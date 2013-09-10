@@ -46,6 +46,13 @@ namespace processor {
 namespace powerpc {
 namespace mpc7447a {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template <class CONFIG>
 CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	: Object(name, parent)
@@ -129,6 +136,11 @@ tlm::tlm_sync_enum CPU<CONFIG>::nb_transport_bw(tlm::tlm_generic_payload& trans,
 template <class CONFIG>
 void CPU<CONFIG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
+	dmi_region_cache.Invalidate(start_range, end_range);
+	if(CONFIG::DEBUG_ENABLE && debug_dmi)
+	{
+		inherited::logger << DebugInfo << "Bus: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << EndDebugInfo;
+	}
 }
 
 template <class CONFIG>
@@ -270,42 +282,6 @@ void CPU<CONFIG>::Run()
 	}
 }
 
-#if 0
-template <class CONFIG>
-void CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg, bool rwitm)
-{
-	AlignToBusClock();
-	
-	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
-	
-	payload->set_address(physical_addr);
-	payload->set_command(tlm::TLM_READ_COMMAND);
-	payload->set_data_length(size);
-	payload->set_data_ptr((unsigned char *) buffer);
-	
-	bus_master_sock->b_transport(*payload, cpu_time);
-	
-	tlm::tlm_response_status status = payload->get_response_status();
-	
-	switch(status)
-	{
-		case tlm::TLM_OK_RESPONSE:
-			break;
-		case tlm::TLM_INCOMPLETE_RESPONSE:
-		case tlm::TLM_GENERIC_ERROR_RESPONSE:
-		case tlm::TLM_ADDRESS_ERROR_RESPONSE:
-		case tlm::TLM_COMMAND_ERROR_RESPONSE:
-		case tlm::TLM_BURST_ERROR_RESPONSE:
-		case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE:
-			inherited::SetIRQ(CONFIG::IRQ_TEA);
-			break;
-	}
-
-	payload->release();
-
-	UpdateTime();
-}
-#else
 template <class CONFIG>
 void CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg, bool rwitm)
 {
@@ -319,36 +295,36 @@ void CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, voi
 		
 		if(likely(dmi_region != 0))
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			if(likely(dmi_region->IsAllowed()))
 			{
-				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
 				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
 				{
-					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << std::endl;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
-					cpu_time += dmi_data->get_read_latency();
+					cpu_time += size * dmi_data->get_read_latency();
 					UpdateTime();
 					return;
 				}
 				else
 				{
-					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << std::endl;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				}
 			}
 			else
 			{
-				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			}
 		}
 		else
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
-	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Read: traditional way for 0x" << std::hex << physical_addr << std::dec << std::endl;
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
@@ -379,7 +355,7 @@ void CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, voi
 	{
 		if(likely(!dmi_region && payload->is_dmi_allowed()))
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
 			unisim::kernel::tlm2::DMIGrant dmi_grant = bus_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
@@ -388,7 +364,7 @@ void CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, voi
 		}
 		else
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
@@ -396,43 +372,7 @@ void CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, voi
 
 	UpdateTime();
 }
-#endif
 
-#if 0
-template <class CONFIG>
-void CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg)
-{
-	AlignToBusClock();
-	
-	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
-	
-	payload->set_address(physical_addr);
-	payload->set_command(tlm::TLM_WRITE_COMMAND);
-	payload->set_data_length(size);
-	payload->set_data_ptr((unsigned char *) buffer);
-	
-	bus_master_sock->b_transport(*payload, cpu_time);
-	
-	tlm::tlm_response_status status = payload->get_response_status();
-	switch(status)
-	{
-		case tlm::TLM_OK_RESPONSE:
-			break;
-		case tlm::TLM_INCOMPLETE_RESPONSE:
-		case tlm::TLM_GENERIC_ERROR_RESPONSE:
-		case tlm::TLM_ADDRESS_ERROR_RESPONSE:
-		case tlm::TLM_COMMAND_ERROR_RESPONSE:
-		case tlm::TLM_BURST_ERROR_RESPONSE:
-		case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE:
-			inherited::SetIRQ(CONFIG::IRQ_TEA);
-			break;
-	}
-
-	payload->release();
-
-	UpdateTime();
-}
-#else
 template <class CONFIG>
 void CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg)
 {
@@ -446,36 +386,36 @@ void CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, co
 		
 		if(likely(dmi_region != 0))
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Write: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			if(likely(dmi_region->IsAllowed()))
 			{
-				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Write: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
-				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
+				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_WRITE) == tlm::tlm_dmi::DMI_ACCESS_WRITE))
 				{
-					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << std::endl;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), buffer, size);
-					cpu_time += dmi_data->get_read_latency();
+					cpu_time += size * dmi_data->get_write_latency();
 					UpdateTime();
 					return;
 				}
 				else
 				{
-					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Write: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << std::endl;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				}
 			}
 			else
 			{
-				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Write: DMI access denied for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			}
 		}
 		else
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Write: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
-	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Write: traditional way for 0x" << std::hex << physical_addr << std::dec << std::endl;
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
@@ -506,7 +446,7 @@ void CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, co
 	{
 		if(likely(!dmi_region && payload->is_dmi_allowed()))
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Write: target allows DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
 			unisim::kernel::tlm2::DMIGrant dmi_grant = bus_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
@@ -515,7 +455,7 @@ void CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, co
 		}
 		else
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: Bus Write: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
@@ -523,7 +463,6 @@ void CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, co
 
 	UpdateTime();
 }
-#endif
 
 template <class CONFIG>
 void CPU<CONFIG>::BusZeroBlock(typename CONFIG::physical_address_t physical_addr)
