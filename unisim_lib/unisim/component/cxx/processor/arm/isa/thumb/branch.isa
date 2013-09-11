@@ -79,46 +79,6 @@ b_2.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * bl (branch with link) instruction
- * op bl(0b111[3]:0b1[1]:h2[1]:offset[11])
- */
-
-op bl(0b111[3]:0b1[1]:h2[1]:offset[11])
-
-bl.disasm = {
-	int32_t bl_soffset;
-
-	buffer << "bl ";
-	if(h2 == 0) {
-		buffer << "????";
-		return;
-	} else {
-		bl_soffset = cpu.GetGPR(cpu.LR_reg) + (offset << 1);
-		buffer << "0x" << std::hex << bl_soffset << std::dec;
-	}
-}
-
-bl.execute = {
-	int32_t bl_soffset;
-	
-	if(offset & 0x0400)
-		bl_soffset = (int32_t)(uint32_t(0xfffff800) + offset);
-	else
-		bl_soffset = offset;
-	
-	if(h2) {
-		cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
-		cpu.Branch(cpu.GetGPR(cpu.LR_reg) + (offset << 1));
-	} else {
-		cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + (bl_soffset << 12));
-	}
-}
-
-/*
- * end of bl (branch with link) instruction
- *******************************************************************/
-
-/*******************************************************************
  * bx (branch and exchange) instruction
  * op bx(0b010001110[9]:h2[1]:rm[3]:/ *sbz* /0[3])
  */
@@ -139,42 +99,11 @@ bx.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * blx(1) (branch with link and exchange) instruction
- * op blx_1(0b111[3]:0b01[2]:sext<32> imm[11])
- */
-
-op blx_1(0b111[3]:0b01[2]:offset[11])
-
-blx_1.disasm = {
-	int32_t blx_soffset;
-	
-	if(offset & 0x0400)
-		blx_soffset = (int32_t)((~(uint32_t)0x0400) + offset);
-	else
-		blx_soffset = offset;
-	
-	buffer << "blx" << " 0x" << std::hex
-		<< ((blx_soffset << 12) + cpu.GetGPR(cpu.PC_reg) + 4 + (offset << 1))
-		<< std::dec;
-}
-
-blx_1.execute = {
-	uint32_t new_PC = (cpu.GetGPR(cpu.LR_reg) + (offset << 1)) & -4;
-	cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
-	cpu.Branch(new_PC);
-}
-
-/*
- * end of blx(1) (branch with link and exchange) instruction
- *******************************************************************/
-
-/*******************************************************************
  * blx(2) (branch with link and exchange) instruction
  * op blx_2(0b111[3]:0b01[2]:sext<32> imm[11])
  */
 
-op blx_2(0b010001111[9]:shl<3> rm1[1]:rm0[3]:/*sbz*/0[3]);
-blx_2.var rm : {uint8_t} = {rm1|rm0};
+op blx_2(0b010001111[9]:rm[4]:/*sbz*/0[3]);
 
 blx_2.disasm = {
   buffer << "blx\t" << DisasmRegister(rm);
@@ -189,4 +118,74 @@ blx_2.execute = {
 
 /*
  * end of blx(2) (branch with link and exchange) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * bl prefix (Branch with Link) instruction
+ *
+ * Prefix for BL and BLX Thumb1 instructions
+ *
+ */
+
+op bl_h1(0b11110[5]:shl<12> sext<32> imm1[11]);
+
+bl_h1.disasm = {
+  buffer << "bl{x}\tLR=0x" << std::hex << (this->GetAddr() + 4 + imm1) << std::dec << " (prefix)";
+};
+
+bl_h1.execute = {
+  cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + imm1);
+};
+
+/*
+ * end of bl prefix (Branch with Link) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * bl postfix (Branch with Link) instruction
+ *
+ * Postfix for the BL Thumb1 instruction.
+ *
+ * BL calls a subroutine at a PC-relative address.
+ */
+
+op bl_h2(0b11111[5]:shl<1> imm0[11]);
+
+bl_h2.disasm = {
+  buffer << "bl\tLR+0x" << std::hex << imm0 << std::dec << " (postfix)";
+};
+
+bl_h2.execute = {
+  uint32_t address = cpu.GetGPR(cpu.LR_reg) + imm0;
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
+  cpu.Branch( address );
+};
+
+/*
+ * end of bl postfix (Branch with Link) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * blx postfix (Branch with Link and Exchange) instruction
+ *
+ * Postfix for the BLX Thumb1 instruction.
+ *
+ * BLX calls a subroutine at a PC-relative address, and changes
+ * instruction set from Thumb to ARM.
+ */
+
+op blx_h3(0b11101[5]:shl<2> imm0[10]:0[1]);
+
+blx_h3.disasm = {
+  buffer << "blx\tLR+0x" << std::hex  << imm0 << std::dec << " (postfix)";
+}
+
+blx_h3.execute = {
+  uint32_t address = (cpu.GetGPR(cpu.LR_reg) + imm0) & -4;
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
+  cpu.BranchExchange( address );
+}
+
+/*
+ * end of blx postfix (Branch with Link and Exchange) instruction
  *******************************************************************/
