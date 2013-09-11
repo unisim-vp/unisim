@@ -122,7 +122,6 @@ protected:
 
 
 private:
-	sc_time& GetBurstLatency(unsigned int num_burst_beats);
 	void UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t);
 
 	/** Verbosity */
@@ -132,12 +131,6 @@ private:
 	/** Latencies */
 	sc_time read_latency;
 	sc_time write_latency;
-	/** Moment when memory will be ready to serve another request */
-	sc_time ready_time;
-	/** Burst latency lookup tables */
-	static const unsigned int NUM_BURST_LATENCY_FAST_LOOKUP = 16; // 0 <= burst_length < 16 for fast lookup
-	sc_time burst_latency_fast_lookup[NUM_BURST_LATENCY_FAST_LOOKUP];
-	std::map<unsigned int, sc_time> burst_latency_slow_lookup;
 	/** The parameter to set frequency */
 	Parameter<sc_time> param_cycle_time;
 	/** The parameters to set the latencies */

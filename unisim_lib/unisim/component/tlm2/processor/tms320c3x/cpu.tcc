@@ -395,7 +395,7 @@ bool CPU<CONFIG, DEBUG>::PrRead(typename CONFIG::address_t addr, void *buffer, u
 				{
 					if(unlikely(DEBUG && debug_dmi)) inherited::logger << DebugInfo << "Bus Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (addr - dmi_data->get_start_address()), size);
-					cpu_time += dmi_data->get_read_latency();
+					cpu_time += dmi_region->GetReadLatency(size);
 					return true;
 				}
 				else
@@ -469,7 +469,7 @@ bool CPU<CONFIG, DEBUG>::PrWrite(typename CONFIG::address_t addr, const void *bu
 				{
 					if(unlikely(DEBUG && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(dmi_data->get_dmi_ptr() + (addr - dmi_data->get_start_address()), buffer, size);
-					cpu_time += dmi_data->get_write_latency();
+					cpu_time += dmi_region->GetWriteLatency(size);
 					return true;
 				}
 				else

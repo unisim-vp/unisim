@@ -410,6 +410,7 @@ private:
 	unisim::kernel::tlm2::FwRedirector<CPU<CONFIG, DEBUG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> > *dint_redirector;
 	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG, DEBUG> > *bus_master_redirector;
 	unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
+	unisim::kernel::tlm2::LatencyLookupTable lat_lut;
 	inline void UpdateTime();
 	void ProcessExternalEvents();
 	void ProcessIRQEvent(Event *event);
