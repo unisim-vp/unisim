@@ -106,8 +106,8 @@ public:
   static bool const     insns5J = true;
   static bool const     insns5T = true;
   static bool const     insns6  = true;
-  static bool const     insnsRM = true;
-  static bool const     insnsT2 = true;
+  static bool const     insnsRM = false;
+  static bool const     insnsT2 = false;
   
   //=====================================================================
   //=                  public service imports/exports                   =

@@ -66,6 +66,7 @@ action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {
 }
 
 include "branch.isa"
+include "branch_T1.isa"
 include "data_processing.isa"
 include "load_store_reg.isa"
 include "load_store_multiple.isa"

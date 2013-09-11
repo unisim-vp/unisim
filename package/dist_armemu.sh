@@ -203,6 +203,7 @@ unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
 unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
 unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa \
 unisim/component/cxx/processor/arm/isa/thumb/branch.isa \
+unisim/component/cxx/processor/arm/isa/thumb/branch_T1.isa \
 unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
 unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
