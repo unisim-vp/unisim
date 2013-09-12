@@ -202,10 +202,6 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 			else
 				status = inherited::ReadMemory(addr, data_ptr, data_length);
 
-			if (status) {
-				read_counter++;
-			}
-
 			break;
 		case tlm::TLM_WRITE_COMMAND:
 			if(IsVerbose())
@@ -222,9 +218,6 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 			else
 				status = inherited::WriteMemory(addr, data_ptr, data_length);
 
-			if (status) {
-				write_counter++;
-			}
 			break;
 		case tlm::TLM_IGNORE_COMMAND:
 			// transport_dbg should not receive such a command
