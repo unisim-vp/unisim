@@ -860,12 +860,7 @@ if [ "${has_to_build_configure_cross}" = "yes" ]; then
 	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
 #!/bin/bash
 HERE=\$(pwd)
-MY_DIR=\$(dirname \$0)
-if test \${MY_DIR} = "."; then
-	MY_DIR=\${HERE}
-elif test \${MY_DIR} = ".."; then
-	MY_DIR=\${HERE}/..
-fi
+MY_DIR=\$(cd \$(dirname \$0); pwd)
 
 # remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
 host=""

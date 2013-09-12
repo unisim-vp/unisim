@@ -39,6 +39,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <inttypes.h>
+#include <iosfwd>
 
 namespace unisim {
 namespace component {
@@ -54,6 +55,27 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::service::interfaces::Memory;
+
+template <class CONFIG> class AddressRange;
+
+template <class CONFIG>
+std::ostream& operator << (std::ostream& os, const AddressRange<CONFIG>& addr_range);
+
+template <class CONFIG>
+class AddressRange
+{
+public:
+	AddressRange(typename CONFIG::ADDRESS start_addr, typename CONFIG::ADDRESS end_addr);
+	~AddressRange();
+	typename CONFIG::ADDRESS GetStartAddr() const;
+	typename CONFIG::ADDRESS GetEndAddr() const;
+	void SetStartAddr(typename CONFIG::ADDRESS start_addr);
+	void SetEndAddr(typename CONFIG::ADDRESS end_addr);
+private:
+	friend std::ostream& operator << <CONFIG>(std::ostream& os, const AddressRange<CONFIG>& addr_range);
+	typename CONFIG::ADDRESS start_addr;
+	typename CONFIG::ADDRESS end_addr;
+};
 
 template <class CONFIG>
 class Crossbar
@@ -94,7 +116,10 @@ protected:
 	
 	unisim::kernel::logger::Logger logger;
 	bool IsVerbose() const;
-	Interface Route(Interface intf, typename CONFIG::ADDRESS addr);
+	Interface Route(Interface intf, typename CONFIG::ADDRESS addr, typename CONFIG::ADDRESS& start_range, typename CONFIG::ADDRESS& end_range);
+	void DumpAddressMapping(typename CONFIG::ADDRESS start_addr, typename CONFIG::ADDRESS end_addr, Interface intf, std::ostream& os);
+	void DumpAddressMapping(Interface intf, std::ostream& os);
+	void GetAddressRanges(Interface src_if, Interface dst_if, std::list<AddressRange<CONFIG> >& lst);
 	const char *GetInterfaceName(Interface intf) const;
 	
 	void MPLBError(Interface master_if, typename CONFIG::ADDRESS addr, bool rnw, unsigned int length);

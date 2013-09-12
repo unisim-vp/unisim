@@ -385,119 +385,105 @@ public:
 	 * @param address the address of the prefetch
 	 */
 	void ReadPrefetch(uint32_t address);
-	/** 32bits memory read that stores result into the PC
-	 * This methods reads 32bits from memory and stores the result into
-	 *   the pc register of the CPU.
+	/** 32bits memory read.
+	 *
+         * This method reads 32bits from memory and returns a
+         * corresponding pending memory operation.
 	 * 
 	 * @param address the base address of the 32bits read
-	 */
-	void Read32toPCUpdateT(uint32_t address);
-	/** 32bits memory read into the PC and updates thumb state.
-	 * This methods reads 32bits from memory and stores the result into
-	 *   the pc register of the CPU and updates thumb state if necessary
 	 * 
-	 * @param address the base address of the 32bits read
+	 * @return a pointer to the pending memory operation
 	 */
-	void Read32toPC(uint32_t address);
-	/** 32bits memory read into one of the general purpose registers.
-	 * This method reads 32bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg
-	 * 
-	 * @param address the base address of the 32bits read
-	 * @param reg the register to store the resulting read
-	 */
-	void Read32toGPR(uint32_t address, uint32_t reg);
-	/** 32bits aligned memory read into one of the general purpose registers.
-	 * This method reads 32bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg. Note that this
-	 *   read methods supposes that the address is 32bits aligned.
-	 * 
-	 * @param address the base address of the 32bits read
-	 * @param reg the register to store the resulting read
-	 */
-	void Read32toGPRAligned(uint32_t address, uint32_t reg);
-	/** 32bits memory read into one of the user general purpose registers.
-	 * This method reads 32bits from memory and stores the result into
-	 *   the user general purpose register indicated by the input reg. For the
-	 *   armemu version this makes the same as Read32toGPR.
-	 * 
-	 * @param address the base address of the 32bits read
-	 * @param reg the user register to store the resulting read
-	 */
-	void Read32toUserGPR(uint32_t address, uint32_t reg)
-	{
-		Read32toGPR(address, reg);
-	}
-	/** 32bits aligned memory read into one of the user general purpose registers.
-	 * This method reads 32bits from memory and stores the result into
-	 *   the user general purpose register indicated by the input reg. Note that
-	 *   this read methods supposes that the address is 32bits aligned. For the
-	 *   armemu version this makes the same as Read32toGPRAligned.
-	 * 
-	 * @param address the base address of the 32bits read
-	 * @param reg the user register to store the resulting read
-	 */
-	void Read32toUserGPRAligned(uint32_t address, uint32_t reg)
-	{
-		Read32toGPRAligned(address, reg);
-	}
-	/** 16bits aligned memory read into one of the general purpose registers.
-	 * This method reads 16bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg. Note that this
-	 *   read methods supposes that the address is 16bits aligned.
+	MemoryOp* MemRead32(uint32_t address);
+	/** 16bits memory read.
+         * 
+	 * This method reads 16bits from memory and returns a
+         * corresponding pending memory operation.
 	 * 
 	 * @param address the base address of the 16bits read
-	 * @param reg the register to store the resulting read
+	 * 
+	 * @return a pointer to the pending memory operation
 	 */
-	void Read16toGPRAligned(uint32_t address, uint32_t reg);
-	/** Signed 16bits aligned memory read into one of the GPRs.
-	 * This method reads 16bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg. Note that this
-	 *   read methods supposes that the address is 16bits aligned. The 16bits
-	 *   value is considered signed and sign extended to the register size.
+	MemoryOp* MemRead16(uint32_t address);
+	/** Signed 16bits memory read.
+	 *
+	 * This method reads 16bits from memory and return a
+	 * corresponding signed pending memory operation.
 	 * 
 	 * @param address the base address of the 16bits read
-	 * @param reg the register to store the resulting read
+	 * 
+	 * @return a pointer to the pending memory operation
 	 */
-	void ReadS16toGPRAligned(uint32_t address, uint32_t reg);
-	/** 8bits memory read into one of the general purpose registers.
-	 * This method reads 8bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg.
+	MemoryOp* MemReadS16(uint32_t address);
+	/** 8bits memory read.
+	 *
+	 * This method reads 8bits from memory and returns a
+         * corresponding pending memory operation.
 	 * 
 	 * @param address the base address of the 8bits read
-	 * @param reg the register to store the resulting read
+	 * 
+	 * @return a pointer to the pending memory operation
 	 */
-	void ReadS8toGPR(uint32_t address, uint32_t reg);
-	/** Signed 8bits memory read into one of the general purpose registers.
-	 * This method reads 8bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg. The 8bits 
-	 *   value is considered signed and sign extended to the register size.
+	MemoryOp* MemRead8(uint32_t address);
+	/** Signed 8bits memory read.
+	 *
+	 * This method reads 8bits from memory and returns a
+         * corresponding signed pending memory operation.
 	 * 
 	 * @param address the base address of the 8bits read
-	 * @param reg the register to store the resulting read
+	 * 
+	 * @return a pointer to the pending memory operation
 	 */
-	void Read8toGPR(uint32_t address, uint32_t reg);
+	MemoryOp* MemReadS8(uint32_t address);
+	/* Prevent hiding base SetGPR */
+	using unisim::component::cxx::processor::arm::CPU::SetGPR;
+	/** Mark a GPR to be updated by a MemoryOp pending memory operation.
+	 *
+	 * @param id the register index
+	 * @param memop the pending memory operation
+	 * 
+	 * @return a pointer to the pending memory operation
+	 */
+	void SetGPR(uint32_t id, MemoryOp* memop)
+	{
+		memop->SetDestReg( id );
+		ls_queue.push(memop);		
+	}
+	/* Prevent hiding base SetGPR_usr */
+	using unisim::component::cxx::processor::arm::CPU::SetGPR_usr;
+	/** Mark a user GPR to be updated by a MemoryOp pending memory operation.
+	 *
+	 * @param id the register index
+	 * @param memop the pending memory operation
+	 * 
+	 * @return a pointer to the pending memory operation
+	 */
+	void SetGPR_usr(uint32_t id, MemoryOp* memop)
+	{
+		memop->SetDestUserReg( id );
+		ls_queue.push(memop);		
+	}
 	/** 32bits memory write.
 	 * This method write the giving 32bits value into the memory system.
 	 * 
 	 * @param address the base address of the 32bits write
 	 * @param value the value to write into memory
 	 */
-	void Write32(uint32_t address, uint32_t value);
+	void MemWrite32(uint32_t address, uint32_t value);
 	/** 16bits memory write.
 	 * This method write the giving 16bits value into the memory system.
 	 * 
 	 * @param address the base address of the 16bits write
 	 * @param value the value to write into memory
 	 */
-	void Write16(uint32_t address, uint16_t value);
+	void MemWrite16(uint32_t address, uint16_t value);
 	/** 8bits memory write.
 	 * This method write the giving 8bits value into the memory system.
 	 * 
 	 * @param address the base address of the 8bits write
 	 * @param value the value to write into memory
 	 */
-	void Write8(uint32_t address, uint8_t value);
+	void MemWrite8(uint32_t address, uint8_t value);
 
 	/**************************************************************/
 	/* Memory access methods       END                            */
@@ -723,12 +709,6 @@ protected:
 	/** Indicates if the firstLS item has been sent or not.
 	 */
 	bool has_sent_first_ls;
-	/** Queue of free entries of memory operations.
-	 * Used memory operations are not removed from the system but kept in a 
-	 *   free list for their reuse.
-	 */
-	std::queue<unisim::component::cxx::processor::arm::MemoryOp *> 
-		free_ls_queue;
 	/** Performs the load/stores present in the queue of memory operations.
 	 */
 	void PerformLoadStoreAccesses();
@@ -748,19 +728,6 @@ protected:
 	 */
 	void PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 			*memop);
-	/** Performs a read access and puts result in the PC register.
-	 * @param memop the memory operation containing the read access
-	 */
-	void PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
-			*memop);
-	/** Performs a read access and puts result in the PC register.
-	 * Performs a read access and puts result in the PC register and updates the
-	 * thumb status if necessary
-	 * 
-	 * @param memop the memory operation containing the read access
-	 */
-	void PerformReadToPCUpdateTAccess(
-			unisim::component::cxx::processor::arm::MemoryOp *memop);
 };
 
 } // end of namespace armemu

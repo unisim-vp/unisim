@@ -195,6 +195,9 @@ unsigned int GPIO_LEDs<NUM_LEDS>::gpio_transport_dbg(unsigned int pin, GPIOPaylo
 template <unsigned int NUM_LEDS>
 bool GPIO_LEDs<NUM_LEDS>::gpio_get_direct_mem_ptr(unsigned int pin, GPIOPayload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 

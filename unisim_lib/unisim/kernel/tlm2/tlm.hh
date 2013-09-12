@@ -37,6 +37,8 @@
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
+#include <unisim/util/hash_table/hash_table.hh>
+#include <unisim/util/likely/likely.hh>
 #include <systemc.h>
 #include <tlm.h>
 #include <stack>
@@ -881,6 +883,343 @@ bool TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::get_direct_mem_ptr(type
 		Object::Stop(-1);
 	}
 	return false;
+}
+
+typedef enum 
+{
+	DMI_ALLOW,
+	DMI_DENY
+} DMIGrant;
+
+class LatencyLookupTable
+{
+public:
+	inline LatencyLookupTable();
+	inline LatencyLookupTable(const sc_time& base_lat);
+	inline ~LatencyLookupTable();
+	inline void SetBaseLatency(const sc_time& base_lat);
+	inline const sc_time& Lookup(unsigned int n); // returns n * base_lat
+private:
+	static const unsigned int NUM_LATENCY_FAST_LOOKUP = 16; // 0 <= n < 16 for fast lookup
+	sc_time base_lat;
+	sc_time latency_fast_lookup[NUM_LATENCY_FAST_LOOKUP];
+	std::map<unsigned int, sc_time> latency_slow_lookup;
+};
+
+LatencyLookupTable::LatencyLookupTable()
+	: base_lat(SC_ZERO_TIME)
+{
+}
+
+LatencyLookupTable::LatencyLookupTable(const sc_time& _base_lat)
+{
+	SetBaseLatency(_base_lat);
+}
+
+LatencyLookupTable::~LatencyLookupTable()
+{
+}
+
+inline void LatencyLookupTable::SetBaseLatency(const sc_time& _base_lat)
+{
+	base_lat = _base_lat;
+	
+	unsigned int n;
+	for(n = 0; n < NUM_LATENCY_FAST_LOOKUP; n++)
+	{
+		latency_fast_lookup[n] = n * base_lat;
+	}
+	
+	latency_slow_lookup.clear();
+}
+
+const sc_time& LatencyLookupTable::Lookup(unsigned int n)
+{
+	if(n < NUM_LATENCY_FAST_LOOKUP)
+	{
+		return latency_fast_lookup[n];
+	}
+	
+	do
+	{
+		std::map<unsigned int, sc_time>::iterator iter = latency_slow_lookup.find(n);
+		
+		if(iter != latency_slow_lookup.end())
+		{
+			return (*iter).second;
+		}
+		
+		sc_time latency = n * base_lat;
+		latency_slow_lookup[n] = latency;
+	}
+	while(1);
+	
+	return latency_fast_lookup[0]; // shall never occur
+}
+
+class DMIRegionCache;
+
+class DMIRegion
+{
+public:
+	inline DMIRegion(DMIGrant dmi_grant, tlm::tlm_dmi *dmi_data);
+	inline ~DMIRegion();
+	inline bool IsAllowed() const;
+	inline bool IsDenied() const;
+	inline DMIGrant GetGrant() const;
+	inline tlm::tlm_dmi *GetDMI() const;
+	inline const sc_time& GetReadLatency(unsigned int data_length);
+	inline const sc_time& GetWriteLatency(unsigned int data_length);
+private:
+	friend class DMIRegionCache;
+	DMIGrant dmi_grant;
+	tlm::tlm_dmi *dmi_data;
+	LatencyLookupTable read_lat_lut;
+	LatencyLookupTable write_lat_lut;
+	DMIRegion *next;
+};
+
+inline DMIRegion::DMIRegion(DMIGrant _dmi_grant, tlm::tlm_dmi *_dmi_data)
+	: dmi_grant(_dmi_grant)
+	, dmi_data(_dmi_data)
+	, read_lat_lut(dmi_data->get_read_latency())
+	, write_lat_lut(dmi_data->get_write_latency())
+{
+}
+
+inline DMIRegion::~DMIRegion()
+{
+	delete dmi_data;
+}
+
+inline bool DMIRegion::IsAllowed() const
+{
+	return dmi_grant == DMI_ALLOW;
+}
+
+inline bool DMIRegion::IsDenied() const
+{
+	return dmi_grant == DMI_DENY;
+}
+
+inline DMIGrant DMIRegion::GetGrant() const
+{
+	return dmi_grant;
+}
+
+inline tlm::tlm_dmi *DMIRegion::GetDMI() const
+{
+	return dmi_data;
+}
+
+inline const sc_time& DMIRegion::GetReadLatency(unsigned int data_length)
+{
+	return read_lat_lut.Lookup(data_length);
+}
+
+inline const sc_time& DMIRegion::GetWriteLatency(unsigned int data_length)
+{
+	return write_lat_lut.Lookup(data_length);
+}
+
+class DMIRegionCache
+{
+public:
+	inline DMIRegionCache();
+	inline ~DMIRegionCache();
+	
+	inline DMIRegion *Lookup(sc_dt::uint64 addr, sc_dt::uint64 size);
+	inline void Insert(DMIGrant dmi_grant, tlm::tlm_dmi *dmi_data);
+	inline void Insert(DMIRegion *dmi_region);
+	inline void Remove(DMIRegion *dmi_region);
+	inline void Invalidate(sc_dt::uint64 start_range = 0, sc_dt::uint64 end_range = (sc_dt::uint64) -1);
+private:
+	DMIRegion *mru_dmi_region;
+};
+
+inline DMIRegionCache::DMIRegionCache()
+	: mru_dmi_region(0)
+{
+}
+
+inline DMIRegionCache::~DMIRegionCache()
+{
+	Invalidate();
+}
+
+inline DMIRegion *DMIRegionCache::Lookup(sc_dt::uint64 addr, sc_dt::uint64 size)
+{
+	sc_dt::uint64 end_addr = addr + size - 1;
+	
+	DMIRegion *cur = mru_dmi_region;
+	if(cur)
+	{
+		tlm::tlm_dmi *dmi_data = cur->GetDMI();
+		sc_dt::uint64 dmi_start_address = dmi_data->get_start_address();
+		sc_dt::uint64 dmi_end_address = dmi_data->get_end_address();
+		
+		if((addr >= dmi_start_address) && (end_addr <= dmi_end_address))
+		{
+			return cur;
+		}
+		DMIRegion *prev = cur;
+		cur = cur->next;
+		if(cur)
+		{
+			do
+			{
+				tlm::tlm_dmi *dmi_data = cur->GetDMI();
+				sc_dt::uint64 dmi_start_address = dmi_data->get_start_address();
+				sc_dt::uint64 dmi_end_address = dmi_data->get_end_address();
+				
+				if((addr >= dmi_start_address) && (end_addr <= dmi_end_address))
+				{
+					prev->next = cur->next;
+					cur->next= mru_dmi_region;
+					mru_dmi_region = cur;
+					return cur;
+				}
+				prev = cur;
+			} while((cur = cur->next) != 0);
+		}
+	}
+	
+	return 0;
+}
+
+inline void DMIRegionCache::Insert(DMIGrant dmi_grant, tlm::tlm_dmi *dmi_data)
+{
+	DMIRegion *dmi_region = new DMIRegion(dmi_grant, dmi_data);
+	dmi_region->next = mru_dmi_region;
+	mru_dmi_region = dmi_region;
+}
+
+inline void DMIRegionCache::Insert(DMIRegion *dmi_region)
+{
+	dmi_region->next = mru_dmi_region;
+	mru_dmi_region = dmi_region;
+}
+
+inline void DMIRegionCache::Remove(DMIRegion *dmi_region)
+{
+	DMIRegion *prev;
+	DMIRegion *cur = mru_dmi_region;
+	
+	if(cur)
+	{
+		if(cur == dmi_region)
+		{
+			mru_dmi_region = cur->next;
+			return;
+		}
+		prev = cur;
+		cur = cur->next;
+		if(cur)
+		{
+			do
+			{
+				if(cur == dmi_region)
+				{
+					prev->next = cur->next;
+					cur->next = 0;
+					return;
+				}
+				prev = cur;
+			} while((cur = cur->next) != 0);
+		}
+	}
+}
+
+inline void DMIRegionCache::Invalidate(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	if(end_range < start_range) return;
+	
+	DMIRegion *dmi_region, *next_dmi_region;
+	
+	dmi_region = mru_dmi_region;
+	if(dmi_region)
+	{
+		do
+		{
+			next_dmi_region = dmi_region->next;
+			
+			tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+			sc_dt::uint64 dmi_start_address = dmi_data->get_start_address();
+			sc_dt::uint64 dmi_end_address = dmi_data->get_end_address();
+			if((end_range >= dmi_start_address) && (start_range <= dmi_end_address))
+			{
+				// collision
+				if(start_range <= dmi_start_address)
+				{
+					if(end_range >= dmi_end_address)
+					{
+						// full delete
+						Remove(dmi_region);
+						delete dmi_region;
+					}
+					else
+					{
+						// cut lower range of region
+						unsigned char *dmi_ptr = dmi_data->get_dmi_ptr();
+						sc_dt::uint64 new_dmi_start_address = end_range + 1;
+						unsigned char *new_dmi_ptr = dmi_ptr + (new_dmi_start_address - dmi_start_address);
+						dmi_data->set_start_address(new_dmi_start_address);
+						dmi_data->set_dmi_ptr(new_dmi_ptr);
+					}
+				}
+				else
+				{
+					if(end_range >= dmi_end_address)
+					{
+						// cut upper range of region
+						sc_dt::uint64 new_dmi_end_address = start_range - 1;
+						dmi_data->set_end_address(new_dmi_end_address);
+					}
+					else
+					{
+						// split in two regions
+						DMIGrant dmi_grant = dmi_region->GetGrant();
+						tlm::tlm_dmi::dmi_access_e dmi_access = dmi_data->get_granted_access();
+						sc_core::sc_time dmi_read_latency = dmi_data->get_read_latency();
+						sc_core::sc_time dmi_write_latency = dmi_data->get_write_latency();
+						unsigned char *dmi_ptr = dmi_data->get_dmi_ptr();
+						
+						Remove(dmi_region);
+						delete dmi_region;
+						
+						// lower region
+						sc_dt::uint64 dmi_start_address1 = dmi_start_address;
+						sc_dt::uint64 dmi_end_address1 = start_range - 1;
+						
+						tlm::tlm_dmi *dmi_data1 = new tlm::tlm_dmi();
+						dmi_data1->set_granted_access(dmi_access);
+						dmi_data1->set_read_latency(dmi_read_latency);
+						dmi_data1->set_write_latency(dmi_write_latency);
+						dmi_data1->set_start_address(dmi_start_address1);
+						dmi_data1->set_end_address(dmi_end_address1);
+						dmi_data1->set_dmi_ptr(dmi_ptr);
+						DMIRegion *dmi_region1 = new DMIRegion(dmi_grant, dmi_data1);
+						Insert(dmi_region1);
+
+						// upper region
+						sc_dt::uint64 dmi_start_address2 = end_range + 1;
+						sc_dt::uint64 dmi_end_address2 = dmi_end_address;
+						
+						tlm::tlm_dmi *dmi_data2 = new tlm::tlm_dmi();
+						dmi_data2->set_granted_access(dmi_access);
+						dmi_data2->set_read_latency(dmi_read_latency);
+						dmi_data2->set_write_latency(dmi_write_latency);
+						dmi_data2->set_start_address(dmi_start_address2);
+						dmi_data2->set_end_address(dmi_end_address2);
+						dmi_data1->set_dmi_ptr(dmi_ptr + (dmi_start_address2 - dmi_start_address));
+						DMIRegion *dmi_region2 = new DMIRegion(dmi_grant, dmi_data2);
+						Insert(dmi_region2);
+					}
+				}
+			}
+			dmi_region = next_dmi_region;
+		} while(dmi_region);
+	}
 }
 
 } // end of namespace tlm2

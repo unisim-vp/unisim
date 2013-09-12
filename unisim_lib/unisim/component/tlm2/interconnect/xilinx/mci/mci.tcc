@@ -60,6 +60,7 @@ MCI<CONFIG>::MCI(const sc_module_name& name, Object *parent)
 	, mci_master_sock("mci-master-sock")
 	, dcr_slave_sock("dcr-slave-sock")
 	, cycle_time(SC_ZERO_TIME)
+	, burst_latency_lut()
 	, param_cycle_time("cycle-time", this, cycle_time, "Enable/Disable verbosity")
 {
 	mci_fw_redirector = 
@@ -124,6 +125,9 @@ bool MCI<CONFIG>::BeginSetup()
 		inherited::logger << DebugError << "Parameter " << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
 		return false;
 	}
+	
+	burst_latency_lut.SetBaseLatency(cycle_time);
+	
 	return true;
 }
 
@@ -135,7 +139,6 @@ tlm::tlm_sync_enum MCI<CONFIG>::nb_transport_fw(unsigned int intf, tlm::tlm_gene
 		case tlm::BEGIN_REQ:
 			switch(intf)
 			{
-				case inherited::IF_MASTER_MCI:
 				case inherited::IF_SLAVE_MCI:
 				case inherited::IF_DCR:
 					{
@@ -168,7 +171,6 @@ void MCI<CONFIG>::b_transport(unsigned int intf, tlm::tlm_generic_payload& paylo
 {
 	switch(intf)
 	{
-		case inherited::IF_MASTER_MCI:
 		case inherited::IF_SLAVE_MCI:
 		case inherited::IF_DCR:
 			{
@@ -191,12 +193,41 @@ void MCI<CONFIG>::b_transport(unsigned int intf, tlm::tlm_generic_payload& paylo
 template <class CONFIG>
 unsigned int MCI<CONFIG>::transport_dbg(unsigned int intf, tlm::tlm_generic_payload& payload)
 {
+	switch(intf)
+	{
+		case inherited::IF_SLAVE_MCI:
+			return inherited::GetMI_CONTROL_ENABLE() ? mci_master_sock->transport_dbg(payload) : 0;
+		case inherited::IF_DCR:
+			return 0;
+		default:
+			inherited::logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
+	}
 	return 0;
 }
 
 template <class CONFIG>
 bool MCI<CONFIG>::get_direct_mem_ptr(unsigned int intf, tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	if(intf == inherited::IF_SLAVE_MCI)
+	{
+		if(inherited::GetMI_CONTROL_ENABLE())
+		{
+			bool dmi_status = mci_master_sock->get_direct_mem_ptr(payload, dmi_data);
+			
+			// add MCI latency per byte
+			if(dmi_status)
+			{
+				dmi_data.set_read_latency(dmi_data.get_read_latency() + (cycle_time / CONFIG::MCI_WIDTH));
+				dmi_data.set_write_latency(dmi_data.get_write_latency() + (cycle_time / CONFIG::MCI_WIDTH));
+			}
+			return dmi_status;
+		}
+	}
+	
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 
@@ -236,6 +267,10 @@ tlm::tlm_sync_enum MCI<CONFIG>::nb_transport_bw(unsigned int intf, tlm::tlm_gene
 template <class CONFIG>
 void MCI<CONFIG>::invalidate_direct_mem_ptr(unsigned int intf, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
+	if(intf == inherited::IF_MASTER_MCI)
+	{
+		mci_slave_sock->invalidate_direct_mem_ptr(start_range, end_range);
+	}
 }
 
 template <class CONFIG>
@@ -304,7 +339,7 @@ void MCI<CONFIG>::ProcessForwardEvent(Event *event)
 {
 	sc_event *ev_completed = event->GetCompletionEvent();
 	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_time t(cycle_time);
+	sc_time t(burst_latency_lut.Lookup((payload->get_data_length() + CONFIG::MCI_WIDTH - 1) / CONFIG::MCI_WIDTH));
 	
 	if(inherited::GetMI_CONTROL_ENABLE())
 	{
@@ -360,7 +395,7 @@ void MCI<CONFIG>::ProcessBackwardEvent(Event *event)
 {
 	tlm::tlm_generic_payload *payload = event->GetPayload();
 	
-	sc_time t(cycle_time);
+	sc_time t(burst_latency_lut.Lookup((payload->get_data_length() + CONFIG::MCI_WIDTH - 1) / CONFIG::MCI_WIDTH));
 
 	if(inherited::IsVerbose())
 	{
@@ -460,6 +495,10 @@ void MCI<CONFIG>::ProcessDCREvent(Event *event)
 					uint32_t value;
 					memcpy(&value, data_ptr, sizeof(value));
 					inherited::WriteDCR(dcrn, unisim::util::endian::BigEndian2Host(value));
+					if(dcrn == CONFIG::MI_CONTROL)
+					{
+						mci_slave_sock->invalidate_direct_mem_ptr(0, (sc_dt::uint64) -1);
+					}
 				}
 				break;
 			case tlm::TLM_IGNORE_COMMAND:

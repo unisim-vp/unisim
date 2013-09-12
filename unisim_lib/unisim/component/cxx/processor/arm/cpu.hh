@@ -106,105 +106,54 @@ namespace arm {
  *
  * void ReadPrefetch(uint32_t address);
  *
- * * 32bits memory read that stores result into the PC
- * This methods reads 32bits from memory and stores the result into
- *   the pc register of the CPU.
- *
- * @param address the base address of the 32bits read
- *
- * void Read32toPCUpdateT(uint32_t address);
- *
- * * 32bits memory read that stores result into the PC and updates thumb state
- * This methods reads 32bits from memory and stores the result into
- *   the pc register of the CPU and updates thumb state if necessary
- *
- * @param address the base address of the 32bits read
- *
- * void Read32toPC(uint32_t address);
- *
  * * 32bits memory read that stores result into one of the general purpose 
  *  registers
- * This method reads 32bits from memory and stores the result into
- *   the general purpose register indicated by the input reg
+ * This method reads 32bits from memory and return a pending memory
+ *   operation
  *
  * @param address the base address of the 32bits read
- * @param reg the register to store the resulting read
  *
- * void Read32toGPR(uint32_t address, uint32_t reg);
- *
- * * 32bits aligned memory read that stores result into one of the general 
- *  purpose registers
- * This method reads 32bits from memory and stores the result into
- *   the general purpose register indicated by the input reg. Note that this
- *   read methods supposes that the address is 32bits aligned.
- *
- * @param address the base address of the 32bits read
- * @param reg the register to store the resulting read
- *
- * void Read32toGPRAligned(uint32_t address, uint32_t reg);
- *
- * * 32bits memory read into one of the user general purpose registers.
- * This method reads 32bits from memory and stores the result into
- *   the user general purpose register indicated by the input reg
- * 
- * @param address the base address of the 32bits read
- * @param reg the user register to store the resulting read
- *
- * void Read32toUserGPR(uint32_t address, uint32_t reg);
- * 
- * * 32bits aligned memory read into one of the user general purpose registers.
- * This method reads 32bits from memory and stores the result into
- *   the user general purpose register indicated by the input reg. Note that
- *   this read methods supposes that the address is 32bits aligned.
- * 
- * @param address the base address of the 32bits read
- * @param reg the user register to store the resulting read
- *
- * void Read32toUserGPRAligned(uint32_t address, uint32_t reg);
+ * void MemRead32(uint32_t address);
  *
  * * 16bits aligned memory read that stores result into one of the general 
  *  purpose registers
- * This method reads 16bits from memory and stores the result into
- *   the general purpose register indicated by the input reg. Note that this
+ * This method reads 16bits from memory and return a pending memory
+ *   operation. Note that this
  *   read methods supposes that the address is 16bits aligned.
  *
  * @param address the base address of the 16bits read
- * @param reg the register to store the resulting read
  *
- * void Read16toGPRAligned(uint32_t address, uint32_t reg);
+ * void MemRead16(uint32_t address);
  *
  * * signed 16bits aligned memory read that stores result into one of the 
  *  general purpose registers
- * This method reads 16bits from memory and stores the result into
- *   the general purpose register indicated by the input reg. Note that this
+ * This method reads 16bits from memory and return a pending memory
+ *   operation. Note that this
  *   read methods supposes that the address is 16bits aligned. The 16bits value
  *   is considered signed and sign extended to the register size 
  *
  * @param address the base address of the 16bits read
- * @param reg the register to store the resulting read
  *
- * void ReadS16toGPRAligned(uint32_t address, uint32_t reg);
+ * void MemReadS16(uint32_t address);
  *
  * * 8bits memory read that stores result into one of the general purpose 
  *  registers
- * This method reads 8bits from memory and stores the result into
- *   the general purpose register indicated by the input reg
+ * This method reads 8bits from memory and return a pending memory
+ *   operation
  *
  * @param address the base address of the 8bits read
- * @param reg the register to store the resulting read
  *
- * void ReadS8toGPR(uint32_t address, uint32_t reg);
+ * void MemReadS8(uint32_t address);
  *
  * * signed 8bits memory read that stores result into one of the general purpose
  *  registers
- * This method reads 8bits from memory and stores the result into
- *   the general purpose register indicated by the input reg. The 8bits value
+ * This method reads 8bits from memory and return a pending memory
+ *   operation. The 8bits value
  *   is considered signed and sign extended to the register size
  *
  * @param address the base address of the 8bits read
- * @param reg the register to store the resulting read
  *
- * void Read8toGPR(uint32_t address, uint32_t reg);
+ * void MemRead8(uint32_t address);
  *
  * * 32bits memory write.
  * This method write the giving 32bits value into the memory system.
@@ -212,7 +161,7 @@ namespace arm {
  * @param address the base address of the 32bits write
  * @param value the value to write into memory
  *
- * void Write32(uint32_t address, uint32_t value);
+ * void MemWrite32(uint32_t address, uint32_t value);
  *
  * * 16bits memory write.
  * This method write the giving 16bits value into the memory system.
@@ -220,7 +169,7 @@ namespace arm {
  * @param address the base address of the 16bits write
  * @param value the value to write into memory
  *
- * void Write16(uint32_t address, uint16_t value);
+ * void MemWrite16(uint32_t address, uint16_t value);
  *
  * * 8bits memory write.
  * This method write the giving 8bits value into the memory system.
@@ -228,7 +177,7 @@ namespace arm {
  * @param address the base address of the 8bits write
  * @param value the value to write into memory
  *
- * void Write8(uint32_t address, uint8_t value);
+ * void MemWrite8(uint32_t address, uint8_t value);
  *
  * * Unpredictable Instruction Behaviour.
  * This method is just called when an unpredictable behaviour is detected to
@@ -286,8 +235,6 @@ public:
 	/* Registers access methods    START                          */
 	/**************************************************************/
 		
-	/** next PC fake register index */
-	const static unsigned int nextPC_reg = 16;
 	/** PC register index */
 	const static unsigned int PC_reg = 15;
 	/** LR register index */
@@ -307,13 +254,42 @@ public:
 	 * @param id the register index
 	 * @return the value contained by the register
 	 */
-	uint32_t GetGPR(uint32_t id) const;
+	uint32_t GetGPR(uint32_t id) const
+	{
+		return gpr[id];
+	}
+
 	/** Set the value contained by a GPR.
 	 *
 	 * @param id the register index
 	 * @param val the value to set
 	 */
-	void SetGPR(uint32_t id, uint32_t val);
+	void SetGPR(uint32_t id, uint32_t val)
+	{
+		if (id != 15) gpr[id] = val;
+		else this->BranchExchange( val );
+	}
+	
+	/** Sets the PC (and potentially exchanges mode ARM<->Thumb)
+	 *
+	 * @param val the value to set PC
+	 */
+	void BranchExchange(uint32_t val)
+	{ this->pc = val; this->SetCPSR_T( val & 1 ); }
+	
+	/** Sets the PC (and preserve mode)
+	 *
+	 * @param val the value to set PC
+	 */
+	void Branch(uint32_t val)
+	{ this->pc = (this->pc & 1) | (val & -2); }
+	
+	/** Gets the updated PC value (next PC as currently computed)
+	 *
+	 */
+	uint32_t GetNPC()
+	{ return this->pc; }
+	
 	/** Get the value contained by a user GPR.
 	 * Returns the value contained by a user GPR. It is the same than GetGPR but
 	 *   restricting the index from 0 to 15 (only the first 16 registers).
@@ -337,6 +313,12 @@ public:
 	 * @return the value of the CPSR register.
 	 */
 	uint32_t GetCPSR() const;
+	/** Get the NZCV bits of the CPSR register
+	 * 
+	 * @return the NZCV bits of the CPSR register
+	 */
+	uint32_t GetCPSR_NZCV() const { return (cpsr >> 28) & 0xf; }
+	
 	/** Set the value of the CPSR register.
 	 *
 	 * @param val the value to set
@@ -631,17 +613,6 @@ public:
 	 */
 	void MoveSPSRtoCPSR();
 
-	/** Check the condition mask given agains current CPSR status.
-	 * Returns true if the condition matches CPSR, false otherwise.
-	 *
-	 * @param cond the condition to check
-	 * @return true if the condition matches CPSR, false otherwise
-	 */
-	bool CheckCondition(uint32_t cond); 
-	/* TODO: Condition codes update method */
-	// void UpdateConditionCodes();
-	/* END TODO */
-
 	/**************************************************************/
 	/* Registers access methods    END                            */
 	/**************************************************************/
@@ -719,6 +690,7 @@ protected:
 	uint32_t phys_gpr[num_phys_gprs]; 
 	/** Storage for the logical registers */
 	uint32_t gpr[num_log_gprs];
+	uint32_t pc;
 	/** The CPSR register.
 	 * All the running modes share the same CPSR register
 	 * CPSR organization:
@@ -759,23 +731,6 @@ protected:
 	 */
 	uint32_t spsr[5];
 		
-	/** The condition table used to check condition in the instructions.
-	 * This table allows a fast check of the condition bits.
-	 */
-	uint16_t check_condition_table[16];
-	/** Check the given condition against CPSR.
-	 * This method checks the given condition against the given value of
-	 *   CPSR and returns true if the condition succeeds, and false otherwise.
-	 *
-	 * @param cond the condition to check
-	 * @param cpsr_val the value of the CPSR register
-	 * @return true if the condition check succeeds, false otherwise.
-	 */
-	bool CheckCondition(unsigned int cond, unsigned int cpsr_val);
-	/** Initialize the values of the condition table.
-	 */
-	void InitializeCheckConditionTable();
-
 	/* TODO: check if the fake floating point registers could be removed. */
 	uint64_t fake_fpr[8];
 	uint32_t fake_fps;

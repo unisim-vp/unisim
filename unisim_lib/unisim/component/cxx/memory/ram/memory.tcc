@@ -436,8 +436,15 @@ void *Memory<PHYSICAL_ADDR, PAGE_SIZE>::GetDirectAccess(PHYSICAL_ADDR physical_a
 		memory_usage += PAGE_SIZE;
 	}
 	
-	physical_start_addr = key * PAGE_SIZE;
-	physical_end_addr = physical_start_addr + PAGE_SIZE - 1;
+	PHYSICAL_ADDR page_start_addr = key * PAGE_SIZE;
+	PHYSICAL_ADDR page_end_addr = page_start_addr + PAGE_SIZE - 1;
+	
+	physical_start_addr = page_start_addr + lo_addr;
+	physical_end_addr = page_end_addr + lo_addr;
+	
+	if(physical_start_addr > hi_addr) physical_start_addr = hi_addr;
+	if(physical_end_addr > hi_addr) physical_end_addr = hi_addr;
+	
 	return page->storage;
 }
 

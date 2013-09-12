@@ -113,10 +113,14 @@ private:
 	sc_time nice_time;
 	sc_event ev_irq;
 	double ipc;
+	bool enable_dmi;
+	bool debug_dmi;
 
 	Parameter<sc_time> param_cpu_cycle_time;
 	Parameter<sc_time> param_nice_time;
 	Parameter<double> param_ipc;
+	Parameter<bool> param_enable_dmi;
+	Parameter<bool> param_debug_dmi;
 	
 	class Event
 	{
@@ -405,6 +409,8 @@ private:
 	unisim::kernel::tlm2::FwRedirector<CPU<CONFIG, DEBUG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> > *tint1_redirector;
 	unisim::kernel::tlm2::FwRedirector<CPU<CONFIG, DEBUG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> > *dint_redirector;
 	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG, DEBUG> > *bus_master_redirector;
+	unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
+	unisim::kernel::tlm2::LatencyLookupTable lat_lut;
 	inline void UpdateTime();
 	void ProcessExternalEvents();
 	void ProcessIRQEvent(Event *event);

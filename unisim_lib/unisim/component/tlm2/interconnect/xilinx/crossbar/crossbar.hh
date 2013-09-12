@@ -230,8 +230,8 @@ private:
 	sc_time cycle_time;
 	Parameter<sc_time> param_cycle_time;
 	
-	sc_time local_time_offset;
-	
+	unisim::kernel::tlm2::LatencyLookupTable burst_latency_lut;
+
 	tlm::tlm_sync_enum nb_transport_fw(unsigned int intf, tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	void b_transport(unsigned int intf, tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
 	unsigned int transport_dbg(unsigned int intf, tlm::tlm_generic_payload& payload);

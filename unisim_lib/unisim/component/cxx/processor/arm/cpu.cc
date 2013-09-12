@@ -99,6 +99,21 @@ using std::ostringstream;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
 
+// class ProgramCounterRegister (unisim::util::debug::Register) used for PC/R15 view
+class ProgramCounterRegister : public Register
+{
+public:
+  ProgramCounterRegister(const char* _name, CPU& _cpu) : name(_name), cpu(_cpu) {}
+  virtual ~ProgramCounterRegister() {}
+  virtual const char *GetName() const { return name.c_str(); }
+  virtual void GetValue(void *buffer) const { *((uint32_t*)buffer) = cpu.GetNPC(); }
+  virtual void SetValue(const void *buffer) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
+  virtual int GetSize() const { return 4; }
+private:
+  std::string name;
+  CPU&        cpu;
+};
+
 // Constructor
 CPU ::
 CPU(endian_type endianness)
@@ -113,6 +128,7 @@ CPU(endian_type endianness)
 	// Initialize general purpose registers
 	for(unsigned int i = 0; i < num_log_gprs; i++)
 		gpr[i] = 0;
+	pc = 0;
 	
 	for(unsigned int i = 0; i < num_phys_gprs; i++)
 		phys_gpr[i] = 0;
@@ -133,19 +149,17 @@ CPU(endian_type endianness)
 	SetEndianness(default_endianness);
 
 	// initialize the registers debugging interface
-	for(int i = 0; i < 16; i++) {
+	for(int i = 0; i < 15; i++) {
 		stringstream str;
 		str << "r" << i;
 		registers_registry[str.str().c_str()] =
 		new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
 	}
-	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
-	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &gpr[15]);
+        registers_registry["r15"] =  new ProgramCounterRegister("r15", *this);
+	registers_registry["pc"] =   new ProgramCounterRegister("pc", *this);
+	registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
+	registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
 	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
-
-	// Initialize check condition table
-	InitializeCheckConditionTable();
 }
 
 /** Destructor.
@@ -219,10 +233,11 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 	{
 		case USER_MODE:
 		case SYSTEM_MODE:
-			for (unsigned int i = 0; i < 16; i++) 
+			for (unsigned int i = 0; i < 15; i++) 
 			{
 				phys_gpr[i] = gpr[i];
 			}
+			phys_gpr[15] = pc;
 			break;
 		case SUPERVISOR_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -231,7 +246,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			phys_gpr[16] = gpr[13];
 			phys_gpr[17] = gpr[14];
-			phys_gpr[15] = gpr[15];
+			phys_gpr[15] = pc;
 			break;
 		case ABORT_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -240,7 +255,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			phys_gpr[18] = gpr[13];
 			phys_gpr[19] = gpr[14];
-			phys_gpr[15] = gpr[15];
+			phys_gpr[15] = pc;
 			break;
 		case UNDEFINED_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -249,7 +264,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			phys_gpr[20] = gpr[13];
 			phys_gpr[21] = gpr[14];
-			phys_gpr[15] = gpr[15];
+			phys_gpr[15] = pc;
 			break;
 		case IRQ_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -258,7 +273,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			phys_gpr[22] = gpr[13];
 			phys_gpr[23] = gpr[14];
-			phys_gpr[15] = gpr[15];
+			phys_gpr[15] = pc;
 			break;
 		case FIQ_MODE:
 			for (unsigned int i = 0; i < 8; i++) 
@@ -269,7 +284,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			{
 				phys_gpr[24 + i] = gpr[8 + i];
 			}
-			phys_gpr[15] = gpr[15];
+			phys_gpr[15] = pc;
 			break;
 		default:
 			assert(0);
@@ -280,10 +295,11 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 	{
 		case USER_MODE:
 		case SYSTEM_MODE:
-			for (unsigned int i = 0; i < 16; i++) 
+			for (unsigned int i = 0; i < 15; i++) 
 			{
 				gpr[i] = phys_gpr[i];
 			}
+			pc = phys_gpr[15];
 			break;
 		case SUPERVISOR_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -292,7 +308,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			gpr[13] = phys_gpr[16];
 			gpr[14] = phys_gpr[17];
-			gpr[15] = phys_gpr[15];
+			pc = phys_gpr[15];
 			break;
 		case ABORT_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -301,7 +317,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			gpr[13] = phys_gpr[18];
 			gpr[14] = phys_gpr[19];
-			gpr[15] = phys_gpr[15];
+			pc = phys_gpr[15];
 			break;
 		case UNDEFINED_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -310,7 +326,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			gpr[13] = phys_gpr[20];
 			gpr[14] = phys_gpr[21];
-			gpr[15] = phys_gpr[15];
+			pc = phys_gpr[15];
 			break;
 		case IRQ_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -319,7 +335,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			gpr[13] = phys_gpr[22];
 			gpr[14] = phys_gpr[23];
-			gpr[15] = phys_gpr[15];
+			pc = phys_gpr[15];
 			break;
 		case FIQ_MODE:
 			for (unsigned int i = 0; i < 8; i++) 
@@ -330,35 +346,11 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			{
 				gpr[8 + i] = phys_gpr[24 + i];
 			}
-			gpr[15] = phys_gpr[15];
+			pc = phys_gpr[15];
 			break;
 		default:
 			assert(0);
 	}
-}
-
-/** Get the value contained by a GPR.
- *
- * @param id the register index
- * @return the value contained by the register
- */
-uint32_t
-CPU::
-GetGPR(uint32_t id) const
-{
-	return gpr[id];
-}
-
-/** Set the value contained by a GPR.
- *
- * @param id the register index
- * @param val the value to set
- */
-void 
-CPU::
-SetGPR(uint32_t id, uint32_t val)
-{
-	gpr[id] = val;
 }
 
 /** Get the value contained by a user GPR.
@@ -379,20 +371,20 @@ GetGPR_usr(uint32_t id, uint32_t mode) const
 		case UNDEFINED_MODE:
 		case IRQ_MODE:
 			if ( (id < 13) || (id == 15) )
-				return gpr[id];
+				return GetGPR(id);
 			else
 				return phys_gpr[id];
 			break;
 		case FIQ_MODE:
 			if ( (id < 8) || (id == 15) )
-				return gpr[id];
+				return GetGPR(id);
 			else
 				return phys_gpr[id];
 			break;
 		case USER_MODE:
 		case SYSTEM_MODE:
 		default:
-			return gpr[id];
+			return GetGPR(id);
 			break;
 	}
 }
@@ -412,20 +404,20 @@ SetGPR_usr(uint32_t id, uint32_t val, uint32_t mode)
 	{
 		case USER_MODE:
 		case SYSTEM_MODE:
-			gpr[id] = val;
+			SetGPR( id, val );
 			break;
 		case SUPERVISOR_MODE:
 		case ABORT_MODE:
 		case UNDEFINED_MODE:
 		case IRQ_MODE:
 			if ( (id < 13) || (id == 15) )
-				gpr[id] = val;
+				SetGPR( id, val );
 			else
 				phys_gpr[id] = val;
 			break;
 		case FIQ_MODE:
 			if ( (id < 8) || (id == 15 ) )
-				gpr[id] = val;
+				SetGPR( id, val );
 			else
 				phys_gpr[id] = val;
 			break;
@@ -1273,19 +1265,6 @@ MoveSPSRtoCPSR()
 		SetGPRMapping(src_mode, dst_mode);
 }
 
-/** Check the condition mask given agains current CPSR status.
- * Returns true if the condition matches CPSR, false otherwise.
- *
- * @param cond the condition to check
- * @return true if the condition matches CPSR, false otherwise
- */
-bool 
-CPU::
-CheckCondition(uint32_t cond)
-{
-	return (cond == 0xe) || ((check_condition_table[cond] >> (cpsr >> 28)) & 1);
-}
-
 /** Mark an exception in the virtual exception vector.
  * This marks an new exception in the virtual exception vector for 
  *   later treatment.
@@ -1321,129 +1300,6 @@ CPU::
 ResetVirtualExceptionVector(uint32_t mask)
 {
 	exception = mask;
-}
-
-/** Check the given condition against CPSR.
- * This method checks the given condition against the given value of
- *   CPSR and returns true if the condition succeeds, and false otherwise.
- *
- * @param cond the condition to check
- * @param cpsr_val the value of the CPSR register
- * @return true if the condition check succeeds, false otherwise.
- */
-bool 
-CPU::
-CheckCondition(unsigned int cond, unsigned int cpsr_val)
-{
-	switch (cond) 
-	{
-		case COND_EQ:
-			if ((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK)
-				return true;
-			break;
-		case COND_NE:
-			if ((cpsr_val & CPSR_Z_MASK) == 0)
-				return true;
-			break;
-		case COND_CS_HS:
-			if ((cpsr_val & CPSR_C_MASK) == CPSR_C_MASK)
-				return true;
-			break;
-		case COND_CC_LO:
-			if ((cpsr_val & CPSR_C_MASK) == 0)
-				return true;
-			break;
-		case COND_MI:
-			if ((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK)
-				return true;
-			break;
-		case COND_PL:
-			if ((cpsr_val & CPSR_N_MASK) == 0)
-				return true;
-			break;
-		case COND_VS:
-			if ((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK)
-				return true;
-			break;
-		case COND_VC:
-			if ((cpsr_val & CPSR_V_MASK) == 0)
-				return true;
-			break;
-		case COND_HI:
-			if (((cpsr_val & CPSR_C_MASK) == CPSR_C_MASK) &&
-					((cpsr_val & CPSR_Z_MASK) == 0))
-				return true;
-			break;
-		case COND_LS:
-			if (((cpsr_val & CPSR_C_MASK) == 0) ||
-					((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK))
-				return true;
-			break;
-		case COND_GE:
-			if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 
-					(CPSR_N_MASK | CPSR_V_MASK))
-				return true;
-			if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 0)
-				return true;
-			break;
-		case COND_LT:
-			if (((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK) &&
-					((cpsr_val & CPSR_V_MASK) == 0))
-				return true;
-			if (((cpsr_val & CPSR_N_MASK) == 0) &&
-					((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK))
-				return true;
-			break;
-		case COND_GT:
-			if ((cpsr_val & CPSR_Z_MASK) == 0)
-			{
-				if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 
-						(CPSR_N_MASK | CPSR_V_MASK))
-					return true;
-				if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 0)
-					return true;
-			}
-			break;
-		case COND_LE:
-			if ((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK)
-				return true;
-			if (((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK) &&
-					((cpsr_val & CPSR_V_MASK) == 0))
-				return true;
-			if (((cpsr_val & CPSR_N_MASK) == 0) &&
-					((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK))
-				return true;
-			break;
-		case COND_AL:
-			return true;
-			break;
-		default:
-			return false;
-			break;
-	}
-
-	return false;
-}
-
-void 
-CPU::
-InitializeCheckConditionTable()
-{
-	for (unsigned int cond = 0; cond < 16; cond++) 
-	{
-		uint16_t entry = 0;
-		for (uint32_t cpsr_val = 0; cpsr_val < 16; cpsr_val++) 
-		{
-			uint16_t val = 0;
-			if (CheckCondition(cond, cpsr_val << 28))
-				val = 1;
-			else
-				val = 0;
-			val = val << cpsr_val;
-			entry += val;
-		}
-		check_condition_table[cond] = entry;
-	}
 }
 
 } // end of namespace arm

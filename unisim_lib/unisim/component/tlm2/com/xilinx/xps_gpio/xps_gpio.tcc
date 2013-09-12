@@ -251,6 +251,9 @@ bool XPS_GPIO<CONFIG>::BeginSetup()
 template <class CONFIG>
 bool XPS_GPIO<CONFIG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 
@@ -447,6 +450,9 @@ unsigned int XPS_GPIO<CONFIG>::gpio_transport_dbg(unsigned int pin, GPIOPayload&
 template <class CONFIG>
 bool XPS_GPIO<CONFIG>::gpio_get_direct_mem_ptr(unsigned int pin, GPIOPayload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 

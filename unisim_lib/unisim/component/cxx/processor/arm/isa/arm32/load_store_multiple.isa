@@ -54,7 +54,7 @@ ldm_1_ia.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ia";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -77,7 +77,7 @@ ldm_1_ib.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ib";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -100,7 +100,7 @@ ldm_1_da.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "da";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -123,7 +123,7 @@ ldm_1_db.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "db";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -142,35 +142,29 @@ ldm_1_db.disasm = {
 }
 
 ldm_1_ia.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toPC(cur_address);
+		cpu.SetGPR( 15, cpu.MemRead32( cur_address & -4 ) );
 	}
 
 	/* TODO:
@@ -182,35 +176,29 @@ ldm_1_ia.execute = {
 }
 
 ldm_1_ib.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMib(rn_value, reg_list,
-		       			&start_address, &end_address,
-		       			&rn_new_val);
+	LSMib(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toPC(cur_address);
+		cpu.SetGPR( 15, cpu.MemRead32( cur_address & -4 ) );
 	}
 
 	/* TODO:
@@ -222,35 +210,29 @@ ldm_1_ib.execute = {
 }
 
 ldm_1_da.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMda(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMda(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
 	
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toPC(cur_address);
+		cpu.SetGPR( 15, cpu.MemRead32( cur_address & -4 ) );
 	}
 
 	/* TODO:
@@ -262,35 +244,29 @@ ldm_1_da.execute = {
 }
 
 ldm_1_db.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMdb(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMdb(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toPC(cur_address);
+		cpu.SetGPR( 15, cpu.MemRead32( cur_address & -4 ) );
 	}
 
 	/* TODO:
@@ -321,7 +297,7 @@ ldm_2_ia.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ia";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -344,7 +320,7 @@ ldm_2_ib.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ib";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -367,7 +343,7 @@ ldm_2_da.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "da";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -390,7 +366,7 @@ ldm_2_db.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "db";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -409,28 +385,22 @@ ldm_2_db.disasm = {
 }
 
 ldm_2_ia.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toUserGPR(cur_address, i);
+			cpu.SetGPR_usr(  i, cpu.MemRead32( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -441,28 +411,22 @@ ldm_2_ia.execute = {
 }
 
 ldm_2_ib.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMib(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMib(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toUserGPRAligned(cur_address, i);
+			cpu.SetGPR_usr(  i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -473,28 +437,22 @@ ldm_2_ib.execute = {
 }
 
 ldm_2_da.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMda(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMda(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toUserGPRAligned(cur_address, i);
+			cpu.SetGPR_usr(  i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -505,28 +463,22 @@ ldm_2_da.execute = {
 }
 
 ldm_2_db.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMdb(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMdb(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toUserGPRAligned(cur_address, i);
+			cpu.SetGPR_usr(  i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -556,7 +508,7 @@ ldm_3_ia.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ia";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -579,7 +531,7 @@ ldm_3_ib.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ib";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -602,7 +554,7 @@ ldm_3_da.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "da";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -625,7 +577,7 @@ ldm_3_db.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "db";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -644,28 +596,22 @@ ldm_3_db.disasm = {
 }
 
 ldm_3_ia.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -677,35 +623,29 @@ ldm_3_ia.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toPC(cur_address);
+	cpu.SetGPR( 15, cpu.MemRead32( cur_address & -4 ) );
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
 }
 
 ldm_3_ib.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMib(rn_value, reg_list,
-			&start_address, &end_address,
-			&rn_new_val);
+	LSMib(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
 
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -717,35 +657,29 @@ ldm_3_ib.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toPC(cur_address);
+	cpu.SetGPR( 15, cpu.MemRead32( cur_address & -4 ) );
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
 }
 
 ldm_3_da.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	num_regs = LSMda(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMda(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
 	
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -757,35 +691,29 @@ ldm_3_da.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toPC(cur_address);
+	cpu.SetGPR( 15, cpu.MemRead32( cur_address & -4 ) );
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
 }
 
 ldm_3_db.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMdb(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMdb(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -797,19 +725,11 @@ ldm_3_db.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toPC(cur_address);
+	cpu.SetGPR( 15, cpu.MemRead32( cur_address & -4 ) );
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
 }
-
-// ldm_3.nextpc = {
-//   if(cond_res) {
-//     /* nothing to do */
-//   } else {
-//     cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-//   }
-// }
 
 /*
  * end of ldm_3 instruction
@@ -831,7 +751,7 @@ stm_1_ia.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ia";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -853,7 +773,7 @@ stm_1_ib.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ib";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -875,7 +795,7 @@ stm_1_da.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "da";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -897,7 +817,7 @@ stm_1_db.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "db";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -915,37 +835,31 @@ stm_1_db.disasm = {
 }
 
 stm_1_ia.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
-			cpu.Write32(cur_address, value);
+			cpu.MemWrite32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
-		cpu.Write32(cur_address, value);
+		cpu.MemWrite32(cur_address, value);
 	}
 
 	/* TODO:
@@ -957,37 +871,31 @@ stm_1_ia.execute = {
 }
 
 stm_1_ib.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	num_regs = LSMib(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMib(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
-			cpu.Write32(cur_address, value);
+			cpu.MemWrite32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
-		cpu.Write32(cur_address, value);
+		cpu.MemWrite32(cur_address, value);
 	}
 
 	/* TODO:
@@ -999,37 +907,31 @@ stm_1_ib.execute = {
 }
 
 stm_1_da.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMda(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMda(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
-			cpu.Write32(cur_address, value);
+			cpu.MemWrite32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
-		cpu.Write32(cur_address, value);
+		cpu.MemWrite32(cur_address, value);
 	}
 
 	/* TODO:
@@ -1041,37 +943,31 @@ stm_1_da.execute = {
 }
 
 stm_1_db.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMdb(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMdb(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
-			cpu.Write32(cur_address, value);
+			cpu.MemWrite32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
-		cpu.Write32(cur_address, value);
+		cpu.MemWrite32(cur_address, value);
 	}
 
 	/* TODO:
@@ -1102,7 +998,7 @@ stm_2_ia.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ia";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -1124,7 +1020,7 @@ stm_2_ib.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ib";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -1146,7 +1042,7 @@ stm_2_da.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "da";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -1168,7 +1064,7 @@ stm_2_db.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "db";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -1186,37 +1082,31 @@ stm_2_db.disasm = {
 }
 
 stm_2_ia.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR_usr(i, cpu.GetCPSR_Mode());
-			cpu.Write32(cur_address, value);
+			cpu.MemWrite32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
-		cpu.Write32(cur_address, value);
+		cpu.MemWrite32(cur_address, value);
 	}
 
 	/* TODO:
@@ -1224,37 +1114,31 @@ stm_2_ia.execute = {
 }
 
 stm_2_ib.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMib(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMib(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR_usr(i, cpu.GetCPSR_Mode());
-			cpu.Write32(cur_address, value);
+			cpu.MemWrite32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
-		cpu.Write32(cur_address, value);
+		cpu.MemWrite32(cur_address, value);
 	}
 
 	/* TODO:
@@ -1262,37 +1146,31 @@ stm_2_ib.execute = {
 }
 
 stm_2_da.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMda(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMda(rn_value, reg_list, &start_address, &end_address,	&rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR_usr(i, cpu.GetCPSR_Mode());
-			cpu.Write32(cur_address, value);
+			cpu.MemWrite32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
-		cpu.Write32(cur_address, value);
+		cpu.MemWrite32(cur_address, value);
 	}
 
 	/* TODO:
@@ -1300,37 +1178,31 @@ stm_2_da.execute = {
 }
 
 stm_2_db.execute = {
-	typedef Operation<STATE> inherited;
-	
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	num_regs = LSMdb(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMdb(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR_usr(i, cpu.GetCPSR_Mode());
-			cpu.Write32(cur_address, value);
+			cpu.MemWrite32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
-		cpu.Write32(cur_address, value);
+		cpu.MemWrite32(cur_address, value);
 	}
 
 	/* TODO:
@@ -1340,15 +1212,3 @@ stm_2_db.execute = {
 /*
  * end of stm_2 instruction
  *******************************************************************/
-
-group load_store_multiple_rn_init(ldm_1_ia, ldm_1_ib, ldm_1_da, ldm_1_db, \
-                                  ldm_2_ia, ldm_2_ib, ldm_2_da, ldm_2_db, \
-                                  ldm_3_ia, ldm_3_ib, ldm_3_da, ldm_3_db, \
-                                  stm_1_ia, stm_1_ib, stm_1_da, stm_1_db, \
-                                  stm_2_ia, stm_2_ib, stm_2_da, stm_2_db)
-load_store_multiple_rn_init.initialize_rn_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rn == STATE::PC_reg) inherited::rn_init = 8;
-	else inherited::rn_init = 0;
-}

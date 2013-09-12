@@ -103,6 +103,7 @@ public:
 	void Run();
 	
 protected:
+	sc_time GetBurstLatency(uint32_t size, const sc_time& latency) const;
 	virtual bool PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
 	virtual bool PLBDataRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
 	virtual bool PLBDataWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
@@ -132,12 +133,16 @@ private:
 	sc_event ev_irq;
 	double ipc;
 	double one;
+	bool enable_dmi;
+	bool debug_dmi;
 
 	Parameter<sc_time> param_bus_cycle_time;
 	Parameter<sc_time> param_ext_timer_cycle_time;
 	Parameter<sc_time> param_nice_time;
 	Parameter<double> param_ipc;
 	Parameter<bool> param_enable_host_idle;
+	Parameter<bool> param_enable_dmi;
+	Parameter<bool> param_debug_dmi;
 	Statistic<double> stat_one;
 	Statistic<sc_time> stat_run_time;
 	Statistic<sc_time> stat_idle_time;
@@ -416,6 +421,9 @@ private:
 	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcuwr_plb_redirector;
 	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcurd_plb_redirector;
 	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcr_redirector;
+	unisim::kernel::tlm2::DMIRegionCache icurd_dmi_region_cache;
+	unisim::kernel::tlm2::DMIRegionCache dcuwr_dmi_region_cache;
+	unisim::kernel::tlm2::DMIRegionCache dcurd_dmi_region_cache;
 	inline void UpdateTime();
 	inline void AlignToBusClock();
 	void AlignToBusClock(sc_time& t);

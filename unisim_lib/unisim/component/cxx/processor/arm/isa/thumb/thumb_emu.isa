@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,9 +31,21 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
+ 
+/**********************************************
+
+           THUMB ARM EMULATOR ISA
+
+**********************************************/
+
+namespace unisim::component::cxx::processor::arm::isa::thumb
+set endianness big
+set addressclass {uint32_t}
+template <{class} {STATE}>
 
 decl {
-#include <map>
+#include <sstream>
+#include <iostream>
 
 namespace unisim {
 namespace component {
@@ -41,22 +53,51 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-using std::map;
+using std::stringstream;
+using std::cerr;
+using std::endl;
+using std::hex;
+using std::dec;
 
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+} // end of decl
+
+impl {
+#include "unisim/component/cxx/processor/arm/models.hh"
+#include "unisim/util/arithmetic/arithmetic.hh"
+#include "unisim/component/cxx/processor/arm/masks.hh"
+#include "unisim/component/cxx/processor/arm/decode_data_processing.hh"
+#include "unisim/component/cxx/processor/arm/decode_load_store.hh"
+#include "unisim/component/cxx/processor/arm/decode_load_store_multiple.hh"
+#include "unisim/component/cxx/processor/arm/decode_misc_load_store.hh"
+#include "unisim/component/cxx/processor/arm/decode_copro_load_store.hh"
+#include "unisim/component/cxx/processor/arm/execute.hh"
+#include "unisim/component/cxx/processor/arm/disasm.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/util/arithmetic/arithmetic.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/component/cxx/processor/arm/carry_overflow.hh"
+#include <stdint.h>
+	
+using unisim::util::arithmetic::Add32;
+using unisim::util::arithmetic::RotateRight;
+
 }
 
-action {void} profile({map<uint64_t, uint32_t> &} {prof}) {
-	uint64_t val = GetEncoding();
-	val += (uint64_t)0x0100000000ULL;
-	map<uint64_t, uint32_t>::iterator it = prof.find(val);
-	if(it != prof.end()) {
-		it->second = it->second + 1;
-	} else {
-		prof[val] = 1;
-	}
-}
+include "constructors_dec.isa"
+include "actions_dec.isa"
+
+include "branch.isa"
+include "data_processing.isa"
+include "load_store_reg.isa"
+include "load_store_multiple.isa"
+include "exception_emu.isa"
+
+include "ordering.isa"
+
+include "profiling.isa"

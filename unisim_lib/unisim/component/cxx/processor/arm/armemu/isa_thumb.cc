@@ -30,54 +30,14 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  *  SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-#include "unisim/component/cxx/processor/arm/memory_op.hh"
-#include <inttypes.h>
+#include "unisim/component/cxx/processor/arm/isa_thumb.hh"
+#include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
+#include "unisim/component/cxx/processor/arm/armemu/cpu.hh"
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace arm {
-
-  std::vector<MemoryOp*> MemoryOp::freepool;
-
-  MemoryOp::MemoryOp() 
-  {}
-
-  MemoryOp::~MemoryOp() 
-  {}
-
-  void 
-  MemoryOp::SetRead(uint32_t address, uint32_t size, bool read_signed) 
-  {
-    type = READ;
-    this->address = address;
-    this->size = size;
-    this->read_signed = read_signed;
-  }
-
-  void
-  MemoryOp::SetWrite(uint32_t address, uint32_t size, uint32_t value) 
-  {
-    type = WRITE;
-    this->address = address;
-    this->size = size;
-    write_value = value;
-  }
-	
-  void 
-  MemoryOp::SetPrefetch(uint32_t address)
-  {
-    type = PREFETCH;
-    this->address = address;
-  }
-	
-} // end of namespace arm
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
-
+template 
+class
+unisim::component::cxx::processor::arm::isa::thumb::Decoder<
+	unisim::component::cxx::processor::arm::armemu::CPU>;

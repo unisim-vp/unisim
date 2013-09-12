@@ -10,12 +10,14 @@ if [ -z "$1" ]; then
 	exit -1
 fi
 
-HERE=$(pwd)
 MY_DIR=$(cd $(dirname $0); pwd)
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
-UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
-UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/armemu
+mkdir -p ${DEST_DIR}
+DEST_DIR=$(cd $DEST_DIR; pwd)
+UNISIM_DIR=$(cd ${MY_DIR}/..; pwd)
+UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
+UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
+UNISIM_SIMULATORS_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/armemu
 
 ARMEMU_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-armemu-${ARMEMU_VERSION}
@@ -191,6 +193,7 @@ unisim/component/cxx/processor/arm/decode_load_store_multiple.cc \
 unisim/component/cxx/processor/arm/armemu/cache.cc \
 unisim/component/cxx/processor/arm/armemu/cpu.cc \
 unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
+unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
 unisim/component/cxx/processor/arm/decode_copro_load_store.cc \
 unisim/component/cxx/processor/arm/decode_data_processing.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
@@ -203,12 +206,15 @@ unisim/component/cxx/memory/ram/memory_32.cc"
 
 UNISIM_LIB_ARMEMU_ISA_THUMB_FILES="\
 unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
+unisim/component/cxx/processor/arm/isa/thumb/thumb_emu.isa \
 unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa \
 unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
+unisim/component/cxx/processor/arm/isa/thumb/exception_emu.isa \
 unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa \
 unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa \
 unisim/component/cxx/processor/arm/isa/thumb/branch.isa \
 unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
+unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
 unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
 unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa \
 "
@@ -233,6 +239,7 @@ unisim/component/cxx/processor/arm/isa/arm32/multiply_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
 unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
 unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
+unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
 unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
 unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
@@ -334,6 +341,7 @@ unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/dwarf/option.hh \
+unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/memory_access_type.hh \
@@ -386,6 +394,7 @@ unisim/component/cxx/processor/arm/armemu/cache.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/decode_misc_load_store.hh \
 unisim/component/cxx/processor/arm/exception.hh \
+unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/masks.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/decode_load_store_multiple.hh \
@@ -571,7 +580,7 @@ for file in ${UNISIM_LIB_ARMEMU_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/armemu/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
+		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
 	fi
 done
 
@@ -902,12 +911,29 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "sharedir = \$(prefix)/share/unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc" >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "BUILT_SOURCES=" >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc " >> "${ARMEMU_MAKEFILE_AM}"
+	echo >> "${ARMEMU_MAKEFILE_AM}"
+	
+	echo -n "CLEANFILES=" >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc " >> "${ARMEMU_MAKEFILE_AM}"
+	echo >> "${ARMEMU_MAKEFILE_AM}"
+	
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32_emu.isa" >> "${ARMEMU_MAKEFILE_AM}"
+
+	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb/thumb_emu.isa" >> "${ARMEMU_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMEMU_MAKEFILE_AM}"

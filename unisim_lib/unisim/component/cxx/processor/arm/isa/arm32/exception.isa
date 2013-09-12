@@ -47,14 +47,12 @@ op swi(cond[4]:0b1111[4]:immed[24])
 
 swi.disasm = {
 	buffer << "swi";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " #" << dec << (unsigned int) immed;
 }
 
 swi.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	if (!cpu.CheckCondition(cond)) return;
+	if (not CheckCondition(cpu, cond)) return;
 
 	// we are executing on full system mode
 	cpu.MarkVirtualExceptionVector(
@@ -72,19 +70,13 @@ swi.execute = {
 op bkpt(0b1110[4]:0b00010010[8]:himmed[12]:0b0111[4]:limmed[4])
 
 bkpt.disasm = {
-	uint32_t immed;
-	
-	immed = limmed + ((uint32_t)himmed << 4);
+	uint32_t immed = limmed + ((uint32_t)himmed << 4);
 	buffer << "bkpt";
 	buffer << " #" << dec << (unsigned int) immed;
 }
 
 bkpt.execute = {
-	uint32_t immed;
-	
-	immed = limmed + ((uint32_t)himmed << 4);
-	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	uint32_t immed = limmed + ((uint32_t)himmed << 4);
 
 	// we are executing on full system mode
 	cpu.MarkVirtualExceptionVector(
