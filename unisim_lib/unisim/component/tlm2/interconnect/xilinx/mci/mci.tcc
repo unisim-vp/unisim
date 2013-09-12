@@ -126,7 +126,7 @@ bool MCI<CONFIG>::BeginSetup()
 		return false;
 	}
 	
-	burst_latency_lut.SetCycleTime(cycle_time);
+	burst_latency_lut.SetBaseLatency(cycle_time);
 	
 	return true;
 }

@@ -891,6 +891,72 @@ typedef enum
 	DMI_DENY
 } DMIGrant;
 
+class LatencyLookupTable
+{
+public:
+	inline LatencyLookupTable();
+	inline LatencyLookupTable(const sc_time& base_lat);
+	inline ~LatencyLookupTable();
+	inline void SetBaseLatency(const sc_time& base_lat);
+	inline const sc_time& Lookup(unsigned int n); // returns n * base_lat
+private:
+	static const unsigned int NUM_LATENCY_FAST_LOOKUP = 16; // 0 <= n < 16 for fast lookup
+	sc_time base_lat;
+	sc_time latency_fast_lookup[NUM_LATENCY_FAST_LOOKUP];
+	std::map<unsigned int, sc_time> latency_slow_lookup;
+};
+
+LatencyLookupTable::LatencyLookupTable()
+	: base_lat(SC_ZERO_TIME)
+{
+}
+
+LatencyLookupTable::LatencyLookupTable(const sc_time& _base_lat)
+{
+	SetBaseLatency(_base_lat);
+}
+
+LatencyLookupTable::~LatencyLookupTable()
+{
+}
+
+inline void LatencyLookupTable::SetBaseLatency(const sc_time& _base_lat)
+{
+	base_lat = _base_lat;
+	
+	unsigned int n;
+	for(n = 0; n < NUM_LATENCY_FAST_LOOKUP; n++)
+	{
+		latency_fast_lookup[n] = n * base_lat;
+	}
+	
+	latency_slow_lookup.clear();
+}
+
+const sc_time& LatencyLookupTable::Lookup(unsigned int n)
+{
+	if(n < NUM_LATENCY_FAST_LOOKUP)
+	{
+		return latency_fast_lookup[n];
+	}
+	
+	do
+	{
+		std::map<unsigned int, sc_time>::iterator iter = latency_slow_lookup.find(n);
+		
+		if(iter != latency_slow_lookup.end())
+		{
+			return (*iter).second;
+		}
+		
+		sc_time latency = n * base_lat;
+		latency_slow_lookup[n] = latency;
+	}
+	while(1);
+	
+	return latency_fast_lookup[0]; // shall never occur
+}
+
 class DMIRegionCache;
 
 class DMIRegion
@@ -902,16 +968,22 @@ public:
 	inline bool IsDenied() const;
 	inline DMIGrant GetGrant() const;
 	inline tlm::tlm_dmi *GetDMI() const;
+	inline const sc_time& GetReadLatency(unsigned int data_length);
+	inline const sc_time& GetWriteLatency(unsigned int data_length);
 private:
 	friend class DMIRegionCache;
 	DMIGrant dmi_grant;
 	tlm::tlm_dmi *dmi_data;
+	LatencyLookupTable read_lat_lut;
+	LatencyLookupTable write_lat_lut;
 	DMIRegion *next;
 };
 
 inline DMIRegion::DMIRegion(DMIGrant _dmi_grant, tlm::tlm_dmi *_dmi_data)
 	: dmi_grant(_dmi_grant)
 	, dmi_data(_dmi_data)
+	, read_lat_lut(dmi_data->get_read_latency())
+	, write_lat_lut(dmi_data->get_write_latency())
 {
 }
 
@@ -938,6 +1010,16 @@ inline DMIGrant DMIRegion::GetGrant() const
 inline tlm::tlm_dmi *DMIRegion::GetDMI() const
 {
 	return dmi_data;
+}
+
+inline const sc_time& DMIRegion::GetReadLatency(unsigned int data_length)
+{
+	return read_lat_lut.Lookup(data_length);
+}
+
+inline const sc_time& DMIRegion::GetWriteLatency(unsigned int data_length)
+{
+	return write_lat_lut.Lookup(data_length);
 }
 
 class DMIRegionCache
@@ -1138,70 +1220,6 @@ inline void DMIRegionCache::Invalidate(sc_dt::uint64 start_range, sc_dt::uint64 
 			dmi_region = next_dmi_region;
 		} while(dmi_region);
 	}
-}
-
-class LatencyLookupTable
-{
-public:
-	inline LatencyLookupTable();
-	inline LatencyLookupTable(const sc_time& cycle_time);
-	inline ~LatencyLookupTable();
-	inline void SetCycleTime(const sc_time& cycle_time);
-	inline sc_time& Lookup(unsigned int num_cycle);
-private:
-	static const unsigned int NUM_LATENCY_FAST_LOOKUP = 16; // 0 <= n < 16 for fast lookup
-	sc_time cycle_time;
-	sc_time latency_fast_lookup[NUM_LATENCY_FAST_LOOKUP];
-	std::map<unsigned int, sc_time> latency_slow_lookup;
-};
-
-LatencyLookupTable::LatencyLookupTable()
-	: cycle_time(SC_ZERO_TIME)
-{
-}
-
-LatencyLookupTable::LatencyLookupTable(const sc_time& _cycle_time)
-{
-	SetCycleTime(_cycle_time);
-}
-
-LatencyLookupTable::~LatencyLookupTable()
-{
-}
-
-inline void LatencyLookupTable::SetCycleTime(const sc_time& _cycle_time)
-{
-	cycle_time = _cycle_time;
-	
-	unsigned int num_cycles;
-	for(num_cycles = 0; num_cycles < NUM_LATENCY_FAST_LOOKUP; num_cycles++)
-	{
-		latency_fast_lookup[num_cycles] = num_cycles * cycle_time;
-	}
-}
-
-sc_time& LatencyLookupTable::Lookup(unsigned int num_cycles)
-{
-	if(num_cycles < NUM_LATENCY_FAST_LOOKUP)
-	{
-		return latency_fast_lookup[num_cycles];
-	}
-	
-	do
-	{
-		std::map<unsigned int, sc_time>::iterator iter = latency_slow_lookup.find(num_cycles);
-		
-		if(iter != latency_slow_lookup.end())
-		{
-			return (*iter).second;
-		}
-		
-		sc_time burst_latency = num_cycles * cycle_time;
-		latency_slow_lookup[num_cycles] = burst_latency;
-	}
-	while(1);
-	
-	return latency_fast_lookup[0]; // shall never occur
 }
 
 } // end of namespace tlm2

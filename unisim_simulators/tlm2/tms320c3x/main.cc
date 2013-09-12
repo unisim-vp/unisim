@@ -110,7 +110,7 @@ private:
 	typedef unisim::component::tlm2::processor::tms320c3x::CPU<CPU_CONFIG, CPU_DEBUG> CPU;
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> IRQ_STUB;
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_CONFIG::address_t> LOADER;
-	typedef unisim::component::tlm2::memory::ram::Memory<32, CPU_CONFIG::address_t, 8, 1024 * 1024, MEMORY_DEBUG> MEMORY;
+	typedef unisim::component::tlm2::memory::ram::Memory<32, CPU_CONFIG::address_t, 1, 1024 * 1024, MEMORY_DEBUG> MEMORY;
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_CONFIG::address_t> GDB_SERVER;
 	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_CONFIG::address_t> INLINE_DEBUGGER;
 	typedef unisim::service::debug::debugger::Debugger<CPU_CONFIG::address_t> DEBUGGER;

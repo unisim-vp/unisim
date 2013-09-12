@@ -67,7 +67,6 @@ Memory(const sc_module_name& name, Object *parent)
 	, cycle_time()
 	, read_latency(cycle_time)
 	, write_latency(SC_ZERO_TIME)
-	, ready_time()
 	, param_cycle_time("cycle-time", this, cycle_time, "memory cycle time")
 	, param_read_latency("read-latency", this, read_latency, "memory read latency")
 	, param_write_latency("write-latency", this, write_latency, "memory write latency")
@@ -111,7 +110,7 @@ BeginSetup() {
 		return false;
 	}
 	
-	burst_latency_lut.SetCycleTime(cycle_time);
+	burst_latency_lut.SetBaseLatency(cycle_time);
 	
 	return unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>::BeginSetup();
 }
@@ -123,19 +122,17 @@ UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t)
 {
 	if(data_length)
 	{
-		const sc_time& time = sc_time_stamp();
 		unsigned int data_bus_word_length = ((data_length * 8) + BUSWIDTH - 1) / BUSWIDTH;
 		do
 		{
-			t = (((time + t) >= ready_time) ? t : ready_time - time) + latency;
 			if(data_bus_word_length <= BURST_LENGTH)
 			{
-				ready_time = time + t + burst_latency_lut.Lookup(data_bus_word_length);
+				t += latency + burst_latency_lut.Lookup(data_bus_word_length);
 				data_bus_word_length = 0;
 			}
 			else
 			{
-				ready_time = time + t + burst_latency_lut.Lookup(BURST_LENGTH);
+				t += latency + burst_latency_lut.Lookup(BURST_LENGTH);
 				data_bus_word_length -= BURST_LENGTH;
 			}
 		}
@@ -162,12 +159,11 @@ bool Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_p
 	{
 		//std::cerr << sc_module::name() << ": grant 0x" << std::hex << dmi_start_addr << "-0x" << dmi_end_addr << std::dec << std::endl;
 		dmi_data.set_dmi_ptr(dmi_ptr);
-		// set latency per byte (with a typical burst of BURST_LENGTH bytes)
-		unsigned int num_burst_beats = ((BURST_LENGTH * 8) + BUSWIDTH - 1) / BUSWIDTH;
-		sc_time read_burst_time = (num_burst_beats * cycle_time) + read_latency;
-		sc_time write_burst_time = (num_burst_beats * cycle_time) + write_latency;
-		dmi_data.set_read_latency(read_burst_time / (BUSWIDTH / 8));
-		dmi_data.set_write_latency(write_burst_time / (BUSWIDTH / 8));
+		// set latency per byte (with a typical burst of BURST_LENGTH * BUSWIDTH bits)
+		sc_time read_burst_time = (BURST_LENGTH * cycle_time) + read_latency;
+		sc_time write_burst_time = (BURST_LENGTH * cycle_time) + write_latency;
+		dmi_data.set_read_latency(read_burst_time / ((BURST_LENGTH * BUSWIDTH) / 8));
+		dmi_data.set_write_latency(write_burst_time / ((BURST_LENGTH * BUSWIDTH) / 8));
 		return true;
 	}
 
