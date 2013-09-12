@@ -189,30 +189,21 @@ unisim/component/tlm2/processor/arm/armemu/armemu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
-unisim/component/cxx/processor/arm/decode_load_store_multiple.cc \
 unisim/component/cxx/processor/arm/armemu/cache.cc \
 unisim/component/cxx/processor/arm/armemu/cpu.cc \
 unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
 unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
-unisim/component/cxx/processor/arm/decode_copro_load_store.cc \
-unisim/component/cxx/processor/arm/decode_data_processing.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
-unisim/component/cxx/processor/arm/decode_load_store.cc \
 unisim/component/cxx/processor/arm/cpu.cc \
-unisim/component/cxx/processor/arm/decode_misc_load_store.cc \
-unisim/component/cxx/processor/arm/carry_overflow.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
 
 UNISIM_LIB_ARMEMU_ISA_THUMB_FILES="\
 unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
-unisim/component/cxx/processor/arm/isa/thumb/thumb_emu.isa \
-unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa \
 unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
-unisim/component/cxx/processor/arm/isa/thumb/exception_emu.isa \
-unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa \
 unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa \
 unisim/component/cxx/processor/arm/isa/thumb/branch.isa \
+unisim/component/cxx/processor/arm/isa/thumb/branch_T1.isa \
 unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
 unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
@@ -221,31 +212,19 @@ unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa \
 
 UNISIM_LIB_ARMEMU_ISA_ARM32_FILES="\
 unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
-unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa \
 unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
-unisim/component/cxx/processor/arm/isa/arm32/arm32_emu.isa \
-unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
 unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa \
 unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_base.isa \
-unisim/component/cxx/processor/arm/isa/arm32/data_processing_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/exception_emu.isa \
-unisim/component/cxx/processor/arm/isa/arm32/multiply_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
 unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
 unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
 unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
 unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_multiple.isa \
-unisim/component/cxx/processor/arm/isa/arm32/arm32.isa \
-unisim/component/cxx/processor/arm/isa/arm32/semaphore.isa"
+unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
 UNISIM_LIB_ARMEMU_ISA_FILES="${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES} ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}"
 
@@ -388,21 +367,13 @@ unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
 unisim/component/cxx/processor/arm/coprocessor_interface.hh \
-unisim/component/cxx/processor/arm/instruction.hh \
 unisim/component/cxx/processor/arm/armemu/cpu.hh \
 unisim/component/cxx/processor/arm/armemu/cache.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
-unisim/component/cxx/processor/arm/decode_misc_load_store.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
-unisim/component/cxx/processor/arm/masks.hh \
 unisim/component/cxx/processor/arm/models.hh \
-unisim/component/cxx/processor/arm/decode_load_store_multiple.hh \
-unisim/component/cxx/processor/arm/decode_data_processing.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
-unisim/component/cxx/processor/arm/decode_load_store.hh \
-unisim/component/cxx/processor/arm/decode_copro_load_store.hh \
-unisim/component/cxx/processor/arm/carry_overflow.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
 UNISIM_LIB_ARMEMU_TEMPLATE_FILES="\
@@ -928,12 +899,12 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32_emu.isa" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa" >> "${ARMEMU_MAKEFILE_AM}"
 
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb/thumb_emu.isa" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb/thumb.isa" >> "${ARMEMU_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMEMU_MAKEFILE_AM}"

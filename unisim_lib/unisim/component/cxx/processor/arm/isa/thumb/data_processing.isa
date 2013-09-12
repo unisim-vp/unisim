@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 /**********************************************
@@ -43,30 +43,30 @@
  * adc (add with carry) instruction
  */
 
-op adc(0b010000[6]:0b0101[4]:rm[3]:rd[3])
+op adc(0b010000[6]:0b0101[4]:rm[3]:rd[3]);
 
 adc.disasm = {
-	buffer << "adc r" << rd << ", r" << rm;
-}
+  buffer << "adc " << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 adc.execute = {
-	uint32_t res;
-	uint32_t s1, s2;
-	uint8_t carry_in, carry_out, overflow_out, sign;
+  uint32_t res;
+  uint32_t s1, s2;
+  uint8_t carry_in, carry_out, overflow_out, sign;
 	
 	
-	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
-	s1 = cpu.GetGPR(rd);
-	s2 = cpu.GetGPR(rm);
-	Add32(res, carry_out, overflow_out, sign,
-			s1, s2, carry_in);
-	cpu.SetGPR(rd, res);
+  carry_in = (cpu.GetCPSR_C() ? 1 : 0);
+  s1 = cpu.GetGPR(rd);
+  s2 = cpu.GetGPR(rm);
+  unisim::util::arithmetic::Add32(res, carry_out, overflow_out, sign,
+        s1, s2, carry_in);
+  cpu.SetGPR(rd, res);
 
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(carry_out); // to check
-	cpu.SetCPSR_V(overflow_out); // to check
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+  cpu.SetCPSR_C(carry_out); // to check
+  cpu.SetCPSR_V(overflow_out); // to check
+};
 
 /*
  * end of adc (add with carry) instruction
@@ -77,29 +77,29 @@ adc.execute = {
  * NOTE: mov(2) is equivalent to add(1)
  */
 
-op add_1(0b0001110[7]:imm[3]:rn[3]:rd[3])
+op add_1(0b0001110[7]:imm[3]:rn[3]:rd[3]);
 
 add_1.disasm = {
-		buffer << "add r" << rd << ", r" << rn << ", #" << dec << imm;
-}
+  buffer << "add " << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << std::dec << imm;
+};
 
 add_1.execute = {
-		uint32_t res;
-		uint32_t s1;
-		uint8_t carry_in, carry_out, overflow_out, sign;
+  uint32_t res;
+  uint32_t s1;
+  uint8_t carry_in, carry_out, overflow_out, sign;
 		
 		
-		s1 = cpu.GetGPR(rn);
-		carry_in = 0;
-		Add32(res, carry_out, overflow_out, sign,
-				s1, imm, carry_in);
-		cpu.SetGPR(rd, res);
+  s1 = cpu.GetGPR(rn);
+  carry_in = 0;
+  unisim::util::arithmetic::Add32(res, carry_out, overflow_out, sign,
+        s1, imm, carry_in);
+  cpu.SetGPR(rd, res);
 
-		cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(carry_out); // to check
-		cpu.SetCPSR_V(overflow_out); // to check
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+  cpu.SetCPSR_C(carry_out); // to check
+  cpu.SetCPSR_V(overflow_out); // to check
+};
 
 /*
  * end of add(1) (add immediate) instruction
@@ -109,29 +109,29 @@ add_1.execute = {
  * add (add large immediate) instruction
  */
 
-op add_2(0b00110[5]:rd[3]:imm[8])
+op add_2(0b00110[5]:rd[3]:imm[8]);
 
 add_2.disasm = {
-	buffer << "add r" << rd << ", #" << dec << imm;
-}
+  buffer << "add " << DisasmRegister(rd) << ", #" << std::dec << imm;
+};
 
 add_2.execute = {
-	uint32_t res;
-	uint32_t s1;
-	uint8_t carry_in, carry_out, overflow_out, sign;
+  uint32_t res;
+  uint32_t s1;
+  uint8_t carry_in, carry_out, overflow_out, sign;
 	
 	
-	s1 = cpu.GetGPR(rd);
-	carry_in = 0;
-	Add32(res, carry_out, overflow_out, sign,
-			s1, imm, carry_in);
+  s1 = cpu.GetGPR(rd);
+  carry_in = 0;
+  unisim::util::arithmetic::Add32(res, carry_out, overflow_out, sign,
+        s1, imm, carry_in);
 
-	cpu.SetGPR(rd, res);
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(carry_out); // to check
-	cpu.SetCPSR_V(overflow_out); // to check
-}
+  cpu.SetGPR(rd, res);
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+  cpu.SetCPSR_C(carry_out); // to check
+  cpu.SetCPSR_V(overflow_out); // to check
+};
 
 /*
  * end of add (add large immediate) instruction
@@ -141,31 +141,31 @@ add_2.execute = {
  * add (add register) instruction
  */
 
-op add_3(0b0001100[7]:rm[3]:rn[3]:rd[3])
+op add_3(0b0001100[7]:rm[3]:rn[3]:rd[3]);
 
 add_3.disasm = {
-	buffer << "add r" << rd << ", r" << rn << ", r" << rm;
-}
+  buffer << "add " << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
 add_3.execute = {
-	uint32_t res;
-	uint32_t s1, s2;
-	uint8_t carry_in, carry_out, overflow_out, sign;
+  uint32_t res;
+  uint32_t s1, s2;
+  uint8_t carry_in, carry_out, overflow_out, sign;
 	
 	
-	s1 = cpu.GetGPR(rm);
-	s2 = cpu.GetGPR(rn);
+  s1 = cpu.GetGPR(rm);
+  s2 = cpu.GetGPR(rn);
 	
-	carry_in = 0;
-	Add32(res, carry_out, overflow_out, sign,
-			s1, s2, carry_in);
+  carry_in = 0;
+  unisim::util::arithmetic::Add32(res, carry_out, overflow_out, sign,
+        s1, s2, carry_in);
 
-	cpu.SetGPR(rd, res);
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(carry_out); // to check
-	cpu.SetCPSR_V(overflow_out); // to check
-}
+  cpu.SetGPR(rd, res);
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+  cpu.SetCPSR_C(carry_out); // to check
+  cpu.SetCPSR_V(overflow_out); // to check
+};
 
 /*
  * end of add (add register) instruction
@@ -175,37 +175,21 @@ add_3.execute = {
  * add (add high registers) instruction
  */
 
-op add_4(0b01000100[8]:h1[1]:h2[1]:rm[3]:rd[3])
-
-add_4.initialize_rm_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rm_index = (h2 << 3) + rm;
-}
-
-add_4.initialize_rd_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rd_index = (h1 << 3) + rd;
-}
+op add_4(0b01000100[8]:shl<3> rd1[1]:shl<3> rm1[1]:rm0[3]:rd0[3]);
+add_4.var rm : {uint8_t} = {rm1|rm0}, rd : {uint8_t} = {rd1|rd0};
 
 add_4.disasm = {
-	typedef Operation<STATE> inherited;
-	
-	buffer << "add r" << inherited::rd_index << ", r" << inherited::rm_index;
-}
+  buffer << "add\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 add_4.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2, res;
-	s1 = cpu.GetGPR(inherited::rd_index);
-	s2 = cpu.GetGPR(inherited::rm_index);
-	
-
-	res = s1 + s2;
-	cpu.SetGPR(inherited::rd_index, res);
-}
+  uint32_t s1, s2, res;
+  s1 = cpu.GetGPR(rd);
+  s2 = cpu.GetGPR(rm);
+        
+  res = s1 + s2;
+  cpu.SetGPR(rd, res);
+};
 
 /*
  * end of add (add high registers) instruction
@@ -215,24 +199,24 @@ add_4.execute = {
  * add (add immediate to program counter) instruction
  */
 
-op add_5(0b10100[5]:rd[3]:imm[8])
+op add_5(0b10100[5]:rd[3]:imm[8]);
 
 add_5.disasm = {
-	buffer << "add r" << rd << ", PC, #" << dec << ((unsigned int)imm * 4);
-}
+  buffer << "add " << DisasmRegister(rd) << ", PC, #" << std::dec << ((unsigned int)imm * 4);
+};
 
 add_5.execute = {
-	uint32_t s1, s2, res;
-	uint32_t pc;
+  uint32_t s1, s2, res;
+  uint32_t pc;
 	
-	pc = cpu.GetGPR(cpu.PC_reg);
+  pc = cpu.GetGPR(cpu.PC_reg);
 	
-	s1 = pc & (uint32_t)0xfffffffc;
-	s2 = ((uint32_t)imm) << 2;
-	res = s1 + s2;
+  s1 = pc & (uint32_t)0xfffffffc;
+  s2 = ((uint32_t)imm) << 2;
+  res = s1 + s2;
 	
-	cpu.SetGPR(rd, res);
-}
+  cpu.SetGPR(rd, res);
+};
 
 /*
  * end of add (add immediate to program counter) instruction
@@ -242,22 +226,22 @@ add_5.execute = {
  * add (add immediate to stack pointer) instruction
  */
 
-op add_6(0b10101[5]:rd[3]:imm[8])
+op add_6(0b10101[5]:rd[3]:imm[8]);
 
 add_6.disasm = {
-	buffer << "add r" << rd << ", SP, #" << dec << ((unsigned int)imm * 4);
-}
+  buffer << "add " << DisasmRegister(rd) << ", SP, #" << std::dec << ((unsigned int)imm * 4);
+};
 
 add_6.execute = {
-	uint32_t s1, s2, res;
+  uint32_t s1, s2, res;
 	
 	
-	s1 = cpu.GetGPR(cpu.SP_reg) & (uint32_t)0xfffffffc;
-	s2 = ((uint32_t)imm) << 2;
-	res = s1 + s2;
+  s1 = cpu.GetGPR(cpu.SP_reg) & (uint32_t)0xfffffffc;
+  s2 = ((uint32_t)imm) << 2;
+  res = s1 + s2;
 	
-	cpu.SetGPR(rd, res);
-}
+  cpu.SetGPR(rd, res);
+};
 
 /*
  * end of add (add immediate to stack pointer) instruction
@@ -267,16 +251,16 @@ add_6.execute = {
  * add (increment stack pointer) instruction
  */
 
-op add_7(0b101100000[9]:imm[7])
+op add_7(0b101100000[9]:imm[7]);
 
 add_7.disasm = {
-	buffer << "add SP, #" << (unsigned int)imm * 4;
-}
+  buffer << "add SP, #" << (unsigned int)imm * 4;
+};
 
 add_7.execute = {
 	
-	cpu.SetGPR(cpu.SP_reg, cpu.GetGPR(cpu.SP_reg) + ((uint32_t)imm * 4));
-}
+  cpu.SetGPR(cpu.SP_reg, cpu.GetGPR(cpu.SP_reg) + ((uint32_t)imm * 4));
+};
 
 /*
  * end of add (increment stack pointer) instruction
@@ -286,22 +270,22 @@ add_7.execute = {
  * and (logical and) instruction
  */
 
-op and(0b010000[6]:0b0000[4]:rm[3]:rd[3])
+op and(0b010000[6]:0b0000[4]:rm[3]:rd[3]);
 
 and.disasm = {
-	buffer << "and r" << rd << ", r" << rm;
-}
+  buffer << "and " << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 and.execute = {
-	uint32_t res;
+  uint32_t res;
 	
 
-	res = cpu.GetGPR(rd) & cpu.GetGPR(rm);
-	cpu.SetGPR(rd,res);
+  res = cpu.GetGPR(rd) & cpu.GetGPR(rm);
+  cpu.SetGPR(rd,res);
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of and (logical and) instruction
@@ -311,35 +295,35 @@ and.execute = {
  * asr(1) (arithmetic shift right immediate) instruction
  */
 
-op asr_1(0b00010[5]:imm[5]:rm[3]:rd[3])
+op asr_1(0b00010[5]:imm[5]:rm[3]:rd[3]);
 
 asr_1.disasm = {
-	buffer << "asr r" << rd << ", r" << rm << ", #" << dec << imm;
-}
+  buffer << "asr " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << std::dec << imm;
+};
 
 asr_1.execute = {
-	uint32_t res, s1;
+  uint32_t res, s1;
 	
 
-	s1 = cpu.GetGPR(rm);
-	if(imm == 0) {
-		if(s1 & (uint32_t)0x80000000) {
-			cpu.SetCPSR_C(true);
-			res = (uint32_t)0xffffffff;
-		} else {
-			cpu.SetCPSR_C(false);
-			res = 0;
-		}
-	} else {
-		cpu.SetCPSR_C((s1 >> (imm - 1)) & (uint32_t)0x01);
-		res = ((int32_t)s1) >> imm;
-	}
+  s1 = cpu.GetGPR(rm);
+  if(imm == 0) {
+    if(s1 & (uint32_t)0x80000000) {
+      cpu.SetCPSR_C(true);
+      res = (uint32_t)0xffffffff;
+    } else {
+      cpu.SetCPSR_C(false);
+      res = 0;
+    }
+  } else {
+    cpu.SetCPSR_C((s1 >> (imm - 1)) & (uint32_t)0x01);
+    res = ((int32_t)s1) >> imm;
+  }
 	
-	cpu.SetGPR(rd, res);
+  cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of asr(1) (arithmetic shift right immediate) instruction
@@ -349,39 +333,39 @@ asr_1.execute = {
  * asr(2) (arithmetic shift right register) instruction
  */
 
-op asr_2(0b010000[6]:0b0100[4]:rs[3]:rd[3])
+op asr_2(0b010000[6]:0b0100[4]:rs[3]:rd[3]);
 
 asr_2.disasm = {
-	buffer << "asr r" << rd << ", r" << rs;
-}
+  buffer << "asr " << DisasmRegister(rd) << ", " << DisasmRegister(rs);
+};
 
 asr_2.execute = {
-	uint32_t res, s1;
+  uint32_t res, s1;
 	
 	
-	s1 = cpu.GetGPR(rs) & (uint32_t)0x0ff;
+  s1 = cpu.GetGPR(rs) & (uint32_t)0x0ff;
 	
-	res = cpu.GetGPR(rd);
-	if(s1 == 0) {
-	} else if(s1 < 32) {
-		cpu.SetCPSR_C((res >> (s1 - 1)) & (uint32_t)0x01);
-		res = ((int32_t)res) >> s1;
-		cpu.SetGPR(rd,res);
-	} else {
-		bool res31;
+  res = cpu.GetGPR(rd);
+  if(s1 == 0) {
+  } else if(s1 < 32) {
+    cpu.SetCPSR_C((res >> (s1 - 1)) & (uint32_t)0x01);
+    res = ((int32_t)res) >> s1;
+    cpu.SetGPR(rd,res);
+  } else {
+    bool res31;
 		
-		res31 = (res & (uint32_t)0x80000000) != 0;
-		cpu.SetCPSR_C(res31);
-		if(res31)
-			res = (uint32_t)0xffffffff;
-		else
-			res = 0;
-		cpu.SetGPR(rd,res);
-	}
+    res31 = (res & (uint32_t)0x80000000) != 0;
+    cpu.SetCPSR_C(res31);
+    if(res31)
+      res = (uint32_t)0xffffffff;
+    else
+      res = 0;
+    cpu.SetGPR(rd,res);
+  }
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of asr(2) (arithmetic shift right register) instruction
@@ -391,23 +375,23 @@ asr_2.execute = {
  * bic (bit clear) instruction
  */
 
-op bic(0b010000[6]:0b1110[4]:rm[3]:rd[3])
+op bic(0b010000[6]:0b1110[4]:rm[3]:rd[3]);
 
 bic.disasm = {
-	buffer << "bic r" << rd << ", r" << rm;
-}
+  buffer << "bic " << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 bic.execute = {
-	uint32_t res, s1, s2;
+  uint32_t res, s1, s2;
 	
-	s1 = cpu.GetGPR(rd);
-	s2 = cpu.GetGPR(rm);
+  s1 = cpu.GetGPR(rd);
+  s2 = cpu.GetGPR(rm);
 	
-	res = s1 & ~s2;
+  res = s1 & ~s2;
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of bic (bit clear) instruction
@@ -417,28 +401,28 @@ bic.execute = {
  * cmn (compare negative) instruction
  */
 
-op cmn(0b010000[6]:0b1011[4]:rm[3]:rn[3])
+op cmn(0b010000[6]:0b1011[4]:rm[3]:rn[3]);
 
 cmn.disasm = {
-	buffer << "cmn r" << rn << ", r" << rm;
-}
+  buffer << "cmn " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
 cmn.execute = {
-	uint32_t res, s1, s2;
-	uint8_t carry_in, carry_out, overflow_out, sign;
+  uint32_t res, s1, s2;
+  uint8_t carry_in, carry_out, overflow_out, sign;
 	
-	s1 = cpu.GetGPR(rn);
-	s2 = cpu.GetGPR(rm);
+  s1 = cpu.GetGPR(rn);
+  s2 = cpu.GetGPR(rm);
 	
-	carry_in = 0;
-	Add32(res, carry_out, overflow_out, sign,
-			s1, s2, carry_in);
+  carry_in = 0;
+  unisim::util::arithmetic::Add32(res, carry_out, overflow_out, sign,
+        s1, s2, carry_in);
 
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(carry_out); // to check
-	cpu.SetCPSR_V(overflow_out); // to check
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+  cpu.SetCPSR_C(carry_out); // to check
+  cpu.SetCPSR_V(overflow_out); // to check
+};
 /*
  * end of cmn (compare negative) instruction
  *******************************************************************/
@@ -447,25 +431,16 @@ cmn.execute = {
  * cmp(1) (compare immediate) instruction
  */
 
-op cmp_1(0b00101[5]:rn[3]:imm[8])
+op cmp_1(0b00101[5]:rn[3]:imm[8]);
 
 cmp_1.disasm = {
-	buffer << "cmp r" << rn << ", #" << dec << imm;
-}
+  buffer << "cmp " << DisasmRegister(rn) << ", #" << std::dec << imm;
+};
 
 cmp_1.execute = {
-	uint32_t res, s1, s2;
-	
-	s1 = cpu.GetGPR(rn);
-	s2 = imm;
-	
-	res = s1 - s2;
-
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
-}
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
+  UpdateStatusSub( cpu, res, op1, op2 );
+};
 /*
  * end of cmp(1) (compare immediate) instruction
  *******************************************************************/
@@ -474,94 +449,45 @@ cmp_1.execute = {
  * cmp(2) (compare register) instruction
  */
 
-op cmp_2(0b010000[6]:0b1010[4]:rm[3]:rn[3])
+op cmp_2(0b010000[6]:0b1010[4]:rm[3]:rn[3]);
+op cmp_3(0b01000101[8]:shl<3> rn1[1]:shl<3> rm1[1]:rm0[3]:rn0[3]);
+cmp_3.var rm : {uint8_t} = {rm1|rm0}, rn : {uint8_t} = {rn1|rn0};
+group cmp_rr( cmp_2, cmp_3 );
 
-cmp_2.disasm = {
-	buffer << "cmp r" << rn << ", r" << rm;
-}
+cmp_rr.disasm = {
+  buffer << "cmp " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
-cmp_2.execute = {
-	uint32_t res, s1, s2;
-	
-	s1 = cpu.GetGPR(rn);
-	s2 = cpu.GetGPR(rm);
-	
-	res = s1 - s2;
-
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
-}
+cmp_rr.execute = {
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = cpu.GetGPR( rm ), res = op1 - op2;
+  UpdateStatusSub( cpu, res, op1, op2 );
+};
 
 /*
  * end of cmp(2) (compare register) instruction
  *******************************************************************/
 
 /*******************************************************************
- * cmp(3) (compare high registers) instruction
- */
-
-op cmp_3(0b01000101[8]:h1[1]:h2[1]:rm[3]:rn[3])
-
-cmp_3.initialize_rm_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rm_index = (h2 << 3) + rm;
-}
-
-cmp_3.initialize_rn_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rn_index = (h1 << 3) + rn;
-}
-
-cmp_3.disasm = {
-	typedef Operation<STATE> inherited;
-
-	buffer << "cmp r" << inherited::rn_index << ", r" << inherited::rm_index;
-}
-
-cmp_3.execute = {
-	typedef Operation<STATE> inherited;
-	uint32_t res, s1, s2;
-	
-	s1 = cpu.GetGPR(inherited::rn_index);
-	s2 = cpu.GetGPR(inherited::rm_index);
-	
-	res = s1 - s2;
-
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
-}
-
-/*
- * end of cmp(3) (compare high registers) instruction
- *******************************************************************/
-
-/*******************************************************************
  * eor (exclusive or) instruction
  */
 
-op eor(0b010000[6]:0b0001[4]:rm[3]:rd[3])
+op eor(0b010000[6]:0b0001[4]:rm[3]:rd[3]);
 
 eor.disasm = {
-	buffer << "eor r" << rd << ", r" << rm;
-}
+  buffer << "eor " << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 eor.execute = {
-	uint32_t res, s1, s2;
+  uint32_t res, s1, s2;
 	
-	s1 = cpu.GetGPR(rd);
-	s2 = cpu.GetGPR(rm);
+  s1 = cpu.GetGPR(rd);
+  s2 = cpu.GetGPR(rm);
 	
-	res = s1 ^ s2;
+  res = s1 ^ s2;
 
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 /*
  * end of eor (exclusive or) instruction
  *******************************************************************/
@@ -570,27 +496,26 @@ eor.execute = {
  * lsl(1) (logical shift left immediate) instruction
  */
 
-op lsl_1(0b00000[5]:imm[5]:rm[3]:rd[3])
+op lsl_1(0b00000[5]:imm[5]:rm[3]:rd[3]);
 
 lsl_1.disasm = {
-	buffer << "lsl r" << rd << ", r" << rm << ", #" << dec << imm;
-}
+  buffer << "lsl " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << std::dec << imm;
+};
 
 lsl_1.execute = {
-	uint32_t res, s1, s2;
+  uint32_t res, s1;
 	
-	s1 = cpu.GetGPR(rm);
-	s2 = imm;
+  s1 = cpu.GetGPR(rm);
 	
-	if(imm == 0) {
-		res = s1;
-	} else {
-		cpu.SetCPSR_C((s1 >> (32 - imm)) & (uint32_t)0x01);
-		res = s1 << imm;
-	}
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  if(imm == 0) {
+    res = s1;
+  } else {
+    cpu.SetCPSR_C((s1 >> (32 - imm)) & (uint32_t)0x01);
+    res = s1 << imm;
+  }
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of lsl(1) (logical shift left immediate) instruction
@@ -600,33 +525,33 @@ lsl_1.execute = {
  * lsl(2) (logical shift left register) instruction
  */
 
-op lsl_2(0b010000[6]:0b0010[4]:rs[3]:rd[3])
+op lsl_2(0b010000[6]:0b0010[4]:rs[3]:rd[3]);
 
 lsl_2.disasm = {
-	buffer << "lsl r" << rd << ", r" << rs;
-}
+  buffer << "lsl " << DisasmRegister(rd) << ", " << DisasmRegister(rs);
+};
 
 lsl_2.execute = {
-	uint32_t res, s1, s2;
+  uint32_t res, s1, s2;
 	
-	s1 = cpu.GetGPR(rd);
-	s2 = cpu.GetGPR(rs) & (uint32_t)0x0ff;
+  s1 = cpu.GetGPR(rd);
+  s2 = cpu.GetGPR(rs) & (uint32_t)0x0ff;
 	
-	if(rs == 0) {
-		res = s1;
-	} else if(rs < 32) {
-		cpu.SetCPSR_C((s1 >> (32 - rs)) & 0x01);
-		res = s1 << s2;
-	} else if(rs == 32) {
-		cpu.SetCPSR_C(s1 & 0x01);
-		res = 0;
-	} else {
-		cpu.SetCPSR_C(false);
-		res = 0;
-	}
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  if(rs == 0) {
+    res = s1;
+  } else if(rs < 32) {
+    cpu.SetCPSR_C((s1 >> (32 - rs)) & 0x01);
+    res = s1 << s2;
+  } else if(rs == 32) {
+    cpu.SetCPSR_C(s1 & 0x01);
+    res = 0;
+  } else {
+    cpu.SetCPSR_C(false);
+    res = 0;
+  }
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of lsl(2) (logical shift left register) instruction
@@ -636,28 +561,28 @@ lsl_2.execute = {
  * lsr(1) (logical shift right immediate) instruction
  */
 
-op lsr_1(0b00001[5]:imm[5]:rm[3]:rd[3])
+op lsr_1(0b00001[5]:imm[5]:rm[3]:rd[3]);
 
 lsr_1.disasm = {
-	buffer << "lsr r" << rd << ", r" << rm << ", #" << dec << imm;
-}
+  buffer << "lsr " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << std::dec << imm;
+};
 
 lsr_1.execute = {
-	uint32_t res, s1, s2;
+  uint32_t res, s1, s2;
 	
-	s1 = cpu.GetGPR(rm);
-	s2 = imm;
+  s1 = cpu.GetGPR(rm);
+  s2 = imm;
 	
-	if(s2 == 0) {
-		cpu.SetCPSR_C(s1 & (uint32_t)0x80000000);
-		res = 0;
-	} else {
-		cpu.SetCPSR_C((s1 >> (imm - 1)) & 0x01);
-		res = s1 >> imm;
-	}
-	cpu.SetCPSR_N(false);
-	cpu.SetCPSR_Z(res == 0);
-}
+  if(s2 == 0) {
+    cpu.SetCPSR_C(s1 & (uint32_t)0x80000000);
+    res = 0;
+  } else {
+    cpu.SetCPSR_C((s1 >> (imm - 1)) & 0x01);
+    res = s1 >> imm;
+  }
+  cpu.SetCPSR_N(false);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of lsr(1) (logical shift right immediate) instruction
@@ -667,35 +592,35 @@ lsr_1.execute = {
  * lsr(2) (logical shift right register) instruction
  */
 
-op lsr_2(0b010000[6]:0b0011[4]:rs[3]:rd[3])
+op lsr_2(0b010000[6]:0b0011[4]:rs[3]:rd[3]);
 
 lsr_2.disasm = {
-	buffer << "lsr r" << rd << ", r" << rs;
-}
+  buffer << "lsr " << DisasmRegister(rd) << ", " << DisasmRegister(rs);
+};
 
 lsr_2.execute = {
-	uint32_t res, s1, s2;
+  uint32_t res, s1, s2;
 	
-	s1 = cpu.GetGPR(rd);
-	s2 = cpu.GetGPR(rs) & 0x0ff;
+  s1 = cpu.GetGPR(rd);
+  s2 = cpu.GetGPR(rs) & 0x0ff;
 	
-	if(s2 == 0) {
-		res = s1;
-	} else if(s2 < 32) {
-		cpu.SetCPSR_C((s1 >> (s2 - 1)) & 0x01);
-		res = s1 >> s2;
-	} else if(s2 == 32) {
-		cpu.SetCPSR_C((s1 >> 31) & 0x01);
-		res = 0;
-	} else {
-		cpu.SetCPSR_C(false);
-		res = 0;
-	}
-	cpu.SetGPR(rd, res);
+  if(s2 == 0) {
+    res = s1;
+  } else if(s2 < 32) {
+    cpu.SetCPSR_C((s1 >> (s2 - 1)) & 0x01);
+    res = s1 >> s2;
+  } else if(s2 == 32) {
+    cpu.SetCPSR_C((s1 >> 31) & 0x01);
+    res = 0;
+  } else {
+    cpu.SetCPSR_C(false);
+    res = 0;
+  }
+  cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of lsr(2) (logical shift right register) instruction
@@ -705,29 +630,29 @@ lsr_2.execute = {
  * mov(1) (move immediate) instruction
  */
 
-op mov_1(0b00100[5]:rd[3]:imm[8])
+op mov_1(0b00100[5]:rd[3]:imm[8]);
 
 mov_1.disasm = {
-	buffer << "mov r" << rd << ", #" << dec << imm;
-}
+  buffer << "mov " << DisasmRegister(rd) << ", #" << std::dec << imm;
+};
 
 mov_1.execute = {
-	uint32_t res;
+  uint32_t res;
 	
-	res = imm;
+  res = imm;
 	
-	cpu.SetGPR(rd, res);
+  cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(false);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(false);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of mov(1) (move immediate) instruction
  *******************************************************************/
 
 ///*******************************************************************
-//op mov_2(0b0001110[7]:0b000[3]:rn[3]:rd[3])
+//op mov_2(0b0001110[7]:0b000[3]:rn[3]:rd[3]);
 // * mov(2) (move a low register to another low register) instruction
 // */
 //
@@ -740,35 +665,19 @@ mov_1.execute = {
  * mov(3) (move high registers) instruction
  */
 
-op mov_3(0b01000110[8]:h1[1]:h2[1]:rm[3]:rd[3])
-
-mov_3.initialize_rm_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rm_index = (h2 << 3) + rm;
-}
-
-mov_3.initialize_rd_index = {
-	typedef Operation<STATE> inherited;
-	
-	inherited::rd_index = (h1 << 3) + rd;
-}
+op mov_3(0b01000110[8]:shl<3> rd1[1]:shl<3> rm1[1]:rm0[3]:rd0[3]);
+mov_3.var rm : {uint8_t} = {rm1|rm0}, rd : {uint8_t} = {rd1|rd0};
 
 mov_3.disasm = {
-	typedef Operation<STATE> inherited;
-
-	buffer << "mov r" << inherited::rd_index << ", r" << inherited::rm_index;
-}
+  buffer << "mov\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 mov_3.execute = {
-	typedef Operation<STATE> inherited;
-	uint32_t res;
-	
-	res = cpu.GetGPR(inherited::rm_index);
-	
-	
-	cpu.SetGPR(inherited::rd_index, res);
-}
+  uint32_t res = cpu.GetGPR(rm);
+  
+  cpu.SetGPR(rd, res);
+};
+
 /*
  * end of mov(3) (move high registers) instruction
  *******************************************************************/
@@ -777,21 +686,21 @@ mov_3.execute = {
  * mul (multiply) instruction
  */
 
-op mul(0b010000[6]:0b1101[4]:rm[3]:rd[3])
+op mul(0b010000[6]:0b1101[4]:rm[3]:rd[3]);
 
 mul.disasm = {
-	buffer << "mul r" << rd << ", r" << rm;
-}
+  buffer << "mul " << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 mul.execute = {
-	uint32_t res;
+  uint32_t res;
 	
-	res = cpu.GetGPR(rd) * cpu.GetGPR(rm);
-	cpu.SetGPR(rd, res);
+  res = cpu.GetGPR(rd) * cpu.GetGPR(rm);
+  cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of mul (multiply) instruction
@@ -801,21 +710,21 @@ mul.execute = {
  * mvn (move not register) instruction
  */
 
-op mvn(0b010000[6]:0b1111[4]:rm[3]:rd[3])
+op mvn(0b010000[6]:0b1111[4]:rm[3]:rd[3]);
 
 mvn.disasm = {
-	buffer << "mvn r" << rd << ", r" << rm;
-}
+  buffer << "mvn " << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 mvn.execute = {
-	uint32_t res;
+  uint32_t res;
 	
-	res = ~(cpu.GetGPR(rm));
-	cpu.SetGPR(rd, res);
+  res = ~(cpu.GetGPR(rm));
+  cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of mvn (move not register) instruction
@@ -825,25 +734,17 @@ mvn.execute = {
  * neg (negate register) instruction
  */
 
-op neg(0b010000[6]:0b1001[4]:rm[3]:rd[3])
+op neg(0b010000[6]:0b1001[4]:rm[3]:rd[3]);
 
 neg.disasm = {
-	buffer << "neg r" << rd << ", r" << rm;
-}
+  buffer << "neg\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 neg.execute = {
-	uint32_t res, s1, s2;
-	
-	s1 = 0;
-	s2 = cpu.GetGPR(rm);
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
-	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
-}
+  uint32_t op1 = 0, op2 = cpu.GetGPR( rm ), res = op1 - op2;
+  cpu.SetGPR( rd, res );
+  UpdateStatusSub( cpu, res, op1, op2 );
+};
 
 /*
  * end of neg (negate register) instruction
@@ -853,23 +754,23 @@ neg.execute = {
  * orr (logical or) instruction
  */
 
-op orr(0b010000[6]:0b1100[4]:rm[3]:rd[3])
+op orr(0b010000[6]:0b1100[4]:rm[3]:rd[3]);
 
 orr.disasm = {
-	buffer << "orr r" << rd << ", r" << rm;
-}
+  buffer << "orr " << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 orr.execute = {
-	uint32_t res, s1, s2;
+  uint32_t res, s1, s2;
 	
-	s1 = cpu.GetGPR(rd);
-	s2 = cpu.GetGPR(rm);
-	res = s1 | s2;
-	cpu.SetGPR(rd, res);
+  s1 = cpu.GetGPR(rd);
+  s2 = cpu.GetGPR(rm);
+  res = s1 | s2;
+  cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of orr (logical or) instruction
@@ -879,32 +780,32 @@ orr.execute = {
  * ror (rotate right register) instruction
  */
 
-op ror(0b010000[6]:0b0111[4]:rs[3]:rd[3])
+op ror(0b010000[6]:0b0111[4]:rs[3]:rd[3]);
 
 ror.disasm = {
-	buffer << "ror r" << rd << ", r" << rs;
-}
+  buffer << "ror " << DisasmRegister(rd) << ", " << DisasmRegister(rs);
+};
 
 ror.execute = {
-	uint32_t res, s1, s2;
+  uint32_t res, s1, s2;
 	
-	s1 = cpu.GetGPR(rd);
-	s2 = cpu.GetGPR(rs) & 0x0ff;
+  s1 = cpu.GetGPR(rd);
+  s2 = cpu.GetGPR(rs) & 0x0ff;
 	
-	if(s2 == 0) {
-		res = s1;
-	} else if((s2 & 0x01f) == 0) {
-		cpu.SetCPSR_C(s1 & (uint32_t)0x80000000);
-		res = s1;
-	} else {
-		cpu.SetCPSR_C((s1 >> ((s2 & 0x01f) - 1)) & 0x01);
-		res = RotateRight(s1, s2);
-	}
-	cpu.SetGPR(rd, res);
+  if(s2 == 0) {
+    res = s1;
+  } else if((s2 & 0x01f) == 0) {
+    cpu.SetCPSR_C(s1 & (uint32_t)0x80000000);
+    res = s1;
+  } else {
+    cpu.SetCPSR_C((s1 >> ((s2 & 0x01f) - 1)) & 0x01);
+    res = unisim::util::arithmetic::RotateRight(s1, s2);
+  }
+  cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 
 /*
  * end of ror (rotate right register) instruction
@@ -914,29 +815,17 @@ ror.execute = {
  * sbc (subtract with carry register) instruction
  */
 
-op sbc(0b010000[6]:0b0110[4]:rm[3]:rd[3])
+op sbc(0b010000[6]:0b0110[4]:rm[3]:rd[3]);
 
 sbc.disasm = {
-	buffer << "sbc r" << rd << ", r" << rm;
-}
+  buffer << "sbc\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 sbc.execute = {
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	  
-
-	s1 = cpu.GetGPR(rd);
-	s2 = cpu.GetGPR(rm);
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s1 - s2 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2, in_neg_carry));
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2, in_neg_carry));
-}
+  uint32_t op1 = cpu.GetGPR( rd ), op2 = cpu.GetGPR( rm ), res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+  cpu.SetGPR( rd, res );
+  UpdateStatusSub( cpu, res, op1, op2 );
+};
 
 /*
  * end of sbc (subtract with carry register) instruction
@@ -946,27 +835,17 @@ sbc.execute = {
  * sub(1) (subtract immediate) instruction
  */
 
-op sub_1(0b0001111[7]:imm[3]:rn[3]:rd[3])
+op sub_1(0b0001111[7]:imm[3]:rn[3]:rd[3]);
 
 sub_1.disasm = {
-	buffer << "sub r" << rd << ", r" << rn << ", #" << dec << imm;
-}
+  buffer << "sub\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << std::dec << imm;
+};
 
 sub_1.execute = {
-	uint32_t s1, s2;
-	uint32_t res;
-	  
-
-	s1 = cpu.GetGPR(rn);
-	s2 = imm;
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
-	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
-}
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
+  cpu.SetGPR( rd, res );
+  UpdateStatusSub( cpu, res, op1, op2 );
+};
 
 /*
  * end of sub(1) (subtract immediate) instruction
@@ -976,29 +855,17 @@ sub_1.execute = {
  * sub(2) (subtract large immediate) instruction
  */
 
-op sub_2(0b00111[5]:rd[3]:imm[8])
+op sub_2(0b00111[5]:rd[3]:imm[8]);
 
 sub_2.disasm = {
-	buffer << "sub r" << rd << ", #" << dec << imm;
-}
+  buffer << "sub\t" << DisasmRegister(rd) << ", #" << std::dec << imm;
+};
 
 sub_2.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	  
-
-	s1 = cpu.GetGPR(rd);
-	s2 = imm;
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
-	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
-}
+  uint32_t op1 = cpu.GetGPR( rd ), op2 = imm, res = op1 - op2;
+  cpu.SetGPR( rd, res );
+  UpdateStatusSub( cpu, res, op1, op2 );
+};
 
 /*
  * end of sub(2) (subtract large immediate) instruction
@@ -1008,27 +875,17 @@ sub_2.execute = {
  * sub(3) (subtract register) instruction
  */
 
-op sub_3(0b0001101[7]:rm[3]:rn[3]:rd[3])
+op sub_3(0b0001101[7]:rm[3]:rn[3]:rd[3]);
 
 sub_3.disasm = {
-	buffer << "sub r" << rd << ", r" << rn << ", r" << rm;
-}
+  buffer << "sub\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
 sub_3.execute = {
-	uint32_t s1, s2;
-	uint32_t res;
-	  
-
-	s1 = cpu.GetGPR(rn);
-	s2 = cpu.GetGPR(rm);
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
-	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
-}
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = cpu.GetGPR( rm ), res = op1 - op2;
+  cpu.SetGPR( rd, res );
+  UpdateStatusSub( cpu, res, op1, op2 );
+};
 
 /*
  * end of sub(3) (subtract register) instruction
@@ -1038,22 +895,22 @@ sub_3.execute = {
  * sub(4) (decrement stack pointer) instruction
  */
 
-op sub_4(0b101100001[9]:imm[7])
+op sub_4(0b101100001[9]:imm[7]);
 
 sub_4.disasm = {
-	buffer << "sub sp, #" << (imm * 4);
-}
+  buffer << "sub sp, #" << (imm * 4);
+};
 
 sub_4.execute = {
-	uint32_t s1, s2;
-	uint32_t res;
+  uint32_t s1, s2;
+  uint32_t res;
 	  
 
-	s1 = cpu.GetGPR(cpu.SP_reg);
-	s2 = imm * 4;
-	res = s1 - s2;
-	cpu.SetGPR(cpu.SP_reg, res);
-}
+  s1 = cpu.GetGPR(cpu.SP_reg);
+  s2 = imm * 4;
+  res = s1 - s2;
+  cpu.SetGPR(cpu.SP_reg, res);
+};
 
 /*
  * end of sub(4) (decrement stack pointer) instruction
@@ -1063,23 +920,23 @@ sub_4.execute = {
  * tst (test register) instruction
  */
 
-op tst(0b010000[6]:0b1000[4]:rm[3]:rn[3])
+op tst(0b010000[6]:0b1000[4]:rm[3]:rn[3]);
 
 tst.disasm = {
-	buffer << "tst r" << rn << ", r" << rm;
-}
+  buffer << "tst\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
 tst.execute = {
-	uint32_t res, s1, s2;
+  uint32_t res, s1, s2;
 	
 	
-	s1 = cpu.GetGPR(rn);
-	s2 = cpu.GetGPR(rm);
-	res = s1 & s2;
+  s1 = cpu.GetGPR(rn);
+  s2 = cpu.GetGPR(rm);
+  res = s1 & s2;
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+};
 /*
  * end of tst (test register) instruction
  *******************************************************************/

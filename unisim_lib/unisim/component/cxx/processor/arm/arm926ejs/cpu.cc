@@ -44,7 +44,6 @@
 #include <string.h>
 
 #include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/masks.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/kernel/logger/logger.hh"
 
@@ -101,7 +100,7 @@ using std::string;
 CPU::
 CPU(const char *name, Object *parent)
 	: Object(name, parent)
-	, unisim::component::cxx::processor::arm::CPU()
+	, unisim::component::cxx::processor::arm::CPU(name, parent)
 	, unisim::component::cxx::processor::arm::arm926ejs::CP15Interface()
 	, Service<MemoryInjection<uint64_t> >(name, parent)
 	, Client<DebugControl<uint64_t> >(name, parent)
@@ -124,7 +123,6 @@ CPU(const char *name, Object *parent)
 			"instruction-counter-trap-reporting-import", this)
 	, exception_trap_reporting_import(
 			"exception-trap-reporting-import", this)
-	, logger(*this)
 	, icache("icache", this)
 	, dcache("dcache", this)
 	, ltlb("lockdown-tlb", this)
@@ -1695,6 +1693,26 @@ TestCleanAndInvalidateDCache()
 	return cleaned;
 }
 
+/** Software Interrupt
+ *  This method is called by SWI instructions to handle software interrupts.
+ */
+void
+CPU::SWI( uint32_t imm )
+{
+  // we are executing on full system mode
+  this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::SWI);
+}
+
+/** Breakpoint
+ *  This method is called by BKPT instructions to handle breakpoints.
+ */
+void
+CPU::BKPT( uint32_t imm )
+{
+  // we are executing on full system mode
+  this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
+}
+	
 /** Unpredictable Instruction Behaviour.
  * This method is just called when an unpredictable behaviour is detected to
  *   notifiy the processor.

@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 /**********************************************
@@ -39,184 +39,79 @@
 **********************************************/
 
 /*******************************************************************
- * b(1) (conditional branch) instruction
- * op b_1(0b1101[4]:cond[4]:sext<32> imm[8])
+ * b (Branch) instruction
+ * 
+ * B causes a branch to a target address.
  */
 
-op b_1(0b1101[4]:cond[4]:sext<32> imm[8])
+op b_1(0b1101[4]:cond[4]:shl<1> sext<32> imm[8]);
 
 b_1.disasm = {
-	buffer << "b";
-	buffer << DisasmCondition(cond);
-	buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
-}
+  buffer << "b" << DisasmCondition(cond) << "\t" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
+};
 
 b_1.execute = {
-	if(not CheckCondition(cpu, cond)) return;
+  if(not CheckCondition(cpu, cond)) return;
 	
-	cpu.Branch(cpu.GetGPR(cpu.PC_reg) + (imm << 1));
-}
+  cpu.Branch(cpu.GetGPR(cpu.PC_reg) + imm);
+};
 
-/*
- * end of b(1) (conditional branch) instruction
- *******************************************************************/
-
-/*******************************************************************
- * b(2) (unconditional branch) instruction
- * op b_2(0b11100[5]:sext<32> imm[11])
- */
-
-op b_2(0b11100[5]:sext<32> imm[11])
+op b_2(0b11100[5]:shl<1> sext<32> imm[11]);
 
 b_2.disasm = {
-	buffer << "b";
-	buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
-}
+  buffer << "b\t" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
+};
 
 b_2.execute = {
-	cpu.Branch(cpu.GetGPR(cpu.PC_reg) + (imm << 1));
-}
+  cpu.Branch(cpu.GetGPR(cpu.PC_reg) + imm);
+};
 
 /*
- * end of b(2) (unconditional branch) instruction
+ * end of b (Branch) instruction
  *******************************************************************/
 
 /*******************************************************************
- * bl (branch with link) instruction
- * op bl(0b111[3]:0b1[1]:h2[1]:offset[11])
+ * bx (Branch and Exchange) instruction
+ *
+ * BX causes a branch to an address and instruction set specified by a
+ * register.
  */
 
-op bl(0b111[3]:0b1[1]:h2[1]:offset[11])
-
-bl.disasm = {
-	int32_t bl_soffset;
-
-	buffer << "bl ";
-	if(h2 == 0) {
-		buffer << "????";
-		return;
-	} else {
-		bl_soffset = cpu.GetGPR(cpu.LR_reg) + (offset << 1);
-		buffer << "0x" << hex << bl_soffset << dec;
-	}
-}
-
-bl.execute = {
-	int32_t bl_soffset;
-	
-	if(offset & 0x0400)
-		bl_soffset = (int32_t)(uint32_t(0xfffff800) + offset);
-	else
-		bl_soffset = offset;
-	
-	if(h2) {
-		cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
-		cpu.Branch(cpu.GetGPR(cpu.LR_reg) + (offset << 1));
-	} else {
-		cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + (bl_soffset << 12));
-	}
-}
-
-/*
- * end of bl (branch with link) instruction
- *******************************************************************/
-
-/*******************************************************************
- * bx (branch and exchange) instruction
- * op bx(0b010001110[9]:h2[1]:rm[3]:sbz[3])
- */
-
-op bx(0b010001110[9]:h2[1]:rm[3]:sbz[3])
+op bx(0b010001110[9]:rm[4]:/*sbz*/0[3]);
 
 bx.disasm = {
-	typedef Operation<STATE> inherited;
-
-	buffer << "bx "
-		<< "r" << inherited::rm_index << endl;
-}
-
-bx.initialize_rm_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rm_index = (h2 << 3) + rm;
-}
+  buffer << "bx\t" << DisasmRegister(rm);
+};
 
 bx.execute = {
-	typedef Operation<STATE> inherited;
-	
-	uint32_t rm_value;
-	
-	rm_value = cpu.GetGPR(inherited::rm_index);
-	
-	cpu.BranchExchange( rm_value );
-}
+  cpu.BranchExchange( cpu.GetGPR(rm) );
+};
 
 /*
- * end of bx (branch and exchange) instruction
+ * end of bx (Branch and Exchange) instruction
  *******************************************************************/
 
 /*******************************************************************
- * blx(1) (branch with link and exchange) instruction
- * op blx_1(0b111[3]:0b01[2]:sext<32> imm[11])
+ * blx (Branch with Link and Exchange) instruction
+ *
+ * BLX (register) calls a subroutine at an address and instruction set
+ * specified by a register.
  */
 
-op blx_1(0b111[3]:0b01[2]:offset[11])
+{ ARCH::insns5T }:                              \
+op blx(0b010001111[9]:rm[4]:/*sbz*/0[3]);
 
-blx_1.disasm = {
-	typedef Operation<STATE> inherited;
-	
-	int32_t blx_soffset;
-	
-	if(offset & 0x0400)
-		blx_soffset = (int32_t)((~(uint32_t)0x0400) + offset);
-	else
-		blx_soffset = offset;
-	
-	buffer << "blx";
-	buffer << " 0x" << hex
-		<< ((blx_soffset << 12) + cpu.GetGPR(cpu.PC_reg) + 4 + (offset << 1))
-		<< dec;
-}
+blx.disasm = {
+  buffer << "blx\t" << DisasmRegister(rm);
+};
 
-blx_1.execute = {
-	uint32_t new_PC = (cpu.GetGPR(cpu.LR_reg) + (offset << 1)) & -4;
-	cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
-	cpu.Branch(new_PC);
-}
+blx.execute = {
+  uint32_t rm_value = cpu.GetGPR(rm);
+  
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
+  cpu.BranchExchange( rm_value );
+};
 
 /*
- * end of blx(1) (branch with link and exchange) instruction
- *******************************************************************/
-
-/*******************************************************************
- * blx(2) (branch with link and exchange) instruction
- * op blx_2(0b111[3]:0b01[2]:sext<32> imm[11])
- */
-
-op blx_2(0b010001111[9]:h2[1]:rm[3]:sbz[3])
-
-blx_2.initialize_rm_index = {
-		typedef Operation<STATE> inherited;
-
-	inherited::rm_index = (h2 << 3) + rm;
-}
-
-blx_2.disasm = {
-	typedef Operation<STATE> inherited;
-	
-	buffer << "blx r" << inherited::rm_index;
-}
-
-blx_2.execute = {
-	typedef Operation<STATE> inherited;
-	uint32_t rm_value;
-	
-	rm_value = cpu.GetGPR(inherited::rm_index);
-	
-	cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
-	cpu.BranchExchange(rm_value);
-}
-
-/*
- * end of blx(2) (branch with link and exchange) instruction
+ * end of blx (Branch with Link and Exchange) instruction
  *******************************************************************/

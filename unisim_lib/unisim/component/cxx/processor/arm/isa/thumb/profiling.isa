@@ -29,31 +29,17 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 decl {
 #include <map>
-
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace arm {
-
-using std::map;
-
-} // end of namespace arm
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
 }
 
-action {void} profile({map<uint64_t, uint32_t> &} {prof}) {
+action {void} profile({std::map<uint64_t, uint32_t> &} {prof}) {
 	uint64_t val = GetEncoding();
 	val += (uint64_t)0x0100000000ULL;
-	map<uint64_t, uint32_t>::iterator it = prof.find(val);
+	std::map<uint64_t, uint32_t>::iterator it = prof.find(val);
 	if(it != prof.end()) {
 		it->second = it->second + 1;
 	} else {

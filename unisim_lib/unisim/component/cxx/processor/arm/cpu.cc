@@ -30,7 +30,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  *  SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #include <iostream>
@@ -38,34 +38,9 @@
 #include <inttypes.h>
 #include <assert.h>
 #include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/masks.hh"
 #include "unisim/util/debug/symbol.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
-
-//#include <sstream>
-//#include <iostream>
-//#include <stdlib.h>
-//#include "unisim/component/cxx/processor/arm/cpu.hh"
-//#include "unisim/component/cxx/processor/arm/masks.hh"
-//#include "unisim/component/cxx/processor/arm/config.hh"
-//#include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
-//#include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
-//#include "unisim/component/cxx/processor/arm/instruction.tcc"
-//#include "unisim/component/cxx/processor/arm/exception.tcc"
-//#include "unisim/util/debug/simple_register.hh"
-//#ifndef __STDC_CONSTANT_MACROS
-//#define __STDC_CONSTANT_MACROS
-//#endif // __STDC_CONSTANT_MACROS
-//#include <stdint.h>
-
-// #if (defined(__GNUC__) && (__GNUC__ >= 3))
-// #define INLINE __attribute__((always_inline))
-// #else
-// #define INLINE
-// #endif
-
-// #define ARM_OPTIMIZATION
 
 namespace unisim {
 namespace component {
@@ -98,6 +73,9 @@ using std::dec;
 using std::ostringstream;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+
 
 // class ProgramCounterRegister (unisim::util::debug::Register) used for PC/R15 view
 class ProgramCounterRegister : public Register
@@ -115,51 +93,52 @@ private:
 };
 
 // Constructor
-CPU ::
-CPU(endian_type endianness)
-	: default_endianness(endianness)
-	, munged_address_mask8(0)
-	, munged_address_mask16(0)
-	, registers_registry()
-	, cpsr(0)
-	, fake_fps(0)
-	, exception(0)
+CPU::CPU(char const* name, Object* parent, endian_type endianness)
+  : Object(name, parent)
+  , logger(*this)
+  , default_endianness(endianness)
+  , munged_address_mask8(0)
+  , munged_address_mask16(0)
+  , registers_registry()
+  , cpsr(0)
+  , fake_fps(0)
+  , exception(0)
 {
-	// Initialize general purpose registers
-	for(unsigned int i = 0; i < num_log_gprs; i++)
-		gpr[i] = 0;
-	pc = 0;
+  // Initialize general purpose registers
+  for(unsigned int i = 0; i < num_log_gprs; i++)
+    gpr[i] = 0;
+  pc = 0;
 	
-	for(unsigned int i = 0; i < num_phys_gprs; i++)
-		phys_gpr[i] = 0;
+  for(unsigned int i = 0; i < num_phys_gprs; i++)
+    phys_gpr[i] = 0;
 
-	// Initialize status (CPSR/SPSR) registers
-	cpsr = 0;
-	for(unsigned int i = 0; i < num_phys_spsrs; i++) {
-		spsr[i] = 0;
-	}
+  // Initialize status (CPSR/SPSR) registers
+  cpsr = 0;
+  for(unsigned int i = 0; i < num_phys_spsrs; i++) {
+    spsr[i] = 0;
+  }
 
-	// Initialize fake floating point registers
-	for(unsigned int i = 0; i < 8; i++) {
-		fake_fpr[i] = 0;
-	}
-	fake_fps = 0;
+  // Initialize fake floating point registers
+  for(unsigned int i = 0; i < 8; i++) {
+    fake_fpr[i] = 0;
+  }
+  fake_fps = 0;
 
-	// Initialize address mungling
-	SetEndianness(default_endianness);
+  // Initialize address mungling
+  SetEndianness(default_endianness);
 
-	// initialize the registers debugging interface
-	for(int i = 0; i < 15; i++) {
-		stringstream str;
-		str << "r" << i;
-		registers_registry[str.str().c_str()] =
-		new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
-	}
-        registers_registry["r15"] =  new ProgramCounterRegister("r15", *this);
-	registers_registry["pc"] =   new ProgramCounterRegister("pc", *this);
-	registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
-	registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
+  // initialize the registers debugging interface
+  for(int i = 0; i < 15; i++) {
+    stringstream str;
+    str << "r" << i;
+    registers_registry[str.str().c_str()] =
+      new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
+  }
+  registers_registry["r15"] =  new ProgramCounterRegister("r15", *this);
+  registers_registry["pc"] =   new ProgramCounterRegister("pc", *this);
+  registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
+  registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
+  registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
 }
 
 /** Destructor.
@@ -362,8 +341,9 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
  */
 uint32_t 
 CPU::
-GetGPR_usr(uint32_t id, uint32_t mode) const
+GetGPR_usr(uint32_t id) const
 {
+	uint32_t mode = GetCPSR_Mode();
 	switch ( mode )
 	{
 		case SUPERVISOR_MODE:
@@ -398,8 +378,9 @@ GetGPR_usr(uint32_t id, uint32_t mode) const
  */
 void
 CPU::
-SetGPR_usr(uint32_t id, uint32_t val, uint32_t mode)
+SetGPR_usr(uint32_t id, uint32_t val)
 {
+	uint32_t mode = GetCPSR_Mode();
 	switch ( mode )
 	{
 		case USER_MODE:
@@ -498,7 +479,7 @@ UnsetCPSR_N()
  */
 bool 
 CPU::
-GetCPSR_N()
+GetCPSR_N() const
 {
 	return (cpsr & CPSR_N_MASK) == CPSR_N_MASK;
 }
@@ -531,7 +512,7 @@ UnsetCPSR_Z()
  */
 bool 
 CPU::
-GetCPSR_Z()
+GetCPSR_Z() const
 {
 	return (cpsr & CPSR_Z_MASK) == CPSR_Z_MASK;
 }
@@ -564,7 +545,7 @@ UnsetCPSR_C()
  */
 bool 
 CPU::
-GetCPSR_C()
+GetCPSR_C() const
 {
 	return (cpsr & CPSR_C_MASK) == CPSR_C_MASK;
 }
@@ -597,7 +578,7 @@ UnsetCPSR_V()
  */
 bool 
 CPU::
-GetCPSR_V()
+GetCPSR_V() const
 {
 	return (cpsr & CPSR_V_MASK) == CPSR_V_MASK;
 }
@@ -752,7 +733,7 @@ SetCPSR_Mode(uint32_t mode)
  */
 uint32_t 
 CPU::
-GetCPSR_Mode()
+GetCPSR_Mode() const
 {
 	uint32_t mode = cpsr & CPSR_RUNNING_MODE_MASK;
 	return mode;
@@ -1215,37 +1196,47 @@ uint32_t
 CPU::
 GetSPSRIndex()
 {
-	uint32_t rm = 0;
-
-	switch (cpsr & CPSR_RUNNING_MODE_MASK) 
-	{
-		case USER_MODE:
-			assert(USER_MODE != USER_MODE);
-			break;
-		case SYSTEM_MODE:
-			assert(SYSTEM_MODE != SYSTEM_MODE);
-			break;
-		case SUPERVISOR_MODE:
-			rm = 0;
-			break;
-		case ABORT_MODE:
-			rm = 1;
-			break;
-		case UNDEFINED_MODE:
-			rm = 2;
-			break;
-		case IRQ_MODE:
-			rm = 3;
-			break;
-		case FIQ_MODE:
-			rm = 4;
-			break;
-		default:
-			assert(0);
-			break;
-	}
+  uint32_t rm = 0;
+  uint32_t run_mode = cpsr & CPSR_RUNNING_MODE_MASK;
+  switch (run_mode)
+    {
+    case USER_MODE: case SYSTEM_MODE: {
+      /* In user or system mode, access to SPSR are unpredictable,
+       * thus the code whould never try to access SPSR in such
+       * modes. */
+      
+      logger << DebugWarning
+             << "trying to access SPSR while running in "
+             << ((run_mode == USER_MODE) ? "user" : "system")
+             << " mode with the following instruction: "
+             << std::endl
+             << "Location: " << __FUNCTION__
+             << ":" << __FILE__
+             << ":" << __LINE__
+             << EndDebugWarning;
+      Stop(-1);
+    } break;
+    case SUPERVISOR_MODE:
+      rm = 0;
+      break;
+    case ABORT_MODE:
+      rm = 1;
+      break;
+    case UNDEFINED_MODE:
+      rm = 2;
+      break;
+    case IRQ_MODE:
+      rm = 3;
+      break;
+    case FIQ_MODE:
+      rm = 4;
+      break;
+    default:
+      assert(0);
+      break;
+    }
 	
-	return rm;
+  return rm;
 }
 
 /** Copy the value of current SPSR register into CPSR.

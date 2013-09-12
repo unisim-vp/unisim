@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 /**********************************************
@@ -45,17 +45,15 @@
 op ldr_1(0b01101[5]:imm[5]:rn[3]:rd[3])
 
 ldr_1.disasm = {
-	buffer << "ldr r" << rd << ", [r" << rn << ", #" << dec << (imm * 4) << "]";
+	buffer << "ldr " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << std::dec << (imm * 4) << "]";
 }
 
 ldr_1.execute = {
 	uint32_t addr;
-	uint32_t rn_value, value;
-	
+	uint32_t rn_value;
 	
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + (imm * 4);
-	value = 0;
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
@@ -70,18 +68,16 @@ ldr_1.execute = {
 op ldr_2(0b0101100[7]:rm[3]:rn[3]:rd[3])
 
 ldr_2.disasm = {
-	buffer << "ldr r" << rd << ", [r" << rn << ", r" << rm << "]";
+	buffer << "ldr " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
 }
 
 ldr_2.execute = {
 	uint32_t addr;
-	uint32_t rn_value, rm_value, value;
-	
+	uint32_t rn_value, rm_value;
 	
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	value = 0;
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
@@ -96,18 +92,17 @@ ldr_2.execute = {
 op ldr_3(0b01001[5]:rd[3]:imm[8])
 
 ldr_3.disasm = {
-	buffer << "ldr r" << rd << ", [pc, #" << dec << (imm * 4) << "]";
+	buffer << "ldr " << DisasmRegister(rd) << ", [pc, #" << std::dec << (imm * 4) << "]";
 }
 
 ldr_3.execute = {
 	uint32_t addr;
-	uint32_t pc_value, value;
+	uint32_t pc_value;
 	
 	pc_value = (cpu.GetGPR(cpu.PC_reg) + 4) & ~((uint32_t)0x03);
 	
 	
 	addr = pc_value + (imm * 4);
-	value = 0;
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
@@ -122,17 +117,16 @@ ldr_3.execute = {
 op ldr_4(0b10011[5]:rd[3]:imm[8])
 
 ldr_4.disasm = {
-	buffer << "ldr r" << rd << ", [sp, #" << dec << (imm * 4) << "]";
+	buffer << "ldr " << DisasmRegister(rd) << ", [sp, #" << std::dec << (imm * 4) << "]";
 }
 
 ldr_4.execute = {
 	uint32_t addr;
-	uint32_t sp_value, value;
+	uint32_t sp_value;
 	
 	
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 	addr = sp_value + (imm * 4);
-	value = 0;
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
@@ -147,18 +141,16 @@ ldr_4.execute = {
 op ldrb_1(0b01111[5]:imm[5]:rn[3]:rd[3])
 
 ldrb_1.disasm = {
-	buffer << "ldrb r" << rd << ", [r" << rn << ", #" << dec << imm << "]";
+	buffer << "ldrb " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << std::dec << imm << "]";
 }
 
 ldrb_1.execute = {
 	uint32_t addr;
 	uint32_t rn_value;
-	uint8_t val8;
 	
 	
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + imm;
-	val8 = 0;
 	cpu.SetGPR( rd, cpu.MemRead8( addr ) );
 }
 
@@ -173,19 +165,16 @@ ldrb_1.execute = {
 op ldrb_2(0b0101110[7]:rm[3]:rn[3]:rd[3])
 
 ldrb_2.disasm = {
-	buffer << "ldrb r" << rd << ", [r" << rn << ", r" << rm << "]";
+	buffer << "ldrb " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
 }
 
 ldrb_2.execute = {
 	uint32_t addr;
 	uint32_t rn_value, rm_value;
-	uint8_t val8;
-	
 	
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	val8 = 0;
 	cpu.SetGPR( rd, cpu.MemRead8( addr ) );
 }
 
@@ -200,18 +189,15 @@ ldrb_2.execute = {
 op ldrh_1(0b10001[5]:imm[5]:rn[3]:rd[3])
 
 ldrh_1.disasm = {
-	buffer << "ldrh r" << rd << ", [r" << rn << ", #" << dec << (imm * 2) << "]";
+	buffer << "ldrh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << std::dec << (imm * 2) << "]";
 }
 
 ldrh_1.execute = {
 	uint32_t addr;
 	uint32_t rn_value;
-	uint16_t val16;
-	
 	
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + (imm * 2);
-	val16 = 0;
 	cpu.SetGPR( rd, cpu.MemRead16( addr & -2 ) );
 }
 
@@ -226,19 +212,16 @@ ldrh_1.execute = {
 op ldrh_2(0b0101101[7]:rm[3]:rn[3]:rd[3])
 
 ldrh_2.disasm = {
-	buffer << "ldrh r" << rd << ", [r" << rn << ", r" << rm << "]";
+	buffer << "ldrh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
 }
 
 ldrh_2.execute = {
 	uint32_t addr;
 	uint32_t rn_value, rm_value;
-	uint16_t val16;
-	
 	
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	val16 = 0;
 	cpu.SetGPR( rd, cpu.MemRead16( addr & -2 ) );
 }
 
@@ -253,19 +236,16 @@ ldrh_2.execute = {
 op ldrsb(0b0101011[7]:rm[3]:rn[3]:rd[3])
 
 ldrsb.disasm = {
-	buffer << "ldrsb r" << rd << ", [r" << rn << ", r" << rm << "]";
+	buffer << "ldrsb " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
 }
 
 ldrsb.execute = {
 	uint32_t addr;
 	uint32_t rn_value, rm_value;
-	int8_t val8;
-	
 	
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	val8 = 0;
 	cpu.SetGPR( rd, cpu.MemReadS8( addr ) );
 }
 
@@ -280,19 +260,16 @@ ldrsb.execute = {
 op ldrsh(0b0101111[7]:rm[3]:rn[3]:rd[3])
 
 ldrsh.disasm = {
-	buffer << "ldrsh r" << rd << ", [r" << rn << ", r" << rm << "]";
+	buffer << "ldrsh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
 }
 
 ldrsh.execute = {
 	uint32_t addr;
 	uint32_t rn_value, rm_value;
-	int16_t val16;
-	
 	
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	val16 = 0;
 	cpu.SetGPR( rd, cpu.MemReadS16( addr & -2 ) );
 }
 
@@ -307,7 +284,7 @@ ldrsh.execute = {
 op str_1(0b01100[5]:imm[5]:rn[3]:rd[3])
 
 str_1.disasm = {
-	buffer << "str r" << rd << ", [r" << rn << ", #" << (imm * 4) << "]";
+	buffer << "str " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << (imm * 4) << "]";
 }
 
 str_1.execute = {
@@ -332,7 +309,7 @@ str_1.execute = {
 op str_2(0b0101000[7]:rm[3]:rn[3]:rd[3])
 
 str_2.disasm = {
-	buffer << "str r" << rd << ", [r" << rn << ", r" << rm << "]";
+	buffer << "str " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
 }
 
 str_2.execute = {
@@ -358,7 +335,7 @@ str_2.execute = {
 op str_3(0b10010[5]:rd[3]:imm[8])
 
 str_3.disasm = {
-	buffer << "str r" << rd << ", [sp, #" << (imm * 4) << "]";
+	buffer << "str " << DisasmRegister(rd) << ", [sp, #" << (imm * 4) << "]";
 }
 
 str_3.execute = {
@@ -383,7 +360,7 @@ str_3.execute = {
 op strb_1(0b01110[5]:imm[5]:rn[3]:rd[3])
 
 strb_1.disasm = {
-	buffer << "strb r" << rd << ", [r" << rn << ", #" << dec << imm << "]";
+	buffer << "strb " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << std::dec << imm << "]";
 }
 
 strb_1.execute = {
@@ -410,7 +387,7 @@ strb_1.execute = {
 op strb_2(0b0101010[7]:rm[3]:rn[3]:rd[3])
 
 strb_2.disasm = {
-	buffer << "strb r" << rd << ", [r" << rn << ", r" << rm << "]";
+	buffer << "strb " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
 }
 
 strb_2.execute = {
@@ -438,7 +415,7 @@ strb_2.execute = {
 op strh_1(0b10000[5]:imm[5]:rn[3]:rd[3])
 
 strh_1.disasm = {
-	buffer << "strh r" << rd << ", [r" << rn << ", #" << dec << (imm * 2) << "]";
+	buffer << "strh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << std::dec << (imm * 2) << "]";
 }
 
 strh_1.execute = {
@@ -465,7 +442,7 @@ strh_1.execute = {
 op strh_2(0b0101001[7]:rm[3]:rn[3]:rd[3])
 
 strh_2.disasm = {
-	buffer << "strh r" << rd << ", [r" << rn << ", r" << rm << "]";
+	buffer << "strh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
 }
 
 strh_2.execute = {
