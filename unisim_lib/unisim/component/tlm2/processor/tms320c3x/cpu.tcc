@@ -474,7 +474,7 @@ bool CPU<CONFIG, DEBUG>::PrWrite(typename CONFIG::address_t addr, const void *bu
 				}
 				else
 				{
-					if(unlikely(DEBUG && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: granted DMI access does not allow direct read access for 0x" << std::hex << addr << std::dec << EndDebugInfo;
+					if(unlikely(DEBUG && debug_dmi)) inherited::logger << DebugInfo << "Bus Write: granted DMI access does not allow direct write access for 0x" << std::hex << addr << std::dec << EndDebugInfo;
 				}
 			}
 			else
