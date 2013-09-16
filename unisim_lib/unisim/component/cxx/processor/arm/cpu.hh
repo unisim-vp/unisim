@@ -236,7 +236,10 @@ public:
    *
    * @return the endian being used
    */
-  unisim::util::endian::endian_type GetEndianness();
+  unisim::util::endian::endian_type GetEndianness() const
+  {
+	  return default_endianness;
+  }
 
   /**************************************************************/
   /* Endian variables and methods                           END */

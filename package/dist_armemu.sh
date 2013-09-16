@@ -185,6 +185,7 @@ unisim/util/xml/xml.cc \
 unisim/util/endian/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
+unisim/util/queue/queue.cc \
 unisim/component/tlm2/processor/arm/armemu/armemu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
@@ -363,6 +364,7 @@ unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
+unisim/util/queue/queue.hh \
 unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
@@ -424,6 +426,7 @@ unisim/util/os/linux_os/linux.tcc \
 unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
+unisim/util/queue/queue.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 

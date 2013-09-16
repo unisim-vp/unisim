@@ -177,17 +177,6 @@ SetEndianness(endian_type endianness)
 	}
 }
 
-/** Get the endian configuration of the processor.
- *
- * @return the endian being used
- */
-endian_type
-CPU ::
-GetEndianness() 
-{
-	return default_endianness;
-}
-
 /** Arrange the GPR mapping depending on initial and target running mode.
  *
  * @param src_mode the running mode the processor is currently in
