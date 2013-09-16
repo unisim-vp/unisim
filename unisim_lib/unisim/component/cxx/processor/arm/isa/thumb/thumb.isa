@@ -55,6 +55,7 @@ impl {
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include <iostream>
+#include <iomanip>
 } // end of impl
 
 action {void} execute({ARCH &} {cpu}) {
