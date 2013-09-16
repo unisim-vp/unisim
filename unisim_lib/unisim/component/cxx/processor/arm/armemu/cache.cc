@@ -270,27 +270,11 @@ const
 	return m_is_ok;
 }
 
-uint32_t
-Cache::
-GetTag(uint32_t addr)
-const
-{
-	return (addr & m_tag_mask) >> m_tag_shift;
-}
-
 void
 Cache::
 SetTag(uint32_t set, uint32_t way, uint32_t tag)
 {
 	m_tag[set][way] = tag;
-}
-	
-uint32_t
-Cache::
-GetSet(uint32_t addr)
-const
-{
-	return (addr & m_set_mask) >> m_set_shift_;
 }
 	
 uint32_t
@@ -315,28 +299,6 @@ const
 		current_way++;
 	}
 	return false;
-}
-
-bool
-Cache::
-GetWay(uint32_t tag, uint32_t set, uint32_t *way)
-const
-{
-	bool found = false;
-	uint32_t current_way = 0;
-
-	while (current_way < m_associativity_)
-	{
-		found = (m_tag[set][current_way] == tag);
-		if (found)
-		{
-			*way = current_way;
-			return found;
-		}
-		current_way++;
-	}
-	*way = 0;
-	return found;
 }
 
 uint32_t
@@ -445,14 +407,6 @@ SetData(uint32_t set, uint32_t way, uint32_t index, uint32_t size, uint8_t *data
 	size = (max_size < size) ? max_size : size;
 	memcpy(&(m_data[set][way][index]), data, size);
 	return size;
-}
-
-uint8_t
-Cache::
-GetValid(uint32_t set, uint32_t way)
-const
-{
-	return m_valid[set][way];
 }
 
 void

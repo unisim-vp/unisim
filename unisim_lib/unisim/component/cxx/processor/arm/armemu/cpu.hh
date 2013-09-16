@@ -54,7 +54,8 @@
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
 #include <string>
-#include <queue>
+#include <unisim/util/queue/queue.hh>
+#include <unisim/util/queue/queue.tcc>
 #include <inttypes.h>
 
 #ifdef GCC_INLINE
@@ -375,6 +376,17 @@ public:
    *   the external memory system.
    * 
    * @param address the address to read data from
+   * @param data the buffer to fill with the read data
+   * @param size the size in bytes to read
+   */
+  void ReadInsn(uint32_t address, uint32_t *data, uint32_t size);
+  
+  /** Reads 32bits instructions from the memory system
+   * This method allows the user to read instructions from the memory system,
+   *   that is, it tries to read from the pertinent caches and if failed from
+   *   the external memory system.
+   * 
+   * @param address the address to read data from
    * @param val the buffer to fill with the read data
    */
   void ReadInsn(uint32_t address, uint32_t &val);
@@ -395,7 +407,7 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  MemoryOp* MemRead32(uint32_t address);
+  inline MemoryOp* MemRead32(uint32_t address);
   /** 16bits memory read.
    * 
    * This method reads 16bits from memory and returns a
@@ -405,7 +417,7 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  MemoryOp* MemRead16(uint32_t address);
+  inline MemoryOp* MemRead16(uint32_t address);
   /** Signed 16bits memory read.
    *
    * This method reads 16bits from memory and return a
@@ -415,7 +427,7 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  MemoryOp* MemReadS16(uint32_t address);
+  inline MemoryOp* MemReadS16(uint32_t address);
   /** 8bits memory read.
    *
    * This method reads 8bits from memory and returns a
@@ -425,7 +437,7 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  MemoryOp* MemRead8(uint32_t address);
+  inline MemoryOp* MemRead8(uint32_t address);
   /** Signed 8bits memory read.
    *
    * This method reads 8bits from memory and returns a
@@ -435,7 +447,7 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  MemoryOp* MemReadS8(uint32_t address);
+  inline MemoryOp* MemReadS8(uint32_t address);
   /* Prevent hiding base SetGPR */
   using unisim::component::cxx::processor::arm::CPU::SetGPR;
   /** Mark a GPR to be updated by a MemoryOp pending memory operation.
@@ -448,7 +460,7 @@ public:
   void SetGPR(uint32_t id, MemoryOp* memop)
   {
     memop->SetDestReg( id );
-    ls_queue.push(memop);		
+    ls_queue.Push(memop);		
   }
   /* Prevent hiding base SetGPR_usr */
   using unisim::component::cxx::processor::arm::CPU::SetGPR_usr;
@@ -462,7 +474,7 @@ public:
   void SetGPR_usr(uint32_t id, MemoryOp* memop)
   {
     memop->SetDestUserReg( id );
-    ls_queue.push(memop);		
+    ls_queue.Push(memop);		
   }
   /** 32bits memory write.
    * This method write the giving 32bits value into the memory system.
@@ -470,21 +482,21 @@ public:
    * @param address the base address of the 32bits write
    * @param value the value to write into memory
    */
-  void MemWrite32(uint32_t address, uint32_t value);
+  inline void MemWrite32(uint32_t address, uint32_t value);
   /** 16bits memory write.
    * This method write the giving 16bits value into the memory system.
    * 
    * @param address the base address of the 16bits write
    * @param value the value to write into memory
    */
-  void MemWrite16(uint32_t address, uint16_t value);
+  inline void MemWrite16(uint32_t address, uint16_t value);
   /** 8bits memory write.
    * This method write the giving 8bits value into the memory system.
    * 
    * @param address the base address of the 8bits write
    * @param value the value to write into memory
    */
-  void MemWrite8(uint32_t address, uint8_t value);
+  inline void MemWrite8(uint32_t address, uint8_t value);
 
   /**************************************************************/
   /* Memory access methods       END                            */
@@ -711,7 +723,15 @@ protected:
    *   accesses at the end of the execution the method 
    *   PerformLoadStoreAccesses must be called 
    */
-  std::queue<unisim::component::cxx::processor::arm::MemoryOp *> ls_queue;
+  class LSQueueConfig
+  {
+  public:
+    static const bool DEBUG = false;
+    typedef unisim::component::cxx::processor::arm::MemoryOp *ELEMENT;
+    static const unsigned int SIZE = 32;
+  };
+
+  unisim::util::queue::Queue<LSQueueConfig> ls_queue;
   /** Current memory operation.
    * First load/store operation pending to be sent to the memory system
    */
@@ -738,7 +758,178 @@ protected:
    */
   void PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
                          *memop);
+
+	//=====================================================================
+	//=               Instruction prefetch buffer                         =
+	//=====================================================================
+	
+	unsigned int num_insn_in_prefetch_buffer;                  //!< Number of instructions currently in the prefetch buffer
+	unsigned int cur_insn_in_prefetch_buffer;                  //!< Prefetch buffer index of the current instruction to be executed
+	uint32_t cur_pc_in_prefetch_buffer;
+	uint32_t prefetch_buffer[8];                               //!< The instruction prefetch buffer
+
 };
+
+/** 32bits memory read.
+ *
+ * This method reads 32bits from memory and returns a
+ * corresponding pending memory operation.
+ * 
+ * @param address the base address of the 32bits read
+ * 
+ * @return a pointer to the pending memory operation
+ */
+inline
+MemoryOp*
+CPU::MemRead32(uint32_t address)
+{
+	MemoryOp* memop;
+	
+	memop = MemoryOp::alloc();
+	memop->SetRead(address, 4, false);
+	
+	return memop;
+}
+
+/** 16bits memory read.
+ * 
+ * This method reads 16bits from memory and returns a
+ * corresponding pending memory operation.
+ * 
+ * @param address the base address of the 16bits read
+ * 
+ * @return a pointer to the pending memory operation
+ */
+inline
+MemoryOp*
+CPU::MemRead16(uint32_t address)
+{
+	MemoryOp* memop;
+	
+	memop = MemoryOp::alloc();
+	memop->SetRead(address, 2, false);
+	
+	return memop;
+}
+
+/** Signed 16bits memory read.
+ *
+ * This method reads 16bits from memory and return a
+ * corresponding signed pending memory operation.
+ * 
+ * @param address the base address of the 16bits read
+ * 
+ * @return a pointer to the pending memory operation
+ */
+inline
+MemoryOp*
+CPU::MemReadS16(uint32_t address)
+{
+	MemoryOp* memop;
+	
+	memop = MemoryOp::alloc();
+	memop->SetRead(address, 2, true);
+	
+	return memop;
+}
+
+/** 8bits memory read.
+ *
+ * This method reads 8bits from memory and returns a
+ * corresponding pending memory operation.
+ * 
+ * @param address the base address of the 8bits read
+ * 
+ * @return a pointer to the pending memory operation
+ */
+inline
+MemoryOp*
+CPU::MemRead8(uint32_t address)
+{
+	MemoryOp* memop;
+	
+	memop = MemoryOp::alloc();
+	memop->SetRead(address, 1, false);
+	
+	return memop;
+}
+
+/** Signed 8bits memory read.
+ *
+ * This method reads 8bits from memory and returns a
+ * corresponding signed pending memory operation.
+ * 
+ * @param address the base address of the 8bits read
+ * 
+ * @return a pointer to the pending memory operation
+ */
+inline
+MemoryOp*
+CPU::MemReadS8(uint32_t address)
+{
+	MemoryOp* memop;
+	
+	memop = MemoryOp::alloc();
+	memop->SetRead(address, 1, true);
+	
+	return memop;
+}
+
+/** 32bits memory write.
+ * This method write the giving 32bits value into the memory system.
+ * 
+ * @param address the base address of the 32bits write
+ * @param value the value to write into memory
+ */
+inline
+void 
+CPU::
+MemWrite32(uint32_t address, uint32_t value)
+{
+	MemoryOp *memop;
+	
+	address = address & ~((uint32_t)0x3);
+	memop = MemoryOp::alloc();
+	memop->SetWrite(address, 4, value);
+	ls_queue.Push(memop);
+}
+
+/** 16bits memory write.
+ * This method write the giving 16bits value into the memory system.
+ * 
+ * @param address the base address of the 16bits write
+ * @param value the value to write into memory
+ */
+inline
+void 
+CPU::
+MemWrite16(uint32_t address, uint16_t value)
+{
+	address = address & ~((uint32_t)0x1);
+	MemoryOp *memop;
+	
+	memop = MemoryOp::alloc();
+	memop->SetWrite(address, 2, value);
+	ls_queue.Push(memop);
+}
+
+/** 8bits memory write.
+ * This method write the giving 8bits value into the memory system.
+ * 
+ * @param address the base address of the 8bits write
+ * @param value the value to write into memory
+ */
+inline
+void 
+CPU::
+MemWrite8(uint32_t address, uint8_t value)
+{
+	MemoryOp *memop;
+	
+	memop = MemoryOp::alloc();
+	memop->SetWrite(address, 1, value);
+	ls_queue.Push(memop);
+}
 
 } // end of namespace armemu
 } // end of namespace arm

@@ -164,6 +164,10 @@ CPU(const char *name, Object *parent)
 	, ls_queue()
 	, first_ls(0)
 	, has_sent_first_ls(false)
+	, num_insn_in_prefetch_buffer(0)
+	, cur_insn_in_prefetch_buffer(0)
+	, cur_pc_in_prefetch_buffer(0)
+	, prefetch_buffer()
 {
 	for (unsigned int i = 0; i < num_phys_gprs; i++)
 	{
@@ -398,6 +402,10 @@ EndSetup()
 		requires_finished_instruction_reporting = false;
 	}
 	
+	num_insn_in_prefetch_buffer = 0;
+	cur_insn_in_prefetch_buffer = 0;
+	cur_pc_in_prefetch_buffer = pc;
+	
 	return true;
 }
 
@@ -428,7 +436,7 @@ StepInstruction()
 		{
 			dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 	
-			if (dbg_cmd == DebugControl<uint32_t>::DBG_STEP) 
+			if (likely(dbg_cmd == DebugControl<uint32_t>::DBG_STEP)) 
 			{
 				/* Nothing to do */
 				break;
@@ -448,7 +456,7 @@ StepInstruction()
 		} while(1);
 	}
 	
-	if (GetCPSR_T()) {
+	if (unlikely(GetCPSR_T())) {
 		/* Thumb state */
 		
 		/* This implementation should never enter into thumb mode */
@@ -459,15 +467,10 @@ StepInstruction()
 	
 	else {
 		/* Arm32 state */
-		if (requires_memory_access_reporting and memory_access_reporting_import)
-                  memory_access_reporting_import->
-                    ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, current_pc, 4);
 		
-                /* fetch instruction word from memory */
-		uint32_t memword;
-		ReadInsn(current_pc, memword);
-		/* convert the instruction to host endianness */
-		isa::arm32::CodeType insn = Target2Host(GetEndianness(), memword);
+		/* fetch instruction word from memory */
+		isa::arm32::CodeType insn;
+		ReadInsn(current_pc, insn);
 			
 		/* Decode current PC */
 		isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::CPU>* op;
@@ -487,7 +490,7 @@ StepInstruction()
 	
 	/* check that an exception has not occurred, if so 
 	 * stop the simulation */
-	if ( GetVirtualExceptionVector() )
+	if ( unlikely(GetVirtualExceptionVector()) )
 	{
 		logger << DebugError
 			<< "An exception has been found, this should never happen "
@@ -496,13 +499,12 @@ StepInstruction()
 		Stop(-1);
 	}
 	instruction_counter++;
-	if ( unlikely((trap_on_instruction_counter == instruction_counter)
-			&& instruction_counter_trap_reporting_import) )
+	if ( unlikely(instruction_counter_trap_reporting_import &&
+		trap_on_instruction_counter == instruction_counter) )
 		instruction_counter_trap_reporting_import->ReportTrap(*this);
 	
-	if(requires_finished_instruction_reporting)
-		if(memory_access_reporting_import)
-			memory_access_reporting_import->ReportFinishedInstruction(current_pc, this->pc);
+	if(unlikely(requires_finished_instruction_reporting && memory_access_reporting_import))
+		memory_access_reporting_import->ReportFinishedInstruction(current_pc, this->pc);
 }
 
 /** Inject an intrusive read memory operation.
@@ -918,20 +920,18 @@ PerformExit(int ret)
 	Stop(ret);
 }
 
-/** Reads 32bits instructions from the memory system
- * This method allows the user to read instructions from the memory system,
- *   that is, it tries to read from the pertinent caches and if failed from
- *   the external memory system.
- * 
- * @param address the address to read data from
- * @param val the buffer to fill with the read data
- */
+  /** Reads 32bits instructions from the memory system
+   * This method allows the user to read instructions from the memory system,
+   *   that is, it tries to read from the pertinent caches and if failed from
+   *   the external memory system.
+   * 
+   * @param address the address to read data from
+   * @param data the buffer to fill with the read data
+   * @param size the size in bytes to read
+   */
 void 
-CPU::ReadInsn(uint32_t address, uint32_t &val)
+CPU::ReadInsn(uint32_t address, uint32_t *data, uint32_t size)
 {
-	uint32_t size = 4;
-	uint8_t *data;
-
 	if ( likely(icache.GetSize()) )
 	{
 		icache.read_accesses++;
@@ -976,10 +976,8 @@ CPU::ReadInsn(uint32_t address, uint32_t &val)
 		// at this point the data is in the cache, we can read it from the
 		//   cache
 		uint32_t cache_index = icache.GetIndex(address);
-		(void)icache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
 		icache.GetDataCopy(cache_set, cache_way, cache_index, size,
-				(uint8_t *)&val);
+				(uint8_t *) data);
 
 		if ( unlikely(icache.power_estimator_import != 0) )
 			icache.power_estimator_import->ReportReadAccess();
@@ -988,8 +986,44 @@ CPU::ReadInsn(uint32_t address, uint32_t &val)
 	{
 		// no instruction cache present, just request the insn to the
 		//   memory system
-		PrRead(address, (uint8_t *)&val, size);
+		PrRead(address, (uint8_t *) data, size);
 	}
+
+	if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
+				memory_access_reporting_import->
+				ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, address, size);
+}
+
+/** Reads 32bits instructions from the memory system
+ * This method allows the user to read instructions from the memory system,
+ *   that is, it tries to read from the pertinent caches and if failed from
+ *   the external memory system.
+ * 
+ * @param address the address to read data from
+ * @param val the buffer to fill with the read data
+ */
+void 
+CPU::ReadInsn(uint32_t address, uint32_t &val)
+{
+#if 1
+	if(unlikely((cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer) || (cur_pc_in_prefetch_buffer != address)))
+	{
+		uint32_t size_to_block_boundary = icache.GetSizeToCacheLineBoundary(address);
+		uint32_t size_to_prefetch = size_to_block_boundary > sizeof(prefetch_buffer) ? sizeof(prefetch_buffer) : size_to_block_boundary;
+		// refill the prefetch buffer with up to one cache line, not much
+		ReadInsn(address, prefetch_buffer, size_to_prefetch);
+		num_insn_in_prefetch_buffer = size_to_prefetch / 4;
+		cur_insn_in_prefetch_buffer = 0;
+		cur_pc_in_prefetch_buffer = address;
+	}
+	val = Target2Host(GetEndianness(), prefetch_buffer[cur_insn_in_prefetch_buffer]);
+	cur_insn_in_prefetch_buffer++;
+	cur_pc_in_prefetch_buffer += 4;
+#else
+	uint32_t buf;
+	ReadInsn(address, &buf, 4);
+	val = Target2Host(GetEndianness(), buf);
+#endif
 }
 
 /** Memory prefetch instruction.
@@ -1007,192 +1041,7 @@ CPU::ReadPrefetch(uint32_t address)
 	
 	memop = MemoryOp::alloc();
 	memop->SetPrefetch(address);
-	ls_queue.push(memop);
-}
-
-/** 32bits memory read.
- *
- * This method reads 32bits from memory and returns a
- * corresponding pending memory operation.
- * 
- * @param address the base address of the 32bits read
- * 
- * @return a pointer to the pending memory operation
- */
-MemoryOp*
-CPU::MemRead32(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 4, false);
-
-	// if (requires_memory_access_reporting and memory_access_reporting_import)
-        //   memory_access_reporting_import->
-        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address & -4, 4);
-	
-	return memop;
-}
-
-/** 16bits memory read.
- * 
- * This method reads 16bits from memory and returns a
- * corresponding pending memory operation.
- * 
- * @param address the base address of the 16bits read
- * 
- * @return a pointer to the pending memory operation
- */
-MemoryOp*
-CPU::MemRead16(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 2, false);
-	
-	// if (requires_memory_access_reporting and memory_access_reporting_import)
-        //   memory_access_reporting_import->
-        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 2);
-	
-	return memop;
-}
-
-/** Signed 16bits memory read.
- *
- * This method reads 16bits from memory and return a
- * corresponding signed pending memory operation.
- * 
- * @param address the base address of the 16bits read
- * 
- * @return a pointer to the pending memory operation
- */
-MemoryOp*
-CPU::MemReadS16(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 2, true);
-	
-	// if (requires_memory_access_reporting and memory_access_reporting_import)
-        //   memory_access_reporting_import->
-        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 2);
-	
-	return memop;
-}
-
-/** 8bits memory read.
- *
- * This method reads 8bits from memory and returns a
- * corresponding pending memory operation.
- * 
- * @param address the base address of the 8bits read
- * 
- * @return a pointer to the pending memory operation
- */
-MemoryOp*
-CPU::MemRead8(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 1, false);
-	
-	// if (requires_memory_access_reporting and memory_access_reporting_import)
-        //   memory_access_reporting_import->
-        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
-
-        return memop;
-}
-
-/** Signed 8bits memory read.
- *
- * This method reads 8bits from memory and returns a
- * corresponding signed pending memory operation.
- * 
- * @param address the base address of the 8bits read
- * 
- * @return a pointer to the pending memory operation
- */
-MemoryOp*
-CPU::MemReadS8(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 1, true);
-	
-	// if (requires_memory_access_reporting and memory_access_reporting_import)
-        //   memory_access_reporting_import->
-        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
-	
-        return memop;
-}
-
-/** 32bits memory write.
- * This method write the giving 32bits value into the memory system.
- * 
- * @param address the base address of the 32bits write
- * @param value the value to write into memory
- */
-void 
-CPU::
-MemWrite32(uint32_t address, uint32_t value)
-{
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x3);
-	memop = MemoryOp::alloc();
-	memop->SetWrite(address, 4, value);
-	ls_queue.push(memop);
-	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, address, 4);
-}
-
-/** 16bits memory write.
- * This method write the giving 16bits value into the memory system.
- * 
- * @param address the base address of the 16bits write
- * @param value the value to write into memory
- */
-void 
-CPU::
-MemWrite16(uint32_t address, uint16_t value)
-{
-	address = address & ~((uint32_t)0x1);
-	MemoryOp *memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetWrite(address, 2, value);
-	ls_queue.push(memop);
-	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, address, 2);
-}
-
-/** 8bits memory write.
- * This method write the giving 8bits value into the memory system.
- * 
- * @param address the base address of the 8bits write
- * @param value the value to write into memory
- */
-void 
-CPU::
-MemWrite8(uint32_t address, uint8_t value)
-{
-	MemoryOp *memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetWrite(address, 1, value);
-	ls_queue.push(memop);
-	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, address, 1);
+	ls_queue.Push(memop);
 }
 
 /** Coprocessor Load
@@ -1395,10 +1244,10 @@ CPU::
 PerformLoadStoreAccesses()
 {
 	// while the ls_queue is not empty process entries
-	while (!ls_queue.empty()) 
+	while (!ls_queue.Empty()) 
 	{
-		MemoryOp *memop = ls_queue.front();
-		ls_queue.pop();
+		MemoryOp *memop = ls_queue.Front();
+		ls_queue.Pop();
 		switch (memop->GetType()) 
 		{
 			case MemoryOp::PREFETCH:
