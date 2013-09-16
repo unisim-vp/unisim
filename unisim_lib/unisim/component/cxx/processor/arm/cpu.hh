@@ -270,16 +270,31 @@ public:
    */
   uint32_t GetGPR_npc(uint32_t id) const
   {
-    assert(id != 15);
+    assert(id != 15); /* Should be unpredictable*/
     return gpr[id];
   }
 
-  /** Set the value contained by a GPR.
+  /** Assign a GPR with a value coming from the Execute stage.  In
+   * architectures up to ARMv6, this is not interworking (simple
+   * branch when destination register is PC).
    *
    * @param id the register index
    * @param val the value to set
    */
   void SetGPR(uint32_t id, uint32_t val)
+  {
+    if (id != 15) gpr[id] = val;
+    else this->Branch( val );
+  }
+	
+  /** Assign a GPR with a value coming from the Memory stage.  In
+   * architectures from to ARMv5T, this is interworking (exchanging
+   * branch when destination register is PC).
+   *
+   * @param id the register index
+   * @param val the value to set
+   */
+  void SetGPR_mem(uint32_t id, uint32_t val)
   {
     if (id != 15) gpr[id] = val;
     else this->BranchExchange( val );
@@ -301,20 +316,20 @@ public:
    * @param val the value to set PC
    */
   void BranchExchange(uint32_t val)
-  { this->pc = val; this->SetCPSR_T( val & 1 ); }
+  { this->next_pc = val; this->SetCPSR_T( val & 1 ); }
 	
   /** Sets the PC (and preserve mode)
    *
    * @param val the value to set PC
    */
   void Branch(uint32_t val)
-  { this->pc = (this->pc & 1) | (val & -2); }
+  { this->next_pc = (this->next_pc & 1) | (val & -2); }
 	
   /** Gets the updated PC value (next PC as currently computed)
    *
    */
   uint32_t GetNPC()
-  { return this->pc; }
+  { return this->next_pc; }
 	
   /** Get the value contained by a user GPR.
    * Returns the value contained by a user GPR. It is the same than GetGPR but
@@ -771,7 +786,7 @@ protected:
   uint32_t phys_gpr[num_phys_gprs]; 
   /** Storage for the logical registers */
   uint32_t gpr[num_log_gprs];
-  uint32_t pc;
+  uint32_t current_pc, next_pc;
   /** The CPSR register.
    * All the running modes share the same CPSR register
    * CPSR organization:

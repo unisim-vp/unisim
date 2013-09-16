@@ -436,8 +436,8 @@ public:
    * @return a pointer to the pending memory operation
    */
   MemoryOp* MemReadS8(uint32_t address);
-  /* Prevent hiding base SetGPR */
-  using unisim::component::cxx::processor::arm::CPU::SetGPR;
+  /* Prevent hiding base SetGPR_mem */
+  using unisim::component::cxx::processor::arm::CPU::SetGPR_mem;
   /** Mark a GPR to be updated by a MemoryOp pending memory operation.
    *
    * @param id the register index
@@ -445,7 +445,7 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  void SetGPR(uint32_t id, MemoryOp* memop)
+  void SetGPR_mem(uint32_t id, MemoryOp* memop)
   {
     memop->SetDestReg( id );
     ls_queue.push(memop);		
@@ -462,13 +462,8 @@ public:
   void SetGPR_usr(uint32_t id, MemoryOp* memop)
   {
     memop->SetDestUserReg( id );
-    ls_queue.push(memop);		
+    ls_queue.push(memop);
   }
-    
-  /** Determine wether the processor instruction stream is inside an
-   * IT block.  Always false before ARMv6T2 architectures.
-   */
-  bool itblock() { return false; }
     
   /** 32bits memory write.
    * This method write the giving 32bits value into the memory system.
@@ -496,6 +491,11 @@ public:
   /* Memory access methods       END                            */
   /**************************************************************/
 
+  /** Determine wether the processor instruction stream is inside an
+   * IT block.  Always false before ARMv6T2 architectures.
+   */
+  bool itblock() { return false; }
+  
   /**************************************************************/
   /* Coprocessor methods          START                         */
   /* NOTE: These methods are only declared because the isa      */
@@ -732,18 +732,15 @@ protected:
    *
    * @param memop the memory operation containing the prefetch access
    */
-  void PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
-                             *memop);
+  void PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp* memop);
   /** Performs a write access.
    * @param memop the memory operation containing the write access
    */
-  void PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
-                          *memop);
+  void PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp* memop);
   /** Performs a read access.
    * @param memop the memory operation containing the read access
    */
-  void PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
-                         *memop);
+  void PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp* memop);
 };
 
 } // end of namespace armemu

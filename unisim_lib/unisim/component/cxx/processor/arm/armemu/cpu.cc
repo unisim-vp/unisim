@@ -97,8 +97,7 @@ using std::stringstream;
  *   infrastructure and will identify this object
  * @param parent the parent object of this object
  */
-CPU::
-CPU(const char *name, Object *parent)
+CPU::CPU(const char *name, Object *parent)
 	: Object(name, parent)
 	, unisim::component::cxx::processor::arm::CPU(name, parent)
 	, Client<LinuxOS>(name, parent)
@@ -185,7 +184,7 @@ CPU(const char *name, Object *parent)
 			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
 					this, gpr[i], ss_desc.str().c_str());
 	}
-        reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, pc, "Logical register 15");
+        reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
 	for (unsigned int i = 0; i < num_phys_spsrs; i++)
 	{
 		stringstream ss;
@@ -214,8 +213,7 @@ CPU(const char *name, Object *parent)
 
 /** Destructor.
  */
-CPU::
-~CPU()
+CPU::~CPU()
 {
 	for (unsigned int i = 0; i < num_phys_gprs; i++)
 		if (reg_phys_gpr[i]) delete reg_phys_gpr[i];
@@ -232,8 +230,7 @@ CPU::
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-EndSetup()
+CPU::EndSetup()
 {
 	if (verbose)
 		logger << DebugInfo
@@ -386,7 +383,7 @@ EndSetup()
 	}
 	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
 	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &pc);
+	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &next_pc);
 	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
 	/* End TODO */
 
@@ -406,8 +403,7 @@ EndSetup()
  *   UNISIM objects.
  */
 void 
-CPU::
-OnDisconnect()
+CPU::OnDisconnect()
 {
 	/* TODO */
 }
@@ -415,10 +411,9 @@ OnDisconnect()
 /** Execute one complete instruction.
  */
 void 
-CPU::
-StepInstruction()
+CPU::StepInstruction()
 {
-	uint32_t current_pc = GetNPC();
+	this->current_pc = GetNPC();
 
 	if (debug_control_import) 
 	{
@@ -474,8 +469,8 @@ StepInstruction()
 		op = arm32_decoder.Decode(current_pc, insn);
 		
 		/* update PC registers value before execution */
-		this->gpr[15] = this->pc + 8;
-		this->pc += 4;
+		this->gpr[15] = this->next_pc + 8;
+		this->next_pc += 4;
 		
 		/* Execute instruction */
 		op->execute(*this);
@@ -502,7 +497,7 @@ StepInstruction()
 	
 	if(requires_finished_instruction_reporting)
 		if(memory_access_reporting_import)
-			memory_access_reporting_import->ReportFinishedInstruction(current_pc, this->pc);
+			memory_access_reporting_import->ReportFinishedInstruction(current_pc, this->next_pc);
 }
 
 /** Inject an intrusive read memory operation.
@@ -515,8 +510,7 @@ StepInstruction()
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-InjectReadMemory(uint32_t addr, 
+CPU::InjectReadMemory(uint32_t addr, 
 	void *buffer,
 	uint32_t size)
 {
@@ -588,8 +582,7 @@ InjectReadMemory(uint32_t addr,
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-InjectWriteMemory(uint32_t addr, 
+CPU::InjectWriteMemory(uint32_t addr, 
 	const void *buffer, 
 	uint32_t size)
 {
@@ -661,8 +654,7 @@ InjectWriteMemory(uint32_t addr,
  *   otherwise
  */
 void 
-CPU::
-RequiresMemoryAccessReporting(bool report)
+CPU::RequiresMemoryAccessReporting(bool report)
 {
 	requires_memory_access_reporting = report;
 }
@@ -673,8 +665,7 @@ RequiresMemoryAccessReporting(bool report)
  *   unset otherwise
  */
 void 
-CPU::
-RequiresFinishedInstructionReporting(bool report)
+CPU::RequiresFinishedInstructionReporting(bool report)
 {
 	requires_finished_instruction_reporting = report;
 }
@@ -772,8 +763,7 @@ CPU::ReadMemory(uint32_t addr,
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-WriteMemory(uint32_t addr, 
+CPU::WriteMemory(uint32_t addr, 
 		const void *buffer, 
 		uint32_t size)
 {
@@ -848,8 +838,7 @@ WriteMemory(uint32_t addr,
  * @return a pointer to the RegisterInterface corresponding to name
  */
 Register *
-CPU::
-GetRegister(const char *name)
+CPU::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
 		return registers_registry[string(name)];
@@ -867,8 +856,7 @@ GetRegister(const char *name)
  * @return the disassembling of the requested instruction address
  */
 string 
-CPU::
-Disasm(uint32_t addr, uint32_t &next_addr)
+CPU::Disasm(uint32_t addr, uint32_t &next_addr)
 {
 	isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::CPU> *
 		op = NULL;
@@ -911,8 +899,7 @@ Disasm(uint32_t addr, uint32_t &next_addr)
  * @param ret the exit cade sent by the exit system call.
  */
 void 
-CPU::
-PerformExit(int ret)
+CPU::PerformExit(int ret)
 {
 	// running = false;
 	Stop(ret);
@@ -1137,8 +1124,7 @@ CPU::MemReadS8(uint32_t address)
  * @param value the value to write into memory
  */
 void 
-CPU::
-MemWrite32(uint32_t address, uint32_t value)
+CPU::MemWrite32(uint32_t address, uint32_t value)
 {
 	MemoryOp *memop;
 	
@@ -1159,8 +1145,7 @@ MemWrite32(uint32_t address, uint32_t value)
  * @param value the value to write into memory
  */
 void 
-CPU::
-MemWrite16(uint32_t address, uint16_t value)
+CPU::MemWrite16(uint32_t address, uint16_t value)
 {
 	address = address & ~((uint32_t)0x1);
 	MemoryOp *memop;
@@ -1181,8 +1166,7 @@ MemWrite16(uint32_t address, uint16_t value)
  * @param value the value to write into memory
  */
 void 
-CPU::
-MemWrite8(uint32_t address, uint8_t value)
+CPU::MemWrite8(uint32_t address, uint8_t value)
 {
 	MemoryOp *memop;
 	
@@ -1206,8 +1190,7 @@ MemWrite8(uint32_t address, uint8_t value)
  *   returning true, false if it has not finished
  */ 
 bool 
-CPU::
-CoprocessorLoad(uint32_t cp_num, uint32_t address)
+CPU::CoprocessorLoad(uint32_t cp_num, uint32_t address)
 {
 	logger << DebugError << "CoprocessorLoad not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
@@ -1228,8 +1211,7 @@ CoprocessorLoad(uint32_t cp_num, uint32_t address)
  *   returning true, false if it has not finished
  */ 
 bool 
-CPU::
-CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option)
+CPU::CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option)
 {
 	logger << DebugError << "CoprocessorLoad not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
@@ -1248,8 +1230,7 @@ CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option)
  *   returning true, false if it has not finished
  */ 
 bool 
-CPU::
-CoprocessorStore(uint32_t cp_num, uint32_t address)
+CPU::CoprocessorStore(uint32_t cp_num, uint32_t address)
 {
 	logger << DebugError << "CoprocessorStore not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
@@ -1270,8 +1251,7 @@ CoprocessorStore(uint32_t cp_num, uint32_t address)
  *   returning true, false if it has not finished
  */ 
 bool 
-CPU::
-CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option)
+CPU::CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option)
 {
 	logger << DebugError << "CoprocessorStore not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
@@ -1289,8 +1269,7 @@ CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option)
  * @param crm coprocessor second operand register
  */
 void 
-CPU::
-CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
+CPU::CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
 		uint32_t crd, uint32_t crn, uint32_t crm)
 {
 	logger << DebugError << "CoprocessorDataProcess not implemented in" << std::endl
@@ -1310,8 +1289,7 @@ CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
  * @param crm the additional destination or source coprocessor register
  */
 void 
-CPU::
-MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
+CPU::MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm)
 {
 	logger << DebugError << "MoveToCoprocessor not implemented in" << std::endl
@@ -1334,8 +1312,7 @@ MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
  * @param crm additional coprocessor source or destination register 
  */
 void
-CPU::
-MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
+CPU::MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm)
 {
 	logger << DebugError << "MoveFromCoprocessor not implemented in" << std::endl
@@ -1375,8 +1352,7 @@ CPU::BKPT( uint32_t imm )
  *   notifiy the processor.
  */
 void 
-CPU::
-UnpredictableInsnBehaviour()
+CPU::UnpredictableInsnBehaviour()
 {
 	logger << DebugWarning
 		<< "Trying to execute unpredictable behavior instruction,"
@@ -1391,8 +1367,7 @@ UnpredictableInsnBehaviour()
  /** Performs the load/stores present in the queue of memory operations.
  */
 void 
-CPU::
-PerformLoadStoreAccesses()
+CPU::PerformLoadStoreAccesses()
 {
 	// while the ls_queue is not empty process entries
 	while (!ls_queue.empty()) 
@@ -1425,8 +1400,7 @@ PerformLoadStoreAccesses()
  * @param memop the memory operation containing the prefetch access
  */
 void 
-CPU::
-PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
+CPU::PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
 		*memop)
 {
 	uint32_t addr = memop->GetAddress();
@@ -1504,8 +1478,7 @@ PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
  * @param memop the memory operation containing the write access
  */
 void 
-CPU::
-PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
+CPU::PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 		*memop)
 {
 	uint32_t addr = memop->GetAddress();
@@ -1598,9 +1571,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
  * @param memop the memory operation containing the read access
  */
 void 
-CPU::
-PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
-		*memop)
+CPU::PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp* memop)
 {
 	uint32_t addr = memop->GetAddress();
 	uint32_t size = memop->GetSize();
@@ -1731,7 +1702,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 		value = val32;
 	}
 
-        SetGPR(memop->GetTargetReg(), value);
+        SetGPR_mem(memop->GetTargetReg(), value);
 
 	if ( likely(dcache.GetSize()) )
 		if ( unlikely(dcache.power_estimator_import != 0) )

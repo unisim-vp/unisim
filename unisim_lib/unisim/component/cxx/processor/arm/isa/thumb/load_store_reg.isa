@@ -49,7 +49,7 @@ ldr_1.disasm = {
 };
 
 ldr_1.execute = {
-  cpu.SetGPR( rd, cpu.MemRead32( cpu.GetGPR(rn) + imm ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead32( cpu.GetGPR(rn) + imm ) );
 };
 
 /*
@@ -67,7 +67,7 @@ ldr_2.disasm = {
 };
 
 ldr_2.execute = {
-  cpu.SetGPR( rd, cpu.MemRead32( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead32( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
 
 /*
@@ -85,7 +85,7 @@ ldr_3.disasm = {
 };
 
 ldr_3.execute = {
-  cpu.SetGPR( rd, cpu.MemRead32( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead32( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
 };
 
 /*
@@ -103,7 +103,7 @@ ldr_4.disasm = {
 };
 
 ldr_4.execute = {
-  cpu.SetGPR( rd, cpu.MemRead32( cpu.GetGPR(cpu.SP_reg) + imm ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead32( cpu.GetGPR(cpu.SP_reg) + imm ) );
 };
 
 /*
@@ -121,7 +121,7 @@ ldrb_1.disasm = {
 };
 
 ldrb_1.execute = {
-  cpu.SetGPR( rd, cpu.MemRead8( cpu.GetGPR(rn) + imm ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead8( cpu.GetGPR(rn) + imm ) );
 };
 
 /*
@@ -139,7 +139,7 @@ ldrb_2.disasm = {
 };
 
 ldrb_2.execute = {
-  cpu.SetGPR( rd, cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
 
 /*
@@ -157,7 +157,7 @@ ldrh_1.disasm = {
 };
 
 ldrh_1.execute = {
-  cpu.SetGPR( rd, cpu.MemRead16( cpu.GetGPR(rn) + imm ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead16( cpu.GetGPR(rn) + imm ) );
 };
 
 /*
@@ -175,7 +175,7 @@ ldrh_2.disasm = {
 };
 
 ldrh_2.execute = {
-  cpu.SetGPR( rd, cpu.MemRead16( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead16( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
 
 /*
@@ -193,7 +193,7 @@ ldrsb.disasm = {
 };
 
 ldrsb.execute = {
-  cpu.SetGPR( rd, cpu.MemReadS8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+  cpu.SetGPR_mem( rd, cpu.MemReadS8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
 
 /*
@@ -211,7 +211,7 @@ ldrsh.disasm = {
 };
 
 ldrsh.execute = {
-  cpu.SetGPR( rd, cpu.MemReadS16( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) );
+  cpu.SetGPR_mem( rd, cpu.MemReadS16( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) );
 };
 
 /*

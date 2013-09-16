@@ -56,7 +56,7 @@ ldr_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemRead32( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead32( p?oaddr:addr ) );
 };
 
 op ldr_reg(cond[4]:0b011[3]:p[1]:u[1]:0b0[1]:w[1]:0b1[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -73,7 +73,7 @@ ldr_reg.execute = {
   uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemRead32( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead32( p?oaddr:addr ) );
 };
 
 /*
@@ -98,7 +98,7 @@ ldrh_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemRead16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead16( p?oaddr:addr ) );
 };
 
 op ldrh_reg(cond[4]:0b000[3]:p[1]:u[1]:0b0[1]:w[1]:0b1[1]:rn[4]:rd[4]:/*sbz*/0[4]:0b1011[4]:rm[4]);
@@ -115,7 +115,7 @@ ldrh_reg.execute = {
   uint32_t rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemRead16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead16( p?oaddr:addr ) );
 };
 
 /*
@@ -140,7 +140,7 @@ ldrsh_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemReadS16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemReadS16( p?oaddr:addr ) );
 };
 
 op ldrsh_reg(cond[4]:0b000[3]:p[1]:u[1]:0b0[1]:w[1]:0b1[1]:rn[4]:rd[4]:/*sbz*/0[4]:0b1111[4]:rm[4]);
@@ -157,7 +157,7 @@ ldrsh_reg.execute = {
   uint32_t rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemReadS16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemReadS16( p?oaddr:addr ) );
 };
 
 /*
@@ -182,7 +182,7 @@ ldrb_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemRead8( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead8( p?oaddr:addr ) );
 };
 
 op ldrb_reg(cond[4]:0b011[3]:p[1]:u[1]:0b1[1]:w[1]:0b1[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -199,7 +199,7 @@ ldrb_reg.execute = {
   uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemRead8( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead8( p?oaddr:addr ) );
 };
 
 /*
@@ -224,7 +224,7 @@ ldrsb_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemReadS8( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemReadS8( p?oaddr:addr ) );
 };
 
 op ldrsb_reg(cond[4]:0b000[3]:p[1]:u[1]:0b0[1]:w[1]:0b1[1]:rn[4]:rd[4]:/*sbz*/0[4]:0b1101[4]:rm[4]);
@@ -241,7 +241,7 @@ ldrsb_reg.execute = {
   uint32_t rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemReadS8( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemReadS8( p?oaddr:addr ) );
 };
 
 /*
@@ -267,8 +267,8 @@ ldrd_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( (rd + 0) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 0 ) );
-  cpu.SetGPR( (rd + 1) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 4 ) );
+  cpu.SetGPR_mem( (rd + 0) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 0 ) );
+  cpu.SetGPR_mem( (rd + 1) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 4 ) );
 };
 
 { ARCH::insns5E }: \
@@ -286,8 +286,8 @@ ldrd_reg.execute = {
   uint32_t rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( (rd + 0) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 0 ) );
-  cpu.SetGPR( (rd + 1) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 4 ) );
+  cpu.SetGPR_mem( (rd + 0) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 0 ) );
+  cpu.SetGPR_mem( (rd + 1) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 4 ) );
 };
 
 /*
@@ -484,7 +484,7 @@ ldrt_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn );
   cpu.SetGPR( rn, addr + imm );
-  cpu.SetGPR( rd, cpu.MemRead32( addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead32( addr ) );
 }
 
 op ldrt_reg(cond[4]:0b0110[4]:u[1]:0b011[3]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -499,7 +499,7 @@ ldrt_reg.execute = {
   uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemRead32( addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead32( addr ) );
 };
 
 /*
@@ -524,7 +524,7 @@ ldrht_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn );
   cpu.SetGPR( rn, addr + imm );
-  cpu.SetGPR( rd, cpu.MemRead16( addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead16( addr ) );
 }
 
 op ldrht_reg(cond[4]:0b0000[4]:u[1]:0b011[3]:rn[4]:rd[4]:/*sbz*/0[4]:0b1011[4]:rm[4]);
@@ -541,7 +541,7 @@ ldrht_reg.execute = {
   uint32_t rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemRead32( addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead32( addr ) );
 };
 
 /*
@@ -566,7 +566,7 @@ ldrsht_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn );
   cpu.SetGPR( rn, addr + imm );
-  cpu.SetGPR( rd, cpu.MemReadS16( addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemReadS16( addr ) );
 }
 
 op ldrsht_reg(cond[4]:0b0000[4]:u[1]:0b011[3]:rn[4]:rd[4]:/*sbz*/0[4]:0b1111[4]:rm[4]);
@@ -583,7 +583,7 @@ ldrsht_reg.execute = {
   uint32_t rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemReadS16( addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemReadS16( addr ) );
 };
 
 /*
@@ -608,7 +608,7 @@ ldrbt_imm.execute = {
 
   uint32_t addr = cpu.GetGPR( rn );
   cpu.SetGPR( rn, addr + imm );
-  cpu.SetGPR( rd, cpu.MemRead8( addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead8( addr ) );
 };
 
 op ldrbt_reg(cond[4]:0b0110[4]:u[1]:0b111[3]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -625,7 +625,7 @@ ldrbt_reg.execute = {
   uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemRead8( addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemRead8( addr ) );
 };
 
 /*
@@ -650,7 +650,7 @@ ldrsbt_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn );
   cpu.SetGPR( rn, addr + imm );
-  cpu.SetGPR( rd, cpu.MemReadS8( addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemReadS8( addr ) );
 };
 
 op ldrsbt_reg(cond[4]:0b0000[4]:u[1]:0b011[3]:rn[4]:rd[4]:/*sbz*/0[4]:0b1101[4]:rm[4]);
@@ -667,7 +667,7 @@ ldrsbt_reg.execute = {
   uint32_t rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR( rd, cpu.MemReadS8( addr ) );
+  cpu.SetGPR_mem( rd, cpu.MemReadS8( addr ) );
 };
 
 /*
@@ -889,7 +889,7 @@ ldm.execute = {
   
   LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
   while (itr.next()) {
-    cpu.SetGPR( itr.reg(), cpu.MemRead32( itr.addr() ) );
+    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
   }
   
   bool overwritten = (reglist >> rn) & 1;
@@ -1015,7 +1015,7 @@ swp.execute = {
         
         uint32_t value = cpu.GetGPR(rm);
 	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR( rd, cpu.MemRead32(address) );
+	cpu.SetGPR_mem( rd, cpu.MemRead32(address) );
 	cpu.MemWrite32(address, value);
 }
 
@@ -1040,7 +1040,7 @@ swpb.execute = {
 
 	uint8_t value = cpu.GetGPR(rm) & uint32_t( 0x0ff );
 	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR( rd, cpu.MemRead8(address) );
+	cpu.SetGPR_mem( rd, cpu.MemRead8(address) );
 	cpu.MemWrite8(address, value);
 }
 

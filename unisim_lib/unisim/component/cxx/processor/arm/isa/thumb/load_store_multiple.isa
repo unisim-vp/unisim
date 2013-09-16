@@ -51,7 +51,7 @@ ldmia.disasm = {
 ldmia.execute = {
   LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
   while (itr.next()) {
-    cpu.SetGPR( itr.reg(), cpu.MemRead32( itr.addr() ) );
+    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
   }
   
   bool overwritten = (reglist >> rn) & 1;
@@ -76,7 +76,7 @@ pop.disasm = {
 pop.execute = {
   LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( cpu.SP_reg ));
   while (itr.next()) {
-    cpu.SetGPR( itr.reg(), cpu.MemRead32( itr.addr() ) );
+    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
   }
   
   bool overwritten = (reglist >> cpu.SP_reg) & 1;

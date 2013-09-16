@@ -106,7 +106,8 @@ CPU::CPU(char const* name, Object* parent, endian_type endianness)
   // Initialize general purpose registers
   for(unsigned int i = 0; i < num_log_gprs; i++)
     gpr[i] = 0;
-  pc = 0;
+  this->current_pc = 0;
+  this->next_pc = 0;
 	
   for(unsigned int i = 0; i < num_phys_gprs; i++)
     phys_gpr[i] = 0;
@@ -215,7 +216,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			{
 				phys_gpr[i] = gpr[i];
 			}
-			phys_gpr[15] = pc;
+			phys_gpr[15] = this->next_pc;
 			break;
 		case SUPERVISOR_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -224,7 +225,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			phys_gpr[16] = gpr[13];
 			phys_gpr[17] = gpr[14];
-			phys_gpr[15] = pc;
+			phys_gpr[15] = this->next_pc;
 			break;
 		case ABORT_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -233,7 +234,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			phys_gpr[18] = gpr[13];
 			phys_gpr[19] = gpr[14];
-			phys_gpr[15] = pc;
+			phys_gpr[15] = this->next_pc;
 			break;
 		case UNDEFINED_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -242,7 +243,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			phys_gpr[20] = gpr[13];
 			phys_gpr[21] = gpr[14];
-			phys_gpr[15] = pc;
+			phys_gpr[15] = this->next_pc;
 			break;
 		case IRQ_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -251,7 +252,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			phys_gpr[22] = gpr[13];
 			phys_gpr[23] = gpr[14];
-			phys_gpr[15] = pc;
+			phys_gpr[15] = this->next_pc;
 			break;
 		case FIQ_MODE:
 			for (unsigned int i = 0; i < 8; i++) 
@@ -262,7 +263,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			{
 				phys_gpr[24 + i] = gpr[8 + i];
 			}
-			phys_gpr[15] = pc;
+			phys_gpr[15] = this->next_pc;
 			break;
 		default:
 			assert(0);
@@ -277,7 +278,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			{
 				gpr[i] = phys_gpr[i];
 			}
-			pc = phys_gpr[15];
+			this->next_pc = phys_gpr[15];
 			break;
 		case SUPERVISOR_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -286,7 +287,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			gpr[13] = phys_gpr[16];
 			gpr[14] = phys_gpr[17];
-			pc = phys_gpr[15];
+			this->next_pc = phys_gpr[15];
 			break;
 		case ABORT_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -295,7 +296,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			gpr[13] = phys_gpr[18];
 			gpr[14] = phys_gpr[19];
-			pc = phys_gpr[15];
+			this->next_pc = phys_gpr[15];
 			break;
 		case UNDEFINED_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -304,7 +305,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			gpr[13] = phys_gpr[20];
 			gpr[14] = phys_gpr[21];
-			pc = phys_gpr[15];
+			this->next_pc = phys_gpr[15];
 			break;
 		case IRQ_MODE:
 			for (unsigned int i = 0; i < 13; i++) 
@@ -313,7 +314,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			}
 			gpr[13] = phys_gpr[22];
 			gpr[14] = phys_gpr[23];
-			pc = phys_gpr[15];
+			this->next_pc = phys_gpr[15];
 			break;
 		case FIQ_MODE:
 			for (unsigned int i = 0; i < 8; i++) 
@@ -324,7 +325,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
 			{
 				gpr[8 + i] = phys_gpr[24 + i];
 			}
-			pc = phys_gpr[15];
+			this->next_pc = phys_gpr[15];
 			break;
 		default:
 			assert(0);
