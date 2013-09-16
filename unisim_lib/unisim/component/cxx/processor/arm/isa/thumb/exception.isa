@@ -46,7 +46,7 @@
 op swi(0b11011111[8]:imm[8]);
 
 swi.disasm = {
-  buffer << "swi\t#" << std::dec << imm;
+  buffer << "swi\t" << DisasmI(imm);
 };
 
 swi.execute = {
@@ -64,7 +64,9 @@ swi.execute = {
 op bkpt(0b10111110[8]:imm[8]);
 
 bkpt.disasm = {
-  buffer << "bkpt\t#" << std::dec << imm;
+  buffer << "bkpt\t0x"
+         << std::hex << std::setfill('0') << std::setw(4) << imm
+         << std::setw(0) << std::setfill(' ') << std::dec;
 };
 
 bkpt.execute = {
@@ -74,3 +76,22 @@ bkpt.execute = {
 /*
  * end of bkpt (breakpoint) instruction
  *******************************************************************/
+
+{ ARCH::insns6 }:                               \
+op cpsid( 0b1011011001110[13] : bf[3] );
+
+cpsid.disasm = {
+  buffer << "cpsid\t";
+  for (int bit = 3; --bit >= 0;)
+    if ((bf >> bit) & 1) buffer << ("fia"[bit]);
+}
+
+{ ARCH::insns6 }:                               \
+op cpsie( 0b1011011001100[13] : bf[3] );
+
+cpsie.disasm = {
+  buffer << "cpsie\t";
+  for (int bit = 3; --bit >= 0;)
+    if ((bf >> bit) & 1) buffer << ("fia"[bit]);
+}
+

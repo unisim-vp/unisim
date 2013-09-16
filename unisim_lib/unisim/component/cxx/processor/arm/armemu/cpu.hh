@@ -464,6 +464,12 @@ public:
     memop->SetDestUserReg( id );
     ls_queue.push(memop);		
   }
+    
+  /** Determine wether the processor instruction stream is inside an
+   * IT block.  Always false before ARMv6T2 architectures.
+   */
+  bool itblock() { return false; }
+    
   /** 32bits memory write.
    * This method write the giving 32bits value into the memory system.
    * 

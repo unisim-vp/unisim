@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -42,20 +42,15 @@
  * ldr(1) (load word immediate offset) instruction
  */
 
-op ldr_1(0b01101[5]:imm[5]:rn[3]:rd[3])
+op ldr_1(0b01101[5]:shl<2> imm[5]:rn[3]:rd[3]);
 
 ldr_1.disasm = {
-	buffer << "ldr " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << std::dec << (imm * 4) << "]";
-}
+  buffer << "ldr " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+};
 
 ldr_1.execute = {
-	uint32_t addr;
-	uint32_t rn_value;
-	
-	rn_value = cpu.GetGPR(rn);
-	addr = rn_value + (imm * 4);
-	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
-}
+  cpu.SetGPR( rd, cpu.MemRead32( cpu.GetGPR(rn) + imm ) );
+};
 
 /*
  * end of ldr(1) (load word immediate offset) instruction
@@ -65,21 +60,15 @@ ldr_1.execute = {
  * ldr(2) (load word register offset) instruction
  */
 
-op ldr_2(0b0101100[7]:rm[3]:rn[3]:rd[3])
+op ldr_2(0b0101100[7]:rm[3]:rn[3]:rd[3]);
 
 ldr_2.disasm = {
-	buffer << "ldr " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
-}
+  buffer << "ldr\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+};
 
 ldr_2.execute = {
-	uint32_t addr;
-	uint32_t rn_value, rm_value;
-	
-	rn_value = cpu.GetGPR(rn);
-	rm_value = cpu.GetGPR(rm);
-	addr = rn_value + rm_value;
-	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
-}
+  cpu.SetGPR( rd, cpu.MemRead32( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+};
 
 /*
  * ldr(2) (load word register offset) instruction
@@ -89,22 +78,15 @@ ldr_2.execute = {
  * ldr(3) (load word pc-relative) instruction
  */
 
-op ldr_3(0b01001[5]:rd[3]:imm[8])
+op ldr_3(0b01001[5]:rd[3]:shl<2> imm[8]);
 
 ldr_3.disasm = {
-	buffer << "ldr " << DisasmRegister(rd) << ", [pc, #" << std::dec << (imm * 4) << "]";
-}
+  buffer << "ldr\t" << DisasmRegister(rd) << ", [pc, " << DisasmI(imm) << "]";
+};
 
 ldr_3.execute = {
-	uint32_t addr;
-	uint32_t pc_value;
-	
-	pc_value = (cpu.GetGPR(cpu.PC_reg) + 4) & ~((uint32_t)0x03);
-	
-	
-	addr = pc_value + (imm * 4);
-	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
-}
+  cpu.SetGPR( rd, cpu.MemRead32( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
+};
 
 /*
  * ldr(3) (load word pc-relative) instruction
@@ -114,21 +96,15 @@ ldr_3.execute = {
  * ldr(4) (load word sp-relative) instruction
  */
 
-op ldr_4(0b10011[5]:rd[3]:imm[8])
+op ldr_4(0b10011[5]:rd[3]:shl<2> imm[8]);
 
 ldr_4.disasm = {
-	buffer << "ldr " << DisasmRegister(rd) << ", [sp, #" << std::dec << (imm * 4) << "]";
-}
+  buffer << "ldr " << DisasmRegister(rd) << ", [sp, " << DisasmI(imm) << "]";
+};
 
 ldr_4.execute = {
-	uint32_t addr;
-	uint32_t sp_value;
-	
-	
-	sp_value = cpu.GetGPR(cpu.SP_reg);
-	addr = sp_value + (imm * 4);
-	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
-}
+  cpu.SetGPR( rd, cpu.MemRead32( cpu.GetGPR(cpu.SP_reg) + imm ) );
+};
 
 /*
  * ldr(4) (load word sp-relative) instruction
@@ -138,21 +114,15 @@ ldr_4.execute = {
  * ldrb(1) (load unsigned byte immediate offset) instruction
  */
 
-op ldrb_1(0b01111[5]:imm[5]:rn[3]:rd[3])
+op ldrb_1(0b01111[5]:imm[5]:rn[3]:rd[3]);
 
 ldrb_1.disasm = {
-	buffer << "ldrb " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << std::dec << imm << "]";
-}
+  buffer << "ldrb\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+};
 
 ldrb_1.execute = {
-	uint32_t addr;
-	uint32_t rn_value;
-	
-	
-	rn_value = cpu.GetGPR(rn);
-	addr = rn_value + imm;
-	cpu.SetGPR( rd, cpu.MemRead8( addr ) );
-}
+  cpu.SetGPR( rd, cpu.MemRead8( cpu.GetGPR(rn) + imm ) );
+};
 
 /*
  * ldrb(1) (load unsigned byte immediate offset) instruction
@@ -162,21 +132,15 @@ ldrb_1.execute = {
  * ldrb(2) (load unsigned byte register offset) instruction
  */
 
-op ldrb_2(0b0101110[7]:rm[3]:rn[3]:rd[3])
+op ldrb_2(0b0101110[7]:rm[3]:rn[3]:rd[3]);
 
 ldrb_2.disasm = {
-	buffer << "ldrb " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
-}
+  buffer << "ldrb\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+};
 
 ldrb_2.execute = {
-	uint32_t addr;
-	uint32_t rn_value, rm_value;
-	
-	rn_value = cpu.GetGPR(rn);
-	rm_value = cpu.GetGPR(rm);
-	addr = rn_value + rm_value;
-	cpu.SetGPR( rd, cpu.MemRead8( addr ) );
-}
+  cpu.SetGPR( rd, cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+};
 
 /*
  * ldrb(2) (load unsigned byte register offset) instruction
@@ -186,20 +150,15 @@ ldrb_2.execute = {
  * ldrh(1) (load unsigned halfword immediate offset) instruction
  */
 
-op ldrh_1(0b10001[5]:imm[5]:rn[3]:rd[3])
+op ldrh_1(0b10001[5]:shl<1> imm[5]:rn[3]:rd[3]);
 
 ldrh_1.disasm = {
-	buffer << "ldrh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << std::dec << (imm * 2) << "]";
-}
+  buffer << "ldrh\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+};
 
 ldrh_1.execute = {
-	uint32_t addr;
-	uint32_t rn_value;
-	
-	rn_value = cpu.GetGPR(rn);
-	addr = rn_value + (imm * 2);
-	cpu.SetGPR( rd, cpu.MemRead16( addr & -2 ) );
-}
+  cpu.SetGPR( rd, cpu.MemRead16( cpu.GetGPR(rn) + imm ) );
+};
 
 /*
  * ldrh(1) (load unsigned halfword immediate offset) instruction
@@ -209,21 +168,15 @@ ldrh_1.execute = {
  * ldrh(2) (load unsigned halfword register offset) instruction
  */
 
-op ldrh_2(0b0101101[7]:rm[3]:rn[3]:rd[3])
+op ldrh_2(0b0101101[7]:rm[3]:rn[3]:rd[3]);
 
 ldrh_2.disasm = {
-	buffer << "ldrh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
-}
+  buffer << "ldrh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+};
 
 ldrh_2.execute = {
-	uint32_t addr;
-	uint32_t rn_value, rm_value;
-	
-	rn_value = cpu.GetGPR(rn);
-	rm_value = cpu.GetGPR(rm);
-	addr = rn_value + rm_value;
-	cpu.SetGPR( rd, cpu.MemRead16( addr & -2 ) );
-}
+  cpu.SetGPR( rd, cpu.MemRead16( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+};
 
 /*
  * ldrh(2) (load unsigned halfword register offset) instruction
@@ -233,21 +186,15 @@ ldrh_2.execute = {
  * ldrsb (load signed byte register offset) instruction
  */
 
-op ldrsb(0b0101011[7]:rm[3]:rn[3]:rd[3])
+op ldrsb(0b0101011[7]:rm[3]:rn[3]:rd[3]);
 
 ldrsb.disasm = {
-	buffer << "ldrsb " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
-}
+  buffer << "ldrsb\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+};
 
 ldrsb.execute = {
-	uint32_t addr;
-	uint32_t rn_value, rm_value;
-	
-	rn_value = cpu.GetGPR(rn);
-	rm_value = cpu.GetGPR(rm);
-	addr = rn_value + rm_value;
-	cpu.SetGPR( rd, cpu.MemReadS8( addr ) );
-}
+  cpu.SetGPR( rd, cpu.MemReadS8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+};
 
 /*
  * ldrsb (load signed byte register offset) instruction
@@ -257,21 +204,15 @@ ldrsb.execute = {
  * ldrsh (load signed halfword register offset) instruction
  */
 
-op ldrsh(0b0101111[7]:rm[3]:rn[3]:rd[3])
+op ldrsh(0b0101111[7]:rm[3]:rn[3]:rd[3]);
 
 ldrsh.disasm = {
-	buffer << "ldrsh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
-}
+  buffer << "ldrsh\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+};
 
 ldrsh.execute = {
-	uint32_t addr;
-	uint32_t rn_value, rm_value;
-	
-	rn_value = cpu.GetGPR(rn);
-	rm_value = cpu.GetGPR(rm);
-	addr = rn_value + rm_value;
-	cpu.SetGPR( rd, cpu.MemReadS16( addr & -2 ) );
-}
+  cpu.SetGPR( rd, cpu.MemReadS16( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) );
+};
 
 /*
  * ldrsh (load signed halfword register offset) instruction
@@ -281,22 +222,15 @@ ldrsh.execute = {
  * str(1) (store word immediate offset) instruction
  */
 
-op str_1(0b01100[5]:imm[5]:rn[3]:rd[3])
+op str_1(0b01100[5]:shl<2> imm[5]:rn[3]:rd[3]);
 
 str_1.disasm = {
-	buffer << "str " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << (imm * 4) << "]";
-}
+  buffer << "str\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+};
 
 str_1.execute = {
-	uint32_t addr;
-	uint32_t rd_value, rn_value;
-	
-	
-	rn_value = cpu.GetGPR(rn);
-	addr = rn_value + (imm * 4);
-	rd_value = cpu.GetGPR(rd);
-	cpu.MemWrite32(addr, rd_value);
-}
+  cpu.MemWrite32(cpu.GetGPR(rn) + imm, cpu.GetGPR(rd));
+};
 
 /*
  * str(1) (store word immediate offset) instruction
@@ -306,23 +240,15 @@ str_1.execute = {
  * str(2) (store word register offset) instruction
  */
 
-op str_2(0b0101000[7]:rm[3]:rn[3]:rd[3])
+op str_2(0b0101000[7]:rm[3]:rn[3]:rd[3]);
 
 str_2.disasm = {
-	buffer << "str " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
-}
+  buffer << "str\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+};
 
 str_2.execute = {
-	uint32_t addr;
-	uint32_t rd_value, rn_value, rm_value;
-	
-	
-	rn_value = cpu.GetGPR(rn);
-	rm_value = cpu.GetGPR(rm);
-	addr = rn_value + rm_value;
-	rd_value = cpu.GetGPR(rd);
-	cpu.MemWrite32(addr, rd_value);
-}
+  cpu.MemWrite32( cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rd) );
+};
 
 /*
  * str(2) (store word register offset) instruction
@@ -332,22 +258,15 @@ str_2.execute = {
  * str(3) (store word sp-relative) instruction
  */
 
-op str_3(0b10010[5]:rd[3]:imm[8])
+op str_3(0b10010[5]:rd[3]:shl<2> imm[8]);
 
 str_3.disasm = {
-	buffer << "str " << DisasmRegister(rd) << ", [sp, #" << (imm * 4) << "]";
-}
+  buffer << "str " << DisasmRegister(rd) << ", [sp, " << DisasmI(imm) << "]";
+};
 
 str_3.execute = {
-	uint32_t addr;
-	uint32_t rd_value, sp_value;
-	
-	
-	sp_value = cpu.GetGPR(cpu.SP_reg);
-	addr = sp_value + (imm * 4);
-	rd_value = cpu.GetGPR(rd);
-	cpu.MemWrite32(addr, rd_value);
-}
+  cpu.MemWrite32(cpu.GetGPR(cpu.SP_reg) + imm, cpu.GetGPR(rd));
+};
 
 /*
  * str(3) (store word sp-relative) instruction
@@ -357,24 +276,15 @@ str_3.execute = {
  * strb(1) (store byte immediate offset) instruction
  */
 
-op strb_1(0b01110[5]:imm[5]:rn[3]:rd[3])
+op strb_1(0b01110[5]:imm[5]:rn[3]:rd[3]);
 
 strb_1.disasm = {
-	buffer << "strb " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << std::dec << imm << "]";
-}
+  buffer << "strb\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+};
 
 strb_1.execute = {
-	uint32_t addr;
-	uint32_t rd_value, rn_value;
-	uint8_t data;
-	
-	
-	rn_value = cpu.GetGPR(rn);
-	addr = rn_value + imm;
-	rd_value = cpu.GetGPR(rd);
-	data = rd_value & (uint32_t)0x0ff;
-	cpu.MemWrite8(addr, data);
-}
+  cpu.MemWrite8(cpu.GetGPR(rn) + imm, cpu.GetGPR(rd));
+};
 
 /*
  * strb(1) (store byte immediate offset) instruction
@@ -384,25 +294,15 @@ strb_1.execute = {
  * strb(2) (store byte register offset) instruction
  */
 
-op strb_2(0b0101010[7]:rm[3]:rn[3]:rd[3])
+op strb_2(0b0101010[7]:rm[3]:rn[3]:rd[3]);
 
 strb_2.disasm = {
-	buffer << "strb " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
-}
+  buffer << "strb\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+};
 
 strb_2.execute = {
-	uint32_t addr;
-	uint32_t rd_value, rn_value, rm_value;
-	uint8_t data;
-	
-	
-	rn_value = cpu.GetGPR(rn);
-	rm_value = cpu.GetGPR(rm);
-	addr = rn_value + rm_value;
-	rd_value = cpu.GetGPR(rd);
-	data = rd_value & (uint32_t)0x0ff;
-	cpu.MemWrite8(addr, data);
-}
+  cpu.MemWrite8(cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rd));
+};
 
 /*
  * strb(2) (store byte register offset) instruction
@@ -412,24 +312,15 @@ strb_2.execute = {
  * strh(1) (store halfword immediate offset) instruction
  */
 
-op strh_1(0b10000[5]:imm[5]:rn[3]:rd[3])
+op strh_1(0b10000[5]:shl<1> imm[5]:rn[3]:rd[3]);
 
 strh_1.disasm = {
-	buffer << "strh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << std::dec << (imm * 2) << "]";
-}
+  buffer << "strh\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+};
 
 strh_1.execute = {
-	uint32_t addr;
-	uint32_t rd_value, rn_value;
-	uint16_t data;
-	
-	
-	rn_value = cpu.GetGPR(rn);
-	addr = rn_value + (imm * 2);
-	rd_value = cpu.GetGPR(rd);
-	data = rd_value & (uint32_t)0x0ffff;
-	cpu.MemWrite16(addr, data);
-}
+  cpu.MemWrite16(cpu.GetGPR(rn) + imm, cpu.GetGPR(rd));
+};
 
 /*
  * strh(1) (store halfword immediate offset) instruction
@@ -439,25 +330,15 @@ strh_1.execute = {
  * strh(2) (store halfword register offset) instruction
  */
 
-op strh_2(0b0101001[7]:rm[3]:rn[3]:rd[3])
+op strh_2(0b0101001[7]:rm[3]:rn[3]:rd[3]);
 
 strh_2.disasm = {
-	buffer << "strh " << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
-}
+  buffer << "strh\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+};
 
 strh_2.execute = {
-	uint32_t addr;
-	uint32_t rd_value, rn_value, rm_value;
-	uint16_t data;
-	
-	
-	rn_value = cpu.GetGPR(rn);
-	rm_value = cpu.GetGPR(rm);
-	addr = rn_value + rm_value;
-	rd_value = cpu.GetGPR(rd);
-	data = rd_value & (uint32_t)0x0ff;
-	cpu.MemWrite16(addr, data);
-}
+  cpu.MemWrite16(cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rd));
+};
 
 /*
  * strh(2) (store halfword register offset) instruction

@@ -45,7 +45,7 @@
 op b(cond[4]:0b1010[4]:shl<2> sext<32> imm[24]);
 
 b.disasm = {
-  buffer << "b" << DisasmCondition(cond) << "\t" << std::hex << ((this->GetAddr() + 8 + imm) & -4) << std::dec;
+  buffer << "b" << DisasmCondition(cond) << "\t" << std::hex << (this->GetAddr() + 8 + imm) << std::dec;
 };
 
 b.execute = {

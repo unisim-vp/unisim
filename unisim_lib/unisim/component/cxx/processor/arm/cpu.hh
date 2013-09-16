@@ -35,13 +35,14 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
-#include <string>
-#include <map>
-#include <inttypes.h>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/endian/endian.hh"
+#include <string>
+#include <map>
+#include <assert.h>
+#include <inttypes.h>
 
 #ifdef GCC_INLINE
 #undef GCC_INLINE
@@ -262,6 +263,17 @@ public:
     return gpr[id];
   }
 
+  /** Get the value contained by a GPR, excluding PC.
+   *
+   * @param id the register index
+   * @return the value contained by the register
+   */
+  uint32_t GetGPR_npc(uint32_t id) const
+  {
+    assert(id != 15);
+    return gpr[id];
+  }
+
   /** Set the value contained by a GPR.
    *
    * @param id the register index
@@ -273,6 +285,17 @@ public:
     else this->BranchExchange( val );
   }
 	
+  /** Set the value contained by a GPR, excluding PC.
+   *
+   * @param id the register index
+   * @param val the value to set
+   */
+  void SetGPR_npc(uint32_t id, uint32_t val)
+  {
+    assert(id != 15);
+    gpr[id] = val;
+  }
+  
   /** Sets the PC (and potentially exchanges mode ARM<->Thumb)
    *
    * @param val the value to set PC
@@ -309,7 +332,7 @@ public:
    * @param val the value to set
    */
   void SetGPR_usr(uint32_t id, uint32_t val);
-		
+  
   /* CPSR access functions */
   /** Get the value of the CPSR register.
    *

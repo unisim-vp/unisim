@@ -36,7 +36,6 @@
 #include <iostream>
 #include <sstream>
 #include <inttypes.h>
-#include <assert.h>
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/util/debug/symbol.hh"
 #include "unisim/util/debug/simple_register.hh"
