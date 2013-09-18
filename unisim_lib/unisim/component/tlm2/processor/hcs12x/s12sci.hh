@@ -179,6 +179,9 @@ public:
 	void assertInterrupt(uint8_t interrupt_offset);
 	void ComputeInternalTime();
 
+	void RunRx();
+	void RunTx();
+
     //================================================================
     //=                    tlm2 Interface                            =
     //================================================================
@@ -239,6 +242,10 @@ private:
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
 
+	sc_time		sci_baud_rate;
+
+	sc_event rx_run_event;
+
 	// S12SCI baseAddress  SCI0=0x00C8:0x00CF  SCI1=0x00D0:0x00D7 SCI2=0x00B8:0x00BF SCI3=0x00C0:0x00C7 SCI4=0x0130:0x0137 SCI5=0x0138:0x013F
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
@@ -253,6 +260,8 @@ private:
 	map<string, Register *> registers_registry;
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
+	bool scisr1_read;
 
 	// =============================================
 	// =            Registers                      =
@@ -269,10 +278,41 @@ private:
 
 	uint8_t scicr2_register; // 1 byte
 	uint8_t scisr1_register; // 1 byte
-	uint8_t scisr2_regsiter; // 1 bytes
+	uint8_t scisr2_register; // 1 bytes
 	uint8_t scidrh_register; // 1 bytes
 	uint8_t scidrl_register; // 1 bytes
 
+	uint16_t tx_shift_register, rx_shift_register;
+
+	void ComputeBaudRate();
+	inline bool isInfraredEnabled() { return ((scibdh_register & 0x80) != 0); }
+	inline bool isBaudRateGeneratorEnabled() {
+		uint16_t sbr = (!isInfraredEnabled())? (((scibdh_register & 0x1F) << 8) | scibdl_register) : (((scibdh_register & 0x1F) << 7) | (scibdl_register >> 1));
+		return ((sbr != 0) && (isTransmitterEnabled() || isReceiverEnabled()));
+	}
+	inline bool isLoopOperationEnabled() {
+		// receiver pin is disconnected and the transmitter output is connected to receiver input
+		return ((scicr1_register & 0x80) != 0);
+	}
+
+	inline bool isRxTxExternal() { return ((scicr1_register & 0x20) != 0); }
+	inline bool isSCIStopWaitMode() { return ((scicr1_register & 0x40) != 0); }
+	inline bool isNineBitsMode() { return ((scicr1_register & 0x10) != 0); }
+	inline bool isIdleLineWakeup() { return ((scicr1_register & 0x08) == 0); }
+	inline bool isIdleLineTypeStop() { return ((scicr1_register & 0x04) != 0); }
+	inline bool isParityEnabled() { return ((scicr1_register & 0x02) != 0); }
+	inline bool isOddParity() { return ((scicr1_register & 0x01) != 0); }
+	inline bool isReceiveInputActiveedgeInterruptEnabled() { return ((sciacr1_register & 0x80) != 0); }
+	inline bool isBitErrorInterruptEnabled() { return ((sciacr1_register & 0x20) != 0); }
+	inline bool isBreakDetectInterruptEnabled() { return ((sciacr1_register & 0x01) != 0); }
+	inline bool isBreakDetectFeatureEnabled() { return ((sciacr2_register & 0x01) != 0); }
+	inline bool isTransmitterEnabled() { return ((scicr2_register & 0x08) != 0); }
+	inline bool isReceiverEnabled() { return ((scicr2_register & 0x04) != 0); }
+	inline bool isReceiverWakeupEnabled() { return ((scicr2_register & 0x02) != 0); }
+	inline bool isTransmitBreakCharsEnabled() { return ((scicr2_register & 0x01) != 0); }
+	inline bool isSCISR1_Read() { return (scisr1_read); }
+	inline bool isBRK13Set() { return ((scisr2_register & 0x04) != 0);}
+	inline bool isTXD_Output() { return ((scisr2_register & 0x02) != 0); }
 
 }; /* end class S12SCI */
 
