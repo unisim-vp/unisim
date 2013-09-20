@@ -457,26 +457,6 @@ mov_3_pc.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * mul (multiply) instruction
- */
-
-op mul(0b010000[6]:0b1101[4]:rm[3]:rd[3]);
-
-mul.disasm = {
-  buffer << "muls\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-};
-
-mul.execute = {
-  uint32_t res = cpu.GetGPR(rd) * cpu.GetGPR(rm);
-  cpu.SetGPR(rd, res);
-  if (not cpu.itblock()) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, cpu.GetCPSR_C(), cpu.GetCPSR_V() );
-};
-
-/*
- * end of mul (multiply) instruction
- *******************************************************************/
-
-/*******************************************************************
  * mvn (move not register) instruction
  */
 
@@ -723,90 +703,6 @@ revsh.disasm = {
 
 /*
  * end of revsh instruction
- *******************************************************************/
-
-/*******************************************************************
- * sxtb (Signed Extend Byte) instruction
- *
- * SXTB extracts an 8-bit value from a register, sign-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 8-bit value.
- */
-
-{ ARCH::insns6 }:                               \
-op sxtb(0b1011001001[10]:rm[3]:rd[3]);
-
-sxtb.disasm = {
-  buffer << "sxtb\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-}
-
-sxtb.execute = {
-  cpu.SetGPR( rd, (int32_t)((int8_t)cpu.GetGPR_npc( rm )) );
-};
-
-/*
- * end of sxtb instruction
- *******************************************************************/
-
-/*******************************************************************
- * sxth (Signed Extend Halfword) instruction
- *
- * SXTH extracts a 16-bit value from a register, sign-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 16-bit value.
- */
-
-{ ARCH::insns6 }:                               \
-op sxth(0b1011001000[10]:rm[3]:rd[3]);
-
-sxth.disasm = {
-  buffer << "sxth\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-};
-
-sxth.execute = {
-  cpu.SetGPR( rd, (int32_t)((int16_t)cpu.GetGPR_npc( rm )) );
-};
-
-/*
- * end of sxth instruction
- *******************************************************************/
-
-/*******************************************************************
- * uxtb (Unsigned Extend Byte) instruction
- *
- * UXTB extracts an 8-bit value from a register, zero-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 8-bit value.
- */
-
-{ ARCH::insns6 }:                               \
-op uxtb(0b1011001011[10]:rm[3]:rd[3]);
-
-uxtb.disasm = {
-  buffer << "uxtb\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-};
-
-uxtb.execute = {
-  cpu.SetGPR( rd, (uint32_t)((uint8_t)cpu.GetGPR_npc( rm )) );
-};
-
-/*
- * end of uxtb instruction
- *******************************************************************/
-
-/*******************************************************************
- * uxth (Unsigned Extend Halfword) instruction
- *
- * UXTH extracts a 16-bit value from a register, zero-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 16-bit value.
- */
-
-{ ARCH::insns6 }:                               \
-op uxth(0b1011001010[10]:rm[3]:rd[3]);
-
-uxth.disasm = {
-  buffer << "uxth\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-};
-
-uxth.execute = {
-  cpu.SetGPR( rd, (uint32_t)((uint16_t)cpu.GetGPR_npc( rm )) );
-};
-
-/*
- * end of uxth instruction
  *******************************************************************/
 
 /*******************************************************************

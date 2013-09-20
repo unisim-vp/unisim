@@ -32,105 +32,86 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-/**********************************************
-
-    THUMB LOAD STORE MULTIPLE INSTRUCTIONS
-
-**********************************************/
-
 /*******************************************************************
- * ldmia (load multiple) instruction
+ * sxtb (Signed Extend Byte) instruction
+ *
+ * SXTB extracts an 8-bit value from a register, sign-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 8-bit value.
  */
 
-op ldmia(0b11001[5]:rn[3]:<32> reglist[8]);
+{ ARCH::insns6 }:                               \
+op sxtb(0b1011001001[10]:rm[3]:rd[3]);
 
-ldmia.disasm = {
-  buffer << "ldmia\t" << DisasmRegister(rn) << ", {" << DisasmRegList( reglist ) << "}";
-};
+sxtb.disasm = {
+  buffer << "sxtb\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+}
 
-ldmia.execute = {
-  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
-  while (itr.next()) {
-    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
-  }
-  
-  bool overwritten = (reglist >> rn) & 1;
-  if (not overwritten) cpu.SetGPR( rn, itr.addr() );
+sxtb.execute = {
+  cpu.SetGPR( rd, (int32_t)((int8_t)cpu.GetGPR_npc( rm )) );
 };
 
 /*
- * end of ldmia (load multiple) instruction
+ * end of sxtb instruction
  *******************************************************************/
 
 /*******************************************************************
-* pop (pop multiple) instruction
+ * sxth (Signed Extend Halfword) instruction
+ *
+ * SXTH extracts a 16-bit value from a register, sign-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 16-bit value.
  */
 
-op pop(0b1011110[7]:shl<15> reglist1[1]:reglist0[8]);
-pop.var reglist : {uint32_t} = {reglist1|reglist0};
+{ ARCH::insns6 }:                               \
+op sxth(0b1011001000[10]:rm[3]:rd[3]);
 
-pop.disasm = {
-  buffer << "pop\t{" << DisasmRegList(reglist) << "}";
+sxth.disasm = {
+  buffer << "sxth\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 };
 
-pop.execute = {
-  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( cpu.SP_reg ));
-  while (itr.next()) {
-    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
-  }
-  
-  bool overwritten = (reglist >> cpu.SP_reg) & 1;
-  if (not overwritten) cpu.SetGPR( cpu.SP_reg, itr.addr() );
+sxth.execute = {
+  cpu.SetGPR( rd, (int32_t)((int16_t)cpu.GetGPR_npc( rm )) );
 };
 
 /*
- * end of pop (pop multiple) instruction
+ * end of sxth instruction
  *******************************************************************/
 
 /*******************************************************************
- * push (push multiple) instruction
+ * uxtb (Unsigned Extend Byte) instruction
+ *
+ * UXTB extracts an 8-bit value from a register, zero-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 8-bit value.
  */
 
-op push(0b1011010[7]:shl<14> reglist1[1]:reglist0[8]);
-push.var reglist : {uint32_t} = {reglist1|reglist0};
+{ ARCH::insns6 }:                               \
+op uxtb(0b1011001011[10]:rm[3]:rd[3]);
 
-push.disasm = {
-  buffer << "push\t{" << DisasmRegList(reglist) << "}";
+uxtb.disasm = {
+  buffer << "uxtb\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 };
 
-push.execute = {
-  LSMIter itr(LSMIter::DB, reglist, cpu.GetGPR( cpu.SP_reg ));
-  while (itr.next()) {
-    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
-  }
-  
-  cpu.SetGPR( cpu.SP_reg, itr.addr() );
+uxtb.execute = {
+  cpu.SetGPR( rd, (uint32_t)((uint8_t)cpu.GetGPR_npc( rm )) );
 };
 
 /*
- * end of push (push multiple) instruction
+ * end of uxtb instruction
  *******************************************************************/
 
 /*******************************************************************
- * stmia (store multiple) instruction
+ * uxth (Unsigned Extend Halfword) instruction
+ *
+ * UXTH extracts a 16-bit value from a register, zero-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 16-bit value.
  */
 
-op stmia(0b11000[5]:rn[3]:reglist[8]);
+{ ARCH::insns6 }:                               \
+op uxth(0b1011001010[10]:rm[3]:rd[3]);
 
-stmia.disasm = {
-  buffer << "stmia\t" << DisasmRegister(rn) << "!, {" << DisasmRegList(reglist) << "}";
+uxth.disasm = {
+  buffer << "uxth\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 };
 
-stmia.execute = {
-  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
-  while (itr.next()) {
-    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
-  }
-  
-  cpu.SetGPR( rn, itr.addr() );
+uxth.execute = {
+  cpu.SetGPR( rd, (uint32_t)((uint16_t)cpu.GetGPR_npc( rm )) );
 };
 
 /*
- * end of stmia (store multiple) instruction
+ * end of uxth instruction
  *******************************************************************/
-

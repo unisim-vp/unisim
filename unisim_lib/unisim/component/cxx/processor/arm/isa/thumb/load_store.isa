@@ -344,3 +344,104 @@ strh_2.execute = {
  * strh(2) (store halfword register offset) instruction
  *******************************************************************/
 
+/**********************************************
+
+    THUMB LOAD STORE MULTIPLE INSTRUCTIONS
+
+**********************************************/
+
+/*******************************************************************
+ * ldmia (load multiple) instruction
+ */
+
+op ldmia(0b11001[5]:rn[3]:<32> reglist[8]);
+
+ldmia.disasm = {
+  buffer << "ldmia\t" << DisasmRegister(rn) << ", {" << DisasmRegList( reglist ) << "}";
+};
+
+ldmia.execute = {
+  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
+  while (itr.next()) {
+    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
+  }
+  
+  bool overwritten = (reglist >> rn) & 1;
+  if (not overwritten) cpu.SetGPR( rn, itr.addr() );
+};
+
+/*
+ * end of ldmia (load multiple) instruction
+ *******************************************************************/
+
+/*******************************************************************
+* pop (pop multiple) instruction
+ */
+
+op pop(0b1011110[7]:shl<15> reglist1[1]:reglist0[8]);
+pop.var reglist : {uint32_t} = {reglist1|reglist0};
+
+pop.disasm = {
+  buffer << "pop\t{" << DisasmRegList(reglist) << "}";
+};
+
+pop.execute = {
+  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( cpu.SP_reg ));
+  while (itr.next()) {
+    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
+  }
+  
+  bool overwritten = (reglist >> cpu.SP_reg) & 1;
+  if (not overwritten) cpu.SetGPR( cpu.SP_reg, itr.addr() );
+};
+
+/*
+ * end of pop (pop multiple) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * push (push multiple) instruction
+ */
+
+op push(0b1011010[7]:shl<14> reglist1[1]:reglist0[8]);
+push.var reglist : {uint32_t} = {reglist1|reglist0};
+
+push.disasm = {
+  buffer << "push\t{" << DisasmRegList(reglist) << "}";
+};
+
+push.execute = {
+  LSMIter itr(LSMIter::DB, reglist, cpu.GetGPR( cpu.SP_reg ));
+  while (itr.next()) {
+    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
+  }
+  
+  cpu.SetGPR( cpu.SP_reg, itr.addr() );
+};
+
+/*
+ * end of push (push multiple) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * stmia (store multiple) instruction
+ */
+
+op stmia(0b11000[5]:rn[3]:reglist[8]);
+
+stmia.disasm = {
+  buffer << "stmia\t" << DisasmRegister(rn) << "!, {" << DisasmRegList(reglist) << "}";
+};
+
+stmia.execute = {
+  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
+  while (itr.next()) {
+    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
+  }
+  
+  cpu.SetGPR( rn, itr.addr() );
+};
+
+/*
+ * end of stmia (store multiple) instruction
+ *******************************************************************/

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2013,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,49 +31,30 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
-
+ 
 /**********************************************
 
-           THUMB ARM EMULATOR ISA
+         THUMB MULTIPLY INSTRUCTIONS
 
 **********************************************/
 
-namespace unisim::component::cxx::processor::arm::isa::thumb
-set endianness big
-set addressclass {uint32_t}
-template <{class} {ARCH}>
+/*******************************************************************
+ * mul (multiply) instruction
+ */
 
-decl {
-#include <iosfwd>
-#include <stdint.h>
-} // end of decl
+op mul(0b010000[6]:0b1101[4]:rm[3]:rd[3]);
 
-impl {
-#include "unisim/component/cxx/processor/arm/models.hh"
-#include "unisim/component/cxx/processor/arm/execute.hh"
-#include "unisim/component/cxx/processor/arm/disasm.hh"
-#include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/util/arithmetic/arithmetic.hh"
-#include <iostream>
-#include <iomanip>
-} // end of impl
+mul.disasm = {
+  buffer << "muls\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
-action {void} execute({ARCH &} {cpu}) {
-  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
-}
+mul.execute = {
+  uint32_t res = cpu.GetGPR(rd) * cpu.GetGPR(rm);
+  cpu.SetGPR(rd, res);
+  if (not cpu.itblock()) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, cpu.GetCPSR_C(), cpu.GetCPSR_V() );
+};
 
-action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {
-  buffer << "Unknown instruction";
-}
+/*
+ * end of mul (multiply) instruction
+ *******************************************************************/
 
-include "data_processing.isa"
-include "load_store.isa"
-include "multiply.isa"
-include "misc_arithmetic.isa"
-include "branch.isa"
-include "branch_T1.isa"
-include "exception.isa"
-
-include "ordering.isa"
-
-include "profiling.isa"

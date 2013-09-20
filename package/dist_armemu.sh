@@ -202,13 +202,14 @@ unisim/component/cxx/memory/ram/memory_32.cc"
 UNISIM_LIB_ARMEMU_ISA_THUMB_FILES="\
 unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
 unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
-unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa \
+unisim/component/cxx/processor/arm/isa/thumb/load_store.isa \
+unisim/component/cxx/processor/arm/isa/thumb/multiply.isa \
+unisim/component/cxx/processor/arm/isa/thumb/misc_arithmetic.isa \
 unisim/component/cxx/processor/arm/isa/thumb/branch.isa \
 unisim/component/cxx/processor/arm/isa/thumb/branch_T1.isa \
 unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
 unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
-unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa \
 "
 
 UNISIM_LIB_ARMEMU_ISA_ARM32_FILES="\
