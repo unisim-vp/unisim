@@ -149,14 +149,30 @@ mfmsr.disasm = {
 op mfspr(31[6]:rd[5]:spr[10]:339[10]:?[1])
 mfspr.execute = {
 	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	uint32_t result = cpu->GetSPR(n);
+	uint32_t result;
+	switch(n)
+	{
+		case 0x001:
+			result = cpu->GetXER();
+			break;
+		case 0x008:
+			result = cpu->GetLR();
+			break;
+		case 0x009:
+			result = cpu->GetCTR();
+			break;
+		default:
+			result = cpu->GetSPR(n);
+			break;
+	}
+	
 	cpu->SetGPR(rd, result);
 }
 mfspr.disasm = {
 	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	switch(n)
 	{
-		case 1: os << "mfxer r" << (unsigned int) rd;
+		case 1: os << "mfxer r" << (unsigned int) rd; return;
 		case 8: os << "mflr r" << (unsigned int) rd; return;
 		case 9: os << "mfctr r" << (unsigned int) rd; return;
 		case 22: os << "mfdec r" << (unsigned int) rd; return;
@@ -201,7 +217,21 @@ op mtspr(31[6]:rs[5]:spr[10]:467[10]:?[1])
 mtspr.execute = {
 	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	uint32_t result = cpu->GetGPR(rs);
-	cpu->SetSPR(n, result);
+	switch(n)
+	{
+		case 0x001:
+			cpu->SetXER(result);
+			break;
+		case 0x008:
+			cpu->SetLR(result);
+			break;
+		case 0x009:
+			cpu->SetCTR(result);
+			break;
+		default:
+			cpu->SetSPR(n, result);
+			break;
+	}
 }
 mtspr.disasm = {
 	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
@@ -250,8 +280,7 @@ mtspr.disasm = {
 
 op mftb(31[6]:rd[5]:tbr[10]:371[10]:?[1])
 mftb.execute = {
-	uint32_t d;
-	d = ((tbr & 0x1F) << 5) + ((tbr >> 5) & 0x1F);
+	uint32_t d = ((tbr & 0x1f) << 5) + ((tbr >> 5) & 0x1f);
 	switch(d)
 	{
 		case 268: cpu->SetGPR(rd, cpu->GetTBL()); break;
@@ -262,7 +291,8 @@ mftb.execute = {
 	}
 }
 mftb.disasm = {
-	os << "mftb r" << (unsigned int) rd << ", " << (unsigned int) tbr;
+	uint32_t d = ((tbr & 0x1f) << 5) + ((tbr >> 5) & 0x1f);
+	os << "mftb r" << (unsigned int) rd << ", " << (unsigned int) d;
 }
 
 op mtcrf(31[6]:rs[5]:?[1]:crm[8]:?[1]:144[10]:?[1])

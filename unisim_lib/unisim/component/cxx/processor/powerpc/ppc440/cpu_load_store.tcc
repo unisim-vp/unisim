@@ -49,7 +49,10 @@ namespace ppc440 {
 template <class CONFIG>
 void CPU<CONFIG>::EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t size)
 {
-	memset(buffer, 0, size);
+	if(CONFIG::DEBUG_ENABLE)
+	{
+		memset(buffer, 0, size);
+	}
 	
 	if(likely(!(mmu_access.storage_attr & CONFIG::SA_I) && IsDataCacheEnabled())) // cache inhibited ?
 	{
@@ -336,26 +339,20 @@ inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 template <class CONFIG>
 inline void CPU<CONFIG>::MonitorLoad(typename CONFIG::address_t ea, uint32_t size)
 {
-	if(likely(size > 0))
+	// Memory access reporting
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		// Memory access reporting
-		if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
-		{
-			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, ea, size);
-		}
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, ea, size);
 	}
 }
 
 template <class CONFIG>
 inline void CPU<CONFIG>::MonitorStore(typename CONFIG::address_t ea, uint32_t size)
 {
-	if(likely(size > 0))
+	// Memory access reporting
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		// Memory access reporting
-		if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
-		{
-			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, ea, size);
-		}
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, ea, size);
 	}
 }
 
@@ -366,7 +363,6 @@ void CPU<CONFIG>::Int8Load(unsigned int rd, typename CONFIG::address_t ea)
 	EmuLoad<uint8_t, false, false>(value, ea);
 	gpr[rd] = (uint32_t) value; // 8-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -377,7 +373,6 @@ void CPU<CONFIG>::Int16Load(unsigned int rd, typename CONFIG::address_t ea)
 	EmuLoad<uint16_t, false, false>(value, ea);
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -388,7 +383,6 @@ void CPU<CONFIG>::SInt16Load(unsigned int rd, typename CONFIG::address_t ea)
 	EmuLoad<uint16_t, false, false>(value, ea);
 	gpr[rd] = (uint32_t) (int16_t) value; // 16-bit to 32-bit sign extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -399,7 +393,6 @@ void CPU<CONFIG>::Int32Load(unsigned int rd, typename CONFIG::address_t ea)
 	EmuLoad<uint32_t, false, false>(value, ea);
 	gpr[rd] = value;
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -413,7 +406,6 @@ void CPU<CONFIG>::Fp32Load(unsigned int fd, typename CONFIG::address_t ea)
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	fpr[fd].assign(SoftFloat(value), flags);
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -424,7 +416,6 @@ void CPU<CONFIG>::Fp64Load(unsigned int fd, typename CONFIG::address_t ea)
 	EmuLoad<uint64_t, false, false>(value, ea);
 	fpr[fd] = SoftDouble(value);
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -435,7 +426,6 @@ void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, typename CONFIG::address
 	EmuLoad<uint16_t, true, false>(value, ea); // reversed
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -446,7 +436,6 @@ void CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, typename CONFIG::address
 	EmuLoad<uint32_t, true, false>(value, ea); // reversed
 	gpr[rd] = value;
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -496,7 +485,6 @@ void CPU<CONFIG>::Int8Store(unsigned int rs, typename CONFIG::address_t ea)
 	uint8_t value = gpr[rs];
 	EmuStore<uint8_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -506,7 +494,6 @@ void CPU<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
 	uint16_t value = (uint16_t) gpr[rs];
 	EmuStore<uint16_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -516,7 +503,6 @@ void CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
 	uint32_t value = gpr[rs];
 	EmuStore<uint32_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -528,7 +514,6 @@ void CPU<CONFIG>::Fp32Store(unsigned int fs, typename CONFIG::address_t ea)
 	uint32_t value = SoftFloat(fpr[fs], flags).queryValue();
 	EmuStore<uint32_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -538,7 +523,6 @@ void CPU<CONFIG>::Fp64Store(unsigned int fs, typename CONFIG::address_t ea)
 	uint64_t value = fpr[fs].queryValue();
 	EmuStore<uint64_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -548,7 +532,6 @@ void CPU<CONFIG>::FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea)
 	uint32_t value = (uint32_t) fpr[fs].queryValue();
 	EmuStore<uint32_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -558,7 +541,6 @@ void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, typename CONFIG::addres
 	uint16_t value = (uint16_t) gpr[rs];
 	EmuStore<uint16_t, true, false>(value, ea); // reversed
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -568,7 +550,6 @@ void CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, typename CONFIG::addres
 	uint32_t value = gpr[rs];
 	EmuStore<uint32_t, true, false>(value, ea); // reversed
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -715,72 +696,6 @@ bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void 
 	}
 	return true;
 }
-
-// template <class CONFIG>
-// bool CPU<CONFIG>::InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
-// {
-// 	if(size > 0)
-// 	{
-// 		MMUAccess<CONFIG> mmu_access;
-// 		mmu_access.pid = GetProcessID();
-// 		mmu_access.as = GetDataAddressSpace();
-// 		mmu_access.privilege_level = GetPrivilegeLevel();
-// 		mmu_access.memory_access_type = CONFIG::MAT_READ;
-// 		mmu_access.memory_type = CONFIG::MT_DATA;
-// 		
-// 		uint32_t sz;
-// 		uint8_t *dst = (uint8_t *) buffer;
-// 		do
-// 		{
-// 			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
-// 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
-// 
-// 			// Address translation
-// 			mmu_access.addr = addr;
-// 
-// 			EmuTranslateAddress<false>(mmu_access);
-// 				
-// 			EmuLoad(mmu_access, dst, sz);
-// 			dst += sz;
-// 			addr += sz;
-// 			size -= sz;
-// 		} while(size > 0);
-// 	}
-// 	return true;
-// }
-// 
-// template <class CONFIG>
-// bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
-// {
-// 	if(size > 0)
-// 	{
-// 		MMUAccess<CONFIG> mmu_access;
-// 		mmu_access.pid = GetProcessID();
-// 		mmu_access.as = GetDataAddressSpace();
-// 		mmu_access.privilege_level = GetPrivilegeLevel();
-// 		mmu_access.memory_access_type = CONFIG::MAT_WRITE;
-// 		mmu_access.memory_type = CONFIG::MT_DATA;
-// 
-// 		uint32_t sz;
-// 		const uint8_t *src = (const uint8_t *) buffer;
-// 		do
-// 		{
-// 			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
-// 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
-// 
-// 			// Address translation
-// 			mmu_access.addr = addr;
-// 
-// 			EmuTranslateAddress<false>(mmu_access);
-// 
-// 			EmuStore(mmu_access, src, sz);
-// 			src += sz;
-// 			addr += sz;
-// 			size -= sz;
-// 		} while(size > 0);
-// 	}
-// 	return true;
-// }
 
 template <class CONFIG>
 bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)

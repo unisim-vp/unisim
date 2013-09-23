@@ -30,31 +30,36 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
+ 
+#include <unisim/component/cxx/processor/powerpc/ppc440/cpu.hh>
+#include <unisim/component/cxx/processor/powerpc/ppc440/exception.tcc>
+#include <unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc>
+#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_cache.tcc>
+#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_debugging.tcc>
+#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_exception_handling.tcc>
+#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_fetch.tcc>
+#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_load_store.tcc>
+#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_mmu.tcc>
+#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_dcr.tcc>
 
-#include "unisim/component/tlm2/memory/ram/memory.hh"
-#include "unisim/component/tlm2/memory/ram/memory.tcc"
+#ifdef powerpc
+#undef powerpc
+#endif
 
 namespace unisim {
 namespace component {
-namespace tlm2 {
-namespace memory {
-namespace ram {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+namespace ppc440 {
 
-template class Memory<32, uint32_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<32, uint64_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<32, uint32_t, 8, DEFAULT_PAGE_SIZE, true>;
-template class Memory<32, uint64_t, 8, DEFAULT_PAGE_SIZE, true>;
-template class Memory<64, uint32_t, 4, DEFAULT_PAGE_SIZE, true>;
-template class Memory<64, uint64_t, 4, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint32_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint64_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint32_t, 2, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint64_t, 2, DEFAULT_PAGE_SIZE, true>;
+template class CPU<Config_woCache>;
 
-} // end of namespace ram
-} // end of namespace memory
-} // end of namespace tlm
+} // end of namespace ppc440
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
 } // end of namespace component
-} // end of namespace unisim 
+} // end of namespace unisim
+

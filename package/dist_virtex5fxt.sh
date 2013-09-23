@@ -185,13 +185,21 @@ unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/telnet/telnet.cc \
 unisim/service/os/linux_os/linux.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_wocache.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_debug_wocache.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wommu.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_wommu_wocache.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug_wommu.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_debug_wommu_wocache.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wfpu.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_wfpu_wocache.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug_wfpu.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_debug_wfpu_wocache.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wommu_wfpu.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_wommu_wfpu_wocache.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug_wommu_wfpu.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_debug_wommu_wfpu_wocache.cc \
 unisim/component/cxx/processor/powerpc/floating.cc \
 unisim/component/cxx/processor/powerpc/config.cc \
 unisim/component/cxx/processor/powerpc/ppc440/config.cc \
@@ -206,13 +214,21 @@ unisim/component/cxx/interconnect/xilinx/mci/mci.cc \
 unisim/component/cxx/com/xilinx/xps_gpio/config.cc \
 unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_wocache.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wocache.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_wommu.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_wommu_wocache.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wommu.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wommu_wocache.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_wfpu.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_wfpu_wocache.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wfpu.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wfpu_wocache.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_wommu_wfpu.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_wommu_wfpu_wocache.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wommu_wfpu.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wommu_wfpu_wocache.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
@@ -638,9 +654,13 @@ unisim.ico"
 
 UNISIM_SIMULATORS_VIRTEX5FXT_TESTBENCH_FILES="\
 main.cc \
+main_wocache.cc \
 main_wfpu.cc \
+main_wfpu_wocache.cc \
 main_debug.cc \
+main_wocache_debug.cc \
 main_wfpu_debug.cc \
+main_wfpu_wocache_debug.cc \
 "
 
 has_to_build_configure=no
@@ -1106,15 +1126,23 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "libvirtex5fxt_${AM_VIRTEX5FXT_VERSION}_a_SOURCES = ${UNISIM_LIB_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = unisim-virtex5fxt-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-debug-${VIRTEX5FXT_VERSION}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "bin_PROGRAMS = unisim-virtex5fxt-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wocache-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wocache-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-wocache-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-wocache-debug-${VIRTEX5FXT_VERSION}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_SOURCES = main.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wocache_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wocache.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wfpu_wocache_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu_wocache.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wocache_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wocache_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wfpu_wocache_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu_wocache_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wocache_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wfpu_wocache_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wocache_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wfpu_wocache_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 
 	echo "noinst_HEADERS = ${UNISIM_LIB_VIRTEX5FXT_HEADER_FILES} ${UNISIM_LIB_VIRTEX5FXT_TEMPLATE_FILES} ${UNISIM_SIMULATORS_VIRTEX5FXT_HEADER_FILES} ${UNISIM_SIMULATORS_VIRTEX5FXT_TEMPLATE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_LIB_VIRTEX5FXT_M4_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
