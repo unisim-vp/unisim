@@ -169,7 +169,7 @@ void CPU<CONFIG>::HandleException(const SystemResetException<CONFIG>& exc)
 		ResetIRQ(CONFIG::IRQ_SOFT_RESET);
 	}
 	
-	SetNIA(CONFIG::EXC_SYSTEM_RESET_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_SYSTEM_RESET_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
@@ -216,7 +216,7 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc)
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 
-	SetNIA(CONFIG::EXC_MACHINE_CHECK_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_MACHINE_CHECK_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
@@ -237,7 +237,7 @@ void CPU<CONFIG>::HandleException(const DecrementerException<CONFIG>& exc)
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
-	SetNIA(CONFIG::EXC_DECREMENTER_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_DECREMENTER_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << "bus cycle " << bus_cycle << ": " << exc.what() << endl << EndDebugInfo;
@@ -260,7 +260,7 @@ void CPU<CONFIG>::HandleException(const ExternalInterruptException<CONFIG>& exc)
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
-	SetNIA(CONFIG::EXC_EXTERNAL_INTERRUPT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_EXTERNAL_INTERRUPT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(unlikely(IsVerboseException()))
 		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
@@ -282,7 +282,7 @@ void CPU<CONFIG>::HandleException(const PerformanceMonitorInterruptException<CON
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
-	SetNIA(CONFIG::EXC_PERFORMANCE_MONITOR_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_PERFORMANCE_MONITOR_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	ResetIRQ(CONFIG::IRQ_PERFORMANCE_MONITOR_INTERRUPT);
 	
@@ -305,7 +305,7 @@ void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFI
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
-	SetNIA(CONFIG::EXC_SYSTEM_MANAGEMENT_INTERRUPT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_SYSTEM_MANAGEMENT_INTERRUPT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	ResetIRQ(CONFIG::IRQ_SMI);
 
@@ -365,7 +365,7 @@ void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc)
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 		
-	SetNIA(CONFIG::EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 
 	if(unlikely(IsVerboseException()))
 	{
@@ -461,7 +461,7 @@ void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc)
 			break;
 	}
 		
-	SetNIA(CONFIG::EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(unlikely(IsVerboseException()))
 	{
@@ -561,7 +561,7 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, uint32_
 	// copy bits 11-15 of instruction encoding into DSISR[27-31]
 	SetDSISR((GetDSISR() & 0xffffffe0UL) | ((instruction_encoding >> 16) & 0x0000001fUL));
 		
-	SetNIA(CONFIG::EXC_ALIGNMENT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_ALIGNMENT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(unlikely(IsVerboseException()))
 	{
@@ -639,7 +639,7 @@ void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc)
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 		
-	SetNIA(CONFIG::EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(unlikely(IsVerboseException()))
 	{
@@ -668,7 +668,7 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 	
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1)); // copy MSR[ILE] into MSR[LE], clear MSR[POW], MSR[EE], MSR[PR], MSR[FP], MSR[FE0], MSR[SE], MSR[BE], MSR[FE1], MSR[IR], MSR[DR] and MSR[RI]
 	
-	SetNIA(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(unlikely(IsVerboseException()))
 	{
@@ -1092,7 +1092,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 					
 		SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1)); // copy MSR[ILE] into MSR[LE], clear MSR[POW], MSR[EE], MSR[PR], MSR[FP], MSR[FE0], MSR[SE], MSR[BE], MSR[FE1], MSR[IR], MSR[DR] and MSR[RI]
 			
-		SetNIA(CONFIG::EXC_SYSTEM_CALL_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+		Branch(CONFIG::EXC_SYSTEM_CALL_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	}
 }
 
@@ -1107,7 +1107,7 @@ void CPU<CONFIG>::HandleException(const TraceException<CONFIG>& exc)
 	
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1)); // copy MSR[ILE] into MSR[LE], clear MSR[POW], MSR[EE], MSR[PR], MSR[FP], MSR[FE0], MSR[SE], MSR[BE], MSR[FE1], MSR[IR], MSR[DR] and MSR[RI]
 	
-	SetNIA(CONFIG::EXC_TRACE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_TRACE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(unlikely(IsVerboseException()))
 	{
@@ -1131,7 +1131,7 @@ void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CO
 	
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1)); // copy MSR[ILE] into MSR[LE], clear MSR[POW], MSR[EE], MSR[PR], MSR[FP], MSR[FE0], MSR[SE], MSR[BE], MSR[FE1], MSR[IR], MSR[DR] and MSR[RI]
 	
-	SetNIA(CONFIG::EXC_INSTRUCTION_ADDRESS_BREAKPOINT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+	Branch(CONFIG::EXC_INSTRUCTION_ADDRESS_BREAKPOINT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
 	if(unlikely(IsVerboseException()))
 	{
@@ -1166,7 +1166,7 @@ void CPU<CONFIG>::HandleException(const TLBMissException<CONFIG>& exc)
 		SetPTEHI(pte_hi);
 		// SRR1[13]=1
 		SetSRR1(GetSRR1() | 0x00040000UL);
-		SetNIA(CONFIG::EXC_ITLB_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+		Branch(CONFIG::EXC_ITLB_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	}
 	else
 	{
@@ -1176,11 +1176,11 @@ void CPU<CONFIG>::HandleException(const TLBMissException<CONFIG>& exc)
 		{
 			// SRR1[15]=1
 			SetSRR1(GetSRR1() | 0x00010000UL);
-			SetNIA(CONFIG::EXC_DTLB_STORE_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+			Branch(CONFIG::EXC_DTLB_STORE_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 		}
 		else
 		{
-			SetNIA(CONFIG::EXC_DTLB_LOAD_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+			Branch(CONFIG::EXC_DTLB_LOAD_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 		}
 	}
 	

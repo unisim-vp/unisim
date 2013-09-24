@@ -49,21 +49,8 @@ namespace mpc7447a {
 template <class CONFIG>
 void CPU<CONFIG>::FlushSubsequentInstructions()
 {
-	cur_insn_in_prefetch_buffer = num_insn_in_prefetch_buffer - 1;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::FillPrefetchBuffer(uint32_t insn)
-{
-	prefetch_buffer[0] = insn;
-	num_insn_in_prefetch_buffer = 1;
+	num_insn_in_prefetch_buffer = 0;
 	cur_insn_in_prefetch_buffer = 0;
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::NeedFillingPrefetchBuffer() const
-{
-	return cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer;
 }
 
 template <class CONFIG>
@@ -143,6 +130,45 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 		// DL1 disabled
 		BusRead(physical_addr, buffer, size, wimg);
 	}
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+	uint32_t *insn = (uint32_t *) buffer;
+	do
+	{
+		BSwap(*insn);
+	}
+	while(++insn, size -= 4);
+#endif
+}
+
+template <class CONFIG>
+uint32_t CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr)
+{
+	if(unlikely(requires_memory_access_reporting)) 
+	{
+		if(unlikely(memory_access_reporting_import != 0))
+		{
+			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, addr, 4);
+		}
+	}
+
+	if(CONFIG::PREFETCH_BUFFER_ENABLE)
+	{
+		if(unlikely(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer))
+		{
+			uint32_t size_to_block_boundary = IsInsnCacheEnabled() ? CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (addr & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1)) : CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
+			uint32_t size_to_prefetch = size_to_block_boundary > (4 * CONFIG::NUM_PREFETCH_BUFFER_ENTRIES) ? CONFIG::NUM_PREFETCH_BUFFER_ENTRIES * 4 : size_to_block_boundary;
+			// refill the prefetch buffer with up to one cache line, not much
+			EmuFetch(addr, prefetch_buffer, size_to_prefetch);
+			num_insn_in_prefetch_buffer = size_to_prefetch / 4;
+			cur_insn_in_prefetch_buffer = 0;
+		}
+		return prefetch_buffer[cur_insn_in_prefetch_buffer++];
+	}
+	
+	uint32_t insn;
+	EmuFetch(addr, &insn, sizeof(insn));
+	return insn;
 }
 
 } // end of namespace mpc7447a

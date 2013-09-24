@@ -790,9 +790,6 @@ void CPU<CONFIG>::Reset()
 		InvalidateL2();
 	}
 	
-	num_insn_in_prefetch_buffer = 0;
-	cur_insn_in_prefetch_buffer = 0;
-
 	hid0 = CONFIG::HID0_RESET_VALUE;
 	hid1 = CONFIG::HID1_RESET_VALUE;
 
@@ -823,6 +820,7 @@ void CPU<CONFIG>::Reset()
 	effective_address = 0;
 	
 	ReconfigureFastBATLookup();
+	FlushSubsequentInstructions();
 }
 
 template <class CONFIG>
@@ -1332,54 +1330,14 @@ void CPU<CONFIG>::StepOneInstruction()
 		} while(1);
 	}
 
-	typename CONFIG::address_t sequential_nia = GetCIA() + 4;
 	unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation = 0;
-
-	SetNIA(sequential_nia);
 
 	try
 	{
 		typename CONFIG::address_t addr = GetCIA();
-		uint32_t insn;
-
-#ifdef SOCLIB
-		if(unlikely(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer))
-		{
-			std::cerr << "No instructions in prefetch buffer" << std::endl;
-			return;
-		}
-		insn = prefetch_buffer[cur_insn_in_prefetch_buffer];
-#else
-		if(CONFIG::PREFETCH_BUFFER_ENABLE)
-		{
-			if(unlikely(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer))
-			{
-				uint32_t size_to_block_boundary = IsInsnCacheEnabled() ? CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (addr & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1)) : CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
-				uint32_t size_to_prefetch = size_to_block_boundary > (4 * CONFIG::NUM_PREFETCH_BUFFER_ENTRIES) ? CONFIG::NUM_PREFETCH_BUFFER_ENTRIES * 4 : size_to_block_boundary;
-				// refill the prefetch buffer with up to one cache line, not much
-				EmuFetch(addr, prefetch_buffer, size_to_prefetch);
-				num_insn_in_prefetch_buffer = size_to_prefetch / 4;
-				cur_insn_in_prefetch_buffer = 0;
-			}
-			insn = prefetch_buffer[cur_insn_in_prefetch_buffer];
-		}
-		else
-		{
-			EmuFetch(addr, &insn, 4);
-		}
-#endif
-
-#if BYTE_ORDER == LITTLE_ENDIAN
-		BSwap(insn);
-#endif
-
-		if(unlikely(requires_memory_access_reporting)) 
-		{
-			if(unlikely(memory_access_reporting_import != 0))
-			{
-				memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, addr, 4);
-			}
-		}
+		SetNIA(addr + 4);
+		uint32_t insn = EmuFetch(addr);
+		
 		if(CONFIG::IABR_ENABLE)
 		{
 			/* Check for instruction address breakpoint */
@@ -1439,21 +1397,6 @@ void CPU<CONFIG>::StepOneInstruction()
 		Stop(1);
 	}
 
-	/* go to the next instruction */
-	if(CONFIG::PREFETCH_BUFFER_ENABLE)
-	{
-		if(unlikely(GetNIA() != sequential_nia))
-		{
-			// branch or exception is being taken: flush the prefetch buffer
-			num_insn_in_prefetch_buffer = 0;
-			cur_insn_in_prefetch_buffer = 0;
-		}
-		else
-		{
-			cur_insn_in_prefetch_buffer++;
-		}
-	}
-
 	if(unlikely(requires_finished_instruction_reporting))
 	{
 		if(unlikely(memory_access_reporting_import != 0))
@@ -1462,6 +1405,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		}
 	}
 
+	/* go to the next instruction */
 	SetCIA(GetNIA());
 
 	/* update the instruction counter */

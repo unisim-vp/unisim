@@ -775,6 +775,7 @@ public:
 	inline void SetCIA(uint32_t value) { cia = value; seq_cia = value; }
 	inline uint32_t GetNIA() const { return nia; }
 	inline void SetNIA(uint32_t value) { nia = value; }
+	inline void Branch(uint32_t value) { nia = value; FlushSubsequentInstructions(); }
 
 	//=====================================================================
 	//=            external address register set/get methods              =
@@ -1035,14 +1036,6 @@ public:
 	void SetIRQ(unsigned int irq);
 
 protected:
-
-	//=====================================================================
-	//=          Instruction prefetch buffer handling methods             =
-	//=====================================================================
-	
-	void FillPrefetchBuffer(uint32_t insn);
-	bool NeedFillingPrefetchBuffer() const;
-
 	//=====================================================================
 	//=          DEC/TBL/TBU bus-time based update methods                =
 	//=====================================================================
@@ -1132,6 +1125,7 @@ private:
 	void EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, typename CONFIG::WIMG wimg);
 	void EmuFillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, typename CONFIG::WIMG wimg, bool rwitm);
 	void EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size);
+	inline uint32_t EmuFetch(typename CONFIG::address_t addr);
 	template <bool TRANSLATE_ADDR> void EmuLoad(typename CONFIG::address_t addr, void *buffer, uint32_t size);
 	template <bool TRANSLATE_ADDR> void EmuStore(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
 	template <class T> void EmuLoad(T& value, typename CONFIG::address_t ea);
