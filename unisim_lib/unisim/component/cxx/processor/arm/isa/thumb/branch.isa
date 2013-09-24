@@ -113,7 +113,7 @@ blx.disasm = {
 
 blx.execute = {
   uint32_t address = cpu.GetGPR(rm);
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() | 1 );
   cpu.BranchExchange( address );
 };
 

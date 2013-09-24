@@ -142,7 +142,7 @@ add_4_pc.disasm = {
 };
 
 add_4_pc.execute = {
-  cpu.SetGPR( 15, (cpu.GetGPR(cpu.PC_reg) & -4) + cpu.GetGPR( rm ) );
+  cpu.SetGPR( 15, cpu.GetGPR(cpu.PC_reg) + cpu.GetGPR( rm ) );
 };
 
 /*
@@ -153,13 +153,13 @@ add_4_pc.execute = {
  * adr (add immediate to program counter) instruction
  */
 
-op add_5(0b10100[5]:rd[3]:shl<2> imm[8]);
+op adr(0b10100[5]:rd[3]:shl<2> imm[8]);
 
-add_5.disasm = {
+adr.disasm = {
   buffer << "add\t" << DisasmRegister(rd) << ", pc, " << DisasmI(imm);
 };
 
-add_5.execute = {
+adr.execute = {
   cpu.SetGPR( rd, (cpu.GetGPR(cpu.PC_reg) & -4) + imm );
 };
 

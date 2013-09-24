@@ -318,15 +318,20 @@ public:
    *
    * @param val the value to set PC
    */
-  void BranchExchange(uint32_t val)
-  { this->next_pc = val; this->SetCPSR_T( val & 1 ); }
+  void BranchExchange(uint32_t target)
+  {
+    this->SetCPSR_T( target & 1 );
+    this->Branch( target );
+  }
 	
   /** Sets the PC (and preserve mode)
    *
    * @param val the value to set PC
    */
-  void Branch(uint32_t val)
-  { this->next_pc = (this->next_pc & 1) | (val & -2); }
+  void Branch(uint32_t target)
+  {
+    this->next_pc = target & (GetCPSR_T() ? -2 : -4);
+  }
 	
   /** Gets the updated PC value (next PC as currently computed)
    *
