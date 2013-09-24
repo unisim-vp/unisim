@@ -693,7 +693,7 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 	EmuTranslateAddress<false>(mmu_access);
 
 	// DL1 Access
-	if(!CONFIG::DL1_CONFIG::ENABLE) return;
+	if(!CONFIG::HAS_DCACHE) return;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 	l1_access.storage_attr = mmu_access.storage_attr;
@@ -767,7 +767,7 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 	EmuTranslateAddress<false>(mmu_access);
 
 	// DL1 Access
-	if(!CONFIG::DL1_CONFIG::ENABLE) return;
+	if(!CONFIG::HAS_DCACHE) return;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 
@@ -804,7 +804,7 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 	EmuTranslateAddress<false>(mmu_access);
 
 	// DL1 Access
-	if(!CONFIG::DL1_CONFIG::ENABLE) return;
+	if(!CONFIG::HAS_DCACHE) return;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 
@@ -872,7 +872,7 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 
 	EmuTranslateAddress<false>(mmu_access);
 
-	if(CONFIG::DL1_CONFIG::ENABLE)
+	if(CONFIG::HAS_DCACHE)
 	{
 		// DL1 Access
 		CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
@@ -927,7 +927,7 @@ void CPU<CONFIG>::Dccci(typename CONFIG::address_t addr)
 		throw PrivilegeViolationException<CONFIG>();
 	}
 
-	if(!CONFIG::DL1_CONFIG::ENABLE) return;
+	if(!CONFIG::HAS_DCACHE) return;
 	
 	InvalidateDL1();
 }
@@ -935,7 +935,7 @@ void CPU<CONFIG>::Dccci(typename CONFIG::address_t addr)
 template <class CONFIG>
 void CPU<CONFIG>::Dcread(typename CONFIG::address_t addr, unsigned int rd)
 {
-	if(CONFIG::DL1_CONFIG::ENABLE)
+	if(CONFIG::HAS_DCACHE)
 	{
 		uint32_t way = addr / CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE;
 		uint32_t offset = (addr % CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE) & 0xfffffffcUL;
@@ -990,7 +990,7 @@ void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 
 	EmuTranslateAddress<false>(mmu_access);
 
-	if(CONFIG::IL1_CONFIG::ENABLE)
+	if(CONFIG::HAS_ICACHE)
 	{
 		// invalidation operation is performed whether or not the access is cacheable
 		CacheAccess<class CONFIG::IL1_CONFIG> l1_access;
@@ -1020,7 +1020,7 @@ void CPU<CONFIG>::Iccci(typename CONFIG::address_t addr)
 		throw PrivilegeViolationException<CONFIG>();
 	}
 
-	if(!CONFIG::IL1_CONFIG::ENABLE) return;
+	if(!CONFIG::HAS_ICACHE) return;
 
 	InvalidateIL1();
 }
@@ -1028,7 +1028,7 @@ void CPU<CONFIG>::Iccci(typename CONFIG::address_t addr)
 template <class CONFIG>
 void CPU<CONFIG>::Icread(typename CONFIG::address_t addr)
 {
-	if(CONFIG::IL1_CONFIG::ENABLE)
+	if(CONFIG::HAS_ICACHE)
 	{
 		uint32_t way = addr / CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE;
 		uint32_t offset = (addr % CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE) & 0xfffffffcUL;

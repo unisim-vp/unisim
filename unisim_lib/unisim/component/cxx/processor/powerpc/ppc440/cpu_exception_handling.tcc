@@ -556,7 +556,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc, unisim
 		
 		SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 		
-		SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_SYSTEM_CALL));
+		Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_SYSTEM_CALL));
 	}
 }
 
@@ -585,7 +585,7 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc, unis
 	
 	SetMSR(0); //  all MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_MACHINE_CHECK));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_MACHINE_CHECK));
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -624,7 +624,7 @@ void CPU<CONFIG>::HandleException(const DecrementerInterruptException<CONFIG>& e
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DECREMENTER));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_DECREMENTER));
 	
 	ResetIRQ(CONFIG::IRQ_DECREMENTER_INTERRUPT);
 
@@ -665,7 +665,7 @@ void CPU<CONFIG>::HandleException(const ExternalInputInterruptException<CONFIG>&
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_EXTERNAL_INPUT));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_EXTERNAL_INPUT));
 
 	//ResetIRQ(CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT);
 
@@ -706,7 +706,7 @@ void CPU<CONFIG>::HandleException(const CriticalInputInterruptException<CONFIG>&
 	
 	SetMSR(GetMSR() & CONFIG::MSR_ME_MASK); // MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_CRITICAL_INPUT));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_CRITICAL_INPUT));
 
 	//ResetIRQ(CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT);
 
@@ -756,7 +756,7 @@ void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc, unisim::compo
 		
 	SetESR(esr_value);
 
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_STORAGE));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_STORAGE));
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -799,7 +799,7 @@ void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc, unisim::compo
 	
 	SetESR(GetESR() & CONFIG::ESR_MCI_MASK); // ESR[MCI] unchanged, all other bits are set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_STORAGE));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_STORAGE));
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -845,7 +845,7 @@ void CPU<CONFIG>::HandleException(const DataTLBErrorException<CONFIG>& exc, unis
 	uint32_t esr_value = (GetESR() & CONFIG::ESR_MCI_MASK) | (operation->get_esr() & (CONFIG::ESR_FP_MASK | CONFIG::ESR_ST_MASK | CONFIG::ESR_AP_MASK));
 	SetESR(esr_value);
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_TLB_ERROR));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_TLB_ERROR));
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -886,7 +886,7 @@ void CPU<CONFIG>::HandleException(const InstructionTLBErrorException<CONFIG>& ex
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_TLB_ERROR));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_TLB_ERROR));
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -930,7 +930,7 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, unisim:
 	uint32_t esr_value = operation->get_esr() & (CONFIG::ESR_FP_MASK | CONFIG::ESR_ST_MASK | CONFIG::ESR_AP_MASK);
 	SetESR(esr_value);
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_ALIGNMENT));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_ALIGNMENT));
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -992,7 +992,7 @@ void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc, unisim::c
 	
 	SetESR(esr_value);
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_PROGRAM));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_PROGRAM));
 	
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -1031,7 +1031,7 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_FLOATING_POINT_UNAVAILABLE));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_FLOATING_POINT_UNAVAILABLE));
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -1070,7 +1070,7 @@ void CPU<CONFIG>::HandleException(const AuxiliaryProcessorUnavailableException<C
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_AUXILIARY_PROCESSOR_UNAVAILABLE));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_AUXILIARY_PROCESSOR_UNAVAILABLE));
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -1109,7 +1109,7 @@ void CPU<CONFIG>::HandleException(const FixedIntervalTimerInterruptException<CON
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_FIXED_INTERVAL_TIMER));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_FIXED_INTERVAL_TIMER));
 
 	ResetIRQ(CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT);
 
@@ -1150,7 +1150,7 @@ void CPU<CONFIG>::HandleException(const WatchDogTimerInterruptException<CONFIG>&
 	
 	SetMSR(GetMSR() & CONFIG::MSR_ME_MASK); // MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_WATCHDOG_TIMER));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_WATCHDOG_TIMER));
 
 	ResetIRQ(CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT);
 
@@ -1191,7 +1191,7 @@ void CPU<CONFIG>::HandleException(const DebugInterruptException<CONFIG>& exc, un
 	
 	SetMSR(GetMSR() & CONFIG::MSR_ME_MASK); // MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DEBUG));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_DEBUG));
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{

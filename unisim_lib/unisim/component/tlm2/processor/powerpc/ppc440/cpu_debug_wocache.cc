@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,31 +30,27 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/tlm2/memory/ram/memory.hh"
-#include "unisim/component/tlm2/memory/ram/memory.tcc"
+#include <unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh>
+#include <unisim/component/tlm2/processor/powerpc/ppc440/cpu.tcc>
+
+#ifdef powerpc
+#undef powerpc
+#endif
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
-namespace memory {
-namespace ram {
+namespace processor {
+namespace powerpc {
+namespace ppc440 {
 
-template class Memory<32, uint32_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<32, uint64_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<32, uint32_t, 8, DEFAULT_PAGE_SIZE, true>;
-template class Memory<32, uint64_t, 8, DEFAULT_PAGE_SIZE, true>;
-template class Memory<64, uint32_t, 4, DEFAULT_PAGE_SIZE, true>;
-template class Memory<64, uint64_t, 4, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint32_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint64_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint32_t, 2, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint64_t, 2, DEFAULT_PAGE_SIZE, true>;
+template class CPU<unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_woCache>;
 
-} // end of namespace ram
-} // end of namespace memory
-} // end of namespace tlm
+} // end of namespace ppc440
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace tlm2
 } // end of namespace component
-} // end of namespace unisim 
+} // end of namespace unisim

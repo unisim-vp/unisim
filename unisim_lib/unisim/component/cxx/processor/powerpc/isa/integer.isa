@@ -64,33 +64,35 @@ inline uint32_t Mask(uint32_t mb, uint32_t me)
 
 op add(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:266[9]:rc[1])
 add.execute = {
-	uint8_t ca; // carry out
-	uint8_t ov; // overflow
-	uint8_t sign; // sign
 	uint32_t result;
 
 	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
 
-	// Compute the result
-	Add32(result, ca, ov, sign, a, b, 0);
-	
-	// Write back the result
-	cpu->SetGPR(rd, result);
-	
-	if(unlikely(oe || rc))
+	if(likely(!oe && !rc))
 	{
+		result = a + b;
+	}
+	else
+	{
+		uint8_t ca; // carry out
+		uint8_t ov; // overflow
+		uint8_t sign; // sign
+
+		// Compute the result
+		Add32(result, ca, ov, sign, a, b, 0);
+		
 		// Read XER
 		uint32_t xer = cpu->GetXER();
-		if(unlikely(oe))
+		if(oe)
 		{
 			// Generate XER[OV] and XER[SO]
 			xer = ov ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
 			// Update XER
 			cpu->SetXER(xer);
 		}
-		if(unlikely(rc))
+		if(rc)
 		{
 			// Read CR
 			uint32_t cr = cpu->GetCR();
@@ -104,6 +106,9 @@ add.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	// Write back the result
+	cpu->SetGPR(rd, result);
 }
 add.disasm = {
 	os << "add" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -775,23 +780,25 @@ neg.disasm = {
 
 op subf(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:40[9]:rc[1])
 subf.execute = {
-	uint8_t carry; // carry out
-	uint8_t sign; // sign
-	uint8_t overflow; // overflow
+	uint32_t result;
 	
 	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
 	
-	// Compute the result
-	uint32_t result;
-	Add32(result, carry, overflow, sign, ~a, b, 1);
-	
-	// Write back the result
-	cpu->SetGPR(rd, result);
-	
-	if(unlikely(oe || rc))
+	if(likely(!rc && !oe))
 	{
+		result = b - a;
+	}
+	else
+	{
+		uint8_t carry; // carry out
+		uint8_t sign; // sign
+		uint8_t overflow; // overflow
+
+		// Compute the result
+		Add32(result, carry, overflow, sign, ~a, b, 1);
+		
 		// Read XER
 		uint32_t xer = cpu->GetXER();
 		if(unlikely(oe))
@@ -815,6 +822,9 @@ subf.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	// Write back the result
+	cpu->SetGPR(rd, result);
 }
 subf.disasm = {
 	os << "subf" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -1261,15 +1271,6 @@ cntlzw.execute = {
 	uint32_t s = cpu->GetGPR(rs);
 	
 	// Compute the result
-// 	uint32_t result = 0;
-// 	uint32_t m = 1 << 31;
-// 	while(result < 32)
-// 	{
-// 		if(s & m) break;
-// 		m >>= 1;
-// 		result++;
-// 	}
-
 	uint32_t result = CountLeadingZeros(s);
 	
 	// Write back the result

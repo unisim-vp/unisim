@@ -802,7 +802,6 @@ public:
 		public:
 		};
 
-		static const bool ENABLE = true;
 		typedef Config::physical_address_t ADDRESS;
 		static const uint32_t CACHE_SIZE = 32 * 1024; //32 * 1024; // 32 KB
 		static const uint32_t CACHE_BLOCK_SIZE = 32;   // 32 bytes
@@ -844,7 +843,6 @@ public:
 		public:
 		};
 
-		static const bool ENABLE = true;
 		typedef Config::virtual_address_t ADDRESS;
 		static const uint32_t CACHE_SIZE = 32 * 1024; // 32 KB
 		static const uint32_t CACHE_BLOCK_SIZE = 32;   // 32 bytes
@@ -938,7 +936,6 @@ public:
 			unisim::component::cxx::tlb::TLBEntry<ITLB_CONFIG> *lru_entry;
 		};
 
-		static const bool ENABLE = true;
 		typedef virtual_address_t VIRTUAL_ADDRESS;
 		static const uint32_t TLB_NUM_ENTRIES = 4;
 		static const uint32_t TLB_LOG_ASSOCIATIVITY = 2; // 4-way set associative (fully associative)
@@ -968,7 +965,6 @@ public:
 			unisim::component::cxx::tlb::TLBEntry<DTLB_CONFIG> *lru_entry;
 		};
 
-		static const bool ENABLE = true;
 		typedef virtual_address_t VIRTUAL_ADDRESS;
 		static const uint32_t TLB_NUM_ENTRIES = 8;
 		static const uint32_t TLB_LOG_ASSOCIATIVITY = 3; // 8-way set associative (fully associative)
@@ -997,7 +993,6 @@ public:
 			unisim::component::cxx::tlb::TLBEntry<UTLB_CONFIG> *lru_entry;
 		};
 
-		static const bool ENABLE = true;
 		typedef virtual_address_t VIRTUAL_ADDRESS;
 		static const uint32_t TLB_NUM_ENTRIES = 64;
 		static const uint32_t TLB_LOG_ASSOCIATIVITY = 6; // 64-way set associative (fully associative)
@@ -1052,6 +1047,15 @@ public:
 	static const unsigned int IVOR_INSTRUCTION_TLB_ERROR = 14;
 	static const unsigned int IVOR_DEBUG = 15;
 	
+	// L1 Instruction cache
+	static const bool HAS_ICACHE = true;
+
+	// L1 Data Cache
+	static const bool HAS_DCACHE = true;
+
+	// DL1
+	static const bool HAS_DL1 = true;
+	
 	// MMU
 	static const bool HAS_MMU = true;
 	
@@ -1098,6 +1102,21 @@ inline std::ostream& operator << (std::ostream& os, const Config::TLB_ENTRY& tlb
 	return os;
 }
 
+class Config_woCache : public Config
+{
+public:
+	typedef CPU<Config_woCache> STATE;
+
+	// Front side bus parameters
+	static const uint32_t FSB_BURST_SIZE = FSB_WIDTH;
+
+	// L1 Instruction Cache
+	static const bool HAS_ICACHE = false;
+	
+	// L1 Data Cache
+	static const bool HAS_DCACHE = false;
+};
+
 class Config_woMMU : public Config
 {
 public:
@@ -1107,6 +1126,24 @@ public:
 	static const bool HAS_MMU = false;
 };
 
+class Config_woMMU_woCache : public Config
+{
+public:
+	typedef CPU<Config_woMMU_woCache> STATE;
+
+	// MMU
+	static const bool HAS_MMU = false;
+
+	// Front side bus parameters
+	static const uint32_t FSB_BURST_SIZE = FSB_WIDTH;
+
+	// L1 Instruction Cache
+	static const bool HAS_ICACHE = false;
+
+	// L1 Data Cache
+	static const bool HAS_DCACHE = false;
+};
+
 class Config_wFPU : public Config
 {
 public:
@@ -1114,6 +1151,24 @@ public:
 
 	// Floating point
 	static const bool HAS_FPU = true;
+};
+
+class Config_wFPU_woCache : public Config
+{
+public:
+	typedef CPU<Config_wFPU_woCache> STATE;
+
+	// Floating point
+	static const bool HAS_FPU = true;
+
+	// Front side bus parameters
+	static const uint32_t FSB_BURST_SIZE = FSB_WIDTH;
+
+	// L1 Instruction Cache
+	static const bool HAS_ICACHE = false;
+
+	// L1 Data Cache
+	static const bool HAS_DCACHE = false;
 };
 
 class Config_woMMU_wFPU : public Config
@@ -1128,10 +1183,54 @@ public:
 	static const bool HAS_FPU = true;
 };
 
+class Config_woMMU_wFPU_woCache : public Config
+{
+public:
+	typedef CPU<Config_woMMU_wFPU_woCache> STATE;
+
+	// MMU
+	static const bool HAS_MMU = false;
+	
+	// Floating point
+	static const bool HAS_FPU = true;
+	
+	// Front side bus parameters
+	static const uint32_t FSB_BURST_SIZE = FSB_WIDTH;
+
+	// L1 Instruction Cache
+	static const bool HAS_ICACHE = false;
+
+	// L1 Data Cache
+	static const bool HAS_DCACHE = false;
+};
+
 class DebugConfig : public Config
 {
 public:
 	typedef CPU<DebugConfig> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
+class DebugConfig_woCache : public Config_woCache
+{
+public:
+	typedef CPU<DebugConfig_woCache> STATE;
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = true;
@@ -1174,6 +1273,29 @@ public:
 	static const bool DEBUG_TLBWE_ENABLE = true;
 };
 
+class DebugConfig_woMMU_woCache : public Config_woMMU_woCache
+{
+public:
+	typedef CPU<DebugConfig_woMMU_woCache> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
 class DebugConfig_wFPU : public Config_wFPU
 {
 public:
@@ -1197,10 +1319,56 @@ public:
 	static const bool DEBUG_TLBWE_ENABLE = true;
 };
 
+class DebugConfig_wFPU_woCache : public Config_wFPU_woCache
+{
+public:
+	typedef CPU<DebugConfig_wFPU_woCache> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
 class DebugConfig_woMMU_wFPU : public Config_woMMU_wFPU
 {
 public:
 	typedef CPU<DebugConfig_woMMU_wFPU> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
+class DebugConfig_woMMU_wFPU_woCache : public Config_woMMU_wFPU_woCache
+{
+public:
+	typedef CPU<DebugConfig_woMMU_wFPU_woCache> STATE;
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = true;

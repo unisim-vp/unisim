@@ -406,6 +406,7 @@ public:
 	inline void SetCIA(uint32_t value) { cia = value; }
 	inline uint32_t GetNIA() const { return nia; }
 	inline void SetNIA(uint32_t value) { nia = value; }
+	inline void Branch(uint32_t value) { nia = value; FlushSubsequentInstructions(); }
 
 	//=====================================================================
 	//=           special purpose registers set/get methods               =
@@ -831,8 +832,6 @@ public:
 	//=                        Debugging stuffs                           =
 	//=====================================================================
 
-	typename CONFIG::address_t GetEA() { return effective_address; }
-	
 	virtual unisim::util::debug::Register *GetRegister(const char *name);
 	virtual string Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t& next_addr);
 	virtual const char *GetArchitectureName() const;
@@ -870,13 +869,6 @@ public:
 	void SetIRQ(unsigned int irq);
 
 protected:
-
-	//=====================================================================
-	//=          Instruction prefetch buffer handling methods             =
-	//=====================================================================
-	
-	void FillPrefetchBuffer(uint32_t insn);
-	bool NeedFillingPrefetchBuffer() const;
 
 	//=====================================================================
 	//=          DEC/TBL/TBU bus-time based update methods                =
@@ -970,6 +962,7 @@ private:
 	void EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
 	void EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, MMUAccess<CONFIG>& mmu_access);
 	void EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size);
+	inline uint32_t EmuFetch(typename CONFIG::address_t addr);
 	void EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t size);
 	void EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, uint32_t size);
 	
@@ -1003,8 +996,6 @@ private:
 	//=====================================================================
 	//=                      Debugging stuffs                             =
 	//=====================================================================
-	typename CONFIG::address_t effective_address;
-
 	bool verbose_all;
 	bool verbose_setup;
 	bool verbose_step;
