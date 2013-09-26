@@ -70,7 +70,7 @@ qadd.execute = {
   }
   
   SignedSatAdd32(result, does_sat, cpu.GetGPR(rn) , cpu.GetGPR(rm));
-  cpu.SetCPSR_Q(does_sat == 1 ? true : false);
+  cpu.CPSR().Q().Set( (does_sat == 1) );
   cpu.SetGPR(rd, result);
 };
 
@@ -102,7 +102,7 @@ qsub.execute = {
   }
   
   SignedSatSub32(result, does_sat, cpu.GetGPR(rm) , cpu.GetGPR(rn));
-  cpu.SetCPSR_Q(does_sat == 1 ? true : false);
+  cpu.CPSR().Q().Set( (does_sat == 1) );
   cpu.SetGPR(rd, result);
 };
 
@@ -135,7 +135,7 @@ qdadd.execute = {
   
   SignedSatAdd32(result, does_sat_tmp, cpu.GetGPR(rn) , cpu.GetGPR(rn));
   SignedSatAdd32(result, does_sat, cpu.GetGPR(rm) , result);
-  cpu.SetCPSR_Q(does_sat == 1 || does_sat_tmp == 1? true : false);
+  cpu.CPSR().Q().Set( (does_sat == 1) or (does_sat_tmp == 1) );
   cpu.SetGPR(rd, result);
 };
 
@@ -168,7 +168,7 @@ qdsub.execute = {
   
   SignedSatAdd32(result, does_sat_tmp, cpu.GetGPR(rn) , cpu.GetGPR(rn));
   SignedSatSub32(result, does_sat, cpu.GetGPR(rm) , result);
-  cpu.SetCPSR_Q(does_sat == 1 ? true : false);
+  cpu.CPSR().Q().Set( (does_sat == 1) );
   cpu.SetGPR(rd, result);
 };
 

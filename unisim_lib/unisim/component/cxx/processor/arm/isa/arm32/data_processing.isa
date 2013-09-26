@@ -55,7 +55,12 @@ and_32imm.execute = {
 
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 & op2;
   cpu.SetGPR( rd, res );
-  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().C().Set( imr == 0 ? cpu.CPSR().C().Get() : (imm >> 31) );
+    }
 };
 
 op and_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -114,7 +119,12 @@ eor_32imm.execute = {
 
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 ^ op2;
   cpu.SetGPR( rd, res );
-  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().C().Set( imr == 0 ? cpu.CPSR().C().Get() : (imm >> 31) );
+    }
 };
 
 op eor_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -346,7 +356,7 @@ adc_32imm.disasm = {
 adc_32imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 + op2 + cpu.GetCPSR_C();
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 + op2 + cpu.CPSR().C().Get();
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
@@ -364,7 +374,7 @@ adc_imm_shift.execute = {
 
   uint32_t rmval = cpu.GetGPR( rm ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 + op2 + cpu.GetCPSR_C();
+           res = op1 + op2 + cpu.CPSR().C().Get();
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
@@ -381,7 +391,7 @@ adc_reg_shift.execute = {
 
   uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
-           res = op1 + op2 + cpu.GetCPSR_C();
+           res = op1 + op2 + cpu.CPSR().C().Get();
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
@@ -405,7 +415,7 @@ sbc_32imm.disasm = {
 sbc_32imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -423,7 +433,7 @@ sbc_imm_shift.execute = {
 
   uint32_t rmval = cpu.GetGPR( rm ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+           res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -440,7 +450,7 @@ sbc_reg_shift.execute = {
 
   uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
-           res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+           res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -464,7 +474,7 @@ rsc_32imm.disasm = {
 rsc_32imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t op1 = imm, op2 = cpu.GetGPR( rn ), res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+  uint32_t op1 = imm, op2 = cpu.GetGPR( rn ), res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -481,7 +491,7 @@ rsc_imm_shift.execute = {
 
   uint32_t rmval = cpu.GetGPR( rm ),
            op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
-           res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+           res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -498,7 +508,7 @@ rsc_reg_shift.execute = {
 
   uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = ComputeRegShift( cpu, rmval, shift, rsval ), op2 = cpu.GetGPR( rn ),
-           res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+           res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -524,7 +534,12 @@ orr_32imm.execute = {
 
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 | op2;
   cpu.SetGPR( rd, res );
-  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().C().Set( imr == 0 ? cpu.CPSR().C().Get() : (imm >> 31) );
+    }
 };
 
 op orr_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -582,7 +597,12 @@ bic_32imm.execute = {
 
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 & ~op2;
   cpu.SetGPR( rd, res );
-  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().C().Set( imr == 0 ? cpu.CPSR().C().Get() : (imm >> 31) );
+    }
 };
 
 op bic_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -639,7 +659,9 @@ tst_32imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 & op2;
-  cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+  cpu.CPSR().N().Set( (res >> 31) & 1 );
+  cpu.CPSR().Z().Set( res == 0 );
+  cpu.CPSR().C().Set( imr == 0 ? cpu.CPSR().C().Get() : (imm >> 31) );
 };
 
 op tst_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:1[1]:rn[4]:/*sbz*/0[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -694,7 +716,9 @@ teq_32imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 ^ op2;
-  cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+  cpu.CPSR().N().Set( (res >> 31) & 1 );
+  cpu.CPSR().Z().Set( res == 0 );
+  cpu.CPSR().C().Set( imr == 0 ? cpu.CPSR().C().Get() : (imm >> 31) );
 };
 
 op teq_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:1[1]:rn[4]:/*sbz*/0[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -860,7 +884,12 @@ mov_32imm.execute = {
 
   uint32_t res = imm;
   cpu.SetGPR( rd, res );
-  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().C().Set( imr == 0 ? cpu.CPSR().C().Get() : (imm >> 31) );
+    }
 };
 
 op mov_imm_shift (cond[4]:0b00[2]:0b0[1]:0b1101[4]:s[1]:/*sbz*/0[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
@@ -928,7 +957,12 @@ mvn_32imm.execute = {
 
   uint32_t res = ~imm;
   cpu.SetGPR( rd, res );
-  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().C().Set( imr == 0 ? cpu.CPSR().C().Get() : (imm >> 31) );
+    }
 };
 
 op mvn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:s[1]:/*sbz*/0[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);

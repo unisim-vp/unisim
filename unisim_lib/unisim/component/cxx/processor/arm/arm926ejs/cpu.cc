@@ -166,7 +166,7 @@ CPU(const char *name, Object *parent)
 			"The link register (LR) (alias of GPR[14]).")
 	, reg_pc("PC", this, pc,
 			"The program counter (PC) register (alias of debug logical GPR[15]).")
-	, reg_cpsr("CPSR", this, cpsr,
+	, reg_cpsr("CPSR", this, cpsr.m_value,
 			"The CPSR register.")
 	, ls_queue()
 	, first_ls(0)
@@ -213,14 +213,14 @@ CPU(const char *name, Object *parent)
 		ss_desc << "SPSR[" << i << "] register";
 		reg_spsr[i] =
 			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-					this, spsr[i], ss_desc.str().c_str());
+					this, spsr[i].m_value, ss_desc.str().c_str());
 	}
 
 	// Init the processor at SUPERVISOR mode
-	SetCPSR_Mode(SUPERVISOR_MODE);
+	cpsr.M().Set(SUPERVISOR_MODE);
 	// Disable fast and normal interruptions
-	SetCPSR_I();
-	SetCPSR_F();
+	cpsr.I().Set(1);
+	cpsr.F().Set(1);
 
 	// Set the right format for various of the variables
 	param_cpu_cycle_time_ps.SetFormat(
@@ -316,7 +316,7 @@ BeginSetup()
 	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
 	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
 	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &pc);
-	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
+	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
 	/* End TODO */
 
 	return true;
@@ -476,7 +476,7 @@ StepInstruction()
 		while(1);
 	}
 
-	if (GetCPSR_T())
+	if (cpsr.T().Get())
 	{
 		/* Thumb state */
 		
@@ -938,7 +938,7 @@ Disasm(uint64_t addr, uint64_t &next_addr)
 	uint32_t insn;
 	
 	stringstream buffer;
-	if (GetCPSR_T()) 
+	if (cpsr.T().Get()) 
 	{
 		assert("Thumb instructions not supported" != 0);
 	} 
@@ -1375,14 +1375,14 @@ MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
 		// Z flag = data[30] 
 		// C flag = data[29] 
 		// V flag = data[28]
-		if ( val & 0x80000000UL ) SetCPSR_N(true);
-		else SetCPSR_N(false);
-		if ( val & 0x40000000UL ) SetCPSR_Z(true);
-		else SetCPSR_Z(false);
-		if ( val & 0x20000000UL ) SetCPSR_C(true);
-		else SetCPSR_C(false);
-		if ( val & 0x10000000UL ) SetCPSR_V(true);
-		else SetCPSR_V(false);
+		if ( val & 0x80000000UL ) cpsr.N().Set(1);
+		else cpsr.N().Set(0);
+		if ( val & 0x40000000UL ) cpsr.Z().Set(1);
+		else cpsr.Z().Set(0);
+		if ( val & 0x20000000UL ) cpsr.C().Set(1);
+		else cpsr.C().Set(0);
+		if ( val & 0x10000000UL ) cpsr.V().Set(1);
+		else cpsr.V().Set(0);
 	}
 	else
 		SetGPR(rd, val);
@@ -1751,7 +1751,7 @@ CheckAccessPermission(bool is_read,
 
 	else if ( ap == 0x01UL )
 	{
-		uint32_t mode = GetCPSR_Mode();
+		uint32_t mode = cpsr.M().Get();
 		if ( mode == USER_MODE )
 		{
 			logger << DebugError
@@ -1774,7 +1774,7 @@ CheckAccessPermission(bool is_read,
 
 	else if ( ap == 0x02UL )
 	{
-		uint32_t mode = GetCPSR_Mode();
+	uint32_t mode = cpsr.M().Get();
 		if ( mode == USER_MODE )
 		{
 			if ( !is_read )
@@ -2530,26 +2530,26 @@ HandleException()
 
 	else if ( (exception &
 			unisim::component::cxx::processor::arm::exception::FIQ) &&
-			!GetCPSR_F() )
+			!cpsr.F().Get() )
 	{
 		report = true;
 	}
 
 	else if ( (exception & 
 			unisim::component::cxx::processor::arm::exception::IRQ) &&
-			!GetCPSR_I() )
+			!cpsr.I().Get() )
 	{
 		report = true;
 		logger << DebugInfo
 			<< "Received IRQ interrupt, handling it."
 			<< EndDebugInfo;
 		handled = true;
-		spsr[3] = cpsr;
-		SetGPRMapping(GetCPSR_Mode(), IRQ_MODE);
+		spsr[3] = cpsr.bits();
+		SetGPRMapping(cpsr.M().Get(), IRQ_MODE);
 		SetGPR(14, GetNPC());
-		SetCPSR_Mode(IRQ_MODE);
-		SetCPSR_T(false);
-		SetCPSR_I(true);
+		cpsr.M().Set(IRQ_MODE);
+		cpsr.T().Set(0);
+		cpsr.I().Set(1);
 		if ( cp15.GetVINITHI() )
 			SetGPR(PC_reg, 0xffff0018UL);
 		else
@@ -2575,12 +2575,12 @@ HandleException()
 	{
 		if ( (exception &
 					unisim::component::cxx::processor::arm::exception::FIQ) &&
-				GetCPSR_F() )
+				cpsr.F().Get() )
 			handled = true;
 
 		if ( (exception & 
 					unisim::component::cxx::processor::arm::exception::IRQ) &&
-				GetCPSR_I() )
+				cpsr.I().Get() )
 			handled = true;
 	}
 
@@ -2589,12 +2589,12 @@ HandleException()
 		logger << DebugError
 			<< "Exception not handled (" << (unsigned int)exception << ")" 
 			<< std::endl
-			<< " - CPSR = 0x" << std::hex << cpsr << std::dec
+			<< " - CPSR = 0x" << std::hex << cpsr.bits() << std::dec
 			<< " - irq? = " 
 			<< (exception & 
 					unisim::component::cxx::processor::arm::exception::IRQ)
 			<< std::endl
-			<< " - CPSR_I = " << GetCPSR_I()
+			<< " - CPSR_I = " << cpsr.I().Get()
 			<< EndDebugError;
 		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	}
@@ -3250,7 +3250,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( likely(memop->GetType() == MemoryOp::READ) )
 		SetGPR(memop->GetTargetReg(), value);
 	else
-		SetGPR_usr(memop->GetTargetReg(), value, GetCPSR_Mode());
+		SetGPR_usr(memop->GetTargetReg(), value, cpsr.M().Get());
 
 	if ( likely(dcache.GetSize()) )
 		if ( unlikely(dcache.power_estimator_import != 0) )

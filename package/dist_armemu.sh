@@ -368,6 +368,7 @@ unisim/util/hash_table/hash_table.hh \
 unisim/util/queue/queue.hh \
 unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
+unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
 unisim/component/cxx/processor/arm/coprocessor_interface.hh \
 unisim/component/cxx/processor/arm/armemu/cpu.hh \

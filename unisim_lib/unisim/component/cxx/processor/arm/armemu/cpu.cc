@@ -158,7 +158,7 @@ CPU::CPU(const char *name, Object *parent)
 			"The link register (LR) (alias of GPR[14]).")
 	, reg_pc("PC", this, gpr[15],
 			"The program counter (PC) register (alias of GPR[15]).")
-	, reg_cpsr("CPSR", this, cpsr,
+	, reg_cpsr("CPSR", this, cpsr.m_value,
 			"The CPSR register.")
 	, ls_queue()
 	, first_ls(0)
@@ -197,12 +197,12 @@ CPU::CPU(const char *name, Object *parent)
 		ss_desc << "SPSR[" << i << "] register";
 		reg_spsr[i] =
 			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-					this, spsr[i], ss_desc.str().c_str());
+					this, spsr[i].m_value, ss_desc.str().c_str());
 	}
 
 	// This implementation of the arm architecture can only run in user mode,
 	//   so we can already set CPSR to that mode.
-	SetCPSR_Mode(USER_MODE);
+	cpsr.M().Set(USER_MODE);
 
 	// Set the right format for various of the variables
 	param_cpu_cycle_time_ps.SetFormat(
@@ -388,7 +388,7 @@ CPU::EndSetup()
 	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
 	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
 	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &next_pc);
-	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
+	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
 	/* End TODO */
 
 	/* If the memory access reporting import is not connected remove the need of
@@ -451,7 +451,7 @@ CPU::StepInstruction()
 		} while(1);
 	}
 	
-	if (unlikely(GetCPSR_T())) {
+	if (cpsr.T().Get()) {
 		/* Thumb state */
 		
 		/* This implementation should never enter into thumb mode */
@@ -865,7 +865,7 @@ CPU::Disasm(uint32_t addr, uint32_t &next_addr)
 	uint32_t insn;
 	
 	stringstream buffer;
-	if (GetCPSR_T()) 
+	if (cpsr.T().Get())
 	{
 		logger << DebugError << "Thumb instructions not supported in" << std::endl
 		       << unisim::kernel::debug::BackTrace() << EndDebugError;

@@ -71,7 +71,7 @@ namespace arm {
   CheckCondition( coreT& core, uint32_t cond )
   {
     using CondTruthTable::N; using CondTruthTable::Z; using CondTruthTable::C; using CondTruthTable::V;
-    uint32_t nzcv = core.GetCPSR_NZCV();
+    uint32_t nzcv = core.CPSR().NZCV().Get();
     uint16_t const condition_truth_tables[] = {
       uint16_t(                      Z::tt ), // eq; equal
       uint16_t(                     ~Z::tt ), // ne; not equal
@@ -96,7 +96,7 @@ namespace arm {
   
   template <typename coreT>
   uint32_t
-  ComputeImmShift( coreT const& core, uint32_t shift_lhs, uint32_t shift, uint32_t shift_rhs )
+  ComputeImmShift( coreT& core, uint32_t shift_lhs, uint32_t shift, uint32_t shift_rhs )
   {
     if (shift_rhs) {
       switch (shift) {
@@ -110,7 +110,7 @@ namespace arm {
       case 0: return shift_lhs;
       case 1: return 0;
       case 2: return ((int32_t)shift_lhs) >> 31;
-      case 3: return ((core.GetCPSR_C() << 31) | (shift_lhs >> 1));
+      case 3: return ((core.CPSR().C().Get() << 31) | (shift_lhs >> 1));
       }
     }
 
@@ -125,7 +125,7 @@ namespace arm {
     uint32_t carry = 0;
 
     if      ((shift_rhs == 0) and (shift == 0)) /* MOVS */
-      carry = core.GetCPSR_C();
+      carry = core.CPSR().C().Get();
     else if ((shift_rhs == 0) and (shift == 3)) /* RRX */
       carry = (shift_lhs & 1);
     else if (shift == 0)                        /* LSL */
@@ -133,7 +133,10 @@ namespace arm {
     else                                        /* LSR, ASR, ROR */
       carry = (shift_lhs >> ((shift_rhs - 1) & 0x1f)) & 1;
 
-    core.SetCPSR_NZCV( (res >> 31) & 1, res == 0, carry, core.GetCPSR_V() );
+    core.CPSR().N().Set( (res >> 31) & 1 );
+    core.CPSR().Z().Set( res == 0 );
+    core.CPSR().C().Set( carry );
+    /* CPSR.V unaltered */
   }
 
   template <typename coreT>
@@ -159,7 +162,7 @@ namespace arm {
     shift_val &= 0xff;
     uint32_t carry = 0;
 
-    if (shift_val == 0) carry = core.GetCPSR_C();
+    if (shift_val == 0) carry = core.CPSR().C().Get();
     else {
       switch (shift) {
       case 0: carry =  (shift_val <= 32) ? (value >> (32 - shift_val)) & 1 : 0; break;
@@ -170,16 +173,20 @@ namespace arm {
       }
     }
 
-    core.SetCPSR_NZCV( (res >> 31) & 1, res == 0, carry, core.GetCPSR_V() );
+    core.CPSR().N().Set( (res >> 31) & 1 );
+    core.CPSR().Z().Set( res == 0 );
+    core.CPSR().C().Set( carry );
+    /* CPSR.V unaltered */
   }
   
   template <typename coreT>
   void
   UpdateStatusAdd( coreT& core, uint32_t res, uint32_t lhs, uint32_t rhs )
   {
-    core.SetCPSR_NZCV( (res >> 31) & 1, res == 0,
-                   ((lhs & rhs) | ((~res) & (lhs | rhs))) >> 31,
-                   ((lhs & rhs & (~res)) | ((~lhs) & (~rhs) & res)) >> 31 );
+    core.CPSR().N().Set( (res >> 31) & 1 );
+    core.CPSR().Z().Set( res == 0 );
+    core.CPSR().C().Set( ((lhs & rhs) | ((~res) & (lhs | rhs))) >> 31 );
+    core.CPSR().V().Set( ((lhs & rhs & (~res)) | ((~lhs) & (~rhs) & res)) >> 31 );
   }
 
   /* In ARM isa, the substraction carry correspond to the complementary                                                                          
@@ -189,9 +196,10 @@ namespace arm {
   void
   UpdateStatusSub( coreT& core, uint32_t res, uint32_t lhs, uint32_t rhs )
   {
-    core.SetCPSR_NZCV( (res >> 31) & 1, res == 0,
-                   ((lhs & (~rhs)) | ((~res) & (lhs | (~rhs)))) >> 31,
-                   ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
+    core.CPSR().N().Set( (res >> 31) & 1 );
+    core.CPSR().Z().Set( res == 0 );
+    core.CPSR().C().Set( ((lhs & (~rhs)) | ((~res) & (lhs | (~rhs)))) >> 31 );
+    core.CPSR().V().Set( ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
   }
 
   template <typename coreT>
@@ -213,7 +221,7 @@ namespace arm {
     if ((mask & 0x04) == 0x04) byte_mask |= 0x00ff0000;
     if ((mask & 0x08) == 0x08) byte_mask |= 0xff000000;
   
-    uint32_t run_mode = core.GetCPSR() & core.RUNNING_MODE_MASK; /* get running mode */
+    uint32_t run_mode = core.CPSR().M().Get(); /* get running mode */
     if (isSPSR == 0)
       {
         uint32_t reg_mask = 0;
@@ -228,8 +236,8 @@ namespace arm {
           {
             reg_mask = byte_mask & msr_usermask;
           }
-        uint32_t reg = (core.GetCPSR() & ~reg_mask) | (operand & reg_mask);
-        core.SetCPSR(reg);
+        uint32_t reg = (core.CPSR().bits() & ~reg_mask) | (operand & reg_mask);
+        core.CPSR().bits() = reg;
       
         /* check if the running mode did change, if so switch registers */
         uint32_t new_run_mode = reg & core.RUNNING_MODE_MASK;
@@ -242,8 +250,8 @@ namespace arm {
         if ( !((run_mode == core.USER_MODE) || (run_mode == core.SYSTEM_MODE)) )
           {
             uint32_t reg_mask = byte_mask & (msr_usermask | msr_privmask | msr_statemask);
-            uint32_t reg = (core.GetSPSR() & ~reg_mask) | (operand & reg_mask);
-            core.SetSPSR(reg);
+            uint32_t reg = (core.SPSR().bits() & ~reg_mask) | (operand & reg_mask);
+            core.SPSR().bits() = reg;
           }
         else
           return; // unpredictable

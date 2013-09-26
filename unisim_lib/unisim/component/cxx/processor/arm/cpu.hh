@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
+#include "unisim/component/cxx/processor/arm/psr.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/debug/register.hh"
@@ -320,7 +321,7 @@ public:
    */
   void BranchExchange(uint32_t target)
   {
-    this->SetCPSR_T( target & 1 );
+    this->cpsr.T().Set( target & 1 );
     this->Branch( target );
   }
 	
@@ -330,7 +331,7 @@ public:
    */
   void Branch(uint32_t target)
   {
-    this->next_pc = target & (GetCPSR_T() ? -2 : -4);
+    this->next_pc = target & (this->CPSR().T().Get() ? -2 : -4);
   }
 	
   /** Gets the updated PC value (next PC as currently computed)
@@ -346,7 +347,7 @@ public:
    * @param id the register index
    * @return the value contained by the register
    */
-  uint32_t GetGPR_usr(uint32_t id) const;
+  uint32_t GetGPR_usr(uint32_t id);
   /** Set the value contained by a user GPR.
    * Sets the value contained by a user GPR. It is the same than SetGPR byt
    *   restricting the index from 0 to 15 (only the first 16 registers).
@@ -356,302 +357,19 @@ public:
    */
   void SetGPR_usr(uint32_t id, uint32_t val);
   
-  /* CPSR access functions */
-  /** Get the value of the CPSR register.
+  /* PSR access functions */
+  
+  /** Get the CPSR register.
    *
-   * @return the value of the CPSR register.
+   * @return the CPSR structured register.
    */
-  uint32_t GetCPSR() const;
-  /** Get the NZCV bits of the CPSR register
-   * 
-   * @return the NZCV bits of the CPSR register
-   */
-  uint32_t GetCPSR_NZCV() const { return (cpsr >> 28) & 0xf; }
-	
-  /** Set the value of the CPSR register.
+  PSR&  CPSR() { return cpsr; };
+  /** Get the SPSR register according to current mode.
    *
-   * @param val the value to set
+   * @return the SPSR structured register according to current mode.
    */
-  void SetCPSR(uint32_t val);
-  /** Set the value of the NZCV bits of the CPSR register.
-   *
-   * @param n the N bit
-   * @param z the Z bit
-   * @param c the C bit
-   * @param v the V bit
-   */
-  void SetCPSR_NZCV(bool n,
-                    bool z,
-                    bool c,
-                    bool v);
-  /** Set the N bit of the CPSR register.
-   *
-   * @param val the value of the N bit
-   */
-  void SetCPSR_N(const bool val = true);
-  /** Unset the N bit of the CPSR register (set to 0).
-   * This method is analagous to SetCPSR_N(false).
-   */
-  void UnsetCPSR_N();
-  /** Get the value of the CPSR register N bit.
-   *
-   * @return the value of the CPSR register N bit
-   */
-  bool GetCPSR_N() const;
-  /** Set the Z bit of the CPSR register.
-   *
-   * @param val the value of the Z bit
-   */
-  void SetCPSR_Z(const bool val = true);
-  /** Unset the Z bit of the CPSR register (set to 0).
-   * This method is analogous to SetCPSR_Z(false).
-   */
-  void UnsetCPSR_Z();
-  /** Get the value of the CPSR register Z bit.
-   *
-   * @return the value of the CPSR register Z bit
-   */
-  bool GetCPSR_Z() const;
-  /** Set the C bit of the CPSR register.
-   *
-   * @param val the value of the C bit
-   */
-  void SetCPSR_C(const bool val = true);
-  /** Unset the C bit of the CPSR register (set to 0).
-   * This method is analogous to SetCPSR_C(false).
-   */
-  void UnsetCPSR_C();
-  /** Get the value of the CPSR register C bit.
-   *
-   * @return the value of the CPSR register C bit
-   */
-  bool GetCPSR_C() const;
-  /** Set teh V bit of the CPSR register.
-   *
-   * @param val the value of the V bit
-   */
-  void SetCPSR_V(const bool val = true);
-  /** Unset the V bit of the CPSR register (set to 0).
-   * This method is analogous to SetCPSR_V(false).
-   */
-  void UnsetCPSR_V();
-  /** Get the value of the CPSR register V bit.
-   *
-   * @return the value of the CPSR register V bit
-   */
-  bool GetCPSR_V() const;
-  /** Set the Q bit of the CPSR register.
-   *
-   * @param val teh value of the Q bit
-   */
-  void SetCPSR_Q(const bool val = true);
-  /** Unset the Q bit of the CPSR register (set to 0).
-   * This method is analogous to SetCPSR_Q(false).
-   */
-  void UnsetCPSR_Q();
-  /** Get the value of the CPSR register Q bit.
-   * 
-   * @return the value of the CPSR register Q bit
-   */
-  bool GetCPSR_Q();
-  /** Set the I bit of the CPSR register.
-   *
-   * @param val the value of the I bit
-   */
-  void SetCPSR_I(const bool val = true);
-  /** Unset the I bit of the CPSR register (set to 0).
-   * This method is analogous to SetCPSR_I(false).
-   */
-  void UnsetCPSR_I();
-  /** Get the value of the CPSR register I bit.
-   *
-   * @return the value of the CPSR register I bit
-   */
-  bool GetCPSR_I();
-  /** Set the F bit of the CPSR register.
-   *
-   * @param val the value of the F bit
-   */
-  void SetCPSR_F(const bool val = true);
-  /** Unset the F bit of the CPSR register (set to 0).
-   * This method is analogous to SetCPSR_F(false).
-   */
-  void UnsetCPSR_F();
-  /** Get the value of the CPSR register F bit.
-   *
-   * @return the value of the CPSR register F bit
-   */
-  bool GetCPSR_F();
-  /** Set the T bit of the CPSR register.
-   *
-   * @param val the value of the T bit
-   */
-  void SetCPSR_T(const bool val = true);
-  /** Unset the T bit of the CPSR register (set to 0).
-   * This method is analogous to SetCPSR_T(false).
-   */
-  void UnsetCPSR_T();
-  /** Get the value of the CPSR register T bit.
-   *
-   * @return the value of the CPSR register T bit.
-   */
-  bool GetCPSR_T();
-  /** Set the mode value of the CPSR register.
-   *
-   * @param mode the mode to set in the CPSR register
-   */
-  void SetCPSR_Mode(uint32_t mode);
-  /** Get the mode value of the CPSR register.
-   *
-   * @return the mode value of the CPSR register
-   */
-  uint32_t GetCPSR_Mode() const;
-		
-  /* SPSR access functions */
-  /** Get the value of the CPSR register.
-   *
-   * @return the value of the CPSR register
-   */
-  uint32_t GetSPSR();
-  /** Set the value of the SPSR register.
-   *
-   * @param val the value to set
-   */
-  void SetSPSR(uint32_t val);
-  /** Set the value of the NZCV bits of the SPSR register.
-   *
-   * @param n the N bit
-   * @param z the Z bit
-   * @param c the C bit
-   * @param v the V bit
-   */
-  void SetSPSR_NZCV(bool n,
-                    bool z,
-                    bool c,
-                    bool v);
-  /** Set the N bit of the SPSR register.
-   *
-   * @param val the value of the N bit
-   */
-  void SetSPSR_N(const bool val = true);
-  /** Unset the N bit of the SPSR register (set to 0).
-   * This method is analogous to SetSPSR_N(false).
-   */
-  void UnsetSPSR_N();
-  /** Get the value of the SPSR register N bit.
-   *
-   * @return the value of the SPSR register N bit.
-   */
-  bool GetSPSR_N();
-  /** Set the Z bit of the SPSR register.
-   *
-   * @param val the value of the Z bit
-   */
-  void SetSPSR_Z(const bool val = true);
-  /** Unset the Z bit of the SPSR register (set to 0).
-   * This method is analogous to SetSPSR_Z(false).
-   */
-  void UnsetSPSR_Z();
-  /** Get the value of the SPSR Z bit.
-   *
-   * @return the value of the SPSR register Z bit
-   */
-  bool GetSPSR_Z();
-  /** Set the C bit of the SPSR register.
-   *
-   * @param val the value of the C bit
-   */
-  void SetSPSR_C(const bool val = true);
-  /** Unset the C bit of the SPSR register (set to 0).
-   * This method is analogous to SetSPSR_C(false).
-   */
-  void UnsetSPSR_C();
-  /** Get the value of the SPSR C bit.
-   *
-   * @return the value of the SPSR register C bit
-   */
-  bool GetSPSR_C();
-  /** Set the V bit of the SPSR register.
-   *
-   * @param val the value of the V bit
-   */
-  void SetSPSR_V(const bool val = true);
-  /** Unset the V bit of the SPSR register (set to 0).
-   * This method is analogous to SetSPSR_V(false).
-   */
-  void UnsetSPSR_V();
-  /** Get the value of the SPSR V bit.
-   *
-   * @return the value of the SPSR register V bit
-   */
-  bool GetSPSR_V();
-  /** Set the Q bit of the SPSR register.
-   *
-   * @param val the value of the Q bit
-   */
-  void SetSPSR_Q(const bool val = true);
-  /** Unset the Q bit of the SPSR register (set to 0).
-   * This method is analogous to SetSPSR_Q(false).
-   */
-  void UnsetSPSR_Q();
-  /** Get the value of the SPSR Q bit.
-   *
-   * @return the value of the SPSR register Q bit
-   */
-  bool GetSPSR_Q();
-  /** Set the I bit of the SPSR register.
-   *
-   * @param val the value of the I bit
-   */
-  void SetSPSR_I(const bool val = true);
-  /** Unset the I bit of the SPSR register (set to 0).
-   * This method is analogous to SetSPSR_I(false).
-   */
-  void UnsetSPSR_I();
-  /** Get the value of the SPSR I bit.
-   *
-   * @return the value of the SPSR register I bit
-   */
-  bool GetSPSR_I();
-  /** Set the F bit of the SPSR register.
-   *
-   * @param val the value of the F bit
-   */
-  void SetSPSR_F(const bool val = true);
-  /** Unset the F bit of the SPSR register (set to 0).
-   * This method is analogous to SetSPSR_F(false).
-   */
-  void UnsetSPSR_F();
-  /** Get the value of the SPSR F bit.
-   * 
-   * @return the value of the SPSR register F bit
-   */
-  bool GetSPSR_F();
-  /** Set the T bit of the SPSR register (set to 0).
-   *
-   * @param val the value of the T bit
-   */
-  void SetSPSR_T(const bool val = true);
-  /** Unset the T bit of the SPSR register (set to 0).
-   * This method is analogous to SetSPSR_T(false).
-   */
-  void UnsetSPSR_T();
-  /** Get the value of the SPSR T bit.
-   *
-   * @return the value of the SPSR register T bit
-   */
-  bool GetSPSR_T();
-  /** Set the mode value of the SPSR register.
-   *
-   * @param mode the mode to set in the SPSR register
-   */
-  void SetSPSR_Mode(uint32_t mode);
-  /** Get the mode value of the SPSR register.
-   *
-   * @return the mode value of the SPSR register
-   */
-  uint32_t GetSPSR_Mode();
-
+  PSR&  SPSR() { return spsr[GetSPSRIndex()]; };
+  
   /** Get SPSR index from current running mode
    *
    * @return the SPSR index from current running mode
@@ -712,26 +430,6 @@ public:
   static uint32_t const ABORT_MODE = 0x17;
   static uint32_t const UNDEFINED_MODE = 0x1B;
   static uint32_t const SYSTEM_MODE = 0x1F;
-  /* masks for the different CPSR status bits */
-  static uint32_t const CPSR_N_MASK = 0x80000000;
-  static uint32_t const CPSR_Z_MASK = 0x40000000;
-  static uint32_t const CPSR_C_MASK = 0x20000000;
-  static uint32_t const CPSR_V_MASK = 0x10000000;
-  static uint32_t const CPSR_Q_MASK = 0x08000000;
-  static uint32_t const CPSR_I_MASK = 0x00000080;
-  static uint32_t const CPSR_F_MASK = 0x00000040;
-  static uint32_t const CPSR_T_MASK = 0x00000020;
-  static uint32_t const CPSR_RUNNING_MODE_MASK = 0x0000001F;
-  /* masks for the different SPSR status bits */
-  static uint32_t const SPSR_N_MASK = CPSR_N_MASK;
-  static uint32_t const SPSR_Z_MASK = CPSR_Z_MASK;
-  static uint32_t const SPSR_C_MASK = CPSR_C_MASK;
-  static uint32_t const SPSR_V_MASK = CPSR_V_MASK;
-  static uint32_t const SPSR_Q_MASK = CPSR_Q_MASK;
-  static uint32_t const SPSR_I_MASK = CPSR_I_MASK;
-  static uint32_t const SPSR_F_MASK = CPSR_F_MASK;
-  static uint32_t const SPSR_T_MASK = CPSR_T_MASK;
-  static uint32_t const SPSR_RUNNING_MODE_MASK = CPSR_RUNNING_MODE_MASK;
   /* values of the different condition codes */
   static uint32_t const COND_EQ = 0x00;
   static uint32_t const COND_NE = 0x01;
@@ -795,30 +493,8 @@ protected:
   /** Storage for the logical registers */
   uint32_t gpr[num_log_gprs];
   uint32_t current_pc, next_pc;
-  /** The CPSR register.
-   * All the running modes share the same CPSR register
-   * CPSR organization:
-   * - bit 31: N
-   * - bit 30: Z
-   * - bit 29: C
-   * - bit 28: V
-   * - bit 27: Q
-   * - bits 26-8: DNM(RAZ) not used in current arm versions
-   * - bit 7: I
-   * - bit 6: F
-   * - bit 5: T
-   * - bits 4-0: M bits, running mode, see bellow
-   * Bits 4 to 0 indicate the processor current running mode.
-   *   Accepted running modes are:
-   * - 0b10000: User
-   * - 0b10001: FIQ (Fast Interrupt)
-   * - 0b10010: IRQ (Interrupt) 
-   * - 0b10011: Supervisor
-   * - 0b10111: Abort
-   * - 0b11011: Undefined
-   * - 0b11111: System
-   */
-  uint32_t cpsr;
+  /** PSR registers. */
+  PSR      cpsr;
   /** Number of SPSR registers.
    * Privileged modes have private SPSR registers, the following is
    *   the organization per running mode:
@@ -833,7 +509,7 @@ protected:
   const static uint32_t num_phys_spsrs = 5;
   /** The SPSR registers storage.
    */
-  uint32_t spsr[5];
+  PSR      spsr[5];
 		
   /* TODO: check if the fake floating point registers could be removed. */
   uint64_t fake_fpr[8];

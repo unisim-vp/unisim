@@ -56,16 +56,17 @@ mla.execute = {
   uint32_t rn_value = cpu.GetGPR(rn);
   uint32_t rs_value = cpu.GetGPR(rs);
   
-  if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
 
   res = rm_value * rs_value;
   res += rn_value;
   cpu.SetGPR(rd, res);
   
-  if(s) {
-    cpu.SetCPSR_N(res & 0x80000000);
-    cpu.SetCPSR_Z(res == 0);
-  }
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -110,10 +111,11 @@ mul.execute = {
   res = rm_value * rs_value;
   cpu.SetGPR(rd, res);
   
-  if(s) {
-    cpu.SetCPSR_N(res & 0x80000000);
-    cpu.SetCPSR_Z(res == 0);
-  }
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -142,7 +144,7 @@ smlal.execute = {
   uint32_t rm_value = cpu.GetGPR(rm);
 
 
-  if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
 
   res = rdlo_value + (((uint64_t)rdhi_value) << 32);
   res = (int64_t)res + ((int64_t)(int32_t)rn_value) * ((int64_t)(int32_t)rm_value);
@@ -151,10 +153,11 @@ smlal.execute = {
   cpu.SetGPR(rdhi, (uint32_t)res_hi);
   cpu.SetGPR(rdlo, (uint32_t)res_lo);
 
-  if(s) {
-    cpu.SetCPSR_N(res_hi & 0x80000000);
-    cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
-  }
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 63) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -228,10 +231,11 @@ smull.execute = {
   cpu.SetGPR(rdhi, (uint32_t)res_hi);
   cpu.SetGPR(rdlo, (uint32_t)res_lo);
 	
-  if(s) {
-    cpu.SetCPSR_N(res_hi & 0x80000000);
-    cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
-  }
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 63) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -267,10 +271,11 @@ umlal.execute = {
   cpu.SetGPR(rdhi, (uint32_t)res_hi);
   cpu.SetGPR(rdlo, (uint32_t)res_lo);
 
-  if(s) {
-    cpu.SetCPSR_N(res_hi & 0x80000000);
-    cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
-  }
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 63) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -323,10 +328,11 @@ umull.execute = {
   cpu.SetGPR(rdhi, (uint32_t)res_hi);
   cpu.SetGPR(rdlo, (uint32_t)res_lo);
 
-  if(s) {
-    cpu.SetCPSR_N(res_hi & 0x80000000);
-    cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
-  }
+  if (s)
+    {
+      cpu.CPSR().N().Set( (res >> 63) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -391,8 +397,8 @@ smlaxy.execute = {
 	uint8_t carry_out, overflow_out, sign;
 	unisim::util::arithmetic::Add32(val_rd, carry_out, overflow_out, sign, mul_res, val_ra, 0);
 	//if(op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
-	if(overflow_out) {
-		cpu.SetCPSR_Q(true);
+	if (overflow_out) {
+		cpu.CPSR().Q().Set( 1 );
 	}
 	cpu.SetGPR(rd, val_rd);
 }
@@ -636,7 +642,7 @@ smlawy.execute = {
 	if(overflow_out)
 	{
 //		cpu.SetCPSR_Q(false);
-		cpu.SetCPSR_Q(true);
+		cpu.CPSR().Q().Set( 1 );
 	}
 // 	else
 // 	{

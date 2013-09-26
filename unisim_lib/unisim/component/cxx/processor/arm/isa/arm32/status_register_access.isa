@@ -53,8 +53,8 @@ mrs.execute = {
   if (not CheckCondition(cpu, cond)) return;
   if (rd == cpu.PC_reg) { cpu.UnpredictableInsnBehaviour(); return; }
   switch (sr) {
-  case 15: cpu.SetGPR(rd, cpu.GetCPSR()); break;
-  case 79: cpu.SetGPR(rd, cpu.GetSPSR()); break;
+  case 15: cpu.SetGPR(rd, cpu.CPSR().bits()); break;
+  case 79: cpu.SetGPR(rd, cpu.SPSR().bits()); break;
   default: cpu.UnpredictableInsnBehaviour(); break;
   }
 };

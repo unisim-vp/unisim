@@ -50,7 +50,7 @@ adc.disasm = {
 };
 
 adc.execute = {
-  uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 + op2 + cpu.GetCPSR_C();
+  uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 + op2 + cpu.CPSR().C().Get();
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusAdd( cpu, res, op1, op2 );
 };
@@ -216,7 +216,11 @@ and.disasm = {
 and.execute = {
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 & op2;
   cpu.SetGPR( rdn, res );
-  if (not cpu.itblock()) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, cpu.GetCPSR_C(), cpu.GetCPSR_V() );
+  if (not cpu.itblock())
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -257,7 +261,11 @@ bic.disasm = {
 bic.execute = {
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 & ~op2;
   cpu.SetGPR( rdn, res );
-  if (not cpu.itblock()) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, cpu.GetCPSR_C(), cpu.GetCPSR_V() );
+  if (not cpu.itblock())
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -337,7 +345,11 @@ eor.disasm = {
 eor.execute = {
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 ^ op2;
   cpu.SetGPR( rdn, res );
-  if (not cpu.itblock()) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, cpu.GetCPSR_C(), cpu.GetCPSR_V() );
+  if (not cpu.itblock())
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -399,7 +411,11 @@ mov_1.disasm = {
 mov_1.execute = {
   uint32_t res = imm;
   cpu.SetGPR( rd, res );
-  if (not cpu.itblock()) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, cpu.GetCPSR_C(), cpu.GetCPSR_V() );
+  if (not cpu.itblock())
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -469,7 +485,11 @@ mvn.disasm = {
 mvn.execute = {
   uint32_t res = ~(cpu.GetGPR( rm ));
   cpu.SetGPR( rd, res );
-  if (not cpu.itblock()) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, cpu.GetCPSR_C(), cpu.GetCPSR_V() );
+  if (not cpu.itblock())
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -509,7 +529,11 @@ orr.disasm = {
 orr.execute = {
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 | op2;
   cpu.SetGPR( rdn, res );
-  if (not cpu.itblock()) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, cpu.GetCPSR_C(), cpu.GetCPSR_V() );
+  if (not cpu.itblock())
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
 };
 
 /*
@@ -548,7 +572,7 @@ sbc.disasm = {
 };
 
 sbc.execute = {
-  uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+  uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -647,7 +671,8 @@ tst.disasm = {
 
 tst.execute = {
   uint32_t op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res = op1 & op2;
-  cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, cpu.GetCPSR_C(), cpu.GetCPSR_V() );
+  cpu.CPSR().N().Set( (res >> 31) & 1 );
+  cpu.CPSR().Z().Set( res == 0 );
 };
 
 /*

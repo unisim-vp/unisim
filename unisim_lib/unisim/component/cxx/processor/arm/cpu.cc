@@ -99,7 +99,7 @@ CPU::CPU(char const* name, Object* parent, endian_type endianness)
   , munged_address_mask8(0)
   , munged_address_mask16(0)
   , registers_registry()
-  , cpsr(0)
+  , cpsr()
   , fake_fps(0)
   , exception(0)
 {
@@ -111,12 +111,6 @@ CPU::CPU(char const* name, Object* parent, endian_type endianness)
 	
   for(unsigned int i = 0; i < num_phys_gprs; i++)
     phys_gpr[i] = 0;
-
-  // Initialize status (CPSR/SPSR) registers
-  cpsr = 0;
-  for(unsigned int i = 0; i < num_phys_spsrs; i++) {
-    spsr[i] = 0;
-  }
 
   // Initialize fake floating point registers
   for(unsigned int i = 0; i < 8; i++) {
@@ -138,7 +132,7 @@ CPU::CPU(char const* name, Object* parent, endian_type endianness)
   registers_registry["pc"] =   new ProgramCounterRegister("pc", *this);
   registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
   registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
-  registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
+  registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
 }
 
 /** Destructor.
@@ -330,32 +324,32 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
  */
 uint32_t 
 CPU::
-GetGPR_usr(uint32_t id) const
+GetGPR_usr(uint32_t id)
 {
-	uint32_t mode = GetCPSR_Mode();
-	switch ( mode )
-	{
-		case SUPERVISOR_MODE:
-		case ABORT_MODE:
-		case UNDEFINED_MODE:
-		case IRQ_MODE:
-			if ( (id < 13) || (id == 15) )
-				return GetGPR(id);
-			else
-				return phys_gpr[id];
-			break;
-		case FIQ_MODE:
-			if ( (id < 8) || (id == 15) )
-				return GetGPR(id);
-			else
-				return phys_gpr[id];
-			break;
-		case USER_MODE:
-		case SYSTEM_MODE:
-		default:
-			return GetGPR(id);
-			break;
-	}
+  uint32_t mode = cpsr.M().Get();
+  switch ( mode )
+    {
+    case SUPERVISOR_MODE:
+    case ABORT_MODE:
+    case UNDEFINED_MODE:
+    case IRQ_MODE:
+      if ( (id < 13) || (id == 15) )
+        return GetGPR(id);
+      else
+        return phys_gpr[id];
+      break;
+    case FIQ_MODE:
+      if ( (id < 8) || (id == 15) )
+        return GetGPR(id);
+      else
+        return phys_gpr[id];
+      break;
+    case USER_MODE:
+    case SYSTEM_MODE:
+    default:
+      return GetGPR(id);
+      break;
+    }
 }
 
 /** Set the value contained by a user GPR.
@@ -369,812 +363,29 @@ void
 CPU::
 SetGPR_usr(uint32_t id, uint32_t val)
 {
-	uint32_t mode = GetCPSR_Mode();
-	switch ( mode )
-	{
-		case USER_MODE:
-		case SYSTEM_MODE:
-			SetGPR( id, val );
-			break;
-		case SUPERVISOR_MODE:
-		case ABORT_MODE:
-		case UNDEFINED_MODE:
-		case IRQ_MODE:
-			if ( (id < 13) || (id == 15) )
-				SetGPR( id, val );
-			else
-				phys_gpr[id] = val;
-			break;
-		case FIQ_MODE:
-			if ( (id < 8) || (id == 15 ) )
-				SetGPR( id, val );
-			else
-				phys_gpr[id] = val;
-			break;
-	}
-}
-
-/** Get the value of the CPSR register.
- *
- * @return the value of the CPSR register.
- */
-uint32_t 
-CPU::
-GetCPSR() const
-{
-	return cpsr;
-}
-
-/** Set the value of the CPSR register.
- *
- * @param val the value to set
- */
-void 
-CPU::
-SetCPSR(uint32_t val)
-{
-	cpsr = val;
-}
-
-/** Set the value of the NZCV bits of the CPSR register.
- *
- * @param n the N bit
- * @param z the Z bit
- * @param c the C bit
- * @param v the V bit
- */
-void 
-CPU::
-SetCPSR_NZCV(bool n,
-		bool z,
-		bool c,
-		bool v)
-{
-	if(n) cpsr = cpsr | CPSR_N_MASK;
-	else cpsr = cpsr & ~(CPSR_N_MASK);
-	if(z) cpsr = cpsr | CPSR_Z_MASK;
-	else cpsr = cpsr & ~(CPSR_Z_MASK);
-	if(c) cpsr = cpsr | CPSR_C_MASK;
-	else cpsr = cpsr & ~(CPSR_C_MASK);
-	if(v) cpsr = cpsr | CPSR_V_MASK;
-	else cpsr = cpsr & ~(CPSR_V_MASK);
-}
-
-/** Set the N bit of the CPSR register.
- *
- * @param val the value of the N bit
- */
-void 
-CPU::
-SetCPSR_N(const bool val)
-{
-	if(val) cpsr = cpsr | CPSR_N_MASK;
-	else cpsr = cpsr & ~(CPSR_N_MASK);
-}
-
-/** Unset the N bit of the CPSR register (set to 0).
- * This method is analagous to SetCPSR_N(false).
- */
-void 
-CPU::
-UnsetCPSR_N()
-{
-	cpsr = cpsr & ~(CPSR_N_MASK);
-}
-
-/** Get the value of the CPSR register N bit.
- *
- * @return the value of the CPSR register N bit
- */
-bool 
-CPU::
-GetCPSR_N() const
-{
-	return (cpsr & CPSR_N_MASK) == CPSR_N_MASK;
-}
-
-/** Set the Z bit of the CPSR register.
- *
- * @param val the value of the Z bit
- */
-void 
-CPU::
-SetCPSR_Z(const bool val)
-{
-	if(val) cpsr = cpsr | CPSR_Z_MASK;
-	else cpsr = cpsr & ~(CPSR_Z_MASK);
-}
-
-/** Unset the Z bit of the CPSR register (set to 0).
- * This method is analogous to SetCPSR_Z(false).
- */
-void 
-CPU:: 
-UnsetCPSR_Z()
-{
-	cpsr = cpsr & ~(CPSR_Z_MASK);
-}
-
-/** Get the value of the CPSR register Z bit.
- *
- * @return the value of the CPSR register Z bit
- */
-bool 
-CPU::
-GetCPSR_Z() const
-{
-	return (cpsr & CPSR_Z_MASK) == CPSR_Z_MASK;
-}
-
-/** Set the C bit of the CPSR register.
- *
- * @param val the value of the C bit
- */
-void 
-CPU::
-SetCPSR_C(const bool val)
-{
-	if(val) cpsr = cpsr | CPSR_C_MASK;
-	else cpsr = cpsr & ~(CPSR_C_MASK);
-}
-
-/** Unset the C bit of the CPSR register (set to 0).
- * This method is analogous to SetCPSR_C(false).
- */
-void 
-CPU::
-UnsetCPSR_C()
-{
-	cpsr = cpsr & ~(CPSR_C_MASK);
-}
-
-/** Get the value of the CPSR register C bit.
- *
- * @return the value of the CPSR register C bit
- */
-bool 
-CPU::
-GetCPSR_C() const
-{
-	return (cpsr & CPSR_C_MASK) == CPSR_C_MASK;
-}
-
-/** Set teh V bit of the CPSR register.
- *
- * @param val the value of the V bit
- */
-void 
-CPU::
-SetCPSR_V(const bool val)
-{
-	if(val) cpsr = cpsr | CPSR_V_MASK;
-	else cpsr = cpsr & ~(CPSR_V_MASK);
-}
-
-/** Unset the V bit of the CPSR register (set to 0).
- * This method is analogous to SetCPSR_V(false).
- */
-void 
-CPU::
-UnsetCPSR_V()
-{
-	cpsr = cpsr & ~(CPSR_V_MASK);
-}
-
-/** Get the value of the CPSR register V bit.
- *
- * @return the value of the CPSR register V bit
- */
-bool 
-CPU::
-GetCPSR_V() const
-{
-	return (cpsr & CPSR_V_MASK) == CPSR_V_MASK;
-}
-
-/** Set the Q bit of the CPSR register.
- *
- * @param val teh value of the Q bit
- */
-void 
-CPU::
-SetCPSR_Q(const bool val)
-{
-	if(val) cpsr = cpsr | CPSR_Q_MASK;
-	else cpsr = cpsr & ~(CPSR_Q_MASK);
-}
-
-/** Unset the Q bit of the CPSR register (set to 0).
- * This method is analogous to SetCPSR_Q(false).
- */
-void 
-CPU::
-UnsetCPSR_Q()
-{
-	cpsr = cpsr & ~(CPSR_Q_MASK);
-}
-
-/** Get the value of the CPSR register Q bit.
- * 
- * @return the value of the CPSR register Q bit
- */
-bool 
-CPU::
-GetCPSR_Q()
-{
-	return (cpsr & CPSR_Q_MASK) == CPSR_Q_MASK;
-}
-
-/** Set the I bit of the CPSR register.
- *
- * @param val the value of the I bit
- */
-void 
-CPU::
-SetCPSR_I(const bool val)
-{
-	if(val) cpsr = cpsr | CPSR_I_MASK;
-	else cpsr = cpsr & ~(CPSR_I_MASK);
-}
-
-/** Unset the I bit of the CPSR register (set to 0).
- * This method is analogous to SetCPSR_I(false).
- */
-void 
-CPU::
-UnsetCPSR_I()
-{
-	cpsr = cpsr & ~(CPSR_I_MASK);
-}
-
-/** Get the value of the CPSR register I bit.
- *
- * @return the value of the CPSR register I bit
- */
-bool 
-CPU::
-GetCPSR_I()
-{
-	return (cpsr & CPSR_I_MASK) == CPSR_I_MASK;
-}
-
-/** Set the F bit of the CPSR register.
- *
- * @param val the value of the F bit
- */
-void 
-CPU::
-SetCPSR_F(const bool val)
-{
-	if(val) cpsr = cpsr | CPSR_F_MASK;
-	else cpsr = cpsr & ~(CPSR_F_MASK);
-}
-
-/** Unset the F bit of the CPSR register (set to 0).
- * This method is analogous to SetCPSR_F(false).
- */
-void 
-CPU::
-UnsetCPSR_F()
-{
-	cpsr = cpsr & ~(CPSR_F_MASK);
-}
-
-/** Get the value of the CPSR register F bit.
- *
- * @return the value of the CPSR register F bit
- */
-bool 
-CPU::
-GetCPSR_F()
-{
-	return (cpsr & CPSR_F_MASK) == CPSR_F_MASK;
-}
-
-/** Set the T bit of the CPSR register.
- *
- * @param val the value of the T bit
- */
-void 
-CPU::
-SetCPSR_T(const bool val)
-{
-	if(val) cpsr = cpsr | CPSR_T_MASK;
-	else cpsr = cpsr & ~(CPSR_T_MASK);
-}
-
-/** Unset the T bit of the CPSR register (set to 0).
- * This method is analogous to SetCPSR_T(false).
- */
-void 
-CPU::
-UnsetCPSR_T()
-{
-	cpsr = cpsr & ~(CPSR_T_MASK);
-}
-
-/** Get the value of the CPSR register T bit.
- *
- * @return the value of the CPSR register T bit.
- */
-bool 
-CPU::
-GetCPSR_T()
-{
-	return (cpsr & CPSR_T_MASK) == CPSR_T_MASK;
-}
-
-/** Set the mode value of the CPSR register.
- *
- * @param mode the mode to set in the CPSR register
- */
-void 
-CPU::
-SetCPSR_Mode(uint32_t mode)
-{
-	cpsr = cpsr & ~(CPSR_RUNNING_MODE_MASK);
-	cpsr = cpsr | mode;
-}
-
-/** Get the mode value of the CPSR register.
- *
- * @return the mode value of the CPSR register
- */
-uint32_t 
-CPU::
-GetCPSR_Mode() const
-{
-	uint32_t mode = cpsr & CPSR_RUNNING_MODE_MASK;
-	return mode;
-}
-
-/** Get the value of the CPSR register.
- *
- * @return the value of the CPSR register
- */
-uint32_t 
-CPU::
-GetSPSR()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return spsr[rm];
-}
-
-/** Set the value of the SPSR register.
- *
- * @param val the value to set
- */
-void 
-CPU::
-SetSPSR(uint32_t val)
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = val;
-}
-
-/** Set the value of the NZCV bits of the SPSR register.
- *
- * @param n the N bit
- * @param z the Z bit
- * @param c the C bit
- * @param v the V bit
- */
-void 
-CPU::
-SetSPSR_NZCV(bool n,
-		bool z,
-		bool c,
-		bool v)
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if (n) spsr[rm] = spsr[rm] | SPSR_N_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_N_MASK);
-	if (z) spsr[rm] = spsr[rm] | SPSR_Z_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_Z_MASK);
-	if (c) spsr[rm] = spsr[rm] | SPSR_C_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_C_MASK);
-	if (v) spsr[rm] = spsr[rm] | SPSR_V_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_V_MASK);
-}
-
-/** Set the N bit of the SPSR register.
- *
- * @param val the value of the N bit
- */
-void 
-CPU::
-SetSPSR_N(const bool val)
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if (val) spsr[rm] = spsr[rm] | SPSR_N_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_N_MASK);
-}
-
-/** Unset the N bit of the SPSR register (set to 0).
- * This method is analogous to SetSPSR_N(false).
- */
-void 
-CPU::
-UnsetSPSR_N()
-{
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_N_MASK);
-}
-
-/** Get the value of the SPSR register N bit.
- *
- * @return the value of the SPSR register N bit.
- */
-bool 
-CPU::
-GetSPSR_N()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_N_MASK) == SPSR_N_MASK;
-}
-
-/** Set the Z bit of the SPSR register.
- *
- * @param val the value of the Z bit
- */
-void 
-CPU::
-SetSPSR_Z(const bool val)
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if (val) spsr[rm] = spsr[rm] | SPSR_Z_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_Z_MASK);
-}
-
-/** Unset the Z bit of the SPSR register (set to 0).
- * This method is analogous to SetSPSR_Z(false).
- */
-void 
-CPU::
-UnsetSPSR_Z()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_Z_MASK);
-}
-
-/** Get the value of the SPSR Z bit.
- *
- * @return the value of the SPSR register Z bit
- */
-bool 
-CPU::
-GetSPSR_Z()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_Z_MASK) == SPSR_Z_MASK;
-}
-
-/** Set the C bit of the SPSR register.
- *
- * @param val the value of the C bit
- */
-void 
-CPU::
-SetSPSR_C(const bool val)
-{
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-	
-	if (val) spsr[rm] = spsr[rm] | SPSR_C_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_C_MASK);
-}
-
-/** Unset the C bit of the SPSR register (set to 0).
- * This method is analogous to SetSPSR_C(false).
- */
-void 
-CPU::
-UnsetSPSR_C()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_C_MASK);
-}
-
-/** Get the value of the SPSR C bit.
- *
- * @return the value of the SPSR register C bit
- */
-bool 
-CPU::
-GetSPSR_C()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_C_MASK) == SPSR_C_MASK;
-}
-
-/** Set the V bit of the SPSR register.
- *
- * @param val the value of the V bit
- */
-void 
-CPU::
-SetSPSR_V(const bool val)
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if (val) spsr[rm] = spsr[rm] | SPSR_V_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_V_MASK);
-}
-
-/** Unset the V bit of the SPSR register (set to 0).
- * This method is analogous to SetSPSR_V(false).
- */
-void 
-CPU::
-UnsetSPSR_V()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_V_MASK);
-}
-
-/** Get the value of the SPSR V bit.
- *
- * @return the value of the SPSR register V bit
- */
-bool 
-CPU::
-GetSPSR_V()
-{
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_V_MASK) == SPSR_V_MASK;
-}
-
-/** Set the Q bit of the SPSR register.
- *
- * @param val the value of the Q bit
- */
-void 
-CPU::
-SetSPSR_Q(const bool val)
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if (val) spsr[rm] = spsr[rm] | SPSR_Q_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_Q_MASK);
-}
-
-/** Unset the Q bit of the SPSR register (set to 0).
- * This method is analogous to SetSPSR_Q(false).
- */
-void 
-CPU::
-UnsetSPSR_Q()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_Q_MASK);
-}
-
-/** Get the value of the SPSR Q bit.
- *
- * @return the value of the SPSR register Q bit
- */
-bool 
-CPU::
-GetSPSR_Q()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_Q_MASK) == SPSR_Q_MASK;
-}
-
-/** Set the I bit of the SPSR register.
- *
- * @param val the value of the I bit
- */
-void 
-CPU::
-SetSPSR_I(const bool val)
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if (val) spsr[rm] = spsr[rm] | SPSR_I_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_I_MASK);
-}
-
-/** Unset the I bit of the SPSR register (set to 0).
- * This method is analogous to SetSPSR_I(false).
- */
-void 
-CPU::
-UnsetSPSR_I()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_I_MASK);
-}
-
-/** Get the value of the SPSR I bit.
- *
- * @return the value of the SPSR register I bit
- */
-bool 
-CPU::
-GetSPSR_I()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_I_MASK) == SPSR_I_MASK;
-}
-
-/** Set the F bit of the SPSR register.
- *
- * @param val the value of the F bit
- */
-void 
-CPU::
-SetSPSR_F(const bool val)
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if (val) spsr[rm] = spsr[rm] | SPSR_F_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_F_MASK);
-}
-
-/** Unset the F bit of the SPSR register (set to 0).
- * This method is analogous to SetSPSR_F(false).
- */
-void 
-CPU::
-UnsetSPSR_F()
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-
-	spsr[rm] = spsr[rm] & ~(SPSR_F_MASK);
-}
-
-/** Get the value of the SPSR F bit.
- * 
- * @return the value of the SPSR register F bit
- */
-bool 
-CPU::
-GetSPSR_F()
-{
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_F_MASK) == SPSR_F_MASK;
-}
-
-/** Set the T bit of the SPSR register (set to 0).
- *
- * @param val the value of the T bit
- */
-void 
-CPU::
-SetSPSR_T(const bool val)
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if (val) spsr[rm] = spsr[rm] | SPSR_T_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_T_MASK);
-}
-
-/** Unset the T bit of the SPSR register (set to 0).
- * This method is analogous to SetSPSR_T(false).
- */
-void 
-CPU::
-UnsetSPSR_T()
-{
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-
-	spsr[rm] = spsr[rm] & ~(SPSR_T_MASK);
-}
-
-/** Get the value of the SPSR T bit.
- *
- * @return the value of the SPSR register T bit
- */
-bool 
-CPU::
-GetSPSR_T()
-{
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-
-	return (spsr[rm] & SPSR_T_MASK) == SPSR_T_MASK;
-}
-
-/** Set the mode value of the SPSR register.
- *
- * @param mode the mode to set in the SPSR register
- */
-void 
-CPU::
-SetSPSR_Mode(uint32_t mode)
-{
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_RUNNING_MODE_MASK);
-	spsr[rm] = spsr[rm] | mode;
-}
-
-/** Get the mode value of the SPSR register.
- *
- * @return the mode value of the SPSR register
- */
-uint32_t 
-CPU::
-GetSPSR_Mode()
-{
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-
-	return spsr[rm] & (SPSR_RUNNING_MODE_MASK);
+  uint32_t mode = cpsr.M().Get();
+  switch ( mode )
+    {
+    case USER_MODE:
+    case SYSTEM_MODE:
+      SetGPR( id, val );
+      break;
+    case SUPERVISOR_MODE:
+    case ABORT_MODE:
+    case UNDEFINED_MODE:
+    case IRQ_MODE:
+      if ( (id < 13) || (id == 15) )
+        SetGPR( id, val );
+      else
+        phys_gpr[id] = val;
+      break;
+    case FIQ_MODE:
+      if ( (id < 8) || (id == 15 ) )
+        SetGPR( id, val );
+      else
+        phys_gpr[id] = val;
+      break;
+    }
 }
 
 /** Get SPSR index from current running mode
@@ -1186,7 +397,7 @@ CPU::
 GetSPSRIndex()
 {
   uint32_t rm = 0;
-  uint32_t run_mode = cpsr & CPSR_RUNNING_MODE_MASK;
+  uint32_t run_mode = cpsr.M().Get();
   switch (run_mode)
     {
     case USER_MODE: case SYSTEM_MODE: {
@@ -1234,15 +445,14 @@ void
 CPU::
 MoveSPSRtoCPSR()
 {
-	/* SPSR needs to be moved to CPSR
-	 * This means that we need to change the register mapping if the running mode has changed
-	 */
-	uint32_t src_mode = GetCPSR_Mode();
-	uint32_t dst_mode = GetSPSR_Mode();
-	uint32_t cur_spsr = GetSPSR();
-	SetCPSR(cur_spsr);
-	if (src_mode != dst_mode)
-		SetGPRMapping(src_mode, dst_mode);
+  /* SPSR needs to be moved to CPSR
+   * This means that we need to change the register mapping if the running mode has changed
+   */
+  uint32_t src_mode = CPSR().M().Get();
+  uint32_t dst_mode = SPSR().M().Get();
+  CPSR().bits() = SPSR().bits();
+  if (src_mode != dst_mode)
+    SetGPRMapping(src_mode, dst_mode);
 }
 
 /** Mark an exception in the virtual exception vector.
