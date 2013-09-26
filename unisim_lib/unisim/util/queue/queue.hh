@@ -98,6 +98,7 @@ public:
 	const typename CONFIG::ELEMENT& operator [] (unsigned int idx) const;
 	typename CONFIG::ELEMENT *Allocate();
 	void Push(typename CONFIG::ELEMENT& elt);
+	void Push(typename CONFIG::ELEMENT *elt, unsigned int num_elts);
 	typename CONFIG::ELEMENT& Front();
 	const typename CONFIG::ELEMENT& ConstFront() const;
 	void Pop();
@@ -114,9 +115,6 @@ private:
 	unsigned int back_idx;
 
 	typename CONFIG::ELEMENT buffer[BUFFER_SIZE];
-
-	inline uint32_t Max(uint32_t a, uint32_t b) { return (a > b) ? a : b; }
-	inline uint32_t Min(uint32_t a, uint32_t b) { return (a < b) ? a : b; }
 };
 
 } // end of namespace queue

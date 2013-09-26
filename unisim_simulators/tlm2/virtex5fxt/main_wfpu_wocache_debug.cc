@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,31 +30,50 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/tlm2/memory/ram/memory.hh"
-#include "unisim/component/tlm2/memory/ram/memory.tcc"
+#include <simulator.hh>
+#include <simulator.tcc>
+#include <config.hh>
 
-namespace unisim {
-namespace component {
-namespace tlm2 {
-namespace memory {
-namespace ram {
+typedef SimConfigFPUWoCacheDebug SIM_CONFIG;
+typedef Simulator<SIM_CONFIG> SIMULATOR;
 
-template class Memory<32, uint32_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<32, uint64_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<32, uint32_t, 8, DEFAULT_PAGE_SIZE, true>;
-template class Memory<32, uint64_t, 8, DEFAULT_PAGE_SIZE, true>;
-template class Memory<64, uint32_t, 4, DEFAULT_PAGE_SIZE, true>;
-template class Memory<64, uint64_t, 4, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint32_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint64_t, 1, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint32_t, 2, DEFAULT_PAGE_SIZE, true>;
-template class Memory<128, uint64_t, 2, DEFAULT_PAGE_SIZE, true>;
+int sc_main(int argc, char *argv[])
+{
+#ifdef WIN32
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		cerr << "WSAStartup failed" << endl;
+		return -1;
+	}
+#endif
+	SIMULATOR *simulator = new SIMULATOR(argc, argv);
 
-} // end of namespace ram
-} // end of namespace memory
-} // end of namespace tlm
-} // end of namespace component
-} // end of namespace unisim 
+	switch(simulator->Setup())
+	{
+		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+			break;
+		case unisim::kernel::service::Simulator::ST_WARNING:
+			cerr << "Some warnings occurred during setup" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+			cerr << "Starting simulation at supervisor privilege level" << endl;
+			simulator->Run();
+			break;
+		case unisim::kernel::service::Simulator::ST_ERROR:
+			cerr << "Can't start simulation because of previous errors" << endl;
+			break;
+	}
+
+	int exit_status = simulator->GetExitStatus();
+	if(simulator) delete simulator;
+#ifdef WIN32
+	// releases the winsock2 resources
+	WSACleanup();
+#endif
+
+	return exit_status;
+}

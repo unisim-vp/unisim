@@ -672,6 +672,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("cpu.max-inst", maxinst);
 	simulator->SetVariable("cpu.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
+	simulator->SetVariable("cpu.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
 
 	//  - DCR controller
 	simulator->SetVariable("dcr-controller.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
@@ -984,6 +985,9 @@ unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 				SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
 			}
 		}
+		
+		// Relax time decoupling
+		SetVariable("cpu.nice-time", "1 ms");
 	}
 	else
 	{

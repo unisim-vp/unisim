@@ -112,7 +112,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, cpu_cycle_time(0)
 	, voltage(0)
 	, timer_cycle(0)
-	, effective_address(0)
 	, verbose_all(false)
 	, verbose_setup(false)
 	, verbose_step(false)
@@ -410,23 +409,23 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	sstr_description << "Processor version (PVR value): 0x" << std::hex << CONFIG::PROCESSOR_VERSION << std::dec << std::endl;
 	sstr_description << "Reset configuration (RSTCFG): U0=" << GetRSTCFG_U0()  << ", U1=" << GetRSTCFG_U1() << ", U2=" << GetRSTCFG_U2() << ", U3=" << GetRSTCFG_U3() << ", E=" << GetRSTCFG_E() << ", ERPN=0x" << std::hex << GetRSTCFG_ERPN() << std::dec << std::endl;
 	sstr_description << "Start address: 0x" << std::hex << CONFIG::START_ADDR << std::dec << std::endl;
-	if(CONFIG::DL1_CONFIG::ENABLE)
+	if(CONFIG::HAS_DCACHE)
 	{
 		sstr_description << "L1 data cache: size=" << CONFIG::DL1_CONFIG::CACHE_SIZE << " bytes, block size=" << CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE << " bytes, associativity=" << CONFIG::DL1_CONFIG::CACHE_ASSOCIATIVITY << std::endl;
 	}
-	if(CONFIG::IL1_CONFIG::ENABLE)
+	if(CONFIG::HAS_ICACHE)
 	{
 		sstr_description << "L1 instruction cache: size=" << CONFIG::IL1_CONFIG::CACHE_SIZE << " bytes, block size=" << CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE << " bytes, associativity=" << CONFIG::IL1_CONFIG::CACHE_ASSOCIATIVITY << std::endl;
 	}
-	if(CONFIG::ITLB_CONFIG::ENABLE)
+	if(CONFIG::HAS_MMU)
 	{
 		sstr_description << "shadow instruction TLB: size=" << CONFIG::ITLB_CONFIG::TLB_NUM_ENTRIES << " entries, associativity=" << CONFIG::ITLB_CONFIG::TLB_ASSOCIATIVITY << std::endl;
 	}
-	if(CONFIG::DTLB_CONFIG::ENABLE)
+	if(CONFIG::HAS_MMU)
 	{
 		sstr_description << "shadow data TLB: size=" << CONFIG::DTLB_CONFIG::TLB_NUM_ENTRIES << " entries, associativity=" << CONFIG::DTLB_CONFIG::TLB_ASSOCIATIVITY << std::endl;
 	}
-	if(CONFIG::UTLB_CONFIG::ENABLE)
+	if(CONFIG::HAS_MMU)
 	{
 		sstr_description << "unified TLB: size=" << CONFIG::UTLB_CONFIG::TLB_NUM_ENTRIES << " entries, associativity=" << CONFIG::UTLB_CONFIG::TLB_ASSOCIATIVITY << std::endl;
 	}
@@ -545,7 +544,7 @@ bool CPU<CONFIG>::EndSetup()
 {
 	unsigned int min_cycle_time = 0;
 
-	if(CONFIG::ITLB_CONFIG::ENABLE && itlb_power_mode_import)
+	if(CONFIG::HAS_MMU && itlb_power_mode_import)
 	{
 		unsigned int itlb_min_cycle_time = itlb_power_mode_import->GetMinCycleTime();
 		if(itlb_min_cycle_time > 0 && itlb_min_cycle_time > min_cycle_time) min_cycle_time = itlb_min_cycle_time;
@@ -553,7 +552,7 @@ bool CPU<CONFIG>::EndSetup()
 		if(voltage <= 0) voltage = itlb_default_voltage;
 	}
 
-	if(CONFIG::DTLB_CONFIG::ENABLE && dtlb_power_mode_import)
+	if(CONFIG::HAS_MMU && dtlb_power_mode_import)
 	{
 		unsigned int dtlb_min_cycle_time = dtlb_power_mode_import->GetMinCycleTime();
 		if(dtlb_min_cycle_time > 0 && dtlb_min_cycle_time > min_cycle_time) min_cycle_time = dtlb_min_cycle_time;
@@ -561,7 +560,7 @@ bool CPU<CONFIG>::EndSetup()
 		if(voltage <= 0) voltage = dtlb_default_voltage;
 	}
 
-	if(CONFIG::UTLB_CONFIG::ENABLE && utlb_power_mode_import)
+	if(CONFIG::HAS_MMU && utlb_power_mode_import)
 	{
 		unsigned int utlb_min_cycle_time = utlb_power_mode_import->GetMinCycleTime();
 		if(utlb_min_cycle_time > 0 && utlb_min_cycle_time > min_cycle_time) min_cycle_time = utlb_min_cycle_time;
@@ -569,7 +568,7 @@ bool CPU<CONFIG>::EndSetup()
 		if(voltage <= 0) voltage = utlb_default_voltage;
 	}
 
-	if(CONFIG::IL1_CONFIG::ENABLE && il1_power_mode_import)
+	if(CONFIG::HAS_ICACHE && il1_power_mode_import)
 	{
 		unsigned int il1_min_cycle_time = il1_power_mode_import->GetMinCycleTime();
 		if(il1_min_cycle_time > 0 && il1_min_cycle_time > min_cycle_time) min_cycle_time = il1_min_cycle_time;
@@ -577,7 +576,7 @@ bool CPU<CONFIG>::EndSetup()
 		if(voltage <= 0) voltage = il1_default_voltage;
 	}
 	
-	if(CONFIG::DL1_CONFIG::ENABLE && dl1_power_mode_import)
+	if(CONFIG::HAS_DCACHE && dl1_power_mode_import)
 	{
 		unsigned int dl1_min_cycle_time = dl1_power_mode_import->GetMinCycleTime();
 		if(dl1_min_cycle_time > 0 && dl1_min_cycle_time > min_cycle_time) min_cycle_time = dl1_min_cycle_time;
@@ -880,19 +879,16 @@ void CPU<CONFIG>::Reset()
 	ResetITLB();
 	ResetUTLB();
 
-	if(CONFIG::IL1_CONFIG::ENABLE)
+	if(CONFIG::HAS_ICACHE)
 	{
 		InvalidateIL1();
 	}
-	if(CONFIG::DL1_CONFIG::ENABLE)
+	if(CONFIG::HAS_DCACHE)
 	{
 		InvalidateDL1();
 	}
-	
-	num_insn_in_prefetch_buffer = 0;
-	cur_insn_in_prefetch_buffer = 0;
 
-	effective_address = 0;
+	FlushSubsequentInstructions();
 }
 
 template <class CONFIG>
@@ -1464,41 +1460,13 @@ void CPU<CONFIG>::StepOneInstruction()
 		} while(1);
 	}
 
-	typename CONFIG::address_t sequential_nia = GetCIA() + 4;
 	unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation = 0;
-
-	SetNIA(sequential_nia);
 
 	try
 	{
 		typename CONFIG::address_t addr = GetCIA();
-		uint32_t insn;
-
-		if(CONFIG::PREFETCH_BUFFER_ENABLE)
-		{
-			if(unlikely(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer))
-			{
-				uint32_t size_to_block_boundary = IsInsnCacheEnabled() ? CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (addr & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1)) : CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
-				uint32_t size_to_prefetch = size_to_block_boundary > (4 * CONFIG::NUM_PREFETCH_BUFFER_ENTRIES) ? CONFIG::NUM_PREFETCH_BUFFER_ENTRIES * 4 : size_to_block_boundary;
-				// refill the prefetch buffer with up to one cache line, not much
-				EmuFetch(addr, prefetch_buffer, size_to_prefetch);
-				num_insn_in_prefetch_buffer = size_to_prefetch / 4;
-				cur_insn_in_prefetch_buffer = 0;
-			}
-			insn = prefetch_buffer[cur_insn_in_prefetch_buffer];
-		}
-		else
-		{
-			EmuFetch(addr, &insn, 4);
-		}
-
-		if(unlikely(requires_memory_access_reporting)) 
-		{
-			if(unlikely(memory_access_reporting_import != 0))
-			{
-				memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, addr, 4);
-			}
-		}
+		SetNIA(addr + 4);
+		uint32_t insn = EmuFetch(addr);
 
 		operation = unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::Decode(addr, insn);
 
@@ -1548,21 +1516,6 @@ void CPU<CONFIG>::StepOneInstruction()
 		Stop(1);
 	}
 
-	/* go to the next instruction */
-	if(CONFIG::PREFETCH_BUFFER_ENABLE)
-	{
-		if(unlikely(GetNIA() != sequential_nia))
-		{
-			// branch or exception is being taken: flush the prefetch buffer
-			num_insn_in_prefetch_buffer = 0;
-			cur_insn_in_prefetch_buffer = 0;
-		}
-		else
-		{
-			cur_insn_in_prefetch_buffer++;
-		}
-	}
-
 	if(unlikely(requires_finished_instruction_reporting))
 	{
 		if(unlikely(memory_access_reporting_import != 0))
@@ -1571,6 +1524,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		}
 	}
 
+	/* go to the next instruction */
 	SetCIA(GetNIA());
 
 	/* update the instruction counter */
@@ -1651,13 +1605,13 @@ inline bool CPU<CONFIG>::IsFPUExceptionEnabled()
 template <class CONFIG>
 inline bool CPU<CONFIG>::IsDataCacheEnabled()
 {
-	return CONFIG::DL1_CONFIG::ENABLE;
+	return CONFIG::HAS_DCACHE;
 }
 
 template <class CONFIG>
 inline bool CPU<CONFIG>::IsInsnCacheEnabled()
 {
-	return CONFIG::IL1_CONFIG::ENABLE;
+	return CONFIG::HAS_ICACHE;
 }
 
 template <class CONFIG>
@@ -2046,7 +2000,8 @@ ostream& operator << (ostream& os, const MMUAccess<CONFIG>& mmu_access)
 	os << ", bat_hit=" << mmu_access.bat_hit;
 	os << ", tlb_hit=" << mmu_access.tlb_hit;
 	os << ", physical_addr=0x" << std::hex << mmu_access.physical_addr << std::dec;
-	os << ", protection_boundary=0x" << std::hex << mmu_access.protection_boundary << std::dec;
+	os << ", lower_protection_boundary=0x" << std::hex << mmu_access.lower_protection_boundary << std::dec;
+	os << ", upper_protection_boundary=0x" << std::hex << mmu_access.upper_protection_boundary << std::dec;
 	os << ", wimg=";
 	os << ((mmu_access.wimg & CONFIG::WIMG_WRITE_THROUGH) ? "W" : "x");
 	os << ((mmu_access.wimg & CONFIG::WIMG_CACHE_INHIBITED) ? "I" : "x");
