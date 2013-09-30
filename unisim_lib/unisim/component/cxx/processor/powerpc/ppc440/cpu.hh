@@ -68,6 +68,15 @@
 #undef powerpc
 #endif
 
+#if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ >= 4) && ((__GNUC_MINOR__ > 1) || ((__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 3)))))     // GNU C version >= 4.1.3
+#if defined(ALWAYS_INLINE)
+#undef ALWAYS_INLINE
+#endif
+#define ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define ALWAYS_INLINE
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -337,24 +346,24 @@ public:
 	const SoftDouble& GetFPR(unsigned int n) const { return fpr[n]; }
 	void SetFPR(unsigned int n, const SoftDouble& value) { fpr[n] = value; }
 
-	void Int8Load(unsigned int rd, typename CONFIG::address_t ea);
-	void Int16Load(unsigned int rd, typename CONFIG::address_t ea);
-	void SInt16Load(unsigned int rd, typename CONFIG::address_t ea);
-	void Int32Load(unsigned int rd, typename CONFIG::address_t ea);
-	void Fp32Load(unsigned int fd, typename CONFIG::address_t ea);
-	void Fp64Load(unsigned int fd, typename CONFIG::address_t ea);
-	void Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea);
-	void Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea);
-	void IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea, uint32_t size);
-	void Int8Store(unsigned int rs, typename CONFIG::address_t ea);
-	void Int16Store(unsigned int rs, typename CONFIG::address_t ea);
-	void Int32Store(unsigned int rs, typename CONFIG::address_t ea);
-	void Fp32Store(unsigned int fs, typename CONFIG::address_t ea);
-	void Fp64Store(unsigned int fs, typename CONFIG::address_t ea);
-	void FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea);
-	void Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea);
-	void Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea);
-	void IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size);
+	bool Int8Load(unsigned int rd, typename CONFIG::address_t ea);
+	bool Int16Load(unsigned int rd, typename CONFIG::address_t ea);
+	bool SInt16Load(unsigned int rd, typename CONFIG::address_t ea);
+	bool Int32Load(unsigned int rd, typename CONFIG::address_t ea);
+	bool Fp32Load(unsigned int fd, typename CONFIG::address_t ea);
+	bool Fp64Load(unsigned int fd, typename CONFIG::address_t ea);
+	bool Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea);
+	bool Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea);
+	bool IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea, uint32_t size);
+	bool Int8Store(unsigned int rs, typename CONFIG::address_t ea);
+	bool Int16Store(unsigned int rs, typename CONFIG::address_t ea);
+	bool Int32Store(unsigned int rs, typename CONFIG::address_t ea);
+	bool Fp32Store(unsigned int fs, typename CONFIG::address_t ea);
+	bool Fp64Store(unsigned int fs, typename CONFIG::address_t ea);
+	bool FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea);
+	bool Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea);
+	bool Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea);
+	bool IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size);
 	
 	void MoveFromDCR(unsigned int rd, unsigned int dcrn);
 	void MoveToDCR(unsigned int rs, unsigned int dcrn);
@@ -412,8 +421,8 @@ public:
 	//=           special purpose registers set/get methods               =
 	//=====================================================================
 
-	uint32_t GetSPR(unsigned int n) const;
-	void SetSPR(unsigned int n, uint32_t value);
+	bool GetSPR(unsigned int n, uint32_t& value);
+	bool SetSPR(unsigned int n, uint32_t value);
 	
 	inline void SetPVR(uint32_t value) { pvr = value; }
 	inline uint32_t GetPVR() const { return pvr; }
@@ -449,6 +458,7 @@ public:
 	inline uint32_t GetDBSR() const { return dbsr; }
 	inline void SetDBCR(unsigned int n, uint32_t value) { dbcr[n] = value; }
 	inline uint32_t GetDBCR(unsigned int n) const { return dbcr[n]; }
+	inline uint32_t GetDBCR0_IDM() const { return (dbcr[0] & CONFIG::DBCR0_IDM_MASK) >> CONFIG::DBCR0_IDM_OFFSET; }
 	inline void SetIAC(unsigned int n, uint32_t value) { iac[n] = value; }
 	inline uint32_t GetIAC(unsigned int n) const { return iac[n]; }
 	inline void SetDAC(unsigned int n, uint32_t value) { dac[n] = value; }
@@ -532,7 +542,7 @@ public:
 			SetDEC(GetDEC() - 1);
 			if(unlikely(GetDEC() == 0))
 			{
-				SetIRQ(CONFIG::IRQ_DECREMENTER_INTERRUPT);
+				SetException(CONFIG::EXC_DECREMENTER);
 				if(GetTCR_ARE())
 				{
 					SetDEC(GetDECAR());
@@ -551,7 +561,7 @@ public:
 			
 			if(unlikely(new_dec == 0))
 			{
-				SetIRQ(CONFIG::IRQ_DECREMENTER_INTERRUPT);
+				SetException(CONFIG::EXC_DECREMENTER);
 				if(GetTCR_ARE())
 				{
 					SetDEC(GetDECAR());
@@ -570,14 +580,14 @@ public:
 		if(!(tb & tb_fit_mask) && (value & tb_fit_mask)) // selected bit toggle from 0 to 1
 		{
 			//std::cerr << "tb_fit_mask=0x" << std::hex << tb_fit_mask << std::dec << std::endl;
-			SetIRQ(CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT);
+			SetException(CONFIG::EXC_FIXED_INTERVAL_TIMER);
 		}
 		uint32_t tcr_wp = GetTCR_WP();
 		uint32_t tb_watchdog_mask = 1048576 << (4 * tcr_wp);
 		if(!(tb & tb_watchdog_mask) && (value & tb_watchdog_mask)) // selected bit toggle from 0 to 1
 		{
 			//std::cerr << "cnt=" << cnt << ", tb_watchdog_mask=0x" << std::hex << tb_watchdog_mask << std::dec << std::endl;
-			SetIRQ(CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT);
+			SetException(CONFIG::EXC_WATCHDOG_TIMER);
 		}
 		tb = value;
 	}
@@ -827,6 +837,9 @@ public:
 	void Rfi();
 	void Rfci();
 	void Rfmci();
+	
+	
+	void SystemCall();
 
 	//=====================================================================
 	//=                        Debugging stuffs                           =
@@ -853,20 +866,28 @@ public:
 	//=               Hardware check/acknowledgement methods              =
 	//=====================================================================
 	
-	void ResetIRQ(unsigned int irq);
+	inline void SetException(unsigned int _exc, typename CONFIG::address_t _addr = 0, typename CONFIG::MemoryAccessType _memory_access_type = CONFIG::MAT_READ) { SetExceptionMask(1 << _exc, _addr, _memory_access_type); }
+	void ResetException(unsigned int _exc) { ResetExceptionMask(1 << _exc); }
+	void SetExceptionMask(uint32_t exc, typename CONFIG::address_t addr = 0, typename CONFIG::MemoryAccessType memory_access_type = CONFIG::MAT_READ);
+	void ResetExceptionMask(uint32_t exc);
 
-	inline bool HasIRQ() const { return irq | (GetTSR() & (CONFIG::TSR_DIS_MASK | CONFIG::TSR_FIS_MASK | CONFIG::TSR_WIS_MASK)); }
-	inline bool HasCriticalInputInterrupt() const { return irq & CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT; }
-	inline bool HasExternalInputInterrupt() const { return irq & CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT; }
-	inline bool HasDecrementerInterrupt() const { return GetTSR() & CONFIG::TSR_DIS_MASK; }
-	inline bool HasFixedIntervalTimerInterrupt() const { return GetTSR() & CONFIG::TSR_FIS_MASK; }
-	inline bool HasWatchDogTimerInterrupt() const { return GetTSR() & CONFIG::TSR_WIS_MASK; }
-
-	//=====================================================================
-	//=                    Hardware interrupt request                     =
-	//=====================================================================
-	
-	void SetIRQ(unsigned int irq);
+	inline bool HasException() const { return exc | (GetTSR() & (CONFIG::TSR_DIS_MASK | CONFIG::TSR_FIS_MASK | CONFIG::TSR_WIS_MASK)); }
+	inline bool HasCriticalInputException() const { return exc & CONFIG::EXC_MASK_CRITICAL_INPUT; }
+	inline bool HasExternalInputException() const { return exc & CONFIG::EXC_MASK_EXTERNAL_INPUT; }
+	inline bool HasDecrementerException() const { return GetTSR() & CONFIG::TSR_DIS_MASK; }
+	inline bool HasDebugException() const { return exc & CONFIG::EXC_MASK_DEBUG; }
+	inline bool HasFixedIntervalTimerException() const { return GetTSR() & CONFIG::TSR_FIS_MASK; }
+	inline bool HasWatchDogTimerException() const { return GetTSR() & CONFIG::TSR_WIS_MASK; }
+	inline bool HasMachineCheckException() const { return exc & CONFIG::EXC_MASK_MACHINE_CHECK; }
+	inline bool HasDataStorageException() const { return exc & CONFIG::EXC_MASK_DATA_STORAGE; }
+	inline bool HasInstructionStorageException() const { return exc & CONFIG::EXC_MASK_INSTRUCTION_STORAGE; }
+	inline bool HasDataTLBErrorException() const { return exc & CONFIG::EXC_MASK_DATA_TLB_ERROR; }
+	inline bool HasInstructionTLBErrorException() const { return exc & CONFIG::EXC_MASK_INSTRUCTION_TLB_ERROR; }
+	inline bool HasAlignmentException() const { return exc & CONFIG::EXC_MASK_ALIGNMENT; }
+	inline bool HasProgramException() const { return exc & CONFIG::EXC_MASK_PROGRAM; }
+	inline bool HasSystemCallException() const { return exc & CONFIG::EXC_MASK_SYSTEM_CALL; }
+	inline bool HasFloatingPointUnavailableException() const { return exc & CONFIG::EXC_MASK_FLOATING_POINT_UNAVAILABLE; }
+	inline bool HasAuxiliaryProcessorUnavailableException() const { return exc & CONFIG::EXC_MASK_AUXILIARY_PROCESSOR_UNAVAILABLE; }
 
 protected:
 
@@ -931,16 +952,16 @@ private:
 	void ResetDTLB();
 	void InvalidateUTLB();
 	void ResetUTLB();
-	template <bool DEBUG> void LookupITLB(MMUAccess<CONFIG>& mmu_access);
-	template <bool DEBUG> void LookupDTLB(MMUAccess<CONFIG>& mmu_access);
-	template <bool DEBUG> void LookupUTLB(MMUAccess<CONFIG>& mmu_access);
+	template <bool DEBUG> inline void LookupITLB(MMUAccess<CONFIG>& mmu_access) ALWAYS_INLINE;
+	template <bool DEBUG> inline void LookupDTLB(MMUAccess<CONFIG>& mmu_access) ALWAYS_INLINE;
+	template <bool DEBUG> inline void LookupUTLB(MMUAccess<CONFIG>& mmu_access) ALWAYS_INLINE;
 	void UpdateITLBReplacementPolicy(MMUAccess<CONFIG>& mmu_access);
 	void UpdateDTLBReplacementPolicy(MMUAccess<CONFIG>& mmu_access);
 	void UpdateUTLBReplacementPolicy(MMUAccess<CONFIG>& mmu_access);
 	void ChooseEntryToEvictITLB(MMUAccess<CONFIG>& mmu_access);
 	void ChooseEntryToEvictDTLB(MMUAccess<CONFIG>& mmu_access);
 	void ChooseEntryToEvictUTLB(MMUAccess<CONFIG>& mmu_access);
-	template <bool DEBUG> void EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access);
+	template <bool DEBUG> inline bool EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access) ALWAYS_INLINE;
 	void DumpITLB(std::ostream& os);
 	void DumpDTLB(std::ostream& os);
 	void DumpUTLB(std::ostream& os, int highlight_index = -1, int hightligh_way = -1);
@@ -951,23 +972,23 @@ private:
 	void InvalidateIL1();
 	void ClearAccessDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
 	void ClearAccessIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
-	template <bool DEBUG> void LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
-	template <bool DEBUG> void LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
-	void EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	template <bool DEBUG> inline void LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access) ALWAYS_INLINE;
+	template <bool DEBUG> inline void LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access) ALWAYS_INLINE;
+	bool EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
 	void EmuEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
 	void ChooseLineToEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
 	void ChooseLineToEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
 	void UpdateReplacementPolicyDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
 	void UpdateReplacementPolicyIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
-	void EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
-	void EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, MMUAccess<CONFIG>& mmu_access);
-	void EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size);
-	inline uint32_t EmuFetch(typename CONFIG::address_t addr);
-	void EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t size);
-	void EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, uint32_t size);
+	bool EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	bool EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, MMUAccess<CONFIG>& mmu_access);
+	bool EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size);
+	inline bool EmuFetch(typename CONFIG::address_t addr, uint32_t& insn);
+	inline bool EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t size) ALWAYS_INLINE;
+	inline bool EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, uint32_t size) ALWAYS_INLINE;
 	
-	template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN> void EmuLoad(T& value, typename CONFIG::address_t ea);
-	template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN> void EmuStore(T value, typename CONFIG::address_t ea);
+	template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool EmuLoad(T& value, typename CONFIG::address_t ea);
+	template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool EmuStore(T value, typename CONFIG::address_t ea);
 	
 	//=====================================================================
 	//=               Programmer view memory access methods               =
@@ -975,24 +996,24 @@ private:
 	
 	bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
 	bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
-
-	void HandleException(const SystemCallException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const MachineCheckException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const DecrementerInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const ExternalInputInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const CriticalInputInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const DSIException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const ISIException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const DataTLBErrorException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const InstructionTLBErrorException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const AlignmentException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const ProgramException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const FloatingPointUnavailableException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const AuxiliaryProcessorUnavailableException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const FixedIntervalTimerInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const WatchDogTimerInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	void HandleException(const DebugInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
-	
+public:
+	void EnterSystemCallISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterMachineCheckISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterDecrementerISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterDebugISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterExternalInputISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterCriticalInputISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterDataStorageISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterInstructionStorageISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterDataTLBErrorISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterInstructionTLBErrorISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterAlignmentISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterProgramISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterFloatingPointUnavailableISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterAuxiliaryProcessorUnavailableISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterFixedIntervalTimerISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void EnterWatchDogTimerISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+private:	
 	//=====================================================================
 	//=                      Debugging stuffs                             =
 	//=====================================================================
@@ -1018,8 +1039,24 @@ private:
 	bool enable_halt_on;
 	typename CONFIG::address_t halt_on_addr;
 	std::string halt_on;
-	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
+	uint64_t max_inst;                                         //!< maximum number of instructions to execute
 	uint64_t num_interrupts;
+	uint64_t num_decrementer_interrupts;
+	uint64_t num_fixed_interval_timer_interrupts;
+	uint64_t num_watchdog_timer_interrupts;
+	uint64_t num_debug_interrupts;
+	uint64_t num_external_input_interrupts;
+	uint64_t num_critical_input_interrupts;
+	uint64_t num_machine_check_interrupts;
+	uint64_t num_data_storage_interrupts;
+	uint64_t num_instruction_storage_interrupts;
+	uint64_t num_data_tlb_error_interrupts;
+	uint64_t num_instruction_tlb_error_interrupts;
+	uint64_t num_alignment_interrupts;
+	uint64_t num_program_interrupts;
+	uint64_t num_system_call_interrupts;
+	uint64_t num_floating_point_unavailable_interrupts;
+	uint64_t num_auxiliary_processor_unavailable_interrupts;
 
 	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces
 	std::vector<unisim::kernel::service::VariableBase *> registers_registry2;       //!< Every CPU register
@@ -1162,16 +1199,14 @@ private:
 	typename CONFIG::address_t reserve_addr;                                   //!< address of the reservation
 	
 	//=====================================================================
-	//=               PPC440 hardware interrupt signals                   =
+	//=                          Exceptions                               =
 	//=====================================================================
 	
-	unsigned int irq;
-
-	//=====================================================================
-	//=                    Exception handling methods                     =
-	//=====================================================================
+	uint32_t exc;                                             //!< exception mask (bits are ordered according to exception priority)
+	typename CONFIG::address_t exc_addr;                      //!< effective address, if any, that caused the exception
+	typename CONFIG::MemoryAccessType exc_memory_access_type; //!< memory access type, if any, that caused the exception
+	void (unisim::component::cxx::processor::powerpc::ppc440::CPU<CONFIG>::*enter_non_maskable_isr_table[CONFIG::NUM_NON_MASKABLE_EXCEPTIONS])(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
 	
-
 	//=====================================================================
 	//=                    CPU run-time parameters                        =
 	//=====================================================================
@@ -1222,6 +1257,22 @@ private:
 	Statistic<uint64_t> stat_num_utlb_misses;
 	Formula<double> formula_utlb_miss_rate;
 	Statistic<uint64_t> stat_num_interrupts;
+	Statistic<uint64_t> stat_num_decrementer_interrupts;
+	Statistic<uint64_t> stat_num_fixed_interval_timer_interrupts;
+	Statistic<uint64_t> stat_num_watchdog_timer_interrupts;
+	Statistic<uint64_t> stat_num_debug_interrupts;
+	Statistic<uint64_t> stat_num_external_input_interrupts;
+	Statistic<uint64_t> stat_num_critical_input_interrupts;
+	Statistic<uint64_t> stat_num_machine_check_interrupts;
+	Statistic<uint64_t> stat_num_data_storage_interrupts;
+	Statistic<uint64_t> stat_num_instruction_storage_interrupts;
+	Statistic<uint64_t> stat_num_data_tlb_error_interrupts;
+	Statistic<uint64_t> stat_num_instruction_tlb_error_interrupts;
+	Statistic<uint64_t> stat_num_alignment_interrupts;
+	Statistic<uint64_t> stat_num_program_interrupts;
+	Statistic<uint64_t> stat_num_system_call_interrupts;
+	Statistic<uint64_t> stat_num_floating_point_unavailable_interrupts;
+	Statistic<uint64_t> stat_num_auxiliary_processor_unavailable_interrupts;
 };
 
 } // end of namespace ppc440

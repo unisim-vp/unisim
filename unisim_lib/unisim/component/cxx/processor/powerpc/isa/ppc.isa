@@ -44,7 +44,7 @@ set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
 action {void} execute({typename CONFIG::STATE *} {cpu}) {
-	throw IllegalInstructionException<CONFIG>();
+	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
 }
 
 action {void} disasm({typename CONFIG::STATE *} {cpu}, {std::ostream&} {os}) {

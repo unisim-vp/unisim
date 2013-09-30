@@ -48,7 +48,7 @@ lswi.execute = {
 	while(n > 0)
 	{
 		uint32_t sz = (n > 4) ? 4 : n;
-		cpu->IntLoadMSBFirst(r, ea, sz);
+		if(unlikely(!cpu->IntLoadMSBFirst(r, ea, sz))) return;
 		r = (r + 1) & 31;
 		ea += sz;
 		n -= sz;
@@ -67,7 +67,11 @@ op lswx(31[6]:rd[5]:ra[5]:rb[5]:533[10]:?[1])
 lswx.execute = {
 	if(unlikely(rd == ra ||
 	            rd == rb ||
-	            (rd == 0 && ra == 0))) throw IllegalInstructionException<CONFIG>();
+	            (rd == 0 && ra == 0)))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 
 	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb);
 
@@ -78,7 +82,7 @@ lswx.execute = {
 	while(n > 0)
 	{
 		uint32_t sz = (n > 4) ? 4 : n;
-		cpu->IntLoadMSBFirst(r, ea, sz);
+		if(unlikely(!cpu->IntLoadMSBFirst(r, ea, sz))) return;
 		r = (r + 1) & 31;
 		ea += sz;
 		n -= sz;
@@ -102,7 +106,7 @@ stswi.execute = {
 	while(n > 0)
 	{
 		uint32_t sz = (n > 4) ? 4 : n;
-		cpu->IntStoreMSBFirst(r, ea, sz);
+		if(unlikely(!cpu->IntStoreMSBFirst(r, ea, sz))) return;
 		r = (r + 1) & 31;
 		ea += sz;
 		n -= sz;
@@ -128,7 +132,7 @@ stswx.execute = {
 	while(n > 0)
 	{
 		uint32_t sz = (n > 4) ? 4 : n;
-		cpu->IntStoreMSBFirst(r, ea, sz);
+		if(unlikely(!cpu->IntStoreMSBFirst(r, ea, sz))) return;
 		r = (r + 1) & 31;
 		ea += sz;
 		n -= sz;

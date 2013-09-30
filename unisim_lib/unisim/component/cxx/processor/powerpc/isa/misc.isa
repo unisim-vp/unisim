@@ -40,8 +40,7 @@
 
 op sc(17[6]:?[24]:1[1]:?[1])
 sc.execute = {
-	cpu->FlushSubsequentInstructions();
-	throw SystemCallException<CONFIG>();
+	cpu->SetException(CONFIG::EXC_SYSTEM_CALL);
 }
 sc.disasm = {
 	os << "sc";
@@ -73,7 +72,7 @@ tw.execute = {
 	if(a == b && (to & 4)) trap = 1;
 	if((uint32_t) a < (uint32_t) b && (to & 2)) trap = 1;
 	if((uint32_t) a > (uint32_t) b && (to & 1)) trap = 1;
-	if(unlikely(trap)) throw TrapException<CONFIG>();
+	if(unlikely(trap)) cpu->SetException(CONFIG::EXC_PROGRAM_TRAP);
 }
 tw.disasm = {
 	os << "tw " << (unsigned int) to << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -90,7 +89,7 @@ twi.execute = {
 	if(a == simm && (to & 4)) trap = 1;
 	if((uint32_t) a < (uint32_t) simm && (to & 2)) trap = 1;
 	if((uint32_t) a > (uint32_t) simm && (to & 1)) trap = 1;
-	if(unlikely(trap)) throw TrapException<CONFIG>();
+	if(unlikely(trap)) cpu->SetException(CONFIG::EXC_PROGRAM_TRAP);
 }
 twi.disasm = {
 	os << "twi " << (unsigned int) to << ", r" << (unsigned int) ra << ", " << simm;
@@ -137,7 +136,11 @@ mfcr.disasm = {
 op mfmsr(31[6]:rd[5]:?[10]:83[10]:?[1])
 mfmsr.execute = {
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
+	if(unlikely(msr & CONFIG::MSR_PR_MASK))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return;
+	}
 
 	// Move MSR to destination GPR
 	cpu->SetGPR(rd, msr);
@@ -162,7 +165,7 @@ mfspr.execute = {
 			result = cpu->GetCTR();
 			break;
 		default:
-			result = cpu->GetSPR(n);
+			if(unlikely(!cpu->GetSPR(n, result))) return;
 			break;
 	}
 	
@@ -287,7 +290,7 @@ mftb.execute = {
 		case 269: cpu->SetGPR(rd, cpu->GetTBU()); break;
 		default:
 			/* illegal instruction */
-			throw IllegalInstructionException<CONFIG>();
+			cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
 	}
 }
 mftb.disasm = {
@@ -326,7 +329,11 @@ mtcrf.disasm = {
 op mtmsr(31[6]:rs[5]:?[10]:146[10]:?[1])
 mtmsr.execute = {
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
+	if(unlikely(msr & CONFIG::MSR_PR_MASK))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return;
+	}
 
 	cpu->SetMSR(cpu->GetGPR(rs));
 }

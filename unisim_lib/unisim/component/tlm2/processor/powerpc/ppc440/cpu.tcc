@@ -288,10 +288,10 @@ void CPU<CONFIG>::ProcessIRQEvent(Event *event)
 		inherited::logger << DebugInfo << (sc_time_stamp() + cpu_time) << ": processing an IRQ event that occured at " << event->GetTimeStamp() << " (";
 		switch(event->GetIRQ())
 		{
-			case CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT:
+			case CONFIG::EXC_EXTERNAL_INPUT:
 				inherited::logger << "external";
 				break;
-			case CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT:
+			case CONFIG::EXC_CRITICAL_INPUT:
 				inherited::logger << "critical";
 				break;
 			default:
@@ -301,9 +301,9 @@ void CPU<CONFIG>::ProcessIRQEvent(Event *event)
 		inherited::logger << " input goes " << (event->GetLevel() ? "high" : "low") << "). Event skew is " << (sc_time_stamp() + cpu_time - event->GetTimeStamp()) << "." << EndDebugInfo;
 	}
 	if(event->GetLevel())
-		inherited::SetIRQ(event->GetIRQ());
+		inherited::SetException(event->GetIRQ());
 	else
-		inherited::ResetIRQ(event->GetIRQ());
+		inherited::ResetException(event->GetIRQ());
 }
 
 template <class CONFIG>
@@ -320,7 +320,7 @@ void CPU<CONFIG>::interrupt_b_transport(unsigned int irq, InterruptPayload& payl
 		{
 			inherited::logger << DebugInfo << notify_time_stamp << ": " << (irq ? "External" : "Critical") << " input interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
 		}
-		external_event_schedule.NotifyIRQEvent(irq ? CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT : CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT, level, notify_time_stamp);
+		external_event_schedule.NotifyIRQEvent(irq ? CONFIG::EXC_EXTERNAL_INPUT : CONFIG::EXC_CRITICAL_INPUT, level, notify_time_stamp);
 	}
 	else
 	{
@@ -347,7 +347,7 @@ tlm::tlm_sync_enum CPU<CONFIG>::interrupt_nb_transport_fw(unsigned int irq, Inte
 					{
 						inherited::logger << DebugInfo << notify_time_stamp << ": " << (irq ? "External" : "Critical") << " input interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
 					}
-					external_event_schedule.NotifyIRQEvent(irq ? CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT : CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT, level, notify_time_stamp);
+					external_event_schedule.NotifyIRQEvent(irq ? CONFIG::EXC_EXTERNAL_INPUT : CONFIG::EXC_CRITICAL_INPUT, level, notify_time_stamp);
 				}
 				else
 				{

@@ -40,11 +40,16 @@ FLOATING POINT LOAD INSTRUCTIONS
 
 op lfd(50[6]:fd[5]:ra[5]:sext<32>d[16])
 lfd.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
 	// check if FPU is available
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
@@ -64,18 +69,27 @@ lfd.disasm = {
 
 op lfdu(51[6]:fd[5]:ra[5]:sext<32>d[16])
 lfdu.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 
 	// do the memory access
-	cpu->Fp64Load(fd, ea);
+	if(unlikely(!cpu->Fp64Load(fd, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -90,17 +104,26 @@ lfdu.disasm = {
 
 op lfdux(31[6]:fd[5]:ra[5]:rb[5]:631[10]:?[1])
 lfdux.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}	
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 
-	cpu->Fp64Load(fd, ea);
+	if(unlikely(!cpu->Fp64Load(fd, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -115,10 +138,15 @@ lfdux.disasm = {
 
 op lfdx(31[6]:fd[5]:ra[5]:rb[5]:599[10]:?[1])
 lfdx.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
@@ -138,10 +166,15 @@ lfdx.disasm = {
 
 op lfs(48[6]:fd[5]:ra[5]:sext<32>d[16])
 lfs.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
@@ -161,18 +194,27 @@ lfs.disasm = {
 
 op lfsu(49[6]:fd[5]:ra[5]:sext<32>d[16])
 lfsu.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 
 	// do the memory access
-	cpu->Fp32Load(fd, ea);
+	if(unlikely(!cpu->Fp32Load(fd, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -187,18 +229,27 @@ lfsu.disasm = {
 
 op lfsux(31[6]:fd[5]:ra[5]:rb[5]:567[10]:?[1])
 lfsux.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 
 	// do the memory access
-	cpu->Fp32Load(fd, ea);
+	if(unlikely(!cpu->Fp32Load(fd, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -213,10 +264,15 @@ lfsux.disasm = {
 
 op lfsx(31[6]:fd[5]:ra[5]:rb[5]:535[10]:?[1])
 lfsx.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
@@ -242,10 +298,15 @@ FLOATING POINT STORE INSTRUCTIONS
 
 op stfd(54[6]:fs[5]:ra[5]:sext<32>d[16])
 stfd.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
@@ -264,17 +325,26 @@ stfd.disasm = {
 
 op stfdu(55[6]:fs[5]:ra[5]:sext<32>d[16])
 stfdu.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 
-	cpu->Fp64Store(fs, ea);
+	if(unlikely(!cpu->Fp64Store(fs, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -289,17 +359,26 @@ stfdu.disasm = {
 
 op stfdux(31[6]:fs[5]:ra[5]:rb[5]:759[10]:?[1])
 stfdux.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 
-	cpu->Fp64Store(fs, ea);
+	if(unlikely(!cpu->Fp64Store(fs, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -314,10 +393,15 @@ stfdux.disasm = {
 
 op stfdx(31[6]:fs[5]:ra[5]:rb[5]:727[10]:?[1])
 stfdx.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
@@ -336,10 +420,15 @@ stfdx.disasm = {
 
 op stfiwx(31[6]:fs[5]:ra[5]:rb[5]:983[10]:?[1])
 stfiwx.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -357,10 +446,15 @@ stfiwx.disasm = {
 
 op stfs(52[6]:fs[5]:ra[5]:sext<32>d[16])
 stfs.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
@@ -378,17 +472,26 @@ stfs.disasm = {
 
 op stfsu(53[6]:fs[5]:ra[5]:sext<32>d[16])
 stfsu.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 
-	cpu->Fp32Store(fs, ea);
+	if(unlikely(!cpu->Fp32Store(fs, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -403,17 +506,26 @@ stfsu.disasm = {
 
 op stfsux(31[6]:fs[5]:ra[5]:rb[5]:695[10]:?[1])
 stfsux.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 
-	cpu->Fp32Store(fs, ea);
+	if(unlikely(!cpu->Fp32Store(fs, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -428,10 +540,15 @@ stfsux.disasm = {
 
 op stfsx(31[6]:fs[5]:ra[5]:rb[5]:663[10]:?[1])
 stfsx.execute = {
-	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return;
+	}
 	if(unlikely(!cpu->GetMSR_FP()))
 	{
-		throw FloatingPointUnavailableException<CONFIG>();
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return;
 	}
 
 	// compute the effective address
