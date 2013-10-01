@@ -370,16 +370,18 @@ public:
   /* Memory access methods       START                          */
   /**************************************************************/
 	
-  /** Reads 32bits instructions from the memory system
-   * This method allows the user to read instructions from the memory system,
-   *   that is, it tries to read from the pertinent caches and if failed from
-   *   the external memory system.
+  /** Refill the Instruction Prefetch Buffer from the memory system
+   * (through the instruction cache if present).
+   *
+   * This method allows the user to prefetch instructions from the memory
+   * system, that is, it tries to read from the pertinent caches and if
+   * failed from the external memory system.
    * 
-   * @param address the address to read data from
-   * @param data the buffer to fill with the read data
-   * @param size the size in bytes to read
+   * @param address the address of the requiered instruction that the
+   *                prefetch instruction buffer should encompass, once
+   *                the refill is complete.
    */
-  void ReadInsn(uint32_t address, uint32_t *data, uint32_t size);
+  void RefillInsnPrefetchBuffer(uint32_t base_address);
   
   /** Reads 32bits instructions from the memory system
    * This method allows the user to read instructions from the memory system,
@@ -387,9 +389,10 @@ public:
    *   the external memory system.
    * 
    * @param address the address to read data from
-   * @param val the buffer to fill with the read data
+   * @param insn the resulting instruction word (address of)
    */
-  void ReadInsn(uint32_t address, uint32_t &val);
+  void ReadInsn(uint32_t address, uint32_t &insn);
+  
   /** Memory prefetch instruction.
    * This method is used to make memory prefetches into the caches (if 
    *   available), that is it sends a memory read that doesn't keep the 
@@ -762,14 +765,12 @@ protected:
    */
   void PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp* memop);
 
-	//=====================================================================
-	//=               Instruction prefetch buffer                         =
-	//=====================================================================
-	
-	unsigned int num_insn_in_prefetch_buffer;                  //!< Number of instructions currently in the prefetch buffer
-	unsigned int cur_insn_in_prefetch_buffer;                  //!< Prefetch buffer index of the current instruction to be executed
-	uint32_t cur_pc_in_prefetch_buffer;
-	uint32_t prefetch_buffer[8];                               //!< The instruction prefetch buffer
+  //=====================================================================
+  //=               Instruction prefetch buffer                         =
+  //=====================================================================
+  
+  uint8_t ipb_bytes[Cache::LINE_SIZE];                       //!< The instruction prefetch buffer
+  uint32_t ipb_base_address;                                 //!< base address of IPB content (cache line size aligned if valid)
 };
 
 /** 32bits memory read.

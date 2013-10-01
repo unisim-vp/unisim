@@ -98,133 +98,128 @@ using std::stringstream;
  * @param parent the parent object of this object
  */
 CPU::CPU(const char *name, Object *parent)
-	: Object(name, parent)
-	, unisim::component::cxx::processor::arm::CPU(name, parent)
-	, Client<LinuxOS>(name, parent)
-	, Service<MemoryInjection<uint32_t> >(name, parent)
-	, Client<DebugControl<uint32_t> >(name, parent)
-	, Client<MemoryAccessReporting<uint32_t> >(name, parent)
-	, Client<TrapReporting>(name, parent)
-	, Service<MemoryAccessReportingControl>(name, parent)
-	, Service<Disassembly<uint32_t> >(name, parent)
-	, Service<Registers>(name, parent)
-	, Service<Memory<uint32_t> >(name, parent)
-	, disasm_export("disasm-export", this)
-	, registers_export("registers-export", this)
-	, memory_injection_export("memory-injection-export", this)
-	, memory_export("memory-export", this)
-	, memory_access_reporting_control_export(
-			"memory-access-reporting-control-export", this)
-	, debug_control_import("debug-control-import", this)
-	, memory_access_reporting_import("memory-access-reporting-import", this)
-	, symbol_table_lookup_import("symbol-table-lookup-import", this)
-	, linux_os_import("linux-os-import", this)
-	, instruction_counter_trap_reporting_import(
-			"instruction-counter-trap-reporting-import", this)
-	, icache("icache", this)
-	, dcache("dcache", this)
-	, arm32_decoder()
-	, instruction_counter(0)
-	, voltage(0)
-	, verbose(0)
-	, trap_on_instruction_counter(0)
-	, default_endianness_string(default_endianness == E_BIG_ENDIAN ? 
-			"big-endian" : "little-endian")
-	, requires_memory_access_reporting(true)
-	, requires_finished_instruction_reporting(true)
-	, param_default_endianness("default-endianness", this,
-			default_endianness_string,
-			"The processor default/boot endianness. Available values are: "
-			"little-endian and big-endian.")
-	, param_cpu_cycle_time_ps("cpu-cycle-time-ps", this,
-			cpu_cycle_time_ps,
-			"The processor cycle time in picoseconds.")
-	, param_voltage("voltage", this,
-			voltage,
-			"The processor voltage in mV.")
-	, param_verbose("verbose", this,
-			verbose,
-			"Activate the verbose system (0 = inactive, different than 0 = "
-			"active).")
-	, param_trap_on_instruction_counter("trap-on-instruction-counter", this,
-			trap_on_instruction_counter,
-			"Produce a trap when the given instruction count is reached.")
-	, stat_instruction_counter("instruction-counter", this,
-			instruction_counter,
-			"Number of instructions executed.")
-	, reg_sp("SP", this, gpr[13],
-			"The stack pointer (SP) register (alias of GPR[13]).")
-	, reg_lr("LR", this, gpr[14],
-			"The link register (LR) (alias of GPR[14]).")
-	, reg_pc("PC", this, gpr[15],
-			"The program counter (PC) register (alias of GPR[15]).")
-	, reg_cpsr("CPSR", this, cpsr.m_value,
-			"The CPSR register.")
-	, ls_queue()
-	, first_ls(0)
-	, has_sent_first_ls(false)
-	, num_insn_in_prefetch_buffer(0)
-	, cur_insn_in_prefetch_buffer(0)
-	, cur_pc_in_prefetch_buffer(0)
-	, prefetch_buffer()
+  : Object(name, parent),
+  unisim::component::cxx::processor::arm::CPU(name, parent),
+  Client<LinuxOS>(name, parent),
+  Service<MemoryInjection<uint32_t> >(name, parent),
+  Client<DebugControl<uint32_t> >(name, parent),
+  Client<MemoryAccessReporting<uint32_t> >(name, parent),
+  Client<TrapReporting>(name, parent),
+  Service<MemoryAccessReportingControl>(name, parent),
+  Service<Disassembly<uint32_t> >(name, parent),
+  Service<Registers>(name, parent),
+  Service< Memory<uint32_t> >(name, parent),
+  disasm_export("disasm-export", this),
+  registers_export("registers-export", this),
+  memory_injection_export("memory-injection-export", this),
+  memory_export("memory-export", this),
+  memory_access_reporting_control_export("memory-access-reporting-control-export", this),
+  debug_control_import("debug-control-import", this),
+  memory_access_reporting_import("memory-access-reporting-import", this),
+  symbol_table_lookup_import("symbol-table-lookup-import", this),
+  linux_os_import("linux-os-import", this),
+  instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this),
+  icache("icache", this),
+  dcache("dcache", this),
+  arm32_decoder(),
+  instruction_counter(0),
+  voltage(0),
+  verbose(0),
+  trap_on_instruction_counter(0),
+  default_endianness_string(default_endianness == E_BIG_ENDIAN ? 
+                            "big-endian" : "little-endian"),
+  requires_memory_access_reporting(true),
+  requires_finished_instruction_reporting(true),
+  param_default_endianness("default-endianness", this,
+                           default_endianness_string,
+                           "The processor default/boot endianness. Available values are: "
+                           "little-endian and big-endian."),
+  param_cpu_cycle_time_ps("cpu-cycle-time-ps", this,
+                          cpu_cycle_time_ps,
+                          "The processor cycle time in picoseconds."),
+  param_voltage("voltage", this,
+                voltage,
+                "The processor voltage in mV."),
+  param_verbose("verbose", this,
+                verbose,
+                "Activate the verbose system (0 = inactive, different than 0 = "
+                "active)."),
+  param_trap_on_instruction_counter("trap-on-instruction-counter", this,
+                                    trap_on_instruction_counter,
+                                    "Produce a trap when the given instruction count is reached."),
+  stat_instruction_counter("instruction-counter", this,
+                           instruction_counter,
+                           "Number of instructions executed."),
+  reg_sp("SP", this, gpr[13],
+         "The stack pointer (SP) register (alias of GPR[13])."),
+  reg_lr("LR", this, gpr[14],
+         "The link register (LR) (alias of GPR[14])."),
+  reg_pc("PC", this, gpr[15],
+         "The program counter (PC) register (alias of GPR[15])."),
+  reg_cpsr("CPSR", this, cpsr.m_value,
+           "The CPSR register."),
+  ls_queue(),
+  first_ls(0),
+  has_sent_first_ls(false),
+  ipb_base_address( -1 )
 {
-	for (unsigned int i = 0; i < num_phys_gprs; i++)
-	{
-		stringstream ss;
-		stringstream ss_desc;
-		ss << "PHYS_GPR[" << i << "]";
-		ss_desc << "Physical register " << i;
-		reg_phys_gpr[i] =  
-			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-					this, phys_gpr[i], ss_desc.str().c_str());
-	}
-	for (unsigned int i = 0; i < (num_log_gprs - 1); i++)
-	{
-		stringstream ss;
-		stringstream ss_desc;
-		ss << "GPR[" << i << "]";
-		ss_desc << "Logical register " << i;
-		reg_gpr[i] = 
-			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-					this, gpr[i], ss_desc.str().c_str());
-	}
-        reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
-	for (unsigned int i = 0; i < num_phys_spsrs; i++)
-	{
-		stringstream ss;
-		stringstream ss_desc;
-		ss << "SPSR[" << i << "]";
-		ss_desc << "SPSR[" << i << "] register";
-		reg_spsr[i] =
-			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-					this, spsr[i].m_value, ss_desc.str().c_str());
-	}
+  for (unsigned int i = 0; i < num_phys_gprs; i++)
+    {
+      stringstream ss;
+      stringstream ss_desc;
+      ss << "PHYS_GPR[" << i << "]";
+      ss_desc << "Physical register " << i;
+      reg_phys_gpr[i] =  
+        new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
+                                                        this, phys_gpr[i], ss_desc.str().c_str());
+    }
+  for (unsigned int i = 0; i < (num_log_gprs - 1); i++)
+    {
+      stringstream ss;
+      stringstream ss_desc;
+      ss << "GPR[" << i << "]";
+      ss_desc << "Logical register " << i;
+      reg_gpr[i] = 
+        new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
+                                                        this, gpr[i], ss_desc.str().c_str());
+    }
+  reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
+  for (unsigned int i = 0; i < num_phys_spsrs; i++)
+    {
+      stringstream ss;
+      stringstream ss_desc;
+      ss << "SPSR[" << i << "]";
+      ss_desc << "SPSR[" << i << "] register";
+      reg_spsr[i] =
+        new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
+                                                        this, spsr[i].m_value, ss_desc.str().c_str());
+    }
 
-	// This implementation of the arm architecture can only run in user mode,
-	//   so we can already set CPSR to that mode.
-	cpsr.M().Set(USER_MODE);
+  // This implementation of the arm architecture can only run in user mode,
+  //   so we can already set CPSR to that mode.
+  cpsr.M().Set(USER_MODE);
 
-	// Set the right format for various of the variables
-	param_cpu_cycle_time_ps.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	param_voltage.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	param_trap_on_instruction_counter.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_instruction_counter.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
+  // Set the right format for various of the variables
+  param_cpu_cycle_time_ps.SetFormat(
+                                    unisim::kernel::service::VariableBase::FMT_DEC);
+  param_voltage.SetFormat(
+                          unisim::kernel::service::VariableBase::FMT_DEC);
+  param_trap_on_instruction_counter.SetFormat(
+                                              unisim::kernel::service::VariableBase::FMT_DEC);
+  stat_instruction_counter.SetFormat(
+                                     unisim::kernel::service::VariableBase::FMT_DEC);
 }
 
 /** Destructor.
  */
 CPU::~CPU()
 {
-	for (unsigned int i = 0; i < num_phys_gprs; i++)
-		if (reg_phys_gpr[i]) delete reg_phys_gpr[i];
-	for (unsigned int i = 0; i < num_log_gprs; i++)
-		if (reg_gpr[i]) delete reg_gpr[i];
-	for (unsigned int i = 0; i < num_phys_spsrs; i++)
-		if (reg_spsr[i]) delete reg_spsr[i];
+  for (unsigned int i = 0; i < num_phys_gprs; i++)
+    if (reg_phys_gpr[i]) delete reg_phys_gpr[i];
+  for (unsigned int i = 0; i < num_log_gprs; i++)
+    if (reg_gpr[i]) delete reg_gpr[i];
+  for (unsigned int i = 0; i < num_phys_spsrs; i++)
+    if (reg_spsr[i]) delete reg_spsr[i];
 }
 
 /** Object setup method.
@@ -398,10 +393,6 @@ CPU::EndSetup()
 		requires_memory_access_reporting = false;
 		requires_finished_instruction_reporting = false;
 	}
-	
-	num_insn_in_prefetch_buffer = 0;
-	cur_insn_in_prefetch_buffer = 0;
-	cur_pc_in_prefetch_buffer = this->next_pc;
 	
 	return true;
 }
@@ -907,78 +898,69 @@ CPU::PerformExit(int ret)
 	Stop(ret);
 }
 
-  /** Reads 32bits instructions from the memory system
-   * This method allows the user to read instructions from the memory system,
-   *   that is, it tries to read from the pertinent caches and if failed from
-   *   the external memory system.
-   * 
-   * @param address the address to read data from
-   * @param data the buffer to fill with the read data
-   * @param size the size in bytes to read
-   */
+/** Refill the Instruction Prefetch Buffer from the memory system
+ * (through the instruction cache if present).
+ *
+ * This method allows the user to prefetch instructions from the memory
+ * system, that is, it tries to read from the pertinent caches and if
+ * failed from the external memory system.
+ * 
+ * @param address the address of the requiered instruction that the
+ *                prefetch instruction buffer should encompass, once
+ *                the refill is complete.
+ */
 void 
-CPU::ReadInsn(uint32_t address, uint32_t *data, uint32_t size)
+CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 {
-	if ( likely(icache.GetSize()) )
-	{
-		icache.read_accesses++;
-		// check the instruction cache
-		uint32_t cache_tag = icache.GetTag(address);
-		uint32_t cache_set = icache.GetSet(address);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( icache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( icache.GetValid(cache_set, cache_way) )
-			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
-			}
-		}
-		if ( unlikely(!cache_hit) )
-		{
-			// get a way to replace
-			cache_way = icache.GetNewWay(cache_set);
-			// no need to check valiad and dirty bits
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-				icache.GetBaseAddressFromAddress(address);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = icache.GetData(cache_set,
-					cache_way, &cache_data);
-			PrRead(cache_address, cache_data,
-					cache_line_size);
-			icache.SetTag(cache_set, cache_way, cache_tag);
-			icache.SetValid(cache_set, cache_way, 1);
-		}
-		else
-		{
-			// cache hit
-			icache.read_hits++;
-		}
+  this->ipb_base_address = base_address;
+  
+  if (likely(icache.GetSize()))
+    {
+      icache.read_accesses++;
+      // check the instruction cache
+      uint32_t cache_tag = icache.GetTag(base_address);
+      uint32_t cache_set = icache.GetSet(base_address);
+      uint32_t cache_way;
+      // Check for a cache hit
+      bool cache_hit =
+        icache.GetWay(cache_tag, cache_set, &cache_way) and
+        icache.GetValid(cache_set, cache_way);
+      
+      if (likely(cache_hit))
+        {
+          // cache hit
+          icache.read_hits++;
+        }
+      else
+        {
+          // get a way to replace (no need to check valid and dirty
+          // bits, the new data can be requested immediately)
+          cache_way = icache.GetNewWay(cache_set);
+          uint8_t *cache_data = 0;
+          // when getting the physical data of the cache line
+          icache.GetData(cache_set, cache_way, &cache_data);
+          PrRead(base_address, cache_data, Cache::LINE_SIZE);
+          icache.SetTag(cache_set, cache_way, cache_tag);
+          icache.SetValid(cache_set, cache_way, 1);
+        }
+      
+      // At this point data is in the cache, so we can read it from it
+      uint32_t cache_index = icache.GetIndex(base_address);
+      icache.GetDataCopy(cache_set, cache_way, cache_index, Cache::LINE_SIZE, &this->ipb_bytes[0]);
 
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = icache.GetIndex(address);
-		icache.GetDataCopy(cache_set, cache_way, cache_index, size,
-				(uint8_t *) data);
+      if ( unlikely(icache.power_estimator_import != 0) )
+        icache.power_estimator_import->ReportReadAccess();
+    }
+  else
+    {
+      // No instruction cache present, just request the insn to the
+      // memory system.
+      PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE);
+    }
 
-		if ( unlikely(icache.power_estimator_import != 0) )
-			icache.power_estimator_import->ReportReadAccess();
-	}
-	else
-	{
-		// no instruction cache present, just request the insn to the
-		//   memory system
-		PrRead(address, (uint8_t *) data, size);
-	}
-
-	if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
-				memory_access_reporting_import->
-				ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, address, size);
+  if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->
+      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, Cache::LINE_SIZE);
 }
 
 /** Reads 32bits instructions from the memory system
@@ -990,27 +972,18 @@ CPU::ReadInsn(uint32_t address, uint32_t *data, uint32_t size)
  * @param val the buffer to fill with the read data
  */
 void 
-CPU::ReadInsn(uint32_t address, uint32_t &val)
+CPU::ReadInsn(uint32_t address, uint32_t &insn)
 {
-#if 1
-	if(unlikely((cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer) || (cur_pc_in_prefetch_buffer != address)))
-	{
-		uint32_t size_to_block_boundary = icache.GetSizeToCacheLineBoundary(address);
-		uint32_t size_to_prefetch = size_to_block_boundary > sizeof(prefetch_buffer) ? sizeof(prefetch_buffer) : size_to_block_boundary;
-		// refill the prefetch buffer with up to one cache line, not much
-		ReadInsn(address, prefetch_buffer, size_to_prefetch);
-		num_insn_in_prefetch_buffer = size_to_prefetch / 4;
-		cur_insn_in_prefetch_buffer = 0;
-		cur_pc_in_prefetch_buffer = address;
-	}
-	val = Target2Host(GetEndianness(), prefetch_buffer[cur_insn_in_prefetch_buffer]);
-	cur_insn_in_prefetch_buffer++;
-	cur_pc_in_prefetch_buffer += 4;
-#else
-	uint32_t buf;
-	ReadInsn(address, &buf, 4);
-	val = Target2Host(GetEndianness(), buf);
-#endif
+  uint32_t base_address = address & -(Cache::LINE_SIZE);
+  uint32_t buffer_index = address % (Cache::LINE_SIZE);
+  
+  if (unlikely(ipb_base_address != base_address))
+    {
+      RefillInsnPrefetchBuffer( base_address );
+    }
+  
+  uint32_t word = *((uint32_t*)(&ipb_bytes[buffer_index]));
+  insn = Target2Host(GetEndianness(), word);
 }
 
 /** Memory prefetch instruction.
