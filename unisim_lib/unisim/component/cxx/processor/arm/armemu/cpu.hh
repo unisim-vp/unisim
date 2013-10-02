@@ -51,6 +51,7 @@
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
 // #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/component/cxx/processor/arm/isa_arm32.hh"
+#include "unisim/component/cxx/processor/arm/isa_thumb.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
 #include <string>
@@ -383,15 +384,25 @@ public:
    */
   void RefillInsnPrefetchBuffer(uint32_t base_address);
   
-  /** Reads 32bits instructions from the memory system
+  /** Reads ARM32 instructions from the memory system
    * This method allows the user to read instructions from the memory system,
    *   that is, it tries to read from the pertinent caches and if failed from
    *   the external memory system.
    * 
    * @param address the address to read data from
-   * @param insn the resulting instruction word (address of)
+   * @param insn the resulting instruction word (output reference)
    */
-  void ReadInsn(uint32_t address, uint32_t &insn);
+  void ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn);
+  
+  /** Reads THUMB instructions from the memory system
+   * This method allows the user to read instructions from the memory system,
+   *   that is, it tries to read from the pertinent caches and if failed from
+   *   the external memory system.
+   * 
+   * @param address the address to read data from
+   * @param insn the resulting instruction word (output reference)
+   */
+  void ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn);
   
   /** Memory prefetch instruction.
    * This method is used to make memory prefetches into the caches (if 
@@ -631,9 +642,10 @@ public:
 		
 protected:
   /** Decoder for the arm32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<
-  unisim::component::cxx::processor::arm::armemu::CPU>
-  arm32_decoder;
+  unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
+  /** Decoder for the thumb instruction set. */
+  unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU> thumb_decoder;
+
   /* The thumb instruction set decoder is not needed for armemu 
    * typename isa::thumb::Decoder<CONFIG> thumb_decoder;
    */

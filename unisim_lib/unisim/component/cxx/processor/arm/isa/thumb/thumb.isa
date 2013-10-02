@@ -39,8 +39,14 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::arm::isa::thumb
-set endianness big
+
+set codetype buffer;
 set addressclass {uint32_t}
+set endianness little;
+//set fields_order descending;
+set words_order ascending;
+//set withencode_p true;
+
 template <{class} {ARCH}>
 
 decl {

@@ -412,85 +412,97 @@ CPU::OnDisconnect()
 void 
 CPU::StepInstruction()
 {
-	this->current_pc = GetNPC();
+  uint32_t current_pc = this->current_pc = GetNPC();
 
-	if (debug_control_import) 
-	{
-		DebugControl<uint32_t>::DebugCommand dbg_cmd;
+  if (debug_control_import) 
+    {
+      DebugControl<uint32_t>::DebugCommand dbg_cmd;
 
-		do 
-		{
-			dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+      do 
+        {
+          dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 	
-			if (likely(dbg_cmd == DebugControl<uint32_t>::DBG_STEP)) 
-			{
-				/* Nothing to do */
-				break;
-			}
-			if (dbg_cmd == DebugControl<uint32_t>::DBG_SYNC) 
-			{
-				// Sync();
-				continue;
-			}
+          if (likely(dbg_cmd == DebugControl<uint32_t>::DBG_STEP)) 
+            {
+              /* Nothing to do */
+              break;
+            }
+          if (dbg_cmd == DebugControl<uint32_t>::DBG_SYNC) 
+            {
+              // Sync();
+              continue;
+            }
 
-			if (dbg_cmd == DebugControl<uint32_t>::DBG_KILL) {
-				Stop(0);
-			}
-			if(dbg_cmd == DebugControl<uint32_t>::DBG_RESET) {
-				// TODO : memory_interface->Reset(); 
-			}
-		} while(1);
-	}
+          if (dbg_cmd == DebugControl<uint32_t>::DBG_KILL) {
+            Stop(0);
+          }
+          if(dbg_cmd == DebugControl<uint32_t>::DBG_RESET) {
+            // TODO : memory_interface->Reset(); 
+          }
+        } while(1);
+    }
 	
-	if (cpsr.T().Get()) {
-		/* Thumb state */
+  if (cpsr.T().Get()) {
+    /* Thumb state */
+    isa::thumb::CodeType insn;
+    ReadInsn(current_pc, insn);
 		
-		/* This implementation should never enter into thumb mode */
-		logger << DebugError << "Thumb mode not supported in" << std::endl
-		       << unisim::kernel::debug::BackTrace() << EndDebugError;
-		Stop(-1);
-	}
-	
-	else {
-		/* Arm32 state */
+    /* Decode current PC */
+    isa::thumb::Operation<unisim::component::cxx::processor::arm::armemu::CPU>* op;
+    op = thumb_decoder.Decode(current_pc, insn);
 		
-		/* fetch instruction word from memory */
-		isa::arm32::CodeType insn;
-		ReadInsn(current_pc, insn);
+    /* update PC registers value before execution */
+    this->gpr[15] = this->next_pc + 4;
+    this->next_pc += 2;
+		
+    /* Execute instruction */
+    op->execute(*this);
+    //op->profile(profile);
+		
+    /* perform the memory load/store operations */
+    PerformLoadStoreAccesses();
+  }
+	
+  else {
+    /* Arm32 state */
+		
+    /* fetch instruction word from memory */
+    isa::arm32::CodeType insn;
+    ReadInsn(current_pc, insn);
 			
-		/* Decode current PC */
-		isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::CPU>* op;
-		op = arm32_decoder.Decode(current_pc, insn);
+    /* Decode current PC */
+    isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::CPU>* op;
+    op = arm32_decoder.Decode(current_pc, insn);
 		
-		/* update PC registers value before execution */
-		this->gpr[15] = this->next_pc + 8;
-		this->next_pc += 4;
+    /* update PC registers value before execution */
+    this->gpr[15] = this->next_pc + 8;
+    this->next_pc += 4;
 		
-		/* Execute instruction */
-		op->execute(*this);
-		//op->profile(profile);
+    /* Execute instruction */
+    op->execute(*this);
+    //op->profile(profile);
 		
-		/* perform the memory load/store operations */
-		PerformLoadStoreAccesses();
-	}
+    /* perform the memory load/store operations */
+    PerformLoadStoreAccesses();
+  }
 	
-	/* check that an exception has not occurred, if so 
-	 * stop the simulation */
-	if ( unlikely(GetVirtualExceptionVector()) )
-	{
-		logger << DebugError
-			<< "An exception has been found, this should never happen "
-			<< "when simulating at user level."
-			<< EndDebugError;
-		Stop(-1);
-	}
-	instruction_counter++;
-	if ( unlikely(instruction_counter_trap_reporting_import &&
+  /* check that an exception has not occurred, if so 
+   * stop the simulation */
+  if ( unlikely(GetVirtualExceptionVector()) )
+    {
+      logger << DebugError
+             << "An exception has been found, this should never happen "
+             << "when simulating at user level."
+             << EndDebugError;
+      Stop(-1);
+    }
+  instruction_counter++;
+  if ( unlikely(instruction_counter_trap_reporting_import &&
 		trap_on_instruction_counter == instruction_counter) )
-		instruction_counter_trap_reporting_import->ReportTrap(*this);
+    instruction_counter_trap_reporting_import->ReportTrap(*this);
 	
-	if(unlikely(requires_finished_instruction_reporting && memory_access_reporting_import))
-		memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+  if(unlikely(requires_finished_instruction_reporting && memory_access_reporting_import))
+    memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
 }
 
 /** Inject an intrusive read memory operation.
@@ -963,7 +975,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
       ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, Cache::LINE_SIZE);
 }
 
-/** Reads 32bits instructions from the memory system
+/** Reads ARM32 instructions from the memory system
  * This method allows the user to read instructions from the memory system,
  *   that is, it tries to read from the pertinent caches and if failed from
  *   the external memory system.
@@ -972,7 +984,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
  * @param val the buffer to fill with the read data
  */
 void 
-CPU::ReadInsn(uint32_t address, uint32_t &insn)
+CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
   uint32_t base_address = address & -(Cache::LINE_SIZE);
   uint32_t buffer_index = address % (Cache::LINE_SIZE);
@@ -984,6 +996,36 @@ CPU::ReadInsn(uint32_t address, uint32_t &insn)
   
   uint32_t word = *((uint32_t*)(&ipb_bytes[buffer_index]));
   insn = Target2Host(GetEndianness(), word);
+}
+
+/** Reads THUMB instructions from the memory system
+ * This method allows the user to read instructions from the memory system,
+ *   that is, it tries to read from the pertinent caches and if failed from
+ *   the external memory system.
+ * 
+ * @param address the address to read data from
+ * @param insn the resulting instruction word (output reference)
+ */
+void
+CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
+{
+  uint32_t base_address = address & -(Cache::LINE_SIZE);
+  uint32_t buffer_index = address % (Cache::LINE_SIZE);
+    
+  if (unlikely(ipb_base_address != base_address))
+    {
+      RefillInsnPrefetchBuffer( base_address );
+    }
+  
+  if (GetEndianness() == E_LITTLE_ENDIAN) {
+    insn.str[0] = ipb_bytes[buffer_index+0];
+    insn.str[1] = ipb_bytes[buffer_index+1];
+  } else {
+    /* Endianness is not the standard ARM instruction endianness */ 
+    insn.str[0] = ipb_bytes[buffer_index+1];
+    insn.str[1] = ipb_bytes[buffer_index+0];
+  }
+  insn.size = 16;
 }
 
 /** Memory prefetch instruction.
