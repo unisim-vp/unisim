@@ -85,7 +85,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "bus cycle time")
 	, param_ext_timer_cycle_time("ext-timer-cycle-time", this, ext_timer_cycle_time, "external timer cycle time")
 	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
-	, param_ipc("ipc", this, ipc, "targeted average instructions per second")
+	, param_ipc("ipc", this, ipc, "targeted average instructions per cycle")
 	, param_enable_host_idle("enable-host-idle", this, enable_host_idle, "Enable/Disable host idle periods when target is idle")
 	, param_enable_dmi("enable-dmi", this, enable_dmi, "Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation")
 	, param_debug_dmi("debug-dmi", this, debug_dmi, "Enable/Disable debugging of DMI (Direct Memory Access)")
@@ -511,7 +511,7 @@ void CPU<CONFIG>::Idle()
 template <class CONFIG>
 void CPU<CONFIG>::Run()
 {
-	sc_time time_per_instruction = cpu_cycle_time * ipc;
+	sc_time time_per_instruction = cpu_cycle_time / ipc;
 	
 	if(inherited::linux_os_import)
 	{
