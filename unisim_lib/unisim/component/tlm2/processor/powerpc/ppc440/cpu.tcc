@@ -388,63 +388,65 @@ bool CPU<CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& p
 template <class CONFIG>
 inline void CPU<CONFIG>::RunInternalTimers()
 {
-	if(unlikely(run_time > timer_time))
-	{
-		const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
+	const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
 		
 #if 0
+	if(run_time >= (timer_time + timer_cycle_time))
+	{
 		do
 		{
 			inherited::RunTimers(1);
 			timer_time += timer_cycle_time;
 		}
-		while(unlikely(run_time >= timer_time));
-#else
-		// Note: this code brings a slight speed improvement (6 %)
-#if 0
-		sc_time delta_time(run_time);
-		delta_time -= timer_time;
-		uint64_t delta = (uint64_t) ceil(delta_time / timer_cycle_time);
-		inherited::RunTimers(delta);
-		sc_time t(timer_cycle_time);
-		t *= (double) delta;
-		timer_time += t;
-#else
-		sc_dt::uint64 delta_time_tu = run_time.value() - timer_time.value();
-		sc_dt::uint64 timer_cycle_time_tu = timer_cycle_time.value();
-		uint64_t delta = (delta_time_tu + timer_cycle_time_tu - 1) / timer_cycle_time_tu;
-		inherited::RunTimers(delta);
-		sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
-		sc_time t(t_tu, false);
-		timer_time += t;
-#endif
-#endif
+		while(run_time >= (timer_time + timer_cycle_time));
 	}
+#else
+	// Note: this code brings a slight speed improvement (6 %)
+#if 0
+	sc_time delta_time(run_time);
+	delta_time -= timer_time;
+	uint64_t delta = (uint64_t) floor(delta_time / timer_cycle_time);
+	inherited::RunTimers(delta);
+	sc_time t(timer_cycle_time);
+	t *= (double) delta;
+	timer_time += t;
+#else
+	sc_dt::uint64 delta_time_tu = run_time.value() - timer_time.value();
+	sc_dt::uint64 timer_cycle_time_tu = timer_cycle_time.value();
+	uint64_t delta = delta_time_tu / timer_cycle_time_tu;
+	inherited::RunTimers(delta);
+	sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
+	sc_time t(t_tu, false);
+	timer_time += t;
+#endif
+#endif
 }
 
 template <class CONFIG>
 inline void CPU<CONFIG>::AlignToBusClock()
 {
 	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
-	sc_dt::uint64 time_tu = sc_time_stamp().value();
-	sc_dt::uint64 cpu_time_tu = cpu_time.value() + time_tu;
-	sc_dt::uint64 modulo = cpu_time_tu % bus_cycle_time_tu;
+	sc_dt::uint64 run_time_tu = run_time.value();
+	sc_dt::uint64 modulo = run_time_tu % bus_cycle_time_tu;
 	if(!modulo) return; // already aligned
-
-	cpu_time_tu += bus_cycle_time_tu - modulo;
-	cpu_time = sc_time(cpu_time_tu - time_tu, false);
+	
+	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
+	sc_time time_alignment(time_alignment_tu, false);
+	cpu_time += time_alignment;
+	run_time += time_alignment;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::AlignToBusClock(sc_time& t)
 {
-	sc_dt::uint64 time_tu = t.value();
 	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
+	sc_dt::uint64 time_tu = t.value();
 	sc_dt::uint64 modulo = time_tu % bus_cycle_time_tu;
 	if(!modulo) return; // already aligned
-
-	time_tu += bus_cycle_time_tu - modulo;
-	t = sc_time(time_tu, false);
+	
+	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
+	sc_time time_alignment(time_alignment_tu, false);
+	t += time_alignment;
 }
 
 template <class CONFIG>
