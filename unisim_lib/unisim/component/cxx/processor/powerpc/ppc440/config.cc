@@ -88,6 +88,8 @@ const uint32_t TLBELayout::TLBE2_MASK;
 
 const uint32_t Config::EXC_EXTERNAL_INPUT;
 const uint32_t Config::EXC_CRITICAL_INPUT;
+const unsigned int Config::EXC_DATA_STORAGE_READ_ACCESS_CONTROL;
+const unsigned int Config::EXC_DATA_STORAGE_WRITE_ACCESS_CONTROL;
 
 } // end of namespace ppc440
 } // end of namespace powerpc

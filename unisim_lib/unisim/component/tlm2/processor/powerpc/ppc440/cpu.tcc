@@ -254,29 +254,33 @@ void CPU<CONFIG>::Synchronize()
 {
 	wait(cpu_time);
 	cpu_time = SC_ZERO_TIME;
+//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::ProcessExternalEvents()
 {
-	sc_time time_stamp = sc_time_stamp();
-	time_stamp += cpu_time;
-	Event *event = external_event_schedule.GetNextEvent(time_stamp);
-	
-	if(unlikely(event != 0))
+	if(!external_event_schedule.Empty())
 	{
-		do
+		sc_time time_stamp = sc_time_stamp();
+		time_stamp += cpu_time;
+		Event *event = external_event_schedule.GetNextEvent(time_stamp);
+		
+		if(unlikely(event != 0))
 		{
-			switch(event->GetType())
+			do
 			{
-				case Event::EV_IRQ:
-					ProcessIRQEvent(event);
-					external_event_schedule.FreeEvent(event);
-					break;
+				switch(event->GetType())
+				{
+					case Event::EV_IRQ:
+						ProcessIRQEvent(event);
+						external_event_schedule.FreeEvent(event);
+						break;
+				}
 			}
+			while((event = external_event_schedule.GetNextEvent(time_stamp)) != 0);
 		}
-		while((event = external_event_schedule.GetNextEvent(time_stamp)) != 0);
 	}
 }
 
@@ -382,7 +386,7 @@ bool CPU<CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& p
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::UpdateTime()
+inline void CPU<CONFIG>::RunInternalTimers()
 {
 	if(unlikely(run_time > timer_time))
 	{
@@ -391,11 +395,10 @@ inline void CPU<CONFIG>::UpdateTime()
 #if 0
 		do
 		{
-			////std::cerr << "timer_time=" << timer_time << std::endl;
 			inherited::RunTimers(1);
 			timer_time += timer_cycle_time;
 		}
-		while(unlikely(run_time > timer_time));
+		while(unlikely(run_time >= timer_time));
 #else
 		// Note: this code brings a slight speed improvement (6 %)
 #if 0
@@ -492,11 +495,12 @@ void CPU<CONFIG>::Idle()
 	}
 	
 	// update overall run time
+//	assert(new_time_stamp >= run_time);
 	run_time = new_time_stamp;
 	run_time += cpu_time;
 	
 	// run internal timers
-	UpdateTime();
+	RunInternalTimers();
 	
 	// check for external events
 	ProcessExternalEvents();
@@ -507,15 +511,42 @@ void CPU<CONFIG>::Run()
 {
 	sc_time time_per_instruction = cpu_cycle_time * ipc;
 	
-	while(1)
+	if(inherited::linux_os_import)
 	{
-		inherited::StepOneInstruction();
-		cpu_time += time_per_instruction;
-		UpdateTime();
-		ProcessExternalEvents();
-		if(unlikely(cpu_time >= nice_time))
+		// User Mode
+		while(1)
 		{
-			Synchronize();
+			inherited::StepOneInstruction();
+			// update local time (relative to sc_time_stamp)
+			cpu_time += time_per_instruction;
+			// update absolute time (local time + sc_time_stamp)
+			run_time += time_per_instruction;
+			// Periodically synchronize with other threads
+			if(unlikely(cpu_time >= nice_time))
+			{
+				Synchronize();
+			}
+		}
+	}
+	else
+	{
+		// Full System
+		while(1)
+		{
+			inherited::StepOneInstruction();
+			// update local time (relative to sc_time_stamp)
+			cpu_time += time_per_instruction;
+			// update absolute time (local time + sc_time_stamp)
+			run_time += time_per_instruction;
+			// Run internal timers
+			RunInternalTimers();
+			// check IRQs
+			ProcessExternalEvents();
+			// Periodically synchronize with other threads
+			if(unlikely(cpu_time >= nice_time))
+			{
+				Synchronize();
+			}
 		}
 	}
 }
@@ -543,7 +574,9 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 				{
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
-					cpu_time += dmi_region->GetReadLatency(size);
+					const sc_time& read_lat = dmi_region->GetReadLatency(size);
+					cpu_time += read_lat;
+					run_time += read_lat;
 					return true;
 				}
 				else
@@ -572,6 +605,7 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 	
 	icurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
+//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
 	
@@ -621,7 +655,9 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 				{
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
-					cpu_time += dmi_region->GetReadLatency(size);
+					const sc_time& read_lat = dmi_region->GetReadLatency(size);
+					cpu_time += read_lat;
+					run_time += read_lat;
 					return true;
 				}
 				else
@@ -651,6 +687,7 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 	
 	dcurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
+//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
 
@@ -700,7 +737,9 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 				{
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), buffer, size);
-					cpu_time += dmi_region->GetWriteLatency(size);
+					const sc_time& write_lat = dmi_region->GetWriteLatency(size);
+					cpu_time += write_lat;
+					run_time += write_lat;
 					return true;
 				}
 				else
@@ -730,6 +769,7 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 	
 	dcuwr_plb_master_sock->b_transport(*payload, cpu_time);
 	
+//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
 
@@ -772,6 +812,7 @@ void CPU<CONFIG>::DCRRead(unsigned int dcrn, uint32_t& value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
+//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
 
@@ -798,6 +839,7 @@ void CPU<CONFIG>::DCRWrite(unsigned int dcrn, uint32_t value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
+//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
 

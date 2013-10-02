@@ -61,20 +61,13 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/queue/queue.hh>
+#include <unisim/util/likely/likely.hh>
+#include <unisim/util/inlining/inlining.hh>
 #include <map>
 #include <iosfwd>
 
 #ifdef powerpc
 #undef powerpc
-#endif
-
-#if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ >= 4) && ((__GNUC_MINOR__ > 1) || ((__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 3)))))     // GNU C version >= 4.1.3
-#if defined(ALWAYS_INLINE)
-#undef ALWAYS_INLINE
-#endif
-#define ALWAYS_INLINE __attribute__((always_inline))
-#else
-#define ALWAYS_INLINE
 #endif
 
 namespace unisim {
@@ -320,6 +313,7 @@ public:
 	//=====================================================================
 	
 	void StepOneInstruction();
+	void StepInstructions(unsigned int count);
 	virtual void Synchronize();
 	virtual void Reset();
 	virtual void Idle();
@@ -334,10 +328,10 @@ public:
 	void DisableFPU();
 	void EnableFPUException();
 	void DisableFPUException();
-	inline bool IsFPUEnabled();
-	inline bool IsFPUExceptionEnabled();
-	inline bool IsDataCacheEnabled();
-	inline bool IsInsnCacheEnabled();
+	inline bool IsFPUEnabled() ALWAYS_INLINE;
+	inline bool IsFPUExceptionEnabled() ALWAYS_INLINE;
+	inline bool IsDataCacheEnabled() ALWAYS_INLINE;
+	inline bool IsInsnCacheEnabled() ALWAYS_INLINE;
 
 	//=====================================================================
 	//=                State interface (with .isa files)                  =
@@ -400,22 +394,22 @@ public:
 	//=                    user level registers set/get methods           =
 	//=====================================================================
 	
-	inline uint32_t GetGPR(unsigned int n) const { return gpr[n]; }
-	inline void SetGPR(unsigned int n, uint32_t value) { gpr[n] = value; }
-	inline uint32_t GetLR() const { return lr; }
-	inline void SetLR(uint32_t value) { lr = value; }
-	inline uint32_t GetCTR() const { return ctr; }
-	inline void SetCTR(uint32_t value) { ctr = value; }
+	inline uint32_t GetGPR(unsigned int n) const ALWAYS_INLINE { return gpr[n]; }
+	inline void SetGPR(unsigned int n, uint32_t value) ALWAYS_INLINE { gpr[n] = value; }
+	inline uint32_t GetLR() const ALWAYS_INLINE { return lr; }
+	inline void SetLR(uint32_t value) ALWAYS_INLINE { lr = value; }
+	inline uint32_t GetCTR() const ALWAYS_INLINE { return ctr; }
+	inline void SetCTR(uint32_t value) ALWAYS_INLINE { ctr = value; }
 	
 	//=====================================================================
 	//=                  instruction address set/get methods              =
 	//=====================================================================
 	
-	inline uint32_t GetCIA() const { return cia; }
-	inline void SetCIA(uint32_t value) { cia = value; }
-	inline uint32_t GetNIA() const { return nia; }
-	inline void SetNIA(uint32_t value) { nia = value; }
-	inline void Branch(uint32_t value) { nia = value; FlushSubsequentInstructions(); }
+	inline uint32_t GetCIA() const ALWAYS_INLINE { return cia; }
+	inline void SetCIA(uint32_t value) ALWAYS_INLINE { cia = value; }
+	inline uint32_t GetNIA() const ALWAYS_INLINE { return nia; }
+	inline void SetNIA(uint32_t value) ALWAYS_INLINE { nia = value; }
+	inline void Branch(uint32_t value) ALWAYS_INLINE { nia = value; FlushSubsequentInstructions(); }
 
 	//=====================================================================
 	//=           special purpose registers set/get methods               =
@@ -424,118 +418,118 @@ public:
 	bool GetSPR(unsigned int n, uint32_t& value);
 	bool SetSPR(unsigned int n, uint32_t value);
 	
-	inline void SetPVR(uint32_t value) { pvr = value; }
-	inline uint32_t GetPVR() const { return pvr; }
-	inline uint32_t GetIVOR(unsigned int n) const { return ivor[n]; }
-	inline void SetIVOR(unsigned int n, uint32_t value) { ivor[n] = value; }
-	inline uint32_t GetIVPR() const { return ivpr; }
-	inline void SetIVPR(uint32_t value) { ivpr = value; }
-	inline uint32_t GetSPRG(unsigned int n) const { return sprg[n]; }
-	inline void SetSPRG(unsigned int n, uint32_t value) { sprg[n] = value; }
-	inline uint32_t GetSRR0() const { return srr0; }
-	inline void SetSRR0(uint32_t value) { srr0 = value; }
-	inline uint32_t GetSRR1() const { return srr1; }
-	inline void SetSRR1(uint32_t value) { srr1 = value; }
-	inline uint32_t GetCSRR0() const { return csrr0; }
-	inline void SetCSRR0(uint32_t value) { csrr0 = value; }
-	inline uint32_t GetCSRR1() const { return csrr1; }
-	inline void SetCSRR1(uint32_t value) { csrr1 = value; }
-	inline uint32_t GetMCSRR0() const { return mcsrr0; }
-	inline void SetMCSRR0(uint32_t value) { mcsrr0 = value; }
-	inline uint32_t GetMCSRR1() const { return mcsrr1; }
-	inline void SetMCSRR1(uint32_t value) { mcsrr1 = value; }
-	inline void SetDEAR(uint32_t value) { dear = value; }
-	inline uint32_t GetDEAR() const { return dear; }
-	inline void SetESR(uint32_t value) { esr = value; }
-	inline uint32_t GetESR() const { return esr; }
-	inline void SetMCSR(uint32_t value) { mcsr = value; }
-	inline uint32_t GetMCSR() const { return mcsr; }
-	inline void SetPIR(uint32_t value) { pir = value; }
-	inline uint32_t GetPIR() const { return pir; }
-	inline void SetUSPRG0(uint32_t value) { usprg0 = value; }
-	inline uint32_t GetUSPRG0() const { return usprg0; }
-	inline void SetDBSR(uint32_t value) { dbsr = value; }
-	inline uint32_t GetDBSR() const { return dbsr; }
-	inline void SetDBCR(unsigned int n, uint32_t value) { dbcr[n] = value; }
-	inline uint32_t GetDBCR(unsigned int n) const { return dbcr[n]; }
-	inline uint32_t GetDBCR0_IDM() const { return (dbcr[0] & CONFIG::DBCR0_IDM_MASK) >> CONFIG::DBCR0_IDM_OFFSET; }
-	inline void SetIAC(unsigned int n, uint32_t value) { iac[n] = value; }
-	inline uint32_t GetIAC(unsigned int n) const { return iac[n]; }
-	inline void SetDAC(unsigned int n, uint32_t value) { dac[n] = value; }
-	inline uint32_t GetDAC(unsigned int n) const { return dac[n]; }
-	inline void SetDVC(unsigned int n, uint32_t value) { dvc[n] = value; }
-	inline uint32_t GetDVC(unsigned int n) const { return dvc[n]; }
-	inline void SetTSR(uint32_t value) { tsr = value; }
-	inline uint32_t GetTSR() const { return tsr; }
-	inline uint32_t GetTSR_ENW() const { return (GetTSR() & CONFIG::TSR_ENW_MASK) >> CONFIG::TSR_ENW_OFFSET; }
-	inline uint32_t GetTSR_WIS() const { return (GetTSR() & CONFIG::TSR_WIS_MASK) >> CONFIG::TSR_WIS_OFFSET; }
-	inline void SetTCR(uint32_t value) { tcr = value; }
-	inline uint32_t GetTCR() const { return tcr; }
-	inline uint32_t GetTCR_ARE() const { return (GetTCR() & CONFIG::TCR_ARE_MASK) >> CONFIG::TCR_ARE_OFFSET; }
-	inline uint32_t GetTCR_DIE() const { return (GetTCR() & CONFIG::TCR_DIE_MASK) >> CONFIG::TCR_DIE_OFFSET; }
-	inline uint32_t GetTCR_FIE() const { return (GetTCR() & CONFIG::TCR_FIE_MASK) >> CONFIG::TCR_FIE_OFFSET; }
-	inline uint32_t GetTCR_WIE() const { return (GetTCR() & CONFIG::TCR_WIE_MASK) >> CONFIG::TCR_WIE_OFFSET; }
-	inline uint32_t GetTCR_FP() const { return (GetTCR() & CONFIG::TCR_FP_MASK) >> CONFIG::TCR_FP_OFFSET; }
-	inline uint32_t GetTCR_WP() const { return (GetTCR() & CONFIG::TCR_WP_MASK) >> CONFIG::TCR_WP_OFFSET; }
-	inline uint32_t GetTCR_WRC() const { return (GetTCR() & CONFIG::TCR_WRC_MASK) >> CONFIG::TCR_WRC_OFFSET; }
-	inline void SetINV(unsigned int n, uint32_t value) { inv[n] = value; }
-	inline uint32_t GetINV(unsigned int n) const { return inv[n]; }
-	inline void SetITV(unsigned int n, uint32_t value) { itv[n] = value; }
-	inline uint32_t GetITV(unsigned int n) const { return itv[n]; }
-	inline void SetCCR0(uint32_t value) { ccr0 = value; }
-	inline uint32_t GetCCR0() const { return ccr0; }
-	inline uint32_t GetCCR0_CRPE() const { return (GetCCR0() & CONFIG::CCR0_CRPE_MASK) >> CONFIG::CCR0_CRPE_OFFSET; }
-	inline uint32_t GetCCR0_FLSTA() const { return (GetCCR0() & CONFIG::CCR0_FLSTA_MASK) >> CONFIG::CCR0_FLSTA_OFFSET; }
-	inline void SetCCR1(uint32_t value) { ccr1 = value; }
-	inline uint32_t GetCCR1() const { return ccr1; }
-	inline uint32_t GetCCR1_FFF() const { return (GetCCR1() & CONFIG::CCR1_FFF_MASK) >> CONFIG::CCR1_FFF_OFFSET; }
-	inline uint32_t GetCCR1_TCS() const { return (GetCCR1() & CONFIG::CCR1_TCS_MASK) >> CONFIG::CCR1_TCS_OFFSET; }
-	inline void SetDNV(unsigned int n, uint32_t value) { dnv[n] = value; }
-	inline uint32_t GetDNV(unsigned int n) const { return dnv[n]; }
-	inline void SetDTV(unsigned int n, uint32_t value) { dtv[n] = value; }
-	inline uint32_t GetDTV(unsigned int n) const { return dtv[n]; }
-	inline void SetDVLIM(uint32_t value) { dvlim = value; }
-	inline uint32_t GetDVLIM() const { return dvlim; }
-	inline uint32_t GetDVLIM_TFLOOR() const { return (GetDVLIM() & CONFIG::DVLIM_TFLOOR_MASK) >> CONFIG::DVLIM_TFLOOR_OFFSET; }
-	inline uint32_t GetDVLIM_TCEILING() const { return (GetDVLIM() & CONFIG::DVLIM_TCEILING_MASK) >> CONFIG::DVLIM_TCEILING_OFFSET; }
-	inline uint32_t GetDVLIM_NFLOOR() const { return (GetDVLIM() & CONFIG::DVLIM_NFLOOR_MASK) >> CONFIG::DVLIM_NFLOOR_OFFSET; }
-	inline void SetIVLIM(uint32_t value) { ivlim = value; }
-	inline uint32_t GetIVLIM() const { return ivlim; }
-	inline uint32_t GetIVLIM_TFLOOR() const { return (GetIVLIM() & CONFIG::IVLIM_TFLOOR_MASK) >> CONFIG::IVLIM_TFLOOR_OFFSET; }
-	inline uint32_t GetIVLIM_TCEILING() const { return (GetIVLIM() & CONFIG::IVLIM_TCEILING_MASK) >> CONFIG::IVLIM_TCEILING_OFFSET; }
-	inline uint32_t GetIVLIM_NFLOOR() const { return (GetIVLIM() & CONFIG::IVLIM_NFLOOR_MASK) >> CONFIG::IVLIM_NFLOOR_OFFSET; }
-	inline void SetRSTCFG(uint32_t value) { rstcfg = value; }
-	inline uint32_t GetRSTCFG() const { return rstcfg; }
-	inline uint32_t GetRSTCFG_U0() const { return (GetRSTCFG() & CONFIG::RSTCFG_U0_MASK) >> CONFIG::RSTCFG_U0_OFFSET; }
-	inline uint32_t GetRSTCFG_U1() const { return (GetRSTCFG() & CONFIG::RSTCFG_U1_MASK) >> CONFIG::RSTCFG_U1_OFFSET; }
-	inline uint32_t GetRSTCFG_U2() const { return (GetRSTCFG() & CONFIG::RSTCFG_U2_MASK) >> CONFIG::RSTCFG_U2_OFFSET; }
-	inline uint32_t GetRSTCFG_U3() const { return (GetRSTCFG() & CONFIG::RSTCFG_U3_MASK) >> CONFIG::RSTCFG_U3_OFFSET; }
-	inline uint32_t GetRSTCFG_E() const { return (GetRSTCFG() & CONFIG::RSTCFG_E_MASK) >> CONFIG::RSTCFG_E_OFFSET; }
-	inline uint32_t GetRSTCFG_ERPN() const { return (GetRSTCFG() & CONFIG::RSTCFG_ERPN_MASK) >> CONFIG::RSTCFG_ERPN_OFFSET; }
-	inline void SetDCDBTRL(uint32_t value) { dcdbtrl = value; }
-	inline uint32_t GetDCDBTRL() const { return dcdbtrl; }
-	inline void SetDCDBTRH(uint32_t value) { dcdbtrh = value; }
-	inline uint32_t GetDCDBTRH() const { return dcdbtrh; }
-	inline void SetICDBTRL(uint32_t value) { icdbtrl = value; }
-	inline uint32_t GetICDBTRL() const { return icdbtrl; }
-	inline void SetICDBTRH(uint32_t value) { icdbtrh = value; }
-	inline uint32_t GetICDBTRH() const { return icdbtrh; }
-	inline void SetMMUCR(uint32_t value) { mmucr = value; }
-	inline void SetMMUCR_STID(uint32_t value) { SetMMUCR((GetMMUCR() & ~CONFIG::MMUCR_STID_MASK) | ((value << CONFIG::MMUCR_STID_OFFSET) & CONFIG::MMUCR_STID_MASK)); }
-	inline uint32_t GetMMUCR() const { return mmucr; }
-	inline uint32_t GetMMUCR_STID() const { return (GetMMUCR() & CONFIG::MMUCR_STID_MASK) >> CONFIG::MMUCR_STID_OFFSET; }
-	inline uint32_t GetMMUCR_STS() const { return (GetMMUCR() & CONFIG::MMUCR_STS_MASK) >> CONFIG::MMUCR_STS_OFFSET; }
-	inline void SetPID(uint32_t value) { pid = value; }
-	inline uint32_t GetPID() const { return pid; }
-	inline typename CONFIG::process_id_t GetProcessID() const { return (typename CONFIG::process_id_t)(pid & 0xff); }
-	inline void SetICDBDR(uint32_t value) { icdbdr = value; }
-	inline uint32_t GetICDBDR() const { return icdbdr; }
-	inline void SetDBDR(uint32_t value) { dbdr = value; }
-	inline uint32_t GetDBDR() const { return dbdr; }
-	inline void SetDECAR(uint32_t value) { decar = value; }
-	inline uint32_t GetDECAR() const { return decar; }
-	inline void SetDEC(uint32_t value) { dec = value; }
-	inline void DecrementDEC()
+	inline void SetPVR(uint32_t value) ALWAYS_INLINE { pvr = value; }
+	inline uint32_t GetPVR() const ALWAYS_INLINE { return pvr; }
+	inline uint32_t GetIVOR(unsigned int n) const ALWAYS_INLINE { return ivor[n]; }
+	inline void SetIVOR(unsigned int n, uint32_t value) ALWAYS_INLINE { ivor[n] = value; }
+	inline uint32_t GetIVPR() const ALWAYS_INLINE { return ivpr; }
+	inline void SetIVPR(uint32_t value) ALWAYS_INLINE { ivpr = value; }
+	inline uint32_t GetSPRG(unsigned int n) const ALWAYS_INLINE { return sprg[n]; }
+	inline void SetSPRG(unsigned int n, uint32_t value) ALWAYS_INLINE { sprg[n] = value; }
+	inline uint32_t GetSRR0() const ALWAYS_INLINE { return srr0; }
+	inline void SetSRR0(uint32_t value) ALWAYS_INLINE { srr0 = value; }
+	inline uint32_t GetSRR1() const ALWAYS_INLINE { return srr1; }
+	inline void SetSRR1(uint32_t value) ALWAYS_INLINE { srr1 = value; }
+	inline uint32_t GetCSRR0() const ALWAYS_INLINE { return csrr0; }
+	inline void SetCSRR0(uint32_t value) ALWAYS_INLINE { csrr0 = value; }
+	inline uint32_t GetCSRR1() const ALWAYS_INLINE { return csrr1; }
+	inline void SetCSRR1(uint32_t value) ALWAYS_INLINE { csrr1 = value; }
+	inline uint32_t GetMCSRR0() const ALWAYS_INLINE { return mcsrr0; }
+	inline void SetMCSRR0(uint32_t value) ALWAYS_INLINE { mcsrr0 = value; }
+	inline uint32_t GetMCSRR1() const ALWAYS_INLINE { return mcsrr1; }
+	inline void SetMCSRR1(uint32_t value) ALWAYS_INLINE { mcsrr1 = value; }
+	inline void SetDEAR(uint32_t value) ALWAYS_INLINE { dear = value; }
+	inline uint32_t GetDEAR() const ALWAYS_INLINE { return dear; }
+	inline void SetESR(uint32_t value) ALWAYS_INLINE { esr = value; }
+	inline uint32_t GetESR() const ALWAYS_INLINE { return esr; }
+	inline void SetMCSR(uint32_t value) ALWAYS_INLINE { mcsr = value; }
+	inline uint32_t GetMCSR() const ALWAYS_INLINE { return mcsr; }
+	inline void SetPIR(uint32_t value) ALWAYS_INLINE { pir = value; }
+	inline uint32_t GetPIR() const ALWAYS_INLINE { return pir; }
+	inline void SetUSPRG0(uint32_t value) ALWAYS_INLINE { usprg0 = value; }
+	inline uint32_t GetUSPRG0() const ALWAYS_INLINE { return usprg0; }
+	inline void SetDBSR(uint32_t value) ALWAYS_INLINE { dbsr = value; }
+	inline uint32_t GetDBSR() const ALWAYS_INLINE { return dbsr; }
+	inline void SetDBCR(unsigned int n, uint32_t value) ALWAYS_INLINE { dbcr[n] = value; }
+	inline uint32_t GetDBCR(unsigned int n) const ALWAYS_INLINE { return dbcr[n]; }
+	inline uint32_t GetDBCR0_IDM() const ALWAYS_INLINE { return (dbcr[0] & CONFIG::DBCR0_IDM_MASK) >> CONFIG::DBCR0_IDM_OFFSET; }
+	inline void SetIAC(unsigned int n, uint32_t value) ALWAYS_INLINE { iac[n] = value; }
+	inline uint32_t GetIAC(unsigned int n) const ALWAYS_INLINE { return iac[n]; }
+	inline void SetDAC(unsigned int n, uint32_t value) ALWAYS_INLINE { dac[n] = value; }
+	inline uint32_t GetDAC(unsigned int n) const ALWAYS_INLINE { return dac[n]; }
+	inline void SetDVC(unsigned int n, uint32_t value) ALWAYS_INLINE { dvc[n] = value; }
+	inline uint32_t GetDVC(unsigned int n) const ALWAYS_INLINE { return dvc[n]; }
+	inline void SetTSR(uint32_t value) ALWAYS_INLINE { tsr = value; }
+	inline uint32_t GetTSR() const ALWAYS_INLINE { return tsr; }
+	inline uint32_t GetTSR_ENW() const ALWAYS_INLINE { return (GetTSR() & CONFIG::TSR_ENW_MASK) >> CONFIG::TSR_ENW_OFFSET; }
+	inline uint32_t GetTSR_WIS() const ALWAYS_INLINE { return (GetTSR() & CONFIG::TSR_WIS_MASK) >> CONFIG::TSR_WIS_OFFSET; }
+	inline void SetTCR(uint32_t value) ALWAYS_INLINE { tcr = value; }
+	inline uint32_t GetTCR() const ALWAYS_INLINE { return tcr; }
+	inline uint32_t GetTCR_ARE() const ALWAYS_INLINE { return (GetTCR() & CONFIG::TCR_ARE_MASK) >> CONFIG::TCR_ARE_OFFSET; }
+	inline uint32_t GetTCR_DIE() const ALWAYS_INLINE { return (GetTCR() & CONFIG::TCR_DIE_MASK) >> CONFIG::TCR_DIE_OFFSET; }
+	inline uint32_t GetTCR_FIE() const ALWAYS_INLINE { return (GetTCR() & CONFIG::TCR_FIE_MASK) >> CONFIG::TCR_FIE_OFFSET; }
+	inline uint32_t GetTCR_WIE() const ALWAYS_INLINE { return (GetTCR() & CONFIG::TCR_WIE_MASK) >> CONFIG::TCR_WIE_OFFSET; }
+	inline uint32_t GetTCR_FP() const ALWAYS_INLINE { return (GetTCR() & CONFIG::TCR_FP_MASK) >> CONFIG::TCR_FP_OFFSET; }
+	inline uint32_t GetTCR_WP() const ALWAYS_INLINE { return (GetTCR() & CONFIG::TCR_WP_MASK) >> CONFIG::TCR_WP_OFFSET; }
+	inline uint32_t GetTCR_WRC() const ALWAYS_INLINE { return (GetTCR() & CONFIG::TCR_WRC_MASK) >> CONFIG::TCR_WRC_OFFSET; }
+	inline void SetINV(unsigned int n, uint32_t value) ALWAYS_INLINE { inv[n] = value; }
+	inline uint32_t GetINV(unsigned int n) const ALWAYS_INLINE { return inv[n]; }
+	inline void SetITV(unsigned int n, uint32_t value) ALWAYS_INLINE { itv[n] = value; }
+	inline uint32_t GetITV(unsigned int n) const ALWAYS_INLINE { return itv[n]; }
+	inline void SetCCR0(uint32_t value) ALWAYS_INLINE { ccr0 = value; }
+	inline uint32_t GetCCR0() const ALWAYS_INLINE { return ccr0; }
+	inline uint32_t GetCCR0_CRPE() const ALWAYS_INLINE { return (GetCCR0() & CONFIG::CCR0_CRPE_MASK) >> CONFIG::CCR0_CRPE_OFFSET; }
+	inline uint32_t GetCCR0_FLSTA() const ALWAYS_INLINE { return (GetCCR0() & CONFIG::CCR0_FLSTA_MASK) >> CONFIG::CCR0_FLSTA_OFFSET; }
+	inline void SetCCR1(uint32_t value) ALWAYS_INLINE { ccr1 = value; }
+	inline uint32_t GetCCR1() const ALWAYS_INLINE { return ccr1; }
+	inline uint32_t GetCCR1_FFF() const ALWAYS_INLINE { return (GetCCR1() & CONFIG::CCR1_FFF_MASK) >> CONFIG::CCR1_FFF_OFFSET; }
+	inline uint32_t GetCCR1_TCS() const ALWAYS_INLINE { return (GetCCR1() & CONFIG::CCR1_TCS_MASK) >> CONFIG::CCR1_TCS_OFFSET; }
+	inline void SetDNV(unsigned int n, uint32_t value) ALWAYS_INLINE { dnv[n] = value; }
+	inline uint32_t GetDNV(unsigned int n) const ALWAYS_INLINE { return dnv[n]; }
+	inline void SetDTV(unsigned int n, uint32_t value) ALWAYS_INLINE { dtv[n] = value; }
+	inline uint32_t GetDTV(unsigned int n) const ALWAYS_INLINE { return dtv[n]; }
+	inline void SetDVLIM(uint32_t value) ALWAYS_INLINE { dvlim = value; }
+	inline uint32_t GetDVLIM() const ALWAYS_INLINE { return dvlim; }
+	inline uint32_t GetDVLIM_TFLOOR() const ALWAYS_INLINE { return (GetDVLIM() & CONFIG::DVLIM_TFLOOR_MASK) >> CONFIG::DVLIM_TFLOOR_OFFSET; }
+	inline uint32_t GetDVLIM_TCEILING() const ALWAYS_INLINE { return (GetDVLIM() & CONFIG::DVLIM_TCEILING_MASK) >> CONFIG::DVLIM_TCEILING_OFFSET; }
+	inline uint32_t GetDVLIM_NFLOOR() const ALWAYS_INLINE { return (GetDVLIM() & CONFIG::DVLIM_NFLOOR_MASK) >> CONFIG::DVLIM_NFLOOR_OFFSET; }
+	inline void SetIVLIM(uint32_t value) ALWAYS_INLINE { ivlim = value; }
+	inline uint32_t GetIVLIM() const ALWAYS_INLINE { return ivlim; }
+	inline uint32_t GetIVLIM_TFLOOR() const ALWAYS_INLINE { return (GetIVLIM() & CONFIG::IVLIM_TFLOOR_MASK) >> CONFIG::IVLIM_TFLOOR_OFFSET; }
+	inline uint32_t GetIVLIM_TCEILING() const ALWAYS_INLINE { return (GetIVLIM() & CONFIG::IVLIM_TCEILING_MASK) >> CONFIG::IVLIM_TCEILING_OFFSET; }
+	inline uint32_t GetIVLIM_NFLOOR() const ALWAYS_INLINE { return (GetIVLIM() & CONFIG::IVLIM_NFLOOR_MASK) >> CONFIG::IVLIM_NFLOOR_OFFSET; }
+	inline void SetRSTCFG(uint32_t value) ALWAYS_INLINE { rstcfg = value; }
+	inline uint32_t GetRSTCFG() const ALWAYS_INLINE { return rstcfg; }
+	inline uint32_t GetRSTCFG_U0() const ALWAYS_INLINE { return (GetRSTCFG() & CONFIG::RSTCFG_U0_MASK) >> CONFIG::RSTCFG_U0_OFFSET; }
+	inline uint32_t GetRSTCFG_U1() const ALWAYS_INLINE { return (GetRSTCFG() & CONFIG::RSTCFG_U1_MASK) >> CONFIG::RSTCFG_U1_OFFSET; }
+	inline uint32_t GetRSTCFG_U2() const ALWAYS_INLINE { return (GetRSTCFG() & CONFIG::RSTCFG_U2_MASK) >> CONFIG::RSTCFG_U2_OFFSET; }
+	inline uint32_t GetRSTCFG_U3() const ALWAYS_INLINE { return (GetRSTCFG() & CONFIG::RSTCFG_U3_MASK) >> CONFIG::RSTCFG_U3_OFFSET; }
+	inline uint32_t GetRSTCFG_E() const ALWAYS_INLINE { return (GetRSTCFG() & CONFIG::RSTCFG_E_MASK) >> CONFIG::RSTCFG_E_OFFSET; }
+	inline uint32_t GetRSTCFG_ERPN() const ALWAYS_INLINE { return (GetRSTCFG() & CONFIG::RSTCFG_ERPN_MASK) >> CONFIG::RSTCFG_ERPN_OFFSET; }
+	inline void SetDCDBTRL(uint32_t value) ALWAYS_INLINE { dcdbtrl = value; }
+	inline uint32_t GetDCDBTRL() const ALWAYS_INLINE { return dcdbtrl; }
+	inline void SetDCDBTRH(uint32_t value) ALWAYS_INLINE { dcdbtrh = value; }
+	inline uint32_t GetDCDBTRH() const ALWAYS_INLINE { return dcdbtrh; }
+	inline void SetICDBTRL(uint32_t value) ALWAYS_INLINE { icdbtrl = value; }
+	inline uint32_t GetICDBTRL() const ALWAYS_INLINE { return icdbtrl; }
+	inline void SetICDBTRH(uint32_t value) ALWAYS_INLINE { icdbtrh = value; }
+	inline uint32_t GetICDBTRH() const ALWAYS_INLINE { return icdbtrh; }
+	inline void SetMMUCR(uint32_t value) ALWAYS_INLINE { mmucr = value; }
+	inline void SetMMUCR_STID(uint32_t value) ALWAYS_INLINE { SetMMUCR((GetMMUCR() & ~CONFIG::MMUCR_STID_MASK) | ((value << CONFIG::MMUCR_STID_OFFSET) & CONFIG::MMUCR_STID_MASK)); }
+	inline uint32_t GetMMUCR() const ALWAYS_INLINE { return mmucr; }
+	inline uint32_t GetMMUCR_STID() const ALWAYS_INLINE { return (GetMMUCR() & CONFIG::MMUCR_STID_MASK) >> CONFIG::MMUCR_STID_OFFSET; }
+	inline uint32_t GetMMUCR_STS() const ALWAYS_INLINE { return (GetMMUCR() & CONFIG::MMUCR_STS_MASK) >> CONFIG::MMUCR_STS_OFFSET; }
+	inline void SetPID(uint32_t value) ALWAYS_INLINE { pid = value; }
+	inline uint32_t GetPID() const ALWAYS_INLINE { return pid; }
+	inline typename CONFIG::process_id_t GetProcessID() const ALWAYS_INLINE { return (typename CONFIG::process_id_t)(pid & 0xff); }
+	inline void SetICDBDR(uint32_t value) ALWAYS_INLINE { icdbdr = value; }
+	inline uint32_t GetICDBDR() const ALWAYS_INLINE { return icdbdr; }
+	inline void SetDBDR(uint32_t value) ALWAYS_INLINE { dbdr = value; }
+	inline uint32_t GetDBDR() const ALWAYS_INLINE { return dbdr; }
+	inline void SetDECAR(uint32_t value) ALWAYS_INLINE { decar = value; }
+	inline uint32_t GetDECAR() const ALWAYS_INLINE { return decar; }
+	inline void SetDEC(uint32_t value) ALWAYS_INLINE { dec = value; }
+	inline void DecrementDEC() ALWAYS_INLINE
 	{
 		if(GetDEC() > 0)
 		{
@@ -550,7 +544,7 @@ public:
 			}
 		}
 	}
-	inline void DecrementDEC(uint64_t delta)
+	inline void DecrementDEC(uint64_t delta) ALWAYS_INLINE
 	{
 		uint32_t old_dec = GetDEC();
 		if(old_dec > 0)
@@ -569,11 +563,11 @@ public:
 			}
 		}
 	}
-	inline uint32_t GetDEC() const { return dec; }
-	inline void IncrementTB() { SetTB(GetTB() + 1); }
-	inline void IncrementTB(uint64_t delta) { SetTB(GetTB() + delta); }
-	inline uint64_t GetTB() const { return tb; }
-	inline void SetTB(uint64_t value)
+	inline uint32_t GetDEC() const ALWAYS_INLINE { return dec; }
+	inline void IncrementTB() ALWAYS_INLINE { SetTB(GetTB() + 1); }
+	inline void IncrementTB(uint64_t delta) ALWAYS_INLINE { SetTB(GetTB() + delta); }
+	inline uint64_t GetTB() const ALWAYS_INLINE { return tb; }
+	inline void SetTB(uint64_t value) ALWAYS_INLINE
 	{
 		uint32_t tcr_fp = GetTCR_FP();
 		uint32_t tb_fit_mask = 4096 << (4 * tcr_fp);
@@ -591,10 +585,10 @@ public:
 		}
 		tb = value;
 	}
-	inline uint32_t GetTBL() const { return (uint32_t) GetTB(); }
-	inline void SetTBL(uint32_t value) { SetTB((GetTB() & 0xffffffff00000000ULL) | ((uint64_t) value)); }
-	inline uint32_t GetTBU() const { return (uint32_t)(GetTB() >> 32); }
-	inline void SetTBU(uint32_t value) { SetTB((GetTB() & 0x00000000ffffffffULL) | ((uint64_t) value << 32)); }
+	inline uint32_t GetTBL() const ALWAYS_INLINE { return (uint32_t) GetTB(); }
+	inline void SetTBL(uint32_t value) ALWAYS_INLINE { SetTB((GetTB() & 0xffffffff00000000ULL) | ((uint64_t) value)); }
+	inline uint32_t GetTBU() const ALWAYS_INLINE { return (uint32_t)(GetTB() >> 32); }
+	inline void SetTBU(uint32_t value) ALWAYS_INLINE { SetTB((GetTB() & 0x00000000ffffffffULL) | ((uint64_t) value << 32)); }
 
 	uint64_t GetMaxIdleTime() const
 	{
@@ -660,32 +654,32 @@ public:
 	//=                        XER set/get methods                        =
 	//=====================================================================
 
-	inline void SetXER(uint32_t value) { xer = value & CONFIG::XER_MASK; }
-	inline uint32_t GetXER() const { return xer; }
+	inline void SetXER(uint32_t value) ALWAYS_INLINE { xer = value & CONFIG::XER_MASK; }
+	inline uint32_t GetXER() const ALWAYS_INLINE { return xer; }
 
 	// Deprecated methods
-	inline uint32_t GetXER_SO() const { return (xer & CONFIG::XER_SO_MASK) >> CONFIG::XER_SO_OFFSET; }
-	inline void SetXER_SO() { xer = xer | CONFIG::XER_SO_MASK; }
-	inline void ResetXER_SO() { xer = xer & ~CONFIG::XER_SO_MASK; }
-	inline uint32_t GetXER_OV() const { return (xer & CONFIG::XER_OV_MASK) >> CONFIG::XER_OV_OFFSET; }
-	inline void SetXER_OV() { xer = xer | CONFIG::XER_OV_MASK; }
-	inline void ResetXER_OV() { xer = xer & ~CONFIG::XER_OV_MASK; }
-	inline uint32_t GetXER_CA() const { return (xer & CONFIG::XER_CA_MASK) >> CONFIG::XER_CA_OFFSET; }
-	inline void SetXER_CA() { xer = xer | CONFIG::XER_CA_MASK; }
-	inline void ResetXER_CA() { xer = xer & ~CONFIG::XER_CA_MASK; }
-	inline uint32_t GetXER_BYTE_COUNT() const { return (xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET; }
+	inline uint32_t GetXER_SO() const ALWAYS_INLINE { return (xer & CONFIG::XER_SO_MASK) >> CONFIG::XER_SO_OFFSET; }
+	inline void SetXER_SO() ALWAYS_INLINE { xer = xer | CONFIG::XER_SO_MASK; }
+	inline void ResetXER_SO() ALWAYS_INLINE { xer = xer & ~CONFIG::XER_SO_MASK; }
+	inline uint32_t GetXER_OV() const ALWAYS_INLINE { return (xer & CONFIG::XER_OV_MASK) >> CONFIG::XER_OV_OFFSET; }
+	inline void SetXER_OV() ALWAYS_INLINE { xer = xer | CONFIG::XER_OV_MASK; }
+	inline void ResetXER_OV() ALWAYS_INLINE { xer = xer & ~CONFIG::XER_OV_MASK; }
+	inline uint32_t GetXER_CA() const ALWAYS_INLINE { return (xer & CONFIG::XER_CA_MASK) >> CONFIG::XER_CA_OFFSET; }
+	inline void SetXER_CA() ALWAYS_INLINE { xer = xer | CONFIG::XER_CA_MASK; }
+	inline void ResetXER_CA() ALWAYS_INLINE { xer = xer & ~CONFIG::XER_CA_MASK; }
+	inline uint32_t GetXER_BYTE_COUNT() const ALWAYS_INLINE { return (xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET; }
 
 	
 	//=====================================================================
 	//=                         CR set/get methods                        =
 	//=====================================================================
 
-	inline uint32_t GetCR() const { return cr; }
-	inline void SetCR(uint32_t value) { cr = value; }
+	inline uint32_t GetCR() const ALWAYS_INLINE { return cr; }
+	inline void SetCR(uint32_t value) ALWAYS_INLINE { cr = value; }
 
 	// Deprecated methods
-	inline uint32_t GetCRF(unsigned int crf) const { return cr >> ((7 - crf) * 4); }
-	inline void SetCRF(unsigned int crfd, uint32_t value)
+	inline uint32_t GetCRF(unsigned int crf) const ALWAYS_INLINE { return cr >> ((7 - crf) * 4); }
+	inline void SetCRF(unsigned int crfd, uint32_t value) ALWAYS_INLINE
 	{
 		uint32_t _c = value << ((7 - crfd) * 4) ; // positionning the crX field
 		uint32_t _d = CRFieldMask(crfd) ;
@@ -697,101 +691,101 @@ public:
 	//=                        MSR set/get methods                        =
 	//=====================================================================
 	
-	uint32_t GetMSR() const { return msr; }
+	uint32_t GetMSR() const ALWAYS_INLINE { return msr; }
 	void SetMSR(uint32_t value);
-	inline uint32_t GetMSR_WE() const { return (GetMSR() & CONFIG::MSR_WE_MASK) >> CONFIG::MSR_WE_OFFSET; }
-	inline uint32_t GetMSR_CE() const { return (GetMSR() & CONFIG::MSR_CE_MASK) >> CONFIG::MSR_CE_OFFSET; }
-	inline uint32_t GetMSR_EE() const { return (GetMSR() & CONFIG::MSR_EE_MASK) >> CONFIG::MSR_EE_OFFSET; }
-	inline uint32_t GetMSR_PR() const { return (GetMSR() & CONFIG::MSR_PR_MASK) >> CONFIG::MSR_PR_OFFSET; }
-	inline typename CONFIG::PrivilegeLevel GetPrivilegeLevel() const { return (typename CONFIG::PrivilegeLevel) GetMSR_PR(); }
-	inline uint32_t GetMSR_FP() const { return (GetMSR() & CONFIG::MSR_FP_MASK) >> CONFIG::MSR_FP_OFFSET; }
-	inline uint32_t GetMSR_ME() const { return (GetMSR() & CONFIG::MSR_ME_MASK) >> CONFIG::MSR_ME_OFFSET; }
-	inline uint32_t GetMSR_FE0() const { return (GetMSR() & CONFIG::MSR_FE0_MASK) >> CONFIG::MSR_FE0_OFFSET; }
-	inline uint32_t GetMSR_DWE() const { return (GetMSR() & CONFIG::MSR_DWE_MASK) >> CONFIG::MSR_DWE_OFFSET; }
-	inline uint32_t GetMSR_DE() const { return (GetMSR() & CONFIG::MSR_DE_MASK) >> CONFIG::MSR_DE_OFFSET; }
-	inline uint32_t GetMSR_FE1() const { return (GetMSR() & CONFIG::MSR_FE1_MASK) >> CONFIG::MSR_FE1_OFFSET; }
-	inline uint32_t GetMSR_IS() const { return (GetMSR() & CONFIG::MSR_IS_MASK) >> CONFIG::MSR_IS_OFFSET; }
-	inline typename CONFIG::address_space_t GetInstructionAddressSpace() const { return (typename CONFIG::address_space_t) GetMSR_IS(); }
-	inline uint32_t GetMSR_DS() const { return (GetMSR() & CONFIG::MSR_DS_MASK) >> CONFIG::MSR_DS_OFFSET; }
-	inline typename CONFIG::address_space_t GetDataAddressSpace() const { return (typename CONFIG::address_space_t) GetMSR_DS(); }
-	inline void SetMSR_WE() { SetMSR(GetMSR() | CONFIG::MSR_WE_MASK); }
-	inline void SetMSR_CE() { SetMSR(GetMSR() | CONFIG::MSR_CE_MASK); }
-	inline void SetMSR_EE() { SetMSR(GetMSR() | CONFIG::MSR_EE_MASK); }
-	inline void SetMSR_PR() { SetMSR(GetMSR() | CONFIG::MSR_PR_MASK); }
-	inline void SetMSR_FP() { SetMSR(GetMSR() | CONFIG::MSR_FP_MASK); }
-	inline void SetMSR_ME() { SetMSR(GetMSR() | CONFIG::MSR_ME_MASK); }
-	inline void SetMSR_FE0() { SetMSR(GetMSR() | CONFIG::MSR_FE0_MASK); }
-	inline void SetMSR_DWE() { SetMSR(GetMSR() | CONFIG::MSR_DWE_MASK); }
-	inline void SetMSR_DE() { SetMSR(GetMSR() | CONFIG::MSR_DE_MASK); }
-	inline void SetMSR_FE1() { SetMSR(GetMSR() | CONFIG::MSR_FE1_MASK); }
-	inline void SetMSR_IS() { SetMSR(GetMSR() | CONFIG::MSR_IS_MASK); }
-	inline void SetMSR_DS() { SetMSR(GetMSR() | CONFIG::MSR_DS_MASK); }
-	inline void ResetMSR_WE() { SetMSR(GetMSR() & ~CONFIG::MSR_WE_MASK); }
-	inline void ResetMSR_CE() { SetMSR(GetMSR() & ~CONFIG::MSR_CE_MASK); }
-	inline void ResetMSR_EE() { SetMSR(GetMSR() & ~CONFIG::MSR_EE_MASK); }
-	inline void ResetMSR_PR() { SetMSR(GetMSR() & ~CONFIG::MSR_PR_MASK); }
-	inline void ResetMSR_FP() { SetMSR(GetMSR() & ~CONFIG::MSR_FP_MASK); }
-	inline void ResetMSR_ME() { SetMSR(GetMSR() & ~CONFIG::MSR_ME_MASK); }
-	inline void ResetMSR_FE0() { SetMSR(GetMSR() & ~CONFIG::MSR_FE0_MASK); }
-	inline void ResetMSR_DWE() { SetMSR(GetMSR() & ~CONFIG::MSR_DWE_MASK); }
-	inline void ResetMSR_DE() { SetMSR(GetMSR() & ~CONFIG::MSR_DE_MASK); }
-	inline void ResetMSR_FE1() { SetMSR(GetMSR() & ~CONFIG::MSR_FE1_MASK); }
-	inline void ResetMSR_IS() { SetMSR(GetMSR() & ~CONFIG::MSR_IS_MASK); }
-	inline void ResetMSR_DS() { SetMSR(GetMSR() & ~CONFIG::MSR_DS_MASK); }
+	inline uint32_t GetMSR_WE() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_WE_MASK) >> CONFIG::MSR_WE_OFFSET; }
+	inline uint32_t GetMSR_CE() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_CE_MASK) >> CONFIG::MSR_CE_OFFSET; }
+	inline uint32_t GetMSR_EE() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_EE_MASK) >> CONFIG::MSR_EE_OFFSET; }
+	inline uint32_t GetMSR_PR() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_PR_MASK) >> CONFIG::MSR_PR_OFFSET; }
+	inline typename CONFIG::PrivilegeLevel GetPrivilegeLevel() const ALWAYS_INLINE { return (typename CONFIG::PrivilegeLevel) GetMSR_PR(); }
+	inline uint32_t GetMSR_FP() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_FP_MASK) >> CONFIG::MSR_FP_OFFSET; }
+	inline uint32_t GetMSR_ME() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_ME_MASK) >> CONFIG::MSR_ME_OFFSET; }
+	inline uint32_t GetMSR_FE0() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_FE0_MASK) >> CONFIG::MSR_FE0_OFFSET; }
+	inline uint32_t GetMSR_DWE() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_DWE_MASK) >> CONFIG::MSR_DWE_OFFSET; }
+	inline uint32_t GetMSR_DE() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_DE_MASK) >> CONFIG::MSR_DE_OFFSET; }
+	inline uint32_t GetMSR_FE1() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_FE1_MASK) >> CONFIG::MSR_FE1_OFFSET; }
+	inline uint32_t GetMSR_IS() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_IS_MASK) >> CONFIG::MSR_IS_OFFSET; }
+	inline typename CONFIG::address_space_t GetInstructionAddressSpace() const ALWAYS_INLINE { return (typename CONFIG::address_space_t) GetMSR_IS(); }
+	inline uint32_t GetMSR_DS() const ALWAYS_INLINE { return (GetMSR() & CONFIG::MSR_DS_MASK) >> CONFIG::MSR_DS_OFFSET; }
+	inline typename CONFIG::address_space_t GetDataAddressSpace() const ALWAYS_INLINE { return (typename CONFIG::address_space_t) GetMSR_DS(); }
+	inline void SetMSR_WE() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_WE_MASK); }
+	inline void SetMSR_CE() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_CE_MASK); }
+	inline void SetMSR_EE() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_EE_MASK); }
+	inline void SetMSR_PR() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_PR_MASK); }
+	inline void SetMSR_FP() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_FP_MASK); }
+	inline void SetMSR_ME() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_ME_MASK); }
+	inline void SetMSR_FE0() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_FE0_MASK); }
+	inline void SetMSR_DWE() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_DWE_MASK); }
+	inline void SetMSR_DE() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_DE_MASK); }
+	inline void SetMSR_FE1() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_FE1_MASK); }
+	inline void SetMSR_IS() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_IS_MASK); }
+	inline void SetMSR_DS() ALWAYS_INLINE { SetMSR(GetMSR() | CONFIG::MSR_DS_MASK); }
+	inline void ResetMSR_WE() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_WE_MASK); }
+	inline void ResetMSR_CE() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_CE_MASK); }
+	inline void ResetMSR_EE() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_EE_MASK); }
+	inline void ResetMSR_PR() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_PR_MASK); }
+	inline void ResetMSR_FP() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_FP_MASK); }
+	inline void ResetMSR_ME() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_ME_MASK); }
+	inline void ResetMSR_FE0() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_FE0_MASK); }
+	inline void ResetMSR_DWE() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_DWE_MASK); }
+	inline void ResetMSR_DE() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_DE_MASK); }
+	inline void ResetMSR_FE1() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_FE1_MASK); }
+	inline void ResetMSR_IS() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_IS_MASK); }
+	inline void ResetMSR_DS() ALWAYS_INLINE { SetMSR(GetMSR() & ~CONFIG::MSR_DS_MASK); }
 
 	//=====================================================================
 	//=                        ESR set/get methods                        =
 	//=====================================================================
 
-	inline uint32_t GetESR_MCI() const { return (GetESR() & CONFIG::ESR_MCI_MASK) >> CONFIG::ESR_MCI_OFFSET; }
-	inline void SetESR_MCI() { SetESR(GetESR() | CONFIG::ESR_MCI_MASK); }
+	inline uint32_t GetESR_MCI() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_MCI_MASK) >> CONFIG::ESR_MCI_OFFSET; }
+	inline void SetESR_MCI() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_MCI_MASK); }
 
-	inline uint32_t GetESR_PIL() const { return (GetESR() & CONFIG::ESR_PIL_MASK) >> CONFIG::ESR_PIL_OFFSET; }
-	inline void SetESR_PIL() { SetESR(GetESR() | CONFIG::ESR_PIL_MASK); }
+	inline uint32_t GetESR_PIL() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_PIL_MASK) >> CONFIG::ESR_PIL_OFFSET; }
+	inline void SetESR_PIL() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_PIL_MASK); }
 
-	inline uint32_t GetESR_PPR() const { return (GetESR() & CONFIG::ESR_PPR_MASK) >> CONFIG::ESR_PPR_OFFSET; }
-	inline void SetESR_PPR() { SetESR(GetESR() | CONFIG::ESR_PPR_MASK); }
+	inline uint32_t GetESR_PPR() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_PPR_MASK) >> CONFIG::ESR_PPR_OFFSET; }
+	inline void SetESR_PPR() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_PPR_MASK); }
 
-	inline uint32_t GetESR_PTR() const { return (GetESR() & CONFIG::ESR_PTR_MASK) >> CONFIG::ESR_PTR_OFFSET; }
-	inline void SetESR_PTR() { SetESR(GetESR() | CONFIG::ESR_PTR_MASK); }
+	inline uint32_t GetESR_PTR() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_PTR_MASK) >> CONFIG::ESR_PTR_OFFSET; }
+	inline void SetESR_PTR() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_PTR_MASK); }
 
-	inline uint32_t GetESR_FP() const { return (GetESR() & CONFIG::ESR_FP_MASK) >> CONFIG::ESR_FP_OFFSET; }
-	inline void SetESR_FP() { SetESR(GetESR() | CONFIG::ESR_FP_MASK); }
+	inline uint32_t GetESR_FP() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_FP_MASK) >> CONFIG::ESR_FP_OFFSET; }
+	inline void SetESR_FP() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_FP_MASK); }
 
-	inline uint32_t GetESR_ST() const { return (GetESR() & CONFIG::ESR_ST_MASK) >> CONFIG::ESR_ST_OFFSET; }
-	inline void SetESR_ST() { SetESR(GetESR() | CONFIG::ESR_ST_MASK); }
+	inline uint32_t GetESR_ST() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_ST_MASK) >> CONFIG::ESR_ST_OFFSET; }
+	inline void SetESR_ST() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_ST_MASK); }
 
-	inline uint32_t GetESR_DLK() const { return (GetESR() & CONFIG::ESR_DLK_MASK) >> CONFIG::ESR_DLK_OFFSET; }
-	inline void SetESR_DLK(uint32_t value) { SetESR((GetESR() & ~CONFIG::ESR_DLK_MASK) | ((value << CONFIG::ESR_DLK_OFFSET) & CONFIG::ESR_DLK_MASK)); }
+	inline uint32_t GetESR_DLK() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_DLK_MASK) >> CONFIG::ESR_DLK_OFFSET; }
+	inline void SetESR_DLK(uint32_t value) ALWAYS_INLINE { SetESR((GetESR() & ~CONFIG::ESR_DLK_MASK) | ((value << CONFIG::ESR_DLK_OFFSET) & CONFIG::ESR_DLK_MASK)); }
 
-	inline uint32_t GetESR_AP() const { return (GetESR() & CONFIG::ESR_AP_MASK) >> CONFIG::ESR_AP_OFFSET; }
-	inline void SetESR_AP() { SetESR(GetESR() | CONFIG::ESR_AP_MASK); }
+	inline uint32_t GetESR_AP() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_AP_MASK) >> CONFIG::ESR_AP_OFFSET; }
+	inline void SetESR_AP() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_AP_MASK); }
 
-	inline uint32_t GetESR_PUO() const { return (GetESR() & CONFIG::ESR_PUO_MASK) >> CONFIG::ESR_PUO_OFFSET; }
-	inline void SetESR_PUO() { SetESR(GetESR() | CONFIG::ESR_PUO_MASK); }
+	inline uint32_t GetESR_PUO() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_PUO_MASK) >> CONFIG::ESR_PUO_OFFSET; }
+	inline void SetESR_PUO() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_PUO_MASK); }
 
-	inline uint32_t GetESR_BO() const { return (GetESR() & CONFIG::ESR_BO_MASK) >> CONFIG::ESR_BO_OFFSET; }
-	inline void SetESR_BO() { SetESR(GetESR() | CONFIG::ESR_BO_MASK); }
+	inline uint32_t GetESR_BO() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_BO_MASK) >> CONFIG::ESR_BO_OFFSET; }
+	inline void SetESR_BO() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_BO_MASK); }
 
-	inline uint32_t GetESR_PIE() const { return (GetESR() & CONFIG::ESR_PIE_MASK) >> CONFIG::ESR_PIE_OFFSET; }
-	inline void SetESR_PIE() { SetESR(GetESR() | CONFIG::ESR_PIE_MASK); }
+	inline uint32_t GetESR_PIE() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_PIE_MASK) >> CONFIG::ESR_PIE_OFFSET; }
+	inline void SetESR_PIE() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_PIE_MASK); }
 
-	inline uint32_t GetESR_PCRE() const { return (GetESR() & CONFIG::ESR_PCRE_MASK) >> CONFIG::ESR_PCRE_OFFSET; }
-	inline void SetESR_PCRE() { SetESR(GetESR() | CONFIG::ESR_PCRE_MASK); }
+	inline uint32_t GetESR_PCRE() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_PCRE_MASK) >> CONFIG::ESR_PCRE_OFFSET; }
+	inline void SetESR_PCRE() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_PCRE_MASK); }
 
-	inline uint32_t GetESR_PCMP() const { return (GetESR() & CONFIG::ESR_PCMP_MASK) >> CONFIG::ESR_PCMP_OFFSET; }
-	inline void SetESR_PCMP() { SetESR(GetESR() | CONFIG::ESR_PCMP_MASK); }
+	inline uint32_t GetESR_PCMP() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_PCMP_MASK) >> CONFIG::ESR_PCMP_OFFSET; }
+	inline void SetESR_PCMP() ALWAYS_INLINE { SetESR(GetESR() | CONFIG::ESR_PCMP_MASK); }
 
-	inline uint32_t GetESR_PCRF() const { return (GetESR() & CONFIG::ESR_PCRF_MASK) >> CONFIG::ESR_PCRF_OFFSET; }
-	inline void SetESR_PCRF(uint32_t value) { SetESR((GetESR() & ~CONFIG::ESR_PCRF_MASK) | ((value << CONFIG::ESR_PCRF_OFFSET) & CONFIG::ESR_PCRF_MASK)); }
+	inline uint32_t GetESR_PCRF() const ALWAYS_INLINE { return (GetESR() & CONFIG::ESR_PCRF_MASK) >> CONFIG::ESR_PCRF_OFFSET; }
+	inline void SetESR_PCRF(uint32_t value) ALWAYS_INLINE { SetESR((GetESR() & ~CONFIG::ESR_PCRF_MASK) | ((value << CONFIG::ESR_PCRF_OFFSET) & CONFIG::ESR_PCRF_MASK)); }
 	
 
 	//=====================================================================
 	//=                   FPU registers set/get methods                   =
 	//=====================================================================
 
-	inline uint32_t GetFPSCR() const { return fpscr; }
-	inline void SetFPSCR(uint32_t value) { fpscr = value; }
+	inline uint32_t GetFPSCR() const ALWAYS_INLINE { return fpscr; }
+	inline void SetFPSCR(uint32_t value) ALWAYS_INLINE { fpscr = value; }
 	
 	//=====================================================================
 	//=               Cache management instructions handling              =
@@ -866,28 +860,28 @@ public:
 	//=               Hardware check/acknowledgement methods              =
 	//=====================================================================
 	
-	inline void SetException(unsigned int _exc, typename CONFIG::address_t _addr = 0, typename CONFIG::MemoryAccessType _memory_access_type = CONFIG::MAT_READ) { SetExceptionMask(1 << _exc, _addr, _memory_access_type); }
-	void ResetException(unsigned int _exc) { ResetExceptionMask(1 << _exc); }
+	inline void SetException(unsigned int _exc, typename CONFIG::address_t _addr = 0, typename CONFIG::MemoryAccessType _memory_access_type = CONFIG::MAT_READ) ALWAYS_INLINE { SetExceptionMask(1 << _exc, _addr, _memory_access_type); }
+	void ResetException(unsigned int _exc) ALWAYS_INLINE { ResetExceptionMask(1 << _exc); }
 	void SetExceptionMask(uint32_t exc, typename CONFIG::address_t addr = 0, typename CONFIG::MemoryAccessType memory_access_type = CONFIG::MAT_READ);
 	void ResetExceptionMask(uint32_t exc);
 
-	inline bool HasException() const { return exc | (GetTSR() & (CONFIG::TSR_DIS_MASK | CONFIG::TSR_FIS_MASK | CONFIG::TSR_WIS_MASK)); }
-	inline bool HasCriticalInputException() const { return exc & CONFIG::EXC_MASK_CRITICAL_INPUT; }
-	inline bool HasExternalInputException() const { return exc & CONFIG::EXC_MASK_EXTERNAL_INPUT; }
-	inline bool HasDecrementerException() const { return GetTSR() & CONFIG::TSR_DIS_MASK; }
-	inline bool HasDebugException() const { return exc & CONFIG::EXC_MASK_DEBUG; }
-	inline bool HasFixedIntervalTimerException() const { return GetTSR() & CONFIG::TSR_FIS_MASK; }
-	inline bool HasWatchDogTimerException() const { return GetTSR() & CONFIG::TSR_WIS_MASK; }
-	inline bool HasMachineCheckException() const { return exc & CONFIG::EXC_MASK_MACHINE_CHECK; }
-	inline bool HasDataStorageException() const { return exc & CONFIG::EXC_MASK_DATA_STORAGE; }
-	inline bool HasInstructionStorageException() const { return exc & CONFIG::EXC_MASK_INSTRUCTION_STORAGE; }
-	inline bool HasDataTLBErrorException() const { return exc & CONFIG::EXC_MASK_DATA_TLB_ERROR; }
-	inline bool HasInstructionTLBErrorException() const { return exc & CONFIG::EXC_MASK_INSTRUCTION_TLB_ERROR; }
-	inline bool HasAlignmentException() const { return exc & CONFIG::EXC_MASK_ALIGNMENT; }
-	inline bool HasProgramException() const { return exc & CONFIG::EXC_MASK_PROGRAM; }
-	inline bool HasSystemCallException() const { return exc & CONFIG::EXC_MASK_SYSTEM_CALL; }
-	inline bool HasFloatingPointUnavailableException() const { return exc & CONFIG::EXC_MASK_FLOATING_POINT_UNAVAILABLE; }
-	inline bool HasAuxiliaryProcessorUnavailableException() const { return exc & CONFIG::EXC_MASK_AUXILIARY_PROCESSOR_UNAVAILABLE; }
+	inline bool HasException() const ALWAYS_INLINE { return exc | (GetTSR() & (CONFIG::TSR_DIS_MASK | CONFIG::TSR_FIS_MASK | CONFIG::TSR_WIS_MASK)); }
+	inline bool HasCriticalInputException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_CRITICAL_INPUT; }
+	inline bool HasExternalInputException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_EXTERNAL_INPUT; }
+	inline bool HasDecrementerException() const ALWAYS_INLINE { return GetTSR() & CONFIG::TSR_DIS_MASK; }
+	inline bool HasDebugException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_DEBUG; }
+	inline bool HasFixedIntervalTimerException() const ALWAYS_INLINE { return GetTSR() & CONFIG::TSR_FIS_MASK; }
+	inline bool HasWatchDogTimerException() const ALWAYS_INLINE { return GetTSR() & CONFIG::TSR_WIS_MASK; }
+	inline bool HasMachineCheckException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_MACHINE_CHECK; }
+	inline bool HasDataStorageException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_DATA_STORAGE; }
+	inline bool HasInstructionStorageException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_INSTRUCTION_STORAGE; }
+	inline bool HasDataTLBErrorException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_DATA_TLB_ERROR; }
+	inline bool HasInstructionTLBErrorException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_INSTRUCTION_TLB_ERROR; }
+	inline bool HasAlignmentException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_ALIGNMENT; }
+	inline bool HasProgramException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_PROGRAM; }
+	inline bool HasSystemCallException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_SYSTEM_CALL; }
+	inline bool HasFloatingPointUnavailableException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_FLOATING_POINT_UNAVAILABLE; }
+	inline bool HasAuxiliaryProcessorUnavailableException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_AUXILIARY_PROCESSOR_UNAVAILABLE; }
 
 protected:
 
@@ -895,8 +889,16 @@ protected:
 	//=          DEC/TBL/TBU bus-time based update methods                =
 	//=====================================================================
 	
-	void OnTimerClock();
-	void RunTimers(uint64_t delta);
+	inline void RunTimers(uint64_t delta) ALWAYS_INLINE
+	{
+		timer_cycle += delta;
+		
+		/* update the time base */
+		IncrementTB(delta);
+
+		/* decrement the decrementer each timer cycle */
+		DecrementDEC(delta);
+	}
 	
 	//=====================================================================
 	//=                        Debugging stuff                            =
@@ -908,20 +910,20 @@ protected:
     /** indicates if the finished instructions require to be reported */
     bool requires_finished_instruction_reporting;
 	
-	inline bool IsVerboseSetup() const { return verbose_all || verbose_setup; }
-	inline bool IsVerboseStep() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
-	inline bool IsVerboseITLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_ITLB_ENABLE && (verbose_all || verbose_itlb); }
-	inline bool IsVerboseDTLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
-	inline bool IsVerboseUTLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_UTLB_ENABLE && (verbose_all || verbose_utlb); }
-	inline bool IsVerboseDL1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DL1_ENABLE && (verbose_all || verbose_dl1); }
-	inline bool IsVerboseIL1() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_IL1_ENABLE && (verbose_all || verbose_il1); }
-	inline bool IsVerboseLoad() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_LOAD_ENABLE && (verbose_all || verbose_load); }
-	inline bool IsVerboseStore() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STORE_ENABLE && (verbose_all || verbose_store); }
-	inline bool IsVerboseReadMemory() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_READ_MEMORY_ENABLE && (verbose_all || verbose_read_memory); }
-	inline bool IsVerboseWriteMemory() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_WRITE_MEMORY_ENABLE && (verbose_all || verbose_write_memory); }
-	inline bool IsVerboseException() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
-	inline bool IsVerboseSetMSR() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_MSR_ENABLE && (verbose_all || verbose_set_msr); }
-	inline bool IsVerboseTlbwe() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_TLBWE_ENABLE && (verbose_all || verbose_tlbwe); }
+	inline bool IsVerboseSetup() const ALWAYS_INLINE { return verbose_all || verbose_setup; }
+	inline bool IsVerboseStep() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
+	inline bool IsVerboseITLB() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_ITLB_ENABLE && (verbose_all || verbose_itlb); }
+	inline bool IsVerboseDTLB() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
+	inline bool IsVerboseUTLB() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_UTLB_ENABLE && (verbose_all || verbose_utlb); }
+	inline bool IsVerboseDL1() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DL1_ENABLE && (verbose_all || verbose_dl1); }
+	inline bool IsVerboseIL1() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_IL1_ENABLE && (verbose_all || verbose_il1); }
+	inline bool IsVerboseLoad() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_LOAD_ENABLE && (verbose_all || verbose_load); }
+	inline bool IsVerboseStore() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STORE_ENABLE && (verbose_all || verbose_store); }
+	inline bool IsVerboseReadMemory() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_READ_MEMORY_ENABLE && (verbose_all || verbose_read_memory); }
+	inline bool IsVerboseWriteMemory() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_WRITE_MEMORY_ENABLE && (verbose_all || verbose_write_memory); }
+	inline bool IsVerboseException() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
+	inline bool IsVerboseSetMSR() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_MSR_ENABLE && (verbose_all || verbose_set_msr); }
+	inline bool IsVerboseTlbwe() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_TLBWE_ENABLE && (verbose_all || verbose_tlbwe); }
 	//=====================================================================
 	//=                      Bus access methods                           =
 	//=====================================================================
@@ -983,7 +985,7 @@ private:
 	bool EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
 	bool EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, MMUAccess<CONFIG>& mmu_access);
 	bool EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size);
-	inline bool EmuFetch(typename CONFIG::address_t addr, uint32_t& insn);
+	inline bool EmuFetch(typename CONFIG::address_t addr, uint32_t& insn) ALWAYS_INLINE;
 	inline bool EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t size) ALWAYS_INLINE;
 	inline bool EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, uint32_t size) ALWAYS_INLINE;
 	
@@ -997,6 +999,7 @@ private:
 	bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
 	bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
 public:
+	void ProcessExceptions(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
 	void EnterSystemCallISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
 	void EnterMachineCheckISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
 	void EnterDecrementerISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
@@ -1036,7 +1039,6 @@ private:
 	bool enable_linux_syscall_snooping;
 	uint64_t trap_on_instruction_counter;
 	bool enable_trap_on_exception;
-	bool enable_halt_on;
 	typename CONFIG::address_t halt_on_addr;
 	std::string halt_on;
 	uint64_t max_inst;                                         //!< maximum number of instructions to execute
@@ -1064,9 +1066,9 @@ private:
 	bool fp32_estimate_inv_warning;
 	bool fp64_estimate_inv_sqrt_warning;
 
-	inline uint64_t GetInstructionCounter() const { return instruction_counter; }
-	inline void MonitorLoad(typename CONFIG::address_t ea, uint32_t size);
-	inline void MonitorStore(typename CONFIG::address_t ea, uint32_t size);
+	inline uint64_t GetInstructionCounter() const ALWAYS_INLINE { return instruction_counter; }
+	inline void MonitorLoad(typename CONFIG::address_t ea, uint32_t size) ALWAYS_INLINE;
+	inline void MonitorStore(typename CONFIG::address_t ea, uint32_t size) ALWAYS_INLINE;
 	bool FloatingPointSelfTest();
 
 	//=====================================================================

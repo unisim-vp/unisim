@@ -139,6 +139,22 @@ std::string CPU<CONFIG>::ReadString(typename CONFIG::address_t addr, unsigned in
 	return sstr.str();
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::ProcessExceptions(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+{
+	unsigned int exception_num;
+	if(unisim::util::arithmetic::BitScanForward(exception_num, exc & CONFIG::EXC_MASK_NON_MASKABLE))
+	{
+		(this->*enter_non_maskable_isr_table[exception_num])(operation);
+	}
+	else if(GetDBCR0_IDM() && GetMSR_DE() && HasDebugException()) EnterDebugISR(operation);
+	else if(GetMSR_CE() && HasCriticalInputException()) EnterCriticalInputISR(operation);
+	else if(GetTCR_WIE() && GetMSR_CE() && HasWatchDogTimerException()) EnterWatchDogTimerISR(operation);
+	else if(GetMSR_EE() && HasExternalInputException()) EnterExternalInputISR(operation);
+	else if(GetTCR_FIE() && GetMSR_EE() && HasFixedIntervalTimerException()) EnterFixedIntervalTimerISR(operation);
+	else if(GetTCR_DIE() && GetMSR_EE() && HasDecrementerException()) EnterDecrementerISR(operation);
+}
+
 /* System call exception */
 template <class CONFIG>
 void CPU<CONFIG>::EnterSystemCallISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)

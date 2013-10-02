@@ -131,8 +131,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, enable_linux_syscall_snooping(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, enable_trap_on_exception(false)
-	, enable_halt_on(false)
-	, halt_on_addr(0)
+	, halt_on_addr((typename CONFIG::address_t) -1)
 	, halt_on()
 	, max_inst(0xffffffffffffffffULL)
 	, num_interrupts(0)
@@ -762,7 +761,6 @@ bool CPU<CONFIG>::EndSetup()
 		if(halt_on_symbol)
 		{
 			halt_on_addr = halt_on_symbol->GetAddress();
-			enable_halt_on = true;
 			if(IsVerboseSetup())
 			{
 				logger << DebugInfo << "Simulation will halt at '" << halt_on_symbol->GetName() << "' (0x" << std::hex << halt_on_addr << std::dec << ")" << EndDebugInfo;
@@ -774,7 +772,6 @@ bool CPU<CONFIG>::EndSetup()
 			sstr >> std::hex;
 			if(sstr >> halt_on_addr)
 			{
-				enable_halt_on = true;
 				if(IsVerboseSetup())
 				{
 					logger << DebugInfo <<  "Simulation will halt at 0x" << std::hex << halt_on_addr << std::dec << EndDebugInfo;
@@ -783,7 +780,7 @@ bool CPU<CONFIG>::EndSetup()
 			else
 			{
 				logger << DebugWarning << "Invalid address (" << halt_on << ") in Parameter " << param_halt_on.GetName() << EndDebugWarning;
-				halt_on_addr = 0;
+				halt_on_addr = (typename CONFIG::address_t) -1;
 			}
 		}
 	}
@@ -1939,17 +1936,7 @@ void CPU<CONFIG>::StepOneInstruction()
 
 	if(unlikely(HasException()))
 	{
-		unsigned int exception_num;
-		if(unisim::util::arithmetic::BitScanForward(exception_num, exc & CONFIG::EXC_MASK_NON_MASKABLE))
-		{
-			(this->*enter_non_maskable_isr_table[exception_num])(operation);
-		}
-		else if(GetDBCR0_IDM() && GetMSR_DE() && HasDebugException()) EnterDebugISR(operation);
-		else if(GetMSR_CE() && HasCriticalInputException()) EnterCriticalInputISR(operation);
-		else if(GetTCR_WIE() && GetMSR_CE() && HasWatchDogTimerException()) EnterWatchDogTimerISR(operation);
-		else if(GetMSR_EE() && HasExternalInputException()) EnterExternalInputISR(operation);
-		else if(GetTCR_FIE() && GetMSR_EE() && HasFixedIntervalTimerException()) EnterFixedIntervalTimerISR(operation);
-		else if(GetTCR_DIE() && GetMSR_EE() && HasDecrementerException()) EnterDecrementerISR(operation);
+		ProcessExceptions(operation);
 	}
 
 	if(unlikely(requires_finished_instruction_reporting))
@@ -1966,12 +1953,12 @@ void CPU<CONFIG>::StepOneInstruction()
 	/* update the instruction counter */
 	instruction_counter++;
 
-	if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
+	if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
 	{
 		trap_reporting_import->ReportTrap();
 	}
 	
-	if(unlikely((instruction_counter >= max_inst) || (enable_halt_on && (GetCIA() == halt_on_addr)))) Stop(0);
+	if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
 	
 	//DL1SanityCheck();
 	//IL1SanityCheck();
@@ -1979,27 +1966,139 @@ void CPU<CONFIG>::StepOneInstruction()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::OnTimerClock()
+void CPU<CONFIG>::StepInstructions(unsigned int count)
 {
-	timer_cycle++;
-	
-	/* update the time base */
-	IncrementTB();
+	if(unlikely((debug_control_import != 0) || requires_finished_instruction_reporting || trap_reporting_import))
+	{
+		do
+		{
+			if(unlikely((debug_control_import != 0)))
+			{
+				do
+				{
+					typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
 
-	/* decrement the decrementer each timer cycle */
-	DecrementDEC();
-}
+					dbg_cmd = debug_control_import->FetchDebugCommand(GetCIA());
+			
+					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
+					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC)
+					{
+						Synchronize();
+						continue;
+					}
 
-template <class CONFIG>
-void CPU<CONFIG>::RunTimers(uint64_t delta)
-{
-	timer_cycle += delta;
-	
-	/* update the time base */
-	IncrementTB(delta);
+					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) Stop(0);
+					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET)
+					{
+						if(loader_import)
+						{
+							loader_import->Load();
+						}
+					}
+				} while(1);
+			}
+			
+			unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation = 0;
 
-	/* decrement the decrementer each timer cycle */
-	DecrementDEC(delta);
+			typename CONFIG::address_t addr = GetCIA();
+			SetNIA(addr + 4);
+			uint32_t insn;
+			if(likely(EmuFetch(addr, insn)))
+			{
+				operation = unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::Decode(addr, insn);
+
+			//	stringstream sstr;
+			//	operation->disasm((CPU<CONFIG> *) this, sstr);
+			//	std::cerr << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << std::endl;
+
+				if(unlikely(IsVerboseStep()))
+				{
+					stringstream sstr;
+					operation->disasm((CPU<CONFIG> *) this, sstr);
+					logger << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugInfo;
+				}
+
+				/* execute the instruction */
+				operation->execute(this);
+			}
+
+			if(unlikely(HasException()))
+			{
+				ProcessExceptions(operation);
+			}
+
+			if(unlikely(requires_finished_instruction_reporting))
+			{
+				if(unlikely(memory_access_reporting_import != 0))
+				{
+					memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
+				}
+			}
+
+			/* go to the next instruction */
+			SetCIA(GetNIA());
+
+			/* update the instruction counter */
+			instruction_counter++;
+
+			if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
+			{
+				trap_reporting_import->ReportTrap();
+			}
+			
+			if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
+			
+			//DL1SanityCheck();
+			//IL1SanityCheck();
+		}
+		while(--count);
+	}
+	else
+	{
+		do
+		{
+			unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation = 0;
+
+			typename CONFIG::address_t addr = GetCIA();
+			SetNIA(addr + 4);
+			uint32_t insn;
+			if(likely(EmuFetch(addr, insn)))
+			{
+				operation = unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::Decode(addr, insn);
+
+			//	stringstream sstr;
+			//	operation->disasm((CPU<CONFIG> *) this, sstr);
+			//	std::cerr << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << std::endl;
+
+				if(unlikely(IsVerboseStep()))
+				{
+					stringstream sstr;
+					operation->disasm((CPU<CONFIG> *) this, sstr);
+					logger << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugInfo;
+				}
+
+				/* execute the instruction */
+				operation->execute(this);
+			}
+
+			if(unlikely(HasException()))
+			{
+				ProcessExceptions(operation);
+			}
+
+			/* go to the next instruction */
+			SetCIA(GetNIA());
+
+			/* update the instruction counter */
+			instruction_counter++;
+
+			if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
+			
+			//DL1SanityCheck();
+			//IL1SanityCheck();
+		}
+		while(--count);
+	}
 }
 
 template <class CONFIG>
