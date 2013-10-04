@@ -70,14 +70,7 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 			mmu_access.memory_access_type = CONFIG::MAT_READ;
 			mmu_access.memory_type = mt;
 	
-			try
-			{
-				EmuTranslateAddress<true>(mmu_access); // debug is enabled
-			}
-			catch(DSIException<CONFIG>& exc) { return false; }
-			catch(ISIException<CONFIG>& exc) { return false; }
-			catch(DataTLBErrorException<CONFIG>& exc) { return false; }
-			catch(InstructionTLBErrorException<CONFIG>& exc) { return false; }
+			if(unlikely(!EmuTranslateAddress<true>(mmu_access))) return false; // debug is enabled
 
 			physical_addr = mmu_access.physical_addr;
 			protection_boundary = mmu_access.protection_boundary;
@@ -204,14 +197,7 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 			mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 			mmu_access.memory_type = mt;
 	
-			try
-			{
-				EmuTranslateAddress<true>(mmu_access); // debug is enabled
-			}
-			catch(DSIException<CONFIG>& exc) { return false; }
-			catch(ISIException<CONFIG>& exc) { return false; }
-			catch(DataTLBErrorException<CONFIG>& exc) { return false; }
-			catch(InstructionTLBErrorException<CONFIG>& exc) { return false; }
+			if(unlikely(!EmuTranslateAddress<true>(mmu_access))) return false; // debug is enabled
 	
 			physical_addr = mmu_access.physical_addr;
 			protection_boundary = mmu_access.protection_boundary;
@@ -342,11 +328,7 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 	mmu_access.memory_access_type = CONFIG::MAT_READ;
 	mmu_access.memory_type = CONFIG::MT_INSN;
 
-	try
-	{
-		EmuTranslateAddress<true>(mmu_access); // debug is enabled
-	}
-	catch(InstructionTLBErrorException<CONFIG>& exc) { return string("not mapped ?"); }
+	if(unlikely(!EmuTranslateAddress<true>(mmu_access))) return string("not mapped ?"); // debug is enabled
 
 	bool hit = false;
 

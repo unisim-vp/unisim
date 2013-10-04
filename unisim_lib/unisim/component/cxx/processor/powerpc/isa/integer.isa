@@ -1078,7 +1078,11 @@ cmp.disasm = {
 op cmpi(11[6]:crfD[3]:?[1]:l[1]:ra[5]:sext<32> simm[16])
 cmpi.execute = {
 	// Raise an illegal instruction exception if l=1
-	if(unlikely(l)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(l))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	
 	// Read the input operands
 	int32_t a = cpu->GetGPR(ra);
@@ -1099,7 +1103,11 @@ cmpi.disasm = {
 op cmpl(31[6]:crfD[3]:?[1]:l[1]:ra[5]:rb[5]:32[10]:?[1])
 cmpl.execute = {
 	// Raise an illegal instruction exception if l=1
-	if(unlikely(l)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(l))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	
 	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
@@ -1121,7 +1129,11 @@ cmpl.disasm = {
 op cmpli(10[6]:crfD[3]:?[1]:l[1]:ra[5]:uimm[16])
 cmpli.execute = {
 	// Raise an illegal instruction exception if l=1
-	if(unlikely(l)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(l))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	
 	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);

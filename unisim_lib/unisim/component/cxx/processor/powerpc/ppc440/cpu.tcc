@@ -131,11 +131,26 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, enable_linux_syscall_snooping(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, enable_trap_on_exception(false)
-	, enable_halt_on(false)
-	, halt_on_addr(0)
+	, halt_on_addr((typename CONFIG::address_t) -1)
 	, halt_on()
 	, max_inst(0xffffffffffffffffULL)
 	, num_interrupts(0)
+	, num_decrementer_interrupts(0)
+	, num_fixed_interval_timer_interrupts(0)
+	, num_watchdog_timer_interrupts(0)
+	, num_debug_interrupts(0)
+	, num_external_input_interrupts(0)
+	, num_critical_input_interrupts(0)
+	, num_machine_check_interrupts(0)
+	, num_data_storage_interrupts(0)
+	, num_instruction_storage_interrupts(0)
+	, num_data_tlb_error_interrupts(0)
+	, num_instruction_tlb_error_interrupts(0)
+	, num_alignment_interrupts(0)
+	, num_program_interrupts(0)
+	, num_system_call_interrupts(0)
+	, num_floating_point_unavailable_interrupts(0)
+	, num_auxiliary_processor_unavailable_interrupts(0)
 	, registers_registry()
 	, instruction_counter(0)
 	, fp32_estimate_inv_warning(false)
@@ -161,7 +176,10 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, prefetch_buffer()
 	, reserve(false)
 	, reserve_addr(0)
-	, irq(0)
+	, exc(0)
+	, exc_addr(0)
+	, exc_memory_access_type(CONFIG::MAT_READ)
+	, enter_non_maskable_isr_table()
 	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time, "CPU cycle time in picoseconds")
 	, param_voltage("voltage",  this,  voltage, "CPU voltage in mV")
 	, param_max_inst("max-inst",  this,  max_inst, "maximum number of instructions to simulate")
@@ -204,6 +222,22 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, stat_num_utlb_misses("num-utlb-misses", this, num_utlb_misses, "number of misses to unified data translation look-aside buffer")
 	, formula_utlb_miss_rate("utlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_utlb_misses, &stat_num_utlb_accesses, "unified data translation look-aside buffer miss rate")
 	, stat_num_interrupts("num-interrupts", this, num_interrupts, "Number of interrupts")
+	, stat_num_decrementer_interrupts("num-decrementer-interrupts", this, num_decrementer_interrupts, "Number decrementer interrupts")
+	, stat_num_fixed_interval_timer_interrupts("num-fixed-interval-timer-interrupts", this, num_fixed_interval_timer_interrupts, "Number of fixed interval timer interrupts")
+	, stat_num_watchdog_timer_interrupts("num-watchdog-timer-interrupts", this, num_watchdog_timer_interrupts, "Number of watchdog timer interrupts")
+	, stat_num_debug_interrupts("num-debug-interrupts", this, num_debug_interrupts, "Number of debug interrupts")
+	, stat_num_external_input_interrupts("num-external-input-interrupts", this, num_external_input_interrupts, "Number of external input interrupts")
+	, stat_num_critical_input_interrupts("num-critical-input-interrupts", this, num_critical_input_interrupts, "Number of critical input interrupts")
+	, stat_num_machine_check_interrupts("num-machine-check-interrupts", this, num_machine_check_interrupts, "Number of machine check interrupts")
+	, stat_num_data_storage_interrupts("num-data-storage-interrupts", this, num_data_storage_interrupts, "Number of data storage interrupts")
+	, stat_num_instruction_storage_interrupts("num-instruction-storage-interrupts", this, num_instruction_storage_interrupts, "Number of instruction storage interrupts")
+	, stat_num_data_tlb_error_interrupts("num-data-tlb-error-interrupts", this, num_data_tlb_error_interrupts, "Number of data TLB error interrupts")
+	, stat_num_instruction_tlb_error_interrupts("num-instruction-tlb-error-interrupts", this, num_instruction_tlb_error_interrupts, "Number of instruction TLB error interrupts")
+	, stat_num_alignment_interrupts("num-alignment-interrupts", this, num_alignment_interrupts, "Number of alignment interrupts")
+	, stat_num_program_interrupts("num-program-interrupts", this, num_program_interrupts, "Number of program interrupts")
+	, stat_num_system_call_interrupts("num-system-call-interrupts", this, num_system_call_interrupts, "Number of system call interrupts")
+	, stat_num_floating_point_unavailable_interrupts("num-floating-point-unavailable-interrupts", this, num_floating_point_unavailable_interrupts, "Number of floating point unavailable interrupts")
+	, stat_num_auxiliary_processor_unavailable_interrupts("num-auxiliary-processor-unavailable-interrupts", this, num_auxiliary_processor_unavailable_interrupts, "Number of auxiliary processor unavailable interrupts")
 {
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_cpu_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -402,6 +436,27 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	registers_registry["tsr"] = new unisim::util::debug::SimpleRegister<uint32_t>("tsr", &tsr);
 	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("tsr", this, tsr, "Timer Status Register"));
 
+	enter_non_maskable_isr_table[CONFIG::EXC_DATA_STORAGE_READ_ACCESS_CONTROL] = &CPU<CONFIG>::EnterDataStorageISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_DATA_STORAGE_WRITE_ACCESS_CONTROL] = &CPU<CONFIG>::EnterDataStorageISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_DATA_STORAGE_BYTE_ORDERING] = &CPU<CONFIG>::EnterDataStorageISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_DATA_STORAGE_CACHE_LOCKING] = &CPU<CONFIG>::EnterDataStorageISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL] = &CPU<CONFIG>::EnterInstructionStorageISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_ALIGNMENT] = &CPU<CONFIG>::EnterAlignmentISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION] = &CPU<CONFIG>::EnterProgramISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION] = &CPU<CONFIG>::EnterProgramISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_PROGRAM_TRAP] = &CPU<CONFIG>::EnterProgramISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_PROGRAM_FLOATING_POINT] = &CPU<CONFIG>::EnterProgramISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION] = &CPU<CONFIG>::EnterProgramISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_FLOATING_POINT_UNAVAILABLE] = &CPU<CONFIG>::EnterFloatingPointUnavailableISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_SYSTEM_CALL] = &CPU<CONFIG>::EnterSystemCallISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_AUXILIARY_PROCESSOR_UNAVAILABLE] = &CPU<CONFIG>::EnterAuxiliaryProcessorUnavailableISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_DATA_TLB_ERROR] = &CPU<CONFIG>::EnterDataTLBErrorISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_INSTRUCTION_TLB_ERROR] = &CPU<CONFIG>::EnterInstructionTLBErrorISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
+	enter_non_maskable_isr_table[CONFIG::EXC_MACHINE_CHECK_TLB_ASYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
+	
 	Reset();
 	
 	std::stringstream sstr_description;
@@ -706,7 +761,6 @@ bool CPU<CONFIG>::EndSetup()
 		if(halt_on_symbol)
 		{
 			halt_on_addr = halt_on_symbol->GetAddress();
-			enable_halt_on = true;
 			if(IsVerboseSetup())
 			{
 				logger << DebugInfo << "Simulation will halt at '" << halt_on_symbol->GetName() << "' (0x" << std::hex << halt_on_addr << std::dec << ")" << EndDebugInfo;
@@ -718,7 +772,6 @@ bool CPU<CONFIG>::EndSetup()
 			sstr >> std::hex;
 			if(sstr >> halt_on_addr)
 			{
-				enable_halt_on = true;
 				if(IsVerboseSetup())
 				{
 					logger << DebugInfo <<  "Simulation will halt at 0x" << std::hex << halt_on_addr << std::dec << EndDebugInfo;
@@ -727,7 +780,7 @@ bool CPU<CONFIG>::EndSetup()
 			else
 			{
 				logger << DebugWarning << "Invalid address (" << halt_on << ") in Parameter " << param_halt_on.GetName() << EndDebugWarning;
-				halt_on_addr = 0;
+				halt_on_addr = (typename CONFIG::address_t) -1;
 			}
 		}
 	}
@@ -767,8 +820,27 @@ void CPU<CONFIG>::Reset()
 	timer_cycle = 0;
 	instruction_counter = 0;
 	num_interrupts = 0;
+	num_decrementer_interrupts = 0;
+	num_fixed_interval_timer_interrupts = 0;
+	num_watchdog_timer_interrupts = 0;
+	num_external_input_interrupts = 0;
+	num_critical_input_interrupts = 0;
+	num_machine_check_interrupts = 0;
+	num_data_storage_interrupts = 0;
+	num_instruction_storage_interrupts = 0;
+	num_data_tlb_error_interrupts = 0;
+	num_instruction_tlb_error_interrupts = 0;
+	num_alignment_interrupts = 0;
+	num_program_interrupts = 0;
+	num_system_call_interrupts = 0;
+	num_floating_point_unavailable_interrupts = 0;
+	num_auxiliary_processor_unavailable_interrupts = 0;
+	num_debug_interrupts = 0;
+	instruction_counter = 0;
 
-	irq = 0;
+	exc = 0;
+	exc_addr = 0;
+	exc_memory_access_type = CONFIG::MAT_READ;
 
 	reserve = false;
 	reserve_addr = 0;
@@ -892,42 +964,94 @@ void CPU<CONFIG>::Reset()
 }
 
 template <class CONFIG>
-uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
+bool CPU<CONFIG>::GetSPR(unsigned int n, uint32_t& value)
 {
 	switch(n)
 	{
-		case 0x001: return GetXER();
-		case 0x008: return GetLR();
-		case 0x009: return GetCTR();
+		case 0x001:
+			value = GetXER();
+			return true;
+		case 0x008:
+			value = GetLR();
+			return true;
+		case 0x009:
+			value = GetCTR();
+			return true;
 		case 0x016:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetDEC();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetDEC();
+			return true;
 		case 0x01a:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetSRR0();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetSRR0();
+			return true;
 		case 0x01b:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetSRR1();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetSRR1();
+			return true;
 		case 0x030:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetPID();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetPID();
+			return true;
 		case 0x03a:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetCSRR0();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetCSRR0();
+			return true;
 		case 0x03b:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetCSRR1();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetCSRR1();
+			return true;
 		case 0x03d:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetDEAR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetDEAR();
+			return true;
 		case 0x03e:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetESR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetESR();
+			return true;
 		case 0x03f:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetIVPR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetIVPR();
+			return true;
 		case 0x100:
-			return GetUSPRG0();
+			value = GetUSPRG0();
+			return true;
 		case 0x104:
 		case 0x105:
 		case 0x106:
@@ -936,14 +1060,18 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_sprg = n - 0x104 + 4;
 			if(num_sprg < CONFIG::NUM_SPRGS)
 			{
-				return GetSPRG(num_sprg);
+				value = GetSPRG(num_sprg);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x10c:
-			return GetTBL();
+			value = GetTBL();
+			return true;
 		case 0x10d:
-			return GetTBU();
+			value = GetTBU();
+			return true;
 		case 0x0110:
 		case 0x0111:
 		case 0x0112:
@@ -952,26 +1080,57 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_sprg = n - 0x110;
 			if(num_sprg < CONFIG::NUM_SPRGS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetSPRG(num_sprg);
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
+				value = GetSPRG(num_sprg);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x11c:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetTBL();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetTBL();
+			return true;
 		case 0x11d:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetTBU();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetTBU();
+			return true;
 		case 0x11e:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetPIR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetPIR();
+			return true;
 		case 0x11f:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetPVR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetPVR();
+			return true;
 		case 0x130:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetDBSR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetDBSR();
+			return true;
 		case 0x134:
 		case 0x135:
 		case 0x136:
@@ -979,10 +1138,16 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_dbcr = n - 0x134;
 			if(num_dbcr < CONFIG::NUM_DBCRS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDBCR(num_dbcr);
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
+				value = GetDBCR(num_dbcr);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x138:
 		case 0x139:
@@ -992,10 +1157,16 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_iac = n - 0x138;
 			if(num_iac < CONFIG::NUM_IACS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetIAC(num_iac);
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
+				value = GetIAC(num_iac);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x13c:
 		case 0x13d:
@@ -1003,10 +1174,16 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_dac = n - 0x13c;
 			if(num_dac < CONFIG::NUM_DACS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDAC(num_dac);
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
+				value = GetDAC(num_dac);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x13e:
 		case 0x13f:
@@ -1014,17 +1191,33 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_dvc = n - 0x13e;
 			if(num_dvc < CONFIG::NUM_DVCS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDVC(num_dvc);
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
+				value = GetDVC(num_dvc);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x150:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetTSR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetTSR();
+			return true;
 		case 0x154:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetTCR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetTCR();
+			return true;
 		case 0x190:
 		case 0x191:
 		case 0x192:
@@ -1045,20 +1238,41 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_ivor = n - 0x190;
 			if(num_ivor < CONFIG::NUM_IVORS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetIVOR(num_ivor);
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
+				value = GetIVOR(num_ivor);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x23a:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetMCSRR0();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetMCSRR0();
+			return true;
 		case 0x23b:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetMCSRR1();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetMCSRR1();
+			return true;
 		case 0x23c:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetMCSR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetMCSR();
+			return true;
 		case 0x370:
 		case 0x371:
 		case 0x372:
@@ -1067,10 +1281,16 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_inv = n - 0x370;
 			if(num_inv < CONFIG::NUM_INVS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetINV(num_inv);
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
+				value = GetINV(num_inv);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x374:
 		case 0x375:
@@ -1080,14 +1300,25 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_itv = n - 0x374;
 			if(num_itv < CONFIG::NUM_ITVS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetITV(num_itv);
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
+				value = GetITV(num_itv);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x378:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetCCR1();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetCCR1();
+			return true;
 		case 0x390:
 		case 0x391:
 		case 0x392:
@@ -1096,10 +1327,16 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_dnv = n - 0x390;
 			if(num_dnv < CONFIG::NUM_DNVS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDNV(num_dnv);
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
+				value = GetDNV(num_dnv);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x394:
 		case 0x395:
@@ -1109,100 +1346,201 @@ uint32_t CPU<CONFIG>::GetSPR(unsigned int n) const
 			unsigned int num_dtv = n - 0x394;
 			if(num_dtv < CONFIG::NUM_DTVS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-				return GetDTV(num_dtv);
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
+				value = GetDTV(num_dtv);
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x398:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetDVLIM();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetDVLIM();
+			return true;
 		case 0x399:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetIVLIM();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetIVLIM();
+			return true;
 		case 0x39b:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetRSTCFG();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetRSTCFG();
+			return true;
 		case 0x39c:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetDCDBTRL();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetDCDBTRL();
+			return true;
 		case 0x39d:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetDCDBTRH();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetDCDBTRH();
+			return true;
 		case 0x39e:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetICDBTRL();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetICDBTRL();
+			return true;
 		case 0x39f:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetICDBTRH();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetICDBTRH();
+			return true;
 		case 0x3b2:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetMMUCR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetMMUCR();
+			return true;
 		case 0x3b3:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetCCR0();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetCCR0();
+			return true;
 		case 0x3d3:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetICDBDR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetICDBDR();
+			return value;
 		case 0x3f3:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			return GetDBDR();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			value = GetDBDR();
+			return true;
 	}
-	throw IllegalInstructionException<CONFIG>();
-	return 0;
+	SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
+bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 {
 	switch(n)
 	{
-		case 0x001: SetXER(value); return;
-		case 0x008: SetLR(value); return;
-		case 0x009: SetCTR(value); return;
+		case 0x001: SetXER(value); return true;
+		case 0x008: SetLR(value); return true;
+		case 0x009: SetCTR(value); return true;
 		case 0x016:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetDEC(value);
-			return;
+			return true;
 		case 0x01a:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetSRR0(value);
-			return;
+			return true;
 		case 0x01b:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetSRR1(value);
-			return;
+			return true;
 		case 0x030:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetPID(value);
-			return;
+			return true;
 		case 0x036:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetDECAR(value);
-			return;
+			return true;
 		case 0x03a:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetCSRR0(value);
-			return;
+			return true;
 		case 0x03b:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetCSRR1(value);
-			return;
+			return true;
 		case 0x03d:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetDEAR(value);
-			return;
+			return true;
 		case 0x03e:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetESR(value);
-			return;
+			return true;
 		case 0x03f:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetIVPR(value);
-			return;
+			return true;
 		case 0x100:
 			SetUSPRG0(value);
-			return;
+			return true;
 		case 0x104:
 		case 0x105:
 		case 0x106:
@@ -1212,9 +1550,10 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			if(num_sprg < CONFIG::NUM_SPRGS)
 			{
 				SetSPRG(num_sprg, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x110:
 		case 0x111:
@@ -1228,24 +1567,41 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			unsigned int num_sprg = n - 0x110;
 			if(num_sprg < CONFIG::NUM_SPRGS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
 				SetSPRG(num_sprg, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x11c:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetTBL(value);
-			return;
+			return true;
 		case 0x11d:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetTBU(value);
-			return;
+			return true;
 		case 0x130:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetDBSR(GetDBSR() & ~value); // A 1 clears the bit, a 0 leaves it unchanged
-			return;
+			return true;
 		case 0x134:
 		case 0x135:
 		case 0x136:
@@ -1253,11 +1609,16 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			unsigned int num_dbcr = n - 0x134;
 			if(num_dbcr < CONFIG::NUM_DBCRS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
 				SetDBCR(num_dbcr, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x138:
 		case 0x139:
@@ -1267,11 +1628,16 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			unsigned int num_iac = n - 0x138;
 			if(num_iac < CONFIG::NUM_IACS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
 				SetIAC(num_iac, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x13c:
 		case 0x13d:
@@ -1279,11 +1645,16 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			unsigned int num_dac = n - 0x13c;
 			if(num_dac < CONFIG::NUM_DACS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
 				SetDAC(num_dac, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x13e:
 		case 0x13f:
@@ -1291,20 +1662,33 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			unsigned int num_dvc = n - 0x13e;
 			if(num_dvc < CONFIG::NUM_DVCS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
 				SetDVC(num_dvc, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x150:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetTSR(GetTSR() & ~value); // A 1 clears the bit, a 0 leaves it unchanged
-			return;
+			return true;
 		case 0x154:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetTCR(value);
-			return;
+			return true;
 		case 0x190:
 		case 0x191:
 		case 0x192:
@@ -1325,24 +1709,41 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			unsigned int num_ivor = n - 0x190;
 			if(num_ivor < CONFIG::NUM_IVORS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
 				SetIVOR(num_ivor, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x23a:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetMCSRR0(value);
-			return;
+			return true;
 		case 0x23b:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetMCSRR1(value);
-			return;
+			return true;
 		case 0x23c:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetMCSR(GetMCSR() & ~value); // A 1 clears the bit, a 0 leaves it unchanged
-			return;
+			return true;
 		case 0x370:
 		case 0x371:
 		case 0x372:
@@ -1351,11 +1752,16 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			unsigned int num_inv = n - 0x370;
 			if(num_inv < CONFIG::NUM_INVS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
 				SetINV(num_inv, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x374:
 		case 0x375:
@@ -1365,16 +1771,25 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			unsigned int num_itv = n - 0x374;
 			if(num_itv < CONFIG::NUM_ITVS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
 				SetITV(num_itv, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x378:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetCCR1(value);
-			return;
+			return true;
 		case 0x390:
 		case 0x391:
 		case 0x392:
@@ -1383,11 +1798,16 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			unsigned int num_dnv = n - 0x390;
 			if(num_dnv < CONFIG::NUM_DNVS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
 				SetDNV(num_dnv, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x394:
 		case 0x395:
@@ -1397,38 +1817,68 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			unsigned int num_dtv = n - 0x394;
 			if(num_dtv < CONFIG::NUM_DTVS)
 			{
-				if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+				if(GetMSR_PR())
+				{
+					SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+					return false;
+				}
 				SetDTV(num_dtv, value);
-				return;
+				return true;
 			}
-			throw IllegalInstructionException<CONFIG>();
+			SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 		}
 		case 0x398:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetDVLIM(value);
-			return;
+			return true;
 		case 0x399:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetIVLIM(value);
-			return;
+			return true;
 		case 0x3b2:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetMMUCR(value);
-			return;
+			return true;
 		case 0x3b3:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetCCR0(value);
-			return;
+			return true;
 		case 0x3d3:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetICDBDR(value);
-			return;
+			return true;
 		case 0x3f3:
-			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
 			SetDBDR(value);
-			return;
+			return true;
 	}
-	throw IllegalInstructionException<CONFIG>();
+	SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 
 template <class CONFIG>
@@ -1462,17 +1912,16 @@ void CPU<CONFIG>::StepOneInstruction()
 
 	unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation = 0;
 
-	try
+	typename CONFIG::address_t addr = GetCIA();
+	SetNIA(addr + 4);
+	uint32_t insn;
+	if(likely(EmuFetch(addr, insn)))
 	{
-		typename CONFIG::address_t addr = GetCIA();
-		SetNIA(addr + 4);
-		uint32_t insn = EmuFetch(addr);
-
 		operation = unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::Decode(addr, insn);
 
-//		stringstream sstr;
-//		operation->disasm((CPU<CONFIG> *) this, sstr);
-//		std::cerr << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << std::endl;
+	//	stringstream sstr;
+	//	operation->disasm((CPU<CONFIG> *) this, sstr);
+	//	std::cerr << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << std::endl;
 
 		if(unlikely(IsVerboseStep()))
 		{
@@ -1483,37 +1932,11 @@ void CPU<CONFIG>::StepOneInstruction()
 
 		/* execute the instruction */
 		operation->execute(this);
-
-		if(unlikely(HasIRQ()))
-		{
-			if(GetMSR_CE() && HasCriticalInputInterrupt()) throw CriticalInputInterruptException<CONFIG>();
-			if(GetTCR_WIE() && GetMSR_CE() && HasWatchDogTimerInterrupt()) throw WatchDogTimerInterruptException<CONFIG>();
-			if(GetMSR_EE() && HasExternalInputInterrupt()) throw ExternalInputInterruptException<CONFIG>();
-			if(GetTCR_FIE() && GetMSR_EE() && HasFixedIntervalTimerInterrupt()) throw FixedIntervalTimerInterruptException<CONFIG>();
-			if(GetTCR_DIE() && GetMSR_EE() && HasDecrementerInterrupt()) throw DecrementerInterruptException<CONFIG>();
-		}
 	}
-	catch(SystemCallException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(MachineCheckException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(DecrementerInterruptException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(ExternalInputInterruptException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(CriticalInputInterruptException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(DSIException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(ISIException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(DataTLBErrorException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(InstructionTLBErrorException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(AlignmentException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(ProgramException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(FloatingPointUnavailableException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(AuxiliaryProcessorUnavailableException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(FixedIntervalTimerInterruptException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(WatchDogTimerInterruptException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(DebugInterruptException<CONFIG>& exc) { HandleException(exc, operation); }
-	catch(Exception& exc)
+
+	if(unlikely(HasException()))
 	{
-		if(unlikely(IsVerboseStep()))
-			logger << DebugError << "uncaught processor exception :" << exc.what() << endl << EndDebugError;
-		Stop(1);
+		ProcessExceptions(operation);
 	}
 
 	if(unlikely(requires_finished_instruction_reporting))
@@ -1530,12 +1953,12 @@ void CPU<CONFIG>::StepOneInstruction()
 	/* update the instruction counter */
 	instruction_counter++;
 
-	if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
+	if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
 	{
 		trap_reporting_import->ReportTrap();
 	}
 	
-	if(unlikely((instruction_counter >= max_inst) || (enable_halt_on && (GetCIA() == halt_on_addr)))) Stop(0);
+	if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
 	
 	//DL1SanityCheck();
 	//IL1SanityCheck();
@@ -1543,27 +1966,139 @@ void CPU<CONFIG>::StepOneInstruction()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::OnTimerClock()
+void CPU<CONFIG>::StepInstructions(unsigned int count)
 {
-	timer_cycle++;
-	
-	/* update the time base */
-	IncrementTB();
+	if(unlikely((debug_control_import != 0) || requires_finished_instruction_reporting || trap_reporting_import))
+	{
+		do
+		{
+			if(unlikely((debug_control_import != 0)))
+			{
+				do
+				{
+					typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
 
-	/* decrement the decrementer each timer cycle */
-	DecrementDEC();
-}
+					dbg_cmd = debug_control_import->FetchDebugCommand(GetCIA());
+			
+					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
+					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC)
+					{
+						Synchronize();
+						continue;
+					}
 
-template <class CONFIG>
-void CPU<CONFIG>::RunTimers(uint64_t delta)
-{
-	timer_cycle += delta;
-	
-	/* update the time base */
-	IncrementTB(delta);
+					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) Stop(0);
+					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET)
+					{
+						if(loader_import)
+						{
+							loader_import->Load();
+						}
+					}
+				} while(1);
+			}
+			
+			unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation = 0;
 
-	/* decrement the decrementer each timer cycle */
-	DecrementDEC(delta);
+			typename CONFIG::address_t addr = GetCIA();
+			SetNIA(addr + 4);
+			uint32_t insn;
+			if(likely(EmuFetch(addr, insn)))
+			{
+				operation = unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::Decode(addr, insn);
+
+			//	stringstream sstr;
+			//	operation->disasm((CPU<CONFIG> *) this, sstr);
+			//	std::cerr << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << std::endl;
+
+				if(unlikely(IsVerboseStep()))
+				{
+					stringstream sstr;
+					operation->disasm((CPU<CONFIG> *) this, sstr);
+					logger << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugInfo;
+				}
+
+				/* execute the instruction */
+				operation->execute(this);
+			}
+
+			if(unlikely(HasException()))
+			{
+				ProcessExceptions(operation);
+			}
+
+			if(unlikely(requires_finished_instruction_reporting))
+			{
+				if(unlikely(memory_access_reporting_import != 0))
+				{
+					memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
+				}
+			}
+
+			/* go to the next instruction */
+			SetCIA(GetNIA());
+
+			/* update the instruction counter */
+			instruction_counter++;
+
+			if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
+			{
+				trap_reporting_import->ReportTrap();
+			}
+			
+			if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
+			
+			//DL1SanityCheck();
+			//IL1SanityCheck();
+		}
+		while(--count);
+	}
+	else
+	{
+		do
+		{
+			unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation = 0;
+
+			typename CONFIG::address_t addr = GetCIA();
+			SetNIA(addr + 4);
+			uint32_t insn;
+			if(likely(EmuFetch(addr, insn)))
+			{
+				operation = unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::Decode(addr, insn);
+
+			//	stringstream sstr;
+			//	operation->disasm((CPU<CONFIG> *) this, sstr);
+			//	std::cerr << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << std::endl;
+
+				if(unlikely(IsVerboseStep()))
+				{
+					stringstream sstr;
+					operation->disasm((CPU<CONFIG> *) this, sstr);
+					logger << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugInfo;
+				}
+
+				/* execute the instruction */
+				operation->execute(this);
+			}
+
+			if(unlikely(HasException()))
+			{
+				ProcessExceptions(operation);
+			}
+
+			/* go to the next instruction */
+			SetCIA(GetNIA());
+
+			/* update the instruction counter */
+			instruction_counter++;
+
+			if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
+			
+			//DL1SanityCheck();
+			//IL1SanityCheck();
+		}
+		while(--count);
+	}
 }
 
 template <class CONFIG>
@@ -1821,35 +2356,116 @@ endian_type CPU<CONFIG>::GetEndianess()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::SetIRQ(unsigned int _irq)
+void CPU<CONFIG>::SetExceptionMask(uint32_t _exc, typename CONFIG::address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
 {
 	if(IsVerboseException())
 	{
-		if(_irq & CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT)
+		if(_exc & CONFIG::EXC_MASK_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS)
 		{
-			logger << DebugInfo << "Got an external input interrupt condition" << EndDebugInfo;
+			logger << DebugInfo << "Got an instruction synchronous machine check exception" << EndDebugInfo;
 		}
-		if(_irq & CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT)
+		if(_exc & CONFIG::EXC_MASK_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS)
 		{
-			logger << DebugInfo << "Got a critical input interrupt condition" << EndDebugInfo;
+			logger << DebugInfo << "Got an instruction asynchronous machine check exception" << EndDebugInfo;
 		}
-		if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT)
+		if(_exc & CONFIG::EXC_MASK_MACHINE_CHECK_DATA_ASYNCHRONOUS)
 		{
-			logger << DebugInfo << "Got a decrementer interrupt condition" << EndDebugInfo;
+			logger << DebugInfo << "Got a data asynchronous machine check exception" << EndDebugInfo;
 		}
-		if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT)
+		if(_exc & CONFIG::EXC_MASK_MACHINE_CHECK_TLB_ASYNCHRONOUS)
 		{
-			logger << DebugInfo << "Got a fixed interval timer interrupt condition" << EndDebugInfo;
+			logger << DebugInfo << "Got a TLB asynchronous machine check exception" << EndDebugInfo;
 		}
-		if(_irq & CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT)
+		if(_exc & CONFIG::EXC_MASK_DATA_STORAGE_READ_ACCESS_CONTROL)
 		{
-			logger << DebugInfo << "Got a watchdog timer interrupt condition" << EndDebugInfo;
+			logger << DebugInfo << "Got a read access control data storage exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_DATA_STORAGE_WRITE_ACCESS_CONTROL)
+		{
+			logger << DebugInfo << "Got a write access control data storage exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_DATA_STORAGE_BYTE_ORDERING)
+		{
+			logger << DebugInfo << "Got a cache locking data storage exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_DATA_STORAGE_CACHE_LOCKING)
+		{
+			logger << DebugInfo << "Got a cache locking data storage exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL)
+		{
+			logger << DebugInfo << "Got an execute access control instruction storage exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_DATA_TLB_ERROR)
+		{
+			logger << DebugInfo << "Got a data TLB error exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_INSTRUCTION_TLB_ERROR)
+		{
+			logger << DebugInfo << "Got an instruction TLB error exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_ALIGNMENT)
+		{
+			logger << DebugInfo << "Got an alignment exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_PROGRAM_ILLEGAL_INSTRUCTION)
+		{
+			logger << DebugInfo << "Got an illegal instruction program exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_PROGRAM_PRIVILEGE_VIOLATION)
+		{
+			logger << DebugInfo << "Got a privilege violation program exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_PROGRAM_TRAP)
+		{
+			logger << DebugInfo << "Got a trap program exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_PROGRAM_FLOATING_POINT)
+		{
+			logger << DebugInfo << "Got a floating point program exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_PROGRAM_UNIMPLEMENTED_INSTRUCTION)
+		{
+			logger << DebugInfo << "Got an unimplemented instruction program exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_FLOATING_POINT_UNAVAILABLE)
+		{
+			logger << DebugInfo << "Got a floating point unavailable exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_AUXILIARY_PROCESSOR_UNAVAILABLE)
+		{
+			logger << DebugInfo << "Got an auxiliary processor unavailable exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_EXTERNAL_INPUT)
+		{
+			logger << DebugInfo << "Got an external input exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_CRITICAL_INPUT)
+		{
+			logger << DebugInfo << "Got a critical input exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_DECREMENTER)
+		{
+			logger << DebugInfo << "Got a decrementer exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_DEBUG)
+		{
+			logger << DebugInfo << "Got a debug exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER)
+		{
+			logger << DebugInfo << "Got a fixed interval timer exception" << EndDebugInfo;
+		}
+		if(_exc & CONFIG::EXC_MASK_WATCHDOG_TIMER)
+		{
+			logger << DebugInfo << "Got a watchdog timer exception" << EndDebugInfo;
 		}
 	}
-	irq = irq | (_irq & (CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT | CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT));
-	if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT) SetTSR(GetTSR() | CONFIG::TSR_DIS_MASK);
-	if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT) SetTSR(GetTSR() | CONFIG::TSR_FIS_MASK);
-	if(_irq & CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT)
+	//exc = exc | (_exc & (CONFIG::EXC_MASK_EXTERNAL_INPUT_INTERRUPT | CONFIG::EXC_MASK_CRITICAL_INPUT_INTERRUPT | CONFIG::EXC_MASK_DEBUG_INTERRUPT));
+	exc = exc | (_exc & ~(CONFIG::EXC_MASK_DECREMENTER | CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER | CONFIG::EXC_MASK_WATCHDOG_TIMER));
+	if(_exc & CONFIG::EXC_MASK_DECREMENTER) SetTSR(GetTSR() | CONFIG::TSR_DIS_MASK);
+	if(_exc & CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER) SetTSR(GetTSR() | CONFIG::TSR_FIS_MASK);
+	if(_exc & CONFIG::EXC_MASK_WATCHDOG_TIMER)
 	{
 		if(GetTSR_ENW())
 		{
@@ -1876,18 +2492,20 @@ void CPU<CONFIG>::SetIRQ(unsigned int _irq)
 			SetTSR(GetTSR() | CONFIG::TSR_ENW_MASK);
 		}
 	}
+	exc_addr = addr;
+	exc_memory_access_type = memory_access_type;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ResetIRQ(unsigned int _irq)
+void CPU<CONFIG>::ResetExceptionMask(unsigned int _exc)
 {
-	irq = irq & (~_irq & (CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT | CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT));
-	if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_DIS_MASK);
-	if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_FIS_MASK);
-	if(_irq & CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_WIS_MASK);
+	exc = exc & ~_exc;
+	if(_exc & CONFIG::EXC_DECREMENTER) SetTSR(GetTSR() & ~CONFIG::TSR_DIS_MASK);
+	if(_exc & CONFIG::EXC_FIXED_INTERVAL_TIMER) SetTSR(GetTSR() & ~CONFIG::TSR_FIS_MASK);
+	if(_exc & CONFIG::EXC_WATCHDOG_TIMER) SetTSR(GetTSR() & ~CONFIG::TSR_WIS_MASK);
 	if(IsVerboseException())
 	{
-		logger << DebugInfo << "Reseting pending IRQ mask: " << irq << EndDebugInfo;
+		logger << DebugInfo << "Resetting exception mask: " << std::hex << exc << std::dec << EndDebugInfo;
 	}
 }
 
@@ -1907,12 +2525,15 @@ void CPU<CONFIG>::Isync()
 template <class CONFIG>
 void CPU<CONFIG>::Rfi()
 {
+	if(unlikely(GetMSR_PR()))
+	{
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return;
+	}
+
 	FlushSubsequentInstructions();
 	InvalidateITLB();
 	InvalidateDTLB();
-
-	if(unlikely(GetMSR_PR())) throw PrivilegeViolationException<CONFIG>();
-
 	SetNIA(GetSRR0());
 	SetMSR(GetSRR1());
 }
@@ -1920,11 +2541,15 @@ void CPU<CONFIG>::Rfi()
 template <class CONFIG>
 void CPU<CONFIG>::Rfci()
 {
+	if(unlikely(GetMSR_PR()))
+	{
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return;
+	}
+	
 	FlushSubsequentInstructions();
 	InvalidateITLB();
 	InvalidateDTLB();
-
-	if(unlikely(GetMSR_PR())) throw PrivilegeViolationException<CONFIG>();
 
 	SetNIA(GetCSRR0());
 	SetMSR(GetCSRR1());
@@ -1933,11 +2558,15 @@ void CPU<CONFIG>::Rfci()
 template <class CONFIG>
 void CPU<CONFIG>::Rfmci()
 {
+	if(unlikely(GetMSR_PR()))
+	{
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return;
+	}
+
 	FlushSubsequentInstructions();
 	InvalidateITLB();
 	InvalidateDTLB();
-
-	if(unlikely(GetMSR_PR())) throw PrivilegeViolationException<CONFIG>();
 
 	SetNIA(GetMCSRR0());
 	SetMSR(GetMCSRR1());

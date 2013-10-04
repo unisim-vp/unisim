@@ -67,7 +67,7 @@ mfdcr.disasm = {
 op mfdcrx(31[6]:rd[5]:ra[5]:?[5]:259[10]:?[1])
 
 mfdcrx.execute = {
-	throw IllegalInstructionException<CONFIG>();
+	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
 }
 
 mfdcrx.disasm = {
@@ -77,7 +77,7 @@ mfdcrx.disasm = {
 op mfdcrux(31[6]:rd[5]:ra[5]:?[5]:291[10]:?[1])
 
 mfdcrux.execute = {
-	throw IllegalInstructionException<CONFIG>();
+	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
 }
 
 mfdcrux.disasm = {
@@ -99,7 +99,7 @@ mtdcr.disasm = {
 op mtdcrx(31[6]:rs[5]:ra[5]:?[5]:387[10]:?[1])
 
 mtdcrx.execute = {
-	throw IllegalInstructionException<CONFIG>();
+	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
 }
 
 mtdcrx.disasm = {
@@ -109,7 +109,7 @@ mtdcrx.disasm = {
 op mtdcrux(31[6]:rs[5]:ra[5]:?[5]:419[10]:?[1])
 
 mtdcrux.execute = {
-	throw IllegalInstructionException<CONFIG>();
+	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
 }
 
 mtdcrux.disasm = {
@@ -120,7 +120,11 @@ op wrtee(31[6]:rs[5]:?[10]:131[10]:?[1])
 
 wrtee.execute = {
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
+	if(unlikely(msr & CONFIG::MSR_PR_MASK))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return;
+	}
 	
 	// Read the input operand
 	uint32_t s = cpu->GetGPR(rs);
@@ -139,7 +143,11 @@ op wrteei(31[6]:?[10]:e[1]:0[4]:163[10]:?[1])
 
 wrteei.execute = {
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
+	if(unlikely(msr & CONFIG::MSR_PR_MASK))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return;
+	}
 	
 	if(e)
 		cpu->SetMSR_EE();

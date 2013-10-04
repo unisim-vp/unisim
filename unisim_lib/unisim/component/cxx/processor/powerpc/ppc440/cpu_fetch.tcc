@@ -54,7 +54,7 @@ void CPU<CONFIG>::FlushSubsequentInstructions()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size)
+bool CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;
@@ -66,7 +66,8 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 	mmu_access.memory_access_type = CONFIG::MAT_READ;
 	mmu_access.memory_type = CONFIG::MT_INSN;
 
-	EmuTranslateAddress<false>(mmu_access);
+	bool status = EmuTranslateAddress<false>(mmu_access);
+	if(unlikely(!status)) return false;
 
 	if(likely(!(mmu_access.storage_attr & CONFIG::SA_I) && IsInsnCacheEnabled())) // cache inhibited ?
 	{
@@ -101,7 +102,7 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 			{
 				logger << DebugInfo << "IL1: block miss at 0x" << std::hex << l1_access.addr << std::dec << endl << EndDebugInfo;
 			}
-			EmuFillIL1(l1_access, mmu_access);
+			if(unlikely(!EmuFillIL1(l1_access, mmu_access))) return false;
 		}
 	
 		memcpy(buffer, &(*l1_access.block)[l1_access.offset], size);
@@ -113,7 +114,8 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 		// DL1 disabled
 		if(unlikely(!PLBInsnRead(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
 		{
-			throw InstructionAsynchronousMachineCheckException<CONFIG>();
+			SetException(CONFIG::EXC_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS);
+			return false;
 		}
 	}
 	
@@ -139,10 +141,12 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 		while(++insn, size -= 4);
 #endif
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-uint32_t CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, uint32_t& insn)
 {
 	if(unlikely(requires_memory_access_reporting)) 
 	{
@@ -159,16 +163,15 @@ uint32_t CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr)
 			uint32_t size_to_block_boundary = IsInsnCacheEnabled() ? CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (addr & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1)) : CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
 			uint32_t size_to_prefetch = size_to_block_boundary > (4 * CONFIG::NUM_PREFETCH_BUFFER_ENTRIES) ? CONFIG::NUM_PREFETCH_BUFFER_ENTRIES * 4 : size_to_block_boundary;
 			// refill the prefetch buffer with up to one cache line, not much
-			EmuFetch(addr, prefetch_buffer, size_to_prefetch);
+			if(unlikely(!EmuFetch(addr, prefetch_buffer, size_to_prefetch))) return false;
 			num_insn_in_prefetch_buffer = size_to_prefetch / 4;
 			cur_insn_in_prefetch_buffer = 0;
 		}
-		return prefetch_buffer[cur_insn_in_prefetch_buffer++];
+		insn = prefetch_buffer[cur_insn_in_prefetch_buffer++];
+		return true;
 	}
 	
-	uint32_t insn;
-	EmuFetch(addr, &insn, sizeof(insn));
-	return insn;
+	return EmuFetch(addr, &insn, sizeof(insn));
 }
 
 } // end of namespace ppc440

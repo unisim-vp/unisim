@@ -55,11 +55,15 @@ lbz.disasm = {
 
 op lbzu(35[6]:rd[5]:ra[5]:sext<32>d[16])
 lbzu.execute = {
-	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
-	cpu->Int8Load(rd, ea);
+	if(unlikely(!cpu->Int8Load(rd, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -74,11 +78,15 @@ lbzu.disasm = {
 
 op lbzux(31[6]:rd[5]:ra[5]:rb[5]:119[10]:?[1])
 lbzux.execute = {
-	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
-	cpu->Int8Load(rd, ea);
+	if(unlikely(!cpu->Int8Load(rd, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -125,11 +133,15 @@ lha.disasm = {
 
 op lhau(43[6]:rd[5]:ra[5]:sext<32>d[16])
 lhau.execute = {
-	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
-	cpu->SInt16Load(rd, ea); // 16-bit load/no byte reverse/sign extend
+	if(unlikely(!cpu->SInt16Load(rd, ea))) return; // 16-bit load/no byte reverse/sign extend
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -144,11 +156,15 @@ lhau.disasm = {
 
 op lhaux(31[6]:rd[5]:ra[5]:rb[5]:375[10]:?[1])
 lhaux.execute = {
-	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
-	cpu->SInt16Load(rd, ea); // 16-bit load/no byte reverse/sign extend
+	if(unlikely(!cpu->SInt16Load(rd, ea))) return; // 16-bit load/no byte reverse/sign extend
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -195,11 +211,15 @@ lhz.disasm = {
 
 op lhzu(41[6]:rd[5]:ra[5]:sext<32>d[16])
 lhzu.execute = {
-	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
-	cpu->Int16Load(rd, ea); // 16-bit load/no byte reverse/no sign extend
+	if(unlikely(!cpu->Int16Load(rd, ea))) return; // 16-bit load/no byte reverse/no sign extend
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -214,11 +234,15 @@ lhzu.disasm = {
 
 op lhzux(31[6]:rd[5]:ra[5]:rb[5]:311[10]:?[1])
 lhzux.execute = {
-	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
-	cpu->Int16Load(rd, ea); // 16-bit load/no byte reverse/no sign extend
+	if(unlikely(!cpu->Int16Load(rd, ea))) return; // 16-bit load/no byte reverse/no sign extend
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -265,11 +289,15 @@ lwz.disasm = {
 
 op lwzu(33[6]:rd[5]:ra[5]:sext<32>d[16])
 lwzu.execute = {
-	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
-	cpu->Int32Load(rd, ea); // 32-bit load/no byte reverse/no sign extend
+	if(unlikely(!cpu->Int32Load(rd, ea))) return; // 32-bit load/no byte reverse/no sign extend
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -284,11 +312,15 @@ lwzu.disasm = {
 
 op lwzux(31[6]:rd[5]:ra[5]:rb[5]:55[10]:?[1])
 lwzux.execute = {
-	if(unlikely(ra == 0 || ra == rd)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0 || ra == rd))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
-	cpu->Int32Load(rd, ea); // 32-bit load/no byte reverse/no sign extend
+	if(unlikely(!cpu->Int32Load(rd, ea))) return; // 32-bit load/no byte reverse/no sign extend
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -340,11 +372,15 @@ stb.disasm = {
 
 op stbu(39[6]:rs[5]:ra[5]:sext<32>d[16])
 stbu.execute = {
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
-	cpu->Int8Store(rs, ea);
+	if(unlikely(!cpu->Int8Store(rs, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -359,11 +395,15 @@ stbu.disasm = {
 
 op stbux(31[6]:rs[5]:ra[5]:rb[5]:247[10]:?[1])
 stbux.execute = {
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
-	cpu->Int8Store(rs, ea);
+	if(unlikely(!cpu->Int8Store(rs, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -410,11 +450,15 @@ sth.disasm = {
 
 op sthu(45[6]:rs[5]:ra[5]:sext<32>d[16])
 sthu.execute = {
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
-	cpu->Int16Store(rs, ea);
+	if(unlikely(!cpu->Int16Store(rs, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -429,11 +473,15 @@ sthu.disasm = {
 
 op sthux(31[6]:rs[5]:ra[5]:rb[5]:439[10]:?[1])
 sthux.execute = {
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
-	cpu->Int16Store(rs, ea);
+	if(unlikely(!cpu->Int16Store(rs, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -480,11 +528,15 @@ stw.disasm = {
 
 op stwu(37[6]:rs[5]:ra[5]:sext<32>d[16])
 stwu.execute = {
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
-	cpu->Int32Store(rs, ea);
+	if(unlikely(!cpu->Int32Store(rs, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
@@ -499,11 +551,15 @@ stwu.disasm = {
 
 op stwux(31[6]:rs[5]:ra[5]:rb[5]:183[10]:?[1])
 stwux.execute = {
-	if(unlikely(ra == 0)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra == 0))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return;
+	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
-	cpu->Int32Store(rs, ea);
+	if(unlikely(!cpu->Int32Store(rs, ea))) return;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 }
