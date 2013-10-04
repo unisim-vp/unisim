@@ -222,24 +222,22 @@ public:
   /* Endian variables and methods                         START */
   /**************************************************************/
 
-  /** The endian of the processor.
-   */
-  unisim::util::endian::endian_type default_endianness;
-
   /** Set the endianness of the processor to the given endianness.
    * This method takes into charge to set the correct address mungling 
    *   depending on the endianness.
    *
    * @param endianness the endianness to use
    */
-  void SetEndianness(unisim::util::endian::endian_type endianness);
+  void
+  SetEndianness(unisim::util::endian::endian_type endianness);
   /** Get the endian configuration of the processor.
    *
    * @return the endian being used
    */
-  unisim::util::endian::endian_type GetEndianness() const
+  unisim::util::endian::endian_type
+  GetEndianness()
   {
-	  return default_endianness;
+    return (this->cpsr.E().Get() == 0) ? unisim::util::endian::E_LITTLE_ENDIAN : unisim::util::endian::E_BIG_ENDIAN;
   }
 
   /**************************************************************/

@@ -95,7 +95,6 @@ private:
 CPU::CPU(char const* name, Object* parent, endian_type endianness)
   : Object(name, parent)
   , logger(*this)
-  , default_endianness(endianness)
   , munged_address_mask8(0)
   , munged_address_mask16(0)
   , registers_registry()
@@ -119,7 +118,7 @@ CPU::CPU(char const* name, Object* parent, endian_type endianness)
   fake_fps = 0;
 
   // Initialize address mungling
-  SetEndianness(default_endianness);
+  this->SetEndianness( endianness );
 
   // initialize the registers debugging interface
   for(int i = 0; i < 15; i++) {
@@ -137,15 +136,14 @@ CPU::CPU(char const* name, Object* parent, endian_type endianness)
 
 /** Destructor.
  */
-CPU ::
-~CPU()
+CPU ::~CPU()
 {
-	for (map<string, Register *>::iterator it = registers_registry.begin();
-			it != registers_registry.end();
-			it++)
-		delete it->second;
+  for (map<string, Register *>::iterator it = registers_registry.begin();
+       it != registers_registry.end();
+       it++)
+    delete it->second;
 
-	registers_registry.clear();
+  registers_registry.clear();
 }
 
 /** Set the endianness of the processor to the given endianness.
@@ -155,22 +153,21 @@ CPU ::
  * @param endianness the endianness to use
  */
 void 
-CPU::
-SetEndianness(endian_type endianness)
+CPU::SetEndianness(endian_type endianness)
 {
-	default_endianness = endianness;
-
-	// set the variables to compute the final address on memory
-	//   accesses
-	if(endianness == E_BIG_ENDIAN) {
-		munged_address_mask8 = (uint32_t)0x03;;
-		munged_address_mask16 = (uint32_t)0x02;
-	} else {
-		munged_address_mask8 = 0;
-		munged_address_mask16 = 0;
-	}
+  // Setting the PSR according to endianness and init address masks
+  // needed to compute the final address of memory accesses
+  if(endianness == E_BIG_ENDIAN) {
+    this->cpsr.E().Set( 1 );
+    munged_address_mask8 = (uint32_t)0x03;;
+    munged_address_mask16 = (uint32_t)0x02;
+  } else {
+    this->cpsr.E().Set( 0 );
+    munged_address_mask8 = 0;
+    munged_address_mask16 = 0;
+  }
 }
-
+  
 /** Arrange the GPR mapping depending on initial and target running mode.
  *
  * @param src_mode the running mode the processor is currently in

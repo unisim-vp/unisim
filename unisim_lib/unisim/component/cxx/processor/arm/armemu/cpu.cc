@@ -126,8 +126,7 @@ CPU::CPU(const char *name, Object *parent)
   voltage(0),
   verbose(0),
   trap_on_instruction_counter(0),
-  default_endianness_string(default_endianness == E_BIG_ENDIAN ? 
-                            "big-endian" : "little-endian"),
+  default_endianness_string(GetEndianness() == E_BIG_ENDIAN ? "big-endian" : "little-endian"),
   requires_memory_access_reporting(true),
   requires_finished_instruction_reporting(true),
   param_default_endianness("default-endianness", this,
