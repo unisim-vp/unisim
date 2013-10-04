@@ -51,6 +51,16 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="use-rand-generator">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="vih">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
@@ -73,11 +83,11 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="atd-anx-stimulus-file">
+		<variable name="start-scan-at">
 			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>ATD.xml</value>
-			<description></description>
+			<data_type>signed 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>ATD start scan at &lt;delay&gt; ms</description>
 		</variable>
 	</object>
 	<object name="ATD1">
@@ -131,6 +141,16 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="use-rand-generator">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="vih">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
@@ -153,11 +173,11 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="atd-anx-stimulus-file">
+		<variable name="start-scan-at">
 			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>ATD.xml</value>
-			<description></description>
+			<data_type>signed 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>ATD start scan at &lt;delay&gt; ms</description>
 		</variable>
 	</object>
 	<object name="CPU">
@@ -465,7 +485,7 @@
 		<variable name="built-in-signal-generator-enable">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description>Use built-in signal generator or external instrument</description>
 			<enumeration>
 				<item>true</item>
@@ -616,6 +636,12 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="version">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>V3</value>
+			<description>MMC version. Supported are V3 and V4. Default is V3</description>
+		</variable>
 		<variable name="mode">
 			<type>parameter</type>
 			<data_type>unsigned 8-bit integer</data_type>
@@ -638,6 +664,12 @@
 			<type>parameter</type>
 			<data_type>unsigned 16-bit integer</data_type>
 			<value>0x0030</value>
+			<description></description>
+		</variable>
+		<variable name="memory-map">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0110,011B;11,0120,012F;12,0130,0137;13,0138,013F;14,02C0,02DF;15,0300,0327;16,0340,0367;17,0380,03BF;18,0007FF,0FFFFF;19,100000,13FFFF;20,400000,7FFFFF</value>
 			<description></description>
 		</variable>
 	</object>
@@ -1286,6 +1318,12 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0120</value>
+			<description></description>
+		</variable>
 	</object>
 	<object name="atd-pwm-stub">
 		<variable name="trace-enabled">
@@ -1436,6 +1474,12 @@
 			<value></value>
 			<description>DWARF v2/v3 to HTML output directory</description>
 		</variable>
+		<variable name="dwarf-to-xml-output-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>DWARF v2/v3 to XML output filename</description>
+		</variable>
 		<variable name="dwarf-register-number-mapping-filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
@@ -1452,25 +1496,17 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="debug-dwarf">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debugging of DWARF</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
-	<variable name="authors">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>Reda Nouacer &lt;reda.nouacer@cea.fr&gt;</value>
-		<description>Authors</description>
-	</variable>
-	<variable name="copyright">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>Copyright (C) 2008-2010, Commissariat a l'Energie Atomique (CEA)</value>
-		<description>Copyright</description>
-	</variable>
-	<variable name="description">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>UNISIM star12x, a Star12X System-on-Chip simulator with support of ELF32 binaries and s19 hex files, and targeted for automotive applications</value>
-		<description>Description</description>
-	</variable>
 	<variable name="dump-formulas">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -1561,7 +1597,7 @@
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.txt</value>
-		<description>Filename to keep logger output (the option file must be activated)</description>
+		<description>Filename to keep logger output _(the option file must be activated)</description>
 	</variable>
 	<variable name="kernel_logger.std_err">
 		<type>parameter</type>
@@ -1577,7 +1613,7 @@
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
-		<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+		<description>Colorize logger output through the standard error output _(only works if std_err is active)</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
@@ -1597,7 +1633,7 @@
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
-		<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+		<description>Colorize logger output through the standard output _(only works if std_out is active)</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
@@ -1627,36 +1663,12 @@
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.xml</value>
-		<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
-	</variable>
-	<variable name="license">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>BSD (see file COPYING)</value>
-		<description>License</description>
+		<description>Filename to keep logger xml output _(the option xml_file must be activated)</description>
 	</variable>
 	<variable name="program-counter-name">
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>CPU.PC</value>
 		<description>Target CPU program counter name</description>
-	</variable>
-	<variable name="program-name">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>UNISIM star12x</value>
-		<description>Program name</description>
-	</variable>
-	<variable name="schematic">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value></value>
-		<description>path to simulator schematic</description>
-	</variable>
-	<variable name="version">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>1.0</value>
-		<description>Version</description>
 	</variable>
 </variables>

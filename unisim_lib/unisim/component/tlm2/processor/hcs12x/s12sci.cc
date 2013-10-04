@@ -7,6 +7,7 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/s12sci.hh>
 #include <unisim/component/tlm2/processor/hcs12x/xint.hh>
+#include <unisim/util/converter/convert.hh>
 
 namespace unisim {
 namespace component {
@@ -48,6 +49,7 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 	, scidrl_register(0x00)
 
 	, scisr1_read(false)
+	, idle_to_send(false)
 
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
@@ -61,6 +63,11 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
+	, txd(true)
+	, txd_output_pin("TXD", this, txd, "TXD output")
+	, rxd(true)
+	, rxd_input_pin("RXD", this, rxd, "RXD input")
+
 {
 
 	interrupt_request(*this);
@@ -68,9 +75,14 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 	slave_socket.register_b_transport(this, &S12SCI::read_write);
 	bus_clock_socket.register_b_transport(this, &S12SCI::updateBusClock);
 
+	txd_output_pin.SetMutable(false);
+	rxd_input_pin.SetMutable(true);
+
 	SC_HAS_PROCESS(S12SCI);
 
 	SC_THREAD(RunRx);
+
+	SC_THREAD(RunTx);
 
 }
 
@@ -98,36 +110,317 @@ S12SCI::~S12SCI() {
 
 void S12SCI::RunRx() {
 
-	while (false) {
+	// TODO: implement Receiver module
+
+	uint8_t idleCounter = 0;
+	uint8_t breakCounter = 0;
+
+
+	while (true) {
 
 		while (!isReceiverEnabled()) {
+
 			wait(rx_run_event);
+			idleCounter = 0;
+			breakCounter = 0;
 		}
 
-		// TODO: implement Receiver module
-
+		uint8_t frameLength = 10;
+		if (isNineBitsMode()) {
+			frameLength = 11;
+		}
 		/**
-		 *  TODO:
 		 *   - SCISR2::RAF bit is set when the receiver detects a logic 0 during the RT1 time period of the start bit search.
 		 *   - SCISR2::RAF bit is cleared when the receiver detects an idle character.
 		 */
+
+		// check baud rate generator (isBaudRateGeneratorEnabled())
+
+		rx_shift_register = 0;
+
+		while (isReceiverEnabled() && isBaudRateGeneratorEnabled() && !isReceiverActive() && (idleCounter < frameLength)) {
+
+			wait(sci_baud_rate);
+			if (!rxd) {
+				setReceiverActive();
+				breakCounter++;
+				idleCounter = 0;
+			} else {
+				breakCounter = 0;
+				idleCounter++;
+			}
+		}
+
+		if (idleCounter == frameLength) {
+			// set Idle
+			idleCounter = 0;
+			if (isIdleLineWakeup() && isReceiverStandbay()) {
+				clearReceiverWakeup();
+			} else {
+				clearReceiverActive();
+				setIDLE();
+			}
+
+		} else {
+
+			uint16_t rx_shift_mask = 1;  // we don't need to keep the start bit in the RX shift register
+			uint8_t index = 1;
+
+			bool lastRXD = rxd;
+			//-- handle breaking detection
+
+			while (isReceiverEnabled() && isBaudRateGeneratorEnabled() && (index < frameLength)) {
+
+				wait(sci_baud_rate);
+				lastRXD = rxd;
+				if (rxd) {
+					rx_shift_register = rx_shift_register | rx_shift_mask;
+					breakCounter = 0;
+					if (!isIdleCountAfterStop()) {
+						idleCounter++;
+					}
+				} else {
+					breakCounter++;
+					idleCounter = 0;
+				}
+
+				rx_shift_mask = rx_shift_mask << 1;
+				index = index + 1;
+			}
+
+			if (!lastRXD) {
+				while (isReceiverEnabled() && isBaudRateGeneratorEnabled() && (breakCounter < getBreakLength() && !lastRXD)) {
+					wait(sci_baud_rate);
+					lastRXD = rxd;
+					if (!lastRXD) {
+						breakCounter++;
+					}
+				}
+
+				if (breakCounter == getBreakLength()) {
+					breakCounter = 0;
+					if (isBreakDetectEnabled()) {
+						setBreakDetectInterrupt();
+
+						// TODO: ? May set noise flag NF, or receiver flag RAF ?
+					} else {
+						setFramingError();
+						setRDRF();
+						scidrh_register = 0;
+						scidrl_register = 0;
+						// TODO: ? May set the overrun flag OR, noise flag NF, parity error flag PE, or the receiver active flag RAF ?
+					}
+				} else {
+					// Stop bit not detected and it is not a break frame
+					setFramingError();
+					setRDRF();
+					scidrh_register = 0;
+					scidrl_register = 0;
+				}
+			}
+			else if (index == frameLength) {
+
+				uint8_t lowByte = rx_shift_register & 0x00FF;
+				uint8_t highByte = 0;
+				 // clear stop bit
+				if (isNineBitsMode()) {
+					highByte = ((rx_shift_register & 0xFDFF) >> 8);
+				} else {
+					highByte = ((rx_shift_register & 0xFEFF) >> 8);
+				}
+
+				bool msBit = false;
+				if (isNineBitsMode()) {
+					msBit = highByte & 0x01; // get the 9th bit of the received data
+					highByte = highByte & 0xFE; // clear parity bit
+				} else {
+					msBit = lowByte & 0x0080; // get the 8th bit of the received data
+					lowByte = lowByte & 0x7F; // clear parity bit
+				}
+
+				if (isReceiverStandbay()) {
+					if (isAddressWakeup() && msBit) {
+						clearReceiverWakeup();
+					}
+				}
+
+				if (!isRDRFCleared()) {
+					setOverrunFlag();
+				} else {
+
+					if (isParityEnabled()) {
+						if (msBit != (getParity<uint8_t>(lowByte) ^ isOddParity())) {
+							setParityError();
+						}
+					}
+
+					scidrl_register = lowByte;
+					scidrh_register = (highByte << 7);
+
+					setRDRF();
+				}
+			}
+
+		}
+
 	}
+
 }
 
 void S12SCI::RunTx() {
 
-	// The receiver isn't a perpetual thread.
+	while (true) {
 
-	// TODO: implement transmitter functionality
+		/**
+		 *  Note:
+		 *  - TXD is high impedance (logic 1) any time the transmitter is disabled
+		 *  - When the transmit shift register is not transmitting a frame, the TXD pin goes to the idle condition, logic 1 (perpetual preamble).
+		 *  - If at any time software clears the TE bit in SCICR2, the transmitter enable signal goes low and the transmit signal goes idle
+		 */
 
-	/**
-	 *  TODO: take into account the SBK (Send Break Bit)
-	 *  Toggling SBK sends one break character (10 or 11 logic 0s, respectively 13 or 14 logics 0s if BRK13 is set).
-	 *  Toggling implies clearing the SBK bit before the break character has finished transmitting.
-	 *  As long as SBK is set, the transmitter continues to send complete break characters.
-	 */
+		while (!isTransmitterEnabled()) {
+
+			wait(tx_run_event);
+
+			// Shifts a frame out (preamble) through the TXD pin at configured baud rate
+			tx_send_idle();
+		}
+
+		while (isTransmitterEnabled() && !isTDRECleared() && !isSendBreak()) {
+
+			wait(tx_load_event | tx_run_event | tx_break_event);
+		}
+
+		while (isTransmitterEnabled() && (isTDRECleared() || isSendBreak())) {
+			if (isSendBreak()) {
+				/**
+				 *   - Toggling SBK sends one break character (10 or 11 logic 0s, respectively 13 or 14 logics 0s if BRK13 is set).
+				 *   - Toggling implies clearing the SBK bit before the break character has finished transmitting.
+				 *   - As long as SBK is set, the transmitter continues to send complete break characters.
+				 */
+
+				tx_shift_register = 0;
+				txShiftOut(0);
+
+			} else {
+				tx_shift_register = 0;
+				uint8_t length = 0;
+				tx_shift_register = scidrl_register; // Load scidrl (8-low bits)
+				bool isOddParity = (isParityEnabled())? getParity<uint8_t>(scidrl_register) : false;
+
+				if (isNineBitsMode()) {
+					// transmit 9-bits
+					if (isParityEnabled()) {
+						if (isOddParity) {
+							tx_shift_register = tx_shift_register | 0x0100; // set to 1 the MSB of 9-bits transmitted data
+						} else {
+							tx_shift_register = tx_shift_register & 0xFEFF; // set to 0 the MSB of 9-bits transmitted data
+						}
+					} else {
+						tx_shift_register = tx_shift_register | ((((uint16_t) scidrh_register) & 0x0040) << 2); // Load T8
+					}
+
+					// 3. Preface the frame with start bit and append it with a stop bit
+					tx_shift_register = tx_shift_register << 1; // load start bit (one logic 0) at position 0
+					tx_shift_register = tx_shift_register | 0x0400; // load stop bit (one logic 1) at position 11
+
+					// 4. Shifts a frame out through the TXD pin at configured baud rate
+					length = 11;
+
+				} else {
+					// transmit 8-bits
+					if (isParityEnabled()) {
+						if (isOddParity) {
+							tx_shift_register = tx_shift_register | 0x0080; // set to 1 the MSB of 8-bits transmitted data
+						} else {
+							tx_shift_register = tx_shift_register & 0xFF7F; // set to 0 the MSB of 8-bits transmitted data
+						}
+					}
+
+					// 3. Preface the frame with start bit and append it with a stop bit
+					tx_shift_register = tx_shift_register << 1; // load start bit (one logic 0) at position 0
+					tx_shift_register = tx_shift_register | 0x0200; // load stop bit (one logic 1) at position 10
+
+					// 4. Shifts a frame out through the TXD pin at configured baud rate
+					length = 10;
+				}
+				setTDRE();
+				txShiftOut(length);
+			}
+
+			if (idle_to_send) {
+				idle_to_send = false;
+				tx_send_idle();
+			}
+
+		}
+
+	}
+
 }
 
+inline void S12SCI::tx_send_idle() {
+	if (isNineBitsMode()) {
+		tx_shift_register = 0x07FF; // preamble of 11 logic 1s
+		txShiftOut(11);
+	} else {
+		tx_shift_register = 0x03FF; // preamble of 10 logic 1s
+		txShiftOut(10);
+	}
+}
+
+inline void S12SCI::txShiftOut(uint8_t length)
+{
+	// SCISR1::TC is set high when the SCISR1::TDRE flag is set and no data, preamble, or break character is being transmitted.
+	clearTC();
+
+	// check baud rate generator (isBaudRateGeneratorEnabled())
+	uint16_t tx_shift = tx_shift_register;
+	uint8_t index = 0;
+	while (isTransmitterEnabled() && isBaudRateGeneratorEnabled() && (index < length) && !isSendBreak()) {
+		if (isLoopOperationEnabled()) {
+			rxd =  tx_shift & 0x0001;
+		} else {
+			txd = tx_shift & 0x0001;
+		}
+
+		wait(sci_baud_rate);
+		tx_shift >> 1;
+	}
+
+	while (isTransmitterEnabled() && isSendBreak()) {
+		/**
+		 *   - Toggling SBK sends one break character (10 or 11 logic 0s, respectively 13 or 14 logics 0s if BRK13 is set).
+		 *   - Toggling implies clearing the SBK bit before the break character has finished transmitting.
+		 *   - As long as SBK is set, the transmitter continues to send complete break characters.
+		 */
+
+		tx_shift_register = 0;
+
+		if (isLoopOperationEnabled()) {
+			rxd =  0;
+		} else {
+			txd = 0;
+		}
+
+		wait(sci_baud_rate * getBreakLength());
+
+		if (!isSendBreak()) {
+			tx_shift_register = 1;
+			if (isLoopOperationEnabled()) {
+				rxd =  1;
+			} else {
+				txd = 1;
+			}
+
+			wait(sci_baud_rate);
+		}
+	}
+	setTC();
+
+	std::cout << sc_object::name() << "::txShiftOut transmission complete" << std::endl;
+
+}
 
 void S12SCI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
@@ -141,13 +434,10 @@ void S12SCI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
 
-			std::cerr << "S12SCI::Warning: READ access to 0x" << std::hex << (address - baseAddress) << std::endl;
-
+			std::cout << sc_object::name() <<"::read @" << (address - baseAddress) << " size " << data_length << std::endl;
 			read(address - baseAddress, data_ptr, data_length);
 		} else if (cmd == tlm::TLM_WRITE_COMMAND) {
-
-			std::cerr << "S12SCI::Warning: WRITE access to 0x" << std::hex << (address - baseAddress) << std::endl;
-
+			std::cout << sc_object::name() << "::write @" << (address - baseAddress) << " value " << std::hex << ((data_length == 1)? ((unsigned int) *((uint8_t*) data_ptr)) : ((unsigned int) *((uint16_t*) data_ptr))) << std::endl;
 			write(address - baseAddress, data_ptr, data_length);
 		}
 
@@ -209,11 +499,14 @@ bool S12SCI::read(unsigned int offset, const void *buffer, unsigned int data_len
 				uint16_t val = (scidrh_register << 8) | scidrl_register;
 				*((uint16_t *) buffer) = Host2BigEndian(val);
 
+				// clear RDRF, IDLE, OR, NF, FE, PF flags
 				if (isSCISR1_Read()) { (scisr1_register = scisr1_register & 0xC0); scisr1_read = false; }
 			}
 		} break;
 		case SCIDRL: {
 			*((uint8_t *) buffer) = scidrl_register;
+
+			// clear RDRF, IDLE, OR, NF, FE, PF flags
 			if (isSCISR1_Read()) { (scisr1_register = scisr1_register & 0xC0); scisr1_read = false; }
 		} break; // 1 bytes
 
@@ -287,9 +580,29 @@ bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_le
 			uint8_t old_scicr2 = scicr2_register;
 			scicr2_register = *((uint8_t *) buffer);
 
+			// check SCICR2::RE bit transition from 0 to 1
 			if (((old_scicr2 & 0x04) == 0) && ((scicr2_register & 0x04) != 0)) {
 				rx_run_event.notify();
 			}
+
+			// check SCICR2::TE bit transition from 0 to 1
+			std::cout << sc_object::name() << " Should Notify transmission" << std::endl;
+			if (((old_scicr2 & 0x08) == 0) && ((scicr2_register & 0x08) != 0)) {
+				std::cout << sc_object::name() << " Notify transmission" << std::endl;
+				tx_run_event.notify();
+				/** clearing and then setting TE bit during a transmission queues an idle character
+				 *  to be sent after the frame currently being transmitted.
+				 */
+				if (!isTransmissionComplete()) {
+					idle_to_send = true;
+				}
+			}
+
+			// check SCICR2::SBK bit transition from 0 to 1
+			if (((old_scicr2 & 0x01) == 0) && ((scicr2_register & 0x01) != 0)) {
+				tx_break_event.notify();
+			}
+
 		}
 
 		break; // 1 byte
@@ -307,18 +620,23 @@ bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_le
 				scidrh_register = val >> 8;
 				scidrl_register = val & 0x00FF;
 
-				if (isSCISR1_Read()) { (scisr1_register = scisr1_register & 0x3F); scisr1_read = false; }
+				clearTDRE();
 
-				RunTx();
+				if (isTransmitterEnabled()) {
+					tx_load_event.notify();
+				}
+
 			}
 
 		} break;
 		case SCIDRL: { // 1 bytes
 			scidrl_register = *((uint8_t *) buffer);
 
-			if (isSCISR1_Read()) { (scisr1_register = scisr1_register & 0x3F); scisr1_read = false; }
+			clearTDRE();
 
-			RunTx();
+			if (isTransmitterEnabled()) {
+				tx_load_event.notify();
+			}
 
 		} break;
 
@@ -354,7 +672,14 @@ bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_le
 
 void S12SCI::assertInterrupt(uint8_t interrupt_offset) {
 
-	if ((scicr2_register & 0xF0) == 0) return;
+	std::cout << sc_object::name() << "::assertInterrupt" << std::endl;
+
+	/**
+	 *  The Receiver Wakeup bit (RWU) enables the wakeup function and inhibits further receiver  interrupt requests.
+	 *  Normally, hardware wakes the receiver by automatically clearing RWU
+	 */
+
+	if (isReceiverWakeupEnabled()) return;
 
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();

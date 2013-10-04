@@ -207,4 +207,20 @@ inline void stringSplit(std::string str, const std::string delim, std::vector<st
 
 }
 
+/* Function to get parity of number n. It returns 1
+   if n has odd parity, and returns 0 if n has even
+   parity */
+template <typename T>
+inline bool getParity(T n)
+{
+    bool parity = false;
+    while (n)
+    {
+        parity = !parity;
+        n      = n & (n - 1);
+    }
+    return parity;
+}
+
+
 #endif /* CONVERT_HH_ */

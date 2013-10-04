@@ -684,26 +684,31 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI3.base-address", 0x00C0);
 	simulator->SetVariable("SCI3.interrupt-offset-channel", 0x88);
 	simulator->SetVariable("SCI3.debug-enabled", false);
+	simulator->SetVariable("SCI3.TXD", true);
 
 	simulator->SetVariable("SCI0.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI0.base-address", 0x00C8);
 	simulator->SetVariable("SCI0.interrupt-offset-channel", 0xD6);
 	simulator->SetVariable("SCI0.debug-enabled", false);
+	simulator->SetVariable("SCI0.TXD", true);
 
 	simulator->SetVariable("SCI1.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI1.base-address", 0x00D0);
 	simulator->SetVariable("SCI1.interrupt-offset-channel", 0xD4);
 	simulator->SetVariable("SCI1.debug-enabled", false);
+	simulator->SetVariable("SCI1.TXD", true);
 
 	simulator->SetVariable("SCI4.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI4.base-address", 0x0130);
 	simulator->SetVariable("SCI4.interrupt-offset-channel", 0x86);
 	simulator->SetVariable("SCI4.debug-enabled", false);
+	simulator->SetVariable("SCI4.TXD", true);
 
 	simulator->SetVariable("SCI5.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI5.base-address", 0x0138);
 	simulator->SetVariable("SCI5.interrupt-offset-channel", 0x84);
 	simulator->SetVariable("SCI5.debug-enabled", false);
+	simulator->SetVariable("SCI5.TXD", true);
 
 	simulator->SetVariable("SPI0.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI0.base-address", 0x00D8);
