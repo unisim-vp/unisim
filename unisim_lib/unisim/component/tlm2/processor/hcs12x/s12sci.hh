@@ -270,6 +270,13 @@ private:
 	bool rxd;
 	unisim::kernel::service::Register<bool> rxd_input_pin;
 
+	inline bool getRXD() {
+		if (isLoopOperationEnabled() && !isTx2RxInternal()) {
+			return (txd);
+		} else {
+			return (rxd);
+		}
+	}
 
 	// =============================================
 	// =            Registers                      =
@@ -303,7 +310,7 @@ private:
 		return ((scicr1_register & 0x80) != 0);
 	}
 
-	inline bool isRxTxExternal() { return ((scicr1_register & 0x20) != 0); }
+	inline bool isTx2RxInternal() { return ((scicr1_register & 0x20) == 0); }
 	inline bool isSCIStopWaitMode() { return ((scicr1_register & 0x40) != 0); }
 	inline bool isNineBitsMode() { /* SCICR1::M ?= 1 */ return ((scicr1_register & 0x10) != 0); }
 	inline bool isIdleLineWakeup() { return ((scicr1_register & 0x08) == 0); }

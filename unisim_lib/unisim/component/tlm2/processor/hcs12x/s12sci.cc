@@ -137,11 +137,13 @@ void S12SCI::RunRx() {
 		// check baud rate generator (isBaudRateGeneratorEnabled())
 
 		rx_shift_register = 0;
+		bool lastRXD = true;
 
 		while (isReceiverEnabled() && isBaudRateGeneratorEnabled() && !isReceiverActive() && (idleCounter < frameLength)) {
 
 			wait(sci_baud_rate);
-			if (!rxd) {
+			lastRXD = getRXD();
+			if (!lastRXD) {
 				setReceiverActive();
 				breakCounter++;
 				idleCounter = 0;
@@ -166,14 +168,13 @@ void S12SCI::RunRx() {
 			uint16_t rx_shift_mask = 1;  // we don't need to keep the start bit in the RX shift register
 			uint8_t index = 1;
 
-			bool lastRXD = rxd;
 			//-- handle breaking detection
 
 			while (isReceiverEnabled() && isBaudRateGeneratorEnabled() && (index < frameLength)) {
 
 				wait(sci_baud_rate);
-				lastRXD = rxd;
-				if (rxd) {
+				lastRXD = getRXD();
+				if (lastRXD) {
 					rx_shift_register = rx_shift_register | rx_shift_mask;
 					breakCounter = 0;
 					if (!isIdleCountAfterStop()) {
@@ -191,7 +192,7 @@ void S12SCI::RunRx() {
 			if (!lastRXD) {
 				while (isReceiverEnabled() && isBaudRateGeneratorEnabled() && (breakCounter < getBreakLength() && !lastRXD)) {
 					wait(sci_baud_rate);
-					lastRXD = rxd;
+					lastRXD = getRXD();
 					if (!lastRXD) {
 						breakCounter++;
 					}
@@ -292,6 +293,7 @@ void S12SCI::RunTx() {
 		}
 
 		while (isTransmitterEnabled() && (isTDRECleared() || isSendBreak())) {
+
 			if (isSendBreak()) {
 				/**
 				 *   - Toggling SBK sends one break character (10 or 11 logic 0s, respectively 13 or 14 logics 0s if BRK13 is set).
@@ -375,20 +377,20 @@ inline void S12SCI::txShiftOut(uint8_t length)
 	clearTC();
 
 	// check baud rate generator (isBaudRateGeneratorEnabled())
+
 	uint16_t tx_shift = tx_shift_register;
 	uint8_t index = 0;
-	while (isTransmitterEnabled() && isBaudRateGeneratorEnabled() && (index < length) && !isSendBreak()) {
-		if (isLoopOperationEnabled()) {
-			rxd =  tx_shift & 0x0001;
-		} else {
-			txd = tx_shift & 0x0001;
-		}
-
-		wait(sci_baud_rate);
+	while (isTransmitterEnabled() && isBaudRateGeneratorEnabled() && ((index < length) || isSendBreak())) {
+		txd = tx_shift & 0x0001;
 		tx_shift >> 1;
+		if (isTx2RxInternal()) {
+			rxd =  txd;
+		}
+		index++;
+		wait(sci_baud_rate);
 	}
 
-	while (isTransmitterEnabled() && isSendBreak()) {
+	while (isTransmitterEnabled() && isBaudRateGeneratorEnabled() && isSendBreak()) {
 		/**
 		 *   - Toggling SBK sends one break character (10 or 11 logic 0s, respectively 13 or 14 logics 0s if BRK13 is set).
 		 *   - Toggling implies clearing the SBK bit before the break character has finished transmitting.
@@ -397,20 +399,18 @@ inline void S12SCI::txShiftOut(uint8_t length)
 
 		tx_shift_register = 0;
 
-		if (isLoopOperationEnabled()) {
-			rxd =  0;
-		} else {
-			txd = 0;
+		txd = 0;
+		if (isTx2RxInternal()) {
+			rxd =  txd;
 		}
 
 		wait(sci_baud_rate * getBreakLength());
 
 		if (!isSendBreak()) {
 			tx_shift_register = 1;
-			if (isLoopOperationEnabled()) {
-				rxd =  1;
-			} else {
-				txd = 1;
+			txd = 1;
+			if (isTx2RxInternal()) {
+				rxd =  txd;
 			}
 
 			wait(sci_baud_rate);
