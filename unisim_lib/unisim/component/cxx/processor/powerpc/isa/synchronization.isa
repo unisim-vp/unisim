@@ -44,6 +44,8 @@ isync.execute = {
 	/* but we still must flush subsequent instruction in the prefetch buffer, forcing refetch */
 	//cpu->FlushSubsequentInstructions();
 	cpu->Isync();
+	
+	return true;
 }
 isync.disasm = { os << "isync"; }
 
@@ -51,7 +53,7 @@ op lwarx(31[6]:rd[5]:ra[5]:rb[5]:20[10]:?[1])
 lwarx.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Lwarx(rd, ea);
+	return cpu->Lwarx(rd, ea);
 }
 lwarx.disasm = {
 	os << "lwarx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -66,7 +68,7 @@ op stwcx_(31[6]:rs[5]:ra[5]:rb[5]:150[10]:1[1])
 stwcx_.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Stwcx(rs, ea);
+	return cpu->Stwcx(rs, ea);
 }
 
 stwcx_.disasm = {

@@ -42,7 +42,7 @@ op tlbre(31[6]:rd[5]:ra[5]:ws[5]:946[10]:0[1])
 tlbre.execute = {
 	// Read the input operand
 	uint32_t way = cpu->GetGPR(ra);
-	cpu->Tlbre(rd, way, ws);
+	return cpu->Tlbre(rd, way, ws);
 }
 tlbre.disasm = {
 	os << "tlbre r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << (unsigned int) ws;
@@ -52,7 +52,7 @@ op tlbsx(31[6]:rd[5]:ra[5]:rb[5]:914[10]:rc[1])
 tlbsx.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-	cpu->Tlbsx(rd, ea, rc);
+	return cpu->Tlbsx(rd, ea, rc);
 }
 tlbsx.disasm = {
 	os << "tlbsx" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -69,7 +69,7 @@ tlbwe.execute = {
 	uint32_t s = cpu->GetGPR(rs);
 	uint32_t a = cpu->GetGPR(ra);
 	
-	cpu->Tlbwe(s, a, ws);
+	return cpu->Tlbwe(s, a, ws);
 }
 tlbwe.disasm = {
 	os << "tlbwe r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", " << (unsigned int) ws;

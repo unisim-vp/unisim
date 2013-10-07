@@ -140,25 +140,20 @@ std::string CPU<CONFIG>::ReadString(typename CONFIG::address_t addr, unsigned in
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ProcessExceptions(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+inline void CPU<CONFIG>::ProcessExceptions(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	unsigned int exception_num;
-	if(unisim::util::arithmetic::BitScanForward(exception_num, exc & CONFIG::EXC_MASK_NON_MASKABLE))
+	if(unisim::util::arithmetic::BitScanForward(exception_num, exc_flags & exc_mask))
 	{
-		(this->*enter_non_maskable_isr_table[exception_num])(operation);
+		(this->*enter_isr_table[exception_num])(operation);
 	}
-	else if(GetDBCR0_IDM() && GetMSR_DE() && HasDebugException()) EnterDebugISR(operation);
-	else if(GetMSR_CE() && HasCriticalInputException()) EnterCriticalInputISR(operation);
-	else if(GetTCR_WIE() && GetMSR_CE() && HasWatchDogTimerException()) EnterWatchDogTimerISR(operation);
-	else if(GetMSR_EE() && HasExternalInputException()) EnterExternalInputISR(operation);
-	else if(GetTCR_FIE() && GetMSR_EE() && HasFixedIntervalTimerException()) EnterFixedIntervalTimerISR(operation);
-	else if(GetTCR_DIE() && GetMSR_EE() && HasDecrementerException()) EnterDecrementerISR(operation);
 }
 
 /* System call exception */
 template <class CONFIG>
 void CPU<CONFIG>::EnterSystemCallISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	instruction_counter++; // account for sc instruction
 	num_interrupts++;
 	num_system_call_interrupts++;
 	
@@ -589,7 +584,7 @@ void CPU<CONFIG>::EnterMachineCheckISR(unisim::component::cxx::processor::powerp
 	InvalidateITLB();
 	InvalidateDTLB();
 
-	switch(exc & CONFIG::EXC_MASK_MACHINE_CHECK)
+	switch(exc_flags & CONFIG::EXC_MASK_MACHINE_CHECK)
 	{
 		case CONFIG::EXC_MASK_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS:
 			break;
@@ -607,7 +602,7 @@ void CPU<CONFIG>::EnterMachineCheckISR(unisim::component::cxx::processor::powerp
 	
 	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_MACHINE_CHECK));
 
-	ResetExceptionMask(CONFIG::EXC_MASK_MACHINE_CHECK);
+	ResetExceptionFlags(CONFIG::EXC_MASK_MACHINE_CHECK);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -784,7 +779,7 @@ void CPU<CONFIG>::EnterDataStorageISR(unisim::component::cxx::processor::powerpc
 
 	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_STORAGE));
 	
-	ResetExceptionMask(CONFIG::EXC_MASK_DATA_STORAGE);
+	ResetExceptionFlags(CONFIG::EXC_MASK_DATA_STORAGE);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -830,7 +825,7 @@ void CPU<CONFIG>::EnterInstructionStorageISR(unisim::component::cxx::processor::
 	
 	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_STORAGE));
 	
-	ResetExceptionMask(CONFIG::EXC_MASK_INSTRUCTION_STORAGE);
+	ResetExceptionFlags(CONFIG::EXC_MASK_INSTRUCTION_STORAGE);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -1013,7 +1008,7 @@ void CPU<CONFIG>::EnterProgramISR(unisim::component::cxx::processor::powerpc::pp
 	uint32_t esr_value = operation->get_esr() & (CONFIG::ESR_PIL_MASK | CONFIG::ESR_PPR_MASK | CONFIG::ESR_PTR_MASK | CONFIG::ESR_PUO_MASK
 	                                           | CONFIG::ESR_FP_MASK | CONFIG::ESR_AP_MASK | CONFIG::ESR_PIE_MASK | CONFIG::ESR_PCRE_MASK
 	                                           | CONFIG::ESR_PCMP_MASK | CONFIG::ESR_PCRF_MASK);
-	switch(exc & CONFIG::EXC_MASK_PROGRAM)
+	switch(exc_flags & CONFIG::EXC_MASK_PROGRAM)
 	{
 		case CONFIG::EXC_MASK_PROGRAM_ILLEGAL_INSTRUCTION:
 			esr_value |= CONFIG::ESR_PIL_MASK;
@@ -1022,6 +1017,7 @@ void CPU<CONFIG>::EnterProgramISR(unisim::component::cxx::processor::powerpc::pp
 			esr_value |= CONFIG::ESR_PPR_MASK;
 			break;
 		case CONFIG::EXC_MASK_PROGRAM_TRAP:
+			instruction_counter++;  // account for the trap instruction
 			esr_value |= CONFIG::ESR_PTR_MASK;
 			break;
 		case CONFIG::EXC_MASK_PROGRAM_FLOATING_POINT:
@@ -1035,7 +1031,7 @@ void CPU<CONFIG>::EnterProgramISR(unisim::component::cxx::processor::powerpc::pp
 	
 	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_PROGRAM));
 	
-	ResetExceptionMask(CONFIG::EXC_MASK_PROGRAM);
+	ResetExceptionFlags(CONFIG::EXC_MASK_PROGRAM);
 	
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{

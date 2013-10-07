@@ -802,9 +802,6 @@ public:
 	static const unsigned int EXC_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS     = 17;
 	static const unsigned int EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS            = 18;
 	static const unsigned int EXC_MACHINE_CHECK_TLB_ASYNCHRONOUS             = 19;
-	
-	static const unsigned int NUM_NON_MASKABLE_EXCEPTIONS = EXC_MACHINE_CHECK_TLB_ASYNCHRONOUS + 1;
-	
 	// - Maskable
 	static const unsigned int EXC_DEBUG                                      = 20;
 	static const unsigned int EXC_CRITICAL_INPUT                             = 21;
@@ -812,6 +809,8 @@ public:
 	static const unsigned int EXC_EXTERNAL_INPUT                             = 23;
 	static const unsigned int EXC_FIXED_INTERVAL_TIMER                       = 24;
 	static const unsigned int EXC_DECREMENTER                                = 25;
+	
+	static const unsigned int NUM_EXCEPTIONS = EXC_DECREMENTER + 1;
 	
 	// Exception masks
 	static const uint32_t EXC_MASK_DATA_STORAGE_READ_ACCESS_CONTROL           = 1 << EXC_DATA_STORAGE_READ_ACCESS_CONTROL;

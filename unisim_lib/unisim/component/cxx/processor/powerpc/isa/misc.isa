@@ -41,6 +41,7 @@
 op sc(17[6]:?[24]:1[1]:?[1])
 sc.execute = {
 	cpu->SetException(CONFIG::EXC_SYSTEM_CALL);
+	return false;
 }
 sc.disasm = {
 	os << "sc";
@@ -48,7 +49,7 @@ sc.disasm = {
 
 op rfi(19[6]:?[15]:50[10]:?[1])
 rfi.execute = {
-	cpu->Rfi();
+	return cpu->Rfi();
 }
 rfi.disasm = {
 	os << "rfi" << endl;
@@ -72,7 +73,12 @@ tw.execute = {
 	if(a == b && (to & 4)) trap = 1;
 	if((uint32_t) a < (uint32_t) b && (to & 2)) trap = 1;
 	if((uint32_t) a > (uint32_t) b && (to & 1)) trap = 1;
-	if(unlikely(trap)) cpu->SetException(CONFIG::EXC_PROGRAM_TRAP);
+	if(unlikely(trap))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_TRAP);
+		return false;
+	}
+	return true;
 }
 tw.disasm = {
 	os << "tw " << (unsigned int) to << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -89,7 +95,12 @@ twi.execute = {
 	if(a == simm && (to & 4)) trap = 1;
 	if((uint32_t) a < (uint32_t) simm && (to & 2)) trap = 1;
 	if((uint32_t) a > (uint32_t) simm && (to & 1)) trap = 1;
-	if(unlikely(trap)) cpu->SetException(CONFIG::EXC_PROGRAM_TRAP);
+	if(unlikely(trap))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_TRAP);
+		return false;
+	}
+	return true;
 }
 twi.disasm = {
 	os << "twi " << (unsigned int) to << ", r" << (unsigned int) ra << ", " << simm;
@@ -119,6 +130,8 @@ mcrxr.execute = {
 	
 	// Update XER
 	cpu->SetXER(xer);
+	
+	return true;
 }
 mcrxr.disasm = {
 	os << "mcrxr cr" << (unsigned int) crfD;
@@ -128,6 +141,8 @@ op mfcr(31[6]:rd[5]:?[10]:19[10]:?[1])
 mfcr.execute = {
 	// Move CR to destination GPR
 	cpu->SetGPR(rd, cpu->GetCR());
+	
+	return true;
 }
 mfcr.disasm = {
 	os << "mfcr r" << (unsigned int) rd;
@@ -139,11 +154,13 @@ mfmsr.execute = {
 	if(unlikely(msr & CONFIG::MSR_PR_MASK))
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 
 	// Move MSR to destination GPR
 	cpu->SetGPR(rd, msr);
+	
+	return true;
 }
 mfmsr.disasm = {
 	os << "mfmsr r" << (unsigned int) rd;
@@ -165,11 +182,13 @@ mfspr.execute = {
 			result = cpu->GetCTR();
 			break;
 		default:
-			if(unlikely(!cpu->GetSPR(n, result))) return;
+			if(unlikely(!cpu->GetSPR(n, result))) return false;
 			break;
 	}
 	
 	cpu->SetGPR(rd, result);
+	
+	return true;
 }
 mfspr.disasm = {
 	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
@@ -232,9 +251,10 @@ mtspr.execute = {
 			cpu->SetCTR(result);
 			break;
 		default:
-			cpu->SetSPR(n, result);
-			break;
+			return cpu->SetSPR(n, result);
 	}
+	
+	return true;
 }
 mtspr.disasm = {
 	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
@@ -291,7 +311,9 @@ mftb.execute = {
 		default:
 			/* illegal instruction */
 			cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+			return false;
 	}
+	return true;
 }
 mftb.disasm = {
 	uint32_t d = ((tbr & 0x1f) << 5) + ((tbr >> 5) & 0x1f);
@@ -318,6 +340,8 @@ mtcrf.execute = {
 	
 	// Update CR
 	cpu->SetCR(cr);
+	
+	return true;
 }
 mtcrf.disasm = {
 	if(crm == 0xff)
@@ -332,10 +356,12 @@ mtmsr.execute = {
 	if(unlikely(msr & CONFIG::MSR_PR_MASK))
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 
 	cpu->SetMSR(cpu->GetGPR(rs));
+	
+	return true;
 }
 mtmsr.disasm = {
 	os << "mtmsr r" << (unsigned int) rs;

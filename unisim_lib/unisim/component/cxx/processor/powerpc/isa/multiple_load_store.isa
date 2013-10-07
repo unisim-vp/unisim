@@ -43,16 +43,18 @@ lmw.execute = {
 	if(unlikely(ra >= rd))
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
-		return;
+		return false;
 	}
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 
 	unsigned int r;
 	for(r = rd; r < 32; r++)
 	{
-		if(unlikely(!cpu->Int32Load(r, ea))) return;
+		if(unlikely(!cpu->Int32Load(r, ea))) return false;
 		ea = ea + 4;
 	}
+	
+	return true;
 }
 lmw.disasm = {
 	os << "lmw r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
@@ -71,9 +73,11 @@ stmw.execute = {
 
 	for(r = rs; r < 32; r++)
 	{
-		if(unlikely(!cpu->Int32Store(r, ea))) return;
+		if(unlikely(!cpu->Int32Store(r, ea))) return false;
 		ea = ea + 4;
 	}
+	
+	return true;
 }
 stmw.disasm = {
 	os << "stmw r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";

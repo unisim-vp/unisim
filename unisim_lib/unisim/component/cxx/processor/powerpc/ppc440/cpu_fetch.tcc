@@ -54,7 +54,7 @@ void CPU<CONFIG>::FlushSubsequentInstructions()
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size)
+inline bool CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;

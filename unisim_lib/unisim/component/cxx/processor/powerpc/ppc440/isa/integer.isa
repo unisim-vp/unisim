@@ -74,6 +74,8 @@ isel.execute = {
 	result = (cr & (1UL << (31 - crb))) ? (ra ? a : 0) : b;
 	
 	cpu->SetGPR(rd, result);
+	
+	return true;
 }
 
 isel.disasm = {
@@ -130,6 +132,8 @@ dlmzb.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 
 dlmzb.disasm = {
@@ -180,6 +184,8 @@ macchw.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 macchw.disasm = {
@@ -230,6 +236,8 @@ macchws.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 macchws.disasm = {
@@ -280,6 +288,8 @@ macchwsu.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 macchwsu.disasm = {
@@ -330,6 +340,8 @@ macchwu.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 macchwu.disasm = {
@@ -380,6 +392,8 @@ machhw.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 machhw.disasm = {
@@ -430,6 +444,8 @@ machhws.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 machhws.disasm = {
@@ -480,6 +496,8 @@ machhwsu.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 machhwsu.disasm = {
@@ -530,6 +548,8 @@ machhwu.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 machhwu.disasm = {
@@ -580,6 +600,8 @@ maclhw.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 maclhw.disasm = {
@@ -630,6 +652,8 @@ maclhws.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 maclhws.disasm = {
@@ -680,6 +704,8 @@ maclhwsu.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 maclhwsu.disasm = {
@@ -731,6 +757,8 @@ maclhwu.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 maclhwu.disasm = {
@@ -766,6 +794,8 @@ mulchw.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 
 mulchw.disasm = {
@@ -801,6 +831,8 @@ mulchwu.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 
 mulchwu.disasm = {
@@ -836,6 +868,8 @@ mulhhw.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 
 mulhhw.disasm = {
@@ -871,6 +905,8 @@ mulhhwu.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 
 mulhhwu.disasm = {
@@ -905,6 +941,8 @@ mullhw.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 
 mullhw.disasm = {
@@ -940,6 +978,8 @@ mullhwu.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 
 mullhwu.disasm = {
@@ -991,6 +1031,8 @@ nmacchw.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 nmacchw.disasm = {
@@ -1041,6 +1083,8 @@ nmacchws.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 nmacchws.disasm = {
@@ -1091,6 +1135,8 @@ nmachhw.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 nmachhw.disasm = {
@@ -1141,6 +1187,8 @@ nmachhws.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 nmachhws.disasm = {
@@ -1191,6 +1239,8 @@ nmaclhw.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 nmaclhw.disasm = {
@@ -1241,6 +1291,8 @@ nmaclhws.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 
 nmaclhws.disasm = {

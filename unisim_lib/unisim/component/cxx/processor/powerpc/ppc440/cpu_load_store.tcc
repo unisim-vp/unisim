@@ -709,33 +709,37 @@ bool CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t e
 
 /* Linked Load-Store */
 template <class CONFIG>
-void CPU<CONFIG>::Lwarx(unsigned int rd, typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Lwarx(unsigned int rd, typename CONFIG::address_t addr)
 {
-	if(unlikely(!Int32Load(rd, addr))) return;
+	if(unlikely(!Int32Load(rd, addr))) return false;
 
 	reserve = true;
 	reserve_addr = addr;
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Stwcx(unsigned int rs, typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Stwcx(unsigned int rs, typename CONFIG::address_t addr)
 {
 	// TBD
 	if(reserve)
 	{
 		if(reserve_addr == addr)
 		{
-			if(unlikely(!Int32Store(rs, addr))) return;
+			if(unlikely(!Int32Store(rs, addr))) return false;
 
 			/* clear CR0[LT][GT], setCR0[EQ] and copy XER[SO] to CR0[SO] */
 			SetCR((GetCR() & ~CONFIG::CR0_MASK) | CONFIG::CR0_EQ_MASK | ((GetXER() & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0));
 			reserve = false;
-			return;
+			return true;
 		}
 	}
 
 	/* clear CR0 and copy XER[SO] to CR0[SO] */
 	SetCR((GetCR() & ~CONFIG::CR0_MASK) | ((GetXER() & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0));
+	
+	return true;
 }
 
 /* Memory injection */

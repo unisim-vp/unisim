@@ -35,7 +35,7 @@
 op rfci(19[6]:?[15]:51[10]:?[1])
 
 rfci.execute = {
-	cpu->Rfci();
+	return cpu->Rfci();
 }
 
 rfci.disasm = {
@@ -45,7 +45,7 @@ rfci.disasm = {
 op rfmci(19[6]:?[15]:38[10]:?[1])
 
 rfmci.execute = {
-	cpu->Rfmci();
+	return cpu->Rfmci();
 }
 
 rfmci.disasm = {
@@ -57,6 +57,8 @@ op mfdcr(31[6]:rd[5]:dcrf[10]:323[10]:?[1])
 mfdcr.execute = {
 	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
 	cpu->MoveFromDCR(rd, dcrn);
+	
+	return true;
 }
 
 mfdcr.disasm = {
@@ -68,6 +70,7 @@ op mfdcrx(31[6]:rd[5]:ra[5]:?[5]:259[10]:?[1])
 
 mfdcrx.execute = {
 	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 
 mfdcrx.disasm = {
@@ -78,6 +81,7 @@ op mfdcrux(31[6]:rd[5]:ra[5]:?[5]:291[10]:?[1])
 
 mfdcrux.execute = {
 	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 
 mfdcrux.disasm = {
@@ -89,6 +93,8 @@ op mtdcr(31[6]:rs[5]:dcrf[10]:451[10]:?[1])
 mtdcr.execute = {
 	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
 	cpu->MoveToDCR(rs, dcrn);
+	
+	return true;
 }
 
 mtdcr.disasm = {
@@ -100,6 +106,7 @@ op mtdcrx(31[6]:rs[5]:ra[5]:?[5]:387[10]:?[1])
 
 mtdcrx.execute = {
 	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 
 mtdcrx.disasm = {
@@ -110,6 +117,7 @@ op mtdcrux(31[6]:rs[5]:ra[5]:?[5]:419[10]:?[1])
 
 mtdcrux.execute = {
 	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 
 mtdcrux.disasm = {
@@ -123,7 +131,7 @@ wrtee.execute = {
 	if(unlikely(msr & CONFIG::MSR_PR_MASK))
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 	
 	// Read the input operand
@@ -133,6 +141,8 @@ wrtee.execute = {
 		cpu->SetMSR_EE();
 	else
 		cpu->ResetMSR_EE();
+	
+	return true;
 }
 
 wrtee.disasm = {
@@ -146,13 +156,15 @@ wrteei.execute = {
 	if(unlikely(msr & CONFIG::MSR_PR_MASK))
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 	
 	if(e)
 		cpu->SetMSR_EE();
 	else
 		cpu->ResetMSR_EE();
+	
+	return true;
 }
 
 wrteei.disasm = {
@@ -161,6 +173,7 @@ wrteei.disasm = {
 
 op nop(31[6]:?[5]:?[5]:?[5]:2[2]:?[3]:18[5]:?[1]) /* reserved no-ops */
 nop.execute = {
+	return true;
 }
 
 nop.disasm = {

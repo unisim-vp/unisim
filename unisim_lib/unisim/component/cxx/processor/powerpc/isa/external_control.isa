@@ -41,6 +41,7 @@ EXTERNAL CONTROL INSTRUCTIONS
 op eciwx(31[6]:rd[5]:ra[5]:rb[5]:310[10]:?[1])
 eciwx.execute = {
 	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 eciwx.disasm = {
 	os << "eciwx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -49,6 +50,7 @@ eciwx.disasm = {
 op ecowx(31[6]:rs[5]:ra[5]:rb[5]:438[10]:?[1])
 ecowx.execute = {
 	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 ecowx.disasm = {
 	os << "ecowx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;

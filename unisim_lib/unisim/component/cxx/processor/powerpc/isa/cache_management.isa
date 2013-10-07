@@ -42,7 +42,7 @@ op dcba(31[6]:?[5]:ra[5]:rb[5]:758[10]:?[1])
 dcba.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Dcba(ea);
+	return cpu->Dcba(ea);
 }
 dcba.disasm = {
 	os << "dcba r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -53,7 +53,7 @@ op dcbf(31[6]:?[5]:ra[5]:rb[5]:86[10]:?[1])
 dcbf.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Dcbf(ea);
+	return cpu->Dcbf(ea);
 }
 dcbf.disasm = {
 	os << "dcbf r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -62,7 +62,7 @@ dcbf.disasm = {
 op dcbi(31[6]:?[5]:ra[5]:rb[5]:470[10]:?[1])
 dcbi.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-	cpu->Dcbi(ea);
+	return cpu->Dcbi(ea);
 }
 dcbi.disasm = {
 	os << "dcbi r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -72,7 +72,7 @@ op dcbst(31[6]:?[5]:ra[5]:rb[5]:54[10]:?[1])
 dcbst.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Dcbst(ea);
+	return cpu->Dcbst(ea);
 }
 dcbst.disasm = {
 	os << "dcbst r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -81,6 +81,7 @@ dcbst.disasm = {
 op dcbt(31[6]:?[5]:ra[5]:rb[5]:278[10]:?[1])
 dcbt.execute = {
 	/* this instruction has no architectural effect (software prefetching) */
+	return true;
 }
 dcbt.disasm = {
 	os << "dcbt r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -89,6 +90,7 @@ dcbt.disasm = {
 op dcbtst(31[6]:?[5]:ra[5]:rb[5]:246[10]:?[1])
 dcbtst.execute = {
 	/* this instruction has no architectural effect (software prefetching) */
+	return true;
 }
 dcbtst.disasm = {
 	os << "dcbtst r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -99,7 +101,7 @@ dcbz.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Dcbz(ea);
+	return cpu->Dcbz(ea);
 }
 dcbz.disasm = {
 	os << "dcbz r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -109,7 +111,7 @@ op icbi(31[6]:?[5]:ra[5]:rb[5]:982[10]:?[1])
 icbi.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Icbi(ea);
+	return cpu->Icbi(ea);
 }
 icbi.disasm = {
 	os << "icbi r" << (unsigned int) ra << ", r" << (unsigned int) rb;

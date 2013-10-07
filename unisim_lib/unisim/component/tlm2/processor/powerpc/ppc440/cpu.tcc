@@ -75,6 +75,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, max_idle_time()
 	, run_time()
 	, idle_time()
+	, timers_update_deadline()
 	, enable_host_idle(false)
 	, ev_max_idle()
 	, ev_irq()
@@ -254,12 +255,12 @@ void CPU<CONFIG>::Synchronize()
 {
 	wait(cpu_time);
 	cpu_time = SC_ZERO_TIME;
-//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
+	if(!inherited::linux_os_import) RunInternalTimers();
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ProcessExternalEvents()
+inline void CPU<CONFIG>::ProcessExternalEvents()
 {
 	if(!external_event_schedule.Empty())
 	{
@@ -420,6 +421,16 @@ inline void CPU<CONFIG>::RunInternalTimers()
 	timer_time += t;
 #endif
 #endif
+	timers_update_deadline = timer_time + (inherited::GetTimersDeadline() * timer_cycle_time);
+}
+
+template <class CONFIG>
+inline void CPU<CONFIG>::LazyRunInternalTimers()
+{
+	if(unlikely(run_time >= timers_update_deadline))
+	{
+		RunInternalTimers();
+	}
 }
 
 template <class CONFIG>
@@ -454,16 +465,28 @@ void CPU<CONFIG>::Idle()
 {
 	// This is called within thread Run()
 	
+	// First synchronize with other threads
+	Synchronize();
+	
 	// Compute the time to consume before an internal timer event occurs
 	const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
 	max_idle_time = timer_cycle_time;
-	max_idle_time *= inherited::GetMaxIdleTime();
-	// Also account for locally spent time from the time decoupling point of view
-	max_idle_time += cpu_time;
+	max_idle_time *= inherited::GetMaxIdleTime(); // max idle time (timer_time based)
+
+	max_idle_time += timer_time;
+	max_idle_time -= run_time;                    // max idle time (run_time based)
 	
+	if((run_time - timer_time) > timer_cycle_time)
+	{
+		std::cerr << "WARNING! (run_time - timer_time)= " << (run_time - timer_time) << ", timer_cycle_time=" << timer_cycle_time << std::endl;
+	}
+	//std::cerr << "run_time + max_idle_time = " << (run_time + max_idle_time) << ", timers_update_deadline=" << timers_update_deadline << std::endl;
+	if(timers_update_deadline > (run_time + max_idle_time))
+	{
+		std::cerr << "WARNING! timers_update_deadline= " << timers_update_deadline << "> (run_time + max_idle_time)=" << (run_time + max_idle_time) << std::endl;
+	}
 	// Notify an event
 	ev_max_idle.notify(max_idle_time);
-	
 	
 	// wait for either an internal timer event or an external event
 	sc_time old_time_stamp(sc_time_stamp());
@@ -477,32 +500,18 @@ void CPU<CONFIG>::Idle()
 	sc_time delta_time(new_time_stamp);
 	delta_time -= old_time_stamp;
 	
-	// Check whether CPU was really idle
-	if(delta_time > cpu_time)
+	if(enable_host_idle)
 	{
-		// CPU was really idle
-		sc_time true_idle_time(delta_time);
-		true_idle_time -= cpu_time;
-		if(enable_host_idle)
-		{
-			usleep(true_idle_time.to_seconds() * 1.0e6); // leave host CPU when target CPU is idle
-		}
-		idle_time += true_idle_time;
-		cpu_time = SC_ZERO_TIME;
+		usleep(delta_time.to_seconds() * 1.0e6); // leave host CPU when target CPU is idle
 	}
-	else
-	{
-		// CPU was not really idle because an external event was delayed because of time decoupling
-		cpu_time -= delta_time;
-	}
+	
+	idle_time += delta_time;
 	
 	// update overall run time
-//	assert(new_time_stamp >= run_time);
 	run_time = new_time_stamp;
-	run_time += cpu_time;
 	
 	// run internal timers
-	RunInternalTimers();
+	LazyRunInternalTimers();
 	
 	// check for external events
 	ProcessExternalEvents();
@@ -541,7 +550,7 @@ void CPU<CONFIG>::Run()
 			// update absolute time (local time + sc_time_stamp)
 			run_time += time_per_instruction;
 			// Run internal timers
-			RunInternalTimers();
+			LazyRunInternalTimers();
 			// check IRQs
 			ProcessExternalEvents();
 			// Periodically synchronize with other threads
@@ -579,6 +588,7 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 					const sc_time& read_lat = dmi_region->GetReadLatency(size);
 					cpu_time += read_lat;
 					run_time += read_lat;
+					if(!inherited::linux_os_import) LazyRunInternalTimers();
 					return true;
 				}
 				else
@@ -607,9 +617,9 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 	
 	icurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
-//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
+	if(!inherited::linux_os_import) LazyRunInternalTimers();
 	
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -660,6 +670,7 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 					const sc_time& read_lat = dmi_region->GetReadLatency(size);
 					cpu_time += read_lat;
 					run_time += read_lat;
+					if(!inherited::linux_os_import) LazyRunInternalTimers();
 					return true;
 				}
 				else
@@ -689,9 +700,9 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 	
 	dcurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
-//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
+	if(!inherited::linux_os_import) LazyRunInternalTimers();
 
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -742,6 +753,7 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 					const sc_time& write_lat = dmi_region->GetWriteLatency(size);
 					cpu_time += write_lat;
 					run_time += write_lat;
+					if(!inherited::linux_os_import) LazyRunInternalTimers();
 					return true;
 				}
 				else
@@ -771,9 +783,9 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 	
 	dcuwr_plb_master_sock->b_transport(*payload, cpu_time);
 	
-//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
+	if(!inherited::linux_os_import) LazyRunInternalTimers();
 
 	tlm::tlm_response_status status = payload->get_response_status();
 
@@ -814,9 +826,9 @@ void CPU<CONFIG>::DCRRead(unsigned int dcrn, uint32_t& value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
-//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
+	LazyRunInternalTimers();
 
 	/* tlm::tlm_response_status status = */ payload->get_response_status();
 	
@@ -841,14 +853,20 @@ void CPU<CONFIG>::DCRWrite(unsigned int dcrn, uint32_t value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
-//	assert(sc_time_stamp() >= run_time);
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
+	LazyRunInternalTimers();
 
 	/* tlm::tlm_response_status status = */ payload->get_response_status();
 
 	payload->release();
 
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::end_of_simulation()
+{
+	if(!inherited::linux_os_import) RunInternalTimers(); // make run_time match timer_time
 }
 
 } // end of namespace ppc440

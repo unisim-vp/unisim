@@ -43,8 +43,9 @@ decl {
 set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
-action {void} execute({typename CONFIG::STATE *} {cpu}) {
+action {bool} execute({typename CONFIG::STATE *} {cpu}) {
 	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 
 action {void} disasm({typename CONFIG::STATE *} {cpu}, {std::ostream&} {os}) {

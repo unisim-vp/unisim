@@ -831,18 +831,18 @@ void CPU<CONFIG>::DumpUTLB(std::ostream& os, int highlight_index, int hightligh_
 
 /* TLB management */
 template <class CONFIG>
-void CPU<CONFIG>::Tlbre(unsigned int rd, uint32_t way, uint8_t ws)
+bool CPU<CONFIG>::Tlbre(unsigned int rd, uint32_t way, uint8_t ws)
 {
 	if(GetMSR_PR())
 	{
 		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 	
 	if(ws > 2)
 	{
 		logger << DebugWarning << "At 0x" << std::hex << GetCIA() << std::dec << ", operand \'ws\' of instruction tlbre is > 2" << EndDebugWarning;
-		return;
+		return true;
 	}
 	
 	way = way & (TLBSet<typename CONFIG::UTLB_CONFIG>::ASSOCIATIVITY - 1);
@@ -861,10 +861,12 @@ void CPU<CONFIG>::Tlbre(unsigned int rd, uint32_t way, uint8_t ws)
 			SetGPR(rd, tlb_entry.pte.Get(ws) & (GetCCR0_CRPE() ? CONFIG::TLBE2_MASK : CONFIG::TLBE2_DATA_MASK));
 			break;
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Tlbsx(unsigned int rd, typename CONFIG::address_t addr, unsigned int rc)
+bool CPU<CONFIG>::Tlbsx(unsigned int rd, typename CONFIG::address_t addr, unsigned int rc)
 {
 	MMUAccess<CONFIG> mmu_access;
 	
@@ -896,10 +898,12 @@ void CPU<CONFIG>::Tlbsx(unsigned int rd, typename CONFIG::address_t addr, unsign
 				 ((GetXER() & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0));
 		}
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
+bool CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
 {
 	if(unlikely(IsVerboseTlbwe()))
 	{
@@ -909,13 +913,13 @@ void CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
 	if(GetMSR_PR())
 	{
 		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 	
 	if(ws > 2)
 	{
 		logger << DebugWarning << "At 0x" << std::hex << GetCIA() << std::dec << ", operand \'ws\' of instruction tlbwe is > 2" << EndDebugWarning;
-		return;
+		return true;
 	}
 
 	way = way & (TLBSet<typename CONFIG::UTLB_CONFIG>::ASSOCIATIVITY - 1);
@@ -942,6 +946,8 @@ void CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
 		logger << sstr.str();
 		logger << EndDebugInfo;
 	}
+	
+	return true;
 }
 
 } // end of namespace ppc440

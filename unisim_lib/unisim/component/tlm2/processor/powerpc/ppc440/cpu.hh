@@ -128,6 +128,7 @@ private:
 	sc_time max_idle_time;          //<! Maximum idle time (temporary variable)
 	sc_time run_time;               //<! absolute timer (local time + sc_time_stamp)
 	sc_time idle_time;              //<! total idle time
+	sc_time timers_update_deadline; //<! deadline for updating internal timers in order to keep internal timer accuracy
 	bool enable_host_idle;
 	sc_event ev_max_idle;
 	sc_event ev_irq;
@@ -429,11 +430,15 @@ private:
 	unisim::kernel::tlm2::DMIRegionCache icurd_dmi_region_cache;
 	unisim::kernel::tlm2::DMIRegionCache dcuwr_dmi_region_cache;
 	unisim::kernel::tlm2::DMIRegionCache dcurd_dmi_region_cache;
-	inline void RunInternalTimers() ALWAYS_INLINE;
+
 	inline void AlignToBusClock() ALWAYS_INLINE;
 	void AlignToBusClock(sc_time& t);
 	inline void ProcessExternalEvents() ALWAYS_INLINE;
 	void ProcessIRQEvent(Event *event);
+protected:
+	virtual inline void RunInternalTimers() ALWAYS_INLINE;
+	inline void LazyRunInternalTimers() ALWAYS_INLINE;
+	virtual void end_of_simulation();
 };
 
 } // end of namespace ppc440
