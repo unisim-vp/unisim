@@ -123,14 +123,6 @@ Generator::init( Isa& _isa ) {
     if( m_insn_minsize > opprops.m_minsize  ) m_insn_minsize = opprops.m_minsize;
   }
 
-  std::cerr << "Instruction Size: ";
-  if (m_insn_minsize != m_insn_maxsize)
-    std::cerr << "[" << m_insn_minsize << ":" << m_insn_maxsize << "]";
-  else
-    std::cerr << m_insn_maxsize;
-  std::cerr << std::endl;
-  
-  
   return *this;
 }
 
@@ -141,7 +133,14 @@ Generator::init( Isa& _isa ) {
     @return non-zero if no error occurs during generation
 */
 void
-Generator::iss( char const* prefix, bool sourcelines ) const {
+Generator::iss( char const* prefix, bool sourcelines ) const
+{
+  std::cerr << "Instruction Size: ";
+  if (m_insn_minsize != m_insn_maxsize)
+    std::cerr << "[" << m_insn_minsize << ":" << m_insn_maxsize << "]";
+  else
+    std::cerr << m_insn_maxsize;
+  std::cerr << std::endl;
   std::cerr << "Instruction Set Encoding: " << (isa().m_little_endian ? "little-endian" : "big-endian") << "\n";
   
   /*******************/
