@@ -408,9 +408,9 @@ public:
 	// PowerPC 32 bits common exceptions
 	static const physical_address_t EXC_SYSTEM_RESET_VECTOR = 0x100UL;                  //!< system reset vector (all)
 	static const physical_address_t EXC_MACHINE_CHECK_VECTOR = 0x200UL;                 //!< machine check exception vector (all)
-	static const physical_address_t EXC_DSI_VECTOR = 0x300UL;                           //!< DSI exception vector (all)
-	static const physical_address_t EXC_ISI_VECTOR = 0x400UL;                           //!< ISI exception vector (all)
-	static const physical_address_t EXC_EXTERNAL_INTERRUPT_VECTOR = 0x500UL;            //!< External interrupt vector (all)
+	static const physical_address_t EXC_DATA_STORAGE_VECTOR = 0x300UL;                  //!< Data storage exception vector (all)
+	static const physical_address_t EXC_INSTRUCTION_STORAGE_VECTOR = 0x400UL;           //!< Instruction storage exception vector (all)
+	static const physical_address_t EXC_EXTERNAL_VECTOR = 0x500UL;                      //!< External interrupt vector (all)
 	static const physical_address_t EXC_ALIGNMENT_VECTOR = 0x600UL;                     //!< Alignment exception vector (all)
 	static const physical_address_t EXC_PROGRAM_VECTOR = 0x700UL;                       //!< Program exception vector (all)
 	static const physical_address_t EXC_FLOATING_POINT_UNAVAILABLE_VECTOR = 0x800UL;    //!< Floating unavailable exception vector (all)
@@ -421,7 +421,7 @@ public:
 	// Additional exceptions in MPC7xx 
 	static const physical_address_t EXC_PERFORMANCE_MONITOR_VECTOR = 0xf00UL;
 	static const physical_address_t EXC_INSTRUCTION_ADDRESS_BREAKPOINT_VECTOR = 0x1300UL;
-	static const physical_address_t EXC_SYSTEM_MANAGEMENT_INTERRUPT_VECTOR = 0x1400UL;
+	static const physical_address_t EXC_SYSTEM_MANAGEMENT_VECTOR = 0x1400UL;
 
 	// Additional exceptions in MPC7x5
 	static const physical_address_t EXC_ITLB_MISS_VECTOR = 0x1000UL;
@@ -430,16 +430,103 @@ public:
 	
 	// Additional exceptions in MPC74xx
 	static const physical_address_t EXC_ALTIVEC_UNAVAILABLE_VECTOR = 0xf20UL;
+	static const physical_address_t EXC_ALTIVEC_ASSIST_VECTOR = 0x1600UL;
 
-	// Hardware interrupt signals
-	static const unsigned int IRQ_DECREMENTER_OVERFLOW = 1;                 // decrementer overflow (internal)
-	static const unsigned int IRQ_EXTERNAL_INTERRUPT = 2;                   // external interrupt (signal INT)
-	static const unsigned int IRQ_SOFT_RESET = 4;                           // soft reset (signal SRESET)
-	static const unsigned int IRQ_HARD_RESET = 8;                           // hard reset (signal HRESET)
-	static const unsigned int IRQ_MCP = 16;                                 // machine check (signal MCP)
-	static const unsigned int IRQ_TEA = 32;                                 // transfer error acknowledge (signal TEA)
-	static const unsigned int IRQ_SMI = 64;                                 // system management interrupt (signal SMI)
-	static const unsigned int IRQ_PERFORMANCE_MONITOR_INTERRUPT = 128;      // performance monitor interrupt (internal)
+	// Exceptions
+	// - Non-maskable
+	static const unsigned int EXC_SYSTEM_RESET_HARD                         = 0;
+	static const unsigned int EXC_MACHINE_CHECK_MCP                         = 1;
+	static const unsigned int EXC_MACHINE_CHECK_TEA                         = 2;
+	static const unsigned int EXC_SYSTEM_RESET_SOFT                         = 3;
+
+	static const unsigned int EXC_INSTRUCTION_STORAGE_NO_EXECUTE            = 4;
+	static const unsigned int EXC_INSTRUCTION_STORAGE_DIRECT_STORE          = 5;
+	static const unsigned int EXC_TLB_MISS                                  = 6;
+	static const unsigned int EXC_INSTRUCTION_STORAGE_GUARDED_MEMORY        = 7;
+	static const unsigned int EXC_INSTRUCTION_STORAGE_PAGE_FAULT            = 8;
+	static const unsigned int EXC_INSTRUCTION_STORAGE_PROTECTION_VIOLATION  = 9;
+	static const unsigned int EXC_INSTRUCTION_ADDRESS_BREAKPOINT            = 10;
+	static const unsigned int EXC_PROGRAM_ILLEGAL_INSTRUCTION               = 11;
+	static const unsigned int EXC_PROGRAM_PRIVILEGE_VIOLATION               = 12;
+	static const unsigned int EXC_PROGRAM_TRAP                              = 13;
+	static const unsigned int EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION         = 14;
+	static const unsigned int EXC_SYSTEM_CALL                               = 15;
+	static const unsigned int EXC_FLOATING_POINT_UNAVAILABLE                = 16;
+	static const unsigned int EXC_ALTIVEC_UNAVAILABLE                       = 17;
+	static const unsigned int EXC_PROGRAM_FLOATING_POINT                    = 18;
+	static const unsigned int EXC_ALIGNMENT                                 = 19;
+	static const unsigned int EXC_DATA_STORAGE_EXTERNAL_ACCESS_DISABLED     = 20;
+	static const unsigned int EXC_DATA_STORAGE_WRITE_THROUGH_LINKED_LOAD_STORE = 21;
+	static const unsigned int EXC_DATA_STORAGE_DIRECT_STORE                 = 22;
+	static const unsigned int EXC_DATA_STORAGE_PROTECTION_VIOLATION         = 23;
+	static const unsigned int EXC_DATA_STORAGE_PAGE_FAULT                   = 24;
+	static const unsigned int EXC_DATA_STORAGE_DATA_ADDRESS_BREAKPOINT      = 25;
+	static const unsigned int EXC_ALTIVEC_ASSIST                            = 26;
+	static const unsigned int EXC_TRACE                                     = 27;
+	
+	// - Maskable
+	static const unsigned int EXC_SYSTEM_MANAGEMENT                         = 28;
+	static const unsigned int EXC_EXTERNAL                                  = 29;
+	static const unsigned int EXC_PERFORMANCE_MONITOR                       = 30;
+	static const unsigned int EXC_DECREMENTER                               = 31;
+	
+	static const unsigned int NUM_EXCEPTIONS = EXC_DECREMENTER + 1;
+	
+	// Exception masks
+	static const uint32_t EXC_MASK_SYSTEM_RESET_HARD                         = 1 << EXC_SYSTEM_RESET_HARD;
+	static const uint32_t EXC_MASK_MACHINE_CHECK_MCP                         = 1 << EXC_MACHINE_CHECK_MCP;
+	static const uint32_t EXC_MASK_MACHINE_CHECK_TEA                         = 1 << EXC_MACHINE_CHECK_TEA;
+	static const uint32_t EXC_MASK_SYSTEM_RESET_SOFT                         = 1 << EXC_SYSTEM_RESET_SOFT;
+
+	static const uint32_t EXC_MASK_INSTRUCTION_STORAGE_NO_EXECUTE            = 1 << EXC_INSTRUCTION_STORAGE_NO_EXECUTE;
+	static const uint32_t EXC_MASK_INSTRUCTION_STORAGE_DIRECT_STORE          = 1 << EXC_INSTRUCTION_STORAGE_DIRECT_STORE;
+	static const uint32_t EXC_MASK_TLB_MISS                                  = 1 << EXC_TLB_MISS;
+	static const uint32_t EXC_MASK_INSTRUCTION_STORAGE_GUARDED_MEMORY        = 1 << EXC_INSTRUCTION_STORAGE_GUARDED_MEMORY;
+	static const uint32_t EXC_MASK_INSTRUCTION_STORAGE_PAGE_FAULT            = 1 << EXC_INSTRUCTION_STORAGE_PAGE_FAULT;
+	static const uint32_t EXC_MASK_INSTRUCTION_STORAGE_PROTECTION_VIOLATION  = 1 << EXC_INSTRUCTION_STORAGE_PROTECTION_VIOLATION;
+	static const uint32_t EXC_MASK_INSTRUCTION_ADDRESS_BREAKPOINT            = 1 << EXC_INSTRUCTION_ADDRESS_BREAKPOINT;
+	static const uint32_t EXC_MASK_PROGRAM_ILLEGAL_INSTRUCTION               = 1 << EXC_PROGRAM_ILLEGAL_INSTRUCTION;
+	static const uint32_t EXC_MASK_PROGRAM_PRIVILEGE_VIOLATION               = 1 << EXC_PROGRAM_PRIVILEGE_VIOLATION;
+	static const uint32_t EXC_MASK_PROGRAM_TRAP                              = 1 << EXC_PROGRAM_TRAP;
+	static const uint32_t EXC_MASK_PROGRAM_UNIMPLEMENTED_INSTRUCTION         = 1 << EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION;
+	static const uint32_t EXC_MASK_SYSTEM_CALL                               = 1 << EXC_SYSTEM_CALL;
+	static const uint32_t EXC_MASK_FLOATING_POINT_UNAVAILABLE                = 1 << EXC_FLOATING_POINT_UNAVAILABLE;
+	static const uint32_t EXC_MASK_ALTIVEC_UNAVAILABLE                       = 1 << EXC_ALTIVEC_UNAVAILABLE;
+	static const uint32_t EXC_MASK_PROGRAM_FLOATING_POINT                    = 1 << EXC_PROGRAM_FLOATING_POINT;
+	static const uint32_t EXC_MASK_ALIGNMENT                                 = 1 << EXC_ALIGNMENT;
+	static const uint32_t EXC_MASK_DATA_STORAGE_EXTERNAL_ACCESS_DISABLED        = 1 << EXC_DATA_STORAGE_EXTERNAL_ACCESS_DISABLED;
+	static const uint32_t EXC_MASK_DATA_STORAGE_WRITE_THROUGH_LINKED_LOAD_STORE = 1 << EXC_DATA_STORAGE_WRITE_THROUGH_LINKED_LOAD_STORE;
+	static const uint32_t EXC_MASK_DATA_STORAGE_DIRECT_STORE                 = 1 << EXC_DATA_STORAGE_DIRECT_STORE;
+	static const uint32_t EXC_MASK_DATA_STORAGE_PROTECTION_VIOLATION         = 1 << EXC_DATA_STORAGE_PROTECTION_VIOLATION;
+	static const uint32_t EXC_MASK_DATA_STORAGE_PAGE_FAULT                   = 1 << EXC_DATA_STORAGE_PAGE_FAULT;
+	static const uint32_t EXC_MASK_DATA_STORAGE_DATA_ADDRESS_BREAKPOINT      = 1 << EXC_DATA_STORAGE_DATA_ADDRESS_BREAKPOINT;
+	static const uint32_t EXC_MASK_ALTIVEC_ASSIST                            = 1 << EXC_ALTIVEC_ASSIST;
+	static const uint32_t EXC_MASK_TRACE                                     = 1 << EXC_TRACE;
+	// - Maskable
+	static const uint32_t EXC_MASK_SYSTEM_MANAGEMENT                         = 1 << EXC_SYSTEM_MANAGEMENT;
+	static const uint32_t EXC_MASK_EXTERNAL                                  = 1 << EXC_EXTERNAL;
+	static const uint32_t EXC_MASK_PERFORMANCE_MONITOR                       = 1 << EXC_PERFORMANCE_MONITOR;
+	static const uint32_t EXC_MASK_DECREMENTER                               = 1 << EXC_DECREMENTER;
+
+	
+	static const uint32_t EXC_MASK_SYSTEM_RESET = EXC_MASK_SYSTEM_RESET_HARD | EXC_MASK_SYSTEM_RESET_SOFT;
+
+	static const uint32_t EXC_MASK_MACHINE_CHECK = EXC_MASK_MACHINE_CHECK_MCP | EXC_MASK_MACHINE_CHECK_TEA;
+	
+	static const uint32_t EXC_MASK_INSTRUCTION_STORAGE = EXC_MASK_INSTRUCTION_STORAGE_NO_EXECUTE | EXC_MASK_INSTRUCTION_STORAGE_DIRECT_STORE |
+	                                                     EXC_MASK_INSTRUCTION_STORAGE_GUARDED_MEMORY | EXC_MASK_INSTRUCTION_STORAGE_PAGE_FAULT |
+	                                                     EXC_MASK_INSTRUCTION_STORAGE_PROTECTION_VIOLATION;
+	
+	static const uint32_t EXC_MASK_PROGRAM = EXC_MASK_PROGRAM_ILLEGAL_INSTRUCTION | EXC_MASK_PROGRAM_PRIVILEGE_VIOLATION |
+	                                         EXC_MASK_PROGRAM_TRAP | EXC_MASK_PROGRAM_UNIMPLEMENTED_INSTRUCTION;
+	
+	static const uint32_t EXC_MASK_DATA_STORAGE = EXC_MASK_DATA_STORAGE_EXTERNAL_ACCESS_DISABLED | EXC_MASK_DATA_STORAGE_WRITE_THROUGH_LINKED_LOAD_STORE |
+	                                              EXC_MASK_DATA_STORAGE_DIRECT_STORE | EXC_MASK_DATA_STORAGE_PROTECTION_VIOLATION |
+	                                              EXC_MASK_DATA_STORAGE_PAGE_FAULT | EXC_MASK_DATA_STORAGE_DATA_ADDRESS_BREAKPOINT;
+
+	static const uint32_t EXC_MASK_NON_MASKABLE = EXC_MASK_SYSTEM_RESET | EXC_MASK_MACHINE_CHECK | EXC_MASK_INSTRUCTION_STORAGE | EXC_MASK_PROGRAM |
+	                                              EXC_MASK_DATA_STORAGE | EXC_MASK_TLB_MISS | EXC_MASK_SYSTEM_CALL | EXC_MASK_FLOATING_POINT_UNAVAILABLE |
+	                                              EXC_MASK_ALIGNMENT | EXC_MASK_ALTIVEC_ASSIST | EXC_MASK_TRACE;
 
 	// start address
 	static const uint32_t START_ADDR = EXC_SYSTEM_RESET_VECTOR | ((MSR_RESET_VALUE & MSR_IP_MASK) ? 0xfff00000UL : 0x00000000UL); // processor starts at system reset interrupt handler

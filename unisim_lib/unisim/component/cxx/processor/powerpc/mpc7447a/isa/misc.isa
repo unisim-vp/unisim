@@ -6,9 +6,15 @@ SEGMENT REGISTER MANIPULATION INSTRUCTIONS
 op mfsr(31[6]:rd[5]:?[1]:sr[4]:?[5]:595[10]:?[1])
 mfsr.execute = {
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
+	if(unlikely(msr & CONFIG::MSR_PR_MASK))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
+	}
 
 	cpu->SetGPR(rd, cpu->GetSR(sr));
+	
+	return true;
 }
 mfsr.disasm = {
 	os << "mfsr r" << (unsigned int) rd << ", " << (unsigned int) sr;
@@ -17,9 +23,15 @@ mfsr.disasm = {
 op mfsrin(31[6]:rd[5]:?[5]:rb[5]:659[10]:?[1])
 mfsrin.execute = {
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
+	if(unlikely(msr & CONFIG::MSR_PR_MASK))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
+	}
 
 	cpu->SetGPR(rd, cpu->GetSR((cpu->GetGPR(rb) >> 28) & 0xf));
+	
+	return true;
 }
 mfsrin.disasm = {
 	os << "mfsrin r" << (unsigned int) rd << ", r" << (unsigned int) rb;
@@ -28,9 +40,15 @@ mfsrin.disasm = {
 op mtsr(31[6]:rs[5]:?[1]:sr[4]:?[5]:210[10]:?[1])
 mtsr.execute = {
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
+	if(unlikely(msr & CONFIG::MSR_PR_MASK))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
+	}
 
 	cpu->SetSR(sr, cpu->GetGPR(rs));
+	
+	return true;
 }
 mtsr.disasm = {
 	os << "mtsr " << (unsigned int) sr << ", r" << (unsigned int) rs;
@@ -39,9 +57,15 @@ mtsr.disasm = {
 op mtsrin(31[6]:rs[5]:?[5]:rb[5]:242[10]:?[1])
 mtsrin.execute = {
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
+	if(unlikely(msr & CONFIG::MSR_PR_MASK))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
+	}
 
 	cpu->SetSR((cpu->GetGPR(rb) >> 28) & 0xf, cpu->GetGPR(rs));
+	
+	return true;
 }
 mtsrin.disasm = {
 	os << "mtsrin r" << (unsigned int) rs << ", r" << (unsigned int) rb;
