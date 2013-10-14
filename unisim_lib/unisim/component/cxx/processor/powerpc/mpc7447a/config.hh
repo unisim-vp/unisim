@@ -425,8 +425,8 @@ public:
 
 	// Additional exceptions in MPC7x5
 	static const physical_address_t EXC_ITLB_MISS_VECTOR = 0x1000UL;
-	static const physical_address_t EXC_DTLB_LOAD_MISS_VECTOR = 0x1100UL;
-	static const physical_address_t EXC_DTLB_STORE_MISS_VECTOR = 0x1200UL;
+	static const physical_address_t EXC_DTLB_MISS_ON_LOAD_VECTOR = 0x1100UL;
+	static const physical_address_t EXC_DTLB_MISS_ON_STORE_VECTOR = 0x1200UL;
 	
 	// Additional exceptions in MPC74xx
 	static const physical_address_t EXC_ALTIVEC_UNAVAILABLE_VECTOR = 0xf20UL;

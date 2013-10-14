@@ -152,6 +152,9 @@ inline void CPU<CONFIG>::ProcessExceptions(unisim::component::cxx::processor::po
 template <class CONFIG>
 void CPU<CONFIG>::EnterSystemResetISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_system_reset_interrupts++;
+	
 	if(linux_os_import)
 	{
 		logger << DebugInfo << "System reset" << EndDebugInfo;
@@ -188,6 +191,9 @@ void CPU<CONFIG>::EnterSystemResetISR(unisim::component::cxx::processor::powerpc
 template <class CONFIG>
 void CPU<CONFIG>::EnterMachineCheckISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_machine_check_interrupts++;
+	
 	if(linux_os_import)
 	{
 		if(exc_flags & CONFIG::EXC_MASK_MACHINE_CHECK_MCP)
@@ -235,6 +241,9 @@ void CPU<CONFIG>::EnterMachineCheckISR(unisim::component::cxx::processor::powerp
 template <class CONFIG>
 void CPU<CONFIG>::EnterDecrementerISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_decrementer_interrupts++;
+
 	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
 	SetSRR0(GetNIA()); // save NIA
 	
@@ -258,6 +267,9 @@ void CPU<CONFIG>::EnterDecrementerISR(unisim::component::cxx::processor::powerpc
 template <class CONFIG>
 void CPU<CONFIG>::EnterExternalISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_external_interrupts++;
+
 	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
 	SetSRR0(GetNIA()); // save NIA
 	
@@ -280,6 +292,9 @@ void CPU<CONFIG>::EnterExternalISR(unisim::component::cxx::processor::powerpc::m
 template <class CONFIG>
 void CPU<CONFIG>::EnterPerformanceMonitorISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_performance_monitor_interrupts++;
+	
 	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
 	SetSRR0(GetNIA()); // save NIA
 	
@@ -303,6 +318,9 @@ void CPU<CONFIG>::EnterPerformanceMonitorISR(unisim::component::cxx::processor::
 template <class CONFIG>
 void CPU<CONFIG>::EnterSystemManagementISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_system_management_interrupts++;
+	
 	if(linux_os_import) return; // silently ignore the IRQ when Linux ABI translation is enabled
 	SetSRR0(GetNIA()); // save NIA
 	
@@ -340,6 +358,9 @@ void CPU<CONFIG>::EnterSystemManagementISR(unisim::component::cxx::processor::po
 template <class CONFIG>
 void CPU<CONFIG>::EnterInstructionStorageISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_instruction_storage_interrupts++;
+	
 	if(linux_os_import)
 	{
 		logger << DebugError << "instruction storage interrupt" << EndDebugError;
@@ -414,6 +435,9 @@ void CPU<CONFIG>::EnterInstructionStorageISR(unisim::component::cxx::processor::
 template <class CONFIG>
 void CPU<CONFIG>::EnterDataStorageISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_data_storage_interrupts++;
+
 	if(linux_os_import)
 	{
 		logger << DebugError << "data storage interrupt" << EndDebugError;
@@ -517,6 +541,9 @@ void CPU<CONFIG>::EnterDataStorageISR(unisim::component::cxx::processor::powerpc
 template <class CONFIG>
 void CPU<CONFIG>::EnterAlignmentISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_alignment_interrupts++;
+
 	if(linux_os_import)
 	{
 		logger << DebugError << "Misalignment" << EndDebugError;
@@ -614,6 +641,9 @@ void CPU<CONFIG>::EnterAlignmentISR(unisim::component::cxx::processor::powerpc::
 template <class CONFIG>
 void CPU<CONFIG>::EnterProgramISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_program_interrupts++;
+	
 	if(linux_os_import)
 	{
 		logger << DebugError << "program interrupt" << EndDebugError;
@@ -674,6 +704,9 @@ void CPU<CONFIG>::EnterProgramISR(unisim::component::cxx::processor::powerpc::mp
 template <class CONFIG>
 void CPU<CONFIG>::EnterFloatingPointUnavailableISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_floating_point_unavailable_interrupts++;
+	
 	if(linux_os_import)
 	{
 		logger << DebugError << "Floating-point unavailable" << EndDebugError;
@@ -705,6 +738,9 @@ void CPU<CONFIG>::EnterFloatingPointUnavailableISR(unisim::component::cxx::proce
 template <class CONFIG>
 void CPU<CONFIG>::EnterSystemCallISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_system_call_interrupts++;
+	
 	if(unlikely(IsVerboseException() || linux_os_import))
 	{
 		std::stringstream sstr;
@@ -1122,6 +1158,9 @@ void CPU<CONFIG>::EnterSystemCallISR(unisim::component::cxx::processor::powerpc:
 template <class CONFIG>
 void CPU<CONFIG>::EnterTraceISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_trace_interrupts++;
+
 	if(linux_os_import) return; // silently ignore trace exception when Linux ABI translation is enabled
 	SetSRR0(GetNIA()); // save NIA
 	
@@ -1148,6 +1187,9 @@ void CPU<CONFIG>::EnterTraceISR(unisim::component::cxx::processor::powerpc::mpc7
 template <class CONFIG>
 void CPU<CONFIG>::EnterInstructionAddressBreakpointISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	num_instruction_address_breakpoint_interrupts++;
+	
 	if(linux_os_import) return; // silently ignore the instruction address breakpoint exception when Linux ABI translation is enabled
 	SetSRR0(GetCIA()); // save CIA
 	
@@ -1173,6 +1215,8 @@ void CPU<CONFIG>::EnterInstructionAddressBreakpointISR(unisim::component::cxx::p
 template <class CONFIG>
 void CPU<CONFIG>::EnterTLBMissISR(unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	
 	if(linux_os_import)
 	{
 		logger << DebugError << "TLB Miss exception" << EndDebugError;
@@ -1188,6 +1232,7 @@ void CPU<CONFIG>::EnterTLBMissISR(unisim::component::cxx::processor::powerpc::mp
 	
 	if(exc_memory_type == CONFIG::MT_INSN)
 	{
+		num_itlb_miss_interrupts++;
 		SetTLBMISS((exc_addr & 0xfffffffeUL) | (exc_way & 1));
 		SetPTEHI(pte_hi);
 		// SRR1[13]=1
@@ -1200,13 +1245,15 @@ void CPU<CONFIG>::EnterTLBMissISR(unisim::component::cxx::processor::powerpc::mp
 		SetPTEHI(pte_hi);
 		if(exc_memory_access_type == CONFIG::MAT_WRITE)
 		{
+			num_dtlb_miss_on_store_interrupts++;
 			// SRR1[15]=1
 			SetSRR1(GetSRR1() | 0x00010000UL);
-			Branch(CONFIG::EXC_DTLB_STORE_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+			Branch(CONFIG::EXC_DTLB_MISS_ON_STORE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 		}
 		else
 		{
-			Branch(CONFIG::EXC_DTLB_LOAD_MISS_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
+			num_dtlb_miss_on_load_interrupts++;
+			Branch(CONFIG::EXC_DTLB_MISS_ON_LOAD_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 		}
 	}
 	

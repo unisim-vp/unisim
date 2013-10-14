@@ -1069,11 +1069,30 @@ private:
 	bool verbose_set_l2cr;
 	bool enable_linux_printk_snooping;
 	bool enable_linux_syscall_snooping;
-	bool enable_halt_on;
 	typename CONFIG::address_t halt_on_addr;
 	std::string halt_on;
 	uint64_t trap_on_instruction_counter;
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
+	uint64_t num_interrupts;
+	uint64_t num_system_reset_interrupts;
+	uint64_t num_machine_check_interrupts;
+	uint64_t num_data_storage_interrupts;
+	uint64_t num_instruction_storage_interrupts;
+	uint64_t num_external_interrupts;
+	uint64_t num_alignment_interrupts;
+	uint64_t num_program_interrupts;
+	uint64_t num_floating_point_unavailable_interrupts;
+	uint64_t num_decrementer_interrupts;
+	uint64_t num_system_call_interrupts;
+	uint64_t num_trace_interrupts;
+	uint64_t num_performance_monitor_interrupts;
+	uint64_t num_instruction_address_breakpoint_interrupts;
+	uint64_t num_system_management_interrupts;
+	uint64_t num_itlb_miss_interrupts;
+	uint64_t num_dtlb_miss_on_load_interrupts;
+	uint64_t num_dtlb_miss_on_store_interrupts;
+	uint64_t num_altivec_unavailable_interrupts;
+	uint64_t num_altivec_assist_interrupts;
 
 	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
 	std::vector<unisim::kernel::service::VariableBase *> registers_registry2;       //!< Every CPU register
@@ -1354,6 +1373,26 @@ private:
 	Statistic<uint64_t> stat_num_dtlb_accesses;
 	Statistic<uint64_t> stat_num_dtlb_misses;
 	Formula<double> formula_dtlb_miss_rate;
+	Statistic<uint64_t> stat_num_interrupts;
+	Statistic<uint64_t> stat_num_system_reset_interrupts;
+	Statistic<uint64_t> stat_num_machine_check_interrupts;
+	Statistic<uint64_t> stat_num_data_storage_interrupts;
+	Statistic<uint64_t> stat_num_instruction_storage_interrupts;
+	Statistic<uint64_t> stat_num_external_interrupts;
+	Statistic<uint64_t> stat_num_alignment_interrupts;
+	Statistic<uint64_t> stat_num_program_interrupts;
+	Statistic<uint64_t> stat_num_floating_point_unavailable_interrupts;
+	Statistic<uint64_t> stat_num_decrementer_interrupts;
+	Statistic<uint64_t> stat_num_system_call_interrupts;
+	Statistic<uint64_t> stat_num_trace_interrupts;
+	Statistic<uint64_t> stat_num_performance_monitor_interrupts;
+	Statistic<uint64_t> stat_num_instruction_address_breakpoint_interrupts;
+	Statistic<uint64_t> stat_num_system_management_interrupts;
+	Statistic<uint64_t> stat_num_itlb_miss_interrupts;
+	Statistic<uint64_t> stat_num_dtlb_miss_on_load_interrupts;
+	Statistic<uint64_t> stat_num_dtlb_miss_on_store_interrupts;
+	Statistic<uint64_t> stat_num_altivec_unavailable_interrupts;
+	Statistic<uint64_t> stat_num_altivec_assist_interrupts;
 };
 
 } // end of namespace mpc7447a
