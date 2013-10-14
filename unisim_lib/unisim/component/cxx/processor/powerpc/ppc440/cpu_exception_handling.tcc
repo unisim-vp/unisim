@@ -36,7 +36,6 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_EXCEPTION_HANDLING_TCC__
 
 #include <sstream>
-#include <unisim/component/cxx/processor/powerpc/exception.tcc>
 
 #ifdef powerpc
 #undef powerpc

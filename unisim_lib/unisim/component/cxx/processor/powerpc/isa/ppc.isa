@@ -35,7 +35,6 @@
 decl {
 
 #include <iosfwd>
-#include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/util/likely/likely.hh>
 
 }

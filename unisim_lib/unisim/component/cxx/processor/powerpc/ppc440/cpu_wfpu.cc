@@ -33,7 +33,6 @@
  */
  
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu.hh>
-#include <unisim/component/cxx/processor/powerpc/ppc440/exception.tcc>
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc>
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu_cache.tcc>
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu_debugging.tcc>

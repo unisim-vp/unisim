@@ -48,7 +48,6 @@
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/component/cxx/processor/powerpc/ppc440/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/memory.hh>
