@@ -729,6 +729,8 @@ bool CPU<CONFIG>::BusFlushBlock(typename CONFIG::physical_address_t physical_add
 template <class CONFIG>
 void CPU<CONFIG>::end_of_simulation()
 {
+	run_time = sc_time_stamp();
+	cpu_time = SC_ZERO_TIME;
 	if(!inherited::linux_os_import) RunInternalTimers(); // make run_time match timer_time
 }
 
