@@ -653,7 +653,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	double cpu_clock_multiplier = 2.0;
 	double ext_timer_clock_divisor = 2.0;
 	uint32_t tech_node = 65; // in nm
-	double cpu_ipc = 1.0; // in instructions per cycle
+	double cpu_ipc = 2.0; // in instructions per cycle: PPC440 is a superscalar processor that can execute "out-of-order" up to 2 instructions per cycle
 	double cpu_cycle_time = (double)(1.0e6 / cpu_frequency); // in picoseconds
 	double fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	double ext_timer_cycle_time = ext_timer_clock_divisor * cpu_cycle_time;

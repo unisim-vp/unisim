@@ -327,12 +327,6 @@ void XPS_Timer<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::
 }
 
 template <class CONFIG>
-void XPS_Timer<CONFIG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
-	// N/A
-}
-
-template <class CONFIG>
 void XPS_Timer<CONFIG>::capture_trigger_b_transport(unsigned int channel, CaptureTriggerPayload& payload, sc_core::sc_time& t)
 {
 	if((!CONFIG::C_ONE_TIMER_ONLY && (channel < 2)) || (channel == 0))

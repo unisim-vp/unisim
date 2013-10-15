@@ -39,13 +39,13 @@ MEMORY SYNCHRONIZATION INSTRUCTIONS
 ***************************************/
 
 op eieio(31[6]:?[5]:?[5]:?[5]:854[10]:?[1])
-eieio.execute = { /* order is always enforced in functional simulation */ }
+eieio.execute = { return true; /* order is always enforced in functional simulation */ }
 eieio.disasm = {
 	os << "eieio";
 }
 
 op sync(31[6]:?[15]:598[10]:?[1])
-sync.execute = { cpu->Synchronize(); }
+sync.execute = { cpu->Synchronize(); return true; }
 sync.disasm = {
 	os << "sync";
 }

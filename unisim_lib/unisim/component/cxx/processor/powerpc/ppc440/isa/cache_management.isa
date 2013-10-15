@@ -43,7 +43,7 @@ dccci.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Dccci(ea);
+	return cpu->Dccci(ea);
 }
 dccci.disasm = {
 	os << "dccci r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -54,7 +54,7 @@ dcread.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Dcread(ea, rd);
+	return cpu->Dcread(ea, rd);
 }
 dcread.disasm = {
 	os << "dcci r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -66,7 +66,7 @@ group icbt(legacy_icbt, new_icbt)
 icbt.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Icbt(ea);
+	return cpu->Icbt(ea);
 }
 icbt.disasm = {
 	os << "icbt r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -77,7 +77,7 @@ iccci.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Iccci(ea);
+	return cpu->Iccci(ea);
 }
 iccci.disasm = {
 	os << "iccci r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -88,7 +88,7 @@ icread.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	cpu->Icread(ea);
+	return cpu->Icread(ea);
 }
 icread.disasm = {
 	os << "icread r" << (unsigned int) ra << ", r" << (unsigned int) rb;

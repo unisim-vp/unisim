@@ -60,6 +60,7 @@ b.execute = {
 	typename CONFIG::address_t target_addr = aa ? li : cpu->GetCIA() + li;
 	cpu->Branch(target_addr);
 	if(lk) cpu->SetLR(cpu->GetCIA() + 4);
+	return true;
 }
 b.disasm = {
 	typename CONFIG::address_t target_addr = (aa ? li : Operation<CONFIG>::GetAddr() + li);
@@ -113,6 +114,8 @@ bc.execute = {
 		cpu->Branch(target_addr);
 	}
 	if(lk) cpu->SetLR(cpu->GetCIA() + 4);
+	
+	return true;
 }
 bc.disasm = {
 	typename CONFIG::address_t target_addr = aa ? bd : Operation<CONFIG>::GetAddr() + bd;
@@ -145,7 +148,11 @@ bc.disasm = {
 
 op bcctr(19[6]: bo[5]: bi[5]:?[5]:528[10]:lk[1])
 bcctr.execute = {
-	if(unlikely(!(bo & 4))) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(!(bo & 4)))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return false;
+	}
 	int cond_ok ;
 	if(((bo & 16) == 0)) {
 		/* Conditional branch */
@@ -166,6 +173,8 @@ bcctr.execute = {
 		cpu->Branch(target_addr);
 	}
 	if(lk) cpu->SetLR(cpu->GetCIA() + 4);
+	
+	return true;
 }
 bcctr.disasm = {
 	switch(bo)
@@ -235,6 +244,8 @@ bclr.execute = {
 		cpu->Branch(target_addr);
 	}
 	if(lk) cpu->SetLR(cpu->GetCIA() + 4);
+	
+	return true;
 }
 bclr.disasm = {
 	switch(bo)

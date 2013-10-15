@@ -176,6 +176,7 @@ unisim/component/cxx/processor/powerpc/floating.cc \
 unisim/component/cxx/processor/powerpc/config.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/vr_debug_if.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/tb_debug_if.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/pci/video/display_32.cc \
 unisim/component/cxx/pci/macio/heathrow_32.cc \
@@ -249,7 +250,7 @@ unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa \
 unisim/component/cxx/processor/powerpc/mpc7447a/isa/synchronization.isa \
 unisim/component/cxx/processor/powerpc/mpc7447a/isa/tlb_management.isa \
 unisim/component/cxx/processor/powerpc/mpc7447a/isa/misc.isa \
-unisim/component/cxx/processor/powerpc/mpc7447a/isa/perf.isa"
+"
 
 UNISIM_LIB_PPCEMU_SYSTEM_HEADER_FILES="${UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES} \
 unisim/kernel/service/service.hh \
@@ -260,6 +261,7 @@ unisim/kernel/tlm/tlm.hh \
 unisim/kernel/debug/debug.hh \
 unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
+unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
@@ -285,6 +287,7 @@ unisim/util/debug/dwarf/fde.hh \
 unisim/util/debug/dwarf/fmt.hh \
 unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/dwarf/option.hh \
+unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/dwarf/filename.hh \
 unisim/util/debug/dwarf/fmt.hh \
 unisim/util/debug/dwarf/leb128.hh \
@@ -493,7 +496,6 @@ unisim/component/cxx/processor/powerpc/mpc7447a/cpu_exception_handling.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_fetch.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_load_store.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_mmu.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu_perf_model.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \

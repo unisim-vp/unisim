@@ -51,7 +51,7 @@ namespace ppc440 {
 template <class CONFIG>
 void CPU<CONFIG>::InvalidateITLB()
 {
-	if(IsVerboseITLB())
+	if(unlikely(IsVerboseITLB()))
 	{
 		logger << DebugInfo << "Invalidating ITLB" << EndDebugInfo;
 		logger << DebugInfo << unisim::kernel::debug::BackTrace() << EndDebugInfo;
@@ -72,7 +72,7 @@ void CPU<CONFIG>::InvalidateITLB()
 template <class CONFIG>
 void CPU<CONFIG>::ResetITLB()
 {
-	if(IsVerboseITLB())
+	if(unlikely(IsVerboseITLB()))
 	{
 		logger << DebugInfo << "Resetting ITLB" << EndDebugInfo;
 	}
@@ -116,7 +116,7 @@ void CPU<CONFIG>::ResetITLB()
 template <class CONFIG>
 void CPU<CONFIG>::InvalidateDTLB()
 {
-	if(IsVerboseDTLB())
+	if(unlikely(IsVerboseDTLB()))
 	{
 		logger << DebugInfo << "Invalidating DTLB" << EndDebugInfo;
 	}
@@ -135,7 +135,7 @@ void CPU<CONFIG>::InvalidateDTLB()
 template <class CONFIG>
 void CPU<CONFIG>::ResetDTLB()
 {
-	if(IsVerboseDTLB())
+	if(unlikely(IsVerboseDTLB()))
 	{
 		logger << DebugInfo << "Resetting DTLB" << EndDebugInfo;
 	}
@@ -179,7 +179,7 @@ void CPU<CONFIG>::ResetDTLB()
 template <class CONFIG>
 void CPU<CONFIG>::InvalidateUTLB()
 {
-	if(IsVerboseUTLB())
+	if(unlikely(IsVerboseUTLB()))
 	{
 		logger << DebugInfo << "Invalidating UTLB" << EndDebugInfo;
 	}
@@ -198,7 +198,7 @@ void CPU<CONFIG>::InvalidateUTLB()
 template <class CONFIG>
 void CPU<CONFIG>::ResetUTLB()
 {
-	if(IsVerboseUTLB())
+	if(unlikely(IsVerboseUTLB()))
 	{
 		logger << DebugInfo << "Resetting UTLB" << EndDebugInfo;
 	}
@@ -618,7 +618,7 @@ void CPU<CONFIG>::ChooseEntryToEvictDTLB(MMUAccess<CONFIG>& mmu_access)
 
 template <class CONFIG>
 template <bool DEBUG>
-void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
+bool CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 {
 	if(CONFIG::HAS_MMU)
 	{
@@ -634,7 +634,8 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 				LookupUTLB<DEBUG>(mmu_access);
 				if(unlikely(!mmu_access.utlb_hit))
 				{
-					throw InstructionTLBErrorException<CONFIG>(mmu_access.addr);
+					if(!DEBUG) SetException(CONFIG::EXC_INSTRUCTION_TLB_ERROR, mmu_access.addr);
+					return false;
 				}
 				
 				if(!DEBUG)
@@ -658,7 +659,8 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 
 				if(unlikely(!(mmu_access.pte->GetAccessCtrl() & access_ctrl)))
 				{
-					throw ISIExecuteAccessControlException<CONFIG>(mmu_access.addr);
+					SetException(CONFIG::EXC_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL, mmu_access.addr);
+					return false;
 				}
 			}
 			
@@ -669,7 +671,7 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 			                         | ((typename CONFIG::physical_address_t) mmu_access.pte->GetRPN() << CONFIG::PADDR_RPN_OFFSET)
 			                         | ((typename CONFIG::physical_address_t) mmu_access.addr & ((typename CONFIG::physical_address_t) mmu_access.page_size - 1));
 			
-			if(IsVerboseITLB())
+			if(unlikely(IsVerboseITLB()))
 			{
 				logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "physical addr=0x" << std::hex << mmu_access.physical_addr << std::dec << EndDebugInfo;
 			}
@@ -683,7 +685,8 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 				LookupUTLB<DEBUG>(mmu_access);
 				if(unlikely(!mmu_access.utlb_hit))
 				{
-					throw DataTLBErrorException<CONFIG>(mmu_access.addr, mmu_access.memory_access_type);
+					if(!DEBUG) SetException(CONFIG::EXC_DATA_TLB_ERROR, mmu_access.addr, mmu_access.memory_access_type);
+					return false;
 				}
 				
 				if(!DEBUG)
@@ -709,14 +712,8 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 				}
 				if(unlikely(!(mmu_access.pte->GetAccessCtrl() & access_ctrl)))
 				{
-					if(mmu_access.memory_access_type == CONFIG::MAT_WRITE)
-					{
-						throw DSIWriteAccessControlException<CONFIG>(mmu_access.addr);
-					}
-					else
-					{
-						throw DSIReadAccessControlException<CONFIG>(mmu_access.addr);
-					}
+					SetException((mmu_access.memory_access_type == CONFIG::MAT_WRITE) ? CONFIG::EXC_DATA_STORAGE_WRITE_ACCESS_CONTROL : CONFIG::EXC_DATA_STORAGE_READ_ACCESS_CONTROL, mmu_access.addr);
+					return false;
 				}
 			}
 
@@ -727,7 +724,7 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 			                         | ((typename CONFIG::physical_address_t) mmu_access.pte->GetRPN() << CONFIG::PADDR_RPN_OFFSET)
 			                         | ((typename CONFIG::physical_address_t) mmu_access.addr & ((typename CONFIG::physical_address_t) mmu_access.page_size - 1));
 
-			if(IsVerboseDTLB())
+			if(unlikely(IsVerboseDTLB()))
 			{
 				logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "physical addr=0x" << std::hex << mmu_access.physical_addr << std::dec << EndDebugInfo;
 			}
@@ -742,6 +739,8 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 		mmu_access.storage_attr = (typename CONFIG::STORAGE_ATTR)(CONFIG::SA_DEFAULT);
 		mmu_access.protection_boundary = 0x0UL; // Note: caller should detect address calculation overflow !
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
@@ -832,17 +831,18 @@ void CPU<CONFIG>::DumpUTLB(std::ostream& os, int highlight_index, int hightligh_
 
 /* TLB management */
 template <class CONFIG>
-void CPU<CONFIG>::Tlbre(unsigned int rd, uint32_t way, uint8_t ws)
+bool CPU<CONFIG>::Tlbre(unsigned int rd, uint32_t way, uint8_t ws)
 {
 	if(GetMSR_PR())
 	{
-		throw PrivilegeViolationException<CONFIG>();
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
 	}
 	
 	if(ws > 2)
 	{
 		logger << DebugWarning << "At 0x" << std::hex << GetCIA() << std::dec << ", operand \'ws\' of instruction tlbre is > 2" << EndDebugWarning;
-		return;
+		return true;
 	}
 	
 	way = way & (TLBSet<typename CONFIG::UTLB_CONFIG>::ASSOCIATIVITY - 1);
@@ -861,10 +861,12 @@ void CPU<CONFIG>::Tlbre(unsigned int rd, uint32_t way, uint8_t ws)
 			SetGPR(rd, tlb_entry.pte.Get(ws) & (GetCCR0_CRPE() ? CONFIG::TLBE2_MASK : CONFIG::TLBE2_DATA_MASK));
 			break;
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Tlbsx(unsigned int rd, typename CONFIG::address_t addr, unsigned int rc)
+bool CPU<CONFIG>::Tlbsx(unsigned int rd, typename CONFIG::address_t addr, unsigned int rc)
 {
 	MMUAccess<CONFIG> mmu_access;
 	
@@ -896,25 +898,28 @@ void CPU<CONFIG>::Tlbsx(unsigned int rd, typename CONFIG::address_t addr, unsign
 				 ((GetXER() & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0));
 		}
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
+bool CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
 {
-	if(IsVerboseTlbwe())
+	if(unlikely(IsVerboseTlbwe()))
 	{
 		logger << DebugInfo << "At 0x" << std::hex << GetCIA() << ", Tlbwe s=0x" << s << ", way=0x" << way << ", ws=0x" << (unsigned int) ws << std::dec << EndDebugInfo;
 	}
 
 	if(GetMSR_PR())
 	{
-		throw PrivilegeViolationException<CONFIG>();
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
 	}
 	
 	if(ws > 2)
 	{
 		logger << DebugWarning << "At 0x" << std::hex << GetCIA() << std::dec << ", operand \'ws\' of instruction tlbwe is > 2" << EndDebugWarning;
-		return;
+		return true;
 	}
 
 	way = way & (TLBSet<typename CONFIG::UTLB_CONFIG>::ASSOCIATIVITY - 1);
@@ -933,7 +938,7 @@ void CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
 			break;
 	}
 	
-	if(IsVerboseTlbwe())
+	if(unlikely(IsVerboseTlbwe()))
 	{
 		std::stringstream sstr;
 		DumpUTLB(sstr, 0, way);
@@ -941,6 +946,8 @@ void CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
 		logger << sstr.str();
 		logger << EndDebugInfo;
 	}
+	
+	return true;
 }
 
 } // end of namespace ppc440

@@ -54,7 +54,7 @@ void CPU<CONFIG>::FlushSubsequentInstructions()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size)
+bool CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	typename CONFIG::WIMG wimg;
 	typename CONFIG::physical_address_t physical_addr;
@@ -69,7 +69,8 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 		mmu_access.memory_access_type = CONFIG::MAT_READ;
 		mmu_access.memory_type = CONFIG::MT_INSN;
 	
-		EmuTranslateAddress<false>(mmu_access);
+		bool status = EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!status)) return false;
 	
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -117,7 +118,7 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 			{
 				logger << DebugInfo << "IL1: block miss at 0x" << std::hex << l1_access.addr << std::dec << endl << EndDebugInfo;
 			}
-			EmuFillIL1(l1_access, wimg);
+			if(unlikely(!EmuFillIL1(l1_access, wimg))) return false;
 		}
 	
 		memcpy(buffer, &(*l1_access.block)[l1_access.offset], size);
@@ -128,21 +129,18 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 	else
 	{
 		// DL1 disabled
-		BusRead(physical_addr, buffer, size, wimg);
+		if(unlikely(!BusRead(physical_addr, buffer, size, wimg)))
+		{
+			SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+			return false;
+		}
 	}
-
-#if BYTE_ORDER == LITTLE_ENDIAN
-	uint32_t *insn = (uint32_t *) buffer;
-	do
-	{
-		BSwap(*insn);
-	}
-	while(++insn, size -= 4);
-#endif
+	
+	return true;
 }
 
 template <class CONFIG>
-uint32_t CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, uint32_t& insn)
 {
 	if(unlikely(requires_memory_access_reporting)) 
 	{
@@ -159,16 +157,22 @@ uint32_t CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr)
 			uint32_t size_to_block_boundary = IsInsnCacheEnabled() ? CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (addr & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1)) : CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
 			uint32_t size_to_prefetch = size_to_block_boundary > (4 * CONFIG::NUM_PREFETCH_BUFFER_ENTRIES) ? CONFIG::NUM_PREFETCH_BUFFER_ENTRIES * 4 : size_to_block_boundary;
 			// refill the prefetch buffer with up to one cache line, not much
-			EmuFetch(addr, prefetch_buffer, size_to_prefetch);
+			if(unlikely(!EmuFetch(addr, prefetch_buffer, size_to_prefetch))) return false;
 			num_insn_in_prefetch_buffer = size_to_prefetch / 4;
 			cur_insn_in_prefetch_buffer = 0;
 		}
-		return prefetch_buffer[cur_insn_in_prefetch_buffer++];
+		insn = prefetch_buffer[cur_insn_in_prefetch_buffer++];
+#if BYTE_ORDER == LITTLE_ENDIAN
+		BSwap(insn);
+#endif
+		return true;
 	}
 	
-	uint32_t insn;
-	EmuFetch(addr, &insn, sizeof(insn));
-	return insn;
+	if(unlikely(!EmuFetch(addr, &insn, sizeof(insn)))) return false;
+#if BYTE_ORDER == LITTLE_ENDIAN
+	BSwap(insn);
+#endif
+	return true;
 }
 
 } // end of namespace mpc7447a
