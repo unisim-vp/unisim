@@ -377,11 +377,9 @@ unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/sdl/sdl.hh \
 unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
-unisim/component/cxx/processor/powerpc/mpc7447a/exception.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
@@ -487,8 +485,6 @@ unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/elf_loader/elf32_loader.tcc \
 unisim/service/sdl/sdl.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
-unisim/component/cxx/processor/powerpc/exception.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc \
