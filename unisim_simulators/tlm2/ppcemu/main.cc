@@ -435,6 +435,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("cpu.max-inst", maxinst);
 	simulator->SetVariable("cpu.nice-time", "1 ms"); // 1 ms
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
+	simulator->SetVariable("cpu.enable-dmi", true); // Allow CPU to use SystemC TLM 2.0 DMI
 
 	//  - RAM
 	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());

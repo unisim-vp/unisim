@@ -48,7 +48,7 @@ namespace mpc7447a {
 
 template <class CONFIG>
 template <bool TRANSLATE_ADDR>
-void CPU<CONFIG>::EmuLoad(typename CONFIG::address_t addr, void *buffer, uint32_t size)
+bool CPU<CONFIG>::EmuLoad(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	typename CONFIG::WIMG wimg;
 	typename CONFIG::physical_address_t physical_addr;
@@ -65,7 +65,8 @@ void CPU<CONFIG>::EmuLoad(typename CONFIG::address_t addr, void *buffer, uint32_
 		mmu_access.memory_access_type = CONFIG::MAT_READ;
 		mmu_access.memory_type = CONFIG::MT_DATA;
 
-		EmuTranslateAddress<false>(mmu_access);
+		bool status = EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!status)) return false;
 
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -101,7 +102,7 @@ void CPU<CONFIG>::EmuLoad(typename CONFIG::address_t addr, void *buffer, uint32_
 				logger << DebugInfo << "DL1 line miss: choosen way=" << l1_access.way << endl << EndDebugInfo;
 			}
 			
-			EmuEvictDL1(l1_access);
+			if(unlikely(!EmuEvictDL1(l1_access))) return false;
 		}
 
 		if(unlikely(!l1_access.block))
@@ -110,7 +111,7 @@ void CPU<CONFIG>::EmuLoad(typename CONFIG::address_t addr, void *buffer, uint32_
 			{
 				logger << DebugInfo << "DL1: block miss at 0x" << std::hex << l1_access.addr << std::dec << endl << EndDebugInfo;
 			}
-			EmuFillDL1(l1_access, wimg, false /* not a rwitm */);
+			if(unlikely(!EmuFillDL1(l1_access, wimg, false /* not a rwitm */))) return false;
 		}
 
 		memcpy(buffer, &(*l1_access.block)[l1_access.offset], size);
@@ -121,7 +122,11 @@ void CPU<CONFIG>::EmuLoad(typename CONFIG::address_t addr, void *buffer, uint32_
 	else
 	{
 		// DL1 disabled
-		BusRead(physical_addr, buffer, size, wimg);
+		if(unlikely(!BusRead(physical_addr, buffer, size, wimg)))
+		{
+			SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+			return false;
+		}
 	}
 	if(unlikely(IsVerboseLoad()))
 	{
@@ -136,11 +141,13 @@ void CPU<CONFIG>::EmuLoad(typename CONFIG::address_t addr, void *buffer, uint32_
 		}
 		logger << "(" << size << " bytes) at 0x" << std::hex << addr << std::dec << endl << EndDebugInfo;
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
 template <bool TRANSLATE_ADDR>
-void CPU<CONFIG>::EmuStore(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
+bool CPU<CONFIG>::EmuStore(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
 {
 	if(unlikely(CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_PRINTK_ENABLE && enable_linux_printk_snooping))
 	{
@@ -189,7 +196,8 @@ void CPU<CONFIG>::EmuStore(typename CONFIG::address_t addr, const void *buffer, 
 		mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 		mmu_access.memory_type = CONFIG::MT_DATA;
 
-		EmuTranslateAddress<false>(mmu_access);
+		bool status = EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!status)) return false;
 
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -225,7 +233,7 @@ void CPU<CONFIG>::EmuStore(typename CONFIG::address_t addr, const void *buffer, 
 				logger << DebugInfo << "DL1 line miss: choosen way=" << l1_access.way << endl << EndDebugInfo;
 			}
 
-			EmuEvictDL1(l1_access);
+			if(unlikely(!EmuEvictDL1(l1_access))) return false;
 		}
 		
 		if(unlikely(!l1_access.block))
@@ -234,7 +242,7 @@ void CPU<CONFIG>::EmuStore(typename CONFIG::address_t addr, const void *buffer, 
 			{
 				logger << DebugInfo << "DL1: block miss at 0x" << std::hex << l1_access.addr << std::dec << endl << EndDebugInfo;
 			}
-			EmuFillDL1(l1_access, wimg, true);
+			if(unlikely(!EmuFillDL1(l1_access, wimg, true))) return false;
 		}
 	
 		// DL1 hit
@@ -259,26 +267,39 @@ void CPU<CONFIG>::EmuStore(typename CONFIG::address_t addr, const void *buffer, 
 				//UpdateReplacementPolicyL2(l2_access);
 				if(unlikely(l2_power_estimator_import != 0)) l2_power_estimator_import->ReportWriteAccess();
 			}
-			BusWrite(physical_addr, buffer, size, wimg);
+			if(unlikely(!BusWrite(physical_addr, buffer, size, wimg)))
+			{
+				SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+				return false;
+			}
 		}
 	}
 	else
 	{
 		// DL1 disabled
-		BusWrite(physical_addr, buffer, size, wimg);
+		if(unlikely(!BusWrite(physical_addr, buffer, size, wimg)))
+		{
+			SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+			return false;
+		}
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
 template <class T>
-inline void CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
+inline bool CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 {
 	// Data Address Breakpoint handling
 	if(CONFIG::DABR_ENABLE)
 	{
 		if(unlikely(GetDABR_DR() && ((ea >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT()))
 		{
-			throw DSIDataAddressBreakpointException<CONFIG>(ea, CONFIG::MAT_READ);
+			SetException(CONFIG::EXC_DATA_STORAGE_DATA_ADDRESS_BREAKPOINT);
+			SetExceptionAddress(ea);
+			SetExceptionMemoryAccessType(CONFIG::MAT_READ);
+			return false;
 		}
 	}
 
@@ -291,26 +312,34 @@ inline void CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
 	{
 		// Memory load does not cross a FSB boundary
-		EmuLoad<true>(munged_ea, &value, sizeof(T));
+		bool status = EmuLoad<true>(munged_ea, &value, sizeof(T));
+		if(unlikely(!status)) return false;
 	}
 	else
 	{
 		// Memory load crosses a FSB boundary
-		EmuLoad<true>(munged_ea, &value, size_to_fsb_boundary);
-		EmuLoad<true>(munged_ea + size_to_fsb_boundary, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary);
+		bool status = EmuLoad<true>(munged_ea, &value, size_to_fsb_boundary);
+		if(unlikely(!status)) return false;
+		bool status2 = EmuLoad<true>(munged_ea + size_to_fsb_boundary, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary);
+		if(unlikely(!status2)) return false;
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
 template <class T>
-inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
+inline bool CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 {
 	// Data Address	Breakpoint handling
 	if(CONFIG::DABR_ENABLE)
 	{
 		if(unlikely(GetDABR_DW() && ((ea >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT()))
 		{
-			throw DSIDataAddressBreakpointException<CONFIG>(ea, CONFIG::MAT_WRITE);
+			SetException(CONFIG::EXC_DATA_STORAGE_DATA_ADDRESS_BREAKPOINT);
+			SetExceptionAddress(ea);
+			SetExceptionMemoryAccessType(CONFIG::MAT_WRITE);
+			return false;
 		}
 	}
 
@@ -323,14 +352,19 @@ inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
 	{
 		// Memory store does not cross a FSB boundary
-		EmuStore<true>(munged_ea, &value, sizeof(T));
+		bool status = EmuStore<true>(munged_ea, &value, sizeof(T));
+		if(unlikely(!status)) return false;
 	}
 	else
 	{
 		// Memory store crosses a FSB boundary
-		EmuStore<true>(munged_ea, &value, size_to_fsb_boundary);
-		EmuStore<true>(munged_ea + size_to_fsb_boundary, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary);
+		bool status = EmuStore<true>(munged_ea, &value, size_to_fsb_boundary);
+		if(unlikely(!status)) return false;
+		bool status2 = EmuStore<true>(munged_ea + size_to_fsb_boundary, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary);
+		if(unlikely(!status2)) return false;
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
@@ -354,146 +388,135 @@ inline void CPU<CONFIG>::MonitorStore(typename CONFIG::address_t ea, uint32_t si
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int8Load(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int8Load(unsigned int rd, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT8_LOAD, rd, MungEffectiveAddress(ea, 1), 1);
-#else
 	uint8_t value;
-	EmuLoad<uint8_t>(value, ea);
+	bool status = EmuLoad<uint8_t>(value, ea);
+	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 8-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16Load(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int16Load(unsigned int rd, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_LOAD, rd, MungEffectiveAddress(ea, 2), 2);
-#else
 	uint16_t value;
-	EmuLoad<uint16_t>(value, ea);
+	bool status = EmuLoad<uint16_t>(value, ea);
+	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) BigEndian2Host(value); // 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::SInt16Load(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::SInt16Load(unsigned int rd, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::SINT16_LOAD, rd, ea, 2);
-#else
 	uint16_t value;
-	EmuLoad<uint16_t>(value, ea);
+	bool status = EmuLoad<uint16_t>(value, ea);
+	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) (int16_t) BigEndian2Host(value); // 16-bit to 32-bit sign extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32Load(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int32Load(unsigned int rd, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_LOAD, rd, MungEffectiveAddress(ea, 4), 4);
-#else
 	uint32_t value;
-	EmuLoad<uint32_t>(value, ea);
+	bool status = EmuLoad<uint32_t>(value, ea);
+	if(unlikely(!status)) return false;
 	gpr[rd] = BigEndian2Host(value);
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp32Load(unsigned int fd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Fp32Load(unsigned int fd, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::FP32_LOAD, fd, MungEffectiveAddress(ea, 4), 4);
-#else
 	// check alignment
 	if(unlikely(ea & 3))
 	{
-		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+		if(!linux_os_import)
+		{
+			SetException(CONFIG::EXC_ALIGNMENT);
+			SetExceptionAddress(ea);
+			return false;
+		}
 	}
 	uint32_t value;
-	EmuLoad<uint32_t>(value, ea);
+	bool status = EmuLoad<uint32_t>(value, ea);
+	if(unlikely(!status)) return false;
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	fpr[fd].assign(SoftFloat(BigEndian2Host(value)), flags);
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp64Load(unsigned int fd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Fp64Load(unsigned int fd, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::FP64_LOAD, fd, MungEffectiveAddress(ea, 8), 8);
-#else
 	// check alignment
 	if(unlikely(ea & 3))
 	{
-		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+		if(!linux_os_import)
+		{
+			SetException(CONFIG::EXC_ALIGNMENT);
+			SetExceptionAddress(ea);
+			return false;
+		}
 	}
 	uint64_t value;
-	EmuLoad<uint64_t>(value, ea);
+	bool status = EmuLoad<uint64_t>(value, ea);
+	if(unlikely(!status)) return false;
 	fpr[fd] = SoftDouble(BigEndian2Host(value));
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_LOAD_BYTE_REVERSE, rd, MungEffectiveAddress(ea, 2), 2);
-#else
 	uint16_t value;
-	EmuLoad<uint16_t>(value, ea);
+	bool status = EmuLoad<uint16_t>(value, ea);
+	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) LittleEndian2Host(value); // reverse bytes and 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_LOAD_BYTE_REVERSE, rd, MungEffectiveAddress(ea, 4), 4);
-#else
 	uint32_t value;
-	EmuLoad<uint32_t>(value, ea);
+	bool status = EmuLoad<uint32_t>(value, ea);
+	if(unlikely(!status)) return false;
 	gpr[rd] = LittleEndian2Host(value); // reverse bytes
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea, uint32_t size)
+bool CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea, uint32_t size)
 {
 	if(unlikely(GetMSR_LE()))
 	{
-		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+		if(!linux_os_import)
+		{
+			SetException(CONFIG::EXC_ALIGNMENT);
+			SetExceptionAddress(ea);
+			return false;
+		}
 	}
 
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT_LOAD_MSB, rd, ea, size);
-#else
 	switch(size)
 	{
 		case 1:
 		{
 			uint8_t value;
-			EmuLoad<uint8_t>(value, ea);
+			bool status = EmuLoad<uint8_t>(value, ea);
+			if(unlikely(!status)) return false;
 			gpr[rd] = (uint32_t) value << 24;
 			break;
 		}
@@ -501,7 +524,8 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea
 		case 2:
 		{
 			uint16_t value;
-			EmuLoad<uint16_t>(value, ea);
+			bool status = EmuLoad<uint16_t>(value, ea);
+			if(unlikely(!status)) return false;
 			gpr[rd] = (uint32_t) BigEndian2Host(value) << 16;
 			break;
 		}
@@ -509,7 +533,8 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea
 		case 3:
 		{
 			uint8_t buffer[3];
-			EmuLoad<typeof(buffer)>(buffer, ea);
+			bool status = EmuLoad<typeof(buffer)>(buffer, ea);
+			if(unlikely(!status)) return false;
 			uint32_t value = ((uint32_t) buffer[0] << 24) | ((uint32_t) buffer[1] << 16) | ((uint32_t) buffer[2] << 8);
 			gpr[rd] = value;
 			break;
@@ -518,160 +543,156 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea
 		case 4:
 		{
 			uint32_t value;
-			EmuLoad<uint32_t>(value, ea);
+			bool status = EmuLoad<uint32_t>(value, ea);
+			if(unlikely(!status)) return false;
 			gpr[rd] = BigEndian2Host(value);
 			break;
 		}
 	}
 	MonitorLoad(ea, size);
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int8Store(unsigned int rs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int8Store(unsigned int rs, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT8_STORE, rs, MungEffectiveAddress(ea, 1), 1);
-#else
 	uint8_t value = gpr[rs];
-	EmuStore<uint8_t>(value, ea);
+	bool status = EmuStore<uint8_t>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_STORE, rs, MungEffectiveAddress(ea, 2), 2);
-#else
 	uint16_t value = Host2BigEndian((uint16_t) gpr[rs]);
-	EmuStore<uint16_t>(value, ea);
+	bool status = EmuStore<uint16_t>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_STORE, rs, MungEffectiveAddress(ea, 4), 4);
-#else
 	uint32_t value = Host2BigEndian(gpr[rs]);
-	EmuStore<uint32_t>(value, ea);
+	bool status = EmuStore<uint32_t>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp32Store(unsigned int fs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Fp32Store(unsigned int fs, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::FP32_STORE, fs, MungEffectiveAddress(ea, 4), 4);
-#else
 	// check alignment
 	if(unlikely(ea & 3))
 	{
-		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+		if(!linux_os_import)
+		{
+			SetException(CONFIG::EXC_ALIGNMENT);
+			SetExceptionAddress(ea);
+			return false;
+		}
 	}
 	Flags flags;
 	flags.setRoundingMode(RN_ZERO);
 	uint32_t value = Host2BigEndian(SoftFloat(fpr[fs], flags).queryValue());
-	EmuStore<uint32_t>(value, ea);
+	bool status = EmuStore<uint32_t>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp64Store(unsigned int fs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Fp64Store(unsigned int fs, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::FP64_STORE, fs, MungEffectiveAddress(ea, 8), 8);
-#else
 	// check alignment
 	if(unlikely(ea & 3))
 	{
-		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+		if(!linux_os_import)
+		{
+			SetException(CONFIG::EXC_ALIGNMENT);
+			SetExceptionAddress(ea);
+			return false;
+		}
 	}
 	uint64_t value = Host2BigEndian(fpr[fs].queryValue());
-	EmuStore<uint64_t>(value, ea);
+	bool status = EmuStore<uint64_t>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::FP_STORE_LSW, fs, MungEffectiveAddress(ea, 4), 4);
-#else
 	// check alignment
 	if(unlikely(ea & 3))
 	{
-		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+		if(!linux_os_import)
+		{
+			SetException(CONFIG::EXC_ALIGNMENT);
+			SetExceptionAddress(ea);
+			return false;
+		}
 	}
 	uint32_t value = Host2BigEndian((uint32_t) fpr[fs].queryValue());
-	EmuStore<uint32_t>(value, ea);
+	bool status = EmuStore<uint32_t>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_STORE_BYTE_REVERSE, rs, MungEffectiveAddress(ea, 2), 2);
-#else
 	uint16_t value = Host2LittleEndian((uint16_t) gpr[rs]);
-	EmuStore<uint16_t>(value, ea);
+	bool status = EmuStore<uint16_t>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
 {
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_STORE_BYTE_REVERSE, rs, MungEffectiveAddress(ea, 4), 4);
-#else
 	uint32_t value = Host2LittleEndian(gpr[rs]);
-	EmuStore<uint32_t>(value, ea);
+	bool status = EmuStore<uint32_t>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
-#endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size)
+bool CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size)
 {
 	if(unlikely(GetMSR_LE()))
 	{
-		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+		if(!linux_os_import)
+		{
+			SetException(CONFIG::EXC_ALIGNMENT);
+			SetExceptionAddress(ea);
+			return false;
+		}
 	}
 
-#ifdef SOCLIB
-	GenLoadStore(LoadStoreAccess<CONFIG>::INT_STORE_MSB, rs, ea, size);
-#else
 	switch(size)
 	{
 		case 1:
 			{
 				uint8_t value = gpr[rs] >> 24;
-				EmuStore<uint8_t>(value, ea);
+				bool status = EmuStore<uint8_t>(value, ea);
+				if(unlikely(!status)) return false;
 				break;
 			}
 
 		case 2:
 			{
 				uint16_t value = Host2BigEndian((uint16_t)(gpr[rs] >> 16));
-				EmuStore<uint16_t>(value, ea);
+				bool status = EmuStore<uint16_t>(value, ea);
+				if(unlikely(!status)) return false;
 				break;
 			}
 
@@ -682,51 +703,57 @@ void CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t e
 				buffer[0] = value >> 24;
 				buffer[1] = value >> 16;
 				buffer[2] = value >> 8;
-				EmuStore<typeof(buffer)>(buffer, ea);
+				bool status = EmuStore<typeof(buffer)>(buffer, ea);
+				if(unlikely(!status)) return false;
 				break;
 			}
 
 		case 4:
 			{
 				uint32_t value = Host2BigEndian(gpr[rs]);
-				EmuStore<uint32_t>(value, ea);
+				bool status = EmuStore<uint32_t>(value, ea);
+				if(unlikely(!status)) return false;
 				break;
 			}
 	}
 
 	MonitorStore(ea, size);
-#endif
+	return true;
 }
 
 /* Linked Load-Store */
 template <class CONFIG>
-void CPU<CONFIG>::Lwarx(unsigned int rd, typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Lwarx(unsigned int rd, typename CONFIG::address_t addr)
 {
-	Int32Load(rd, addr);
+	if(!Int32Load(rd, addr)) return false;
 
 	reserve = true;
 	reserve_addr = addr;
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Stwcx(unsigned int rs, typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Stwcx(unsigned int rs, typename CONFIG::address_t addr)
 {
 	// TBD
 	if(reserve)
 	{
 		if(reserve_addr == addr)
 		{
-			Int32Store(rs, addr);
+			if(!Int32Store(rs, addr)) return false;
 
 			/* clear CR0[LT][GT], setCR0[EQ] and copy XER[SO] to CR0[SO] */
 			SetCR((GetCR() & ~CONFIG::CR0_MASK) | CONFIG::CR0_EQ_MASK | ((GetXER() & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0));
 			reserve = false;
-			return;
+			return true;
 		}
 	}
 
 	/* clear CR0 and copy XER[SO] to CR0[SO] */
 	SetCR((GetCR() & ~CONFIG::CR0_MASK) | ((GetXER() & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0));
+	
+	return true;
 }
 
 } // end of namespace mpc7447a

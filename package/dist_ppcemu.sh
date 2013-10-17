@@ -177,6 +177,7 @@ unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/floating.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/vr_debug_if.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/tb_debug_if.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.cc \
@@ -206,8 +207,7 @@ unisim/component/cxx/processor/powerpc/isa/specialization.isa \
 unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa \
 unisim/component/cxx/processor/powerpc/mpc7447a/isa/synchronization.isa \
 unisim/component/cxx/processor/powerpc/mpc7447a/isa/tlb_management.isa \
-unisim/component/cxx/processor/powerpc/mpc7447a/isa/misc.isa \
-unisim/component/cxx/processor/powerpc/mpc7447a/isa/perf.isa"
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/misc.isa"
 
 UNISIM_LIB_PPCEMU_HEADER_FILES="${UNISIM_LIB_PPCEMU_ISA_FILES} \
 unisim/kernel/service/service.hh \
@@ -218,6 +218,7 @@ unisim/kernel/tlm2/tlm.hh \
 unisim/kernel/debug/debug.hh \
 unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
+unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
@@ -335,11 +336,9 @@ unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
-unisim/component/cxx/processor/powerpc/mpc7447a/exception.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
@@ -398,8 +397,6 @@ unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/elf_loader/elf32_loader.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/os/linux_os/linux.tcc \
-unisim/component/cxx/processor/powerpc/exception.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc \

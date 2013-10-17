@@ -594,7 +594,7 @@ void CPU<CONFIG>::LookupL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access)
+inline bool CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access)
 {
 	if(unlikely(IsVerboseDL1()))
 	{
@@ -640,7 +640,11 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 						}
 						// dirty DL1 block eviction into memory
 						// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
-						BusWrite(l1_block_to_evict.GetBaseAddr(), &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+						if(unlikely(!BusWrite(l1_block_to_evict.GetBaseAddr(), &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
+						{
+							SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+							return false;
+						}
 					}
 				}
 				else
@@ -651,7 +655,11 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 					}
 					// dirty DL1 block eviction into memory
 					// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
-					BusWrite(l1_block_to_evict.GetBaseAddr(), &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+					if(unlikely(!BusWrite(l1_block_to_evict.GetBaseAddr(), &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
+					{
+						SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+						return false;
+					}
 				}
 			}
 			l1_block_to_evict.status.valid = false;
@@ -662,6 +670,8 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 	}
 	l1_access.line = l1_access.line_to_evict;
 	l1_access.line_to_evict = 0;
+	
+	return true;
 }
 
 template <class CONFIG>
@@ -689,7 +699,7 @@ inline void CPU<CONFIG>::EmuEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::EmuEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
+bool CPU<CONFIG>::EmuEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 {
 	if(unlikely(IsVerboseL2()))
 	{
@@ -711,7 +721,11 @@ void CPU<CONFIG>::EmuEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 				{
 					logger << DebugInfo << "L2: evicting dirty block at 0x" << std::hex << l2_block_to_evict.GetBaseAddr() << std::dec << " into memory" << endl << EndDebugInfo;
 				}
-				BusWrite(l2_block_to_evict.GetBaseAddr(), &l2_block_to_evict[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE);
+				if(unlikely(!BusWrite(l2_block_to_evict.GetBaseAddr(), &l2_block_to_evict[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE)))
+				{
+					SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+					return false;
+				}
 			}
 			l2_block_to_evict.status.valid = false;
 			l2_block_to_evict.status.dirty = false;
@@ -721,6 +735,8 @@ void CPU<CONFIG>::EmuEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 	}
 	l2_access.line = l2_access.line_to_evict;
 	l2_access.line_to_evict = 0;
+	
+	return true;
 }
 
 template <class CONFIG>
@@ -865,7 +881,7 @@ void CPU<CONFIG>::UpdateReplacementPolicyL2(CacheAccess<typename CONFIG::L2_CONF
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, typename CONFIG::WIMG wimg, bool rwitm)
+inline bool CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, typename CONFIG::WIMG wimg, bool rwitm)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
 	if(unlikely(unlikely(IsVerboseDL1())))
@@ -895,7 +911,7 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 				logger << DebugInfo << "L2 line miss: choosen way=" << l2_access.way << endl << EndDebugInfo;
 			}
 			
-			EmuEvictL2(l2_access);
+			if(unlikely(!EmuEvictL2(l2_access))) return false;
 		}
 	
 		if(unlikely(!l2_access.block))
@@ -904,7 +920,7 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 			{
 				logger << DebugInfo << "L2: block miss at 0x" << std::hex << l2_access.addr << std::dec << endl << EndDebugInfo;
 			}
-			EmuFillL2(l2_access, wimg, rwitm);
+			if(unlikely(!EmuFillL2(l2_access, wimg, rwitm))) return false;
 		}
 
 		memcpy(&(*l1_access.block)[0], &(*l2_access.block)[l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
@@ -915,7 +931,11 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 	else
 	{
 		// DL1 block fill from memory
-		BusRead(l1_access.block_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, wimg, rwitm);
+		if(unlikely(!BusRead(l1_access.block_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, wimg, rwitm)))
+		{
+			SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+			return false;
+		}
 	}
 
 	l1_access.line->status.valid = true;
@@ -923,10 +943,12 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 	l1_access.block->status.valid = true;
 	l1_access.block->status.dirty = false;
 	UpdateReplacementPolicyDL1(l1_access);
+	
+	return true;
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, typename CONFIG::WIMG wimg)
+inline bool CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, typename CONFIG::WIMG wimg)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
 	if(unlikely(IsVerboseIL1()))
@@ -957,7 +979,7 @@ inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1
 				logger << DebugInfo << "L2 line miss: choosen way=" << l2_access.way << endl << EndDebugInfo;
 			}
 
-			EmuEvictL2(l2_access);
+			if(unlikely(!EmuEvictL2(l2_access))) return false;
 		}
 	
 		if(unlikely(!l2_access.block))
@@ -966,7 +988,7 @@ inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1
 			{
 				logger << DebugInfo << "L2: block miss at 0x" << std::hex << l2_access.addr << std::dec << endl << EndDebugInfo;
 			}
-			EmuFillL2(l2_access, wimg, false);
+			if(unlikely(!EmuFillL2(l2_access, wimg, false))) return false;
 		}
 		memcpy(&(*l1_access.block)[0], &(*l2_access.block)[l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
 		//UpdateReplacementPolicyL2(l2_access);
@@ -976,48 +998,64 @@ inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1
 	else
 	{
 		// DL1 block fill from memory
-		BusRead(l1_access.block_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, wimg, false);
+		if(!unlikely(BusRead(l1_access.block_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, wimg, false)))
+		{
+			SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+			return false;
+		}
 	}
 
 	l1_access.line->status.valid = true;
 	l1_access.line->SetBaseAddr(l1_access.line_base_addr);
 	l1_access.block->status.valid = true;
 	UpdateReplacementPolicyIL1(l1_access);
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::EmuFillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, typename CONFIG::WIMG wimg, bool rwitm)
+bool CPU<CONFIG>::EmuFillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, typename CONFIG::WIMG wimg, bool rwitm)
 {
 	l2_access.block = &(*l2_access.line)[l2_access.sector];
 	if(unlikely(IsVerboseL2()))
 	{
 		logger << DebugInfo << "L2: filling block at 0x" << std::hex << l2_access.block_base_addr << std::dec << endl << EndDebugInfo;
 	}
-	BusRead(l2_access.block_base_addr, &(*l2_access.block)[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE, wimg, rwitm);
+	if(unlikely(!BusRead(l2_access.block_base_addr, &(*l2_access.block)[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE, wimg, rwitm)))
+	{
+		SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+		return false;
+	}
 	l2_access.line->status.valid = true;
 	l2_access.line->SetBaseAddr(l2_access.line_base_addr);
 	l2_access.block->status.valid = true;
 	l2_access.block->status.dirty = false;
 	UpdateReplacementPolicyL2(l2_access);
+	
+	return true;
 }
 
 /* Data Cache management */
 template <class CONFIG>
-void CPU<CONFIG>::Dcba(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcba(typename CONFIG::address_t addr)
 {
-	Dcbz(addr);
+	return Dcbz(addr);
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 {
-	Dcbst(addr);
+	return Dcbst(addr);
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 {
-	if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+	if(GetMSR_PR())
+	{
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
+	}
 
 	typename CONFIG::WIMG wimg;
 	typename CONFIG::physical_address_t physical_addr;
@@ -1032,7 +1070,8 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 		mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 		mmu_access.memory_type = CONFIG::MT_DATA;
 
-		EmuTranslateAddress<false>(mmu_access);
+		bool status = EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!status)) return false;
 
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -1085,7 +1124,11 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 						logger << DebugInfo << "DL1: flushing/invalidating dirty block at 0x" << std::hex << l1_block_to_flush.GetBaseAddr() << std::dec << " into memory" << endl;
 					}
 					// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
-					BusWrite(l1_block_to_flush.GetBaseAddr(), &l1_block_to_flush[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+					if(unlikely(!BusWrite(l1_block_to_flush.GetBaseAddr(), &l1_block_to_flush[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
+					{
+						SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+						return false;
+					}
 				}
 			}
 			l1_block_to_flush.status.valid = false;
@@ -1115,7 +1158,11 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 					logger << DebugInfo << "L2: flushing/invalidating dirty block at 0x" << std::hex << l2_block_to_flush.GetBaseAddr() << std::dec << " into memory" << endl;
 				}
 				// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
-					BusWrite(l2_block_to_flush.GetBaseAddr(), &l2_block_to_flush[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE);
+				if(unlikely(!BusWrite(l2_block_to_flush.GetBaseAddr(), &l2_block_to_flush[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE)))
+				{
+					SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+					return false;
+				}
 			}
 			l2_block_to_flush.status.valid = false;
 			l2_block_to_flush.status.dirty = false;
@@ -1125,12 +1172,18 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 
 	if(dirty || (IsAddressBroadcastEnabled() && (wimg & CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED)))
 	{
-		BusFlushBlock(physical_addr);
+		if(unlikely(!BusFlushBlock(physical_addr)))
+		{
+			SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+			return false;
+		}
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 {
 	typename CONFIG::WIMG wimg;
 	typename CONFIG::physical_address_t physical_addr;
@@ -1145,7 +1198,8 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 		mmu_access.memory_access_type = CONFIG::MAT_READ; // 3.4.4.4 Data Cache Block Store (dcbst): This instruction is treated as a load with respect to address translation and memory protection
 		mmu_access.memory_type = CONFIG::MT_DATA;
 
-		EmuTranslateAddress<false>(mmu_access);
+		bool status = EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!status)) return false;
 
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -1198,7 +1252,11 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 						logger << DebugInfo << "DL1: flushing/invalidating dirty block at 0x" << std::hex << l1_block_to_flush.GetBaseAddr() << std::dec << " into memory" << endl;
 					}
 					// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
-					BusWrite(l1_block_to_flush.GetBaseAddr(), &l1_block_to_flush[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+					if(unlikely(!BusWrite(l1_block_to_flush.GetBaseAddr(), &l1_block_to_flush[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
+					{
+						SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+						return false;
+					}
 				}
 			}
 			l1_block_to_flush.status.valid = false;
@@ -1228,7 +1286,11 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 					logger << DebugInfo << "L2: flushing/invalidating dirty block at 0x" << std::hex << l2_block_to_flush.GetBaseAddr() << std::dec << " into memory" << endl;
 				}
 				// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
-					BusWrite(l2_block_to_flush.GetBaseAddr(), &l2_block_to_flush[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE);
+				if(unlikely(!BusWrite(l2_block_to_flush.GetBaseAddr(), &l2_block_to_flush[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE)))
+				{
+					SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+					return false;
+				}
 			}
 			l2_block_to_flush.status.valid = false;
 			l2_block_to_flush.status.dirty = false;
@@ -1238,16 +1300,24 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 
 	if(dirty || (IsAddressBroadcastEnabled() && (wimg & CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED)))
 	{
-		BusFlushBlock(physical_addr);
+		if(unlikely(!BusFlushBlock(physical_addr)))
+		{
+			SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+			return false;
+		}
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 {
 	if(CONFIG::DL1_CONFIG::ENABLE && !IsDataCacheEnabled())
 	{
-		throw AlignmentException<CONFIG>(addr);
+		SetException(CONFIG::EXC_ALIGNMENT);
+		SetExceptionAddress(addr);
+		return false;
 	}
 
 	typename CONFIG::WIMG wimg;
@@ -1263,7 +1333,8 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 		mmu_access.memory_access_type = CONFIG::MAT_WRITE; // 3.4.4.3 Data Cache Block Zero (dcbz): The dcbz instruction is treated as a store to the addressed byte with respect to address translation, protection, and pipelining.
 		mmu_access.memory_type = CONFIG::MT_DATA;
 
-		EmuTranslateAddress<false>(mmu_access);
+		bool status = EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!status)) return false;
 
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -1280,7 +1351,9 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 
 	if((wimg & CONFIG::WIMG_CACHE_INHIBITED) || (wimg & CONFIG::WIMG_WRITE_THROUGH))
 	{
-		throw AlignmentException<CONFIG>(addr);
+		SetException(CONFIG::EXC_ALIGNMENT);
+		SetExceptionAddress(addr);
+		return false;
 	}
 
 	if(CONFIG::DL1_CONFIG::ENABLE)
@@ -1299,7 +1372,7 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 				logger << DebugInfo << "DL1 line miss: choosen way=" << l1_access.way << endl << EndDebugInfo;
 			}
 			
-			EmuEvictDL1(l1_access);
+			if(unlikely(!EmuEvictDL1(l1_access))) return false;
 		}
 	
 		if(!l1_access.block)
@@ -1332,7 +1405,7 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 					logger << DebugInfo << "L2 line miss: choosen way=" << l2_access.way << endl << EndDebugInfo;
 				}
 
-				EmuEvictL2(l2_access);
+				if(unlikely(!EmuEvictL2(l2_access))) return false;
 			}
 		
 			if(!l2_access.block)
@@ -1355,28 +1428,20 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 		// just in case we don't have a data cache
 		uint8_t zero[32];
 		memset(zero, 0, sizeof(zero));
-		BusWrite(physical_addr & (~31), zero, sizeof(zero));
+		if(unlikely(!BusWrite(physical_addr & (~31), zero, sizeof(zero))))
+		{
+			SetException(CONFIG::EXC_MACHINE_CHECK_TEA);
+			return false;
+		}
 	}
 	
 	// broadcast zero block on the bus
-	BusZeroBlock(physical_addr);
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Dccci(typename CONFIG::address_t addr)
-{
-	throw IllegalInstructionException<CONFIG>();
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Dcread(typename CONFIG::address_t addr, unsigned int rd)
-{
-	throw IllegalInstructionException<CONFIG>();
+	return BusZeroBlock(physical_addr);
 }
 
 /* Instruction Cache Management */
 template <class CONFIG>
-void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 {
 //	mmu.InvalidateInsnCacheBlock(addr, GetPrivilegeLevel());
 
@@ -1393,24 +1458,15 @@ void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 	InvalidateIL1Set(index);
 
 	unisim::component::cxx::processor::powerpc::mpc7447a::Decoder<CONFIG>::InvalidateDecodingCacheEntry(addr);
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Icbt(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Icbt(typename CONFIG::address_t addr)
 {
-	throw IllegalInstructionException<CONFIG>();
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Iccci(typename CONFIG::address_t addr)
-{
-	throw IllegalInstructionException<CONFIG>();
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Icread(typename CONFIG::address_t addr)
-{
-	throw IllegalInstructionException<CONFIG>();
+	SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 
 } // end of namespace mpc7447a
