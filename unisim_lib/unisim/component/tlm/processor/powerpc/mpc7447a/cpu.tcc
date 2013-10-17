@@ -36,7 +36,6 @@
 #define __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_MPC7447A_CPU_TCC__
 
 #include <unistd.h>
-#include <unisim/component/cxx/processor/powerpc/exception.tcc>
 
 namespace unisim {
 namespace component {
@@ -127,6 +126,8 @@ bool CPU<CONFIG>::EndSetup()
 template <class CONFIG>
 void CPU<CONFIG>::end_of_simulation()
 {
+	run_time = sc_time_stamp();
+	cpu_time = SC_ZERO_TIME;
 	if(!inherited::linux_os_import) RunInternalTimers(); // make run_time match timer_time
 }
 
