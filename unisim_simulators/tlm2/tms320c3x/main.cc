@@ -388,10 +388,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("loader.filename", "c31boot.out");
 	
 	// - CPU
-	simulator->SetVariable("cpu.mimic-dev-board", "true");
+	simulator->SetVariable("cpu.mimic-dev-board", true);
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
 	simulator->SetVariable("cpu.cpu-cycle-time", sc_time(cpu_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.nice-time", "1 us");
+	simulator->SetVariable("cpu.enable-dmi", true);
 	
 	//  - RAM
 	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
