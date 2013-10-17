@@ -38,5 +38,4 @@ include "unisim/component/cxx/processor/powerpc/isa/ppc.isa"
 include "unisim/component/cxx/processor/powerpc/mpc7447a/isa/synchronization.isa"
 include "unisim/component/cxx/processor/powerpc/mpc7447a/isa/tlb_management.isa"
 include "unisim/component/cxx/processor/powerpc/mpc7447a/isa/misc.isa"
-include "unisim/component/cxx/processor/powerpc/mpc7447a/isa/perf.isa"
 

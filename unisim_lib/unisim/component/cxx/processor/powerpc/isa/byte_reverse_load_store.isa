@@ -9,7 +9,7 @@ lhbrx.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// do the memory access
-	cpu->Int16LoadByteReverse(rd, ea); // 16-bit load/byte reverse/no signe extend
+	return cpu->Int16LoadByteReverse(rd, ea); // 16-bit load/byte reverse/no signe extend
 }
 lhbrx.disasm = {
 	os << "lhbrx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -25,7 +25,7 @@ lwbrx.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// do the memory access
-	cpu->Int32LoadByteReverse(rd, ea); // 32-bit load/byte reverse/no signe extend
+	return cpu->Int32LoadByteReverse(rd, ea); // 32-bit load/byte reverse/no signe extend
 }
 lwbrx.disasm = {
 	os << "lwbrx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -41,7 +41,7 @@ sthbrx.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// do the memory access
-	cpu->Int16StoreByteReverse(rs, ea); // 16-bit load/byte reverse
+	return cpu->Int16StoreByteReverse(rs, ea); // 16-bit load/byte reverse
 }
 sthbrx.disasm = {
 	os << "sthbrx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -57,7 +57,7 @@ stwbrx.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// do the memory access
-	cpu->Int32StoreByteReverse(rs, ea); // 32-bit load/byte reverse
+	return cpu->Int32StoreByteReverse(rs, ea); // 32-bit load/byte reverse
 }
 stwbrx.disasm = {
 	os << "stwbrx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;

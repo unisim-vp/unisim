@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_QUEUE_QUEUE_TCC__
 
 #include <iostream>
+#include <string.h>
 
 namespace unisim {
 namespace util {
@@ -93,6 +94,19 @@ void Queue<CONFIG>::Push(typename CONFIG::ELEMENT& elt)
 	buffer[back_idx] = elt;
 	back_idx = (back_idx + 1) & (BUFFER_SIZE - 1);
 	size++;
+}
+
+template <class CONFIG>
+void Queue<CONFIG>::Push(typename CONFIG::ELEMENT *elt, unsigned int num_elts)
+{
+	if(num_elts)
+	{
+		do
+		{
+			Push(*elt);
+		}
+		while(++elt, --num_elts);
+	}
 }
 
 template <class CONFIG>

@@ -492,6 +492,11 @@ public:
 		kernel_event.notify(t);
 	}
 	
+	bool Empty() const
+	{
+		return schedule.empty();
+	}
+	
 	EVENT *GetNextEvent()
 	{
 		if(schedule.empty()) return 0;

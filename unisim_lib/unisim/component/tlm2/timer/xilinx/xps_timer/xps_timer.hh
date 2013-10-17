@@ -107,7 +107,6 @@ public:
 	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 	
 	// Forward b_transport/nb_transport callbacks for CaptureTrigger
 	void capture_trigger_b_transport(unsigned int channel, CaptureTriggerPayload& trans, sc_core::sc_time& t);

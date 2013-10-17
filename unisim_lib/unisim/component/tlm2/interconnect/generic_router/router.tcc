@@ -393,14 +393,6 @@ template<class CONFIG>
 tlm::tlm_sync_enum 
 Router<CONFIG>::
 I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core::sc_time &time) {
-//	if (trans.get_command() == tlm::TLM_IGNORE_COMMAND || trans.get_command() == tlm::TLM_WRITE_COMMAND) {
-//		logger << DebugWarning << "Received nb_transport_bw on port " << id << ", with an ignore or a write command, which the router doesn't know how to handle" << endl
-//			<< TIME(time) << endl
-//			<< PHASE(phase) << endl;
-//		TRANS(logger, trans);
-//		logger << EndDebug;
-//		return tlm::TLM_ACCEPTED;
-//	}
 	switch (phase) {
 		case tlm::BEGIN_REQ:
 		case tlm::END_RESP:
@@ -458,11 +450,6 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 		case tlm::END_REQ:
 			/* just signal that the socket can be used again */
 			m_req_dispatcher[id]->Completed(&trans, time);
-			/* if the transaction is a write, we do not expect a response and the request is finished for us.
-			 *   we can release it */
-//			if (trans.is_write()) {
-//				trans.release();
-//			}
 			return tlm::TLM_COMPLETED;
 			break;
 	}
@@ -565,14 +552,14 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 			/* get the init port through which the transaction should be forwarded */
 			unsigned int mapping_id;
 			if (!ApplyMap(trans, mapping_id)) {
-				logger << DebugError << "When handling received transaction could not apply any mapping" << endl
+				trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+				logger << DebugWarning << "When handling received transaction could not apply any mapping" << endl
 					<< TIME(time) << endl
 					<< PHASE(phase) << endl
 					<< LOCATION << endl;
 				TRANS(logger, trans);
 				logger << EndDebug;
-				Object::Stop(-1);
-				return tlm::TLM_COMPLETED; // should never occur
+				return tlm::TLM_COMPLETED;
 			}
 
 			/* perform the address translation */
@@ -582,37 +569,14 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 			trans.set_address(translated_addr);
 
 			/* checking command */
-//			if (trans.is_read()) {
-				/* insert the input port id into the transaction */
-				SetRouterExtension(trans, id);
-				/* push the transaction to the corresponding init port queue */
-				m_req_dispatcher[mapping[mapping_id].output_port]->Push(trans, time);
-				trans.release();
-				/* change the phase and return */
-				phase = tlm::END_REQ;
-				return tlm::TLM_UPDATED;
-#if 0
-			} else {
-				/* trans is a write, the request is complete at this point so we need to copy it to forward it */
-				transaction_type *clone_trans = payload_fabric.allocate();
-				// clone_trans->acquire(); // not necessary because it is being done in the payload_fabric
-				unsigned char *data = (unsigned char *)malloc(sizeof(unsigned char) * trans.get_data_length());
-				clone_trans->set_data_ptr(data);
-				if (trans.get_byte_enable_length() != 0) {
-					unsigned char *byte_enable = (unsigned char *)malloc(sizeof(unsigned char) * trans.get_byte_enable_length());
-					clone_trans->set_byte_enable_ptr(byte_enable);
-				}
-				clone_trans->deep_copy_from(trans);
-				/* push the transaction to the corresponding init port queue */
-				m_req_dispatcher[mapping[mapping_id].output_port]->Push(*clone_trans, time);
-				/* finish the incomming request */
-				phase = tlm::END_REQ;
-				trans.set_response_status(tlm::TLM_OK_RESPONSE);
-				trans.release();
-				clone_trans->release();
-				return tlm::TLM_COMPLETED;
-			}
-#endif
+			/* insert the input port id into the transaction */
+			SetRouterExtension(trans, id);
+			/* push the transaction to the corresponding init port queue */
+			m_req_dispatcher[mapping[mapping_id].output_port]->Push(trans, time);
+			trans.release();
+			/* change the phase and return */
+			phase = tlm::END_REQ;
+			return tlm::TLM_UPDATED;
 		}
 		break;
 	case tlm::END_RESP:
@@ -644,7 +608,8 @@ T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time)
 	bool found = ApplyMap(trans, mapping_id);
 	if (!found) 
 	{
-		logger << DebugError << "Received transaction on port " << id << " has an unmapped address"  << endl
+		trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+		logger << DebugWarning << "Received transaction on port " << id << " has an unmapped address"  << endl
 			<< LOCATION << endl
 			<< TIME(time) << endl;
 		TRANS(logger, trans);
@@ -1080,16 +1045,6 @@ SendReq(unsigned int id, transaction_type &trans) {
 					/* nothing else to do, just wait for the corresponding END_REQ */
 					break;
 				case tlm::END_REQ:
-					/* if the transaction is a write we should not have received a TLM_UPDATED with END_REQ, but TLM_COMPLETED instead */
-//					if(trans.is_write()) {
-//						logger << DebugError << "Received a TLM_UPDATED with phase to END_REQ when sending a write request transaction through init_socket[" << id << "], a TLM_COMPLETED should have been received" << endl
-//							<< LOCATION << endl
-//							<< TIME(time) << endl;
-//						TRANS(logger, trans);
-//						logger << EndDebug;
-//						Object::Stop(-1);
-//					}
-					/* we can remove the request from the queue, so new ones can be sent */
 					if (VerboseTLM()) {
 						logger << DebugInfo << "Transaction sent from init_req_fifo[" << id << "] accepted (TLM_UPDATED with phase END_REQ), removing the transaction from the request queue" << endl
 							<< TIME(time) << endl;
@@ -1099,15 +1054,6 @@ SendReq(unsigned int id, transaction_type &trans) {
 					m_req_dispatcher[id]->Completed(&trans, time);
 					break;	
 				case tlm::BEGIN_RESP:
-					/* if the transaction is a write we should not have received a TLM_UPDATED with BEGIN_RESP, but TLM_COMPLETED instead */
-//					if(trans.is_write()) {
-//						logger << DebugError << "Received a TLM_UPDATED with phase to BEGIN_RESP when sending a write request transaction through init_socket[" << id << "], a TLM_COMPLETED should have been received" << endl
-//							<< LOCATION << endl
-//							<< TIME(time) << endl;
-//						TRANS(logger, trans);
-//						logger << EndDebug;
-//						Object::Stop(-1);
-//					}
 					/* the request has been accepted, and the response has been produced
 					 * check when the response can be queued into the response queue through the handled port (recovering the router extension)
 					 * we must send an end response message */
@@ -1177,51 +1123,37 @@ SendReq(unsigned int id, transaction_type &trans) {
 			{
 				/* notify to the request dispatcher that the transaction request has been completed */
 				m_req_dispatcher[id]->Completed(&trans, time);
-#if 0
-				if(trans.is_write()) {
-					if (VerboseTLM()) {
-						logger << DebugInfo << "Transaction request send through the init_port[" << id << "] completed (TLM_COMPLETED)" << endl
-							<< TIME(time) << endl;
-						ETRANS(logger, trans);
-						logger << EndDebug;
-					}
-					/* we can release the transaction */
-					trans.release();
+				unsigned int targ_id;
+				if(!GetRouterExtension(trans, targ_id)) {
+					logger << DebugError << "Could not find the router extension from transaction response" << endl
+						<< LOCATION << endl
+						<< TIME(time) << endl;
+					ETRANS(logger, trans);
+					logger << EndDebug;
+					Object::Stop(-1);
+					return; // should never occur
+				}
+				if (VerboseTLM()) {
+					logger << DebugInfo << "Transaction request sent through the init_port[" << id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << endl
+						<< TIME(time) << endl;
+					ETRANS(logger, trans);
+					logger << EndDebug;
+				}
+				/* check when the request can be accepted by the router */
+				sc_core::sc_time cur_time = sc_time_stamp() + time;
+				if (cur_time <= m_init_rsp_ready[id]) {
+					/* the init port is not ready to receive the response, get the time when it will be ready */
+					time = m_init_rsp_ready[id] - sc_time_stamp();
+					m_init_rsp_ready[id] = m_init_rsp_ready[id] + cycle_time;
 				} else {
-#endif
-					/* the transaction is a read */
-					unsigned int targ_id;
-					if(!GetRouterExtension(trans, targ_id)) {
-						logger << DebugError << "Could not find the router extension from transaction response" << endl
-							<< LOCATION << endl
-							<< TIME(time) << endl;
-						ETRANS(logger, trans);
-						logger << EndDebug;
-						Object::Stop(-1);
-						return; // should never occur
-					}
-					if (VerboseTLM()) {
-						logger << DebugInfo << "Transaction request sent through the init_port[" << id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << endl
-							<< TIME(time) << endl;
-						ETRANS(logger, trans);
-						logger << EndDebug;
-					}
-					/* check when the request can be accepted by the router */
-					sc_core::sc_time cur_time = sc_time_stamp() + time;
-					if (cur_time <= m_init_rsp_ready[id]) {
-						/* the init port is not ready to receive the response, get the time when it will be ready */
-						time = m_init_rsp_ready[id] - sc_time_stamp();
-						m_init_rsp_ready[id] = m_init_rsp_ready[id] + cycle_time;
-					} else {
-						/* the init port is ready for the time the response is received, however we have to make sure
-						 *   that the incomming transactions is synchronized with the router cycle_time */
-						sc_core::sc_time t_time = ((cycle_time * floor(cur_time / cycle_time)) + cycle_time);
-						time = t_time - sc_time_stamp();
-						m_init_rsp_ready[id] = t_time + cycle_time;
-					}
-					/* push the response into the response dispatcher */
-					m_rsp_dispatcher[targ_id]->Push(trans, time);
-//				}
+					/* the init port is ready for the time the response is received, however we have to make sure
+						*   that the incomming transactions is synchronized with the router cycle_time */
+					sc_core::sc_time t_time = ((cycle_time * floor(cur_time / cycle_time)) + cycle_time);
+					time = t_time - sc_time_stamp();
+					m_init_rsp_ready[id] = t_time + cycle_time;
+				}
+				/* push the response into the response dispatcher */
+				m_rsp_dispatcher[targ_id]->Push(trans, time);
 			}
 			break;
 	}
@@ -1272,7 +1204,6 @@ SendRsp(unsigned int id, transaction_type &trans) {
 			/* the response has been completed, we can remove it from the response queue */
 			m_rsp_dispatcher[id]->Completed(&trans, time);
 			/* release the transaction */
-			//trans.release();
 			break;
 	}
 }

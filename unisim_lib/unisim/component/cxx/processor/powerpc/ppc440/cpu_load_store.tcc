@@ -47,9 +47,12 @@ namespace powerpc {
 namespace ppc440 {
 
 template <class CONFIG>
-void CPU<CONFIG>::EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t size)
+bool CPU<CONFIG>::EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t size)
 {
-	memset(buffer, 0, size);
+	if(CONFIG::DEBUG_ENABLE)
+	{
+		memset(buffer, 0, size);
+	}
 	
 	if(likely(!(mmu_access.storage_attr & CONFIG::SA_I) && IsDataCacheEnabled())) // cache inhibited ?
 	{
@@ -73,7 +76,7 @@ void CPU<CONFIG>::EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t 
 				logger << DebugInfo << "DL1 line miss: index=" << l1_access.index << ", choosen way=" << l1_access.way << endl << EndDebugInfo;
 			}
 			
-			EmuEvictDL1(l1_access);
+			if(unlikely(!EmuEvictDL1(l1_access))) return false;
 		}
 
 		if(unlikely(!l1_access.block))
@@ -82,7 +85,7 @@ void CPU<CONFIG>::EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t 
 			{
 				logger << DebugInfo << "DL1: block miss at 0x" << std::hex << l1_access.addr << std::dec << endl << EndDebugInfo;
 			}
-			EmuFillDL1(l1_access);
+			if(unlikely(!EmuFillDL1(l1_access))) return false;
 		}
 
 		memcpy(buffer, &(*l1_access.block)[l1_access.offset], size);
@@ -94,7 +97,8 @@ void CPU<CONFIG>::EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t 
 		// DL1 disabled
 		if(unlikely(!PLBDataRead(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
 		{
-			throw DataAsynchronousMachineCheckException<CONFIG>();
+			SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+			return false;
 		}
 	}
 	if(unlikely(IsVerboseLoad()))
@@ -110,10 +114,11 @@ void CPU<CONFIG>::EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t 
 		}
 		logger << "(" << size << " bytes) at 0x" << std::hex << mmu_access.addr << std::dec << endl << EndDebugInfo;
 	}
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, uint32_t size)
+bool CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, uint32_t size)
 {
 	if(unlikely(CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_PRINTK_ENABLE && enable_linux_printk_snooping))
 	{
@@ -172,7 +177,7 @@ void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, ui
 				logger << DebugInfo << "DL1 line miss: index=" << l1_access.index << ", choosen way=" << l1_access.way << endl << EndDebugInfo;
 			}
 
-			EmuEvictDL1(l1_access);
+			if(unlikely(!EmuEvictDL1(l1_access))) return false;
 		}
 		
 		if(unlikely(!l1_access.block))
@@ -181,7 +186,7 @@ void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, ui
 			{
 				logger << DebugInfo << "DL1: block miss at 0x" << std::hex << l1_access.addr << std::dec << endl << EndDebugInfo;
 			}
-			EmuFillDL1(l1_access);
+			if(unlikely(!EmuFillDL1(l1_access))) return false;
 		}
 	
 		// DL1 hit
@@ -194,7 +199,8 @@ void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, ui
 			// Note: dirty bit is not set when storage attribute W is set
 			if(unlikely(!PLBDataWrite(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
 			{
-				throw DataAsynchronousMachineCheckException<CONFIG>();
+				SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+				return false;
 			}
 		}
 		else
@@ -207,14 +213,17 @@ void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, ui
 		// DL1 disabled
 		if(unlikely(!PLBDataWrite(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
 		{
-			throw DataAsynchronousMachineCheckException<CONFIG>();
+			SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+			return false;
 		}
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
 template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN>
-inline void CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
+inline bool CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 {
 	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (ea & (CONFIG::FSB_WIDTH - 1));
 
@@ -232,9 +241,9 @@ inline void CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 		mmu_access.memory_access_type = CONFIG::MAT_READ;
 		mmu_access.memory_type = CONFIG::MT_DATA;
 
-		EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 		
-		EmuLoad(mmu_access, &value, sizeof(T));
+		if(unlikely(!EmuLoad(mmu_access, &value, sizeof(T)))) return false;
 		
 	}
 	else
@@ -249,13 +258,13 @@ inline void CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 		mmu_access.memory_access_type = CONFIG::MAT_READ;
 		mmu_access.memory_type = CONFIG::MT_DATA;
 
-		EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
-		EmuLoad(mmu_access, &value, size_to_fsb_boundary);
+		if(unlikely(!EmuLoad(mmu_access, &value, size_to_fsb_boundary))) return false;
 
 		mmu_access.addr = ea + size_to_fsb_boundary;
-		EmuTranslateAddress<false>(mmu_access);
-		EmuLoad(mmu_access, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary);
+		if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
+		if(unlikely(!EmuLoad(mmu_access, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary))) return false;
 	}
 
 #if BYTE_ORDER == LITTLE_ENDIAN
@@ -266,11 +275,13 @@ inline void CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 	{
 		BSwap(value);
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
 template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN>
-inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
+inline bool CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 {
 	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (ea & (CONFIG::FSB_WIDTH - 1));
 
@@ -289,7 +300,7 @@ inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 		mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 		mmu_access.memory_type = CONFIG::MT_DATA;
 
-		EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 		
 #if BYTE_ORDER == LITTLE_ENDIAN
 		if((REVERSE && !FORCE_BIG_ENDIAN && (mmu_access.storage_attr & CONFIG::SA_E)) || (!REVERSE && (FORCE_BIG_ENDIAN || !(mmu_access.storage_attr & CONFIG::SA_E))))
@@ -299,7 +310,7 @@ inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 		{
 			BSwap(value);
 		}
-		EmuStore(mmu_access, &value, sizeof(T));
+		if(unlikely(!EmuStore(mmu_access, &value, sizeof(T)))) return false;
 	}
 	else
 	{
@@ -312,7 +323,7 @@ inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 		mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 		mmu_access.memory_type = CONFIG::MT_DATA;
 
-		EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 		
 #if BYTE_ORDER == LITTLE_ENDIAN
 		if((REVERSE && !FORCE_BIG_ENDIAN && (mmu_access.storage_attr & CONFIG::SA_E)) || (!REVERSE && (FORCE_BIG_ENDIAN || !(mmu_access.storage_attr & CONFIG::SA_E))))
@@ -323,141 +334,174 @@ inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 			BSwap(value);
 		}
 
-		EmuStore(mmu_access, &value, size_to_fsb_boundary);
+		if(unlikely(!EmuStore(mmu_access, &value, size_to_fsb_boundary))) return false;
 
 		// Address translation for the first memory access
 		mmu_access.addr = ea + size_to_fsb_boundary;
-		EmuTranslateAddress<false>(mmu_access);
+		if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
-		EmuStore(mmu_access, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary);
+		if(unlikely(!EmuStore(mmu_access, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary))) return false;
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
 inline void CPU<CONFIG>::MonitorLoad(typename CONFIG::address_t ea, uint32_t size)
 {
-	if(likely(size > 0))
+	// Memory access reporting
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		// Memory access reporting
-		if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
-		{
-			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, ea, size);
-		}
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, ea, size);
 	}
 }
 
 template <class CONFIG>
 inline void CPU<CONFIG>::MonitorStore(typename CONFIG::address_t ea, uint32_t size)
 {
-	if(likely(size > 0))
+	// Memory access reporting
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		// Memory access reporting
-		if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
-		{
-			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, ea, size);
-		}
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, ea, size);
 	}
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int8Load(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int8Load(unsigned int rd, typename CONFIG::address_t ea)
 {
 	uint8_t value;
-	EmuLoad<uint8_t, false, false>(value, ea);
+	bool status = EmuLoad<uint8_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 8-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16Load(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int16Load(unsigned int rd, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint16_t value;
-	EmuLoad<uint16_t, false, false>(value, ea);
+	bool status = EmuLoad<uint16_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::SInt16Load(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::SInt16Load(unsigned int rd, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint16_t value;
-	EmuLoad<uint16_t, false, false>(value, ea);
+	bool status = EmuLoad<uint16_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) (int16_t) value; // 16-bit to 32-bit sign extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32Load(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int32Load(unsigned int rd, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint32_t value;
-	EmuLoad<uint32_t, false, false>(value, ea);
+	bool status = EmuLoad<uint32_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	gpr[rd] = value;
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp32Load(unsigned int fd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Fp32Load(unsigned int fd, typename CONFIG::address_t ea)
 {
 	// check alignment
-	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint32_t value;
-	EmuLoad<uint32_t, false, false>(value, ea);
+	bool status = EmuLoad<uint32_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	fpr[fd].assign(SoftFloat(value), flags);
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp64Load(unsigned int fd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Fp64Load(unsigned int fd, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 7) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 7) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint64_t value;
-	EmuLoad<uint64_t, false, false>(value, ea);
+	bool status = EmuLoad<uint64_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	fpr[fd] = SoftDouble(value);
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint16_t value;
-	EmuLoad<uint16_t, true, false>(value, ea); // reversed
+	bool status = EmuLoad<uint16_t, true, false>(value, ea); // reversed
+	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint32_t value;
-	EmuLoad<uint32_t, true, false>(value, ea); // reversed
+	bool status = EmuLoad<uint32_t, true, false>(value, ea); // reversed
+	if(unlikely(!status)) return false;
 	gpr[rd] = value;
 	MonitorLoad(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea, uint32_t size)
+bool CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea, uint32_t size)
 {
 	switch(size)
 	{
 		case 1:
 		{
 			uint8_t value;
-			EmuLoad<uint8_t, false, true>(value, ea);
+			bool status = EmuLoad<uint8_t, false, true>(value, ea);
+			if(unlikely(!status)) return false;
 			gpr[rd] = (uint32_t) value << 24;
 			break;
 		}
@@ -465,7 +509,8 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea
 		case 2:
 		{
 			uint16_t value;
-			EmuLoad<uint16_t, false, true>(value, ea);
+			bool status = EmuLoad<uint16_t, false, true>(value, ea);
+			if(unlikely(!status)) return false;
 			gpr[rd] = (uint32_t) BigEndian2Host(value) << 16;
 			break;
 		}
@@ -473,7 +518,8 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea
 		case 3:
 		{
 			uint8_t buffer[3];
-			EmuLoad<typeof(buffer), false, true>(buffer, ea);
+			bool status = EmuLoad<typeof(buffer), false, true>(buffer, ea);
+			if(unlikely(!status)) return false;
 			uint32_t value = ((uint32_t) buffer[0] << 24) | ((uint32_t) buffer[1] << 16) | ((uint32_t) buffer[2] << 8);
 			gpr[rd] = value;
 			break;
@@ -482,111 +528,154 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea
 		case 4:
 		{
 			uint32_t value;
-			EmuLoad<uint32_t, false, true>(value, ea);
+			bool status = EmuLoad<uint32_t, false, true>(value, ea);
+			if(unlikely(!status)) return false;
 			gpr[rd] = BigEndian2Host(value);
 			break;
 		}
+		
+		default:
+			return false;
 	}
 	MonitorLoad(ea, size);
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int8Store(unsigned int rs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int8Store(unsigned int rs, typename CONFIG::address_t ea)
 {
 	uint8_t value = gpr[rs];
-	EmuStore<uint8_t, false, false>(value, ea);
+	bool status = EmuStore<uint8_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint16_t value = (uint16_t) gpr[rs];
-	EmuStore<uint16_t, false, false>(value, ea);
+	bool status = EmuStore<uint16_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint32_t value = gpr[rs];
-	EmuStore<uint32_t, false, false>(value, ea);
+	bool status = EmuStore<uint32_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp32Store(unsigned int fs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Fp32Store(unsigned int fs, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	Flags flags;
 	flags.setRoundingMode(RN_ZERO);
 	uint32_t value = SoftFloat(fpr[fs], flags).queryValue();
-	EmuStore<uint32_t, false, false>(value, ea);
+	bool status = EmuStore<uint32_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fp64Store(unsigned int fs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Fp64Store(unsigned int fs, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 7) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 7) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint64_t value = fpr[fs].queryValue();
-	EmuStore<uint64_t, false, false>(value, ea);
+	bool status = EmuStore<uint64_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint32_t value = (uint32_t) fpr[fs].queryValue();
-	EmuStore<uint32_t, false, false>(value, ea);
+	bool status = EmuStore<uint32_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
 {
-	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
+	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint16_t value = (uint16_t) gpr[rs];
-	EmuStore<uint16_t, true, false>(value, ea); // reversed
+	bool status = EmuStore<uint16_t, true, false>(value, ea); // reversed
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
+bool CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
 {
-	if(unlikely(GetCCR0_FLSTA() && (ea & 3))) throw AlignmentException<CONFIG>(ea);
+	if(unlikely(GetCCR0_FLSTA() && (ea & 3)))
+	{
+		SetException(CONFIG::EXC_ALIGNMENT, ea);
+		return false;
+	}
 	uint32_t value = gpr[rs];
-	EmuStore<uint32_t, true, false>(value, ea); // reversed
+	bool status = EmuStore<uint32_t, true, false>(value, ea); // reversed
+	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	effective_address = ea;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size)
+bool CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size)
 {
 	switch(size)
 	{
 		case 1:
 			{
 				uint8_t value = gpr[rs] >> 24;
-				EmuStore<uint8_t, false, true>(value, ea);
+				bool status = EmuStore<uint8_t, false, true>(value, ea);
+				if(unlikely(!status)) return false;
 				break;
 			}
 
 		case 2:
 			{
 				uint16_t value = Host2BigEndian((uint16_t)(gpr[rs] >> 16));
-				EmuStore<uint16_t, false, true>(value, ea);
+				bool status = EmuStore<uint16_t, false, true>(value, ea);
+				if(unlikely(!status)) return false;
 				break;
 			}
 
@@ -597,50 +686,60 @@ void CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t e
 				buffer[0] = value >> 24;
 				buffer[1] = value >> 16;
 				buffer[2] = value >> 8;
-				EmuStore<typeof(buffer), false, true>(buffer, ea);
+				bool status = EmuStore<typeof(buffer), false, true>(buffer, ea);
+				if(unlikely(!status)) return false;
 				break;
 			}
 
 		case 4:
 			{
 				uint32_t value = Host2BigEndian(gpr[rs]);
-				EmuStore<uint32_t, false, true>(value, ea);
+				bool status = EmuStore<uint32_t, false, true>(value, ea);
+				if(unlikely(!status)) return false;
 				break;
 			}
+			
+		default:
+			return false;
 	}
 
 	MonitorStore(ea, size);
+	return true;
 }
 
 /* Linked Load-Store */
 template <class CONFIG>
-void CPU<CONFIG>::Lwarx(unsigned int rd, typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Lwarx(unsigned int rd, typename CONFIG::address_t addr)
 {
-	Int32Load(rd, addr);
+	if(unlikely(!Int32Load(rd, addr))) return false;
 
 	reserve = true;
 	reserve_addr = addr;
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Stwcx(unsigned int rs, typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Stwcx(unsigned int rs, typename CONFIG::address_t addr)
 {
 	// TBD
 	if(reserve)
 	{
 		if(reserve_addr == addr)
 		{
-			Int32Store(rs, addr);
+			if(unlikely(!Int32Store(rs, addr))) return false;
 
 			/* clear CR0[LT][GT], setCR0[EQ] and copy XER[SO] to CR0[SO] */
 			SetCR((GetCR() & ~CONFIG::CR0_MASK) | CONFIG::CR0_EQ_MASK | ((GetXER() & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0));
 			reserve = false;
-			return;
+			return true;
 		}
 	}
 
 	/* clear CR0 and copy XER[SO] to CR0[SO] */
 	SetCR((GetCR() & ~CONFIG::CR0_MASK) | ((GetXER() & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0));
+	
+	return true;
 }
 
 /* Memory injection */
@@ -666,9 +765,9 @@ bool CPU<CONFIG>::InjectReadMemory(typename CONFIG::address_t addr, void *buffer
 			mmu_access.memory_access_type = CONFIG::MAT_READ;
 			mmu_access.memory_type = CONFIG::MT_DATA;
 
-			EmuTranslateAddress<false>(mmu_access);
+			if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
-			EmuLoad(mmu_access, dst, sz);
+			if(unlikely(!EmuLoad(mmu_access, dst, sz))) return false;
 			
 			dst += sz;
 			addr += sz;
@@ -702,9 +801,9 @@ bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void 
 			mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 			mmu_access.memory_type = CONFIG::MT_DATA;
 
-			EmuTranslateAddress<false>(mmu_access);
+			if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 			
-			EmuStore(mmu_access, src, sz);
+			if(unlikely(!EmuStore(mmu_access, src, sz))) return false;
 			
 			src += sz;
 			addr += sz;
@@ -715,72 +814,6 @@ bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void 
 	}
 	return true;
 }
-
-// template <class CONFIG>
-// bool CPU<CONFIG>::InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
-// {
-// 	if(size > 0)
-// 	{
-// 		MMUAccess<CONFIG> mmu_access;
-// 		mmu_access.pid = GetProcessID();
-// 		mmu_access.as = GetDataAddressSpace();
-// 		mmu_access.privilege_level = GetPrivilegeLevel();
-// 		mmu_access.memory_access_type = CONFIG::MAT_READ;
-// 		mmu_access.memory_type = CONFIG::MT_DATA;
-// 		
-// 		uint32_t sz;
-// 		uint8_t *dst = (uint8_t *) buffer;
-// 		do
-// 		{
-// 			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
-// 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
-// 
-// 			// Address translation
-// 			mmu_access.addr = addr;
-// 
-// 			EmuTranslateAddress<false>(mmu_access);
-// 				
-// 			EmuLoad(mmu_access, dst, sz);
-// 			dst += sz;
-// 			addr += sz;
-// 			size -= sz;
-// 		} while(size > 0);
-// 	}
-// 	return true;
-// }
-// 
-// template <class CONFIG>
-// bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
-// {
-// 	if(size > 0)
-// 	{
-// 		MMUAccess<CONFIG> mmu_access;
-// 		mmu_access.pid = GetProcessID();
-// 		mmu_access.as = GetDataAddressSpace();
-// 		mmu_access.privilege_level = GetPrivilegeLevel();
-// 		mmu_access.memory_access_type = CONFIG::MAT_WRITE;
-// 		mmu_access.memory_type = CONFIG::MT_DATA;
-// 
-// 		uint32_t sz;
-// 		const uint8_t *src = (const uint8_t *) buffer;
-// 		do
-// 		{
-// 			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
-// 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
-// 
-// 			// Address translation
-// 			mmu_access.addr = addr;
-// 
-// 			EmuTranslateAddress<false>(mmu_access);
-// 
-// 			EmuStore(mmu_access, src, sz);
-// 			src += sz;
-// 			addr += sz;
-// 			size -= sz;
-// 		} while(size > 0);
-// 	}
-// 	return true;
-// }
 
 template <class CONFIG>
 bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)

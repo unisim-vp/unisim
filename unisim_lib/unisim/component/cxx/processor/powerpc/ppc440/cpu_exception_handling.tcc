@@ -36,7 +36,6 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_EXCEPTION_HANDLING_TCC__
 
 #include <sstream>
-#include <unisim/component/cxx/processor/powerpc/exception.tcc>
 
 #ifdef powerpc
 #undef powerpc
@@ -139,11 +138,23 @@ std::string CPU<CONFIG>::ReadString(typename CONFIG::address_t addr, unsigned in
 	return sstr.str();
 }
 
+template <class CONFIG>
+inline void CPU<CONFIG>::ProcessExceptions(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+{
+	unsigned int exception_num;
+	if(unisim::util::arithmetic::BitScanForward(exception_num, exc_flags & exc_mask))
+	{
+		(this->*enter_isr_table[exception_num])(operation);
+	}
+}
+
 /* System call exception */
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterSystemCallISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	instruction_counter++; // account for sc instruction
 	num_interrupts++;
+	num_system_call_interrupts++;
 	
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -151,7 +162,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc, unisim
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got a system call exception";
 
 		if(unlikely(enable_linux_syscall_snooping))
 		{
@@ -556,27 +567,30 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc, unisim
 		
 		SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 		
-		SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_SYSTEM_CALL));
+		Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_SYSTEM_CALL));
 	}
+	
+	ResetException(CONFIG::EXC_SYSTEM_CALL);
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterMachineCheckISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_machine_check_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
 
-	switch(exc.GetType())
+	switch(exc_flags & CONFIG::EXC_MASK_MACHINE_CHECK)
 	{
-		case MachineCheckException<CONFIG>::MCP_INSTRUCTION_SYNCHRONOUS:
+		case CONFIG::EXC_MASK_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS:
 			break;
 			SetMCSRR0(GetCIA()); // effective address of the instruction presenting the exception
-		case MachineCheckException<CONFIG>::MCP_INSTRUCTION_ASYNCHRONOUS:
-		case MachineCheckException<CONFIG>::MCP_DATA_ASYNCHRONOUS:
-		case MachineCheckException<CONFIG>::MCP_TLB_ASYNCHRONOUS:
+		case CONFIG::EXC_MASK_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS:
+		case CONFIG::EXC_MASK_MACHINE_CHECK_DATA_ASYNCHRONOUS:
+		case CONFIG::EXC_MASK_MACHINE_CHECK_TLB_ASYNCHRONOUS:
 			SetMCSRR0(GetNIA()); // effective address of the next instruction to be executed
 			break;
 	}
@@ -585,7 +599,9 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc, unis
 	
 	SetMSR(0); //  all MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_MACHINE_CHECK));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_MACHINE_CHECK));
+
+	ResetExceptionFlags(CONFIG::EXC_MASK_MACHINE_CHECK);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -593,7 +609,7 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc, unis
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got a machine check exception";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -610,9 +626,10 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc, unis
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DecrementerInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterDecrementerISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_decrementer_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -624,9 +641,9 @@ void CPU<CONFIG>::HandleException(const DecrementerInterruptException<CONFIG>& e
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DECREMENTER));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_DECREMENTER));
 	
-	ResetIRQ(CONFIG::IRQ_DECREMENTER_INTERRUPT);
+	ResetException(CONFIG::EXC_DECREMENTER);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -634,7 +651,7 @@ void CPU<CONFIG>::HandleException(const DecrementerInterruptException<CONFIG>& e
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got a decrementer interrupt";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -651,9 +668,10 @@ void CPU<CONFIG>::HandleException(const DecrementerInterruptException<CONFIG>& e
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ExternalInputInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterExternalInputISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_external_input_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -665,9 +683,9 @@ void CPU<CONFIG>::HandleException(const ExternalInputInterruptException<CONFIG>&
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_EXTERNAL_INPUT));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_EXTERNAL_INPUT));
 
-	//ResetIRQ(CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT);
+	//ResetException(CONFIG::EXC_EXTERNAL_INPUT_INTERRUPT);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -675,7 +693,7 @@ void CPU<CONFIG>::HandleException(const ExternalInputInterruptException<CONFIG>&
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got an external input interrupt";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -692,9 +710,10 @@ void CPU<CONFIG>::HandleException(const ExternalInputInterruptException<CONFIG>&
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const CriticalInputInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterCriticalInputISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_critical_input_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -706,9 +725,9 @@ void CPU<CONFIG>::HandleException(const CriticalInputInterruptException<CONFIG>&
 	
 	SetMSR(GetMSR() & CONFIG::MSR_ME_MASK); // MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_CRITICAL_INPUT));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_CRITICAL_INPUT));
 
-	//ResetIRQ(CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT);
+	//ResetException(CONFIG::EXC_CRITICAL_INPUT_INTERRUPT);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -716,7 +735,7 @@ void CPU<CONFIG>::HandleException(const CriticalInputInterruptException<CONFIG>&
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got a critical input interrupt";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -733,9 +752,10 @@ void CPU<CONFIG>::HandleException(const CriticalInputInterruptException<CONFIG>&
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterDataStorageISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_data_storage_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -747,7 +767,7 @@ void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc, unisim::compo
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetDEAR(exc.GetAddress()); // effective address causing the esception
+	SetDEAR(exc_addr); // effective address causing the esception
 
 	// leave ESR[MCI] unmodified
 	// alter ESR[FP], ESR[ST], ESR[DLK], ESR[AP] and ESR[BO]
@@ -756,7 +776,9 @@ void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc, unisim::compo
 		
 	SetESR(esr_value);
 
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_STORAGE));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_STORAGE));
+	
+	ResetExceptionFlags(CONFIG::EXC_MASK_DATA_STORAGE);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -764,9 +786,9 @@ void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc, unisim::compo
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(func_symbol) sstr << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what() << " while accessing data at 0x" << std::hex << exc.GetAddress() << std::dec;
+		sstr << ", got a data storage interrupt while accessing data at 0x" << std::hex << exc_addr << std::dec;
 		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) sstr << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		if(obj_symbol) sstr << " (" << obj_symbol->GetFriendlyName(exc_addr) << ")";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -783,9 +805,10 @@ void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc, unisim::compo
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterInstructionStorageISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_instruction_storage_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -799,7 +822,9 @@ void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc, unisim::compo
 	
 	SetESR(GetESR() & CONFIG::ESR_MCI_MASK); // ESR[MCI] unchanged, all other bits are set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_STORAGE));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_STORAGE));
+	
+	ResetExceptionFlags(CONFIG::EXC_MASK_INSTRUCTION_STORAGE);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -807,7 +832,7 @@ void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc, unisim::compo
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got an instruction storage interrupt";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -824,9 +849,10 @@ void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc, unisim::compo
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DataTLBErrorException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterDataTLBErrorISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_data_tlb_error_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -838,14 +864,16 @@ void CPU<CONFIG>::HandleException(const DataTLBErrorException<CONFIG>& exc, unis
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetDEAR(exc.GetAddress()); // effective address causing the esception
+	SetDEAR(exc_addr); // effective address causing the esception
 
 	// leave ESR[MCI] unmodified
 	// alter ESR[FP], ESR[ST], ESR[AP]
 	uint32_t esr_value = (GetESR() & CONFIG::ESR_MCI_MASK) | (operation->get_esr() & (CONFIG::ESR_FP_MASK | CONFIG::ESR_ST_MASK | CONFIG::ESR_AP_MASK));
 	SetESR(esr_value);
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_TLB_ERROR));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_TLB_ERROR));
+	
+	ResetException(CONFIG::EXC_DATA_TLB_ERROR);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -853,9 +881,9 @@ void CPU<CONFIG>::HandleException(const DataTLBErrorException<CONFIG>& exc, unis
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(func_symbol) sstr << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what() << " while accessing data at 0x" << std::hex << exc.GetAddress() << std::dec;
+		sstr << ", got a data TLB error while accessing data at 0x" << std::hex << exc_addr << std::dec;
 		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) sstr << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		if(obj_symbol) sstr << " (" << obj_symbol->GetFriendlyName(exc_addr) << ")";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -872,9 +900,10 @@ void CPU<CONFIG>::HandleException(const DataTLBErrorException<CONFIG>& exc, unis
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const InstructionTLBErrorException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterInstructionTLBErrorISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_instruction_tlb_error_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -886,15 +915,17 @@ void CPU<CONFIG>::HandleException(const InstructionTLBErrorException<CONFIG>& ex
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_TLB_ERROR));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_TLB_ERROR));
 
+	ResetException(CONFIG::EXC_INSTRUCTION_TLB_ERROR);
+	
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got an instruction TLB error";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -911,9 +942,10 @@ void CPU<CONFIG>::HandleException(const InstructionTLBErrorException<CONFIG>& ex
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterAlignmentISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_alignment_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -925,12 +957,14 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, unisim:
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetDEAR(exc.GetAddress()); // effective address causing the esception
+	SetDEAR(exc_addr); // effective address causing the esception
 
 	uint32_t esr_value = operation->get_esr() & (CONFIG::ESR_FP_MASK | CONFIG::ESR_ST_MASK | CONFIG::ESR_AP_MASK);
 	SetESR(esr_value);
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_ALIGNMENT));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_ALIGNMENT));
+	
+	ResetException(CONFIG::EXC_ALIGNMENT);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -938,7 +972,7 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, unisim:
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got an alignement exception";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -955,9 +989,10 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, unisim:
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterProgramISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_program_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -972,27 +1007,30 @@ void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc, unisim::c
 	uint32_t esr_value = operation->get_esr() & (CONFIG::ESR_PIL_MASK | CONFIG::ESR_PPR_MASK | CONFIG::ESR_PTR_MASK | CONFIG::ESR_PUO_MASK
 	                                           | CONFIG::ESR_FP_MASK | CONFIG::ESR_AP_MASK | CONFIG::ESR_PIE_MASK | CONFIG::ESR_PCRE_MASK
 	                                           | CONFIG::ESR_PCMP_MASK | CONFIG::ESR_PCRF_MASK);
-	switch(exc.GetType())
+	switch(exc_flags & CONFIG::EXC_MASK_PROGRAM)
 	{
-		case ProgramException<CONFIG>::PX_ILLEGAL_INSTRUCTION:
+		case CONFIG::EXC_MASK_PROGRAM_ILLEGAL_INSTRUCTION:
 			esr_value |= CONFIG::ESR_PIL_MASK;
 			break;
-		case ProgramException<CONFIG>::PX_PRIVILEGE_VIOLATION:
+		case CONFIG::EXC_MASK_PROGRAM_PRIVILEGE_VIOLATION:
 			esr_value |= CONFIG::ESR_PPR_MASK;
 			break;
-		case ProgramException<CONFIG>::PX_TRAP:
+		case CONFIG::EXC_MASK_PROGRAM_TRAP:
+			instruction_counter++;  // account for the trap instruction
 			esr_value |= CONFIG::ESR_PTR_MASK;
 			break;
-		case ProgramException<CONFIG>::PX_FLOATING_POINT:
+		case CONFIG::EXC_MASK_PROGRAM_FLOATING_POINT:
 			break;
-		case ProgramException<CONFIG>::PX_UNIMPLEMENTED_INSTRUCTION:
+		case CONFIG::EXC_MASK_PROGRAM_UNIMPLEMENTED_INSTRUCTION:
 			esr_value |= CONFIG::ESR_PUO_MASK;
 			break;
 	}
 	
 	SetESR(esr_value);
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_PROGRAM));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_PROGRAM));
+	
+	ResetExceptionFlags(CONFIG::EXC_MASK_PROGRAM);
 	
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -1000,7 +1038,7 @@ void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc, unisim::c
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got a program exception";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -1017,9 +1055,10 @@ void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc, unisim::c
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterFloatingPointUnavailableISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_floating_point_unavailable_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -1031,7 +1070,9 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_FLOATING_POINT_UNAVAILABLE));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_FLOATING_POINT_UNAVAILABLE));
+	
+	ResetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -1039,7 +1080,7 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got a floating point unavailable exception";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -1056,9 +1097,10 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const AuxiliaryProcessorUnavailableException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterAuxiliaryProcessorUnavailableISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_auxiliary_processor_unavailable_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -1070,7 +1112,9 @@ void CPU<CONFIG>::HandleException(const AuxiliaryProcessorUnavailableException<C
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_AUXILIARY_PROCESSOR_UNAVAILABLE));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_AUXILIARY_PROCESSOR_UNAVAILABLE));
+	
+	ResetException(CONFIG::EXC_AUXILIARY_PROCESSOR_UNAVAILABLE);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -1078,7 +1122,7 @@ void CPU<CONFIG>::HandleException(const AuxiliaryProcessorUnavailableException<C
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got an auxiliary processor unavailable exception";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -1095,9 +1139,10 @@ void CPU<CONFIG>::HandleException(const AuxiliaryProcessorUnavailableException<C
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const FixedIntervalTimerInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterFixedIntervalTimerISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_fixed_interval_timer_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -1109,9 +1154,9 @@ void CPU<CONFIG>::HandleException(const FixedIntervalTimerInterruptException<CON
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_FIXED_INTERVAL_TIMER));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_FIXED_INTERVAL_TIMER));
 
-	ResetIRQ(CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT);
+	ResetException(CONFIG::EXC_FIXED_INTERVAL_TIMER);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -1119,7 +1164,7 @@ void CPU<CONFIG>::HandleException(const FixedIntervalTimerInterruptException<CON
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got a fixed interval timer interrupt";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -1136,9 +1181,10 @@ void CPU<CONFIG>::HandleException(const FixedIntervalTimerInterruptException<CON
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const WatchDogTimerInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterWatchDogTimerISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_watchdog_timer_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -1150,9 +1196,9 @@ void CPU<CONFIG>::HandleException(const WatchDogTimerInterruptException<CONFIG>&
 	
 	SetMSR(GetMSR() & CONFIG::MSR_ME_MASK); // MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_WATCHDOG_TIMER));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_WATCHDOG_TIMER));
 
-	ResetIRQ(CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT);
+	ResetException(CONFIG::EXC_WATCHDOG_TIMER);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
@@ -1160,7 +1206,7 @@ void CPU<CONFIG>::HandleException(const WatchDogTimerInterruptException<CONFIG>&
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got a watchdog timer interrupt";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
@@ -1177,9 +1223,10 @@ void CPU<CONFIG>::HandleException(const WatchDogTimerInterruptException<CONFIG>&
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::HandleException(const DebugInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
+void CPU<CONFIG>::EnterDebugISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
 	num_interrupts++;
+	num_debug_interrupts++;
 
 	// Invalidate shadow TLBs
 	InvalidateITLB();
@@ -1191,15 +1238,17 @@ void CPU<CONFIG>::HandleException(const DebugInterruptException<CONFIG>& exc, un
 	
 	SetMSR(GetMSR() & CONFIG::MSR_ME_MASK); // MSR[ME] unchanged, all other MSR bits set to 0
 	
-	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DEBUG));
+	Branch(GetIVPR() | GetIVOR(CONFIG::IVOR_DEBUG));
 
+	ResetException(CONFIG::EXC_DEBUG);
+	
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
 		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		sstr << ", got a " << exc.what();
+		sstr << ", got a debug interrupt";
 		std::string msg = sstr.str();
 
 		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;

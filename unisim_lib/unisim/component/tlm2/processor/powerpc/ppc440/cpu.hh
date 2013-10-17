@@ -119,15 +119,16 @@ private:
 	} Interface;
 	
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
-	sc_time cpu_cycle_time;
-	sc_time bus_cycle_time;
-	sc_time ext_timer_cycle_time;
-	sc_time cpu_time;
-	sc_time timer_time;
-	sc_time nice_time;
-	sc_time max_idle_time;
-	sc_time run_time;
-	sc_time idle_time;
+	sc_time cpu_cycle_time;         //<! CPU core cycle time
+	sc_time bus_cycle_time;         //<! Bus (PLB) cycle time
+	sc_time ext_timer_cycle_time;   //<! external timer cycle time
+	sc_time cpu_time;               //<! local time (relative to sc_time_stamp)
+	sc_time timer_time;             //<! absolute time from the internal timers point of view
+	sc_time nice_time;              //<! period of synchronization with other threads
+	sc_time max_idle_time;          //<! Maximum idle time (temporary variable)
+	sc_time run_time;               //<! absolute timer (local time + sc_time_stamp)
+	sc_time idle_time;              //<! total idle time
+	sc_time timers_update_deadline; //<! deadline for updating internal timers in order to keep internal timer accuracy
 	bool enable_host_idle;
 	sc_event ev_max_idle;
 	sc_event ev_irq;
@@ -335,6 +336,11 @@ private:
 			kernel_event.notify(t);
 		}
 		
+		bool Empty() const
+		{
+			return schedule.empty();
+		}
+
 		Event *GetNextEvent(const sc_time& time_stamp)
 		{
 			if(schedule.empty()) return 0;
@@ -424,11 +430,15 @@ private:
 	unisim::kernel::tlm2::DMIRegionCache icurd_dmi_region_cache;
 	unisim::kernel::tlm2::DMIRegionCache dcuwr_dmi_region_cache;
 	unisim::kernel::tlm2::DMIRegionCache dcurd_dmi_region_cache;
-	inline void UpdateTime();
-	inline void AlignToBusClock();
+
+	inline void AlignToBusClock() ALWAYS_INLINE;
 	void AlignToBusClock(sc_time& t);
-	void ProcessExternalEvents();
+	inline void ProcessExternalEvents() ALWAYS_INLINE;
 	void ProcessIRQEvent(Event *event);
+protected:
+	virtual inline void RunInternalTimers() ALWAYS_INLINE;
+	inline void LazyRunInternalTimers() ALWAYS_INLINE;
+	virtual void end_of_simulation();
 };
 
 } // end of namespace ppc440
