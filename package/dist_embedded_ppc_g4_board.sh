@@ -185,6 +185,7 @@ unisim/component/cxx/processor/powerpc/floating.cc \
 unisim/component/cxx/processor/powerpc/config.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/vr_debug_if.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/tb_debug_if.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/flash/am29/am29.cc \
 unisim/component/cxx/memory/flash/am29/am29lv800b.cc \
@@ -257,6 +258,7 @@ unisim/kernel/tlm/tlm.hh \
 unisim/kernel/debug/debug.hh \
 unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
+unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
@@ -282,6 +284,7 @@ unisim/util/debug/dwarf/fde.hh \
 unisim/util/debug/dwarf/fmt.hh \
 unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/dwarf/option.hh \
+unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/dwarf/leb128.hh \
 unisim/util/debug/dwarf/macinfo.hh \
 unisim/util/debug/dwarf/pub.hh \
@@ -377,11 +380,9 @@ unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/sdl/sdl.hh \
 unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
-unisim/component/cxx/processor/powerpc/mpc7447a/exception.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
@@ -478,8 +479,6 @@ unisim/service/tee/loader/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
-unisim/component/cxx/processor/powerpc/exception.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc \
