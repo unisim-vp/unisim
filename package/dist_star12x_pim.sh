@@ -179,13 +179,13 @@ unisim/service/loader/elf_loader/elf64_loader.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/profiling/addr_profiler/profiler64.cc \
-unisim/service/telnet/telnet.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/tee/registers/registers_tee.cc \
 unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
 unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
+unisim/service/telnet/telnet.cc \
 unisim/component/cxx/processor/hcs12x/xgate.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \

@@ -640,9 +640,10 @@ inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlo
 	data_load_counter++;
 
 	// Memory access reporting
-	if(memory_access_reporting_import)
+	if(memory_access_reporting_import && requires_memory_access_reporting)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, pea, size);
+//		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, pea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, logicalAddress, size);
 	}
 }
 
@@ -653,9 +654,10 @@ inline void CPU::monitorStore(address_t logicalAddress, uint32_t size, bool isGl
 	data_store_counter++;
 
 	// Memory access reporting
-	if(memory_access_reporting_import)
+	if(memory_access_reporting_import && requires_memory_access_reporting)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, pea, size);
+//		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, pea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, logicalAddress, size);
 	}
 }
 

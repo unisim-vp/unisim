@@ -65,6 +65,8 @@
 #include <unisim/kernel/service/service.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
+#include <unisim/kernel/logger/logger.hh>
+
 #include "unisim/service/interfaces/char_io.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
@@ -121,6 +123,14 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
+
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 
 class S12SCI :
 	public sc_module
@@ -270,6 +280,12 @@ private:
 	bool rxd;
 	unisim::kernel::service::Register<bool> rxd_input_pin;
 
+	inline void RunTelnetRx();
+	inline void RunNormalizedRx();
+
+	inline void RunTelnetTx();
+	inline void RunNormalizedTx();
+
 	inline bool getRXD() {
 		if (isLoopOperationEnabled() && !isTx2RxInternal()) {
 			return (txd);
@@ -334,6 +350,7 @@ private:
 		scisr1_register = scisr1_register | 0x80;
 		// is Transmission (TDRE) interrupt enabled ?
 		if ((scicr2_register & 0x80) != 0) {
+			if (debug_enabled)	std::cout << sc_object::name() << "::setTDRE" << std::endl;
 			assertInterrupt(interrupt_offset);
 		}
 	}
@@ -353,16 +370,23 @@ private:
 			scisr1_register = scisr1_register | 0x40;
 			// Is transmission complete interrupt enabled ?
 			if ((scicr2_register & 0x40) != 0) {
+				if (debug_enabled)	std::cout << sc_object::name() << "::setTC" << std::endl;
 				assertInterrupt(interrupt_offset);
 			}
 		}
 	}
 	inline bool isTransmissionComplete() { return ((scisr1_register & 0x40) != 0); }
 
+	inline bool isIDLE() { return (scisr1_register & 0x10); }
+
 	inline void setIDLE() {
+
+		if (isReceiverStandbay()) return;
+
 		scisr1_register = scisr1_register | 0x10;
 		//is Idle interrupt enabled ?
 		if ((scicr2_register & 0x10) != 0) {
+			if (debug_enabled)	std::cout << sc_object::name() << "::setIDLE" << std::endl;
 			assertInterrupt(interrupt_offset);
 		}
 	}
@@ -389,9 +413,13 @@ private:
 
 	inline bool isBreakDetectEnabled() { return ((sciacr2_register & 0x01) != 0); }
 	inline void setBreakDetectInterrupt() {
+
+		if (isReceiverStandbay()) return;
+
 		sciasr1_register = sciasr1_register | 0x01;
 		// is break detect interrupt enabled ?
 		if ((sciacr1_register & 0x01) != 0) {
+			if (debug_enabled)	std::cout << sc_object::name() << "::setBreakDetect" << std::endl;
 			assertInterrupt(interrupt_offset);
 		}
 	}
@@ -400,6 +428,8 @@ private:
 	inline bool isReceiverStandbay() { return ((scicr2_register & 0x02) != 0); }
 
 	inline void setRDRF() {
+
+		if (debug_enabled)	std::cout << sc_object::name() << "::setRDRF received char " << (unsigned int) scidrl_register << std::endl;
 
 		if (isReceiverStandbay()) return;
 
@@ -414,14 +444,118 @@ private:
 	inline bool isAddressWakeup() { return ((scicr1_register & 0x08) != 0); }
 
 	inline void setOverrunFlag() {
+
+		if (isReceiverStandbay()) return;
+
 		scisr1_register = scisr1_register | 0x08;
 		// is receiver full interrupt enabled ?
 		if ((scicr2_register & 0x20) != 0) {
+			if (debug_enabled)	std::cout << sc_object::name() << "::setOverrunFlag" << std::endl;
 			assertInterrupt(interrupt_offset);
 		}
 	}
 
 	inline void txShiftOut(uint8_t length);
+
+
+//   *** de chez Gilles ***
+	bool	telnet_enabled;
+	Parameter<bool>	param_telnet_enabled;
+
+	unisim::kernel::logger::Logger logger;
+
+	std::queue<uint8_t> rx_fifo;
+	std::queue<uint8_t> tx_fifo;
+	sc_event queue_event;
+
+	inline void add(std::queue<uint8_t> &buffer_queue, uint8_t data) {
+	    buffer_queue.push(data);
+	    queue_event.notify();
+	}
+
+	inline void next(std::queue<uint8_t> &buffer_queue, uint8_t& data) {
+
+		while( isEmpty(buffer_queue))
+		{
+			wait(queue_event);
+		}
+
+		data = buffer_queue.front();
+		buffer_queue.pop();
+
+	}
+
+	inline bool isEmpty(std::queue<uint8_t> &buffer_queue) {
+
+	    return (buffer_queue.empty());
+	}
+
+	inline size_t size(std::queue<uint8_t> &buffer_queue) {
+
+	    return (buffer_queue.size());
+	}
+
+
+	inline void TelnetProcessInput()
+	{
+		if(char_io_import)
+		{
+			char c;
+			uint8_t v;
+
+			if(!char_io_import->GetChar(c)) return;
+
+			v = (uint8_t) c;
+			if(debug_enabled)
+			{
+				logger << DebugInfo << "Receiving ";
+				if(v >= 32)
+					logger << "character '" << c << "'";
+				else
+					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+				logger << " from telnet client" << EndDebugInfo;
+			}
+
+			add(rx_fifo, v);
+		}
+	}
+
+	inline void TelnetProcessOutput(bool flush_telnet_output)
+	{
+		if(char_io_import)
+		{
+			char c;
+			uint8_t v;
+
+			if(!isEmpty(tx_fifo))
+			{
+				do
+				{
+					next(tx_fifo, v);
+					c = (char) v;
+					if(debug_enabled)
+					{
+						logger << DebugInfo << "Sending ";
+						if(v >= 32)
+							logger << "character '" << c << "'";
+						else
+							logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+						logger << " to telnet client" << EndDebugInfo;
+					}
+					char_io_import->PutChar(c);
+				}
+				while(!isEmpty(tx_fifo));
+
+			}
+
+			if(flush_telnet_output)
+			{
+				char_io_import->FlushChars();
+			}
+		}
+	}
+
+
 
 }; /* end class S12SCI */
 
