@@ -35,6 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_CONTROL_HH__
 #define __UNISIM_SERVICE_INTERFACES_DEBUG_CONTROL_HH__
 
+#include <unisim/kernel/service/service.hh>
 #include <string>
 
 namespace unisim {
@@ -42,11 +43,9 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class DebugControl
+class DebugControl : public unisim::kernel::service::ServiceInterface
 {
 public:
-	DebugControl() {}
-	virtual ~DebugControl() {}
 	typedef enum { DBG_STEP, DBG_SYNC, DBG_KILL, DBG_RESET } DebugCommand;
 
 	virtual DebugCommand FetchDebugCommand(ADDRESS cia) = 0;

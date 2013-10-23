@@ -51,6 +51,7 @@
 #include <unisim/service/interfaces/synchronizable.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/component/cxx/pci/types.hh>
+#include <unisim/util/debug/memory_access_type.hh>
 
 namespace unisim {
 namespace component {
@@ -75,6 +76,7 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
@@ -115,7 +117,9 @@ public:
 	virtual ~PCIStub();
 
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
 	virtual void Reset();
 	bool Read(ADDRESS physical_addr, void *buffer, uint32_t size, unisim::component::cxx::pci::PCISpace space, const bool monitor = true);
 	bool Write(ADDRESS physical_addr, const void *buffer, uint32_t size, unisim::component::cxx::pci::PCISpace space, const bool monitor = true);
@@ -136,30 +140,19 @@ public:
 
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
-	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+	virtual void ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
+	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 	virtual void Trap();
 private:
-	Parameter<bool> param_is_server;
-	Parameter<unsigned int> param_protocol;
-	Parameter<string> param_pipe_name;
-	Parameter<string> param_server_name;
-	Parameter<unsigned int> param_tcp_port;
-	ParameterArray<ADDRESS> param_initial_base_addr;
-	ParameterArray<unisim::component::cxx::pci::PCISpace> param_address_space;
-	ParameterArray<uint32_t> param_region_size;
-	Parameter<uint32_t> param_pci_device_number;
-	Parameter<unsigned int> param_pci_bus_frequency;
-	Parameter<unsigned int> param_bus_frequency;
-	
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry[3]; // one registry for each of the three address spaces
 
+	bool SetupMemory();
+	bool SetupMemoryAccessReporting();
 protected:
 	// Debug stuff
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
-	Parameter<bool> param_verbose;
 	
 	// PCI configuration registers
 	reg16_t pci_conf_device_id;
@@ -187,6 +180,19 @@ protected:
 	unsigned int bus_frequency; // in Mhz
 
 	list<typename inherited::TRAP> traps;
+private:
+	Parameter<bool> param_verbose;
+	Parameter<bool> param_is_server;
+	Parameter<unsigned int> param_protocol;
+	Parameter<string> param_pipe_name;
+	Parameter<string> param_server_name;
+	Parameter<unsigned int> param_tcp_port;
+	ParameterArray<ADDRESS> param_initial_base_addr;
+	ParameterArray<unisim::component::cxx::pci::PCISpace> param_address_space;
+	ParameterArray<uint32_t> param_region_size;
+	Parameter<uint32_t> param_pci_device_number;
+	Parameter<unsigned int> param_pci_bus_frequency;
+	Parameter<unsigned int> param_bus_frequency;
 };
 
 } // end of namespace debug

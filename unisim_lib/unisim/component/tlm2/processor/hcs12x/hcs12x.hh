@@ -36,7 +36,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_HCS12X_HH__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_HCS12X_HH__
 
-#include <systemc.h>
+#include <systemc>
 
 #include <tlm.h>
 #include <tlm_utils/simple_initiator_socket.h>
@@ -61,6 +61,9 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+using namespace sc_core;
+using namespace sc_dt;
+
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::component::cxx::processor::hcs12x::address_t;
@@ -71,6 +74,7 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::util::garbage_collector::Pointer;
 
 using unisim::kernel::tlm2::ManagedPayload;
@@ -79,8 +83,11 @@ using unisim::kernel::tlm2::PayloadFabric;
 using std::string;
 
 class HCS12X :
-	public sc_module,
-	public CPU {
+	public sc_module
+	, public CPU
+	, virtual public tlm_fw_transport_if< >
+
+{
 public:
 	typedef CPU inherited;
 
@@ -88,10 +95,13 @@ public:
 	tlm_utils::simple_initiator_socket<HCS12X> socket;
 
 	// wake-up request from XINT
-	tlm_utils::simple_target_socket<HCS12X> interrupt_request;
+	tlm_target_socket< > xint_interrupt_request;
+	virtual tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
-	// Initiator
-	tlm_utils::simple_initiator_socket<HCS12X> toXINT;
+	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t) { }
+	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm_dmi&  dmi_data) { return (false);}
+	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload) { return (0); }
+	virtual tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& payload,	tlm_phase& phase, sc_core::sc_time& t) { return (TLM_ACCEPTED); }
 
 	tlm_utils::simple_target_socket<HCS12X> bus_clock_socket;
 
@@ -105,25 +115,25 @@ public:
 	 * Stop All Clocks and puts the device in standby mode.
 	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode.
 	 */
-	virtual void Sleep();
+	virtual void sleep();
 
 	/* TODO:
 	 * Enter a wait state for an integer number of bus clock cycle
 	 * Only CPU12 clocks are stopped
 	 * Wait for not masked interrupt
 	 */
-	virtual void Wait();
+	virtual void wai();
 
-	virtual bool Setup();
-
-	void BusSynchronize();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
 
 	void Run();
 
 	virtual void Reset();
 
-	virtual void BusWrite(address_t addr, const void *buffer, uint32_t size);
-	virtual void BusRead(address_t addr, void *buffer, uint32_t size);
+	virtual void busWrite(address_t addr, const void *buffer, uint32_t size);
+	virtual void busRead(address_t addr, void *buffer, uint32_t size);
 
 	//================================================================
     //=                    tlm2 Interface                            =
@@ -139,20 +149,18 @@ public:
 	 * If (RAM_ACC_VIOL | SYS || SWI || TRAP) return IVBR;
 	 * Else return INT_Vector
 	 */
-	virtual address_t GetIntVector(uint8_t &ipl);
+	virtual address_t getIntVector(uint8_t &ipl);
 
-	virtual double  GetSimulatedTime();
-
-	void AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
-	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:
 	void Synchronize();
-	void ComputeInternalTime();
+	void computeInternalTime();
 
 	sc_event	irq_event,		// I-bit-Maskable Interrupt Requests and X-bit Non-Maskable Interrupt Requests
 				reset_event;	// Hardware and Software Reset
 
+	sc_time core_clock_time;
 	sc_time cpu_cycle_time;
 	sc_time bus_cycle_time;
 	sc_time cpu_time;
@@ -160,16 +168,18 @@ private:
 	sc_time last_cpu_time;
 	sc_time nice_time;
 	sc_time next_nice_time;
-	uint64_t nice_time_int;
 
 	sc_time tlm2_btrans_time;
-	sc_time opCyclesArray[32]; // replace with the Max Inst Cycles
+	sc_time opCyclesArray[32];
 
-	uint64_t bus_cycle_time_int;
+	uint64_t core_clock_int;
 
-	Parameter<uint64_t> param_nice_time;
-	Parameter<uint64_t> param_bus_cycle_time;
+	Parameter<sc_time> param_nice_time;
+	Parameter<uint64_t> param_core_clock;
 
+	bool enable_fine_timing;
+	Parameter<bool> param_enable_fine_timing;
+	
 	// verbose parameters
 	bool verbose_tlm_bus_synchronize;
 	Parameter<bool> param_verbose_tlm_bus_synchronize;
@@ -181,6 +191,7 @@ private:
 	uint64_t last_instruction_counter;
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
+
 };
 
 } // end of namespace hcs12x

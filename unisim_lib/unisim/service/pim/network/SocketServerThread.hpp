@@ -10,6 +10,7 @@
 
 
 #include "SocketThread.hpp"
+#include <vector>
 
 namespace unisim {
 namespace service {
@@ -19,12 +20,18 @@ namespace network {
 class SocketServerThread: public SocketThread {
 public:
 
-	SocketServerThread(char* host, uint16_t port, uint8_t connection_req_nb = 1);
+	SocketServerThread(string host, uint16_t port, bool _blocking, uint8_t connection_req_nb);
+	~SocketServerThread();
 
-	virtual void Run();
+	virtual void run();
+
+	void setProtocolHandler(SocketThread* protocolHandler) { this->protocolHandler = protocolHandler; }
 
 private:
+	int primary_sockfd;
+
 	uint8_t request_nbre;
+	SocketThread* protocolHandler;
 
 };
 

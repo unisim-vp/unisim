@@ -12,6 +12,10 @@
 #include <stdlib.h>
 #include<iostream>
 #include<pthread.h>
+#include <signal.h>
+#include <errno.h>
+
+#define MAXDATASIZE		255
 
 namespace unisim {
 namespace service {
@@ -26,33 +30,64 @@ void* executer(void* param);
 class TObject
 {
 public:
+
+	virtual ~TObject() { }
+
 	/**
 	 *  This method has to be overloaded.
 	 *  It implement the behavior of the thread
 	 */
-	virtual void Run(){}
+	virtual void run(){}
 	virtual void error(const char* msg);
 	virtual void error(const int* fd, const char* msg);
 
 };
 
+#ifdef _WIN32
+  typedef ptw32_handle_t pthread_t;
+#endif
+
 class GenericThread : public TObject
 {
 public:
+#ifdef WIN32
+	static const int kill_signo = SIGTERM;
+#else
+	static const int kill_signo = SIGKILL;
+#endif
 
-	~GenericThread() { if (!isTerminated()) stop(); }
-	virtual void start() { ret=pthread_create(&thid,NULL,executer,(void*)this); terminated = false; }
+	GenericThread() : ret(0), terminated(false), started(false) {}
+
+	virtual ~GenericThread() {
+		if (!isTerminated()) stop();
+		if (started && !isTerminated()) {
+
+			stop();
+
+			pthread_detach(thid);
+			/**
+			 *  If pthread_kill(thid, 0) return 0 the thread is still running - if not equal to 0 the thread has already terminated.
+			 */
+			if (pthread_kill(thid, 0) == 0) pthread_kill(thid, kill_signo);
+		}
+	}
+
+	virtual void start() { ret=pthread_create(&thid,NULL,executer,(void*)this); terminated = false; started = true; }
 	virtual void join() { pthread_join(thid,NULL); }
-	virtual void stop() { terminated = true; }
-	virtual bool isTerminated() { return terminated; }
+	virtual void stop() { terminated = true; started = false; }
+	virtual bool isTerminated() { return (terminated); }
+	virtual void setTerminated(bool b) { terminated = b; }
+	virtual bool isStarted() { return (started); }
+	virtual void setStarted(bool b) { started = b; }
 
 protected:
-	bool terminated;
 	typedef GenericThread super;
 
 private:
 	pthread_t thid;
 	int ret;
+	bool terminated;
+	bool started;
 };
 
 } // network 

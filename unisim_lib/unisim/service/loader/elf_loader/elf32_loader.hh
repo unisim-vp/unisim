@@ -42,7 +42,13 @@ namespace service {
 namespace loader {
 namespace elf_loader {
 
-typedef ElfLoaderImpl<uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
+template <class MEMORY_ADDR = uint32_t>
+class Elf32Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>
+{
+public:
+	Elf32Loader(const char *name, Object *parent = 0);
+	virtual ~Elf32Loader();
+};
 
 } // end of namespace elf_loader
 } // end of namespace loader

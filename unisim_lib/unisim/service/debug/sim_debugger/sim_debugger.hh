@@ -49,76 +49,13 @@
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
 #include <unisim/util/debug/profile.hh>
-#include <unisim/util/debug/debugger_handler/debugger_handler.hh>
+
+#include <unisim/api/debug/debug_api.hh>
 
 #include <unisim/kernel/service/service.hh>
 
 #include <inttypes.h>
 #include <string>
-
-namespace unisim {
-namespace service {
-namespace debug {
-	class DebuggerHandler
-	{
-	public:
-		DebuggerHandler()
-			: handler_context(0)
-			, breakpoint_handler_function(0)
-			, watchpoint_handler_function(0)
-		{};
-		virtual ~DebuggerHandler() {};
-		virtual bool SetStepMode() = 0;
-		virtual bool SetContinueMode() = 0;
-		virtual bool IsModeStep() = 0;
-		virtual bool IsModeContinue() = 0;
-		virtual bool HasBreakpoint(uint64_t addr) = 0;
-		virtual bool HasBreakpoint(const char *str) = 0;
-		virtual bool SetBreakpoint(uint64_t addr) = 0;
-		virtual bool SetBreakpoint(const char *str) = 0;
-		virtual bool DeleteBreakpoint(uint64_t addr) = 0;
-		virtual bool DeleteBreakpoint(const char *str) = 0;
-		virtual bool SetHandlerContext(void *context)
-		{
-			handler_context = context;
-			return true;
-		};
-		virtual bool SetBreakpointHandler(
-				void (*function)(void *, uint64_t))
-		{
-			breakpoint_handler_function = function;
-			return true;
-		};
-
-		virtual bool SetWatchpointHandler(
-				void (*function)(void *, uint64_t, bool))
-		{
-			watchpoint_handler_function = function;
-			return true;
-		};
-
-	protected:
-		void CallBreakpointHandler(uint64_t addr)
-		{
-			if ( breakpoint_handler_function )
-				breakpoint_handler_function(handler_context, addr);
-		};
-
-		void CallWatchpointHandler(uint64_t addr, bool read)
-		{
-			if ( watchpoint_handler_function )
-				watchpoint_handler_function(handler_context, addr, read);
-		};
-
-	private:
-		void *handler_context;
-		void (*breakpoint_handler_function)(void *, uint64_t);
-		void (*watchpoint_handler_function)(void *, uint64_t, bool);
-
-	};
-}
-}
-}
 
 namespace unisim {
 namespace service {
@@ -177,10 +114,10 @@ class SimDebugger
 	, public Client<Memory<ADDRESS> >
 	, public Client<Registers>
 	, public Client<SymbolTableLookup<ADDRESS> >
-	, public Client<Loader<ADDRESS> >
+	, public Client<Loader>
 	, public Client<StatementLookup<ADDRESS> >
 	, public SimDebuggerBase
-	, public unisim::util::debug::debugger_handler::DebuggerHandler
+	, public unisim::api::debug::DebugAPI
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
@@ -191,7 +128,7 @@ public:
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > **symbol_table_lookup_import;
-	ServiceImport<Loader<ADDRESS> > **loader_import;
+	ServiceImport<Loader> **loader_import;
 	ServiceImport<StatementLookup<ADDRESS> > **stmt_lookup_import;
 
 	SimDebugger(const char *name, Object *parent = 0);
@@ -199,7 +136,7 @@ public:
 
 	// MemoryAccessReportingInterface
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
@@ -210,7 +147,7 @@ public:
 	// DebugControlInterface
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 
-	virtual bool Setup();
+	virtual bool EndSetup();
 	virtual void OnDisconnect();
 
 private:
@@ -257,13 +194,15 @@ private:
 	bool GetSymbolAddress(const char *str, uint64_t &addr);
 	bool GetFileSystemAddress(const char *str, uint64_t &addr);
 
+  uint8_t ReadMemory(uint64_t addr);
+
 	void DumpBreakpoints();
 	void DumpWatchpoints();
 	void DumpMemory(uint64_t addr);
 	void DumpProgramProfile();
 	void DumpDataProfile(bool write);
 	void DumpAvailableLoaders();
-	void Load(const char *loader_name, const char *filename);
+	void Load(const char *loader_name);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
 };
 

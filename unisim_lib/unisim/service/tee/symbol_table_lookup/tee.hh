@@ -58,13 +58,13 @@ class Tee :
 	public Service<SymbolTableLookup<ADDRESS> >
 {
 public:
-	ServiceExport<SymbolTableLookup<ADDRESS> > in;
-	ServiceImport<SymbolTableLookup<ADDRESS> > *out[MAX_IMPORTS];
+	ServiceExport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_export;
+	ServiceImport<SymbolTableLookup<ADDRESS> > *symbol_table_lookup_import[MAX_IMPORTS];
 	
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 
-	virtual const std::list<unisim::util::debug::Symbol<ADDRESS> *> *GetSymbols() const;
+	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbol(const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr) const;
 	virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name) const;

@@ -49,18 +49,18 @@ using std::string;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
 Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "This service/client implements a tee ('T'). It unifies the symbol table lookup capability of several services that individually provides their own symbol table lookup capability" ),
 	Client<SymbolTableLookup<ADDRESS> >(name, parent),
 	Service<SymbolTableLookup<ADDRESS> >(name, parent),
-	in("in", this)
+	symbol_table_lookup_export("symbol-table-lookup-export", this)
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
 		stringstream sstr;
-		sstr << "out[" << i << "]";
+		sstr << "symbol-table-lookup-import[" << i << "]";
 		string import_name = sstr.str();
-		out[i] = new ServiceImport<SymbolTableLookup<ADDRESS> >(import_name.c_str(), this);
+		symbol_table_lookup_import[i] = new ServiceImport<SymbolTableLookup<ADDRESS> >(import_name.c_str(), this);
 	}
 }
 
@@ -70,27 +70,24 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
-		if(out[i]) delete out[i];
+		if(symbol_table_lookup_import[i]) delete symbol_table_lookup_import[i];
 	}
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const std::list<unisim::util::debug::Symbol<ADDRESS> *> *Tee<ADDRESS, MAX_IMPORTS>::GetSymbols() const {
-
+void Tee<ADDRESS, MAX_IMPORTS>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const
+{
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
-		if(out[i])
+		if(symbol_table_lookup_import[i])
 		{
-			if(*out[i])
+			if(*symbol_table_lookup_import[i])
 			{
-				const std::list<unisim::util::debug::Symbol<ADDRESS> *> *symbolList = (*out[i])->GetSymbols();
-				if(symbolList) return symbolList;
+				(*symbol_table_lookup_import[i])->GetSymbols(lst, type);
 			}
 		}
 	}
-
-	return 0;
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
@@ -99,11 +96,11 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
-		if(out[i])
+		if(symbol_table_lookup_import[i])
 		{
-			if(*out[i])
+			if(*symbol_table_lookup_import[i])
 			{
-				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*out[i])->FindSymbol(name, addr, type);
+				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*symbol_table_lookup_import[i])->FindSymbol(name, addr, type);
 				if(symbol) return symbol;
 			}
 		}
@@ -117,11 +114,11 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
-		if(out[i])
+		if(symbol_table_lookup_import[i])
 		{
-			if(*out[i])
+			if(*symbol_table_lookup_import[i])
 			{
-				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*out[i])->FindSymbolByAddr(addr);
+				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
 				if(symbol) return symbol;
 			}
 		}
@@ -135,11 +132,11 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
-		if(out[i])
+		if(symbol_table_lookup_import[i])
 		{
-			if(*out[i])
+			if(*symbol_table_lookup_import[i])
 			{
-				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*out[i])->FindSymbolByName(name);
+				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(name);
 				if(symbol) return symbol;
 			}
 		}
@@ -153,11 +150,11 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
-		if(out[i])
+		if(symbol_table_lookup_import[i])
 		{
-			if(*out[i])
+			if(*symbol_table_lookup_import[i])
 			{
-				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*out[i])->FindSymbolByName(name, type);
+				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(name, type);
 				if(symbol) return symbol;
 			}
 		}
@@ -171,11 +168,11 @@ const typename unisim::util::debug::Symbol<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
-		if(out[i])
+		if(symbol_table_lookup_import[i])
 		{
-			if(*out[i])
+			if(*symbol_table_lookup_import[i])
 			{
-				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*out[i])->FindSymbolByAddr(addr, type);
+				const typename unisim::util::debug::Symbol<ADDRESS> *symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr, type);
 				if(symbol) return symbol;
 			}
 		}

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,9 +29,9 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 /**********************************************
 
            THUMB ARM EMULATOR ISA
@@ -39,71 +39,47 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::arm::isa::thumb
-set endianness big
-set addressclass {typename CONFIG::address_t}
-template <{class} {CONFIG}>
+
+set codetype buffer;
+set addressclass {uint32_t}
+set endianness little;
+//set fields_order descending;
+set words_order ascending;
+//set withencode_p true;
+
+template <{class} {ARCH}>
 
 decl {
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif // __STDC_CONSTANT_MACROS
-#include <sstream>
-#include <iostream>
-#include <stdexcept>
-#include "unisim/component/cxx/processor/arm/decode_data_processing.hh"
-#include "unisim/component/cxx/processor/arm/decode_load_store.hh"
-#include "unisim/component/cxx/processor/arm/decode_load_store_multiple.hh"
-#include "unisim/component/cxx/processor/arm/decode_misc_load_store.hh"
-#include "unisim/component/cxx/processor/arm/decode_copro_load_store.hh"
-#include "unisim/component/cxx/processor/arm/disasm.hh"
-
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace arm {
-
-using std::stringstream;
-using std::cerr;
-using std::endl;
-using std::hex;
-using std::dec;
-using std::exception;
-
-template<class CONFIG>
-class CPU;
-
-} // end of namespace arm 
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
-
+#include <iosfwd>
+#include <stdint.h>
 } // end of decl
 
 impl {
-#include "unisim/util/arithmetic/arithmetic.hh"
+#include "unisim/component/cxx/processor/arm/models.hh"
+#include "unisim/component/cxx/processor/arm/execute.hh"
+#include "unisim/component/cxx/processor/arm/disasm.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include <stdint.h>
-	
-using unisim::component::cxx::processor::arm::UndefinedInstructionException;
-using unisim::util::arithmetic::Add32;
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
+#include "unisim/util/arithmetic/arithmetic.hh"
+#include <iostream>
+#include <iomanip>
+} // end of impl
+
+action {void} execute({ARCH &} {cpu}) {
+  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
 }
 
-include "constructors_dec.isa"
-include "actions_dec.isa"
+action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {
+  buffer << "Unknown instruction";
+}
 
-include "branch.isa"
 include "data_processing.isa"
-include "load_store_reg.isa"
-include "load_store_multiple.isa"
+include "load_store.isa"
+include "multiply.isa"
+include "misc_arithmetic.isa"
+include "branch.isa"
+include "branch_T1.isa"
 include "exception.isa"
+
+include "ordering.isa"
 
 include "profiling.isa"

@@ -48,17 +48,17 @@ template <class MEMORY_ADDR>
 S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, Object *parent) :
 	Object(name,parent),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
-	Service<Loader<MEMORY_ADDR> >(name, parent),
+	Service<Loader>(name, parent),
 	memory_import("memory-import", this),
 	loader_export("loader-export", this),
-	entry_point(0),
-	isFirstDataRec(true),
 	filename(),
-	param_filename("filename", this, filename)
-	
+	entry_point(0),
+	param_filename("filename", this, filename),
+	isFirstDataRec(true)
 {
-	Object::SetupDependsOn(memory_import);
-//	Object::SetupDependsOn(symbol_table_build_import); 
+
+	loader_export.SetupDependsOn(memory_import);
+
 }
 
 template <class MEMORY_ADDR>
@@ -80,32 +80,41 @@ void S19_Loader<MEMORY_ADDR>::Reset()
 template <class MEMORY_ADDR>
 MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetEntryPoint() const
 { 
-	return (MEMORY_ADDR) entry_point;
+	return ((MEMORY_ADDR) entry_point);
 }
 
 template <class MEMORY_ADDR>
 MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetTopAddr() const
 {  
-	return -1;
+	return (-1);
 }
 
 template <class MEMORY_ADDR>
 MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetStackBase() const
 {  // TODO
-	return 0;
+	return (0);
 }
 
 template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::Setup() {
-	return Load();
+bool S19_Loader<MEMORY_ADDR>::BeginSetup() {
+	return (true);
 }
 
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::Setup(ServiceExportBase *srv_export) {
+	return (true);
+}
+
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::EndSetup() {
+	return (Load());
+}
 
 template <class MEMORY_ADDR>
 bool S19_Loader<MEMORY_ADDR>::Load(const char *_filename) {
 	if(memory_import) memory_import->Reset();
 	filename = _filename;
-	return Load();
+	return (Load());
 }
 
 template <class MEMORY_ADDR>
@@ -113,21 +122,17 @@ bool S19_Loader<MEMORY_ADDR>::Load() {
 	 
 	int             linenum;            /* tracks line number in bootstrap file */
 	char            srec[S_RECORD_SIZE];          /* holds S-record from bootstrap file */
-	unsigned int    status;             /* general status variable */
-	int             n, j;               /* temp registers */
 	FILE            *bootptr;           /* pointer to bootstrap file */
 	bool			success = true;
 
-//	if(symbol_table_build_import) symbol_table_build_import->Reset();
-	
-	if(filename.empty()) return true;
+	if(filename.empty()) return (true);
 	
 	linenum = 0;
 
 	bootptr = fopen(Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str(), "r");
 	if (!bootptr)  {
 		ShowError(ERR_NOFILE,0,NULL);
-		return false;
+		return (false);
 	}
 
 	cerr << Object::GetName() << ": Load file \"" << filename << "\" to simulated RAM." << endl;
@@ -157,7 +162,7 @@ bool S19_Loader<MEMORY_ADDR>::Load() {
 		cerr << "\" Load fail!" << endl;
 	}
 
-	return success;
+	return (success);
 }
 
 template <class MEMORY_ADDR>
@@ -167,19 +172,18 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 	int     chksum;
 	int     tchksum;
 	unsigned char     sdata[254];
-	physical_address_t     flash_address;
+
 	s19_address_t s19_addr;
-	address_t cpu_address;
-	page_t page;
-	int     n, sdataIndex, nDataByte;
+
+	int     sdataIndex, nDataByte;
 	int		addrSize;
 
-	if (srec[0] == '\0')  return true;           /* just in case */
-	if (srec[0] == '\n')  return true;           /* just in case */
-	if (srec[0] == '*')  return true;            /* * in column 1 = comment */
+	if (srec[0] == '\0')  return (true);           /* just in case */
+	if (srec[0] == '\n')  return (true);           /* just in case */
+	if (srec[0] == '*')  return (true);            /* * in column 1 = comment */
 	if (srec[0] != 'S')  {                  /* no S in column 1... */
 		ShowError(ERR_BADREC,linenum,srec); /* show bad record format */
-		return false;                            /* exit fatally */
+		return (false);                            /* exit fatally */
 	}
 
 
@@ -188,7 +192,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 
 	switch (srec[1]) {
 		case S0: {	/* S0 = header, ignore it */
-			return true; 
+			return (true);
 		} break;
 		
 		case S5: {
@@ -202,10 +206,10 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 			sscanf(srec+2+(cnt*2), "%2x", &tchksum);
 			if ((tchksum + (chksum & 0xff)) != 0xff)  {
 				ShowError(ERR_BADCHKSUM,linenum,srec);
-				return false;
+				return (false);
 			}
 			
-			return true;
+			return (true);
 
 		} break;
 		
@@ -218,7 +222,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 				entry_point = s19_addr;
 			}
 
-			return true;
+			return (true);
 		} break;
 		
 		case S8: {	/* S8 = A termination record for a block S2,
@@ -230,7 +234,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 				entry_point = s19_addr;
 			}
 
-			return true;
+			return (true);
 		} break;
 		
 		case S9: {	/* S9 = A termination record for a block S1,
@@ -242,7 +246,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 				entry_point = s19_addr;
 			}
 
-			return true;
+			return (true);
 		} break;
 		
 		default: {
@@ -276,7 +280,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 				    /* not (S1 or S2 or S3), unsupported record */
 		    		/* show the error */
 					ShowError(ERR_NOSUPPORT,linenum,srec);  /* show the error */
-					return false;
+					return (false);
 				}
 			}
 
@@ -295,7 +299,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 			if ((tchksum + (chksum & 0xff)) != 0xff)  {
 				cerr << "check sum " << chksum << "\n";
 				ShowError(ERR_BADCHKSUM,linenum,srec);
-				return false;
+				return (false);
 			}
 
 			if (srec[1] == S1)
@@ -312,7 +316,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 				
 			}
 			
-			return memWrite(s19_addr, sdata,nDataByte);
+			return (memWrite(s19_addr, sdata,nDataByte));
 
 		}
 	}
@@ -320,7 +324,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 }
 
 template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::memWrite(physical_address_t addr, const void *buffer, uint32_t size) {
+bool S19_Loader<MEMORY_ADDR>::memWrite(uint32_t addr, const void *buffer, uint32_t size) {
 
 	bool success = false;
 	
@@ -334,13 +338,12 @@ bool S19_Loader<MEMORY_ADDR>::memWrite(physical_address_t addr, const void *buff
 			}
 			else 
 			{
-				cerr << Object::GetName() << ": write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
 				success = true;
 			}
 		}
 	}
 
-	return success;
+	return (success);
 }
 
 template <class MEMORY_ADDR>
@@ -355,7 +358,7 @@ void  S19_Loader<MEMORY_ADDR>::ShowError(int  errnum, int linenum, char srec[S_R
 		case ERR_BADCHKSUM: cerr << "Error: Record checksum is bad."; break;
 		case ERR_BADFILENAME: cerr << "Error: Illegal character in file name."; break;
 		case ERR_IO : cerr << "Error: Input/Output !"; break;
-		default: cerr << "Error: Unknown!";
+		default: cerr << "Error: Unknown!"; break;
 	}
 	
 	if (linenum)  {

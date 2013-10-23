@@ -57,16 +57,16 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Heathrow(const sc_module_name& name, Object *parent) :
-	Object(name, parent, "Heathrow Programmable Interrupt Controller (PIC)"),
-	unisim::component::cxx::pci::macio::Heathrow<ADDRESS_TYPE>(name, parent),
-	sc_module(name),
-	bus_port("bus_port"),
-	cpu_irq_port("cpu_irq_port"),
-	pci_bus_cycle_time(),
-	bus_cycle_time(),
-	set_irq_ev(),
-	level(false)
+Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Heathrow(const sc_module_name& name, Object *parent)
+	: Object(name, parent, "Heathrow Programmable Interrupt Controller (PIC)")
+	, sc_module(name)
+	, unisim::component::cxx::pci::macio::Heathrow<ADDRESS_TYPE>(name, parent)
+	, bus_port("bus_port")
+	, cpu_irq_port("cpu_irq_port")
+	, level(false)
+	, pci_bus_cycle_time()
+	, bus_cycle_time()
+	, set_irq_ev()
 {
 	SC_HAS_PROCESS(Heathrow);
 	
@@ -195,18 +195,21 @@ void Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Run()
 		irq->serial_id = 0;
 		message->req = irq;
 		
+		if(inherited::verbose)
+		{
+			inherited::logger << DebugInfo << "Interrupt output goes " << (level ? "high" : "low") << EndDebugInfo;
+		}
 		while(!cpu_irq_port->Send(message))
 		{
 			wait(bus_cycle_time);
 		}
-		level = false;
 	}
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-bool Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup()
+bool Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::BeginSetup()
 {
-	if(!inherited::Setup()) return false;
+	if(!inherited::BeginSetup()) return false;
 	pci_bus_cycle_time = sc_time(1.0 / (double) (*this)["pci-bus-frequency"], SC_US);
 	bus_cycle_time = sc_time(1.0 / (double) (*this)["bus-frequency"], SC_US);
 	return true;
@@ -221,8 +224,11 @@ void Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::SetIRQ(unsigned int int_num, bool le
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 void Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::TriggerInterrupt(bool in_level)
 {
-	level = in_level;
-	set_irq_ev.notify(SC_ZERO_TIME);
+	if(level != in_level)
+	{
+		level = in_level;
+		set_irq_ev.notify(SC_ZERO_TIME);
+	}
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>

@@ -14,7 +14,9 @@
 %----------------------
 %---- les packages ----
 %----------------------
-\usepackage[dvips]{color,graphicx}
+%\usepackage[dvips]{color,graphicx} % removed dvips option
+\usepackage{color}
+\usepackage{graphicx}
 \usepackage{epsfig}
 \usepackage[francais,english]{babel}
 %\usepackage[T1]{fontenc}
@@ -29,12 +31,15 @@
 %\usepackage[pdfauthor={David Parello},pdftitle={Rapport d'activites},pdftex]{hyperref}
 %\usepackage{progSTF,colorSTF}
 %\usepackage{myprogSTF,colorSTF}
-\usepackage{pstricks,graphics}
+%\usepackage{pstricks,graphics} % removed pstricks
+\usepackage{graphics}
+%\usepackage[pdf]{pstricks}
 %\usepackage{progSTF}
 \usepackage{subfigure}
 
 \usepackage[normalem]{ulem} % normalem garantit que \em reste l'italique
 \usepackage{rotating}
+\usepackage{verbatim} 
 
 %------------------------------
 %---- la taille de la page ----
@@ -199,3 +204,5 @@
 %        } 
 %%       \vspace{6mm} 
 %} 
+
+\newenvironment{script}{\endgraf\footnotesize\verbatim}{\endverbatim}

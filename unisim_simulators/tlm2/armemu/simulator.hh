@@ -44,128 +44,80 @@
 #include <signal.h>
 
 #include "unisim/kernel/service/service.hh"
-
-#include "unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.hh"
+#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
-#include "unisim/component/tlm2/interrupt/master_stub.hh"
-
+#include "unisim/util/likely/likely.hh"
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
-#include "unisim/service/loader/elf_loader/elf_loader.hh"
-#include "unisim/service/loader/elf_loader/elf_loader.tcc"
-#include "unisim/service/loader/linux_loader/linux_loader.hh"
-#include "unisim/service/os/linux_os/linux_os_32/linux_os_32.hh"
+#include "unisim/service/os/linux_os/linux.hh"
 #include "unisim/service/trap_handler/trap_handler.hh"
-#include "config.hh"
-#ifdef SIM_GDB_SERVER_SUPPORT
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
-#endif // SIM_GDB_SERVER_SUPPORT
-#ifdef SIM_INLINE_DEBUGGER_SUPPORT
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#endif // SIM_INLINE_DEBUGGER_SUPPORT
-#ifdef SIM_SIM_DEBUGGER_SUPPORT
-#include "unisim/service/debug/sim_debugger/sim_debugger.hh"
-#include "unisim/util/debug/debugger_handler/debugger_handler.hh"
-#endif // SIM_SIM_DEBUGGER_SUPPORT
-#ifdef SIM_POWER_ESTIMATOR_SUPPORT
+#include "unisim/service/debug/debugger/debugger.hh"
 #include "unisim/service/power/cache_power_estimator.hh"
-#endif // SIM_POWER_ESTIMATOR_SUPPORT
+#include "unisim/service/profiling/addr_profiler/profiler.hh"
+#include "unisim/service/tee/memory_access_reporting/tee.hh"
+
 
 class Simulator
-	: public unisim::kernel::service::Simulator
-#ifdef SIM_LIBRARY
-	, public unisim::kernel::service::VariableBase::Notifiable
-	, public unisim::service::trap_handler::ExternalTrapHandlerInterface
-#endif // SIM_LIBRARY
+  : public unisim::kernel::service::Simulator
 {
-public:
-	Simulator(int argc, char **argv);
-	virtual ~Simulator();
-	int Run();
-	int Run(double time, sc_time_unit unit);
-	bool IsRunning() const;
-	bool SimulationStarted() const;
-	bool SimulationFinished() const;
-#ifdef SIM_LIBRARY
-	bool AddNotifiable(void *(*notif_function)(const char *), const char *var_name);
-	bool SetTrapHandler(void (*function)(void *, unsigned int), void *context);
-	unisim::util::debug::debugger_handler::DebuggerHandler *GetDebugger(const char *name);
-#endif // SIM_LIBRARY
-	void Stop();
+ public:
+  Simulator(int argc, char **argv);
+  virtual ~Simulator();
+  int Run();
+  int Run(double time, sc_time_unit unit);
+  bool IsRunning() const;
+  bool SimulationStarted() const;
+  bool SimulationFinished() const;
+  virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+  virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
+  int GetExitStatus() const;
 
-protected:
-private:
-	static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
-	typedef unisim::component::tlm2::processor::arm::arm926ejs::ARM926EJS CPU;
-	typedef unisim::component::tlm2::interrupt::InterruptMasterStub IRQ_MASTER_STUB;
-	typedef unisim::component::tlm2::interrupt::InterruptMasterStub FIQ_MASTER_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
-	typedef unisim::service::loader::linux_loader::LinuxLoader<uint64_t> LINUX_LOADER;
-	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
-	typedef unisim::service::os::linux_os::linux_os_32::LinuxOS32 LINUX_OS;
-	typedef unisim::service::trap_handler::TrapHandler TRAP_HANDLER;
-#ifdef SIM_GDB_SERVER_SUPPORT
-	typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
-#endif // SIM_GDB_SERVER_SUPPORT
-#ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
-#endif // SIM_INLINE_DEBUGGER_SUPPORT
-#ifdef SIM_SIM_DEBUGGER_SUPPORT
-	typedef unisim::service::debug::sim_debugger::SimDebugger<uint64_t> SIM_DEBUGGER;
-#endif // SIM_SIM_DEBUGGER_SUPPORT
-#ifdef SIM_POWER_ESTIMATOR_SUPPORT
-	typedef unisim::service::power::CachePowerEstimator POWER_ESTIMATOR;
-#endif // SIM_POWER_ESTIMATOR_SUPPORT
+ protected:
+ private:
+  static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
+  typedef unisim::component::tlm2::processor::arm::armemu::ARMEMU CPU;
+  typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
+  typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
 
-	CPU *cpu;
-	IRQ_MASTER_STUB *irq_master_stub;
-	FIQ_MASTER_STUB *fiq_master_stub;
-	MEMORY *memory;
-	unisim::service::time::sc_time::ScTime *time;
-	unisim::service::time::host_time::HostTime *host_time;
-	ELF32_LOADER *elf32_loader;
-	LINUX_LOADER *linux_loader;
-	LINUX_OS *linux_os;
-	TRAP_HANDLER *trap_handler;
+  typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
+  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
+  typedef unisim::service::power::CachePowerEstimator POWER_ESTIMATOR;
+  typedef unisim::service::debug::debugger::Debugger<uint32_t> DEBUGGER;
+  typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
+  typedef unisim::service::tee::memory_access_reporting::Tee<uint32_t> TEE_MEMORY_ACCESS_REPORTING;
 
-	double simulation_spent_time;
+  CPU *cpu;
+  MEMORY *memory;
+  unisim::service::time::sc_time::ScTime *time;
+  unisim::service::time::host_time::HostTime *host_time;
+  LINUX_OS *linux_os;
+  TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
 
-#ifdef SIM_GDB_SERVER_SUPPORT
-	GDB_SERVER *gdb_server;
-	bool enable_gdb_server;
-	void EnableGdbServer();
-	unisim::kernel::service::Parameter<bool> *param_enable_gdb_server;
-#endif // SIM_GDB_SERVER_SUPPORT
-#ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	INLINE_DEBUGGER *inline_debugger;
-	bool enable_inline_debugger;
-	void EnableInlineDebugger();
-	unisim::kernel::service::Parameter<bool> *param_enable_inline_debugger;
-#endif // SIM_INLINE_DEBUGGER_SUPPORT
-#ifdef SIM_SIM_DEBUGGER_SUPPORT
-	SIM_DEBUGGER *sim_debugger;
-	bool enable_sim_debugger;
-	void EnableSimDebugger();
-	unisim::kernel::service::Parameter<bool> *param_enable_sim_debugger;
-#endif // SIM_SIM_DEBUGGER_SUPPORT
-#ifdef SIM_POWER_ESTIMATOR_SUPPORT
-	POWER_ESTIMATOR *il1_power_estimator;
-	POWER_ESTIMATOR *dl1_power_estimator;
-	bool enable_power_estimation;
-	unisim::kernel::service::Parameter<bool> param_enable_power_estimation;
-	unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_energy;
-	unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_power;
-	unisim::kernel::service::Formula<double> *formula_caches_total_leakage_power;
-	unisim::kernel::service::Formula<double> *formula_caches_total_power;
-#endif // SIM_POWER_ESTIMATOR_SUPPORT
+  double simulation_spent_time;
 
-#ifdef SIM_LIBRARY
-	std::map < std::string, std::vector<void * (*)(const char *)> * > notif_list;
-	virtual void VariableNotify(const char *name);
-	void *trap_handler_context;
-	void (*trap_handler_function)(void *, unsigned int);
-	virtual void ExternalTrap(unsigned int id);
-#endif // SIM_LIBRARY
+  GDB_SERVER *gdb_server;
+  INLINE_DEBUGGER *inline_debugger;
+  DEBUGGER *debugger;
+  PROFILER *profiler;
+  bool enable_gdb_server;
+  unisim::kernel::service::Parameter<bool> *param_enable_gdb_server;
+  bool enable_inline_debugger;
+  unisim::kernel::service::Parameter<bool> *param_enable_inline_debugger;
+
+  POWER_ESTIMATOR *il1_power_estimator;
+  POWER_ESTIMATOR *dl1_power_estimator;
+  bool enable_power_estimation;
+  unisim::kernel::service::Parameter<bool> param_enable_power_estimation;
+  unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_energy;
+  unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_power;
+  unisim::kernel::service::Formula<double> *formula_caches_total_leakage_power;
+  unisim::kernel::service::Formula<double> *formula_caches_total_power;
+  int exit_status;
 };
 
 #endif /* SIMULATOR_HH_ */

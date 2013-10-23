@@ -44,6 +44,7 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
+#include "unisim/util/likely/likely.hh"
 #include <string>
 
 #define LOCATION "In file " << __FILE__ << " function " << __FUNCTION__ << " line #" << __LINE__
@@ -124,7 +125,7 @@ public:
 	 * 
 	 * @return true if the objet is correctly initialized, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	/* Module methods to process incomming requests/responses */
 	/** Method to process incomming requests. 
@@ -151,28 +152,28 @@ private:
 	RequestSpy<REQ> req_spy;
 	ResponseSpy<RSP, REQ> rsp_spy;
 
-	Parameter<string> param_source_module_name;
-	Parameter<string> param_source_port_name;
-	Parameter<string> param_target_module_name;
-	Parameter<string> param_target_port_name;
-	
 	string source_module_name;
 	string source_port_name;
 	string target_module_name;
 	string target_port_name;
+
+	Parameter<string> param_source_module_name;
+	Parameter<string> param_source_port_name;
+	Parameter<string> param_target_module_name;
+	Parameter<string> param_target_port_name;
 };
 
 template<class REQ, class RSP>
 TransactionSpy<REQ, RSP> ::
 TransactionSpy(const sc_module_name &name, Object *parent) :
-	sc_module(name),
 	Object(name, parent),
+	sc_module(name),
 	ResponseListener<REQ, RSP>(),
+	slave_port("slave_port"),
+	master_port("master_port"),
 	logger(*this),
 	verbose(false),
 	param_verbose("verbose", this, verbose),
-	slave_port("slave_port"),
-	master_port("master_port"),
 	source_module_name("source_module_name"),
 	source_port_name("source_port_name"),
 	target_module_name("target_module_name"),
@@ -192,7 +193,7 @@ TransactionSpy<REQ, RSP> ::
 template<class REQ, class RSP>
 bool
 TransactionSpy<REQ, RSP> ::
-Setup() {
+BeginSetup() {
 	return true;
 }
 

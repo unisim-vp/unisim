@@ -374,8 +374,7 @@ OutIRQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 				<< ITRANS(trans) << endl
 				<< PHASE(phase) << endl
 				<< TIME(t) << EndDebugError;
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			break;
 	}
 	// this code should never be executed
@@ -384,8 +383,7 @@ OutIRQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 		<< ITRANS(trans) << endl
 		<< PHASE(phase) << endl
 		<< TIME(t) << EndDebugError;
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -422,8 +420,7 @@ OutFIQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 				<< ITRANS(trans) << endl
 				<< PHASE(phase) << endl
 				<< TIME(t) << EndDebugError;
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			break;
 	}
 	// this code should never be executed
@@ -432,8 +429,7 @@ OutFIQNb(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 		<< ITRANS(trans) << endl
 		<< PHASE(phase) << endl
 		<< TIME(t) << EndDebugError;
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -929,8 +925,7 @@ Push()
 	{
 		logger << DebugError << "Stack overflow" << endl
 			<< LOCATION << EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 
@@ -960,8 +955,7 @@ Pop()
 	{
 		logger << DebugError << "Stack underflow" << endl
 			<< LOCATION << EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 

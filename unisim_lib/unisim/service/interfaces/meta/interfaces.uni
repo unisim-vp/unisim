@@ -74,9 +74,6 @@
 		<depends>
 			<dep>unisim::kernel::service</dep>
 		</depends>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/trap_reporting.am</automake>
-		</autotools>
 	</unit>
 	<unit>
 		<name>unisim::service::interfaces::registers</name>
@@ -87,9 +84,6 @@
 		<depends>
 			<dep>unisim::util::debug</dep>
 		</depends>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/registers.am</automake>
-		</autotools>
 	</unit>
 	<unit>
 		<name>unisim::service::interfaces::symbol_table_lookup</name>
@@ -100,9 +94,6 @@
 		<depends>
 			<dep>unisim::util::debug</dep>
 		</depends>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/symbol_table_lookup.am</automake>
-		</autotools>
 	</unit>
 	<unit>
 		<name>unisim::service::interfaces::ti_c_io</name>
@@ -110,9 +101,6 @@
 			<file>unisim/service/interfaces/ti_c_io.hh</file>
 			<file>unisim/service/interfaces/ti_c_io/CMakeLists.txt</file>
 		</files>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/ti_c_io.am</automake>
-		</autotools>
 	</unit>
 	<unit>
 		<name>unisim::service::interfaces::loader</name>
@@ -120,9 +108,6 @@
 			<file>unisim/service/interfaces/loader.hh</file>
 			<file>unisim/service/interfaces/loader/CMakeLists.txt</file>
 		</files>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/loader.am</automake>
-		</autotools>
 	</unit>
 	<unit>
 		<name>unisim::service::interfaces::os</name>
@@ -130,9 +115,6 @@
 			<file>unisim/service/interfaces/os.hh</file>
 			<file>unisim/service/interfaces/os/CMakeLists.txt</file>
 		</files>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/os.am</automake>
-		</autotools>
 	</unit>
 	<unit>
 		<name>unisim::service::interfaces::linux_os</name>
@@ -144,32 +126,6 @@
 			<dep>stl_string</dep>
 			<dep>unisim::service::interfaces::os</dep>
 		</depends>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/linux_os.am</automake>
-		</autotools>
-	</unit>
-	<unit>
-		<name>unisim::service::interfaces::cpu_os</name>
-		<files>
-			<file>unisim/service/interfaces/cpu_os.hh</file>
-			<file>unisim/service/interfaces/cpu_os/CMakeLists.txt</file>
-		</files>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/cpu_os.am</automake>
-		</autotools>
-	</unit>
-	<unit>
-		<name>unisim::service::interfaces::cpu_linux_os</name>
-		<files>
-			<file>unisim/service/interfaces/cpu_linux_os.hh</file>
-			<file>unisim/service/interfaces/cpu_linux_os/CMakeLists.txt</file>
-		</files>
-		<depends>
-			<dep>unisim::service::interfaces::cpu_os</dep>
-		</depends>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/cpu_linux_os.am</automake>
-		</autotools>
 	</unit>
 	<unit>
 		<name>unisim::service::interfaces::time</name>
@@ -180,9 +136,6 @@
 		<depends>
 			<dep>clib_inttypes_h</dep>
 		</depends>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/time.am</automake>
-		</autotools>
 	</unit>
 	<unit>
 		<name>unisim::service::interfaces::cache_power_estimator</name>
@@ -211,6 +164,26 @@
 			<file>unisim/service/interfaces/stmt_lookup.hh</file>
 			<file>unisim/service/interfaces/stmt_lookup/CMakeLists.txt</file>
 		</files>
+	</unit>
+	<unit>
+		<name>unisim::service::interfaces::blob</name>
+		<files>
+			<file>unisim/service/interfaces/blob.hh</file>
+			<file>unisim/service/interfaces/blob/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::util::debug::blob</dep>
+		</depends>
+	</unit>
+	<unit>
+		<name>unisim::service::interfaces::backtrace</name>
+		<files>
+			<file>unisim/service/interfaces/backtrace.hh</file>
+			<file>unisim/service/interfaces/backtrace/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel::service</dep>
+		</depends>
 	</unit>
 </package>
 

@@ -35,12 +35,14 @@
 #ifndef UNISIM_SERVICE_INTERFACES_TYPED_REGISTERS_HH
 #define UNISIM_SERVICE_INTERFACES_TYPED_REGISTERS_HH
 
+#include <unisim/kernel/service/service.hh>
+
 namespace unisim {
 namespace service {
 namespace interfaces {
 
 template<class REG, class ADDRESS>
-struct TypedRegisters
+struct TypedRegisters : public unisim::kernel::service::ServiceInterface
 {
 	virtual REG ReadTypedRegister(ADDRESS addr) = 0;
 	virtual void WriteTypedRegister(ADDRESS addr, REG const & r) = 0;

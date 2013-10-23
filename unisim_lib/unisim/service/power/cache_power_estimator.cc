@@ -33,6 +33,12 @@
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
+#include <iostream>
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #endif
@@ -44,13 +50,7 @@
 #include <cacti4_2.hh>
 #endif
 
-#include <unisim/service/power/cache_power_estimator.hh>
-#include <iostream>
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include "unisim/service/power/cache_power_estimator.hh"
 // #if defined(HAVE_CACTI4_2)
 // #define cacti (*(Cacti4_2 *) opaque)
 // #endif
@@ -63,6 +63,9 @@ namespace service {
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::Variable(const char *_name, Object *_object, unisim::service::power::CachePowerEstimator::AccessMode& _storage, Type type, const char *_description) :
 VariableBase(_name, _object, type, _description), storage(&_storage)
 {
+	AddEnumeratedValue("normal");
+	AddEnumeratedValue("sequential");
+	AddEnumeratedValue("fast");
 	Simulator::simulator->Initialize(this);
 }
 
@@ -70,6 +73,12 @@ template <>
 const char *Variable<unisim::service::power::CachePowerEstimator::AccessMode>::GetDataTypeName() const
 {
 	return "cache power estimator access mode";
+}
+
+template <>
+unsigned int Variable<unisim::service::power::CachePowerEstimator::AccessMode>::GetBitSize() const
+{
+	return 0;
 }
 
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator bool () const { return false; }
@@ -94,13 +103,16 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 		switch(value)
 		{
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL:
+				SetModified((unsigned long long) *storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
 				break;
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST:
+				SetModified((unsigned long long) *storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
 				break;
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL:
 			default:
+				SetModified((unsigned long long) *storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
 				break;
 		}
@@ -127,9 +139,24 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 {
 	if(IsMutable())
 	{
-		if(strcmp(value, "normal") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL; else
-		if(strcmp(value, "sequential") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL; else
-		if(strcmp(value, "fast") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
+		if(strcmp(value, "normal") == 0)
+		{
+			unisim::service::power::CachePowerEstimator::AccessMode tmp = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
+		else if(strcmp(value, "sequential") == 0)
+		{
+			unisim::service::power::CachePowerEstimator::AccessMode tmp = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
+		else if(strcmp(value, "fast") == 0)
+		{
+			unisim::service::power::CachePowerEstimator::AccessMode tmp = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
 	}
 	return *this;
 }
@@ -154,7 +181,7 @@ using std::endl;
 using std::string;
 
 CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "this service implements an SRAM/Cache power estimator (dynamic energy and leakage power)"),
 	Service<unisim::service::interfaces::CachePowerEstimator>(name, parent),
 	Service<unisim::service::interfaces::PowerMode>(name, parent),
 	Client<unisim::service::interfaces::Time>(name, parent),
@@ -181,7 +208,7 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	param_line_size("line-size", this, p_line_size,
 			"cache line size (in bytes)"),
 	param_associativity("associativity", this, p_associativity,
-			"cache associativity level"),
+			"cache associativity level (0 for fully associative)"),
 	param_rw_ports("rw-ports", this, p_rw_ports, "number of read-write ports"),
 	param_excl_read_ports("excl-read-ports", this, p_excl_read_ports,
 			"number of read only ports"),
@@ -226,11 +253,7 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	param_banks.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_output_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_tag_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-#if defined(HAVE_CACTI4_2)
-	cacti =  new Cacti4_2();
-#else
 	cacti = 0;
-#endif
 }
 
 CachePowerEstimator::~CachePowerEstimator()
@@ -244,7 +267,10 @@ CachePowerEstimator::~CachePowerEstimator()
 	}
 	
 #if defined(HAVE_CACTI4_2)
-	delete cacti;
+	if(cacti)
+	{
+		delete cacti;
+	}
 #endif
 }
 
@@ -389,19 +415,48 @@ double CachePowerEstimator::GetLeakagePower()
 	return leakage_power;
 }
 
-bool CachePowerEstimator::Setup()
+bool CachePowerEstimator::BeginSetup()
 {
+	map<CacheProfileKey, CacheProfile *>::iterator prof_iter;
+
+	for(prof_iter = profiles.begin(); prof_iter != profiles.end(); prof_iter++)
+	{
+		CacheProfile *prof = (*prof_iter).second;
+		delete prof;
+	}
+	
+#if defined(HAVE_CACTI4_2)
+	if(cacti)
+	{
+		delete cacti;
+		cacti = 0;
+	}
+#endif
+	return true;
+}
+
+bool CachePowerEstimator::SetupCacti()
+{
+	if(!profiles.empty()) return true;
 #if defined(HAVE_CACTI4_2)
 	if(!time_import)
 	{
 		logger << DebugError << "no time service is connected." << EndDebugError;
 		return false;
 	}
+
+	cacti = new Cacti4_2();
+
 	if(verbose)
 	{
 		logger << DebugInfo << ((double) p_cache_size / 1024.0) << " KB cache" << EndDebugInfo;
 		logger << DebugInfo << p_line_size << " bytes per line" << EndDebugInfo;
-		logger << DebugInfo << p_associativity << " way/set associative" << EndDebugInfo;
+		logger << DebugInfo;
+		if(p_associativity)
+			logger << p_associativity << " way/set associative";
+		else
+			logger << "fully associative";
+		logger << EndDebugInfo;
 		logger << DebugInfo << p_rw_ports << " read/write ports" << EndDebugInfo;
 		logger << DebugInfo << p_excl_read_ports << " read-only ports" << EndDebugInfo;
 		logger << DebugInfo << p_excl_write_ports << " write-only ports" << EndDebugInfo;
@@ -460,12 +515,22 @@ bool CachePowerEstimator::Setup()
 				<< ", Nspd=" << Nspd << ", min cycle time=" << min_cycle_time << " ps, default VddPow=" << VddPow << " V" << EndDebugInfo;
 	}
 	
-	SetPowerMode(min_cycle_time, default_voltage);
+	SetPowerMode(min_cycle_time, default_voltage); // this create and select the default power profile
 	return true;
 #else
 	logger << DebugError << "Cacti 4.2 is not available." << EndDebugError;
 	return false;
 #endif
+}
+
+bool CachePowerEstimator::Setup(ServiceExportBase *srv_export)
+{
+	if(srv_export == &power_estimator_export) return SetupCacti();
+	if(srv_export == &power_mode_export) return SetupCacti();
+	
+	logger << DebugError << "Internal error" << EndDebugError;
+	
+	return false;
 }
 
 } // end of namespace power

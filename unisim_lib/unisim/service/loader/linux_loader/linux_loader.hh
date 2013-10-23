@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
 #ifndef __UNISIM_SERVICE_LOADER_LINUX_LOADER_LINUX_LOADER_HH__
@@ -38,10 +39,12 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/service/interfaces/loader.hh"
+#include "unisim/service/interfaces/blob.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 
 #include <string>
+#include <vector>
 
 namespace unisim {
 namespace service {
@@ -51,28 +54,35 @@ namespace linux_loader {
 using std::string;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Loader;
+using unisim::service::interfaces::Blob;
 using namespace unisim::util::endian;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
 using unisim::kernel::logger::Logger;
 
 template<class T>
 class LinuxLoader :
-public Client<Loader<T> >,
+public Client<Loader>,
+public Client<Blob<T> >,
 public Client<Memory<T> >,
-public Service<Loader<T> >
+public Service<Loader>,
+public Service<Blob<T> >,
+public unisim::kernel::service::VariableBaseListener
 {
 public:
 	/* Import of the different services */
-	ServiceImport<Loader<T> > loader_import;
+	ServiceImport<Loader> loader_import;
+	ServiceImport<Blob<T> > blob_import;
 	ServiceImport<Memory<T> > memory_import;
 	/* Exported services */
-	ServiceExport<Loader<T> > loader_export;
+	ServiceExport<Loader> loader_export;
+	ServiceExport<Blob<T> > blob_export;
 
 	/* Constructor/Destructor */
 	LinuxLoader(const char *name, Object *parent = 0);
@@ -80,46 +90,118 @@ public:
 
 	/* Service methods */
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
 
 	/* Service interface methods */
-	virtual void Reset();
-	virtual T GetEntryPoint() const;
-	virtual T GetTopAddr() const;
-	virtual T GetStackBase() const;
-	virtual bool Load(const char *filename);
+	virtual bool Load();
+	virtual const unisim::util::debug::blob::Blob<T> *GetBlob();
 
 protected:
 	endian_type endianness;
 	T stack_base;
+	T stack_size;
 	T max_environ;
+	T memory_page_size;
 	unsigned int argc;
-	string *argv;
+	std::vector<std::string *> argv;
+	bool apply_host_environ;
 	unsigned int envc;
-	string *envp;
-
-	T stack_address;
-	T arg_address;
+	std::vector<std::string *> envp;
+	std::vector<std::string *> target_envp;
+	unisim::util::debug::blob::Blob<T> *blob;
+	unisim::util::debug::blob::Blob<T> *stack_blob;
+	
+	//T stack_address;
+	//T arg_address;
 
 	bool verbose;
 
 private:
-	static const int size = sizeof(T);
+	bool LoadStack();
+	bool SetupLoad();
+	bool SetupBlob();
+	void DumpBlob(unisim::util::debug::blob::Blob<T> const &, int);
+	void DumpSection(unisim::util::debug::blob::Section<T> const &, int);
+	void DumpSegment(unisim::util::debug::blob::Segment<T> const &, int);
+	
+	static const int arch_size = sizeof(uint32_t); // this works for 32 bits which is the case of arm and powerpc
 
 	string endianness_string;
 	Parameter<string> param_endian;
 	Parameter<T> param_stack_base;
+	Parameter<T> param_stack_size;
 	Parameter<T> param_max_environ;
 	Parameter<unsigned int> param_argc;
-	ParameterArray<string> *param_argv;
+	std::vector<Parameter<string> *> param_argv;
+	Parameter<bool> param_apply_host_environ;
 	Parameter<unsigned int> param_envc;
-	ParameterArray<string> *param_envp;
+	std::vector<Parameter<string> *> param_envp;
+    Parameter<T> param_memory_page_size;
 
 	Parameter<bool> param_verbose;
 	Logger logger;
 
-	bool Load();
 	void Log(T addr, const uint8_t *value, uint32_t size);
+
+	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
+
+	// auxiliary table symbols
+	static const T AT_NULL = 0;
+	static const T AT_IGNORE = 1;     /* entry should be ignored */
+	static const T AT_EXECFD = 2;     /* file descriptor of program */
+	static const T AT_PHDR = 3;     /* program headers for program */
+	static const T AT_PHENT = 4;     /* size of program header entry */
+	static const T AT_PHNUM = 5;     /* number of program headers */
+	static const T AT_PAGESZ = 6;     /* system page size */
+	static const T AT_BASE = 7;     /* base address of interpreter */
+	static const T AT_FLAGS = 8;     /* flags */
+	static const T AT_ENTRY = 9;     /* entry point of program */
+	static const T AT_NOTELF = 10;    /* program is not ELF */
+	static const T AT_UID = 11;    /* real uid */
+	static const T AT_EUID = 12;    /* effective uid */
+	static const T AT_GID = 13;    /* real gid */
+	static const T AT_EGID = 14;    /* effective gid */
+	static const T AT_PLATFORM = 15;  /* string identifying CPU for optimizations */
+	static const T AT_HWCAP = 16;    /* arch dependent hints at CPU capabilities */
+	static const T AT_CLKTCK = 17;    /* frequency at which times() increments */
+	
+	T SetAuxTableEntry(uint8_t * _stack_data, T _sp, T const & _entry, const T &_value)
+	{
+		_sp = _sp - sizeof(T);
+		uint8_t *addr = _stack_data + _sp;
+		memcpy(addr, &_value, sizeof(T));
+		_sp = _sp - sizeof(T);
+		addr = _stack_data + _sp;
+		memcpy(addr, &_entry, sizeof(T));
+		return _sp;
+	};
+
+	static const T ARM_HWCAP_ARM_SWP       = 1 << 0;
+	static const T ARM_HWCAP_ARM_HALF      = 1 << 1;
+	static const T ARM_HWCAP_ARM_THUMB     = 1 << 2;
+	static const T ARM_HWCAP_ARM_26BIT     = 1 << 3;
+	static const T ARM_HWCAP_ARM_FAST_MULT = 1 << 4;
+	static const T ARM_HWCAP_ARM_FPA       = 1 << 5;
+	static const T ARM_HWCAP_ARM_VFP       = 1 << 6;
+	static const T ARM_HWCAP_ARM_EDSP      = 1 << 7;
+	static const T ARM_HWCAP_ARM_JAVA      = 1 << 8;
+	static const T ARM_HWCAP_ARM_IWMMXT    = 1 << 9;
+	static const T ARM_HWCAP_ARM_THUMBEE   = 1 << 10;
+	static const T ARM_HWCAP_ARM_NEON      = 1 << 11;
+	static const T ARM_HWCAP_ARM_VFPv3     = 1 << 12;
+	static const T ARM_HWCAP_ARM_VFPv3D16  = 1 << 13;
+
+	static const T ARM_ELF_HWCAP = ARM_HWCAP_ARM_SWP 
+								   | ARM_HWCAP_ARM_HALF
+		   						   | ARM_HWCAP_ARM_THUMB
+		   						   | ARM_HWCAP_ARM_FAST_MULT
+								   | ARM_HWCAP_ARM_FPA
+								   | ARM_HWCAP_ARM_VFP
+								   | ARM_HWCAP_ARM_NEON
+								   | ARM_HWCAP_ARM_VFPv3;
+
 };
 
 } // end of linux_loader

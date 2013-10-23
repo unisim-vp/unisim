@@ -39,11 +39,18 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <list>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 
-#include <unisim/util/endian/endian.hh>
+#ifdef WIN32
+#include <unistd.h>
+#endif
+
+#include "unisim/util/endian/endian.hh"
+#include "unisim/util/likely/likely.hh"
 
 namespace unisim {
 namespace service {
@@ -75,9 +82,10 @@ SimDebugger(const char *_name, Object *_parent)
 	, Client<Memory<ADDRESS> >(_name, _parent)
 	, Client<Registers>(_name, _parent)
 	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, Client<Loader<ADDRESS> >(_name, _parent)
+	, Client<Loader>(_name, _parent)
 	, Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, SimDebuggerBase()
+	, unisim::api::debug::DebugAPI(_name, this)
 	, debug_control_export("debug-control-export", this)
 	, memory_access_reporting_export("memory-access-reporting-export", this)
 	, trap_reporting_export("trap-reporting-export", this)
@@ -112,7 +120,7 @@ SimDebugger(const char *_name, Object *_parent)
 	if ( num_loaders )
 	{
 		unsigned int i;
-		typedef ServiceImport<Loader<ADDRESS> > *PLoaderImport;
+		typedef ServiceImport<Loader> *PLoaderImport;
 		loader_import = new PLoaderImport[num_loaders];
 
 		for ( i = 0; i < num_loaders; i++ )
@@ -120,7 +128,7 @@ SimDebugger(const char *_name, Object *_parent)
 			std::stringstream sstr_name;
 			sstr_name << "loader-import[" << i << "]";
 			loader_import[i] =
-					new ServiceImport<Loader<ADDRESS> >(sstr_name.str().c_str(),
+					new ServiceImport<Loader>(sstr_name.str().c_str(),
 							this);
 		}
 
@@ -149,7 +157,7 @@ SimDebugger(const char *_name, Object *_parent)
 		}
 	}
 
-	Object::SetupDependsOn(memory_access_reporting_control_import);
+	debug_control_export.SetupDependsOn(memory_access_reporting_control_import);
 }
 
 template <class ADDRESS>
@@ -173,7 +181,7 @@ SimDebugger<ADDRESS>::
 template<class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
-Setup() {
+EndSetup() {
 	if ( memory_access_reporting_control_import ) {
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 				false);
@@ -210,14 +218,12 @@ ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat
 {
 	if ( watchpoint_registry.HasWatchpoint(mat, mt, addr, size) )
 		trap = true;
-	if ( mt == MemoryAccessReporting<ADDRESS>::MT_DATA )
-	{
-		if ( mat == MemoryAccessReporting<ADDRESS>::MAT_WRITE )
-		{
+	//if ( mt == MemoryAccessReporting<ADDRESS>::MT_DATA )
+	if ( mt == unisim::util::debug::MT_DATA ) {
+		//if ( mat == MemoryAccessReporting<ADDRESS>::MAT_WRITE )
+		if ( mat == unisim::util::debug::MAT_WRITE ) {
 			data_write_profile.Accumulate(addr, 1);
-		}
-		else
-		{
+		} else {
 			data_read_profile.Accumulate(addr, 1);
 		}
 	}
@@ -226,10 +232,19 @@ ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat
 template <class ADDRESS>
 void
 SimDebugger<ADDRESS>::
-ReportFinishedInstruction(ADDRESS next_addr)
+ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 {
-	if ( breakpoint_registry.HasBreakpoint(next_addr) )
+	if(breakpoint_registry.HasBreakpoint(next_addr))
+	{
 		trap = true;
+		const Breakpoint<ADDRESS> *breakpoint = breakpoint_registry.FindBreakpoint(next_addr);
+		
+		if(!breakpoint) throw std::runtime_error("Internal error");
+		
+    std::cout << "-> Reached " << (*breakpoint) << std::endl;
+	}
+	// if(unlikely(profile))
+  program_profile.Accumulate(addr, 1);
 }
 
 template <class ADDRESS>
@@ -497,12 +512,34 @@ DeleteBreakpoint(const char *str)
 template <class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
+SetWatchpoint(uint64_t addr, uint32_t size)
+{
+	bool set = false;
+
+	set = SetReadWatchpoint(addr, size);
+	if ( set )
+	{
+		set = SetWriteWatchpoint(addr, size);
+		if ( !set )
+		{
+			DeleteReadWatchpoint(addr, size);
+		}
+	}
+
+	return set;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
 SetReadWatchpoint(uint64_t addr, uint32_t size)
 {
 	bool set = false;
 
-	if ( !watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ,
-			MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size) )
+	//if ( !watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ,
+			//MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size) )
+	if ( !watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_READ,
+			unisim::util::debug::MT_DATA, addr, size) )
 		cout << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	else
 		set = true;
@@ -521,8 +558,10 @@ SetWriteWatchpoint(uint64_t addr, uint32_t size)
 {
 	bool set = false;
 
-	if ( !watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE,
-			MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size) )
+	//if ( !watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE,
+			//MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size) )
+	if ( !watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_WRITE,
+			unisim::util::debug::MT_DATA, addr, size) )
 		cout << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	else
 		set = true;
@@ -537,12 +576,28 @@ SetWriteWatchpoint(uint64_t addr, uint32_t size)
 template <class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
+DeleteWatchpoint(uint64_t addr, uint32_t size)
+{
+	bool r_deleted = false;
+	bool w_deleted = false;
+
+	r_deleted = DeleteReadWatchpoint(addr, size);
+	w_deleted = DeleteWriteWatchpoint(addr, size);
+
+	return (r_deleted && w_deleted);
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
 DeleteReadWatchpoint(uint64_t addr, uint32_t size)
 {
 	bool deleted = false;
 
-	if ( !watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ,
-			MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size) )
+	//if ( !watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ,
+			//MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size) )
+	if ( !watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_READ,
+			unisim::util::debug::MT_DATA, addr, size) )
 		cout << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	else
 		deleted = true;
@@ -561,8 +616,10 @@ DeleteWriteWatchpoint(uint64_t addr, uint32_t size)
 {
 	bool deleted = false;
 
-	if ( !watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE,
-			MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size) )
+	//if ( !watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE,
+			//MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size) )
+	if ( !watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_WRITE,
+			unisim::util::debug::MT_DATA, addr, size) )
 		cout << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	else
 		deleted = true;
@@ -632,6 +689,16 @@ GetFileSystemAddress(const char *str, uint64_t &addr)
 	}
 
 	return false;
+}
+
+template <class ADDRESS>
+uint8_t
+SimDebugger<ADDRESS>::
+ReadMemory(uint64_t addr)
+{
+  uint8_t value;
+  memory_import->ReadMemory(addr, &value, 1);
+  return value;
 }
 
 template <class ADDRESS>
@@ -715,25 +782,31 @@ DumpWatchpoints()
 	{
 		ADDRESS addr = iter->GetAddress();
 		uint32_t size = iter->GetSize();
-		typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = iter->GetMemoryAccessType();
-		typename MemoryAccessReporting<ADDRESS>::MemoryType mt = iter->GetMemoryType();
+		//typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = iter->GetMemoryAccessType();
+		//typename MemoryAccessReporting<ADDRESS>::MemoryType mt = iter->GetMemoryType();
+		typename unisim::util::debug::MemoryAccessType mat = iter->GetMemoryAccessType();
+		typename unisim::util::debug::MemoryType mt = iter->GetMemoryType();
 
 		switch ( mt )
 		{
-		case MemoryAccessReporting<ADDRESS>::MT_INSN:
+		//case MemoryAccessReporting<ADDRESS>::MT_INSN:
+      case unisim::util::debug::MT_INSN:
 			cout << "insn"; // it should never occur
 			break;
-		case MemoryAccessReporting<ADDRESS>::MT_DATA:
+		//case MemoryAccessReporting<ADDRESS>::MT_DATA:
+      case unisim::util::debug::MT_DATA:
 			cout << "data";
 			break;
 		}
 		cout << " ";
 		switch ( mat )
 		{
-		case MemoryAccessReporting<ADDRESS>::MAT_READ:
+		//case MemoryAccessReporting<ADDRESS>::MAT_READ:
+      case unisim::util::debug::MAT_READ:
 			cout << " read";
 			break;
-		case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
+		//case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
+      case unisim::util::debug::MAT_WRITE:
 			cout << "write";
 			break;
 		default:
@@ -879,7 +952,7 @@ DumpAvailableLoaders()
 		unsigned int i;
 		for ( i = 0; i < num_loaders; i++ )
 		{
-			ServiceImport<Loader<ADDRESS> > *import = loader_import[i];
+			ServiceImport<Loader> *import = loader_import[i];
 			if ( *import )
 			{
 				Object *service = import->GetService();
@@ -895,14 +968,14 @@ DumpAvailableLoaders()
 template <class ADDRESS>
 void
 SimDebugger<ADDRESS>::
-Load(const char *loader_name, const char *filename)
+Load(const char *loader_name)
 {
 	if ( num_loaders && loader_import )
 	{
 		unsigned int i;
 		for( i = 0; i < num_loaders; i++ )
 		{
-			ServiceImport<Loader<ADDRESS> > *import = loader_import[i];
+			ServiceImport<Loader> *import = loader_import[i];
 			if ( *import )
 			{
 				Object *service = import->GetService();
@@ -911,9 +984,12 @@ Load(const char *loader_name, const char *filename)
 					if ( strcmp(service->GetName(), loader_name) == 0 )
 					{
 						// Found loader
-						if ( !(*import)->Load(filename) )
+						if ( !(*import)->Load() )
 						{
-							cerr << Object::GetName() << ": ERROR! Loader \"" << loader_name << "\" was not able to load file \"" << filename << "\"" << endl;
+							cerr << Object::GetName() << ": ERROR! Loader \"" 
+								<< loader_name 
+								<< "\" was not able to load data/program" 
+								<< endl;
 						}
 
 						return;

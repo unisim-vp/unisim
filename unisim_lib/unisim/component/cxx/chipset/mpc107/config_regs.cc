@@ -34,6 +34,7 @@
  
 #include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
 #include <iostream>
+#include <stdlib.h>
 
 namespace unisim {
 namespace component {
@@ -83,87 +84,17 @@ ConfigurationRegister::Set(const char *_name,
 	value = _value;
 	mask = _mask;
 }
-	
-bool 
-ConfigurationRegister::AllowedSize(uint32_t size) {
-	if(access_size & size != size) return false;
-	return true;
+
+bool
+ConfigurationRegister::AllowedSize(uint32_t address, unsigned int req_size) {
+	if(access_size & ByteAccess) return true; // no restriction
+	return (access_size & req_size) == req_size && (address == base_address); // check access size and strict access alignment
 }
-	
+
 /* IMPORTANT: val must be in host endian and size 1,2 or 4 */
 bool 
-ConfigurationRegister::Write(uint32_t address, uint32_t val, uint32_t size) {
-	if(!AllowedSize(size)) return false;
-	switch(byte_size) {
-	case 4:
-		switch(size) {
-		case 4:
-			value = (val & mask) | value;
-			break;
-		case 2: {
-			uint8_t a_val[4];
-			uint8_t a_mask[4];
-			uint16_t h_val;
-			uint16_t h_mask;
-			*(uint32_t *)a_val = Host2LittleEndian(value);
-			*(uint32_t *)a_mask = Host2LittleEndian(mask);
-			if((address & 0x03) == 0) {
-				h_val = *(uint16_t *)a_val;
-				h_mask = *(uint16_t *)a_mask;
-			} else {
-				h_val = *(uint16_t *)&(a_val[2]);
-				h_mask = *(uint16_t *)&(a_mask[2]);
-			}
-			h_val = LittleEndian2Host(h_val);
-			val = (val & (uint32_t)h_mask) | (uint32_t)h_val;
-			h_val = val;
-			h_val = Host2LittleEndian(h_val);
-			if(address == base_address) {
-				*(uint16_t *)a_val = h_val; 
-			} else {
-				*(uint16_t *)&(a_val[2]) = h_val;
-			}
-			value = *(uint32_t *)a_val;
-			value = LittleEndian2Host(value);
-			break; }
-		case 1: {
-			uint8_t a_val[4];
-			uint8_t a_mask[4];
-			uint8_t b_val;
-			uint8_t b_mask;
-			*(uint32_t *)a_val = Host2LittleEndian(value);
-			*(uint32_t *)a_mask = Host2LittleEndian(mask);
-			b_val = a_val[address & 0x03];
-			val = (val & (uint32_t)b_mask) | (uint32_t)b_val;
-			a_val[address & 0x03] = val;
-			value = *(uint32_t *)a_val;
-			value = LittleEndian2Host(value);
-			break; }
-		}
-		break;
-	case 2:
-		switch(size) {
-		case 2:
-			value = (val & mask) | value;
-			break;
-		case 1: {
-			uint8_t a_val[2];
-			uint8_t a_mask[2];
-			uint8_t b_val;
-			uint8_t b_mask;
-			*(uint16_t *)a_val = Host2LittleEndian((uint16_t)value);
-			*(uint16_t *)a_mask = Host2LittleEndian((uint16_t)mask);
-			b_val = a_val[address & 0x01];
-			val = (val & (uint32_t)b_mask) | (uint32_t)b_val;
-			a_val[address & 0x01] = val;
-			value = LittleEndian2Host(*(uint16_t *)a_val);
-			break; }
-		}
-		break;
-	case 1:
-		value = (val & mask) | value;
-		break;
-	}
+ConfigurationRegister::Write(uint32_t address, uint32_t val) {
+	value = (val & mask) | value;
 	
 	return true;
 }
@@ -181,16 +112,15 @@ ConfigurationRegisters::Reset(bool pci_host,
 	bool rom0_8bit_data_bus_size,
 	bool rom1_8bit_data_bus_size) {
 	typedef ConfigurationRegister CR;
-	uint32_t val;
 	
 	vendor_id.Set("vendor_id", "Vendor ID", 0x00, 2, 
 		CR::ReadAccess,
-		CR::HalfWordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x1057,
 		0x0000); // mask: the register is read only
 	device_id.Set("device_id", "Device ID", 0x02, 2,
 		CR::ReadAccess,
-		CR::HalfWordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x0004,
 		0x0000); // mask: the register is read only
 	pci_command_reg.Set("pci_command_register", "PCI command register", 0x04, 2,
@@ -203,66 +133,66 @@ ConfigurationRegisters::Reset(bool pci_host,
 		0x00a0);
 	revision_id.Set("revision_id", "Revision ID", 0x08, 1,
 		CR::ReadAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00,
 		0x00); // mask: the register is read only
 	pir.Set("pir", "Standard programming interface", 0x09, 1,
 		CR::ReadAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		pci_host ? 0x00 : 0x01,
 		0x00); // mask: the register is read only
 	subclass_code.Set("subclass_code", "Subclass code", 0x0a, 1,
 		CR::ReadAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00,
 		0x00); // mask: the register is read only
 	pbccr.Set("pbccr", "Base Class code", 0x0b, 1,
 		CR::ReadAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		pci_host ? 0x06 : 0x0e,
 		0x00); // mask: the register is read only
 	pclsr.Set("pclsr", "Cache line size", 0x0c, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	pltr.Set("pltr", "Latency timer", 0x0d, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	header_type.Set("header_type", "Header type", 0x0e, 1,
 		CR::ReadAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00,
 		0x00); // mask: the register is read only
 	bist_ctrl.Set("bis_ctrl", "BIST control", 0x0f, 1,
 		CR::ReadAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00,
 		0x00); // mask: the register is read only
 	lmbar.Set("lmbar", "Local memory base address register", 0x10, 4,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::WordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00000008);
 	pcsrbar.Set("pcsrbar", "Peripheral control and status register base address register", 0x14, 4,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::WordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00000000);
 //start compatibility for pci
 	bar2.Set("bar2", "3rd base address register", 0x18, 4,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::WordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00000000);
 	bar3.Set("bar3", "4th base address register", 0x1c, 4,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::WordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00000000);
 	bar4.Set("bar4", "5th base address register", 0x20, 4,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::WordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00000000);
 	bar5.Set("bar5", "6th base address register", 0x24, 4,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::WordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00000000);
 //end compatibility code
 	subsys_vendor_id.Set("subsys_vendor_id", "Subsystem vendor id", 0x2c, 2,
@@ -277,63 +207,63 @@ ConfigurationRegisters::Reset(bool pci_host,
 		0x00000000); // mask: the register is read only
 	exp_rom_base_addr.Set("exp_rom_base_addr", "Expansion ROM base address", 0x30, 4,
 		CR::ReadAccess,
-		CR::WordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00000000,
 		0x00000000); // mask: the register is read only
 	ilr.Set("ilr", "Interrupt line", 0x3c, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	interrupt_pin.Set("interrupt_pin", "Interrupt pin", 0x3d, 1,
 		CR::ReadAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x01,
 		0x00); // mask: the register is read only
 	min_gnt.Set("min_gnt", "MIN_GNT", 0x3e, 1,
 		CR::ReadAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00,
 		0x00); // mask: the register is read only
 	max_lat.Set("max_lat", "MAX_LAT", 0x3f, 1,
 		CR::ReadAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00,
 		0x00); // mask: the reigster is read only
 	bus_number.Set("bus_number", "Bus number", 0x40, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	subor_bus_number.Set("subor_bus_number", "Subordinate bus number", 0x41, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	pacr.Set("pacr", "PCI arbiter control register", 0x46, 2,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::HalfWordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x0000);
 	pmcr1.Set("pmcr1", "Power management configuration register 1", 0x70, 2,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess + CR::HalfWordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x0000);
 	pmcr2.Set("pmcr2", "Power management configuration register 2", 0x72, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	odcr.Set("odcr2", "Output driver control register", 0x73, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0xff);
 	cdcr.Set("cdcr", "CLK driver control register", 0x74, 2,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess + CR::HalfWordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x0300);
 	miocr.Set("miocr", "Miscellaneous driver control register", 0x76, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0X00);
 	eumbbar.Set("eumbbar", "Embedded utilities memory block base address register", 0x78, 4,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::WordAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00000000);
 	mem_start_addr_reg1.Set("mem_start_addr_reg1", "Memory starting address register 1", 0x80, 4,
 		CR::ReadAccess + CR::WriteAccess,
@@ -369,16 +299,12 @@ ConfigurationRegisters::Reset(bool pci_host,
 		0x00000000);
 	mem_bank_enable_reg.Set("mem_bank_enable_reg", "Memory banck enable register", 0xa0, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	mem_page_mode_reg.Set("mem_page_mode_reg", "Page mode counter/timer register", 0xa3, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
-	if(a_address_map)
-		val = 0xff050010;
-	else
-		val = 0xff040010;
 	picr1.Set("picr1", "Processor interface configuration 1", 0xa8, 4,
 		CR::ReadAccess + CR::WriteAccess,
 		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
@@ -389,35 +315,35 @@ ConfigurationRegisters::Reset(bool pci_host,
 		0x000c000c);
 	ecc_sb_err_counter.Set("ecc_sb_err_counter", "ECC single bit error counter", 0xb8, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	ecc_sb_err_trig_reg.Set("ecc_sb_err_trig_reg", "ECC single bit error trigger register", 0xb9, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	errenr1.Set("errenr1", "Error enabling register 1", 0xc0, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x01);
 	errdr1.Set("errdr1", "Error detection register 1", 0xc1, 1,
 		CR::ReadAccess + CR::BitResetAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	besr.Set("besr", "Processor bus error status register", 0xc3, 1,
 		CR::ReadAccess + CR::BitResetAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	errenr2.Set("errenr2", "Error enabling register 2", 0xc4, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	errdr2.Set("errdr2", "Error detection register 2", 0xc5, 1,
 		CR::ReadAccess + CR::BitResetAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	pci_besr.Set("pci_besr", "PCI bus error status register", 0xc7, 1,
 		CR::ReadAccess + CR::BitResetAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
 	ear.Set("ear", "Processor/PCI error address register", 0xc8, 4,
 		CR::ReadAccess,
@@ -425,7 +351,7 @@ ConfigurationRegisters::Reset(bool pci_host,
 		0x00);
 	ambor.Set("ambor", "Address map B options register", 0xe0, 1,
 		CR::ReadAccess + CR::WriteAccess,
-		CR::ByteAccess,
+		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0xc0);
 	
 	mccr1.Set("mccr1", "MCCR1", 0xf0, 4,

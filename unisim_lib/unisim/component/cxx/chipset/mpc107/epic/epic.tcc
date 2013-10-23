@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_TCC__
 #define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_TCC__
 
+#include <unisim/util/likely/likely.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -59,12 +60,14 @@ EPIC<PHYSICAL_ADDR, DEBUG> ::
 EPIC(const char *name, Object *parent) :
 	Object(name, parent, "MPC107 integrated Embedded Programmable Interrupt Controller (EPIC)"),
 	Service<Memory<PHYSICAL_ADDR> >(name, parent),
+	memory_export("memory_export", this),
 	logger(*this),
 	verbose(false),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
-	memory_export("memory_export", this),
-	pending_reg(0),
 	regs(),
+	pending_reg(0),
+	irq_selector(0),
+	irq_req_reg(0),
 	inservice_reg() {
 } 
 
@@ -78,7 +81,7 @@ template <class PHYSICAL_ADDR,
 	bool DEBUG>
 bool
 EPIC<PHYSICAL_ADDR, DEBUG> ::
-Setup() {
+BeginSetup() {
 	return true;
 } 
 
@@ -1086,7 +1089,7 @@ template <class PHYSICAL_ADDR,
 uint32_t
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 GetVPRFromIRQMask(uint32_t mask) {
-	uint32_t vpr;
+	uint32_t vpr = 0;
 	switch(mask) {
 	case IRQ_T0:
 		vpr = regs.gtvpr[0];
@@ -1522,8 +1525,8 @@ template <class PHYSICAL_ADDR,
 bool
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 EdgeSensitive(uint32_t in_irq, uint32_t reg_val) {
+#if 0
 	bool edge_sensitive = true;
-	
 	switch(in_irq) {
 	case IRQ_T0: case IRQ_T1: case IRQ_T2: case IRQ_T3:
 		break;  
@@ -1536,6 +1539,7 @@ EdgeSensitive(uint32_t in_irq, uint32_t reg_val) {
 		edge_sensitive = EdgeSensitive(reg_val);
 		break; 
 	}
+#endif
 	if(reg_val & (uint32_t)0x00400000) return false;
 	return true;
 }
@@ -2070,7 +2074,7 @@ template <class PHYSICAL_ADDR,
 void 
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteIACK(uint32_t data) {
-	uint32_t orig_data = data;
+	//uint32_t orig_data = data;
 	
 	if(unlikely(verbose)) {
 		logger << DebugWarning << LOCATION

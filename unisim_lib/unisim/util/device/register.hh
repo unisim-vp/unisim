@@ -53,8 +53,8 @@ public:
 	Register() :
 		name("undefined"),
 		long_name("undefined"),
-		mask(0),
 		value(0),
+		mask(0),
 		reset_value(0)
 	{
 	}
@@ -65,8 +65,8 @@ public:
 	         TYPE _reset_value) :
 		name(_name),
 		long_name(_long_name),
-		mask(_mask),
 		value(_reset_value),
+		mask(_mask),
 		reset_value(_reset_value)
 	{
 	}
@@ -78,8 +78,8 @@ public:
 	{
 		name = _name;
 		long_name = _long_name;
-		mask = _mask;
 		value = _reset_value;
+		mask = _mask;
 		reset_value = _reset_value;
 	}
 	

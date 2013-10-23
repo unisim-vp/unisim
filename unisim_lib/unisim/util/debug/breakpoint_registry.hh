@@ -54,7 +54,7 @@ public:
 
 	void SetBreakpoint(uint32_t offset);
 	void RemoveBreakpoint(uint32_t offset);
-	bool HasBreakpoint(uint32_t offset);
+	bool HasBreakpoint(uint32_t offset) const;
 
 	static const uint32_t NUM_BREAKPOINTS_PER_PAGE = 256;// MUST BE a power of two !
 	ADDRESS base_addr;			/*< base effective address */
@@ -71,12 +71,16 @@ public:
 	BreakpointRegistry();
 	virtual ~BreakpointRegistry();
 
+	void Reset();
 	bool SetBreakpoint(ADDRESS addr);
 	bool RemoveBreakpoint(ADDRESS addr);
-	bool HasBreakpoint(ADDRESS addr);
+	bool HasBreakpoint(ADDRESS addr) const;
+	bool SetBreakpoint(const Breakpoint<ADDRESS>& brkp);
+	bool RemoveBreakpoint(const Breakpoint<ADDRESS>& brkp);
+	bool HasBreakpoint(const Breakpoint<ADDRESS>& brkp) const;
 	bool HasBreakpoints() const;
-	const Breakpoint<ADDRESS> *FindBreakpoint(ADDRESS addr);
-	const list<Breakpoint<ADDRESS> >& GetBreakpoints();
+	const Breakpoint<ADDRESS> *FindBreakpoint(ADDRESS addr) const;
+	const list<Breakpoint<ADDRESS> >& GetBreakpoints() const;
 
 private:
 	bool has_breakpoints;
@@ -85,6 +89,7 @@ private:
 
 	void AllocatePage(ADDRESS addr);
 	BreakpointMapPage<ADDRESS> *GetPage(ADDRESS addr);
+	const BreakpointMapPage<ADDRESS> *GetPage(ADDRESS addr) const;
 	
 };
 

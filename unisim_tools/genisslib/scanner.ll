@@ -17,7 +17,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <parser.hh>
+#include <parser_defs.hh>
 #include <scanner.hh>
 #include <strtools.hh>
 #include <sourcecode.hh>

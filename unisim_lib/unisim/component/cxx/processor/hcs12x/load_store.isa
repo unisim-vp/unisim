@@ -354,7 +354,7 @@ leay.disasm = {
 
 leay.execute = {
 
-    address_t	addr = xb->getEAddr(cpu);
+    uint16_t	addr = xb->getEAddr(cpu);
    
 	cpu->setRegY(addr);
 	
@@ -377,7 +377,7 @@ leax.disasm = {
 
 leax.execute = {
 
-    address_t	addr = xb->getEAddr(cpu);
+    uint16_t	addr = xb->getEAddr(cpu);
     
 	cpu->setRegX(addr);
 	
@@ -400,7 +400,7 @@ leas.disasm = {
 
 leas.execute = {
 
-    address_t	addr = xb->getEAddr(cpu);
+    uint16_t	addr = xb->getEAddr(cpu);
     
 	cpu->setRegSP(addr);
 	
@@ -492,7 +492,7 @@ staab_idx.post_execute = {
 	xb->post_execute(sink);
 }
 
-staab_idx.getCycles = { XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
+staab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
 
 staab_idx.disasm = {
 	string mnem;
@@ -544,7 +544,7 @@ st_dyxs_dir.disasm = {
 
 st_dyxs_dir.execute = {
 
-	uint16_t val;
+	uint16_t val = 0;
 		
 	switch (dyxs) {
 	case 0: val = cpu->getRegD(); break;
@@ -1041,7 +1041,7 @@ gst_dyxs_dir.disasm = {
 
 gst_dyxs_dir.execute = {
 
-	uint16_t val;
+	uint16_t val = 0;
 		
 	switch (dyxs) {
 	case 0: val = cpu->getRegD(); break;

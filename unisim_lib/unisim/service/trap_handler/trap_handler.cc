@@ -108,7 +108,7 @@ TrapHandler::~TrapHandler()
 }
 
 bool
-TrapHandler::Setup()
+TrapHandler::EndSetup()
 {
 	return true;
 }

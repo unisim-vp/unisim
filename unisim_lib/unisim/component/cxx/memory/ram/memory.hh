@@ -62,7 +62,7 @@ template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE = 1024 * 1024>
 class MemoryPage
 {
 public:
-	MemoryPage(PHYSICAL_ADDR _key);
+	MemoryPage(PHYSICAL_ADDR _key, uint8_t initial_state = 0x00);
 	~MemoryPage();
 private:
 	friend class HashTable<PHYSICAL_ADDR, MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> >;
@@ -84,7 +84,7 @@ public:
 	
 	/* service methods */
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	
 	/* unisim::service::interfaces::Memory methods */
 	virtual void Reset();
@@ -95,17 +95,20 @@ public:
 	void *GetDirectAccess(PHYSICAL_ADDR physical_addr, PHYSICAL_ADDR& physical_start_addr, PHYSICAL_ADDR& physical_end_addr);
 protected:
 	PHYSICAL_ADDR org;
-	uint32_t bytesize;
+	PHYSICAL_ADDR bytesize;
 	PHYSICAL_ADDR lo_addr;
 	PHYSICAL_ADDR hi_addr;
-	uint32_t memory_usage;
+	PHYSICAL_ADDR memory_usage;
 	
 private:
 	HashTable<PHYSICAL_ADDR, MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> > hash_table;
 	
 	Parameter<PHYSICAL_ADDR> param_org;
-	Parameter<uint32_t> param_bytesize;
-	Statistic<uint32_t> stat_memory_usage;
+	Parameter<PHYSICAL_ADDR> param_bytesize;
+	Statistic<PHYSICAL_ADDR> stat_memory_usage;
+
+	uint8_t initial_byte_value;
+	Parameter<uint8_t> param_initial_byte_value;
 };
 
 } // end of namespace ram

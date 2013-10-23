@@ -74,7 +74,7 @@ void BreakpointMapPage<ADDRESS>::RemoveBreakpoint(uint32_t offset)
 }
 
 template <class ADDRESS>
-bool BreakpointMapPage<ADDRESS>::HasBreakpoint(uint32_t offset)
+bool BreakpointMapPage<ADDRESS>::HasBreakpoint(uint32_t offset) const
 {
   return (map[offset / 32] & (1 << (offset % 32))) ? true : false;
 }
@@ -89,6 +89,12 @@ BreakpointRegistry<ADDRESS>::BreakpointRegistry() :
 
 template <class ADDRESS>
 BreakpointRegistry<ADDRESS>::~BreakpointRegistry()
+{
+	Reset();
+}
+
+template <class ADDRESS>
+void BreakpointRegistry<ADDRESS>::Reset()
 {
 	uint32_t index;
 	for(index = 0; index < NUM_HASH_TABLE_ENTRIES; index++)
@@ -130,6 +136,12 @@ bool BreakpointRegistry<ADDRESS>::SetBreakpoint(ADDRESS addr)
 }
 
 template <class ADDRESS>
+bool BreakpointRegistry<ADDRESS>::SetBreakpoint(const Breakpoint<ADDRESS>& brkp)
+{
+	return SetBreakpoint(brkp.GetAddress());
+}
+
+template <class ADDRESS>
 bool BreakpointRegistry<ADDRESS>::RemoveBreakpoint(ADDRESS addr)
 {
 	BreakpointMapPage<ADDRESS> *page = GetPage(addr);
@@ -153,7 +165,13 @@ bool BreakpointRegistry<ADDRESS>::RemoveBreakpoint(ADDRESS addr)
 }
 
 template <class ADDRESS>
-const Breakpoint<ADDRESS> *BreakpointRegistry<ADDRESS>::FindBreakpoint(ADDRESS addr)
+bool BreakpointRegistry<ADDRESS>::RemoveBreakpoint(const Breakpoint<ADDRESS>& brkp)
+{
+	return RemoveBreakpoint(brkp.GetAddress());
+}
+
+template <class ADDRESS>
+const Breakpoint<ADDRESS> *BreakpointRegistry<ADDRESS>::FindBreakpoint(ADDRESS addr) const
 {
 	if(HasBreakpoint(addr))
 	{
@@ -168,12 +186,18 @@ const Breakpoint<ADDRESS> *BreakpointRegistry<ADDRESS>::FindBreakpoint(ADDRESS a
 }
 
 template <class ADDRESS>
-bool BreakpointRegistry<ADDRESS>::HasBreakpoint(ADDRESS addr)
+bool BreakpointRegistry<ADDRESS>::HasBreakpoint(ADDRESS addr) const
 {
 	if(!has_breakpoints) return false;
-	BreakpointMapPage<ADDRESS> *page = GetPage(addr);
+	const BreakpointMapPage<ADDRESS> *page = GetPage(addr);
 	if(!page) return false;
 	return page->HasBreakpoint(addr & (BreakpointMapPage<ADDRESS>::NUM_BREAKPOINTS_PER_PAGE - 1));
+}
+
+template <class ADDRESS>
+bool BreakpointRegistry<ADDRESS>::HasBreakpoint(const Breakpoint<ADDRESS>& brkp) const
+{
+	return HasBreakpoint(brkp.GetAddress());
 }
 
 template <class ADDRESS>
@@ -183,7 +207,7 @@ bool BreakpointRegistry<ADDRESS>::HasBreakpoints() const
 }
 
 template <class ADDRESS>
-const list<Breakpoint<ADDRESS> >& BreakpointRegistry<ADDRESS>::GetBreakpoints()
+const list<Breakpoint<ADDRESS> >& BreakpointRegistry<ADDRESS>::GetBreakpoints() const
 {
 	return breakpoints;
 }
@@ -215,6 +239,31 @@ void BreakpointRegistry<ADDRESS>::AllocatePage(ADDRESS addr)
 
 
 template <class ADDRESS>
+const BreakpointMapPage<ADDRESS> *BreakpointRegistry<ADDRESS>::GetPage(ADDRESS addr) const
+{
+	BreakpointMapPage<ADDRESS> *page;
+	ADDRESS base_addr = addr & ~(BreakpointMapPage<ADDRESS>::NUM_BREAKPOINTS_PER_PAGE - 1);
+	uint32_t index = (base_addr / BreakpointMapPage<ADDRESS>::NUM_BREAKPOINTS_PER_PAGE) & (NUM_HASH_TABLE_ENTRIES - 1);
+	page = hash_table[index];
+	if(page)
+	{
+		if(page->base_addr == base_addr) return page;
+		page = page->next;
+		if(page)
+		{
+			do
+			{
+				if(page->base_addr == base_addr)
+				{
+					return page;
+				}
+			} while((page = page->next) != 0);
+		}
+	}
+	return page;
+}
+
+template <class ADDRESS>
 BreakpointMapPage<ADDRESS> *BreakpointRegistry<ADDRESS>::GetPage(ADDRESS addr)
 {
 	BreakpointMapPage<ADDRESS> *prev, *page;
@@ -228,22 +277,21 @@ BreakpointMapPage<ADDRESS> *BreakpointRegistry<ADDRESS>::GetPage(ADDRESS addr)
 		page = page->next;
 		if(page)
 		{
-		do
-		{
-			if(page->base_addr == base_addr)
+			do
 			{
-				prev->next = page->next;
-				page->next= hash_table[index];
-				hash_table[index] = page;
-				return page;
-			}
-			prev = page;
-		} while((page = page->next) != 0);
+				if(page->base_addr == base_addr)
+				{
+					prev->next = page->next;
+					page->next= hash_table[index];
+					hash_table[index] = page;
+					return page;
+				}
+				prev = page;
+			} while((page = page->next) != 0);
 		}
 	}
 	return page;
 }
-
 
 } // end of namespace debug
 } // end of namespace util

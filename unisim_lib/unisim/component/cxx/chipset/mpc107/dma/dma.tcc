@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_DMA_TCC__
 #define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_DMA_TCC__
 
+#include <unisim/util/likely/likely.hh>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -55,13 +57,14 @@ template <class PHYSICAL_ADDR,
 		 bool DEBUG>
 DMA<PHYSICAL_ADDR, DEBUG> ::
 DMA(DMAClientInterface<PHYSICAL_ADDR> *_client,
-	const char *name, Object *parent) :
-	Object(name, parent, "MPC107 integrated Direct Memory Access (DMA) controller"),
-	logger(*this),
-	verbose(false),
-	param_verbose("verbose", this, verbose),
-	client(_client),
-	reg() {
+	const char *name, Object *parent)
+	: Object(name, parent, "MPC107 integrated Direct Memory Access (DMA) controller")
+	, logger(*this)
+	, verbose(false)
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, reg()
+	, client(_client)
+{
 }
 
 template <class PHYSICAL_ADDR,
@@ -74,7 +77,7 @@ template <class PHYSICAL_ADDR,
 		 bool DEBUG>
 bool
 DMA<PHYSICAL_ADDR, DEBUG> ::
-Setup() {
+BeginSetup() {
 	return true;
 }
 
@@ -879,6 +882,10 @@ SendWrite(unsigned int channel, bool last) {
 		/* PCI memory space write */
 		pci_write = true;
 		break;
+	default:
+		logger << DebugError << "Internal error" << EndDebugError;
+		Object::Stop(-1);
+		return;
 	}
 
 	/* check if it is the last write request */

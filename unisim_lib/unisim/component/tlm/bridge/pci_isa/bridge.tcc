@@ -53,8 +53,8 @@ using unisim::kernel::logger::EndDebugError;
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::Bridge(const sc_module_name& name, Object *parent) :
 	Object(name, parent, "PCI-to-ISA bridge"),
-	unisim::component::cxx::bridge::pci_isa::Bridge<ADDRESS_TYPE>(name, parent),
 	sc_module(name),
+	unisim::component::cxx::bridge::pci_isa::Bridge<ADDRESS_TYPE>(name, parent),
 	pci_slave_port("pci-slave-port"),
 	//pci_master_port("pci-master-port"),
 	//isa_slave_port("isa-slave-port"),
@@ -82,9 +82,9 @@ bool Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq, 
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-bool Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup()
+bool Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::BeginSetup()
 {
-	if(!inherited::Setup()) return false;
+	if(!inherited::BeginSetup()) return false;
 	pci_bus_cycle_time = sc_time(1.0 / (double) (*this)["pci-bus-frequency"], SC_US);
 	isa_bus_cycle_time = sc_time(1.0 / (double) (*this)["isa-bus-frequency"], SC_US);
 	return true;
@@ -113,7 +113,7 @@ void Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::ISAMaster()
 					unisim::component::cxx::isa::TransactionType isa_transaction_type;
 					unisim::component::cxx::isa::isa_address_t isa_addr;
 					// Translate PCI address to ISA address
-					bool legal_access = TranslatePCItoISA(pci_space, pci_transaction_type, pci_addr, pci_req_size, isa_space, isa_transaction_type, isa_addr);
+					bool legal_access = inherited::TranslatePCItoISA(pci_space, pci_transaction_type, pci_addr, pci_req_size, isa_space, isa_transaction_type, isa_addr);
 					
 					if(inherited::verbose)
 					{

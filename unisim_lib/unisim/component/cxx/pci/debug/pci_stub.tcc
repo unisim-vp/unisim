@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PCI_DEBUG_PCI_STUB_TCC__
 #define __UNISIM_COMPONENT_CXX_PCI_DEBUG_PCI_STUB_TCC__
 
+#include <unisim/util/likely/likely.hh>
 #include <sstream>
 
 namespace unisim {
@@ -55,8 +56,8 @@ using unisim::util::debug::Symbol;
 	
 template <class ADDRESS>
 PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
-	NetStub<ADDRESS>(false, 0, "localhost", 10000, "pipe"),
 	Object(name, parent),
+	NetStub<ADDRESS>(false, 0, "localhost", 10000, "pipe"),
 	Service<Memory<ADDRESS> >(name, parent),
 	Service<MemoryAccessReporting<ADDRESS> >(name, parent),
 	Client<MemoryAccessReportingControl>(name, parent),
@@ -65,21 +66,17 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	Client<Memory<ADDRESS> >(name, parent),
 	Client<Registers>(name, parent),
 	memory_export("memory_export", this),
-	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
+	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	synchronizable_import("synchronizable-import", this),
 	memory_import("memory-import", this),
 	registers_import("registers-import", this),
-	pci_device_number(0),
-	pci_bus_frequency(33),
-	bus_frequency(0),
 	breakpoint_registry(),
 	watchpoint_registry(),
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose),
-	
+
 	// PCI configuration registers initialization
 	pci_conf_device_id("pci_conf_device_id", "PCI config Device ID", 0x0, 0x0000), // TBD
 	pci_conf_vendor_id("pci_conf_vendor_id", "PCI config Vendor ID", 0x0, 0x0000), // TBD
@@ -95,13 +92,18 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	pci_conf_carbus_cis_pointer("pci_conf_carbus_cis_pointer", "PCI Config Carbus CIS Pointer", 0x0, 0x0),
 	pci_conf_subsystem_id("pci_conf_subsystem_id", "PCI Config Subsystem ID", 0x0, 0x0),
 	pci_conf_subsystem_vendor_id("pci_conf_subsystem_vendor_id", "PCI Config Subsystem Vendor ID", 0x0, 0x0),
-
+	
+	pci_device_number(0),
+	pci_bus_frequency(33),
+	bus_frequency(0),
+	traps(),
 	// Parameters initialization
+	param_verbose("verbose", this, verbose),
+	param_is_server("is-server", this, inherited::is_server),
 	param_protocol("protocol", this, inherited::protocol),
+	param_pipe_name("pipe-name", this, inherited::pipename),
 	param_server_name("server-name", this, inherited::server_name),
 	param_tcp_port("tcp-port", this, inherited::tcp_port),
-	param_pipe_name("pipe-name", this, inherited::pipename),
-	param_is_server("is-server", this, inherited::is_server),
 	param_initial_base_addr("initial-base-addr", this, initial_base_addr, NUM_REGIONS),
 	param_address_space("address-space", this, address_space, NUM_REGIONS),
 	param_region_size("region-size", this, region_size, NUM_REGIONS),
@@ -109,52 +111,26 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency),
 	param_bus_frequency("bus-frequency", this, bus_frequency)
 {
-	Object::SetupDependsOn(memory_access_reporting_control_import);
+	unsigned int num_region;
+
+	for(num_region = 0; num_region < NUM_REGIONS; num_region++)
+	{
+		region_size[num_region] = 0;
+		storage[num_region] = 0;
+	}
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::Setup()
+bool PCIStub<ADDRESS>::BeginSetup()
 {
-	if(memory_access_reporting_control_import) {
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				false);
-	}
+	Reset();
 	
-	if(!memory_import)
-	{
-		if(unlikely(verbose))
-		{
-			logger << DebugError;
-			logger << memory_import.GetName() << " is not connected" << std::endl;
-			logger << EndDebugError;
-		}
-		return false;
-	}
+	return true;
+}
 
-	if(!registers_import)
-	{
-		if(unlikely(verbose))
-		{
-			logger << DebugError;
-			logger << registers_import.GetName() << " is not connected" << std::endl;
-			logger << EndDebugError;
-		}
-		return false;
-	}
-
-	if(!synchronizable_import)
-	{
-		if(unlikely(verbose))
-		{
-			logger << DebugError;
-			logger << synchronizable_import.GetName() << " is not connected" << std::endl;
-			logger << EndDebugError;
-		}
-		return false;
-	}
-
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::SetupMemory()
+{
 	if(unlikely(verbose))
 	{
 		unsigned int num_region;
@@ -225,12 +201,86 @@ bool PCIStub<ADDRESS>::Setup()
 			memset(storage[num_region], 0, region_size[num_region]);
 		}
 	}
+	
+	return true;
+}
 
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::SetupMemoryAccessReporting()
+{
+	return true;
+}
+
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::Setup(ServiceExportBase *srv_export)
+{
+	if(srv_export == &memory_export) return SetupMemory();
+	if(srv_export == &memory_access_reporting_export) return SetupMemoryAccessReporting();
+	
+	logger << DebugError << "Internal error" << EndDebugError;
+	
+	return false;
+}
+
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::EndSetup()
+{
+	if(memory_access_reporting_control_import) {
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				false);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				false);
+	}
+
+	if(!memory_import)
+	{
+		if(unlikely(verbose))
+		{
+			logger << DebugError;
+			logger << memory_import.GetName() << " is not connected" << std::endl;
+			logger << EndDebugError;
+		}
+		return false;
+	}
+
+	if(!registers_import)
+	{
+		if(unlikely(verbose))
+		{
+			logger << DebugError;
+			logger << registers_import.GetName() << " is not connected" << std::endl;
+			logger << EndDebugError;
+		}
+		return false;
+	}
+
+	if(!synchronizable_import)
+	{
+		if(unlikely(verbose))
+		{
+			logger << DebugError;
+			logger << synchronizable_import.GetName() << " is not connected" << std::endl;
+			logger << EndDebugError;
+		}
+		return false;
+	}
+	
 	return inherited::Initialize();
 }
 
 template <class ADDRESS>
 PCIStub<ADDRESS>::~PCIStub()
+{
+	Reset();
+}
+
+template <class ADDRESS>
+void PCIStub<ADDRESS>::OnDisconnect()
+{
+}
+
+template <class ADDRESS>
+void PCIStub<ADDRESS>::Reset()
 {
 	unsigned int num_region;
 
@@ -242,16 +292,11 @@ PCIStub<ADDRESS>::~PCIStub()
 			storage[num_region] = 0;
 		}
 	}
-}
-
-template <class ADDRESS>
-void PCIStub<ADDRESS>::OnDisconnect()
-{
-}
-
-template <class ADDRESS>
-void PCIStub<ADDRESS>::Reset()
-{
+	
+	watchpoint_registry[unisim::component::cxx::pci::SP_MEM].Reset();
+	watchpoint_registry[unisim::component::cxx::pci::SP_IO].Reset();
+	watchpoint_registry[unisim::component::cxx::pci::SP_CONFIG].Reset();
+	breakpoint_registry.Reset();
 }
 
 template <class ADDRESS>
@@ -298,6 +343,10 @@ bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, PC
 							case unisim::component::cxx::pci::SP_IO:
 								mask = mask & 0xfffffffcUL;
 								break;
+							default:
+								logger << DebugError << "Internal error" << EndDebugError;
+								Object::Stop(-1);
+								return false;
 						}
 				
 						pci_conf_base_addr[num_region] = ((pci_conf_base_addr[num_region] & mask) == mask && value == 0xff) ?
@@ -334,8 +383,12 @@ bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, PC
 				{
 					case unisim::component::cxx::pci::SP_MEM: sp = inherited::SP_DEV_MEM; break;
 					case unisim::component::cxx::pci::SP_IO: sp = inherited::SP_DEV_IO; break;
+					default:
+						logger << DebugError << "Internal error" << EndDebugError;
+						Object::Stop(-1);
+						return false;
 				}
-				if(watchpoint_registry[sp].HasWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+				if(watchpoint_registry[sp].HasWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
 				{
 					synchronizable_import->Synchronize();
 			
@@ -439,8 +492,12 @@ bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, PCISpace 
 				{
 					case unisim::component::cxx::pci::SP_MEM: sp = inherited::SP_DEV_MEM; break;
 					case unisim::component::cxx::pci::SP_IO: sp = inherited::SP_DEV_IO; break;
+					default:
+						logger << DebugError << "Internal error" << EndDebugError;
+						Object::Stop(-1);
+						return false;
 				}
-				if(watchpoint_registry[sp].HasWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+				if(watchpoint_registry[sp].HasWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 				{
 					synchronizable_import->Synchronize();
 			
@@ -519,7 +576,7 @@ bool PCIStub<ADDRESS>::ServeWriteRegister(const char *name, uint32_t value)
 }
 
 template <class ADDRESS>
-void PCIStub<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void PCIStub<ADDRESS>::ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(!watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints()) return;
 	if(watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoint(mat, mt, addr, size))
@@ -530,12 +587,15 @@ void PCIStub<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS
 		trap.type = inherited::TRAP_WATCHPOINT;
 		switch(mat)
 		{
-			case MemoryAccessReporting<ADDRESS>::MAT_READ:
+			case unisim::util::debug::MAT_READ:
 				trap.watchpoint.wtype = inherited::WATCHPOINT_READ;
 				break;
-			case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
+			case unisim::util::debug::MAT_WRITE:
 				trap.watchpoint.wtype = inherited::WATCHPOINT_WRITE;
 				break;
+			default:
+				// Ignore report
+				return;
 		}
 		trap.watchpoint.addr = addr;
 		trap.watchpoint.size = size;
@@ -547,7 +607,7 @@ void PCIStub<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS
 }
 
 template <class ADDRESS>
-void PCIStub<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
+void PCIStub<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 {
 	if(!breakpoint_registry.HasBreakpoints()) return;
 	if(breakpoint_registry.HasBreakpoint(next_addr))
@@ -609,7 +669,7 @@ bool PCIStub<ADDRESS>::ServeSetBreakpoint(const char *symbol_name)
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeSetReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
-	bool ret = watchpoint_registry[space].SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	bool ret = watchpoint_registry[space].SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 	if(memory_access_reporting_control_import)
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
@@ -621,7 +681,7 @@ bool PCIStub<ADDRESS>::ServeSetReadWatchpoint(ADDRESS addr, uint32_t size, typen
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeSetWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
-	bool ret = watchpoint_registry[space].SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	bool ret = watchpoint_registry[space].SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 	if(memory_access_reporting_control_import)
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
@@ -677,7 +737,7 @@ bool PCIStub<ADDRESS>::ServeRemoveBreakpoint(const char *symbol_name)
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeRemoveReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
-	bool ret = watchpoint_registry[space].RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	bool ret = watchpoint_registry[space].RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 	if(memory_access_reporting_control_import)
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
@@ -689,7 +749,7 @@ bool PCIStub<ADDRESS>::ServeRemoveReadWatchpoint(ADDRESS addr, uint32_t size, ty
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
-	bool ret = watchpoint_registry[space].RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	bool ret = watchpoint_registry[space].RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 	if(memory_access_reporting_control_import)
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 

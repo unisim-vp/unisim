@@ -50,16 +50,16 @@ using unisim::kernel::logger::EndDebugError;
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIDev(const sc_module_name &name, Object *parent):
-	sc_module(name),
 	Object(name, parent, "PCI device"),
-	input_port("PCI_input_port"),
-	output_port("PCI_output_port"),
-	irq_port("irq_port"),
+	sc_module(name),
 	intr_device_request(),
 	pciDev(0),
 	logger(*this),
 	verbose(false),
-	param_verbose("verbose", this, verbose)
+	param_verbose("verbose", this, verbose),
+	input_port("PCI_input_port"),
+	output_port("PCI_output_port"),
+	irq_port("irq_port")
 	//,
 	//Service<PCIInterface<ADDRESS_TYPE> >(name, parent),
 	//Client<PCIInterface<ADDRESS_TYPE> >(name, parent),
@@ -86,7 +86,7 @@ PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::~PCIDev() {
 }
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup () {
+bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::BeginSetup () {
 	pciDev->SetPCIMaster(this);
 	pciDev->SetEventManager(this);
 	Reset ();
@@ -234,7 +234,7 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::dmaRead(ADDRESS_TYPE addr, int size, u
 		req->addr = addr + size_done;
 		req->type = unisim::component::cxx::pci::TT_READ;
 		req->space = unisim::component::cxx::pci::SP_MEM;
-		req->size = (size - size_done) < MAX_DATA_SIZE?(size - size_done):MAX_DATA_SIZE;
+		req->size = (size - size_done) < (int) MAX_DATA_SIZE?(size - size_done):MAX_DATA_SIZE;
 		//todo: implement resend?
 		output_port->Send(message);
 		wait(pci_event);
@@ -260,7 +260,7 @@ bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::dmaWrite(ADDRESS_TYPE addr, int size, 
 		req->addr = addr + size_done;
 		req->type = unisim::component::cxx::pci::TT_WRITE;
 		req->space = unisim::component::cxx::pci::SP_MEM;
-		req->size = (size - size_done) <= MAX_DATA_SIZE?(size - size_done):MAX_DATA_SIZE;
+		req->size = (size - size_done) <= (int) MAX_DATA_SIZE?(size - size_done):MAX_DATA_SIZE;
 		memcpy(req->write_data, data + size_done, req->size);
 		//todo: implement resend?		
 		output_port->Send(pci_msg);
@@ -355,7 +355,7 @@ void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::IntrDispatch() {
 						<< ":" << __LINE__
 						<< "): received a response for a pci message without response field"
 						<< endl;
-					sc_stop();
+					Object::Stop(-1);
 					wait();
 				}			 	
 			} */

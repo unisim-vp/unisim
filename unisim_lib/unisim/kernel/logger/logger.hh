@@ -35,19 +35,29 @@
 #ifndef __UNISIM_KERNEL_LOGGER_HH__
 #define __UNISIM_KERNEL_LOGGER_HH__
 
+#include <ios>
+#include <ostream>
 #include <sstream>
-#include "unisim/kernel/logger/logger_server.hh"
-#include "unisim/kernel/service/service.hh"
+
+namespace unisim { 
+namespace kernel {
+namespace service {
+
+class Object;
+
+}
+}
+}
 
 namespace unisim {
 namespace kernel {
 namespace logger {
 
-using namespace std;
+class LoggerServer;
 
 class Logger {
 public:
-	Logger(const unisim::kernel::service::Object &_obj);
+	Logger(const unisim::kernel::service::Object &obj);
 	~Logger();
 
 	friend Logger& operator << (Logger& logger, std::ios_base& (*f)(std::ios_base &));
@@ -55,9 +65,28 @@ public:
 	friend Logger& operator << (Logger& logger, Logger& (*f)(Logger &));
 
 	template<typename T> Logger& operator << (const T& t) {
-		buffer << t;
+		buffer_ << t;
 		return *this;
 	}
+
+  // Returns the raw STL output stream that is used to print out the log.
+  // Use this method with caution. Before handling the stream one of the open
+  // debug tags should have been used, and after the close of the debug tags the
+  // stream should not be used any longer.
+  // Example of usage:
+  //   logger << DebugInfo; // start debug info message
+  //   {
+  //     std::ostream& log_stream = logger.GetStream(); // get the raw output
+  //                                                    // stream
+  //     // send whatever you want to the output stream
+  //     log_stream << "Hello world";
+  //     // ...
+  //   } // we ensure that the log_stream liveness is in between DebugInfo and
+  //     // EndDebugInfo tags, so it is not used outside that scope
+  //   logger << EndDebugInfo;
+  //
+  // More tricky usages are possible, but not recommended.
+  std::ostream& GetStream();
 
 	void DebugInfo();
 	void EndDebugInfo();
@@ -68,16 +97,16 @@ public:
 	void EndDebug();
 
 private:
-	std::stringstream buffer;
-	const unisim::kernel::service::Object &obj;
+	std::stringstream buffer_;
+	const unisim::kernel::service::Object &obj_;
 	enum mode_t {NO_MODE,
 		INFO_MODE,
 		WARNING_MODE,
 		ERROR_MODE};
-	mode_t mode;
+	mode_t mode_;
 	void PrintMode();
 
-	LoggerServer *server;
+  unisim::kernel::logger::LoggerServer *server_;
 };
 
 Logger& DebugInfo(Logger&);

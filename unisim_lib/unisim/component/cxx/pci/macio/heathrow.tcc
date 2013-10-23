@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PCI_MACIO_HEATHROW_TCC__
 
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/likely/likely.hh>
 #include <sstream>
 #include <iostream>
 
@@ -59,11 +60,6 @@ Heathrow<ADDRESS>::Heathrow(const char *name, Object *parent) :
 	Object(name, parent, "Heathrow Programmable Interrupt Controller (PIC)"),
 	logger(*this),
 	verbose(false),
-	pci_device_number(0),
-	bus_frequency(0),
-	pci_bus_frequency(33),
-	initial_base_addr(0),
-	level(false),
 	
 	// heathrow global registers
 	heathrow_brightness("heathrow_brightness", "Heathrow Brightness", 0x0, 0x0),
@@ -88,6 +84,11 @@ Heathrow<ADDRESS>::Heathrow(const char *name, Object *parent) :
 	pci_conf_subsystem_id("pci_conf_subsystem_id", "PCI Config Subsystem ID", 0x0, 0x0),
 	pci_conf_subsystem_vendor_id("pci_conf_subsystem_vendor_id", "PCI Config Subsystem Vendor ID", 0x0, 0x0),
 
+	pci_device_number(0),
+	initial_base_addr(0),
+	bus_frequency(0),
+	pci_bus_frequency(33),
+	level(false),
 	
 	// Parameters initialization
 	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
@@ -542,7 +543,7 @@ void Heathrow<ADDRESS>::SetIRQ(unsigned int int_num, bool level)
 }
 	
 template <class ADDRESS>
-bool Heathrow<ADDRESS>::Setup()
+bool Heathrow<ADDRESS>::BeginSetup()
 {
 	// PCI configuration registers initialization	
 	pci_conf_base_addr.Initialize("pci_conf_base_addr", "PCI Config Base Address", 0xfffffff0UL, initial_base_addr);

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 /**********************************************
@@ -41,67 +41,23 @@
 /*******************************************************************
  * mrs instruction
  */
-op mrs(cond[4]:0b00010[5]:r[1]:0b0[2]:0b1111[4]:rd[4]:0b0[12])
+
+op mrs(cond[4]:0b00010[5]:shl <6> sr2[1]:0b0[2]:sr0[4]:rd[4]:0[2]:shl <4> sr1[2]:0[8]);
+mrs.var sr : {uint8_t} = {sr2|sr1|sr0};
 
 mrs.disasm = {
-	buffer << "mrs";
-	DisasmCondition(cond, buffer);
-	buffer << "r" << rd << ", ";
-	if(r) buffer << "spsr";
-	else buffer << "cpsr";
-}
+  buffer << "mrs" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmSpecReg(sr);
+};
 
 mrs.execute = {
-	typename CONFIG::reg_t run_mode;
-	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-	
-	if(!cpu.CheckCondition(cond)) return;
-	
-	/* if rd is the pc register the behavior is unpredictable, 
-	 *   we just return */
-	if(rd == cpu.PC_reg) {
-		return;
-	}
-
-	run_mode = cpu.GetCPSR() & RUNNING_MODE_MASK; /* get running mode */
-	if(r) {
-		/* check current running mode, if in user or system mode then the behaviour is 
-		 *   unpredictable, so we will do a return */
-		if((run_mode == USER_MODE) ||
-				(run_mode == SYSTEM_MODE)) {
-			stringstream str;
-			this->disasm(cpu, str);
-
-#ifdef SOCLIB
-			
-			cerr << "Warning("
-				<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-				<< "trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cerr << str.str() << endl;
-
-#else // SOCLIB
-			
-			cpu.logger << DebugWarning
-				<< "trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cpu.logger << str.str() << endl 
-				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugWarning;
-				
-#endif // SOCLIB
-				
-			return;
-		}
-		cpu.SetGPR(rd, cpu.GetSPSR());
-	} else {
-		cpu.SetGPR(rd, cpu.GetCPSR());
-	}
-}
+  if (not CheckCondition(cpu, cond)) return;
+  if (rd == cpu.PC_reg) { cpu.UnpredictableInsnBehaviour(); return; }
+  switch (sr) {
+  case 15: cpu.SetGPR(rd, cpu.CPSR().bits()); break;
+  case 79: cpu.SetGPR(rd, cpu.SPSR().bits()); break;
+  default: cpu.UnpredictableInsnBehaviour(); break;
+  }
+};
 
 /*
  * end of mrs instruction
@@ -111,252 +67,39 @@ mrs.execute = {
  * msr instruction
  */
 
-op msr_imm(cond[4]:0b00110[5]:r[1]:0b10[2]:mask[4]:0b1111[4]:rotate_imm[4]:imm[8])
-
-msr_imm.disasm = {
-	buffer << "msr";
-	DisasmCondition(cond, buffer);
-	buffer << " ";
-	if(r) buffer << "spsr_";
-	else buffer << "cpsr_";
-	DisasmConditionFieldsMask(mask, buffer);
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-msr_imm.execute = {
-	uint32_t operand;
-	typename CONFIG::reg_t reg;
-	typename CONFIG::reg_t reg_mask;
-	typename CONFIG::reg_t run_mode;
-  
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	if(!cpu.CheckCondition(cond)) return;
-	
-	operand = ShiftOperand32imm(rotate_imm, imm);
-	run_mode = cpu.GetCPSR() & RUNNING_MODE_MASK; /* get running mode */
-	if(r) {
-		/* check current running mode, if in user or system mode then the behaviour is 
-		 *   unpredictable, so we will do a return */
-		if((run_mode == USER_MODE) ||
-				(run_mode == SYSTEM_MODE)) {
-			stringstream str;
-			this->disasm(cpu, str);
-
-#ifdef SOCLIB
-			
-			cerr << "Warning(" << __FUNCTION__
-				<< ":" << __FILE__ << ":" << __LINE__
-				<< "):" << endl
-				<< "trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cerr << str.str() 
-				<< endl;
-
-#else // SOCLIB
-
-			cpu.logger << DebugWarning
-				<< "trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cpu.logger << str.str() << endl 
-				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugWarning;
-			
-#endif // SOCLIB
-			
-			return;
-		}
-		reg = cpu.GetSPSR();
-	} else {
-		/* check current running mode, if in user mode then the behaviour is 
-		 *   unpredictable, so we will do a return */
-		if(mask != 0x08 && run_mode == USER_MODE) {
-			stringstream str;
-			this->disasm(cpu, str);
-
-#ifdef SOCLIB
-			
-			cerr << "Warning(" << __FUNCTION__
-				<< ":" << __FILE__ << ":" << __LINE__
-				<< "):" << endl
-				<< "Warning: trying to execute msr instruction  while running in "
-				<< "user"
-				<< " mode: " << Endl;
-			cerr << str.str() 
-				<< endl;
-
-#else // SOCLIB
-			
-			cpu.logger << DebugWarning
-				<< "trying to execute msr instruction  while running in "
-				<< "user"
-				<< " mode: " << endl;
-			cpu.logger << str.str() << endl
-				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-				<< EndDebugWarning;
-			
-#endif // SOCLIB
-			
-			return;
-		}
-		reg = cpu.GetCPSR();
-	}
-
-	/* creating the register mask */
-	reg_mask = 0;
-	if((mask & 0x01) == 0x01) reg_mask = reg_mask | 0xFF;
-	if((mask & 0x02) == 0x02) reg_mask = reg_mask | 0xFF00;
-	if((mask & 0x04) == 0x04) reg_mask = reg_mask | 0xFF0000;
-	if((mask & 0x08) == 0x08) reg_mask = reg_mask | 0xFF000000;
-	
-	/* updating the register */
-	reg = (reg & ~reg_mask) | (operand & reg_mask);
-	
-	if(r) cpu.SetSPSR(reg);
-	else {
-		cpu.SetCPSR(reg);
-		/* check if there has been any change in the running mode,
-		 *   and switch registers if so */
-		typename CONFIG::reg_t new_run_mode = reg & RUNNING_MODE_MASK;
-		if(run_mode != new_run_mode) {
-			cpu.SetGPRMapping(run_mode, new_run_mode);
-		}
-	}
-}
-
-op msr_reg(cond[4]:0b00010[5]:r[1]:0b10[2]:mask[4]:0b1111[4]:0b0[4]:0b0[4]:rm[4])
+op msr_reg(cond[4]:0b00010[5]:shl <6> sr2[1]:0b10[2]:sr0[4]:/*sbo*/0b1111[4]:0[2]:shl <4> sr1[2]:0[4]:rn[4]);
+msr_reg.var sr : {uint8_t} = {sr2|sr1|sr0};
 
 msr_reg.disasm = {
-	buffer << "msr";
-	DisasmCondition(cond, buffer);
-	buffer << " ";
-	if(r) buffer << "spsr_";
-	else buffer << "cpsr_";
-	DisasmConditionFieldsMask(mask, buffer);
-	buffer << ", r" << rm;
-}
+  buffer << "msr" << DisasmCondition(cond) << '\t' << DisasmSpecReg(sr) << ", " << DisasmRegister(rn);
+};
 
-msr_reg.execute = {
-	typedef Operation<CONFIG> inherited;
+op msr_reg_psr(cond[4]:0b00010[5]:r[1]:0b10[2]:mask[4]:/*sbo*/0b1111[4]:0[2]:0[2]:0[4]:rn[4]);
 
-	uint32_t operand;
-	typename CONFIG::reg_t reg;
-	typename CONFIG::reg_t reg_mask;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t run_mode;
+msr_reg_psr.disasm = {
+  buffer << "msr" << DisasmCondition(cond) << '\t' << DisasmPSRMask(r,mask) << ", " << DisasmRegister(rn);
+};
+
+msr_reg_psr.execute = {
+  if (not CheckCondition(cpu, cond)) return;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+  ComputeMoveToPSR( cpu, cpu.GetGPR(rn), mask, r );
+};
 
-	if(!cpu.CheckCondition(cond)) return;
+op msr_imm_psr(cond[4]:0b00110[5]:r[1]:0b10[2]:mask[4]:0b1111[4]:shl<1> imr[4]:imb[8]);
+msr_imm_psr.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
-	operand = rm_value;
-	run_mode = cpu.GetCPSR() & RUNNING_MODE_MASK; /* get running mode */
-	if(r) {
-		/* check current running mode, if in user or system mode then the behaviour is 
-		 *   unpredictable, so we will do a return */
-		if((run_mode == USER_MODE) ||
-				(run_mode == SYSTEM_MODE)) {
-			stringstream str;
-			this->disasm(cpu, str);
+msr_imm_psr.disasm = {
+  buffer << "msr" << DisasmCondition(cond) << '\t' << DisasmPSRMask(r,mask) << ", #"
+         << std::hex << std::showbase << imm << std::noshowbase << std::dec;
+};
 
-#ifdef SOCLIB
-			
-			cerr << "Warning(" << __FUNCTION__
-				<< ":" << __FILE__ << ":" << __LINE__
-				<< "):" << endl
-				<< "Warning: trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cerr << str.str() 
-				<< endl;
-
-#else // SOCLIB
-			
-			cpu.logger << DebugWarning 
-				<< "trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cpu.logger << str.str() << endl
-				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-				<< EndDebugWarning;
-			
-#endif // SOCLIB
-			
-			return;
-		}
-		reg = cpu.GetSPSR();
-	} else {
-		/* check current running mode, if in user mode then the behaviour is 
-		 * 	 unpredictable, so we will do a return */
-		if(mask != 0x08 && run_mode == USER_MODE) {
-			stringstream str;
-			this->disasm(cpu, str);
-
-#ifdef SOCLIB
-			
-			cerr << "Warning(" << __FUNCTION__
-				<< ":" << __FILE__ << ":" << __LINE__
-				<< "):" << endl
-				<< "Warning: trying to execute msr instruction  while running in "
-				<< "user"
-				<< " mode: " << endl;
-			cerr << str.str() 
-				<< endl;
-			
-#else // SOCLIB
-			
-			cpu.logger << DebugWarning
-				<< "trying to execute msr instruction  while running in "
-				<< "user"
-				<< " mode: " << endl;
-			cpu.logger << str.str() << endl
-				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-				<< EndDebugWarning;
-			
-#endif // SOCLIB
-			
-			return;
-		}
-		reg = cpu.GetCPSR();
-	}
-
-	/* creating the register mask */
-	reg_mask = 0;
-	if((mask & 0x01) == 0x01) reg_mask = reg_mask | 0xFF;
-	if((mask & 0x02) == 0x02) reg_mask = reg_mask | 0xFF00;
-	if((mask & 0x04) == 0x04) reg_mask = reg_mask | 0xFF0000;
-	if((mask & 0x08) == 0x08) reg_mask = reg_mask | 0xFF000000;
-
-	/* updating the register */
-	reg = (reg & ~reg_mask) | (operand & reg_mask);
-
-	if(r) cpu.SetSPSR(reg);
-	else {
-		cpu.SetCPSR(reg);
-		/* check if there has been any change in the running mode,
-		 *   and switch registers if so */
-		typename CONFIG::reg_t new_run_mode = reg & RUNNING_MODE_MASK;
-		if(run_mode != new_run_mode) {
-			cpu.SetGPRMapping(run_mode, new_run_mode);
-		}
-	}
-}
+msr_imm_psr.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  ComputeMoveToPSR( cpu, imm, mask, r );
+};
 
 /*
  * end of msr instruction
  *******************************************************************/
-
-group status_register_access_rm_init(msr_reg)
-status_register_access_rm_init.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
-
-	if(rm == 15) inherited::rm_init = 8;
-	else inherited::rm_init = 0;
-}
-

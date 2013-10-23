@@ -35,14 +35,16 @@
 #ifndef __UNISIM_SERVICE_SDL_SDL_TCC__
 #define __UNISIM_SERVICE_SDL_SDL_TCC__
 
+#include <unisim/util/xml/xml.hh>
+#include <unisim/util/likely/likely.hh>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <unistd.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <unisim/util/xml/xml.hh>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <signal.h>
 
 namespace unisim {
 namespace service {
@@ -92,6 +94,8 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, logger(*this)
 	, verbose_setup(false)
 	, verbose_run(false)
+	, kbd_key_action_fifo()
+	, mouse_state()
 	, mouse_state_updated(false)
 	, param_verbose_setup("verbose-setup", this, verbose_setup, "enable/disable verbosity while setup")
 	, param_verbose_run("verbose-run", this, verbose_run, "enable/disable verbosity while simulation")
@@ -103,16 +107,19 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, logger_mutex(0)
 	, refresh_timer(0)
 	, host_key_down(false)
+	, host_cmd(false)
 	, grab_input(false)
 	, full_screen(false)
 	, host_key(SDLK_RCTRL)
-	, host_cmd(false)
 	, mode_set(false)
 	, alive(false)
-	, video_subsystem_initialized_cond(false)
-	, video_subsystem_initialized_mutex(false)
+	, video_subsystem_initialized_cond(0)
+	, video_subsystem_initialized_mutex(0)
 	, refresh(false)
 	, force_refresh(false)
+	, typematic_delay_us(0)
+	, typematic_interval_us(0)
+	, video_mode()
 	, bmp_out_file_number(0)
 	, learn_keymap_filename("learned_keymap.xml")
 	, bmp_out_filename()
@@ -129,6 +136,10 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 #endif
 {
 	param_refresh_period.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
+	video_export.SetupDependsOn(memory_import);
+	keyboard_export.SetupDependsOn(memory_import);
+	mouse_export.SetupDependsOn(memory_import);
 	
 	mouse_state.dx = 0;
 	mouse_state.dy = 0;
@@ -406,8 +417,9 @@ void SDL<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-bool SDL<ADDRESS>::Setup()
+bool SDL<ADDRESS>::SetupSDL()
 {
+	if(alive) return true;
 	if(!memory_import) return false;
 #if defined(HAVE_SDL)
 	if(unlikely(verbose_setup))
@@ -425,7 +437,7 @@ bool SDL<ADDRESS>::Setup()
 	unisim::util::xml::Node *xml_node = 0;
 	if(!keymap_filename.empty())
 	{
-		unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
+		unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
 		xml_node = parser->Parse(GetSimulator()->SearchSharedDataFile(keymap_filename.c_str()));
 		delete parser;
 	}
@@ -439,7 +451,7 @@ bool SDL<ADDRESS>::Setup()
 		{
 			if((*xml_child)->Name() != string("key"))
 			{
-				unisim::util::xml::Error((*xml_child)->Filename(), (*xml_child)->LineNo(), "WARNING! expected tag key, ignoring tag %s", (*xml_child)->Name().c_str());
+				logger << DebugWarning << (*xml_child)->Filename() << ":" << (*xml_child)->LineNo() << ":expected tag key, ignoring tag " << (*xml_child)->Name() << EndDebugWarning;
 			}
 			else
 			{
@@ -477,7 +489,7 @@ bool SDL<ADDRESS>::Setup()
 						}
 						else
 						{
-							unisim::util::xml::Error((*xml_prop)->Filename(), (*xml_prop)->LineNo(), "WARNING! ignoring property %s of tag %s", (*xml_prop)->Name().c_str(), xml_node->Name().c_str());
+							logger << DebugWarning << (*xml_prop)->Filename() << ":" << (*xml_prop)->LineNo() << ":ignoring property " << (*xml_prop)->Name() << " of tag " << xml_node->Name() << EndDebugWarning;
 						}
 					}
 				}
@@ -492,7 +504,7 @@ bool SDL<ADDRESS>::Setup()
 				}
 				else
 				{
-					unisim::util::xml::Error((*xml_child)->Filename(), (*xml_child)->LineNo(), "WARNING! ignoring unrecognized key", (*xml_child)->Name().c_str());
+					logger << DebugWarning << (*xml_child)->Filename() << ":" << (*xml_child)->LineNo() << ":ignoring unrecognized key" << EndDebugWarning;
 				}
 			}
 		}
@@ -558,6 +570,17 @@ bool SDL<ADDRESS>::Setup()
 #endif
 	
 	return true;
+}
+
+template <class ADDRESS>
+bool SDL<ADDRESS>::Setup(ServiceExportBase *srv_export)
+{
+	if(srv_export == &video_export) return SetupSDL();
+	if(srv_export == &keyboard_export) return SetupSDL();
+	if(srv_export == &mouse_export) return SetupSDL();
+	
+	logger << DebugError << "Internal error" << EndDebugError;
+	return false;
 }
 
 template <class ADDRESS>
@@ -703,7 +726,7 @@ void SDL<ADDRESS>::LearnKeyboard()
 		cout << "Click on graphical window to give it the keyboard focus, and press a key please..." << endl;
 		cout.flush();
 		bool pressed = false;
-		SDLKey sdlk;
+		SDLKey sdlk = SDLK_UNKNOWN;
 
 		while(!pressed)
 		{
@@ -820,6 +843,8 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 				ToggleFullScreen();
 				return;
 			}
+			break;
+		default:
 			break;
 	}
 
@@ -1187,7 +1212,6 @@ void SDL<ADDRESS>::HandleBlit()
 	
 	uint32_t line;
 	uint8_t *dst;
-	uint8_t *src;
 	ADDRESS scan_line_addr;
 	
 	if(SDL_LockSurface(surface) < 0) return;

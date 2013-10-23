@@ -8,7 +8,7 @@ import sys
 
 # puscomp v0.1
 print("puscomp (Python UniSim Compiler) v0.1")
-print("Author: Daniel Gracia Pérez (daniel.gracia-perez@cea.fr)")
+print("Author: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)")
 
 usage = """usage: %prog [options] [target]
 NOTE: options -c and -o must be defined"""

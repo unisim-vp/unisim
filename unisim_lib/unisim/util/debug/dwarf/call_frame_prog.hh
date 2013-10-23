@@ -36,12 +36,16 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_CALL_FRAME_PROG_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/dwarf/fmt.hh>
 
 namespace unisim {
 namespace util {
 namespace debug {
 namespace dwarf {
 
+static const unsigned int DW_CFP_INITIAL_INSTRUCTIONS = 0;
+static const unsigned int DW_CFP_INSTRUCTIONS = 1;
+	
 template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog);
 
@@ -49,19 +53,28 @@ template <class MEMORY_ADDR>
 class DWARF_CallFrameProgram
 {
 public:
-	DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *dw_handler, uint64_t length, const uint8_t *program);
+	DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *dw_handler, uint64_t length, const uint8_t *program, unsigned int type, DWARF_Format dw_fmt);
 	~DWARF_CallFrameProgram();
-	endian_type GetEndianness() const;
-	uint8_t GetAddressSize() const;
+	DWARF_Handler<MEMORY_ADDR> *GetHandler() const;
+	DWARF_Format GetFormat() const;
 	uint64_t GetLength() const;
 	const uint8_t *GetProgram() const;
+	unsigned int GetType() const;
+	void SetCIE(const DWARF_CIE<MEMORY_ADDR> *dw_cie);
+	const DWARF_CIE<MEMORY_ADDR> *GetCIE() const;
+	void SetFDE(const DWARF_FDE<MEMORY_ADDR> *dw_fde);
+	const DWARF_FDE<MEMORY_ADDR> *GetFDE() const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog);
 private:
 	friend class DWARF_CallFrameVM<MEMORY_ADDR>;
 
+	unsigned int type;
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	uint64_t length;
+	DWARF_Format dw_fmt;
 	const uint8_t *program;
+	const DWARF_CIE<MEMORY_ADDR> *dw_cie;
+	const DWARF_FDE<MEMORY_ADDR> *dw_fde;
 };
 
 } // end of namespace dwarf

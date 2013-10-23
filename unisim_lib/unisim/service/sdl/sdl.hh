@@ -69,6 +69,7 @@ using namespace unisim::util::endian;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
@@ -98,7 +99,7 @@ public:
 	virtual ~SDL();
 
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool Setup(ServiceExportBase *srv_export);
 
 	virtual bool SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height, uint32_t depth, uint32_t fb_bytes_per_line);
 	virtual void RefreshDisplay();
@@ -165,6 +166,9 @@ private:
 	bool work_around_sdl_mouse_motion_coordinates_bug;
 	Parameter<bool> param_work_around_sdl_mouse_motion_coordinates_bug;
 
+	// Setup SDL
+	bool SetupSDL();
+	
 	// Keyboard learning is executed in main thread
 	void LearnKeyboard();
 

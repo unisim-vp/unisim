@@ -24,6 +24,7 @@ set ( dwarf_subdirs
 	unisim/util/debug
 	unisim/util/endian
 	unisim/util/arithmetic
+	unisim/util/debug/blob
 	)
 
 foreach ( dir ${dwarf_subdirs} )
@@ -86,12 +87,14 @@ add_library ( unisim__util__debug__dwarf
 target_link_libraries ( unisim__util__debug__dwarf
 	unisim__util__endian
 	unisim__util__debug
+	unisim__util__debug__blob
 	)
 
 add_dependencies ( unisim__util__debug__dwarf
 	unisim__util__endian
 	unisim__util__debug
 	unisim__util__arithmetic
+	unisim__util__debug__blob
 	)
 	
 message ( STATUS "Checking unisim::service::debug::dwarf - done" )

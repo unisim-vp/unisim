@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,12 +30,14 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  *  SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr),
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_OP_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_OP_HH__
 
+#include <vector>
 #include <inttypes.h>
 
 namespace unisim {
@@ -44,104 +46,51 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-template<class CONFIG>
-class MemoryOp {
-public:
-	typedef enum {
-		READ,
-		READ_TO_PC_UPDATE_T,
-		READ_TO_PC,
-		WRITE,
-		PREFETCH
-	} type_t;
+  class MemoryOp {
+  public:
+    typedef enum {
+      READ,
+      USER_READ,
+      WRITE,
+      PREFETCH
+    } type_t;
 	
-	MemoryOp() {}
-	~MemoryOp() {}
+    MemoryOp();
+    ~MemoryOp();
 	
-	void SetReadToPCUpdateT(typename CONFIG::address_t address) {
-		type = READ_TO_PC_UPDATE_T;
-		this->address = address;
-		this->size = 4;
-		target_reg = 15; // the pc register
-		this->read_signed = false;
-		this->aligned = true;
-#ifdef SOCLIB
-		this->external = false;
-#endif // SOCLIB
-	}
+    void SetRead(uint32_t address, uint32_t size, bool read_signed);
+    void SetWrite(uint32_t address, uint32_t size, uint32_t value);
+    void SetPrefetch(uint32_t address);
+    void SetDestReg(uint32_t dst) { target_reg = dst; }
+    void SetDestUserReg(uint32_t dst) { target_reg = dst; type = USER_READ; }
+    type_t GetType() const { return type; }
+    uint32_t GetAddress() const { return address; }
+    uint32_t GetSize() const { return size; }
+    uint32_t GetTargetReg() const { return target_reg; }
+    uint32_t GetWriteValue() const { return write_value; }
+    bool IsSigned() const { return read_signed; }
 	
-	void SetReadToPC(typename CONFIG::address_t address) {
-		type = READ_TO_PC;
-		this->address = address;
-		this->size = 4;
-		target_reg = 15; // the pc register
-		this->read_signed = false;
-		this->aligned = true;
-#ifdef SOCLIB
-		this->external = false;
-#endif // SOCLIB
-	}
-	
-	void SetRead(typename CONFIG::address_t address, 
-			uint32_t size, 
-			uint32_t dest, 
-			bool aligned, 
-			bool read_signed) {
-		type = READ;
-		this->address = address;
-		this->size = size;
-		target_reg = dest;
-		this->read_signed = read_signed;
-		this->aligned = aligned;
-#ifdef SOCLIB
-		this->external = false;
-#endif // SOCLIB
-	}
-	
-	void SetWrite(typename CONFIG::address_t address, 
-			uint32_t size, 
-			uint32_t value) {
-		type = WRITE;
-		this->address = address;
-		this->size = size;
-		write_value = value;
-#ifdef SOCLIB
-		this->external = false;
-#endif // SOCLIB
-	}
-	
-	void SetPrefetch(typename CONFIG::address_t address) {
-		type = PREFETCH;
-		this->address = address;
-#ifdef SOCLIB
-		this->external = false;
-#endif // SOCLIB
-	}
-	
-	type_t GetType() const {return type;}
-	typename CONFIG::address_t GetAddress() const {return address;}
-	uint32_t GetSize() const {return size;}
-	uint32_t GetTargetReg() const {return target_reg;}
-	uint32_t GetWriteValue() const {return write_value;}
-	bool NeedAlignment() const {return !aligned;}
-	bool IsSigned() const {return read_signed;}
-#ifdef SOCLIB
-	bool IsExternal() const {return external;}
-	void SetExternal(bool ext) {external = ext;}
-#endif // SOCLIB
-	
-private:
-	typename CONFIG::address_t address;
-	type_t type;
-	uint32_t size;
-	uint32_t target_reg;
-	uint32_t write_value;
-	bool read_signed;
-	bool aligned;
-#ifdef SOCLIB
-	bool external;
-#endif // SOCLIB
-};
+    static MemoryOp* alloc() {
+      if (freepool.empty())
+        return new MemoryOp();
+      MemoryOp* res = freepool.back();
+      freepool.pop_back();
+      return res;
+    }
+    static void release( MemoryOp* memop ) {
+      freepool.push_back( memop );
+    }
+    
+  private:
+    uint32_t  address;
+    type_t    type;
+    uint32_t  size;
+    uint32_t  target_reg;
+    uint32_t  write_value;
+    bool      read_signed;
+    
+    static std::vector<MemoryOp*> freepool;
+  };
 
 } // end of namespace arm
 } // end of namespace processor

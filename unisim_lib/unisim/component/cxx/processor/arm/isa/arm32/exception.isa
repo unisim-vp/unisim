@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 /**********************************************
@@ -39,105 +39,85 @@
 **********************************************/
 
 /*******************************************************************
- * swi instruction
+ * swi (software interrupt) instruction; also known as: svc (supervisor call) in armv7
  * NOTE: this instruction is used to make the system calls
  */
 
-op swi(cond[4]:0b1111[4]:immed[24])
+op swi(cond[4]:0b1111[4]:imm[24]);
 
 swi.disasm = {
-	buffer << "swi";
-	DisasmCondition(cond, buffer);
-	buffer << " #" << dec << immed;
-}
+  buffer << "swi" << DisasmCondition(cond) << "\t" << DisasmI(imm);
+};
 
 swi.execute = {
-//	if(cpu.logger_import) 
-//		(*cpu.logger_import) << DebugInfo
-//			<< Function << __FUNCTION__
-//			<< File << __FILE__
-//			<< Line << __LINE__
-//			<< "executing swi (#" << immed << ")"
-//			<< Endl << EndDebugInfo;
-	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	if(!cpu.CheckCondition(cond)) return;
-
-#ifdef SOCLIB
-	
-	throw SoftwareInterruptException<CONFIG>();
-	
-#else // SOCLIB
-	
-	if(cpu.linux_os_import) {
-		// we are executing on linux emulation mode
-		// use linux_os_import
-		try {
-			cpu.linux_os_import->ExecuteSystemCall(immed);
-		} catch(exception &e) {
-			cerr << e.what() << endl;
-		}
-	} else {		
-		// we are executing on full system mode
-		throw SoftwareInterruptException<CONFIG>();
-	}
-	
-#endif // SOCLIB
-
-}
+  if (not CheckCondition(cpu, cond)) return;
+  
+  cpu.SWI( imm );
+};
 
 /*
- * end of swi instruction
+ * end of swi (software interrupt) instruction
  *******************************************************************/
 
 /*******************************************************************
- * bkpt instruction
+ * bkpt (breakpoint) instruction
  */
 
-op bkpt(0b1110[4]:0b00010010[8]:himmed[12]:0b0111[4]:limmed[4])
+op bkpt(0b1110[4]:0b00010010[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
+bkpt.var imm : {uint32_t} = {im1|im0};
 
 bkpt.disasm = {
-	uint32_t immed;
-	
-	immed = limmed + ((uint32_t)himmed << 4);
-	buffer << "bkpt";
-	buffer << " #" << dec << immed;
-}
+  buffer << "bkpt\t0x" << std::hex << std::setw( 4 ) << std::setfill( '0' ) << imm << std::setw( 0 ) << std::dec;
+};
 
 bkpt.execute = {
-//	if(cpu.logger_import) 
-//		(*cpu.logger_import) << DebugInfo
-//			<< Function << __FUNCTION__
-//			<< File << __FILE__
-//			<< Line << __LINE__
-//			<< "executing swi (#" << immed << ")"
-//			<< Endl << EndDebugInfo;
-	uint32_t immed;
-	
-	immed = limmed + ((uint32_t)himmed << 4);
-	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-#ifdef SOCLIB
-	
-	throw PrefetchAbortException<CONFIG>();
-	
-#else // SOCLIB
-	
-	if(cpu.linux_os_import) {
-		// we are executing on linux emulation mode
-		// what should we do with this kind of call? ignore it
-	} else {
-		// we are executing on full system mode
-		throw PrefetchAbortException<CONFIG>();
-	}
-	
-#endif // SOCLIB
-	
-}
+  cpu.BKPT( imm );
+};
 
 /*
- * end of bkpt instruction
+ * end of bkpt (breakpoint) instruction
  *******************************************************************/
 
+/*******************************************************************
+ * hvc () instruction
+ */
+
+op hvc(cond[4]:0b00010100[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
+hvc.var imm : {uint32_t} = {im1|im0};
+
+hvc.disasm = {
+  buffer << "hvc" << DisasmCondition(cond) << '\t' << std::dec << imm;
+};
+
+/*
+ * end of hvc () instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smc () instruction
+ */
+
+op smc(cond[4]:0b00010110[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
+smc.var imm : {uint32_t} = {im1|im0};
+
+smc.disasm = {
+  buffer << "smc" << DisasmCondition(cond) << '\t' << std::dec << imm;
+};
+
+/*
+ * end of smc () instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * eret (Exception Return) instruction
+ */
+
+op eret(cond[4]:0b0001011000000000000001101110[28]);
+
+eret.disasm = {
+  buffer << "eret" << DisasmCondition(cond);
+};
+
+/*
+ * end of eret (Exception Return) instruction
+ *******************************************************************/

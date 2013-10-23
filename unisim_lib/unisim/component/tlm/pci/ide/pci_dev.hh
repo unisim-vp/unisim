@@ -123,7 +123,7 @@ public:
 	PCIDev(const sc_module_name &name, Object *parent = 0);
 	void SetDevice(unisim::component::cxx::pci::ide::PciDev<ADDRESS_TYPE> * dev);
 	virtual ~PCIDev();
-	bool Setup ();
+	virtual bool BeginSetup ();
 	virtual bool Send (const PMsgType &message);
 	virtual void Reset();
 	bool dmaRead(ADDRESS_TYPE addr, int size, uint8_t *data);

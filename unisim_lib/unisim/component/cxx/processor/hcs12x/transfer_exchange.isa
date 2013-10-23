@@ -315,14 +315,14 @@ exg_hcs12x.disasm = {
 		case EBLB::EBLBMSLSRegs::CCR: // src is CCRW register
 			if (lls == EBLB::EBLBMSLSRegs::A) {
 				rrSrc = EBLB::EBLBRegs::CCRH; //0x22;
-			} else if (lls = EBLB::EBLBMSLSRegs::B) {
+			} else if (lls == EBLB::EBLBMSLSRegs::B) {
 				rrSrc = EBLB::EBLBRegs::CCRL; //0x21;
 			} else {
 				rrSrc = EBLB::EBLBRegs::CCRW; //0x23;
 			}
 			break; 
 		case EBLB::EBLBMSLSRegs::TMPx: // src is TMP register
-			if (lls = EBLB::EBLBMSLSRegs::D) {
+			if (lls == EBLB::EBLBMSLSRegs::D) {
 				rrSrc = EBLB::EBLBRegs::TMP1; //0x30; // TMP1
 			} else {
 				rrSrc = EBLB::EBLBRegs::TMP3; //0x32; // TMP3
@@ -561,14 +561,14 @@ tfr_hcs12x.disasm = {
 		case EBLB::EBLBMSLSRegs::CCR: // src is CCRW register
 			if (lls == EBLB::EBLBMSLSRegs::A) {
 				rrSrc = EBLB::EBLBRegs::CCRH; //0x22;
-			} else if (lls = EBLB::EBLBMSLSRegs::B) {
+			} else if (lls == EBLB::EBLBMSLSRegs::B) {
 				rrSrc = EBLB::EBLBRegs::CCRL; //0x21;
 			} else {
 				rrSrc = EBLB::EBLBRegs::CCRW; //0x23;
 			}
 			break; 
 		case EBLB::EBLBMSLSRegs::TMPx: // src is TMP register
-			if (lls = EBLB::EBLBMSLSRegs::D) {
+			if (lls == EBLB::EBLBMSLSRegs::D) {
 				rrSrc = EBLB::EBLBRegs::TMP1; //0x30; // TMP1
 			} else {
 				rrSrc = EBLB::EBLBRegs::TMP3; //0x32; // TMP3

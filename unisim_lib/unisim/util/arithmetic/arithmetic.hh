@@ -60,6 +60,10 @@ inline void SignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overf
 inline void SignedSatAdd16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
 inline void SignedSatAdd32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
 
+inline void UnsignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
+inline void UnsignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
+inline void UnsignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
+
 inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
 inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
 inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
@@ -121,6 +125,14 @@ inline int16_t SignExtend(uint16_t v, unsigned int n) __attribute__((always_inli
 inline int32_t SignExtend(uint32_t v, unsigned int n) __attribute__((always_inline));
 inline int64_t SignExtend(uint64_t v, unsigned int n) __attribute__((always_inline));
 
+inline void EvenParity(uint8_t v, uint8_t& parity_out) __attribute__((always_inline));
+inline void EvenParity(uint16_t v, uint8_t& parity_out) __attribute__((always_inline));
+inline void EvenParity(uint32_t v, uint8_t& parity_out) __attribute__((always_inline));
+
+inline void OddParity(uint8_t v, uint8_t& parity_out) __attribute__((always_inline));
+inline void OddParity(uint16_t v, uint8_t& parity_out) __attribute__((always_inline));
+inline void OddParity(uint32_t v, uint8_t& parity_out) __attribute__((always_inline));
+
 #endif
 
 //=============================================================================
@@ -132,11 +144,11 @@ inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(carry_in)
 	{
-		__asm__ ("stc\nadcb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "qQm" (y) : "cc");	
+		__asm__ ("stc\nadcb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQ" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "qQm" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("addb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "qQm" (y) : "cc");
+		__asm__ ("addb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQ" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "qQm" (y) : "cc");
 	}
 #else
 	uint8_t res = x + y + carry_in;
@@ -218,11 +230,11 @@ inline void Sub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
 	{
-		__asm__ ("stc\nsbbb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");	
+		__asm__ ("stc\nsbbb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQ" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("subb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");
+		__asm__ ("subb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQ" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");
 	}
 #else
 	uint8_t res = x - y - borrow_in;
@@ -340,6 +352,37 @@ inline void SignedSatAdd32(uint32_t& result, uint8_t& overflow, uint32_t x, uint
 	uint8_t carry_out;
 	uint8_t sign;
 	SignedSatAdd32(result, carry_out, overflow, sign, x, y, 0);
+}
+
+//=============================================================================
+//=                   Full Adders with unsigned saturation                    =
+//=============================================================================
+
+inline void UnsignedSatAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in)
+{
+	Add8(result, carry_out, overflow, sign, x, y, carry_in);
+	if(overflow)
+	{
+		result = 0xff;
+	}
+}
+
+inline void UnsignedSatAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in)
+{
+	Add16(result, carry_out, overflow, sign, x, y, carry_in);
+	if(overflow)
+	{
+		result = 0xffff;
+	}
+}
+
+inline void UnsignedSatAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in)
+{
+	Add32(result, carry_out, overflow, sign, x, y, carry_in);
+	if(overflow)
+	{
+		result = 0xffffffffUL;
+	}
 }
 
 //=============================================================================
@@ -784,6 +827,106 @@ inline int64_t SignExtend(uint64_t v, unsigned int n)
 {
 	unsigned int m = (8 * sizeof(v)) - n;
 	return (int64_t) (v << m) >> m; 
+}
+
+//=============================================================================
+//=                                  Parity                                   =
+//=============================================================================
+
+inline void EvenParity(uint8_t v, uint8_t& parity_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	__asm__ ("orb %1, %1\nsetp %0\n" : "=qQm" (parity_out) : "qQ" (v) : "cc");
+#else
+	unsigned int n = 8 * sizeof(v);
+	uint8_t par = 0;
+	do
+	{
+		par = par ^ v;
+	}
+	while(v >>= 1,--n);
+	parity_out = par & 1;
+#endif
+}
+
+inline void EvenParity(uint16_t v, uint8_t& parity_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	__asm__ ("orw %1, %1\nsetp %0\n" : "=qQm" (parity_out) : "r" (v) : "cc");
+#else
+	unsigned int n = 8 * sizeof(v);
+	uint8_t par = 0;
+	do
+	{
+		par = par ^ v;
+	}
+	while(v >>= 1,--n);
+	parity_out = par & 1;
+#endif
+}
+
+inline void EvenParity(uint32_t v, uint8_t& parity_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	__asm__ ("orl %1, %1\nsetp %0\n" : "=qQm" (parity_out) : "r" (v) : "cc");
+#else
+	unsigned int n = 8 * sizeof(v);
+	uint8_t par = 0;
+	do
+	{
+		par = par ^ v;
+	}
+	while(v >>= 1,--n);
+	parity_out = par & 1;
+#endif
+}
+
+inline void OddParity(uint8_t v, uint8_t& parity_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	__asm__ ("orb %1, %1\nsetnp %0\n" : "=qQm" (parity_out) : "qQ" (v) : "cc");
+#else
+	unsigned int n = 8 * sizeof(v);
+	uint8_t par = 0;
+	do
+	{
+		par = par ^ v;
+	}
+	while(v >>= 1,--n);
+	parity_out = par & 1;
+#endif
+}
+
+inline void OddParity(uint16_t v, uint8_t& parity_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	__asm__ ("orw %1, %1\nsetnp %0\n" : "=qQm" (parity_out) : "r" (v) : "cc");
+#else
+	unsigned int n = 8 * sizeof(v);
+	uint8_t par = 0;
+	do
+	{
+		par = par ^ v;
+	}
+	while(v >>= 1,--n);
+	parity_out = par & 1;
+#endif
+}
+
+inline void OddParity(uint32_t v, uint8_t& parity_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	__asm__ ("orl %1, %1\nsetnp %0\n" : "=qQm" (parity_out) : "r" (v) : "cc");
+#else
+	unsigned int n = 8 * sizeof(v);
+	uint8_t par = 0;
+	do
+	{
+		par = par ^ v;
+	}
+	while(v >>= 1,--n);
+	parity_out = par & 1;
+#endif
 }
 
 } // end of namespace arithmetic

@@ -35,21 +35,29 @@
 #ifndef __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
 #define __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
 
-#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <inttypes.h>
+#include <iostream>
+
+#include <unisim/util/debug/event.hh>
+#include "unisim/util/debug/memory_access_type.hh"
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-using unisim::service::interfaces::MemoryAccessReporting;
+
+template <class ADDRESS> class Watchpoint;
 
 template <class ADDRESS>
-class Watchpoint
+std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& wp);
+
+template <class ADDRESS>
+class Watchpoint : public Event<ADDRESS>
 {
 public:
 
-	Watchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+	Watchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+		: Event<ADDRESS>(Event<ADDRESS>::EV_WATCHPOINT)
 	{
 		this->mat = mat;
 		this->mt = mt;
@@ -57,8 +65,8 @@ public:
 		this->size = size;
 	}
 
-	inline typename MemoryAccessReporting<ADDRESS>::MemoryAccessType GetMemoryAccessType() const { return mat; }
-	inline typename MemoryAccessReporting<ADDRESS>::MemoryType GetMemoryType() const { return mt; }
+	inline typename unisim::util::debug::MemoryAccessType GetMemoryAccessType() const { return mat; }
+	inline typename unisim::util::debug::MemoryType GetMemoryType() const { return mt; }
 	inline ADDRESS GetAddress() const { return addr; }
 	inline uint32_t GetSize() const { return size; }
 	inline bool HasOverlap(ADDRESS addr, uint32_t size) const
@@ -72,12 +80,44 @@ public:
 		
 		return ovl_lo <= ovl_hi;
 	}
+	
+	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const Watchpoint<ADDRESS>& wp);
 private:
-	typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat;
-	typename MemoryAccessReporting<ADDRESS>::MemoryType mt;
+	typename unisim::util::debug::MemoryAccessType mat;
+	typename unisim::util::debug::MemoryType mt;
 	ADDRESS addr;
 	uint32_t size;
 };
+
+template <class ADDRESS>
+inline std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& wp)
+{
+	switch(wp.mt)
+	{
+		case unisim::util::debug::MT_DATA:
+			os << "data";
+			break;
+		case unisim::util::debug::MT_INSN:
+			os << "instruction";
+			break;
+	}
+	os << " ";
+	if((wp.mat & (unisim::util::debug::MAT_WRITE | unisim::util::debug::MAT_READ)) == (unisim::util::debug::MAT_WRITE | unisim::util::debug::MAT_READ))
+	{
+		os << "read/write";
+	}
+	else if(wp.mat & unisim::util::debug::MAT_WRITE)
+	{
+		os << "write";
+	}
+	else if(wp.mat & unisim::util::debug::MAT_READ)
+	{
+		os << "read";
+	}
+	os << " at 0x" << std::hex << wp.addr << std::dec << " (" << wp.size << " bytes) watchpoint";
+	
+	return os;
+}
 
 } // end of namespace debug
 } // end of namespace util

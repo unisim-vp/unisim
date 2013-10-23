@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::component::cxx::processor::arm::armemu</name>
+		<files>
+			<file>unisim/component/cxx/processor/arm/armemu/cpu.hh</file>
+			<file>unisim/component/cxx/processor/arm/armemu/cpu.cc</file>
+			<file>unisim/component/cxx/processor/arm/armemu/isa_arm32.cc</file>
+			<file>unisim/component/cxx/processor/arm/armemu/cache.hh</file>
+			<file>unisim/component/cxx/processor/arm/armemu/cache.cc</file>
+			<file>unisim/component/cxx/processor/arm/armemu/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel</dep>
+			<dep>unisim::component::cxx::processor::arm</dep>
+			<dep>unisim::service::interfaces::linux_os</dep>
+			<dep>unisim::service::interfaces::debug_control</dep>
+			<dep>unisim::service::interfaces::disassembly</dep>
+			<dep>unisim::util::likely</dep>
+		</depends>
+	</unit>
+</package>
+

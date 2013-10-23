@@ -35,6 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_VIDEO_HH__
 #define __UNISIM_SERVICE_INTERFACES_VIDEO_HH__
 
+#include <unisim/kernel/service/service.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -42,7 +43,7 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class Video
+class Video : public unisim::kernel::service::ServiceInterface
 {
 public:
 	virtual bool SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height, uint32_t depth, uint32_t fb_bytes_per_line) = 0;

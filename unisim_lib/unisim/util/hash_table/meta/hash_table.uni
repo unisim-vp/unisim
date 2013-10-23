@@ -6,13 +6,6 @@
 			<file>unisim/util/hash_table/hash_table.hh</file>
 			<file>unisim/util/hash_table/CMakeLists.txt</file>
 		</files>
-		<depends>
-			<dep>clib_string_h</dep>
-			<dep>stl_map</dep>
-		</depends>
-		<autotools>
-			<automake>unisim/util/hash_table/meta/hash_table.am</automake>
-		</autotools>
 	</unit>
 </package>
 

@@ -29,9 +29,9 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 /**********************************************
 
         BRANCH INSTRUCTIONS
@@ -40,61 +40,19 @@
 
 /*******************************************************************
  * b (branch) instruction
- * op b(cond[4]:0b1010[4]:sext<32> imm[24])
  */
 
-op b_0xxx(0b0[1]:sub_cond[3]:0b1010[4]:sext<32> imm[24])
-op b_10xx(0b10[2]:sub_cond[2]:0b1010[4]:sext<32> imm[24])
-op b_110x(0b110[3]:sub_cond[1]:0b1010[4]:sext<32> imm[24])
-op b_1110(0b1110[4]:0b1010[4]:sext<32> imm[24])
-
-b_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
-
-	inherited::cond_init = sub_cond;
-}
-
-b_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
-
-	inherited::cond_init = 8 + sub_cond;
-}
-
-b_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
-
-	inherited::cond_init = 12 + sub_cond;
-}
-
-b_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
-
-	inherited::cond_init = 14;
-}
-
-group b(b_0xxx, b_10xx, b_110x, b_1110)
+op b(cond[4]:0b1010[4]:shl<2> sext<32> imm[24]);
 
 b.disasm = {
-	typedef Operation<CONFIG> inherited;
-
-	buffer << "b";
-	DisasmCondition(inherited::cond_init, buffer);
-	buffer << " 0x" << hex << (imm << 2) + cpu.GetGPR(cpu.PC_reg) + 8<< dec;
-}
+  buffer << "b" << DisasmCondition(cond) << "\t" << std::hex << (this->GetAddr() + 8 + imm) << std::dec;
+};
 
 b.execute = {
-	typedef Operation<CONFIG> inherited;
-
-	typename CONFIG::reg_t new_PC;
-
-	if(!cpu.CheckCondition(inherited::cond_init)) {
-		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-		return;
-	}
-	
-	new_PC = cpu.GetGPR(cpu.PC_reg) + 8 + (imm << 2);
-	cpu.SetGPR(cpu.PC_reg, new_PC);
-}
+  if (not CheckCondition(cpu, cond)) return;
+  
+  cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
+};
 
 /*
  * end of b (branch) instruction
@@ -102,193 +60,100 @@ b.execute = {
 
 /*******************************************************************
  * bl (branch & link) instruction
- * op bl(cond[4]:0b1011[4]:sext<32> imm[24])
  */
 
-op bl_0xxx(0b0[1]:sub_cond[3]:0b1011[4]:sext<32> imm[24])
-op bl_10xx(0b10[2]:sub_cond[2]:0b1011[4]:sext<32> imm[24])
-op bl_110x(0b110[3]:sub_cond[1]:0b1011[4]:sext<32> imm[24])
-op bl_1110(0b1110[4]:0b1011[4]:sext<32> imm[24])
-
-bl_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
-
-	inherited::cond_init = sub_cond;
-}
-
-bl_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
-
-	inherited::cond_init = 8 + sub_cond;
-}
-
-bl_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
-
-	inherited::cond_init = 12 + sub_cond;
-}
-
-bl_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
-
-	inherited::cond_init = 14;
-}
-
-group bl(bl_0xxx, bl_10xx, bl_110x, bl_1110)
+op bl(cond[4]:0b1011[4]:shl<2> sext<32> imm[24]);
 
 bl.disasm = {
-	typedef Operation<CONFIG> inherited;
-
-	buffer << "bl";
-	DisasmCondition(inherited::cond_init, buffer);
-	buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + (imm << 2) + 8 << dec;
-}
+  buffer << "bl" << DisasmCondition(cond) << "\t" << std::hex << (this->GetAddr() + 8 + imm) << std::dec;
+};
 
 bl.execute = {
-	typedef Operation<CONFIG> inherited;
-
-	typename CONFIG::reg_t new_PC;
-
-	if(!cpu.CheckCondition(inherited::cond_init)) {
-		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-		return;
-	}
-
-	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + cpu.InstructionByteSize());
-
-	new_PC = cpu.GetGPR(cpu.PC_reg) + (imm << 2) + 8;
-	cpu.SetGPR(cpu.PC_reg, new_PC);
-}
+  if (not CheckCondition(cpu, cond)) return;
+  
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
+  cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
+};
 
 /*
  * end of bl (branch & link) instruction
  *******************************************************************/
 
 /*******************************************************************
- * bx (branch and exchange) instruction
- * this instruction is only availabe for the following architectures
- * 	CONFIG::ARMV4T,
- *  CONFIG::ARMV4TXM,
- *  CONFIG::ARMV5,
- *	CONFIG::ARMV5XM,
- *	CONFIG::ARMV5T,
- *	CONFIG::ARMV5TXM,
- *	CONFIG::ARMV5TE,
- *	CONFIG::ARMV5TEXP
+ * bx (Branch and Exchange) instruction
  */
 
-{ CONFIG::HAS_INSN_BX
-}:op bx(cond[4]:0b00010010[8]:sbo1[4]:sbo2[4]:sbo3[4]:0b0001[4]:rm[4])
+{ ARCH::insns4T }: \
+op bx(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0001[4]:rm[4]);
 
 bx.disasm = {
-	buffer << "bx";
-	DisasmCondition(cond, buffer);
-	buffer << " r" << rm;
-}
+  buffer << "bx" << DisasmCondition(cond) << "\t" << DisasmRegister(rm);
+};
 
 bx.execute = {
-	typedef Operation<CONFIG> inherited;
-
-	typename CONFIG::reg_t new_PC;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-
-	if(!cpu.CheckCondition(cond)) {
-		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-		return;
-	}
+  if (not CheckCondition(cpu, cond)) return;
   
-	cpu.SetCPSR_T((rm_value & 0x01) == 1);
-	new_PC = rm_value & 0xFFFFFFFE;
-	cpu.SetGPR(cpu.PC_reg, new_PC);
-}
-
-bx.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
-
-	if(rm == 15) inherited::rm_init = 8;
-	else inherited::rm_init = 0;
-}
+  cpu.BranchExchange( cpu.GetGPR(rm) );
+};
 
 /*
  * end of bx (branch and exchange) instruction
  *******************************************************************/
 
 /*******************************************************************
- * blx (1) (branch with link and exchange version 1) instruction
- * this instruction is only availabe for the following architectures
- *  CONFIG::ARMV5,
- *	CONFIG::ARMV5XM,
- *	CONFIG::ARMV5T,
- *	CONFIG::ARMV5TXM,
- *	CONFIG::ARMV5TE,
- *	CONFIG::ARMV5TEXP
+ * bxj (Branch and Exchange Jazelle) instruction
+ * 
+ * This instruction attempts to change to Jazelle state. If the
+ * attempt fails, it branches to an address and instruction set
+ * specified by a register as though it were a BX instruction.
  */
 
-{ CONFIG::HAS_INSN_BLX
-}:op blx_1(0b1111101[7]:h[1] :sext<32> imm[24])
+{ ARCH::insns5J }:                                      \
+op bxj(cond[4]:0b00010010[8]:0b1111[4]:0b1111[4]:0b1111[4]:0b0010[4]:rm[4]);
 
-blx_1.disasm = {
-	buffer << "blx 0x" << hex << cpu.GetGPR(cpu.PC_reg) + (imm << 2) + (h << 1) + 8 << dec;
-}
-
-blx_1.execute = {
-	typename CONFIG::reg_t new_PC;
-
-	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + cpu.InstructionByteSize());
-	cpu.SetCPSR_T(true);
-	new_PC = cpu.GetGPR(cpu.PC_reg) + (imm << 2) + (h << 1) + 8;
-	cpu.SetGPR(cpu.PC_reg, new_PC);
-}
+bxj.disasm = {
+  buffer << "bxj" << DisasmCondition(cond) << '\t' << DisasmRegister(rm);
+};
 
 /*
- * end of blx (1) (branch with link and exchange version 1) instruction
+ * end of bxj (Branch and Exchange Jazelle) instruction
  *******************************************************************/
 
-
 /*******************************************************************
- * blx (2) (branch with link and exchange version 2) instruction
- * this instruction is only availabe for the following architectures
- *  CONFIG::ARMV5,
- *	CONFIG::ARMV5XM,
- *	CONFIG::ARMV5T,
- *	CONFIG::ARMV5TXM,
- *	CONFIG::ARMV5TE,
- *	CONFIG::ARMV5TEXP
+ * blx (Branch with Link and Exchange) instruction
+ *
+ * BLX calls a subroutine (at a PC-relative or register address), and
+ * changes instruction set from ARM to Thumb, or from Thumb to ARM.
  */
 
-{ CONFIG::HAS_INSN_BLX
-}:op blx_2(cond[4]:0b00010010[8]:sbo1[4]:sbo2[4]:sbo3[4]:0b0011[4]:rm[4])
+{ ARCH::insns5T }: \
+op blx_pcrel(0b1111101[7]:shl<1> im0[1]:shl<2> sext<32> im1[24]);
+blx_pcrel.var imm : {uint32_t} = {im1|im0};
 
-blx_2.disasm = {
-	buffer << "blx";
-	DisasmCondition(cond, buffer);
-	buffer << " r" << rm;
-}
+blx_pcrel.disasm = {
+  buffer << "blx\t" << std::hex << ((this->GetAddr() + 8 + imm) & -2) << std::dec;
+};
 
-blx_2.execute = {
-	typedef Operation<CONFIG> inherited;
+blx_pcrel.execute = {
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
+  cpu.BranchExchange( (cpu.GetGPR(cpu.PC_reg) + imm) | 1 );
+};
 
-	typename CONFIG::reg_t new_PC;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+{ ARCH::insns5T }: \
+op blx_reg(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0011[4]:rm[4]);
 
-	if(!cpu.CheckCondition(cond)) {
-		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-		return;
-	}
+blx_reg.disasm = {
+  buffer << "blx" << DisasmCondition(cond) << "\t" << DisasmRegister(rm);
+};
 
-	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + cpu.InstructionByteSize());
-	cpu.SetCPSR_T((rm_value & 0x01) == 1);
-	new_PC = rm_value & 0xFFFFFFFE;
-	cpu.SetGPR(cpu.PC_reg, new_PC);
-}
-
-blx_2.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
-
-	if(rm == 15) inherited::rm_init = 8;
-	else inherited::rm_init = 0;
-}
+blx_reg.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t rm_value = cpu.GetGPR(rm);
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
+  cpu.BranchExchange( rm_value );
+};
 
 /*
- * end of blx (2) (branch with link and exchange version 2) instruction
+ * end of blx (Branch with Link and Exchange) instruction
  *******************************************************************/

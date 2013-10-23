@@ -73,7 +73,7 @@ public:
 	void Reset();
 	uint8_t ReadConfigByte(unsigned int offset);
 	void WriteConfigByte(unsigned int offset, uint8_t value);
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	bool TranslatePCItoISA(unisim::component::cxx::pci::PCISpace pci_space, unisim::component::cxx::pci::TransactionType pci_transaction_type, ADDRESS pci_addr, uint32_t size, unisim::component::cxx::isa::ISASpace& isa_space, unisim::component::cxx::isa::TransactionType& isa_transaction_type, unisim::component::cxx::isa::isa_address_t& isa_addr);
 

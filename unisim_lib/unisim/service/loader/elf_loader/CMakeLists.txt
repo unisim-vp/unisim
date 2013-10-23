@@ -26,9 +26,12 @@ set ( elf_loader_subdirs
 	unisim/service/interfaces/loader
 	unisim/service/interfaces/symbol_table_lookup
 	unisim/service/interfaces/stmt_lookup
+	unisim/service/interfaces/blob
+	unisim/util/loader/elf_loader
 	unisim/util/endian
 	unisim/util/debug
 	unisim/util/debug/dwarf
+	unisim/util/debug/blob
 	)
 foreach ( dir ${elf_loader_subdirs} )
 	unisim_include ( ${dir} )
@@ -49,9 +52,11 @@ add_library ( unisim__service__loader__elf_loader
 
 target_link_libraries ( unisim__service__loader__elf_loader
 	unisim__kernel
+	unisim__util__loader__elf_loader
 	unisim__util__endian
 	unisim__util__debug
 	unisim__util__debug__dwarf
+	unisim__util__debug__blob
 	)
 
 add_dependencies ( unisim__service__loader__elf_loader
@@ -59,9 +64,11 @@ add_dependencies ( unisim__service__loader__elf_loader
 	unisim__service__interfaces__memory
 	unisim__service__interfaces__loader
 	unisim__service__interfaces__symbol_table_lookup
+	unisim__service__interfaces__blob
 	unisim__util__endian
 	unisim__util__debug
 	unisim__util__debug__dwarf
+	unisim__util__debug__blob
 	)
 
 message ( STATUS "Checking unisim::service::loader::elf_loader - done" )

@@ -1,0 +1,162 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+ 
+op crand(19[6]:crbD[5]:crbA[5]:crbB[5]:257[10]:?[1])
+crand.execute = {
+	uint32_t _a, _b, _c, _d, _m;
+	_c = cpu->GetCR();
+	_a = (0x1)  & (_c >> (31- crbA));
+	_b = (0x1)  & (_c >> (31- crbB));
+	_d = (_a & _b)<<(31-crbD);
+	_m = ~(1<<(31-crbD));
+	cpu->SetCR((_c & _m) | _d );
+	return true;
+}
+crand.disasm = {
+	os << "crand cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+}
+
+op crandc(19[6]:crbD[5]:crbA[5]:crbB[5]:129[10]:?[1])
+crandc.execute = {
+	uint32_t _a, _b, _c, _d, _m;
+	_c = cpu->GetCR();
+	_a = (0x1)  & (_c >> (31- crbA));
+	_b = (0x1)  & (_c >> (31- crbB));
+	_d = (_a & (!_b))<<(31-crbD);
+	_m = ~(1<<(31-crbD));
+	cpu->SetCR((_c & _m) | _d );
+	return true;
+}
+crandc.disasm = {
+	os << "crandc cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+}
+
+op creqv(19[6]:crbD[5]:crbA[5]:crbB[5]:289[10]:?[1])
+creqv.execute = {
+	uint32_t _a, _b, _c, _d, _m;
+	_c = cpu->GetCR();
+	_a = (0x1)  & (_c >> (31- crbA));
+	_b = (0x1)  & (_c >> (31- crbB));
+	_d = (!(_a ^ _b))<<(31-crbD);
+	_m = ~(1<<(31-crbD));
+	cpu->SetCR((_c & _m) | _d );
+	return true;
+}
+creqv.disasm = {
+	os << "creqv cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+}
+
+op crnand(19[6]:crbD[5]:crbA[5]:crbB[5]:225[10]:?[1])
+crnand.execute = {
+	uint32_t _a, _b, _c, _d, _m;
+	_c = cpu->GetCR();
+	_a = (0x1)  & (_c >> (31- crbA));
+	_b = (0x1)  & (_c >> (31- crbB));
+	_d = (!(_a & _b))<<(31-crbD);
+	_m = ~(1<<(31-crbD));
+	cpu->SetCR((_c & _m) | _d );
+	return true;
+}
+crnand.disasm = {
+	os << "crnand cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+}
+
+op crnor(19[6]:crbD[5]:crbA[5]:crbB[5]:33[10]:?[1])
+crnor.execute = {
+	uint32_t _a, _b, _c, _d, _m;
+	_c = cpu->GetCR();
+	_a = (0x1)  & (_c >> (31- crbA));
+	_b = (0x1)  & (_c >> (31- crbB));
+	_d = (!(_a | _b))<<(31-crbD);
+	_m = ~(1<<(31-crbD));
+	cpu->SetCR((_c & _m) | _d );
+	return true;
+}
+crnor.disasm = {
+	os << "crnor cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+}
+
+op cror(19[6]:crbD[5]:crbA[5]:crbB[5]:449[10]:?[1])
+cror.execute = {
+	uint32_t _a, _b, _c, _d, _m;
+	_c = cpu->GetCR();
+	_a = (0x1)  & (_c >> (31- crbA));
+	_b = (0x1)  & (_c >> (31- crbB));
+	_d = (_a | _b) << (31-crbD);
+	_m = ~(1<<(31-crbD));
+	cpu->SetCR((_c & _m) | _d );
+	return true;
+}
+cror.disasm = {
+	os << "cror cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+}
+
+op crorc(19[6]:crbD[5]:crbA[5]:crbB[5]:417[10]:?[1])
+crorc.execute = {
+	uint32_t _a, _b, _c, _d, _m;
+	_c = cpu->GetCR();
+	_a = (0x1)  & (_c >> (31- crbA));
+	_b = (0x1)  & (_c >> (31- crbB));
+	_d = (_a | (!_b))<<(31-crbD);
+	_m = ~(1<<(31-crbD));
+	cpu->SetCR((_c & _m) | _d );
+	return true;
+}
+crorc.disasm = {
+	os << "crorc cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+}
+
+op crxor(19[6]:crbD[5]:crbA[5]:crbB[5]:193[10]:?[1])
+crxor.execute = {
+	uint32_t _a, _b, _c, _d, _e ;
+	_c = cpu->GetCR();
+	_a = (0x1)  & (_c >> (31- crbA));
+	_b = (0x1)  & (_c >> (31- crbB));
+	_d = (_a ^ _b)<<(31-crbD);
+	_e = ~(1<<(31-crbD));
+	cpu->SetCR((_c & _e) | _d );
+	return true;
+}
+crxor.disasm = {
+	os << "crxor cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+}
+
+op mcrf(19[6]:crfD[3]:?[2]:crfS[3]:?[7]:0[10]:?[1])
+mcrf.execute = {
+	cpu->SetCR((cpu->GetCR() & (~(0xf << (4 * (7 - crfD))))) | (((cpu->GetCR() >> (4 * (7 - crfS))) & 0xf) << (4 * (7 - crfD))));
+	return true;
+}
+mcrf.disasm = {
+	os << "mcrf cr" << (unsigned int) crfD << ", cr" << (unsigned int) crfS;
+}

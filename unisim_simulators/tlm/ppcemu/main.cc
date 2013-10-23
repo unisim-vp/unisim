@@ -36,7 +36,7 @@
 #include "config.h"
 #endif
 
-#include <unisim/component/tlm/processor/powerpc/powerpc.hh>
+#include <unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/elf_loader/elf32_loader.hh>
@@ -53,7 +53,7 @@
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 
-#include <unisim/component/cxx/processor/powerpc/config.hh>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
 #include <stdexcept>
 #include <unisim/component/tlm/debug/transaction_spy.hh>
 #include <unisim/component/tlm/bridge/snooping_fsb_to_mem/bridge.hh>
@@ -68,9 +68,9 @@
 #endif
 
 #ifdef DEBUG_PPCEMU
-typedef unisim::component::cxx::processor::powerpc::MPC7447ADebugConfig CPU_CONFIG;
+typedef unisim::component::cxx::processor::powerpc::mpc7447a::DebugConfig CPU_CONFIG;
 #else
-typedef unisim::component::cxx::processor::powerpc::MPC7447AConfig CPU_CONFIG;
+typedef unisim::component::cxx::processor::powerpc::mpc7447a::Config CPU_CONFIG;
 #endif
 
 static const bool DEBUG_INFORMATION = false;
@@ -127,7 +127,7 @@ private:
 	typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
 	typedef CPU_ADDRESS_TYPE FSB_ADDRESS_TYPE;
 	typedef CPU_ADDRESS_TYPE MEMORY_ADDRESS_TYPE;
-	typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
+	typedef uint32_t CPU_REG_TYPE;
 	static const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 	static const uint32_t FSB_NUM_PROCS = 1;
 
@@ -142,7 +142,7 @@ private:
 	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> FRONT_SIDE_BUS;
 	typedef unisim::component::tlm::bridge::snooping_fsb_to_mem::Bridge<unisim::component::tlm::bridge::snooping_fsb_to_mem::Addr32BurstSize32_Config> FSB_TO_MEM_BRIDGE;
 	typedef unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MEMORY;
-	typedef unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> CPU;
+	typedef unisim::component::tlm::processor::powerpc::mpc7447a::CPU<CPU_CONFIG> CPU;
 
 	//=========================================================================
 	//===               Aliases for transaction Spies classes               ===
@@ -177,7 +177,7 @@ private:
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - ELF32 loader
-	Elf32Loader *elf32_loader;
+	Elf32Loader<CPU_ADDRESS_TYPE> *elf32_loader;
 	//  - Linux loader
 	LinuxLoader<FSB_ADDRESS_TYPE> *linux_loader;
 	//  - Linux OS
@@ -277,7 +277,7 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - ELF32 loader
-	elf32_loader = new Elf32Loader("elf32-loader");
+	elf32_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("elf32-loader");
 	//  - Linux loader
 	linux_loader = new LinuxLoader<FSB_ADDRESS_TYPE>("linux-loader");
 	//  - Linux OS
@@ -404,7 +404,6 @@ Simulator::Simulator(int argc, char **argv)
 	linux_loader->memory_import >> memory->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
-	linux_os->cpu_linux_os_import >> cpu->cpu_linux_os_export;
 	linux_os->memory_import >> cpu->memory_export;
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
@@ -448,18 +447,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("description", "UNISIM ppcemu, user level PowerPC simulator with support of ELF32 binaries and Linux system call translation");
 
 	const char *filename = "";
-	bool enable_gdb_server = false;
-	bool enable_inline_debugger = false;
-	bool estimate_power = false;
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
-	char *logger_filename = 0;
-	bool logger_zip = false;
-	bool logger_error = false;
-	bool logger_out = false;
-	bool logger_on = false;
-	bool logger_messages = false;
 	double cpu_frequency = 300.0; // in Mhz
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
@@ -595,7 +585,7 @@ void Simulator::Run()
 	double time_start = host_time->GetTime();
 
 	EnableDebug();
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if(!inline_debugger)
 	{

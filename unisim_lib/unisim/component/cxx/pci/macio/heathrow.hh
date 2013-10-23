@@ -79,7 +79,7 @@ public:
 	virtual void TriggerInterrupt(bool in_level) = 0; // Callback
 	void UpdatePIC(unsigned int pic_num);
 	void SetIRQ(unsigned int int_num, bool level);
-	virtual bool Setup();
+	virtual bool BeginSetup();
 protected:
 	// debug stuff
 	unisim::kernel::logger::Logger logger;

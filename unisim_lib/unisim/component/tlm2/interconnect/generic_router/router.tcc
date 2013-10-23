@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
 #ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_TCC__
@@ -134,32 +135,31 @@ template <class CONFIG> const unsigned int unisim::component::tlm2::interconnect
 template<class CONFIG>
 Router<CONFIG>::
 Router(const sc_module_name &name, Object *parent) :
-sc_module(name),
-unisim::kernel::service::Object(name, parent),
+unisim::kernel::service::Object(name, parent, "A memory-mapped router"),
 unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >(name, parent),
 unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >(name, parent),
+sc_module(name),
 memory_export("memory-export", this),
-// TODO: remove ==> targ_socket("targ_socket"),
-// TODO: remove ==> init_socket("init_socket"), 
 m_req_dispatcher(),
 m_rsp_dispatcher(),
 cycle_time(SC_ZERO_TIME),
-cycle_time_double(0.0),
-param_cycle_time_double("cycle_time", this, cycle_time_double, "Time to process a request/response by the router in SC_PS)"),
+param_cycle_time("cycle_time", this, cycle_time, "Time to process a request/response by the router"),
 port_buffer_size(0),
 param_port_buffer_size("port_buffer_size", this, port_buffer_size, "Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)"),
 logger(*this),
 verbose_all(false),
-verbose_setup(false),
-verbose_tlm(false),
-verbose_tlm_debug(false),
-verbose_memory_interface(false),
 param_verbose_all(0),
+verbose_setup(false),
 param_verbose_setup(0),
+verbose_tlm(false),
 param_verbose_tlm(0),
+verbose_tlm_debug(false),
 param_verbose_tlm_debug(0),
+verbose_memory_interface(false),
 param_verbose_memory_interface(0)
 {
+	param_port_buffer_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	if (VERBOSE)
 	{
 		param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose_all", this, verbose_all, "Activate all the verbose options");
@@ -231,10 +231,10 @@ param_verbose_memory_interface(0)
 	/* create memory_imports */
 	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
 	{
-		stringstream str;
+		std::stringstream str;
 		str << "memory-import[" << i << "]";
 		memory_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >(str.str().c_str(), this);
-		SetupDependsOn(*memory_import[i]);
+		memory_export.SetupDependsOn(*memory_import[i]);
 	}
 //	/* create initiator sockets and register socket callbacks */
 //	for (unsigned int i = 0; i < MAX_OUTPUT_SOCKETS; i++)
@@ -318,20 +318,18 @@ Router<CONFIG>::
 template<class CONFIG>
 bool
 Router<CONFIG>::
-Setup()
+BeginSetup()
 {
 	const unsigned int num_mappings = CONFIG::MAX_NUM_MAPPINGS;
 
 	SetVerboseAll();
 
-	if (cycle_time_double == 0.0) 
+	if (cycle_time == SC_ZERO_TIME) 
 	{
-		logger << DebugError << "PARAMETER ERROR: the cycle_time parameter must be bigger than 0" << endl
+		logger << DebugError << "PARAMETER ERROR: the " << param_cycle_time.GetName() << " parameter must be bigger than 0" << endl
 			<< LOCATION << EndDebug;
 		return false;
 	}
-
-	cycle_time = sc_time(cycle_time_double, SC_PS);
 
 	bool has_mapping = false;
 	for (unsigned int i = 0; i < num_mappings; i++) 
@@ -395,14 +393,6 @@ template<class CONFIG>
 tlm::tlm_sync_enum 
 Router<CONFIG>::
 I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core::sc_time &time) {
-	if (trans.get_command() == tlm::TLM_IGNORE_COMMAND || trans.get_command() == tlm::TLM_WRITE_COMMAND) {
-		logger << DebugWarning << "Received nb_transport_bw on port " << id << ", with an ignore or a write command, which the router doesn't know how to handle" << endl
-			<< TIME(time) << endl
-			<< PHASE(phase) << endl;
-		TRANS(logger, trans);
-		logger << EndDebug;
-		return tlm::TLM_ACCEPTED;
-	}
 	switch (phase) {
 		case tlm::BEGIN_REQ:
 		case tlm::END_RESP:
@@ -411,12 +401,12 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 				<< PHASE(phase) << endl;
 			TRANS(logger, trans);
 			logger << EndDebug;
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			break;
 		case tlm::BEGIN_RESP:
 			/* a response has been received through the init_socket */
-			{
+			{	
+				m_req_dispatcher[id]->Completed(&trans, time);
 				trans.acquire();
 				/* check when the response can be queued into the response queue through the handled port (recovering the router extension)
 				 * we must send an end response message */
@@ -427,8 +417,8 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 						<< TIME(time) << endl;
 					ETRANS(logger, trans);
 					logger << EndDebug;
-					sc_stop();
-					wait();
+					Object::Stop(-1);
+					return tlm::TLM_COMPLETED; // should never occur
 				}
 				if (VerboseTLM()) {
 					logger << DebugInfo << "Received response through init_socket[" << id << "], queueing it to be sent through targ_socket[" << targ_id << "]"  << endl
@@ -459,12 +449,7 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 			break;
 		case tlm::END_REQ:
 			/* just signal that the socket can be used again */
-			m_req_dispatcher[id]->Completed(time);
-			/* if the transaction is a write, we do not expect a response and the request is finished for us.
-			 *   we can release it */
-			if (trans.is_write()) {
-				trans.release();
-			}
+			m_req_dispatcher[id]->Completed(&trans, time);
 			return tlm::TLM_COMPLETED;
 			break;
 	}
@@ -476,7 +461,39 @@ void
 Router<CONFIG>::
 I_invalidate_direct_mem_ptr_cb(int id, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
-	/* nothing to do */
+	unsigned int mapping_id;
+	
+	for(mapping_id = 0; mapping_id < MAX_NUM_MAPPINGS; mapping_id++)
+	{
+		if(mapping[mapping_id].used)
+		{
+			if(mapping[mapping_id].output_port == (unsigned int) id)
+			{
+				// do reverse translation on DMI invalidation range
+				start_range -= mapping[mapping_id].translation;
+				start_range += mapping[mapping_id].range_start;
+				end_range -= mapping[mapping_id].translation;
+				end_range += mapping[mapping_id].range_start;
+
+				sc_dt::uint64 mapping_start_addr = mapping[mapping_id].range_start;
+				sc_dt::uint64 mapping_end_addr = mapping[mapping_id].range_end;
+				
+				if((mapping_end_addr >= start_range) && (mapping_start_addr <= end_range))
+				{
+					// collision
+					if(mapping_start_addr < start_range) mapping_start_addr = start_range; // cut lower region
+					if(mapping_end_addr > end_range) mapping_end_addr = end_range; // cut upper region
+				
+					// invalidate direct memory pointers on all input sockets
+					unsigned int i;
+					for(i = 0; i < INPUT_SOCKETS; i++)
+					{
+						(*targ_socket[i])->invalidate_direct_mem_ptr(mapping_start_addr, mapping_end_addr);
+					}
+				}
+			}
+		}
+	}
 }
 
 /*************************************************************************
@@ -507,8 +524,7 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 			<< PHASE(phase) << endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 		break;
 	case tlm::BEGIN_REQ:
 		{
@@ -536,14 +552,14 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 			/* get the init port through which the transaction should be forwarded */
 			unsigned int mapping_id;
 			if (!ApplyMap(trans, mapping_id)) {
-				logger << DebugError << "When handling received transaction could not apply any mapping" << endl
+				trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+				logger << DebugWarning << "When handling received transaction could not apply any mapping" << endl
 					<< TIME(time) << endl
 					<< PHASE(phase) << endl
 					<< LOCATION << endl;
 				TRANS(logger, trans);
 				logger << EndDebug;
-				sc_stop();
-				wait();
+				return tlm::TLM_COMPLETED;
 			}
 
 			/* perform the address translation */
@@ -553,40 +569,19 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 			trans.set_address(translated_addr);
 
 			/* checking command */
-			if (trans.is_read()) {
-				/* insert the input port id into the transaction */
-				SetRouterExtension(trans, id);
-				/* push the transaction to the corresponding init port queue */
-				m_req_dispatcher[mapping[mapping_id].output_port]->Push(trans, time);
-				trans.release();
-				/* change the phase and return */
-				phase = tlm::END_REQ;
-				return tlm::TLM_UPDATED;
-			} else {
-				/* trans is a write, the request is complete at this point so we need to copy it to forward it */
-				transaction_type *clone_trans = payload_fabric.allocate();
-				// clone_trans->acquire(); // not necessary because it is being done in the payload_fabric
-				unsigned char *data = (unsigned char *)malloc(sizeof(unsigned char) * trans.get_data_length());
-				clone_trans->set_data_ptr(data);
-				if (trans.get_byte_enable_length() != 0) {
-					unsigned char *byte_enable = (unsigned char *)malloc(sizeof(unsigned char) * trans.get_byte_enable_length());
-					clone_trans->set_byte_enable_ptr(byte_enable);
-				}
-				clone_trans->deep_copy_from(trans);
-				/* push the transaction to the corresponding init port queue */
-				m_req_dispatcher[mapping[mapping_id].output_port]->Push(*clone_trans, time);
-				/* finish the incomming request */
-				phase = tlm::END_REQ;
-				trans.set_response_status(tlm::TLM_OK_RESPONSE);
-				trans.release();
-				clone_trans->release();
-				return tlm::TLM_COMPLETED;
-			}
+			/* insert the input port id into the transaction */
+			SetRouterExtension(trans, id);
+			/* push the transaction to the corresponding init port queue */
+			m_req_dispatcher[mapping[mapping_id].output_port]->Push(trans, time);
+			trans.release();
+			/* change the phase and return */
+			phase = tlm::END_REQ;
+			return tlm::TLM_UPDATED;
 		}
 		break;
 	case tlm::END_RESP:
 		/* just signal that the socket can be used again */
-		m_rsp_dispatcher[id]->Completed(time);
+		m_rsp_dispatcher[id]->Completed(&trans, time);
 		/* the transaction is now finished for us, release it */
 		trans.release();
 		return tlm::TLM_COMPLETED;
@@ -613,7 +608,8 @@ T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time)
 	bool found = ApplyMap(trans, mapping_id);
 	if (!found) 
 	{
-		logger << DebugError << "Received transaction on port " << id << " has an unmapped address"  << endl
+		trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+		logger << DebugWarning << "Received transaction on port " << id << " has an unmapped address"  << endl
 			<< LOCATION << endl
 			<< TIME(time) << endl;
 		TRANS(logger, trans);
@@ -915,8 +911,89 @@ template<class CONFIG>
 bool
 Router<CONFIG>::
 T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tlm::tlm_dmi &dmi) {
-	/* nothing to do */
-	return false;
+	/* the first thing that must be done is the translation from the mapping table */
+	if (VerboseTLM()) 
+	{
+		logger << DebugInfo << "Received get_direct_mem_ptr on port " << id << ", forwarding it" << endl;
+		TRANS(logger, trans);
+		logger << EndDebug;
+	}
+	/* check the address of the transaction to perform the port routing */
+	unsigned int mapping_id;
+	bool found = ApplyMap(trans, mapping_id);
+	if (!found) 
+	{
+		logger << DebugError << "Received get_direct_mem_ptr transaction on port " << id << " has an unmapped address"  << endl
+			<< LOCATION << endl;
+		TRANS(logger, trans);
+		logger << EndDebug;
+		dmi.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+		dmi.set_start_address(0);
+		dmi.set_end_address((sc_dt::uint64) -1);
+		return false;
+	}
+	/* perform the address translation */
+	uint64_t translated_addr = trans.get_address();
+	translated_addr -= mapping[mapping_id].range_start;
+	translated_addr += mapping[mapping_id].translation;
+	if (VerboseTLM() && translated_addr != trans.get_address())
+	{
+		logger << DebugInfo << "Performing address translation on transaction:" << endl;
+		TRANS(logger, trans);
+		logger << endl
+			<< "--> address translated to 0x" << hex << translated_addr << dec
+			<< EndDebug;
+	}
+	trans.set_address(translated_addr);
+	/* forward the transaction to the selected output port */
+	if(VerboseTLM()) {
+		logger << DebugInfo << "Forwarding get_direct_mem_ptr received on port " << id << " to port " << mapping[mapping_id].output_port << endl;
+		TRANS(logger, trans);
+		logger << EndDebug;
+	}
+	bool dmi_status = (*init_socket[mapping[mapping_id].output_port])->get_direct_mem_ptr(trans, dmi);
+	
+	sc_dt::uint64 dmi_start_address = dmi.get_start_address();
+	sc_dt::uint64 dmi_end_address = dmi.get_end_address();
+	
+	// do reverse translation on DMI
+	dmi_start_address -= mapping[mapping_id].translation;
+	dmi_start_address += mapping[mapping_id].range_start;
+	dmi_end_address -= mapping[mapping_id].translation;
+	dmi_end_address += mapping[mapping_id].range_start;
+
+	// restrict address range of DMI
+	sc_dt::uint64 start_range = mapping[mapping_id].range_start;
+	sc_dt::uint64 end_range = mapping[mapping_id].range_end;
+	
+	if(dmi_start_address < start_range)
+	{
+		// cut lower region
+		dmi.set_dmi_ptr(dmi.get_dmi_ptr() + (start_range - dmi_start_address));
+		dmi.set_start_address(start_range);
+	}
+	else
+	{
+		dmi.set_start_address(dmi_start_address);
+	}
+		
+	if(dmi_end_address > end_range)
+	{
+		// cut upper region
+		dmi.set_end_address(end_range);
+	}
+	else
+	{
+		dmi.set_end_address(dmi_end_address);
+	}
+
+	// add router latency per byte
+	if(dmi_status)
+	{
+		dmi.set_read_latency(dmi.get_read_latency() + (cycle_time / (CONFIG::BUSWIDTH / 8)));
+		dmi.set_write_latency(dmi.get_write_latency() + (cycle_time / (CONFIG::BUSWIDTH / 8)));
+	}
+	return dmi_status;
 }
 
 /*************************************************************************
@@ -968,51 +1045,30 @@ SendReq(unsigned int id, transaction_type &trans) {
 					/* nothing else to do, just wait for the corresponding END_REQ */
 					break;
 				case tlm::END_REQ:
-					/* if the transaction is a write we should not have received a TLM_UPDATED with END_REQ, but TLM_COMPLETED instead */
-					if(trans.is_write()) {
-						logger << DebugError << "Received a TLM_UPDATED with phase to END_REQ when sending a write request transaction through init_socket[" << id << "], a TLM_COMPLETED should have been received" << endl
-							<< LOCATION << endl
-							<< TIME(time) << endl;
-						TRANS(logger, trans);
-						logger << EndDebug;
-						sc_stop();
-						wait();
-					}
-					/* we can remove the request from the queue, so new ones can be sent */
 					if (VerboseTLM()) {
 						logger << DebugInfo << "Transaction sent from init_req_fifo[" << id << "] accepted (TLM_UPDATED with phase END_REQ), removing the transaction from the request queue" << endl
 							<< TIME(time) << endl;
 						TRANS(logger, trans);
 						logger << EndDebug;
 					}
-					m_req_dispatcher[id]->Completed(time);
+					m_req_dispatcher[id]->Completed(&trans, time);
 					break;	
 				case tlm::BEGIN_RESP:
-					/* if the transaction is a write we should not have received a TLM_UPDATED with BEGIN_RESP, but TLM_COMPLETED instead */
-					if(trans.is_write()) {
-						logger << DebugError << "Received a TLM_UPDATED with phase to BEGIN_RESP when sending a write request transaction through init_socket[" << id << "], a TLM_COMPLETED should have been received" << endl
-							<< LOCATION << endl
-							<< TIME(time) << endl;
-						TRANS(logger, trans);
-						logger << EndDebug;
-						sc_stop();
-						wait();
-					}
 					/* the request has been accepted, and the response has been produced
 					 * check when the response can be queued into the response queue through the handled port (recovering the router extension)
 					 * we must send an end response message */
 					{
 						unsigned int targ_id;
 						/* notify to the request dispatcher that the transaction request has been completed */
-						m_req_dispatcher[id]->Completed(time);
+						m_req_dispatcher[id]->Completed(&trans, time);
 						if(!GetRouterExtension(trans, targ_id)) {
 							logger << DebugError << "Could not find the router extension from transaction response" << endl
 								<< LOCATION << endl
 								<< TIME(time) << endl;
 							ETRANS(logger, trans);
 							logger << EndDebug;
-							sc_stop();
-							wait();
+							Object::Stop(-1);
+							return; // should never occur
 						}
 						if (VerboseTLM()) {
 							logger << DebugInfo << "Transaction request sent through the init_port[" << id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << endl
@@ -1044,8 +1100,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 								<< TIME(time) << endl;
 							ETRANS(logger, trans);
 							logger << EndDebug;
-							sc_stop();
-							wait();
+							Object::Stop(-1);
 						}
 					}
 					break;
@@ -1057,8 +1112,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 						<< PHASE(phase) << endl;
 					TRANS(logger, trans);
 					logger << EndDebug;
-					sc_stop();
-					wait();
+					Object::Stop(-1);
 					break;
 			}
 			break;
@@ -1068,50 +1122,38 @@ SendReq(unsigned int id, transaction_type &trans) {
 			 * if the request was a read we have to forward the response to the corresponding targ_port */
 			{
 				/* notify to the request dispatcher that the transaction request has been completed */
-				m_req_dispatcher[id]->Completed(time);
-				if(trans.is_write()) {
-					if (VerboseTLM()) {
-						logger << DebugInfo << "Transaction request send through the init_port[" << id << "] completed (TLM_COMPLETED)" << endl
-							<< TIME(time) << endl;
-						ETRANS(logger, trans);
-						logger << EndDebug;
-					}
-					/* we can release the transaction */
-					trans.release();
-				} else {
-					/* the transaction is a read */
-					unsigned int targ_id;
-					if(!GetRouterExtension(trans, targ_id)) {
-						logger << DebugError << "Could not find the router extension from transaction response" << endl
-							<< LOCATION << endl
-							<< TIME(time) << endl;
-						ETRANS(logger, trans);
-						logger << EndDebug;
-						sc_stop();
-						wait();
-					}
-					if (VerboseTLM()) {
-						logger << DebugInfo << "Transaction request sent through the init_port[" << id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << endl
-							<< TIME(time) << endl;
-						ETRANS(logger, trans);
-						logger << EndDebug;
-					}
-					/* check when the request can be accepted by the router */
-					sc_core::sc_time cur_time = sc_time_stamp() + time;
-					if (cur_time <= m_init_rsp_ready[id]) {
-						/* the init port is not ready to receive the response, get the time when it will be ready */
-						time = m_init_rsp_ready[id] - sc_time_stamp();
-						m_init_rsp_ready[id] = m_init_rsp_ready[id] + cycle_time;
-					} else {
-						/* the init port is ready for the time the response is received, however we have to make sure
-						 *   that the incomming transactions is synchronized with the router cycle_time */
-						sc_core::sc_time t_time = ((cycle_time * floor(cur_time / cycle_time)) + cycle_time);
-						time = t_time - sc_time_stamp();
-						m_init_rsp_ready[id] = t_time + cycle_time;
-					}
-					/* push the response into the response dispatcher */
-					m_rsp_dispatcher[targ_id]->Push(trans, time);
+				m_req_dispatcher[id]->Completed(&trans, time);
+				unsigned int targ_id;
+				if(!GetRouterExtension(trans, targ_id)) {
+					logger << DebugError << "Could not find the router extension from transaction response" << endl
+						<< LOCATION << endl
+						<< TIME(time) << endl;
+					ETRANS(logger, trans);
+					logger << EndDebug;
+					Object::Stop(-1);
+					return; // should never occur
 				}
+				if (VerboseTLM()) {
+					logger << DebugInfo << "Transaction request sent through the init_port[" << id << "] accepted and response received (TLM_UPDATED, BEGIN_REQ), queueing the response to be sent through the targ_socket[" << targ_id << "]" << endl
+						<< TIME(time) << endl;
+					ETRANS(logger, trans);
+					logger << EndDebug;
+				}
+				/* check when the request can be accepted by the router */
+				sc_core::sc_time cur_time = sc_time_stamp() + time;
+				if (cur_time <= m_init_rsp_ready[id]) {
+					/* the init port is not ready to receive the response, get the time when it will be ready */
+					time = m_init_rsp_ready[id] - sc_time_stamp();
+					m_init_rsp_ready[id] = m_init_rsp_ready[id] + cycle_time;
+				} else {
+					/* the init port is ready for the time the response is received, however we have to make sure
+						*   that the incomming transactions is synchronized with the router cycle_time */
+					sc_core::sc_time t_time = ((cycle_time * floor(cur_time / cycle_time)) + cycle_time);
+					time = t_time - sc_time_stamp();
+					m_init_rsp_ready[id] = t_time + cycle_time;
+				}
+				/* push the response into the response dispatcher */
+				m_rsp_dispatcher[targ_id]->Push(trans, time);
 			}
 			break;
 	}
@@ -1160,9 +1202,8 @@ SendRsp(unsigned int id, transaction_type &trans) {
 				logger << EndDebug;
 			}
 			/* the response has been completed, we can remove it from the response queue */
-			m_rsp_dispatcher[id]->Completed(time);
+			m_rsp_dispatcher[id]->Completed(&trans, time);
 			/* release the transaction */
-			trans.release();
 			break;
 	}
 }
@@ -1205,7 +1246,7 @@ ApplyMap(uint64_t addr, uint32_t size, unsigned int &applied_mapping) const
 	bool found = false;
 	for(unsigned int i = 0; !found && i < MAX_NUM_MAPPINGS; i++) {
 		if(mapping[i].used) {
-			if(addr >= mapping[i].range_start && (addr + size - 1) <= mapping[i].range_end) {
+			if((addr >= mapping[i].range_start) && ((addr + size - 1) <= mapping[i].range_end)) {
 				found = true;
 				applied_mapping = i;
 			}
@@ -1232,7 +1273,7 @@ ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &port_mappings)
 {
 	sc_dt::uint64 cur_addr = addr;
 	unsigned int cur_size = size;
-	while (cur_addr < addr + size) {
+	while (cur_size) {
 		unsigned int index = 0;
 		bool found = false;
 		for (; !found && index < MAX_NUM_MAPPINGS; index++) {
@@ -1240,11 +1281,20 @@ ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &port_mappings)
 				if (cur_addr >= mapping[index].range_start && cur_addr <= mapping[index].range_end) {
 					found = true;
 					port_mappings.push_back(index);
-					if (cur_size - 1 <= mapping[index].range_end - cur_addr) {
-						cur_addr = mapping[index].range_end + 1;
-						cur_size = 1 + size - (mapping[index].range_end - addr);
-					} else 
-						cur_addr = addr + size;
+					if(cur_size > (mapping[index].range_end - cur_addr + 1)) // partially covered
+					{
+						sc_dt::uint64 next_addr = mapping[index].range_end + 1;
+						if(cur_addr > next_addr) return; // detect address overflow
+						cur_addr = next_addr;
+						cur_size = cur_size - (mapping[index].range_end - cur_addr + 1);
+					}
+					else // totally covered
+					{
+						sc_dt::uint64 next_addr = cur_addr + cur_size;
+						if(cur_addr > next_addr) return; // detect address overflow
+						cur_addr = next_addr;
+						cur_size = 0;
+					}
 				}
 			}
 		}
@@ -1252,7 +1302,7 @@ ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &port_mappings)
 			sc_dt::uint64 closest_range_start = 0;
 			for (index = 0; index < MAX_NUM_MAPPINGS; index++) {
 				if (mapping[index].used) {
-					if (cur_addr < mapping[index].range_start && cur_addr + cur_size > mapping[index].range_start) {
+					if ((cur_addr < mapping[index].range_start) && ((cur_addr + cur_size) > mapping[index].range_start)) {
 						if (!found)
 							closest_range_start = mapping[index].range_start;
 						else
@@ -1263,7 +1313,7 @@ ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &port_mappings)
 				}
 			}
 			if (!found) return;
-			cur_size = size - (closest_range_start - cur_addr);
+			cur_size = cur_size - (closest_range_start - cur_addr);
 			cur_addr = closest_range_start;
 		}
 	}

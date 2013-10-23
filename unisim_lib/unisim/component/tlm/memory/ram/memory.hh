@@ -91,7 +91,7 @@ public:
 	/* Service methods */
 	/** Setup
 	 * Initializes the service interface. */
-	virtual bool Setup();		
+	virtual bool EndSetup();		
 	
 	/* Methods required by the TlmSendIf (Tlm send interface) */
 	/** 

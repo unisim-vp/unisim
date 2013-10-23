@@ -9,10 +9,9 @@
 #define SOCKETTHREAD_HPP_
 
 #include <stdint.h>
+#include <sstream>
 
 #include "GenericThread.hpp"
-#include "SocketReader.hpp"
-#include "SocketWriter.hpp"
 
 namespace unisim {
 namespace service {
@@ -22,30 +21,52 @@ namespace network {
 class SocketThread: public GenericThread {
 public:
 
-	SocketThread(char* host, uint16_t port);
+	SocketThread(string host, uint16_t port, bool _blocking);
+	SocketThread();
 
-	~SocketThread();
+	virtual ~SocketThread();
 
-	virtual void Run() { };
-	virtual void send(const char* data);
-	virtual char* receive();
+	void startSocketThread(int sockfd, bool _blocking);
+
+	virtual void run() { };
+
+	bool GetChar(char& c, bool blocking);
+	bool GetPacket(string& s, bool blocking);
+	bool PutChar(char c);
+	bool PutPacket(const string& data);
+	bool OutputText(const char *s, int count);
+	bool FlushOutput();
+
+	void setSockfd(int sockfd);
+	void waitConnection();
 
 protected:
 
-	int sockfd;
 	uint32_t hostname;
 	uint16_t hostport;
-
-	SocketReader *reader;
-	SocketWriter *writer;
+	int sockfd;
+	bool blocking;
 
 	/*
 	 *  this routine converts the address into an internet ip
 	 *
 	 *  e.g. in_addr_t serv_addr = name_resolve("127.0.0.1");
 	 */
-	uint32_t name_resolve(char *host_name);
+	uint32_t name_resolve(const char *host_name);
 
+	pthread_mutex_t sockfd_mutex;
+	pthread_mutex_t sockfd_condition_mutex;
+	pthread_cond_t  sockfd_condition_cond;
+
+private:
+	int input_buffer_size;
+	int input_buffer_index;
+
+	char *input_buffer;
+
+	std::stringstream output_buffer_strm;
+
+	void init();
 };
 
 } // network 

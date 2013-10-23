@@ -16,23 +16,16 @@
 #include <string>
 #include <stdexcept>
 
-#include <libxml/xmlmemory.h>
-#include <libxml/xpath.h>
-#include <libxml/parser.h>
-#include <libxml/encoding.h>
-#include <libxml/xmlwriter.h>
-
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/pim/convert.hh>
 
 #include <unisim/service/pim/network/GenericThread.hpp>
+#include <unisim/service/pim/network/SocketThread.hpp>
 #include <unisim/service/pim/network/SocketServerThread.hpp>
 #include <unisim/service/pim/network/SocketClientThread.hpp>
+#include <unisim/service/pim/pim_thread.hh>
 
-
-// 127.0.0.1 is the default localhost-name
-#define DEFAULT_HOST	"127.0.0.1"
 #define DEFAULT_XML_ENCODING "ISO-8859-1"	// UTF-8 , ISO-8859-1
 
 namespace unisim {
@@ -51,114 +44,52 @@ using unisim::service::pim::network::GenericThread;
 using unisim::service::pim::network::SocketServerThread;
 using unisim::service::pim::network::SocketClientThread;
 
-
-//class BadConversion : public std::runtime_error {
-//public:
-//  BadConversion(std::string const& s)
-//    : std::runtime_error(s)
-//    { }
-//};
-//
-//inline double convertToDouble(std::string const& s)
-//{
-//  std::istringstream i(s);
-//  double x;
-//  if (!(i >> x))
-//    throw BadConversion("convertToDouble(\"" + s + "\")");
-//  return x;
-//}
-
-class pin_t { // VirtualComponent simple (getChldren() == null)
-public:
-	~pin_t() {
-	}
-
-	string				name;
-	bool				isMutable;	// e.g. true (r/w) / false (r-only)
-	string				type;	// e.g. double, integer, boolean
-
-	VariableBase		*var;
-};
-
 class component_t { // VirtualComponent Hierarchical (getChldren() != null)
 public:
 	~component_t() {
 
-		for (int i=0; i < pins.size(); i++) {
-			if (pins[i]) { delete pins[i]; pins[i] = NULL; }
-		}
 		pins.clear();
 	}
 
 	string				name;
-	string				host;
-	uint16_t			port;
 	string				description;
-	string				network;	// e.g. socket
-	vector<pin_t*>		pins;
+	vector<VariableBase*>		pins;
 };
 
 class PIM : public Object, public GenericThread
 {
 public:
 
-	PIM(const char *name, Simulator *simulator, uint16_t port, char* host = DEFAULT_HOST, Object *parent = 0);
+	PIM(const char *name, Object *parent = 0);
 
 	~PIM();
 	virtual bool Setup();
-	virtual void Run();
+	virtual void run();
+	void generatePimFile();
+	int loadPimFile();
+	void getAllVariables(vector<VariableBase*> *variables);
 
 private:
-	Simulator *fSimulator;
+
 	uint16_t fPort;
-	char* fHost;
+	string fHost;
 
 	vector<component_t*> pim_model;
-	vector<pin_t*>		input_variables;
-	vector<pin_t*>		output_variables;
+
+	Parameter<uint16_t> param_tcp_port;
+	Parameter<string> param_host;
 
 	string				filename;
 	Parameter<string>	param_filename;
 
-	void ParseComponent (xmlDocPtr doc, xmlNodePtr cur, component_t *component);
-	int LoadPimFromXml(vector<component_t*> &pim, const string filename);
-	component_t* FindComponent(const string name);
+	component_t* findComponent(const string name);
 
-	void GetExportedVariables(vector<component_t*> &pim);
-	xmlChar *ConvertInput(const char *in, const char *encoding);
-	void SavePimToXml(vector<component_t*> &pim, const string filename);
+	SocketServerThread *socketfd;
+//	SocketClientThread *socketfd;
 
-	SocketServerThread *serverSockfd;
-	SocketClientThread *clientSockfd;
-	GenericThread *target;
-	GenericThread *initiator;
+	SocketThread *target;
 
 };
-
-class TargetThread : public GenericThread {
-public:
-	TargetThread(char* _name, vector<pin_t*> *variables, SocketThread *fd);
-
-	virtual void Run();
-
-private:
-	char* name;
-	vector<pin_t*> *fVariables;
-	SocketThread *sockfd;
-};
-
-class InitiatorThread : public GenericThread {
-public:
-	InitiatorThread(char* _name, vector<pin_t*> *variables, SocketThread *fd);
-
-	virtual void Run();
-
-private:
-	char* name;
-	vector<pin_t*> *fVariables;
-	SocketThread *sockfd;
-};
-
 
 } // end pim
 } // end service

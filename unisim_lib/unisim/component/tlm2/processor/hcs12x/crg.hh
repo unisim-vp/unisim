@@ -44,13 +44,14 @@
 #include <cmath>
 #include <map>
 
-#include <systemc.h>
+#include <systemc>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
+//#include "tlm_utils/multi_passthrough_target_socket.h"
 
 #include <unisim/kernel/service/service.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
@@ -60,6 +61,7 @@
 #include "unisim/service/interfaces/trap_reporting.hh"
 
 #include "unisim/util/debug/register.hh"
+#include "unisim/util/debug/simple_register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -73,6 +75,8 @@ namespace processor {
 namespace hcs12x {
 
 using namespace std;
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
@@ -81,18 +85,22 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
-using unisim::service::interfaces::TrapReporting;
+using unisim::kernel::service::CallBackObject;
+using unisim::kernel::service::VariableBase;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
+using unisim::service::interfaces::TrapReporting;
 
 using unisim::util::debug::Register;
+using unisim::util::debug::SimpleRegister;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
-using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::kernel::service::Object;
@@ -100,12 +108,13 @@ using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
 class CRG :
-	public sc_module,
-	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
-	public Client<TrapReporting >,
-	public Service<Memory<service_address_t> >,
-	public Service<Registers>,
-	public Client<Memory<service_address_t> >
+	public sc_module
+	, public CallBackObject
+	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
+	, public Client<TrapReporting >
+	, public Service<Memory<physical_address_t> >
+	, public Service<Registers>
+	, public Client<Memory<physical_address_t> >
 
 {
 public:
@@ -124,14 +133,18 @@ public:
 
 	tlm_utils::simple_target_socket<CRG> slave_socket;
 
-	ServiceExport<Memory<service_address_t> > memory_export;
-	ServiceImport<Memory<service_address_t> > memory_import;
+//	tlm_utils::multi_passthrough_target_socket<CRG> reset_socket;
+
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceExport<Registers> registers_export;
 
 	CRG(const sc_module_name& name, Object *parent = 0);
 	virtual ~CRG();
 
-	void RunRTI();
+	void runRTI();
+	void runCOP();
+	void runClockMonitor();
 
 	void assertInterrupt(uint8_t interrupt_offset);
 
@@ -147,7 +160,10 @@ public:
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 	virtual void OnDisconnect();
 	virtual void Reset();
 
@@ -156,8 +172,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             XINT Registers Interface interface methods               =
@@ -174,8 +190,8 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-    bool read(uint8_t offset, uint8_t &value);
-    bool write(uint8_t offset, uint8_t val);
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 
 protected:
@@ -186,15 +202,54 @@ private:
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
-	double	oscillator_clock_int;	// The time unit is PS
-	Parameter<double>	param_oscillator_clock_int;
+	uint32_t	oscillator_clock_value;	// The time unit is PS
+	Parameter<uint32_t>	param_oscillator_clock_int;
 	sc_time		oscillator_clock;
+
+	// A number greater equal than 4096 rising OSCCLK edges within a check window is called osc ok.
+	sc_time		osc_ok;
+	uint32_t		osc_ok_int;
+	Parameter<uint32_t> param_osc_ok;
+	bool				osc_fail;
+	Parameter<bool>	var_osc_fail;
+
+	/**
+	 * A time window of 50,000 VCO clock cycles is called check window
+	 * VCO clock cycles are generated by the PLL when running at minimum frequency Fscm.
+	 */
+	sc_time		check_window;
+	uint32_t	check_window_int;
+	Parameter<uint32_t>	param_check_window;
+
+	double pll_stabilization_delay_value;
+	Parameter<double>	param_pll_stabilization_delay;
+	sc_time		pll_stabilization_delay;
+
+	uint32_t self_clock_mode_value;
+	Parameter<uint32_t> param_self_clock_mode_clock;
+	sc_time self_clock_mode_clock;
 
 	sc_time		pll_clock;
 	sc_time		bus_clock;
 
-	sc_event rti_enable_event;
+	sc_event	lock_track_detector_event;
+	sc_event	track_detector_event;
 
+	sc_event	clockmonitor_enable_event;
+	sc_event	rti_enable_event;
+	sc_event	cop_enable_event;
+
+	bool armcop_write_enabled;
+	bool cop_timeout_reset;
+	bool cop_timeout_restart;
+	bool clock_monitor_enabled; // reset to TRUE; the clock monitor is enabled by default
+
+	bool copwai_write; // CLKSEL::WOPWAI is write once bit
+	bool rti_enabled;
+	bool cop_enabled;
+	bool scme_write;
+
+	// MC9S12XDP512V2 - CRG baseAddress
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
@@ -213,16 +268,23 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
 	// RTI Frequency Divide Rate
 	double rti_fdr;
 
-	void compute_clock();
-	void initialize_rti_counter();
-	void UpdateBusClock();
+	inline void runPLL_LockTrack_Detector();
+	inline void initialize_rti_counter();
+	inline void updateBusClock();
 
-	void select_cop_timeout();
-	void cop_reset();
-	void restart_cop_timeout();
+	void systemReset();
+
+	void activateSelfClockMode();
+	void deactivateSelfClockMode();
+
+	void activateStopMode();
+	void activateWaitMode();
+	void wakeupFromStopMode();
 
 	// =============================================
 	// =            Registers                      =

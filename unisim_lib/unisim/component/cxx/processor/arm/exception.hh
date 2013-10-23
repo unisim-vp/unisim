@@ -35,94 +35,24 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 
-#include <string>
-#include <stdexcept>
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+namespace exception {
 
-using std::string;
+static const uint32_t RESET = 1;
+static const uint32_t UNDEFINED_INSN = 2;
+static const uint32_t SWI = 4;
+static const uint32_t PREFETCH_ABORT = 8;
+static const uint32_t DATA_ABORT = 16;
+static const uint32_t IRQ = 32;
+static const uint32_t FIQ = 64;
 
-class Exception : public std::exception {};
-
-template <class CONFIG>
-class ProgramException : 
-	public Exception {
-public:
-	ProgramException(const char *name);
-	virtual ~ProgramException() throw();
-	virtual const char * what () const throw ();
-private:
-	string what_str;
-};
-
-template <class CONFIG>
-class IllegalInstructionException : 
-	public ProgramException<CONFIG>
-{
-public:
-	IllegalInstructionException();
-};
-
-template <class CONFIG>
-class ResetException :
-	public Exception {
-public:
-	ResetException();
-	virtual const char *what() const throw();
-};
-
-template <class CONFIG>
-class UndefinedInstructionException :
-	public Exception {
-public:
-	UndefinedInstructionException();
-	virtual const char *what() const throw();
-};
-
-template <class CONFIG>
-class SoftwareInterruptException :
-	public Exception {
-public:
-	SoftwareInterruptException();
-	virtual const char *what() const throw();
-};
-
-template <class CONFIG>
-class PrefetchAbortException :
-	public Exception {
-public:
-	PrefetchAbortException();
-	virtual const char *what() const throw();
-};
-
-template <class CONFIG>
-class DataAbortException :
-	public Exception {
-public:
-	DataAbortException();
-	virtual const char *what() const throw();
-};
-
-template <class CONFIG>
-class IRQException :
-	public Exception {
-public:
-	IRQException();
-	virtual const char *what() const throw();
-};
-
-template <class CONFIG>
-class FIQException :
-	public Exception {
-public:
-	FIQException();
-	virtual const char *what() const throw();
-};
-
+} // end of namespace exception
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

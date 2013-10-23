@@ -49,6 +49,8 @@
 #include <unisim/util/debug/dwarf/range.hh>
 #include <unisim/util/debug/dwarf/stmt_prog.hh>
 #include <unisim/util/debug/dwarf/stmt_vm.hh>
+#include <unisim/util/debug/dwarf/frame.hh>
+#include <unisim/util/debug/dwarf/data_object.hh>
 
 #include <unisim/util/debug/dwarf/addr_range.tcc>
 #include <unisim/util/debug/dwarf/attr.tcc>
@@ -66,6 +68,8 @@
 #include <unisim/util/debug/dwarf/range.tcc>
 #include <unisim/util/debug/dwarf/stmt_prog.tcc>
 #include <unisim/util/debug/dwarf/stmt_vm.tcc>
+#include <unisim/util/debug/dwarf/frame.tcc>
+#include <unisim/util/debug/dwarf/data_object.tcc>
 
 namespace unisim {
 namespace util {
@@ -96,15 +100,19 @@ template class DWARF_ExpressionVM<uint32_t>;
 template class DWARF_CallFrameProgram<uint32_t>;
 template class DWARF_CIE<uint32_t>;
 template class DWARF_FDE<uint32_t>;
-template class Rule<uint32_t>;
-template class CFARule<uint32_t>;
-template class OffsetRule<uint32_t>;
-template class ValOffsetRule<uint32_t>;
-template class RegisterRule<uint32_t>;
-template class ExpressionRule<uint32_t>;
-template class ValExpressionRule<uint32_t>;
-template class RuleMatrixRow<uint32_t>;
+template class DWARF_RegisterRule<uint32_t>;
+template class DWARF_CFARule<uint32_t>;
+template class DWARF_RegisterRuleUndefined<uint32_t>;
+template class DWARF_RegisterRuleSameValue<uint32_t>;
+template class DWARF_RegisterRuleOffset<uint32_t>;
+template class DWARF_RegisterRuleValOffset<uint32_t>;
+template class DWARF_RegisterRuleRegister<uint32_t>;
+template class DWARF_RegisterRuleExpression<uint32_t>;
+template class DWARF_RegisterRuleValExpression<uint32_t>;
+template class DWARF_CFIRow<uint32_t>;
+template class DWARF_CFI<uint32_t>;
 template class DWARF_CallFrameVM<uint32_t>;
+template class DWARF_Frame<uint32_t>;
 template class DWARF_RangeListEntry<uint32_t>;
 template class DWARF_MacInfoListEntry<uint32_t>;
 template class DWARF_MacInfoListEntryDefine<uint32_t>;
@@ -118,7 +126,29 @@ template class DWARF_Pub<uint32_t>;
 template class DWARF_Pubs<uint32_t>;
 template class DWARF_LocListEntry<uint32_t>;
 template class DWARF_Handler<uint32_t>;
-	
+template class DWARF_DataObject<uint32_t>;
+
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_AddressRangeDescriptor<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_AddressRanges<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_AttributeValue<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Attribute<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CallFrameProgram<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CFARule<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_RegisterRule<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CFIRow<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CFI<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CIE<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CompilationUnit<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_DIE<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_FDE<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Frame<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_LocListEntry<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_MacInfoListEntry<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Pub<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Pubs<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_RangeListEntry<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_StatementProgram<uint32_t>&);
+
 } // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util

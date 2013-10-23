@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_XML_HH__
 #define __UNISIM_UTIL_XML_HH__
 
+#include <unisim/kernel/logger/logger.hh>
 #include <list>
 #include <string>
 #include <iosfwd>
@@ -121,7 +122,7 @@ private:
 class Parser
 {
 public:
-	Parser();
+	Parser(unisim::kernel::logger::Logger& logger);
 	virtual ~Parser();
 	Node *Parse(const string& filename);
 private:
@@ -132,14 +133,15 @@ private:
 	Node *ParseNode(istream& is);
 	bool ParseComment(istream& is);
 
+	unisim::kernel::logger::Logger& logger;
 	Node *root_node;
 	int current_lineno;
 	string current_filename;
 	int look_ahead_token;
 	string look_ahead_value;
+	
+	void Error(const string& filename, int lineno, const char *format, ...);
 };
-
-extern void Error(const string& filename, int lineno, const char *format, ...);
 
 } // end of namespace xml
 } // end of namespace util

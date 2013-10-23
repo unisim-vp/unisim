@@ -13,8 +13,6 @@
 #include "BlockingQueue.tcc"
 #include "GenericThread.hpp"
 
-#define MAXDATASIZE		255
-
 namespace unisim {
 namespace service {
 namespace pim {
@@ -23,11 +21,11 @@ namespace network {
 class SocketWriter: public GenericThread {
 public:
 
-	SocketWriter(const int sock);
+	SocketWriter(const int sock, bool _blocking);
 	~SocketWriter();
 
 	virtual void Run();
-	virtual void send(const char* data);
+	virtual bool send(const char* data, bool blocking);
 	virtual void stop();
 
 protected:
@@ -35,6 +33,7 @@ protected:
 private:
 	int sockfd;
 	BlockingQueue<char *> *buffer_queue;
+	bool blocking;
 };
 
 } // network 

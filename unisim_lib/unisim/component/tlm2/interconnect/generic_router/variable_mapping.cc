@@ -45,6 +45,9 @@ template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapp
 	Simulator::simulator->Initialize(this);
 }
 
+template <>
+unsigned int Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::GetBitSize() const { return 0; }
+
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator bool () const { return false; }
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator long long () const { return 0; }
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator unsigned long long () const { return 0; }
@@ -54,7 +57,7 @@ template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapp
 	buf << "range_start=\"0x" << std::hex << storage->range_start << std::dec
 		<< "\" range_end=\"0x" << std::hex << storage->range_end << std::dec
 		<< "\" output_port=\"" << storage->output_port 
-		<< "\" translation=\"" << std::hex << storage->translation << std::dec << "\"";
+		<< "\" translation=\"0x" << std::hex << storage->translation << std::dec << "\"";
 	return buf.str();
 }
 
@@ -73,7 +76,7 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generi
 		std::stringstream buf(value);
 		std::string str(buf.str());
 		std::string str_rest;
-		unsigned int pos;
+		size_t pos;
 		pos = str.find('"');
 		str_rest = str.substr(pos + 1);
 		str = str_rest;
@@ -118,11 +121,15 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generi
 		{
 			translation = range_start;
 		}
-		storage->used = true;
-		storage->range_start = range_start;
-		storage->range_end = range_end;
-		storage->output_port = output_port;
-		storage->translation = translation;
+		unisim::component::tlm2::interconnect::generic_router::Mapping tmp;
+		
+		tmp.used = true;
+		tmp.range_start = range_start;
+		tmp.range_end = range_end;
+		tmp.output_port = output_port;
+		tmp.translation = translation;
+		SetModified(*storage != tmp);
+		*storage = tmp;
 	}
 	return *this;
 }

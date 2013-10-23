@@ -55,12 +55,21 @@ namespace unisim {
 namespace util {
 namespace endian {
 
-typedef enum {E_BIG_ENDIAN, E_LITTLE_ENDIAN} endian_type;
+typedef enum
+{
+	E_BIG_ENDIAN = 0,
+	E_LITTLE_ENDIAN = 1,
+	E_UNKNOWN_ENDIAN = 2
+} endian_type;
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
+inline bool IsHostLittleEndian() __attribute__((always_inline));
+inline bool IsHostBigEndian() __attribute__((always_inline));
+inline endian_type GetHostEndian() __attribute__((always_inline));
 
 inline void BSwap(uint8_t& value) __attribute__((always_inline));
 inline void BSwap(uint16_t& value) __attribute__((always_inline));
+inline void BSwap(uint8_t value[3]) __attribute__((always_inline));
 inline void BSwap(uint32_t& value) __attribute__((always_inline));
 inline void BSwap(uint64_t& value) __attribute__((always_inline));
 
@@ -125,6 +134,33 @@ inline int64_t Target2Host(endian_type target_endian, int64_t value) __attribute
 
 #endif
 
+inline bool IsHostLittleEndian()
+{
+#if BYTE_ORDER == LITTLE_ENDIAN
+	return true;
+#else
+	return false;
+#endif
+}
+
+inline bool IsHostBigEndian()
+{
+#if BYTE_ORDER == BIG_ENDIAN
+	return true;
+#else
+	return false;
+#endif
+}
+
+inline endian_type GetHostEndian()
+{
+#if BYTE_ORDER == LITTLE_ENDIAN
+	return E_LITTLE_ENDIAN;
+#else
+	return E_BIG_ENDIAN;
+#endif
+}
+
 inline void BSwap(uint8_t& value)
 {
 }
@@ -132,6 +168,13 @@ inline void BSwap(uint8_t& value)
 inline void BSwap(uint16_t& value)
 {
 	value = (value >> 8) | (value << 8);
+}
+
+inline void BSwap(uint8_t value[3])
+{
+	uint8_t tmp = value[0];
+	value[0] = value[1];
+	value[1] = tmp;
 }
 
 inline void BSwap(uint32_t& value)

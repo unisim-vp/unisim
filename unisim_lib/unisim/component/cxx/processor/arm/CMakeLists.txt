@@ -29,7 +29,6 @@ set ( cxx_arm_subdirs
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/loader
 	unisim/service/interfaces/linux_os
-	unisim/service/interfaces/cpu_linux_os
 	unisim/service/interfaces/debug_control
 	unisim/service/interfaces/disassembly
 	unisim/service/interfaces/memory_access_reporting
@@ -110,35 +109,13 @@ add_custom_command (
 	)
 
 set ( cxx_arm_srcs
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/models.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/masks.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cache_interface.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/config.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor_interface.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.hh
-	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.soclib_step_cycle.tcc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.tcc
-	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.step_cycle.tcc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.hh
-	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction_factory.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.step_instruction.tcc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.tcc
-	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction_factory.tcc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.tcc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/tcm.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/tcm.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/write_buffer.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/write_buffer.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cpu.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.tcc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/tcm/tcm.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/tcm/tcm.tcc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/tcm/tcm.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.cc
 	
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/decode_data_processing.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/decode_data_processing.cc
@@ -154,10 +131,10 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/disasm.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/disasm.cc
 	
-	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
-	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
-	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.hh
-	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.tcc
+	# ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
+	# ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
+	# ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.hh
+	# ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_thumb.tcc
 	)
 
 set_source_files_properties (
@@ -214,7 +191,6 @@ add_dependencies ( unisim__component__cxx__processor__arm
 	unisim__service__interfaces__memory
 	unisim__service__interfaces__loader
 	unisim__service__interfaces__linux_os
-	unisim__service__interfaces__cpu_linux_os
 	unisim__service__interfaces__debug_control
 	unisim__service__interfaces__disassembly
 	unisim__service__interfaces__memory_access_reporting

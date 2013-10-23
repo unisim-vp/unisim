@@ -51,31 +51,34 @@ using std::endl;
 using std::hex;
 using std::dec;
 
-I8042::I8042(const char *name, Object *parent) :
-	Object(name, parent, "i8042 PS/2 keyboard/mouse controller"),
-	Client<Keyboard>(name, parent),
-	Client<Mouse>(name, parent),
-	keyboard_import("keyboard-import", this),
-	mouse_import("mouse-import", this),
-	logger(*this),
-	status(0),
-	control(0),
-	fsb_frequency(0),
-	isa_bus_frequency(8),
-	typematic_rate(30.0),
-	typematic_delay(0.250),
-	speed_boost(30.0),
-	aux_status(0),
-	aux_log2_resolution(2),
-	aux_sample_rate(100),
-	aux_wrap(false),
-	verbose(false),
-	param_fsb_frequency("fsb-frequency", this, fsb_frequency, "front side bus frequency in Mhz"),
-	param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency, "ISA bus frequency in Mhz"),
-	param_typematic_rate("typematic-rate", this, typematic_rate, "typematic rate (key strokes per second)"),
-	param_typematic_delay("typematic-delay", this, typematic_delay, "typematic delay (key repeat delay in seconds)"),
-	param_speed_boost("speed-boost", this, speed_boost, "speed-boost factor"),
-	param_verbose("verbose", this, verbose, "enable/disable verbosity")
+I8042::I8042(const char *name, Object *parent)
+	: Object(name, parent, "i8042 PS/2 keyboard/mouse controller")
+	, Client<Keyboard>(name, parent)
+	, Client<Mouse>(name, parent)
+	, keyboard_import("keyboard-import", this)
+	, mouse_import("mouse-import", this)
+	, typematic_rate(30.0)
+	, typematic_delay(0.250)
+	, speed_boost(30.0)
+	, aux_status(0)
+	, aux_log2_resolution(2)
+	, aux_sample_rate(100)
+	, aux_wrap(false)
+	, logger(*this)
+	, verbose(false)
+	, isa_bus_frequency(8)
+	, fsb_frequency(0)
+	, status(0)
+	, control(0)
+	, kbd_irq_level(false)
+	, aux_irq_level(false)
+	, kbd_scanning(false)
+	, param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency, "ISA bus frequency in Mhz")
+	, param_fsb_frequency("fsb-frequency", this, fsb_frequency, "front side bus frequency in Mhz")
+	, param_typematic_rate("typematic-rate", this, typematic_rate, "typematic rate (key strokes per second)")
+	, param_typematic_delay("typematic-delay", this, typematic_delay, "typematic delay (key repeat delay in seconds)")
+	, param_speed_boost("speed-boost", this, speed_boost, "speed-boost factor")
+	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
 	param_fsb_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_isa_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -755,7 +758,7 @@ I8042::~I8042()
 {
 }
 
-bool I8042::Setup()
+bool I8042::EndSetup()
 {
 	if(!keyboard_import)
 	{
@@ -821,7 +824,7 @@ bool I8042::WriteIO(isa_address_t addr, const void *buffer, uint32_t size)
 				// fill-in input buffer
 				if(verbose)
 				{
-					logger << DebugInfo << "Write I/O. port 0x" << hex << addr << " (I8042_DATA_REG), value=" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
+					logger << DebugInfo << "Write I/O. port 0x" << hex << addr << " (I8042_DATA_REG), value=0x" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
 				}
 				WriteData(*(uint8_t *) buffer);
 				Unlock();
@@ -830,7 +833,7 @@ bool I8042::WriteIO(isa_address_t addr, const void *buffer, uint32_t size)
 				// fill-in input buffer
 				if(verbose)
 				{
-					logger << DebugInfo << "Write I/O. port 0x" << hex << addr << " (I8042_COMMAND_REG), value=" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
+					logger << DebugInfo << "Write I/O. port 0x" << hex << addr << " (I8042_COMMAND_REG), value=0x" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
 				}
 				WriteCommand(*(uint8_t *) buffer);
 				Unlock();
@@ -1251,7 +1254,7 @@ void I8042::WriteControl(uint8_t value)
 {
 	if(verbose)
 	{
-		logger << DebugInfo << "Writing control (0x" << hex << (unsigned int) value << dec << ")" << EndDebugInfo;
+		logger << DebugInfo << "Writing control (0x" << hex << (unsigned int) value << dec << "):" << EndDebugInfo;
 	}
 	control = value;
 	if(!enable_aux)
@@ -1261,13 +1264,13 @@ void I8042::WriteControl(uint8_t value)
 	}
 	if(verbose)
 	{
-		logger << DebugInfo << "Keyboard interrupt " << ((control & I8042_CTR_KBDINT) ? "enabled" : "disabled") << EndDebugInfo;
-		logger << DebugInfo << "Aux interrupt " << ((control & I8042_CTR_AUXINT) ? "enabled" : "disabled") << EndDebugInfo;
-		logger << DebugInfo << "Self test " << ((control & I8042_CTR_SYSFLAG) ? "passed" : "failed") << EndDebugInfo;
-		logger << DebugInfo << "PC/AT inhibit override/ignore keylock " << ((control & I8042_CTR_IGNKEYLOCK) ? "enabled" : "disabled") << EndDebugInfo;
-		logger << DebugInfo << "Keyboard " << ((control & I8042_CTR_KBDDIS) ? "disabled" : "enabled") << EndDebugInfo;
-		logger << DebugInfo << "Aux " << ((control & I8042_CTR_AUXDIS) ? "disabled" : "enabled") << EndDebugInfo;
-		logger << DebugInfo << "IBM PC Compatibility Mode " << ((control & I8042_CTR_XLATE) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Keyboard interrupt " << ((control & I8042_CTR_KBDINT) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Aux interrupt " << ((control & I8042_CTR_AUXINT) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Self test " << ((control & I8042_CTR_SYSFLAG) ? "passed" : "failed") << EndDebugInfo;
+		logger << DebugInfo << "  - PC/AT inhibit override/ignore keylock " << ((control & I8042_CTR_IGNKEYLOCK) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Keyboard " << ((control & I8042_CTR_KBDDIS) ? "disabled" : "enabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Aux " << ((control & I8042_CTR_AUXDIS) ? "disabled" : "enabled") << EndDebugInfo;
+		logger << DebugInfo << "  - IBM PC Compatibility Mode " << ((control & I8042_CTR_XLATE) ? "enabled" : "disabled") << EndDebugInfo;
 	}
 	UpdateStatus();
 	UpdateIRQ();
@@ -1284,7 +1287,7 @@ bool I8042::ReadIO(isa_address_t addr, void *buffer, uint32_t size)
 				ReadData(*(uint8_t *) buffer);
 				if(verbose)
 				{
-					logger << DebugInfo << "Read I/O. port 0x" << hex << addr << " (I8042_DATA_REG), value=" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
+					logger << DebugInfo << "Read I/O. port 0x" << hex << addr << " (I8042_DATA_REG), value=0x" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
 				}
 				UpdateIRQ();
 				Unlock();
@@ -1293,7 +1296,7 @@ bool I8042::ReadIO(isa_address_t addr, void *buffer, uint32_t size)
 				ReadStatus(*(uint8_t *) buffer);
 				if(verbose)
 				{
-					logger << DebugInfo << "Read I/O. port 0x" << hex << addr << " (I8042_STATUS_REG), value=" << (unsigned int) status << dec << "(OBF=" << ((status & I8042_STR_OBF) ? 1:0) << ",AUXOBF=" << ((status & I8042_STR_AUX_OBF) ? 1:0) << ",IBF=" << ((status & I8042_STR_IBF) ? 1:0) << ")" << EndDebugInfo;
+					logger << DebugInfo << "Read I/O. port 0x" << hex << addr << " (I8042_STATUS_REG), value=0x" << (unsigned int) status << dec << "(OBF=" << ((status & I8042_STR_OBF) ? 1:0) << ",AUXOBF=" << ((status & I8042_STR_AUX_OBF) ? 1:0) << ",IBF=" << ((status & I8042_STR_IBF) ? 1:0) << ")" << EndDebugInfo;
 				}
 				Unlock();
 				return true;
@@ -1566,11 +1569,6 @@ void I8042::TriggerKbdInterrupt(bool level)
 }
 
 void I8042::TriggerAuxInterrupt(bool level)
-{
-	// this should be implemented elsewhere as it is a virtual method
-}
-
-void I8042::Stop()
 {
 	// this should be implemented elsewhere as it is a virtual method
 }

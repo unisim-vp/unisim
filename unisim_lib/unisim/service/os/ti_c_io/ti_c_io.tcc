@@ -53,6 +53,7 @@
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/util/endian/endian.hh"
+#include "unisim/util/likely/likely.hh"
 
 namespace unisim {
 namespace service {
@@ -89,40 +90,44 @@ TI_C_IO<MEMORY_ADDR>::TI_C_IO(const char *name, Object *parent) :
 	Service<unisim::service::interfaces::TI_C_IO>(name, parent),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
 	Client<MemoryInjection<MEMORY_ADDR> >(name, parent),
-	Client<Registers>(name, parent),
 	Client<SymbolTableLookup<MEMORY_ADDR> >(name, parent),
+	Client<Registers>(name, parent),
+	Client<Blob<MEMORY_ADDR> >(name, parent),
 	ti_c_io_export("ti-c-io-export", this),
 	memory_import("memory-import", this),
 	memory_injection_import("memory-injection-import", this),
 	registers_import("registers-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
+	blob_import("blob-import", this),
 	logger(*this),
+	c_io_buffer_addr(0),
+	c_exit_breakpoint_addr(0),
 	max_buffer_byte_length(0),
 	buffer(0),
+	enable(false),
+	param_enable("enable", this, enable, "enable/disable TI C I/O support"),
+	reg_pc(0),
+	reg_sp(0),
+	warning_as_error(false),
+	pc_register_name("PC"),
+	sp_register_name("SP"),
+	c_io_buffer_symbol_name("__CIOBUF_"),
+	c_io_breakpoint_symbol_name("C$$IO$$"),
+	c_exit_breakpoint_symbol_name("C$$EXIT"),
+	param_warning_as_error("warning-as-error", this, warning_as_error, "Whether Warnings are considered as error or not"),
+	param_pc_register_name("pc-register-name", this, pc_register_name, "Name of the CPU program counter register"),
+	param_c_io_buffer_symbol_name("c-io-buffer-symbol-name", this, c_io_buffer_symbol_name, "C I/O buffer symbol name"),
+	param_c_io_breakpoint_symbol_name("c-io-breakpoint-symbol-name", this, c_io_breakpoint_symbol_name, "C I/O breakpoint symbol name"),
+	param_c_exit_breakpoint_symbol_name("c-exit-breakpoint-symbol-name", this, c_exit_breakpoint_symbol_name, "C EXIT breakpoint symbol name"),
 	verbose_all(false),
 	verbose_io(false),
 	verbose_setup(false),
 	enable_lseek_bug(false),
-	enable(false),
-	warning_as_error(false),
-	reg_pc(0),
-	pc_register_name("PC"),
-	c_io_breakpoint_symbol_name("C$$IO$$"),
-	c_io_buffer_symbol_name("__CIOBUF_"),
-	c_exit_breakpoint_symbol_name("C$$EXIT"),
 	param_verbose_all("verbose-all", this, verbose_all, "globally enable/disable verbosity"),
 	param_verbose_io("verbose-io", this, verbose_io, "enable/disable verbosity while I/Os"),
 	param_verbose_setup("verbose-setup", this, verbose_setup, "enable/disable verbosity while setup"),
-	param_enable_lseek_bug("enable-lseek-bug", this, enable_lseek_bug, "enable/disable lseek bug (as code composer)"),
-	param_enable("enable", this, enable, "enable/disable TI C I/O support"),
-	param_warning_as_error("warning-as-error", this, warning_as_error, "Whether Warnings are considered as error or not"),
-	param_pc_register_name("pc-register-name", this, pc_register_name, "Name of the CPU program counter register"),
-	param_c_io_breakpoint_symbol_name("c-io-breakpoint-symbol-name", this, c_io_breakpoint_symbol_name, "C I/O breakpoint symbol name"),
-	param_c_io_buffer_symbol_name("c-io-buffer-symbol-name", this, c_io_buffer_symbol_name, "C I/O buffer symbol name"),
-	param_c_exit_breakpoint_symbol_name("c-exit-breakpoint-symbol-name", this, c_exit_breakpoint_symbol_name, "C EXIT breakpoint symbol name")
+	param_enable_lseek_bug("enable-lseek-bug", this, enable_lseek_bug, "enable/disable lseek bug (as code composer)")
 {
-	Object::SetupDependsOn(memory_import);
-	Object::SetupDependsOn(symbol_table_lookup_import);
 }
 
 template <class MEMORY_ADDR>
@@ -137,8 +142,16 @@ void TI_C_IO<MEMORY_ADDR>::OnDisconnect()
 }
 
 template <class MEMORY_ADDR>
-bool TI_C_IO<MEMORY_ADDR>::Setup()
+bool TI_C_IO<MEMORY_ADDR>::EndSetup()
 {
+	return true;
+}
+
+template <class MEMORY_ADDR>
+bool TI_C_IO<MEMORY_ADDR>::LoadMemoryAndRegisters()
+{
+	target_to_host_fildes.clear();
+	
 	if(enable)
 	{
 		if(unlikely(verbose_setup || verbose_all))
@@ -167,6 +180,13 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 			return false;
 		}
 
+		if(!blob_import)
+		{
+			logger << DebugError << blob_import.GetName() << " is not connected" << EndDebugError;
+			enable = false;
+			return false;
+		}
+
 		reg_pc = registers_import->GetRegister(pc_register_name.c_str());
 
 		if(!reg_pc)
@@ -182,6 +202,46 @@ bool TI_C_IO<MEMORY_ADDR>::Setup()
 			enable = false;
 			return !warning_as_error;
 		}
+		
+		const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = blob_import->GetBlob();
+		if(!blob)
+		{
+			logger << DebugWarning << "Can't get program informations" << EndDebugWarning;
+			enable = false;
+			return !warning_as_error;
+		}
+		
+		MEMORY_ADDR entry_point = blob->GetEntryPoint() / 4;
+		
+		if(unlikely(verbose_setup || verbose_all))
+		{
+			logger << DebugInfo << "Initializing register " << reg_pc->GetName() << " to 0x" << hex << entry_point << dec << EndDebugInfo;
+		}
+		reg_pc->SetValue(&entry_point);
+
+		reg_sp = registers_import->GetRegister(sp_register_name.c_str());
+
+		if(!reg_sp)
+		{
+			logger << DebugWarning << "Undefined register " << sp_register_name << ". Disabling TI C I/O support" << EndDebugWarning;
+			enable = false;
+			return !warning_as_error;
+		}
+
+		if(reg_sp->GetSize() != 4)
+		{
+			logger << DebugWarning << "Register " << sp_register_name << " is not a 32-bit register. Disabling TI C I/O support" << EndDebugWarning;
+			enable = false;
+			return !warning_as_error;
+		}
+
+		MEMORY_ADDR stack_base = blob->GetStackBase() / 4;
+		
+		if(unlikely(verbose_setup || verbose_all))
+		{
+			logger << DebugInfo << "Initializing register " << reg_sp->GetName() << " to 0x" << hex << stack_base << dec << EndDebugInfo;
+		}
+		reg_sp->SetValue(&stack_base);
 
 		const unisim::util::debug::Symbol<MEMORY_ADDR> *c_io_buffer_symbol = symbol_table_lookup_import->FindSymbolByName(c_io_buffer_symbol_name.c_str());
 
@@ -296,6 +356,12 @@ const char *TI_C_IO<MEMORY_ADDR>::GetCommandFriendlyName(uint32_t command)
 		case C_IO_CMD_GETCLOCK: return "getclock";
 	}
 	return "?";
+}
+
+template <class MEMORY_ADDR>
+void TI_C_IO<MEMORY_ADDR>::Reset()
+{
+	LoadMemoryAndRegisters();
 }
 
 template <class MEMORY_ADDR>
@@ -612,7 +678,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_read(int16_t fno, char *buf, uint16_t count)
 		logger << DebugInfo << "read:" << endl << "  - fno=" << fno << endl << "  - count=" << count << EndDebugInfo;
 	}
 
-	// Translate TI C I/O file descriptor file descriptor to an host file descriptor
+	// Translate TI C I/O file descriptor to an host file descriptor
 	fd = TranslateFileDescriptor(fno);
 
 	// Return an error if file descriptor does not exist
@@ -649,7 +715,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_write(int16_t fno, const char *buf, uint16_t 
 		logger << DebugInfo << "write:" << endl << "  - fno=" << fno << endl << "  - count=" << count << EndDebugInfo;
 	}
 
-	// Translate TI C I/O file descriptor file descriptor to an host file descriptor
+	// Translate TI C I/O file descriptor to an host file descriptor
 	fd = TranslateFileDescriptor(fno);
 
 	// Return an error if file descriptor does not exist
@@ -675,7 +741,7 @@ int32_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t or
 		logger << DebugInfo << "lseek:" << endl << "  - fno=" << fno << endl << "  - offset=" << offset << endl << "  - origin=" << origin << EndDebugInfo;
 	}
 
-	// Translate TI C I/O file descriptor file descriptor to an host file descriptor
+	// Translate TI C I/O file descriptor to an host file descriptor
 	fd = TranslateFileDescriptor(fno);
 
 	// Return an error if file descriptor does not exist
@@ -694,6 +760,12 @@ int32_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t or
 		case C_IO_SEEK_END:
 			whence = SEEK_END;
 			break;
+		default:
+			if(unlikely(verbose_io || verbose_all))
+			{
+				logger << DebugInfo << "bad origin (" << origin << ")" << EndDebugInfo;
+			}
+			return -1;
 	}
 
 	off_t ret = lseek(fd, offset, whence);

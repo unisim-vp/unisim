@@ -35,17 +35,18 @@
 #ifndef __UNISIM_SERVICE_POWER_CACHE_POWER_ESTIMATOR_HH__
 #define __UNISIM_SERVICE_POWER_CACHE_POWER_ESTIMATOR_HH__
 
-#include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/logger/logger.hh>
-#include <unisim/service/interfaces/cache_power_estimator.hh>
-#include <unisim/service/interfaces/power_mode.hh>
-#include <unisim/service/interfaces/time.hh>
+#include <map>
+#include <inttypes.h>
+
+#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
+#include "unisim/service/interfaces/cache_power_estimator.hh"
+#include "unisim/service/interfaces/power_mode.hh"
+#include "unisim/service/interfaces/time.hh"
 #include "unisim/service/power/cache_profile.hh"
 #include "unisim/service/power/cache_dynamic_energy.hh"
 #include "unisim/service/power/cache_dynamic_power.hh"
 #include "unisim/service/power/cache_leakage_power.hh"
-#include <map>
-#include <inttypes.h>
 
 namespace unisim {
 namespace service {
@@ -57,6 +58,7 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
@@ -79,7 +81,8 @@ public:
  	CachePowerEstimator(const char *name, Object *parent = 0);
  	virtual ~CachePowerEstimator();
 
- 	virtual bool Setup();
+ 	virtual bool BeginSetup();
+ 	virtual bool Setup(ServiceExportBase *srv_export);
 
 	// Cache power estimator interface
 	virtual void ReportReadAccess();
@@ -149,6 +152,8 @@ private:
 	
 	/* total results */
 	Cacti4_2 *cacti;
+	
+	bool SetupCacti();
 };
 
 } // end of namespace power

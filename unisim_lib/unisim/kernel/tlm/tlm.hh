@@ -43,15 +43,6 @@
 #include <stack>
 #include <string>
 
-extern void EnableDebug();
-extern void DisableDebug();
-extern bool debug_enabled;
-
-inline bool DebugEnabled()
-{
-	return debug_enabled;
-}
-
 namespace unisim {
 namespace kernel {
 namespace tlm {
@@ -82,16 +73,16 @@ public:
 	Pointer<REQ> req;
 	Pointer<RSP> rsp;
 
-	TlmMessage() : req(0), rsp(0), event_stack() {
+	TlmMessage() : event_stack(), req(0), rsp(0) {
 	}
 
-	TlmMessage(const TlmMessage<REQ, RSP> &m) : req(m.req), rsp(m.rsp), event_stack(m.event_stack) {
+	TlmMessage(const TlmMessage<REQ, RSP> &m) : event_stack(m.event_stack), req(m.req), rsp(m.rsp) {
 	}
 
-	TlmMessage(const Pointer<REQ>& _req) : req(_req), rsp(0), event_stack() {
+	TlmMessage(const Pointer<REQ>& _req) : event_stack(), req(_req), rsp(0) {
 	}
 
-	TlmMessage(const Pointer<REQ>& _req, sc_event& ev) : req(_req), rsp(0), event_stack() {
+	TlmMessage(const Pointer<REQ>& _req, sc_event& ev) : event_stack(), req(_req), rsp(0) {
 			event_stack.push(&ev);
 	}
 	
@@ -327,7 +318,7 @@ public:
 	RequestPortIdentifier(const char *_name,
 		unsigned int _id,
 		RequestPortIdentifierInterface<REQ, RSP> &_master) : 
-		name(_name), id(_id), master(&_master) {}
+		master(&_master), name(_name), id(_id) {}
 	
 	~RequestPortIdentifier() {}
 	

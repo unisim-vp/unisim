@@ -46,7 +46,13 @@
 #endif
 
 
-#include "unisim/kernel/service/service.hh"
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <vector>
+#include <map>
+
+#include <stdlib.h>
 
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/interfaces/debug_control.hh"
@@ -56,22 +62,19 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/kernel/service/service.hh"
 
 #include "unisim/util/debug/register.hh"
+#include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/util/endian/endian.hh"
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <vector>
-#include <map>
 
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
+#include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
-
 
 namespace unisim {
 namespace component {
@@ -83,8 +86,10 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::DebugControl;
@@ -124,27 +129,23 @@ using std::map;
 using std::ostream;
 using std::vector;
 
-//#define MAX_INS_SIZE	CodeType::maxsize;
-#define MAX_INS_SIZE	8
-#define QUEUE_SIZE		MAX_INS_SIZE
-
 class CPU;
 
-	/* *******************************************************************
-	 * ********  Used for                                   **************
-	 * ********    Exchange/Transfer EB:  post-byte         **************
-	 * ********    Loop Primitive    LB:  post-byte         **************
-	 * ******************************************************************/
+/* *******************************************************************
+ * ********  Used for                                   **************
+ * ********    Exchange/Transfer EB:  post-byte         **************
+ * ********    Loop Primitive    LB:  post-byte         **************
+ * ******************************************************************/
 class EBLB {
 public:
 
 	class EBLBMSLSRegs {
-		public:
+	public:
 		enum { A=0x0, B=0x1, CCR=0x2, TMPx=0x3, D=0x4, X=0x5, Y=0x6, SP=0x7 };
 	};
 
 	class EBLBRegs {
-		public:
+	public:
 		enum {A=0x0, B=0x1, CCR=0x20, CCRL=0x21, CCRH=0x22, CCRW=0x23, TMP1=0x30, TMP2=0x31, TMP3=0x32, D=0x4, X=0x5, Y=0x6, SP=0x7};
 	};
 
@@ -153,39 +154,39 @@ public:
 
 	static string getRegName(uint8_t num) {
 		switch (num) {
-			case EBLBRegs::A: return "A"; break;
-			case EBLBRegs::B: return "B"; break;
-			case EBLBRegs::CCR: return "CCR"; break;
-			case EBLBRegs::CCRL: return "CCRL"; break;
-			case EBLBRegs::CCRH: return "CCRH"; break;
-			case EBLBRegs::CCRW: return "CCRW"; break;
-			case EBLBRegs::TMP1: return "TMP1"; break;
-			case EBLBRegs::TMP2: return "TMP2"; break;
-			case EBLBRegs::TMP3: return "TMP3"; break;
-			case EBLBRegs::D: return "D"; break;
-			case EBLBRegs::X: return "X"; break;
-			case EBLBRegs::Y: return "Y"; break;
-			case EBLBRegs::SP: return "SP"; break;
-			default: return "?";
+		case EBLBRegs::A: return ("A");
+		case EBLBRegs::B: return ("B");
+		case EBLBRegs::CCR: return ("CCR");
+		case EBLBRegs::CCRL: return ("CCRL");
+		case EBLBRegs::CCRH: return ("CCRH");
+		case EBLBRegs::CCRW: return ("CCRW");
+		case EBLBRegs::TMP1: return ("TMP1");
+		case EBLBRegs::TMP2: return ("TMP2");
+		case EBLBRegs::TMP3: return ("TMP3");
+		case EBLBRegs::D: return ("D");
+		case EBLBRegs::X: return ("X");
+		case EBLBRegs::Y: return ("Y");
+		case EBLBRegs::SP: return ("SP");
+		default: return ("?");
 		}
 	}
 
 	static uint8_t getRegSize(uint8_t num) {
 		switch (num) {
-			case EBLBRegs::A: return 8; break;
-			case EBLBRegs::B: return 8; break;
-			case EBLBRegs::CCR: return 8; break;
-			case EBLBRegs::CCRL: return 8; break;
-			case EBLBRegs::CCRH: return 8; break;
-			case EBLBRegs::CCRW: return 16; break;
-			case EBLBRegs::TMP1: return 16; break;
-			case EBLBRegs::TMP2: return 16; break;
-			case EBLBRegs::TMP3: return 16; break;
-			case EBLBRegs::D: return 16; break;
-			case EBLBRegs::X: return 16; break;
-			case EBLBRegs::Y: return 16; break;
-			case EBLBRegs::SP: return 16; break;
-			default: return 0;
+		case EBLBRegs::A: return (8);
+		case EBLBRegs::B: return (8);
+		case EBLBRegs::CCR: return (8);
+		case EBLBRegs::CCRL: return (8);
+		case EBLBRegs::CCRH: return (8);
+		case EBLBRegs::CCRW: return (16);
+		case EBLBRegs::TMP1: return (16);
+		case EBLBRegs::TMP2: return (16);
+		case EBLBRegs::TMP3: return (16);
+		case EBLBRegs::D: return (16);
+		case EBLBRegs::X: return (16);
+		case EBLBRegs::Y: return (16);
+		case EBLBRegs::SP: return (16);
+		default: return (0);
 		}
 	}
 
@@ -206,18 +207,22 @@ private:
 
 
 class CPU : public Decoder,
-	public Client<DebugControl<service_address_t> >,
-	public Client<MemoryAccessReporting<service_address_t> >,
-	public Service<MemoryAccessReportingControl>,
-	public Service<Disassembly<service_address_t> >,
-    public Service<Registers>,
-	public Service<Memory<service_address_t> >,
-	public Client<Memory<service_address_t> >,
-	public Client<SymbolTableLookup<service_address_t> >,
-	public Client<TrapReporting >
+public Client<DebugControl<physical_address_t> >,
+public Client<MemoryAccessReporting<physical_address_t> >,
+public Service<MemoryAccessReportingControl>,
+public Service<Disassembly<physical_address_t> >,
+public Service<Registers>,
+public Service<Memory<physical_address_t> >,
+public Client<Memory<physical_address_t> >,
+public Client<SymbolTableLookup<physical_address_t> >,
+public Client<TrapReporting >
 
 {
 public:
+	//#define MAX_INS_SIZE	CodeType::maxsize;
+	static const uint8_t MAX_INS_SIZE = 8;
+	static const uint8_t QUEUE_SIZE = MAX_INS_SIZE;
+
 
 	void queueFlush(uint8_t nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
 	uint8_t* queueFetch(address_t addr, uint8_t* ins, uint8_t nByte);
@@ -236,15 +241,15 @@ public:
 	//=                  public service imports/exports                   =
 	//=====================================================================
 
-	ServiceExport<Disassembly<service_address_t> > disasm_export;
+	ServiceExport<Disassembly<physical_address_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
-	ServiceExport<Memory<service_address_t> > memory_export;
+	ServiceExport<Memory<physical_address_t> > memory_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<DebugControl<service_address_t> > debug_control_import;
-	ServiceImport<MemoryAccessReporting<service_address_t> > memory_access_reporting_import;
-	ServiceImport<Memory<service_address_t> > memory_import;
-	ServiceImport<SymbolTableLookup<service_address_t> > symbol_table_lookup_import;
+	ServiceImport<DebugControl<physical_address_t> > debug_control_import;
+	ServiceImport<MemoryAccessReporting<physical_address_t> > memory_access_reporting_import;
+	ServiceImport<Memory<physical_address_t> > memory_import;
+	ServiceImport<SymbolTableLookup<physical_address_t> > symbol_table_lookup_import;
 
 	// the kernel logger
 	unisim::kernel::logger::Logger *logger;
@@ -258,7 +263,7 @@ public:
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
 
-	void SetEntryPoint(address_t cpu_address);
+	void setEntryPoint(address_t cpu_address);
 
 	//==========================================
 	//=     ISA - MEMORY ACCESS ROUTINES       =
@@ -274,23 +279,25 @@ public:
 	//=                    execution handling methods                     =
 	//=====================================================================
 
-	void OnBusCycle();
-	uint8_t Step();	// Return the number of cpu cycles consumed by the operation
-	virtual void Stop(int ret);
+	uint8_t step();	// Return the number of cpu cycles consumed by the operation
 	virtual void Sync();
 
-	/* TODO:
-	 * Stop All Clocks and puts the device in standby mode.
-	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode.
+	enum STATES {RUNNING, WAIT, STOP};
+	/**
+	 * RUNNING:
+	 * WAIT:
+	 *     Enter a wait state for an integer number of bus clock cycle
+	 *     Only CPU12 clocks are stopped
+	 *     Wait for not masked interrupt
+	 * STOP:
+	 *     Stop All Clocks and puts the device in standby mode.
+	 *     Asserting the RESET, XIRQ, or IRQ signals ends standby mode.
+	 *     if S control bit = 1, the STOP instruction is disabled and acts like two-cycle NOP
 	 */
-	virtual void Sleep() = 0;
 
-	/* TODO:
-	 * Enter a wait state for an integer number of bus clock cycle
-	 * Only CPU12 clocks are stopped
-	 * Wait for not masked interrupt
-	 */
-	virtual void Wait() = 0;
+	void setState(STATES st) { state = st; }
+	virtual void sleep() = 0;
+	virtual void wai() = 0;
 
 	/*
 	 * The CPU issues a signal that tells the interrupt module to drive
@@ -302,140 +309,144 @@ public:
 	 * If (RAM_ACC_VIOL | SYS || SWI || TRAP) return IVBR;
 	 * Else return INT_Vector
 	 */
-	virtual address_t GetIntVector(uint8_t &ipl) = 0;
-
-	virtual double  GetSimulatedTime() = 0;
+	virtual address_t getIntVector(uint8_t &ipl) = 0;
 
 	//=====================================================================
 	//=                    Interface with outside                         =
 	//=====================================================================
-	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
+	inline bool hasAsynchronousInterrupt() const { return (asynchronous_interrupt); }
 
-	inline bool HasMaskableIbitInterrup() const { return maskableIbit_interrupt; }
-	inline bool HasNonMaskableXIRQInterrupt() const { return nonMaskableXIRQ_interrupt; }
-	inline bool HasNonMaskableAccessErrorInterrupt() const { return nonMaskableAccessError_interrupt; }
-	inline bool HasNonMaskableSWIInterrupt() const { return nonMascableSWI_interrupt; }
-	inline bool HasTrapInterrupt() const { return trap_interrupt; }
-	inline bool HasReset() const { return reset; }
-	inline bool HasSysCallInterrupt() const { return syscall_interrupt; }
-	inline bool HasSpuriousInterrupt() const { return spurious_interrupt; }
+	inline bool hasMaskableIbitInterrup() const { return (maskableIbit_interrupt); }
+	inline bool hasNonMaskableXIRQInterrupt() const { return (nonMaskableXIRQ_interrupt); }
+	inline bool hasNonMaskableAccessErrorInterrupt() const { return (nonMaskableAccessError_interrupt); }
+	inline bool hasNonMaskableSWIInterrupt() const { return (nonMascableSWI_interrupt); }
+	inline bool hasTrapInterrupt() const { return (trap_interrupt); }
+	inline bool hasReset() const { return (reset); }
+	inline bool hasMPUAccessErrorInterrupt() const { return (mpuAccessError_interrupt); }
+	inline bool hasSysCallInterrupt() const { return (syscall_interrupt); }
+	inline bool hasSpuriousInterrupt() const { return (spurious_interrupt); }
 
 	//=====================================================================
 	//=                    Exception handling methods                     =
 	//=====================================================================
 
 	// compute return address, save the CPU registers and then set I/X bit before the interrupt handling began
-	void PrepareInterrupt();
+	void saveCPUContext();
 
 	// Asynchronous Interrupts (including Resets, I-bit, XIRQ, IRQ)
-	void HandleException(const AsynchronousException& exc);
+	void handleException(const AsynchronousException& exc);
 
 	// Hardware and Software reset (including COP, clock monitor, and pin)
-	void HandleResetException(address_t resetVector);
+	void handleResetException(address_t resetVector);
 
 	// Non-maskable (X bit) interrupts
-	void HandleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL);
+	void handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL);
+
+	// Non-maskable MPU Access Error interrupt
+	void handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL);
 
 	// Maskable (I bit) interrupt
-	void HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL);
+	void handleMaskableIbitException(address_t ibitVector, uint8_t newIPL);
 
 	// A software interrupt instruction (SWI) or BDM vector request
-	void HandleException(const NonMaskableSWIInterrupt& exc);
+	void handleException(const NonMaskableSWIInterrupt& exc);
 
 	// Unimplemented opcode trap
-	void HandleException(const TrapException& exc);
+	void handleException(const TrapException& exc);
 
 	// A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
-	void HandleException(const SysCallInterrupt& exc);
+	void handleException(const SysCallInterrupt& exc);
 
 	// A spurious interrupt
-	void HandleException(const SpuriousInterrupt& exc);
+	void handleException(const SpuriousInterrupt& exc);
 
 	// Non-maskable Access Error interrupts
-	void HandleException(const NonMaskableAccessErrorInterrupt& exc);
+	void handleException(const NonMaskableAccessErrorInterrupt& exc);
 
 	//=====================================================================
 	//=               Hardware check/acknowledgement methods              =
 	//=====================================================================
 
-	void AckAsynchronousInterrupt();
-	void AckIbitInterrupt();
-	void AckXIRQInterrupt();
-	void AckAccessErrorInterrupt();
-	void AckSWIInterrupt();
-	void AckTrapInterrupt();
-	void AckReset();
-	void AckSysInterrupt();
-	void AckSpuriousInterrupt();
+	void ackAsynchronousInterrupt();
+	void ackIbitInterrupt();
+	void ackXIRQInterrupt();
+	void ackAccessErrorInterrupt();
+	void ackSWIInterrupt();
+	void ackTrapInterrupt();
+	void ackReset();
+	void ackMPUAccessErrorInterrupt();
+	void ackSysInterrupt();
+	void ackSpuriousInterrupt();
 
 	//=====================================================================
 	//=                    Hardware interrupt request                     =
 	//=====================================================================
 
-	void ReqAsynchronousInterrupt();
-	void ReqIbitInterrupt();
-	void ReqXIRQInterrupt();
-	void ReqAccessErrorInterrupt();
-	void ReqSWIInterrupt();
-	void ReqTrapInterrupt();
-	void ReqReset();
-	void ReqSysInterrupt();
-	void ReqSpuriousInterrupt();
+	void reqAsynchronousInterrupt();
+	void reqIbitInterrupt();
+	void reqXIRQInterrupt();
+	void reqAccessErrorInterrupt();
+	void reqSWIInterrupt();
+	void reqTrapInterrupt();
+	void reqReset();
+	void reqMPUAccessErrorInterrupt();
+	void reqSysInterrupt();
+	void reqSpuriousInterrupt();
 
 	//======================================================================
 	//=                  Registers Acces Routines                          =
 	//======================================================================
-    inline void    setRegA(uint8_t val);
-    inline uint8_t getRegA();
+	inline void    setRegA(uint8_t val);
+	inline uint8_t getRegA();
 
-    inline void    setRegB(uint8_t val);
-    inline uint8_t getRegB();
+	inline void    setRegB(uint8_t val);
+	inline uint8_t getRegB();
 
-    inline void    setRegD(uint16_t val); // regD == regA:regB
-    inline uint16_t getRegD();
+	inline void    setRegD(uint16_t val); // regD == regA:regB
+	inline uint16_t getRegD();
 
-    inline void    setRegX(uint16_t val);
-    inline uint16_t getRegX();
+	inline void    setRegX(uint16_t val);
+	inline uint16_t getRegX();
 
-    inline void    setRegY(uint16_t val);
-    inline uint16_t getRegY();
+	inline void    setRegY(uint16_t val);
+	inline uint16_t getRegY();
 
-    inline void    setRegSP(uint16_t val);
-    inline uint16_t getRegSP();
+	inline void    setRegSP(uint16_t val);
+	inline uint16_t getRegSP();
 
-    inline void    setRegPC(uint16_t val);
-    inline uint16_t getRegPC();
+	inline void    setRegPC(uint16_t val);
+	inline uint16_t getRegPC();
 
-    inline void    setRegTMP(uint8_t index, uint16_t val);
-    inline uint16_t getRegTMP(uint8_t index);
+	inline void    setRegTMP(uint8_t index, uint16_t val);
+	inline uint16_t getRegTMP(uint8_t index);
 
 	/********************************************************************
 	 * *******  Used for Indexed Operations XB: Postbyte Code  **********
 	 * ******************************************************************/
 	static string xb_getAddrRegLabel(uint8_t rr) {
 		switch (rr) {
-    	case 0:
-       		return "X";
-    	case 1:
-   	    	return "Y";
+		case 0:
+			return ("X");
+		case 1:
+			return ("Y");
 		case 2:
-       		return "SP";
-    	case 3:
-   	    	return "PC";
+			return ("SP");
+		case 3:
+			return ("PC");
 		}
+		return ("unknown");
 	}
 
 	static string xb_getAccRegLabel(uint8_t rr) {
 		switch (rr) {
-    	case 0:
-       		return "A";
-    	case 1:
-   	    	return "B";
+		case 0:
+			return ("A");
+		case 1:
+			return ("B");
 		case 2:
-       		return "D";
-       	default:
-       		return "unknown"; // rr=11 see accumulator D offset indexed-indirect
+			return ("D");
 		}
+		return ("unknown"); // rr=11 see accumulator D offset indexed-indirect
 	}
 
 	inline uint16_t xb_getAddrRegValue(uint8_t rr);
@@ -448,7 +459,10 @@ public:
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 	virtual void OnDisconnect();
 	virtual void Reset();
 
@@ -459,23 +473,23 @@ public:
 	virtual void RequiresMemoryAccessReporting(bool report);
 	virtual void RequiresFinishedInstructionReporting(bool report) ;
 
-	inline void MonitorStore(address_t ea, uint32_t size);
-	inline void MonitorLoad(address_t ea, uint32_t size);
+	inline void monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal);
+	inline void monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal);
 
-	inline void ReportTrap();
+	inline void reportTrap();
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             bus interface methods                              =
 	//=====================================================================
-	virtual void BusWrite(address_t addr, const void *buffer, uint32_t size) = 0;
-	virtual void BusRead(address_t addr, void *buffer, uint32_t size) = 0;
+	virtual void busWrite(address_t addr, const void *buffer, uint32_t size) = 0;
+	virtual void busRead(address_t addr, void *buffer, uint32_t size) = 0;
 
 	//=====================================================================
 	//=             CPURegistersInterface interface methods               =
@@ -487,13 +501,13 @@ public:
 	 * @param name The name of the requested register.
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
-    virtual Register *GetRegister(const char *name);
+	virtual Register *GetRegister(const char *name);
 
 	//=====================================================================
 	//=                   DebugDisasmInterface methods                    =
 	//=====================================================================
 
-    /**
+	/**
 	 * Returns a string with the disassembling of the instruction found
 	 *   at address addr.
 	 *
@@ -501,21 +515,21 @@ public:
 	 * @param next_addr The address following the requested instruction.
 	 * @return The disassembling of the requested instruction address.
 	 */
-    virtual string Disasm(service_address_t addr, service_address_t &next_addr);
+	virtual string Disasm(physical_address_t addr, physical_address_t &next_addr);
 
 	//=====================================================================
 	//=                   Debugging methods                               =
 	//=====================================================================
 
-	string GetObjectFriendlyName(service_address_t addr);
-	string GetFunctionFriendlyName(service_address_t addr);
-    inline uint64_t GetInstructionCounter() const { return instruction_counter; }
-	inline bool IsVerboseException() const { return debug_enabled && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
+	string getObjectFriendlyName(physical_address_t addr);
+	string getFunctionFriendlyName(physical_address_t addr);
+	inline uint64_t getInstructionCounter() const { return (instruction_counter); }
+	inline bool isVerboseException() const { return (debug_enabled && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception)); }
 
-	address_t getLastPC() {return lastPC; }
+	address_t getLastPC() {return (lastPC); }
 
-//protected:
-    class CCR_t *ccr;
+	//protected:
+	class CCR_t *ccr;
 	class EBLB	*eblb;
 
 protected:
@@ -523,9 +537,9 @@ protected:
 	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
 	//=====================================================================
 
-	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
+//	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
 	uint64_t voltage;        //!< CPU voltage in mV
-	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
+//	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
 	uint64_t cpu_cycle;      //!< Number of cpu cycles
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
 
@@ -546,14 +560,15 @@ protected:
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
-		// verbose methods
+	uint64_t periodic_trap;
+	Parameter<uint64_t> param_periodic_trap;
+
+	// verbose methods
 	inline bool VerboseSetup() GCC_INLINE;
 	inline bool VerboseStep() GCC_INLINE;
 	inline void VerboseDumpRegs() GCC_INLINE;
 	inline void VerboseDumpRegsStart() GCC_INLINE;
 	inline void VerboseDumpRegsEnd() GCC_INLINE;
-
-	inline void RegistersInfo() GCC_INLINE;
 
 	/** indicates if the memory accesses require to be reported */
 	bool requires_memory_access_reporting;
@@ -567,13 +582,6 @@ protected:
 	Parameter<bool>	param_debug_enabled;
 
 
-private:
-	uint8_t		regA, regB;
-    uint16_t    regX, regY, regSP, regPC;
-    uint16_t	regTMP[3];
-
-    address_t lastPC;
-
 	//=====================================================================
 	//=                   68HCS12X interrupt signals                      =
 	//=====================================================================
@@ -583,18 +591,40 @@ private:
 	bool nonMaskableXIRQ_interrupt;	// X-Bit (XIRQ) maskable interrupt => IVBR + 0x00F4
 	bool nonMaskableAccessError_interrupt; // Memory Access Error Interrupt
 	bool nonMascableSWI_interrupt;	// (SWI) => IVBR + 0x00F6
-									// non maskable software interrupt request or background debug mode vector request
+	// non maskable software interrupt request or background debug mode vector request
 	bool trap_interrupt;			// non maskable unimplemented opcode => IVBR + 0x00F8
 	bool reset;						// Hardware and Software interrupt =>  0xFFFA-0xFFFE
+	bool mpuAccessError_interrupt; // non maskable MPU Access Error interrupt
 	bool syscall_interrupt;			// SYS call interrupt =>
 	bool spurious_interrupt;		// Spurious interrupt => IVBR + 0x0010 (default interrupt)
+
+private:
+	// cpu state
+	STATES state;
+
+	uint8_t		regA, regB;
+	uint16_t    regX, regY, regSP, regPC, ccrReg;
+	uint16_t	regTMP[3];
+
+	address_t lastPC;
 
 	// Registers map
 	map<string, Register *> registers_registry;
 
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
 	/** the instruction counter */
 	uint64_t instruction_counter;
+	uint64_t cycles_counter;
+	uint64_t data_load_counter;
+	uint64_t data_store_counter;
 	uint64_t	max_inst;
+
+	Statistic<uint64_t> stat_instruction_counter;
+	Statistic<uint64_t> stat_cycles_counter;
+	Statistic<uint64_t> stat_load_counter;
+	Statistic<uint64_t> stat_store_counter;
+
 	Parameter<uint64_t>	   param_max_inst;
 
 };
@@ -603,27 +633,34 @@ private:
 // =          MEMORY ACCESS ROUTINES            =
 // ==============================================
 
-inline void CPU::MonitorLoad(address_t ea, uint32_t size)
+inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
+	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+
+	data_load_counter++;
+
 	// Memory access reporting
-	if(requires_memory_access_reporting && memory_access_reporting_import)
+	if(memory_access_reporting_import)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_DATA, ea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, pea, size);
 	}
 }
 
-inline void CPU::MonitorStore(address_t ea, uint32_t size)
+inline void CPU::monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
+	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+
+	data_store_counter++;
+
 	// Memory access reporting
-	if(requires_memory_access_reporting && memory_access_reporting_import)
+	if(memory_access_reporting_import)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_WRITE, MemoryAccessReporting<service_address_t>::MT_DATA, ea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, pea, size);
 	}
 }
 
-inline void CPU::ReportTrap() {
-	if (debug_enabled && trap_reporting_import) {
-		std::cout << "*** CPU12 ReprotTrap *** 0x" << std::hex << getLastPC() << std::dec << std::endl;
+inline void CPU::reportTrap() {
+	if (trap_reporting_import) {
 		trap_reporting_import->ReportTrap();
 	}
 
@@ -639,11 +676,11 @@ inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool 
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
-	BusRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	MonitorLoad(logicalAddress, sizeof(data));
+	monitorLoad(logicalAddress, sizeof(data), isGlobal);
 
-	return data;
+	return (data);
 }
 
 inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal) {
@@ -656,44 +693,44 @@ inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, boo
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
-	BusRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
 	data = BigEndian2Host(data);
 
-	MonitorLoad(logicalAddress, sizeof(data));
+	monitorLoad(logicalAddress, sizeof(data), isGlobal);
 
-	return data;
+	return (data);
 }
 
-inline void CPU::memWrite8(address_t logicalAddress,uint8_t val, ADDRESS::MODE type, bool isGlobal) {
+inline void CPU::memWrite8(address_t logicalAddress,uint8_t data, ADDRESS::MODE type, bool isGlobal) {
 
 	MMC_DATA mmc_data;
 
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
-	mmc_data.buffer = &val;
+	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
-	BusWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	MonitorStore(logicalAddress, sizeof(val));
+	monitorStore(logicalAddress, sizeof(data), isGlobal);
 
 }
 
-inline void CPU::memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE type, bool isGlobal) {
+inline void CPU::memWrite16(address_t logicalAddress,uint16_t data, ADDRESS::MODE type, bool isGlobal) {
 
 	MMC_DATA mmc_data;
 
-	val = Host2BigEndian(val);
+	data = Host2BigEndian(data);
 
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
-	mmc_data.buffer = &val;
+	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
-	BusWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	MonitorStore(logicalAddress, sizeof(val));
+	monitorStore(logicalAddress, sizeof(data), isGlobal);
 
 }
 
@@ -702,82 +739,84 @@ inline void CPU::memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE
 //======================================================================
 
 uint16_t CPU::xb_getAddrRegValue(uint8_t rr) {
-switch (rr) {
-case 0:
-	return getRegX(); break;
-case 1:
-	return getRegY(); break;
-case 2:
-	return getRegSP(); break;
-case 3:
-	return getRegPC(); break;
-}
+	switch (rr) {
+	case 0:
+		return (getRegX());
+	case 1:
+		return (getRegY());
+	case 2:
+		return (getRegSP());
+	case 3:
+		return (getRegPC());
+	}
+	throw std::runtime_error("Internal error");
 }
 
 void CPU::xb_setAddrRegValue(uint8_t rr,uint16_t val) {
-switch (rr) {
-case 0:
-	return setRegX(val); break;
-case 1:
-	return setRegY(val); break;
-case 2:
-	return setRegSP(val); break;
-case 3:
-	return setRegPC(val); break;
-}
+	switch (rr) {
+	case 0:
+		(setRegX(val)); break;
+	case 1:
+		(setRegY(val)); break;
+	case 2:
+		(setRegSP(val)); break;
+	case 3:
+		(setRegPC(val)); break;
+	default:
+		throw std::runtime_error("Internal error"); break;
+	}
 }
 
 
 uint16_t CPU::xb_getAccRegValue(uint8_t rr) {
-switch (rr) {
-case 0:
-	return getRegA(); break;
-case 1:
-	return getRegB(); break;
-case 2:
-	return getRegD(); break;
-default:
-	return 0; // ! or throw an exception
-}
+	switch (rr) {
+	case 0:
+		return (getRegA());
+	case 1:
+		return (getRegB());
+	case 2:
+		return (getRegD());
+	}
+	throw std::runtime_error("Internal error");
 }
 
 
 void CPU::setRegA(uint8_t val) { regA = val; }
 
-uint8_t CPU::getRegA() { return regA; }
+uint8_t CPU::getRegA() { return (regA); }
 
 void CPU::setRegB(uint8_t val) { regB = val; }
-uint8_t CPU::getRegB() { return regB; }
+uint8_t CPU::getRegB() { return (regB); }
 
 void CPU::setRegD(uint16_t val) {
-// regD == regA:regB
+	// regD == regA:regB
 
-setRegA((uint8_t) (val >> 8));
-setRegB((uint8_t) (val & 0x00FF));
+	setRegA((uint8_t) (val >> 8));
+	setRegB((uint8_t) (val & 0x00FF));
 
 }
 
 uint16_t CPU::getRegD() {
-// regD == regA:regB
-uint16_t val = (((uint16_t) getRegA()) << 8) | getRegB();
-return val;
+	// regD == regA:regB
+	uint16_t val = (((uint16_t) getRegA()) << 8) | getRegB();
+	return (val);
 }
 
 void CPU::setRegX(uint16_t val) { regX = val; }
-uint16_t CPU::getRegX() { return regX; }
+uint16_t CPU::getRegX() { return (regX); }
 
 void CPU::setRegY(uint16_t val) { regY = val; }
 
-uint16_t CPU::getRegY() { return regY; }
+uint16_t CPU::getRegY() { return (regY); }
 
 void CPU::setRegSP(uint16_t val) { regSP = val; }
-uint16_t CPU::getRegSP() { return regSP; }
+uint16_t CPU::getRegSP() { return (regSP); }
 
 void CPU::setRegPC(uint16_t val) { regPC = val; }
-uint16_t CPU::getRegPC() { return regPC; }
+uint16_t CPU::getRegPC() { return (regPC); }
 
 void CPU::setRegTMP(uint8_t index, uint16_t val) { regTMP[index] = val; }
-uint16_t CPU::getRegTMP(uint8_t index) { return regTMP[index]; }
+uint16_t CPU::getRegTMP(uint8_t index) { return (regTMP[index]); }
 
 
 } // end of namespace hcs12x
@@ -786,5 +825,5 @@ uint16_t CPU::getRegTMP(uint8_t index) { return regTMP[index]; }
 } // end of namespace component
 } // end of namespace unisim
 
-#endif
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CPU_HH__
 

@@ -96,7 +96,7 @@ public:
 
 	NonMaskableAccessErrorInterrupt(ERROR_TYPE error);
 	virtual const char * what () const throw ();
-	ERROR_TYPE getErrorType() { return errorType; }
+	ERROR_TYPE getErrorType() { return (errorType); }
 
 private:
 	ERROR_TYPE errorType;

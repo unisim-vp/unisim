@@ -59,8 +59,8 @@ using unisim::kernel::logger::EndDebugError;
 
 template <uint32_t MAX_DATA_SIZE>
 I8042<MAX_DATA_SIZE>::I8042(const sc_module_name& name, Object *parent) :
-	sc_module(name),
 	Object(name, parent, "i8042 PS/2 keyboard/mouse controller"),
+	sc_module(name),
 	unisim::component::cxx::isa::i8042::I8042(name, parent),
 	isa_bus_cycle_time(),
 	bus_cycle_time()
@@ -86,9 +86,9 @@ I8042<MAX_DATA_SIZE>::~I8042()
 }
 
 template <uint32_t MAX_DATA_SIZE>
-bool I8042<MAX_DATA_SIZE>::Setup()
+bool I8042<MAX_DATA_SIZE>::EndSetup()
 {
-	if(!inherited::Setup()) return false;
+	if(!inherited::EndSetup()) return false;
 	isa_bus_cycle_time = sc_time(1.0 / (double) (*this)["isa-bus-frequency"], SC_US);
 	bus_cycle_time = sc_time(1.0 / (double) (*this)["fsb-frequency"], SC_US);
 	kbd_irq_level = false;
@@ -157,7 +157,7 @@ void I8042<MAX_DATA_SIZE>::KbdIrqMaster()
 		irq->serial_id = 0;
 		if(inherited::verbose)
 		{
-			inherited::logger << DebugInfo << "KBD interrupt level " << irq->level << EndDebugInfo;
+			inherited::logger << DebugInfo << "KBD Interrupt output goes " << (kbd_irq_level ? "high" : "low") << EndDebugInfo;
 		}
 		while(!kbd_irq_port->Send(message))
 		{
@@ -182,7 +182,7 @@ void I8042<MAX_DATA_SIZE>::AuxIrqMaster()
 		irq->serial_id = 0;
 		if(inherited::verbose)
 		{
-			inherited::logger << DebugInfo << "AUX interrupt level " << irq->level << EndDebugInfo;
+			inherited::logger << DebugInfo << "AUX Interrupt output goes " << (aux_irq_level ? "high" : "low") << EndDebugInfo;
 		}
 		while(!aux_irq_port->Send(message))
 		{
@@ -244,13 +244,6 @@ void I8042<MAX_DATA_SIZE>::TriggerAuxInterrupt(bool level)
 			inherited::logger << DebugInfo << "Trigger AUX interrupt level " << level << EndDebugInfo;
 		}
 	}
-}
-
-template <uint32_t MAX_DATA_SIZE>
-void I8042<MAX_DATA_SIZE>::Stop()
-{
-	sc_stop();
-	wait();
 }
 
 template <uint32_t MAX_DATA_SIZE>
