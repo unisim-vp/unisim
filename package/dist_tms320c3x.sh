@@ -788,17 +788,17 @@ if test \${STATUS} -ne 0; then
 fi
 
 if test "\${help}" = "yes"; then
-	echo "=== configure help for armemu"
+	echo "=== configure help for tms320c3x"
 else
-	echo "=== configuring in armemu (\${HERE}/armemu) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/armemu/configure \$@"
+	echo "=== configuring in tms320c3x (\${HERE}/tms320c3x) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/tms320c3x/configure \$@"
 fi
 
-if test ! -d \${HERE}/armemu; then
-	mkdir \${HERE}/armemu
+if test ! -d \${HERE}/tms320c3x; then
+	mkdir \${HERE}/tms320c3x
 fi
-cd \${HERE}/armemu
-\${MY_DIR}/armemu/configure "\$@"
+cd \${HERE}/tms320c3x
+\${MY_DIR}/tms320c3x/configure "\$@"
 STATUS="\$?"
 cd "\${HERE}"
 if test \${STATUS} -ne 0; then
@@ -812,26 +812,26 @@ fi
 echo "\$(basename \$0): creating Makefile.cross"
 cat << EOF_MAKEFILE_CROSS > Makefile.cross
 #!/usr/bin/make -f
-all: armemu-all
-clean: genisslib-clean armemu-clean
-distclean: genisslib-distclean armemu-distclean
+all: tms320c3x-all
+clean: genisslib-clean tms320c3x-clean
+distclean: genisslib-distclean tms320c3x-distclean
 	rm -f \${HERE}/Makefile.cross
-install: armemu-install
+install: tms320c3x-install
 
 genisslib-all:
 	@\\\$(MAKE) -C \${HERE}/genisslib all
-armemu-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/armemu all
+tms320c3x-all: genisslib-all
+	@\\\$(MAKE) -C \${HERE}/tms320c3x all
 genisslib-clean:
 	@\\\$(MAKE) -C \${HERE}/genisslib clean
-armemu-clean:
-	@\\\$(MAKE) -C \${HERE}/armemu clean
+tms320c3x-clean:
+	@\\\$(MAKE) -C \${HERE}/tms320c3x clean
 genisslib-distclean:
 	@\\\$(MAKE) -C \${HERE}/genisslib distclean
-armemu-distclean:
-	@\\\$(MAKE) -C \${HERE}/armemu distclean
-armemu-install:
-	@\\\$(MAKE) -C \${HERE}/armemu install
+tms320c3x-distclean:
+	@\\\$(MAKE) -C \${HERE}/tms320c3x distclean
+tms320c3x-install:
+	@\\\$(MAKE) -C \${HERE}/tms320c3x install
 EOF_MAKEFILE_CROSS
 
 chmod +x Makefile.cross
