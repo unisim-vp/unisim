@@ -85,7 +85,6 @@ public:
 	virtual bool ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size);
 protected:
 	bool FSM(COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
-	void *GetDirectAccess(typename CONFIG::ADDRESS addr, typename CONFIG::ADDRESS& start_addr, typename CONFIG::ADDRESS& end_addr);
 	
 	// debug stuff
 	unisim::kernel::logger::Logger logger;
