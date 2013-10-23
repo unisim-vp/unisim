@@ -743,7 +743,7 @@ EOF
 
 CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
-
+CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
 if [ ! -e "${CONFIGURE_AC}" ]; then
 	has_to_build_configure=yes
@@ -758,6 +758,14 @@ if [ ! -e "${MAKEFILE_AM}" ]; then
 else
 	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
 		has_to_build_configure=yes
+	fi
+fi
+
+if [ ! -e "${CONFIGURE_CROSS}" ]; then
+	has_to_build_configure_cross=yes
+else
+	if [ "$0" -nt "${CONFIGURE_CROSS}" ]; then
+		has_to_build_configure_cross=yes
 	fi
 fi
 
@@ -783,6 +791,118 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
+
+if [ "${has_to_build_configure_cross}" = "yes" ]; then
+	echo "Building configure.cross"
+	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
+#!/bin/bash
+HERE=\$(pwd)
+MY_DIR=\$(cd \$(dirname \$0); pwd)
+
+# remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
+host=""
+help=""
+old_args=$@
+i=0
+j=0
+for arg in "\$@"
+do
+	case "\${arg}" in
+		--host=*)
+			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
+			;;
+		--with-systemc=* | --with-tlm20=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
+			;;
+		--help=* | --help)
+			help="yes"
+			args[\${j}]=\${arg}
+			j=\$((\${j}+1))
+			;;
+		*)
+			args[\${j}]=\${arg}
+			j=\$((\${j}+1))
+			;;
+	esac
+	i=\$((\${i}+1))
+done
+
+if test "\${help}" != "yes"; then
+	if test -z "\${host}"; then
+		echo "ERROR: No canonical name for the host system type was specified. Use --host=<canonical name> to specify a host system type (e.g. --host=i586-pc-mingw32)"
+		exit -1
+	fi
+fi
+
+if test "\${help}" = "yes"; then
+	echo "=== configure help for genisslib"
+else
+	echo "=== configuring in genisslib (\${HERE}/genisslib)"
+	echo "\$(basename \$0): running \${MY_DIR}/genisslib/configure \${args[@]}"
+fi
+if test ! -d \${HERE}/genisslib; then
+	mkdir "\${HERE}/genisslib"
+fi
+cd "\${HERE}/genisslib"
+\${MY_DIR}/genisslib/configure "\${args[@]}"
+STATUS="\$?"
+cd "\${HERE}"
+if test \${STATUS} -ne 0; then
+	exit \${STATUS}
+fi
+
+if test "\${help}" = "yes"; then
+	echo "=== configure help for embedded_ppc_g4_board"
+else
+	echo "=== configuring in embedded_ppc_g4_board (\${HERE}/embedded_ppc_g4_board) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/embedded_ppc_g4_board/configure \$@"
+fi
+
+if test ! -d \${HERE}/embedded_ppc_g4_board; then
+	mkdir \${HERE}/embedded_ppc_g4_board
+fi
+cd \${HERE}/embedded_ppc_g4_board
+\${MY_DIR}/embedded_ppc_g4_board/configure "\$@"
+STATUS="\$?"
+cd "\${HERE}"
+if test \${STATUS} -ne 0; then
+	exit \${STATUS}
+fi
+
+if test "\${help}" = "yes"; then
+	exit 0
+fi
+
+echo "\$(basename \$0): creating Makefile.cross"
+cat << EOF_MAKEFILE_CROSS > Makefile.cross
+#!/usr/bin/make -f
+all: embedded_ppc_g4_board-all
+clean: genisslib-clean embedded_ppc_g4_board-clean
+distclean: genisslib-distclean embedded_ppc_g4_board-distclean
+	rm -f \${HERE}/Makefile.cross
+install: embedded_ppc_g4_board-install
+
+genisslib-all:
+	@\\\$(MAKE) -C \${HERE}/genisslib all
+embedded_ppc_g4_board-all: genisslib-all
+	@\\\$(MAKE) -C \${HERE}/embedded_ppc_g4_board all
+genisslib-clean:
+	@\\\$(MAKE) -C \${HERE}/genisslib clean
+embedded_ppc_g4_board-clean:
+	@\\\$(MAKE) -C \${HERE}/embedded_ppc_g4_board clean
+genisslib-distclean:
+	@\\\$(MAKE) -C \${HERE}/genisslib distclean
+embedded_ppc_g4_board-distclean:
+	@\\\$(MAKE) -C \${HERE}/embedded_ppc_g4_board distclean
+embedded_ppc_g4_board-install:
+	@\\\$(MAKE) -C \${HERE}/embedded_ppc_g4_board install
+EOF_MAKEFILE_CROSS
+
+chmod +x Makefile.cross
+
+echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
+EOF_CONFIGURE_CROSS
+	chmod +x "${CONFIGURE_CROSS}"
+fi  # has_to_build_configure_cross = "yes"
 
 # GENISSLIB
 
