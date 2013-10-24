@@ -724,6 +724,7 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating Makefile.am"
 # 	echo "SUBDIRS=genisslib tms320c3x docs" > "${MAKEFILE_AM}"
 	echo "SUBDIRS=genisslib tms320c3x" > "${MAKEFILE_AM}"
+	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
@@ -739,7 +740,6 @@ MY_DIR=\$(cd \$(dirname \$0); pwd)
 # remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
 host=""
 help=""
-old_args=$@
 i=0
 j=0
 for arg in "\$@"
