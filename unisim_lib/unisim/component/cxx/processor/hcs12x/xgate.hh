@@ -244,7 +244,7 @@ public:
 	static const unsigned int XGCHPL = 0x03; // 1-byte For XGATE.V2 this byte is reserved. For XGATE.V3 it hold the current thread priority.
 	static const unsigned int RESERVED2 = 0x04; // 1-byte
 	static const unsigned int XGISPSEL = 0x05; // 1-byte For XGATE.V2 this byte is reserved. For XGATE.V3 it is mapped to selection register.
-	static const unsigned int XGVBR = 6; // 2-bytes For XGATE.V3 this 2-bytes depending on the content of XGISPSEL is mapped to {XGVBR, XGISP74, XGISP31}
+	static const unsigned int XGVBR = 0x06; // 2-bytes For XGATE.V3 this 2-bytes depending on the content of XGISPSEL is mapped to {XGVBR, XGISP74, XGISP31}
 	static const unsigned int XGIF_7F_70 = 0x08; // 2-bytes
 	static const unsigned int XGIF_6F_60 = 0x0A; // 2-bytes
 	static const unsigned int XGIF_5F_50 = 0x0C; // 2-bytes

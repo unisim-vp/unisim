@@ -37,6 +37,8 @@
 #include <unisim/service/tee/registers/registers_tee.hh>
 #include <unisim/service/tee/memory_import_export/memory_import_export_tee.hh>
 
+#include <unisim/service/telnet/telnet.hh>
+
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 
@@ -118,6 +120,7 @@ using unisim::kernel::service::CallBackObject;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
 
+using unisim::service::telnet::Telnet;
 
 class Simulator :
 	public unisim::kernel::service::Simulator
@@ -252,6 +255,9 @@ private:
 	//  - Inline debugger
 	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
 
+	// - telnet
+	unisim::service::telnet::Telnet *telnet;
+
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
@@ -264,6 +270,9 @@ private:
 	Parameter<bool> param_enable_pim_server;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
+
+	bool enable_telnet;
+	Parameter<bool>  param_enable_telnet;
 
 	string endian;
 	Parameter<string> *param_endian;

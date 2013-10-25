@@ -433,7 +433,7 @@ Simulator::Simulator(int argc, char **argv)
 
 	if(enable_telnet)
 	{
-		sci1->char_io_import >> telnet->char_io_export;
+		sci0->char_io_import >> telnet->char_io_export;
 	}
 
 	if (isS19) {

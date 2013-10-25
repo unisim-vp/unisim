@@ -310,7 +310,7 @@ bool MMC::ReadMemory(physical_address_t paged_addr, void *buffer, uint32_t size)
 
 
 	if (memory_import) {
-		return (memory_import->ReadMemory(addr, (uint8_t *) buffer, size));
+		return (memory_import->ReadMemory(addr, buffer, size));
 	}
 
 	return (false);
@@ -338,9 +338,8 @@ bool MMC::WriteMemory(physical_address_t paged_addr, const void *buffer, uint32_
 		}
 	}
 
-
 	if (memory_import) {
-		return (memory_import->WriteMemory(addr, (uint8_t *) buffer, size));
+		return (memory_import->WriteMemory(addr, buffer, size));
 	}
 
 	return (false);

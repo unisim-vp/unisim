@@ -193,21 +193,16 @@ void S12SCI::RunRx() {
 
 			//-- handle breaking detection
 
-			if (rx_debug_enabled)	std::cout << "New char " << std::endl;
-
 			while (isReceiverEnabled() && (index < frameLength)) {
 
 				lastRXD = getRXD();
 				if (lastRXD) {
-					if (rx_debug_enabled)	std::cout << "receive bit 1" << std::endl;
-
 					rx_shift_register = rx_shift_register | rx_shift_mask;
 					breakCounter = 0;
 					if (!isIdleCountAfterStop()) {
 						idleCounter++;
 					}
 				} else {
-					if (rx_debug_enabled)	std::cout << "receive bit 0" << std::endl;
 					breakCounter++;
 					idleCounter = 0;
 				}
@@ -331,6 +326,7 @@ inline bool S12SCI::getRXD() {
 					bufferin = buildFrame(0xFF, 0xFF, SCIIDLE);
 					frameLength = getDataFrameLength();
 
+//					if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::getRXD  NO DATA" << std::endl;
 				} else {
 
 					uint8_t telnet_charin = 0x00;
@@ -338,7 +334,11 @@ inline bool S12SCI::getRXD() {
 					if (telnet_charin == 0x03) {
 						bufferin = buildFrame(0, 0, SCIBREAK);
 						frameLength = getBreakLength();
+
+//						if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::getRXD  BREAK" << std::endl;
 					} else {
+
+						if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::getRXD  HAVE DATA" << std::endl;
 						// TODO: I have to emulate address wakeup frame
 						bufferin = buildFrame(0, telnet_charin, SCIDATA);
 						frameLength = getDataFrameLength();
@@ -522,12 +522,17 @@ inline void S12SCI::txShiftOut(SCIMSG msgType, uint8_t length)
 
 	clearTC();
 
+	if (tx_debug_enabled) std::cout << sc_object::name() << "::Telnet Is Enabled '" << ((telnet_enabled)? "TRUE": "FALSE") << "'" << std::endl;
+
 	// use Telnet as an echo
 	if (telnet_enabled) {
+
 		switch (msgType) {
 			case SCIDATA: {
+
 				add(telnet_tx_fifo, scidrl_register, telnet_tx_event);
 				TelnetProcessOutput(true);
+				if (tx_debug_enabled) std::cout << sc_object::name() << "::Telnet shiftOut '" << scidrl_register << "'" << std::endl;
 
 			} break;
 			case SCIIDLE: {

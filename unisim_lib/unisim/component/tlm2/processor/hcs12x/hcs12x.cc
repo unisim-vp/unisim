@@ -146,9 +146,7 @@ void HCS12X ::wai() {
 
 	inherited::setState(WAIT);
 
-	std::cout << sc_object::name() << " enter wait @ " << sc_time_stamp() << std::endl;
 	wait(irq_event | reset_event);
-	std::cout << sc_object::name() << " leave wait @ " << sc_time_stamp() << std::endl;
 
 }
 
