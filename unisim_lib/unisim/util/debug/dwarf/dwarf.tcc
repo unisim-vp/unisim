@@ -3407,7 +3407,28 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 				}
 				break;
 				
-			case DW_TAG_base_type:
+			case DW_TAG_const_type:
+				if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+				{
+					logger << DebugError << "In File \"" << GetFilename() << "\", can't determine data type of const construction for \"" << matched_data_object_name << "\"" << EndDebugError;
+					status = false;
+					break;
+				}
+				break;
+
+			case DW_TAG_volatile_type:
+				if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+				{
+					logger << DebugError << "In File \"" << GetFilename() << "\", can't determine data type of volatile construction for \"" << matched_data_object_name << "\"" << EndDebugError;
+					status = false;
+					break;
+				}
+				break;
+
+			case DW_TAG_base_type: // Reaching these cases means operator stream does not match any data object
+			case DW_TAG_enumeration_type:
+			case DW_TAG_subroutine_type:
+			case DW_TAG_unspecified_type:
 				if(is_dereferencing_a_structure)
 				{
 					logger << DebugError << "In File \"" << GetFilename() << "\", \"" << matched_data_object_name << "\" is not a pointer to a structure" << EndDebugError;

@@ -43,14 +43,14 @@ fres.execute = {
 	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
-		return;
+		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
-		return;
+		return false;
 	}
 
 	// Read the input operands
@@ -157,11 +157,13 @@ fres.execute = {
 	{
 		// Raise a floating point exception
 		cpu->SetException(CONFIG::EXC_PROGRAM_FLOATING_POINT);
-		return;
+		return false;
 	}
 
 	// Copy FX, FEX, VX, OX to CR1
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	
+	return true;
 }
 fres.disasm = {
 	os << "fres" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
@@ -172,14 +174,14 @@ frsqrte.execute = {
 	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
-		return;
+		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
-		return;
+		return false;
 	}
 
 	// Read the input operands
@@ -314,11 +316,13 @@ frsqrte.execute = {
 	{
 		// Raise a floating point exception
 		cpu->SetException(CONFIG::EXC_PROGRAM_FLOATING_POINT);
-		return;
+		return false;
 	}
 
 	// Copy FX, FEX, VX, OX to CR1
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	
+	return true;
 }
 frsqrte.disasm = {
 	os << "frsqrte" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
@@ -329,14 +333,14 @@ fsel.execute = {
 	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
-		return;
+		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
-		return;
+		return false;
 	}
 
 	// Read the input operands
@@ -350,6 +354,8 @@ fsel.execute = {
 
 	// Copy FX, FEX, VX, OX to CR1
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	
+	return true;
 }
 fsel.disasm = {
 	os << "fsel" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
@@ -360,14 +366,14 @@ fsqrt.execute = {
 	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_SQRT)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
-		return;
+		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
-		return;
+		return false;
 	}
 
 	// Read the input operands
@@ -495,11 +501,13 @@ fsqrt.execute = {
 	{
 		// Raise a floating point exception
 		cpu->SetException(CONFIG::EXC_PROGRAM_FLOATING_POINT);
-		return;
+		return false;
 	}
 
 	// Copy FX, FEX, VX, OX to CR1
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	
+	return true;
 }
 fsqrt.disasm = {
 	os << "fsqrt" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
@@ -510,14 +518,14 @@ fsqrts.execute = {
 	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_SQRT)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
-		return;
+		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
-		return;
+		return false;
 	}
 
 	// Read the input operands
@@ -646,11 +654,13 @@ fsqrts.execute = {
 	{
 		// Raise a floating point exception
 		cpu->SetException(CONFIG::EXC_PROGRAM_FLOATING_POINT);
-		return;
+		return false;
 	}
 
 	// Copy FX, FEX, VX, OX to CR1
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	
+	return true;
 }
 fsqrts.disasm = {
 	os << "fsqrts" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;

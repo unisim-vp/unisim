@@ -123,14 +123,6 @@ Generator::init( Isa& _isa ) {
     if( m_insn_minsize > opprops.m_minsize  ) m_insn_minsize = opprops.m_minsize;
   }
 
-  std::cerr << "Instruction Size: ";
-  if (m_insn_minsize != m_insn_maxsize)
-    std::cerr << "[" << m_insn_minsize << ":" << m_insn_maxsize << "]";
-  else
-    std::cerr << m_insn_maxsize;
-  std::cerr << std::endl;
-  
-  
   return *this;
 }
 
@@ -141,7 +133,14 @@ Generator::init( Isa& _isa ) {
     @return non-zero if no error occurs during generation
 */
 void
-Generator::iss( char const* prefix, bool sourcelines ) const {
+Generator::iss( char const* prefix, bool sourcelines ) const
+{
+  std::cerr << "Instruction Size: ";
+  if (m_insn_minsize != m_insn_maxsize)
+    std::cerr << "[" << m_insn_minsize << ":" << m_insn_maxsize << "]";
+  else
+    std::cerr << m_insn_maxsize;
+  std::cerr << std::endl;
   std::cerr << "Instruction Set Encoding: " << (isa().m_little_endian ? "little-endian" : "big-endian") << "\n";
   
   /*******************/
@@ -356,7 +355,6 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " void SetLittleEndian();\n" );
   _product.code( " void SetBigEndian();\n" );
   _product.code( "private:\n" );
-  _product.code( " bool is_little_endian;\n" );
   _product.code( " std::vector<DecodeTableEntry" );
   _product.template_abbrev( isa().m_tparams );
   _product.code( " > decode_table;\n" );
@@ -829,9 +827,12 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.code( "Decoder" );
   _product.template_abbrev( isa().m_tparams );
   _product.code( "::Decoder()\n" );
-  _product.code( ": is_little_endian( %s )", isa().m_little_endian ? "true" : "false" );
-  if( not isa().m_is_subdecoder)
-    _product.code( ", mru_page( 0 )" );
+  char const* member_init_separator = ": ";
+  if (not isa().m_is_subdecoder)
+    {
+      _product.code( "%smru_page( 0 )", member_init_separator );
+      member_init_separator = ", ";
+    }
   _product.code( "\n{\n" );
   if( not isa().m_is_subdecoder )
     _product.code( " memset(decode_hash_table, 0, sizeof(decode_hash_table));\n" );
@@ -1081,24 +1082,6 @@ Generator::decoder_impl( Product_t& _product ) const {
     _product.code( " return operation;\n" );
     _product.code( "}\n\n" );
   }
-  
-  /*** SetLittleEndian() ***/
-  _product.template_signature( isa().m_tparams );
-  _product.code( "void Decoder" );
-  _product.template_abbrev( isa().m_tparams );
-  _product.code( "::SetLittleEndian()\n" );
-  _product.code( "{\n" );
-  _product.code( " is_little_endian = true;\n" );
-  _product.code( "}\n\n" );
-
-  /*** SetBigEndian() ***/
-  _product.template_signature( isa().m_tparams );
-  _product.code( "void Decoder" );
-  _product.template_abbrev( isa().m_tparams );
-  _product.code( "::SetBigEndian()\n" );
-  _product.code( "{\n" );
-  _product.code( " is_little_endian = false;\n" );
-  _product.code( "}\n\n" );
 }
 
 unsigned int

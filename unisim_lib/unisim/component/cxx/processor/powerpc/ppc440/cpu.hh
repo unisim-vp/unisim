@@ -48,7 +48,6 @@
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/component/cxx/processor/powerpc/ppc440/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -65,6 +64,8 @@
 #include <unisim/util/inlining/inlining.hh>
 #include <map>
 #include <iosfwd>
+
+#include <unisim/kernel/debug/debug.hh>
 
 #ifdef powerpc
 #undef powerpc
@@ -311,9 +312,9 @@ public:
 	//=====================================================================
 	//=                    execution handling methods                     =
 	//=====================================================================
-	
+
 	void StepOneInstruction();
-	void StepInstructions(unsigned int count);
+	//void StepInstructions(unsigned int count);
 	virtual void Synchronize();
 	virtual void Reset();
 	virtual void Idle();
@@ -328,10 +329,10 @@ public:
 	void DisableFPU();
 	void EnableFPUException();
 	void DisableFPUException();
-	inline bool IsFPUEnabled() ALWAYS_INLINE;
-	inline bool IsFPUExceptionEnabled() ALWAYS_INLINE;
-	inline bool IsDataCacheEnabled() ALWAYS_INLINE;
-	inline bool IsInsnCacheEnabled() ALWAYS_INLINE;
+	inline bool IsFPUEnabled() ALWAYS_INLINE { return GetMSR_FP() != 0; }
+	inline bool IsFPUExceptionEnabled() ALWAYS_INLINE { return GetMSR_FE0() || GetMSR_FE1(); }
+	inline bool IsDataCacheEnabled() ALWAYS_INLINE { return CONFIG::HAS_DCACHE; }
+	inline bool IsInsnCacheEnabled() ALWAYS_INLINE { return CONFIG::HAS_ICACHE; }
 
 	//=====================================================================
 	//=                State interface (with .isa files)                  =
@@ -450,7 +451,7 @@ public:
 	inline uint32_t GetUSPRG0() const ALWAYS_INLINE { return usprg0; }
 	inline void SetDBSR(uint32_t value) ALWAYS_INLINE { dbsr = value; }
 	inline uint32_t GetDBSR() const ALWAYS_INLINE { return dbsr; }
-	inline void SetDBCR(unsigned int n, uint32_t value) ALWAYS_INLINE { dbcr[n] = value; }
+	inline void SetDBCR(unsigned int n, uint32_t value) ALWAYS_INLINE { dbcr[n] = value; if(n == 0) UpdateExceptionMask(); }
 	inline uint32_t GetDBCR(unsigned int n) const ALWAYS_INLINE { return dbcr[n]; }
 	inline uint32_t GetDBCR0_IDM() const ALWAYS_INLINE { return (dbcr[0] & CONFIG::DBCR0_IDM_MASK) >> CONFIG::DBCR0_IDM_OFFSET; }
 	inline void SetIAC(unsigned int n, uint32_t value) ALWAYS_INLINE { iac[n] = value; }
@@ -459,11 +460,13 @@ public:
 	inline uint32_t GetDAC(unsigned int n) const ALWAYS_INLINE { return dac[n]; }
 	inline void SetDVC(unsigned int n, uint32_t value) ALWAYS_INLINE { dvc[n] = value; }
 	inline uint32_t GetDVC(unsigned int n) const ALWAYS_INLINE { return dvc[n]; }
-	inline void SetTSR(uint32_t value) ALWAYS_INLINE { tsr = value; }
+	inline void SetTSR(uint32_t value) ALWAYS_INLINE { tsr = value; UpdateExceptionMask(); }
 	inline uint32_t GetTSR() const ALWAYS_INLINE { return tsr; }
 	inline uint32_t GetTSR_ENW() const ALWAYS_INLINE { return (GetTSR() & CONFIG::TSR_ENW_MASK) >> CONFIG::TSR_ENW_OFFSET; }
 	inline uint32_t GetTSR_WIS() const ALWAYS_INLINE { return (GetTSR() & CONFIG::TSR_WIS_MASK) >> CONFIG::TSR_WIS_OFFSET; }
-	inline void SetTCR(uint32_t value) ALWAYS_INLINE { tcr = value; }
+	inline uint32_t GetTSR_FIS() const ALWAYS_INLINE { return (GetTSR() & CONFIG::TSR_FIS_MASK) >> CONFIG::TSR_FIS_OFFSET; }
+	inline uint32_t GetTSR_DIS() const ALWAYS_INLINE { return (GetTSR() & CONFIG::TSR_DIS_MASK) >> CONFIG::TSR_DIS_OFFSET; }
+	inline void SetTCR(uint32_t value) ALWAYS_INLINE { tcr = value; UpdateExceptionMask(); }
 	inline uint32_t GetTCR() const ALWAYS_INLINE { return tcr; }
 	inline uint32_t GetTCR_ARE() const ALWAYS_INLINE { return (GetTCR() & CONFIG::TCR_ARE_MASK) >> CONFIG::TCR_ARE_OFFSET; }
 	inline uint32_t GetTCR_DIE() const ALWAYS_INLINE { return (GetTCR() & CONFIG::TCR_DIE_MASK) >> CONFIG::TCR_DIE_OFFSET; }
@@ -529,26 +532,21 @@ public:
 	inline void SetDECAR(uint32_t value) ALWAYS_INLINE { decar = value; }
 	inline uint32_t GetDECAR() const ALWAYS_INLINE { return decar; }
 	inline void SetDEC(uint32_t value) ALWAYS_INLINE { dec = value; }
-	inline void DecrementDEC() ALWAYS_INLINE
-	{
-		if(GetDEC() > 0)
-		{
-			SetDEC(GetDEC() - 1);
-			if(unlikely(GetDEC() == 0))
-			{
-				SetException(CONFIG::EXC_DECREMENTER);
-				if(GetTCR_ARE())
-				{
-					SetDEC(GetDECAR());
-				}
-			}
-		}
-	}
 	inline void DecrementDEC(uint64_t delta) ALWAYS_INLINE
 	{
 		uint32_t old_dec = GetDEC();
 		if(old_dec > 0)
 		{
+#if 0
+			if(delta > old_dec)
+			{
+				// Only PLB transfers should induce such misprediction
+				std::cerr << "WARNING! " << delta << " > " << old_dec << " (" << (int64_t) (delta - old_dec) << ") at 0x" << std::hex << GetCIA() << std::dec << std::endl;
+				std::cerr << unisim::kernel::debug::BackTrace(4) << std::endl;
+				if(trap_reporting_import) trap_reporting_import->ReportTrap();
+			}
+#endif
+
 			uint32_t new_dec = (delta <= old_dec) ? old_dec - delta : 0;
 			
 			SetDEC(new_dec);
@@ -558,13 +556,20 @@ public:
 				SetException(CONFIG::EXC_DECREMENTER);
 				if(GetTCR_ARE())
 				{
-					SetDEC(GetDECAR());
+					std::cerr << "autoreloading" << std::endl;
+					if((delta > old_dec) && GetDECAR()) // several autoreload occured during instruction execution
+					{
+						SetDEC(GetDECAR() - ((delta - old_dec) % GetDECAR()));
+					}
+					else
+					{
+						SetDEC(GetDECAR());
+					}
 				}
 			}
 		}
 	}
 	inline uint32_t GetDEC() const ALWAYS_INLINE { return dec; }
-	inline void IncrementTB() ALWAYS_INLINE { SetTB(GetTB() + 1); }
 	inline void IncrementTB(uint64_t delta) ALWAYS_INLINE { SetTB(GetTB() + delta); }
 	inline uint64_t GetTB() const ALWAYS_INLINE { return tb; }
 	inline void SetTB(uint64_t value) ALWAYS_INLINE
@@ -585,6 +590,45 @@ public:
 		}
 		tb = value;
 	}
+	/*
+	inline uint64_t GetTimersDeadline() const
+	{
+		// time for decrementer to reach zero
+		uint64_t timers_deadline = dec ? dec : uint64_t (-1);
+		
+		uint32_t tcr_fp = GetTCR_FP();
+		uint32_t tb_fit_mask = 4096 << (4 * tcr_fp);
+		
+		if(!(tb & tb_fit_mask))
+		{
+			// time for bit to toggle, i.e. 0 -> 1
+			uint64_t fit_deadline = tb & (tb_fit_mask - 1);
+			if(fit_deadline < timers_deadline) timers_deadline = fit_deadline;
+		}
+		else
+		{
+			// time for bit toggle twice, i.e. 1 -> 0 -> 1
+			uint64_t fit_deadline = (2 * tb_fit_mask) - (tb & (tb_fit_mask - 1));
+			if(fit_deadline < timers_deadline) timers_deadline = fit_deadline;
+		}
+		uint32_t tcr_wp = GetTCR_WP();
+		uint32_t tb_watchdog_mask = 1048576 << (4 * tcr_wp);
+		if(!(tb & tb_watchdog_mask))
+		{
+			// time for bit to toggle, i.e. 0 -> 1
+			uint64_t watchdog_deadline = tb & (tb_watchdog_mask - 1);
+			if(watchdog_deadline < timers_deadline) timers_deadline = watchdog_deadline;
+		}
+		else
+		{
+			// time for bit to toggle twice, i.e. 1 -> 0 -> 1
+			uint64_t watchdog_deadline = (2 * tb_watchdog_mask) - (tb & (tb_watchdog_mask - 1));
+			if(watchdog_deadline < timers_deadline) timers_deadline = watchdog_deadline;
+		}
+		
+		//std::cerr << "timers_deadline=" << timers_deadline << ", dec=" << dec << std::endl;
+		return timers_deadline;
+	}*/
 	inline uint32_t GetTBL() const ALWAYS_INLINE { return (uint32_t) GetTB(); }
 	inline void SetTBL(uint32_t value) ALWAYS_INLINE { SetTB((GetTB() & 0xffffffff00000000ULL) | ((uint64_t) value)); }
 	inline uint32_t GetTBU() const ALWAYS_INLINE { return (uint32_t)(GetTB() >> 32); }
@@ -600,7 +644,8 @@ public:
 		{
 			if(GetTCR_DIE())
 			{
-				delay_dec = GetDEC();
+				uint32_t dec_value = GetDEC();
+				if(dec_value) delay_dec = dec_value;
 				//std::cerr << "Time for DEC to reach zero: " << delay_dec << std::endl;
 			}
 			
@@ -649,7 +694,52 @@ public:
 		//std::cerr << "Max idle time=" << max_idle_time << std::endl;
 		return max_idle_time;
 	}
-	
+
+	uint64_t GetTimersDeadline() const
+	{
+		uint64_t delay_dec = 0xffffffffffffffffULL;
+		uint64_t delay_fit = 0xffffffffffffffffULL;
+		uint64_t delay_watchdog = 0xffffffffffffffffULL;
+		
+		uint32_t dec_value = GetDEC();
+		if(dec_value) delay_dec = dec_value;
+		
+		uint32_t tcr_fp = GetTCR_FP();
+		uint32_t tb_fit_mask = 4096 << (4 * tcr_fp);
+		
+		if(GetTB() & tb_fit_mask)
+		{
+			// time to toogle from 1 to 0
+			delay_fit = tb_fit_mask - (GetTB() & (tb_fit_mask - 1));
+			// time to toogle from 0 to 1
+			delay_fit += tb_fit_mask;
+		}
+		else
+		{
+			// time to toogle from 0 to 1
+			delay_fit = tb_fit_mask - (GetTB() & (tb_fit_mask - 1));
+		}
+		
+		uint32_t tcr_wp = GetTCR_WP();
+		uint32_t tb_watchdog_mask = 1048576 << (4 * tcr_wp);
+		
+		if(tb & tb_watchdog_mask)
+		{
+			// time to toogle from 1 to 0
+			delay_watchdog = tb_watchdog_mask - (GetTB() & (tb_watchdog_mask - 1));
+			// time to toogle from 0 to 1
+			delay_watchdog += tb_watchdog_mask;
+		}
+		else
+		{
+			// time to toogle from 0 to 1
+			delay_watchdog = tb_watchdog_mask - (GetTB() & (tb_watchdog_mask - 1));
+		}
+		
+		uint64_t timers_deadline = delay_dec < delay_fit ? (delay_dec < delay_watchdog ? delay_dec : delay_watchdog) : (delay_fit < delay_watchdog ? delay_fit : delay_watchdog);
+		return timers_deadline;
+	}
+
 	//=====================================================================
 	//=                        XER set/get methods                        =
 	//=====================================================================
@@ -791,49 +881,46 @@ public:
 	//=               Cache management instructions handling              =
 	//=====================================================================
 	
-	void Dcba(typename CONFIG::address_t addr);
-	void Dcbf(typename CONFIG::address_t addr);
-	void Dcbi(typename CONFIG::address_t addr);
-	void Dcbst(typename CONFIG::address_t addr);
-	void Dcbz(typename CONFIG::address_t addr);
-	void Dccci(typename CONFIG::address_t addr);
-	void Dcread(typename CONFIG::address_t addr, unsigned int rd);
-	void Icbi(typename CONFIG::address_t addr);
-	void Icbt(typename CONFIG::address_t addr);
-	void Iccci(typename CONFIG::address_t addr);
-	void Icread(typename CONFIG::address_t addr);
+	bool Dcba(typename CONFIG::address_t addr);
+	bool Dcbf(typename CONFIG::address_t addr);
+	bool Dcbi(typename CONFIG::address_t addr);
+	bool Dcbst(typename CONFIG::address_t addr);
+	bool Dcbz(typename CONFIG::address_t addr);
+	bool Dccci(typename CONFIG::address_t addr);
+	bool Dcread(typename CONFIG::address_t addr, unsigned int rd);
+	bool Icbi(typename CONFIG::address_t addr);
+	bool Icbt(typename CONFIG::address_t addr);
+	bool Iccci(typename CONFIG::address_t addr);
+	bool Icread(typename CONFIG::address_t addr);
 	
 	//=====================================================================
 	//=  Translation look-aside buffers management instructions handling  =
 	//=====================================================================
 	
-	void Tlbre(unsigned int rd, uint32_t way, uint8_t ws);
-	void Tlbsx(unsigned int rd, typename CONFIG::address_t addr, unsigned int rc);
-	void Tlbwe(uint32_t s, uint32_t way, uint8_t ws);
+	bool Tlbre(unsigned int rd, uint32_t way, uint8_t ws);
+	bool Tlbsx(unsigned int rd, typename CONFIG::address_t addr, unsigned int rc);
+	bool Tlbwe(uint32_t s, uint32_t way, uint8_t ws);
 
 	//=====================================================================
 	//=               Linked Load-Store instructions handling             =
 	//=====================================================================
 	
-	void Lwarx(unsigned int rd, typename CONFIG::address_t addr);
-	void Stwcx(unsigned int rs, typename CONFIG::address_t addr);
+	bool Lwarx(unsigned int rd, typename CONFIG::address_t addr);
+	bool Stwcx(unsigned int rs, typename CONFIG::address_t addr);
 
 	//=====================================================================
 	//=                Synchronization instructions handling              =
 	//=====================================================================
 
-	void Isync();
+	bool Isync();
 
 	//=====================================================================
 	//=           Return from interrupt instructions handling             =
 	//=====================================================================
 	
-	void Rfi();
-	void Rfci();
-	void Rfmci();
-	
-	
-	void SystemCall();
+	bool Rfi();
+	bool Rfci();
+	bool Rfmci();
 
 	//=====================================================================
 	//=                        Debugging stuffs                           =
@@ -860,28 +947,13 @@ public:
 	//=               Hardware check/acknowledgement methods              =
 	//=====================================================================
 	
-	inline void SetException(unsigned int _exc, typename CONFIG::address_t _addr = 0, typename CONFIG::MemoryAccessType _memory_access_type = CONFIG::MAT_READ) ALWAYS_INLINE { SetExceptionMask(1 << _exc, _addr, _memory_access_type); }
-	void ResetException(unsigned int _exc) ALWAYS_INLINE { ResetExceptionMask(1 << _exc); }
-	void SetExceptionMask(uint32_t exc, typename CONFIG::address_t addr = 0, typename CONFIG::MemoryAccessType memory_access_type = CONFIG::MAT_READ);
-	void ResetExceptionMask(uint32_t exc);
-
-	inline bool HasException() const ALWAYS_INLINE { return exc | (GetTSR() & (CONFIG::TSR_DIS_MASK | CONFIG::TSR_FIS_MASK | CONFIG::TSR_WIS_MASK)); }
-	inline bool HasCriticalInputException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_CRITICAL_INPUT; }
-	inline bool HasExternalInputException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_EXTERNAL_INPUT; }
-	inline bool HasDecrementerException() const ALWAYS_INLINE { return GetTSR() & CONFIG::TSR_DIS_MASK; }
-	inline bool HasDebugException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_DEBUG; }
-	inline bool HasFixedIntervalTimerException() const ALWAYS_INLINE { return GetTSR() & CONFIG::TSR_FIS_MASK; }
-	inline bool HasWatchDogTimerException() const ALWAYS_INLINE { return GetTSR() & CONFIG::TSR_WIS_MASK; }
-	inline bool HasMachineCheckException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_MACHINE_CHECK; }
-	inline bool HasDataStorageException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_DATA_STORAGE; }
-	inline bool HasInstructionStorageException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_INSTRUCTION_STORAGE; }
-	inline bool HasDataTLBErrorException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_DATA_TLB_ERROR; }
-	inline bool HasInstructionTLBErrorException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_INSTRUCTION_TLB_ERROR; }
-	inline bool HasAlignmentException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_ALIGNMENT; }
-	inline bool HasProgramException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_PROGRAM; }
-	inline bool HasSystemCallException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_SYSTEM_CALL; }
-	inline bool HasFloatingPointUnavailableException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_FLOATING_POINT_UNAVAILABLE; }
-	inline bool HasAuxiliaryProcessorUnavailableException() const ALWAYS_INLINE { return exc & CONFIG::EXC_MASK_AUXILIARY_PROCESSOR_UNAVAILABLE; }
+	inline void SetException(unsigned int _exc, typename CONFIG::address_t _addr = 0, typename CONFIG::MemoryAccessType _memory_access_type = CONFIG::MAT_READ) ALWAYS_INLINE { SetExceptionFlags(1 << _exc, _addr, _memory_access_type); }
+	void ResetException(unsigned int _exc) ALWAYS_INLINE { ResetExceptionFlags(1 << _exc); }
+	void SetExceptionFlags(uint32_t _exc_flags, typename CONFIG::address_t addr = 0, typename CONFIG::MemoryAccessType memory_access_type = CONFIG::MAT_READ);
+	void ResetExceptionFlags(uint32_t _exc_flags);
+	void SetExceptionMask(uint32_t _exc_mask);
+	void ResetExceptionMask(uint32_t _exc_mask);
+	void UpdateExceptionMask();
 
 protected:
 
@@ -899,6 +971,8 @@ protected:
 		/* decrement the decrementer each timer cycle */
 		DecrementDEC(delta);
 	}
+	
+	virtual void RunInternalTimers();
 	
 	//=====================================================================
 	//=                        Debugging stuff                            =
@@ -999,7 +1073,7 @@ private:
 	bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
 	bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
 public:
-	void ProcessExceptions(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	inline void ProcessExceptions(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation) ALWAYS_INLINE;
 	void EnterSystemCallISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
 	void EnterMachineCheckISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
 	void EnterDecrementerISR(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
@@ -1070,12 +1144,6 @@ private:
 	inline void MonitorLoad(typename CONFIG::address_t ea, uint32_t size) ALWAYS_INLINE;
 	inline void MonitorStore(typename CONFIG::address_t ea, uint32_t size) ALWAYS_INLINE;
 	bool FloatingPointSelfTest();
-
-	//=====================================================================
-	//=                    registers set/get methods                      =
-	//=====================================================================
-
-
 
 	//=====================================================================
 	//=                        PowerPC registers                          =
@@ -1204,10 +1272,11 @@ private:
 	//=                          Exceptions                               =
 	//=====================================================================
 	
-	uint32_t exc;                                             //!< exception mask (bits are ordered according to exception priority)
+	uint32_t exc_flags;                                            //!< exception flags (bits are ordered according to exception priority)
+	uint32_t exc_mask;                                             //!< exception mask  (bits are ordered according to exception priority)
 	typename CONFIG::address_t exc_addr;                      //!< effective address, if any, that caused the exception
 	typename CONFIG::MemoryAccessType exc_memory_access_type; //!< memory access type, if any, that caused the exception
-	void (unisim::component::cxx::processor::powerpc::ppc440::CPU<CONFIG>::*enter_non_maskable_isr_table[CONFIG::NUM_NON_MASKABLE_EXCEPTIONS])(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
+	void (unisim::component::cxx::processor::powerpc::ppc440::CPU<CONFIG>::*enter_isr_table[CONFIG::NUM_EXCEPTIONS])(unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation);
 	
 	//=====================================================================
 	//=                    CPU run-time parameters                        =

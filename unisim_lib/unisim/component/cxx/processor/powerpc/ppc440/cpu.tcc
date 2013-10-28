@@ -37,7 +37,6 @@
 
 #include <unisim/component/cxx/processor/powerpc/ppc440/isa.tcc>
 #include <unisim/util/simfloat/floating.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/exception.tcc>
 #include <unisim/component/cxx/cache/cache.tcc>
 #include <unisim/component/cxx/tlb/tlb.tcc>
 #include <unisim/util/queue/queue.tcc>
@@ -155,7 +154,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, instruction_counter(0)
 	, fp32_estimate_inv_warning(false)
 	, fp64_estimate_inv_sqrt_warning(false)
-	//, formula_insn_per_bus_cycle("insn-per-bus-cycle", this, Formula<double>::OP_DIV, &stat_instruction_counter, &stat_bus_cycle)
 	, il1()
 	, num_il1_accesses(0)
 	, num_il1_misses(0)
@@ -176,10 +174,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, prefetch_buffer()
 	, reserve(false)
 	, reserve_addr(0)
-	, exc(0)
+	, exc_flags(0)
+	, exc_mask(CONFIG::EXC_MASK_NON_MASKABLE)
 	, exc_addr(0)
 	, exc_memory_access_type(CONFIG::MAT_READ)
-	, enter_non_maskable_isr_table()
+	, enter_isr_table()
 	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time, "CPU cycle time in picoseconds")
 	, param_voltage("voltage",  this,  voltage, "CPU voltage in mV")
 	, param_max_inst("max-inst",  this,  max_inst, "maximum number of instructions to simulate")
@@ -203,7 +202,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
 	, param_enable_trap_on_exception("enable-trap-on-exception", this, enable_trap_on_exception, "enable/disable trap reporting on exception")
 	, param_halt_on("halt-on", this, halt_on, "Symbol or address where to stop simulation")
-//	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
 	, stat_timer_cycle("timer-cycle",  this,  timer_cycle, "number of simulated timer cycles")
 	, stat_num_il1_accesses("num-il1-accesses", this, num_il1_accesses, "number of accesses to L1 instruction cache")
@@ -436,26 +434,32 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	registers_registry["tsr"] = new unisim::util::debug::SimpleRegister<uint32_t>("tsr", &tsr);
 	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("tsr", this, tsr, "Timer Status Register"));
 
-	enter_non_maskable_isr_table[CONFIG::EXC_DATA_STORAGE_READ_ACCESS_CONTROL] = &CPU<CONFIG>::EnterDataStorageISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_DATA_STORAGE_WRITE_ACCESS_CONTROL] = &CPU<CONFIG>::EnterDataStorageISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_DATA_STORAGE_BYTE_ORDERING] = &CPU<CONFIG>::EnterDataStorageISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_DATA_STORAGE_CACHE_LOCKING] = &CPU<CONFIG>::EnterDataStorageISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL] = &CPU<CONFIG>::EnterInstructionStorageISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_ALIGNMENT] = &CPU<CONFIG>::EnterAlignmentISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION] = &CPU<CONFIG>::EnterProgramISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION] = &CPU<CONFIG>::EnterProgramISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_PROGRAM_TRAP] = &CPU<CONFIG>::EnterProgramISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_PROGRAM_FLOATING_POINT] = &CPU<CONFIG>::EnterProgramISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION] = &CPU<CONFIG>::EnterProgramISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_FLOATING_POINT_UNAVAILABLE] = &CPU<CONFIG>::EnterFloatingPointUnavailableISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_SYSTEM_CALL] = &CPU<CONFIG>::EnterSystemCallISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_AUXILIARY_PROCESSOR_UNAVAILABLE] = &CPU<CONFIG>::EnterAuxiliaryProcessorUnavailableISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_DATA_TLB_ERROR] = &CPU<CONFIG>::EnterDataTLBErrorISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_INSTRUCTION_TLB_ERROR] = &CPU<CONFIG>::EnterInstructionTLBErrorISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
-	enter_non_maskable_isr_table[CONFIG::EXC_MACHINE_CHECK_TLB_ASYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
+	enter_isr_table[CONFIG::EXC_DATA_STORAGE_READ_ACCESS_CONTROL] = &CPU<CONFIG>::EnterDataStorageISR;
+	enter_isr_table[CONFIG::EXC_DATA_STORAGE_WRITE_ACCESS_CONTROL] = &CPU<CONFIG>::EnterDataStorageISR;
+	enter_isr_table[CONFIG::EXC_DATA_STORAGE_BYTE_ORDERING] = &CPU<CONFIG>::EnterDataStorageISR;
+	enter_isr_table[CONFIG::EXC_DATA_STORAGE_CACHE_LOCKING] = &CPU<CONFIG>::EnterDataStorageISR;
+	enter_isr_table[CONFIG::EXC_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL] = &CPU<CONFIG>::EnterInstructionStorageISR;
+	enter_isr_table[CONFIG::EXC_ALIGNMENT] = &CPU<CONFIG>::EnterAlignmentISR;
+	enter_isr_table[CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION] = &CPU<CONFIG>::EnterProgramISR;
+	enter_isr_table[CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION] = &CPU<CONFIG>::EnterProgramISR;
+	enter_isr_table[CONFIG::EXC_PROGRAM_TRAP] = &CPU<CONFIG>::EnterProgramISR;
+	enter_isr_table[CONFIG::EXC_PROGRAM_FLOATING_POINT] = &CPU<CONFIG>::EnterProgramISR;
+	enter_isr_table[CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION] = &CPU<CONFIG>::EnterProgramISR;
+	enter_isr_table[CONFIG::EXC_FLOATING_POINT_UNAVAILABLE] = &CPU<CONFIG>::EnterFloatingPointUnavailableISR;
+	enter_isr_table[CONFIG::EXC_SYSTEM_CALL] = &CPU<CONFIG>::EnterSystemCallISR;
+	enter_isr_table[CONFIG::EXC_AUXILIARY_PROCESSOR_UNAVAILABLE] = &CPU<CONFIG>::EnterAuxiliaryProcessorUnavailableISR;
+	enter_isr_table[CONFIG::EXC_DATA_TLB_ERROR] = &CPU<CONFIG>::EnterDataTLBErrorISR;
+	enter_isr_table[CONFIG::EXC_INSTRUCTION_TLB_ERROR] = &CPU<CONFIG>::EnterInstructionTLBErrorISR;
+	enter_isr_table[CONFIG::EXC_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
+	enter_isr_table[CONFIG::EXC_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
+	enter_isr_table[CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
+	enter_isr_table[CONFIG::EXC_MACHINE_CHECK_TLB_ASYNCHRONOUS] = &CPU<CONFIG>::EnterMachineCheckISR;
+	enter_isr_table[CONFIG::EXC_DEBUG] = &CPU<CONFIG>::EnterDebugISR;
+	enter_isr_table[CONFIG::EXC_CRITICAL_INPUT] = &CPU<CONFIG>::EnterCriticalInputISR;
+	enter_isr_table[CONFIG::EXC_WATCHDOG_TIMER] = &CPU<CONFIG>::EnterWatchDogTimerISR;
+	enter_isr_table[CONFIG::EXC_EXTERNAL_INPUT] = &CPU<CONFIG>::EnterExternalInputISR;
+	enter_isr_table[CONFIG::EXC_FIXED_INTERVAL_TIMER] = &CPU<CONFIG>::EnterFixedIntervalTimerISR;
+	enter_isr_table[CONFIG::EXC_DECREMENTER] = &CPU<CONFIG>::EnterDecrementerISR;
 	
 	Reset();
 	
@@ -838,7 +842,8 @@ void CPU<CONFIG>::Reset()
 	num_debug_interrupts = 0;
 	instruction_counter = 0;
 
-	exc = 0;
+	exc_flags = 0;
+	exc_mask = CONFIG::EXC_MASK_NON_MASKABLE;
 	exc_addr = 0;
 	exc_memory_access_type = CONFIG::MAT_READ;
 
@@ -983,6 +988,7 @@ bool CPU<CONFIG>::GetSPR(unsigned int n, uint32_t& value)
 				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
 				return false;
 			}
+			RunInternalTimers();
 			value = GetDEC();
 			return true;
 		case 0x01a:
@@ -1067,9 +1073,11 @@ bool CPU<CONFIG>::GetSPR(unsigned int n, uint32_t& value)
 			return false;
 		}
 		case 0x10c:
+			if(!linux_os_import) RunInternalTimers();
 			value = GetTBL();
 			return true;
 		case 0x10d:
+			if(!linux_os_import) RunInternalTimers();
 			value = GetTBU();
 			return true;
 		case 0x0110:
@@ -1464,7 +1472,9 @@ bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
 				return false;
 			}
+			RunInternalTimers();
 			SetDEC(value);
+			RunInternalTimers();
 			return true;
 		case 0x01a:
 			if(GetMSR_PR())
@@ -1584,7 +1594,9 @@ bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
 				return false;
 			}
+			RunInternalTimers();
 			SetTBL(value);
+			RunInternalTimers();
 			return true;
 		case 0x11d:
 			if(GetMSR_PR())
@@ -1592,7 +1604,9 @@ bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
 				return false;
 			}
+			RunInternalTimers();
 			SetTBU(value);
+			RunInternalTimers();
 			return true;
 		case 0x130:
 			if(GetMSR_PR())
@@ -1687,7 +1701,9 @@ bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
 				return false;
 			}
+			RunInternalTimers();
 			SetTCR(value);
+			RunInternalTimers();
 			return true;
 		case 0x190:
 		case 0x191:
@@ -1789,6 +1805,7 @@ bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 				return false;
 			}
 			SetCCR1(value);
+			RunInternalTimers();
 			return true;
 		case 0x390:
 		case 0x391:
@@ -1931,27 +1948,26 @@ void CPU<CONFIG>::StepOneInstruction()
 		}
 
 		/* execute the instruction */
-		operation->execute(this);
-	}
-
-	if(unlikely(HasException()))
-	{
-		ProcessExceptions(operation);
-	}
-
-	if(unlikely(requires_finished_instruction_reporting))
-	{
-		if(unlikely(memory_access_reporting_import != 0))
+		if(likely(operation->execute(this)))
 		{
-			memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
+			/* update the instruction counter */
+			instruction_counter++;
+			
+			/* report a finished instruction */
+			if(unlikely(requires_finished_instruction_reporting))
+			{
+				if(unlikely(memory_access_reporting_import != 0))
+				{
+					memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
+				}
+			}
 		}
 	}
 
+	ProcessExceptions(operation);
+
 	/* go to the next instruction */
 	SetCIA(GetNIA());
-
-	/* update the instruction counter */
-	instruction_counter++;
 
 	if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
 	{
@@ -1963,142 +1979,6 @@ void CPU<CONFIG>::StepOneInstruction()
 	//DL1SanityCheck();
 	//IL1SanityCheck();
 	
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::StepInstructions(unsigned int count)
-{
-	if(unlikely((debug_control_import != 0) || requires_finished_instruction_reporting || trap_reporting_import))
-	{
-		do
-		{
-			if(unlikely((debug_control_import != 0)))
-			{
-				do
-				{
-					typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
-
-					dbg_cmd = debug_control_import->FetchDebugCommand(GetCIA());
-			
-					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
-					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC)
-					{
-						Synchronize();
-						continue;
-					}
-
-					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) Stop(0);
-					if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET)
-					{
-						if(loader_import)
-						{
-							loader_import->Load();
-						}
-					}
-				} while(1);
-			}
-			
-			unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation = 0;
-
-			typename CONFIG::address_t addr = GetCIA();
-			SetNIA(addr + 4);
-			uint32_t insn;
-			if(likely(EmuFetch(addr, insn)))
-			{
-				operation = unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::Decode(addr, insn);
-
-			//	stringstream sstr;
-			//	operation->disasm((CPU<CONFIG> *) this, sstr);
-			//	std::cerr << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << std::endl;
-
-				if(unlikely(IsVerboseStep()))
-				{
-					stringstream sstr;
-					operation->disasm((CPU<CONFIG> *) this, sstr);
-					logger << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugInfo;
-				}
-
-				/* execute the instruction */
-				operation->execute(this);
-			}
-
-			if(unlikely(HasException()))
-			{
-				ProcessExceptions(operation);
-			}
-
-			if(unlikely(requires_finished_instruction_reporting))
-			{
-				if(unlikely(memory_access_reporting_import != 0))
-				{
-					memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
-				}
-			}
-
-			/* go to the next instruction */
-			SetCIA(GetNIA());
-
-			/* update the instruction counter */
-			instruction_counter++;
-
-			if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
-			{
-				trap_reporting_import->ReportTrap();
-			}
-			
-			if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
-			
-			//DL1SanityCheck();
-			//IL1SanityCheck();
-		}
-		while(--count);
-	}
-	else
-	{
-		do
-		{
-			unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation = 0;
-
-			typename CONFIG::address_t addr = GetCIA();
-			SetNIA(addr + 4);
-			uint32_t insn;
-			if(likely(EmuFetch(addr, insn)))
-			{
-				operation = unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::Decode(addr, insn);
-
-			//	stringstream sstr;
-			//	operation->disasm((CPU<CONFIG> *) this, sstr);
-			//	std::cerr << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << std::endl;
-
-				if(unlikely(IsVerboseStep()))
-				{
-					stringstream sstr;
-					operation->disasm((CPU<CONFIG> *) this, sstr);
-					logger << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugInfo;
-				}
-
-				/* execute the instruction */
-				operation->execute(this);
-			}
-
-			if(unlikely(HasException()))
-			{
-				ProcessExceptions(operation);
-			}
-
-			/* go to the next instruction */
-			SetCIA(GetNIA());
-
-			/* update the instruction counter */
-			instruction_counter++;
-
-			if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
-			
-			//DL1SanityCheck();
-			//IL1SanityCheck();
-		}
-		while(--count);
-	}
 }
 
 template <class CONFIG>
@@ -2123,30 +2003,6 @@ template <class CONFIG>
 void CPU<CONFIG>::DisableFPU()
 {
 	ResetMSR_FP();   // disable floating point unit
-}
-
-template <class CONFIG>
-inline bool CPU<CONFIG>::IsFPUEnabled()
-{
-	return GetMSR_FP() != 0;
-}
-
-template <class CONFIG>
-inline bool CPU<CONFIG>::IsFPUExceptionEnabled()
-{
-	return GetMSR_FE0() || GetMSR_FE1();
-}
-
-template <class CONFIG>
-inline bool CPU<CONFIG>::IsDataCacheEnabled()
-{
-	return CONFIG::HAS_DCACHE;
-}
-
-template <class CONFIG>
-inline bool CPU<CONFIG>::IsInsnCacheEnabled()
-{
-	return CONFIG::HAS_ICACHE;
 }
 
 template <class CONFIG>
@@ -2300,6 +2156,8 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 		if(unlikely(IsVerboseSetMSR()))
 			logger << DebugInfo << "Switching load/store accesses to the system address space" << endl << EndDebugInfo;
 	}
+	
+	UpdateExceptionMask();
 }
 
 template <class CONFIG>
@@ -2356,111 +2214,147 @@ endian_type CPU<CONFIG>::GetEndianess()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::SetExceptionMask(uint32_t _exc, typename CONFIG::address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
+void CPU<CONFIG>::SetExceptionFlags(uint32_t _exc_flags, typename CONFIG::address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
 {
 	if(IsVerboseException())
 	{
-		if(_exc & CONFIG::EXC_MASK_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS)
+		if(_exc_flags & CONFIG::EXC_MASK_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS)
 		{
 			logger << DebugInfo << "Got an instruction synchronous machine check exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS)
+		if(_exc_flags & CONFIG::EXC_MASK_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS)
 		{
 			logger << DebugInfo << "Got an instruction asynchronous machine check exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_MACHINE_CHECK_DATA_ASYNCHRONOUS)
+		if(_exc_flags & CONFIG::EXC_MASK_MACHINE_CHECK_DATA_ASYNCHRONOUS)
 		{
 			logger << DebugInfo << "Got a data asynchronous machine check exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_MACHINE_CHECK_TLB_ASYNCHRONOUS)
+		if(_exc_flags & CONFIG::EXC_MASK_MACHINE_CHECK_TLB_ASYNCHRONOUS)
 		{
 			logger << DebugInfo << "Got a TLB asynchronous machine check exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_DATA_STORAGE_READ_ACCESS_CONTROL)
+		if(_exc_flags & CONFIG::EXC_MASK_DATA_STORAGE_READ_ACCESS_CONTROL)
 		{
 			logger << DebugInfo << "Got a read access control data storage exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_DATA_STORAGE_WRITE_ACCESS_CONTROL)
+		if(_exc_flags & CONFIG::EXC_MASK_DATA_STORAGE_WRITE_ACCESS_CONTROL)
 		{
 			logger << DebugInfo << "Got a write access control data storage exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_DATA_STORAGE_BYTE_ORDERING)
+		if(_exc_flags & CONFIG::EXC_MASK_DATA_STORAGE_BYTE_ORDERING)
 		{
 			logger << DebugInfo << "Got a cache locking data storage exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_DATA_STORAGE_CACHE_LOCKING)
+		if(_exc_flags & CONFIG::EXC_MASK_DATA_STORAGE_CACHE_LOCKING)
 		{
 			logger << DebugInfo << "Got a cache locking data storage exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL)
+		if(_exc_flags & CONFIG::EXC_MASK_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL)
 		{
 			logger << DebugInfo << "Got an execute access control instruction storage exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_DATA_TLB_ERROR)
+		if(_exc_flags & CONFIG::EXC_MASK_DATA_TLB_ERROR)
 		{
 			logger << DebugInfo << "Got a data TLB error exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_INSTRUCTION_TLB_ERROR)
+		if(_exc_flags & CONFIG::EXC_MASK_INSTRUCTION_TLB_ERROR)
 		{
 			logger << DebugInfo << "Got an instruction TLB error exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_ALIGNMENT)
+		if(_exc_flags & CONFIG::EXC_MASK_ALIGNMENT)
 		{
 			logger << DebugInfo << "Got an alignment exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_PROGRAM_ILLEGAL_INSTRUCTION)
+		if(_exc_flags & CONFIG::EXC_MASK_PROGRAM_ILLEGAL_INSTRUCTION)
 		{
 			logger << DebugInfo << "Got an illegal instruction program exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_PROGRAM_PRIVILEGE_VIOLATION)
+		if(_exc_flags & CONFIG::EXC_MASK_PROGRAM_PRIVILEGE_VIOLATION)
 		{
 			logger << DebugInfo << "Got a privilege violation program exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_PROGRAM_TRAP)
+		if(_exc_flags & CONFIG::EXC_MASK_PROGRAM_TRAP)
 		{
 			logger << DebugInfo << "Got a trap program exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_PROGRAM_FLOATING_POINT)
+		if(_exc_flags & CONFIG::EXC_MASK_PROGRAM_FLOATING_POINT)
 		{
 			logger << DebugInfo << "Got a floating point program exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_PROGRAM_UNIMPLEMENTED_INSTRUCTION)
+		if(_exc_flags & CONFIG::EXC_MASK_PROGRAM_UNIMPLEMENTED_INSTRUCTION)
 		{
 			logger << DebugInfo << "Got an unimplemented instruction program exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_FLOATING_POINT_UNAVAILABLE)
+		if(_exc_flags & CONFIG::EXC_MASK_FLOATING_POINT_UNAVAILABLE)
 		{
 			logger << DebugInfo << "Got a floating point unavailable exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_AUXILIARY_PROCESSOR_UNAVAILABLE)
+		if(_exc_flags & CONFIG::EXC_MASK_AUXILIARY_PROCESSOR_UNAVAILABLE)
 		{
 			logger << DebugInfo << "Got an auxiliary processor unavailable exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_EXTERNAL_INPUT)
+		if(_exc_flags & CONFIG::EXC_MASK_EXTERNAL_INPUT)
 		{
 			logger << DebugInfo << "Got an external input exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_CRITICAL_INPUT)
+		if(_exc_flags & CONFIG::EXC_MASK_CRITICAL_INPUT)
 		{
 			logger << DebugInfo << "Got a critical input exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_DECREMENTER)
+		if(_exc_flags & CONFIG::EXC_MASK_DECREMENTER)
 		{
 			logger << DebugInfo << "Got a decrementer exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_DEBUG)
+		if(_exc_flags & CONFIG::EXC_MASK_DEBUG)
 		{
 			logger << DebugInfo << "Got a debug exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER)
+		if(_exc_flags & CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER)
 		{
 			logger << DebugInfo << "Got a fixed interval timer exception" << EndDebugInfo;
 		}
-		if(_exc & CONFIG::EXC_MASK_WATCHDOG_TIMER)
+		if(_exc_flags & CONFIG::EXC_MASK_WATCHDOG_TIMER)
 		{
 			logger << DebugInfo << "Got a watchdog timer exception" << EndDebugInfo;
 		}
 	}
+	
+	exc_flags = exc_flags | _exc_flags;
+	if(_exc_flags & CONFIG::EXC_MASK_DECREMENTER) SetTSR(GetTSR() | CONFIG::TSR_DIS_MASK);
+	if(_exc_flags & CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER) SetTSR(GetTSR() | CONFIG::TSR_FIS_MASK);
+	if(_exc_flags & CONFIG::EXC_MASK_WATCHDOG_TIMER)
+	{
+		if(GetTSR_ENW())
+		{
+			if(GetTSR_WIS())
+			{
+				if(GetTCR_WRC() != 0)
+				{
+					SetTCR((GetTSR() & ~CONFIG::TSR_WRS_MASK) | ((GetTCR_WRC() << CONFIG::TSR_WRS_OFFSET) & CONFIG::TSR_WRS_MASK)); // TSR[WRS]=TCR[WRC]
+					logger << DebugWarning << "A reset because of watchdog timer occured" << EndDebugWarning;
+					Stop(0);
+				}
+				else
+				{
+					// nothing
+				}
+			}
+			else
+			{
+				SetTSR(GetTSR() | CONFIG::TSR_WIS_MASK);
+			}
+		}
+		else
+		{
+			SetTSR(GetTSR() | CONFIG::TSR_ENW_MASK);
+		}
+	}
+	exc_addr = addr;
+	exc_memory_access_type = memory_access_type;
+	
+	/*
+	
 	//exc = exc | (_exc & (CONFIG::EXC_MASK_EXTERNAL_INPUT_INTERRUPT | CONFIG::EXC_MASK_CRITICAL_INPUT_INTERRUPT | CONFIG::EXC_MASK_DEBUG_INTERRUPT));
 	exc = exc | (_exc & ~(CONFIG::EXC_MASK_DECREMENTER | CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER | CONFIG::EXC_MASK_WATCHDOG_TIMER));
 	if(_exc & CONFIG::EXC_MASK_DECREMENTER) SetTSR(GetTSR() | CONFIG::TSR_DIS_MASK);
@@ -2494,19 +2388,51 @@ void CPU<CONFIG>::SetExceptionMask(uint32_t _exc, typename CONFIG::address_t add
 	}
 	exc_addr = addr;
 	exc_memory_access_type = memory_access_type;
+	*/
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ResetExceptionMask(unsigned int _exc)
+void CPU<CONFIG>::ResetExceptionFlags(unsigned int _exc_flags)
 {
-	exc = exc & ~_exc;
-	if(_exc & CONFIG::EXC_DECREMENTER) SetTSR(GetTSR() & ~CONFIG::TSR_DIS_MASK);
-	if(_exc & CONFIG::EXC_FIXED_INTERVAL_TIMER) SetTSR(GetTSR() & ~CONFIG::TSR_FIS_MASK);
-	if(_exc & CONFIG::EXC_WATCHDOG_TIMER) SetTSR(GetTSR() & ~CONFIG::TSR_WIS_MASK);
+	exc_flags = exc_flags & ~_exc_flags;
+	// FIXME: HW is not supposed to clear TSR bits !!!
+	/*
+	if(_exc_flags & CONFIG::EXC_DECREMENTER) SetTSR(GetTSR() & ~CONFIG::TSR_DIS_MASK);
+	if(_exc_flags & CONFIG::EXC_FIXED_INTERVAL_TIMER) SetTSR(GetTSR() & ~CONFIG::TSR_FIS_MASK);
+	if(_exc_flags & CONFIG::EXC_WATCHDOG_TIMER) SetTSR(GetTSR() & ~CONFIG::TSR_WIS_MASK);
+	*/
 	if(IsVerboseException())
 	{
-		logger << DebugInfo << "Resetting exception mask: " << std::hex << exc << std::dec << EndDebugInfo;
+		logger << DebugInfo << "Resetting exception flags: " << std::hex << exc_flags << std::dec << EndDebugInfo;
 	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::SetExceptionMask(unsigned int _exc_mask)
+{
+	exc_mask = exc_mask | _exc_mask;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::ResetExceptionMask(unsigned int _exc_mask)
+{
+	exc_mask = exc_mask & ~_exc_mask;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::UpdateExceptionMask()
+{
+	if(GetDBCR0_IDM() && GetMSR_DE()) SetExceptionMask(CONFIG::EXC_MASK_DEBUG); else ResetExceptionMask(CONFIG::EXC_MASK_DEBUG);
+	if(GetMSR_CE()) SetExceptionMask(CONFIG::EXC_MASK_CRITICAL_INPUT); else ResetExceptionMask(CONFIG::EXC_MASK_CRITICAL_INPUT);
+	if(GetTCR_WIE() && GetMSR_CE() && GetTSR_WIS()) SetExceptionMask(CONFIG::EXC_MASK_WATCHDOG_TIMER); else ResetExceptionMask(CONFIG::EXC_MASK_WATCHDOG_TIMER);
+	if(GetMSR_EE()) SetExceptionMask(CONFIG::EXC_MASK_EXTERNAL_INPUT); else ResetExceptionMask(CONFIG::EXC_MASK_EXTERNAL_INPUT);
+	if(GetTCR_FIE() && GetMSR_EE() && GetTSR_FIS()) SetExceptionMask(CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER); else ResetExceptionMask(CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER);
+	if(GetTCR_DIE() && GetMSR_EE() && GetTSR_DIS()) SetExceptionMask(CONFIG::EXC_MASK_DECREMENTER); else ResetExceptionMask(CONFIG::EXC_MASK_DECREMENTER);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::RunInternalTimers()
+{
 }
 
 template <class CONFIG>
@@ -2515,20 +2441,22 @@ void CPU<CONFIG>::Synchronize()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Isync()
+bool CPU<CONFIG>::Isync()
 {
 	FlushSubsequentInstructions();
 	InvalidateITLB();
 	InvalidateDTLB();
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Rfi()
+bool CPU<CONFIG>::Rfi()
 {
 	if(unlikely(GetMSR_PR()))
 	{
 		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 
 	FlushSubsequentInstructions();
@@ -2536,15 +2464,17 @@ void CPU<CONFIG>::Rfi()
 	InvalidateDTLB();
 	SetNIA(GetSRR0());
 	SetMSR(GetSRR1());
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Rfci()
+bool CPU<CONFIG>::Rfci()
 {
 	if(unlikely(GetMSR_PR()))
 	{
 		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 	
 	FlushSubsequentInstructions();
@@ -2553,15 +2483,17 @@ void CPU<CONFIG>::Rfci()
 
 	SetNIA(GetCSRR0());
 	SetMSR(GetCSRR1());
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Rfmci()
+bool CPU<CONFIG>::Rfmci()
 {
 	if(unlikely(GetMSR_PR()))
 	{
 		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 
 	FlushSubsequentInstructions();
@@ -2570,6 +2502,8 @@ void CPU<CONFIG>::Rfmci()
 
 	SetNIA(GetMCSRR0());
 	SetMSR(GetMCSRR1());
+	
+	return true;
 }
 
 template <class CONFIG>

@@ -921,23 +921,6 @@ bool AM29<CONFIG, BYTESIZE, IO_WIDTH>::ReadMemory(typename CONFIG::ADDRESS addr,
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void *AM29<CONFIG, BYTESIZE, IO_WIDTH>::GetDirectAccess(typename CONFIG::ADDRESS addr, typename CONFIG::ADDRESS& start_addr, typename CONFIG::ADDRESS& end_addr)
-{
-	if((addr < org) || (addr > (org + bytesize - 1)))
-	{
-		logger << DebugWarning;
-		logger << "out of range address";
-		logger << EndDebugWarning;
-		return 0;
-	}
-	
-	typename CONFIG::ADDRESS offset = addr - org;
-	start_addr = org + (offset & ~ADDR_MASK);
-	end_addr = start_addr + BYTESIZE - 1;
-	return storage;
-}
-
-template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 bool AM29<CONFIG, BYTESIZE, IO_WIDTH>::IsVerbose() const
 {
 	return verbose;

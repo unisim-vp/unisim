@@ -39,5 +39,5 @@ LOOKASIDE BUFFER MANAGEMENT INSTRUCTIONS
 *********************************************/
 
 op tlbsync(31[6]:0[5]:0[5]:0[5]:566[10]:0[1])
-tlbsync.execute = { /* nothing to do */ }
+tlbsync.execute = { return true; /* nothing to do */ }
 tlbsync.disasm = { os << "tlbsync"; }

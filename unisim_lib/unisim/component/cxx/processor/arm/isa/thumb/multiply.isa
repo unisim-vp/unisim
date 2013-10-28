@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,52 +29,36 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+ 
+/**********************************************
+
+         THUMB MULTIPLY INSTRUCTIONS
+
+**********************************************/
+
+/*******************************************************************
+ * mul (multiply) instruction
  */
 
-/**
- * Methods for the arm processor data processing operand decoding
- **/
+op mul(0b010000[6]:0b1101[4]:rm[3]:rd[3]);
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DECODE_DATA_PROCESSING_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DECODE_DATA_PROCESSING_HH__
+mul.disasm = {
+  buffer << "muls\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
-#include <inttypes.h>
+mul.execute = {
+  uint32_t res = cpu.GetGPR(rd) * cpu.GetGPR(rm);
+  cpu.SetGPR(rd, res);
+  if (not cpu.itblock())
+    {
+      cpu.CPSR().N().Set( (res >> 31) & 1 );
+      cpu.CPSR().Z().Set( res == 0 );
+    }
+};
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace arm {
+/*
+ * end of mul (multiply) instruction
+ *******************************************************************/
 
-uint32_t ShiftOperand32imm(const uint32_t rotate_imm,
-		const uint32_t imm);
-uint32_t ShiftOperand32imm(const uint32_t rotate_imm,
-		const uint32_t imm,
-		const bool carry_in,
-		bool *shift_carry_out);
-uint32_t ShiftOperandImmShift(const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t val_reg,
-		const bool carry_in);
-uint32_t ShiftOperandImmShift(const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t val_reg,
-		const bool carry_in,
-		bool *shift_carry_out);
-uint32_t ShiftOperandRegShift(const uint32_t shift_reg,
-		const uint32_t shift,
-		const uint32_t val_reg);
-uint32_t ShiftOperandRegShift(const uint32_t shift_reg,
-		const uint32_t shift,
-		const uint32_t val_reg,
-		const bool carry_in,
-		bool *shift_carry_out);
-
-} // end of namespace arm
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
-
-#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DATA_PROCESSING_HH__ */

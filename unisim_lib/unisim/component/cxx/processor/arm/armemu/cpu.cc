@@ -44,10 +44,9 @@
 
 #include "unisim/component/cxx/processor/arm/armemu/cache.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
+#include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
-#include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/masks.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/likely/likely.hh"
 
@@ -98,133 +97,128 @@ using std::stringstream;
  *   infrastructure and will identify this object
  * @param parent the parent object of this object
  */
-CPU::
-CPU(const char *name, Object *parent)
-	: Object(name, parent)
-	, unisim::component::cxx::processor::arm::CPU()
-	, Client<LinuxOS>(name, parent)
-	, Service<MemoryInjection<uint32_t> >(name, parent)
-	, Client<DebugControl<uint32_t> >(name, parent)
-	, Client<MemoryAccessReporting<uint32_t> >(name, parent)
-	, Client<TrapReporting>(name, parent)
-	, Service<MemoryAccessReportingControl>(name, parent)
-	, Service<Disassembly<uint32_t> >(name, parent)
-	, Service<Registers>(name, parent)
-	, Service<Memory<uint32_t> >(name, parent)
-	, disasm_export("disasm-export", this)
-	, registers_export("registers-export", this)
-	, memory_injection_export("memory-injection-export", this)
-	, memory_export("memory-export", this)
-	, memory_access_reporting_control_export(
-			"memory-access-reporting-control-export", this)
-	, debug_control_import("debug-control-import", this)
-	, memory_access_reporting_import("memory-access-reporting-import", this)
-	, symbol_table_lookup_import("symbol-table-lookup-import", this)
-	, linux_os_import("linux-os-import", this)
-	, instruction_counter_trap_reporting_import(
-			"instruction-counter-trap-reporting-import", this)
-	, logger(*this)
-	, icache("icache", this)
-	, dcache("dcache", this)
-	, arm32_decoder()
-	, instruction_counter(0)
-	, voltage(0)
-	, verbose(0)
-	, trap_on_instruction_counter(0)
-	, default_endianness_string(default_endianness == E_BIG_ENDIAN ? 
-			"big-endian" : "little-endian")
-	, requires_memory_access_reporting(true)
-	, requires_finished_instruction_reporting(true)
-	, param_default_endianness("default-endianness", this,
-			default_endianness_string,
-			"The processor default/boot endianness. Available values are: "
-			"little-endian and big-endian.")
-	, param_cpu_cycle_time_ps("cpu-cycle-time-ps", this,
-			cpu_cycle_time_ps,
-			"The processor cycle time in picoseconds.")
-	, param_voltage("voltage", this,
-			voltage,
-			"The processor voltage in mV.")
-	, param_verbose("verbose", this,
-			verbose,
-			"Activate the verbose system (0 = inactive, different than 0 = "
-			"active).")
-	, param_trap_on_instruction_counter("trap-on-instruction-counter", this,
-			trap_on_instruction_counter,
-			"Produce a trap when the given instruction count is reached.")
-	, stat_instruction_counter("instruction-counter", this,
-			instruction_counter,
-			"Number of instructions executed.")
-	, reg_sp("SP", this, gpr[13],
-			"The stack pointer (SP) register (alias of GPR[13]).")
-	, reg_lr("LR", this, gpr[14],
-			"The link register (LR) (alias of GPR[14]).")
-	, reg_pc("PC", this, gpr[15],
-			"The program counter (PC) register (alias of GPR[15]).")
-	, reg_cpsr("CPSR", this, cpsr,
-			"The CPSR register.")
-	, ls_queue()
-	, first_ls(0)
-	, has_sent_first_ls(false)
+CPU::CPU(const char *name, Object *parent)
+  : Object(name, parent),
+  unisim::component::cxx::processor::arm::CPU(name, parent),
+  Client<LinuxOS>(name, parent),
+  Service<MemoryInjection<uint32_t> >(name, parent),
+  Client<DebugControl<uint32_t> >(name, parent),
+  Client<MemoryAccessReporting<uint32_t> >(name, parent),
+  Client<TrapReporting>(name, parent),
+  Service<MemoryAccessReportingControl>(name, parent),
+  Service<Disassembly<uint32_t> >(name, parent),
+  Service<Registers>(name, parent),
+  Service< Memory<uint32_t> >(name, parent),
+  disasm_export("disasm-export", this),
+  registers_export("registers-export", this),
+  memory_injection_export("memory-injection-export", this),
+  memory_export("memory-export", this),
+  memory_access_reporting_control_export("memory-access-reporting-control-export", this),
+  debug_control_import("debug-control-import", this),
+  memory_access_reporting_import("memory-access-reporting-import", this),
+  symbol_table_lookup_import("symbol-table-lookup-import", this),
+  linux_os_import("linux-os-import", this),
+  instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this),
+  icache("icache", this),
+  dcache("dcache", this),
+  arm32_decoder(),
+  instruction_counter(0),
+  voltage(0),
+  verbose(0),
+  trap_on_instruction_counter(0),
+  default_endianness_string(GetEndianness() == E_BIG_ENDIAN ? "big-endian" : "little-endian"),
+  requires_memory_access_reporting(true),
+  requires_finished_instruction_reporting(true),
+  param_default_endianness("default-endianness", this,
+                           default_endianness_string,
+                           "The processor default/boot endianness. Available values are: "
+                           "little-endian and big-endian."),
+  param_cpu_cycle_time_ps("cpu-cycle-time-ps", this,
+                          cpu_cycle_time_ps,
+                          "The processor cycle time in picoseconds."),
+  param_voltage("voltage", this,
+                voltage,
+                "The processor voltage in mV."),
+  param_verbose("verbose", this,
+                verbose,
+                "Activate the verbose system (0 = inactive, different than 0 = "
+                "active)."),
+  param_trap_on_instruction_counter("trap-on-instruction-counter", this,
+                                    trap_on_instruction_counter,
+                                    "Produce a trap when the given instruction count is reached."),
+  stat_instruction_counter("instruction-counter", this,
+                           instruction_counter,
+                           "Number of instructions executed."),
+  reg_sp("SP", this, gpr[13],
+         "The stack pointer (SP) register (alias of GPR[13])."),
+  reg_lr("LR", this, gpr[14],
+         "The link register (LR) (alias of GPR[14])."),
+  reg_pc("PC", this, gpr[15],
+         "The program counter (PC) register (alias of GPR[15])."),
+  reg_cpsr("CPSR", this, cpsr.m_value,
+           "The CPSR register."),
+  ls_queue(),
+  first_ls(0),
+  has_sent_first_ls(false),
+  ipb_base_address( -1 )
 {
-	for (unsigned int i = 0; i < num_phys_gprs; i++)
-	{
-		stringstream ss;
-		stringstream ss_desc;
-		ss << "PHYS_GPR[" << i << "]";
-		ss_desc << "Physical register " << i;
-		reg_phys_gpr[i] =  
-			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-					this, phys_gpr[i], ss_desc.str().c_str());
-	}
-	for (unsigned int i = 0; i < (num_log_gprs - 1); i++)
-	{
-		stringstream ss;
-		stringstream ss_desc;
-		ss << "GPR[" << i << "]";
-		ss_desc << "Logical register " << i;
-		reg_gpr[i] = 
-			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-					this, gpr[i], ss_desc.str().c_str());
-	}
-        reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, pc, "Logical register 15");
-	for (unsigned int i = 0; i < num_phys_spsrs; i++)
-	{
-		stringstream ss;
-		stringstream ss_desc;
-		ss << "SPSR[" << i << "]";
-		ss_desc << "SPSR[" << i << "] register";
-		reg_spsr[i] =
-			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-					this, spsr[i], ss_desc.str().c_str());
-	}
+  for (unsigned int i = 0; i < num_phys_gprs; i++)
+    {
+      stringstream ss;
+      stringstream ss_desc;
+      ss << "PHYS_GPR[" << i << "]";
+      ss_desc << "Physical register " << i;
+      reg_phys_gpr[i] =  
+        new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
+                                                        this, phys_gpr[i], ss_desc.str().c_str());
+    }
+  for (unsigned int i = 0; i < (num_log_gprs - 1); i++)
+    {
+      stringstream ss;
+      stringstream ss_desc;
+      ss << "GPR[" << i << "]";
+      ss_desc << "Logical register " << i;
+      reg_gpr[i] = 
+        new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
+                                                        this, gpr[i], ss_desc.str().c_str());
+    }
+  reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
+  for (unsigned int i = 0; i < num_phys_spsrs; i++)
+    {
+      stringstream ss;
+      stringstream ss_desc;
+      ss << "SPSR[" << i << "]";
+      ss_desc << "SPSR[" << i << "] register";
+      reg_spsr[i] =
+        new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
+                                                        this, spsr[i].m_value, ss_desc.str().c_str());
+    }
 
-	// This implementation of the arm architecture can only run in user mode,
-	//   so we can already set CPSR to that mode.
-	SetCPSR_Mode(USER_MODE);
+  // This implementation of the arm architecture can only run in user mode,
+  //   so we can already set CPSR to that mode.
+  cpsr.M().Set(USER_MODE);
 
-	// Set the right format for various of the variables
-	param_cpu_cycle_time_ps.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	param_voltage.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	param_trap_on_instruction_counter.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_instruction_counter.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
+  // Set the right format for various of the variables
+  param_cpu_cycle_time_ps.SetFormat(
+                                    unisim::kernel::service::VariableBase::FMT_DEC);
+  param_voltage.SetFormat(
+                          unisim::kernel::service::VariableBase::FMT_DEC);
+  param_trap_on_instruction_counter.SetFormat(
+                                              unisim::kernel::service::VariableBase::FMT_DEC);
+  stat_instruction_counter.SetFormat(
+                                     unisim::kernel::service::VariableBase::FMT_DEC);
 }
 
 /** Destructor.
  */
-CPU::
-~CPU()
+CPU::~CPU()
 {
-	for (unsigned int i = 0; i < num_phys_gprs; i++)
-		if (reg_phys_gpr[i]) delete reg_phys_gpr[i];
-	for (unsigned int i = 0; i < num_log_gprs; i++)
-		if (reg_gpr[i]) delete reg_gpr[i];
-	for (unsigned int i = 0; i < num_phys_spsrs; i++)
-		if (reg_spsr[i]) delete reg_spsr[i];
+  for (unsigned int i = 0; i < num_phys_gprs; i++)
+    if (reg_phys_gpr[i]) delete reg_phys_gpr[i];
+  for (unsigned int i = 0; i < num_log_gprs; i++)
+    if (reg_gpr[i]) delete reg_gpr[i];
+  for (unsigned int i = 0; i < num_phys_spsrs; i++)
+    if (reg_spsr[i]) delete reg_spsr[i];
 }
 
 /** Object setup method.
@@ -234,8 +228,7 @@ CPU::
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-EndSetup()
+CPU::EndSetup()
 {
 	if (verbose)
 		logger << DebugInfo
@@ -318,9 +311,9 @@ EndSetup()
 			logger << DebugWarning;
 			logger << "A cycle time of " << cpu_cycle_time_ps
 				<< " ps is too low for the simulated"
-				<< " hardware !" << endl;
+				<< " hardware !" << std::endl;
 			logger << "cpu cycle time should be >= "
-				<< min_cycle_time << " ps." << endl;
+				<< min_cycle_time << " ps." << std::endl;
 			logger << EndDebugWarning;
 		}
 	}
@@ -335,7 +328,7 @@ EndSetup()
 			<< " Using the maximum voltage found from the caches as "
 			<< " current voltage. Voltage used is "
 			<< voltage
-			<< " mV." << endl;
+			<< " mV." << std::endl;
 		if ( icache.power_mode_import )
 			logger << "  - instruction cache voltage = "
 				<< il1_def_voltage
@@ -343,7 +336,7 @@ EndSetup()
 		if ( dcache.power_mode_import )
 		{
 			if ( icache.power_mode_import )
-				logger << endl;
+				logger << std::endl;
 			logger << "  - data cache voltage = "
 				<< dl1_def_voltage
 				<< " mV";
@@ -388,8 +381,8 @@ EndSetup()
 	}
 	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
 	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &pc);
-	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
+	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &next_pc);
+	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
 	/* End TODO */
 
 	/* If the memory access reporting import is not connected remove the need of
@@ -408,8 +401,7 @@ EndSetup()
  *   UNISIM objects.
  */
 void 
-CPU::
-OnDisconnect()
+CPU::OnDisconnect()
 {
 	/* TODO */
 }
@@ -417,94 +409,99 @@ OnDisconnect()
 /** Execute one complete instruction.
  */
 void 
-CPU::
-StepInstruction()
+CPU::StepInstruction()
 {
-	uint32_t current_pc = GetNPC();
+  uint32_t current_pc = this->current_pc = GetNPC();
 
-	if (debug_control_import) 
-	{
-		DebugControl<uint32_t>::DebugCommand dbg_cmd;
+  if (debug_control_import) 
+    {
+      DebugControl<uint32_t>::DebugCommand dbg_cmd;
 
-		do 
-		{
-			dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+      do 
+        {
+          dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 	
-			if (dbg_cmd == DebugControl<uint32_t>::DBG_STEP) 
-			{
-				/* Nothing to do */
-				break;
-			}
-			if (dbg_cmd == DebugControl<uint32_t>::DBG_SYNC) 
-			{
-				// Sync();
-				continue;
-			}
+          if (likely(dbg_cmd == DebugControl<uint32_t>::DBG_STEP)) 
+            {
+              /* Nothing to do */
+              break;
+            }
+          if (dbg_cmd == DebugControl<uint32_t>::DBG_SYNC) 
+            {
+              // Sync();
+              continue;
+            }
 
-			if (dbg_cmd == DebugControl<uint32_t>::DBG_KILL) {
-				Stop(0);
-			}
-			if(dbg_cmd == DebugControl<uint32_t>::DBG_RESET) {
-				// TODO : memory_interface->Reset(); 
-			}
-		} while(1);
-	}
+          if (dbg_cmd == DebugControl<uint32_t>::DBG_KILL) {
+            Stop(0);
+          }
+          if(dbg_cmd == DebugControl<uint32_t>::DBG_RESET) {
+            // TODO : memory_interface->Reset(); 
+          }
+        } while(1);
+    }
 	
-	if (GetCPSR_T()) {
-		/* Thumb state */
+  if (cpsr.T().Get()) {
+    /* Thumb state */
+    isa::thumb::CodeType insn;
+    ReadInsn(current_pc, insn);
 		
-		/* This implementation should never enter into thumb mode */
-		logger << DebugError << "Thumb mode not supported in" << endl
-		       << unisim::kernel::debug::BackTrace() << EndDebugError;
-		Stop(-1);
-	}
-	
-	else {
-		/* Arm32 state */
-		if (requires_memory_access_reporting and memory_access_reporting_import)
-                  memory_access_reporting_import->
-                    ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, current_pc, 4);
+    /* Decode current PC */
+    isa::thumb::Operation<unisim::component::cxx::processor::arm::armemu::CPU>* op;
+    op = thumb_decoder.Decode(current_pc, insn);
 		
-                /* fetch instruction word from memory */
-		uint32_t memword;
-		ReadInsn(current_pc, memword);
-		/* convert the instruction to host endianness */
-		isa::arm32::CodeType insn = Target2Host(GetEndianness(), memword);
+    /* update PC registers value before execution */
+    this->gpr[15] = this->next_pc + 4;
+    this->next_pc += 2;
+		
+    /* Execute instruction */
+    op->execute(*this);
+    //op->profile(profile);
+		
+    /* perform the memory load/store operations */
+    PerformLoadStoreAccesses();
+  }
+	
+  else {
+    /* Arm32 state */
+		
+    /* fetch instruction word from memory */
+    isa::arm32::CodeType insn;
+    ReadInsn(current_pc, insn);
 			
-		/* Decode current PC */
-		isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::CPU>* op;
-		op = arm32_decoder.Decode(current_pc, insn);
+    /* Decode current PC */
+    isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::CPU>* op;
+    op = arm32_decoder.Decode(current_pc, insn);
 		
-		/* update PC registers value before execution */
-		this->gpr[15] = this->pc + 8;
-		this->pc += 4;
+    /* update PC registers value before execution */
+    this->gpr[15] = this->next_pc + 8;
+    this->next_pc += 4;
 		
-		/* Execute instruction */
-		op->execute(*this);
-		//op->profile(profile);
+    /* Execute instruction */
+    op->execute(*this);
+    //op->profile(profile);
 		
-		/* perform the memory load/store operations */
-		PerformLoadStoreAccesses();
-	}
+    /* perform the memory load/store operations */
+    PerformLoadStoreAccesses();
+  }
 	
-	/* check that an exception has not occurred, if so 
-	 * stop the simulation */
-	if ( GetVirtualExceptionVector() )
-	{
-		logger << DebugError
-			<< "An exception has been found, this should never happen "
-			<< "when simulating at user level."
-			<< EndDebugError;
-		Stop(-1);
-	}
-	instruction_counter++;
-	if ( unlikely((trap_on_instruction_counter == instruction_counter)
-			&& instruction_counter_trap_reporting_import) )
-		instruction_counter_trap_reporting_import->ReportTrap(*this);
+  /* check that an exception has not occurred, if so 
+   * stop the simulation */
+  if ( unlikely(GetVirtualExceptionVector()) )
+    {
+      logger << DebugError
+             << "An exception has been found, this should never happen "
+             << "when simulating at user level."
+             << EndDebugError;
+      Stop(-1);
+    }
+  instruction_counter++;
+  if ( unlikely(instruction_counter_trap_reporting_import &&
+		trap_on_instruction_counter == instruction_counter) )
+    instruction_counter_trap_reporting_import->ReportTrap(*this);
 	
-	if(requires_finished_instruction_reporting)
-		if(memory_access_reporting_import)
-			memory_access_reporting_import->ReportFinishedInstruction(current_pc, this->pc);
+  if(unlikely(requires_finished_instruction_reporting && memory_access_reporting_import))
+    memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
 }
 
 /** Inject an intrusive read memory operation.
@@ -517,8 +514,7 @@ StepInstruction()
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-InjectReadMemory(uint32_t addr, 
+CPU::InjectReadMemory(uint32_t addr, 
 	void *buffer,
 	uint32_t size)
 {
@@ -590,8 +586,7 @@ InjectReadMemory(uint32_t addr,
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-InjectWriteMemory(uint32_t addr, 
+CPU::InjectWriteMemory(uint32_t addr, 
 	const void *buffer, 
 	uint32_t size)
 {
@@ -663,8 +658,7 @@ InjectWriteMemory(uint32_t addr,
  *   otherwise
  */
 void 
-CPU::
-RequiresMemoryAccessReporting(bool report)
+CPU::RequiresMemoryAccessReporting(bool report)
 {
 	requires_memory_access_reporting = report;
 }
@@ -675,8 +669,7 @@ RequiresMemoryAccessReporting(bool report)
  *   unset otherwise
  */
 void 
-CPU::
-RequiresFinishedInstructionReporting(bool report)
+CPU::RequiresFinishedInstructionReporting(bool report)
 {
 	requires_finished_instruction_reporting = report;
 }
@@ -774,8 +767,7 @@ CPU::ReadMemory(uint32_t addr,
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-WriteMemory(uint32_t addr, 
+CPU::WriteMemory(uint32_t addr, 
 		const void *buffer, 
 		uint32_t size)
 {
@@ -850,8 +842,7 @@ WriteMemory(uint32_t addr,
  * @return a pointer to the RegisterInterface corresponding to name
  */
 Register *
-CPU::
-GetRegister(const char *name)
+CPU::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
 		return registers_registry[string(name)];
@@ -869,17 +860,16 @@ GetRegister(const char *name)
  * @return the disassembling of the requested instruction address
  */
 string 
-CPU::
-Disasm(uint32_t addr, uint32_t &next_addr)
+CPU::Disasm(uint32_t addr, uint32_t &next_addr)
 {
 	isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::CPU> *
 		op = NULL;
 	uint32_t insn;
 	
 	stringstream buffer;
-	if (GetCPSR_T()) 
+	if (cpsr.T().Get())
 	{
-		logger << DebugError << "Thumb instructions not supported in" << endl
+		logger << DebugError << "Thumb instructions not supported in" << std::endl
 		       << unisim::kernel::debug::BackTrace() << EndDebugError;
 		Stop(-1);
 	} 
@@ -913,14 +903,78 @@ Disasm(uint32_t addr, uint32_t &next_addr)
  * @param ret the exit cade sent by the exit system call.
  */
 void 
-CPU::
-PerformExit(int ret)
+CPU::PerformExit(int ret)
 {
 	// running = false;
 	Stop(ret);
 }
 
-/** Reads 32bits instructions from the memory system
+/** Refill the Instruction Prefetch Buffer from the memory system
+ * (through the instruction cache if present).
+ *
+ * This method allows the user to prefetch instructions from the memory
+ * system, that is, it tries to read from the pertinent caches and if
+ * failed from the external memory system.
+ * 
+ * @param address the address of the requiered instruction that the
+ *                prefetch instruction buffer should encompass, once
+ *                the refill is complete.
+ */
+void 
+CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
+{
+  this->ipb_base_address = base_address;
+  
+  if (likely(icache.GetSize()))
+    {
+      icache.read_accesses++;
+      // check the instruction cache
+      uint32_t cache_tag = icache.GetTag(base_address);
+      uint32_t cache_set = icache.GetSet(base_address);
+      uint32_t cache_way;
+      // Check for a cache hit
+      bool cache_hit =
+        icache.GetWay(cache_tag, cache_set, &cache_way) and
+        icache.GetValid(cache_set, cache_way);
+      
+      if (likely(cache_hit))
+        {
+          // cache hit
+          icache.read_hits++;
+        }
+      else
+        {
+          // get a way to replace (no need to check valid and dirty
+          // bits, the new data can be requested immediately)
+          cache_way = icache.GetNewWay(cache_set);
+          uint8_t *cache_data = 0;
+          // when getting the physical data of the cache line
+          icache.GetData(cache_set, cache_way, &cache_data);
+          PrRead(base_address, cache_data, Cache::LINE_SIZE);
+          icache.SetTag(cache_set, cache_way, cache_tag);
+          icache.SetValid(cache_set, cache_way, 1);
+        }
+      
+      // At this point data is in the cache, so we can read it from it
+      uint32_t cache_index = icache.GetIndex(base_address);
+      icache.GetDataCopy(cache_set, cache_way, cache_index, Cache::LINE_SIZE, &this->ipb_bytes[0]);
+
+      if ( unlikely(icache.power_estimator_import != 0) )
+        icache.power_estimator_import->ReportReadAccess();
+    }
+  else
+    {
+      // No instruction cache present, just request the insn to the
+      // memory system.
+      PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE);
+    }
+
+  if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->
+      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, Cache::LINE_SIZE);
+}
+
+/** Reads ARM32 instructions from the memory system
  * This method allows the user to read instructions from the memory system,
  *   that is, it tries to read from the pertinent caches and if failed from
  *   the external memory system.
@@ -929,69 +983,48 @@ PerformExit(int ret)
  * @param val the buffer to fill with the read data
  */
 void 
-CPU::ReadInsn(uint32_t address, uint32_t &val)
+CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
-	uint32_t size = 4;
-	uint8_t *data;
+  uint32_t base_address = address & -(Cache::LINE_SIZE);
+  uint32_t buffer_index = address % (Cache::LINE_SIZE);
+  
+  if (unlikely(ipb_base_address != base_address))
+    {
+      RefillInsnPrefetchBuffer( base_address );
+    }
+  
+  uint32_t word = *((uint32_t*)(&ipb_bytes[buffer_index]));
+  insn = Target2Host(GetEndianness(), word);
+}
 
-	if ( likely(icache.GetSize()) )
-	{
-		icache.read_accesses++;
-		// check the instruction cache
-		uint32_t cache_tag = icache.GetTag(address);
-		uint32_t cache_set = icache.GetSet(address);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( icache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( icache.GetValid(cache_set, cache_way) )
-			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
-			}
-		}
-		if ( unlikely(!cache_hit) )
-		{
-			// get a way to replace
-			cache_way = icache.GetNewWay(cache_set);
-			// no need to check valiad and dirty bits
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-				icache.GetBaseAddressFromAddress(address);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = icache.GetData(cache_set,
-					cache_way, &cache_data);
-			PrRead(cache_address, cache_data,
-					cache_line_size);
-			icache.SetTag(cache_set, cache_way, cache_tag);
-			icache.SetValid(cache_set, cache_way, 1);
-		}
-		else
-		{
-			// cache hit
-			icache.read_hits++;
-		}
-
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = icache.GetIndex(address);
-		(void)icache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
-		icache.GetDataCopy(cache_set, cache_way, cache_index, size,
-				(uint8_t *)&val);
-
-		if ( unlikely(icache.power_estimator_import != 0) )
-			icache.power_estimator_import->ReportReadAccess();
-	}
-	else
-	{
-		// no instruction cache present, just request the insn to the
-		//   memory system
-		PrRead(address, (uint8_t *)&val, size);
-	}
+/** Reads THUMB instructions from the memory system
+ * This method allows the user to read instructions from the memory system,
+ *   that is, it tries to read from the pertinent caches and if failed from
+ *   the external memory system.
+ * 
+ * @param address the address to read data from
+ * @param insn the resulting instruction word (output reference)
+ */
+void
+CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
+{
+  uint32_t base_address = address & -(Cache::LINE_SIZE);
+  uint32_t buffer_index = address % (Cache::LINE_SIZE);
+    
+  if (unlikely(ipb_base_address != base_address))
+    {
+      RefillInsnPrefetchBuffer( base_address );
+    }
+  
+  if (GetEndianness() == E_LITTLE_ENDIAN) {
+    insn.str[0] = ipb_bytes[buffer_index+0];
+    insn.str[1] = ipb_bytes[buffer_index+1];
+  } else {
+    /* Endianness is not the standard ARM instruction endianness */ 
+    insn.str[0] = ipb_bytes[buffer_index+1];
+    insn.str[1] = ipb_bytes[buffer_index+0];
+  }
+  insn.size = 16;
 }
 
 /** Memory prefetch instruction.
@@ -1009,192 +1042,7 @@ CPU::ReadPrefetch(uint32_t address)
 	
 	memop = MemoryOp::alloc();
 	memop->SetPrefetch(address);
-	ls_queue.push(memop);
-}
-
-/** 32bits memory read.
- *
- * This method reads 32bits from memory and returns a
- * corresponding pending memory operation.
- * 
- * @param address the base address of the 32bits read
- * 
- * @return a pointer to the pending memory operation
- */
-MemoryOp*
-CPU::MemRead32(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 4, false);
-
-	// if (requires_memory_access_reporting and memory_access_reporting_import)
-        //   memory_access_reporting_import->
-        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address & -4, 4);
-	
-	return memop;
-}
-
-/** 16bits memory read.
- * 
- * This method reads 16bits from memory and returns a
- * corresponding pending memory operation.
- * 
- * @param address the base address of the 16bits read
- * 
- * @return a pointer to the pending memory operation
- */
-MemoryOp*
-CPU::MemRead16(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 2, false);
-	
-	// if (requires_memory_access_reporting and memory_access_reporting_import)
-        //   memory_access_reporting_import->
-        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 2);
-	
-	return memop;
-}
-
-/** Signed 16bits memory read.
- *
- * This method reads 16bits from memory and return a
- * corresponding signed pending memory operation.
- * 
- * @param address the base address of the 16bits read
- * 
- * @return a pointer to the pending memory operation
- */
-MemoryOp*
-CPU::MemReadS16(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 2, true);
-	
-	// if (requires_memory_access_reporting and memory_access_reporting_import)
-        //   memory_access_reporting_import->
-        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 2);
-	
-	return memop;
-}
-
-/** 8bits memory read.
- *
- * This method reads 8bits from memory and returns a
- * corresponding pending memory operation.
- * 
- * @param address the base address of the 8bits read
- * 
- * @return a pointer to the pending memory operation
- */
-MemoryOp*
-CPU::MemRead8(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 1, false);
-	
-	// if (requires_memory_access_reporting and memory_access_reporting_import)
-        //   memory_access_reporting_import->
-        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
-
-        return memop;
-}
-
-/** Signed 8bits memory read.
- *
- * This method reads 8bits from memory and returns a
- * corresponding signed pending memory operation.
- * 
- * @param address the base address of the 8bits read
- * 
- * @return a pointer to the pending memory operation
- */
-MemoryOp*
-CPU::MemReadS8(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 1, true);
-	
-	// if (requires_memory_access_reporting and memory_access_reporting_import)
-        //   memory_access_reporting_import->
-        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
-	
-        return memop;
-}
-
-/** 32bits memory write.
- * This method write the giving 32bits value into the memory system.
- * 
- * @param address the base address of the 32bits write
- * @param value the value to write into memory
- */
-void 
-CPU::
-MemWrite32(uint32_t address, uint32_t value)
-{
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x3);
-	memop = MemoryOp::alloc();
-	memop->SetWrite(address, 4, value);
-	ls_queue.push(memop);
-	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, address, 4);
-}
-
-/** 16bits memory write.
- * This method write the giving 16bits value into the memory system.
- * 
- * @param address the base address of the 16bits write
- * @param value the value to write into memory
- */
-void 
-CPU::
-MemWrite16(uint32_t address, uint16_t value)
-{
-	address = address & ~((uint32_t)0x1);
-	MemoryOp *memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetWrite(address, 2, value);
-	ls_queue.push(memop);
-	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, address, 2);
-}
-
-/** 8bits memory write.
- * This method write the giving 8bits value into the memory system.
- * 
- * @param address the base address of the 8bits write
- * @param value the value to write into memory
- */
-void 
-CPU::
-MemWrite8(uint32_t address, uint8_t value)
-{
-	MemoryOp *memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetWrite(address, 1, value);
-	ls_queue.push(memop);
-	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, address, 1);
+	ls_queue.Push(memop);
 }
 
 /** Coprocessor Load
@@ -1208,10 +1056,9 @@ MemWrite8(uint32_t address, uint8_t value)
  *   returning true, false if it has not finished
  */ 
 bool 
-CPU::
-CoprocessorLoad(uint32_t cp_num, uint32_t address)
+CPU::CoprocessorLoad(uint32_t cp_num, uint32_t address)
 {
-	logger << DebugError << "CoprocessorLoad not implemented in" << endl
+	logger << DebugError << "CoprocessorLoad not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 	return false;
@@ -1230,10 +1077,9 @@ CoprocessorLoad(uint32_t cp_num, uint32_t address)
  *   returning true, false if it has not finished
  */ 
 bool 
-CPU::
-CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option)
+CPU::CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option)
 {
-	logger << DebugError << "CoprocessorLoad not implemented in" << endl
+	logger << DebugError << "CoprocessorLoad not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 	return false;
@@ -1250,10 +1096,9 @@ CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option)
  *   returning true, false if it has not finished
  */ 
 bool 
-CPU::
-CoprocessorStore(uint32_t cp_num, uint32_t address)
+CPU::CoprocessorStore(uint32_t cp_num, uint32_t address)
 {
-	logger << DebugError << "CoprocessorStore not implemented in" << endl
+	logger << DebugError << "CoprocessorStore not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 	return false;
@@ -1272,10 +1117,9 @@ CoprocessorStore(uint32_t cp_num, uint32_t address)
  *   returning true, false if it has not finished
  */ 
 bool 
-CPU::
-CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option)
+CPU::CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option)
 {
-	logger << DebugError << "CoprocessorStore not implemented in" << endl
+	logger << DebugError << "CoprocessorStore not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 	return false;
@@ -1291,11 +1135,10 @@ CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option)
  * @param crm coprocessor second operand register
  */
 void 
-CPU::
-CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
+CPU::CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
 		uint32_t crd, uint32_t crn, uint32_t crm)
 {
-	logger << DebugError << "CoprocessorDataProcess not implemented in" << endl
+	logger << DebugError << "CoprocessorDataProcess not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 }
@@ -1312,11 +1155,10 @@ CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
  * @param crm the additional destination or source coprocessor register
  */
 void 
-CPU::
-MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
+CPU::MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm)
 {
-	logger << DebugError << "MoveToCoprocessor not implemented in" << endl
+	logger << DebugError << "MoveToCoprocessor not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 }
@@ -1336,22 +1178,47 @@ MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
  * @param crm additional coprocessor source or destination register 
  */
 void
-CPU::
-MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
+CPU::MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm)
 {
-	logger << DebugError << "MoveFromCoprocessor not implemented in" << endl
+	logger << DebugError << "MoveFromCoprocessor not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 }
 
+/** Software Interrupt
+ *  This method is called by SWI instructions to handle software interrupts.
+ */
+void
+CPU::SWI( uint32_t imm )
+{
+  // we are executing on linux emulation mode, use linux_os_import
+  try
+    {
+      this->linux_os_import->ExecuteSystemCall(imm);
+    }
+  catch(std::exception &e)
+    {
+      std::cerr << e.what() << std::endl;
+    }
+}
+
+/** Breakpoint
+ *  This method is called by BKPT instructions to handle breakpoints.
+ */
+void
+CPU::BKPT( uint32_t imm )
+{
+  // we are executing on linux emulation mode
+  // what should we do with this kind of call? ignore it
+}
+	
 /** Unpredictable Instruction Behaviour.
  * This method is just called when an unpredictable behaviour is detected to
  *   notifiy the processor.
  */
 void 
-CPU::
-UnpredictableInsnBehaviour()
+CPU::UnpredictableInsnBehaviour()
 {
 	logger << DebugWarning
 		<< "Trying to execute unpredictable behavior instruction,"
@@ -1366,14 +1233,13 @@ UnpredictableInsnBehaviour()
  /** Performs the load/stores present in the queue of memory operations.
  */
 void 
-CPU::
-PerformLoadStoreAccesses()
+CPU::PerformLoadStoreAccesses()
 {
 	// while the ls_queue is not empty process entries
-	while (!ls_queue.empty()) 
+	while (!ls_queue.Empty()) 
 	{
-		MemoryOp *memop = ls_queue.front();
-		ls_queue.pop();
+		MemoryOp *memop = ls_queue.Front();
+		ls_queue.Pop();
 		switch (memop->GetType()) 
 		{
 			case MemoryOp::PREFETCH:
@@ -1386,7 +1252,7 @@ PerformLoadStoreAccesses()
 				PerformReadAccess(memop);
 				break;
 			case MemoryOp::USER_READ:
-				logger << DebugError << "Not permitted operation with armemu in" <<endl
+				logger << DebugError << "Not permitted operation with armemu in" <<std::endl
 				       << unisim::kernel::debug::BackTrace() << EndDebugError;
 				Stop(-1);
 				break;
@@ -1400,8 +1266,7 @@ PerformLoadStoreAccesses()
  * @param memop the memory operation containing the prefetch access
  */
 void 
-CPU::
-PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
+CPU::PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
 		*memop)
 {
 	uint32_t addr = memop->GetAddress();
@@ -1479,8 +1344,7 @@ PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
  * @param memop the memory operation containing the write access
  */
 void 
-CPU::
-PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
+CPU::PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 		*memop)
 {
 	uint32_t addr = memop->GetAddress();
@@ -1573,9 +1437,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
  * @param memop the memory operation containing the read access
  */
 void 
-CPU::
-PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
-		*memop)
+CPU::PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp* memop)
 {
 	uint32_t addr = memop->GetAddress();
 	uint32_t size = memop->GetSize();
@@ -1706,7 +1568,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 		value = val32;
 	}
 
-        SetGPR(memop->GetTargetReg(), value);
+        SetGPR_mem(memop->GetTargetReg(), value);
 
 	if ( likely(dcache.GetSize()) )
 		if ( unlikely(dcache.power_estimator_import != 0) )

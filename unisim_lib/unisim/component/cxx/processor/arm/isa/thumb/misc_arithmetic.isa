@@ -31,93 +31,87 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
-
-/**********************************************
-
-      EXCEPTION-GENERATING INSTRUCTIONS
-
-**********************************************/
-
+ 
 /*******************************************************************
- * swi (software interrupt) instruction; also known as: svc (supervisor call) in armv7
- * NOTE: this instruction is used to make the system calls
+ * sxtb (Signed Extend Byte) instruction
+ *
+ * SXTB extracts an 8-bit value from a register, sign-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 8-bit value.
  */
 
-op swi(cond[4]:0b1111[4]:imm[24]);
+{ ARCH::insns6 }:                               \
+op sxtb(0b1011001001[10]:rm[3]:rd[3]);
 
-swi.disasm = {
-  buffer << "swi" << DisasmCondition(cond) << "\t" << DisasmI(imm);
-};
+sxtb.disasm = {
+  buffer << "sxtb\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+}
 
-swi.execute = {
-  if (not CheckCondition(cpu, cond)) return;
-  
-  cpu.SWI( imm );
+sxtb.execute = {
+  cpu.SetGPR( rd, (int32_t)((int8_t)cpu.GetGPR_npc( rm )) );
 };
 
 /*
- * end of swi (software interrupt) instruction
+ * end of sxtb instruction
  *******************************************************************/
 
 /*******************************************************************
- * bkpt (breakpoint) instruction
+ * sxth (Signed Extend Halfword) instruction
+ *
+ * SXTH extracts a 16-bit value from a register, sign-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 16-bit value.
  */
 
-op bkpt(0b1110[4]:0b00010010[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
-bkpt.var imm : {uint32_t} = {im1|im0};
+{ ARCH::insns6 }:                               \
+op sxth(0b1011001000[10]:rm[3]:rd[3]);
 
-bkpt.disasm = {
-  buffer << "bkpt\t0x" << std::hex << std::setw( 4 ) << std::setfill( '0' ) << imm << std::setw( 0 ) << std::dec;
+sxth.disasm = {
+  buffer << "sxth\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 };
 
-bkpt.execute = {
-  cpu.BKPT( imm );
+sxth.execute = {
+  cpu.SetGPR( rd, (int32_t)((int16_t)cpu.GetGPR_npc( rm )) );
 };
 
 /*
- * end of bkpt (breakpoint) instruction
+ * end of sxth instruction
  *******************************************************************/
 
 /*******************************************************************
- * hvc () instruction
+ * uxtb (Unsigned Extend Byte) instruction
+ *
+ * UXTB extracts an 8-bit value from a register, zero-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 8-bit value.
  */
 
-op hvc(cond[4]:0b00010100[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
-hvc.var imm : {uint32_t} = {im1|im0};
+{ ARCH::insns6 }:                               \
+op uxtb(0b1011001011[10]:rm[3]:rd[3]);
 
-hvc.disasm = {
-  buffer << "hvc" << DisasmCondition(cond) << '\t' << std::dec << imm;
+uxtb.disasm = {
+  buffer << "uxtb\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
+
+uxtb.execute = {
+  cpu.SetGPR( rd, (uint32_t)((uint8_t)cpu.GetGPR_npc( rm )) );
 };
 
 /*
- * end of hvc () instruction
+ * end of uxtb instruction
  *******************************************************************/
 
 /*******************************************************************
- * smc () instruction
+ * uxth (Unsigned Extend Halfword) instruction
+ *
+ * UXTH extracts a 16-bit value from a register, zero-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 16-bit value.
  */
 
-op smc(cond[4]:0b00010110[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
-smc.var imm : {uint32_t} = {im1|im0};
+{ ARCH::insns6 }:                               \
+op uxth(0b1011001010[10]:rm[3]:rd[3]);
 
-smc.disasm = {
-  buffer << "smc" << DisasmCondition(cond) << '\t' << std::dec << imm;
+uxth.disasm = {
+  buffer << "uxth\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
+
+uxth.execute = {
+  cpu.SetGPR( rd, (uint32_t)((uint16_t)cpu.GetGPR_npc( rm )) );
 };
 
 /*
- * end of smc () instruction
- *******************************************************************/
-
-/*******************************************************************
- * eret (Exception Return) instruction
- */
-
-op eret(cond[4]:0b0001011000000000000001101110[28]);
-
-eret.disasm = {
-  buffer << "eret" << DisasmCondition(cond);
-};
-
-/*
- * end of eret (Exception Return) instruction
+ * end of uxth instruction
  *******************************************************************/

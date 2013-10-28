@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,57 +29,19 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-/**********************************************
+#ifndef __UNISIM_UTIL_INLINING_INLINING_HH__
+#define __UNISIM_UTIL_INLINING_INLINING_HH__
 
-        THUMB EXCEPTION INSTRUCTIONS
+#if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ >= 4) && ((__GNUC_MINOR__ > 1) || ((__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 3)))))     // GNU C version >= 4.1.3
+#if defined(ALWAYS_INLINE)
+#undef ALWAYS_INLINE
+#endif
+#define ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define ALWAYS_INLINE
+#endif
 
-**********************************************/
-
-/*******************************************************************
- * bkpt (breakpoint) instruction
- */
-
-op bkpt(0b10111110[8]:imm[8])
-
-bkpt.disasm = {
-	buffer << "bkpt #" << dec << imm;
-}
-
-bkpt.execute = {
-	// we are executing on linux emulation mode
-	// what should we do with this kind of call? ignore it
-}
-
-/*
- * end of bkpt (breakpoint) instruction
- *******************************************************************/
-
-/*******************************************************************
- * swi (software interrupt) instruction
- */
-
-op swi(0b11011111[8]:imm[8])
-
-swi.disasm = {
-	buffer << "swi #" << dec << imm;
-}
-
-swi.execute = {
-	// we are executing on linux emulation mode
-	// use linux_os_import
-	try
-	{
-		cpu.linux_os_import->ExecuteSystemCall(imm);
-	}
-	catch(std::exception &e)
-	{
-		cerr << e.what() << endl;
-	}
-}
-
-/*
- * end of swi (software interrupt) instruction
- *******************************************************************/
+#endif // __UNISIM_UTIL_INLINING_INLINING_HH__

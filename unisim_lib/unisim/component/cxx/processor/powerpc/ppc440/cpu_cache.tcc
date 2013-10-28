@@ -682,13 +682,14 @@ inline bool CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1
 
 /* Data Cache management */
 template <class CONFIG>
-void CPU<CONFIG>::Dcba(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcba(typename CONFIG::address_t addr)
 {
 	// Dcba is treated as a no-op by PPC440x5
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 {
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;
@@ -700,10 +701,10 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 	mmu_access.memory_access_type = CONFIG::MAT_READ; // Dcbf is treated as a Load
 	mmu_access.memory_type = CONFIG::MT_DATA;
 
-	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return;
+	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
 	// DL1 Access
-	if(!CONFIG::HAS_DCACHE) return;
+	if(!CONFIG::HAS_DCACHE) return true;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 	l1_access.storage_attr = mmu_access.storage_attr;
@@ -735,7 +736,7 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 					if(unlikely(!PLBDataWrite(l1_block_to_flush.GetBaseAddr(), &l1_block_to_flush[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
 					{
 						SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
-						return;
+						return false;
 					}
 				}
 				else
@@ -750,7 +751,7 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 					if(unlikely(!PLBDataWrite(l1_block_to_flush.GetBaseAddr() + dirty_dword_offset, &l1_block_to_flush[dirty_dword_offset], 8)))
 					{
 						SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
-						return;
+						return false;
 					}
 				}
 			}
@@ -759,15 +760,17 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 		}
 		l1_access.line->status.valid = false;
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 {
 	if(GetMSR_PR())
 	{
 		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 
 	// Address translation
@@ -780,10 +783,10 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 	mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 	mmu_access.memory_type = CONFIG::MT_DATA;
 
-	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return;
+	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
 	// DL1 Access
-	if(!CONFIG::HAS_DCACHE) return;
+	if(!CONFIG::HAS_DCACHE) return true;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 
@@ -802,10 +805,12 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 		}
 		l1_access.line->status.valid = false;
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 {
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;
@@ -817,10 +822,10 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 	mmu_access.memory_access_type = CONFIG::MAT_READ; // 3.4.4.4 Data Cache Block Store (dcbst): This instruction is treated as a load with respect to address translation and memory protection
 	mmu_access.memory_type = CONFIG::MT_DATA;
 
-	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return;
+	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
 	// DL1 Access
-	if(!CONFIG::HAS_DCACHE) return;
+	if(!CONFIG::HAS_DCACHE) return true;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 
@@ -851,7 +856,7 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 					if(unlikely(!PLBDataWrite(l1_block_to_copy_back.GetBaseAddr(), &l1_block_to_copy_back[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
 					{
 						SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
-						return;
+						return false;
 					}
 				}
 				else
@@ -866,17 +871,19 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 					if(unlikely(!PLBDataWrite(l1_block_to_copy_back.GetBaseAddr() + dirty_dword_offset, &l1_block_to_copy_back[dirty_dword_offset], 8)))
 					{
 						SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
-						return;
+						return false;
 					}
 				}
 			}
 			l1_block_to_copy_back.status.dirty = 0;
 		}
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 {
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;
@@ -888,7 +895,7 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 	mmu_access.memory_access_type = CONFIG::MAT_WRITE; // 3.4.4.3 Data Cache Block Zero (dcbz): The dcbz instruction is treated as a store to the addressed byte with respect to address translation, protection, and pipelining.
 	mmu_access.memory_type = CONFIG::MT_DATA;
 
-	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return;
+	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
 	if(CONFIG::HAS_DCACHE)
 	{
@@ -907,7 +914,7 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 				logger << DebugInfo << "DL1 line miss: choosen way=" << l1_access.way << endl << EndDebugInfo;
 			}
 			
-			if(unlikely(!EmuEvictDL1(l1_access))) return;
+			if(unlikely(!EmuEvictDL1(l1_access))) return false;
 		}
 	
 		if(unlikely(!l1_access.block))
@@ -932,28 +939,32 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 		if(unlikely(!PLBDataWrite(mmu_access.physical_addr & (~31), zero, sizeof(zero))))
 		{
 			SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
-			return;
+			return false;
 		}
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dccci(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dccci(typename CONFIG::address_t addr)
 {
 	// Note: it's normal to ignore 'addr' as it's unused on PPC440
 	if(GetMSR_PR())
 	{
 		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 
-	if(!CONFIG::HAS_DCACHE) return;
+	if(!CONFIG::HAS_DCACHE) return true;
 	
 	InvalidateDL1();
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcread(typename CONFIG::address_t addr, unsigned int rd)
+bool CPU<CONFIG>::Dcread(typename CONFIG::address_t addr, unsigned int rd)
 {
 	if(CONFIG::HAS_DCACHE)
 	{
@@ -992,11 +1003,13 @@ void CPU<CONFIG>::Dcread(typename CONFIG::address_t addr, unsigned int rd)
 		SetDCDBTRH(0);
 		SetDCDBTRL(0);
 	}
+	
+	return true;
 }
 
 /* Instruction Cache Management */
 template <class CONFIG>
-void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 {
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;
@@ -1008,7 +1021,7 @@ void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 	mmu_access.memory_access_type = CONFIG::MAT_READ;
 	mmu_access.memory_type = CONFIG::MT_DATA; // instruction is considered as a "load" with respect to data storage exceptions
 
-	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return;
+	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
 	if(CONFIG::HAS_ICACHE)
 	{
@@ -1023,31 +1036,36 @@ void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 	}
 
 	unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::InvalidateDecodingCacheEntry(addr);
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Icbt(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Icbt(typename CONFIG::address_t addr)
 {
 	// Nothing to do: no architecturally visible changed 
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Iccci(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Iccci(typename CONFIG::address_t addr)
 {
 	// Note: it's normal to ignore 'addr' as it's unused on PPC440
 	if(GetMSR_PR())
 	{
 		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
-		return;
+		return false;
 	}
 
-	if(!CONFIG::HAS_ICACHE) return;
+	if(!CONFIG::HAS_ICACHE) return true;
 
 	InvalidateIL1();
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Icread(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Icread(typename CONFIG::address_t addr)
 {
 	if(CONFIG::HAS_ICACHE)
 	{
@@ -1086,6 +1104,8 @@ void CPU<CONFIG>::Icread(typename CONFIG::address_t addr)
 		SetICDBTRH(0);
 		SetICDBTRL(0);
 	}
+	
+	return true;
 }
 
 } // end of namespace ppc440

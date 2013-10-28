@@ -185,67 +185,48 @@ unisim/util/xml/xml.cc \
 unisim/util/endian/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
+unisim/util/queue/queue.cc \
 unisim/component/tlm2/processor/arm/armemu/armemu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
-unisim/component/cxx/processor/arm/decode_load_store_multiple.cc \
 unisim/component/cxx/processor/arm/armemu/cache.cc \
 unisim/component/cxx/processor/arm/armemu/cpu.cc \
 unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
 unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
-unisim/component/cxx/processor/arm/decode_copro_load_store.cc \
-unisim/component/cxx/processor/arm/decode_data_processing.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
-unisim/component/cxx/processor/arm/decode_load_store.cc \
 unisim/component/cxx/processor/arm/cpu.cc \
-unisim/component/cxx/processor/arm/decode_misc_load_store.cc \
-unisim/component/cxx/processor/arm/carry_overflow.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
 
 UNISIM_LIB_ARMEMU_ISA_THUMB_FILES="\
 unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
-unisim/component/cxx/processor/arm/isa/thumb/thumb_emu.isa \
-unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa \
 unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
-unisim/component/cxx/processor/arm/isa/thumb/exception_emu.isa \
-unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa \
-unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa \
+unisim/component/cxx/processor/arm/isa/thumb/load_store.isa \
+unisim/component/cxx/processor/arm/isa/thumb/multiply.isa \
+unisim/component/cxx/processor/arm/isa/thumb/misc_arithmetic.isa \
 unisim/component/cxx/processor/arm/isa/thumb/branch.isa \
+unisim/component/cxx/processor/arm/isa/thumb/branch_T1.isa \
 unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
 unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
-unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa \
 "
 
 UNISIM_LIB_ARMEMU_ISA_ARM32_FILES="\
 unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
-unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa \
 unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
-unisim/component/cxx/processor/arm/isa/arm32/arm32_emu.isa \
-unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
 unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa \
 unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_base.isa \
-unisim/component/cxx/processor/arm/isa/arm32/data_processing_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/exception_emu.isa \
-unisim/component/cxx/processor/arm/isa/arm32/multiply_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
 unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
 unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
 unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
 unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_multiple.isa \
-unisim/component/cxx/processor/arm/isa/arm32/arm32.isa \
-unisim/component/cxx/processor/arm/isa/arm32/semaphore.isa"
+unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
 UNISIM_LIB_ARMEMU_ISA_FILES="${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES} ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}"
 
@@ -384,25 +365,19 @@ unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
+unisim/util/queue/queue.hh \
 unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
+unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
 unisim/component/cxx/processor/arm/coprocessor_interface.hh \
-unisim/component/cxx/processor/arm/instruction.hh \
 unisim/component/cxx/processor/arm/armemu/cpu.hh \
 unisim/component/cxx/processor/arm/armemu/cache.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
-unisim/component/cxx/processor/arm/decode_misc_load_store.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
-unisim/component/cxx/processor/arm/masks.hh \
 unisim/component/cxx/processor/arm/models.hh \
-unisim/component/cxx/processor/arm/decode_load_store_multiple.hh \
-unisim/component/cxx/processor/arm/decode_data_processing.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
-unisim/component/cxx/processor/arm/decode_load_store.hh \
-unisim/component/cxx/processor/arm/decode_copro_load_store.hh \
-unisim/component/cxx/processor/arm/carry_overflow.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
 UNISIM_LIB_ARMEMU_TEMPLATE_FILES="\
@@ -453,6 +428,7 @@ unisim/util/os/linux_os/linux.tcc \
 unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
+unisim/util/queue/queue.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 
@@ -700,7 +676,7 @@ EOF
 
 CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
-
+CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
 if [ ! -e "${CONFIGURE_AC}" ]; then
 	has_to_build_configure=yes
@@ -715,6 +691,14 @@ if [ ! -e "${MAKEFILE_AM}" ]; then
 else
 	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
 		has_to_build_configure=yes
+	fi
+fi
+
+if [ ! -e "${CONFIGURE_CROSS}" ]; then
+	has_to_build_configure_cross=yes
+else
+	if [ "$0" -nt "${CONFIGURE_CROSS}" ]; then
+		has_to_build_configure_cross=yes
 	fi
 fi
 
@@ -736,10 +720,122 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 
 	echo "Generating Makefile.am"
 	echo "SUBDIRS=genisslib armemu" > "${MAKEFILE_AM}"
+	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
+
+if [ "${has_to_build_configure_cross}" = "yes" ]; then
+	echo "Building configure.cross"
+	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
+#!/bin/bash
+HERE=\$(pwd)
+MY_DIR=\$(cd \$(dirname \$0); pwd)
+
+# remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
+host=""
+help=""
+i=0
+j=0
+for arg in "\$@"
+do
+	case "\${arg}" in
+		--host=*)
+			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
+			;;
+		--with-systemc=* | --with-tlm20=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
+			;;
+		--help=* | --help)
+			help="yes"
+			args[\${j}]=\${arg}
+			j=\$((\${j}+1))
+			;;
+		*)
+			args[\${j}]=\${arg}
+			j=\$((\${j}+1))
+			;;
+	esac
+	i=\$((\${i}+1))
+done
+
+if test "\${help}" != "yes"; then
+	if test -z "\${host}"; then
+		echo "ERROR: No canonical name for the host system type was specified. Use --host=<canonical name> to specify a host system type (e.g. --host=i586-pc-mingw32)"
+		exit -1
+	fi
+fi
+
+if test "\${help}" = "yes"; then
+	echo "=== configure help for genisslib"
+else
+	echo "=== configuring in genisslib (\${HERE}/genisslib)"
+	echo "\$(basename \$0): running \${MY_DIR}/genisslib/configure \${args[@]}"
+fi
+if test ! -d \${HERE}/genisslib; then
+	mkdir "\${HERE}/genisslib"
+fi
+cd "\${HERE}/genisslib"
+\${MY_DIR}/genisslib/configure "\${args[@]}"
+STATUS="\$?"
+cd "\${HERE}"
+if test \${STATUS} -ne 0; then
+	exit \${STATUS}
+fi
+
+if test "\${help}" = "yes"; then
+	echo "=== configure help for armemu"
+else
+	echo "=== configuring in armemu (\${HERE}/armemu) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/armemu/configure \$@"
+fi
+
+if test ! -d \${HERE}/armemu; then
+	mkdir \${HERE}/armemu
+fi
+cd \${HERE}/armemu
+\${MY_DIR}/armemu/configure "\$@"
+STATUS="\$?"
+cd "\${HERE}"
+if test \${STATUS} -ne 0; then
+	exit \${STATUS}
+fi
+
+if test "\${help}" = "yes"; then
+	exit 0
+fi
+
+echo "\$(basename \$0): creating Makefile.cross"
+cat << EOF_MAKEFILE_CROSS > Makefile.cross
+#!/usr/bin/make -f
+all: armemu-all
+clean: genisslib-clean armemu-clean
+distclean: genisslib-distclean armemu-distclean
+	rm -f \${HERE}/Makefile.cross
+install: armemu-install
+
+genisslib-all:
+	@\\\$(MAKE) -C \${HERE}/genisslib all
+armemu-all: genisslib-all
+	@\\\$(MAKE) -C \${HERE}/armemu all
+genisslib-clean:
+	@\\\$(MAKE) -C \${HERE}/genisslib clean
+armemu-clean:
+	@\\\$(MAKE) -C \${HERE}/armemu clean
+genisslib-distclean:
+	@\\\$(MAKE) -C \${HERE}/genisslib distclean
+armemu-distclean:
+	@\\\$(MAKE) -C \${HERE}/armemu distclean
+armemu-install:
+	@\\\$(MAKE) -C \${HERE}/armemu install
+EOF_MAKEFILE_CROSS
+
+chmod +x Makefile.cross
+
+echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
+EOF_CONFIGURE_CROSS
+	chmod +x "${CONFIGURE_CROSS}"
+fi  # has_to_build_configure_cross = "yes"
 
 # GENISSLIB
 
@@ -928,12 +1024,12 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32_emu.isa" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa" >> "${ARMEMU_MAKEFILE_AM}"
 
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb/thumb_emu.isa" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb/thumb.isa" >> "${ARMEMU_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMEMU_MAKEFILE_AM}"

@@ -16,7 +16,7 @@ DEST_DIR=$1
 UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
 UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
 UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/virtex5fxt
-LIGHT_DIST=yes
+LIGHT_DIST=no #yes
 
 VIRTEX5FXT_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-virtex5fxt-${VIRTEX5FXT_VERSION}
@@ -410,11 +410,9 @@ unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.hh \
-unisim/component/cxx/processor/powerpc/ppc440/exception.hh \
 unisim/component/cxx/processor/powerpc/ppc440/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
@@ -516,9 +514,7 @@ unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/os/linux_os/linux.tcc \
-unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc \
-unisim/component/cxx/processor/powerpc/ppc440/exception.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_cache.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debugging.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_exception_handling.tcc \
@@ -892,7 +888,6 @@ MY_DIR=\$(cd \$(dirname \$0); pwd)
 # remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
 host=""
 help=""
-old_args=$@
 i=0
 j=0
 for arg in "\$@"

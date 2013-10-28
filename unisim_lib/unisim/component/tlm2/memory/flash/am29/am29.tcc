@@ -77,27 +77,9 @@ bool AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::BeginSetup()
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
 bool AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
-	// tlm::tlm_command cmd = payload.get_command();
-	typename CONFIG::ADDRESS addr = payload.get_address();
-	typename CONFIG::ADDRESS dmi_start_addr = addr;
-	typename CONFIG::ADDRESS dmi_end_addr = addr;
-
-	unsigned char *dmi_ptr = (unsigned char *) inherited::GetDirectAccess(addr, dmi_start_addr, dmi_end_addr);
-
-	dmi_data.set_start_address(dmi_start_addr);
-	dmi_data.set_end_address(dmi_end_addr);
-	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ); // Only grant read access
-
-	if(dmi_ptr)
-	{
-		//std::cerr << sc_module::name() << ": grant 0x" << std::hex << dmi_start_addr << "-0x" << dmi_end_addr << std::dec << std::endl;
-		dmi_data.set_dmi_ptr(dmi_ptr);
-		// set latency per byte
-		dmi_data.set_read_latency(cycle_time / (BUSWIDTH / 8));
-		dmi_data.set_write_latency(cycle_time / (BUSWIDTH / 8));
-		return true;
-	}
-
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 

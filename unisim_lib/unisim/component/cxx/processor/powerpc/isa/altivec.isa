@@ -974,4 +974,5 @@ group altivec(dss, dssall, dst, dstst, dststt, dstt, lvebx, lvehx, lvewx, lvsl, 
 
 altivec.execute = {
 	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	return false;
 }

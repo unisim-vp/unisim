@@ -40,14 +40,14 @@ LOOKASIDE BUFFER MANAGEMENT INSTRUCTIONS
 
 op tlbia(31[6]:?[5]:?[5]:?[5]:370[10]:?[1])
 tlbia.execute = {
-	cpu->Tlbia();
+	return cpu->Tlbia();
 }
 tlbia.disasm = { os << "tlbia"; }
 
 op tlbie(31[6]:?[5]:?[5]:rb[5]:306[10]:?[1])
 tlbie.execute = {
 	typename CONFIG::address_t ea = cpu->GetGPR(rb);
-	cpu->Tlbie(ea);
+	return cpu->Tlbie(ea);
 }
 tlbie.disasm = {
 	os << "tlbie r" << (unsigned int) rb;
@@ -61,7 +61,7 @@ tlbie.disasm = {
 op tlbld(31[6]:0[5]:0[5]:rb[5]:978[10]:0[1])
 tlbld.execute = {
 	typename CONFIG::address_t ea = cpu->GetGPR(rb);
-	cpu->Tlbld(ea);
+	return cpu->Tlbld(ea);
 }
 tlbld.disasm = {
 	os << "tlbld r" << (unsigned int) rb;
@@ -75,7 +75,7 @@ tlbld.disasm = {
 op tlbli(31[6]:0[5]:0[5]:rb[5]:1010[10]:0[1])
 tlbli.execute = {
 	typename CONFIG::address_t ea = cpu->GetGPR(rb);
-	cpu->Tlbli(ea);
+	return cpu->Tlbli(ea);
 }
 tlbli.disasm = {
 	os << "tlbli r" << (unsigned int) rb;

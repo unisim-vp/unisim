@@ -39,13 +39,13 @@ MEMORY SYNCHRONIZATION INSTRUCTIONS
 ***************************************/
 
 op mbar(31[6]:mo[5]:?[5]:?[5]:854[10]:?[1])
-mbar.execute = { /* order is always enforced in functional simulation */ }
+mbar.execute = { return true; /* order is always enforced in functional simulation */ }
 mbar.disasm = {
 	os << "mbar " << (unsigned int) mo;
 }
 
 op msync(31[6]:?[15]:598[10]:?[1])
-msync.execute = { /*cpu->Synchronize();*/ }
+msync.execute = { return true; /*cpu->Synchronize();*/ }
 msync.disasm = {
 	os << "msync";
 }

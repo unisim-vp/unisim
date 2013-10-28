@@ -29,7 +29,7 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MODELS_HH__
@@ -51,6 +51,7 @@ static const uint32_t ARMV5TE = 5;
 static const uint32_t ARMV5TEJ = 6;
 static const uint32_t ARMV5TEXP = 7;
 static const uint32_t ARMV6 = 8;
+static const uint32_t ARMV7 = 9;
 
 static const uint32_t ARMEMU = 1000;
 
