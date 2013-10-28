@@ -540,8 +540,6 @@ void S12XGATE::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	std::cout << "XGATE::read_write offset @0x" << std::hex << address << "  data_length " << std::dec << data_length << std::endl;
-
 	if ((address >= baseAddress) && (address < (baseAddress + 64))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
