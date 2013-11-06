@@ -330,7 +330,7 @@ private:
 	inline bool isIdleLineTypeStop() { return ((scicr1_register & 0x04) != 0); }
 	inline bool isParityEnabled() { return ((scicr1_register & 0x02) != 0); }
 	inline bool isOddParity() { return ((scicr1_register & 0x01) != 0); }
-	inline void setParityError() { scisr1_register = scisr1_register | 0x01;	}
+	inline void setParityError() { scisr1_read = false; scisr1_register = scisr1_register | 0x01;	}
 	inline bool isReceiveInputActiveedgeInterruptEnabled() { return ((sciacr1_register & 0x80) != 0); }
 	inline bool isBitErrorInterruptEnabled() { return ((sciacr1_register & 0x20) != 0); }
 	inline bool isBreakDetectInterruptEnabled() { return ((sciacr1_register & 0x01) != 0); }
@@ -344,6 +344,7 @@ private:
 	inline bool isBRK13Set() { return ((scisr2_register & 0x04) != 0);}
 	inline bool isTXD_Output() { return ((scisr2_register & 0x02) != 0); }
 	inline void setTDRE() {
+		 scisr1_read = false;
 		scisr1_register = scisr1_register | 0x80;
 		// is Transmission (TDRE) interrupt enabled ?
 		if ((scicr2_register & 0x80) != 0) {
@@ -355,7 +356,7 @@ private:
 	inline void clearTDRE() {
 		if (isSCISR1_Read()) {
 			// clear SCISR1::TDRE bit
-			(scisr1_register = scisr1_register & 0x7F); scisr1_read = false;
+			(scisr1_register = scisr1_register & 0x7F);
 		}
 	}
 
@@ -380,6 +381,7 @@ private:
 
 		if (isReceiverStandbay()) return;
 
+		scisr1_read = false;
 		scisr1_register = scisr1_register | 0x10;
 		//is Idle interrupt enabled ?
 		if ((scicr2_register & 0x10) != 0) {
@@ -425,7 +427,8 @@ private:
 		}
 	}
 
-	inline void setFramingError() { scisr1_register = scisr1_register | 0x02; }
+	inline void setNoiseFlag() { scisr1_read = false; scisr1_register = scisr1_register | 0x04; }
+	inline void setFramingError() { scisr1_read = false; scisr1_register = scisr1_register | 0x02; }
 	inline bool isReceiverStandbay() { return ((scicr2_register & 0x02) != 0); }
 
 	inline void setRDRF() {
@@ -434,6 +437,7 @@ private:
 
 		if (isReceiverStandbay()) return;
 
+		scisr1_read = false;
 		scisr1_register = scisr1_register | 0x20;
 		// is receiver full interrupt enabled ?
 		if ((scicr2_register & 0x20) != 0) {
@@ -448,6 +452,7 @@ private:
 
 		if (isReceiverStandbay()) return;
 
+		scisr1_read = false;
 		scisr1_register = scisr1_register | 0x08;
 		// is receiver full interrupt enabled ?
 		if ((scicr2_register & 0x20) != 0) {
@@ -462,7 +467,7 @@ private:
 
 	inline uint16_t buildFrame(uint8_t high, uint8_t low, SCIMSG msgType);
 
-//   *** de chez Gilles ***
+	// *** Telnet ***
 	bool	telnet_enabled;
 	Parameter<bool>	param_telnet_enabled;
 

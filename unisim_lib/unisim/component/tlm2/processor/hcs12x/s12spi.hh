@@ -59,11 +59,13 @@
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
-//#include "tlm_utils/multi_passthrough_target_socket.h"
 
 #include <unisim/kernel/service/service.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
+#include <unisim/kernel/logger/logger.hh>
+
+#include "unisim/service/interfaces/char_io.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
@@ -99,6 +101,7 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
 using unisim::kernel::service::VariableBase;
 
+using unisim::service::interfaces::CharIO;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::TrapReporting;
@@ -119,6 +122,13 @@ using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 class S12SPI :
 	public sc_module
 	, public CallBackObject
@@ -127,6 +137,7 @@ class S12SPI :
 	, public Service<Memory<physical_address_t> >
 	, public Service<Registers>
 	, public Client<Memory<physical_address_t> >
+	, public Client<CharIO>
 
 {
 public:
@@ -143,7 +154,10 @@ public:
 	static const uint8_t RESERVED2	= 0x06; // 1 bytes
 	static const uint8_t RESERVED3	= 0x07; // 1 bytes
 
+	enum STATUS {IDLE, ACTIVE};
+
 	ServiceImport<TrapReporting > trap_reporting_import;
+	ServiceImport<CharIO > char_io_import;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
@@ -159,6 +173,9 @@ public:
 
 	void assertInterrupt(uint8_t interrupt_offset);
 	void ComputeInternalTime();
+
+	void TxRun();
+	void RxRun();
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -220,6 +237,10 @@ private:
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
 
+	sc_time		spi_baud_rate;
+
+	sc_event tx_run_event, rx_run_event, tx_load_event;
+
 	// S12SPI baseAddress  SPI0=0x00D8:0x00DF  SPI1=0x00F0:0x00F7 SPI2=0x00F8:0x00FF
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
@@ -235,6 +256,24 @@ private:
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
+	bool spisr_read;
+
+	bool mosi;
+	unisim::kernel::service::Register<bool> mosi_pin;
+
+	bool miso;
+	unisim::kernel::service::Register<bool> miso_pin;
+
+	bool ss;
+	unisim::kernel::service::Register<bool> ss_pin;
+
+	bool sck;
+	unisim::kernel::service::Register<bool> sck_pin;
+
+	STATUS state;
+	bool abortTransmission;
+	bool validFrameWaiting;
+
 	// =============================================
 	// =            Registers                      =
 	// =============================================
@@ -244,6 +283,229 @@ private:
 	uint8_t spibr_register; // 1 byte
 	uint8_t spisr_register; // 1 byte
 	uint8_t spidr_register; // 1 bytes
+
+	uint8_t spidr_tx_buffer, spidr_rx_buffer;;
+
+	inline void ComputeBaudRate();
+
+	inline bool isInterruptEnabled() { return ((spicr1_register & 0x80) != 0); }
+	inline bool isSPIEnabled() { return ((spicr1_register & 0x40) != 0); }
+	inline void enableSPI() {
+		state == IDLE;
+		if (isMaster()) {
+			tx_run_event.notify();
+		} else {
+			rx_run_event.notify();
+		}
+	}
+
+	inline void disableSPI() {
+		// if SPI is disabled (idle status) then the status bits in SPISR register are reseted
+		spisr_register = 0x20;
+		state == IDLE;
+		if (isMaster()) {
+			abortTX();
+		}
+	}
+
+	inline bool isTransmitInterruptEnabled() { return ((spicr1_register & 0x20) != 0); }
+
+	inline bool isMaster() { return ((spicr1_register & 0x10) != 0); }
+	inline bool getSCKIdle() {
+		if ((spicr1_register) != 0) {
+			return (true);
+		} else {
+			return (false);
+		}
+	}
+
+	inline bool isAabortTransmission() {
+
+		return (abortTransmission);
+	}
+
+	inline void abortTX() {
+		// TODO finalize abort transmission
+
+		if (isMaster()) {
+			state = IDLE;
+			abortTransmission = true;
+		}
+	}
+
+	inline bool isLSBFirst() { return ((spicr1_register & 0x01) != 0); }
+	inline bool isOutputBufferEnabled() { return ((spicr2_register & 0x08) != 0); }
+	inline bool isClkStopInWait() { return ((spicr2_register & 0x02) != 0); }
+
+	inline bool isSPC0Set() { return ((spicr2_register & 0x01) != 0); }
+
+	inline void pinRead(bool &value) {
+
+		if (!(isSPC0Set() ^ isMaster())) {
+			value = mosi;
+		} else {
+			value = miso;
+		}
+	}
+
+	inline void pinWrite(bool value) {
+
+		if (isMaster()) {
+			mosi = value;
+		} else {
+			miso = value;
+		}
+	}
+
+	inline void setSPIF() {
+		spisr_read = false;
+		spisr_register = spisr_register | 0x80;
+		if (isInterruptEnabled()) {
+			assertInterrupt(interrupt_offset);
+		}
+	}
+
+	inline bool isSPIF() { return ((spisr_register & 0x80) != 0); }
+
+	inline void setSPTEF() {
+		spisr_read = false;
+		spisr_register = spisr_register | 0x20;
+		if (isTransmitInterruptEnabled()) {
+			assertInterrupt(interrupt_offset);
+		}
+	}
+
+	inline bool isSPTEF() { return ((spisr_register & 0x20) != 0); }
+
+	inline void setMODF() {
+		spisr_read = false;
+		spisr_register = spisr_register | 0x10;
+
+		if (isInterruptEnabled()) {
+			assertInterrupt(interrupt_offset);
+		}
+
+	}
+
+	inline bool isSPISR_Read() { return (spisr_read); }
+
+	inline bool isValideFrameWaiting() { return (validFrameWaiting); }
+	inline void setValideFrameWaiting(bool b) { validFrameWaiting = b; }
+	inline void setSPIDR(uint8_t spidr) {
+		if (isSPIF()) {
+			validFrameWaiting = true;
+		} else {
+			spidr_register = spidr;
+			setSPIF();
+		}
+	}
+
+	inline void startTransmission() { ss = false; }
+	inline void endTransmission() { ss = true; }
+
+	// *** Telnet ***
+	bool	telnet_enabled;
+	Parameter<bool>	param_telnet_enabled;
+
+	unisim::kernel::logger::Logger logger;
+
+	std::queue<uint8_t> telnet_rx_fifo;
+	std::queue<uint8_t> telnet_tx_fifo;
+	sc_event telnet_rx_event, telnet_tx_event;
+
+	inline void add(std::queue<uint8_t> &buffer_queue, uint8_t data, sc_event &event) {
+	    buffer_queue.push(data);
+	    event.notify();
+	}
+
+	inline void next(std::queue<uint8_t> &buffer_queue, uint8_t& data, sc_event &event) {
+
+		while( isEmpty(buffer_queue))
+		{
+			wait(event);
+		}
+
+		data = buffer_queue.front();
+		buffer_queue.pop();
+
+	}
+
+	inline bool isEmpty(std::queue<uint8_t> &buffer_queue) {
+
+	    return (buffer_queue.empty());
+	}
+
+	inline size_t size(std::queue<uint8_t> &buffer_queue) {
+
+	    return (buffer_queue.size());
+	}
+
+	inline void TelnetSendString(const char *msg) {
+
+		while (*msg != 0)
+			add(telnet_tx_fifo, *msg++, telnet_tx_event) ;
+
+		TelnetProcessOutput(true);
+	}
+
+	inline void TelnetProcessInput()
+	{
+		if(char_io_import)
+		{
+			char c;
+			uint8_t v;
+
+			if(!char_io_import->GetChar(c)) return;
+
+			v = (uint8_t) c;
+			if(debug_enabled)
+			{
+				logger << DebugInfo << "Receiving ";
+				if(v >= 32)
+					logger << "character '" << c << "'";
+				else
+					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+				logger << " from telnet client" << EndDebugInfo;
+			}
+
+			add(telnet_rx_fifo, v, telnet_rx_event);
+		}
+	}
+
+	inline void TelnetProcessOutput(bool flush_telnet_output)
+	{
+		if(char_io_import)
+		{
+			char c;
+			uint8_t v;
+
+			if(!isEmpty(telnet_tx_fifo))
+			{
+				do
+				{
+					next(telnet_tx_fifo, v, telnet_tx_event);
+					c = (char) v;
+					if(debug_enabled)
+					{
+						logger << DebugInfo << "Sending ";
+						if(v >= 32)
+							logger << "character '" << c << "'";
+						else
+							logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+						logger << " to telnet client" << EndDebugInfo;
+					}
+					char_io_import->PutChar(c);
+				}
+				while(!isEmpty(telnet_tx_fifo));
+
+			}
+
+			if(flush_telnet_output)
+			{
+				char_io_import->FlushChars();
+			}
+		}
+	}
 
 
 }; /* end class S12SPI */

@@ -23,20 +23,25 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Service<Registers>(name, parent)
 	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Client<CharIO>(name, parent)
+
+	, logger(*this)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
 	, bus_clock_socket("bus_clock_socket")
 	, slave_socket("slave_socket")
 
+	, char_io_import("char_io_import", this)
+
 	, memory_export("memory_export", this)
 	, memory_import("memory_import", this)
 	, registers_export("registers_export", this)
 
-	, spicr1_register(0x00)
+	, spicr1_register(0x04)
 	, spicr2_register(0x00)
 	, spibr_register(0x00)
-	, spisr_register(0x00)
+	, spisr_register(0x20)
 	, spidr_register(0x00)
 
 	, bus_cycle_time_int(250000)
@@ -51,8 +56,28 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
-{
+	, mosi(false)
+	, mosi_pin("MOSI", this, mosi, "master output and slave input pin")
 
+	, miso(false)
+	, miso_pin("MISO", this, miso, "master input and slave output pin")
+
+	, ss(true)
+	, ss_pin("SS", this, ss, "Select signal pin. If MODFEN and SSOE bit are set, the SS pin is configured as slave select output (low during transmission and high for idle).")
+
+	, sck(false)
+	, sck_pin("SCK", this, sck, "SPI clock")
+
+	, state(IDLE)
+	, abortTransmission(false)
+	, spisr_read(false)
+	, validFrameWaiting(false)
+
+	, telnet_enabled(false)
+	, param_telnet_enabled("telnet-enabled", this, telnet_enabled)
+
+
+{
 
 	interrupt_request(*this);
 
@@ -60,6 +85,9 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	bus_clock_socket.register_b_transport(this, &S12SPI::updateBusClock);
 
 	SC_HAS_PROCESS(S12SPI);
+
+	SC_THREAD(TxRun);
+	SC_THREAD(RxRun);
 
 }
 
@@ -82,9 +110,88 @@ S12SPI::~S12SPI() {
 	for (i=0; i<n; i++) {
 		delete extended_registers_registry[i];
 	}
-
 }
 
+void S12SPI::TxRun() {
+
+	while (true) {
+		while (!isSPIEnabled() || !isMaster()) {
+			wait(tx_run_event);
+		}
+
+		while (isSPIEnabled() && isSPTEF() && isMaster()) {
+			wait(tx_load_event | tx_run_event);
+			// TODO check is it an other master ?
+		}
+
+		// TODO: implement transmit functionalities
+		while (isSPIEnabled() && isMaster() && !isAabortTransmission()) {
+
+			if (debug_enabled)	std::cout << sc_object::name() << "::txShiftOut Start transmission -> " << std::hex << (unsigned int) spidr_register << std::dec << std::endl;
+
+			if (debug_enabled) std::cout << sc_object::name() << "::Telnet Is Enabled '" << ((telnet_enabled)? "TRUE": "FALSE") << "'" << std::endl;
+
+			// use Telnet as an echo
+			if (telnet_enabled) {
+				add(telnet_tx_fifo, spidr_register, telnet_tx_event);
+				TelnetProcessOutput(true);
+				if (debug_enabled) std::cout << sc_object::name() << "::Telnet shiftOut '" << spidr_register << "'" << std::endl;
+			}
+
+			spidr_tx_buffer = spidr_register;
+			setSPTEF();
+
+			// check baud rate generator (isBaudRateGeneratorEnabled())
+
+			uint16_t tx_shift = spidr_tx_buffer;
+			uint8_t index = 0;
+
+			if (debug_enabled)	std::cout << "tx_shift  -> " << std::hex << tx_shift << std::dec << std::endl;
+
+			startTransmission();
+			while (isSPIEnabled() && isMaster() && (index < 8)) {
+				pinWrite(tx_shift & 0x0001);
+
+				tx_shift = tx_shift >> 1;
+
+				index++;
+				wait(spi_baud_rate);
+
+				// TODO check is it an other master ?
+			}
+			endTransmission();
+
+			if (debug_enabled)	std::cout << sc_object::name() << "::txShiftOut transmission complete" << std::endl;
+
+		}
+	}
+}
+
+void S12SPI::RxRun() {
+
+	while (true) {
+		while (!isSPIEnabled() || isMaster()) {
+			wait(rx_run_event);
+		}
+
+		// TODO: implement receive functionalities
+		while (isSPIEnabled() && !isMaster()) {
+
+			// TODO ** a new start is detected ** handle valid waiting when receiving third frame
+
+			if (isValideFrameWaiting()) {
+				setValideFrameWaiting(false);
+			}
+
+			// TODO ** receive new frame **
+			setSPIDR(spidr_rx_buffer);
+		}
+	}
+}
+
+//=====================================================================
+//=             registers setters and getters                         =
+//=====================================================================
 
 void S12SPI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
@@ -99,12 +206,12 @@ void S12SPI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
 
-			std::cerr << "S12SPI::Warning: READ access to 0x" << std::hex << (address - baseAddress) << std::endl;
+//			std::cerr << "S12SPI::Warning: READ access to 0x" << std::hex << (address - baseAddress) << std::endl;
 
 			read(address - baseAddress, data_ptr, data_length);
 		} else if (cmd == tlm::TLM_WRITE_COMMAND) {
 
-			std::cerr << "S12SPI::Warning: WRITE access to 0x" << std::hex << (address - baseAddress) << std::endl;
+//			std::cerr << "S12SPI::Warning: WRITE access to 0x" << std::hex << (address - baseAddress) << std::endl;
 
 			write(address - baseAddress, data_ptr, data_length);
 		}
@@ -121,35 +228,118 @@ void S12SPI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 bool S12SPI::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
-	case SPICR1: *((uint8_t *) buffer) = spicr1_register; break;	// 1 byte
-	case SPICR2: *((uint8_t *) buffer) = spicr2_register; break;	// 1 byte
-	case SPIBR: *((uint8_t *) buffer) = spibr_register; break;	// 1 byte
-	case SPISR: *((uint8_t *) buffer) = spisr_register; break; // 1 byte
-	case RESERVED1: *((uint8_t *) buffer) = 0x00; break; // 1 byte
-	case SPIDR: *((uint8_t *) buffer) = spidr_register; break; // 1 bytes
-	case RESERVED2: *((uint8_t *) buffer) = 0x00; break; // 1 bytes
-	case RESERVED3: *((uint8_t *) buffer) = 0x00; break; // 1 bytes
+		case SPICR1: {
+			*((uint8_t *) buffer) = spicr1_register;
+		} break;	// 1 byte
+		case SPICR2: {
+			*((uint8_t *) buffer) = spicr2_register & 0x1B;
+		} break;	// 1 byte
+		case SPIBR: {
+			*((uint8_t *) buffer) = spibr_register & 0x77;
+		} break;	// 1 byte
+		case SPISR: {
+			// Write has no effect. Flags are cleared by reading the SPISR register and doing read/write operation
+			spisr_read = true;
+			*((uint8_t *) buffer) = spisr_register & 0xB0;
+		} break; // 1 byte
+		case RESERVED1: {
+			*((uint8_t *) buffer) = 0x00;
+		} break; // 1 byte
+		case SPIDR: {
+			*((uint8_t *) buffer) = spidr_register;
+			if (isSPISR_Read()) {
+				if (isValideFrameWaiting()) {
+					spidr_register = spidr_rx_buffer;
+					setSPIF();
+					validFrameWaiting = false;
+				} else {
+					// clear SPIF
+					spisr_register = spisr_register & 0x7F;
+				}
+			}
+		} break; // 1 bytes
+		case RESERVED2: {
+			*((uint8_t *) buffer) = 0x00;
+		} break; // 1 bytes
+		case RESERVED3: {
+			*((uint8_t *) buffer) = 0x00;
+		} break; // 1 bytes
 	}
 
 	return (true);
 }
 
-//=====================================================================
-//=             registers setters and getters                         =
-//=====================================================================
-
-
 bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
-	case SPICR1: spicr1_register = *((uint8_t *) buffer); break;	// 1 byte
-	case SPICR2: spicr2_register = *((uint8_t *) buffer); break;	// 1 byte
-	case SPIBR:  spibr_register = *((uint8_t *) buffer); break;	// 1 byte
-	case SPISR:  spisr_register = *((uint8_t *) buffer); break; // 1 byte
-	case RESERVED1:  break; // 1 byte
-	case SPIDR:  spidr_register = *((uint8_t *) buffer); break; // 1 bytes
-	case RESERVED2:  break; // 1 bytes
-	case RESERVED3:  break; // 1 bytes
+		case SPICR1: {
+			uint8_t old = spicr1_register;
+			spicr1_register = *((uint8_t *) buffer);
+
+			if ((state == ACTIVE) && (((old & 0x1F) ^ (spicr1_register & 0x1F)) != 0)) {
+				abortTX();
+			}
+
+			if (((old & 0x40) == 0) && isSPIEnabled()) {
+				enableSPI();
+			}
+
+			if (((old & 0x40) != 0) && !isSPIEnabled()) {
+				disableSPI();
+			}
+
+			if (isSPISR_Read()) {
+				// clear MODF flag
+				spisr_register = spisr_register & 0xEF;
+			}
+
+			// TODO: I have not understand the meaning and use of SPISCR1::SSOE bit also of SS pin !!!
+
+		} break;	// 1 byte
+		case SPICR2: {
+			uint8_t old = spicr2_register;
+			spicr2_register = *((uint8_t *) buffer) & 0x1B;
+
+			if ((state == ACTIVE) && (((old & 0x19) ^ (spicr2_register & 0x19)) != 0)) {
+				abortTX();
+			}
+
+		} break;	// 1 byte
+		case SPIBR:  {
+			uint8_t old = spibr_register;
+			spibr_register = *((uint8_t *) buffer) & 0x77;
+			if ((old & 0x77) ^ (spibr_register & 0x77)) {
+				ComputeBaudRate();
+
+				if (state == ACTIVE) {
+					abortTX();
+				}
+			}
+
+		} break;	// 1 byte
+		case SPISR:  {
+			// Write has no effect. Flags are cleared by reading the SPISR register and doing read/write operation
+		} break; // 1 byte
+
+		case RESERVED1:  break; // 1 byte
+
+		case SPIDR:  {
+			if (!isSPTEF() || isSPISR_Read()) {
+				// (SPTEF = 1) has to be read before a write to SPIDR can happen and taken into account
+				spidr_register = *((uint8_t *) buffer);
+				if (isMaster()) {
+					tx_load_event.notify();
+				}
+			}
+
+			if (isSPISR_Read()) {
+				// clear SPTEF flag
+				spisr_register = spisr_register & 0xDF;
+			}
+
+		} break; // 1 bytes
+		case RESERVED2:  break; // 1 bytes
+		case RESERVED3:  break; // 1 bytes
 
 	}
 
@@ -216,6 +406,8 @@ void S12SPI::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
+	ComputeBaudRate();
+
 }
 
 
@@ -229,6 +421,14 @@ void S12SPI::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 	ComputeInternalTime();
 }
 
+void S12SPI::ComputeBaudRate() {
+
+	uint16_t sppr = (spibr_register >> 4) & 0x07;
+	uint16_t spr = spibr_register & 0x07;
+	uint16_t baudRateDivisor = (sppr + 1) * pow(2, spr+1);
+	spi_baud_rate = bus_cycle_time / baudRateDivisor;
+
+}
 
 //=====================================================================
 //=                  Client/Service setup methods                     =
@@ -309,11 +509,17 @@ void S12SPI::OnDisconnect() {
 
 void S12SPI::Reset() {
 
-	spicr1_register = 0x00;
+	spicr1_register = 0x04;
 	spicr2_register = 0x00;
 	spibr_register = 0x00;
-	spisr_register = 0x00;
+	spisr_register = 0x20;
 	spidr_register = 0x00;
+
+	if(char_io_import)
+	{
+		char_io_import->Reset();
+	}
+
 }
 
 
@@ -329,14 +535,30 @@ bool S12SPI::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 		physical_address_t offset = addr-baseAddress;
 
 		switch (offset) {
-		case SPICR1: *((uint8_t *) buffer) = spicr1_register; break;	// 1 byte
-		case SPICR2: *((uint8_t *) buffer) = spicr2_register; break;	// 1 byte
-		case SPIBR: *((uint8_t *) buffer) = spibr_register; break;	// 1 byte
-		case SPISR: *((uint8_t *) buffer) = spisr_register; break; // 1 byte
-		case RESERVED1: *((uint8_t *) buffer) = 0x00; break; // 1 byte
-		case SPIDR: *((uint8_t *) buffer) = spidr_register; break; // 1 bytes
-		case RESERVED2: *((uint8_t *) buffer) = 0x00; break; // 1 bytes
-		case RESERVED3: *((uint8_t *) buffer) = 0x00; break; // 1 bytes
+			case SPICR1: {
+				*((uint8_t *) buffer) = spicr1_register;
+			} break;	// 1 byte
+			case SPICR2: {
+				*((uint8_t *) buffer) = spicr2_register;
+			} break;	// 1 byte
+			case SPIBR: {
+				*((uint8_t *) buffer) = spibr_register;
+			} break;	// 1 byte
+			case SPISR: {
+				*((uint8_t *) buffer) = spisr_register;
+			} break; // 1 byte
+			case RESERVED1: {
+				*((uint8_t *) buffer) = 0x00;
+			} break; // 1 byte
+			case SPIDR: {
+				*((uint8_t *) buffer) = spidr_register;
+			} break; // 1 bytes
+			case RESERVED2: {
+				*((uint8_t *) buffer) = 0x00;
+			} break; // 1 bytes
+			case RESERVED3: {
+				*((uint8_t *) buffer) = 0x00;
+			} break; // 1 bytes
 
 		}
 
@@ -359,14 +581,24 @@ bool S12SPI::WriteMemory(physical_address_t addr, const void *buffer, uint32_t s
 		physical_address_t offset = addr-baseAddress;
 
 		switch (offset) {
-		case SPICR1: spicr1_register = *((uint8_t *) buffer); break;	// 1 byte
-		case SPICR2: spicr2_register = *((uint8_t *) buffer); break;	// 1 byte
-		case SPIBR:  spibr_register = *((uint8_t *) buffer); break;	// 1 byte
-		case SPISR:  spisr_register = *((uint8_t *) buffer); break; // 1 byte
-		case RESERVED1:  break; // 1 byte
-		case SPIDR:  spidr_register = *((uint8_t *) buffer); break; // 1 bytes
-		case RESERVED2:  break; // 1 bytes
-		case RESERVED3:  break; // 1 bytes
+			case SPICR1: {
+				spicr1_register = *((uint8_t *) buffer);
+			} break;	// 1 byte
+			case SPICR2: {
+				spicr2_register = *((uint8_t *) buffer);
+			} break;	// 1 byte
+			case SPIBR: {
+				spibr_register = *((uint8_t *) buffer);
+			} break;	// 1 byte
+			case SPISR:  {
+				spisr_register = *((uint8_t *) buffer);
+			} break; // 1 byte
+			case RESERVED1:  break; // 1 byte
+			case SPIDR:  {
+				spidr_register = *((uint8_t *) buffer);
+			} break; // 1 bytes
+			case RESERVED2:  break; // 1 bytes
+			case RESERVED3:  break; // 1 bytes
 		}
 
 		return (true);

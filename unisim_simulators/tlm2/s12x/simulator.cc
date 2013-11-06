@@ -433,7 +433,7 @@ Simulator::Simulator(int argc, char **argv)
 
 	if(enable_telnet)
 	{
-		sci0->char_io_import >> telnet->char_io_export;
+		spi0->char_io_import >> telnet->char_io_export;
 	}
 
 	if (isS19) {
@@ -741,16 +741,28 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SPI0.base-address", 0x00D8);
 	simulator->SetVariable("SPI0.interrupt-offset", 0xD8);
 	simulator->SetVariable("SPI0.debug-enabled", false);
+	simulator->SetVariable("SPI0.MOSI", false);
+	simulator->SetVariable("SPI0.MISO", false);
+	simulator->SetVariable("SPI0.SS", true);
+	simulator->SetVariable("SPI0.SCK", false);
 
 	simulator->SetVariable("SPI1.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI1.base-address", 0x00F0);
 	simulator->SetVariable("SPI1.interrupt-offset", 0xBE);
 	simulator->SetVariable("SPI1.debug-enabled", false);
+	simulator->SetVariable("SPI1.MOSI", false);
+	simulator->SetVariable("SPI1.MISO", false);
+	simulator->SetVariable("SPI1.SS", true);
+	simulator->SetVariable("SPI1.SCK", false);
 
 	simulator->SetVariable("SPI2.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI2.base-address", 0x00F8);
 	simulator->SetVariable("SPI2.interrupt-offset", 0xBC);
 	simulator->SetVariable("SPI2.debug-enabled", false);
+	simulator->SetVariable("SPI2.MOSI", false);
+	simulator->SetVariable("SPI2.MISO", false);
+	simulator->SetVariable("SPI2.SS", true);
+	simulator->SetVariable("SPI2.SCK", false);
 
 	simulator->SetVariable("RAM.org", 0x000800);
 	simulator->SetVariable("RAM.bytesize", 1024*1024); // 1MByte

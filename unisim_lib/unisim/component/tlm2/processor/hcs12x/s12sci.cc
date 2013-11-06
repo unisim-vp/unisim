@@ -233,6 +233,7 @@ void S12SCI::RunRx() {
 					if (isBreakDetectEnabled()) {
 						setBreakDetectInterrupt();
 						// TODO: ? May set noise flag NF, or receiver flag RAF ?
+						// setNoiseFlag();
 					} else {
 						setFramingError();
 						if (rx_debug_enabled)	std::cout << "Fraiming Error (1)" << std::endl;
@@ -240,6 +241,7 @@ void S12SCI::RunRx() {
 						scidrh_register = 0;
 						scidrl_register = 0;
 						// TODO: ? May set the overrun flag OR, noise flag NF, parity error flag PE, or the receiver active flag RAF ?
+						// setNoiseFlag();
 					}
 				} else {
 					// Stop bit not detected and it is not a break frame
@@ -612,7 +614,7 @@ bool S12SCI::read(unsigned int offset, const void *buffer, unsigned int data_len
 	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
 
 	switch (offset) {
-		case 0x00:
+		case (SCIBDH | SCIASR1): {
 			if ((scisr2_register & 0x80) == 0) {
 				if (data_length == 1) {
 					*((uint8_t *) buffer) = scibdh_register;
@@ -620,30 +622,37 @@ bool S12SCI::read(unsigned int offset, const void *buffer, unsigned int data_len
 					uint16_t val = (scibdh_register << 8) | scibdl_register;
 					*((uint16_t *) buffer) = Host2BigEndian(val);
 				}
-
 			} else {
 				*((uint8_t *) buffer) = sciasr1_register & 0x87;
-			} break;
-		case 0x01: // 1 byte
+			}
+		} break;
+		case (SCIBDL | SCIACR1): {
 			if ((scisr2_register & 0x80) == 0) {
 				*((uint8_t *) buffer) = scibdl_register;
 			} else {
 				*((uint8_t *) buffer) = sciacr1_register & 0x83;
-			} break;
-		case 0x02: // 1 byte
+			}
+		} break;
+		case (SCICR1 | SCIACR2): {
+			// TODO: LIN Transmit Collision Detection is not implemented
 			if ((scisr2_register & 0x80) == 0) {
 				*((uint8_t *) buffer) = scicr1_register;
 			} else {
 				*((uint8_t *) buffer) = sciacr2_register & 0x07;
-			} break;
+			}
+		} break;
 
-		case SCICR2: *((uint8_t *) buffer) = scicr2_register; break; // 1 byte
+		case SCICR2: {
+			*((uint8_t *) buffer) = scicr2_register;
+		} break; // 1 byte
 		case SCISR1: { // 1 byte
 			*((uint8_t *) buffer) = scisr1_register;
 			/* Write has no effect and clearing is done by read/write of SCI-Data-Register after reading SCISCR1 and data register has not changed between */
 			scisr1_read = true;
 		} break;
-		case SCISR2: *((uint8_t *) buffer) = (scisr2_register & 0x9E); break; // 1 bytes
+		case SCISR2: {
+			*((uint8_t *) buffer) = (scisr2_register & 0x9E);
+		} break; // 1 bytes
 
 		case SCIDRH: { // 1 bytes
 			if (data_length == 1) {
@@ -653,14 +662,14 @@ bool S12SCI::read(unsigned int offset, const void *buffer, unsigned int data_len
 				*((uint16_t *) buffer) = Host2BigEndian(val);
 
 				// clear RDRF, IDLE, OR, NF, FE, PF flags
-				if (isSCISR1_Read()) { (scisr1_register = scisr1_register & 0xC0); scisr1_read = false; }
+				if (isSCISR1_Read()) { (scisr1_register = scisr1_register & 0xC0); }
 			}
 		} break;
 		case SCIDRL: {
 			*((uint8_t *) buffer) = scidrl_register;
 
 			// clear RDRF, IDLE, OR, NF, FE, PF flags
-			if (isSCISR1_Read()) { (scisr1_register = scisr1_register & 0xC0); scisr1_read = false; }
+			if (isSCISR1_Read()) { (scisr1_register = scisr1_register & 0xC0); }
 		} break; // 1 bytes
 
 		case SCIBDH_BANK_OFFSET: {
@@ -694,8 +703,11 @@ bool S12SCI::read(unsigned int offset, const void *buffer, unsigned int data_len
 
 bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
+	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
+	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
+
 	switch (offset) {
-		case 0x00: 	// 1 byte
+		case (SCIBDH | SCIASR1): {
 			if ((scisr2_register & 0x80) == 0) {
 				if (data_length == 1) {
 					scibdh_register = *((uint8_t *) buffer);
@@ -712,9 +724,9 @@ bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_le
 				sciasr1_register = ~(*((uint8_t *) buffer) & 0x83) & sciasr1_register;
 			}
 
-		break;
+		} break;
 
-		case 0x01: // 1 byte
+		case (SCIBDL | SCIACR1): {
 			if ((scisr2_register & 0x80) == 0) {
 				 scibdl_register = *((uint8_t *) buffer);
 				 ComputeBaudRate();
@@ -725,15 +737,16 @@ bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_le
 				 sciacr1_register = (*((uint8_t *) buffer) & 0x83) | (sciacr1_register & 0x7C);
 			}
 
-		break;
+		} break;
 
-		case 0x02: // 1 byte
+		case (SCICR1 | SCIACR2): {
+			// TODO: LIN Transmit Collision Detection is not implemented
 			if ((scisr2_register & 0x80) == 0) {
 				 scicr1_register = *((uint8_t *) buffer);
 			} else {
 				 sciacr2_register = (*((uint8_t *) buffer) & 0x07) | (sciacr2_register & 0xF8);
 			}
-		break;
+		} break;
 
 		case SCICR2: {
 			uint8_t old_scicr2 = scicr2_register;
@@ -917,11 +930,21 @@ void S12SCI::ComputeBaudRate() {
 	if (!isInfraredEnabled()) {
 		// SCI baud rate = SCI bus clock / (16 x SBR[12:0])
 		uint16_t sbr12_0 = ((scibdh_register & 0x1F) << 8) | scibdl_register;
-		sci_baud_rate = bus_cycle_time /(16 * sbr12_0);
+		if (sbr12_0 != 0) {
+			sci_baud_rate = bus_cycle_time /(16 * sbr12_0);
+		} else {
+			sci_baud_rate = sc_time(-1, SC_PS);
+		}
+
 	} else {
 		// SCIbaud rate = SCI bus clock / (32 x SBR[12:1])
 		uint16_t sbr12_1 = ((scibdh_register & 0x1F) << 7) | (scibdl_register >> 1);
-		sci_baud_rate = bus_cycle_time /(32 * sbr12_1);
+		if (sbr12_1 != 0) {
+			sci_baud_rate = bus_cycle_time /(32 * sbr12_1);
+		} else {
+			sci_baud_rate = sc_time(-1, SC_PS);
+		}
+
 	}
 }
 
@@ -1073,46 +1096,62 @@ void S12SCI::Reset() {
 
 bool S12SCI::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
+	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
+	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
+
 	if ((addr >= baseAddress) && (addr < (baseAddress+8))) {
 
 		physical_address_t offset = addr-baseAddress;
 
 		switch (offset) {
-		case 0x00: 	// 1 byte
-			if ((scisr2_register & 0x80) == 0) {
+			case (SCIBDH | SCIASR1): {
+				if ((scisr2_register & 0x80) == 0) {
+					if (size == 1) {
+						*((uint8_t *) buffer) = scibdh_register;
+					} else if (size == 2) {
+						uint16_t val = (scibdh_register << 8) | scibdl_register;
+						*((uint16_t *) buffer) = Host2BigEndian(val);
+					}
+
+				} else {
+					*((uint8_t *) buffer) = sciasr1_register;
+				}
+			} break;
+			case (SCIBDL | SCIACR1): {
+				if ((scisr2_register & 0x80) == 0) {
+					*((uint8_t *) buffer) = scibdl_register;
+				} else {
+					*((uint8_t *) buffer) = sciacr1_register;
+				}
+			} break;
+			case (SCICR1 | SCIACR2): {
+				if ((scisr2_register & 0x80) == 0) {
+					*((uint8_t *) buffer) = scicr1_register;
+				} else {
+					*((uint8_t *) buffer) = sciacr2_register;
+				}
+			} break;
+
+			case SCICR2: {
+				*((uint8_t *) buffer) = scicr2_register;
+			} break; // 1 byte
+			case SCISR1: {
+				*((uint8_t *) buffer) = scisr1_register;
+			} break; // 1 byte
+			case SCISR2: {
+				*((uint8_t *) buffer) = scisr2_register;
+			} break; // 1 bytes
+			case SCIDRH: {
 				if (size == 1) {
-					*((uint8_t *) buffer) = scibdh_register;
+					*((uint8_t *) buffer) = scidrh_register & 0xD0;
 				} else if (size == 2) {
-					uint16_t val = (scibdh_register << 8) | scibdl_register;
+					uint16_t val = ((scidrh_register & 0xD0) << 8) | scidrl_register;
 					*((uint16_t *) buffer) = Host2BigEndian(val);
 				}
-
-			} else {
-				*((uint8_t *) buffer) = sciasr1_register;
-			} break;
-		case 0x01: // 1 byte
-			if ((scisr2_register & 0x80) == 0) {
-				*((uint8_t *) buffer) = scibdl_register;
-			} else {
-				*((uint8_t *) buffer) = sciacr1_register;
-			} break;
-		case 0x02: // 1 byte
-			if ((scisr2_register & 0x80) == 0) {
-				*((uint8_t *) buffer) = scicr1_register;
-			} else {
-				*((uint8_t *) buffer) = sciacr2_register;
-			} break;
-
-		case SCICR2: *((uint8_t *) buffer) = scicr2_register; break; // 1 byte
-		case SCISR1: *((uint8_t *) buffer) = scisr1_register; break; // 1 byte
-		case SCISR2: *((uint8_t *) buffer) = scisr2_register; break; // 1 bytes
-		case SCIDRH: if (size == 1) {
-			*((uint8_t *) buffer) = scidrh_register & 0xD0;
-		} else if (size == 2) {
-			uint16_t val = ((scidrh_register & 0xD0) << 8) | scidrl_register;
-			*((uint16_t *) buffer) = Host2BigEndian(val);
-		} break; // 1 bytes
-		case SCIDRL: *((uint8_t *) buffer) = scidrl_register; break; // 1 bytes
+			} break; // 1 bytes
+			case SCIDRL: {
+				*((uint8_t *) buffer) = scidrl_register;
+			} break; // 1 bytes
 
 		}
 
@@ -1126,6 +1165,9 @@ bool S12SCI::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool S12SCI::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
+	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
+	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
+
 	if ((addr >= baseAddress) && (addr < (baseAddress+8))) {
 
 		if (size == 0) {
@@ -1135,43 +1177,62 @@ bool S12SCI::WriteMemory(physical_address_t addr, const void *buffer, uint32_t s
 		physical_address_t offset = addr-baseAddress;
 
 		switch (offset) {
-		case 0x00: 	// 1 byte
-			if ((scisr2_register & 0x80) == 0) {
+			case (SCIBDH | SCIASR1): {
+				if ((scisr2_register & 0x80) == 0) {
+					if (size == 1) {
+						scibdh_register = *((uint8_t *) buffer);
+					} else if (size == 2) {
+						uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
+						scibdh_register = val >> 8;
+						scibdl_register = val & 0x00FF;
+					}
+
+				} else {
+					 sciasr1_register= *((uint8_t *) buffer);
+				}
+			} break;
+
+			case (SCIBDL | SCIACR1): {
+				if ((scisr2_register & 0x80) == 0) {
+					 scibdl_register = *((uint8_t *) buffer);
+				} else {
+					 sciacr1_register = *((uint8_t *) buffer);
+				}
+			} break;
+
+			case (SCICR1 | SCIACR2): {
+				if ((scisr2_register & 0x80) == 0) {
+					 scicr1_register = *((uint8_t *) buffer);
+				} else {
+					 sciacr2_register = *((uint8_t *) buffer);
+				}
+			} break;
+
+			case SCICR2: {
+				scicr2_register = *((uint8_t *) buffer);
+			} break; // 1 byte
+
+			case SCISR1: {
+				scisr1_register = *((uint8_t *) buffer);
+			} break; // 1 byte
+
+			case SCISR2: {
+				scisr2_register = *((uint8_t *) buffer);
+			} break; // 1 bytes
+
+			case SCIDRH: {
 				if (size == 1) {
-					scibdh_register = *((uint8_t *) buffer);
+					scidrh_register = (*((uint8_t *) buffer) & 0x7F) | (scidrh_register & 0x80);
 				} else if (size == 2) {
 					uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-					scibdh_register = val >> 8;
-					scibdl_register = val & 0x00FF;
+					scidrh_register = ((val >> 8) & 0x7F) | (scidrh_register & 0x80);
+					scidrl_register = val & 0x00FF;
 				}
+			} break; // 1 bytes
 
-			} else {
-				 sciasr1_register= *((uint8_t *) buffer);
-			} break;
-		case 0x01: // 1 byte
-			if ((scisr2_register & 0x80) == 0) {
-				 scibdl_register = *((uint8_t *) buffer);
-			} else {
-				 sciacr1_register = *((uint8_t *) buffer);
-			} break;
-		case 0x02: // 1 byte
-			if ((scisr2_register & 0x80) == 0) {
-				 scicr1_register = *((uint8_t *) buffer);
-			} else {
-				 sciacr2_register = *((uint8_t *) buffer);
-			} break;
-
-		case SCICR2: scicr2_register = *((uint8_t *) buffer); break; // 1 byte
-		case SCISR1: scisr1_register = *((uint8_t *) buffer); break; // 1 byte
-		case SCISR2: scisr2_register = *((uint8_t *) buffer); break; // 1 bytes
-		case SCIDRH: if (size == 1) {
-			scidrh_register = (*((uint8_t *) buffer) & 0x7F) | (scidrh_register & 0x80);
-		} else if (size == 2) {
-			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-			scidrh_register = ((val >> 8) & 0x7F) | (scidrh_register & 0x80);
-			scidrl_register = val & 0x00FF;
-		} break; // 1 bytes
-		case SCIDRL: scidrl_register = *((uint8_t *) buffer); break; // 1 bytes
+			case SCIDRL: {
+				scidrl_register = *((uint8_t *) buffer);
+			} break; // 1 bytes
 		}
 
 		return (true);
