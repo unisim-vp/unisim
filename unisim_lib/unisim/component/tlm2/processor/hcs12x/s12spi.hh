@@ -228,6 +228,9 @@ public:
 protected:
 
 private:
+
+	static const uint16_t frameLength = 8;
+
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
@@ -284,14 +287,14 @@ private:
 	uint8_t spisr_register; // 1 byte
 	uint8_t spidr_register; // 1 bytes
 
-	uint8_t spidr_tx_buffer, spidr_rx_buffer;;
+	uint8_t /*spidr_tx_buffer,*/ spidr_rx_buffer;;
 
 	inline void ComputeBaudRate();
 
 	inline bool isInterruptEnabled() { return ((spicr1_register & 0x80) != 0); }
 	inline bool isSPIEnabled() { return ((spicr1_register & 0x40) != 0); }
 	inline void enableSPI() {
-		state == IDLE;
+		setIdle();
 		if (isMaster()) {
 			tx_run_event.notify();
 		} else {
@@ -302,7 +305,7 @@ private:
 	inline void disableSPI() {
 		// if SPI is disabled (idle status) then the status bits in SPISR register are reseted
 		spisr_register = 0x20;
-		state == IDLE;
+		setIdle();
 		if (isMaster()) {
 			abortTX();
 		}
@@ -311,6 +314,9 @@ private:
 	inline bool isTransmitInterruptEnabled() { return ((spicr1_register & 0x20) != 0); }
 
 	inline bool isMaster() { return ((spicr1_register & 0x10) != 0); }
+
+	inline void setSlaveMode() { spicr1_register = spicr1_register & 0xEF; }
+
 	inline bool getSCKIdle() {
 		if ((spicr1_register) != 0) {
 			return (true);
@@ -319,16 +325,21 @@ private:
 		}
 	}
 
-	inline bool isAabortTransmission() {
+	inline bool isAbortTransmission() {
 
 		return (abortTransmission);
 	}
+
+	inline void setIdle() { state = IDLE; }
+	inline void setActive() { state = ACTIVE; }
+	inline bool isIdle() { return (state == IDLE); }
+	inline bool isActive() { return (state == ACTIVE); }
 
 	inline void abortTX() {
 		// TODO finalize abort transmission
 
 		if (isMaster()) {
-			state = IDLE;
+			setIdle();
 			abortTransmission = true;
 		}
 	}
@@ -339,13 +350,34 @@ private:
 
 	inline bool isSPC0Set() { return ((spicr2_register & 0x01) != 0); }
 
-	inline void pinRead(bool &value) {
+	inline bool isSlaveSelect() { return (((spicr1_register & 0x02) != 0) && ((spicr2_register & 0x10) != 0)); }
+	inline bool checkModeFaultError() {
+		// is Detecting Mode Fault Error enabled ?
+		if (((spicr1_register & 0x02) != 0) || ((spicr2_register & 0x10) == 0)) { return (false); }
+
+		if (isSSLow()) {
+			abortTX();
+			setSlaveMode();
+			setMODF();
+			return (true);
+		}
+
+		return (false);
+	}
+
+	inline bool isDetectingModeFaultError() { return (((spicr1_register & 0x02) == 0) && ((spicr2_register & 0x10) != 0)); }
+
+	inline bool pinRead() {
+
+		bool value;
 
 		if (!(isSPC0Set() ^ isMaster())) {
 			value = mosi;
 		} else {
 			value = miso;
 		}
+
+		return (value);
 	}
 
 	inline void pinWrite(bool value) {
@@ -400,8 +432,10 @@ private:
 		}
 	}
 
-	inline void startTransmission() { ss = false; }
-	inline void endTransmission() { ss = true; }
+	inline bool isSSLow() { return (!ss); }
+
+	inline void startTransmission() { setActive(); if (isSlaveSelect()) { ss = false; } }
+	inline void endTransmission() { setIdle(); if (isSlaveSelect()) { ss = true; } }
 
 	// *** Telnet ***
 	bool	telnet_enabled;
@@ -469,6 +503,8 @@ private:
 			}
 
 			add(telnet_rx_fifo, v, telnet_rx_event);
+		} else {
+			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
 		}
 	}
 
@@ -504,6 +540,8 @@ private:
 			{
 				char_io_import->FlushChars();
 			}
+		} else {
+			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
 		}
 	}
 

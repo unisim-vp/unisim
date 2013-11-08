@@ -174,6 +174,9 @@ public:
 	static const uint8_t SCIACR1_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x04;	// 1 byte
 	static const uint8_t SCIACR2_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x05; // 1 byte
 
+	static const uint16_t IDLE_11 = 0x07FF; // preamble of 11 logic 1s
+	static const uint16_t IDLE_10 = 0x03FF; // preamble of 10 logic 1s
+
 	ServiceImport<TrapReporting > trap_reporting_import;
 	ServiceImport<CharIO > char_io_import;
 
@@ -461,9 +464,7 @@ private:
 		}
 	}
 
-	inline void tx_send_idle();
-	inline void tx_send_break();
-	inline void txShiftOut(SCIMSG msgType, uint8_t length);
+	inline void txShiftOut(SCIMSG msgType);
 
 	inline uint16_t buildFrame(uint8_t high, uint8_t low, SCIMSG msgType);
 
@@ -533,6 +534,9 @@ private:
 			}
 
 			add(telnet_rx_fifo, v, telnet_rx_event);
+
+		} else {
+			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
 		}
 	}
 
@@ -568,6 +572,8 @@ private:
 			{
 				char_io_import->FlushChars();
 			}
+		} else {
+			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
 		}
 	}
 

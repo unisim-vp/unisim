@@ -127,11 +127,9 @@ void S12SCI::RunRx() {
 		while (!isReceiverEnabled()) {
 
 			wait(rx_run_event);
+
 			idleCounter = 0;
 			breakCounter = 0;
-
-			// Introduce a virtual dephasing of 180° to sample at the middle of the wave
-			wait(sci_baud_rate/2);
 
 		}
 
@@ -241,7 +239,7 @@ void S12SCI::RunRx() {
 						scidrh_register = 0;
 						scidrl_register = 0;
 						// TODO: ? May set the overrun flag OR, noise flag NF, parity error flag PE, or the receiver active flag RAF ?
-						// setNoiseFlag();
+						setNoiseFlag();
 					}
 				} else {
 					// Stop bit not detected and it is not a break frame
@@ -304,6 +302,8 @@ void S12SCI::RunRx() {
 
 }
 
+// *** From Now ***
+
 inline bool S12SCI::getRXD() {
 
 	static uint16_t telnet_charin_mask = 0x00;
@@ -328,7 +328,6 @@ inline bool S12SCI::getRXD() {
 					bufferin = buildFrame(0xFF, 0xFF, SCIIDLE);
 					frameLength = getDataFrameLength();
 
-//					if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::getRXD  NO DATA" << std::endl;
 				} else {
 
 					uint8_t telnet_charin = 0x00;
@@ -337,7 +336,6 @@ inline bool S12SCI::getRXD() {
 						bufferin = buildFrame(0, 0, SCIBREAK);
 						frameLength = getBreakLength();
 
-//						if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::getRXD  BREAK" << std::endl;
 					} else {
 
 						if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::getRXD  HAVE DATA" << std::endl;
@@ -378,14 +376,15 @@ void S12SCI::RunTx() {
 			wait(tx_run_event);
 
 			// Shifts a frame out (preamble) through the TXD pin at configured baud rate
-			tx_send_idle();
+			txShiftOut(SCIIDLE);
 		}
 
-		while (isTransmitterEnabled() && !isTDRECleared() && !isSendBreak()) {
-			wait(tx_load_event | tx_run_event | tx_break_event);
-		}
+		while (isTransmitterEnabled()) {
 
-		while (isTransmitterEnabled() && (isTDRECleared() || isSendBreak())) {
+			if (!isTDRECleared() && !isSendBreak()) {
+				wait(tx_load_event | tx_break_event);
+				continue;
+			}
 
 			if (isSendBreak()) {
 
@@ -395,21 +394,21 @@ void S12SCI::RunTx() {
 				 *   - As long as SBK is set, the transmitter continues to send complete break characters.
 				 */
 
-				tx_send_break();
+				txShiftOut(SCIBREAK);
+
+				if (!isSendBreak()) {
+					txShiftOut(SCIIDLE);
+				}
 
 			} else {
 
-				tx_shift_register = buildFrame(scidrh_register, scidrl_register, SCIDATA);
-
-				setTDRE();
-
-				txShiftOut(SCIDATA, getDataFrameLength());
+				txShiftOut(SCIDATA);
 
 			}
 
 			if (idle_to_send) {
 				idle_to_send = false;
-				tx_send_idle();
+				txShiftOut(SCIIDLE);
 			}
 
 		}
@@ -472,9 +471,9 @@ inline uint16_t S12SCI::buildFrame(uint8_t high, uint8_t low, SCIMSG msgType) {
 		case SCIIDLE: {
 
 			if (isNineBitsMode()) {
-				result = 0x07FF; // preamble of 11 logic 1s
+				result = IDLE_11; // preamble of 11 logic 1s
 			} else {
-				result = 0x03FF; // preamble of 10 logic 1s
+				result = IDLE_10; // preamble of 10 logic 1s
 			}
 
 		} break;
@@ -488,35 +487,8 @@ inline uint16_t S12SCI::buildFrame(uint8_t high, uint8_t low, SCIMSG msgType) {
 	return (result);
 }
 
-inline void S12SCI::tx_send_idle() {
-	uint8_t length = getDataFrameLength();
-	tx_shift_register = buildFrame(0xFF, 0xFF, SCIIDLE); // preamble of 11 logic 1s
-	txShiftOut(SCIIDLE, length);
-
-}
-
-inline void S12SCI::tx_send_break() {
-
-	while (isTransmitterEnabled() && isSendBreak()) {
-		/**
-		 *   - Toggling SBK sends one break character (10 or 11 logic 0s, respectively 13 or 14 logics 0s if BRK13 is set).
-		 *   - Toggling implies clearing the SBK bit before the break character has finished transmitting.
-		 *   - As long as SBK is set, the transmitter continues to send complete break characters.
-		 */
-
-		tx_shift_register = buildFrame(0, 0, SCIBREAK);
-		txShiftOut(SCIBREAK, getBreakLength());
-
-		if (!isSendBreak()) {
-			tx_shift_register = 1;
-
-			txShiftOut(SCIBREAK, 1);
-		}
-	}
-
-}
-
-inline void S12SCI::txShiftOut(SCIMSG msgType, uint8_t length)
+//inline void S12SCI::txShiftOut(SCIMSG msgType, uint8_t length)
+inline void S12SCI::txShiftOut(SCIMSG msgType)
 {
 	// SCISR1::TC is set high when the SCISR1::TDRE flag is set and no data, preamble, or break character is being transmitted.
 
@@ -524,53 +496,71 @@ inline void S12SCI::txShiftOut(SCIMSG msgType, uint8_t length)
 
 	clearTC();
 
-	if (tx_debug_enabled) std::cout << sc_object::name() << "::Telnet Is Enabled '" << ((telnet_enabled)? "TRUE": "FALSE") << "'" << std::endl;
-
-	// use Telnet as an echo
 	if (telnet_enabled) {
-
 		switch (msgType) {
 			case SCIDATA: {
 
 				add(telnet_tx_fifo, scidrl_register, telnet_tx_event);
 				TelnetProcessOutput(true);
-				if (tx_debug_enabled) std::cout << sc_object::name() << "::Telnet shiftOut '" << scidrl_register << "'" << std::endl;
 
 			} break;
 			case SCIIDLE: {
+
 				TelnetSendString("\r\nIDLE\r\n");
 
 			} break;
 			case SCIBREAK: {
+
 				TelnetSendString("\r\nBREAK\r\n");
 
 			} break;
 			default: break;
 		}
 
-	}
+	} else {
 
-	// check baud rate generator (isBaudRateGeneratorEnabled())
+		uint8_t length = 0;
+		switch (msgType) {
+			case SCIDATA: {
 
-	uint16_t tx_shift = tx_shift_register;
-	uint8_t index = 0;
+				length = getDataFrameLength();
+				tx_shift_register = buildFrame(scidrh_register, scidrl_register, SCIDATA);
 
-	if (tx_debug_enabled)	std::cout << "tx_shift  -> " << std::hex << tx_shift << std::dec << std::endl;
+			} break;
+			case SCIIDLE: {
 
-	while (isTransmitterEnabled() && (index < length) && !(isSendBreak() ^ (msgType == SCIBREAK))) {
-		txd = (tx_shift & 0x0001);
+				length = getDataFrameLength();
+				tx_shift_register = buildFrame(0xFF, 0xFF, SCIIDLE); // preamble of 11 logic 1s
 
-		tx_shift = tx_shift >> 1;
-		if (isLoopOperationEnabled() && isTx2RxInternal()) {
-			rxd =  txd;
+			} break;
+			case SCIBREAK: {
+
+				length = getBreakLength();
+				tx_shift_register = buildFrame(0, 0, SCIBREAK);
+
+			} break;
+			default: break;
 		}
-		index++;
-		wait(sci_baud_rate);
+
+		// check baud rate generator (isBaudRateGeneratorEnabled())
+
+		uint16_t tx_shift = tx_shift_register;
+		uint8_t index = 0;
+
+		while (isTransmitterEnabled() && (index < length) && !(isSendBreak() ^ (msgType == SCIBREAK))) {
+			txd = (tx_shift & 0x0001);
+
+			tx_shift = tx_shift >> 1;
+			if (isLoopOperationEnabled() && isTx2RxInternal()) {
+				rxd =  txd;
+			}
+			index++;
+			wait(sci_baud_rate);
+		}
+
 	}
 
-	if ((isSendBreak() ^ (msgType == SCIBREAK))) {
-		tx_send_break();
-	}
+	setTDRE();
 
 	setTC();
 

@@ -69,7 +69,8 @@ Simulator::Simulator(int argc, char **argv)
 	, enable_pim_server(false)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
-	, enable_telnet(false)
+	, sci_enable_telnet(false)
+	, spi_enable_telnet(false)
 
 	, dump_parameters(false)
 	, dump_formulas(false)
@@ -81,7 +82,8 @@ Simulator::Simulator(int argc, char **argv)
 	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
-	, param_enable_telnet("enable-telnet", 0, enable_telnet, "Enable/Disable telnet instantiation")
+	, param_sci_enable_telnet("sci-enable-telnet", 0, sci_enable_telnet, "SCI Enable/Disable telnet instantiation")
+	, param_spi_enable_telnet("spi-enable-telnet", 0, spi_enable_telnet, "SPI Enable/Disable telnet instantiation")
 	, param_dump_parameters("dump-parameters", 0, dump_parameters, "")
 	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
@@ -196,7 +198,8 @@ Simulator::Simulator(int argc, char **argv)
 	inline_debugger = enable_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
 
 	// - telnet
-	telnet = (enable_telnet) ? new unisim::service::telnet::Telnet("telnet") : 0;
+	sci_telnet = (sci_enable_telnet) ? new unisim::service::telnet::Telnet("sci_telnet") : 0;
+	spi_telnet = (spi_enable_telnet) ? new unisim::service::telnet::Telnet("spi_telnet") : 0;
 
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
@@ -438,9 +441,14 @@ Simulator::Simulator(int argc, char **argv)
 
 	}
 
-	if(enable_telnet)
+	if (sci_enable_telnet)
 	{
-		sci1->char_io_import >> telnet->char_io_export;
+		sci0->char_io_import >> sci_telnet->char_io_export;
+	}
+
+	if(spi_enable_telnet)
+	{
+		spi0->char_io_import >> spi_telnet->char_io_export;
 	}
 
 	if (isS19) {
@@ -472,7 +480,8 @@ Simulator::~Simulator()
 	if(gdb_server) { delete gdb_server; gdb_server = NULL; }
 	if(inline_debugger) { delete inline_debugger; inline_debugger = NULL; }
 
-	if (telnet) { delete telnet; telnet = NULL; }
+	if (sci_telnet) { delete sci_telnet; sci_telnet = NULL; }
+	if (spi_telnet) { delete spi_telnet; spi_telnet = NULL; }
 
 	if (host_time) { delete host_time; host_time = NULL; }
 	if(sim_time) { delete sim_time; sim_time = NULL; }

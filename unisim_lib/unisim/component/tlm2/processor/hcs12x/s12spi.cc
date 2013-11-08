@@ -119,49 +119,50 @@ void S12SPI::TxRun() {
 			wait(tx_run_event);
 		}
 
-		while (isSPIEnabled() && isSPTEF() && isMaster()) {
-			wait(tx_load_event | tx_run_event);
-			// TODO check is it an other master ?
-		}
+		while (isSPIEnabled() && isMaster() && !isAbortTransmission()) {
 
-		// TODO: implement transmit functionalities
-		while (isSPIEnabled() && isMaster() && !isAabortTransmission()) {
+			if (isSPTEF()) {
+				wait(tx_load_event);
+				continue;
+			}
+
+			if (checkModeFaultError()) { break; }
 
 			if (debug_enabled)	std::cout << sc_object::name() << "::txShiftOut Start transmission -> " << std::hex << (unsigned int) spidr_register << std::dec << std::endl;
 
-			if (debug_enabled) std::cout << sc_object::name() << "::Telnet Is Enabled '" << ((telnet_enabled)? "TRUE": "FALSE") << "'" << std::endl;
+			uint8_t tx_shift = spidr_register;
+
+			setSPTEF();
+
+			startTransmission();
 
 			// use Telnet as an echo
 			if (telnet_enabled) {
 				add(telnet_tx_fifo, spidr_register, telnet_tx_event);
 				TelnetProcessOutput(true);
-				if (debug_enabled) std::cout << sc_object::name() << "::Telnet shiftOut '" << spidr_register << "'" << std::endl;
+
+				// TODO I have to emulate Mode Fault Error
+			} else {
+
+				// TODO I have to rewrite the following code using TLM and stub
+				uint8_t index = 0;
+				while (isSPIEnabled() && isMaster() && (index < frameLength) && !isAbortTransmission()) {
+
+					if (checkModeFaultError()) { break;}
+
+					pinWrite(tx_shift & 0x0001);
+
+					tx_shift = tx_shift >> 1;
+
+					index++;
+
+					wait(spi_baud_rate);
+
+				}
+
 			}
 
-			spidr_tx_buffer = spidr_register;
-			setSPTEF();
-
-			// check baud rate generator (isBaudRateGeneratorEnabled())
-
-			uint16_t tx_shift = spidr_tx_buffer;
-			uint8_t index = 0;
-
-			if (debug_enabled)	std::cout << "tx_shift  -> " << std::hex << tx_shift << std::dec << std::endl;
-
-			startTransmission();
-			while (isSPIEnabled() && isMaster() && (index < 8)) {
-				pinWrite(tx_shift & 0x0001);
-
-				tx_shift = tx_shift >> 1;
-
-				index++;
-				wait(spi_baud_rate);
-
-				// TODO check is it an other master ?
-			}
 			endTransmission();
-
-			if (debug_enabled)	std::cout << sc_object::name() << "::txShiftOut transmission complete" << std::endl;
 
 		}
 	}
@@ -174,18 +175,67 @@ void S12SPI::RxRun() {
 			wait(rx_run_event);
 		}
 
-		// TODO: implement receive functionalities
-		while (isSPIEnabled() && !isMaster()) {
+		bool newFrameStart = false;
+		while (isSPIEnabled() && !isMaster() && !newFrameStart) {
 
-			// TODO ** a new start is detected ** handle valid waiting when receiving third frame
+			wait(spi_baud_rate);
 
-			if (isValideFrameWaiting()) {
-				setValideFrameWaiting(false);
+			if (telnet_enabled) {
+				TelnetProcessInput();
+
+				newFrameStart = !isEmpty(telnet_rx_fifo);
+			} else {
+				// TODO I have to rewrite the following code using TLM and stub
+				newFrameStart = isSSLow();
 			}
 
-			// TODO ** receive new frame **
-			setSPIDR(spidr_rx_buffer);
 		}
+
+		if (!newFrameStart) { continue; }
+
+		if (isValideFrameWaiting()) {
+			setValideFrameWaiting(false);
+		}
+
+		setActive();
+
+		uint8_t rx_shift = 0;
+
+		if (telnet_enabled) {
+
+			next(telnet_rx_fifo, rx_shift, telnet_rx_event);
+
+			if (debug_enabled) std::cout << sc_object::name() << "::Telnet::get  HAVE DATA" << std::endl;
+
+			spidr_rx_buffer = rx_shift;
+			setSPIDR(spidr_rx_buffer);
+
+		} else {
+			// TODO I have to rewrite the following code using TLM and stub
+			uint8_t rx_shift_mask = 1;
+			uint8_t index = 0;
+
+			while (isSPIEnabled() && !isMaster() && isSSLow() && (index < frameLength)) {
+				bool val = pinRead();
+				if (val) {
+					rx_shift = rx_shift | rx_shift_mask;
+				}
+
+				rx_shift_mask = rx_shift_mask << 1;
+				index = index + 1;
+
+				wait(spi_baud_rate);
+
+			}
+
+			if (index == frameLength) {
+				spidr_rx_buffer = rx_shift;
+				setSPIDR(spidr_rx_buffer);
+			}
+
+		}
+
+		setIdle();
 	}
 }
 
@@ -276,7 +326,7 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 			uint8_t old = spicr1_register;
 			spicr1_register = *((uint8_t *) buffer);
 
-			if ((state == ACTIVE) && (((old & 0x1F) ^ (spicr1_register & 0x1F)) != 0)) {
+			if (isActive() && (((old & 0x1F) ^ (spicr1_register & 0x1F)) != 0)) {
 				abortTX();
 			}
 
@@ -300,7 +350,7 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 			uint8_t old = spicr2_register;
 			spicr2_register = *((uint8_t *) buffer) & 0x1B;
 
-			if ((state == ACTIVE) && (((old & 0x19) ^ (spicr2_register & 0x19)) != 0)) {
+			if (isActive() && (((old & 0x19) ^ (spicr2_register & 0x19)) != 0)) {
 				abortTX();
 			}
 
@@ -311,7 +361,7 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 			if ((old & 0x77) ^ (spibr_register & 0x77)) {
 				ComputeBaudRate();
 
-				if (state == ACTIVE) {
+				if (isActive()) {
 					abortTX();
 				}
 			}

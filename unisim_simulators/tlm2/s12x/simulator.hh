@@ -254,7 +254,8 @@ private:
 	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
 
 	// - telnet
-	unisim::service::telnet::Telnet *telnet;
+	unisim::service::telnet::Telnet *sci_telnet;
+	unisim::service::telnet::Telnet *spi_telnet;
 
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
@@ -269,8 +270,10 @@ private:
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
 
-	bool enable_telnet;
-	Parameter<bool>  param_enable_telnet;
+	bool sci_enable_telnet;
+	Parameter<bool>  param_sci_enable_telnet;
+	bool spi_enable_telnet;
+	Parameter<bool>  param_spi_enable_telnet;
 
 	string endian;
 	Parameter<string> *param_endian;
