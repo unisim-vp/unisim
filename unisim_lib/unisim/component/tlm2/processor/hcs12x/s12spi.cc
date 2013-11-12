@@ -115,18 +115,32 @@ S12SPI::~S12SPI() {
 void S12SPI::TxRun() {
 
 	while (true) {
-		while (!isSPIEnabled() || !isMaster()) {
+		while (!isSPIEnabled()) {
+			if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (1) " << std::endl;
+
 			wait(tx_run_event);
+
+			if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (2) " << std::endl;
+
 		}
 
-		while (isSPIEnabled() && isMaster() && !isAbortTransmission()) {
+		while (isSPIEnabled() && !isAbortTransmission()) {
+
+			if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (3) " << std::endl;
 
 			if (isSPTEF()) {
+				if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (4) " << std::endl;
+
 				wait(tx_load_event);
+
+				if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (5) " << std::endl;
+
 				continue;
 			}
 
 			if (checkModeFaultError()) { break; }
+
+			if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (6) " << std::endl;
 
 			if (debug_enabled)	std::cout << sc_object::name() << "::txShiftOut Start transmission -> " << std::hex << (unsigned int) spidr_register << std::dec << std::endl;
 
@@ -146,7 +160,7 @@ void S12SPI::TxRun() {
 
 				// TODO I have to rewrite the following code using TLM and stub
 				uint8_t index = 0;
-				while (isSPIEnabled() && isMaster() && (index < frameLength) && !isAbortTransmission()) {
+				while (isSPIEnabled() && (index < frameLength) && !isAbortTransmission()) {
 
 					if (checkModeFaultError()) { break;}
 
@@ -164,6 +178,8 @@ void S12SPI::TxRun() {
 
 			endTransmission();
 
+			if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (7) " << std::endl;
+
 		}
 	}
 }
@@ -171,19 +187,33 @@ void S12SPI::TxRun() {
 void S12SPI::RxRun() {
 
 	while (true) {
-		while (!isSPIEnabled() || isMaster()) {
+		while (!isSPIEnabled()) {
+			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (1) " << std::endl;
+
 			wait(rx_run_event);
+
+			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (2) " << std::endl;
 		}
 
 		bool newFrameStart = false;
-		while (isSPIEnabled() && !isMaster() && !newFrameStart) {
+		while (isSPIEnabled() && !newFrameStart) {
+
+			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (3) " << std::endl;
 
 			wait(spi_baud_rate);
 
+			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (4) " << std::endl;
+
 			if (telnet_enabled) {
+
+				if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (5) " << std::endl;
+
 				TelnetProcessInput();
 
 				newFrameStart = !isEmpty(telnet_rx_fifo);
+
+				if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (6) " << std::endl;
+
 			} else {
 				// TODO I have to rewrite the following code using TLM and stub
 				newFrameStart = isSSLow();
@@ -191,17 +221,29 @@ void S12SPI::RxRun() {
 
 		}
 
+		if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (7) " << std::endl;
+
 		if (!newFrameStart) { continue; }
 
+		if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (8) " << std::endl;
+
 		if (isValideFrameWaiting()) {
+			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (9) " << std::endl;
+
 			setValideFrameWaiting(false);
+
+			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (10) " << std::endl;
 		}
+
+		if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (11) " << std::endl;
 
 		setActive();
 
 		uint8_t rx_shift = 0;
 
 		if (telnet_enabled) {
+
+			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (12) " << std::endl;
 
 			next(telnet_rx_fifo, rx_shift, telnet_rx_event);
 
@@ -210,12 +252,14 @@ void S12SPI::RxRun() {
 			spidr_rx_buffer = rx_shift;
 			setSPIDR(spidr_rx_buffer);
 
+			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (13) " << std::endl;
+
 		} else {
 			// TODO I have to rewrite the following code using TLM and stub
 			uint8_t rx_shift_mask = 1;
 			uint8_t index = 0;
 
-			while (isSPIEnabled() && !isMaster() && isSSLow() && (index < frameLength)) {
+			while (isSPIEnabled() && isSSLow() && (index < frameLength)) {
 				bool val = pinRead();
 				if (val) {
 					rx_shift = rx_shift | rx_shift_mask;
@@ -234,6 +278,8 @@ void S12SPI::RxRun() {
 			}
 
 		}
+
+		if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (14) " << std::endl;
 
 		setIdle();
 	}
@@ -377,9 +423,8 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 			if (!isSPTEF() || isSPISR_Read()) {
 				// (SPTEF = 1) has to be read before a write to SPIDR can happen and taken into account
 				spidr_register = *((uint8_t *) buffer);
-				if (isMaster()) {
-					tx_load_event.notify();
-				}
+
+				tx_load_event.notify();
 			}
 
 			if (isSPISR_Read()) {

@@ -496,7 +496,7 @@ void CPU::queueFlush(uint8_t nByte)
 //=====================================================================
 
 // compute return address, save the CPU registers and then set I/X bit before the interrupt handling began
-void CPU::saveCPUContext() {
+inline void CPU::saveCPUContext() {
 
 	if ((state == STOP) || (state == WAIT)) {
 		setState(RUNNING);
@@ -538,7 +538,7 @@ void CPU::saveCPUContext() {
 }
 
 // AsynchronousException
-void CPU::handleException(const AsynchronousException& exc)
+inline void CPU::handleException(const AsynchronousException& exc)
 {
 
 	uint8_t newIPL = ccr->getIPL();
@@ -564,7 +564,7 @@ void CPU::handleException(const AsynchronousException& exc)
 
 }
 
-void CPU::ackAsynchronousInterrupt()
+inline void CPU::ackAsynchronousInterrupt()
 {
 	if (CONFIG::HAS_RESET)  asynchronous_interrupt |= reset;
 	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT)  asynchronous_interrupt |= nonMaskableXIRQ_interrupt;
@@ -578,7 +578,7 @@ void CPU::reqAsynchronousInterrupt()
 }
 
 // Hardware and Software reset
-void CPU::handleResetException(address_t resetVector)
+inline void CPU::handleResetException(address_t resetVector)
 {
 
 	ackReset();
@@ -593,7 +593,7 @@ void CPU::handleResetException(address_t resetVector)
 
 }
 
-void CPU::ackReset()
+inline void CPU::ackReset()
 {
 	reset = false;
 	ackAsynchronousInterrupt();
@@ -605,7 +605,7 @@ void CPU::reqReset()
 }
 
 // NonMaskable XIRQ (X bit) interrupts
-void CPU::handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
+inline void CPU::handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 {
 	ackXIRQInterrupt();
 
@@ -624,7 +624,7 @@ void CPU::handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 
 }
 
-void CPU::ackXIRQInterrupt()
+inline void CPU::ackXIRQInterrupt()
 {
 	nonMaskableXIRQ_interrupt = false;
 	ackAsynchronousInterrupt();
@@ -636,7 +636,7 @@ void CPU::reqXIRQInterrupt()
 }
 
 // Non-maskable MPU Access Error interrupt
-void CPU::handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL)
+inline void CPU::handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL)
 {
 	ackMPUAccessErrorInterrupt();
 
@@ -650,7 +650,7 @@ void CPU::handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t 
 
 }
 
-void CPU::ackMPUAccessErrorInterrupt()
+inline void CPU::ackMPUAccessErrorInterrupt()
 {
 	mpuAccessError_interrupt = false;
 	ackAsynchronousInterrupt();
@@ -662,7 +662,7 @@ void CPU::reqMPUAccessErrorInterrupt()
 }
 
 // Maskable (I bit) interrupt
-void CPU::handleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
+inline void CPU::handleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 {
 	ackIbitInterrupt();
 
@@ -682,7 +682,7 @@ void CPU::handleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 
 }
 
-void CPU::ackIbitInterrupt()
+inline void CPU::ackIbitInterrupt()
 {
 	maskableIbit_interrupt = false;
 	ackAsynchronousInterrupt();
@@ -696,7 +696,7 @@ void CPU::reqIbitInterrupt()
 }
 
 // Unimplemented opcode trap
-void CPU::handleException(const TrapException& exc)
+inline void CPU::handleException(const TrapException& exc)
 {
 	reqTrapInterrupt();
 
@@ -716,18 +716,18 @@ void CPU::handleException(const TrapException& exc)
 	ackTrapInterrupt();
 }
 
-void CPU::ackTrapInterrupt()
+inline void CPU::ackTrapInterrupt()
 {
 	trap_interrupt = false;
 }
 
-void CPU::reqTrapInterrupt()
+inline void CPU::reqTrapInterrupt()
 {
 	trap_interrupt = true;
 }
 
 // A software interrupt instruction (SWI) or BDM vector request
-void CPU::handleException(const NonMaskableSWIInterrupt& exc)
+inline void CPU::handleException(const NonMaskableSWIInterrupt& exc)
 {
 	reqSWIInterrupt();
 
@@ -747,18 +747,18 @@ void CPU::handleException(const NonMaskableSWIInterrupt& exc)
 	ackSWIInterrupt();
 }
 
-void CPU::ackSWIInterrupt()
+inline void CPU::ackSWIInterrupt()
 {
 	nonMascableSWI_interrupt = false;
 }
 
-void CPU::reqSWIInterrupt()
+inline void CPU::reqSWIInterrupt()
 {
 	nonMascableSWI_interrupt = true;
 }
 
 // A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
-void CPU::handleException(const SysCallInterrupt& exc)
+inline void CPU::handleException(const SysCallInterrupt& exc)
 {
 	reqSysInterrupt();
 
@@ -778,18 +778,18 @@ void CPU::handleException(const SysCallInterrupt& exc)
 	ackSysInterrupt();
 }
 
-void CPU::ackSysInterrupt()
+inline void CPU::ackSysInterrupt()
 {
 	syscall_interrupt = false;
 }
 
-void CPU::reqSysInterrupt()
+inline void CPU::reqSysInterrupt()
 {
 	syscall_interrupt = true;
 }
 
 // A spurious interrupt
-void CPU::handleException(const SpuriousInterrupt& exc)
+inline void CPU::handleException(const SpuriousInterrupt& exc)
 {
 	reqSpuriousInterrupt();
 
@@ -809,18 +809,18 @@ void CPU::handleException(const SpuriousInterrupt& exc)
 	ackSpuriousInterrupt();
 }
 
-void CPU::ackSpuriousInterrupt()
+inline void CPU::ackSpuriousInterrupt()
 {
 	spurious_interrupt = false;
 }
 
-void CPU::reqSpuriousInterrupt()
+inline void CPU::reqSpuriousInterrupt()
 {
 	spurious_interrupt = true;
 }
 
 // NonMaskable Access Error interrupts
-void CPU::handleException(const NonMaskableAccessErrorInterrupt& exc)
+inline void CPU::handleException(const NonMaskableAccessErrorInterrupt& exc)
 {
 	reqAccessErrorInterrupt();
 
@@ -836,13 +836,13 @@ void CPU::handleException(const NonMaskableAccessErrorInterrupt& exc)
 
 }
 
-void CPU::ackAccessErrorInterrupt()
+inline void CPU::ackAccessErrorInterrupt()
 {
 	nonMaskableAccessError_interrupt = false;
 	ackAsynchronousInterrupt();
 }
 
-void CPU::reqAccessErrorInterrupt()
+inline void CPU::reqAccessErrorInterrupt()
 {
 	nonMaskableAccessError_interrupt = true;
 	reqAsynchronousInterrupt();

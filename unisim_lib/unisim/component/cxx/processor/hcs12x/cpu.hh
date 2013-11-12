@@ -152,7 +152,7 @@ public:
 	EBLB(CPU *cpu) { this->cpu = cpu; }
 	~EBLB() { cpu = NULL; }
 
-	static string getRegName(uint8_t num) {
+	inline static string getRegName(uint8_t num) {
 		switch (num) {
 		case EBLBRegs::A: return ("A");
 		case EBLBRegs::B: return ("B");
@@ -171,7 +171,7 @@ public:
 		}
 	}
 
-	static uint8_t getRegSize(uint8_t num) {
+	inline static uint8_t getRegSize(uint8_t num) {
 		switch (num) {
 		case EBLBRegs::A: return (8);
 		case EBLBRegs::B: return (8);
@@ -224,8 +224,8 @@ public:
 	static const uint8_t QUEUE_SIZE = MAX_INS_SIZE;
 
 
-	void queueFlush(uint8_t nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
-	uint8_t* queueFetch(address_t addr, uint8_t* ins, uint8_t nByte);
+	inline void queueFlush(uint8_t nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
+	inline uint8_t* queueFetch(address_t addr, uint8_t* ins, uint8_t nByte);
 
 private:
 	address_t	queueCurrentAddress;
@@ -233,7 +233,7 @@ private:
 
 	int		queueFirst, queueNElement;
 
-	void queueFill(address_t addr, int position, uint8_t nByte);
+	inline void queueFill(address_t addr, int position, uint8_t nByte);
 
 public:
 
@@ -295,7 +295,7 @@ public:
 	 *     if S control bit = 1, the STOP instruction is disabled and acts like two-cycle NOP
 	 */
 
-	void setState(STATES st) { state = st; }
+	inline void setState(STATES st) { state = st; }
 	virtual void sleep() = 0;
 	virtual void wai() = 0;
 
@@ -331,52 +331,52 @@ public:
 	//=====================================================================
 
 	// compute return address, save the CPU registers and then set I/X bit before the interrupt handling began
-	void saveCPUContext();
+	inline void saveCPUContext();
 
 	// Asynchronous Interrupts (including Resets, I-bit, XIRQ, IRQ)
-	void handleException(const AsynchronousException& exc);
+	inline void handleException(const AsynchronousException& exc);
 
 	// Hardware and Software reset (including COP, clock monitor, and pin)
-	void handleResetException(address_t resetVector);
+	inline void handleResetException(address_t resetVector);
 
 	// Non-maskable (X bit) interrupts
-	void handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL);
+	inline void handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL);
 
 	// Non-maskable MPU Access Error interrupt
-	void handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL);
+	inline void handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL);
 
 	// Maskable (I bit) interrupt
-	void handleMaskableIbitException(address_t ibitVector, uint8_t newIPL);
+	inline void handleMaskableIbitException(address_t ibitVector, uint8_t newIPL);
 
 	// A software interrupt instruction (SWI) or BDM vector request
-	void handleException(const NonMaskableSWIInterrupt& exc);
+	inline void handleException(const NonMaskableSWIInterrupt& exc);
 
 	// Unimplemented opcode trap
-	void handleException(const TrapException& exc);
+	inline void handleException(const TrapException& exc);
 
 	// A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
-	void handleException(const SysCallInterrupt& exc);
+	inline void handleException(const SysCallInterrupt& exc);
 
 	// A spurious interrupt
-	void handleException(const SpuriousInterrupt& exc);
+	inline void handleException(const SpuriousInterrupt& exc);
 
 	// Non-maskable Access Error interrupts
-	void handleException(const NonMaskableAccessErrorInterrupt& exc);
+	inline void handleException(const NonMaskableAccessErrorInterrupt& exc);
 
 	//=====================================================================
 	//=               Hardware check/acknowledgement methods              =
 	//=====================================================================
 
-	void ackAsynchronousInterrupt();
-	void ackIbitInterrupt();
-	void ackXIRQInterrupt();
-	void ackAccessErrorInterrupt();
-	void ackSWIInterrupt();
-	void ackTrapInterrupt();
-	void ackReset();
-	void ackMPUAccessErrorInterrupt();
-	void ackSysInterrupt();
-	void ackSpuriousInterrupt();
+	inline void ackAsynchronousInterrupt();
+	inline void ackIbitInterrupt();
+	inline void ackXIRQInterrupt();
+	inline void ackAccessErrorInterrupt();
+	inline void ackSWIInterrupt();
+	inline void ackTrapInterrupt();
+	inline void ackReset();
+	inline void ackMPUAccessErrorInterrupt();
+	inline void ackSysInterrupt();
+	inline void ackSpuriousInterrupt();
 
 	//=====================================================================
 	//=                    Hardware interrupt request                     =
@@ -423,7 +423,7 @@ public:
 	/********************************************************************
 	 * *******  Used for Indexed Operations XB: Postbyte Code  **********
 	 * ******************************************************************/
-	static string xb_getAddrRegLabel(uint8_t rr) {
+	inline static string xb_getAddrRegLabel(uint8_t rr) {
 		switch (rr) {
 		case 0:
 			return ("X");
@@ -437,7 +437,7 @@ public:
 		return ("unknown");
 	}
 
-	static string xb_getAccRegLabel(uint8_t rr) {
+	inline static string xb_getAccRegLabel(uint8_t rr) {
 		switch (rr) {
 		case 0:
 			return ("A");
@@ -526,7 +526,7 @@ public:
 	inline uint64_t getInstructionCounter() const { return (instruction_counter); }
 	inline bool isVerboseException() const { return (debug_enabled && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception)); }
 
-	address_t getLastPC() {return (lastPC); }
+	inline address_t getLastPC() {return (lastPC); }
 
 	//protected:
 	class CCR_t *ccr;

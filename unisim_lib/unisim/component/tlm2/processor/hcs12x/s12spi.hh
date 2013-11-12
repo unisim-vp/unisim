@@ -295,11 +295,10 @@ private:
 	inline bool isSPIEnabled() { return ((spicr1_register & 0x40) != 0); }
 	inline void enableSPI() {
 		setIdle();
-		if (isMaster()) {
-			tx_run_event.notify();
-		} else {
-			rx_run_event.notify();
-		}
+
+		tx_run_event.notify();
+		rx_run_event.notify();
+
 	}
 
 	inline void disableSPI() {
