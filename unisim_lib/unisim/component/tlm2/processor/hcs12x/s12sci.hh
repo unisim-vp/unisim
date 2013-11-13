@@ -287,10 +287,10 @@ private:
 	bool idle_to_send;
 
 	bool txd;
-	unisim::kernel::service::Register<bool> txd_output_pin;
+	unisim::kernel::service::Signal<bool> txd_output_pin;
 
 	bool rxd;
-	unisim::kernel::service::Register<bool> rxd_input_pin;
+	unisim::kernel::service::Signal<bool> rxd_input_pin;
 
 	inline bool getRXD();
 

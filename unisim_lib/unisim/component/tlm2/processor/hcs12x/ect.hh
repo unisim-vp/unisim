@@ -94,7 +94,7 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::RegisterArray;
+using unisim::kernel::service::SignalArray;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::VariableBaseListener;
 using unisim::service::interfaces::TrapReporting;
@@ -401,7 +401,7 @@ private:
 	sc_time signal_generator_period;
 
 	bool portt_pin[8];
-	RegisterArray<bool> portt_pin_reg;
+	SignalArray<bool> portt_pin_reg;
 
 	// Registers map
 	map<string, Register *> registers_registry;

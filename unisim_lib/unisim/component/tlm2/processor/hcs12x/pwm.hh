@@ -82,7 +82,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::RegisterArray;
+using unisim::kernel::service::SignalArray;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -205,7 +205,7 @@ public:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
-	RegisterArray<bool> channel_output_reg;
+	SignalArray<bool> channel_output_reg;
 
 protected:
 	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };

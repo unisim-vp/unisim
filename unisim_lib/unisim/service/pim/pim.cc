@@ -97,6 +97,7 @@ void PIM::run() {
 
 component_t* PIM::findComponent(const string name) {
 
+
 	for (int i=0; i < pim_model.size(); i++) {
 		if (pim_model[i]->name.compare(name) == 0) {
 			return (pim_model[i]);
@@ -108,11 +109,9 @@ component_t* PIM::findComponent(const string name) {
 
 void PIM::generatePimFile() {
 
-	vector<component_t*> pim;
-
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetRegisters(lst);
+	Simulator::simulator->GetSignals(lst);
 
 	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
 
@@ -130,7 +129,7 @@ void PIM::generatePimFile() {
 			component->name = component_name;
 			component->description = "bla bla";
 
-			pim.push_back(component);
+			pim_model.push_back(component);
 		}
 
 		component->pins.push_back((VariableBase *) *it);
@@ -186,7 +185,7 @@ void PIM::generatePimFile() {
     }
     if (tmp != NULL) xmlFree(tmp);
 
-	for (int i=0; i < pim.size(); i++) {
+	for (int i=0; i < pim_model.size(); i++) {
 
 	    /* Start an element named "component" as child of "pim". */
 	    rc = xmlTextWriterStartElement(writer, BAD_CAST "component");
@@ -196,14 +195,14 @@ void PIM::generatePimFile() {
 	    }
 
 	    /* Add an attribute with name "name" and value "component_t::name" to "component". */
-	    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", BAD_CAST pim[i]->name.c_str());
+	    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", BAD_CAST pim_model[i]->name.c_str());
 	    if (rc < 0) {
 	        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
 	        return;
 	    }
 
 	    /* Write a comment as child of "component" */
-	    tmp = convertInput(pim[i]->name.c_str(), DEFAULT_XML_ENCODING);
+	    tmp = convertInput(pim_model[i]->name.c_str(), DEFAULT_XML_ENCODING);
 	    rc = xmlTextWriterWriteFormatComment(writer, "%s exported interface", tmp);
 	    if (rc < 0) {
 	        printf
@@ -213,7 +212,7 @@ void PIM::generatePimFile() {
 	    if (tmp != NULL) xmlFree(tmp);
 
 	    /* Write an element named "description" as child of "component". */
-	    tmp = convertInput(pim[i]->description.c_str(), DEFAULT_XML_ENCODING);
+	    tmp = convertInput(pim_model[i]->description.c_str(), DEFAULT_XML_ENCODING);
 	    rc = xmlTextWriterWriteFormatElement(writer, BAD_CAST "description", "%s", tmp);
 	    if (rc < 0) {
 	        printf
@@ -222,7 +221,7 @@ void PIM::generatePimFile() {
 	    }
 	    if (tmp != NULL) xmlFree(tmp);
 
-		for (int j=0; j < pim[i]->pins.size(); j++) {
+		for (int j=0; j < pim_model[i]->pins.size(); j++) {
 
 		    rc = xmlTextWriterStartElement(writer, BAD_CAST "pin");
 		    if (rc < 0) {
@@ -231,7 +230,7 @@ void PIM::generatePimFile() {
 		        return;
 		    }
 
-		    if (pim[i]->pins[j]->IsMutable()) {
+		    if (pim_model[i]->pins[j]->IsMutable()) {
 		    	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "isMutable", BAD_CAST "true");
 		    } else {
 		    	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "isMutable", BAD_CAST "false");
@@ -242,13 +241,13 @@ void PIM::generatePimFile() {
 		        return;
 		    }
 
-		    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "dataType", BAD_CAST pim[i]->pins[j]->GetDataTypeName());
+		    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "dataType", BAD_CAST pim_model[i]->pins[j]->GetDataTypeName());
 		    if (rc < 0) {
 		        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
 		        return;
 		    }
 
-			string var_name(pim[i]->pins[j]->GetName());
+			string var_name(pim_model[i]->pins[j]->GetName());
 			size_t pos = var_name.find_first_of('.');
 			string component_name = var_name.substr(0, pos);
 			string short_var_name = var_name.substr(pos+1);

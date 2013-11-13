@@ -87,7 +87,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::RegisterArray;
+using unisim::kernel::service::SignalArray;
 
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
@@ -251,7 +251,7 @@ private:
 	bool use_rand_generator;
 	Parameter<bool>		param_use_rand_generator;
 
-	RegisterArray<double> analog_signal_reg;
+	SignalArray<double> analog_signal_reg;
 
 
 	/**

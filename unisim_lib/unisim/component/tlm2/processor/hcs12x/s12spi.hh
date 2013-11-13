@@ -262,16 +262,16 @@ private:
 	bool spisr_read;
 
 	bool mosi;
-	unisim::kernel::service::Register<bool> mosi_pin;
+	unisim::kernel::service::Signal<bool> mosi_pin;
 
 	bool miso;
-	unisim::kernel::service::Register<bool> miso_pin;
+	unisim::kernel::service::Signal<bool> miso_pin;
 
 	bool ss;
-	unisim::kernel::service::Register<bool> ss_pin;
+	unisim::kernel::service::Signal<bool> ss_pin;
 
 	bool sck;
-	unisim::kernel::service::Register<bool> sck_pin;
+	unisim::kernel::service::Signal<bool> sck_pin;
 
 	STATUS state;
 	bool abortTransmission;

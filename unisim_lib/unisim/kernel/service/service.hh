@@ -139,7 +139,7 @@ public:
 class VariableBase
 {
 public:
-	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER, VAR_FORMULA } Type;
+	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER, VAR_FORMULA, VAR_SIGNAL } Type;
 	typedef enum { FMT_DEFAULT, FMT_HEX, FMT_DEC } Format;
 
 	VariableBase();
@@ -272,6 +272,7 @@ public:
 	void GetArrays(list<VariableBase *>& lst);
 	void GetParameters(list<VariableBase *>& lst);
 	void GetRegisters(list<VariableBase *>& lst);
+	void GetSignals(list<VariableBase *>& lst);
 	void GetStatistics(list<VariableBase *>& lst);
 	void GetFormulas(list<VariableBase *>& lst);
 
@@ -562,6 +563,14 @@ public:
 };
 
 template <class TYPE>
+class Signal : public Variable<TYPE>
+{
+public:
+
+	Signal(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_SIGNAL, description) {}
+};
+
+template <class TYPE>
 class Formula;
 
 template <class TYPE>
@@ -791,6 +800,13 @@ class RegisterArray : public VariableArray<TYPE>
 {
 public:
 	RegisterArray(const char *name, Object *owner, TYPE *parameters, unsigned int dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_REGISTER, description) {}
+};
+
+template <class TYPE>
+class SignalArray : public VariableArray<TYPE>
+{
+public:
+	SignalArray(const char *name, Object *owner, TYPE *parameters, unsigned int dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_SIGNAL, description) {}
 };
 
 //=============================================================================

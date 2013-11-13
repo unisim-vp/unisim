@@ -3326,6 +3326,11 @@ void Simulator::GetRegisters(list<VariableBase *>& lst)
 	GetVariables(lst, VariableBase::VAR_REGISTER);
 }
 
+void Simulator::GetSignals(list<VariableBase *>& lst)
+{
+	GetVariables(lst, VariableBase::VAR_SIGNAL);
+}
+
 void Simulator::GetStatistics(list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_STATISTIC);

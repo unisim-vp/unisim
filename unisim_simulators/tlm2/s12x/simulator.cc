@@ -703,75 +703,51 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI2.interrupt-offset", 0x8A);
 	simulator->SetVariable("SCI2.debug-enabled", false);
 	simulator->SetVariable("SCI2.telnet-enabled", false);
-	simulator->SetVariable("SCI2.TXD", true);
-	simulator->SetVariable("SCI2.RXD", true);
 
 	simulator->SetVariable("SCI3.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI3.base-address", 0x00C0);
 	simulator->SetVariable("SCI3.interrupt-offset", 0x88);
 	simulator->SetVariable("SCI3.debug-enabled", false);
 	simulator->SetVariable("SCI3.telnet-enabled", false);
-	simulator->SetVariable("SCI3.TXD", true);
-	simulator->SetVariable("SCI3.RXD", true);
 
 	simulator->SetVariable("SCI0.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI0.base-address", 0x00C8);
 	simulator->SetVariable("SCI0.interrupt-offset", 0xD6);
 	simulator->SetVariable("SCI0.debug-enabled", false);
 	simulator->SetVariable("SCI0.telnet-enabled", false);
-	simulator->SetVariable("SCI0.TXD", true);
-	simulator->SetVariable("SCI0.RXD", true);
 
 	simulator->SetVariable("SCI1.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI1.base-address", 0x00D0);
 	simulator->SetVariable("SCI1.interrupt-offset", 0xD4);
 	simulator->SetVariable("SCI1.debug-enabled", false);
 	simulator->SetVariable("SCI1.telnet-enabled", false);
-	simulator->SetVariable("SCI1.TXD", true);
-	simulator->SetVariable("SCI1.RXD", true);
 
 	simulator->SetVariable("SCI4.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI4.base-address", 0x0130);
 	simulator->SetVariable("SCI4.interrupt-offset", 0x86);
 	simulator->SetVariable("SCI4.debug-enabled", false);
 	simulator->SetVariable("SCI4.telnet-enabled", false);
-	simulator->SetVariable("SCI4.TXD", true);
-	simulator->SetVariable("SCI4.RXD", true);
 
 	simulator->SetVariable("SCI5.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI5.base-address", 0x0138);
 	simulator->SetVariable("SCI5.interrupt-offset", 0x84);
 	simulator->SetVariable("SCI5.debug-enabled", false);
 	simulator->SetVariable("SCI5.telnet-enabled", false);
-	simulator->SetVariable("SCI5.TXD", true);
-	simulator->SetVariable("SCI5.RXD", true);
 
 	simulator->SetVariable("SPI0.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI0.base-address", 0x00D8);
 	simulator->SetVariable("SPI0.interrupt-offset", 0xD8);
 	simulator->SetVariable("SPI0.debug-enabled", false);
-	simulator->SetVariable("SPI0.MOSI", false);
-	simulator->SetVariable("SPI0.MISO", false);
-	simulator->SetVariable("SPI0.SS", true);
-	simulator->SetVariable("SPI0.SCK", false);
 
 	simulator->SetVariable("SPI1.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI1.base-address", 0x00F0);
 	simulator->SetVariable("SPI1.interrupt-offset", 0xBE);
 	simulator->SetVariable("SPI1.debug-enabled", false);
-	simulator->SetVariable("SPI1.MOSI", false);
-	simulator->SetVariable("SPI1.MISO", false);
-	simulator->SetVariable("SPI1.SS", true);
-	simulator->SetVariable("SPI1.SCK", false);
 
 	simulator->SetVariable("SPI2.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI2.base-address", 0x00F8);
 	simulator->SetVariable("SPI2.interrupt-offset", 0xBC);
 	simulator->SetVariable("SPI2.debug-enabled", false);
-	simulator->SetVariable("SPI2.MOSI", false);
-	simulator->SetVariable("SPI2.MISO", false);
-	simulator->SetVariable("SPI2.SS", true);
-	simulator->SetVariable("SPI2.SCK", false);
 
 	simulator->SetVariable("RAM.org", 0x000800);
 	simulator->SetVariable("RAM.bytesize", 1024*1024); // 1MByte
