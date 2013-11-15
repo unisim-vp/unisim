@@ -496,7 +496,7 @@ void CPU::queueFlush(uint8_t nByte)
 //=====================================================================
 
 // compute return address, save the CPU registers and then set I/X bit before the interrupt handling began
-inline void CPU::saveCPUContext() {
+void CPU::saveCPUContext() {
 
 	if ((state == STOP) || (state == WAIT)) {
 		setState(RUNNING);

@@ -101,6 +101,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Simulator;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Variable;
 
 using unisim::service::pim::network::SocketThread;
 using unisim::service::pim::network::GenericThread;

@@ -331,7 +331,7 @@ public:
 	//=====================================================================
 
 	// compute return address, save the CPU registers and then set I/X bit before the interrupt handling began
-	inline void saveCPUContext();
+	void saveCPUContext();
 
 	// Asynchronous Interrupts (including Resets, I-bit, XIRQ, IRQ)
 	inline void handleException(const AsynchronousException& exc);

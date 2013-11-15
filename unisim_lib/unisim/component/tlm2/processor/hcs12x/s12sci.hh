@@ -102,6 +102,8 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Signal;
+using unisim::kernel::service::Variable;
 
 using unisim::service::interfaces::CharIO;
 using unisim::service::interfaces::Memory;
@@ -287,10 +289,10 @@ private:
 	bool idle_to_send;
 
 	bool txd;
-	unisim::kernel::service::Signal<bool> txd_output_pin;
+	Signal<bool> txd_output_pin;
 
 	bool rxd;
-	unisim::kernel::service::Signal<bool> rxd_input_pin;
+	Signal<bool> rxd_input_pin;
 
 	inline bool getRXD();
 

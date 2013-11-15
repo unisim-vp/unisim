@@ -11,6 +11,7 @@
 #include <fstream>
 
 #include <math.h>
+#include <unistd.h>
 
 #include <unisim/kernel/service/service.hh>
 
@@ -28,10 +29,13 @@ namespace pim {
 using namespace std;
 
 using unisim::kernel::service::Object;
+using unisim::kernel::service::VariableBaseListener;
+using unisim::kernel::service::Simulator;
+using unisim::kernel::service::VariableBase;
 
 using unisim::service::pim::network::SocketThread;
 
-class PIMThread : public SocketThread, virtual public Object {
+class PIMThread : public SocketThread, VariableBaseListener, virtual public Object {
 public:
 	PIMThread(const char *_name, Object *_parent = 0);
 	~PIMThread();
@@ -66,13 +70,47 @@ public:
 
 	double GetLastTimeRatio() { return last_time_ratio; }
 
+	virtual void VariableBaseNotify(const VariableBase *var) {
+		std::ostringstream os;
+
+		os << GetSimTime() << ";";
+
+		os << var->GetName() << ":";
+
+		if (strcmp(var->GetDataTypeName(), "double precision floating-point") == 0) {
+			double val = *(var);
+			os << stringify(val);
+		}
+		else if (strcmp(var->GetDataTypeName(), "single precision floating-point") == 0) {
+			float val = *(var);
+			os << stringify(val);
+		}
+		else if (strcmp(var->GetDataTypeName(), "boolean") == 0) {
+			bool val = *(var);
+			os << stringify(val);
+		}
+		else {
+			uint64_t val = *(var);
+			os << stringify(val);
+		}
+
+		os << ";";
+
+		std::string str = os.str();
+
+		PutPacket(str);
+
+		os.str(std::string());
+
+	}
+
+
 private:
 	string name;
 	double last_time_ratio;
 	ofstream pim_trace_file;
 
 };
-
 
 } // end pim
 } // end service

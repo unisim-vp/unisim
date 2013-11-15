@@ -560,6 +560,15 @@ class Register : public Variable<TYPE>
 public:
 
 	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
+
+//	using Variable<TYPE>::operator=;
+
+	VariableBase& operator = (bool value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (long long value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (unsigned long long value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (double value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (const char * value) { return (Variable<TYPE>::operator = (value)); }
+
 };
 
 template <class TYPE>
@@ -568,6 +577,15 @@ class Signal : public Variable<TYPE>
 public:
 
 	Signal(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_SIGNAL, description) {}
+
+//	using Variable<TYPE>::operator=;
+
+	VariableBase& operator = (bool value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (long long value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (unsigned long long value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (double value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (const char * value) { return (Variable<TYPE>::operator = (value)); }
+
 };
 
 template <class TYPE>

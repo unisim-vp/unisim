@@ -83,7 +83,7 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 	slave_socket.register_b_transport(this, &S12SCI::read_write);
 	bus_clock_socket.register_b_transport(this, &S12SCI::updateBusClock);
 
-	txd_output_pin.SetMutable(false);
+	txd_output_pin.SetMutable(true);
 	rxd_input_pin.SetMutable(true);
 
 	SC_HAS_PROCESS(S12SCI);
@@ -548,12 +548,16 @@ inline void S12SCI::txShiftOut(SCIMSG msgType)
 		uint8_t index = 0;
 
 		while (isTransmitterEnabled() && (index < length) && !(isSendBreak() ^ (msgType == SCIBREAK))) {
-			txd = (tx_shift & 0x0001);
+//			txd = (tx_shift & 0x0001);
+//			((Variable<bool>) txd_output_pin) = ((tx_shift & 0x0001) != 0);
+//			*((VariableBase*) &txd_output_pin) = ((tx_shift & 0x0001) != 0);
+			txd_output_pin = ((tx_shift & 0x0001) != 0);
 
 			tx_shift = tx_shift >> 1;
 			if (isLoopOperationEnabled() && isTx2RxInternal()) {
 				rxd =  txd;
 			}
+
 			index++;
 			wait(sci_baud_rate);
 		}

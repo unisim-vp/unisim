@@ -251,9 +251,6 @@ private:
 	bool use_rand_generator;
 	Parameter<bool>		param_use_rand_generator;
 
-	SignalArray<double> analog_signal_reg;
-
-
 	/**
 	 * Vih and Vil are logical levels
 	 *  - Vih minimum voltage to model logical "1" the default is 3.25 V (min)
@@ -314,6 +311,8 @@ private:
 	 * Analog signals are modeled as sample potential within VSSA and VDDA given by external tool
 	 */
 	double analog_signal[ATD_SIZE];
+	SignalArray<double> analog_signal_reg;
+
 	int start_scan_at;
 	Parameter<int> param_start_scan_at;
 

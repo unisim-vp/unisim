@@ -6,7 +6,6 @@
  */
 
 #include <unisim/service/pim/pim_thread.hh>
-#include <unistd.h>
 
 namespace unisim {
 namespace service {
@@ -14,13 +13,10 @@ namespace pim {
 
 using namespace std;
 
-using unisim::kernel::service::Simulator;
-using unisim::kernel::service::VariableBase;
-
 PIMThread::PIMThread(const char *_name, Object *_parent) :
-	SocketThread()
-	, Object(_name, _parent)
-	, name(string(_name))
+					SocketThread()
+, Object(_name, _parent)
+, name(string(_name))
 {
 
 }
@@ -76,13 +72,13 @@ void PIMThread::run(){
 			}
 		}
 
-//		cerr << "PIM-Target receive " << buffer << std::endl;
+		//		cerr << "PIM-Target receive " << buffer << std::endl;
 
 		if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
 			super::stop();
 		} else {
 
-// qRcmd,cmd;var_name[:value]{;var_name[:value]}
+			// qRcmd,cmd;var_name[:value]{;var_name[:value]}
 			int start_index = 0;
 			int end_index = buf_str.find(',');
 			string qRcmd = buf_str.substr(start_index, end_index-start_index);
@@ -94,7 +90,49 @@ void PIMThread::run(){
 
 			start_index = end_index+1;
 
-			if (cmd.compare("read") == 0) {
+			if (cmd.compare("listen") == 0) {
+
+				do {
+
+					string name = buf_str.substr(start_index, end_index-start_index);
+					start_index = end_index+1;
+
+					for (int i=0; i < simulator_variables.size(); i++) {
+						if (name.compare(simulator_variables[i]->GetName()) == 0) {
+							simulator_variables[i]->AddListener(this);
+							break;
+						}
+					}
+
+					end_index = buf_str.find(';', start_index);
+					if (end_index != string::npos) {
+						start_index = end_index+1;
+					}
+				} while (end_index != string::npos);
+
+
+			} else	if (cmd.compare("unlisten") == 0) {
+
+				do {
+
+					string name = buf_str.substr(start_index, end_index-start_index);
+					start_index = end_index+1;
+
+					for (int i=0; i < simulator_variables.size(); i++) {
+						if (name.compare(simulator_variables[i]->GetName()) == 0) {
+							simulator_variables[i]->RemoveListener(this);
+							break;
+						}
+					}
+
+					end_index = buf_str.find(';', start_index);
+					if (end_index != string::npos) {
+						start_index = end_index+1;
+					}
+				} while (end_index != string::npos);
+
+
+			} else	if (cmd.compare("read") == 0) {
 
 				std::ostringstream os;
 
