@@ -88,27 +88,17 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	vrh(5.12),
 	param_vrl("vrl", this, vrl),
 	param_vrh("vrh", this, vrh),
-	
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
-
-	use_atd_stub(false),
-	param_use_atd_stub("use-atd-stub", this, use_atd_stub),
-
-	use_rand_generator(false),
-	param_use_rand_generator("use-rand-generator", this, use_rand_generator),
-
-
-	start_scan_at(0),
-	param_start_scan_at("start-scan-at", this, start_scan_at, "ATD start scan at <delay> ms"),
-
-	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
 
 	vih(3.25),
 	vil(1.75),
 	param_vih("vih", this, vih),
 	param_vil("vil", this, vil),
-	
+
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
+
+	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
+
 	hasExternalTrigger(false),
 	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger)
 {
@@ -232,15 +222,6 @@ void ATD10B<ATD_SIZE>::Process()
 {
 	srand(12345);
 
-	/**
-	 * Note: The Software sample the ATDDRx periodically (e.g. every 1024us)
-	 *       For simulation study purpose, the ATD can be delayed before starting to handle ATD voltage inputs
-	 *        for this the injected trace can start after a delay (e.g. 20ms)
-	 */
-
-	sc_time start_scan_time(start_scan_at, SC_MS);
-	wait(start_scan_time);
-
 	while(1)
 	{
 
@@ -249,19 +230,9 @@ void ATD10B<ATD_SIZE>::Process()
 			wait(scan_event);
 		}
 
-		if (use_atd_stub) {
-			wait(input_anx_payload_queue.get_event());
+		wait(input_anx_payload_queue.get_event());
 
-			InputANx(analog_signal);
-		}
-		else {
-			if (use_rand_generator) {
-				for (uint8_t i=0; i < ATD_SIZE; i++) {
-					analog_signal[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-					if (analog_signal[i] < vrl) analog_signal[i] = vrl;
-				}
-			}
-		}
+		InputANx(analog_signal);
 
 		RunScanMode();
 
@@ -1067,11 +1038,6 @@ bool ATD10B<ATD_SIZE>::BeginSetup() {
 		busClockRange[i].maxBusClock = 1e6/(i+1); // busClock is modeled in PS
 		busClockRange[i].minBusClock = 1e6/((i+1)*4);
 	}
-
-//	if (!use_atd_stub) {
-//		atd_vect.clear();
-//		LoadXmlData(atd_anx_stimulus_file.c_str(), atd_vect);
-//	}
 
 	return (true);
 }

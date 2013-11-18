@@ -245,12 +245,6 @@ private:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
-	bool	use_atd_stub;
-	Parameter<bool>		param_use_atd_stub;
-
-	bool use_rand_generator;
-	Parameter<bool>		param_use_rand_generator;
-
 	/**
 	 * Vih and Vil are logical levels
 	 *  - Vih minimum voltage to model logical "1" the default is 3.25 V (min)
@@ -312,9 +306,6 @@ private:
 	 */
 	double analog_signal[ATD_SIZE];
 	SignalArray<double> analog_signal_reg;
-
-	int start_scan_at;
-	Parameter<int> param_start_scan_at;
 
 	struct data_t {
 		double volte[ATD_SIZE];
