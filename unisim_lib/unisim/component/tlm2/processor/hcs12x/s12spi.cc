@@ -89,10 +89,14 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	SC_THREAD(TxRun);
 	SC_THREAD(RxRun);
 
+	xint_payload = xint_payload_fabric.allocate();
+
 }
 
 
 S12SPI::~S12SPI() {
+
+	xint_payload->release();
 
 	// Release registers_registry
 	map<string, unisim::util::debug::Register *>::iterator reg_iter;
@@ -446,15 +450,16 @@ void S12SPI::assertInterrupt(uint8_t interrupt_offset) {
 
 
 	tlm_phase phase = BEGIN_REQ;
-	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->setInterruptOffset(interrupt_offset);
+	xint_payload->acquire();
+
+	xint_payload->setInterruptOffset(interrupt_offset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
-	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
 
-	payload->release();
+	xint_payload->release();
 
 	switch(ret)
 	{

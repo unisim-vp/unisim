@@ -488,8 +488,8 @@ public:
 	//=====================================================================
 	//=             bus interface methods                              =
 	//=====================================================================
-	virtual void busWrite(address_t addr, const void *buffer, uint32_t size) = 0;
-	virtual void busRead(address_t addr, void *buffer, uint32_t size) = 0;
+	virtual void busWrite(MMC_DATA *buffer) = 0;
+	virtual void busRead(MMC_DATA *buffer) = 0;
 
 	//=====================================================================
 	//=             CPURegistersInterface interface methods               =
@@ -673,12 +673,13 @@ inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool 
 	uint8_t data;
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
-	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 	monitorLoad(logicalAddress, sizeof(data), isGlobal);
 
@@ -690,12 +691,13 @@ inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, boo
 	uint16_t data;
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
-	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 	data = BigEndian2Host(data);
 
@@ -708,12 +710,13 @@ inline void CPU::memWrite8(address_t logicalAddress,uint8_t data, ADDRESS::MODE 
 
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
-	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busWrite(&mmc_data);
 
 	monitorStore(logicalAddress, sizeof(data), isGlobal);
 
@@ -725,12 +728,13 @@ inline void CPU::memWrite16(address_t logicalAddress,uint16_t data, ADDRESS::MOD
 
 	data = Host2BigEndian(data);
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
-	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busWrite(&mmc_data);
 
 	monitorStore(logicalAddress, sizeof(data), isGlobal);
 

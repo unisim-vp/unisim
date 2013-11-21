@@ -469,12 +469,13 @@ void CPU::queueFill(address_t addr, int position, uint8_t nByte)
 
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = addr;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = buff;
 	mmc_data.data_size = nByte;
 
-	busRead(addr, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 	for (uint8_t i=0; i<nByte; i++)
 	{

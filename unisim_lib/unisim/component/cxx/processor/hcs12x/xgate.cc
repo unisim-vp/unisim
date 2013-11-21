@@ -531,12 +531,13 @@ void XGATE::Sync()
 
 }
 
+Decoder decoder;
+
 uint8_t XGATE::step()
 {
 
 	uint8_t 	buffer[MAX_INS_SIZE];
 
-	Decoder decoder;
 	Operation 	*op;
 	uint8_t	opCycles = 0;
 
@@ -728,12 +729,13 @@ void XGATE::fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte)
 
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = addr;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = ins;
 	mmc_data.data_size = nByte;
 
-	busRead(addr, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 }
 

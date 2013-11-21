@@ -128,10 +128,14 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 	Reset();
 
+	xint_payload = xint_payload_fabric.allocate();
+
 }
 
 template <uint8_t ATD_SIZE>
 ATD10B<ATD_SIZE>::~ATD10B() {
+
+	xint_payload->release();
 
 	// Release registers_registry
 	map<string, unisim::util::debug::Register *>::iterator reg_iter;
@@ -476,15 +480,16 @@ void ATD10B<ATD_SIZE>::assertInterrupt() {
 //	std::cout << sc_object::name() << "assert ATD_SequenceComplete_Interrupt at " << sc_time_stamp() << std::endl;
 
 	tlm_phase phase = BEGIN_REQ;
-	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->setInterruptOffset(interruptOffset);
+	xint_payload->acquire();
+
+	xint_payload->setInterruptOffset(interruptOffset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
-	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
 
-	payload->release();
+	xint_payload->release();
 
 	switch(ret)
 	{

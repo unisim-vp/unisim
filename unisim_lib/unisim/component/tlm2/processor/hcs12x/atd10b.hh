@@ -209,6 +209,7 @@ private:
 	peq_with_get<ATD_Payload<ATD_SIZE> > input_anx_payload_queue;
 
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
+	XINT_Payload *xint_payload;
 
 	PayloadFabric<ATD_Payload<ATD_SIZE> > payload_fabric;
 

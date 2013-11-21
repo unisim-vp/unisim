@@ -40,10 +40,11 @@ namespace tlm2 {
 namespace processor {
 namespace s12xgate {
 
-S12XGATE::S12XGATE(const sc_module_name& name, Object *parent) :
+S12XGATE::S12XGATE(const sc_module_name& name, S12XMMC *_mmc, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 	, XGATE(name, parent)
+	, mmc(_mmc)
 
 	, target_socket("slave_socket")
 	, xint_interrupt_request("interrupt_request")
@@ -96,10 +97,21 @@ S12XGATE::S12XGATE(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(Run);
 
+	xint_buffer = new INT_TRANS_T();
+	xint_target_trans = xint_target_payload_fabric.allocate();
+	xint_phase = new tlm_phase(BEGIN_REQ);
+
+	xint_init_payload = xint_init_payload_fabric.allocate();
+
 }
 
 S12XGATE::~S12XGATE()
 {
+	delete xint_phase;
+	delete xint_buffer;
+	xint_target_trans->release();
+
+	xint_init_payload->release();
 
 }
 
@@ -160,8 +172,7 @@ void S12XGATE::Reset() {
 void
 S12XGATE ::
 Stop(int ret) {
-//	// Call BusSynchronize to account for the remaining time spent in the cpu core
-//	BusSynchronize();
+
 	Object::Stop(-1);
 }
 
@@ -418,35 +429,31 @@ address_t S12XGATE ::getIntVector(uint8_t& priority)
 
 	address_t address; // get INT_VECTOR from XINT
 
-	INT_TRANS_T *buffer = new INT_TRANS_T();
-	buffer->setPriority(priority);
+	xint_buffer->Reset();
+	xint_buffer->setPriority(priority);
 
-	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+	xint_target_trans->acquire();
 
-	trans->set_command( tlm::TLM_READ_COMMAND );
-	trans->set_address( 0 );
-	trans->set_data_ptr( (unsigned char *) buffer );
+	xint_target_trans->set_command( tlm::TLM_READ_COMMAND );
+	xint_target_trans->set_address( 0 );
+	xint_target_trans->set_data_ptr( (unsigned char *) xint_buffer );
 
-	trans->set_data_length( sizeof(INT_TRANS_T) );
-	trans->set_streaming_width( sizeof(INT_TRANS_T) );
+	xint_target_trans->set_data_length( sizeof(INT_TRANS_T) );
+	xint_target_trans->set_streaming_width( sizeof(INT_TRANS_T) );
 
-	trans->set_byte_enable_ptr( 0 );
-	trans->set_dmi_allowed( false );
-	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+	xint_target_trans->set_byte_enable_ptr( 0 );
+	xint_target_trans->set_dmi_allowed( false );
+	xint_target_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-	tlm_phase *phase = new tlm_phase(BEGIN_REQ);
-	xint_interrupt_request->nb_transport_bw(*trans, *phase, tlm2_btrans_time);
+	*xint_phase = BEGIN_REQ;
+	xint_interrupt_request->nb_transport_bw(*xint_target_trans, *xint_phase, tlm2_btrans_time);
 
-	if (trans->is_response_error() )
+	if (xint_target_trans->is_response_error() )
 		SC_REPORT_ERROR("S12XGATE : ", "Unable to compute channel ID");
 
-	delete phase;
-	trans->release();
+	address = xint_buffer->getID();
+	priority = xint_buffer->getPriority();
 
-	address = buffer->getID();
-	priority = buffer->getPriority();
-
-	delete buffer;
 
 	return (address);
 
@@ -458,16 +465,17 @@ void S12XGATE::assertInterrupt(uint8_t offset, bool isXGATE_flag) {
 	if (!inherited::isInterruptEnabled()) return;
 
 	tlm_phase phase = BEGIN_REQ;
-	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->setInterruptOffset(offset);
-	payload->setXGATE_shared_channel(isXGATE_flag);
+	xint_init_payload->acquire();
+
+	xint_init_payload->setInterruptOffset(offset);
+	xint_init_payload->setXGATE_shared_channel(isXGATE_flag);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
-	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_init_payload, phase, local_time);
 
-	payload->release();
+	xint_init_payload->release();
 
 	switch(ret)
 	{
@@ -556,53 +564,18 @@ void S12XGATE::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	}
 }
 
-
-void S12XGATE::busWrite(address_t addr, void *buffer, uint32_t size)
+void S12XGATE::busWrite(MMC_DATA *buffer)
 {
 
-	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+	mmc->xgate_access(MMC::WRITE, buffer);
 
-	trans->set_command( tlm::TLM_WRITE_COMMAND );
-	trans->set_address( addr );
-	trans->set_data_ptr( (unsigned char *) buffer );
-
-	trans->set_data_length( size );
-	trans->set_streaming_width( size );
-
-	trans->set_byte_enable_ptr( 0 );
-	trans->set_dmi_allowed( false );
-	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
-	initiator_socket->b_transport( *trans, tlm2_btrans_time );
-
-	if (trans->is_response_error() )
-		SC_REPORT_ERROR("S12XGATE : ", "Response error from b_transport");
-
-	trans->release();
 }
 
-void S12XGATE::busRead(address_t addr, void *buffer, uint32_t size)
+void S12XGATE::busRead(MMC_DATA *buffer)
 {
 
-	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+	mmc->xgate_access(MMC::READ, buffer);
 
-	trans->set_command( tlm::TLM_READ_COMMAND );
-	trans->set_address( addr );
-	trans->set_data_ptr( (unsigned char *) buffer );
-
-	trans->set_data_length( size );
-	trans->set_streaming_width( size );
-
-	trans->set_byte_enable_ptr( 0 );
-	trans->set_dmi_allowed( false );
-	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
-	initiator_socket->b_transport( *trans, tlm2_btrans_time );
-
-	if (trans->is_response_error() )
-		SC_REPORT_ERROR("S12XGATE : ", "Response error from b_transport");
-
-	trans->release();
 }
 
 } // end of namespace s12xgate

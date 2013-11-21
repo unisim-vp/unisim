@@ -68,6 +68,7 @@ public:
 
 	~INT_TRANS_T() { }
 
+	void Reset() { id = 0; vectorAddress = 0; priority = 0; }
 	uint8_t getID() { return (id); }
 	void setID(uint8_t _id) { id = _id; }
 	address_t getVectorAddress() { return (vectorAddress); }

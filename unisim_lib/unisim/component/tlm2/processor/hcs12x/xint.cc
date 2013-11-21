@@ -78,6 +78,10 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 	toCPU12X_request.register_nb_transport_bw(this, &XINT::cpu_nb_transport_bw);
 	toXGATE_request.register_nb_transport_bw(this, &XINT::xgate_nb_transport_bw);
 
+	trans = payloadFabric.allocate();
+
+	phase = new tlm_phase(BEGIN_REQ);
+
 	SC_HAS_PROCESS(XINT);
 
 	SC_THREAD(run);
@@ -111,6 +115,9 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 }
 
 XINT::~XINT() {
+
+	delete phase;
+	trans->release();
 
 	// Release registers_registry
 	map<string, unisim::util::debug::Register *>::iterator reg_iter;
@@ -287,16 +294,15 @@ void XINT::run()
 
 	// This thread is waked-up by any not CPU interrupt
 
-	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
-
-	tlm_phase *phase = new tlm_phase(BEGIN_REQ);
-
-	trans->set_command( tlm::TLM_WRITE_COMMAND );
-	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
 	while (true) {
 
 		wait(input_payload_queue.get_event() | retry_event);
+
+		trans->acquire();
+		trans->set_command( tlm::TLM_WRITE_COMMAND );
+		trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+		*phase = BEGIN_REQ;
 
 		bool found_cpu = false;
 		bool found_xgate = false;
@@ -345,10 +351,10 @@ void XINT::run()
 
 		}
 
+		trans->release();
+
 	}
 
-	delete phase;
-	trans->release();
 
 }
 

@@ -331,8 +331,8 @@ public:
 		 */
 	}
 
-	virtual void busWrite(address_t addr, void *buffer, uint32_t size) = 0;
-	virtual void busRead(address_t addr, void *buffer, uint32_t size) = 0;
+	virtual void busWrite(MMC_DATA *buffer) = 0;
+	virtual void busRead(MMC_DATA *buffer) = 0;
 
 	inline void reportTrap();
 
@@ -680,12 +680,13 @@ inline uint8_t XGATE::memRead8(address_t logicalAddress) {
 	uint8_t data;
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
-	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 	monitorLoad(logicalAddress, sizeof(data));
 
@@ -697,12 +698,13 @@ inline uint16_t XGATE::memRead16(address_t logicalAddress) {
 	uint16_t data;
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
-	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 	data = BigEndian2Host(data);
 
@@ -715,12 +717,13 @@ inline void XGATE::memWrite8(address_t logicalAddress,uint8_t data) {
 
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
-	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busWrite(&mmc_data);
 
 	monitorStore(logicalAddress, sizeof(data));
 
@@ -732,12 +735,13 @@ inline void XGATE::memWrite16(address_t logicalAddress,uint16_t data) {
 
 	data = Host2BigEndian(data);
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
-	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busWrite(&mmc_data);
 
 	monitorStore(logicalAddress, sizeof(data));
 

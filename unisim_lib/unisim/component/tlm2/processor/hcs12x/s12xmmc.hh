@@ -105,21 +105,20 @@ public:
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 	
-	tlm_utils::simple_target_socket<S12XMMC> cpu_socket;
-	tlm_utils::simple_target_socket<S12XMMC> xgate_socket;
-
 	tlm_utils::multi_passthrough_initiator_socket<S12XMMC> init_socket;
 
 	S12XMMC(const sc_module_name& name, S12MPU_IF *_mpu = 0, Object *parent = 0);
 	virtual ~S12XMMC();
 
-	virtual void cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
-	virtual void xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
+	void xgate_access(MMC::ACCESS accessType, MMC_DATA *buffer);
+	void cpu_access(MMC::ACCESS accessType, MMC_DATA *buffer);
 
 	virtual bool BeginSetup();
 
 
 private:
+
+	tlm::tlm_generic_payload* mmc_trans;
 
 	sc_time tlm2_btrans_time;
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
@@ -127,7 +126,7 @@ private:
 	TSemaphore busSemaphore;
 	sc_event   busSemaphore_event;
 
-	bool accessBus(sc_dt::uint64 logicalAddress, physical_address_t addr, MMC_DATA *buffer, tlm::tlm_command cmd);
+	bool accessBus(physical_address_t addr, MMC_DATA *buffer, tlm::tlm_command cmd);
 
 	string memoryMapStr;
 	Parameter<string> param_memoryMapStr;

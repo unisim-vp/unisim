@@ -50,7 +50,6 @@ S12XMMC::S12XMMC(const sc_module_name& name, S12MPU_IF *_mpu, Object *parent) :
 	, sc_module(name)
 	, MMC(name, _mpu, parent)
 	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, cpu_socket("cpu_to_mmc")
 	, init_socket("init-socket")
 
 	, trap_reporting_import("trap_reporting_import", this)
@@ -63,20 +62,21 @@ S12XMMC::S12XMMC(const sc_module_name& name, S12MPU_IF *_mpu, Object *parent) :
 
 {
 
-	cpu_socket.register_b_transport(this, &S12XMMC::cpu_b_transport);
-	xgate_socket.register_b_transport(this, &S12XMMC::xgate_b_transport);
-
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
+
+	mmc_trans = payloadFabric.allocate();
 
 }
 
 
 S12XMMC::~S12XMMC() {
 
+	mmc_trans->release();
+
 }
 
 
-bool S12XMMC::accessBus(sc_dt::uint64 logicalAddress, physical_address_t addr, MMC_DATA *buffer, tlm::tlm_command cmd) {
+bool S12XMMC::accessBus(physical_address_t addr, MMC_DATA *buffer, tlm::tlm_command cmd) {
 
 	bool find = false;
 
@@ -84,7 +84,9 @@ bool S12XMMC::accessBus(sc_dt::uint64 logicalAddress, physical_address_t addr, M
 		if ((addr >= memoryMap[i]->start_address) && (addr <= memoryMap[i]->end_address)) {
 			find = true;
 
-			tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
+//			tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
+
+			mmc_trans->acquire();
 
 			mmc_trans->set_data_ptr( (unsigned char *)buffer->buffer );
 
@@ -98,7 +100,7 @@ bool S12XMMC::accessBus(sc_dt::uint64 logicalAddress, physical_address_t addr, M
 			if (cmd == tlm::TLM_READ_COMMAND) {
 				mmc_trans->set_command( tlm::TLM_READ_COMMAND );
 
-				memset(buffer->buffer, 0, buffer->data_size);
+//				memset(buffer->buffer, 0, buffer->data_size);
 
 			} else {
 				mmc_trans->set_command( tlm::TLM_WRITE_COMMAND );
@@ -121,11 +123,10 @@ bool S12XMMC::accessBus(sc_dt::uint64 logicalAddress, physical_address_t addr, M
 }
 
 
-void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
+void S12XMMC::xgate_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
 
-	sc_dt::uint64 logicalAddress = trans.get_address();
-	MMC_DATA *buffer = (MMC_DATA *) trans.get_data_ptr();
-	tlm::tlm_command cmd = trans.get_command();
+	address_t logicalAddress = buffer->logicalAddress;
+	tlm::tlm_command cmd = ((accessType == MMC::WRITE)? tlm::TLM_WRITE_COMMAND: tlm::TLM_READ_COMMAND);
 
 	bool find = false;
 	if (inherited::version.compare("V3") == 0) {
@@ -155,7 +156,7 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 				wait(busSemaphore_event);
 			}
 
-			find = accessBus(logicalAddress, addr, buffer, cmd);
+			find = accessBus(addr, buffer, cmd);
 
 			if (busSemaphore.unlock(TOWNER::XGATE)) {
 				busSemaphore_event.notify();
@@ -182,16 +183,12 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 
 	}
 
-	trans.set_response_status( tlm::TLM_OK_RESPONSE );
-
 }
 
+void S12XMMC::cpu_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
 
-void S12XMMC::cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
-
-	sc_dt::uint64 logicalAddress = trans.get_address();
-	MMC_DATA *buffer = (MMC_DATA *) trans.get_data_ptr();
-	tlm::tlm_command cmd = trans.get_command();
+	address_t logicalAddress = buffer->logicalAddress;
+	tlm::tlm_command cmd = ((accessType == MMC::WRITE)? tlm::TLM_WRITE_COMMAND: tlm::TLM_READ_COMMAND);
 
 	bool find = false;
 	if (inherited::version.compare("V3") == 0) {
@@ -226,7 +223,7 @@ void S12XMMC::cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 				wait(busSemaphore_event);
 			}
 
-			find = accessBus(logicalAddress, addr, buffer, cmd);
+			find = accessBus(addr, buffer, cmd);
 
 			if (busSemaphore.unlock(TOWNER::CPU12X)) {
 				busSemaphore_event.notify();
@@ -249,7 +246,6 @@ void S12XMMC::cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 	}
 
-	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 
 }
 

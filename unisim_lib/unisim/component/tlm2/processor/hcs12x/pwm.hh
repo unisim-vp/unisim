@@ -219,6 +219,8 @@ private:
 
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
+	XINT_Payload *xint_payload;
+	PWM_Payload<PWM_SIZE> *pwm_payload;
 
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;
