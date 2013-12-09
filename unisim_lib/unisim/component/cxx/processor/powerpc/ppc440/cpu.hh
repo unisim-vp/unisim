@@ -460,7 +460,7 @@ public:
 	inline uint32_t GetDAC(unsigned int n) const ALWAYS_INLINE { return dac[n]; }
 	inline void SetDVC(unsigned int n, uint32_t value) ALWAYS_INLINE { dvc[n] = value; }
 	inline uint32_t GetDVC(unsigned int n) const ALWAYS_INLINE { return dvc[n]; }
-	inline void SetTSR(uint32_t value) ALWAYS_INLINE { tsr = value; UpdateExceptionMask(); }
+	inline void SetTSR(uint32_t value) ALWAYS_INLINE { tsr = value;  }
 	inline uint32_t GetTSR() const ALWAYS_INLINE { return tsr; }
 	inline uint32_t GetTSR_ENW() const ALWAYS_INLINE { return (GetTSR() & CONFIG::TSR_ENW_MASK) >> CONFIG::TSR_ENW_OFFSET; }
 	inline uint32_t GetTSR_WIS() const ALWAYS_INLINE { return (GetTSR() & CONFIG::TSR_WIS_MASK) >> CONFIG::TSR_WIS_OFFSET; }
@@ -953,6 +953,7 @@ public:
 	void ResetExceptionFlags(uint32_t _exc_flags);
 	void SetExceptionMask(uint32_t _exc_mask);
 	void ResetExceptionMask(uint32_t _exc_mask);
+	void UpdateExceptionFlags();
 	void UpdateExceptionMask();
 
 protected:

@@ -578,6 +578,7 @@ bool CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
 	bool status = EmuStore<uint32_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
+	if(trap_reporting_import && (ea = 0xc816ffd0) && (value == 0xfe4dd34UL)) trap_reporting_import->ReportTrap("Got a store of 0xfe4dd34 at @0xc816ffd0");
 	return true;
 }
 
