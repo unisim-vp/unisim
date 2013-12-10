@@ -395,7 +395,7 @@ smlaxy.execute = {
 	uint32_t mul_res = (uint32_t)(op1 * op2);
 	//val_rd = op1 + val_ra;
 	uint8_t carry_out, overflow_out, sign;
-	unisim::util::arithmetic::Add32(val_rd, carry_out, overflow_out, sign, mul_res, val_ra, 0);
+	unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, mul_res, val_ra, 0);
 	//if(op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
 	if (overflow_out) {
 		cpu.CPSR().Q().Set( 1 );
@@ -636,7 +636,7 @@ smlawy.execute = {
 	//int32_t sval_rd = (int32_t)op_tmp;
 	//val_rd = (uint32_t)(sval_rd + (int32_t)val_rn);
 	uint8_t carry_out, overflow_out, sign;
-	unisim::util::arithmetic::Add32(val_rd, carry_out, overflow_out, sign, op_tmp, val_rn, 0);
+	unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, op_tmp, val_rn, 0);
 // 	if ( (op_tmp & (uint32_t)0x80000000ULL) !=
 // 		(val_rn & (uint32_t)0x80000000ULL) )
 	if(overflow_out)
