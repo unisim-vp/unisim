@@ -127,9 +127,9 @@ static const char *COND_NAME[] = {
     0       // 11111
 };
 
-using unisim::util::arithmetic::Add32;
+using unisim::util::arithmetic::SignedAdd32;
 using unisim::util::arithmetic::SignedSatAdd32;
-using unisim::util::arithmetic::Sub32;
+using unisim::util::arithmetic::SignedSub32;
 using unisim::util::arithmetic::SignedSatSub32;
 using unisim::util::arithmetic::RotateLeft;
 using unisim::util::arithmetic::RotateRight;
