@@ -889,6 +889,8 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 template <class CONFIG>
 void Simulator<CONFIG>::Run()
 {
+	cerr << "Starting simulation at " << (enable_linux_os ? "user" : "supervisor") << " privilege level" << endl;
+	
 	double time_start = host_time->GetTime();
 
 #ifndef WIN32

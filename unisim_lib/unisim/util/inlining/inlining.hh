@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2011,
+ *  Copyright (c) 2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,48 +31,17 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_UTIL_INLINING_INLINING_HH__
+#define __UNISIM_UTIL_INLINING_INLINING_HH__
 
-#include <simulator.hh>
-#include <simulator.tcc>
-#include <config.hh>
-
-typedef SimConfigWoCache SIM_CONFIG;
-typedef Simulator<SIM_CONFIG> SIMULATOR;
-
-int sc_main(int argc, char *argv[])
-{
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
+#if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ >= 4) && ((__GNUC_MINOR__ > 1) || ((__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 3)))))     // GNU C version >= 4.1.3
+#if defined(ALWAYS_INLINE)
+#undef ALWAYS_INLINE
 #endif
-	SIMULATOR *simulator = new SIMULATOR(argc, argv);
-
-	switch(simulator->Setup())
-	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
-			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
-			simulator->Run();
-			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
-			break;
-	}
-
-	int exit_status = simulator->GetExitStatus();
-	if(simulator) delete simulator;
-#ifdef WIN32
-	// releases the winsock2 resources
-	WSACleanup();
+#define ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define ALWAYS_INLINE
 #endif
 
-	return exit_status;
-}
+#endif // __UNISIM_UTIL_INLINING_INLINING_HH__

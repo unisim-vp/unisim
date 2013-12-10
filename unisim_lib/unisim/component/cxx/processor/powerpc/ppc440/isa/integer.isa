@@ -43,7 +43,8 @@ namespace processor {
 namespace powerpc {
 namespace ppc440 {
 
-using unisim::util::arithmetic::Add32;
+using unisim::util::arithmetic::SignedAdd32;
+using unisim::util::arithmetic::UnsignedAdd32;
 using unisim::util::arithmetic::SignExtend;
 using unisim::util::arithmetic::SignedSatAdd32;
 using unisim::util::arithmetic::UnsignedSatAdd32;
@@ -155,7 +156,7 @@ macchw.execute = {
 	uint8_t overflow;
 	uint8_t sign;
 	
-	Add32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
+	SignedAdd32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -311,7 +312,7 @@ macchwu.execute = {
 	uint8_t overflow;
 	uint8_t sign;
 	
-	Add32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
+	UnsignedAdd32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -363,7 +364,7 @@ machhw.execute = {
 	uint8_t overflow;
 	uint8_t sign;
 	
-	Add32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
+	SignedAdd32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -519,7 +520,7 @@ machhwu.execute = {
 	uint8_t overflow;
 	uint8_t sign;
 	
-	Add32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
+	UnsignedAdd32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -571,7 +572,7 @@ maclhw.execute = {
 	uint8_t overflow;
 	uint8_t sign;
 	
-	Add32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
+	SignedAdd32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -728,7 +729,7 @@ maclhwu.execute = {
 	uint8_t overflow;
 	uint8_t sign;
 	
-	Add32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
+	UnsignedAdd32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -1002,7 +1003,7 @@ nmacchw.execute = {
 	uint8_t overflow;
 	uint8_t sign;
 	
-	Add32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
+	SignedAdd32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -1106,7 +1107,7 @@ nmachhw.execute = {
 	uint8_t overflow;
 	uint8_t sign;
 	
-	Add32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
+	SignedAdd32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -1210,7 +1211,7 @@ nmaclhw.execute = {
 	uint8_t overflow;
 	uint8_t sign;
 	
-	Add32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
+	SignedAdd32(result, carry_out, overflow, sign, prod32, d, 0); // this can overflow
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
