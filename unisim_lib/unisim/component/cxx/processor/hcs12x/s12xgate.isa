@@ -906,7 +906,7 @@ arithmetic_triadic.execute = {
 		uint16_t rs1_reg = cpu->getXGRx(reg2);
 		uint16_t rs2_reg = cpu->getXGRx(reg3);
 
-		Sub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
+		SignedSub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
 
 		cpu->setXGRx(reg1, rd_reg);
 
@@ -927,7 +927,7 @@ arithmetic_triadic.execute = {
 		uint16_t rs1_reg = cpu->getXGRx(reg2);
 		uint16_t rs2_reg = cpu->getXGRx(reg3);
 
-		Sub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
+		SignedSub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
 
 		cpu->setXGRx(reg1, rd_reg);
 
@@ -946,7 +946,7 @@ arithmetic_triadic.execute = {
 		uint16_t rs1_reg = cpu->getXGRx(reg2);
 		uint16_t rs2_reg = cpu->getXGRx(reg3);
 
-		Add16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
+		UnsignedAdd16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
 
 		cpu->setXGRx(reg1, rd_reg);
 
@@ -967,7 +967,7 @@ arithmetic_triadic.execute = {
 		uint16_t rs1_reg = cpu->getXGRx(reg2);
 		uint16_t rs2_reg = cpu->getXGRx(reg3);
 
-		Add16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
+		UnsignedAdd16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
 
 		cpu->setXGRx(reg1, rd_reg);
 
@@ -1833,7 +1833,7 @@ arithmetic_imm8.execute = {
 
 		uint16_t reg1_val = cpu->getXGRx(reg1);
 
-		Sub16(result, carry_out, overflow, sign, reg1_val, (0x00FF & imm8), carry_in);
+		SignedSub16(result, carry_out, overflow, sign, reg1_val, (0x00FF & imm8), carry_in);
 
 		cpu->setXGRx(reg1, result);
 
@@ -1854,7 +1854,7 @@ arithmetic_imm8.execute = {
 		uint16_t reg1_val = cpu->getXGRx(reg1);
 		uint16_t to_subract = (imm8 << 8);
 
-		Sub16(result, carry_out, overflow, sign, reg1_val, to_subract, carry_in);
+		SignedSub16(result, carry_out, overflow, sign, reg1_val, to_subract, carry_in);
 
 		cpu->setXGRx(reg1, result);
 
@@ -1871,7 +1871,7 @@ arithmetic_imm8.execute = {
 		carry_in = 0;
 		uint8_t regVal = cpu->getXGRx(reg1) & 0x00FF;
 
-		Sub8(result, carry_out, overflow, sign, regVal, imm8, carry_in);
+		SignedSub8(result, carry_out, overflow, sign, regVal, imm8, carry_in);
 
 		if (carry_out) { cpu->getCCR()->setC();} else { cpu->getCCR()->clrC();}
 		if (overflow) { cpu->getCCR()->setV();} else { cpu->getCCR()->clrV();}
@@ -1885,7 +1885,7 @@ arithmetic_imm8.execute = {
 		uint8_t carry_in = cpu->getCCR()->getC();
 		uint8_t regVal = cpu->getXGRx(reg1) >> 8;
 
-		Sub8(result, carry_out, overflow, sign, regVal, imm8, carry_in);
+		SignedSub8(result, carry_out, overflow, sign, regVal, imm8, carry_in);
 
 		if (carry_out) { cpu->getCCR()->setC();} else { cpu->getCCR()->clrC();}
 		if (overflow) { cpu->getCCR()->setV();} else { cpu->getCCR()->clrV();}
@@ -1901,7 +1901,7 @@ arithmetic_imm8.execute = {
 
 		uint16_t rd_reg = cpu->getXGRx(reg1);
 
-		Add16(result, carry_out, overflow, sign, rd_reg, (0x00FF & imm8), 0);
+		UnsignedAdd16(result, carry_out, overflow, sign, rd_reg, (0x00FF & imm8), 0);
 
 		cpu->setXGRx(reg1, result);
 
@@ -1920,7 +1920,7 @@ arithmetic_imm8.execute = {
 
 		uint16_t rd_reg = cpu->getXGRx(reg1);
 
-		Add16(result, carry_out, overflow, sign, rd_reg, (0xFF00 & (imm8 << 8)), 0);
+		UnsignedAdd16(result, carry_out, overflow, sign, rd_reg, (0xFF00 & (imm8 << 8)), 0);
 
 		cpu->setXGRx(reg1, result);
 

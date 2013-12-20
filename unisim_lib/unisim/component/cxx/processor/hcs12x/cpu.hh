@@ -112,10 +112,10 @@ using unisim::kernel::logger::EndDebug;
 
 using unisim::util::debug::Register;
 
-using unisim::util::arithmetic::Add8;
-using unisim::util::arithmetic::Add16;
-using unisim::util::arithmetic::Sub8;
-using unisim::util::arithmetic::Sub16;
+using unisim::util::arithmetic::UnsignedAdd8;
+using unisim::util::arithmetic::UnsignedAdd16;
+using unisim::util::arithmetic::SignedSub8;
+using unisim::util::arithmetic::SignedSub16;
 
 using unisim::util::endian::endian_type;
 using unisim::util::endian::BigEndian2Host;

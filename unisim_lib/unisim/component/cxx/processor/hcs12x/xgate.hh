@@ -111,10 +111,10 @@ using unisim::util::endian::Host2BigEndian;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::util::endian::LittleEndian2Host;
 
-using unisim::util::arithmetic::Add8;
-using unisim::util::arithmetic::Add16;
-using unisim::util::arithmetic::Sub8;
-using unisim::util::arithmetic::Sub16;
+using unisim::util::arithmetic::UnsignedAdd8;
+using unisim::util::arithmetic::UnsignedAdd16;
+using unisim::util::arithmetic::SignedSub8;
+using unisim::util::arithmetic::SignedSub16;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::address_t;
