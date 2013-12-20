@@ -159,7 +159,7 @@ void CPU<CONFIG>::EnterSystemCallISR(unisim::component::cxx::processor::powerpc:
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a system call exception";
@@ -606,7 +606,7 @@ void CPU<CONFIG>::EnterMachineCheckISR(unisim::component::cxx::processor::powerp
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a machine check exception";
@@ -648,7 +648,7 @@ void CPU<CONFIG>::EnterDecrementerISR(unisim::component::cxx::processor::powerpc
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a decrementer interrupt";
@@ -690,7 +690,7 @@ void CPU<CONFIG>::EnterExternalInputISR(unisim::component::cxx::processor::power
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got an external input interrupt";
@@ -732,7 +732,7 @@ void CPU<CONFIG>::EnterCriticalInputISR(unisim::component::cxx::processor::power
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a critical input interrupt";
@@ -783,7 +783,7 @@ void CPU<CONFIG>::EnterDataStorageISR(unisim::component::cxx::processor::powerpc
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(func_symbol) sstr << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a data storage interrupt while accessing data at 0x" << std::hex << exc_addr << std::dec;
@@ -829,7 +829,7 @@ void CPU<CONFIG>::EnterInstructionStorageISR(unisim::component::cxx::processor::
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got an instruction storage interrupt";
@@ -878,7 +878,7 @@ void CPU<CONFIG>::EnterDataTLBErrorISR(unisim::component::cxx::processor::powerp
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(func_symbol) sstr << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a data TLB error while accessing data at 0x" << std::hex << exc_addr << std::dec;
@@ -922,7 +922,7 @@ void CPU<CONFIG>::EnterInstructionTLBErrorISR(unisim::component::cxx::processor:
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got an instruction TLB error";
@@ -969,7 +969,7 @@ void CPU<CONFIG>::EnterAlignmentISR(unisim::component::cxx::processor::powerpc::
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got an alignement exception";
@@ -1035,7 +1035,7 @@ void CPU<CONFIG>::EnterProgramISR(unisim::component::cxx::processor::powerpc::pp
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a program exception";
@@ -1077,7 +1077,7 @@ void CPU<CONFIG>::EnterFloatingPointUnavailableISR(unisim::component::cxx::proce
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a floating point unavailable exception";
@@ -1119,7 +1119,7 @@ void CPU<CONFIG>::EnterAuxiliaryProcessorUnavailableISR(unisim::component::cxx::
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got an auxiliary processor unavailable exception";
@@ -1161,7 +1161,7 @@ void CPU<CONFIG>::EnterFixedIntervalTimerISR(unisim::component::cxx::processor::
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a fixed interval timer interrupt";
@@ -1203,7 +1203,7 @@ void CPU<CONFIG>::EnterWatchDogTimerISR(unisim::component::cxx::processor::power
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a watchdog timer interrupt";
@@ -1245,7 +1245,7 @@ void CPU<CONFIG>::EnterDebugISR(unisim::component::cxx::processor::powerpc::ppc4
 	if(unlikely(IsVerboseException() || enable_trap_on_exception || linux_os_import))
 	{
 		std::stringstream sstr;
-		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec << ", instruction #" << instruction_counter;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
 		sstr << ", got a debug interrupt";

@@ -1694,6 +1694,7 @@ bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 				return false;
 			}
 			SetTSR(GetTSR() & ~value); // A 1 clears the bit, a 0 leaves it unchanged
+			UpdateExceptionFlags(); // Mirror TSR[DIS], TSR[FIS] and TSR[WIS]
 			return true;
 		case 0x154:
 			if(GetMSR_PR())
@@ -1952,19 +1953,19 @@ void CPU<CONFIG>::StepOneInstruction()
 		{
 			/* update the instruction counter */
 			instruction_counter++;
-			
-			/* report a finished instruction */
-			if(unlikely(requires_finished_instruction_reporting))
-			{
-				if(unlikely(memory_access_reporting_import != 0))
-				{
-					memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
-				}
-			}
 		}
 	}
 
 	ProcessExceptions(operation);
+
+	/* report a finished instruction */
+	if(unlikely(requires_finished_instruction_reporting))
+	{
+		if(unlikely(memory_access_reporting_import != 0))
+		{
+			memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
+		}
+	}
 
 	/* go to the next instruction */
 	SetCIA(GetNIA());
@@ -2321,8 +2322,15 @@ void CPU<CONFIG>::SetExceptionFlags(uint32_t _exc_flags, typename CONFIG::addres
 	}
 	
 	exc_flags = exc_flags | _exc_flags;
-	if(_exc_flags & CONFIG::EXC_MASK_DECREMENTER) SetTSR(GetTSR() | CONFIG::TSR_DIS_MASK);
-	if(_exc_flags & CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER) SetTSR(GetTSR() | CONFIG::TSR_FIS_MASK);
+	// Mirror TSR[DIS], TSR[FIS] and TSR[WIS]
+	if(_exc_flags & CONFIG::EXC_MASK_DECREMENTER)
+	{
+		SetTSR(GetTSR() | CONFIG::TSR_DIS_MASK);
+	}
+	if(_exc_flags & CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER)
+	{
+		SetTSR(GetTSR() | CONFIG::TSR_FIS_MASK);
+	}
 	if(_exc_flags & CONFIG::EXC_MASK_WATCHDOG_TIMER)
 	{
 		if(GetTSR_ENW())
@@ -2394,16 +2402,12 @@ void CPU<CONFIG>::SetExceptionFlags(uint32_t _exc_flags, typename CONFIG::addres
 template <class CONFIG>
 void CPU<CONFIG>::ResetExceptionFlags(unsigned int _exc_flags)
 {
+	// Note: HW is not supposed to clear TSR bits
+	_exc_flags = _exc_flags & ~(CONFIG::EXC_MASK_DECREMENTER | CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER | CONFIG::EXC_MASK_WATCHDOG_TIMER);
 	exc_flags = exc_flags & ~_exc_flags;
-	// FIXME: HW is not supposed to clear TSR bits !!!
-	/*
-	if(_exc_flags & CONFIG::EXC_DECREMENTER) SetTSR(GetTSR() & ~CONFIG::TSR_DIS_MASK);
-	if(_exc_flags & CONFIG::EXC_FIXED_INTERVAL_TIMER) SetTSR(GetTSR() & ~CONFIG::TSR_FIS_MASK);
-	if(_exc_flags & CONFIG::EXC_WATCHDOG_TIMER) SetTSR(GetTSR() & ~CONFIG::TSR_WIS_MASK);
-	*/
 	if(IsVerboseException())
 	{
-		logger << DebugInfo << "Resetting exception flags: " << std::hex << exc_flags << std::dec << EndDebugInfo;
+		logger << DebugInfo << "Resetting exception flags (" << std::hex << _exc_flags << std::dec << "): " << std::hex << exc_flags << std::dec << EndDebugInfo;
 	}
 }
 
@@ -2420,14 +2424,32 @@ void CPU<CONFIG>::ResetExceptionMask(unsigned int _exc_mask)
 }
 
 template <class CONFIG>
+void CPU<CONFIG>::UpdateExceptionFlags()
+{
+	uint32_t tsr_dis = GetTSR_DIS();
+	uint32_t tsr_fis = GetTSR_FIS();
+	uint32_t tsr_wis = GetTSR_WIS();
+	exc_flags = (exc_flags & ~(CONFIG::EXC_MASK_DECREMENTER | CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER | CONFIG::EXC_MASK_WATCHDOG_TIMER))
+	          | (tsr_dis << CONFIG::EXC_DECREMENTER) | (tsr_fis << CONFIG::EXC_FIXED_INTERVAL_TIMER) | (tsr_wis << CONFIG::EXC_WATCHDOG_TIMER);
+}
+
+template <class CONFIG>
 void CPU<CONFIG>::UpdateExceptionMask()
 {
-	if(GetDBCR0_IDM() && GetMSR_DE()) SetExceptionMask(CONFIG::EXC_MASK_DEBUG); else ResetExceptionMask(CONFIG::EXC_MASK_DEBUG);
-	if(GetMSR_CE()) SetExceptionMask(CONFIG::EXC_MASK_CRITICAL_INPUT); else ResetExceptionMask(CONFIG::EXC_MASK_CRITICAL_INPUT);
-	if(GetTCR_WIE() && GetMSR_CE() && GetTSR_WIS()) SetExceptionMask(CONFIG::EXC_MASK_WATCHDOG_TIMER); else ResetExceptionMask(CONFIG::EXC_MASK_WATCHDOG_TIMER);
-	if(GetMSR_EE()) SetExceptionMask(CONFIG::EXC_MASK_EXTERNAL_INPUT); else ResetExceptionMask(CONFIG::EXC_MASK_EXTERNAL_INPUT);
-	if(GetTCR_FIE() && GetMSR_EE() && GetTSR_FIS()) SetExceptionMask(CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER); else ResetExceptionMask(CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER);
-	if(GetTCR_DIE() && GetMSR_EE() && GetTSR_DIS()) SetExceptionMask(CONFIG::EXC_MASK_DECREMENTER); else ResetExceptionMask(CONFIG::EXC_MASK_DECREMENTER);
+	uint32_t dbcr0_idm = GetDBCR0_IDM();
+	uint32_t msr_de = GetMSR_DE();
+	uint32_t tcr_wie = GetTCR_WIE();
+	uint32_t msr_ce = GetMSR_CE();
+	uint32_t msr_ee = GetMSR_EE();
+	uint32_t tcr_fie = GetTCR_FIE();
+	uint32_t tcr_die = GetTCR_DIE();
+	exc_mask = (exc_mask & ~(CONFIG::EXC_MASK_DEBUG | CONFIG::EXC_MASK_CRITICAL_INPUT | CONFIG::EXC_MASK_WATCHDOG_TIMER | CONFIG::EXC_MASK_EXTERNAL_INPUT | CONFIG::EXC_MASK_FIXED_INTERVAL_TIMER | CONFIG::EXC_MASK_DECREMENTER))
+	         | ((dbcr0_idm & msr_de) << CONFIG::EXC_DEBUG)
+	         | (msr_ce << CONFIG::EXC_CRITICAL_INPUT)
+	         | ((tcr_wie & msr_ce) << CONFIG::EXC_WATCHDOG_TIMER)
+	         | (msr_ee << CONFIG::EXC_EXTERNAL_INPUT)
+	         | ((tcr_fie & msr_ee) << CONFIG::EXC_FIXED_INTERVAL_TIMER)
+	         | ((tcr_die & msr_ee) << CONFIG::EXC_DECREMENTER);
 }
 
 template <class CONFIG>
@@ -2458,13 +2480,18 @@ bool CPU<CONFIG>::Rfi()
 		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
 		return false;
 	}
-
+	
 	FlushSubsequentInstructions();
 	InvalidateITLB();
 	InvalidateDTLB();
 	SetNIA(GetSRR0());
 	SetMSR(GetSRR1());
 	
+	if(unlikely(IsVerboseException()))
+	{
+		logger << DebugInfo << "Returning from interrupt to 0x" << std::hex << GetNIA() << std::dec << EndDebugInfo;
+	}
+
 	return true;
 }
 
@@ -2484,6 +2511,11 @@ bool CPU<CONFIG>::Rfci()
 	SetNIA(GetCSRR0());
 	SetMSR(GetCSRR1());
 	
+	if(unlikely(IsVerboseException()))
+	{
+		logger << DebugInfo << "Returning from critical interrupt to 0x" << std::hex << GetNIA() << std::dec << EndDebugInfo;
+	}
+
 	return true;
 }
 
@@ -2503,6 +2535,11 @@ bool CPU<CONFIG>::Rfmci()
 	SetNIA(GetMCSRR0());
 	SetMSR(GetMCSRR1());
 	
+	if(unlikely(IsVerboseException()))
+	{
+		logger << DebugInfo << "Returning from machine check interrupt to 0x" << std::hex << GetNIA() << std::dec << EndDebugInfo;
+	}
+
 	return true;
 }
 

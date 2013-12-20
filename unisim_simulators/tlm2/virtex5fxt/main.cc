@@ -60,7 +60,6 @@ int sc_main(int argc, char *argv[])
 		case unisim::kernel::service::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
 		case unisim::kernel::service::Simulator::ST_OK_TO_START:
-			cerr << "Starting simulation at supervisor privilege level" << endl;
 			simulator->Run();
 			break;
 		case unisim::kernel::service::Simulator::ST_ERROR:
