@@ -690,7 +690,7 @@ ADDI3_STI.execute = {
 	}
 	else
 	{
-		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		SignedAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -764,7 +764,7 @@ ADDI3_STI_ext.execute = {
 	}
 	else
 	{
-		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		SignedAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -2676,7 +2676,7 @@ NEGI_STI.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, 0, src2_value, 0);
+		SignedSub32(result, borrow_out, overflow, sign, 0, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -2742,7 +2742,7 @@ NEGI_STI_ext.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, 0, src2_value, 0);
+		SignedSub32(result, borrow_out, overflow, sign, 0, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -3645,7 +3645,7 @@ SUBI3_STI.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, src2_value, src1_value, 0);
+		SignedSub32(result, borrow_out, overflow, sign, src2_value, src1_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -3718,7 +3718,7 @@ SUBI3_STI_ext.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, src2_value, src1_value, 0);
+		SignedSub32(result, borrow_out, overflow, sign, src2_value, src1_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -4873,7 +4873,7 @@ MPYI3_ADDI3.execute = {
 	if(cpu.GetST_OVM())
 		SignedSatAdd32(addi3_result, addi3_carry_out, addi3_overflow, addi3_sign, srcD_value, srcC_value, 0);
 	else
-		Add32(addi3_result, addi3_carry_out, addi3_overflow, addi3_sign, srcD_value, srcC_value, 0);
+		SignedAdd32(addi3_result, addi3_carry_out, addi3_overflow, addi3_sign, srcD_value, srcC_value, 0);
 
 	// Summarize overflow bit of MPYI3 and ADDI3
 	uint8_t overflow = mpyi3_overflow | addi3_overflow;
@@ -5120,7 +5120,7 @@ MPYI3_SUBI3.execute = {
 	if(cpu.GetST_OVM())
 		SignedSatSub32(subi3_result, subi3_borrow_out, subi3_overflow, subi3_sign, srcD_value, srcC_value, 0);
 	else
-		Sub32(subi3_result, subi3_borrow_out, subi3_overflow, subi3_sign, srcD_value, srcC_value, 0);
+		SignedSub32(subi3_result, subi3_borrow_out, subi3_overflow, subi3_sign, srcD_value, srcC_value, 0);
 
 	// Summarize overflow bit of MPYI3 and SUBI3
 	uint8_t overflow = mpyi3_overflow | subi3_overflow;

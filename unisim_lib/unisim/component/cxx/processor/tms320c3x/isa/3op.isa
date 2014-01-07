@@ -140,7 +140,7 @@ ADDC3_reg_reg.execute = {
 	}
 	else
 	{
-		Add32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+		SignedAdd32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
 		sign = sign ^ overflow;
 	}
 
@@ -208,7 +208,7 @@ ADDC3_indir_reg.execute = {
 	}
 	else
 	{
-		Add32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+		SignedAdd32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
 		sign = sign ^ overflow;
 	}
 
@@ -276,7 +276,7 @@ ADDC3_reg_indir.execute = {
 	}
 	else
 	{
-		Add32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+		SignedAdd32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
 		sign = sign ^ overflow;
 	}
 
@@ -347,7 +347,7 @@ ADDC3_indir_indir.execute = {
 	}
 	else
 	{
-		Add32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
+		SignedAdd32(result, carry_out, overflow, sign, src1_value, src2_value, carry_in);
 		sign = sign ^ overflow;
 	}
 
@@ -776,7 +776,7 @@ ADDI3_reg_reg.execute = {
 	}
 	else
 	{
-		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		SignedAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -841,7 +841,7 @@ ADDI3_indir_reg.execute = {
 	}
 	else
 	{
-		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		SignedAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -906,7 +906,7 @@ ADDI3_reg_indir.execute = {
 	}
 	else
 	{
-		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		SignedAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -993,7 +993,7 @@ ADDI3_indir_indir.execute = {
 	}
 	else
 	{
-		Add32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
+		SignedAdd32(result, carry_out, overflow, sign, src1_value, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -2355,7 +2355,7 @@ CMPI3_reg_reg.execute = {
 	uint8_t overflow;     // the overflow (0 or 1)
 	uint8_t sign;         // the sign (0 or 1)
 
-	Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
 	sign = sign ^ overflow;
 
 	// Generate flags (into ST)
@@ -2405,7 +2405,7 @@ CMPI3_indir_reg.execute = {
 	uint8_t overflow;     // the overflow (0 or 1)
 	uint8_t sign;         // the sign (0 or 1)
 
-	Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
 	sign = sign ^ overflow;
 
 	// Generate flags (into ST)
@@ -2455,7 +2455,7 @@ CMPI3_reg_indir.execute = {
 	uint8_t overflow;     // the overflow (0 or 1)
 	uint8_t sign;         // the sign (0 or 1)
 
-	Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
 	sign = sign ^ overflow;
 
 	// Generate flags (into ST)
@@ -2521,7 +2521,7 @@ CMPI3_indir_indir.execute = {
 	uint8_t overflow;     // the overflow (0 or 1)
 	uint8_t sign;         // the sign (0 or 1)
 
-	Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+	SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
 	sign = sign ^ overflow;
 
 	// Generate flags (into ST)
@@ -3929,7 +3929,7 @@ SUBB3_reg_reg.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+		SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
 		sign = sign ^ overflow;
 	}
 
@@ -3997,7 +3997,7 @@ SUBB3_indir_reg.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+		SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
 		sign = sign ^ overflow;
 	}
 
@@ -4065,7 +4065,7 @@ SUBB3_reg_indir.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+		SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
 		sign = sign ^ overflow;
 	}
 
@@ -4136,7 +4136,7 @@ SUBB3_indir_indir.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
+		SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, borrow_in);
 		sign = sign ^ overflow;
 	}
 
@@ -4565,7 +4565,7 @@ SUBI3_reg_reg.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+		SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -4630,7 +4630,7 @@ SUBI3_indir_reg.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+		SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -4695,7 +4695,7 @@ SUBI3_reg_indir.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+		SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
@@ -4763,7 +4763,7 @@ SUBI3_indir_indir.execute = {
 	}
 	else
 	{
-		Sub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
+		SignedSub32(result, borrow_out, overflow, sign, src1_value, src2_value, 0);
 		sign = sign ^ overflow;
 	}
 
