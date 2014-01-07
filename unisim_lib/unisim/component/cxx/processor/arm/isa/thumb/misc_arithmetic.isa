@@ -46,6 +46,8 @@ sxtb.disasm = {
 }
 
 sxtb.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR( rd, (int32_t)((int8_t)cpu.GetGPR_npc( rm )) );
 };
 
@@ -67,6 +69,8 @@ sxth.disasm = {
 };
 
 sxth.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR( rd, (int32_t)((int16_t)cpu.GetGPR_npc( rm )) );
 };
 
@@ -88,6 +92,8 @@ uxtb.disasm = {
 };
 
 uxtb.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR( rd, (uint32_t)((uint8_t)cpu.GetGPR_npc( rm )) );
 };
 
@@ -109,6 +115,8 @@ uxth.disasm = {
 };
 
 uxth.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR( rd, (uint32_t)((uint16_t)cpu.GetGPR_npc( rm )) );
 };
 

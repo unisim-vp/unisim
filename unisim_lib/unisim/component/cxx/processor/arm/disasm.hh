@@ -137,6 +137,8 @@ namespace arm {
     uint32_t m_mode;
   };
 
+  enum controltype_t { ctNormal, ctBranch, ctCondBranch, ctCall, ctLeave };
+  
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
