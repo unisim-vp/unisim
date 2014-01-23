@@ -14,9 +14,12 @@ namespace pim {
 using namespace std;
 
 PIMThread::PIMThread(const char *_name, Object *_parent) :
-					SocketThread()
-, Object(_name, _parent)
-, name(string(_name))
+	SocketThread()
+	, VariableBaseListener()
+	, Object(_name, _parent)
+	, name(string(_name))
+	, last_time_ratio(-1)
+
 {
 
 }
@@ -24,6 +27,7 @@ PIMThread::PIMThread(const char *_name, Object *_parent) :
 PIMThread::~PIMThread() {
 
 	pim_trace_file.close();
+
 }
 
 double PIMThread::GetSimTime() {
@@ -58,7 +62,7 @@ void PIMThread::run(){
 
 		string buf_str;
 
-		if (!GetPacket(buf_str, blocking)) {
+		if (!GetDatagramPacket(buf_str, blocking)) {
 			if (blocking) {
 				cerr << "PIM-Target receive **NULL**" << endl;
 				break;
@@ -71,8 +75,6 @@ void PIMThread::run(){
 				continue;
 			}
 		}
-
-		//		cerr << "PIM-Target receive " << buffer << std::endl;
 
 		if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
 			super::stop();
@@ -179,7 +181,7 @@ void PIMThread::run(){
 
 				std::string str = os.str();
 
-				PutPacket(str);
+				PutDatagramPacket(str);
 
 				os.str(std::string());
 

@@ -208,7 +208,16 @@ public:
 	SignalArray<bool> channel_output_reg;
 
 protected:
-	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };
+//	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };
+	void setOutput(uint8_t channel_index, bool value) {
+		assert(channel_index < PWM_SIZE);
+
+		if (value != output[channel_index]) {
+			channel_output_reg[channel_index] = value;
+		}
+
+	};
+
 	bool getOutput(uint8_t channel_index) { assert(channel_index < PWM_SIZE); return (output[channel_index]); }
 
 private:

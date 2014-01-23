@@ -92,7 +92,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 
 		channel[channel_number] = new Channel_t(channelName, this, channel_number, &pwmcnt16_register[i], &pwmper16_register[i], &pwmdty16_register_value[i]);
 
-		channel_output_reg[i].SetMutable(false);
+//		channel_output_reg[i].SetMutable(false);
 	}
 
 	// Reserved Register for factory testing

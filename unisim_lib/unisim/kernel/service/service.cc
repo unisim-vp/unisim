@@ -504,11 +504,11 @@ void VariableBase::RemoveListener(VariableBaseListener *listener)
 void VariableBase::NotifyListeners()
 {
 	list<VariableBaseListener *>::iterator iter;
-	if ( IsMutable() )
-		for ( iter = listener_list.begin();
-				iter != listener_list.end();
-				iter++)
-			(*iter)->VariableBaseNotify(this);
+
+	for ( iter = listener_list.begin();	iter != listener_list.end(); iter++) {
+		(*iter)->VariableBaseNotify(this);
+	}
+
 }
 
 VariableBase::operator bool () const { return false; }

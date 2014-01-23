@@ -31,9 +31,12 @@ public:
 	virtual void run() { };
 
 	bool GetChar(char& c, bool blocking);
+	bool GetDatagramPacket(string& s, bool blocking);
 	bool GetPacket(string& s, bool blocking);
 	bool PutChar(char c);
+	bool PutDatagramPacket(const string& data);
 	bool PutPacket(const string& data);
+	bool OutputTextDatagram(const char *s, int count);
 	bool OutputText(const char *s, int count);
 	bool FlushOutput();
 

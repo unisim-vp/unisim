@@ -98,7 +98,7 @@ public:
 
 		std::string str = os.str();
 
-		PutPacket(str);
+		PutDatagramPacket(str);
 
 		os.str(std::string());
 
