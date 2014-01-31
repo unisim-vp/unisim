@@ -106,7 +106,7 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, unisim::kernel::service::Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<Registers>(_name, _parent)
 	, unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
-	, SocketThread()
+
 	, debug_control_export("debug-control-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
 	, debug_event_trigger_import("debug-event-trigger-import", this)
@@ -118,6 +118,11 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, disasm_import("disasm-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, stmt_lookup_import("stmt-lookup-import", this)
+
+	, socketServer(NULL)
+	, monitorThread(NULL)
+	, pimServerThread(NULL)
+	, debuggerThread(NULL)
 
 	, logger(*this)
 	, tcp_port(12345)
@@ -158,20 +163,16 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 template <class ADDRESS>
 PIMServer<ADDRESS>::~PIMServer()
 {
-	if(sockfd >= 0)
+	if(debuggerThread->getSockfd() >= 0)
 	{
 		string packet("W00");
-		PutPacket(packet);
-#ifdef WIN32
-		closesocket(sockfd);
-#else
-		close(sockfd);
-#endif
-		sockfd = -1;
+		debuggerThread->PutPacket(packet);
+		debuggerThread->closeSockfd();
 	}
 
 	if (socketServer) { delete socketServer; socketServer = NULL;}
-	if (target) { delete target; target = NULL; }
+	if (debuggerThread) { delete debuggerThread; debuggerThread = NULL; }
+	if (monitorThread) { delete monitorThread; monitorThread = NULL; }
 	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
 
 }
@@ -224,7 +225,9 @@ bool PIMServer<ADDRESS>::EndSetup() {
 	// connection_req_nbre parameter has to be set to two "2" connections. once is for GDB requests and the second is for PIM requests
 	socketServer = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
 
-	socketServer->setProtocolHandler(this);
+	debuggerThread = new SocketThread();
+
+	socketServer->setProtocolHandler(debuggerThread);
 
 	socketServer->start();
 
@@ -305,7 +308,7 @@ template <class ADDRESS>
 void PIMServer<ADDRESS>::Stop(int exit_status) {
 
 	if (socketServer) { socketServer->stop();}
-	if (target) { target->stop();}
+	if (monitorThread) { monitorThread->stop();}
 	if (pimServerThread) { pimServerThread->stop();}
 
 }
@@ -406,7 +409,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 		char c;
 
-		if(GetChar(c, false))
+		if(debuggerThread->GetChar(c, false))
 		{
 			if(c == 0x03)
 			{
@@ -437,7 +440,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 	while(!killed)
 	{
-		if(!GetPacket(packet, true))
+		if(!debuggerThread->GetPacket(packet, true))
 		{
 			Object::Stop(0);
 			return (DebugControl<ADDRESS>::DBG_KILL);
@@ -467,18 +470,18 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 			case 'G':
 				if(WriteRegisters(packet.substr(1)))
-					OutputText("OK", 2);
+					debuggerThread->OutputText("OK", 2);
 				else
-					OutputText("E00", 3);
+					debuggerThread->OutputText("E00", 3);
 				break;
 
 			case 'P':
 				if(!ParseHex(packet, pos, reg_num)) break;
 				if(packet[pos++] != '=') break;
 				if(WriteRegister(reg_num, packet.substr(pos)))
-					OutputText("OK", 2);
+					debuggerThread->OutputText("OK", 2);
 				else
-					OutputText("E00", 3);
+					debuggerThread->OutputText("E00", 3);
 				break;
 
 			case 'm':
@@ -499,9 +502,9 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, size)) break;
 				if(packet[pos++] != ':') break;
 				if(WriteMemory(addr, packet.substr(pos), size))
-					OutputText("OK", 2);
+					debuggerThread->OutputText("OK", 2);
 				else
-					OutputText("E00", 3);
+					debuggerThread->OutputText("E00", 3);
 				break;
 
 			case 's':
@@ -547,7 +550,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				break;
 
 			case 'H':
-				PutPacket("E01");
+				debuggerThread->PutPacket("E01");
 				break;
 
 			case 'k':
@@ -569,7 +572,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 			case '!':
 				extended_mode = true;
-				OutputText("OK", 2);
+				debuggerThread->OutputText("OK", 2);
 				break;
 
 			case 'Z':
@@ -579,9 +582,9 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(SetBreakpointWatchpoint(type, addr, size))
-					OutputText("OK", 2);
+					debuggerThread->OutputText("OK", 2);
 				else
-					OutputText("E00", 3);
+					debuggerThread->OutputText("E00", 3);
 				break;
 
 			case 'z':
@@ -591,16 +594,16 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(RemoveBreakpointWatchpoint(type, addr, size))
-					OutputText("OK", 2);
+					debuggerThread->OutputText("OK", 2);
 				else
-					OutputText("E00", 3);
+					debuggerThread->OutputText("E00", 3);
 				break;
 
 			default:
 
 				if(packet.substr(0, 9) == "qSymbol::")
 				{
-					PutPacket("qSymbol::");
+					debuggerThread->PutPacket("qSymbol::");
 
 					if (!HandleSymbolLookup()) {
 						Object::Stop(0);
@@ -609,7 +612,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				}
 				else if(packet == "vCont?")
 				{
-					PutPacket("vCont;c;C;s;S");
+					debuggerThread->PutPacket("vCont;c;C;s;S");
 				}
 				else if(packet.substr(0, 7) == "vCont;c")
 				{
@@ -632,7 +635,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 					{
 						logger << DebugWarning << "Received an unknown GDB remote protocol packet" << EndDebugWarning;
 					}
-					PutPacket("");
+					debuggerThread->PutPacket("");
 				}
 
 				break;
@@ -660,7 +663,7 @@ bool PIMServer<ADDRESS>::ReadRegisters()
 		packet += hex;
 	}
 
-	return (PutPacket(packet));
+	return (debuggerThread->PutPacket(packet));
 
 }
 
@@ -694,7 +697,7 @@ bool PIMServer<ADDRESS>::ReadRegister(unsigned int regnum)
 	ADDRESS val = *(simulator_registers[regnum]);
 	number2HexString((uint8_t*) &val, (simulator_registers[regnum])->GetBitSize()/8, packet, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
-	return (PutPacket(packet));
+	return (debuggerThread->PutPacket(packet));
 
 }
 
@@ -723,7 +726,7 @@ bool PIMServer<ADDRESS>::HandleSymbolLookup() {
 		string packet;
 		bool	found_error = false;
 
-		if(!GetPacket(packet, true))
+		if(!debuggerThread->GetPacket(packet, true))
 		{
 			return (false);
 		}
@@ -813,10 +816,10 @@ bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) 
 					logger << DebugWarning << memory_import.GetName() << "->WriteSymbol has reported an error" << EndDebugWarning;
 				}
 
-				OutputText("NOK", 3);
+				debuggerThread->OutputText("NOK", 3);
 				return (false);
 			} else {
-				OutputText("OK", 2);
+				debuggerThread->OutputText("OK", 2);
 			}
 
 			break;
@@ -873,7 +876,7 @@ bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 				break;
 			} else {
 				if (count == 0) {
-					PutPacket(packet);
+					debuggerThread->PutPacket(packet);
 					packet = "";
 				}
 
@@ -883,11 +886,11 @@ bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 	}
 
 	if (count > 0) {
-		PutPacket(packet);
+		debuggerThread->PutPacket(packet);
 	}
 
 	if (name.compare("*") == 0) {
-		PutPacket("qSymbol:");
+		debuggerThread->PutPacket("qSymbol:");
 	}
 
 
@@ -947,7 +950,7 @@ bool PIMServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 		}
 	}
 
-	return (PutPacket(packet));
+	return (debuggerThread->PutPacket(packet));
 }
 
 template <class ADDRESS>
@@ -989,21 +992,16 @@ bool PIMServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 template <class ADDRESS>
 void PIMServer<ADDRESS>::Kill()
 {
-	if(sockfd >= 0)
+	if(debuggerThread->getSockfd() >= 0)
 	{
-#ifdef WIN32
-		closesocket(sockfd);
-#else
-		close(sockfd);
-#endif
-		sockfd = -1;
+		debuggerThread->closeSockfd();
 	}
 }
 
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::ReportProgramExit()
 {
-	return (PutPacket("W00"));
+	return (debuggerThread->PutPacket("W00"));
 }
 
 template <class ADDRESS>
@@ -1011,7 +1009,7 @@ bool PIMServer<ADDRESS>::ReportSignal(unsigned int signum)
 {
 	char packet[4];
 	sprintf(packet, "S%02x", signum);
-	return (PutPacket(packet));
+	return (debuggerThread->PutPacket(packet));
 }
 
 template <class ADDRESS>
@@ -1037,7 +1035,7 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 		watchpoint_hit = NULL;
 	}
 
-	return (PutPacket(packet));
+	return (debuggerThread->PutPacket(packet));
 }
 
 template <class ADDRESS>
@@ -1196,7 +1194,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 			string str = strstm.str();
 
-			OutputText(str.c_str(), str.size());
+			debuggerThread->OutputText(str.c_str(), str.size());
 
 			strstm.str(std::string());
 
@@ -1204,7 +1202,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 		lst.clear();
 
-		PutPacket("T05");
+		debuggerThread->PutPacket("T05");
 
 	}
 	else if (cmdPrefix.compare("parameter") == 0) {
@@ -1243,7 +1241,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 				}
 
 				std::string value = os.str();
-				OutputText(value.c_str(), value.size());
+				debuggerThread->OutputText(value.c_str(), value.size());
 			}
 			else // write parameter request
 			{
@@ -1256,7 +1254,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 		}
 
-		PutPacket("T05");
+		debuggerThread->PutPacket("T05");
 
 	}
 	else if (cmdPrefix.compare("symboles") == 0) {
@@ -1290,7 +1288,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			strstm << ":" << "FUNCTION";
 
 			string str = strstm.str();
-			OutputText(str.c_str(), str.size());
+			debuggerThread->OutputText(str.c_str(), str.size());
 
 			strstm.str(std::string());
 		}
@@ -1312,13 +1310,13 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			strstm << ":" << "VARIABLE";
 
 			string str = strstm.str();
-			OutputText(str.c_str(), str.size());
+			debuggerThread->OutputText(str.c_str(), str.size());
 
 			strstm.str(std::string());
 
 		}
 
-		PutPacket("T05");
+		debuggerThread->PutPacket("T05");
 
 	}
 	else if (cmdPrefix.compare("disasm") == 0) {
@@ -1332,42 +1330,42 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		 */
 
 		if (separator_index == string::npos) {
-			PutPacket("E00");
+			debuggerThread->PutPacket("E00");
 		} else {
 			separator_index++;
 			ADDRESS symbol_address;
 			ADDRESS symbol_size;
 			if(!ParseHex(command, separator_index, symbol_address)) {
-				PutPacket("E00");
+				debuggerThread->PutPacket("E00");
 			} else if(command[separator_index++] != ':') {
-				PutPacket("E00");
+				debuggerThread->PutPacket("E00");
 			} else if(!ParseHex(command, separator_index, symbol_size)) {
-				PutPacket("E00");
+				debuggerThread->PutPacket("E00");
 			} else if(separator_index != command.length()) {
-				PutPacket("E00");
+				debuggerThread->PutPacket("E00");
 			}
 
 			if (disasm_import) {
 				Disasm(symbol_address, symbol_size);
 			}
 
-			PutPacket("T05");
+			debuggerThread->PutPacket("T05");
 
 		}
 
 	}
 	else if (cmdPrefix.compare("start-pim") == 0) {
 		// Start PIMThread
-		target = new PIMThread("pim-thread");
+		monitorThread = new PIMThread("pim-thread");
 
 		// Open Socket Stream
 		// restart the SocketServer to get connection with Pim-Client
 
-		socketServer->setProtocolHandler(target);
+		socketServer->setProtocolHandler(monitorThread);
 
 		socketServer->start();
 
-		OutputText("OK", 2);
+		debuggerThread->OutputText("OK", 2);
 
 	}
 	else if (cmdPrefix.compare("time") == 0) {
@@ -1377,7 +1375,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		sstr << GetSimTime();
 		packet += sstr.str();
 
-		PutPacket(packet);
+		debuggerThread->PutPacket(packet);
 
 	}
 	else if (cmdPrefix.compare("endian") == 0) {
@@ -1387,7 +1385,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		sstr << GetEndian();
 		packet += sstr.str();
 
-		PutPacket(packet);
+		debuggerThread->PutPacket(packet);
 
 	}
 	else if (cmdPrefix.compare("registers") == 0) {
@@ -1409,7 +1407,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		lst.clear();
 
 		string str = sstr.str();
-		PutPacket(str);
+		debuggerThread->PutPacket(str);
 
 	}
 	else if (cmdPrefix.compare("stack") == 0) {
@@ -1460,13 +1458,13 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 		string packet(sstr.str());
 
-		OutputText(packet.c_str(), packet.length());
+		debuggerThread->OutputText(packet.c_str(), packet.length());
 
 	}
 	else if (cmdPrefix.compare("physicalAddress") == 0) {
 
 		if (separator_index == string::npos) {
-			PutPacket("E00");
+			debuggerThread->PutPacket("E00");
 		} else {
 			separator_index++;
 			long logical_address;
@@ -1474,7 +1472,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			int start_index = 0;
 			int end_index = command.find(':', start_index);
 			if(end_index == string::npos) {
-				PutPacket("E00");
+				debuggerThread->PutPacket("E00");
 			} else {
 
 				string cmd = command.substr(start_index, end_index-start_index);
@@ -1494,7 +1492,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 				packet += hex;
 
-				PutPacket(packet);
+				debuggerThread->PutPacket(packet);
 
 			}
 
@@ -1504,7 +1502,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 	else if (cmdPrefix.compare("structuredAddress") == 0) {
 
 		if (separator_index == string::npos) {
-			PutPacket("E00");
+			debuggerThread->PutPacket("E00");
 		} else {
 			separator_index++;
 			long logical_address;
@@ -1512,7 +1510,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			int start_index = 0;
 			int end_index = command.find(':', start_index);
 			if(end_index == string::npos) {
-				PutPacket("E00");
+				debuggerThread->PutPacket("E00");
 			} else {
 
 				string cmd = command.substr(start_index, end_index-start_index);
@@ -1532,7 +1530,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 				packet += hex;
 
-				PutPacket(packet);
+				debuggerThread->PutPacket(packet);
 
 			}
 
@@ -1574,10 +1572,10 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 			string packet(sstr.str());
 
-			PutPacket(packet.c_str());
+			debuggerThread->PutPacket(packet.c_str());
 
 		} else {
-			PutPacket("E00");
+			debuggerThread->PutPacket("E00");
 		}
 
 	}
@@ -1597,10 +1595,10 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 		string str = sstr.str();
 
-		OutputText(str.c_str(), str.size());
+		debuggerThread->OutputText(str.c_str(), str.size());
 
 	} else {
-		PutPacket("E00");
+		debuggerThread->PutPacket("E00");
 	}
 
 }
@@ -1632,7 +1630,7 @@ void PIMServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_size
 		strstm.fill(' ');
 
 		string str = strstm.str();
-		OutputText(str.c_str(), str.size());
+		debuggerThread->OutputText(str.c_str(), str.size());
 
 		disassembled_size += next_address - current_address;
 		current_address = next_address;

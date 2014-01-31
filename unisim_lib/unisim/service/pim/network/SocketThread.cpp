@@ -123,6 +123,17 @@ void SocketThread::startSocketThread(int sockfd, bool _blocking) {
 	this->start();
 }
 
+void SocketThread::closeSockfd() {
+
+#ifdef WIN32
+		closesocket(sockfd);
+#else
+		close(sockfd);
+#endif
+		sockfd = -1;
+
+}
+
 void SocketThread::setSockfd(int sockfd) {
 
     pthread_mutex_lock( &sockfd_mutex );

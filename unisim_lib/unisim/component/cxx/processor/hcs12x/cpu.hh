@@ -90,6 +90,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
+using unisim::kernel::service::CallBackObject;
 
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::DebugControl;
@@ -206,19 +207,23 @@ private:
 };	/***********   END EBLB  **********/
 
 
-class CPU : public Decoder,
-public Client<DebugControl<physical_address_t> >,
-public Client<MemoryAccessReporting<physical_address_t> >,
-public Service<MemoryAccessReportingControl>,
-public Service<Disassembly<physical_address_t> >,
-public Service<Registers>,
-public Service<Memory<physical_address_t> >,
-public Client<Memory<physical_address_t> >,
-public Client<SymbolTableLookup<physical_address_t> >,
-public Client<TrapReporting >
+class CPU :
+		public Decoder,
+		public Client<DebugControl<physical_address_t> >,
+		public Client<MemoryAccessReporting<physical_address_t> >,
+		public Service<MemoryAccessReportingControl>,
+		public Service<Disassembly<physical_address_t> >,
+		public Service<Registers>,
+		public Service<Memory<physical_address_t> >,
+		public Client<Memory<physical_address_t> >,
+		public Client<SymbolTableLookup<physical_address_t> >,
+		public Client<TrapReporting >,
+		public CallBackObject
 
 {
 public:
+	enum REGS_OFFSETS {X, D, Y, SP, PC, A, B, CCRL, CCRH, CCR};
+
 	//#define MAX_INS_SIZE	CodeType::maxsize;
 	static const uint8_t MAX_INS_SIZE = 8;
 	static const uint8_t QUEUE_SIZE = MAX_INS_SIZE;
@@ -419,6 +424,9 @@ public:
 
 	inline void    setRegTMP(uint8_t index, uint16_t val);
 	inline uint16_t getRegTMP(uint8_t index);
+
+	bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 	/********************************************************************
 	 * *******  Used for Indexed Operations XB: Postbyte Code  **********

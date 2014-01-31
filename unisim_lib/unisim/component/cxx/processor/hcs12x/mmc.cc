@@ -217,6 +217,7 @@ bool MMC::BeginSetup() {
 		unisim::kernel::service::Register<uint8_t> *ramshu_var = new unisim::kernel::service::Register<uint8_t>("RAMSHU", this, ramshu, "RAM Shared Region Upper Boundary Register (RAMSHU)");
 		extended_registers_registry.push_back(ramshu_var);
 		ramshu_var->setCallBack(this, RAMSHU, &CallBackObject::write, NULL);
+
 	}
 
 	MMC_REGS_ADDRESSES[MMCCTL0] = 0x000A;

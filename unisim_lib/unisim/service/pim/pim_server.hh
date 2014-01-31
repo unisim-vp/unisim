@@ -123,8 +123,8 @@ class PIMServer :
 	public Client<Disassembly<ADDRESS> >,
 	public Client<SymbolTableLookup<ADDRESS> >,
 	public Client<StatementLookup<ADDRESS> >,
-	public Client<Registers>,
-	public SocketThread
+	public Client<Registers>
+
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
@@ -177,7 +177,8 @@ protected:
 
 	SocketServerThread *socketServer;
 
-	SocketThread *target;
+	SocketThread *debuggerThread;
+	SocketThread *monitorThread;
 	SocketThread *pimServerThread;
 
 private:

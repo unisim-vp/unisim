@@ -155,22 +155,47 @@ CPU::CPU(const char *name, Object *parent):
 	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("B", this, regB, "Accumulator register B"));
 
 	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);
-	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>("D", this,  &regA, &regB, "Accumulator register D"));
+//	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>("D", this,  &regA, &regB, "Accumulator register D"));
+
+	ConcatenatedRegisterView<uint16_t,uint8_t> *d_var = new ConcatenatedRegisterView<uint16_t,uint8_t>("D", this,  &regA, &regB, "16-bits Accumulator register (D=A:B)");
+	extended_registers_registry.push_back(d_var);
+	d_var->setCallBack(this, D, &CallBackObject::write, NULL);
+
 
 	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("X", this, regX, "Index register X"));
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("X", this, regX, "Index register X"));
+
+	unisim::kernel::service::Register<uint16_t> *x_var = new unisim::kernel::service::Register<uint16_t>("X", this, regX, "16-bits index register (X)");
+	extended_registers_registry.push_back(x_var);
+	x_var->setCallBack(this, X, &CallBackObject::write, NULL);
 
 	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("Y", this, regY, "Index register Y"));
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("Y", this, regY, "Index register Y"));
+
+	unisim::kernel::service::Register<uint16_t> *y_var = new unisim::kernel::service::Register<uint16_t>("Y", this, regY, "16-bits index register (Y)");
+	extended_registers_registry.push_back(y_var);
+	y_var->setCallBack(this, Y, &CallBackObject::write, NULL);
 
 	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("SP", this, regSP, "Stack Pointer SP"));
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("SP", this, regSP, "Stack Pointer SP"));
+
+	unisim::kernel::service::Register<uint16_t> *sp_var = new unisim::kernel::service::Register<uint16_t>("SP", this, regSP, "16-bits stack pointer register (SP)");
+	extended_registers_registry.push_back(sp_var);
+	sp_var->setCallBack(this, SP, &CallBackObject::write, NULL);
 
 	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("PC", this, regPC, "Program counter PC"));
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("PC", this, regPC, "Program counter PC"));
+
+	unisim::kernel::service::Register<uint16_t> *pc_var = new unisim::kernel::service::Register<uint16_t>("PC", this, regPC, "16-bits program counter register (PC)");
+	extended_registers_registry.push_back(pc_var);
+	pc_var->setCallBack(this, PC, &CallBackObject::write, NULL);
 
 	registers_registry[ccr->GetName()] = ccr;
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(ccr->GetName(), this, ccrReg, "CCR"));
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(ccr->GetName(), this, ccrReg, "CCR"));
+
+	unisim::kernel::service::Register<uint16_t> *ccr_var = new unisim::kernel::service::Register<uint16_t>(ccr->GetName(), this, ccrReg, "16-bits condition code register (CCR)");
+	extended_registers_registry.push_back(ccr_var);
+	ccr_var->setCallBack(this, CCR, &CallBackObject::write, NULL);
 
 	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
 	registers_registry[ccrl->GetName()] = ccrl;
@@ -227,6 +252,49 @@ void CPU::Reset()
 
 	ccr->reset();
 	for (unsigned int i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
+}
+
+
+bool CPU::read(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	std::cout << "Read back" << std::endl;
+
+	switch (offset) {
+		case X: *((uint16_t *) buffer) = Host2BigEndian(getRegX()); break;
+		case D: *((uint16_t *) buffer) = Host2BigEndian(getRegD()); break;
+		case Y: *((uint16_t *) buffer) = Host2BigEndian(getRegY()); break;
+		case SP: *((uint16_t *) buffer) = Host2BigEndian(getRegSP()); break;
+		case PC: *((uint16_t *) buffer) = Host2BigEndian(getRegPC()); break;
+		case A: *((uint8_t *) buffer) = getRegA(); break;
+		case B: *((uint8_t *) buffer) = getRegB(); break;
+		case CCRL: *((uint8_t *) buffer) = ccr->getCCRLow(); break;
+		case CCRH: *((uint8_t *) buffer) = ccr->getCCRHigh(); break;
+		case CCR: *((uint16_t *) buffer) = Host2BigEndian(ccr->getCCR()); break;
+		default: return (false);
+	}
+
+	return (true);
+}
+
+bool CPU::write(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	std::cout << "Write back" << std::hex << *((uint16_t *) buffer) << std::endl;
+
+	switch (offset) {
+		case X: setRegX(BigEndian2Host(*((uint16_t *) buffer))); break;
+		case D: setRegD(BigEndian2Host(*((uint16_t *) buffer))); break;
+		case Y: setRegY(BigEndian2Host(*((uint16_t *) buffer))); break;
+		case SP: setRegSP(BigEndian2Host(*((uint16_t *) buffer))); break;
+		case PC: setRegPC(BigEndian2Host(*((uint16_t *) buffer))); break;
+		case A: setRegA(*((uint8_t *) buffer)); break;
+		case B: setRegB(*((uint8_t *) buffer)); break;
+		case CCRL: ccr->setCCRLow(*((uint8_t *) buffer)); break;
+		case CCRH: ccr->setCCRHigh(*((uint8_t *) buffer)); break;
+		case CCR: ccr->setCCR(BigEndian2Host(*((uint16_t *) buffer))); break;
+		default: return (false);
+	}
+
+	return (true);
 }
 
 //=====================================================================

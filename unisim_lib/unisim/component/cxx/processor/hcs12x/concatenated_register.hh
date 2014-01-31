@@ -52,6 +52,9 @@ namespace hcs12x {
 using std::string;
 using unisim::util::debug::Register;
 
+using unisim::kernel::service::TCallBack;
+using unisim::kernel::service::CallBackObject;
+
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 class ConcatenatedRegister : public Register
 {
@@ -135,9 +138,41 @@ public:
 	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
 	virtual unisim::kernel::service::VariableBase& operator = (double value);
 	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+
+	void setCallBack(CallBackObject *owner, unsigned int offset, bool (CallBackObject::*_write)(unsigned int, const void*, unsigned int), bool (CallBackObject::*_read)(unsigned int, const void*, unsigned int)) {
+		m_callback.reset(new TCallBack<REGISTER_TYPE>(owner, offset, _write, _read));
+	}
+
+protected:
+	bool WriteBack(REGISTER_TYPE storage) {
+
+		CallBackObject *cb = m_callback.get();
+		if (cb != NULL) {
+			return (((TCallBack<REGISTER_TYPE>&) *m_callback).Write(storage));
+		}
+
+		return (false);
+	}
+
+	bool ReadBack(REGISTER_TYPE& storage) const {
+
+		CallBackObject *cb = m_callback.get();
+		if (cb != NULL) {
+			return (((TCallBack<REGISTER_TYPE>&) *m_callback).Read(storage));
+		}
+
+		return (false);
+	}
+
+	const CallBackObject& callback() const { return (*m_callback); }
+	CallBackObject& scallback() { return (*m_callback); }
+
+
 private:
 	SUB_REGISTER_TYPE* regHigh;
 	SUB_REGISTER_TYPE* regLow;
+
+	std::auto_ptr<CallBackObject> m_callback;
 };
 
 
@@ -173,109 +208,248 @@ unsigned int ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetBitS
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>:: operator bool () const {
-	return (*regHigh || *regLow);
+//	return (*regHigh || *regLow);
+
+	REGISTER_TYPE tmp;
+	bool result = ReadBack(tmp);
+
+	return (result? (tmp? true : false) : ((*regHigh || *regLow) ? true : false));
+
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator long long () const {
+//	switch(sizeof(SUB_REGISTER_TYPE))
+//	{
+//	case 1: return ((long long) (int16_t) (((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow));
+//	case 2: return ((long long) (int32_t) (((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow));
+//	case 4: return ((long long) (int64_t) (((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow));
+//	default: throw std::runtime_error("Internal error");
+//	}
+
+//
+
+	REGISTER_TYPE tmp;
+	bool result = ReadBack(tmp);
+
 	switch(sizeof(SUB_REGISTER_TYPE))
 	{
-	case 1: return ((long long) (int16_t) (((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow));
-	case 2: return ((long long) (int32_t) (((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow));
-	case 4: return ((long long) (int64_t) (((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow));
+	case 1: return (result? (long long) tmp : ((long long) (int16_t) (((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow)));
+	case 2: return (result? (long long) tmp : ((long long) (int32_t) (((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow)));
+	case 4: return (result? (long long) tmp : ((long long) (int64_t) (((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow)));
 	default: throw std::runtime_error("Internal error");
 	}
+
 	return (0);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator unsigned long long () const {
+//	switch(sizeof(SUB_REGISTER_TYPE))
+//	{
+//	case 1: return ((unsigned long long) (((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow));
+//	case 2: return ((unsigned long long) (((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow));
+//	case 4: return ((unsigned long long) (((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow));
+//	default: throw std::runtime_error("Internal error");
+//	}
+
+//
+
+	REGISTER_TYPE tmp;
+	bool result = ReadBack(tmp);
+
 	switch(sizeof(SUB_REGISTER_TYPE))
 	{
-	case 1: return ((unsigned long long) (((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow));
-	case 2: return ((unsigned long long) (((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow));
-	case 4: return ((unsigned long long) (((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow));
+	case 1: return (result? (unsigned long long) tmp : ((unsigned long long) (((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow)));
+	case 2: return (result? (unsigned long long) tmp : ((unsigned long long) (((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow)));
+	case 4: return (result? (unsigned long long) tmp : ((unsigned long long) (((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow)));
 	default: throw std::runtime_error("Internal error");
 	}
+
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator double () const {
+//	switch(sizeof(SUB_REGISTER_TYPE))
+//	{
+//	case 1: return ((double) (int16_t) ((((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow)));
+//	case 2: return ((double) (int32_t) ((((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow)));
+//	case 4: return ((double) (int64_t) ((((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow)));
+//	default: throw std::runtime_error("Internal error");
+//	}
+
+//
+
+	REGISTER_TYPE tmp;
+	bool result = ReadBack(tmp);
+
 	switch(sizeof(SUB_REGISTER_TYPE))
 	{
-	case 1: return ((double) (int16_t) ((((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow)));
-	case 2: return ((double) (int32_t) ((((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow)));
-	case 4: return ((double) (int64_t) ((((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow)));
+	case 1: return (result? (double) tmp : ((double) (int16_t) ((((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow))));
+	case 2: return (result? (double) tmp : ((double) (int32_t) ((((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow))));
+	case 4: return (result? (double) tmp : ((double) (int64_t) ((((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow))));
 	default: throw std::runtime_error("Internal error");
 	}
+
 	return (0);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator std::string () const {
+//	std::stringstream sstr;
+//	sstr << "0x" << std::hex;
+//	sstr.fill('0');
+//	sstr.width(2 * sizeof(SUB_REGISTER_TYPE));
+//	sstr << (uint64_t) *regHigh;
+//	sstr.width(2 * sizeof(SUB_REGISTER_TYPE));
+//	sstr << (uint64_t) *regLow;
+
+//
+	REGISTER_TYPE tmp;
+	bool result = ReadBack(tmp);
 	std::stringstream sstr;
-	sstr << "0x" << std::hex;
-	sstr.fill('0');
-	sstr.width(2 * sizeof(SUB_REGISTER_TYPE));
-	sstr << (uint64_t) *regHigh;
-	sstr.width(2 * sizeof(SUB_REGISTER_TYPE));
-	sstr << (uint64_t) *regLow;
+
+	if (result) {
+		sstr << "0x" << std::hex;
+		sstr.fill('0');
+		sstr.width(2 * sizeof(REGISTER_TYPE));
+		sstr << (uint64_t) tmp;
+
+	} else {
+		sstr << "0x" << std::hex;
+		sstr.fill('0');
+		sstr.width(2 * sizeof(SUB_REGISTER_TYPE));
+		sstr << (uint64_t) *regHigh;
+		sstr.width(2 * sizeof(SUB_REGISTER_TYPE));
+		sstr << (uint64_t) *regLow;
+
+	}
+
 	return (sstr.str());
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (bool value) {
-	if(IsMutable())
-	{
-		*regHigh = 0;
-		*regLow = value ? 1 : 0;
-		NotifyListeners();
+//	if(IsMutable())
+//	{
+//		*regHigh = 0;
+//		*regLow = value ? 1 : 0;
+//		NotifyListeners();
+//	}
+
+//
+	if ( IsMutable() ) {
+		SUB_REGISTER_TYPE tmp = value ? 1 : 0;
+		SetModified(*regLow != tmp);
+		if (!WriteBack(tmp)) {
+			*regHigh = 0;
+			*regLow = tmp;
+		}
+
 	}
+	NotifyListeners();
+
 	return (*this);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (long long value) {
-	if(IsMutable())
-	{
-		*regHigh = value >> (8 * sizeof(SUB_REGISTER_TYPE));
-		*regLow = value;
-		NotifyListeners();
+//	if(IsMutable())
+//	{
+//		*regHigh = value >> (8 * sizeof(SUB_REGISTER_TYPE));
+//		*regLow = value;
+//		NotifyListeners();
+//	}
+
+//
+	if ( IsMutable() ) {
+
+		REGISTER_TYPE tmp = (REGISTER_TYPE) (*regHigh << (8 * sizeof(SUB_REGISTER_TYPE))) | *regLow;
+
+		SetModified(tmp != (REGISTER_TYPE) value);
+		if (!WriteBack(value)) {
+			*regHigh = value >> (8 * sizeof(SUB_REGISTER_TYPE));
+			*regLow = value;
+		}
 	}
+	NotifyListeners();
+
 	return (*this);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (unsigned long long value) {
-	if(IsMutable())
-	{
-		*regHigh = value >> (8 * sizeof(SUB_REGISTER_TYPE));
-		*regLow = value;
-		NotifyListeners();
+//	if(IsMutable())
+//	{
+//		*regHigh = value >> (8 * sizeof(SUB_REGISTER_TYPE));
+//		*regLow = value;
+//		NotifyListeners();
+//	}
+
+//
+	if ( IsMutable() ) {
+		REGISTER_TYPE tmp = (REGISTER_TYPE) (*regHigh << (8 * sizeof(SUB_REGISTER_TYPE))) | *regLow;
+
+		SetModified(tmp != (REGISTER_TYPE) value);
+		if (!WriteBack(value)) {
+			*regHigh = value >> (8 * sizeof(SUB_REGISTER_TYPE));
+			*regLow = value;
+		}
 	}
+	NotifyListeners();
+
 	return (*this);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (double value) {
-	if(IsMutable())
-	{
-		*regHigh = (int64_t) value >> (8 * sizeof(SUB_REGISTER_TYPE));
-		*regLow = (int64_t) value;
-		NotifyListeners();
+//	if(IsMutable())
+//	{
+//		*regHigh = (int64_t) value >> (8 * sizeof(SUB_REGISTER_TYPE));
+//		*regLow = (int64_t) value;
+//		NotifyListeners();
+//	}
+
+//
+	if ( IsMutable() ) {
+		int64_t tmp = (int64_t) (*regHigh << (8 * sizeof(SUB_REGISTER_TYPE))) | *regLow;
+
+		SetModified(tmp != (REGISTER_TYPE) value);
+		if (!WriteBack((REGISTER_TYPE) value)) {
+			*regHigh = (int64_t) value >> (8 * sizeof(SUB_REGISTER_TYPE));
+			*regLow = (int64_t) value;
+		}
 	}
+	NotifyListeners();
+
 	return (*this);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator = (const char * value) {
+//	if(IsMutable())
+//	{
+//		uint64_t v = (uint64_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+//		*regHigh = v >> (8 * sizeof(SUB_REGISTER_TYPE));
+//		*regLow = v;
+//		NotifyListeners();
+//	}
+
+//
 	if(IsMutable())
 	{
 		uint64_t v = (uint64_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-		*regHigh = v >> (8 * sizeof(SUB_REGISTER_TYPE));
-		*regLow = v;
-		NotifyListeners();
+
+		uint64_t tmp = (int64_t) (*regHigh << (8 * sizeof(SUB_REGISTER_TYPE))) | *regLow;
+		SetModified(tmp != v);
+		if (!WriteBack((uint64_t) v)) {
+			*regHigh = v >> (8 * sizeof(SUB_REGISTER_TYPE));
+			*regLow = v;
+		}
 	}
+
+	NotifyListeners();
+
 	return (*this);
 }
 

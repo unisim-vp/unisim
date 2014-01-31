@@ -29,6 +29,7 @@ public:
 	void startSocketThread(int sockfd, bool _blocking);
 
 	virtual void run() { };
+	void closeSockfd();
 
 	bool GetChar(char& c, bool blocking);
 	bool GetDatagramPacket(string& s, bool blocking);
@@ -41,6 +42,7 @@ public:
 	bool FlushOutput();
 
 	void setSockfd(int sockfd);
+	int getSockfd() { return (sockfd); }
 	void waitConnection();
 
 protected:
