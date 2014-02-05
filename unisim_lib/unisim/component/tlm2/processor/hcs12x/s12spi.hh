@@ -383,9 +383,11 @@ private:
 	inline void pinWrite(bool value) {
 
 		if (isMaster()) {
-			mosi = value;
+//			mosi = value;
+			mosi_pin = value;
 		} else {
-			miso = value;
+//			miso = value;
+			miso_pin = value;
 		}
 	}
 
@@ -434,8 +436,20 @@ private:
 
 	inline bool isSSLow() { return (!ss); }
 
-	inline void startTransmission() { setActive(); if (isSlaveSelect()) { ss = false; } }
-	inline void endTransmission() { setIdle(); if (isSlaveSelect()) { ss = true; } }
+	inline void startTransmission() {
+		setActive();
+		if (isSlaveSelect()) {
+//			ss = false;
+			ss_pin = false;
+		}
+	}
+	inline void endTransmission() {
+		setIdle();
+		if (isSlaveSelect()) {
+//			ss = true;
+			ss_pin = true;
+		}
+	}
 
 	// *** Telnet ***
 	bool	telnet_enabled;
