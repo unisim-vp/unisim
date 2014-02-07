@@ -214,7 +214,6 @@ unisim/service/pim/pim_server_32.cc \
 unisim/service/pim/pim_server_64.cc \
 unisim/service/pim/pim_server.cc \
 unisim/service/pim/pim_thread.cc \
-unisim/service/pim/network/BlockingQueue.cpp \
 unisim/service/pim/network/GenericThread.cpp \
 unisim/service/pim/network/SocketClientThread.cpp \
 unisim/service/pim/network/SocketServerThread.cpp \
@@ -391,7 +390,7 @@ unisim/service/pim/pim_server.hh \
 unisim/service/pim/pim_thread.hh \
 unisim/util/converter/convert.hh \
 unisim/service/pim/network/BlockingQueue.hpp \
-unisim/service/pim/network/BlockingQueue.tcc \
+unisim/service/pim/network/BlockingCircularQueue.hpp \
 unisim/service/pim/network/GenericThread.hpp \
 unisim/service/pim/network/SocketClientThread.hpp \
 unisim/service/pim/network/SocketServerThread.hpp \

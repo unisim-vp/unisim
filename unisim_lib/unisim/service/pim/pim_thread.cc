@@ -13,10 +13,41 @@ namespace pim {
 
 using namespace std;
 
+std::ostream& operator << (std::ostream& os, PIMData& data) {
+
+	switch (data.getName()) {
+		case PIMData::TERMINATE: {
+			os << "Req./Res.=\"" << data.getName() << "\"";
+		} break;
+		case PIMData::VAR_READ: {
+			os << "InitiatorSite=\"" << data.getInitiatorSite() << "\" : Initiator=\"" << data.getInitiator() << "\" : : Target=\"" << data.getTarget()  << "\" : Req./Res.=\"" << data.getName() << "\"";
+		} break;
+		case PIMData::VAR_WRITE: {
+			os << "InitiatorSite=\"" << data.getInitiatorSite() << "\" : Initiator=\"" << data.getInitiator() << "\" : : Target=\"" << data.getTarget()  << "\" : Req./Res.=\"" << data.getName() << "\"";
+			os << " : Value=\"" << data.getAttribute("value") << "\"";
+		} break;
+		case PIMData::VAR_LISTEN: {
+			os << "InitiatorSite=\"" << data.getInitiatorSite() << "\" : Initiator=\"" << data.getInitiator() << "\" : : Target=\"" << data.getTarget()  << "\" : Req./Res.=\"" << data.getName() << "\"";
+		} break;
+		case PIMData::VAR_UNLISTEN: {
+			os << "InitiatorSite=\"" << data.getInitiatorSite() << "\" : Initiator=\"" << data.getInitiator() << "\" : : Target=\"" << data.getTarget()  << "\" : Req./Res.=\"" << data.getName() << "\"";
+		} break;
+		case PIMData::UNKNOWN: {
+			os << "Req./Res.=\"" << data.getName() << "\"";
+		} break;
+	}
+
+	os << endl;
+
+	return os;
+}
+
 PIMThread::PIMThread(const char *_name, Object *_parent) :
 	SocketThread()
 	, VariableBaseListener()
 	, Object(_name, _parent)
+
+	, requestThread(NULL)
 	, name(string(_name))
 	, last_time_ratio(-1)
 
@@ -26,15 +57,21 @@ PIMThread::PIMThread(const char *_name, Object *_parent) :
 
 PIMThread::~PIMThread() {
 
+	if (requestThread) {
+		if (!requestThread->isTerminated()) {
+			requestThread->stop();
+		}
+		delete requestThread; requestThread = NULL;
+	}
+
 	pim_trace_file.close();
 
 }
 
-double PIMThread::GetSimTime() {
-	return Object::GetSimulator()->GetSimTime();
-}
-
 void PIMThread::run(){
+
+	requestThread = new RequestThread("request-Thread");
+	requestThread->startSocketThread(getSockfd(), blocking);
 
 	pim_trace_file.open ("pim_trace.xls");
 
@@ -60,124 +97,79 @@ void PIMThread::run(){
 
 	while (!super::isTerminated()) {
 
-		string buf_str;
+		PIMData* request = requestThread->getRequest();
 
-		if (!GetDatagramPacket(buf_str, blocking)) {
-			if (blocking) {
-				cerr << "PIM-Target receive **NULL**" << endl;
-				break;
-			} else {
-#ifdef WIN32
-				Sleep(1);
-#else
-				usleep(1000);
-#endif
-				continue;
+		if (request->getName() == PIMData::TERMINATE) {
+			if (requestThread) {
+				requestThread->stop();
 			}
-		}
 
-		if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
 			super::stop();
 		} else {
 
 			// qRcmd,cmd;var_name[:value]{;var_name[:value]}
-			int start_index = 0;
-			int end_index = buf_str.find(',');
-			string qRcmd = buf_str.substr(start_index, end_index-start_index);
 
-			start_index = end_index+1;
+			if (request->getName() == PIMData::VAR_LISTEN) {
 
-			end_index = buf_str.find(';', start_index);
-			string cmd = buf_str.substr(start_index, end_index-start_index);
+				string targetVar = request->getTarget();
+				for (int i=0; i < simulator_variables.size(); i++) {
+					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
+						simulator_variables[i]->AddListener(this);
+						break;
+					}
+				}
 
-			start_index = end_index+1;
+			} else	if (request->getName() == PIMData::VAR_UNLISTEN) {
 
-			if (cmd.compare("listen") == 0) {
+				string targetVar = request->getTarget();
 
-				do {
+				for (int i=0; i < simulator_variables.size(); i++) {
 
-					string name = buf_str.substr(start_index, end_index-start_index);
-					start_index = end_index+1;
+					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
-					for (int i=0; i < simulator_variables.size(); i++) {
-						if (name.compare(simulator_variables[i]->GetName()) == 0) {
-							simulator_variables[i]->AddListener(this);
-							break;
-						}
+						simulator_variables[i]->RemoveListener(this);
+
+						break;
 					}
 
-					end_index = buf_str.find(';', start_index);
-					if (end_index != string::npos) {
-						start_index = end_index+1;
-					}
-				} while (end_index != string::npos);
+				}
 
-
-			} else	if (cmd.compare("unlisten") == 0) {
-
-				do {
-
-					string name = buf_str.substr(start_index, end_index-start_index);
-					start_index = end_index+1;
-
-					for (int i=0; i < simulator_variables.size(); i++) {
-						if (name.compare(simulator_variables[i]->GetName()) == 0) {
-							simulator_variables[i]->RemoveListener(this);
-							break;
-						}
-					}
-
-					end_index = buf_str.find(';', start_index);
-					if (end_index != string::npos) {
-						start_index = end_index+1;
-					}
-				} while (end_index != string::npos);
-
-
-			} else	if (cmd.compare("read") == 0) {
+			} else	if (request->getName() == PIMData::VAR_READ) {
 
 				std::ostringstream os;
 
 				os << GetSimTime() << ";";
 
-				do {
+				string targetVar = request->getTarget();
 
-					string name = buf_str.substr(start_index, end_index-start_index);
-					start_index = end_index+1;
+				for (int i=0; i < simulator_variables.size(); i++) {
 
-					for (int i=0; i < simulator_variables.size(); i++) {
-						if (name.compare(simulator_variables[i]->GetName()) == 0) {
+					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
-							os << simulator_variables[i]->GetName() << ":";
+						os << simulator_variables[i]->GetName() << ":";
 
-							if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
-								double val = *(simulator_variables[i]);
-								os << stringify(val);
-							}
-							else if (strcmp(simulator_variables[i]->GetDataTypeName(), "single precision floating-point") == 0) {
-								float val = *(simulator_variables[i]);
-								os << stringify(val);
-							}
-							else if (strcmp(simulator_variables[i]->GetDataTypeName(), "boolean") == 0) {
-								bool val = *(simulator_variables[i]);
-								os << stringify(val);
-							}
-							else {
-								uint64_t val = *(simulator_variables[i]);
-								os << stringify(val);
-							}
-
-							os << ";";
-
-							break;
+						if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
+							double val = *(simulator_variables[i]);
+							os << stringify(val);
 						}
-					}
+						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "single precision floating-point") == 0) {
+							float val = *(simulator_variables[i]);
+							os << stringify(val);
+						}
+						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "boolean") == 0) {
+							bool val = *(simulator_variables[i]);
+							os << stringify(val);
+						}
+						else {
+							uint64_t val = *(simulator_variables[i]);
+							os << stringify(val);
+						}
 
-					end_index = buf_str.find(';', start_index);
-					if (end_index != string::npos) {
-						start_index = end_index+1;
+						os << ";";
+
+						break;
 					}
-				} while (end_index != string::npos);
+				}
 
 				std::string str = os.str();
 
@@ -185,38 +177,43 @@ void PIMThread::run(){
 
 				os.str(std::string());
 
+			} else if (request->getName() == PIMData::VAR_WRITE) {
 
-			} else if (cmd.compare("write") == 0) {
+				string targetVar = request->getTarget();
 
-				end_index = buf_str.find(':');
-				string name = buf_str.substr(start_index, end_index-start_index);
-				start_index = end_index+1;
-
-				string value = buf_str.substr(start_index);
+				string value = request->getAttribute("value");
 
 				for (int i=0; i < simulator_variables.size(); i++) {
-					if (name.compare(simulator_variables[i]->GetName()) == 0) {
+
+					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
 						if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
+
 							*(simulator_variables[i]) = convertTo<double>(value);
+
 						}
 						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "single precision floating-point") == 0) {
+
 							*(simulator_variables[i]) = convertTo<float>(value);
+
 						}
 						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "boolean") == 0) {
 
 							*(simulator_variables[i]) = value.compare("false");
 						}
 						else {
+
 							*(simulator_variables[i]) = convertTo<uint64_t>(value);
+
 						}
 
 						break;
 					}
 				}
 
+
 			} else {
-				cerr << "PIM-Target UNKNOWN command => " << buf_str << std::endl;
+				cerr << "PIM-Target UNKNOWN command => " << std::endl;
 			}
 
 		}
@@ -227,6 +224,69 @@ void PIMThread::run(){
 
 }
 
+double PIMThread::GetSimTime() {
+	return Object::GetSimulator()->GetSimTime();
+}
+
+double PIMThread::GetLastTimeRatio() { return (last_time_ratio); }
+
+bool PIMThread::UpdateTimeRatio() {
+/*
+	- add a time_ratio = HotsTime/SimulatedTime response
+	- the time_ratio is used by timed/periodic operations
+*/
+
+
+		double new_time_ratio = last_time_ratio;
+		double sim_time = Object::GetSimulator()->GetSimTime();
+		double host_time = Object::GetSimulator()->GetHostTime();
+
+		bool has_changed = false;
+
+		if (sim_time > 0) {
+			new_time_ratio = host_time / sim_time;
+		}
+		if ((sim_time == 0) || (fabs(last_time_ratio - new_time_ratio) > 0.1)) {
+			pim_trace_file << (sim_time * 1000) << " \t" << (new_time_ratio) << endl;
+			last_time_ratio = new_time_ratio;
+			has_changed = true;
+		}
+
+		return has_changed;
+	}
+void PIMThread::VariableBaseNotify(const VariableBase *var) {
+	std::ostringstream os;
+
+	os << GetSimTime() << ";";
+
+	os << var->GetName() << ":";
+
+	if (strcmp(var->GetDataTypeName(), "double precision floating-point") == 0) {
+		double val = *(var);
+		os << stringify(val);
+	}
+	else if (strcmp(var->GetDataTypeName(), "single precision floating-point") == 0) {
+		float val = *(var);
+		os << stringify(val);
+	}
+	else if (strcmp(var->GetDataTypeName(), "boolean") == 0) {
+		bool val = *(var);
+		os << stringify(val);
+	}
+	else {
+		uint64_t val = *(var);
+		os << stringify(val);
+	}
+
+	os << ";";
+
+	std::string str = os.str();
+
+	PutDatagramPacket(str);
+
+	os.str(std::string());
+
+}
 
 } // end pim
 } // end service

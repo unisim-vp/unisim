@@ -21,12 +21,13 @@
 #include <unisim/service/time/sc_time/time.hh>
 
 #include <unisim/service/pim/network/SocketThread.hpp>
+#include <unisim/service/pim/network/BlockingCircularQueue.hpp>
+
+using namespace std;
 
 namespace unisim {
 namespace service {
 namespace pim {
-
-using namespace std;
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::VariableBaseListener;
@@ -34,6 +35,250 @@ using unisim::kernel::service::Simulator;
 using unisim::kernel::service::VariableBase;
 
 using unisim::service::pim::network::SocketThread;
+using unisim::service::pim::network::BlockingCircularQueue;
+
+class PIMData {
+public:
+
+	enum PCOMMANDS {TERMINATE, VAR_READ, VAR_WRITE, VAR_LISTEN, VAR_UNLISTEN, UNKNOWN};
+
+	PIMData(PCOMMANDS _name) : name(_name), initiatorSite(std::string()), initiator(std::string()),	target(std::string()) {}
+
+	PIMData(PCOMMANDS _name, string _initiatorSite, string _initiator,	string _target) :
+		name(_name), initiatorSite(_initiatorSite), initiator(_initiator),	target(_target) {}
+
+
+	~PIMData() { attributes.clear(); }
+
+	PCOMMANDS getName() { return (name); }
+
+	bool addAttribute(std::string name, std::string value) {
+
+		if (attributes.find(name) == attributes.end()) {
+			attributes.insert ( std::pair<std::string, std::string>(name, value) );
+		} else {
+			return (false);
+		}
+
+		return (true);
+	}
+
+	bool removeAttribute(std::string name) {
+
+		if (attributes.find(name) == attributes.end()) {
+			return (false);
+		} else {
+			attributes.erase (name);
+		}
+
+		return (true);
+	}
+
+	std::string getAttribute(std::string name) {
+
+		std::map<std::string, std::string>::iterator it = attributes.find(name);
+		if (it == attributes.end()) {
+			return (std::string());
+		}
+
+		return (it->second);
+	}
+
+	bool setAttribute(std::string name, std::string value) {
+
+		std::map<std::string, std::string>::iterator it = attributes.find(name);
+		if (it == attributes.end()) {
+			return (false);
+		} else {
+			it->second = value;
+		}
+
+		return  (true);
+	}
+
+	std::map<std::string, std::string> getAttributes() { return (attributes); }
+
+	void setInitiatorSite(string _initiatorSite) { initiatorSite = _initiatorSite; }
+	string getInitiatorSite() { return (initiatorSite); }
+
+	void setInitiator(string _initiator) { initiator = _initiator; }
+	string getInitiator() { return (initiator); }
+
+	void setTarget(string _target) { target = _target; }
+	string getTarget() { return (target); }
+
+	friend std::ostream& operator << (std::ostream& os, PIMData& data);
+
+protected:
+
+private:
+	PCOMMANDS name;
+	string initiatorSite;
+	string initiator;
+	string target;
+
+	std::map<std::string, std::string> attributes;
+
+};
+
+class RequestThread : public SocketThread {
+public:
+	RequestThread(const char *_name, Object *_parent = 0):
+		SocketThread()
+		, name(string(_name))
+		, requestsQueue(NULL)
+
+	{
+		requestsQueue = new BlockingCircularQueue<PIMData*>();
+	}
+
+	~RequestThread() {
+		delete requestsQueue; requestsQueue = NULL;
+	}
+
+	PIMData* getRequest() {
+		PIMData *request = requestsQueue->next();
+
+		return request;
+	}
+
+	virtual void run() {
+
+		while (!super::isTerminated()) {
+
+			string buf_str;
+
+			if (!GetDatagramPacket(buf_str, blocking)) {
+				if (blocking) {
+					cerr << "PIM-RequestThread receive **NULL**" << endl;
+					break;
+				} else {
+	#ifdef WIN32
+					Sleep(1);
+	#else
+					usleep(1000);
+	#endif
+					continue;
+				}
+			}
+
+			if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
+				PIMData *request = new PIMData(PIMData::TERMINATE);
+				requestsQueue->add(request);
+
+			} else {
+
+				// qRcmd,cmd;var_name[:value]{;var_name[:value]}
+				int start_index = 0;
+				int end_index = buf_str.find(',');
+				string qRcmd = buf_str.substr(start_index, end_index-start_index);
+
+				start_index = end_index+1;
+
+				end_index = buf_str.find(';', start_index);
+				string cmd = buf_str.substr(start_index, end_index-start_index);
+
+				start_index = end_index+1;
+
+				if (cmd.compare("listen") == 0) {
+
+					do {
+
+						PIMData *request = new PIMData(PIMData::VAR_LISTEN);
+
+						string name = buf_str.substr(start_index, end_index-start_index);
+						request->setInitiator(name);
+						request->setTarget(name);
+						request->setInitiatorSite("workbench");
+
+						requestsQueue->add(request);
+
+						start_index = end_index+1;
+
+						end_index = buf_str.find(';', start_index);
+						if (end_index != string::npos) {
+							start_index = end_index+1;
+						}
+					} while (end_index != string::npos);
+
+				}
+				else	if (cmd.compare("unlisten") == 0) {
+
+					do {
+						PIMData *request = new PIMData(PIMData::VAR_UNLISTEN);
+
+						string name = buf_str.substr(start_index, end_index-start_index);
+						request->setInitiator(name);
+						request->setTarget(name);
+						request->setInitiatorSite("workbench");
+
+						requestsQueue->add(request);
+
+						start_index = end_index+1;
+
+						end_index = buf_str.find(';', start_index);
+						if (end_index != string::npos) {
+							start_index = end_index+1;
+						}
+					} while (end_index != string::npos);
+
+
+				}
+				else	if (cmd.compare("read") == 0) {
+
+					do {
+
+						PIMData *request = new PIMData(PIMData::VAR_READ);
+
+						string name = buf_str.substr(start_index, end_index-start_index);
+						request->setInitiator(name);
+						request->setTarget(name);
+						request->setInitiatorSite("workbench");
+
+						requestsQueue->add(request);
+
+						start_index = end_index+1;
+
+						end_index = buf_str.find(';', start_index);
+						if (end_index != string::npos) {
+							start_index = end_index+1;
+						}
+					} while (end_index != string::npos);
+
+				}
+				else if (cmd.compare("write") == 0) {
+
+					PIMData *request = new PIMData(PIMData::VAR_WRITE);
+
+					end_index = buf_str.find(':');
+
+					string name = buf_str.substr(start_index, end_index-start_index);
+					start_index = end_index+1;
+					request->setInitiator(name);
+					request->setTarget(name);
+					request->setInitiatorSite("workbench");
+
+					string value = buf_str.substr(start_index);
+
+					request->addAttribute("value", value);
+
+					requestsQueue->add(request);
+
+				} else {
+					PIMData *request = new PIMData(PIMData::UNKNOWN);
+					requestsQueue->add(request);
+				}
+
+			}
+
+		}
+
+	}
+
+private:
+	string name;
+	BlockingCircularQueue<PIMData*> *requestsQueue;
+};
 
 class PIMThread : public SocketThread, VariableBaseListener, virtual public Object {
 public:
@@ -41,75 +286,19 @@ public:
 	~PIMThread();
 
 	virtual void run();
+
 	double GetSimTime();
+	bool UpdateTimeRatio();
+	double GetLastTimeRatio();
 
-	bool UpdateTimeRatio() {
-/*
-	- add a time_ratio = HotsTime/SimulatedTime response
-	- the time_ratio is used by timed/periodic operations
-*/
-
-
-		double new_time_ratio = last_time_ratio;
-		double sim_time = Object::GetSimulator()->GetSimTime();
-		double host_time = Object::GetSimulator()->GetHostTime();
-
-		bool has_changed = false;
-
-		if (sim_time > 0) {
-			new_time_ratio = host_time / sim_time;
-		}
-		if ((sim_time == 0) || (fabs(last_time_ratio - new_time_ratio) > 0.1)) {
-			pim_trace_file << (sim_time * 1000) << " \t" << (new_time_ratio) << endl;
-			last_time_ratio = new_time_ratio;
-			has_changed = true;
-		}
-
-		return has_changed;
-	}
-
-	double GetLastTimeRatio() { return last_time_ratio; }
-
-	virtual void VariableBaseNotify(const VariableBase *var) {
-		std::ostringstream os;
-
-		os << GetSimTime() << ";";
-
-		os << var->GetName() << ":";
-
-		if (strcmp(var->GetDataTypeName(), "double precision floating-point") == 0) {
-			double val = *(var);
-			os << stringify(val);
-		}
-		else if (strcmp(var->GetDataTypeName(), "single precision floating-point") == 0) {
-			float val = *(var);
-			os << stringify(val);
-		}
-		else if (strcmp(var->GetDataTypeName(), "boolean") == 0) {
-			bool val = *(var);
-			os << stringify(val);
-		}
-		else {
-			uint64_t val = *(var);
-			os << stringify(val);
-		}
-
-		os << ";";
-
-		std::string str = os.str();
-
-		PutDatagramPacket(str);
-
-		os.str(std::string());
-
-	}
-
+	virtual void VariableBaseNotify(const VariableBase *var);
 
 private:
 	string name;
 	double last_time_ratio;
 	ofstream pim_trace_file;
 
+	RequestThread *requestThread;
 };
 
 } // end pim

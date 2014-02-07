@@ -114,13 +114,15 @@ typedef enum { GDBSERVER_MODE_WAITING_GDB_CLIENT, GDBSERVER_MODE_STEP, GDBSERVER
 
 typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 
-class Request {
+class DebugRequest {
 public:
 
-	enum TargetCOMMANDS {CONTINUE, SUSPEND, DISCONNECT, READ_REGISTERS, WRITE_REGISTER, SET_THREAD_CONTEXT, STEP_CYCLE, KILL_COMMAND, READ_MEMORY, WRITE_MEMORY, READ_SELECTED_REGISTER, WRITE_SELECTED_REGISTER, QUERY_VARIABLE, STEP_INSTRUCTION, REMOVE_BREAKPOINT, SET_BREAKPOINT, GET_LAST_SIGNAL};
+	enum TargetCOMMANDS {CONTINUE, SUSPEND, DISCONNECT, READ_REGISTERS, WRITE_REGISTERS, SET_THREAD_CONTEXT, STEP_CYCLE, KILL_COMMAND, READ_MEMORY, WRITE_MEMORY, READ_SELECTED_REGISTER, WRITE_SELECTED_REGISTER, QUERY_VARIABLE, STEP_INSTRUCTION, REMOVE_BREAKPOINT, SET_BREAKPOINT, GET_LAST_SIGNAL, UNKNOWN};
 
-	Request() {}
-	~Request() {}
+	DebugRequest(TargetCOMMANDS _name) : name(_name) {}
+	~DebugRequest() { attributes.clear(); }
+
+	TargetCOMMANDS getName() { return (name); }
 
 	bool addAttribute(std::string name, std::string value) {
 
@@ -166,8 +168,12 @@ public:
 		return  (true);
 	}
 
+	std::map<std::string, std::string> getAttributes() { return (attributes); }
+
 protected:
+
 private:
+	TargetCOMMANDS name;
 	std::map<std::string, std::string> attributes;
 };
 
