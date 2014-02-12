@@ -13,33 +13,35 @@ namespace pim {
 
 using namespace std;
 
-std::ostream& operator << (std::ostream& os, PIMData& data) {
+double PIMThread::GetSimTime() {
+	return Object::GetSimulator()->GetSimTime();
+}
 
-	switch (data.getName()) {
-		case PIMData::TERMINATE: {
-			os << "Req./Res.=\"" << data.getName() << "\"";
-		} break;
-		case PIMData::VAR_READ: {
-			os << "InitiatorSite=\"" << data.getInitiatorSite() << "\" : Initiator=\"" << data.getInitiator() << "\" : : Target=\"" << data.getTarget()  << "\" : Req./Res.=\"" << data.getName() << "\"";
-		} break;
-		case PIMData::VAR_WRITE: {
-			os << "InitiatorSite=\"" << data.getInitiatorSite() << "\" : Initiator=\"" << data.getInitiator() << "\" : : Target=\"" << data.getTarget()  << "\" : Req./Res.=\"" << data.getName() << "\"";
-			os << " : Value=\"" << data.getAttribute("value") << "\"";
-		} break;
-		case PIMData::VAR_LISTEN: {
-			os << "InitiatorSite=\"" << data.getInitiatorSite() << "\" : Initiator=\"" << data.getInitiator() << "\" : : Target=\"" << data.getTarget()  << "\" : Req./Res.=\"" << data.getName() << "\"";
-		} break;
-		case PIMData::VAR_UNLISTEN: {
-			os << "InitiatorSite=\"" << data.getInitiatorSite() << "\" : Initiator=\"" << data.getInitiator() << "\" : : Target=\"" << data.getTarget()  << "\" : Req./Res.=\"" << data.getName() << "\"";
-		} break;
-		case PIMData::UNKNOWN: {
-			os << "Req./Res.=\"" << data.getName() << "\"";
-		} break;
+double PIMThread::GetLastTimeRatio() { return (last_time_ratio); }
+
+bool PIMThread::UpdateTimeRatio() {
+/*
+	- add a time_ratio = HotsTime/SimulatedTime response
+	- the time_ratio is used by timed/periodic operations
+*/
+
+
+	double new_time_ratio = last_time_ratio;
+	double sim_time = Object::GetSimulator()->GetSimTime();
+	double host_time = Object::GetSimulator()->GetHostTime();
+
+	bool has_changed = false;
+
+	if (sim_time > 0) {
+		new_time_ratio = host_time / sim_time;
+	}
+	if ((sim_time == 0) || (fabs(last_time_ratio - new_time_ratio) > 0.1)) {
+		pim_trace_file << (sim_time * 1000) << " \t" << (new_time_ratio) << endl;
+		last_time_ratio = new_time_ratio;
+		has_changed = true;
 	}
 
-	os << endl;
-
-	return os;
+	return has_changed;
 }
 
 PIMThread::PIMThread(const char *_name, Object *_parent) :
@@ -48,6 +50,7 @@ PIMThread::PIMThread(const char *_name, Object *_parent) :
 	, Object(_name, _parent)
 
 	, requestThread(NULL)
+	, responseThread(NULL)
 	, name(string(_name))
 	, last_time_ratio(-1)
 
@@ -64,14 +67,24 @@ PIMThread::~PIMThread() {
 		delete requestThread; requestThread = NULL;
 	}
 
+	if (responseThread) {
+		if (!responseThread->isTerminated()) {
+			responseThread->stop();
+		}
+		delete responseThread; responseThread = NULL;
+	}
+
 	pim_trace_file.close();
 
 }
 
 void PIMThread::run(){
 
-	requestThread = new RequestThread("request-Thread");
+	requestThread = new GDBThread("request-Thread", GDBThread::RECEIVE);
 	requestThread->startSocketThread(getSockfd(), blocking);
+
+	responseThread = new GDBThread("response-Thread", GDBThread::SEND);
+	responseThread->startSocketThread(getSockfd(), blocking);
 
 	pim_trace_file.open ("pim_trace.xls");
 
@@ -97,11 +110,15 @@ void PIMThread::run(){
 
 	while (!super::isTerminated()) {
 
-		PIMData* request = requestThread->getRequest();
+		DBGData* request = requestThread->getData();
 
-		if (request->getName() == PIMData::TERMINATE) {
+		if (request->getName() == DBGData::TERMINATE) {
 			if (requestThread) {
 				requestThread->stop();
+			}
+
+			if (responseThread) {
+				responseThread->stop();
 			}
 
 			super::stop();
@@ -109,7 +126,7 @@ void PIMThread::run(){
 
 			// qRcmd,cmd;var_name[:value]{;var_name[:value]}
 
-			if (request->getName() == PIMData::VAR_LISTEN) {
+			if (request->getName() == DBGData::VAR_LISTEN) {
 
 				string targetVar = request->getTarget();
 				for (int i=0; i < simulator_variables.size(); i++) {
@@ -119,7 +136,7 @@ void PIMThread::run(){
 					}
 				}
 
-			} else	if (request->getName() == PIMData::VAR_UNLISTEN) {
+			} else	if (request->getName() == DBGData::VAR_UNLISTEN) {
 
 				string targetVar = request->getTarget();
 
@@ -134,11 +151,7 @@ void PIMThread::run(){
 
 				}
 
-			} else	if (request->getName() == PIMData::VAR_READ) {
-
-				std::ostringstream os;
-
-				os << GetSimTime() << ";";
+			} else	if (request->getName() == DBGData::VAR_READ) {
 
 				string targetVar = request->getTarget();
 
@@ -146,38 +159,41 @@ void PIMThread::run(){
 
 					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
-						os << simulator_variables[i]->GetName() << ":";
+						DBGData *response = new DBGData(DBGData::VAR_READ_RESPONSE);
+
+						response->setSimTime(GetSimTime());
+
+						response->setInitiator(simulator_variables[i]->GetName());
+						response->setInitiatorSite("simulator");
+						response->setTarget(simulator_variables[i]->GetName());
+						response->setTargetSite(request->getInitiatorSite());
 
 						if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
 							double val = *(simulator_variables[i]);
-							os << stringify(val);
+
+							response->addAttribute("value", stringify(val));
+
 						}
 						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "single precision floating-point") == 0) {
 							float val = *(simulator_variables[i]);
-							os << stringify(val);
+							response->addAttribute("value", stringify(val));
 						}
 						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "boolean") == 0) {
 							bool val = *(simulator_variables[i]);
-							os << stringify(val);
+							response->addAttribute("value", stringify(val));
 						}
 						else {
 							uint64_t val = *(simulator_variables[i]);
-							os << stringify(val);
+							response->addAttribute("value", stringify(val));
 						}
 
-						os << ";";
+						responseThread->addData(response);
 
 						break;
 					}
 				}
 
-				std::string str = os.str();
-
-				PutDatagramPacket(str);
-
-				os.str(std::string());
-
-			} else if (request->getName() == PIMData::VAR_WRITE) {
+			} else if (request->getName() == DBGData::VAR_WRITE) {
 
 				string targetVar = request->getTarget();
 
@@ -216,6 +232,8 @@ void PIMThread::run(){
 				cerr << "PIM-Target UNKNOWN command => " << std::endl;
 			}
 
+			if (request) { delete request; request = NULL; }
+
 		}
 
 	}
@@ -224,67 +242,35 @@ void PIMThread::run(){
 
 }
 
-double PIMThread::GetSimTime() {
-	return Object::GetSimulator()->GetSimTime();
-}
-
-double PIMThread::GetLastTimeRatio() { return (last_time_ratio); }
-
-bool PIMThread::UpdateTimeRatio() {
-/*
-	- add a time_ratio = HotsTime/SimulatedTime response
-	- the time_ratio is used by timed/periodic operations
-*/
-
-
-		double new_time_ratio = last_time_ratio;
-		double sim_time = Object::GetSimulator()->GetSimTime();
-		double host_time = Object::GetSimulator()->GetHostTime();
-
-		bool has_changed = false;
-
-		if (sim_time > 0) {
-			new_time_ratio = host_time / sim_time;
-		}
-		if ((sim_time == 0) || (fabs(last_time_ratio - new_time_ratio) > 0.1)) {
-			pim_trace_file << (sim_time * 1000) << " \t" << (new_time_ratio) << endl;
-			last_time_ratio = new_time_ratio;
-			has_changed = true;
-		}
-
-		return has_changed;
-	}
 void PIMThread::VariableBaseNotify(const VariableBase *var) {
-	std::ostringstream os;
 
-	os << GetSimTime() << ";";
+	DBGData *response = new DBGData(DBGData::VAR_LISTEN_RESPONSE);
 
-	os << var->GetName() << ":";
+	response->setSimTime(GetSimTime());
+
+	response->setInitiator(var->GetName());
+	response->setInitiatorSite("simulator");
+	response->setTarget(var->GetName());
+	response->setTargetSite("_who_initiate_the_listener_");
 
 	if (strcmp(var->GetDataTypeName(), "double precision floating-point") == 0) {
 		double val = *(var);
-		os << stringify(val);
+		response->addAttribute("value", stringify(val));
 	}
 	else if (strcmp(var->GetDataTypeName(), "single precision floating-point") == 0) {
 		float val = *(var);
-		os << stringify(val);
+		response->addAttribute("value", stringify(val));
 	}
 	else if (strcmp(var->GetDataTypeName(), "boolean") == 0) {
 		bool val = *(var);
-		os << stringify(val);
+		response->addAttribute("value", stringify(val));
 	}
 	else {
 		uint64_t val = *(var);
-		os << stringify(val);
+		response->addAttribute("value", stringify(val));
 	}
 
-	os << ";";
-
-	std::string str = os.str();
-
-	PutDatagramPacket(str);
-
-	os.str(std::string());
+	responseThread->addData(response);
 
 }
 

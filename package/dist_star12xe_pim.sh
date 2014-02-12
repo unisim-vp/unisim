@@ -220,7 +220,8 @@ unisim/service/pim/pim_thread.cc \
 unisim/service/pim/network/GenericThread.cpp \
 unisim/service/pim/network/SocketClientThread.cpp \
 unisim/service/pim/network/SocketServerThread.cpp \
-unisim/service/pim/network/SocketThread.cpp"
+unisim/service/pim/network/SocketThread.cpp \
+unisim/service/pim/gdbthread.cc"
 
 
 UNISIM_LIB_STAR12X_ISA_FILES="\
@@ -394,7 +395,9 @@ unisim/service/pim/network/BlockingCircularQueue.hpp \
 unisim/service/pim/network/GenericThread.hpp \
 unisim/service/pim/network/SocketClientThread.hpp \
 unisim/service/pim/network/SocketServerThread.hpp \
-unisim/service/pim/network/SocketThread.hpp"
+unisim/service/pim/network/SocketThread.hpp \
+unisim/service/pim/gdbthread.hh"
+
 
 UNISIM_LIB_STAR12X_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \

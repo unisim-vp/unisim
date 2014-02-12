@@ -114,68 +114,6 @@ typedef enum { GDBSERVER_MODE_WAITING_GDB_CLIENT, GDBSERVER_MODE_STEP, GDBSERVER
 
 typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 
-class DebugRequest {
-public:
-
-	enum TargetCOMMANDS {CONTINUE, SUSPEND, DISCONNECT, READ_REGISTERS, WRITE_REGISTERS, SET_THREAD_CONTEXT, STEP_CYCLE, KILL_COMMAND, READ_MEMORY, WRITE_MEMORY, READ_SELECTED_REGISTER, WRITE_SELECTED_REGISTER, QUERY_VARIABLE, STEP_INSTRUCTION, REMOVE_BREAKPOINT, SET_BREAKPOINT, GET_LAST_SIGNAL, UNKNOWN};
-
-	DebugRequest(TargetCOMMANDS _name) : name(_name) {}
-	~DebugRequest() { attributes.clear(); }
-
-	TargetCOMMANDS getName() { return (name); }
-
-	bool addAttribute(std::string name, std::string value) {
-
-		if (attributes.find(name) == attributes.end()) {
-			return (false);
-		} else {
-			attributes.insert ( std::pair<std::string, std::string>(name, value) );
-		}
-
-		return (true);
-	}
-
-	bool removeAttribute(std::string name) {
-
-		if (attributes.find(name) == attributes.end()) {
-			return (false);
-		} else {
-			attributes.erase (name);
-		}
-
-		return (true);
-	}
-
-	std::string getAttribute(std::string name) {
-
-		std::map<std::string, std::string>::iterator it = attributes.find(name);
-		if (it == attributes.end()) {
-			return (NULL);
-		}
-
-		return (it->second);
-	}
-
-	bool setAttribute(std::string name, std::string value) {
-
-		std::map<std::string, std::string>::iterator it = attributes.find(name);
-		if (it == attributes.end()) {
-			return (false);
-		} else {
-			it->second = value;
-		}
-
-		return  (true);
-	}
-
-	std::map<std::string, std::string> getAttributes() { return (attributes); }
-
-protected:
-
-private:
-	TargetCOMMANDS name;
-	std::map<std::string, std::string> attributes;
-};
 
 template <class ADDRESS>
 class PIMServer :
