@@ -77,7 +77,7 @@ void PIM::run() {
 	target = new PIMThread("pim-thread");
 
 	// Open Socket Stream
-	socketfd = new SocketServerThread(fHost, fPort, true, 1);
+	socketfd = new SocketServerThread(fHost, fPort, 1);
 //	socketfd = new SocketClientThread(fHost, fPort);
 
 	socketfd->setProtocolHandler(target);

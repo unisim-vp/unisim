@@ -51,12 +51,11 @@ uint32_t SocketThread::name_resolve(const char *host_name)
 	return (addr.s_addr);
 }
 
-SocketThread::SocketThread(string host, uint16_t port, bool _blocking) :
+SocketThread::SocketThread(string host, uint16_t port) :
 		GenericThread(),
 		hostname(0),
 		hostport(0),
 		sockfd(-1),
-		blocking(_blocking),
 		input_buffer_size(0),
 		input_buffer_index(0),
 		input_buffer(NULL)
@@ -75,7 +74,6 @@ SocketThread::SocketThread() :
 				hostname(0),
 				hostport(0),
 				sockfd(-1),
-				blocking(true),
 				input_buffer_size(0),
 				input_buffer_index(0),
 				input_buffer(NULL)
@@ -115,9 +113,8 @@ SocketThread::~SocketThread() {
 
 }
 
-void SocketThread::startSocketThread(int sockfd, bool _blocking) {
+void SocketThread::startSocketThread(int sockfd) {
 
-	this->blocking = _blocking;
 	setSockfd(sockfd);
 
 	this->start();
@@ -203,8 +200,6 @@ bool SocketThread::PutPacket(const string& data) {
 
 	int data_size = data.size();
 
-	output_buffer_strm << '$' << data << '#';
-
 	uint8_t checksum = 0;
 
 	for (int pos=0; pos < data_size; pos++)
@@ -212,22 +207,17 @@ bool SocketThread::PutPacket(const string& data) {
 		checksum += (uint8_t) data[pos];
 	}
 
-	output_buffer_strm << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf);
-
 	do
 	{
+		output_buffer_strm.str(std::string());
+
+		output_buffer_strm << '$' << data << '#';
+
+		output_buffer_strm << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf);
+
 		if (!FlushOutput()) {
-			if (blocking) {
-				cerr << "SocketThread unable to send !" << endl;
-				return (false);
-			} else {
-#ifdef WIN32
-				Sleep(1);
-#else
-				usleep(1000);
-#endif
-				continue;
-			}
+			cerr << "SocketThread unable to send !" << endl;
+			return (false);
 		}
 
 	} while(GetChar(c, true) && c != '+');
@@ -331,17 +321,7 @@ bool SocketThread::FlushOutput() {
 
 		} else {
 
-			if (blocking) {
-#ifdef WIN32
-				Sleep(1);
-#else
-				usleep(1000);
-#endif
-				continue;
-			} else {
-				break;
-			}
-
+			break;
 		}
 
 	}

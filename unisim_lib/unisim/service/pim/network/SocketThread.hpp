@@ -21,12 +21,12 @@ namespace network {
 class SocketThread: public GenericThread {
 public:
 
-	SocketThread(string host, uint16_t port, bool _blocking);
+	SocketThread(string host, uint16_t port);
 	SocketThread();
 
 	virtual ~SocketThread();
 
-	void startSocketThread(int sockfd, bool _blocking);
+	void startSocketThread(int sockfd);
 
 	virtual void run() { };
 	void closeSockfd();
@@ -50,7 +50,6 @@ protected:
 	uint32_t hostname;
 	uint16_t hostport;
 	int sockfd;
-	bool blocking;
 
 	/*
 	 *  this routine converts the address into an internet ip

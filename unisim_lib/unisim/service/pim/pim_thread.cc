@@ -81,10 +81,10 @@ PIMThread::~PIMThread() {
 void PIMThread::run(){
 
 	requestThread = new GDBThread("request-Thread", GDBThread::RECEIVE);
-	requestThread->startSocketThread(getSockfd(), blocking);
+	requestThread->startSocketThread(getSockfd());
 
 	responseThread = new GDBThread("response-Thread", GDBThread::SEND);
-	responseThread->startSocketThread(getSockfd(), blocking);
+	responseThread->startSocketThread(getSockfd());
 
 	pim_trace_file.open ("pim_trace.xls");
 

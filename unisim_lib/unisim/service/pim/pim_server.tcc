@@ -223,7 +223,7 @@ bool PIMServer<ADDRESS>::EndSetup() {
 
 	// Open Socket Stream
 	// connection_req_nbre parameter has to be set to two "2" connections. once is for GDB requests and the second is for PIM requests
-	socketServer = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
+	socketServer = new SocketServerThread(GetHost(), GetTCPPort(), 2);
 
 	debuggerThread = new SocketThread();
 

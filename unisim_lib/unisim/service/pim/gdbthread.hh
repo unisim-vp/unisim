@@ -181,7 +181,7 @@ private:
 		while (!super::isTerminated()) {
 
 			string buf_str;
-
+			bool blocking = true;
 			if (!GetDatagramPacket(buf_str, blocking)) {
 				if (blocking) {
 					cerr << "PIM-RequestThread receive **NULL**" << endl;
