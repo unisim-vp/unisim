@@ -1176,15 +1176,15 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 		case XGCHID: {
 			*((uint8_t *) buffer) = getXGCHID();
 		} break;
-		case XGCHPL: *((uint16_t *) buffer) = getXGCHPL(); break;
+		case XGCHPL: *((uint8_t *) buffer) = getXGCHPL(); break;
 		case RESERVED2: *((uint16_t *) buffer) = 0; break;
-		case XGISPSEL: *((uint16_t *) buffer) = getXGISPSEL(); break;
+		case XGISPSEL: *((uint8_t *) buffer) = getXGISPSEL(); break;
 		case XGVBR: *((uint16_t *) buffer) = Host2BigEndian(getXGVBR() & 0xFFFE); break;
 		case XGSWT: *((uint16_t *) buffer) = Host2BigEndian(xgswt_register & 0x00FF); break;
 		case XGSEM: *((uint16_t *) buffer) = Host2BigEndian(xgsem_register & 0x00FF); break;
 		case RESERVED4: *((uint16_t *) buffer) = 0; break;
 		case XGCCR: *((uint8_t *) buffer) = currentRegisterBank->getXGCCR() & 0x0F; break;
-		case XGPC: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGPC()); break;
+		case XGPC: *((address_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGPC()); break;
 		case RESERVED5: *((uint16_t *) buffer) = 0; break;
 		case RESERVED6: *((uint16_t *) buffer) = 0; break;
 		case XGR1: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGRx(1)); break;
