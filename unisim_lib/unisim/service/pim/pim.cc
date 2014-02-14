@@ -42,23 +42,13 @@ using unisim::service::pim::PIMThread;
 
 PIM::PIM(const char *name, Object *parent) :
 	Object(name,parent),
-	GenericThread(),
-	fPort(0),
 	filename("pim.xml"),
-	param_filename("filename", this, filename),
-	param_tcp_port("tcp-port", this, fPort, "TCP/IP port to listen waiting for clients (GDB/PIM) connections"),
-	param_host("host", this, fHost),
-	socketfd(0),
-	target(0)
+	param_filename("filename", this, filename)
 { 
 
 }
 
 PIM::~PIM() {
-
-	if (target) { delete target; target = NULL; }
-
-	if (socketfd) { delete socketfd; socketfd = NULL; }
 
 	for (int i=0; i < pim_model.size(); i++) {
 		if (pim_model[i]) { delete pim_model[i]; pim_model[i] = NULL;}
@@ -70,28 +60,6 @@ PIM::~PIM() {
 bool PIM::Setup() {
 	return (true);
 }
-
-void PIM::run() {
-
-	// Start Simulation <-> ToolBox communication
-	target = new PIMThread("pim-thread");
-
-	// Open Socket Stream
-	socketfd = new SocketServerThread(fHost, fPort, 1);
-//	socketfd = new SocketClientThread(fHost, fPort);
-
-	socketfd->setProtocolHandler(target);
-
-	socketfd->start();
-
-	socketfd->join();
-
-	cerr << "PIM connection success " << std::endl;
-
-	target->join();
-
-}
-
 
 // *************************************************************
 

@@ -56,7 +56,7 @@ public:
 	vector<VariableBase*>		pins;
 };
 
-class PIM : public Object, public GenericThread
+class PIM : public Object
 {
 public:
 
@@ -64,30 +64,19 @@ public:
 
 	~PIM();
 	virtual bool Setup();
-	virtual void run();
+
 	void generatePimFile();
 	int loadPimFile();
 	void getAllVariables(vector<VariableBase*> *variables);
 
 private:
 
-	uint16_t fPort;
-	string fHost;
-
 	vector<component_t*> pim_model;
-
-	Parameter<uint16_t> param_tcp_port;
-	Parameter<string> param_host;
 
 	string				filename;
 	Parameter<string>	param_filename;
 
 	component_t* findComponent(const string name);
-
-	SocketServerThread *socketfd;
-//	SocketClientThread *socketfd;
-
-	SocketThread *target;
 
 };
 
