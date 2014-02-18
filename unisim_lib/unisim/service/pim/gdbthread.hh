@@ -178,15 +178,17 @@ private:
 
 	void receiveLoop() {
 
+//		waitConnection();
+
 		while (!super::isTerminated()) {
 
 			string buf_str;
 
-			pthread_mutex_lock( &sockfd_mutex );
+//			pthread_mutex_lock( &sockfd_mutex );
 
 			if (!GetDatagramPacket(buf_str, false)) {
 
-			    pthread_mutex_unlock( &sockfd_mutex );
+//			    pthread_mutex_unlock( &sockfd_mutex );
 
 #ifdef WIN32
 				Sleep(1);
@@ -197,7 +199,7 @@ private:
 
 			}
 
-		    pthread_mutex_unlock( &sockfd_mutex );
+//		    pthread_mutex_unlock( &sockfd_mutex );
 
 			if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
 				DBGData *request = new DBGData(DBGData::TERMINATE);
@@ -219,6 +221,8 @@ private:
 	}
 
 	void sendLoop() {
+
+//		waitConnection();
 
 		while (!super::isTerminated()) {
 
@@ -253,11 +257,11 @@ private:
 
 			std::string str = os.str();
 
-			pthread_mutex_lock( &sockfd_mutex );
+//			pthread_mutex_lock( &sockfd_mutex );
 
 			PutDatagramPacket(str);
 
-		    pthread_mutex_unlock( &sockfd_mutex );
+//		    pthread_mutex_unlock( &sockfd_mutex );
 
 			os.str(std::string());
 
