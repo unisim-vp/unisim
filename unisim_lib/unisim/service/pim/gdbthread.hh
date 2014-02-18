@@ -181,20 +181,23 @@ private:
 		while (!super::isTerminated()) {
 
 			string buf_str;
-			bool blocking = true;
-			if (!GetDatagramPacket(buf_str, blocking)) {
-				if (blocking) {
-					cerr << "PIM-RequestThread receive **NULL**" << endl;
-					break;
-				} else {
-	#ifdef WIN32
-					Sleep(1);
-	#else
-					usleep(1000);
-	#endif
-					continue;
-				}
+
+			pthread_mutex_lock( &sockfd_mutex );
+
+			if (!GetDatagramPacket(buf_str, false)) {
+
+			    pthread_mutex_unlock( &sockfd_mutex );
+
+#ifdef WIN32
+				Sleep(1);
+#else
+				usleep(1000);
+#endif
+				continue;
+
 			}
+
+		    pthread_mutex_unlock( &sockfd_mutex );
 
 			if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
 				DBGData *request = new DBGData(DBGData::TERMINATE);
@@ -250,7 +253,11 @@ private:
 
 			std::string str = os.str();
 
+			pthread_mutex_lock( &sockfd_mutex );
+
 			PutDatagramPacket(str);
+
+		    pthread_mutex_unlock( &sockfd_mutex );
 
 			os.str(std::string());
 
