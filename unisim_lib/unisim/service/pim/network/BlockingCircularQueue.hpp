@@ -23,8 +23,18 @@ public:
 
 	BlockingCircularQueue() {
 
-		pthread_mutex_init (&queue_mutex, NULL);
-		pthread_mutex_init (&condition_mutex, NULL);
+//		pthread_mutex_init (&queue_mutex, NULL);
+//		pthread_mutex_init (&condition_mutex, NULL);
+//		pthread_cond_init (&condition_cond, NULL);
+
+		pthread_mutexattr_init(&queue_mutex_Attr);
+		pthread_mutexattr_settype(&queue_mutex_Attr, PTHREAD_MUTEX_RECURSIVE);
+		pthread_mutex_init (&queue_mutex, &queue_mutex_Attr);
+
+		pthread_mutexattr_init(&condition_mutex_Attr);
+		pthread_mutexattr_settype(&condition_mutex_Attr, PTHREAD_MUTEX_RECURSIVE);
+		pthread_mutex_init (&condition_mutex, &condition_mutex_Attr);
+
 		pthread_cond_init (&condition_cond, NULL);
 
 		alive = true;
@@ -52,8 +62,10 @@ public:
 
 		while( isFull() && alive)
 		{
+			cout << "Queue Full" << endl;
 			pthread_cond_wait( &condition_cond, &condition_mutex );
 		}
+		cout << "Queue not Full" << endl;
 
 		if (alive) {
 		    pthread_mutex_lock( &queue_mutex );
@@ -77,8 +89,10 @@ public:
 		pthread_mutex_lock( &condition_mutex );
 		while( isEmpty() && alive)
 		{
+			cout << "Queue Empty" << endl;
 			pthread_cond_wait( &condition_cond, &condition_mutex );
 		}
+		cout << "Queue not Empty" << endl;
 
 		if (alive) {
 		    pthread_mutex_lock( &queue_mutex );
@@ -87,6 +101,9 @@ public:
 		    head = (head+1)%MAX_SIZE;
 
 		    pthread_mutex_unlock( &queue_mutex );
+
+		    pthread_cond_signal( &condition_cond );
+
 		}
 
 		pthread_mutex_unlock( &condition_mutex );
@@ -151,6 +168,9 @@ protected:
 	pthread_mutex_t queue_mutex;
 	pthread_mutex_t condition_mutex;
 	pthread_cond_t  condition_cond;
+
+	pthread_mutexattr_t queue_mutex_Attr;
+	pthread_mutexattr_t condition_mutex_Attr;
 
 private:
 	T item[MAX_SIZE];

@@ -32,12 +32,12 @@ public:
 	void closeSockfd();
 
 	bool GetChar(char& c, bool blocking);
-	bool GetDatagramPacket(string& s, bool blocking);
+//	bool GetDatagramPacket(string& s, bool blocking);
 	bool GetPacket(string& s, bool blocking);
 	bool PutChar(char c);
-	bool PutDatagramPacket(const string& data);
+//	bool PutDatagramPacket(const string& data);
 	bool PutPacket(const string& data);
-	bool OutputTextDatagram(const char *s, int count);
+//	bool OutputTextDatagram(const char *s, int count);
 	bool OutputText(const char *s, int count);
 	bool FlushOutput();
 
@@ -64,10 +64,7 @@ protected:
 	pthread_mutex_t sockfd_condition_mutex;
 	pthread_cond_t  sockfd_condition_cond;
 
-// I am testing recursive mutex **
 	pthread_mutexattr_t Attr;
-
-// ********
 
 private:
 	int input_buffer_size;

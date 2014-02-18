@@ -88,13 +88,9 @@ void SocketThread::init() {
 
 //	pthread_mutex_init (&sockfd_mutex, NULL);
 
-// I am testing recursive mutex **
-
 	pthread_mutexattr_init(&Attr);
 	pthread_mutexattr_settype(&Attr, PTHREAD_MUTEX_RECURSIVE);
 	pthread_mutex_init (&sockfd_mutex, &Attr);
-
-// ********
 
 	pthread_mutex_init (&sockfd_condition_mutex, NULL);
 	pthread_cond_init (&sockfd_condition_cond, NULL);
@@ -174,33 +170,33 @@ bool SocketThread::PutChar(char c) {
 	return (true);
 }
 
-bool SocketThread::PutDatagramPacket(const string& data) {
-
-	char c;
-
-	int data_size = data.size();
-
-	output_buffer_strm << '$' << data << '#';
-
-	uint8_t checksum = 0;
-
-	for (int pos=0; pos < data_size; pos++)
-	{
-		checksum += (uint8_t) data[pos];
-	}
-
-	output_buffer_strm << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf);
-
-	std::string tmpStr = output_buffer_strm.str();
-
-	if (!FlushOutput()) {
-		cerr << "SocketThread unable to send !" << endl;
-		return (false);
-	}
-
-	return (true);
-
-}
+//bool SocketThread::PutDatagramPacket(const string& data) {
+//
+//	char c;
+//
+//	int data_size = data.size();
+//
+//	output_buffer_strm << '$' << data << '#';
+//
+//	uint8_t checksum = 0;
+//
+//	for (int pos=0; pos < data_size; pos++)
+//	{
+//		checksum += (uint8_t) data[pos];
+//	}
+//
+//	output_buffer_strm << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf);
+//
+//	std::string tmpStr = output_buffer_strm.str();
+//
+//	if (!FlushOutput()) {
+//		cerr << "SocketThread unable to send !" << endl;
+//		return (false);
+//	}
+//
+//	return (true);
+//
+//}
 
 
 bool SocketThread::PutPacket(const string& data) {
@@ -235,22 +231,22 @@ bool SocketThread::PutPacket(const string& data) {
 
 }
 
-bool SocketThread::OutputTextDatagram(const char *s, int count)
-{
-	int i;
-	uint8_t packet[1 + 2 * count + 1];
-	uint8_t *p = packet;
-
-	*p = 'O';
-	p++;
-	for(i = 0; i < count; i++, p += 2)
-	{
-		p[0] = nibble2HexChar((uint8_t) s[i] >> 4);
-		p[1] = nibble2HexChar((uint8_t) s[i] & 0xf);
-	}
-	*p = 0;
-	return (PutDatagramPacket((const char *) packet));
-}
+//bool SocketThread::OutputTextDatagram(const char *s, int count)
+//{
+//	int i;
+//	uint8_t packet[1 + 2 * count + 1];
+//	uint8_t *p = packet;
+//
+//	*p = 'O';
+//	p++;
+//	for(i = 0; i < count; i++, p += 2)
+//	{
+//		p[0] = nibble2HexChar((uint8_t) s[i] >> 4);
+//		p[1] = nibble2HexChar((uint8_t) s[i] & 0xf);
+//	}
+//	*p = 0;
+//	return (PutDatagramPacket((const char *) packet));
+//}
 
 bool SocketThread::OutputText(const char *s, int count)
 {
@@ -344,72 +340,72 @@ bool SocketThread::FlushOutput() {
 	return (true);
 }
 
-bool SocketThread::GetDatagramPacket(string& str, bool blocking) {
-
-	str.clear();
-
-	uint8_t checkSum = 0;
-	int packet_size = 0;
-	uint8_t pchk;
-	char c;
-
-	while (true) {
-		GetChar(c, blocking);
-		if (c == 0) {
-			if (blocking) {
-				cerr << "receive EOF " << endl;
-			}
-
-			break;
-		}
-    	switch(c)
-    	{
-    		case '+':
-    			cerr << "Warning receive + " << endl;
-    			break;
-    		case '-':
-   				// error response => e.g. retransmission of the last packet
-    			cerr << "Warning receive - " << endl;
-    			break;
-    		case 3: // '\003'
-    			break;
-    		case '$':
-
-    			GetChar(c, blocking);
-    			while (true) {
-    				str = str + c;
-        			packet_size++;
-    				checkSum = checkSum + c;
-    				GetChar(c, blocking);
-
-    				if (c == '#') break;
-    			}
-
-    			GetChar(c, blocking);
-    			pchk = hexChar2Nibble(c) << 4;
-    			GetChar(c, blocking);
-    			pchk = pchk + hexChar2Nibble(c);
-
-				if(str.length() >= 3 && str[2] == ':')
-				{
-					if(!PutChar(str[0])) return (false);
-					if(!PutChar(str[1])) return (false);
-					if(!FlushOutput()) return (false);
-					str.erase(0, 3);
-				}
-				return (true);
-
-    			break;
-    		default:
-    			cerr << "receive_packet: protocol error (0x" << nibble2HexChar(c) << ":" << c << ")";
-    			break;
-    	}
-
-	}
-
-	return (false);
-
-}
+//bool SocketThread::GetDatagramPacket(string& str, bool blocking) {
+//
+//	str.clear();
+//
+//	uint8_t checkSum = 0;
+//	int packet_size = 0;
+//	uint8_t pchk;
+//	char c;
+//
+//	while (true) {
+//		GetChar(c, blocking);
+//		if (c == 0) {
+//			if (blocking) {
+//				cerr << "receive EOF " << endl;
+//			}
+//
+//			break;
+//		}
+//    	switch(c)
+//    	{
+//    		case '+':
+//    			cerr << "Warning receive + " << endl;
+//    			break;
+//    		case '-':
+//   				// error response => e.g. retransmission of the last packet
+//    			cerr << "Warning receive - " << endl;
+//    			break;
+//    		case 3: // '\003'
+//    			break;
+//    		case '$':
+//
+//    			GetChar(c, blocking);
+//    			while (true) {
+//    				str = str + c;
+//        			packet_size++;
+//    				checkSum = checkSum + c;
+//    				GetChar(c, blocking);
+//
+//    				if (c == '#') break;
+//    			}
+//
+//    			GetChar(c, blocking);
+//    			pchk = hexChar2Nibble(c) << 4;
+//    			GetChar(c, blocking);
+//    			pchk = pchk + hexChar2Nibble(c);
+//
+//				if(str.length() >= 3 && str[2] == ':')
+//				{
+//					if(!PutChar(str[0])) return (false);
+//					if(!PutChar(str[1])) return (false);
+//					if(!FlushOutput()) return (false);
+//					str.erase(0, 3);
+//				}
+//				return (true);
+//
+//    			break;
+//    		default:
+//    			cerr << "receive_packet: protocol error (0x" << nibble2HexChar(c) << ":" << c << ")";
+//    			break;
+//    	}
+//
+//	}
+//
+//	return (false);
+//
+//}
 
 bool SocketThread::GetPacket(string& str, bool blocking) {
 
@@ -431,7 +427,7 @@ bool SocketThread::GetPacket(string& str, bool blocking) {
     	switch(c)
     	{
     		case '+':
-    			cerr << "Warning receive + " << endl;
+    			cerr << "GetPacket Warning receive + " << endl;
     			break;
     		case '-':
    				// error response => e.g. retransmission of the last packet
@@ -567,13 +563,9 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 		input_buffer_size--;
 		input_buffer_index++;
 
-		cerr << "GetChar return True " << endl;
-
 		return (true);
 	} else {
 		c = 0;
-
-		cerr << "GetChar return False " << endl;
 
 		return (false);
 	}

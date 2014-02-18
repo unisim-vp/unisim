@@ -185,22 +185,15 @@ private:
 		~ReceiveThread() {}
 
 		virtual void run(){
-			cout << "ReceiveLoop before waitConnection" << endl;
 
 			while (!parent->isTerminated()) {
 
 				string buf_str;
 
-				cout << "ReceiveLoop mutex Lock" << endl;
-
 				parent->lockSocket();
 
-				cout << "ReceiveLoop before GetDataGramPacket" << endl;
-
-				if (!parent->GetDatagramPacket(buf_str, false)) {
-//				if (!parent->GetPacket(buf_str, false)) {
-
-					cout << "ReceiveLoop GetDataGramPacket return false ********" << endl;
+//				if (!parent->GetDatagramPacket(buf_str, false)) {
+				if (!parent->GetPacket(buf_str, false)) {
 
 					parent->unlockSocket();
 
@@ -212,8 +205,6 @@ private:
 					continue;
 
 				}
-
-				cout << "ReceiveLoop GetDataGramPacket return true" << endl;
 
 				parent->unlockSocket();
 
@@ -391,16 +382,10 @@ private:
 
 				std::string str = os.str();
 
-				cout << "SendLoop before mutex lock" << endl;
-
 				parent->lockSocket();
 
-				cout << "SendLoop before PutDatagram Packet" << endl;
-
-				parent->PutDatagramPacket(str);
-//				parent->PutPacket(str);
-
-				cout << "SendLoop After PutDatagram Packet" << endl;
+//				parent->PutDatagramPacket(str);
+				parent->PutPacket(str);
 
 				parent->unlockSocket();
 
