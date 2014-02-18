@@ -565,7 +565,8 @@ m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
-m4/real_path.m4"
+m4/real_path.m4 \
+m4/pthread.m4"
 
 UNISIM_LIB_VIRTEX5FXT_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_ppc440.xml \
@@ -1101,6 +1102,13 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "AM_PROG_CC_C_O" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "CPPFLAGS=\"${CPPFLAGS} -D_LARGEFILE64_SOURCE\"" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${VIRTEX5FXT_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "case \"\${host}\" in" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	printf "\t*mingw*)\n" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	printf "\t*)\n" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "esac" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TIMES(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_ENDIAN(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
