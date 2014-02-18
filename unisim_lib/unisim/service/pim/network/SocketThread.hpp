@@ -44,6 +44,8 @@ public:
 	void setSockfd(int sockfd);
 	int getSockfd() { return (sockfd); }
 	void waitConnection();
+	void lockSocket() { pthread_mutex_lock( &sockfd_mutex ); }
+	void unlockSocket() { pthread_mutex_unlock( &sockfd_mutex ); }
 
 protected:
 
@@ -61,6 +63,11 @@ protected:
 	pthread_mutex_t sockfd_mutex;
 	pthread_mutex_t sockfd_condition_mutex;
 	pthread_cond_t  sockfd_condition_cond;
+
+// I am testing recursive mutex **
+	pthread_mutexattr_t Attr;
+
+// ********
 
 private:
 	int input_buffer_size;

@@ -86,7 +86,16 @@ SocketThread::SocketThread() :
 
 void SocketThread::init() {
 
-	pthread_mutex_init (&sockfd_mutex, NULL);
+//	pthread_mutex_init (&sockfd_mutex, NULL);
+
+// I am testing recursive mutex **
+
+	pthread_mutexattr_init(&Attr);
+	pthread_mutexattr_settype(&Attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init (&sockfd_mutex, &Attr);
+
+// ********
+
 	pthread_mutex_init (&sockfd_condition_mutex, NULL);
 	pthread_cond_init (&sockfd_condition_cond, NULL);
 
@@ -350,6 +359,7 @@ bool SocketThread::GetDatagramPacket(string& str, bool blocking) {
 			if (blocking) {
 				cerr << "receive EOF " << endl;
 			}
+
 			break;
 		}
     	switch(c)
@@ -527,6 +537,7 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 #else
 			n = read(sockfd, input_buffer, MAXDATASIZE);
 #endif
+
 			if (n <= 0)	{
 		    	int array[] = {sockfd};
 		    	error(array, "ERROR reading from socket");
@@ -556,9 +567,14 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 		input_buffer_size--;
 		input_buffer_index++;
 
+		cerr << "GetChar return True " << endl;
+
 		return (true);
 	} else {
 		c = 0;
+
+		cerr << "GetChar return False " << endl;
+
 		return (false);
 	}
 

@@ -134,249 +134,296 @@ private:
 class GDBThread : public SocketThread {
 public:
 
-	enum MODES {RECEIVE, SEND};
-
-	GDBThread(const char *_name, MODES _mode, Object *_parent = 0):
+	GDBThread(const char *_name, Object *_parent = 0):
 		SocketThread()
 		, name(string(_name))
-		, mode(_mode)
-		, dataQueue(NULL)
+		, receiveDataQueue(NULL)
+		, sendDataQueue(NULL)
 
 	{
-		dataQueue = new BlockingCircularQueue<DBGData*>();
+		receiveDataQueue = new BlockingCircularQueue<DBGData*>();
+		sendDataQueue = new BlockingCircularQueue<DBGData*>();
+
+		receiver = new ReceiveThread(this, receiveDataQueue);
+		sender = new SendThread(this, sendDataQueue);
+
 	}
 
 	~GDBThread() {
-		delete dataQueue; dataQueue = NULL;
+		delete receiveDataQueue; receiveDataQueue = NULL;
+		delete sendDataQueue; sendDataQueue = NULL;
+		delete receiver; receiver = NULL;
+		delete sender; sender = NULL;
 	}
 
-	DBGData* getData() {
-		return (dataQueue->next());
+	DBGData* receiveData() {
+		return (receiveDataQueue->next());
 	}
 
-	void addData(DBGData* data) {
-		dataQueue->add(data);
+	void sendData(DBGData* data) {
+		sendDataQueue->add(data);
 	}
 
 	virtual void run() {
 
-		if (mode == RECEIVE) {
-			receiveLoop();
-		} else {
-			sendLoop();
-		}
+		waitConnection();
+
+		receiver->start();
+		sender->start();
 
 	}
+
+protected:
 
 private:
 	static const string SEGMENT_SEPARATOR;
 	static const string FIELD_SEPARATOR;
 
-	string name;
-	MODES mode;
-	BlockingCircularQueue<DBGData*> *dataQueue;
+	class ReceiveThread: public GenericThread {
+	public:
+		ReceiveThread(GDBThread *_parent, BlockingCircularQueue<DBGData*> *_dataQueue) : GenericThread(), parent(_parent), dataQueue(_dataQueue) {}
+		~ReceiveThread() {}
 
-	void receiveLoop() {
+		virtual void run(){
+			cout << "ReceiveLoop before waitConnection" << endl;
 
-//		waitConnection();
+			while (!parent->isTerminated()) {
 
-		while (!super::isTerminated()) {
+				string buf_str;
 
-			string buf_str;
+				cout << "ReceiveLoop mutex Lock" << endl;
 
-//			pthread_mutex_lock( &sockfd_mutex );
+				parent->lockSocket();
 
-			if (!GetDatagramPacket(buf_str, false)) {
+				cout << "ReceiveLoop before GetDataGramPacket" << endl;
 
-//			    pthread_mutex_unlock( &sockfd_mutex );
+				if (!parent->GetDatagramPacket(buf_str, false)) {
+//				if (!parent->GetPacket(buf_str, false)) {
 
-#ifdef WIN32
-				Sleep(1);
-#else
-				usleep(1000);
-#endif
-				continue;
+					cout << "ReceiveLoop GetDataGramPacket return false ********" << endl;
+
+					parent->unlockSocket();
+
+	#ifdef WIN32
+					Sleep(1);
+	#else
+					usleep(1000);
+	#endif
+					continue;
+
+				}
+
+				cout << "ReceiveLoop GetDataGramPacket return true" << endl;
+
+				parent->unlockSocket();
+
+				if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
+					DBGData *request = new DBGData(DBGData::TERMINATE);
+					dataQueue->add(request);
+
+				} else {
+
+					if (1 == 0) {
+
+					}
+					else if(buf_str.substr(0, 6) == "qRcmd,")
+					{
+						HandleQRcmd(buf_str.substr(6));
+					}
+
+				}
 
 			}
 
-//		    pthread_mutex_unlock( &sockfd_mutex );
+		}
 
-			if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
-				DBGData *request = new DBGData(DBGData::TERMINATE);
+	private:
+		GDBThread *parent;
+		BlockingCircularQueue<DBGData*> *dataQueue;
+
+		void HandleQRcmd(string command) {
+
+			// qRcmd,cmd;var_name[:value]{;var_name[:value]}
+			int start_index = 0;
+			int end_index = command.find(';', start_index);
+			string cmdPrefix = command.substr(start_index, end_index-start_index);
+
+			start_index = end_index+1;
+
+			if (cmdPrefix.compare("var_listen") == 0) {
+
+				do {
+
+					DBGData *request = new DBGData(DBGData::VAR_LISTEN);
+
+					string name = command.substr(start_index, end_index-start_index);
+
+					request->setInitiatorSite("workbench");
+					request->setInitiator(name);
+					request->setTargetSite("simulator");
+					request->setTarget(name);
+
+					dataQueue->add(request);
+
+					start_index = end_index+1;
+
+					end_index = command.find(';', start_index);
+					if (end_index != string::npos) {
+						start_index = end_index+1;
+					}
+				} while (end_index != string::npos);
+
+			}
+			else	if (cmdPrefix.compare("var_unlisten") == 0) {
+
+				do {
+					DBGData *request = new DBGData(DBGData::VAR_UNLISTEN);
+
+					string name = command.substr(start_index, end_index-start_index);
+
+					request->setInitiatorSite("workbench");
+					request->setInitiator(name);
+					request->setTargetSite("simulator");
+					request->setTarget(name);
+
+					dataQueue->add(request);
+
+					start_index = end_index+1;
+
+					end_index = command.find(';', start_index);
+					if (end_index != string::npos) {
+						start_index = end_index+1;
+					}
+				} while (end_index != string::npos);
+
+
+			}
+			else	if (cmdPrefix.compare("var_read") == 0) {
+
+				do {
+
+					DBGData *request = new DBGData(DBGData::VAR_READ);
+
+					string name = command.substr(start_index, end_index-start_index);
+
+					request->setInitiatorSite("workbench");
+					request->setInitiator(name);
+					request->setTargetSite("simulator");
+					request->setTarget(name);
+
+					dataQueue->add(request);
+
+					start_index = end_index+1;
+
+					end_index = command.find(';', start_index);
+					if (end_index != string::npos) {
+						start_index = end_index+1;
+					}
+				} while (end_index != string::npos);
+
+			}
+			else if (cmdPrefix.compare("var_write") == 0) {
+
+				DBGData *request = new DBGData(DBGData::VAR_WRITE);
+
+				end_index = command.find(':');
+
+				string name = command.substr(start_index, end_index-start_index);
+				start_index = end_index+1;
+
+				request->setInitiatorSite("workbench");
+				request->setInitiator(name);
+				request->setTargetSite("simulator");
+				request->setTarget(name);
+
+				string value = command.substr(start_index);
+
+				request->addAttribute("value", value);
+
 				dataQueue->add(request);
 
 			} else {
-
-				if (1 == 0) {
-
-				}
-				else if(buf_str.substr(0, 6) == "qRcmd,")
-				{
-					HandleQRcmd(buf_str.substr(6));
-				}
-
+				DBGData *request = new DBGData(DBGData::UNKNOWN);
+				dataQueue->add(request);
 			}
 
 		}
-	}
 
-	void sendLoop() {
+	};
 
-//		waitConnection();
+	class SendThread: public GenericThread {
+	public:
+		SendThread(GDBThread *_parent, BlockingCircularQueue<DBGData*> *_dataQueue) : GenericThread(), parent(_parent), dataQueue(_dataQueue) {}
+		~SendThread() {}
 
-		while (!super::isTerminated()) {
+		virtual void run(){
 
-			DBGData* response = getData();
+			while (!parent->isTerminated()) {
 
-			std::ostringstream os;
+				DBGData* response = dataQueue->next();
 
-			switch (response->getName()) {
-				case DBGData::VAR_READ_RESPONSE: {
-					os << response->getSimTime() << SEGMENT_SEPARATOR;
+				std::ostringstream os;
 
-					string targetVar = response->getTarget();
+				switch (response->getName()) {
+					case DBGData::VAR_READ_RESPONSE: {
+						os << response->getSimTime() << SEGMENT_SEPARATOR;
 
-					os << response->getTarget() << FIELD_SEPARATOR;
+						string targetVar = response->getTarget();
 
-					os << response->getAttribute("value") << SEGMENT_SEPARATOR;
+						os << response->getTarget() << FIELD_SEPARATOR;
 
-				} break;
-				case DBGData::VAR_LISTEN_RESPONSE: {
-					os << response->getSimTime() << SEGMENT_SEPARATOR;
+						os << response->getAttribute("value") << SEGMENT_SEPARATOR;
 
-					string targetVar = response->getTarget();
+					} break;
+					case DBGData::VAR_LISTEN_RESPONSE: {
+						os << response->getSimTime() << SEGMENT_SEPARATOR;
 
-					os << response->getTarget() << FIELD_SEPARATOR;
+						string targetVar = response->getTarget();
 
-					os << response->getAttribute("value") << SEGMENT_SEPARATOR;
+						os << response->getTarget() << FIELD_SEPARATOR;
 
-				} break;
+						os << response->getAttribute("value") << SEGMENT_SEPARATOR;
 
-				default: cerr << "GDBThread UNKNOWN response => " << std::endl; break;
+					} break;
+
+					default: cerr << "GDBThread UNKNOWN response => " << std::endl; break;
+				}
+
+				std::string str = os.str();
+
+				cout << "SendLoop before mutex lock" << endl;
+
+				parent->lockSocket();
+
+				cout << "SendLoop before PutDatagram Packet" << endl;
+
+				parent->PutDatagramPacket(str);
+//				parent->PutPacket(str);
+
+				cout << "SendLoop After PutDatagram Packet" << endl;
+
+				parent->unlockSocket();
+
+				os.str(std::string());
+
+				if (response) { delete response; response = NULL; }
 			}
-
-			std::string str = os.str();
-
-//			pthread_mutex_lock( &sockfd_mutex );
-
-			PutDatagramPacket(str);
-
-//		    pthread_mutex_unlock( &sockfd_mutex );
-
-			os.str(std::string());
-
-			if (response) { delete response; response = NULL; }
 		}
 
-	}
+	private:
+		GDBThread *parent;
+		BlockingCircularQueue<DBGData*> *dataQueue;
 
-	void HandleQRcmd(string command) {
+	};
 
-		// qRcmd,cmd;var_name[:value]{;var_name[:value]}
-		int start_index = 0;
-		int end_index = command.find(';', start_index);
-		string cmdPrefix = command.substr(start_index, end_index-start_index);
+	string name;
 
-		start_index = end_index+1;
+	BlockingCircularQueue<DBGData*> *receiveDataQueue;
+	BlockingCircularQueue<DBGData*> *sendDataQueue;
 
-		if (cmdPrefix.compare("var_listen") == 0) {
+	ReceiveThread* receiver;
+	SendThread* sender;
 
-			do {
-
-				DBGData *request = new DBGData(DBGData::VAR_LISTEN);
-
-				string name = command.substr(start_index, end_index-start_index);
-
-				request->setInitiatorSite("workbench");
-				request->setInitiator(name);
-				request->setTargetSite("simulator");
-				request->setTarget(name);
-
-				dataQueue->add(request);
-
-				start_index = end_index+1;
-
-				end_index = command.find(';', start_index);
-				if (end_index != string::npos) {
-					start_index = end_index+1;
-				}
-			} while (end_index != string::npos);
-
-		}
-		else	if (cmdPrefix.compare("var_unlisten") == 0) {
-
-			do {
-				DBGData *request = new DBGData(DBGData::VAR_UNLISTEN);
-
-				string name = command.substr(start_index, end_index-start_index);
-
-				request->setInitiatorSite("workbench");
-				request->setInitiator(name);
-				request->setTargetSite("simulator");
-				request->setTarget(name);
-
-				dataQueue->add(request);
-
-				start_index = end_index+1;
-
-				end_index = command.find(';', start_index);
-				if (end_index != string::npos) {
-					start_index = end_index+1;
-				}
-			} while (end_index != string::npos);
-
-
-		}
-		else	if (cmdPrefix.compare("var_read") == 0) {
-
-			do {
-
-				DBGData *request = new DBGData(DBGData::VAR_READ);
-
-				string name = command.substr(start_index, end_index-start_index);
-
-				request->setInitiatorSite("workbench");
-				request->setInitiator(name);
-				request->setTargetSite("simulator");
-				request->setTarget(name);
-
-				dataQueue->add(request);
-
-				start_index = end_index+1;
-
-				end_index = command.find(';', start_index);
-				if (end_index != string::npos) {
-					start_index = end_index+1;
-				}
-			} while (end_index != string::npos);
-
-		}
-		else if (cmdPrefix.compare("var_write") == 0) {
-
-			DBGData *request = new DBGData(DBGData::VAR_WRITE);
-
-			end_index = command.find(':');
-
-			string name = command.substr(start_index, end_index-start_index);
-			start_index = end_index+1;
-
-			request->setInitiatorSite("workbench");
-			request->setInitiator(name);
-			request->setTargetSite("simulator");
-			request->setTarget(name);
-
-			string value = command.substr(start_index);
-
-			request->addAttribute("value", value);
-
-			dataQueue->add(request);
-
-		} else {
-			DBGData *request = new DBGData(DBGData::UNKNOWN);
-			dataQueue->add(request);
-		}
-
-	}
 
 };
 

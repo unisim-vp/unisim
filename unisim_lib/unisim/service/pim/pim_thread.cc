@@ -49,8 +49,8 @@ PIMThread::PIMThread(const char *_name, Object *_parent) :
 	, VariableBaseListener()
 	, Object(_name, _parent)
 
-	, requestThread(NULL)
-	, responseThread(NULL)
+	, gdbThread(NULL)
+
 	, name(string(_name))
 	, last_time_ratio(-1)
 
@@ -60,18 +60,11 @@ PIMThread::PIMThread(const char *_name, Object *_parent) :
 
 PIMThread::~PIMThread() {
 
-	if (requestThread) {
-		if (!requestThread->isTerminated()) {
-			requestThread->stop();
+	if (gdbThread) {
+		if (!gdbThread->isTerminated()) {
+			gdbThread->stop();
 		}
-		delete requestThread; requestThread = NULL;
-	}
-
-	if (responseThread) {
-		if (!responseThread->isTerminated()) {
-			responseThread->stop();
-		}
-		delete responseThread; responseThread = NULL;
+		delete gdbThread; gdbThread = NULL;
 	}
 
 	pim_trace_file.close();
@@ -80,11 +73,8 @@ PIMThread::~PIMThread() {
 
 void PIMThread::run(){
 
-	requestThread = new GDBThread("request-Thread", GDBThread::RECEIVE);
-	requestThread->startSocketThread(getSockfd());
-
-	responseThread = new GDBThread("response-Thread", GDBThread::SEND);
-	responseThread->startSocketThread(getSockfd());
+	gdbThread = new GDBThread("gdb-Thread");
+	gdbThread->startSocketThread(getSockfd());
 
 	pim_trace_file.open ("pim_trace.xls");
 
@@ -110,16 +100,10 @@ void PIMThread::run(){
 
 	while (!super::isTerminated()) {
 
-		DBGData* request = requestThread->getData();
+		DBGData* request = gdbThread->receiveData();
 
 		if (request->getName() == DBGData::TERMINATE) {
-			if (requestThread) {
-				requestThread->stop();
-			}
-
-			if (responseThread) {
-				responseThread->stop();
-			}
+			gdbThread->stop();
 
 			super::stop();
 		} else {
@@ -187,7 +171,7 @@ void PIMThread::run(){
 							response->addAttribute("value", stringify(val));
 						}
 
-						responseThread->addData(response);
+						gdbThread->sendData(response);
 
 						break;
 					}
@@ -270,7 +254,7 @@ void PIMThread::VariableBaseNotify(const VariableBase *var) {
 		response->addAttribute("value", stringify(val));
 	}
 
-	responseThread->addData(response);
+	gdbThread->sendData(response);
 
 }
 

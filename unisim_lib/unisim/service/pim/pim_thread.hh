@@ -52,8 +52,8 @@ private:
 	double last_time_ratio;
 	ofstream pim_trace_file;
 
-	GDBThread *requestThread;
-	GDBThread *responseThread;
+	GDBThread *gdbThread;
+
 };
 
 } // end pim
