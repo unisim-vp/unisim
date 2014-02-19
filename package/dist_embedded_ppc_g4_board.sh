@@ -521,7 +521,8 @@ m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
-m4/real_path.m4"
+m4/real_path.m4 \
+m4/pthread.m4"
 
 UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_powerpc.xml \
@@ -1015,6 +1016,13 @@ if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	echo "AC_LANG([C++])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${EMBEDDED_PPC_G4_BOARD_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "case \"\${host}\" in" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	printf "\t*mingw*)\n" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	printf "\t*)\n" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "esac" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TIMES(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_ENDIAN(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
