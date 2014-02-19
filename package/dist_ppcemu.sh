@@ -427,7 +427,8 @@ m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
-m4/real_path.m4"
+m4/real_path.m4 \
+m4/pthread.m4"
 
 UNISIM_LIB_PPCEMU_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_powerpc.xml \
@@ -924,6 +925,13 @@ if [ "${has_to_build_ppcemu_configure}" = "yes" ]; then
 	echo "AC_LANG([C++])" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${PPCEMU_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${PPCEMU_CONFIGURE_AC}"
+	echo "case \"\${host}\" in" >> "${PPCEMU_CONFIGURE_AC}"
+	printf "\t*mingw*)\n" >> "${PPCEMU_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${PPCEMU_CONFIGURE_AC}"
+	printf "\t*)\n" >> "${PPCEMU_CONFIGURE_AC}"
+	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${PPCEMU_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${PPCEMU_CONFIGURE_AC}"
+	echo "esac" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TIMES(main)" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_ENDIAN(main)" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES(main)" >> "${PPCEMU_CONFIGURE_AC}"
