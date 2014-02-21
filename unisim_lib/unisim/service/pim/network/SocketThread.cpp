@@ -170,37 +170,7 @@ bool SocketThread::PutChar(char c) {
 	return (true);
 }
 
-//bool SocketThread::PutDatagramPacket(const string& data) {
-//
-//	char c;
-//
-//	int data_size = data.size();
-//
-//	output_buffer_strm << '$' << data << '#';
-//
-//	uint8_t checksum = 0;
-//
-//	for (int pos=0; pos < data_size; pos++)
-//	{
-//		checksum += (uint8_t) data[pos];
-//	}
-//
-//	output_buffer_strm << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf);
-//
-//	std::string tmpStr = output_buffer_strm.str();
-//
-//	if (!FlushOutput()) {
-//		cerr << "SocketThread unable to send !" << endl;
-//		return (false);
-//	}
-//
-//	return (true);
-//
-//}
-
-
-bool SocketThread::PutPacket(const string& data) {
-
+bool SocketThread::PutPacketWithAck(const string& data, bool Acknowledgment) {
 	char c;
 
 	int data_size = data.size();
@@ -225,31 +195,17 @@ bool SocketThread::PutPacket(const string& data) {
 			return (false);
 		}
 
-	} while(GetChar(c, true) && c != '+');
+	} while(Acknowledgment && (GetChar(c, true) && (c != '+')));
 
 	return (true);
 
 }
 
-//bool SocketThread::OutputTextDatagram(const char *s, int count)
-//{
-//	int i;
-//	uint8_t packet[1 + 2 * count + 1];
-//	uint8_t *p = packet;
-//
-//	*p = 'O';
-//	p++;
-//	for(i = 0; i < count; i++, p += 2)
-//	{
-//		p[0] = nibble2HexChar((uint8_t) s[i] >> 4);
-//		p[1] = nibble2HexChar((uint8_t) s[i] & 0xf);
-//	}
-//	*p = 0;
-//	return (PutDatagramPacket((const char *) packet));
-//}
+bool SocketThread::PutPacket(const string& data) {
+	return PutPacketWithAck(data, true);
+}
 
-bool SocketThread::OutputText(const char *s, int count)
-{
+bool SocketThread::OutputTextWithAck(const char *s, int count, bool Acknowledgment) {
 	int i;
 	uint8_t packet[1 + 2 * count + 1];
 	uint8_t *p = packet;
@@ -262,7 +218,12 @@ bool SocketThread::OutputText(const char *s, int count)
 		p[1] = nibble2HexChar((uint8_t) s[i] & 0xf);
 	}
 	*p = 0;
-	return (PutPacket((const char *) packet));
+	return (PutPacketWithAck((const char *) packet, Acknowledgment));
+}
+
+bool SocketThread::OutputText(const char *s, int count)
+{
+	return OutputTextWithAck(s, count, true);
 }
 
 bool SocketThread::FlushOutput() {
@@ -316,9 +277,11 @@ bool SocketThread::FlushOutput() {
 #else
 			n = write(sockfd, &(output_buffer.at(index)), output_buffer_size);
 #endif
+
 			if (n <= 0) {
 				int array[] = {sockfd};
 				error(array, "ERROR writing to socket");
+				break;
 			} else {
 				index += n;
 				output_buffer_size -= n;
@@ -326,89 +289,27 @@ bool SocketThread::FlushOutput() {
 
 		} else {
 
-			break;
+#ifdef WIN32
+			Sleep(1);
+#else
+			usleep(1000);
+#endif
+
+			continue;
 		}
 
 	}
+
+	output_buffer_strm.str(std::string());
 
 	if (output_buffer_size > 0) {
 		return (false);
 	}
 
-	output_buffer_strm.str(std::string());
-
 	return (true);
 }
 
-//bool SocketThread::GetDatagramPacket(string& str, bool blocking) {
-//
-//	str.clear();
-//
-//	uint8_t checkSum = 0;
-//	int packet_size = 0;
-//	uint8_t pchk;
-//	char c;
-//
-//	while (true) {
-//		GetChar(c, blocking);
-//		if (c == 0) {
-//			if (blocking) {
-//				cerr << "receive EOF " << endl;
-//			}
-//
-//			break;
-//		}
-//    	switch(c)
-//    	{
-//    		case '+':
-//    			cerr << "Warning receive + " << endl;
-//    			break;
-//    		case '-':
-//   				// error response => e.g. retransmission of the last packet
-//    			cerr << "Warning receive - " << endl;
-//    			break;
-//    		case 3: // '\003'
-//    			break;
-//    		case '$':
-//
-//    			GetChar(c, blocking);
-//    			while (true) {
-//    				str = str + c;
-//        			packet_size++;
-//    				checkSum = checkSum + c;
-//    				GetChar(c, blocking);
-//
-//    				if (c == '#') break;
-//    			}
-//
-//    			GetChar(c, blocking);
-//    			pchk = hexChar2Nibble(c) << 4;
-//    			GetChar(c, blocking);
-//    			pchk = pchk + hexChar2Nibble(c);
-//
-//				if(str.length() >= 3 && str[2] == ':')
-//				{
-//					if(!PutChar(str[0])) return (false);
-//					if(!PutChar(str[1])) return (false);
-//					if(!FlushOutput()) return (false);
-//					str.erase(0, 3);
-//				}
-//				return (true);
-//
-//    			break;
-//    		default:
-//    			cerr << "receive_packet: protocol error (0x" << nibble2HexChar(c) << ":" << c << ")";
-//    			break;
-//    	}
-//
-//	}
-//
-//	return (false);
-//
-//}
-
-bool SocketThread::GetPacket(string& str, bool blocking) {
-
+bool SocketThread::GetPacketWithAck(string& str, bool blocking, bool Acknowledgment) {
 	str.clear();
 
 	uint8_t checkSum = 0;
@@ -427,11 +328,11 @@ bool SocketThread::GetPacket(string& str, bool blocking) {
     	switch(c)
     	{
     		case '+':
-    			cerr << "GetPacket Warning receive + " << endl;
+    			cerr << "SocketThread:: Warning receive + " << endl;
     			break;
     		case '-':
    				// error response => e.g. retransmission of the last packet
-    			cerr << "Warning receive - " << endl;
+    			cerr << "SocketThread:: Warning receive - " << endl;
     			break;
     		case 3: // '\003'
     			break;
@@ -453,14 +354,19 @@ bool SocketThread::GetPacket(string& str, bool blocking) {
     			pchk = pchk + hexChar2Nibble(c);
 
 				if (checkSum != pchk) {
-					cerr << "receive_packet: wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
-    				if(!PutChar('-')) return (false);
-    				if(!FlushOutput()) return (false);
+					cerr << "SocketThread:: receive_packet: wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
+
+					if (Acknowledgment) {
+	    				if(!PutChar('-')) return (false);
+	    				if(!FlushOutput()) return (false);
+					}
     			}
     			else
     			{
-    				if(!PutChar('+')) return (false);
-    				if(!FlushOutput()) return (false);
+					if (Acknowledgment) {
+						if(!PutChar('+')) return (false);
+	    				if(!FlushOutput()) return (false);
+					}
 
     				if(str.length() >= 3 && str[2] == ':')
     				{
@@ -474,7 +380,7 @@ bool SocketThread::GetPacket(string& str, bool blocking) {
 
     			break;
     		default:
-    			cerr << "receive_packet: protocol error (0x" << nibble2HexChar(c) << ":" << c << ")";
+    			cerr << "SocketThread:: receive_packet: protocol error (0x" << nibble2HexChar(c) << ":" << c << ")";
     			break;
     	}
 
@@ -482,6 +388,10 @@ bool SocketThread::GetPacket(string& str, bool blocking) {
 
 	return (false);
 
+}
+
+bool SocketThread::GetPacket(string& str, bool blocking) {
+	return GetPacketWithAck(str, blocking, true);
 }
 
 bool SocketThread::GetChar(char& c, bool blocking) {
@@ -571,6 +481,120 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 	}
 
 }
+
+//bool SocketThread::PutDatagramPacket(const string& data) {
+//
+//	char c;
+//
+//	int data_size = data.size();
+//
+//	output_buffer_strm << '$' << data << '#';
+//
+//	uint8_t checksum = 0;
+//
+//	for (int pos=0; pos < data_size; pos++)
+//	{
+//		checksum += (uint8_t) data[pos];
+//	}
+//
+//	output_buffer_strm << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf);
+//
+//	std::string tmpStr = output_buffer_strm.str();
+//
+//	if (!FlushOutput()) {
+//		cerr << "SocketThread unable to send !" << endl;
+//		return (false);
+//	}
+//
+//	return (true);
+//
+//}
+//
+//
+//bool SocketThread::OutputTextDatagram(const char *s, int count)
+//{
+//	int i;
+//	uint8_t packet[1 + 2 * count + 1];
+//	uint8_t *p = packet;
+//
+//	*p = 'O';
+//	p++;
+//	for(i = 0; i < count; i++, p += 2)
+//	{
+//		p[0] = nibble2HexChar((uint8_t) s[i] >> 4);
+//		p[1] = nibble2HexChar((uint8_t) s[i] & 0xf);
+//	}
+//	*p = 0;
+//	return (PutDatagramPacket((const char *) packet));
+//}
+//
+//bool SocketThread::GetDatagramPacket(string& str, bool blocking) {
+//
+//	str.clear();
+//
+//	uint8_t checkSum = 0;
+//	int packet_size = 0;
+//	uint8_t pchk;
+//	char c;
+//
+//	while (true) {
+//		GetChar(c, blocking);
+//		if (c == 0) {
+//			if (blocking) {
+//				cerr << "receive EOF " << endl;
+//			}
+//
+//			break;
+//		}
+//    	switch(c)
+//    	{
+//    		case '+':
+//    			cerr << "Warning receive + " << endl;
+//    			break;
+//    		case '-':
+//   				// error response => e.g. retransmission of the last packet
+//    			cerr << "Warning receive - " << endl;
+//    			break;
+//    		case 3: // '\003'
+//    			break;
+//    		case '$':
+//
+//    			GetChar(c, blocking);
+//    			while (true) {
+//    				str = str + c;
+//        			packet_size++;
+//    				checkSum = checkSum + c;
+//    				GetChar(c, blocking);
+//
+//    				if (c == '#') break;
+//    			}
+//
+//    			GetChar(c, blocking);
+//    			pchk = hexChar2Nibble(c) << 4;
+//    			GetChar(c, blocking);
+//    			pchk = pchk + hexChar2Nibble(c);
+//
+//				if(str.length() >= 3 && str[2] == ':')
+//				{
+//					if(!PutChar(str[0])) return (false);
+//					if(!PutChar(str[1])) return (false);
+//					if(!FlushOutput()) return (false);
+//					str.erase(0, 3);
+//				}
+//				return (true);
+//
+//    			break;
+//    		default:
+//    			cerr << "receive_packet: protocol error (0x" << nibble2HexChar(c) << ":" << c << ")";
+//    			break;
+//    	}
+//
+//	}
+//
+//	return (false);
+//
+//}
+
 
 } // network 
 } // end pim 

@@ -102,7 +102,7 @@ void PIMThread::run(){
 
 		DBGData* request = gdbThread->receiveData();
 
-		if (request->getName() == DBGData::TERMINATE) {
+		if (request->getCommand() == DBGData::TERMINATE) {
 			gdbThread->stop();
 
 			super::stop();
@@ -110,7 +110,7 @@ void PIMThread::run(){
 
 			// qRcmd,cmd;var_name[:value]{;var_name[:value]}
 
-			if (request->getName() == DBGData::VAR_LISTEN) {
+			if (request->getCommand() == DBGData::VAR_LISTEN) {
 
 				string targetVar = request->getTarget();
 				for (int i=0; i < simulator_variables.size(); i++) {
@@ -120,7 +120,7 @@ void PIMThread::run(){
 					}
 				}
 
-			} else	if (request->getName() == DBGData::VAR_UNLISTEN) {
+			} else	if (request->getCommand() == DBGData::VAR_UNLISTEN) {
 
 				string targetVar = request->getTarget();
 
@@ -135,7 +135,7 @@ void PIMThread::run(){
 
 				}
 
-			} else	if (request->getName() == DBGData::VAR_READ) {
+			} else	if (request->getCommand() == DBGData::VAR_READ) {
 
 				string targetVar = request->getTarget();
 
@@ -177,7 +177,7 @@ void PIMThread::run(){
 					}
 				}
 
-			} else if (request->getName() == DBGData::VAR_WRITE) {
+			} else if (request->getCommand() == DBGData::VAR_WRITE) {
 
 				string targetVar = request->getTarget();
 

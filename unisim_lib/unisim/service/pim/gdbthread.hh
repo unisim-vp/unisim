@@ -34,15 +34,15 @@ public:
 
 //	enum TargetCOMMANDS {CONTINUE, SUSPEND, DISCONNECT, READ_REGISTERS, WRITE_REGISTERS, SET_THREAD_CONTEXT, STEP_CYCLE, KILL_COMMAND, READ_MEMORY, WRITE_MEMORY, READ_SELECTED_REGISTER, WRITE_SELECTED_REGISTER, QUERY_VARIABLE, STEP_INSTRUCTION, REMOVE_BREAKPOINT, SET_BREAKPOINT, GET_LAST_SIGNAL, UNKNOWN};
 
-	DBGData(DBGCOMMANDS _name) : name(_name), simTime(0), initiatorSite(std::string()), initiator(std::string()),	target(std::string()) { }
+	DBGData(DBGCOMMANDS _command) : command(_command), simTime(0), initiatorSite(std::string()), initiator(std::string()),	target(std::string()) { }
 
 	DBGData(DBGCOMMANDS _name, string _initiatorSite, string _initiator,	string _target) :
-		name(_name), simTime(0), initiatorSite(_initiatorSite), initiator(_initiator),	target(_target) {}
+		command(_name), simTime(0), initiatorSite(_initiatorSite), initiator(_initiator),	target(_target) {}
 
 
 	~DBGData() { attributes.clear(); }
 
-	DBGCOMMANDS getName() const { return (name); }
+	DBGCOMMANDS getCommand() const { return (command); }
 
 	bool addAttribute(std::string name, std::string value) {
 
@@ -121,7 +121,7 @@ protected:
 
 private:
 	double		simTime;
-	DBGCOMMANDS name;
+	DBGCOMMANDS command;
 	string initiatorSite;
 	string initiator;
 	string targetSite;
@@ -141,8 +141,8 @@ public:
 		, sendDataQueue(NULL)
 
 	{
-		receiveDataQueue = new BlockingCircularQueue<DBGData*>();
-		sendDataQueue = new BlockingCircularQueue<DBGData*>();
+		receiveDataQueue = new BlockingCircularQueue<DBGData*, QUEUE_SIZE>();
+		sendDataQueue = new BlockingCircularQueue<DBGData*, QUEUE_SIZE>();
 
 		receiver = new ReceiveThread(this, receiveDataQueue);
 		sender = new SendThread(this, sendDataQueue);
@@ -150,6 +150,7 @@ public:
 	}
 
 	~GDBThread() {
+
 		delete receiveDataQueue; receiveDataQueue = NULL;
 		delete sendDataQueue; sendDataQueue = NULL;
 		delete receiver; receiver = NULL;
@@ -178,10 +179,12 @@ protected:
 private:
 	static const string SEGMENT_SEPARATOR;
 	static const string FIELD_SEPARATOR;
+	static const int QUEUE_SIZE = 100;
+
 
 	class ReceiveThread: public GenericThread {
 	public:
-		ReceiveThread(GDBThread *_parent, BlockingCircularQueue<DBGData*> *_dataQueue) : GenericThread(), parent(_parent), dataQueue(_dataQueue) {}
+		ReceiveThread(GDBThread *_parent, BlockingCircularQueue<DBGData*, QUEUE_SIZE> *_dataQueue) : GenericThread(), parent(_parent), dataQueue(_dataQueue) {}
 		~ReceiveThread() {}
 
 		virtual void run(){
@@ -192,37 +195,32 @@ private:
 
 				parent->lockSocket();
 
-//				if (!parent->GetDatagramPacket(buf_str, false)) {
-				if (!parent->GetPacket(buf_str, false)) {
+				while (parent->GetPacketWithAck(buf_str, false, false)) {
 
-					parent->unlockSocket();
+					if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
+						DBGData *request = new DBGData(DBGData::TERMINATE);
+						dataQueue->add(request);
 
-	#ifdef WIN32
-					Sleep(1);
-	#else
-					usleep(1000);
-	#endif
-					continue;
+					} else {
 
+						if (1 == 0) {
+
+						}
+						else if(buf_str.substr(0, 6) == "qRcmd,")
+						{
+							HandleQRcmd(buf_str.substr(6));
+						}
+
+					}
 				}
 
 				parent->unlockSocket();
 
-				if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
-					DBGData *request = new DBGData(DBGData::TERMINATE);
-					dataQueue->add(request);
-
-				} else {
-
-					if (1 == 0) {
-
-					}
-					else if(buf_str.substr(0, 6) == "qRcmd,")
-					{
-						HandleQRcmd(buf_str.substr(6));
-					}
-
-				}
+#ifdef WIN32
+				Sleep(1);
+#else
+				usleep(1000);
+#endif
 
 			}
 
@@ -230,7 +228,7 @@ private:
 
 	private:
 		GDBThread *parent;
-		BlockingCircularQueue<DBGData*> *dataQueue;
+		BlockingCircularQueue<DBGData*, QUEUE_SIZE> *dataQueue;
 
 		void HandleQRcmd(string command) {
 
@@ -344,7 +342,7 @@ private:
 
 	class SendThread: public GenericThread {
 	public:
-		SendThread(GDBThread *_parent, BlockingCircularQueue<DBGData*> *_dataQueue) : GenericThread(), parent(_parent), dataQueue(_dataQueue) {}
+		SendThread(GDBThread *_parent, BlockingCircularQueue<DBGData*, QUEUE_SIZE> *_dataQueue) : GenericThread(), parent(_parent), dataQueue(_dataQueue) {}
 		~SendThread() {}
 
 		virtual void run(){
@@ -355,7 +353,7 @@ private:
 
 				std::ostringstream os;
 
-				switch (response->getName()) {
+				switch (response->getCommand()) {
 					case DBGData::VAR_READ_RESPONSE: {
 						os << response->getSimTime() << SEGMENT_SEPARATOR;
 
@@ -384,27 +382,31 @@ private:
 
 				parent->lockSocket();
 
-//				parent->PutDatagramPacket(str);
-				parent->PutPacket(str);
+				bool result = parent->PutPacketWithAck(str, false);
 
 				parent->unlockSocket();
 
 				os.str(std::string());
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					exit(-1);
+					break;
+				}
 			}
 		}
 
 	private:
 		GDBThread *parent;
-		BlockingCircularQueue<DBGData*> *dataQueue;
+		BlockingCircularQueue<DBGData*, QUEUE_SIZE> *dataQueue;
 
 	};
 
 	string name;
 
-	BlockingCircularQueue<DBGData*> *receiveDataQueue;
-	BlockingCircularQueue<DBGData*> *sendDataQueue;
+	BlockingCircularQueue<DBGData*, QUEUE_SIZE> *receiveDataQueue;
+	BlockingCircularQueue<DBGData*, QUEUE_SIZE> *sendDataQueue;
 
 	ReceiveThread* receiver;
 	SendThread* sender;

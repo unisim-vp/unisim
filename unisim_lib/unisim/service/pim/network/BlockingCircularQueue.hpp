@@ -62,10 +62,8 @@ public:
 
 		while( isFull() && alive)
 		{
-			cout << "Queue Full" << endl;
 			pthread_cond_wait( &condition_cond, &condition_mutex );
 		}
-		cout << "Queue not Full" << endl;
 
 		if (alive) {
 		    pthread_mutex_lock( &queue_mutex );
@@ -89,10 +87,8 @@ public:
 		pthread_mutex_lock( &condition_mutex );
 		while( isEmpty() && alive)
 		{
-			cout << "Queue Empty" << endl;
 			pthread_cond_wait( &condition_cond, &condition_mutex );
 		}
-		cout << "Queue not Empty" << endl;
 
 		if (alive) {
 		    pthread_mutex_lock( &queue_mutex );

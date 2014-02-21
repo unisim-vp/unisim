@@ -32,14 +32,40 @@ public:
 	void closeSockfd();
 
 	bool GetChar(char& c, bool blocking);
-//	bool GetDatagramPacket(string& s, bool blocking);
 	bool GetPacket(string& s, bool blocking);
 	bool PutChar(char c);
-//	bool PutDatagramPacket(const string& data);
 	bool PutPacket(const string& data);
-//	bool OutputTextDatagram(const char *s, int count);
 	bool OutputText(const char *s, int count);
 	bool FlushOutput();
+
+//	bool canWrite() {
+//		fd_set read_flags;
+//
+//	    /* Initialize and set `readset` and `maxfd` */
+//
+//	    struct timeval waitd;
+//	    waitd.tv_sec  = 0;
+//	    waitd.tv_usec = 0;
+//	    FD_ZERO(&read_flags);
+//
+//		// Set the sockets read flag, so when select is called it examines
+//		// the read status of available data.
+//		FD_SET(sockfd, &read_flags);
+//
+//		// Now call select
+//		if (select(sockfd+1, &read_flags, NULL, NULL, &waitd) == 0)
+//		{
+//		    return true;
+//		}
+//		else
+//		{
+//		    return false;
+//		}
+//	}
+
+	bool GetPacketWithAck(string& s, bool blocking, bool Acknowledgment);
+	bool PutPacketWithAck(const string& data, bool Acknowledgment);
+	bool OutputTextWithAck(const char *s, int count, bool Acknowledgment);
 
 	void setSockfd(int sockfd);
 	int getSockfd() { return (sockfd); }
