@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,41 +29,61 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Julien Lisita (julien.lisita@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
 
-#include <tlm.h>
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_AVR32_AVR32A_AVR32UC_CONFIG_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_AVR32_AVR32A_AVR32UC_CONFIG_HH__
+
+#include "unisim/component/cxx/processor/avr32/avr32a/config.hh"
 
 namespace unisim {
 namespace component {
-namespace tlm2 {
-namespace interconnect {
-namespace generic_router {
+namespace cxx {
+namespace processor {
+namespace avr32 {
+namespace avr32a {
+namespace avr32uc {
 
-class Config {
+template <class CONFIG>
+class CPU; // Forward declaration
+
+//=====================================================================
+//=                  AVR32UC common configuration                     =
+//=====================================================================
+
+class Config : public unisim::component::cxx::processor::avr32::avr32a::Config
+{
 public:
-	typedef uint64_t ADDRESS;
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool VERBOSE = false;
+	typedef CPU<Config> STATE;
+	
+	static const unsigned int HSB_WIDTH = 4;
+	static const unsigned int HSB_BURST_SIZE = 4;
+	static const unsigned int NUM_IRQS = 64;
+	
+	static const bool DEBUG_ENABLE = false;
+	static const bool DEBUG_SETUP_ENABLE = false;
+	static const bool DEBUG_INTERRUPT_ENABLE = false;
 };
 
-class VerboseConfig : public Config {
+class DebugConfig : public Config
+{
 public:
-	static const bool VERBOSE = true;
+	typedef CPU<DebugConfig> STATE;
+
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_SETUP_ENABLE = true;
+	static const bool DEBUG_INTERRUPT_ENABLE = true;
 };
 
-} // end of namespace generic_router
-} // end of namespace interconnect
-} // end of namespace tlm2
+} // end of namespace avr32uc
+} // end of namespace avr32a
+} // end of namespace avr32
+} // end of namespace processor
+} // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
 
+#endif

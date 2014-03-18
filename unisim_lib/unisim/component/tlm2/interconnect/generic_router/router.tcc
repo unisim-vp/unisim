@@ -136,8 +136,8 @@ template<class CONFIG>
 Router<CONFIG>::
 Router(const sc_module_name &name, Object *parent) :
 unisim::kernel::service::Object(name, parent, "A memory-mapped router"),
-unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >(name, parent),
-unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >(name, parent),
+unisim::kernel::service::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(name, parent),
+unisim::kernel::service::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(name, parent),
 sc_module(name),
 memory_export("memory-export", this),
 m_req_dispatcher(),
@@ -233,7 +233,7 @@ param_verbose_memory_interface(0)
 	{
 		std::stringstream str;
 		str << "memory-import[" << i << "]";
-		memory_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >(str.str().c_str(), this);
+		memory_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(str.str().c_str(), this);
 		memory_export.SetupDependsOn(*memory_import[i]);
 	}
 //	/* create initiator sockets and register socket callbacks */
@@ -812,7 +812,7 @@ WriteTransportDbg(unsigned int id, transaction_type &trans) {
 template <class CONFIG>
 bool
 Router<CONFIG> ::
-ReadMemory(uint64_t addr, void *buffer, uint32_t size)
+ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size)
 {
 	if (VerboseMemoryInterface())
 	{
@@ -859,7 +859,7 @@ ReadMemory(uint64_t addr, void *buffer, uint32_t size)
 template <class CONFIG>
 bool
 Router<CONFIG> ::
-WriteMemory(uint64_t addr, const void *buffer, uint32_t size)
+WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size)
 {
 	if (VerboseMemoryInterface())
 	{

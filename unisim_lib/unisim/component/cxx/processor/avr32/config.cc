@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,41 +29,20 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Julien Lisita (julien.lisita@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
 
-#include <tlm.h>
+#include "unisim/component/cxx/processor/avr32/config.hh"
 
 namespace unisim {
 namespace component {
-namespace tlm2 {
-namespace interconnect {
-namespace generic_router {
+namespace cxx {
+namespace processor {
+namespace avr32 {
 
-class Config {
-public:
-	typedef uint64_t ADDRESS;
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool VERBOSE = false;
-};
-
-class VerboseConfig : public Config {
-public:
-	static const bool VERBOSE = true;
-};
-
-} // end of namespace generic_router
-} // end of namespace interconnect
-} // end of namespace tlm2
+} // end of namespace avr32
+} // end of namespace processor
+} // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
-#endif // __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,41 +29,22 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Julien Lisita (julien.lisita@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
 
-#include <tlm.h>
+#include "config.hh"
 
-namespace unisim {
-namespace component {
-namespace tlm2 {
-namespace interconnect {
-namespace generic_router {
+const unsigned int MemoryRouterConfig::INPUT_SOCKETS;
+const unsigned int MemoryRouterConfig::OUTPUT_SOCKETS;
+const unsigned int MemoryRouterConfig::MAX_NUM_MAPPINGS;
+const unsigned int MemoryRouterConfig::BUSWIDTH;
 
-class Config {
-public:
-	typedef uint64_t ADDRESS;
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool VERBOSE = false;
-};
+const bool MemoryRouterDebugConfig::VERBOSE;
 
-class VerboseConfig : public Config {
-public:
-	static const bool VERBOSE = true;
-};
+const bool SimConfig::DEBUG_INFORMATION;
 
-} // end of namespace generic_router
-} // end of namespace interconnect
-} // end of namespace tlm2
-} // end of namespace component
-} // end of namespace unisim
+const SimConfig::MEMORY_ADDR SimConfig::RAM_BASE_ADDR;
+const SimConfig::MEMORY_ADDR SimConfig::RAM_BYTE_SIZE;
 
-#endif // __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-
+const bool SimConfigDebug::DEBUG_INFORMATION;

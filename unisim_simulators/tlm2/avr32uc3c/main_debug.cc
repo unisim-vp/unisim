@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,41 +29,51 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Julien Lisita (julien.lisita@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
 
-#include <tlm.h>
+#include <simulator.hh>
+#include <simulator.tcc>
+#include <config.hh>
 
-namespace unisim {
-namespace component {
-namespace tlm2 {
-namespace interconnect {
-namespace generic_router {
+typedef SimConfigDebug SIM_CONFIG;
+typedef Simulator<SIM_CONFIG> SIMULATOR;
 
-class Config {
-public:
-	typedef uint64_t ADDRESS;
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool VERBOSE = false;
-};
+int sc_main(int argc, char *argv[])
+{
+#ifdef WIN32
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		cerr << "WSAStartup failed" << endl;
+		return -1;
+	}
+#endif
+	SIMULATOR *simulator = new SIMULATOR(argc, argv);
 
-class VerboseConfig : public Config {
-public:
-	static const bool VERBOSE = true;
-};
+	switch(simulator->Setup())
+	{
+		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+			break;
+		case unisim::kernel::service::Simulator::ST_WARNING:
+			cerr << "Some warnings occurred during setup" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+			simulator->Run();
+			break;
+		case unisim::kernel::service::Simulator::ST_ERROR:
+			cerr << "Can't start simulation because of previous errors" << endl;
+			break;
+	}
 
-} // end of namespace generic_router
-} // end of namespace interconnect
-} // end of namespace tlm2
-} // end of namespace component
-} // end of namespace unisim
+	int exit_status = simulator->GetExitStatus();
+	if(simulator) delete simulator;
+#ifdef WIN32
+	// releases the winsock2 resources
+	WSACleanup();
+#endif
 
-#endif // __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-
+	return exit_status;
+}
