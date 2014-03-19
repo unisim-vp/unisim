@@ -33,8 +33,8 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __AVR32UC3C_SIMULATOR_HH__
-#define __AVR32UC3C_SIMULATOR_HH__
+#ifndef __AT32UC3C_SIMULATOR_HH__
+#define __AT32UC3C_SIMULATOR_HH__
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -169,4 +169,4 @@ private:
 #endif
 };
 
-#endif // __AVR32UC3C_SIMULATOR_HH__
+#endif // __AT32UC3C_SIMULATOR_HH__

@@ -15,10 +15,10 @@ MY_DIR=$(cd $(dirname $0); pwd)
 DEST_DIR=$1
 UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
 UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
-UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/avr32uc3c
+UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/at32uc3c
 
-AVR32UC3C_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
-GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-avr32uc3c-${AVR32UC3C_VERSION}
+AT32UC3C_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
+GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-at32uc3c-${AT32UC3C_VERSION}
 
 if test -z "${DISTCOPY}"; then
     DISTCOPY=cp
@@ -102,7 +102,7 @@ ostream \
 unistd.h \
 vector"
 
-UNISIM_LIB_AVR32UC3C_SOURCE_FILES="\
+UNISIM_LIB_AT32UC3C_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
@@ -185,13 +185,13 @@ unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 "
 
-UNISIM_LIB_AVR32UC3C_ISA_FILES="\
+UNISIM_LIB_AT32UC3C_ISA_FILES="\
 unisim/component/cxx/processor/avr32/isa/avr32.isa \
 unisim/component/cxx/processor/avr32/avr32a/isa/avr32a.isa \
 unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.isa \
 "
 
-UNISIM_LIB_AVR32UC3C_HEADER_FILES="${UNISIM_LIB_AVR32UC3C_ISA_FILES} \
+UNISIM_LIB_AT32UC3C_HEADER_FILES="${UNISIM_LIB_AT32UC3C_ISA_FILES} \
 unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \
@@ -316,7 +316,7 @@ unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
 "
 
-UNISIM_LIB_AVR32UC3C_TEMPLATE_FILES="\
+UNISIM_LIB_AT32UC3C_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/profile.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
@@ -379,7 +379,7 @@ unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 "
 
-UNISIM_LIB_AVR32UC3C_M4_FILES="\
+UNISIM_LIB_AT32UC3C_M4_FILES="\
 m4/times.m4 \
 m4/endian.m4 \
 m4/cxxabi.m4 \
@@ -397,11 +397,11 @@ m4/get_exec_path.m4 \
 m4/real_path.m4 \
 m4/pthread.m4"
 
-UNISIM_LIB_AVR32UC3C_DATA_FILES="\
+UNISIM_LIB_AT32UC3C_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_avr32.xml \
 "
 
-AVR32UC3C_EXTERNAL_HEADERS="\
+AT32UC3C_EXTERNAL_HEADERS="\
 assert.h \
 ctype.h \
 cxxabi.h \
@@ -444,21 +444,21 @@ vector \
 string \
 set"
 
-UNISIM_SIMULATORS_AVR32UC3C_SOURCE_FILES="\
+UNISIM_SIMULATORS_AT32UC3C_SOURCE_FILES="\
 config.cc \
 memory_router.cc \
 memory_router_debug.cc \
 "
-UNISIM_SIMULATORS_AVR32UC3C_HEADER_FILES="\
+UNISIM_SIMULATORS_AT32UC3C_HEADER_FILES="\
 simulator.hh \
 config.hh \
 "
 
-UNISIM_SIMULATORS_AVR32UC3C_TEMPLATE_FILES="\
+UNISIM_SIMULATORS_AT32UC3C_TEMPLATE_FILES="\
 simulator.tcc \
 "
 
-UNISIM_SIMULATORS_AVR32UC3C_DATA_FILES="\
+UNISIM_SIMULATORS_AT32UC3C_DATA_FILES="\
 COPYING \
 INSTALL \
 NEWS \
@@ -467,7 +467,7 @@ AUTHORS \
 ChangeLog \
 unisim.ico"
 
-UNISIM_SIMULATORS_AVR32UC3C_TESTBENCH_FILES="\
+UNISIM_SIMULATORS_AT32UC3C_TESTBENCH_FILES="\
 main.cc \
 main_debug.cc \
 "
@@ -475,10 +475,10 @@ main_debug.cc \
 has_to_build_configure=no
 has_to_build_configure_cross=no
 has_to_build_genisslib_configure=no
-has_to_build_avr32uc3c_configure=no
+has_to_build_at32uc3c_configure=no
 
 mkdir -p ${DEST_DIR}/genisslib
-mkdir -p ${DEST_DIR}/avr32uc3c
+mkdir -p ${DEST_DIR}/at32uc3c
 
 UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
@@ -498,42 +498,42 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	fi
 done
 
-UNISIM_LIB_AVR32UC3C_FILES="${UNISIM_LIB_AVR32UC3C_SOURCE_FILES} ${UNISIM_LIB_AVR32UC3C_HEADER_FILES} ${UNISIM_LIB_AVR32UC3C_TEMPLATE_FILES} ${UNISIM_LIB_AVR32UC3C_DATA_FILES}"
+UNISIM_LIB_AT32UC3C_FILES="${UNISIM_LIB_AT32UC3C_SOURCE_FILES} ${UNISIM_LIB_AT32UC3C_HEADER_FILES} ${UNISIM_LIB_AT32UC3C_TEMPLATE_FILES} ${UNISIM_LIB_AT32UC3C_DATA_FILES}"
 
-for file in ${UNISIM_LIB_AVR32UC3C_FILES}; do
-	mkdir -p "${DEST_DIR}/avr32uc3c/$(dirname ${file})"
+for file in ${UNISIM_LIB_AT32UC3C_FILES}; do
+	mkdir -p "${DEST_DIR}/at32uc3c/$(dirname ${file})"
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/avr32uc3c/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/avr32uc3c/${file}" ]; then
+	if [ -e "${DEST_DIR}/at32uc3c/${file}" ]; then
+		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/at32uc3c/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/avr32uc3c/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/avr32uc3c/${file}" || exit
+		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/at32uc3c/${file}"
+		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/at32uc3c/${file}" || exit
 	fi
 done
 
-UNISIM_SIMULATORS_AVR32UC3C_FILES="${UNISIM_SIMULATORS_AVR32UC3C_SOURCE_FILES} ${UNISIM_SIMULATORS_AVR32UC3C_HEADER_FILES} ${UNISIM_SIMULATORS_AVR32UC3C_TEMPLATE_FILES} ${UNISIM_SIMULATORS_AVR32UC3C_DATA_FILES} ${UNISIM_SIMULATORS_AVR32UC3C_TESTBENCH_FILES}"
+UNISIM_SIMULATORS_AT32UC3C_FILES="${UNISIM_SIMULATORS_AT32UC3C_SOURCE_FILES} ${UNISIM_SIMULATORS_AT32UC3C_HEADER_FILES} ${UNISIM_SIMULATORS_AT32UC3C_TEMPLATE_FILES} ${UNISIM_SIMULATORS_AT32UC3C_DATA_FILES} ${UNISIM_SIMULATORS_AT32UC3C_TESTBENCH_FILES}"
 
-for file in ${UNISIM_SIMULATORS_AVR32UC3C_FILES}; do
+for file in ${UNISIM_SIMULATORS_AT32UC3C_FILES}; do
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/avr32uc3c/${file}" ]; then
-		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/avr32uc3c/${file}" ]; then
+	if [ -e "${DEST_DIR}/at32uc3c/${file}" ]; then
+		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/at32uc3c/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/avr32uc3c/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/avr32uc3c/${file}" || exit
+		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/at32uc3c/${file}"
+		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/at32uc3c/${file}" || exit
 	fi
 done
 
-for file in ${UNISIM_SIMULATORS_AVR32UC3C_DATA_FILES}; do
+for file in ${UNISIM_SIMULATORS_AT32UC3C_DATA_FILES}; do
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/${file}" ]; then
 		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
@@ -550,8 +550,8 @@ done
 
 
 mkdir -p ${DEST_DIR}/config
-mkdir -p ${DEST_DIR}/avr32uc3c/config
-mkdir -p ${DEST_DIR}/avr32uc3c/m4
+mkdir -p ${DEST_DIR}/at32uc3c/config
+mkdir -p ${DEST_DIR}/at32uc3c/m4
 mkdir -p ${DEST_DIR}/genisslib/config
 mkdir -p ${DEST_DIR}/genisslib/m4
 
@@ -571,19 +571,19 @@ for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	fi
 done
 
-for file in ${UNISIM_LIB_AVR32UC3C_M4_FILES}; do
+for file in ${UNISIM_LIB_AT32UC3C_M4_FILES}; do
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/avr32uc3c/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/avr32uc3c/${file}" ]; then
+	if [ -e "${DEST_DIR}/at32uc3c/${file}" ]; then
+		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/at32uc3c/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/avr32uc3c/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/avr32uc3c/${file}" || exit
-		has_to_build_avr32uc3c_configure=yes
+		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/at32uc3c/${file}"
+		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/at32uc3c/${file}" || exit
+		has_to_build_at32uc3c_configure=yes
 	fi
 done
 
@@ -597,7 +597,7 @@ EOF
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
   - UNISIM GenISSLib: an instruction set simulator generator
-  - UNISIM AVR32UC3C Simulator: an AVR32UC3C simulator.
+  - UNISIM AT32UC3C Simulator: an AVR32UC simulator.
 See INSTALL for installation instructions.
 EOF
 
@@ -661,7 +661,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM AVR32UC3C Simulator Package], [${AVR32UC3C_VERSION}], [Julien Lisita <julien.lisita@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-avr32uc3c])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM AT32UC3C Simulator Package], [${AT32UC3C_VERSION}], [Julien Lisita <julien.lisita@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-at32uc3c])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -671,12 +671,12 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
 	echo "AC_CONFIG_SUBDIRS([genisslib])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_SUBDIRS([avr32uc3c])"  >> "${CONFIGURE_AC}" 
+	echo "AC_CONFIG_SUBDIRS([at32uc3c])"  >> "${CONFIGURE_AC}" 
 	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
 
 	echo "Generating Makefile.am"
-	echo "SUBDIRS=genisslib avr32uc3c" > "${MAKEFILE_AM}"
+	echo "SUBDIRS=genisslib at32uc3c" > "${MAKEFILE_AM}"
 	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
 
 	echo "Building configure"
@@ -741,17 +741,17 @@ if test \${STATUS} -ne 0; then
 fi
 
 if test "\${help}" = "yes"; then
-	echo "=== configure help for avr32uc3c"
+	echo "=== configure help for at32uc3c"
 else
-	echo "=== configuring in avr32uc3c (\${HERE}/avr32uc3c) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/avr32uc3c/configure \$@"
+	echo "=== configuring in at32uc3c (\${HERE}/at32uc3c) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/at32uc3c/configure \$@"
 fi
 
-if test ! -d \${HERE}/avr32uc3c; then
-	mkdir \${HERE}/avr32uc3c
+if test ! -d \${HERE}/at32uc3c; then
+	mkdir \${HERE}/at32uc3c
 fi
-cd \${HERE}/avr32uc3c
-\${MY_DIR}/avr32uc3c/configure "\$@"
+cd \${HERE}/at32uc3c
+\${MY_DIR}/at32uc3c/configure "\$@"
 STATUS="\$?"
 cd "\${HERE}"
 if test \${STATUS} -ne 0; then
@@ -765,26 +765,26 @@ fi
 echo "\$(basename \$0): creating Makefile.cross"
 cat << EOF_MAKEFILE_CROSS > Makefile.cross
 #!/usr/bin/make -f
-all: avr32uc3c-all
-clean: genisslib-clean avr32uc3c-clean
-distclean: genisslib-distclean avr32uc3c-distclean
+all: at32uc3c-all
+clean: genisslib-clean at32uc3c-clean
+distclean: genisslib-distclean at32uc3c-distclean
 	rm -f \${HERE}/Makefile.cross
-install: avr32uc3c-install
+install: at32uc3c-install
 
 genisslib-all:
 	@\\\$(MAKE) -C \${HERE}/genisslib all
-avr32uc3c-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/avr32uc3c all
+at32uc3c-all: genisslib-all
+	@\\\$(MAKE) -C \${HERE}/at32uc3c all
 genisslib-clean:
 	@\\\$(MAKE) -C \${HERE}/genisslib clean
-avr32uc3c-clean:
-	@\\\$(MAKE) -C \${HERE}/avr32uc3c clean
+at32uc3c-clean:
+	@\\\$(MAKE) -C \${HERE}/at32uc3c clean
 genisslib-distclean:
 	@\\\$(MAKE) -C \${HERE}/genisslib distclean
-avr32uc3c-distclean:
-	@\\\$(MAKE) -C \${HERE}/avr32uc3c distclean
-avr32uc3c-install:
-	@\\\$(MAKE) -C \${HERE}/avr32uc3c install
+at32uc3c-distclean:
+	@\\\$(MAKE) -C \${HERE}/at32uc3c distclean
+at32uc3c-install:
+	@\\\$(MAKE) -C \${HERE}/at32uc3c install
 EOF_MAKEFILE_CROSS
 
 chmod +x Makefile.cross
@@ -865,125 +865,125 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 fi
 
 
-# avr32uc3c
+# at32uc3c
 
-AVR32UC3C_CONFIGURE_AC="${DEST_DIR}/avr32uc3c/configure.ac"
-AVR32UC3C_MAKEFILE_AM="${DEST_DIR}/avr32uc3c/Makefile.am"
+AT32UC3C_CONFIGURE_AC="${DEST_DIR}/at32uc3c/configure.ac"
+AT32UC3C_MAKEFILE_AM="${DEST_DIR}/at32uc3c/Makefile.am"
 
 
-if [ ! -e "${AVR32UC3C_CONFIGURE_AC}" ]; then
-	has_to_build_avr32uc3c_configure=yes
+if [ ! -e "${AT32UC3C_CONFIGURE_AC}" ]; then
+	has_to_build_at32uc3c_configure=yes
 else
-	if [ "$0" -nt "${AVR32UC3C_CONFIGURE_AC}" ]; then
-		has_to_build_avr32uc3c_configure=yes
+	if [ "$0" -nt "${AT32UC3C_CONFIGURE_AC}" ]; then
+		has_to_build_at32uc3c_configure=yes
 	fi
 fi
 
-if [ ! -e "${AVR32UC3C_MAKEFILE_AM}" ]; then
-	has_to_build_avr32uc3c_configure=yes
+if [ ! -e "${AT32UC3C_MAKEFILE_AM}" ]; then
+	has_to_build_at32uc3c_configure=yes
 else
-	if [ "$0" -nt "${AVR32UC3C_MAKEFILE_AM}" ]; then
-		has_to_build_avr32uc3c_configure=yes
+	if [ "$0" -nt "${AT32UC3C_MAKEFILE_AM}" ]; then
+		has_to_build_at32uc3c_configure=yes
 	fi
 fi
 
-if [ "${has_to_build_avr32uc3c_configure}" = "yes" ]; then
-	echo "Generating avr32uc3c configure.ac"
-	echo "AC_INIT([UNISIM AVR32UC3C Standalone simulator], [${AVR32UC3C_VERSION}], [Julien Lisita <julien.lisita@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-avr32uc3c-core])" > "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_PROG_RANLIB" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AM_PROG_CC_C_O" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "CPPFLAGS=\"${CPPFLAGS} -D_LARGEFILE64_SOURCE\"" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${AVR32UC3C_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "case \"\${host}\" in" >> "${AVR32UC3C_CONFIGURE_AC}"
-	printf "\t*mingw*)\n" >> "${AVR32UC3C_CONFIGURE_AC}"
-	printf "\t;;\n" >> "${AVR32UC3C_CONFIGURE_AC}"
-	printf "\t*)\n" >> "${AVR32UC3C_CONFIGURE_AC}"
-	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${AVR32UC3C_CONFIGURE_AC}"
-	printf "\t;;\n" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "esac" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TIMES(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ENDIAN(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_SYSTEMC" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_SUBST(GENISSLIB_PATH)" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-avr32uc3c-${AVR32UC3C_VERSION}\"], [path of shared data relative to bin directory])" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${AVR32UC3C_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${AVR32UC3C_CONFIGURE_AC}"
+if [ "${has_to_build_at32uc3c_configure}" = "yes" ]; then
+	echo "Generating at32uc3c configure.ac"
+	echo "AC_INIT([UNISIM AT32UC3C Standalone simulator], [${AT32UC3C_VERSION}], [Julien Lisita <julien.lisita@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-at32uc3c-core])" > "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_CONFIG_AUX_DIR(config)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_CONFIG_HEADERS([config.h])" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_CANONICAL_BUILD" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_CANONICAL_HOST" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_CANONICAL_TARGET" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_PATH_PROGS(SH, sh)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_PROG_CXX" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_PROG_RANLIB" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_PROG_INSTALL" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_PROG_LN_S" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_LANG([C++])" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AM_PROG_CC_C_O" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "CPPFLAGS=\"${CPPFLAGS} -D_LARGEFILE64_SOURCE\"" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_CHECK_HEADERS([${AT32UC3C_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "case \"\${host}\" in" >> "${AT32UC3C_CONFIGURE_AC}"
+	printf "\t*mingw*)\n" >> "${AT32UC3C_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${AT32UC3C_CONFIGURE_AC}"
+	printf "\t*)\n" >> "${AT32UC3C_CONFIGURE_AC}"
+	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${AT32UC3C_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "esac" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TIMES(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ENDIAN(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CURSES(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ZLIB(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBXML2(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CXXABI(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_WITH_BOOST(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_SYSTEMC" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TLM20" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_SUBST(GENISSLIB_PATH)" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-at32uc3c-${AT32UC3C_VERSION}\"], [path of shared data relative to bin directory])" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_CONFIG_FILES([Makefile])" >> "${AT32UC3C_CONFIGURE_AC}"
+	echo "AC_OUTPUT" >> "${AT32UC3C_CONFIGURE_AC}"
 
-	AM_AVR32UC3C_VERSION=$(printf ${AVR32UC3C_VERSION} | sed -e 's/\./_/g')
-	echo "Generating avr32uc3c Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${AVR32UC3C_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libavr32uc3c-${AVR32UC3C_VERSION}.a" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "libavr32uc3c_${AM_AVR32UC3C_VERSION}_a_SOURCES = ${UNISIM_LIB_AVR32UC3C_SOURCE_FILES}" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = unisim-avr32uc3c-${AVR32UC3C_VERSION} unisim-avr32uc3c-debug-${AVR32UC3C_VERSION}" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "unisim_avr32uc3c_${AM_AVR32UC3C_VERSION}_SOURCES = main.cc ${UNISIM_SIMULATORS_AVR32UC3C_SOURCE_FILES}" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "unisim_avr32uc3c_${AM_AVR32UC3C_VERSION}_LDADD = libavr32uc3c-${AVR32UC3C_VERSION}.a" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "unisim_avr32uc3c_debug_${AM_AVR32UC3C_VERSION}_SOURCES = main_debug.cc ${UNISIM_SIMULATORS_AVR32UC3C_SOURCE_FILES}" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "unisim_avr32uc3c_debug_${AM_AVR32UC3C_VERSION}_LDADD = libavr32uc3c-${AVR32UC3C_VERSION}.a" >> "${AVR32UC3C_MAKEFILE_AM}"
+	AM_AT32UC3C_VERSION=$(printf ${AT32UC3C_VERSION} | sed -e 's/\./_/g')
+	echo "Generating at32uc3c Makefile.am"
+	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${AT32UC3C_MAKEFILE_AM}"
+	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "noinst_LIBRARIES = libat32uc3c-${AT32UC3C_VERSION}.a" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "libat32uc3c_${AM_AT32UC3C_VERSION}_a_SOURCES = ${UNISIM_LIB_AT32UC3C_SOURCE_FILES}" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "bin_PROGRAMS = unisim-at32uc3c-${AT32UC3C_VERSION} unisim-at32uc3c-debug-${AT32UC3C_VERSION}" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "unisim_at32uc3c_${AM_AT32UC3C_VERSION}_SOURCES = main.cc ${UNISIM_SIMULATORS_AT32UC3C_SOURCE_FILES}" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "unisim_at32uc3c_${AM_AT32UC3C_VERSION}_LDADD = libat32uc3c-${AT32UC3C_VERSION}.a" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "unisim_at32uc3c_debug_${AM_AT32UC3C_VERSION}_SOURCES = main_debug.cc ${UNISIM_SIMULATORS_AT32UC3C_SOURCE_FILES}" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "unisim_at32uc3c_debug_${AM_AT32UC3C_VERSION}_LDADD = libat32uc3c-${AT32UC3C_VERSION}.a" >> "${AT32UC3C_MAKEFILE_AM}"
 
-	echo "noinst_HEADERS = ${UNISIM_LIB_AVR32UC3C_HEADER_FILES} ${UNISIM_LIB_AVR32UC3C_TEMPLATE_FILES} ${UNISIM_SIMULATORS_AVR32UC3C_HEADER_FILES} ${UNISIM_SIMULATORS_AVR32UC3C_TEMPLATE_FILES}" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_LIB_AVR32UC3C_M4_FILES}" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/unisim-avr32uc3c-${AVR32UC3C_VERSION}" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "dist_share_DATA = ${UNISIM_LIB_AVR32UC3C_DATA_FILES} ${UNISIM_SIMULATORS_AVR32UC3C_DATA_FILES}" >> "${AVR32UC3C_MAKEFILE_AM}"
+	echo "noinst_HEADERS = ${UNISIM_LIB_AT32UC3C_HEADER_FILES} ${UNISIM_LIB_AT32UC3C_TEMPLATE_FILES} ${UNISIM_SIMULATORS_AT32UC3C_HEADER_FILES} ${UNISIM_SIMULATORS_AT32UC3C_TEMPLATE_FILES}" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_LIB_AT32UC3C_M4_FILES}" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "sharedir = \$(prefix)/share/unisim-at32uc3c-${AT32UC3C_VERSION}" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "dist_share_DATA = ${UNISIM_LIB_AT32UC3C_DATA_FILES} ${UNISIM_SIMULATORS_AT32UC3C_DATA_FILES}" >> "${AT32UC3C_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.tcc" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.tcc" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "\$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.tcc: \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "\$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh: ${UNISIM_LIB_AVR32UC3C_ISA_FILES}" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\t" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.isa" >> "${AVR32UC3C_MAKEFILE_AM}"
+	echo "BUILT_SOURCES=\$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.tcc" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "CLEANFILES=\$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.tcc" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.tcc: \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh: ${UNISIM_LIB_AT32UC3C_ISA_FILES}" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\t" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.isa" >> "${AT32UC3C_MAKEFILE_AM}"
 
-	echo "all-local: all-local-bin all-local-share" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "clean-local: clean-local-bin clean-local-share" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "clean-local-bin:" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "all-local-share: \$(dist_share_DATA)" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/unisim-avr32uc3c-${AVR32UC3C_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/unisim-avr32uc3c-${AVR32UC3C_VERSION}'; \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-avr32uc3c-${AVR32UC3C_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	echo "clean-local-share:" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${AVR32UC3C_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${AVR32UC3C_MAKEFILE_AM}"
+	echo "all-local: all-local-bin all-local-share" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "clean-local: clean-local-bin clean-local-share" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\tdone\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "clean-local-bin:" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\tfi\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "all-local-share: \$(dist_share_DATA)" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/share/unisim-at32uc3c-${AT32UC3C_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/share/unisim-at32uc3c-${AT32UC3C_VERSION}'; \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-at32uc3c-${AT32UC3C_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\tdone\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	echo "clean-local-share:" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${AT32UC3C_MAKEFILE_AM}"
+	printf "\tfi\n" >> "${AT32UC3C_MAKEFILE_AM}"
 
-	echo "Building avr32uc3c configure"
-	${SHELL} -c "cd ${DEST_DIR}/avr32uc3c && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
+	echo "Building at32uc3c configure"
+	${SHELL} -c "cd ${DEST_DIR}/at32uc3c && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

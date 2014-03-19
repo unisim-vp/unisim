@@ -33,8 +33,8 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __AVR32UC3C_SIMULATOR_TCC__
-#define __AVR32UC3C_SIMULATOR_TCC__
+#ifndef __AT32UC3C_SIMULATOR_TCC__
+#define __AT32UC3C_SIMULATOR_TCC__
 
 template <class CONFIG>
 Simulator<CONFIG>::Simulator(int argc, char **argv)
@@ -205,13 +205,13 @@ template <class CONFIG>
 void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
 	// meta information
-	simulator->SetVariable("program-name", "UNISIM AVR32UC3C");
+	simulator->SetVariable("program-name", "UNISIM AT32UC3C");
 	simulator->SetVariable("copyright", "Copyright (C) 2014, Commissariat a l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Julien Lisita <julien.lisita@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>");
 	simulator->SetVariable("version", VERSION);
-	simulator->SetVariable("description", "UNISIM AVR32UC3C, AVR32UC simulator");
-	simulator->SetVariable("schematic", "avr32uc3c/fig_schematic.pdf");
+	simulator->SetVariable("description", "UNISIM AT32UC3C, AVR32UC simulator");
+	simulator->SetVariable("schematic", "at32uc3c/fig_schematic.pdf");
 
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_avr32.xml";
@@ -355,7 +355,7 @@ void Simulator<CONFIG>::Stop(Object *object, int _exit_status, bool asynchronous
 	{
 		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
 	}
-#ifdef DEBUG_AVR32UC3C
+#ifdef DEBUG_AT32UC3C
 	std::cerr << "Call stack:" << std::endl;
 	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
 #endif
@@ -421,4 +421,4 @@ void Simulator<CONFIG>::SigIntHandler(int signum)
 }
 #endif
 
-#endif // __AVR32UC3C_SIMULATOR_TCC__
+#endif // __AT32UC3C_SIMULATOR_TCC__
