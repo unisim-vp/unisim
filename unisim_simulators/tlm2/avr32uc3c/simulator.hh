@@ -118,6 +118,8 @@ private:
 	typedef unisim::component::tlm2::memory::ram::Memory<CONFIG::CPU_CONFIG::HSB_WIDTH * 8, HSB_ADDRESS_TYPE, CONFIG::CPU_CONFIG::HSB_BURST_SIZE / CONFIG::CPU_CONFIG::HSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, CONFIG::DEBUG_INFORMATION> RAM;
 	typedef unisim::component::tlm2::processor::avr32::avr32uc::CPU<typename CONFIG::CPU_CONFIG> CPU;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<typename CONFIG::MEMORY_ROUTER_CONFIG> MEMORY_ROUTER;
+	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> NMIREQ_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> IRQ_STUB;
 	
 	//=========================================================================
 	//===                           Components                              ===
@@ -128,6 +130,10 @@ private:
 	RAM *ram;
 	//  - Memory Router
 	MEMORY_ROUTER *memory_router;
+	//  - NMIREQ Stub
+	NMIREQ_STUB *nmireq_stub;
+	//  - IRQ Stub
+	IRQ_STUB *irq_stub[CONFIG::CPU_CONFIG::NUM_IRQS];
 	
 	//=========================================================================
 	//===                            Services                               ===

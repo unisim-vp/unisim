@@ -55,6 +55,14 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, exit_status(0)
 {
+	// Optionally get the program to load from the command line arguments
+	VariableBase *cmd_args = FindVariable("cmd-args");
+	unsigned int cmd_args_length = cmd_args->GetLength();
+	if(cmd_args_length > 0)
+	{
+		SetVariable("loader.filename", ((string)(*cmd_args)[0]).c_str());
+	}
+
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -64,6 +72,16 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	ram = new RAM("ram");
 	//  - Memory Router
 	memory_router = new MEMORY_ROUTER("memory-router");
+	//  - NMIREQ Stub
+	nmireq_stub = new NMIREQ_STUB("nmireq-stub");
+	//  - IRQ Stubs
+	unsigned int irq;
+	for(irq = 0; irq < CONFIG::CPU_CONFIG::NUM_IRQS; irq++)
+	{
+		std::stringstream sstr_irq_stub_name;
+		sstr_irq_stub_name << "irq-stub" << irq;
+		irq_stub[irq] = new IRQ_STUB(sstr_irq_stub_name.str().c_str());
+	}
 	
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -71,7 +89,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	//  - Multiformat loader
 	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
 	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
+	debugger = new Debugger<CPU_ADDRESS_TYPE>("debugger");
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -89,9 +107,14 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	cpu->dhsb_master_sock(*memory_router->targ_socket[0]); // CPU>DHSB <-> Memory Router
-	cpu->ihsb_master_sock(*memory_router->targ_socket[1]); // CPU>IHSB <-> Memory Router
-	(*memory_router->init_socket[0])(ram->slave_sock); // Memory Router <-> RAM
+	cpu->dhsb_master_sock(*memory_router->targ_socket[0]); // CPU>DHSB      <-> Memory Router
+	cpu->ihsb_master_sock(*memory_router->targ_socket[1]); // CPU>IHSB      <-> Memory Router
+	(*memory_router->init_socket[0])(ram->slave_sock);     // Memory Router <-> RAM
+	nmireq_stub->master_sock(cpu->nmireq_slave_sock);      // NMIREQ Stub   <-> CPU>NMIREQ
+	for(irq = 0; irq < CONFIG::CPU_CONFIG::NUM_IRQS; irq++)
+	{
+		irq_stub[irq]->master_sock(*cpu->irq_slave_sock[irq]);  // IRQ Stub <-> CPU>IRQ
+	}
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -152,6 +175,8 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 		gdb_server->memory_import >> debugger->memory_export;
 		gdb_server->registers_import >> debugger->registers_export;
 	}
+	
+	*loader->memory_import[0] >> ram->memory_export;
 }
 
 template <class CONFIG>
@@ -168,6 +193,12 @@ Simulator<CONFIG>::~Simulator()
 	if(host_time) delete host_time;
 	if(loader) delete loader;
 	if(tee_memory_access_reporting) delete tee_memory_access_reporting;
+	if(nmireq_stub) delete nmireq_stub;
+	unsigned int irq;
+	for(irq = 0; irq < CONFIG::CPU_CONFIG::NUM_IRQS; irq++)
+	{
+		if(irq_stub[irq]) delete irq_stub[irq];
+	}
 }
 
 template <class CONFIG>
@@ -304,14 +335,6 @@ unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 		SetVariable("debugger.parse-dwarf", true);
 	}
 	
-	// Optionally get the program to load from the command line arguments
-	VariableBase *cmd_args = FindVariable("cmd-args");
-	unsigned int cmd_args_length = cmd_args->GetLength();
-	if(cmd_args_length > 0)
-	{
-		SetVariable("loader.filename", ((string)(*cmd_args)[0]).c_str());
-	}
-
 	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
 	
 	// inline-debugger and gdb-server are exclusive
