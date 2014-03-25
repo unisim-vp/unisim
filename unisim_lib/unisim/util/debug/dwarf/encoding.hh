@@ -549,6 +549,7 @@ const uint8_t DW_CFA_def_cfa_offset_sf = 0x13;  // DWARF v3
 const uint8_t DW_CFA_val_offset = 0x14;         // DWARF v3
 const uint8_t DW_CFA_val_offset_sf = 0x15;      // DWARF v3
 const uint8_t DW_CFA_val_expression = 0x16;     // DWARF v3
+const uint8_t DW_CFA_GNU_args_size = 0x2e;      // DWARF extension from Linux Standard Base Core Specification
 const uint8_t DW_CFA_lo_user = 0x1c;
 const uint8_t DW_CFA_hi_user = 0x3f;
 
