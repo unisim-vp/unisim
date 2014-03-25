@@ -249,7 +249,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("ram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("ram.write-latency", SC_ZERO_TIME.to_string().c_str());
 	simulator->SetVariable("ram.org", CONFIG::RAM_BASE_ADDR);
-	simulator->SetVariable("ram.bytesize", CONFIG::RAM_BYTE_SIZE);
+	simulator->SetVariable("ram.bytesize", (1ULL << 32) /*CONFIG::RAM_BYTE_SIZE*/);
 	
 	//=========================================================================
 	//===                      Service run-time configuration               ===
