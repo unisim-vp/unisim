@@ -904,14 +904,19 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case ELFOSABI_SYSV:os << "UNIX System V ABI"; break;
 		case ELFOSABI_HPUX:os << "HP-UX"; break;
 		case ELFOSABI_NETBSD:os << "NetBSD"; break;
-		case ELFOSABI_LINUX:os << "Linux"; break;
+		case ELFOSABI_LINUX:os << "GNU/Linux"; break;
+		case ELFOSABI_HURD:os << "GNU/Hurd"; break;
+		case ELFOSABI_86OPEN:os << "86Open common IA32 ABI"; break;
 		case ELFOSABI_SOLARIS:os << "Sun Solaris"; break;
-		case ELFOSABI_MONTEREY:os << "Monterey"; break;
+		case ELFOSABI_MONTEREY:os << "AIX/Monterey"; break;
 		case ELFOSABI_IRIX:os << "SGI Irix"; break;
 		case ELFOSABI_FREEBSD:os << "FreeBSD"; break;
 		case ELFOSABI_TRU64:os << "Compaq TRU64 UNIX"; break;
 		case ELFOSABI_MODESTO:os << "Novell Modesto"; break;
 		case ELFOSABI_OPENBSD:os << "OpenBSD"; break;
+		case ELFOSABI_OPENVMS:os << "Open VMS"; break;
+		case ELFOSABI_NSK:os << "HP Non-Stop Kernel"; break;
+		case ELFOSABI_AROS:os << "Amiga Research OS"; break;
 		case ELFOSABI_ARM:os << "ARM"; break;
 		case ELFOSABI_STANDALONE:os << "Standalone (embedded) application"; break;
 		default : os << "Unknown (" << hdr->e_ident[EI_OSABI] << ")"; break;
@@ -919,24 +924,23 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 
 	os << endl << "Object File Type : ";
 
-	if(hdr->e_type == ET_NONE) os << "No file type"; else
-	if(hdr->e_type == ET_REL) os << "Relocatable file"; else
-	if(hdr->e_type == ET_EXEC) os << "Executable file"; else
-	if(hdr->e_type == ET_DYN) os << "Shared object file"; else
+	if(hdr->e_type == ET_NONE) os << "Unknown type"; else
+	if(hdr->e_type == ET_REL) os << "Relocatable"; else
+	if(hdr->e_type == ET_EXEC) os << "Executable"; else
+	if(hdr->e_type == ET_DYN) os << "Shared object"; else
 	if(hdr->e_type == ET_CORE) os << "Core file"; else
-	if(hdr->e_type == ET_NUM) os << "Number of defined types"; else
 	if(hdr->e_type >= ET_LOOS && hdr->e_type <= ET_HIOS) os << "OS-specific"; else
-	//if(hdr->e_type >= ET_LOPROC && hdr->e_type <= ET_HIPROC) os << "Processor-specific"; else os << "Unknown (" << hdr->e_type << ")";
 	if(hdr->e_type >= ET_LOPROC) os << "Processor-specific"; else os << "Unknown (" << hdr->e_type << ")";
 
 	os << endl << "Target machine : ";
 
 	switch(hdr->e_machine)
 	{
-		case EM_NONE: os << "No machine"; break;
+		case EM_NONE: os << "Unknown machine"; break;
 		case EM_M32: os << "AT&T WE 32100"; break;
 		case EM_SPARC: os << "SUN SPARC"; break;
 		case EM_386: os << "Intel 80386"; break;
+		case EM_486: os << "Intel i486"; break;
 		case EM_68K: os << "Motorola m68k family"; break;
 		case EM_88K: os << "Motorola m88k family"; break;
 		case EM_860: os << "Intel 80860"; break;
@@ -957,7 +961,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case EM_RH32: os << "TRW RH-32"; break;
 		case EM_RCE: os << "Motorola RCE"; break;
 		case EM_ARM: os << "ARM"; break;
-		case EM_FAKE_ALPHA: os << "Digital Alpha"; break;
+		case EM_ALPHA_STD: os << "Digital Alpha"; break;
 		case EM_SH: os << "Hitachi SH"; break;
 		case EM_SPARCV9: os << "SPARC v9 64-bit"; break;
 		case EM_TRICORE: os << "Siemens Tricore"; break;
@@ -1010,6 +1014,22 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case EM_OPENRISC: os << "OpenRISC 32-bit embedded processor"; break;
 		case EM_ARC_A5: os << "ARC Cores Tangent-A5"; break;
 		case EM_XTENSA: os << "Tensilica Xtensa Architecture"; break;
+		case EM_VIDEOCORE: os << "Alphamosaic VideoCore processor"; break;
+		case EM_TMM_GPP: os << "Thompson Multimedia General Purpose Processor"; break;
+		case EM_NS32K: os << "National Semiconductor 320000 series"; break;
+		case EM_TPC: os << "Tenor Network TPC processor"; break;
+		case EM_SNP1K: os << "Trebia SNP 1000 processor"; break;
+		case EM_IP2K: os << "STMicroelectronics ST200 microcontroller"; break;
+		case EM_MAX: os << "MAX Processor"; break;
+		case EM_CR: os << "National Semiconductor CompactRISC microprocessor"; break;
+		case EM_F2MC16: os << "Fujitsu F2MC16"; break;
+		case EM_MSP430: os << "Texas Instruments embedded microcontroller msp430"; break;
+		case EM_BLACKFIN: os << "Analog Devices Blackfin (DSP) processor"; break;
+		case EM_SE_C33: os << "S1C33 Family of Seiko Epson processors"; break;
+		case EM_SEP: os << "Sharp embedded microprocessor"; break;
+		case EM_ARCA: os << "Arca RISC Microprocessor"; break;
+		case EM_UNICORE: os << "Microprocessor series from PKU-Unity Ltd. and MPRC of Peking University"; break;
+		case EM_AVR32: os << "Atmel Corporation 32-bit microprocessor family"; break;
 		case EM_ALPHA: os << "Alpha"; break;
 		default: os << "Unknown (" << hdr->e_machine << ")"; break;
 	}
@@ -1039,7 +1059,6 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case PT_SHLIB: os << "Reserved (SHLIB)"; break;
 		case PT_PHDR: os << "Entry for header table itself"; break;
 		case PT_TLS: os << "Thread-local storage segment"; break;
-		case PT_NUM: os << "Number of defined types"; break;
 		case PT_GNU_EH_FRAME: os << "GCC .eh_frame_hdr segment"; break;
 		case PT_GNU_STACK: os << "Stack executability"; break;
 		case PT_SUNWBSS: os << "Sun Specific segment"; break;
@@ -1092,9 +1111,6 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case SHT_PREINIT_ARRAY: os << "Array of pre-constructors"; break;
 		case SHT_GROUP: os << "Section group"; break;
 		case SHT_SYMTAB_SHNDX: os << "Extended section indeces"; break;
-		case SHT_NUM: os << "Number of defined types"; break;
-		case SHT_GNU_LIBLIST: os << "Prelink library list"; break;
-		case SHT_CHECKSUM:os << "Checksum for DSO content"; break;
 		case SHT_SUNW_move:os << "SUNW move"; break;
 		case SHT_SUNW_COMDAT:os << "SUNW COMDAT"; break;
 		case SHT_SUNW_syminfo:os << "SUNW syminfo"; break;
@@ -1391,6 +1407,7 @@ const char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 		case EM_M32: return "m32";
 		case EM_SPARC: return "sparc";
 		case EM_386: return "i386";
+		case EM_486: return "i486";
 		case EM_68K: return "68k";
 		case EM_88K: return "88k";
 		case EM_860: return "860";
@@ -1411,7 +1428,7 @@ const char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 		case EM_RH32: return "rh32";
 		case EM_RCE: return "rce";
 		case EM_ARM: return "arm";
-		case EM_FAKE_ALPHA: return "fake_alpha";
+		case EM_ALPHA_STD: return "alpha";
 		case EM_SH: return "sh";
 		case EM_SPARCV9: return "sparcv9";
 		case EM_TRICORE: return "tricore";
@@ -1464,6 +1481,22 @@ const char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 		case EM_OPENRISC: return "openrisc";
 		case EM_ARC_A5: return "arc_a5";
 		case EM_XTENSA: return "xtensa";
+		case EM_VIDEOCORE: return "videocore";
+		case EM_TMM_GPP: return "tmm_gpp";
+		case EM_NS32K: return "ns32k";
+		case EM_TPC: return "tpc";
+		case EM_SNP1K: return "snp1k";
+		case EM_ST200: return "st200";
+		case EM_IP2K: return "ip2k";
+		case EM_MAX: return "max";
+		case EM_CR: return "cr";
+		case EM_F2MC16: return "f2mc16";
+		case EM_MSP430: return "msp430";
+		case EM_BLACKFIN: return "blackfin";
+		case EM_SE_C33: return "se_c33";
+		case EM_SEP: return "sep";
+		case EM_ARCA: return "arca";
+		case EM_UNICORE: return "unicore";
 		case EM_ALPHA: return "alpha";
 	}
 	return "";
@@ -1478,6 +1511,7 @@ uint8_t ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 		case EM_M32: return sizeof(uint32_t);
 		case EM_SPARC: return sizeof(uint32_t);
 		case EM_386: return sizeof(uint32_t);
+		case EM_486: return sizeof(uint32_t);
 		case EM_68K: return sizeof(uint32_t);
 		case EM_88K: return sizeof(uint32_t);
 		case EM_860: return sizeof(uint32_t);
@@ -1498,7 +1532,7 @@ uint8_t ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 		case EM_RH32: return sizeof(uint32_t);
 		case EM_RCE: return sizeof(uint32_t);
 		case EM_ARM: return sizeof(uint32_t);
-		case EM_FAKE_ALPHA: return sizeof(uint64_t);
+		case EM_ALPHA_STD: return sizeof(uint64_t);
 		case EM_SH: return sizeof(uint32_t);
 		case EM_SPARCV9: return sizeof(uint64_t);
 		case EM_TRICORE: return sizeof(uint32_t);
@@ -1551,6 +1585,22 @@ uint8_t ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 		case EM_OPENRISC: return sizeof(uint32_t);
 		case EM_ARC_A5: return sizeof(uint32_t);
 		case EM_XTENSA: return sizeof(uint32_t);
+		case EM_VIDEOCORE: return sizeof(uint32_t);
+		case EM_TMM_GPP: return sizeof(uint32_t);
+		case EM_NS32K: return sizeof(uint32_t);
+		case EM_TPC: return sizeof(uint32_t);
+		case EM_SNP1K: return sizeof(uint32_t);
+		case EM_IP2K: return sizeof(uint32_t);
+		case EM_MAX: return sizeof(uint32_t);
+		case EM_CR: return sizeof(uint32_t);
+		case EM_F2MC16: return sizeof(uint32_t);
+		case EM_MSP430: return sizeof(uint32_t);
+		case EM_BLACKFIN: return sizeof(uint32_t);
+		case EM_SE_C33: return sizeof(uint32_t);
+		case EM_SEP: return sizeof(uint32_t);
+		case EM_ARCA: return sizeof(uint32_t);
+		case EM_UNICORE: return sizeof(uint32_t);
+		case EM_AVR32: return sizeof(uint32_t);
 		case EM_ALPHA: return sizeof(uint64_t);
 	}
 	return sizeof(uint32_t);

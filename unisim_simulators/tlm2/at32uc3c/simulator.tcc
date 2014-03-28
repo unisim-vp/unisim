@@ -42,6 +42,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	, cpu(0)
 	, ram(0)
 	, loader(0)
+	, avr32_t2h_syscalls(0)
 	, debugger(0)
 	, gdb_server(0)
 	, inline_debugger(0)
@@ -49,18 +50,30 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	, sim_time(0)
 	, host_time(0)
 	, tee_memory_access_reporting(0)
+	, enable_avr32_t2h_syscalls(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
+	, param_enable_avr32_t2h_syscalls("enable-avr32-t2h-syscalls", 0, enable_avr32_t2h_syscalls, "Enable/Disable AVR32 Target to Host system calls")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, exit_status(0)
 {
-	// Optionally get the program to load from the command line arguments
+	// Optionally get the program to load and its arguments from the command line arguments
 	VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
 	if(cmd_args_length > 0)
 	{
 		SetVariable("loader.filename", ((string)(*cmd_args)[0]).c_str());
+		
+		SetVariable("avr32-t2h-syscalls.argc", cmd_args_length);
+		
+		unsigned int i;
+		for(i = 0; i < cmd_args_length; i++)
+		{
+			std::stringstream sstr;
+			sstr << "avr32-t2h-syscalls.argv[" << i << "]";
+			SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
+		}
 	}
 
 	//=========================================================================
@@ -88,6 +101,8 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	//=========================================================================
 	//  - Multiformat loader
 	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
+	//  - AVR32 Target to Host system calls
+	avr32_t2h_syscalls = enable_avr32_t2h_syscalls ? new AVR32_T2H_Syscalls<CPU_ADDRESS_TYPE>("avr32-t2h-syscalls") : 0;
 	//  - debugger
 	debugger = new Debugger<CPU_ADDRESS_TYPE>("debugger");
 	//  - GDB server
@@ -131,6 +146,13 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	debugger->memory_import >> cpu->memory_export;
 	debugger->registers_import >> cpu->registers_export;
 	debugger->blob_import >> loader->blob_export;
+	
+	if(enable_avr32_t2h_syscalls)
+	{
+		avr32_t2h_syscalls->registers_import >> cpu->registers_export;
+		avr32_t2h_syscalls->memory_injection_import >> cpu->memory_injection_export;
+		cpu->avr32_t2h_syscalls_import >> avr32_t2h_syscalls->avr32_t2h_syscalls_export;
+	}
 	
 	if(enable_inline_debugger)
 	{
@@ -192,6 +214,7 @@ Simulator<CONFIG>::~Simulator()
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
 	if(loader) delete loader;
+	if(avr32_t2h_syscalls) delete avr32_t2h_syscalls;
 	if(tee_memory_access_reporting) delete tee_memory_access_reporting;
 	if(nmireq_stub) delete nmireq_stub;
 	unsigned int irq;

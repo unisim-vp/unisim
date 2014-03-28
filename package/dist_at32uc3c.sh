@@ -165,6 +165,7 @@ unisim/service/loader/s19_loader/s19_loader.cc \
 unisim/service/loader/coff_loader/coff_loader32.cc \
 unisim/service/loader/multiformat_loader/multiformat_loader.cc \
 unisim/service/loader/multiformat_loader/multiformat_loader32.cc \
+unisim/service/os/avr32_t2h_syscalls/avr32_t2h_syscalls_32.cc \
 unisim/service/tee/loader/tee.cc \
 unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/blob/tee_32.cc \
@@ -284,6 +285,7 @@ unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/data_object_lookup.hh \
+unisim/service/interfaces/avr32_t2h_syscalls.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -295,6 +297,7 @@ unisim/service/loader/raw_loader/raw_loader.hh \
 unisim/service/loader/s19_loader/s19_loader.hh \
 unisim/service/loader/coff_loader/coff_loader.hh \
 unisim/service/loader/multiformat_loader/multiformat_loader.hh \
+unisim/service/os/avr32_t2h_syscalls/avr32_t2h_syscalls.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/service/tee/loader/tee.hh \
@@ -364,6 +367,7 @@ unisim/service/loader/raw_loader/raw_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
 unisim/service/loader/coff_loader/coff_loader.tcc \
 unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
+unisim/service/os/avr32_t2h_syscalls/avr32_t2h_syscalls.tcc \
 unisim/service/translator/memory_address/memory/translator.tcc \
 unisim/service/tee/loader/tee.tcc \
 unisim/service/tee/symbol_table_lookup/tee.tcc \

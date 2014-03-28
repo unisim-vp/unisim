@@ -54,6 +54,7 @@
 #include <unisim/service/interfaces/synchronizable.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/avr32_t2h_syscalls.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <map>
@@ -76,6 +77,7 @@ using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
+using unisim::service::interfaces::AVR32_T2H_Syscalls;
 using namespace unisim::util::endian;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
@@ -114,7 +116,8 @@ class CPU :
 	public Service<Memory<typename CONFIG::address_t> >,
 	public Service<MemoryInjection<typename CONFIG::address_t> >,
 	public Client<Memory<typename CONFIG::physical_address_t> >,
-	public Service<Synchronizable>
+	public Service<Synchronizable>,
+	public Client<AVR32_T2H_Syscalls>
 {
 public:
 	//=====================================================================
@@ -134,7 +137,8 @@ public:
 	ServiceImport<SymbolTableLookup<typename CONFIG::address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<typename CONFIG::physical_address_t> > memory_import;
 	ServiceImport<TrapReporting> trap_reporting_import;
-
+	ServiceImport<AVR32_T2H_Syscalls> avr32_t2h_syscalls_import;
+	
 	//=====================================================================
 	//=                    Constructor/Destructor                         =
 	//=====================================================================

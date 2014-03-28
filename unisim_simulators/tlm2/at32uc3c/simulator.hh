@@ -56,6 +56,7 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
+#include <unisim/service/os/avr32_t2h_syscalls/avr32_t2h_syscalls.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/tee/memory_access_reporting/tee.hh>
@@ -79,6 +80,7 @@
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::service::loader::multiformat_loader::MultiFormatLoader;
+using unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls;
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
@@ -140,7 +142,9 @@ private:
 	//=========================================================================
 	//  - Multiformat loader
 	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
-	//  - Linux loader and Linux ABI translator
+	//  - AVR32 Target to Host syscalls
+	AVR32_T2H_Syscalls<CPU_ADDRESS_TYPE> *avr32_t2h_syscalls;
+	//  - Debugger
 	Debugger<CPU_ADDRESS_TYPE> *debugger;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
@@ -155,8 +159,10 @@ private:
 	//  - Tee Memory Access Reporting
 	unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> *tee_memory_access_reporting;
 
+	bool enable_avr32_t2h_syscalls;
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
+	Parameter<bool> param_enable_avr32_t2h_syscalls;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
 
