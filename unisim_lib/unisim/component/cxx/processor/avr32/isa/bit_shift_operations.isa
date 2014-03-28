@@ -1,0 +1,241 @@
+
+//----------------------------------------------------------------------
+
+//                  BIT INSTRUCTIONS
+
+//----------------------------------------------------------------------
+
+//BFEXTS - bitfield extract and sign-extend
+
+op bfexts(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1011[4]:0b00[2]:bp5[5]:w5[5])
+
+bfexts.disasm={
+	os << "bfexts " << rd << "," << rs << "," << bp5 << "," << w5 << endl;
+}
+
+//BFEXTU - bitfield extract and zero-extend
+
+op bfextu(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1100[4]:0b00[2]:bp5[5]:w5[5])
+
+bfextu.disasm={
+	os << "bfextu " << rd << "," << rs << "," << bp5 << "," << w5 << endl;
+}
+
+//BFINS - bitfield insert
+
+op bfins(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1101[4]:0b00[2]:bp5[5]:w5[5])
+
+bfins.disasm={
+	os << "bfins " << rd << "," << rs << "," << bp5 << "," << w5 << endl;
+}
+
+
+//BLD - bit load from register to c and z
+
+op bld(0b111[3]:0b0110[4]:0b11011[5]:rd[4]:><:0b00000000000[11]:bp5[5])
+
+bld.disasm={
+	os << "bld " << rd << "," << bp5 << endl; 
+}
+
+//BREV - bit reverse
+
+op brev(0b010[3]:0b1110[4]:0b01001[5]:rd[4])
+
+brev.disasm={
+	os << "brev " << rd << endl;
+}
+
+//BST - copy c to register
+
+op bst(0b111[3]:0b0111[4]:0b11011[5]:rd[4]:><:0b00000000000[11]:bp5[5])
+
+bst.disasm={
+	os << "bst " << rd << "," << bp5 << endl;
+}
+
+//CASTS - type cast to signed word
+
+op casts_h(0b010[3]:0b1110[4]:0b01000[5]:rd[4])
+
+casts_h.disasm={
+	os << "casts_h " << rd << endl;
+}
+
+op casts_b(0b010[3]:0b1110[4]:0b00110[5]:rd[4])
+
+casts_b.disasm={
+	os << "casts_b " << rd << endl;
+}
+
+//CASTU - type cast to unsigned word
+
+op castu_h(0b010[3]:0b1110[4]:0b00111[5]:rd[4])
+
+castu_h.disasm={
+	os << "castu_h " << rd << endl;
+}
+
+op castu_b(0b010[3]:0b1110[4]:0b00101[5]:rd[4])
+
+castu_b.disasm={
+	os << "castu_b " << rd << endl;
+}
+
+// CBR - clear bit in register
+
+op cbr(0b101[3]:bp_4_1[4]:0b1110[4]:bp_0[1]:rd[4])
+
+cbr.var bp : {uint8_t} = {(bp_4_1 << 1)| bp_0 }
+
+cbr.disasm={
+	os << "cbr " << rd << "," << bp << endl;
+}
+
+//CLZ - count leading zeros
+
+op clz(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0010[4]:0b00000000[8])
+
+clz.disasm={
+	os << "clz " << rd << "," << rs << endl;
+}
+
+//SBR - set bit in register
+
+op sbr(0b101[3]:bp_4_1[4]:0b1101[4]:bp_0[1]:rd[4])
+
+sbr.var bp : {uint8_t} = {(bp_4_1 << 1)| bp_0 } 
+
+sbr.disasm={
+	os << "sbr " << rd << "," << bp << endl;
+}
+
+
+//SWAP_B -  swap bytes
+
+op swap_b(0b010[3]:0b1110[4]:0b01011[5]:rd[4])
+
+swap_b.disasm={
+
+	os << "swap_b " << rd << endl;
+}
+
+// SWAP_BH - swap bytes in halfword
+
+op swap_bh(0b010[3]:0b1110[4]:0b01100[5]:rd[4])
+
+swap_bh.disasm={
+
+	os << "swap_bh " << rd << endl;
+}
+
+
+//SWAP_H - swap halfwords
+
+op swap_h(0b010[3]:0b1110[4]:0b01010[5]:rd[4])
+
+swap_h.disasm={
+
+	os << "swap_h " << rd << endl;
+}
+
+
+//---------------------------------------------------------------------------
+
+//                SHIFT INSTRUCTIONS
+
+//---------------------------------------------------------------------------
+
+
+//ASR - arithmetic shift right
+
+op asr_a(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b10000100[8]:rd[4])
+
+asr_a.disasm={
+	os << "asr_a " << rd << "," << rx << "," << ry << endl;
+}
+
+op asr_b(0b101[3]:sa_4_1[4]:0b1010[4]:sa_0[1]:rd[4])
+
+asr_b.var sa : {uint8_t} = {(sa_4_1 << 1)| sa_0 }
+
+asr_b.disasm={
+	os << "asr_b " << rd << "," << sa << endl;
+}
+
+
+op asr_c(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0100[4]:0b000[3]:sa5[5])
+
+asr_c.disasm={
+	os << "asr_c " << rd << "," << rs << "," << sa5 << endl;
+}
+
+
+//LSL - logical shift left
+
+op lsl_a(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b10010100[8]:rd[4])
+
+lsl_a.disasm={
+	os << "lsl_a " << rd << "," << rx << "," << ry << endl;
+}
+
+op lsl_b(0b101[3]:sa_4_1[4]:0b1011[4]:sa_0[1]:rd[4])
+
+lsl_b.var sa : {uint8_t} = {(sa_4_1 << 1)| sa_0 }
+
+lsl_b.disasm={
+	os << "lsl_b " << rd << "," << sa << endl;
+}
+
+
+op lsl_c(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0101[4]:0b000[3]:sa5[5])
+
+lsl_c.disasm={
+	os << "lsl_c " << rd << "," << rs << "," << sa5 << endl;
+}
+
+//LSR - logical shift right
+
+op lsr_a(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b10100100[8]:rd[4])
+
+lsr_a.disasm={
+	os << "lsr_a " << rd << "," << rx << "," << ry << endl;
+}
+
+
+op lsr_b(0b101[3]:sa_4_1[4]:0b1100[4]:sa_0[1]:rd[4])
+
+lsr_b.var sa : {uint8_t} = {(sa_4_1 << 1)| sa_0 }
+
+lsr_b.disasm={
+	os << "lsr_b " << rd << "," << sa << endl;
+}
+
+
+
+op lsr_c(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0110[4]:0b000[3]:sa5[5])
+
+lsr_c.disasm={
+	os << "lsr_c " << rd << "," << rs << "," << sa5 << endl;
+}
+
+//ROL - rotate left through carry
+
+op rol(0b010[3]:0b1110[4]:0b01111[5]:rd[4])
+
+rol.disasm={
+
+	os << "rol " << rd << endl;
+}
+
+//ROR - rotate right through carry
+
+op ror(0b010[3]:0b1110[4]:0b10000[5]:rd[4])
+
+ror.disasm={
+
+	os << "ror " << rd << endl;
+}
+
+
+

@@ -1,0 +1,167 @@
+//AND - logical and into hight or low half to register
+
+op andh(0b111[3]:0b00[2]:0b1[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
+
+andh.disasm={
+	os << "andh " << rd << "," << imm16 << "," << coh << endl;
+}
+
+op andl(0b111[3]:0b00[2]:0b0[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
+
+andl.disasm={
+	os << "andl " << rd << "," << imm16 << "," << coh << endl;
+}
+
+
+// COM - one's compliment
+
+op com(0b010[3]:0b1110[4]:0b01101[5]:rd[4])
+
+com.disasm={
+
+	os << "com " << rd << endl;
+}
+
+//EOR - logical exclusive or with optional logical shift
+
+op eor_a(0b000[3]:rs[4]:0b00101[5]:rd[4])
+
+eor_a.disasm={
+	os << "eor_a " << rd << "," << rs << endl;
+}
+
+op eor_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0010000[7]:sa5[5]:rd[4])
+
+eor_b.disasm={
+	os << "eor_b " << rd << "," << rx << "," << ry << " << " << sa5 <<endl;
+}
+
+
+op eor_c(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0010001[7]:sa5[5]:rd[4])
+
+eor_c.disasm={
+
+	os << "eor_c " << rd << "," << rx << "," << ry << " >> " << sa5 <<endl;
+}
+
+
+//EOR_COND4 -  conditional logical EOR
+
+op eor_cond4(0b111[3]:rx[4]:0b11101[5]//AND - logical and into hight or low half to register
+
+op andh(0b111[3]:0b00[2]:0b1[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
+
+andh.disasm={
+	os << "andh " << rd << "," << imm16 << "," << coh << endl;
+}
+
+op andl(0b111[3]:0b00[2]:0b0[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
+
+andl.disasm={
+	os << "andl " << rd << "," << imm16 << "," << coh << endl;
+}
+
+
+// COM - one's compliment
+
+op com(0b010[3]:0b1110[4]:0b01101[5]:rd[4])
+
+com.disasm={
+
+	os << "com " << rd << endl;
+}
+
+//EOR - logical exclusive or with optional logical shift
+
+op eor_a(0b000[3]:rs[4]:0b00101[5]:rd[4])
+:ry[4]:><:0b1110[4]:cond4[4]:rd[4])
+
+eor_cond4.disasm={
+	os << "eor_cond4 " << rd << "," << rx << "," << ry << endl;
+}
+
+
+//EORH - logical EOR into hight half register
+
+op eorh(0b111[3]:0b011100001[9]:rd[4]:><:imm16[16])
+
+eorh.disasm={
+	os << "eorh " << rd << "," << imm16 << endl;
+}
+
+//EORL - logical EOR into low half register
+
+op eorl(0b111[3]:0b011000001[9]:rd[4]:><:imm16[16])
+
+eorl.disasm={
+	os << "eorl " << rd << "," << imm16 << endl;
+}
+
+//OR - logical or with optional logical shift
+
+op or_a(0b000[3]:rs[4]:0b00100[5]:rd[4])
+
+or_a.disasm={
+	os << "or_a " << rd << "," << rs << endl;
+}
+
+op or_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0001000[7]:sa5[5]:rd[4])
+
+or_b.disasm={
+	os << "or_b " << rd << "," << rx << "," << ry << " << " << sa5 <<endl;
+}
+
+op or_c(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0001001[7]:sa5[5]:rd[4])
+
+or_c.disasm={
+	os << "or_c " << rd << "," << rx << "," << ry << " >> " << sa5 <<endl;
+}
+//OR - logical or with optional logical shift
+
+op or_a(0b000[3]:rs[4]:0b00100[5]:rd[4])
+
+or_a.disasm={
+	os << "or_a " << rd << "," << rs << endl;
+}
+
+op or_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0001000[7]:sa5[5]:rd[4])
+
+or_b.disasm={
+	os << "or_b " << rd << "," << rx << "," << ry << " << " << sa5 <<endl;
+}
+
+// or_c
+
+//OR_COND4 - conditional logical OR
+
+op or_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0011[4]:rd[4])
+
+or_cond4.disasm={
+	os << "or_cond4 " << rd << "," << rx << "," << ry <<endl;
+}
+
+//ORH - logical OR into hight half register
+
+op orh(0b111[3]:0b010100001[9]:rd[4]:><:imm16[16])
+
+orh.disasm={
+	os << "orh " << rd << "," << imm16 << endl;
+}
+
+//ORL- logical OR into low half register
+
+op orl(0b111[3]:0b010000001[9]:rd[4]:><:imm16[16])
+
+orl.disasm={
+	os << "orl " << rd << "," << imm16 << endl;
+}
+
+
+// TST- test register
+
+op tst(0b000[3]:rs[4]:0b00111[5]:rd[4])
+
+tst.disasm={
+	os << "tst " << rd << "," << rs << endl;
+}
+

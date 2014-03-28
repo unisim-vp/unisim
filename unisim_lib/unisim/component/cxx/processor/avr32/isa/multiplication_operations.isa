@@ -1,0 +1,93 @@
+//signed divide
+
+op divs(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11000000[8]:rd[4])
+
+divs.disasm={
+
+	os << "divs " << rd << "," << rx << "," << ry << endl;
+}
+
+
+//unsigned divide
+
+op divu(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11010000[8]:rd[4])
+
+divu.disasm={
+
+	os << "divu " << rd << "," << rx << "," << ry << endl;
+}
+
+
+// MAC - multiply accumulate
+
+op mac(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00110100[8]:rd[4])
+
+mac.disasm={
+
+	os << "mac " << rd << "," << rx << "," << ry << endl;
+}
+
+//multiply accumulate signed
+
+op macs_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b01010100[8]:rd[4])
+
+macs_d.disasm={
+
+	os << "macs_d " << rd << "," << rx << "," << ry << endl;
+}
+
+
+//multiply accumulate unsigned
+
+op macu_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b01110100[8]:rd[4])
+
+macu_d.disasm={
+
+	os << "macu_d " << rd << "," << rx << "," << ry << endl;
+}
+
+
+//MUL - multiply
+
+op mul_a(0b101[3]:rs[4]:0b10011[5]:rd[4])
+
+mul_a.disasm={
+
+	os << "mul_a " << rd << "," << rs << endl;
+}
+
+op mul_b(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00100100[8]:rd[4])
+
+mul_b.disasm={
+
+	os << "mul_b " << rd << "," << rx << "," << ry << endl;
+}
+
+op mul_c(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0000[4]:imm8[8])
+
+mul_c.disasm={
+
+	os << "mul_c " << rd << "," << rs << "," << imm8 << endl;
+}
+
+//multiply signed
+
+op muls_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b01000100[8]:rd[4])
+
+muls_d.disasm={
+
+	os << "muls_d " << rd << "," << rx << "," << ry << endl;
+}
+
+
+//multiply unsigned
+
+op mulu_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b01100100[8]:rd[4]) // verfier pour rd si pas erreur dans le manuel
+
+mulu_d.disasm={
+
+	os << "mulu_d " << rd << "," << rx << "," << ry << endl;
+}
+
+
+

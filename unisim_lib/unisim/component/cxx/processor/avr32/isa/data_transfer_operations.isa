@@ -1,0 +1,262 @@
+//-----------------------------------------------------------------------------
+
+//                               MOV INSTRUCTIONS
+
+//-----------------------------------------------------------------------------
+
+
+//MOV - move data into register
+
+op mov_a(0b001[3]:0b1[1]:imm8[8]:rd[4])
+
+mov_a.disasm={
+
+	os << "mov_a " << rd << "," << imm8 << endl;
+}
+
+op mov_b(0b111[3]:imm_20_17[4]:0b0011[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
+
+mov_b.var imm : {uint32_t}= {(imm_20_17<<17)|(imm_16)<<16| imm_15_0}
+
+mov_b.disasm={
+
+	os << "mov_b " << rd << "," << imm << endl;
+}
+
+op mov_c(0b000[3]:rs[4]:0b01001[5]:rd[4])
+
+mov_c.disasm={
+
+	os << "mov_c " << rd << "," << rs << endl;
+}
+
+// MOV_COND4 - conditional move register
+
+op mov_cond4_a(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0111[4]:cond4[4]:0b0000[4])
+
+mov_cond4_a.disasm={
+
+	os << "mov_cond4_a " << rd << "," << rs << endl;
+}
+
+op mov_cond4_b(0b111[3]:0b1100[4]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:imm8[8])
+
+mov_cond4_b.disasm={
+
+	os << "mov_cond4_b " << rd << "," << imm8 << endl;
+}
+
+// MOVH - move data into high halfword of register
+
+op movh(0b111[3]:0b1110[4]:0b00001[5]:rd[4]:><:imm16[16])
+
+movh.disasm={
+
+	os << "movh " << rd << "," << imm16 << endl;
+}
+
+//----------------------------------------------------------------------------
+
+//                          LOAD INSTRUCTIONS
+
+//----------------------------------------------------------------------------
+
+// LD_UB - load zero extended byte
+
+op ld_ub_a(0b000[3]:rp[4]:0b10011[5]:rd[4])
+
+op ld_ub_b(0b000[3]:rp[4]:0b10111[5]:rd[4])
+
+op ld_ub_c(0b000[3]:rp[4]:0b11[2]:disp3[3]:rd[4])
+
+op ld_ub_d(0b111[3]:rp[4]:0b10011[5]:rd[4]:><:dips16[16])
+
+op ld_ub_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0111[4]:0b00[2]:sa[2]:rd[4])
+
+//conditionally load zero extended byte
+
+op ld_ub_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b100[3]:disp9[9])
+
+//load sign-extended byte
+//f1
+op ld_sb_a(0b111[3]:rp[4]:0b10010[5]:rd[4]:><:disp16[16])
+//f2
+op ld_sb_b(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0110[4]:0b00[2]:sa[2]:rd[4])
+
+//conditionally load sign-extended byte
+
+op ld_sb_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b011[3]:disp9[9])
+
+//load zero extended half word
+
+op ld_uh_a(0b000[3]:rp[4]:0b10010[5]:rd[4])
+
+op ld_uh_b(0b000[3]:rp[4]:0b10110[5]:rd[4])
+
+op ld_uh_c(0b100[3]:rp[4]:0b01[2]:disp3[3]:rd[4])
+
+op ld_uh_d(0b111[3]:rp[4]:0b10001[5]:rd[4]:><:disp16[16])
+
+op ld_uh_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0101[4]:0b00[2]:sa[2]:rd[4])
+
+
+//conditionally load zero extended halfword
+
+op ld_uh_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b010[3]:disp9[9])
+
+//load sign extended halfword
+
+op ld_sh_a(0b000[3]:rp[4]:0b10001[5]:rd[4])
+
+op ld_sh_b(0b000[3]:rp[4]:0b10101[5]:rd[4])
+
+op ld_sh_c(0b100[3]:rp[4]:0b00[2]:disp3[3]:rd[4])
+
+op ld_sh_d(0b111[3]:rp[4]:0b10000[5]:rd[4]:><:disp16[16])
+
+op ld_sh_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0100[4]:0b00[2]:sa[2]:rd[4])
+
+//conditionally load extended halword
+
+op ld_sh_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b001[3]:disp9[9])
+
+//load word
+
+op ld_w_a(0b000[3]:rp[4]:0b10000[5]:rd[4])
+
+op ld_w_b(0b000[3]:rp[4]:0b10100[5]:rd[4])
+
+op ld_w_c(0b011[3]:rp[4]:disp5[5]:rd[4])
+
+op ld_w_d(0b111[3]:rp[4]:0b01111[5]:rd[4]:><:disp16[16])
+
+op ld_w_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0011[4]:0b00[2]:sa[2]:rd[4])
+
+op ld_w_f(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b111110[6]:x[1]:y[1]:rd[4])
+
+
+
+//conditionally load word
+
+op ld_w_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b000[3]:disp9[9])
+
+//load doubleword
+
+op ld_d_a(0b101[3]:rp[4]:0b100[3]:0b00[2]:rd[3]:0b1[1])
+
+op ld_d_b(0b101[3]:rp[4]:0b100[3]:0b01[2]:rd[3]:0b0[1])
+
+op ld_d_c(0b101[3]:rp[4]:0b100[3]:0b00[2]:rd[3]:0b0[1])
+
+op ld_d_d(0b111[3]:rp[4]:0b01110[5]:rd[3]:0b0[1]:><:disp16[16])
+
+op ld_d_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0010[4]:0b00[2]:sa[2]:rd[4])
+
+//load and insert byte or halfword into register
+
+op ldins_b(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b01[2]:part[2]:disp12[12])
+
+op ldins_h(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b000[3]:part[1]:disp12[12])
+
+//load and swap
+
+op ldsw_sh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0010[4]:disp12[12])
+
+op ldswp_uh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0011[4]:disp12[12])
+
+op ldswp_w(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b1000[4]:disp12[12])
+
+//load pc relative with displacement
+
+op lddpc(0b010[3]:0b01[2]:disp7[7]:rd[4])
+
+//load sp relative with displacement
+
+op lddsp(0b010[3]:0b00[2]:disp7[7]:rd[4])
+
+//-------------------------------------------------------------------------------
+
+//                      STORE INSTRUCTIONS
+
+//-------------------------------------------------------------------------------
+
+// store byte
+
+op st_b_a(0b000[3]:rp[4]:0b01100[5]:rs[4])
+
+op st_b_b(0b000[3]:rp[4]:0b01111[5]:rs[4])
+
+op st_b_c(0b101[3]:rp[4]:0b01[2]:disp3[3]:rs[4])
+
+op st_b_d(0b111[3]:rp[4]:0b10110[5]:rs[4]:disp16[16])
+
+op st_b_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1011[4]:0b00[2]:sa[2]:rs[4])
+
+
+//conditional store byte
+
+op st_b_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b111[3]:disp9[9])
+
+//store doubleword
+
+op st_d_a(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b0[1])
+
+op st_d_b(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b1[1])
+
+op st_d_c(0b101[3]:rp[4]:0b100[3]:0b01[2]:rs[3]:0b1[1])
+
+op st_d_d(0b111[3]:rp[4]:0b01110[5]:rs[3]:0b1[1]:><:disp16[16])
+
+op st_d_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1000[4]:0b00[2]:sa[2]:rs[4])
+
+//store halfword
+
+op st_h_a(0b000[3]:rp[4]:0b01011[5]:rs[4])
+
+op st_h_b(0b000[3]:rp[4]:0b01110[5]:rs[4])
+
+op st_h_c(0b101[3]:rp[4]:0b00[2]:disp3[3]:rs[4])
+
+op st_h_d(0b111[3]:rp[4]:0b10101[5]:rs[4]:><:disp16[16])
+
+op st_h_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1010[4]:0b00[2]:sa[2]:rs[4])
+
+// conditionally store halfword
+
+op st_h_cond4(0b111[3]:rp[4]:0b11111[5]:rs[4]:><:cond4[4]:0b110[3]:disp9[9])
+
+//store word conditionally
+
+op stcond(0b111[3]:rp[4]:0b10111[5]:rs[4]:><:disp16[16])
+
+//store stack pointer relative
+
+op stdsp(0b010[3]:0b10[2]:disp7[7]:rs[4])
+
+//store halfword into word
+
+op sthh_w_a(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b11[2]:x[1]:y[1]:disp8[8]:rp[4])
+
+op sthh_w_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b10[2]:x[1]:y[1]:ri[4]:0b00[2]:sa[2]:rb[4])
+
+// swap and store
+
+op stswp_h(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1001[4]:disp12[12])
+
+op stswp_w(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1010[4]:disp12[12])
+
+// XCHG -Exchange register and memory
+
+op xchg(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b10110100[8]:rd[4])
+
+xchg.disasm={
+
+	os << "xchg " << rd << "," << rx << "," << ry << endl;
+}
+
+
+//-----------------------------------------------------------------------------
+
+//                   MULTIPLE DATA                 
+
+//-----------------------------------------------------------------------------

@@ -36,7 +36,11 @@
 decl {
 
 #include <iosfwd>
+#include <cmath>
 
+extern uint32_t grp[15];
+extern uint32_t pc;
+extern uint32_t psr;
 }
 
 set endianness big
@@ -62,11 +66,17 @@ action {void} disasm({typename CONFIG::STATE *} {cpu}, {std::ostream&} {os}) {
 
 op abs(0b010[3]:0b1110[4]:0b00100[5]:rd[4])
 
+
+abs.execute={
+
+	if(gpr[rd]!=0x80000000) gpr[rd]= abs(gpr[rd]);
+	
+}
 abs.disasm={
 
 	os<< "abs " << rd << endl ;
-
 }
+
 
 // ACR - add carry to register
 
@@ -75,7 +85,6 @@ op acr(0b010[3]:0b1110[4]:0b00000[5]:rd[4])
 acr.disasm={
 
 	os<< "acr " << rd << endl ;
-
 }
 
 // ADC - add with carry
@@ -85,23 +94,42 @@ op adc(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00000100[8]:rd[4])
 adc.disasm={
 
 	os<< "adc " << rd << "," << rx << "," << ry << endl ;
-
 }
 
 // ADD - add without carry
 
-op add(0b000[3]:rs[4]:0b00000[5]:rd[4])
+op add_a(0b000[3]:rs[4]:0b00000[5]:rd[4]) 
 
-add.disasm={
+add_a.execute={
 
-	os<< "add " << rd << "," << rs << endl ;
+	gpr[rd]=gpr[rd]+gpr[rs];
+}
+add_a.disasm={
 
+	os<< "add_a " << rd << "," << rs << endl ;
+
+}
+
+op add_b(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0000[4]:0b00[2]:sa[2]:rd[4])
+
+add_b.execute={
+
+	gpr[rd]=gpr[rx]+(gpr[ry] << sa);
+}
+
+add_b.disasm={
+
+	os << "add_b " << rd << "," << rx << "," << ry << "<<" << sa << endl;
 }
 
 // ADD_COND4 - conditional add
 
 op add_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0000[4]:rd[4])
 
+add_cond4.execute={
+
+	if(cond4) gpr[rd]=grp[rx]+gpr[ry];
+}
 add_cond4.disasm={
 
 	os<< "add_cond4 " << rd << "," << rx << "," << ry << endl ;
@@ -422,7 +450,34 @@ eor_c.disasm={
 
 //EOR_COND4 -  conditional logical EOR
 
-op eor_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:rd[4])
+op eor_cond4(0b111[3]:rx[4]:0b11101[5]//AND - logical and into hight or low half to register
+
+op andh(0b111[3]:0b00[2]:0b1[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
+
+andh.disasm={
+	os << "andh " << rd << "," << imm16 << "," << coh << endl;
+}
+
+op andl(0b111[3]:0b00[2]:0b0[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
+
+andl.disasm={
+	os << "andl " << rd << "," << imm16 << "," << coh << endl;
+}
+
+
+// COM - one's compliment
+
+op com(0b010[3]:0b1110[4]:0b01101[5]:rd[4])
+
+com.disasm={
+
+	os << "com " << rd << endl;
+}
+
+//EOR - logical exclusive or with optional logical shift
+
+op eor_a(0b000[3]:rs[4]:0b00101[5]:rd[4])
+:ry[4]:><:0b1110[4]:cond4[4]:rd[4])
 
 eor_cond4.disasm={
 	os << "eor_cond4 " << rd << "," << rx << "," << ry << endl;
@@ -464,7 +519,21 @@ op or_c(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0001001[7]:sa5[5]:rd[4])
 or_c.disasm={
 	os << "or_c " << rd << "," << rx << "," << ry << " >> " << sa5 <<endl;
 }
+//OR - logical or with optional logical shift
 
+op or_a(0b000[3]:rs[4]:0b00100[5]:rd[4])
+
+or_a.disasm={
+	os << "or_a " << rd << "," << rs << endl;
+}
+
+op or_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0001000[7]:sa5[5]:rd[4])
+
+or_b.disasm={
+	os << "or_b " << rd << "," << rx << "," << ry << " << " << sa5 <<endl;
+}
+
+op or_c(0b111[3]:rx[4]:0b11110[
 //OR_COND4 - conditional logical OR
 
 op or_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0011[4]:rd[4])
@@ -1107,7 +1176,7 @@ machh_w.disasm={
 }
 
 
-//multiply word with halfword and accumulate in doubleword
+//MACWH_D - multiply word with halfword and accumulate in doubleword
 
 op macwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1100[4]:0b100[3]:y[1]:rd[4])
 
