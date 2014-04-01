@@ -44,6 +44,7 @@ union  yylval_t {
   Vect_t<Constraint_t>*        constraint_list;        /**< A constraint list object */
   Specialization_t*            specialization;         /**< A specialization object */
   Inheritance_t*               inheritance;            /**< An inheritance descriptor */
+  UIntVect_t*                  uint_list;              /**< A unsigned integer list object */
 };
 
 /* define the type of yylval */

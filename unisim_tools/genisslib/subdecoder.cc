@@ -30,18 +30,6 @@
 
 using namespace std;
 
-/** Create a subdecoder class object
-    @param _namespace a namespace in which the decoder is defined
-    @param _minsize a minimum bit size for the decoder operations
-    @param _maxsize a maximum bit size for the decoder operations
-    @param _fileloc a fileloc pointing at the subdecoder declaration
-*/
-SDClass_t::SDClass_t( std::vector<ConstStr_t>& _namespace, unsigned int _minsize, unsigned int _maxsize, FileLoc_t const& _fileloc )
-  : m_namespace( _namespace ), m_minsize( _minsize ), m_maxsize( _maxsize ), m_fileloc( _fileloc )
-{
-  assert( m_minsize <= m_maxsize  );
-}
-
 /** Delete a subdecoder object
 */
 SDClass_t::~SDClass_t() {}

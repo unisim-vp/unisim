@@ -106,10 +106,10 @@ Specialization_t::newop() {
   Vect_t<BitField_t>& bflist = m_operation->m_bitfields;
   
   for( Vect_t<BitField_t>::const_iterator bf = bflist.begin(); bf < bflist.end(); ++ bf ) {
+    OperandBitField_t const* opbf;
     Constraint_t* expr;
-    if( (**bf).type() == BitField_t::Operand and (expr = constraint( (**bf).symbol() )) ) {
-      OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
-      res->m_bitfields.push_back( new SpOperandBitField_t( opbf, expr->m_value ) );
+    if ((opbf = dynamic_cast<OperandBitField_t const*>( &**bf )) and (expr = constraint( (**bf).symbol() )) ) {
+      res->m_bitfields.push_back( new SpOperandBitField_t( *opbf, expr->m_value ) );
     } else {
       res->m_bitfields.push_back( *bf );
     }
