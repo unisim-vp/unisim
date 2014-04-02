@@ -278,7 +278,7 @@ global_ident_parameter: TOK_SET TOK_IDENT TOK_IDENT
   
   try {
     Scanner::isa().setparam( key, val );
-  } catch( Isa::UnknownIdent ui ) {
+  } catch (Isa::UnknownIdent ui) {
     Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }
@@ -290,7 +290,7 @@ global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
   SourceCode_t* val = $3;
   try {
     Scanner::isa().setparam( key, val );
-  } catch( Isa::UnknownIdent ui ) {
+  } catch (Isa::UnknownIdent ui) {
     Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }
@@ -302,7 +302,7 @@ global_uinteger_parameter: TOK_SET TOK_IDENT TOK_INTEGER
   unsigned int val = $3;
   try {
     Scanner::isa().setparam( key, val );
-  } catch( Isa::UnknownIdent ui ) {
+  } catch (Isa::UnknownIdent ui) {
     Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }

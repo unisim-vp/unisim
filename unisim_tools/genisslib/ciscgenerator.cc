@@ -217,12 +217,13 @@ struct BFWordIterator {
 /** Process the isa structure and computes CISC specific data 
 */
 void
-CiscGenerator::finalize() {
+CiscGenerator::finalize()
+{
   // Finalize size information
   m_code_capacity = ((*m_insnsizes.rbegin()) + 7) / 8;
   
   // Process the opcodes needed by the decoder
-  for( Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
+  for (Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op) {
     // compute prefix size
     unsigned int prefixsize = 0, insn_size = 0;
     bool vlen = false, outprefix = false, vword = false;

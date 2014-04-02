@@ -103,7 +103,7 @@ RiscGenerator::RiscGenerator()
 void
 RiscGenerator::finalize() {
   // Finalize size information
-  if( (*m_insnsizes.rbegin()) > 64 ) {
+  if ((*m_insnsizes.rbegin()) > 64) {
     std::cerr << "error: can't process encodings wider than 64 bits (" << (*m_insnsizes.rbegin()) << " bits).";
     throw GenerationError;
   }
