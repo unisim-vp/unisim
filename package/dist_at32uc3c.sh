@@ -188,6 +188,16 @@ unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 
 UNISIM_LIB_AT32UC3C_ISA_FILES="\
 unisim/component/cxx/processor/avr32/isa/avr32.isa \
+unisim/component/cxx/processor/avr32/isa/arithmetic_operations.isa \
+unisim/component/cxx/processor/avr32/isa/bit_shift_operations.isa \
+unisim/component/cxx/processor/avr32/isa/coprocessor_interface.isa \
+unisim/component/cxx/processor/avr32/isa/data_transfert_operations.isa \
+unisim/component/cxx/processor/avr32/isa/dsp_operations.isa \
+unisim/component/cxx/processor/avr32/isa/instruction_flow.isa \
+unisim/component/cxx/processor/avr32/isa/logic_operations.isa \
+unisim/component/cxx/processor/avr32/isa/multiplication_operations.isa \
+unisim/component/cxx/processor/avr32/isa/simd_operations.isa \
+unisim/component/cxx/processor/avr32/isa/system_control_operations.isa \
 unisim/component/cxx/processor/avr32/avr32a/isa/avr32a.isa \
 unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.isa \
 "
