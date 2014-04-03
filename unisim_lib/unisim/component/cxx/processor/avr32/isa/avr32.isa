@@ -38,9 +38,7 @@ decl {
 #include <iosfwd>
 #include <cmath>
 
-extern uint32_t grp[15];
-extern uint32_t pc;
-extern uint32_t psr;
+
 }
 
 set endianness big
@@ -56,4 +54,14 @@ action {void} disasm({typename CONFIG::STATE *} {cpu}, {std::ostream&} {os}) {
 	os << "???";
 }
 
+include "arithmetic_operations.isa" 
+include "bit_shift_operations.isa"
+include "coprocessor_interface.isa"
+include "data_transfert_operations.isa"
+include "dsp_operations.isa"
+include "instruction_flow.isa"
+include "logic_operations.isa"
+include "multiplication_operations.isa"
+include "simd_operations.isa"
+include "system_control_operations.isa"
 

@@ -215,78 +215,88 @@ void CPU<CONFIG>::Reset()
 }
 
 template <class CONFIG>
+bool CPU<CONFIG>::Fetch(void *buffer, uint32_t size)
+{
+	// TODO
+	return false;
+}
+
+template <class CONFIG>
 void CPU<CONFIG>::StepOneInstruction()
 {
-// 	if(unlikely(debug_control_import != 0))
-// 	{
-// 		do
-// 		{
-// 			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
-// 
-// 			dbg_cmd = debug_control_import->FetchDebugCommand(GetCIA());
-// 	
-// 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
-// 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC)
-// 			{
-// 				Synchronize();
-// 				continue;
-// 			}
-// 
-// 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) Stop(0);
-// 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET)
-// 			{
-// 				if(loader_import)
-// 				{
-// 					loader_import->Load();
-// 				}
-// 			}
-// 		} while(1);
-// 	}
-// 
-// 	unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation = 0;
-// 
-// 	typename CONFIG::address_t addr = GetCIA();
-// 	SetNIA(addr + 4);
-// 	CodeType insn;
-// 	if(likely(EmuFetch(addr, insn)))
-// 	{
-// 		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(addr, insn);
-// 
-// 		if(unlikely(IsVerboseStep()))
-// 		{
-// 			stringstream sstr;
-// 			operation->disasm((CPU<CONFIG> *) this, sstr);
-// 			logger << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugInfo;
-// 		}
-// 
-// 		/* execute the instruction */
-// 		if(likely(operation->execute(this)))
-// 		{
-// 			/* update the instruction counter */
-// 			instruction_counter++;
-// 		}
-// 	}
-// 
-// 	ProcessExceptions(operation);
-// 
-// 	/* report a finished instruction */
-// 	if(unlikely(requires_finished_instruction_reporting))
-// 	{
-// 		if(unlikely(memory_access_reporting_import != 0))
-// 		{
-// 			memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
-// 		}
-// 	}
-// 
-// 	/* go to the next instruction */
-// 	SetCIA(GetNIA());
-// 
-// 	if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
-// 	{
-// 		trap_reporting_import->ReportTrap();
-// 	}
-// 	
-// 	if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
+	if(unlikely(debug_control_import != 0))
+	{
+		do
+		{
+			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
+
+			dbg_cmd = debug_control_import->FetchDebugCommand(GetPC());
+	
+			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
+			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC)
+			{
+				Synchronize();
+				continue;
+			}
+
+			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) Stop(0);
+			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET)
+			{
+				if(loader_import)
+				{
+					loader_import->Load();
+				}
+			}
+		} while(1);
+	}
+
+	unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation = 0;
+
+	typename CONFIG::address_t addr = GetPC();
+	
+	uint8_t buffer[4];
+	if(likely(Fetch(addr, buffer)))
+	{
+		CodeType insn(buffer, sizeof(buffer) * 8);
+	  
+		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(addr, insn);
+		SetNPC(addr + operation->GetLength());
+
+		if(unlikely(IsVerboseStep()))
+		{
+			stringstream sstr;
+			operation->disasm((CPU<CONFIG> *) this, sstr);
+			logger << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugInfo;
+		}
+
+		/* execute the instruction */
+		if(likely(operation->execute(this)))
+		{
+			/* update the instruction counter */
+			instruction_counter++;
+		}
+	}
+
+	//ProcessExceptions(operation);
+
+	/* report a finished instruction */
+	if(unlikely(requires_finished_instruction_reporting))
+	{
+		if(unlikely(memory_access_reporting_import != 0))
+		{
+			memory_access_reporting_import->ReportFinishedInstruction(GetPC(), GetNPC());
+		}
+	}
+
+	/* go to the next instruction */
+	SetNPC(GetPC());
+
+	if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
+	{
+		trap_reporting_import->ReportTrap();
+	}
+	
+	if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
 }
 
 template <class CONFIG>
@@ -311,7 +321,7 @@ string CPU<CONFIG>::GetFunctionFriendlyName(typename CONFIG::address_t addr)
 	const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
-	else
+	elseSetGPR_mem
 		sstr << "0x" << std::hex << addr << std::dec;
 
 	return sstr.str();
