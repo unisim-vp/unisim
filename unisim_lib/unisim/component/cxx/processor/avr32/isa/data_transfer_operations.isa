@@ -65,114 +65,293 @@ movh.disasm={
 
 op ld_ub_a(0b000[3]:rp[4]:0b10011[5]:rd[4])
 
+ld_ub_a.disasm={
+	os << "ld_ub_a " << rd << "," << rp << "++" << endl;
+}
+
 op ld_ub_b(0b000[3]:rp[4]:0b10111[5]:rd[4])
 
-op ld_ub_c(0b000[3]:rp[4]:0b11[2]:disp3[3]:rd[4])
+ld_ub_b.disasm={
+	os << "ld_ub_b " << rd << ",--" << rp << endl;
+}
+
+op ld_ub_c(0b000[3]:rp[4]:0b11[2]:disp[3]:rd[4])
+
+ld_ub_c.disasm={
+	os << "ld_ub_c " << rd << "," << rp <<"[" << disp << "]" << endl;
+}
+
 
 op ld_ub_d(0b111[3]:rp[4]:0b10011[5]:rd[4]:><:dips16[16])
 
+ld_ub_d.disasm={
+	os << "ld_ub_d " << rd << "," << rp <<"[" << disp << "]" << endl;
+}
+
+
 op ld_ub_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0111[4]:0b00[2]:sa[2]:rd[4])
 
-//conditionally load zero extended byte
+ld_ub_e.disasm={
+	os << "ld_ub_e " << rd << ","<< rp << "[" << ri << "<<" << sa << "]" << endl;
+}
+
+
+//LD_UB_COND4 - conditionally load zero extended byte
 
 op ld_ub_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b100[3]:disp9[9])
 
-//load sign-extended byte
-//f1
+ld_ub_cond4.disasm={
+	os << "ld_ub_cond4 " << rd << ","<< rp <<",[" << disp <<"]" << endl;
+}
+
+//LD_SB - load sign-extended byte
+
 op ld_sb_a(0b111[3]:rp[4]:0b10010[5]:rd[4]:><:disp16[16])
-//f2
+
+ld_sb_a.disasm={
+	os << "ld_sb_a " << rd << ","<< rp << "[" << disp16 << "]" << endl;
+}
+
 op ld_sb_b(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0110[4]:0b00[2]:sa[2]:rd[4])
 
-//conditionally load sign-extended byte
+ld_sb_b.disasm={
+	os << "ld_sb_b " << rd << ","<< rb << "[" << ri << "<<" << sa << "]" << endl;
+}
+
+// LD_SB_COND4 - conditionally load sign-extended byte
 
 op ld_sb_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b011[3]:disp9[9])
 
-//load zero extended half word
+ld_sb_cond4.disasm={
+	os << "ld_sb_cond4 " << rd << ","<< rp << "[" << disp9 << "]" << endl;
+}
+
+// LD_UH - load zero extended half word
 
 op ld_uh_a(0b000[3]:rp[4]:0b10010[5]:rd[4])
 
+ld_uh_a.disasm={
+	os << "ld_uh_a " << rd << "," << rp << "++" << endl;
+}
+
+
 op ld_uh_b(0b000[3]:rp[4]:0b10110[5]:rd[4])
+
+ld_uh_b.disasm={
+	os << "ld_uh_b " << rd << ",--" << rp << endl;
+}
+
 
 op ld_uh_c(0b100[3]:rp[4]:0b01[2]:disp3[3]:rd[4])
 
+ld_uh_c.disasm={
+	os << "ld_uh_c " << rd << ","<< rp << "[" << disp3 << "]" << endl;
+}
+
 op ld_uh_d(0b111[3]:rp[4]:0b10001[5]:rd[4]:><:disp16[16])
+
+ld_uh_d.disasm={
+	os << "ld_uh_d " << rd << "," << rp << "[" << disp16 << "]" << endl;
+}
 
 op ld_uh_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0101[4]:0b00[2]:sa[2]:rd[4])
 
+ld_uh_e.disasm={
+	os << "ld_uh_e " << rd << "," << rb << "[" << ri << "<<" << sa << "]" << endl;
+}
 
-//conditionally load zero extended halfword
+
+//LD_UH_COND4 - conditionally load zero extended halfword
 
 op ld_uh_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b010[3]:disp9[9])
 
-//load sign extended halfword
+ld_uh_cond4.disasm={
+	os << "ld_uh_cond4 " << rd << "," << rp << "[" << disp9 << "]" << endl;
+}
+
+//LD_SH - load sign extended halfword
 
 op ld_sh_a(0b000[3]:rp[4]:0b10001[5]:rd[4])
 
+ld_sh_a.disasm={
+	os << "ld_sh_a " << rd << "," << rp << "++" << endl;
+}
+
 op ld_sh_b(0b000[3]:rp[4]:0b10101[5]:rd[4])
+
+ld_sh_b.disasm={
+	os << "ld_sh_b " << rd << ",--" << rp << endl;
+}
 
 op ld_sh_c(0b100[3]:rp[4]:0b00[2]:disp3[3]:rd[4])
 
+ld_sh_c.disasm={
+	os << "ld_sh_c " << rd << "," << rp << "[" << disp3 << "]" << endl;
+}
+
 op ld_sh_d(0b111[3]:rp[4]:0b10000[5]:rd[4]:><:disp16[16])
+
+ld_sh_d.disasm={
+	os << "ld_sh_d " << rd << "," << rp << "[" << disp16 << "]" << endl;
+}
 
 op ld_sh_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0100[4]:0b00[2]:sa[2]:rd[4])
 
-//conditionally load extended halword
+ld_sh_e.disasm={
+	os << "ld_sh_e " << rd << "," << rb << "[" << ri << "<<" << sa << "]" << endl;
+}
+
+
+// LD_SH_COND4 - conditionally load extended halword
 
 op ld_sh_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b001[3]:disp9[9])
 
-//load word
+ld_sh_cond4.disasm={
+	os << "ld_sh_cond4 " << rd << "," << rp << "[" << disp9 << "]" << endl;
+}
+
+
+// LD_W - load word
 
 op ld_w_a(0b000[3]:rp[4]:0b10000[5]:rd[4])
 
+ld_w_a.disasm={
+	os << "ld_w_a " << rd << "," << rp << "++" << endl;
+}
+
 op ld_w_b(0b000[3]:rp[4]:0b10100[5]:rd[4])
+
+ld_w_b.disasm={
+	os << "ld_w_b " << rd << ",--" << rp << endl;
+}
 
 op ld_w_c(0b011[3]:rp[4]:disp5[5]:rd[4])
 
+ld_w_c.disasm={
+	os << "ld_w_c " << rd << "," << rp << "[" << disp5 << "]" << endl;
+}
+
+
 op ld_w_d(0b111[3]:rp[4]:0b01111[5]:rd[4]:><:disp16[16])
+
+ld_w_d.disasm={
+	os << "ld_w_d " << rd << "," << rp << "[" << disp16 << "]" << endl;
+}
 
 op ld_w_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0011[4]:0b00[2]:sa[2]:rd[4])
 
+ld_w_e.disasm={
+	os << "ld_w_e " << rd << "," << rb << "[" << ri << "<<" << sa << "]" << endl;
+}
+
+
 op ld_w_f(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b111110[6]:x[1]:y[1]:rd[4])
 
+ld_w_f.disasm={
+	os << "ld_w_f " << rd << "," << rb << "[" << ri << ":<" << part << "> << 2]" << endl;
+}
 
 
-//conditionally load word
+
+// LD_W_COND4 - conditionally load word
 
 op ld_w_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b000[3]:disp9[9])
 
-//load doubleword
+ld_w_cond4.disasm={
+	os << "ld_w_cond4 " << rd << "," << rp << "[" << disp9 << "]" << endl;
+}
+
+
+// LD_D - load doubleword
 
 op ld_d_a(0b101[3]:rp[4]:0b100[3]:0b00[2]:rd[3]:0b1[1])
 
+ld_d_a.disasm={
+	os << "ld_d_a " << rd << "," << rp << "++" << endl;
+}
+
 op ld_d_b(0b101[3]:rp[4]:0b100[3]:0b01[2]:rd[3]:0b0[1])
+
+ld_d_b.disasm={
+	os << "ld_d_b " << rd << ",--" << rp << endl;
+}
 
 op ld_d_c(0b101[3]:rp[4]:0b100[3]:0b00[2]:rd[3]:0b0[1])
 
+ld_d_c.disasm={
+	os << "ld_d_c " << rd << "," << rp << endl;
+}
+
+
 op ld_d_d(0b111[3]:rp[4]:0b01110[5]:rd[3]:0b0[1]:><:disp16[16])
+
+ld_d_d.disasm={
+	os << "ld_d_d " << rd << "," << rp << "[" << disp16 << "]" << endl;
+}
+
 
 op ld_d_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0010[4]:0b00[2]:sa[2]:rd[4])
 
-//load and insert byte or halfword into register
+ld_d_e.disasm={
+	os << "ld_d_e " << rd << "," << rb << "[" << ri << "<<" << sa << "]" << endl;
+}
+
+
+// LDINS_B/H - load and insert byte or halfword into register
 
 op ldins_b(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b01[2]:part[2]:disp12[12])
 
+ldins_b.disasm={
+	os << "ldins_b " << rd << ":<" << part << ">," << rp << "[" << disp12 << "]" << endl;
+}
+
 op ldins_h(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b000[3]:part[1]:disp12[12])
 
-//load and swap
+ldins_h.disasm={
+	os << "ldins_h " << rd << ":<" << part << ">," << rp << "[" << disp12 << "]" << endl;
+}
 
-op ldsw_sh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0010[4]:disp12[12])
+// LDSWP_SH/UH/W  - load and swap
+
+op ldswp_sh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0010[4]:disp12[12])
+
+ldswp_sh.disasm={
+	os << "ldswp_sh " << rd << "," << rp << "[" << disp12 << "]" << endl;
+}
+
 
 op ldswp_uh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0011[4]:disp12[12])
 
+ldswp_uh.disasm={
+	os << "ldswp_uh " << rd << "," << rp << "[" << disp12 << "]" << endl;
+}
+
+
 op ldswp_w(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b1000[4]:disp12[12])
 
-//load pc relative with displacement
+ldswp_w.disasm={
+	os << "ldswp_w " << rd << "," << rp << "[" << disp12 << "]" << endl;
+}
+
+
+// LDDPC - load pc relative with displacement
 
 op lddpc(0b010[3]:0b01[2]:disp7[7]:rd[4])
 
-//load sp relative with displacement
+lddpc.disasm={
+
+	os << "lddpc " << rd << "," << pc << "[" << disp7 << "]" endl; 
+}
+
+// LDDSP - load sp relative with displacement
 
 op lddsp(0b010[3]:0b00[2]:disp7[7]:rd[4])
+
+lddsp.disasm={
+
+	os << "lddsp " << rd << "," << sp << "[" << disp7 << "]" endl; 
+}
+
 
 //-------------------------------------------------------------------------------
 
@@ -180,72 +359,241 @@ op lddsp(0b010[3]:0b00[2]:disp7[7]:rd[4])
 
 //-------------------------------------------------------------------------------
 
-// store byte
+// ST_B -  store byte
 
 op st_b_a(0b000[3]:rp[4]:0b01100[5]:rs[4])
 
+st_b_a.disasm={
+
+	os << "st_b_a " << rp << "++," << rs << endl;
+}
+
 op st_b_b(0b000[3]:rp[4]:0b01111[5]:rs[4])
+
+st_b_b.disasm={
+
+	os << "st_b_b --" << rp << "," << rs << endl;
+}
 
 op st_b_c(0b101[3]:rp[4]:0b01[2]:disp3[3]:rs[4])
 
+st_b_c.disasm={
+
+	os << "st_b_c " << rp << "[" << disp3 << "]," << rs << endl;
+}
+
+
 op st_b_d(0b111[3]:rp[4]:0b10110[5]:rs[4]:disp16[16])
+
+st_b_d.disasm={
+
+	os << "st_b_d " << rp << "[" << disp16 << "]," << rs << endl;
+}
+
 
 op st_b_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1011[4]:0b00[2]:sa[2]:rs[4])
 
+st_b_e.disasm={
 
-//conditional store byte
+	os << "st_b_e " << rb << "[" << ri << "<<" << sa <<"]," << rs << endl;
+}
+
+
+// ST_B_COND4 - conditional store byte
 
 op st_b_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b111[3]:disp9[9])
 
-//store doubleword
+st_b_cond4.disasm={
+
+	os << "st_b_cond4 " << rp << "[" << disp9 << "]," << rs << endl;
+}
+
+// ST_D - store doubleword
 
 op st_d_a(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b0[1])
 
+st_d_a.disasm={
+
+	os << "st_d_a " << rp << "++," << rs << endl;
+}
+
 op st_d_b(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b1[1])
+
+st_d_b.disasm={
+
+	os << "st_d_b --" << rp << "," << rs << endl;
+}
 
 op st_d_c(0b101[3]:rp[4]:0b100[3]:0b01[2]:rs[3]:0b1[1])
 
+st_d_c.disasm={
+
+	os << "st_d_c " << rp  << "," << rs << endl;
+}
+
 op st_d_d(0b111[3]:rp[4]:0b01110[5]:rs[3]:0b1[1]:><:disp16[16])
+
+st_d_d.disasm={
+
+	os << "st_d_d " << rp << "[" << disp16 << "]," << rs << endl;
+}
 
 op st_d_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1000[4]:0b00[2]:sa[2]:rs[4])
 
-//store halfword
+st_d_e.disasm={
+
+	os << "st_d_e " << rb << "[" << ri << "<<" << sa << "]," << rs << endl;
+}
+
+
+// ST_H - store halfword
 
 op st_h_a(0b000[3]:rp[4]:0b01011[5]:rs[4])
 
+st_h_a.disasm={
+
+	os << "st_h_a " << rp << "++," << rs << endl;
+}
+
 op st_h_b(0b000[3]:rp[4]:0b01110[5]:rs[4])
+
+st_h_b.disasm={
+
+	os << "st_h_b --" << rp << "," << rs << endl;
+}
 
 op st_h_c(0b101[3]:rp[4]:0b00[2]:disp3[3]:rs[4])
 
+st_h_d.disasm={
+
+	os << "st_h_d " << rp << "[" << disp3 << "]," << rs << endl;
+}
+
 op st_h_d(0b111[3]:rp[4]:0b10101[5]:rs[4]:><:disp16[16])
+
+st_h_d.disasm={
+
+	os << "st_h_d " << rp << "[" << disp16 << "]," << rs << endl;
+}
 
 op st_h_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1010[4]:0b00[2]:sa[2]:rs[4])
 
-// conditionally store halfword
+st_h_e.disasm={
+
+	os << "st_h_e " << rb << "[" << ri << "<<" << sa << "]," << rs << endl;
+}
+
+// ST_H_COND4 - conditionally store halfword
 
 op st_h_cond4(0b111[3]:rp[4]:0b11111[5]:rs[4]:><:cond4[4]:0b110[3]:disp9[9])
 
-//store word conditionally
+st_h_cond4.disasm={
+
+	os << "st_h_cond4 " << rp << "[" << disp9 << "]," << rs << endl;
+}
+
+// ST_W - store word
+
+op st_w_a(0b000[3]:rp[4]:0b01010[5]:rs[4])
+
+st_w_a.disasm={
+
+	os << "st_w_a " << rp << "++," << rs << endl;
+}
+
+op st_w_b(0b000[3]:rp[4]:0b01101[5]:rs[4])
+
+st_w_b.disasm={
+
+	os << "st_w_b --" << rp << "," << rs << endl;
+}
+
+op st_w_c(0b100[3]:rp[4]:0b1[1]:disp4[4]:rs[4])
+
+st_w_d.disasm={
+
+	os << "st_w_d " << rp << "[" << disp4 << "]," << rs << endl;
+}
+
+op st_w_d(0b111[3]:rp[4]:0b10100[5]:rs[4]:><:disp16[16])
+
+st_w_d.disasm={
+
+	os << "st_w_d " << rp << "[" << disp16 << "]," << rs << endl;
+}
+
+op st_w_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1001[4]:0b00[2]:sa[2]:rs[4])
+
+st_w_e.disasm={
+
+	os << "st_w_e " << rb << "[" << ri << "<<" << sa << "]," << rs << endl;
+}
+
+// ST_W_COND4 - conditionally store word
+
+op st_w_cond4(0b111[3]:rp[4]:0b11111[5]:rs[4]:><:cond4[4]:0b101[3]:disp9[9])
+
+st_w_cond4.disasm={
+
+	os << "st_w_cond4 " << rp << "[" << disp9 << "]," << rs << endl;
+}
+// erreur dans manuel rd au lieu de rs dans opcode
+
+// STCOND - store word conditionally
 
 op stcond(0b111[3]:rp[4]:0b10111[5]:rs[4]:><:disp16[16])
 
-//store stack pointer relative
+stcond.disasm={
+
+	os << "stcond " << rp << "[" << disp16 << "]," << rs << endl;
+}
+
+
+// STDSP - store stack pointer relative
 
 op stdsp(0b010[3]:0b10[2]:disp7[7]:rs[4])
 
-//store halfword into word
+stdsp.disasm={
+
+	os << "stdsp " << sp << "[" << disp7 << "]," << rs << endl;
+}
+
+// STHH_W - store halfword into word
 
 op sthh_w_a(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b11[2]:x[1]:y[1]:disp8[8]:rp[4])
 
+sthh_w_a.disasm={
+
+	os << "sthh_w_a " << rp << "[" << disp8 << "]," << rx << ":<" << part << ">,"<< ry << ":[" << part << "]" << endl;
+
+}
+
 op sthh_w_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b10[2]:x[1]:y[1]:ri[4]:0b00[2]:sa[2]:rb[4])
 
-// swap and store
+sthh_w_b.disasm={
+
+	os << "sthh_w_b " << rp << "[" << ri << "<<" << sa << "]," << rx << ":<" << part << ">,"<< ry << ":[" << part << "]" << endl;
+
+}
+
+// STSWP_H/W - swap and store
 
 op stswp_h(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1001[4]:disp12[12])
 
+stswp_h.disasm={
+
+	os << "stswp_h " << rp << "[" << disp12 << "]," << rs << endl;
+}
+
+
 op stswp_w(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1010[4]:disp12[12])
 
-// XCHG -Exchange register and memory
+stswp_w.disasm={
+
+	os << "stswp_w " << sr << "[" << disp12 << "]," << rs << endl;
+}
+
+// XCHG - Exchange register and memory
 
 op xchg(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b10110100[8]:rd[4])
 
@@ -260,3 +608,59 @@ xchg.disasm={
 //                   MULTIPLE DATA                 
 
 //-----------------------------------------------------------------------------
+
+//LDM - load multiple register
+
+op ldm(0b111[3]:0b000[3]:postinc[1]:0b11100[5]:rp[4]:><:reglist16[16])
+
+ldm.disasm={
+
+	os << "ldm " << rp << "{++}," << reglist16 << endl;
+}
+
+
+//LDMTS load multiple registers for atsk switch
+
+op ldmts(0b111[3]:0b001[3]:postinc[1]:0b11100[5]:rp[4]:><:reglist16[16])
+
+ldmts.disasm={
+
+	os << "ldmts " << rp << "{++}," << reglist16 << endl;
+}
+ 
+// POPM - pop multiple registers from stack
+
+op popm(0b110[3]:0b1[1]:reglist8[8]:k[1]:0b010[3])
+
+popm.disasm={
+	os << "popm " << reglist8 << endl;
+}
+
+// PUSHM - push multiple registers to stack
+
+op pushm(0b110[3]:0b1[1]:reglist8[8]:0b0001[4])
+
+pushm.disasm={
+	os << "pushm " << reglist8 << endl;
+}
+
+// STM - store multiple registers
+
+op stm(0b111[3]:0b010[3]:predec[1]:0b11100[5]:rp[4]:><:reglist16[16])
+
+stm.disasm={
+
+	os << "stm {--}" << rp << "," << reglist16 << endl; 
+
+}
+
+// STMS - store multiple registers for task switch
+
+op stmts(0b111[3]:0b011[3]:predec[1]:0b11100[5]:rp[4]:><:reglist16[16])
+
+stmts.disasm={
+
+	os << "stmts {--}" << rp << "," << reglist16 << endl; 
+
+}
+
