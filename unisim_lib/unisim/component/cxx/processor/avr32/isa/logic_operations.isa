@@ -1,4 +1,40 @@
-//AND - logical and into hight or low half to register
+//AND - logical and with optional logical shift
+
+op and_a(0b000[3]:rs[4]:0b00110[5]:rd[4])
+
+and_a.disasm={
+	os << "and_a " << rd << "," << rs << endl; 
+}
+
+op and_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0000000[7]:sa5[5]:rd[4])
+
+and_b.disasm={
+	os << "and_b " << rd << "," << rx << "," << ry <<  "<<" << sa5 << endl; 
+}
+
+op and_c(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0000001[7]:sa5[5]:rd[4])
+
+and_c.disasm={
+	os << "and_c " << rd << "," << rx << "," << ry <<  "<<" << sa5 << endl; 
+}
+
+//AND_CON4 condiotionnal and
+
+op and_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0010[4]:rd[4])
+
+and_cond4.disasm={
+	os << "and_cond4 " << rd << "," << rx << "," << ry << endl; 
+}
+
+//ANDN - logical and not
+
+op andn(0b000[3]:rs[4]:0b01000[5]:rd[4])
+
+andn.disasm={
+	os << "andn " << rd << "," << rs<< endl; 
+}
+
+//ANDH/L - logical and into hight or low half to register
 
 op andh(0b111[3]:0b00[2]:0b1[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
 
@@ -47,36 +83,10 @@ eor_c.disasm={
 
 //EOR_COND4 -  conditional logical EOR
 
-op eor_cond4(0b111[3]:rx[4]:0b11101[5]//AND - logical and into hight or low half to register
-
-op andh(0b111[3]:0b00[2]:0b1[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
-
-andh.disasm={
-	os << "andh " << rd << "," << imm16 << "," << coh << endl;
-}
-
-op andl(0b111[3]:0b00[2]:0b0[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
-
-andl.disasm={
-	os << "andl " << rd << "," << imm16 << "," << coh << endl;
-}
-
-
-// COM - one's compliment
-
-op com(0b010[3]:0b1110[4]:0b01101[5]:rd[4])
-
-com.disasm={
-
-	os << "com " << rd << endl;
-}
-
-//EOR - logical exclusive or with optional logical shift
-
-op eor_a(0b000[3]:rs[4]:0b00101[5]:rd[4])
-:ry[4]:><:0b1110[4]:cond4[4]:rd[4])
+op eor_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0100[4]:rd[4])
 
 eor_cond4.disasm={
+
 	os << "eor_cond4 " << rd << "," << rx << "," << ry << endl;
 }
 
@@ -116,21 +126,7 @@ op or_c(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0001001[7]:sa5[5]:rd[4])
 or_c.disasm={
 	os << "or_c " << rd << "," << rx << "," << ry << " >> " << sa5 <<endl;
 }
-//OR - logical or with optional logical shift
 
-op or_a(0b000[3]:rs[4]:0b00100[5]:rd[4])
-
-or_a.disasm={
-	os << "or_a " << rd << "," << rs << endl;
-}
-
-op or_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0001000[7]:sa5[5]:rd[4])
-
-or_b.disasm={
-	os << "or_b " << rd << "," << rx << "," << ry << " << " << sa5 <<endl;
-}
-
-// or_c
 
 //OR_COND4 - conditional logical OR
 
@@ -165,3 +161,150 @@ tst.disasm={
 	os << "tst " << rd << "," << rs << endl;
 }
 
+/*
+
+//BFEXTS - bitfield extract and sign-extend
+
+op bfexts(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1011[4]:0b00[2]:bp5[5]:w5[5])
+
+bfexts.disasm={
+
+	os << "bfexts " << rd << "," << rs << "," << bp5 << "," << w5 << endl;
+}
+
+// BFEXTU - bitfield extract and zero-extend
+
+op bfextu(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1100[4]:0b00[2]:bp5[5]:w5[5])
+
+bfextu.disasm={
+
+	os << "bfextu " << rd << "," << rs << "," << bp5 << "," << w5 << endl;
+}
+
+//BFLNS - bitfield insert
+
+op bflns(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1101[4]:0b00[2]:bp5[5]:w5[5])
+
+bflns.disasm={
+
+	os << "bflns " << rd << "," << rs << "," << bp5 << "," << w5 << endl;
+}
+
+// BLD - bit load from register to c and z
+
+op bld(0b111[3]:0b0110[4]:0b11011[5]:rd[4]:><:0b00000000000[11]:bp5[5])
+
+bld.disasm={
+
+	os << "bld " << rd << "," << bp5 << endl;
+}
+
+// BREV - bit reverse
+
+op brev(0b010[3]:0b1110[4]:0b01001[5]:rd[4])
+
+brev.disasm={
+
+	os << "brev " << rd << endl;
+}
+
+// BST - copy c to register
+
+op bst(0b111[3]:0b0111[4]:0b11011[5]:rd[4]:><:0b00000000000[11]:bp5[5])
+
+bst.disasm={
+
+	os << "bst " << rd << "," << bp5 << endl;
+}
+
+// CASTS_H/B - type cast to signed word
+
+op casts_h(0b010[3]:0b1110[4]:0b01000[5]:rd[4])
+
+casts_h.disasm={
+
+	os << "casts_h " << rd << endl;
+}
+
+op casts_b(0b010[3]:0b1110[4]:0b00110[5]:rd[4])
+
+casts_b.disasm={
+
+	os << "casts_b " << rd << endl;
+}
+
+// CASTU_H/B - type cast to unsigned word
+
+op castu_h(0b010[3]:0b1110[4]:0b00111[5]:rd[4])
+
+castu_h.disasm={
+
+	os << "castu_h " << rd <<  endl;
+}
+
+op castu_b(0b010[3]:0b1110[4]:0b00101[5]:rd[4])
+
+castu_b.disasm={
+
+	os << "castu_b " << rd << endl;
+}
+
+// BRB - clear bit in register
+
+op cbr(0b101[3]:bp_4_1[4]:0b1110[4]:bp_0[1]:rd[4]) 
+
+cbr.var bp:{uint8_t}={(bp_4_1 << 1) | bp_0 }
+
+cbr.disasm={
+
+	os << "cbr " << rd << "," << bp << endl;
+}
+
+// CLZ - count leading zeros
+
+op clz(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0010[4]:0b00000000[8])
+
+clz.disasm={
+
+	os << "clz " << rd << "," << rs << endl;
+}
+
+// SBR - set bit in register
+
+op sbr(0b101[3]:bp_4_1[4]:0b1101[4]:bp_0[1]:rd[4])
+
+sbr.var bp:{uint8_t}={(bp_4_1 << 1) | bp_0 }
+
+sbr.disasm={
+
+	os << "sbr " << rd << "," << bp << endl;
+}  
+
+// SWAP_B - swap bytes
+
+op swap_b(0b010[3]:0b1110[4]:0b01011[5]:rd[4])
+
+swap_b.disasm={
+
+	os << "swap_b " << rd << endl;
+}
+
+// SWAP_BH - swap bytes in halfword
+
+op swap_bh(0b010[3]:0b1110[4]:0b01100[5]:rd[4])
+
+swap_bh.disasm={
+
+	os << "swap_bh " << rd << endl;
+}
+
+
+//SWAP_H - swap halfwords
+
+op swap_h(0b010[3]:0b1110[4]:0b01010[5]:rd[4])
+
+swap_h.disasm={
+
+	os << "swap_h " << rd << endl;
+}
+*/

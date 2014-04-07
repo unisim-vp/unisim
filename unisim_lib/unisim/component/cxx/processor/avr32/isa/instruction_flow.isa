@@ -78,7 +78,7 @@ rcall_a.var disp :{uint16_t} ={ (disp_9_8 << 8 )| disp_7_0}
 
 rcall_a.disasm={
 
-	os << "rcall_a " << pc << "[" << disp << "]" << endl: 
+	os << "rcall_a " << pc << "[" << disp << "]" << endl;
 }
 
 op rcall_b(0b111[3]:disp_20_17[4]:0b0101[4]:disp_16[1]:0b0000[4]:><:disp_15_0[16])

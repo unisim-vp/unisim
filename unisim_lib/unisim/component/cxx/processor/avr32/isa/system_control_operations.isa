@@ -13,7 +13,7 @@ op cache(0b111101000001[12]:rp[4]:><:op5[5]:disp11[11])
 
 cache.disasm={
 
-	os << "cache " << rp << "[" << disp << "]" << "," << op5 << endl;
+	os << "cache " << rp << "[" << disp11 << "]" << "," << op5 << endl;
 }
 
 // CSRF - Clear status register flag

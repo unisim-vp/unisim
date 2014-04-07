@@ -2,14 +2,14 @@
 
 op pabs_sb(0b111000000000[12]:rs[4]:><:0b001000111110[12]:rd[4])
 
-op pabs_sb.disasm={
-	os << "pabs_sb " << rd << "," << rs << 
+pabs_sb.disasm={
+	os << "pabs_sb " << rd << "," << rs << endl;
 }
 
 op pabs_sh(0b111000000000[12]:rs[4]:><:0b001000111111[12]:rd[4])
 
-op pabs_sh.disasm={
-	os << "pabs_sh " << rd << "," << rs << 
+pabs_sh.disasm={
+	os << "pabs_sh " << rd << "," << rs << endl;
 }
 
 //PACKSH_UB/SB - pack signed halfwords to bytes
@@ -414,7 +414,7 @@ op punpcksb_h(0b111[3]:rs[4]:0b000000000[9]:><:0b00100100101[11]:k[1]:rd[4])
 
 punpcksb_h.disasm={
 
-	os << "punpcksb_h " << rd << "," << rs << ":<" << part << ">"
+	os << "punpcksb_h " << rd << "," << rs << ":<" << part << ">" << endl;
 }
  
 

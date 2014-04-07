@@ -9,11 +9,11 @@
 
 op cop(0b111[3]:0b00[2]:op_6_5[2]:0b11010[5]:op_4_1[4]:><:cp[3]:op_0[1]:cRd[4]:cRx[4]:cRy[4])
 
-cop.var op :{uint8_t} = {(op_6_5<<5) | (op_4_1 << 4) | op_0}
+cop.var _op :{uint8_t} = {(op_6_5<<5) | (op_4_1 << 4) | op_0}
 
 cop.disasm={
 
-	os << "cop " << cp << "," << cRd << "," << cRx << "," << cRy << "," << op << endl;
+	os << "cop " << cp << "," << cRd << "," << cRx << "," << cRy << "," << _op << endl;
 }
                    
 
@@ -22,10 +22,10 @@ cop.disasm={
 op ldc_d_a(0b111[3]:0b0100[4]:0b11010[5]:rp[4]:><:cp[3]:0b1[1]:cRd_3_1[3]:0b0[1]:disp8[8])
 
 ldc_d_a.disasm={
-	os << "ldc_d_a " << cp << "," << cRd_3_1 << "," << rp << "[" << disp << "]" << endl;
+	os << "ldc_d_a " << cp << "," << cRd_3_1 << "," << rp << "[" << disp8 << "]" << endl;
 }
 
-op ldc_d_b(0b111[3]:0b0111[4]:0b11010[5]:rp[4]:><:cp[3]:0b0[1]:cRd_3_1[3]:0b0[1]:0b0101:[4]0b0000[4])
+op ldc_d_b(0b111[3]:0b0111[4]:0b11010[5]:rp[4]:><:cp[3]:0b0[1]:cRd_3_1[3]:0b0[1]:0b0101[4]:0b0000[4])
 
 ldc_d_b.disasm={
 	os << "ldc_d_b " << cp << "," << cRd_3_1 << "," << "--" << rp << endl;
@@ -58,7 +58,7 @@ ldc_w_a.disasm={
 }
 
 // erreur dans la doc disp au lieu de k8
-m
+
 op ldc_w_b(0b111[3]:0b0111[4]:0b11010[5]:rp[4]:><:cp[3]:0b0[1]:cRd[4]:0b0100[4]:0b0000[4])
 
 ldc_w_b.disasm={
@@ -66,11 +66,13 @@ ldc_w_b.disasm={
 }
 
 
-op ldc_w_c(0b111[3]:0b0111[4]:0b11010[5]:rp[4]:><:cp[3]:0b1[1]:cRd[4]:0b00[2]:sa[2]:ri[4])
+op ldc_w_c(0b111[3]:0b0111[4]:0b11010[5]:rp[4]:><:cp[3]:0b1[1]:crd[4]:0b00[2]:sa[2]:ri[4])
 
 ldc_w_c.disasm={
-	os << "ldc_w_c " << cp << "," << cRd << "," << rb << "[" << ri << "<<" << sa << "]" << endl;
+	os << "ldc_w_c " << cp << "," << crd << "," << rp << "[" << ri << "<<" << sa << "]" << endl;
 }
+
+// rp au lieu de rd
 
 // LDC0_W
 
@@ -113,13 +115,13 @@ ldcm_w_b.disasm={
 op mvcr_d(0b111[3]:0b0111[4]:0b11010[5]:rd[3]:0b0[1]:><:cp[3]:0b0[1]:crs[3]:0b0[1]:0b00010000[8])
 
 mvcr_d.disasm={
-	os << "mvcr_d " << cp << "," << rd << "," << cRs << endl;
+	os << "mvcr_d " << cp << "," << rd << "," << crs << endl;
 }
 
 op mvcr_w(0b111[3]:0b0111[4]:0b11010[5]:rd[4]:><:cp[3]:0b0[1]:crs[4]:0b00000000[8])
 
 mvcr_w.disasm={
-	os << "mvcr_w " << cp << "," << rd << "," << cRs << endl;
+	os << "mvcr_w " << cp << "," << rd << "," << crs << endl;
 }
 
 // MVRC_D/W move register file register to coprocessor register
@@ -144,7 +146,7 @@ mvrc_w.disasm={
 op stc_d_a(0b111[3]:0b0101[4]:0b11010[5]:rp[4]:><:cp[3]:0b1[1]:cRd_3_1[3]:0b0[1]:disp8[8])
 
 stc_d_a.disasm={
-	os << "stc_d_a " << cp << "," << rp << "[" << disp << "]" << "," << cRd_3_1 << endl;
+	os << "stc_d_a " << cp << "," << rp << "[" << disp8 << "]" << "," << cRd_3_1 << endl;
 }
 
 op stc_d_b(0b111[3]:0b0111[4]:0b11010[5]:rp[4]:><:cp[3]:0b0[1]:cRd_3_1[3]:0b0[1]:0b0111[4]:0b0000[4])
@@ -169,7 +171,7 @@ op stc0_d(0b111[3]:0b1011[4]:0b11010[5]:rp[4]:><:disp_11_8[4]:cRs[3]:0b0[1]:disp
 stc0_d.var disp:{uint16_t}={(disp_11_8 << 8) | disp_7_0}
 
 stc0_d.disasm={
-	os << "stc0_d " << rp << "[" << disp << "]," << cRs <<  << endl;
+	os << "stc0_d " << rp << "[" << disp << "]," << cRs << endl;
 }
 
 
@@ -201,7 +203,7 @@ op stc0_w(0b111[3]:0b1010[4]:0b11010[5]:rp[4]:><:disp_11_8[4]:cRs[4]:disp_7_0[8]
 stc0_w.var disp:{uint16_t}={(disp_11_8 << 8) | disp_7_0}
 
 stc0_w.disasm={
-	os << "stc0_w " << rp << "[" << disp << "]," << cRs <<  << endl;
+	os << "stc0_w " << rp << "[" << disp << "]," << cRs  << endl;
 }
 
 
@@ -217,10 +219,9 @@ stcm_d.disasm={
 
 op stcm_w_a(0b111[3]:0b0110[4]:0b11010[5]:rp[4]:><:cp[3]:preinc[1]:0b0011[4]:CPH8[8])
 
-ldcm_w_a.disasm={
+stcm_w_a.disasm={
 
 	os << "stcm_w_a " << cp << ",{--}" << rp << "," << CPH8 << endl;
-	
 }
 
 op stcm_w_b(0b111[3]:0b0110[4]:0b11010[5]:rp[4]:><:cp[3]:preinc[1]:0b0010[4]:CPL8[8]) 

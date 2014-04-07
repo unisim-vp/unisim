@@ -54,14 +54,14 @@ action {void} disasm({typename CONFIG::STATE *} {cpu}, {std::ostream&} {os}) {
 	os << "???";
 }
 
-include "arithmetic_operations.isa" 
-include "bit_shift_operations.isa"
-include "coprocessor_interface.isa"
-include "data_transfert_operations.isa"
-include "dsp_operations.isa"
-include "instruction_flow.isa"
-include "logic_operations.isa"
-include "multiplication_operations.isa"
-include "simd_operations.isa"
-include "system_control_operations.isa"
+include "unisim/component/cxx/processor/avr32/isa/arithmetic_operations.isa" 
+include "unisim/component/cxx/processor/avr32/isa/bit_shift_operations.isa"
+include "unisim/component/cxx/processor/avr32/isa/coprocessor_interface.isa"
+include "unisim/component/cxx/processor/avr32/isa/data_transfer_operations.isa"
+include "unisim/component/cxx/processor/avr32/isa/dsp_operations.isa"
+include "unisim/component/cxx/processor/avr32/isa/instruction_flow.isa"
+include "unisim/component/cxx/processor/avr32/isa/logic_operations.isa"
+include "unisim/component/cxx/processor/avr32/isa/multiplication_operations.isa"
+include "unisim/component/cxx/processor/avr32/isa/simd_operations.isa"
+include "unisim/component/cxx/processor/avr32/isa/system_control_operations.isa"
 
