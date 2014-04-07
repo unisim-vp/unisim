@@ -30,21 +30,42 @@ macwh_d.disasm={
 	os << "macwh_d " << rd << "," << rx << "," << ry <<":<" << part << ">" << endl;
 }
 
-//MULHH_W multiply halfword with halfword
+//MULHH_W - multiply halfword with halfword
 
 op mulhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b00000111[8]:0b10[2]:x[1]:y[1]:rd[4])
 
-//multiply word with halfword
+mulhh_w.disasm={
+
+	os << "mulhh_w " << rd << "," << rx << ":<" << part <<">," << ry <<":<" << part << ">" << endl;
+}
+
+// MULWH_D - multiply word with halfword
 
 op mulwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1101[4]:0b100[3]:y[1]:rd[4])
 
-// multiply halword with negative halfword
+mulwh_d.disasm={
+
+	os << "mulwh_d " << rd << "," << rx << "," << ry <<":<" << part << ">" << endl;
+}
+
+// MULNHH_W - multiply halword with negative halfword
 
 op mulnhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b00000001[8]:0b10[2]:x[1]:y[1]:rd[4])
 
-//multiply word with negative halfword
+mulnhh_w.disasm={
+
+	os << "mulnhh_w " << rd << "," << rx << ":<" << part <<">," << ry <<":<" << part << ">" << endl;
+}
+
+//MULNWH_D - multiply word with negative halfword
 
 op mulnwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0010[4]:0b100[3]:y[1]:rd[4])
+
+mulnwh_d.disasm={
+
+	os << "mulnwh_d " << rd << "," << rx << "," << ry << ":<" << part << ">" << endl;
+}
+
 
 //SATADD_H - saturated add of halfwords
 
@@ -130,27 +151,64 @@ satu.disasm={
 
 op subhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b111100[6]:x[1]:y[1]:rd[4])
 
-//multiply halfword with saturation into halfword
+subhh_w.disasm={
+
+	os << "msubhh_w " << rd << "," << rx << ":<" << part << ">," << ry << ":<" << part << ">" << endl;
+}
+
+
+// MULSATHH_H - multiply halfword with saturation into halfword
 
 op mulsathh_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1000[4]:0b10[2]:x[1]:y[1]:rd[4])
 
-//multiply halfword with saturation into word
+mulsathh_h.disasm={
+
+	os << "mulsathh_h " << rd << "," << rx << ":<" << part << ">," << ry <<":<" << part << ">" << endl;
+}
+
+
+// MULSATHH_W - multiply halfword with saturation into word
 
 op mulsathh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1001[4]:0b10[2]:x[1]:y[1]:rd[4])
 
-//multiply halfwords with saturation and rounding into halfword
+mulsathh_w.disasm={
+
+	os << "mulsathh_w " << rd << "," << rx << ":<" << part << ">," << ry <<":<" << part << ">" << endl;
+}
+
+
+// MULSATRNDHH_H - multiply halfwords with saturation and rounding into halfword
 
 op mulsatrndhh_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1010[4]:0b10[2]:x[1]:y[1]:rd[4])
 
-//multiply word ans halfwords with saturation and rounding into word
+mulsatrndhh_h.disasm={
+
+	os << "mulsatrndhh_h " << rd << "," << rx << ":<" << part << ">," << ry <<":<" << part << ">" << endl;
+}
+
+
+// MULSATRNDWH_W - multiply word ans halfwords with saturation and rounding into word
 
 op mulsatrndwh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1011[4]:0b100[3]:y[1]:rd[4])
 
-//multiply word and halfword with saturation into word
+mulsatrndwh_w.disasm={
+
+	os << "mulsatrndwh_w " << rd << "," << rx << "," << ry <<":<" << part << ">" << endl;
+}
+
+
+// MULSATWH_W - multiply word and halfword with saturation into word
 
 op mulsatwh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1110[4]:0b100[3]:y[1]:rd[4])
 
-//multiply accumulate halfwords with saturation into word
+mulsatwh_w.disasm={
+
+	os << "mulsatwh_w " << rd << "," << rx << "," << ry <<":<" << part << ">" << endl;
+}
+
+
+
+// MACSATHH_W - multiply accumulate halfwords with saturation into word
 
 op macsathh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0110[4]:0b10[2]:x[1]:y[1]:rd[4])
 
