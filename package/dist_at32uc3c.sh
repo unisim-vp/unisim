@@ -191,7 +191,7 @@ unisim/component/cxx/processor/avr32/isa/avr32.isa \
 unisim/component/cxx/processor/avr32/isa/arithmetic_operations.isa \
 unisim/component/cxx/processor/avr32/isa/bit_shift_operations.isa \
 unisim/component/cxx/processor/avr32/isa/coprocessor_interface.isa \
-unisim/component/cxx/processor/avr32/isa/data_transfert_operations.isa \
+unisim/component/cxx/processor/avr32/isa/data_transfer_operations.isa \
 unisim/component/cxx/processor/avr32/isa/dsp_operations.isa \
 unisim/component/cxx/processor/avr32/isa/instruction_flow.isa \
 unisim/component/cxx/processor/avr32/isa/logic_operations.isa \
