@@ -380,8 +380,10 @@ private:
 
 	// system call 'stat' helper methods
 	int Stat(int fd, struct powerpc_stat *target_stat);
-	int Stat64(int fd, struct powerpc_stat64 *target_stat);
-	int Stat64(int fd, struct arm_stat64 *target_stat);
+	int Fstat64(int fd, struct powerpc_stat64 *target_stat);
+	int Stat64(const char *pathname, struct powerpc_stat64 *target_stat);
+	int Fstat64(int fd, struct arm_stat64 *target_stat);
+	int Stat64(const char *pathname, struct arm_stat64 *target_stat);
 	// system call 'times' helper methods
 	int Times(struct powerpc_tms *target_tms);
 	int Times(struct arm_tms *target_tms);
