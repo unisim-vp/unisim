@@ -484,6 +484,7 @@ public:
 	inline uint32_t GetCCR0_CRPE() const ALWAYS_INLINE { return (GetCCR0() & CONFIG::CCR0_CRPE_MASK) >> CONFIG::CCR0_CRPE_OFFSET; }
 	inline uint32_t GetCCR0_FLSTA() const ALWAYS_INLINE { return (GetCCR0() & CONFIG::CCR0_FLSTA_MASK) >> CONFIG::CCR0_FLSTA_OFFSET; }
 	inline void SetCCR1(uint32_t value) ALWAYS_INLINE { ccr1 = value; }
+	inline void SetCCR1_FFF() { SetCCR1(GetCCR1() | CONFIG::CCR1_FFF_MASK); }
 	inline uint32_t GetCCR1() const ALWAYS_INLINE { return ccr1; }
 	inline uint32_t GetCCR1_FFF() const ALWAYS_INLINE { return (GetCCR1() & CONFIG::CCR1_FFF_MASK) >> CONFIG::CCR1_FFF_OFFSET; }
 	inline uint32_t GetCCR1_TCS() const ALWAYS_INLINE { return (GetCCR1() & CONFIG::CCR1_TCS_MASK) >> CONFIG::CCR1_TCS_OFFSET; }
