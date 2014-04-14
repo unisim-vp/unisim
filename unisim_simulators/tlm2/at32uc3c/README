@@ -1,1 +1,4 @@
-See INSTALL at top level of this package for installation instructions.
+This package contains:
+  - UNISIM GenISSLib: an instruction set simulator generator
+  - UNISIM AT32UC3C Simulator: an AVR32UC simulator.
+See INSTALL for installation instructions.
