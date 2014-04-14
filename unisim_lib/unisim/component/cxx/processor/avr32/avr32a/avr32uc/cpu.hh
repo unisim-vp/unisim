@@ -295,12 +295,12 @@ private:
 	//=                       register's access methods                         =
 	//=====================================================================
 
-	uint32_t getPC();
-	uint32_t getNPC();
-	uint32_t getSP();
-	uint32_t getSR();
-	void setPC(uint32_t valpc);
-	void setNPC(uint32_t valnpc);
+	inline uint32_t getPC() ALWAYS_INLINE;
+	inline uint32_t getNPC() ALWAYS_INLINE;
+	inline uint32_t getSP() ALWAYS_INLINE;
+	inline uint32_t getSR() ALWAYS_INLINE;
+	inline void setPC(uint32_t valpc) ALWAYS_INLINE;
+	inline void setNPC(uint32_t valnpc) ALWAYS_INLINE;
 
 	
 

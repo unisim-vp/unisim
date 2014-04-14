@@ -1,6 +1,13 @@
 // ADDHH_W - add halfwords into word
 
-op addhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1110[4]:0b00[2]:x[1]:y[1]:rd[4])
+op addhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1110[4]:0b00[2]:x[1]:y[1]:rd[
+
+// X=t=0 high part ; X=b=1 low part
+addhh_w.disasm={
+
+	os << "addhh_w " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
+}
+
 
 // MACHH_D - multiply halfwords and accumulate in doubleword
 
@@ -8,16 +15,17 @@ op machh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0101[4]:0b10[2]:x[1]:y
 
 machh_d.disasm={
 
-	os << "machh_d " << rd << "," << rx << ":<" << part << ">," << ry <<":<" << part << ">" << endl;
+	os << "machh_d " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
 }
 
 // MACHH_W - multiply halfwords and accumulate in word
 
 op machh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0100[4]:0b10[2]:x[1]:y[1]:rd[4])
 
+
 machh_w.disasm={
 
-	os << "machh_w " << rd << "," << rx << ":<" << part << ">," << ry <<":<" << part << ">" << endl;
+	os << "machh_w " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
 }
 
 
@@ -25,36 +33,41 @@ machh_w.disasm={
 
 op macwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1100[4]:0b100[3]:y[1]:rd[4])
 
-macwh_d.disasm={
+// y=t=0 high part ; y=b=1 low part
 
-	os << "macwh_d " << rd << "," << rx << "," << ry <<":<" << part << ">" << endl;
+addhh_w.disasm={
+
+	os << "macwh_d " << rd << "," << rx << "," << ry << ":<" << y << ">" << endl;
 }
 
 //MULHH_W - multiply halfword with halfword
 
 op mulhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b00000111[8]:0b10[2]:x[1]:y[1]:rd[4])
 
+
 mulhh_w.disasm={
 
-	os << "mulhh_w " << rd << "," << rx << ":<" << part <<">," << ry <<":<" << part << ">" << endl;
+	os << "mulhh_w " << rd << "," << rx << ":<" << x <<">," << ry <<":<" << y << ">" << endl;
 }
 
 // MULWH_D - multiply word with halfword
 
 op mulwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1101[4]:0b100[3]:y[1]:rd[4])
 
+
 mulwh_d.disasm={
 
-	os << "mulwh_d " << rd << "," << rx << "," << ry <<":<" << part << ">" << endl;
+	os << "mulwh_d " << rd << "," << rx << "," << ry << ":<" << y << ">" << endl;
 }
 
 // MULNHH_W - multiply halword with negative halfword
 
 op mulnhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b00000001[8]:0b10[2]:x[1]:y[1]:rd[4])
 
+
 mulnhh_w.disasm={
 
-	os << "mulnhh_w " << rd << "," << rx << ":<" << part <<">," << ry <<":<" << part << ">" << endl;
+	os << "mulnhh_w " << rd << "," << rx << ":<" << x <<">," << ry <<":<" << y << ">" << endl;
 }
 
 //MULNWH_D - multiply word with negative halfword
@@ -63,7 +76,7 @@ op mulnwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0010[4]:0b100[3]:y[1]
 
 mulnwh_d.disasm={
 
-	os << "mulnwh_d " << rd << "," << rx << "," << ry << ":<" << part << ">" << endl;
+	os << "mulnwh_d " << rd << "," << rx << "," << ry << ":<" << y << ">" << endl;
 }
 
 
@@ -153,7 +166,7 @@ op subhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b111100[6]:x[1]:y[1]:rd
 
 subhh_w.disasm={
 
-	os << "msubhh_w " << rd << "," << rx << ":<" << part << ">," << ry << ":<" << part << ">" << endl;
+	os << "msubhh_w " << rd << "," << rx << ":<" << x << ">," << ry << ":<" << y << ">" << endl;
 }
 
 
@@ -161,9 +174,10 @@ subhh_w.disasm={
 
 op mulsathh_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1000[4]:0b10[2]:x[1]:y[1]:rd[4])
 
+
 mulsathh_h.disasm={
 
-	os << "mulsathh_h " << rd << "," << rx << ":<" << part << ">," << ry <<":<" << part << ">" << endl;
+	os << "mulsathh_h " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
 }
 
 
@@ -173,7 +187,7 @@ op mulsathh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1001[4]:0b10[2]:x[1
 
 mulsathh_w.disasm={
 
-	os << "mulsathh_w " << rd << "," << rx << ":<" << part << ">," << ry <<":<" << part << ">" << endl;
+	os << "mulsathh_w " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
 }
 
 
@@ -183,7 +197,7 @@ op mulsatrndhh_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1010[4]:0b10[2]:
 
 mulsatrndhh_h.disasm={
 
-	os << "mulsatrndhh_h " << rd << "," << rx << ":<" << part << ">," << ry <<":<" << part << ">" << endl;
+	os << "mulsatrndhh_h " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
 }
 
 
@@ -193,7 +207,7 @@ op mulsatrndwh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1011[4]:0b100[3]
 
 mulsatrndwh_w.disasm={
 
-	os << "mulsatrndwh_w " << rd << "," << rx << "," << ry <<":<" << part << ">" << endl;
+	os << "mulsatrndwh_w " << rd << "," << rx << "," << ry <<":<" << y << ">" << endl;
 }
 
 
@@ -203,7 +217,7 @@ op mulsatwh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1110[4]:0b100[3]:y[
 
 mulsatwh_w.disasm={
 
-	os << "mulsatwh_w " << rd << "," << rx << "," << ry <<":<" << part << ">" << endl;
+	os << "mulsatwh_w " << rd << "," << rx << "," << ry <<":<" << y << ">" << endl;
 }
 
 
@@ -214,7 +228,7 @@ op macsathh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0110[4]:0b10[2]:x[1
 
 macsathh_w.disasm={
 
-	os << "macsathh_w " << rd << "," << rx << ":<" << part << ">," << ry <<":<" << part << ">" << endl;
+	os << "macsathh_w " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
 }
 
 

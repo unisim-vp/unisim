@@ -3,11 +3,11 @@
 op abs(0b010[3]:0b1110[4]:0b00100[5]:rd[4])
 
 
-abs.execute={
+/*abs.execute={
 
 	if(gpr[rd]!=0x80000000) gpr[rd]= abs(gpr[rd]);
 	
-}
+}*/
 abs.disasm={
 
 	os<< "abs " << rd << endl ;
@@ -36,10 +36,10 @@ adc.disasm={
 
 op add_a(0b000[3]:rs[4]:0b00000[5]:rd[4]) 
 
-add_a.execute={
+/*add_a.execute={
 
 	gpr[rd]=gpr[rd]+gpr[rs];
-}
+}*/
 add_a.disasm={
 
 	os<< "add_a " << rd << "," << rs << endl ;
@@ -48,10 +48,10 @@ add_a.disasm={
 
 op add_b(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0000[4]:0b00[2]:sa[2]:rd[4])
 
-add_b.execute={
+/*add_b.execute={
 
 	gpr[rd]=gpr[rx]+(gpr[ry] << sa);
-}
+}*/
 
 add_b.disasm={
 
@@ -62,10 +62,10 @@ add_b.disasm={
 
 op add_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0000[4]:rd[4])
 
-add_cond4.execute={
+/*add_cond4.execute={
 
 	if(cond4) gpr[rd]=grp[rx]+gpr[ry];
-}
+}*/
 add_cond4.disasm={
 
 	os<< "add_cond4 " << rd << "," << rx << "," << ry << endl ;
@@ -159,7 +159,8 @@ max.disasm={
 
 //MIN - return minimum value
 
-op min(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11010100[8]:rd[4])//erreur dans la doc rd au lieu de ry
+op min(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11010100[8]:rd[4])
+//erreur dans la doc rd au lieu de ry
 
 min.disasm={
 

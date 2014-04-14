@@ -250,7 +250,7 @@ ld_w_e.disasm={
 op ld_w_f(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b111110[6]:x[1]:y[1]:rd[4])
 
 ld_w_f.disasm={
-	os << "ld_w_f " << rd << "," << rb << "[" << ri << ":<" << part << "> << 2]" << endl;
+	os << "ld_w_f " << rd << "," << rb << "[" << ri << ":<" << x << y  << "> << 2]" << endl;
 }
 
 
@@ -342,7 +342,7 @@ op lddpc(0b010[3]:0b01[2]:disp7[7]:rd[4])
 
 lddpc.disasm={
 
-	os << "lddpc " << rd << "," << pc << "[" << disp7 << "]"<< endl; 
+	os << "lddpc " << rd << "," << cpu.getPC() << "[" << disp7 << "]"<< endl; 
 }
 
 // LDDSP - load sp relative with displacement
@@ -351,7 +351,7 @@ op lddsp(0b010[3]:0b00[2]:disp7[7]:rd[4])
 
 lddsp.disasm={
 
-	os << "lddsp " << rd << "," << sp << "[" << disp7 << "]" << endl; 
+	os << "lddsp " << rd << "," << cpu.getSP() << "[" << disp7 << "]" << endl; 
 }
 
 
@@ -558,7 +558,7 @@ op stdsp(0b010[3]:0b10[2]:disp7[7]:rs[4])
 
 stdsp.disasm={
 
-	os << "stdsp " << sp << "[" << disp7 << "]," << rs << endl;
+	os << "stdsp " << cpu.getSP() << "[" << disp7 << "]," << rs << endl;
 }
 
 // STHH_W - store halfword into word
@@ -567,7 +567,7 @@ op sthh_w_a(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b11[2]:x[1]:y[1]:disp8[8]:rp[4])
 
 sthh_w_a.disasm={
 
-	os << "sthh_w_a " << rp << "[" << disp8 << "]," << rx << ":<" << part << ">,"<< ry << ":[" << part << "]" << endl;
+	os << "sthh_w_a " << rp << "[" << disp8 << "]," << rx << ":<" << x << ">,"<< ry << ":[" << x << "]" << endl;
 
 }
 
@@ -575,7 +575,7 @@ op sthh_w_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b10[2]:x[1]:y[1]:ri[4]:0b00[2]:s
 
 sthh_w_b.disasm={
 
-	os << "sthh_w_b " << rb << "[" << ri << "<<" << sa << "]," << rx << ":<" << part << ">,"<< ry << ":[" << part << "]" << endl;
+	os << "sthh_w_b " << rb << "[" << ri << "<<" << sa << "]," << rx << ":<" << x << ">,"<< ry << ":[" << y << "]" << endl;
 
 }
 

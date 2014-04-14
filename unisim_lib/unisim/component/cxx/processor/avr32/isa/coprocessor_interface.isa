@@ -46,7 +46,7 @@ op ldc0_d(0b111[3]:0b1001[4]:0b11010[5]:rp[4]:><:disp_11_8[4]:cRd_3_1[3]:0b0[1]:
 ldc0_d.var disp:{uint16_t}={(disp_11_8 << 8) | disp_7_0}
 
 ldc0_d.disasm={
-	os << "ldc0_d " << cRd_3_1 << "," << rp << "[" <<disp << "]" << endl;
+	os << "ldc0_d " << cRd_3_1 << "," << rp << "[" << disp << "]" << endl;
 }
 
 // LDC_W

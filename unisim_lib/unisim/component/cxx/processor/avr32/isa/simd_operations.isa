@@ -105,7 +105,7 @@ op paddsub_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0010000100[10]:x[1]:y[1]:rd[4]
 
 paddsub_h.disasm={
 
-	os << "paddsub_h " << rd << "," << rx << ":<" << part << ">," << ry << ":<" << part << ">" << endl;
+	os << "paddsub_h " << rd << "," << rx << ":<" << x << ">," << ry << ":<" << y << ">" << endl;
 }
 
 //PADDSUBH_SH - packed halfword addition substration with halving
@@ -114,7 +114,7 @@ op paddsubh_sh(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0010001010[10]:x[1]:y[1]:rd[
 
 paddsubh_sh.disasm={
 
-	os << "paddsubh_sh " << rd << "," << rx << ":<" << part << ">," << ry << ":<" << part << ">" << endl;
+	os << "paddsubh_sh " << rd << "," << rx << ":<" << x << ">," << ry << ":<" << y << ">" << endl;
 }
 
 // PADDSUBS_UH/SH - packed halfword addition and substraction with saturation
@@ -123,14 +123,14 @@ op paddsubs_uh(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0010001000[10]:x[1]:y[1]:rd[
 
 paddsubs_uh.disasm={
 
-	os << "paddsubs_uh " << rd << "," << rx << ":<" << part << ">," << ry << ":<" << part << ">" << endl;
+	os << "paddsubs_uh " << rd << "," << rx << ":<" << x << ">," << ry << ":<" << y << ">" << endl;
 }
 
 op paddsubs_sh(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0010000110[10]:x[1]:y[1]:rd[4])
 
 paddsubs_sh.disasm={
 
-	os << "paddsubs_sh " << rd << "," << rx << ":<" << part << ">," << ry << "<" << part << ">" << endl;
+	os << "paddsubs_sh " << rd << "," << rx << ":<" << y << ">," << ry << "<" << y << ">" << endl;
 }
 
 // PADDX_H - packed halfword addition with crossed operand
@@ -294,7 +294,7 @@ op psubadd_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0010000101[10]:x[1]:y[1]:rd[4]
 
 psubadd_h.disasm={
 
-	os << "psubadd_h " << rd << "," << rx << ":<" << part << ">," << ry << ":<" << part << ">" << endl;
+	os << "psubadd_h " << rd << "," << rx << ":<" << x << ">," << ry << ":<" << y << ">" << endl;
 }
 
 // PSUBADDH_SH - packed signed halfword substraction and addiction with halving
@@ -303,7 +303,7 @@ op psubaddh_sh(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0010001011[10]:x[1]:y[1]:rd[
 
 psubaddh_sh.disasm={
 
-	os << "psubaddh_sh " << rd << "," << rx << ":<" << part << ">," << ry << ":<" << part << ">" << endl;
+	os << "psubaddh_sh " << rd << "," << rx << ":<" << x << ">," << ry << ":<" << y << ">" << endl;
 }
 
 // PSUBADDS_UH/SH - packed halfword substraction and addition with saturation
@@ -312,14 +312,14 @@ op psubadds_uh(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0010001001[10]:x[1]:y[1]:rd[
 
 psubadds_uh.disasm={
 
-	os << "psubadds_uh " << rd << "," << rx << ":<" << part << ">," << ry << ":<" << part << ">" << endl;
+	os << "psubadds_uh " << rd << "," << rx << ":<" << x << ">," << ry << ":<" << y << ">" << endl;
 }
 
 op psubadds_sh(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0010000111[10]:x[1]:y[1]:rd[4])
 
 psubadds_sh.disasm={
 
-	os << "psubadds_sh " << rd << "," << rx << ":<" << part << ">," << ry << ":<" << part << ">" << endl;
+	os << "psubadds_sh " << rd << "," << rx << ":<" << x << ">," << ry << ":<" << y << ">" << endl;
 }
 
 //PSUBH_UB/SH - packed substratction with halving
@@ -408,7 +408,7 @@ op punpckub_h(0b111[3]:rs[4]:0b000000000[9]:><:0b00100100100[11]:k[1]:rd[4])
 
 punpckub_h.disasm={
 
-	os << "punpckub_h " << rd << "," << rs << ":<" << part << ">"
+	os << "punpckub_h " << rd << "," << rs << ":<" << k << ">" << endl;
 }
 op punpcksb_h(0b111[3]:rs[4]:0b000000000[9]:><:0b00100100101[11]:k[1]:rd[4])
 
