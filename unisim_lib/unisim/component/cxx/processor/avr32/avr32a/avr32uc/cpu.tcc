@@ -75,7 +75,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, registers_export("registers-export",  this)
 	, memory_export("memory-export",  this)
 	, memory_injection_export("memory-injection-export",  this)
-	, synchronizable_export("synchronizable-export",  this)
+	, synchronizable_export("synchronizable-export",  thbuffer[4];
+	uint8_t is)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export",  this)
 	, loader_import("loader-import",  this)
 	, debug_control_import("debug-control-import",  this)
@@ -111,10 +112,15 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
 	unsigned int i;
 
-	//registers_registry["cia"] = new unisim::util::debug::SimpleRegister<uint32_t>("cia", &cia);
+	for(i = 0; i < 12; i++)
+	{
+		std::stringstream sstr_register_name;
+		sstr_register_name << "r" << i;
+		registers_registry[sstr_register_name.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr_register_name.str().c_str(), &gpr[i]);
+	}
 
 	Reset();
-	
+	disasm
 	std::stringstream sstr_description;
 	sstr_description << "This module implements an AVR32UC CPU core." << std::endl;
 	
@@ -213,12 +219,13 @@ void CPU<CONFIG>::Reset()
 
 	CPU<CONFIG>::InvalidateDecodingCache();
 }
-
+ 
 template <class CONFIG>
-bool CPU<CONFIG>::Fetch(void *buffer, uint32_t size)
+bool CPU<CONFIG>::Fetch(typename CONFIG::address_t addr, void *buffer,uint32_t size)
 {
-	// TODO
-	return false;
+	
+	
+	return memory_import->IHSBRead(addr, buffer, size);
 }
 
 template <class CONFIG>
@@ -255,7 +262,7 @@ void CPU<CONFIG>::StepOneInstruction()
 	typename CONFIG::address_t addr = GetPC();
 	
 	uint8_t buffer[4];
-	if(likely(Fetch(addr, buffer)))
+	if(likely(Fetch(addr, buffer, size)))
 	{
 		CodeType insn(buffer, sizeof(buffer) * 8);
 	  
@@ -289,14 +296,51 @@ void CPU<CONFIG>::StepOneInstruction()
 	}
 
 	/* go to the next instruction */
-	SetNPC(GetPC());
+	SetPC(GetNPC());
 
 	if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
 	{
 		trap_reporting_import->ReportTrap();
 	}
 	
-	if(unlikely((instruction_counter >= max_inst) || (GetCIA() == halt_on_addr))) Stop(0);
+	if(unlikely((instruction_counter >= max_inst) || (GetPC() == halt_on_addr))) Stop(0);
+}
+
+template <class CONFIG>
+uint32_t CPU<CONFIG>::getPC()
+{
+	return gpr[15];
+}
+
+
+template <class CONFIG>
+uint32_t CPU<CONFIG>::getNPC()
+{
+	return npc;
+}
+
+template <class CONFIG>
+uint32_t CPU<CONFIG>::getSP()
+{
+	return gpr[14];
+}
+
+template <class CONFIG>
+uint32_t CPU<CONFIG>::getSR()
+{
+	return gpr[13];
+}
+
+template <class CONFIG>
+void setPC(uint32_t valpc)
+{
+	gpr[15]=valpc;
+}
+
+template <class CONFIG>
+void setNPC(uint32_t valnpc)
+{
+	npc=valnpc;
 }
 
 template <class CONFIG>
@@ -405,22 +449,43 @@ void CPU<CONFIG>::Idle()
 template <class CONFIG>
 bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
-	// TODO
-	return false;
+	
+        
+	return memory_import-> ReadMemory( addr, buffer, size);
 }
 
 template <class CONFIG>
 bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
 {
-	// TODO
-	return false;
+	
+	return memory_import-> WriteMemory( addr, buffer, size);
 }
 
 template <class CONFIG>
 string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t& next_addr)
 {
-	// TODO
-	return std::string("?");
+	uint8_t buffer[4];
+        if(ReadMemory(addr, buffer ,sizeof(buffer)))
+	{
+		CodeType insn= CodeType(buffer, sizeof(buffer) * 8);
+	  
+		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(addr, insn);
+
+		next_addr = addr + operation->GetLength();
+		std::stringstream sstrdisasm;
+		sstrdisasm << operation->GetEncoding() << " ";
+
+		/* disasm the instruction */
+		operation->disasm(this,sstrdisasm);	
+	
+	
+		return sstrdisasm.str();
+	}
+	else
+        {
+		next_addr= addr+2;
+		return std::string("not readable");
+	}
 }
 
 /* Memory injection */

@@ -146,6 +146,16 @@ public:
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
 	
+        //=====================================================================
+	//=                        Getters//Setters                           =
+	//=====================================================================    
+
+        virtual uint32_t getPC();    //return adress of currently instruction
+        virtual uint32_t getNPC();
+
+	virtual void setPC(uint32_t);
+        virtual void setNPC(uint32_t);
+
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
@@ -201,7 +211,7 @@ public:
 	//=                     Memory access methods                         =
 	//=====================================================================
 	
-	bool Fetch(void *buffer, uint32_t size);
+	bool Fetch(typename CONFIG::address_t addr,void *buffer, uint32_t size);
 protected:
 
 	//=====================================================================
@@ -275,11 +285,25 @@ private:
 	//=                         AVR32A registers                          =
 	//=====================================================================
 
-	// TODO
-	uint32_t gpr[16];
-	uint32_t npc;
-	uint32_t sr;
+
+	uint32_t gpr[16]; // register file gpr[15]=pc,gpr[14]=lr , gpr[13]=sp
+	uint32_t npc;     //program counter
+	uint32_t sr;      // stack register
 	
+
+	//=====================================================================
+	//=                       register's access methods                         =
+	//=====================================================================
+
+	uint32_t getPC();
+	uint32_t getNPC();
+	uint32_t getSP();
+	uint32_t getSR();
+	void setPC(uint32_t valpc);
+	void setNPC(uint32_t valnpc);
+
+	
+
 	//=====================================================================
 	//=                    CPU run-time parameters                        =
 	//=====================================================================
