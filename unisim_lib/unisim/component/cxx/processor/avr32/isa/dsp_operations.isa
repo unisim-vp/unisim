@@ -1,11 +1,11 @@
 // ADDHH_W - add halfwords into word
 
-op addhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1110[4]:0b00[2]:x[1]:y[1]:rd[
+op addhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1110[4]:0b00[2]:x[1]:y[1]:rd[4])
 
 // X=t=0 high part ; X=b=1 low part
 addhh_w.disasm={
 
-	os << "addhh_w " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
+	os << "addhh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
 }
 
 
@@ -15,7 +15,7 @@ op machh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0101[4]:0b10[2]:x[1]:y
 
 machh_d.disasm={
 
-	os << "machh_d " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
+	os << "machh_d\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
 }
 
 // MACHH_W - multiply halfwords and accumulate in word
@@ -25,7 +25,7 @@ op machh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0100[4]:0b10[2]:x[1]:y
 
 machh_w.disasm={
 
-	os << "machh_w " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
+	os << "machh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
 }
 
 
@@ -35,9 +35,9 @@ op macwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1100[4]:0b100[3]:y[1]:
 
 // y=t=0 high part ; y=b=1 low part
 
-addhh_w.disasm={
+macwh_d.disasm={
 
-	os << "macwh_d " << rd << "," << rx << "," << ry << ":<" << y << ">" << endl;
+	os << "macwh_d\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << ":<" << y << ">" << endl;
 }
 
 //MULHH_W - multiply halfword with halfword
@@ -47,7 +47,7 @@ op mulhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b00000111[8]:0b10[2]:x[1]:y[1]:rd
 
 mulhh_w.disasm={
 
-	os << "mulhh_w " << rd << "," << rx << ":<" << x <<">," << ry <<":<" << y << ">" << endl;
+	os << "mulhh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x <<">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
 }
 
 // MULWH_D - multiply word with halfword
@@ -57,7 +57,7 @@ op mulwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1101[4]:0b100[3]:y[1]:
 
 mulwh_d.disasm={
 
-	os << "mulwh_d " << rd << "," << rx << "," << ry << ":<" << y << ">" << endl;
+	os << "mulwh_d\tr" << (unsigned int)rd << ",r" <<(unsigned int) rx << ",r" << (unsigned int)ry << ":<" << y << ">" << endl;
 }
 
 // MULNHH_W - multiply halword with negative halfword
@@ -67,7 +67,7 @@ op mulnhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b00000001[8]:0b10[2]:x[1]:y[1]:r
 
 mulnhh_w.disasm={
 
-	os << "mulnhh_w " << rd << "," << rx << ":<" << x <<">," << ry <<":<" << y << ">" << endl;
+	os << "mulnhh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x <<">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
 }
 
 //MULNWH_D - multiply word with negative halfword
@@ -76,7 +76,7 @@ op mulnwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0010[4]:0b100[3]:y[1]
 
 mulnwh_d.disasm={
 
-	os << "mulnwh_d " << rd << "," << rx << "," << ry << ":<" << y << ">" << endl;
+	os << "mulnwh_d\tr" << (unsigned int) rd << ",r" << (unsigned int)rx << ",r" <<(unsigned int) ry << ":<" << y << ">" << endl;
 }
 
 
@@ -86,7 +86,7 @@ op satadd_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00101100[8]:rd[4])
 
 satadd_h.disasm={
 
-	os << "satadd_h " << rd << "," << rx << "," << ry << endl;
+	os << "satadd_h\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
 }
 
 //SATADD_W - saturated add of words
@@ -95,7 +95,7 @@ op satadd_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00001100[8]:rd[4])
 
 satadd_w.disasm={
 
-	os << "satadd_w " << rd << "," << rx << "," << ry << endl;
+	os << "satadd_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
 }
 
 //SATSUB_H - saturate subtract of halfwords
@@ -104,7 +104,7 @@ op satsub_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00111100[8]:rd[4])
 
 satsub_h.disasm={
 
-	os << "satsub_h " << rd << "," << rx << "," << ry << endl;
+	os << "satsub_h\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
 }
 
 //SATSUB_W_A saturate subtract of words
@@ -113,7 +113,7 @@ op satsub_w_a(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00011100[8]:rd[4])
 
 satsub_w_a.disasm={
 
-	os << "satsub_w_a " << rd << "," << rx << "," << ry << endl;
+	os << "satsub_w_a\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
 }
 
 //SATSUB_W_B
@@ -122,7 +122,7 @@ op satsub_w_b(0b111[3]:rs[4]:0b01101[5]:rd[4]:><:imm16[16])
 
 satsub_w_b.disasm={
 
-	os << "satsub_w_b " << rd << "," << rs << "," << imm16 << endl;
+	os << "satsub_w_b\tr" << (unsigned int)rd << ",r" << (unsigned int)rs << ",0x" << std::hex<< (unsigned int)imm16 << endl;
 }
 
 //SATRNDS - saturate with rounding signed
@@ -130,7 +130,7 @@ satsub_w_b.disasm={
 op satrnds(0b111[3]:0b1001[4]:0b11011[5]:rd[4]:><:0b0000[4]:0b00[2]:bp5[5]:sa5[5])
 
 satrnds.disasm={
-	os << "satrnds " << rd  << ">>" << sa5 << "," << bp5 << endl; 
+	os << "satrnds\tr" << (unsigned int)rd  << ">>0x" <<std::hex << (unsigned int)sa5 << ",0x" <<std::hex <<(unsigned int) bp5 << endl; 
 }
 
 //SATRNDU - saturate with rounding unsigned
@@ -138,7 +138,7 @@ satrnds.disasm={
 op satrndu(0b111[3]:0b1001[4]:0b11011[5]:rd[4]:><:0b0000[4]:0b01[2]:bp5[5]:sa5[5])
 
 satrndu.disasm={
-	os << "satrndu " << rd << ">>" << sa5 << "," << bp5 << endl; 
+	os << "satrndu\tr" << (unsigned int)rd << ">>0x" << std::hex <<(unsigned int) sa5 << ",0x" << std::hex <<(unsigned int) bp5 << endl; 
 }
 
 
@@ -147,7 +147,7 @@ satrndu.disasm={
 op sats(0b111[3]:0b1000[4]:0b11011[5]:rd[4]:><:0b0000[4]:0b00[2]:bp5[5]:sa5[5])
 
 sats.disasm={
-	os << "sats " << rd << ">>" << sa5 << "," << bp5 << endl; 
+	os << "sats\tr" << (unsigned int)rd << ">>0x" <<std::hex<< (unsigned int)sa5 << ",0x" <<std::hex <<(unsigned int) bp5 << endl; 
 }
 
 
@@ -157,7 +157,7 @@ op satu(0b111[3]:0b1000[4]:0b11011[5]:rd[4]:><:0b0000[4]:0b01[2]:bp5[5]:sa5[5])
 
 satu.disasm={
 
-	os << "satu " << rd << ">>" << sa5 << "," << bp5 << endl; 
+	os << "satu\tr" << (unsigned int)rd << ">>0x"<< std::hex << (unsigned int)sa5 << ",0x" << std::hex<<(unsigned int)bp5 << endl; 
 }
 
 //SUBHH_W - subtract halfwords into word
@@ -166,7 +166,7 @@ op subhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b111100[6]:x[1]:y[1]:rd
 
 subhh_w.disasm={
 
-	os << "msubhh_w " << rd << "," << rx << ":<" << x << ">," << ry << ":<" << y << ">" << endl;
+	os << "msubhh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry << ":<" << y << ">" << endl;
 }
 
 
@@ -177,7 +177,7 @@ op mulsathh_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1000[4]:0b10[2]:x[1
 
 mulsathh_h.disasm={
 
-	os << "mulsathh_h " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
+	os << "mulsathh_h\tr" << (unsigned int)rd << ",r" <<(unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
 }
 
 
@@ -187,7 +187,7 @@ op mulsathh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1001[4]:0b10[2]:x[1
 
 mulsathh_w.disasm={
 
-	os << "mulsathh_w " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
+	os << "mulsathh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
 }
 
 
@@ -197,7 +197,7 @@ op mulsatrndhh_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1010[4]:0b10[2]:
 
 mulsatrndhh_h.disasm={
 
-	os << "mulsatrndhh_h " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
+	os << "mulsatrndhh_h\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" <<(unsigned int) ry <<":<" << y << ">" << endl;
 }
 
 
@@ -207,7 +207,7 @@ op mulsatrndwh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1011[4]:0b100[3]
 
 mulsatrndwh_w.disasm={
 
-	os << "mulsatrndwh_w " << rd << "," << rx << "," << ry <<":<" << y << ">" << endl;
+	os << "mulsatrndwh_w\tr" <<(unsigned int) rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry <<":<" << y << ">" << endl;
 }
 
 
@@ -217,7 +217,7 @@ op mulsatwh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1110[4]:0b100[3]:y[
 
 mulsatwh_w.disasm={
 
-	os << "mulsatwh_w " << rd << "," << rx << "," << ry <<":<" << y << ">" << endl;
+	os << "mulsatwh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry <<":<" << y << ">" << endl;
 }
 
 
@@ -228,7 +228,7 @@ op macsathh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0110[4]:0b10[2]:x[1
 
 macsathh_w.disasm={
 
-	os << "macsathh_w " << rd << "," << rx << ":<" << x << ">," << ry <<":<" << y << ">" << endl;
+	os << "macsathh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
 }
 
 

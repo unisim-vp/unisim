@@ -1,5 +1,3 @@
-//pc sp part
-
 //-----------------------------------------------------------------------------
 
 //                               MOV INSTRUCTIONS
@@ -13,7 +11,7 @@ op mov_a(0b001[3]:0b1[1]:imm8[8]:rd[4])
 
 mov_a.disasm={
 
-	os << "mov_a " << rd << "," << imm8 << endl;
+	os << "mov_a\tr" << (unsigned int) rd << "," << std::hex << (uint32_t)imm8 << endl;
 }
 
 op mov_b(0b111[3]:imm_20_17[4]:0b0011[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
@@ -22,14 +20,14 @@ mov_b.var imm : {uint32_t}= {(imm_20_17<<17)|(imm_16)<<16| imm_15_0}
 
 mov_b.disasm={
 
-	os << "mov_b " << rd << "," << imm << endl;
+	os << "mov_b\tr" << (unsigned int) rd << "," << std::hex << (uint32_t)imm << endl;
 }
 
 op mov_c(0b000[3]:rs[4]:0b01001[5]:rd[4])
 
 mov_c.disasm={
 
-	os << "mov_c " << rd << "," << rs << endl;
+	os << "mov_c\tr" << (unsigned int) rd << ",r" << (unsigned int) rs << endl;
 }
 
 // MOV_COND4 - conditional move register
@@ -38,14 +36,14 @@ op mov_cond4_a(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0111[4]:cond4[4]:0
 
 mov_cond4_a.disasm={
 
-	os << "mov_cond4_a " << rd << "," << rs << endl;
+	os << "mov_cond4_a\tr" << (unsigned int) rd << ",r" << (unsigned int) rs << endl;
 }
 
 op mov_cond4_b(0b111[3]:0b1100[4]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:imm8[8])
 
 mov_cond4_b.disasm={
 
-	os << "mov_cond4_b " << rd << "," << imm8 << endl;
+	os << "mov_cond4_b\tr" << (unsigned int) rd << ",Ox" << std::hex << (uint32_t) imm8 << endl;
 }
 
 // MOVH - move data into high halfword of register
@@ -54,7 +52,7 @@ op movh(0b111[3]:0b1110[4]:0b00001[5]:rd[4]:><:imm16[16])
 
 movh.disasm={
 
-	os << "movh " << rd << "," << imm16 << endl;
+	os << "movh\tr" << (unsigned int) rd << ",0x" << std::hex <<(uint32_t) imm16 << endl;
 }
 
 //----------------------------------------------------------------------------
@@ -68,33 +66,33 @@ movh.disasm={
 op ld_ub_a(0b000[3]:rp[4]:0b10011[5]:rd[4])
 
 ld_ub_a.disasm={
-	os << "ld_ub_a " << rd << "," << rp << "++" << endl;
+	os << "ld_ub_a\tr" << (unsigned int) rd << ",r" << (unsigned int) rp << "++" << endl;
 }
 
 op ld_ub_b(0b000[3]:rp[4]:0b10111[5]:rd[4])
 
 ld_ub_b.disasm={
-	os << "ld_ub_b " << rd << ",--" << rp << endl;
+	os << "ld_ub_b\tr" << (unsigned int) rd << ",--r" << (unsigned int) rp << endl;
 }
 
 op ld_ub_c(0b000[3]:rp[4]:0b11[2]:disp[3]:rd[4])
 
 ld_ub_c.disasm={
-	os << "ld_ub_c " << rd << "," << rp <<"[" << disp << "]" << endl;
+	os << "ld_ub_c\tr" << (unsigned int) rd << ",r" << (unsigned int) rp <<"[0x" << std::hex <<(unsigned int) disp << "]" << endl;
 }
 
 
-op ld_ub_d(0b111[3]:rp[4]:0b10011[5]:rd[4]:><:dips16[16])
+op ld_ub_d(0b111[3]:rp[4]:0b10011[5]:rd[4]:><:disp16[16])
 
 ld_ub_d.disasm={
-	os << "ld_ub_d " << rd << "," << rp <<"[" << disp16 << "]" << endl;
+	os << "ld_ub_d\tr" << (unsigned int) rd << ",r" << (unsigned int) rp << "[0x" << std::hex<<(uint32_t) disp16 << "]" << endl;
 }
 
 
 op ld_ub_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0111[4]:0b00[2]:sa[2]:rd[4])
 
 ld_ub_e.disasm={
-	os << "ld_ub_e " << rd << ","<< rb << "[" << ri << "<<" << sa << "]" << endl;
+	os << "ld_ub_e\tr" << (unsigned int) rd << ",r"<< (unsigned int) rb << "[r" << (unsigned int) ri << "<<0x" << std::hex << (unsigned int) sa << "]" << endl;
 }
 
 
@@ -103,7 +101,7 @@ ld_ub_e.disasm={
 op ld_ub_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b100[3]:disp9[9])
 
 ld_ub_cond4.disasm={
-	os << "ld_ub_cond4 " << rd << ","<< rp <<",[" << disp9 <<"]" << endl;
+	os << "ld_ub_cond4\tr" << (unsigned int) rd << ",r"<< (unsigned int) rp <<",[0x" << std::hex <<(unsigned int) disp9 <<"]" << endl;
 }
 
 //LD_SB - load sign-extended byte
@@ -111,13 +109,13 @@ ld_ub_cond4.disasm={
 op ld_sb_a(0b111[3]:rp[4]:0b10010[5]:rd[4]:><:disp16[16])
 
 ld_sb_a.disasm={
-	os << "ld_sb_a " << rd << ","<< rp << "[" << disp16 << "]" << endl;
+	os << "ld_sb_a\tr" << (unsigned int) rd << ",r"<< (unsigned int) rp << "[0x" << std::hex << (uint32_t) disp16 << "]" << endl;
 }
 
 op ld_sb_b(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0110[4]:0b00[2]:sa[2]:rd[4])
 
 ld_sb_b.disasm={
-	os << "ld_sb_b " << rd << ","<< rb << "[" << ri << "<<" << sa << "]" << endl;
+	os << "ld_sb_b\t" << (unsigned int) rd << ",r" << (unsigned int) rb << "[r" << (unsigned int) ri << "<<0x" <<std::hex<< (unsigned int) sa << "]" << endl;
 }
 
 // LD_SB_COND4 - conditionally load sign-extended byte
@@ -125,7 +123,7 @@ ld_sb_b.disasm={
 op ld_sb_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b011[3]:disp9[9])
 
 ld_sb_cond4.disasm={
-	os << "ld_sb_cond4 " << rd << ","<< rp << "[" << disp9 << "]" << endl;
+	os << "ld_sb_cond4\t" << (unsigned int) rd << ",r" << (unsigned int) rp << "[0x"<< std::hex << (unsigned int) disp9 << "]" << endl;
 }
 
 // LD_UH - load zero extended half word
@@ -133,33 +131,33 @@ ld_sb_cond4.disasm={
 op ld_uh_a(0b000[3]:rp[4]:0b10010[5]:rd[4])
 
 ld_uh_a.disasm={
-	os << "ld_uh_a " << rd << "," << rp << "++" << endl;
+	os << "ld_uh_a\tr" << (unsigned int) rd << ",r" << (unsigned int) rp << "++" << endl;
 }
 
 
 op ld_uh_b(0b000[3]:rp[4]:0b10110[5]:rd[4])
 
 ld_uh_b.disasm={
-	os << "ld_uh_b " << rd << ",--" << rp << endl;
+	os << "ld_uh_b\tr" << (unsigned int) rd << ",--r" << (unsigned int) rp << endl;
 }
 
 
 op ld_uh_c(0b100[3]:rp[4]:0b01[2]:disp3[3]:rd[4])
 
 ld_uh_c.disasm={
-	os << "ld_uh_c " << rd << ","<< rp << "[" << disp3 << "]" << endl;
+	os << "ld_uh_c\tr" << (unsigned int) rd << ",r"<< (unsigned int) rp << "[0x" << std::hex << (unsigned int) disp3 << "]" << endl;
 }
 
 op ld_uh_d(0b111[3]:rp[4]:0b10001[5]:rd[4]:><:disp16[16])
 
 ld_uh_d.disasm={
-	os << "ld_uh_d " << rd << "," << rp << "[" << disp16 << "]" << endl;
+	os << "ld_uh_d\tr" << (unsigned int) rd << ",r" << (unsigned int) rp << "[0x" << std::hex << (uint32_t) disp16 << "]" << endl;
 }
 
 op ld_uh_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0101[4]:0b00[2]:sa[2]:rd[4])
 
 ld_uh_e.disasm={
-	os << "ld_uh_e " << rd << "," << rb << "[" << ri << "<<" << sa << "]" << endl;
+	os << "ld_uh_e\tr" << rd << ",r" << (unsigned int) rb << "[r" << (unsigned int) ri << "<<0x" << std::hex << (unsigned int) sa << "]" << endl;
 }
 
 
@@ -168,7 +166,7 @@ ld_uh_e.disasm={
 op ld_uh_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b010[3]:disp9[9])
 
 ld_uh_cond4.disasm={
-	os << "ld_uh_cond4 " << rd << "," << rp << "[" << disp9 << "]" << endl;
+	os << "ld_uh_cond4\tr" << (unsigned int)rd << ",r" << (unsigned int)rp << "[0x" << std::hex <<disp9 << "]" << endl;
 }
 
 //LD_SH - load sign extended halfword
@@ -176,31 +174,31 @@ ld_uh_cond4.disasm={
 op ld_sh_a(0b000[3]:rp[4]:0b10001[5]:rd[4])
 
 ld_sh_a.disasm={
-	os << "ld_sh_a " << rd << "," << rp << "++" << endl;
+	os << "ld_sh_a\tr" << (unsigned int)rd << ",r" << (unsigned int)rp << "++" << endl;
 }
 
 op ld_sh_b(0b000[3]:rp[4]:0b10101[5]:rd[4])
 
 ld_sh_b.disasm={
-	os << "ld_sh_b " << rd << ",--" << rp << endl;
+	os << "ld_sh_b\tr" << (unsigned int)rd << ",--r" << (unsigned int)rp << endl;
 }
 
 op ld_sh_c(0b100[3]:rp[4]:0b00[2]:disp3[3]:rd[4])
 
 ld_sh_c.disasm={
-	os << "ld_sh_c " << rd << "," << rp << "[" << disp3 << "]" << endl;
+	os << "ld_sh_c\tr" << (unsigned int)rd << ",r" << (unsigned int)rp << "[0x" << std::hex << (unsigned int)disp3 << "]" << endl;
 }
 
 op ld_sh_d(0b111[3]:rp[4]:0b10000[5]:rd[4]:><:disp16[16])
 
 ld_sh_d.disasm={
-	os << "ld_sh_d " << rd << "," << rp << "[" << disp16 << "]" << endl;
+	os << "ld_sh_d\tr" << (unsigned int)rd << ",r" << (unsigned int)rp << "[0x" << std::hex << (uint32_t) disp16 << "]" << endl;
 }
 
 op ld_sh_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0100[4]:0b00[2]:sa[2]:rd[4])
 
 ld_sh_e.disasm={
-	os << "ld_sh_e " << rd << "," << rb << "[" << ri << "<<" << sa << "]" << endl;
+	os << "ld_sh_e\tr" << (unsigned int)rd << ",r" << (unsigned int)rb << "[r" << (unsigned int)ri << "<<0x" << std::hex<< (unsigned int)sa << "]" << endl;
 }
 
 
@@ -209,7 +207,7 @@ ld_sh_e.disasm={
 op ld_sh_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b001[3]:disp9[9])
 
 ld_sh_cond4.disasm={
-	os << "ld_sh_cond4 " << rd << "," << rp << "[" << disp9 << "]" << endl;
+	os << "ld_sh_cond4\tr" << (unsigned int)rd << ",r" << (unsigned int)rp << "[0x" << std::hex << (unsigned int)disp9 << "]" << endl;
 }
 
 
@@ -218,39 +216,39 @@ ld_sh_cond4.disasm={
 op ld_w_a(0b000[3]:rp[4]:0b10000[5]:rd[4])
 
 ld_w_a.disasm={
-	os << "ld_w_a " << rd << "," << rp << "++" << endl;
+	os << "ld_w_a\tr" << (unsigned int)rd << ",r" << (unsigned int)rp << "++" << endl;
 }
 
 op ld_w_b(0b000[3]:rp[4]:0b10100[5]:rd[4])
 
 ld_w_b.disasm={
-	os << "ld_w_b " << rd << ",--" << rp << endl;
+	os << "ld_w_b\tr" << (unsigned int)rd << ",--r" << (unsigned int)rp << endl;
 }
 
 op ld_w_c(0b011[3]:rp[4]:disp5[5]:rd[4])
 
 ld_w_c.disasm={
-	os << "ld_w_c " << rd << "," << rp << "[" << disp5 << "]" << endl;
+	os << "ld_w_c\tr" << (unsigned int)rd << ",r" << (unsigned int)rp << "[0x" <<std:hex << (unsigned int) disp5 << "]" << endl;
 }
 
 
 op ld_w_d(0b111[3]:rp[4]:0b01111[5]:rd[4]:><:disp16[16])
 
 ld_w_d.disasm={
-	os << "ld_w_d " << rd << "," << rp << "[" << disp16 << "]" << endl;
+	os << "ld_w_d\tr" << (unsigned int)rd << ",r" << (unsigned int)rp << "[0x" <<std::hex<< (uint32_t)disp16 << "]" << endl;
 }
 
 op ld_w_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0011[4]:0b00[2]:sa[2]:rd[4])
 
 ld_w_e.disasm={
-	os << "ld_w_e " << rd << "," << rb << "[" << ri << "<<" << sa << "]" << endl;
+	os << "ld_w_e\tr" << (unsigned int) rd << ",r" <<  (unsigned int) rb << "[r" << (unsigned int) ri << "<<0x" << std::hex <<(unsigned int) sa << "]" << endl;
 }
 
 
 op ld_w_f(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b111110[6]:x[1]:y[1]:rd[4])
 
 ld_w_f.disasm={
-	os << "ld_w_f " << rd << "," << rb << "[" << ri << ":<" << x << y  << "> << 2]" << endl;
+	os << "ld_w_f\tr" << (unsigned int) rd << ",r" << (unsigned int) rb << "[r" << (unsigned int) ri << ":<" << x << y  << "> << 2]" << endl;
 }
 
 
@@ -260,7 +258,7 @@ ld_w_f.disasm={
 op ld_w_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b000[3]:disp9[9])
 
 ld_w_cond4.disasm={
-	os << "ld_w_cond4 " << rd << "," << rp << "[" << disp9 << "]" << endl;
+	os << "ld_w_cond4\tr" << (unsigned int) rd << ",r" << (unsigned int) rp << "[0x" << std::hex << (unsigned int)disp9 << "]" << endl;
 }
 
 
@@ -269,33 +267,33 @@ ld_w_cond4.disasm={
 op ld_d_a(0b101[3]:rp[4]:0b100[3]:0b00[2]:rd[3]:0b1[1])
 
 ld_d_a.disasm={
-	os << "ld_d_a " << rd << "," << rp << "++" << endl;
+	os << "ld_d_a\tr" << (unsigned int) rd << ",r" << (unsigned int) rp << "++" << endl;
 }
 
 op ld_d_b(0b101[3]:rp[4]:0b100[3]:0b01[2]:rd[3]:0b0[1])
 
 ld_d_b.disasm={
-	os << "ld_d_b " << rd << ",--" << rp << endl;
+	os << "ld_d_b\tr" << (unsigned int) rd << ",--r" << (unsigned int) rp << endl;
 }
 
 op ld_d_c(0b101[3]:rp[4]:0b100[3]:0b00[2]:rd[3]:0b0[1])
 
 ld_d_c.disasm={
-	os << "ld_d_c " << rd << "," << rp << endl;
+	os << "ld_d_c\tr" << (unsigned int) rd << ",r" << (unsigned int) rp << endl;
 }
 
 
 op ld_d_d(0b111[3]:rp[4]:0b01110[5]:rd[3]:0b0[1]:><:disp16[16])
 
 ld_d_d.disasm={
-	os << "ld_d_d " << rd << "," << rp << "[" << disp16 << "]" << endl;
+	os << "ld_d_d\tr" << rd (unsigned int) << ",r" << (unsigned int) rp << "[0x" << std::hex << (uint32_t) disp16 << "]" << endl;
 }
 
 
 op ld_d_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0010[4]:0b00[2]:sa[2]:rd[4])
 
 ld_d_e.disasm={
-	os << "ld_d_e " << rd << "," << rb << "[" << ri << "<<" << sa << "]" << endl;
+	os << "ld_d_e\tr" << (unsigned int) rd << ",r" <<  (unsigned int) rb << "[r" << (unsigned int) ri << "<<" << std::hex << (uint32_t)sa << "]" << endl;
 }
 
 
@@ -304,13 +302,13 @@ ld_d_e.disasm={
 op ldins_b(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b01[2]:part[2]:disp12[12])
 
 ldins_b.disasm={
-	os << "ldins_b " << rd << ":<" << part << ">," << rp << "[" << disp12 << "]" << endl;
+	os << "ldins_b\tr" << (unsigned int) rd << ":<" << part << ">,r" << (unsigned int) rp << "[0x" << std::hex << (uint32_t)disp12 << "]" << endl;
 }
 
 op ldins_h(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b000[3]:part[1]:disp12[12])
 
 ldins_h.disasm={
-	os << "ldins_h " << rd << ":<" << part << ">," << rp << "[" << disp12 << "]" << endl;
+	os << "ldins_h\tr" << (unsigned int) rd << ":<" << part << ">,r" << (unsigned int) rp << "[0x" << std::hex << (uint32_t)disp12 << "]" << endl;
 }
 
 // LDSWP_SH/UH/W  - load and swap
@@ -318,21 +316,21 @@ ldins_h.disasm={
 op ldswp_sh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0010[4]:disp12[12])
 
 ldswp_sh.disasm={
-	os << "ldswp_sh " << rd << "," << rp << "[" << disp12 << "]" << endl;
+	os << "ldswp_sh\tr" << (unsigned int) rd << ",r" << (unsigned int) rp << "[0x" <<std::hex << (uint32_t)disp12 << "]" << endl;
 }
 
 
 op ldswp_uh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0011[4]:disp12[12])
 
 ldswp_uh.disasm={
-	os << "ldswp_uh " << rd << "," << rp << "[" << disp12 << "]" << endl;
+	os << "ldswp_uh\tr" << (unsigned int) rd << ",r" << (unsigned int) rp << "[0x" << std::hex << (uint32_t)disp12 << "]" << endl;
 }
 
 
 op ldswp_w(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b1000[4]:disp12[12])
 
 ldswp_w.disasm={
-	os << "ldswp_w " << rd << "," << rp << "[" << disp12 << "]" << endl;
+	os << "ldswp_w\tr" << (unsigned int) rd << ",r" << (unsigned int) rp << "[0x" << std::hex << (uint32_t)disp12 << "]" << endl;
 }
 
 
@@ -342,7 +340,7 @@ op lddpc(0b010[3]:0b01[2]:disp7[7]:rd[4])
 
 lddpc.disasm={
 
-	os << "lddpc " << rd << "," << cpu.getPC() << "[" << disp7 << "]"<< endl; 
+	os << "lddpc\tr" << (unsigned int)rd << ",0x" << std::hex << (unsigned int)cpu->getPC() << "[0x" << std::hex << (uint32_t)disp7 << "]"<< endl; 
 }
 
 // LDDSP - load sp relative with displacement
@@ -351,7 +349,7 @@ op lddsp(0b010[3]:0b00[2]:disp7[7]:rd[4])
 
 lddsp.disasm={
 
-	os << "lddsp " << rd << "," << cpu.getSP() << "[" << disp7 << "]" << endl; 
+	os << "lddsp\tr" << (unsigned int)rd << ",0x" << std::hex<< (unsigned int)cpu->getSP() << "[0x" << std::hex << (uint32_t)disp7 << "]" << endl; 
 }
 
 
@@ -367,21 +365,21 @@ op st_b_a(0b000[3]:rp[4]:0b01100[5]:rs[4])
 
 st_b_a.disasm={
 
-	os << "st_b_a " << rp << "++," << rs << endl;
+	os << "st_b_a\tr" << (unsigned int) rp << "++,r" << (unsigned int)rs << endl;
 }
 
 op st_b_b(0b000[3]:rp[4]:0b01111[5]:rs[4])
 
 st_b_b.disasm={
 
-	os << "st_b_b --" << rp << "," << rs << endl;
+	os << "st_b_b\t--r" << (unsigned int)rp << ",r" << (unsigned int)rs << endl;
 }
 
 op st_b_c(0b101[3]:rp[4]:0b01[2]:disp3[3]:rs[4])
 
 st_b_c.disasm={
 
-	os << "st_b_c " << rp << "[" << disp3 << "]," << rs << endl;
+	os << "st_b_c\tr" << (unsigned int)rp << "[0x" << std::hex<<(unsigned int)disp3 << "],r" << (unsigned int)rs << endl;
 }
 
 
@@ -389,7 +387,7 @@ op st_b_d(0b111[3]:rp[4]:0b10110[5]:rs[4]:disp16[16])
 
 st_b_d.disasm={
 
-	os << "st_b_d " << rp << "[" << disp16 << "]," << rs << endl;
+	os << "st_b_d\tr" << (unsigned int) rp << "[0x"<< std::hex << (uint32_t)disp16 << "],r" << (unsigned int)rs << endl;
 }
 
 
@@ -397,7 +395,7 @@ op st_b_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1011[4]:0b00[2]:sa[2]:r
 
 st_b_e.disasm={
 
-	os << "st_b_e " << rb << "[" << ri << "<<" << sa <<"]," << rs << endl;
+	os << "st_b_e\tr" << (unsigned int) rb << "[0x" << std::hex << (unsigned int) ri << "<<0x" << std::hex << (unsigned int) sa <<"]," << (unsigned int) rs << endl;
 }
 
 
@@ -407,7 +405,7 @@ op st_b_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b111[3]:disp9[9])
 
 st_b_cond4.disasm={
 
-	os << "st_b_cond4 " << rp << "[" << disp9 << "]," << rd << endl;
+	os << "st_b_cond4\tr" << (unsigned int)rp << "[" << disp9 << "],r" << (unsigned int)rd << endl;
 }
 // erreur dans atmel archi manual rs au lieu de rd
 
@@ -417,35 +415,35 @@ op st_d_a(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b0[1])
 
 st_d_a.disasm={
 
-	os << "st_d_a " << rp << "++," << rs << endl;
+	os << "st_d_a\tr" << (unsigned int) rp << "++,r" << (unsigned int)rs << endl;
 }
 
 op st_d_b(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b1[1])
 
 st_d_b.disasm={
 
-	os << "st_d_b --" << rp << "," << rs << endl;
+	os << "st_d_b\t--r" << (unsigned int)rp << ",r" << (unsigned int)rs << endl;
 }
 
 op st_d_c(0b101[3]:rp[4]:0b100[3]:0b01[2]:rs[3]:0b1[1])
 
 st_d_c.disasm={
 
-	os << "st_d_c " << rp  << "," << rs << endl;
+	os << "st_d_c\tr" << (unsigned int)rp  << ",r" << (unsigned int)rs << endl;
 }
 
 op st_d_d(0b111[3]:rp[4]:0b01110[5]:rs[3]:0b1[1]:><:disp16[16])
 
 st_d_d.disasm={
 
-	os << "st_d_d " << rp << "[" << disp16 << "]," << rs << endl;
+	os << "st_d_d\tr" << (unsigned int)rp << "[" << std::hex << (uint32_t)disp16 << "]r," << (unsigned int)rs << endl;
 }
 
 op st_d_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1000[4]:0b00[2]:sa[2]:rs[4])
 
 st_d_e.disasm={
 
-	os << "st_d_e " << rb << "[" << ri << "<<" << sa << "]," << rs << endl;
+	os << "st_d_e\tr" << rb << "[r" << ri << "<<0x"<< std::hex << (unsigned int)sa << "],r" << rs << endl;
 }
 
 
@@ -455,35 +453,35 @@ op st_h_a(0b000[3]:rp[4]:0b01011[5]:rs[4])
 
 st_h_a.disasm={
 
-	os << "st_h_a " << rp << "++," << rs << endl;
+	os << "st_h_a\tr" << (unsigned int)rp << "++,r" << (unsigned int)rs << endl;
 }
 
 op st_h_b(0b000[3]:rp[4]:0b01110[5]:rs[4])
 
 st_h_b.disasm={
 
-	os << "st_h_b --" << rp << "," << rs << endl;
+	os << "st_h_b\t--r" << (unsigned int)rp << ",r" << (unsigned int)rs << endl;
 }
 
 op st_h_c(0b101[3]:rp[4]:0b00[2]:disp3[3]:rs[4])
 
 st_h_c.disasm={
 
-	os << "st_h_d " << rp << "[" << disp3 << "]," << rs << endl;
+	os << "st_h_d\tr" << (unsigned int)rp << "[0x" << std::hex << (unsigned int)disp3 << "],r" << (unsigned int)rs << endl;
 }
 
 op st_h_d(0b111[3]:rp[4]:0b10101[5]:rs[4]:><:disp16[16])
 
 st_h_d.disasm={
 
-	os << "st_h_d " << rp << "[" << disp16 << "]," << rs << endl;
+	os << "st_h_d\tr" << rp << "[0x"<< std::hex << (unsigned int)disp16 << "],r" << rs << endl;
 }
 
 op st_h_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1010[4]:0b00[2]:sa[2]:rs[4])
 
 st_h_e.disasm={
 
-	os << "st_h_e " << rb << "[" << ri << "<<" << sa << "]," << rs << endl;
+	os << "st_h_e\tr" << (unsigned int)rb << "[r" << (unsigned int)ri << "<<0x" << std::hex << (unsigned int) sa << "],r" << (unsigned int)rs << endl;
 }
 
 // ST_H_COND4 - conditionally store halfword
@@ -492,7 +490,7 @@ op st_h_cond4(0b111[3]:rp[4]:0b11111[5]:rs[4]:><:cond4[4]:0b110[3]:disp9[9])
 
 st_h_cond4.disasm={
 
-	os << "st_h_cond4 " << rp << "[" << disp9 << "]," << rs << endl;
+	os << "st_h_cond4\tr" << (unsigned int)rp << "[0x" << std::hex << (unsigned int) disp9 << "],r" << (unsigned int)rs << endl;
 }
 
 // ST_W - store word
@@ -501,35 +499,35 @@ op st_w_a(0b000[3]:rp[4]:0b01010[5]:rs[4])
 
 st_w_a.disasm={
 
-	os << "st_w_a " << rp << "++," << rs << endl;
+	os << "st_w_a\tr" << (unsigned int)rp << "++,r" << (unsigned int)rs << endl;
 }
 
 op st_w_b(0b000[3]:rp[4]:0b01101[5]:rs[4])
 
 st_w_b.disasm={
 
-	os << "st_w_b --" << rp << "," << rs << endl;
+	os << "st_w_b\t--r" << (unsigned int)rp << ",r" << (unsigned int)rs << endl;
 }
 
 op st_w_c(0b100[3]:rp[4]:0b1[1]:disp4[4]:rs[4])
 
 st_w_c.disasm={
 
-	os << "st_w_d " << rp << "[" << disp4 << "]," << rs << endl;
+	os << "st_w_d\tr" << (unsigned int)rp << "[0x" << std::hex << (unsigned int)disp4 << "],r" << (unsigned int)rs << endl;
 }
 
 op st_w_d(0b111[3]:rp[4]:0b10100[5]:rs[4]:><:disp16[16])
 
 st_w_d.disasm={
 
-	os << "st_w_d " << rp << "[" << disp16 << "]," << rs << endl;
+	os << "st_w_d\tr" <<(unsigned int)rp << "[0x" << std::hex << (uint32_t)disp16 << "],r" << (unsigned int)rs << endl;
 }
 
 op st_w_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1001[4]:0b00[2]:sa[2]:rs[4])
 
 st_w_e.disasm={
 
-	os << "st_w_e " << rb << "[" << ri << "<<" << sa << "]," << rs << endl;
+	os << "st_w_e\tr" << (unsigned int)rb << "[r" << (unsigned int)ri << "<<0x" << <<(unsigned int)sa << "],r" << (unsigned int)rs << endl;
 }
 
 // ST_W_COND4 - conditionally store word
@@ -538,7 +536,7 @@ op st_w_cond4(0b111[3]:rp[4]:0b11111[5]:rs[4]:><:cond4[4]:0b101[3]:disp9[9])
 
 st_w_cond4.disasm={
 
-	os << "st_w_cond4 " << rp << "[" << disp9 << "]," << rs << endl;
+	os << "st_w_cond4\tr" << (unsigned int)rp << "[0x" << std::hex << (unsigned int)disp9 << "],r" << (unsigned int)rs << endl;
 }
 // erreur dans manuel rd au lieu de rs dans opcode
 
@@ -548,7 +546,7 @@ op stcond(0b111[3]:rp[4]:0b10111[5]:rs[4]:><:disp16[16])
 
 stcond.disasm={
 
-	os << "stcond " << rp << "[" << disp16 << "]," << rs << endl;
+	os << "stcond\tr" << (unsigned int)rp << "[0x" << std::hex << (unsigned int)disp16 << "],r" << (unsigned int)rs << endl;
 }
 
 
@@ -558,7 +556,7 @@ op stdsp(0b010[3]:0b10[2]:disp7[7]:rs[4])
 
 stdsp.disasm={
 
-	os << "stdsp " << cpu.getSP() << "[" << disp7 << "]," << rs << endl;
+	os << "stdsp\t" << std::hex <<(unsigned int) cpu->getSP() << "[0x" << (unsigned int)disp7 << "],r" << (unsigned int)rs << endl;
 }
 
 // STHH_W - store halfword into word
@@ -567,7 +565,7 @@ op sthh_w_a(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b11[2]:x[1]:y[1]:disp8[8]:rp[4])
 
 sthh_w_a.disasm={
 
-	os << "sthh_w_a " << rp << "[" << disp8 << "]," << rx << ":<" << x << ">,"<< ry << ":[" << x << "]" << endl;
+	os << "sthh_w_a\tr" << (unsigned int)rp << "[0x" << (unsigned int)disp8 << "],r" << (unsigned int)rx << ":<" << x << ">,r"<< (unsigned int)ry << ":[" << x << "]" << endl;
 
 }
 
@@ -575,7 +573,7 @@ op sthh_w_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b10[2]:x[1]:y[1]:ri[4]:0b00[2]:s
 
 sthh_w_b.disasm={
 
-	os << "sthh_w_b " << rb << "[" << ri << "<<" << sa << "]," << rx << ":<" << x << ">,"<< ry << ":[" << y << "]" << endl;
+	os << "sthh_w_b\tr" << (unsigned int)rb << "[r" << (unsigned int)ri << "<<0x" << std::hex <<(unsigned int)sa << "],r" << (unsigned int)rx << ":<" << x << ">,r"<< (unsigned int)ry << ":[" << y << "]" << endl;
 
 }
 
@@ -585,7 +583,7 @@ op stswp_h(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1001[4]:disp12[12])
 
 stswp_h.disasm={
 
-	os << "stswp_h " << rp << "[" << disp12 << "]," << rs << endl;
+	os << "stswp_h\tr" << (unsigned int)rp << "[0x" << std::hex<<(unsigned int)disp12 << "],r" << (unsigned int)rs << endl;
 }
 
 
@@ -593,7 +591,7 @@ op stswp_w(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1010[4]:disp12[12])
 
 stswp_w.disasm={
 
-	os << "stswp_w " << rp << "[" << disp12 << "]," << rs << endl;
+	os << "stswp_w\tr" <<(unsigned int)rp << "[0x" << std::hex << (unsigned int)disp12 << "],r" << (unsigned int)rs << endl;
 }
 
 // XCHG - Exchange register and memory
@@ -602,7 +600,7 @@ op xchg(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b10110100[8]:rd[4])
 
 xchg.disasm={
 
-	os << "xchg " << rd << "," << rx << "," << ry << endl;
+	os << "xchg\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
 }
 
 
@@ -618,7 +616,7 @@ op ldm(0b111[3]:0b000[3]:postinc[1]:0b11100[5]:rp[4]:><:reglist16[16])
 
 ldm.disasm={
 
-	os << "ldm " << rp << "{++}," << reglist16 << endl;
+	os << "ldm\tr" << (unsigned int)rp << "{++}," << std::hex <<(unsigned int)reglist16 << endl;
 }
 
 
@@ -628,7 +626,7 @@ op ldmts(0b111[3]:0b001[3]:postinc[1]:0b11100[5]:rp[4]:><:reglist16[16])
 
 ldmts.disasm={
 
-	os << "ldmts " << rp << "{++}," << reglist16 << endl;
+	os << "ldmts\tr" << (unsigned int)rp << "{++}," << std::hex <<(unsigned int)reglist16 << endl;
 }
  
 // POPM - pop multiple registers from stack
@@ -636,7 +634,7 @@ ldmts.disasm={
 op popm(0b110[3]:0b1[1]:reglist8[8]:k[1]:0b010[3])
 
 popm.disasm={
-	os << "popm " << reglist8 << endl;
+	os << "popm\t" << std::hex <<(unsigned int)reglist8 << endl;
 }
 
 // PUSHM - push multiple registers to stack
@@ -644,7 +642,7 @@ popm.disasm={
 op pushm(0b110[3]:0b1[1]:reglist8[8]:0b0001[4])
 
 pushm.disasm={
-	os << "pushm " << reglist8 << endl;
+	os << "pushm\t" << std::hex <<(unsigned int)reglist8 << endl;
 }
 
 // STM - store multiple registers
@@ -653,7 +651,7 @@ op stm(0b111[3]:0b010[3]:predec[1]:0b11100[5]:rp[4]:><:reglist16[16])
 
 stm.disasm={
 
-	os << "stm {--}" << rp << "," << reglist16 << endl; 
+	os << "stm\t{--}r" <<(unsigned int)rp << "," <<std::hex << (unsigned int)reglist16 << endl; 
 
 }
 
@@ -663,7 +661,7 @@ op stmts(0b111[3]:0b011[3]:predec[1]:0b11100[5]:rp[4]:><:reglist16[16])
 
 stmts.disasm={
 
-	os << "stmts {--}" << rp << "," << reglist16 << endl; 
+	os << "stmts\t{--}r" << (unsigned int)rp << "," << std::hex << (unsigned int)reglist16 << endl; 
 
 }
 
