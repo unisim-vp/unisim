@@ -38,6 +38,8 @@
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.tcc>
 #include <unisim/kernel/debug/debug.hh>
 
+#include "unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.hh"
+
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
@@ -75,8 +77,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, registers_export("registers-export",  this)
 	, memory_export("memory-export",  this)
 	, memory_injection_export("memory-injection-export",  this)
-	, synchronizable_export("synchronizable-export",  thbuffer[4];
-	uint8_t is)
+	, synchronizable_export("synchronizable-export",this)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export",  this)
 	, loader_import("loader-import",  this)
 	, debug_control_import("debug-control-import",  this)
@@ -91,6 +92,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, verbose_all(false)
 	, verbose_setup(false)
 	, verbose_interrupt(false)
+	, verbose_step(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, enable_trap_on_exception(false)
 	, halt_on_addr((typename CONFIG::address_t) -1)
@@ -102,6 +104,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_verbose_all("verbose-all",  this,  verbose_all, "globally enable/disable verbosity")
 	, param_verbose_setup("verbose-setup",  this,  verbose_all, "enable/disable verbosity while setup")
 	, param_verbose_interrupt("verbose-interrupt",  this,  verbose_interrupt, "enable/disable verbosity when handling interrupts")
+	, param_verbose_step("verbose-step", this, verbose_step, "enable/disable verbosity when stepping instructions")
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
 	, param_enable_trap_on_exception("enable-trap-on-exception", this, enable_trap_on_exception, "enable/disable trap reporting on exception")
 	, param_halt_on("halt-on", this, halt_on, "Symbol or address where to stop simulation")
@@ -112,15 +115,18 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
 	unsigned int i;
 
-	for(i = 0; i < 12; i++)
+	for(i = 0; i < 13; i++)
 	{
 		std::stringstream sstr_register_name;
 		sstr_register_name << "r" << i;
 		registers_registry[sstr_register_name.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr_register_name.str().c_str(), &gpr[i]);
 	}
+	registers_registry["sp"] = new unisim::util::debug::SimpleRegister<uint32_t>("sp", &gpr[13]);
+	registers_registry["lr"] = new unisim::util::debug::SimpleRegister<uint32_t>("lr", &gpr[14]);
+	registers_registry["pc"] = new unisim::util::debug::SimpleRegister<uint32_t>("pc", &gpr[15]);
+	registers_registry["sr"] = new unisim::util::debug::SimpleRegister<uint32_t>("sr", &sr);
 
 	Reset();
-	disasm
 	std::stringstream sstr_description;
 	sstr_description << "This module implements an AVR32UC CPU core." << std::endl;
 	
@@ -223,9 +229,9 @@ void CPU<CONFIG>::Reset()
 template <class CONFIG>
 bool CPU<CONFIG>::Fetch(typename CONFIG::address_t addr, void *buffer,uint32_t size)
 {
+	// TODO
 	
-	
-	return memory_import->IHSBRead(addr, buffer, size);
+	return false;
 }
 
 template <class CONFIG>
@@ -236,8 +242,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		do
 		{
 			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
-
-			dbg_cmd = debug_control_import->FetchDebugCommand(GetPC());
+			dbg_cmd = debug_control_import->FetchDebugCommand(getPC());
 	
 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC)
@@ -259,15 +264,15 @@ void CPU<CONFIG>::StepOneInstruction()
 
 	unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation = 0;
 
-	typename CONFIG::address_t addr = GetPC();
+	typename CONFIG::address_t addr = getPC();
 	
 	uint8_t buffer[4];
-	if(likely(Fetch(addr, buffer, size)))
+	if(likely(Fetch(addr, buffer, sizeof(buffer)*8)))
 	{
 		CodeType insn(buffer, sizeof(buffer) * 8);
 	  
 		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(addr, insn);
-		SetNPC(addr + operation->GetLength());
+		setNPC(addr + operation->GetLength());
 
 		if(unlikely(IsVerboseStep()))
 		{
@@ -291,19 +296,19 @@ void CPU<CONFIG>::StepOneInstruction()
 	{
 		if(unlikely(memory_access_reporting_import != 0))
 		{
-			memory_access_reporting_import->ReportFinishedInstruction(GetPC(), GetNPC());
+			memory_access_reporting_import->ReportFinishedInstruction(getPC(), getNPC());
 		}
 	}
 
 	/* go to the next instruction */
-	SetPC(GetNPC());
+	setPC(getNPC());
 
 	if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
 	{
 		trap_reporting_import->ReportTrap();
 	}
 	
-	if(unlikely((instruction_counter >= max_inst) || (GetPC() == halt_on_addr))) Stop(0);
+	if(unlikely((instruction_counter >= max_inst) || (getPC() == halt_on_addr))) Stop(0);
 }
 
 template <class CONFIG>
@@ -332,13 +337,13 @@ uint32_t CPU<CONFIG>::getSR()
 }
 
 template <class CONFIG>
-void setPC(uint32_t valpc)
+void CPU<CONFIG>::setPC(uint32_t valpc)
 {
 	gpr[15]=valpc;
 }
 
 template <class CONFIG>
-void setNPC(uint32_t valnpc)
+void CPU<CONFIG>::setNPC(uint32_t valnpc)
 {
 	npc=valnpc;
 }
@@ -365,7 +370,7 @@ string CPU<CONFIG>::GetFunctionFriendlyName(typename CONFIG::address_t addr)
 	const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
-	elseSetGPR_mem
+	else //SetGPR_mem
 		sstr << "0x" << std::hex << addr << std::dec;
 
 	return sstr.str();
@@ -468,7 +473,7 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
         if(ReadMemory(addr, buffer ,sizeof(buffer)))
 	{
 		CodeType insn= CodeType(buffer, sizeof(buffer) * 8);
-	  
+	        unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation=0;
 		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(addr, insn);
 
 		next_addr = addr + operation->GetLength();

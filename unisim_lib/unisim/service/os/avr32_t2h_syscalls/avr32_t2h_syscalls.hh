@@ -117,13 +117,15 @@ template <class MEMORY_ADDR>
 class AVR32_T2H_Syscalls :
 	public Service<unisim::service::interfaces::AVR32_T2H_Syscalls>,
 	public Client<MemoryInjection<MEMORY_ADDR> >,
-	public Client<Registers>
+	public Client<Registers>,
+	public Client<Blob<MEMORY_ADDR> >
 {
 public:
 	ServiceExport<unisim::service::interfaces::AVR32_T2H_Syscalls> avr32_t2h_syscalls_export;
 
 	ServiceImport<MemoryInjection<MEMORY_ADDR> > memory_injection_import;
 	ServiceImport<Registers> registers_import;
+	ServiceImport<Blob<MEMORY_ADDR> > blob_import;
 
     AVR32_T2H_Syscalls(const char *name, Object *parent = 0);
     virtual ~AVR32_T2H_Syscalls();
@@ -154,6 +156,7 @@ private:
 	unisim::kernel::logger::Logger logger;
 
 	// register access interfaces
+	unisim::util::debug::Register *reg_pc;
 	unisim::util::debug::Register *reg_sp;
 	unisim::util::debug::Register *reg_syscall_num;
 	unisim::util::debug::Register *reg_params[5];
@@ -167,6 +170,7 @@ private:
 	int exit_status;
 
 	// register names
+	std::string pc_register_name;
 	std::string sp_register_name;
 	std::string syscall_num_register_name;
 	std::string return_status_register_name;
@@ -174,7 +178,7 @@ private:
 	
 	// program arguments
 	int argc;
-	std::vector<std::string> argv;
+	std::vector<std::string *> argv;
 
 	bool verbose_all;
 	bool verbose_syscalls;

@@ -65,6 +65,7 @@ public:
 	static const bool DEBUG_ENABLE = false;
 	static const bool DEBUG_SETUP_ENABLE = false;
 	static const bool DEBUG_INTERRUPT_ENABLE = false;
+	static const bool DEBUG_STEP_ENABLE = false;
 };
 
 class DebugConfig : public Config
@@ -75,6 +76,7 @@ public:
 	static const bool DEBUG_ENABLE = true;
 	static const bool DEBUG_SETUP_ENABLE = true;
 	static const bool DEBUG_INTERRUPT_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
 };
 
 } // end of namespace avr32uc

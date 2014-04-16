@@ -124,10 +124,13 @@ AVR32_T2H_Syscalls<MEMORY_ADDR>::AVR32_T2H_Syscalls(const char *name, Object *pa
 	, Service<unisim::service::interfaces::AVR32_T2H_Syscalls>(name, parent)
 	, Client<MemoryInjection<MEMORY_ADDR> >(name, parent)
 	, Client<Registers>(name, parent)
+	, Client<Blob<MEMORY_ADDR> >(name, parent)
 	, avr32_t2h_syscalls_export("avr32-t2h-syscalls-export", this)
 	, memory_injection_import("memory-injection-import", this)
 	, registers_import("registers-import", this)
+	, blob_import("blob-import", this)
 	, logger(*this)
+	, reg_pc(0)
 	, reg_sp(0)
 	, reg_syscall_num(0)
 	, reg_params()
@@ -135,6 +138,7 @@ AVR32_T2H_Syscalls<MEMORY_ADDR>::AVR32_T2H_Syscalls(const char *name, Object *pa
 	, t2h_syscall_table()
 	, terminated(false)
 	, exit_status(0)
+	, pc_register_name("pc")
 	, sp_register_name("sp")
 	, syscall_num_register_name("r8")
 	, return_status_register_name("r11")
@@ -178,6 +182,19 @@ AVR32_T2H_Syscalls<MEMORY_ADDR>::AVR32_T2H_Syscalls(const char *name, Object *pa
 template <class MEMORY_ADDR>
 AVR32_T2H_Syscalls<MEMORY_ADDR>::~AVR32_T2H_Syscalls()
 {
+	std::vector<std::string *>::iterator it_argv;
+
+	for(it_argv = argv.begin(); it_argv != argv.end(); it_argv++)
+	{
+		if(*it_argv) delete (*it_argv);
+	}
+
+	std::vector<Parameter<std::string> *>::iterator it_param_argv;
+
+	for(it_param_argv = param_argv.begin(); it_param_argv != param_argv.end(); it_param_argv++)
+	{
+		if(*it_param_argv) delete (*it_param_argv);
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -202,6 +219,26 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 		return false;
 	}
 	
+	if(!blob_import)
+	{
+		logger << DebugError << blob_import.GetName() << " is not connected" << EndDebugError;
+		return false;
+	}
+
+	reg_pc = registers_import->GetRegister(pc_register_name.c_str());
+
+	if(!reg_pc)
+	{
+		logger << DebugError << "Undefined register " << pc_register_name << "." << EndDebugError;
+		return false;
+	}
+
+	if(reg_pc->GetSize() != 4)
+	{
+		logger << DebugError << "Register " << pc_register_name << " is not a 32-bit register." << EndDebugError;
+		return false;
+	}
+
 	reg_sp = registers_import->GetRegister(sp_register_name.c_str());
 
 	if(!reg_sp)
@@ -262,11 +299,18 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 
 	for(i = 0; i < argc; i++)
 	{
+		std::string *arg = new std::string();
+		argv.push_back(arg);
 		std::stringstream sstr_param_argv_name;
 		sstr_param_argv_name << "argv[" << i << "]";
-		param_argv[i] = new Parameter<std::string>(sstr_param_argv_name.str().c_str(), this, argv[i], "program argument");
+		param_argv.push_back(new Parameter<std::string>(sstr_param_argv_name.str().c_str(), this, *arg, "program argument"));
 	}
 	
+	
+	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = blob_import->GetBlob();
+	MEMORY_ADDR entry_point = blob->GetEntryPoint();
+	reg_pc->SetValue(&entry_point);
+
 	return true;
 }
 
@@ -970,7 +1014,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	unsigned int n = argv.size();
 	for(i = n; i >= 0; i--)
 	{
-		const std::string& arg = argv[i];
+		const std::string& arg = *argv[i];
 		sp -= arg.length() + 1;
 		sp = sp & ~3; // align to a 32-bit boundary
 		

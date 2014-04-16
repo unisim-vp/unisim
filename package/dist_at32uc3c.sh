@@ -413,6 +413,7 @@ m4/pthread.m4"
 
 UNISIM_LIB_AT32UC3C_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_avr32.xml \
+unisim/util/debug/dwarf/avr32_dwarf_register_number_mapping.xml \
 "
 
 AT32UC3C_EXTERNAL_HEADERS="\

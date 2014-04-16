@@ -823,6 +823,8 @@ ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size)
 	std::vector<unsigned int> mappings;
 	std::vector<unsigned int>::iterator it;
 	ApplyMap(addr, size, mappings);
+	if(!mappings.size()) return false;
+
 	for(it = mappings.begin(); it != mappings.end(); it++) {
 		sc_dt::uint64 buffer_index;
 		sc_dt::uint64 buffer_addr;
@@ -870,6 +872,8 @@ WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size)
 	std::vector<unsigned int> mappings;
 	std::vector<unsigned int>::iterator it;
 	ApplyMap(addr, size, mappings);
+	if(!mappings.size()) return false;
+
 	for(it = mappings.begin(); it != mappings.end(); it++) {
 		sc_dt::uint64 buffer_index;
 		sc_dt::uint64 buffer_addr;

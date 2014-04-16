@@ -153,8 +153,14 @@ public:
         virtual uint32_t getPC();    //return adress of currently instruction
         virtual uint32_t getNPC();
 
-	virtual void setPC(uint32_t);
-        virtual void setNPC(uint32_t);
+	virtual void setPC(uint32_t pc);
+        virtual void setNPC(uint32_t npc);
+
+	
+	virtual uint32_t getSP();
+	virtual uint32_t getSR();
+	
+	
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -249,6 +255,7 @@ protected:
 	
 	inline bool IsVerboseSetup() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SETUP_ENABLE && (verbose_all || verbose_setup); }
 	inline bool IsVerboseInterrupt() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_INTERRUPT_ENABLE && (verbose_all || verbose_interrupt); }
+	inline bool IsVerboseStep() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
 	
 	//=====================================================================
 	//=                      Bus access methods                           =
@@ -261,6 +268,8 @@ protected:
 public:
 	inline void ProcessExceptions(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation) ALWAYS_INLINE;
 
+
+
 private:	
 	//=====================================================================
 	//=                      Debugging stuffs                             =
@@ -268,6 +277,7 @@ private:
 	bool verbose_all;
 	bool verbose_setup;
 	bool verbose_interrupt;
+	bool verbose_step;
 	uint64_t trap_on_instruction_counter;
 	bool enable_trap_on_exception;
 	typename CONFIG::address_t halt_on_addr;
@@ -291,19 +301,7 @@ private:
 	uint32_t sr;      // stack register
 	
 
-	//=====================================================================
-	//=                       register's access methods                         =
-	//=====================================================================
-
-	inline uint32_t getPC() ALWAYS_INLINE;
-	inline uint32_t getNPC() ALWAYS_INLINE;
-	inline uint32_t getSP() ALWAYS_INLINE;
-	inline uint32_t getSR() ALWAYS_INLINE;
-	inline void setPC(uint32_t valpc) ALWAYS_INLINE;
-	inline void setNPC(uint32_t valnpc) ALWAYS_INLINE;
-
 	
-
 	//=====================================================================
 	//=                    CPU run-time parameters                        =
 	//=====================================================================
@@ -312,6 +310,7 @@ private:
 	Parameter<bool> param_verbose_all;
 	Parameter<bool> param_verbose_setup;
 	Parameter<bool> param_verbose_interrupt;
+	Parameter<bool> param_verbose_step;
 	Parameter<uint64_t> param_trap_on_instruction_counter;
 	Parameter<bool> param_enable_trap_on_exception;
 	Parameter<std::string> param_halt_on;

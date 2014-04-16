@@ -151,6 +151,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	{
 		avr32_t2h_syscalls->registers_import >> cpu->registers_export;
 		avr32_t2h_syscalls->memory_injection_import >> cpu->memory_injection_export;
+		avr32_t2h_syscalls->blob_import >> loader->blob_export;
 		cpu->avr32_t2h_syscalls_import >> avr32_t2h_syscalls->avr32_t2h_syscalls_export;
 	}
 	
@@ -261,7 +262,8 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("cpu.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
 
 	//  - Memory router
-	simulator->SetVariable("memory-router.cycle_time", sc_time(hsb_cycle_time, SC_PS).to_string().c_str());	simulator->SetVariable("memory-router.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffffffffffff\" output_port=\"0\" translation=\"0x0\""); // RAM
+	simulator->SetVariable("memory-router.cycle_time", sc_time(hsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("memory-router.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\""); // RAM
 
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;

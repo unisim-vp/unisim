@@ -1497,6 +1497,7 @@ const char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 		case EM_SEP: return "sep";
 		case EM_ARCA: return "arca";
 		case EM_UNICORE: return "unicore";
+		case EM_AVR32: return "avr32";
 		case EM_ALPHA: return "alpha";
 	}
 	return "";
