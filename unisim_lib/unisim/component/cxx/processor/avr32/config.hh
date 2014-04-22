@@ -48,11 +48,133 @@ namespace avr32 {
 //=                    AVR32 common configuration                     =
 //=====================================================================
 
+class SRLayout
+{
+public:
+	// SR fields offsets
+	static const unsigned int SR_SS_OFFSET = 31;
+	static const unsigned int SR_H_OFFSET = 29;
+	static const unsigned int SR_J_OFFSET = 28;
+	static const unsigned int SR_DM_OFFSET = 27;
+	static const unsigned int SR_D_OFFSET = 26;
+	static const unsigned int SR_M2_OFFSET = 24;
+	static const unsigned int SR_M1_OFFSET = 23;
+	static const unsigned int SR_M0_OFFSET = 22;
+	static const unsigned int SR_M_OFFSET = 22;
+	static const unsigned int SR_EM_OFFSET = 21;
+	static const unsigned int SR_I3M_OFFSET = 20;
+	static const unsigned int SR_I2M_OFFSET = 19;
+	static const unsigned int SR_I1M_OFFSET = 18;
+	static const unsigned int SR_I0M_OFFSET = 17;
+	static const unsigned int SR_GM_OFFSET = 16;
+
+	static const unsigned int SR_R_OFFSET = 15;
+	static const unsigned int SR_T_OFFSET = 14;
+	static const unsigned int SR_L_OFFSET = 5;
+	static const unsigned int SR_Q_OFFSET = 4;
+	static const unsigned int SR_V_OFFSET = 3;
+	static const unsigned int SR_N_OFFSET = 2;
+	static const unsigned int SR_Z_OFFSET = 1;
+	static const unsigned int SR_C_OFFSET = 0;
+
+	// SR fields sizes
+	static const unsigned int SR_SS_BITSIZE = 1;
+	static const unsigned int SR_H_BITSIZE = 1;
+	static const unsigned int SR_J_BITSIZE = 1;
+	static const unsigned int SR_DM_BITSIZE = 1;
+	static const unsigned int SR_D_BITSIZE = 1;
+	static const unsigned int SR_M2_BITSIZE = 1;
+	static const unsigned int SR_M1_BITSIZE = 1;
+	static const unsigned int SR_M0_BITSIZE = 1;
+	static const unsigned int SR_M_BITSIZE = 3;
+	static const unsigned int SR_EM_BITSIZE = 1;
+	static const unsigned int SR_I3M_BITSIZE = 1;
+	static const unsigned int SR_I2M_BITSIZE = 1;
+	static const unsigned int SR_I1M_BITSIZE = 1;
+	static const unsigned int SR_I0M_BITSIZE = 1;
+	static const unsigned int SR_GM_BITSIZE = 1;
+
+	static const unsigned int SR_R_BITSIZE = 1;
+	static const unsigned int SR_T_BITSIZE = 1;
+	static const unsigned int SR_L_BITSIZE = 1;
+	static const unsigned int SR_Q_BITSIZE = 1;
+	static const unsigned int SR_V_BITSIZE = 1;
+	static const unsigned int SR_N_BITSIZE = 1;
+	static const unsigned int SR_Z_BITSIZE = 1;
+	static const unsigned int SR_C_BITSIZE = 1;
+
+	static const uint32_t SR_SS_MASK = ((1UL << SR_SS_BITSIZE) - 1) << SR_SS_OFFSET;
+	static const uint32_t SR_H_MASK = ((1UL << SR_H_BITSIZE) - 1) << SR_H_OFFSET;
+	static const uint32_t SR_J_MASK = ((1UL << SR_J_BITSIZE) - 1) << SR_J_OFFSET;
+	static const uint32_t SR_DM_MASK = ((1UL << SR_DM_BITSIZE) - 1) << SR_DM_OFFSET;
+	static const uint32_t SR_D_MASK = ((1UL << SR_D_BITSIZE) - 1) << SR_D_OFFSET;
+	static const uint32_t SR_M2_MASK = ((1UL << SR_M2_BITSIZE) - 1) << SR_M2_OFFSET;
+	static const uint32_t SR_M1_MASK = ((1UL << SR_M1_BITSIZE) - 1) << SR_M1_OFFSET;
+	static const uint32_t SR_M0_MASK = ((1UL << SR_M0_BITSIZE) - 1) << SR_M0_OFFSET;
+	static const uint32_t SR_M_MASK = ((1UL << SR_M_BITSIZE) - 1) << SR_M_OFFSET;
+	static const uint32_t SR_EM_MASK = ((1UL << SR_EM_BITSIZE) - 1) << SR_EM_OFFSET;
+	static const uint32_t SR_I3M_MASK = ((1UL << SR_I3M_BITSIZE) - 1) << SR_I3M_OFFSET;
+	static const uint32_t SR_I2M_MASK = ((1UL << SR_I2M_BITSIZE) - 1) << SR_I2M_OFFSET;
+	static const uint32_t SR_I1M_MASK = ((1UL << SR_I1M_BITSIZE) - 1) << SR_I1M_OFFSET;
+	static const uint32_t SR_I0M_MASK = ((1UL << SR_I0M_BITSIZE) - 1) << SR_I0M_OFFSET;
+	static const uint32_t SR_GM_MASK = ((1UL << SR_GM_BITSIZE) - 1) << SR_GM_OFFSET;
+
+	static const uint32_t SR_R_MASK = ((1UL << SR_R_BITSIZE) - 1) << SR_R_OFFSET;
+	static const uint32_t SR_T_MASK = ((1UL << SR_T_BITSIZE) - 1) << SR_T_OFFSET;
+	static const uint32_t SR_L_MASK = ((1UL << SR_L_BITSIZE) - 1) << SR_L_OFFSET;
+	static const uint32_t SR_Q_MASK = ((1UL << SR_Q_BITSIZE) - 1) << SR_Q_OFFSET;
+	static const uint32_t SR_V_MASK = ((1UL << SR_V_BITSIZE) - 1) << SR_V_OFFSET;
+	static const uint32_t SR_N_MASK = ((1UL << SR_N_BITSIZE) - 1) << SR_N_OFFSET;
+	static const uint32_t SR_Z_MASK = ((1UL << SR_Z_BITSIZE) - 1) << SR_Z_OFFSET;
+	static const uint32_t SR_C_MASK = ((1UL << SR_C_BITSIZE) - 1) << SR_C_OFFSET;
+
+	// SR bitwise AND mask
+	static const uint32_t HW_SR_MASK = SR_SS_MASK | SR_H_MASK | SR_J_MASK | SR_DM_MASK | SR_D_MASK | SR_M_MASK | SR_EM_MASK |
+	                                   SR_I3M_MASK | SR_I2M_MASK | SR_I1M_MASK | SR_I0M_MASK | SR_GM_MASK |
+	                                   SR_R_MASK | SR_T_MASK | SR_L_MASK | SR_Q_MASK | SR_V_MASK | SR_N_MASK |
+	                                   SR_Z_MASK | SR_C_MASK;
+
+	// SR bitwise AND mask
+	static const uint32_t SR_MASK = SR_H_MASK | SR_DM_MASK | SR_EM_MASK |
+	                                SR_I3M_MASK | SR_I2M_MASK | SR_I1M_MASK | SR_I0M_MASK | SR_GM_MASK |
+	                                SR_T_MASK | SR_L_MASK | SR_Q_MASK | SR_V_MASK | SR_N_MASK |
+	                                SR_Z_MASK | SR_C_MASK;
+
+	// SR bitwise AND mask
+	static const uint32_t SR_APP_MASK = SR_T_MASK | SR_L_MASK | SR_Q_MASK | SR_V_MASK | SR_N_MASK |
+	                                    SR_Z_MASK | SR_C_MASK;
+
+	// SR reset value
+	static const uint32_t SR_RESET_VALUE = SR_M0_MASK | SR_EM_MASK | SR_GM_MASK;
+};
+
 class Config
+	: public SRLayout
 {
 public:
 	typedef uint32_t address_t;
 	typedef uint32_t physical_address_t;
+
+	// Execution Mode
+	static const uint32_t EXEC_MODE_NMI         = 1;    // Non-Maskable Interrupt
+	static const uint32_t EXEC_MODE_EXC         = 2;    // Exception
+	static const uint32_t EXEC_MODE_INT_LEVEL3  = 3;    // Interrupt Level 3
+	static const uint32_t EXEC_MODE_INT_LEVEL2  = 4;    // Interrupt Level 2
+	static const uint32_t EXEC_MODE_INT_LEVEL1  = 5;    // Interrupt Level 1
+	static const uint32_t EXEC_MODE_INT_LEVEL0  = 6;    // Interrupt Level 0
+	static const uint32_t EXEC_MODE_SUPERVISOR  = 7;    // Supervisor
+	static const uint32_t EXEC_MODE_APPLICATION = 0;    // Application
+
+	static const uint32_t PRIO_LEVEL_MODE_NMI         = 7;  
+	static const uint32_t PRIO_LEVEL_MODE_EXC         = 6;   
+	static const uint32_t PRIO_LEVEL_MODE_INT_LEVEL3  = 5;    
+	static const uint32_t PRIO_LEVEL_MODE_INT_LEVEL2  = 4;    
+	static const uint32_t PRIO_LEVEL_MODE_INT_LEVEL1  = 3;    
+	static const uint32_t PRIO_LEVEL_MODE_INT_LEVEL0  = 2;    
+	static const uint32_t PRIO_LEVEL_MODE_SUPERVISOR  = 0;   
+	static const uint32_t PRIO_LEVEL_MODE_APPLICATION = 0;    
+
+	
 };
 
 } // end of namespace avr32
