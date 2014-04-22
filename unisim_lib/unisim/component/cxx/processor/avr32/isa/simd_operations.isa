@@ -18,7 +18,7 @@ op packsh_ub(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b001001001100[12]:rd[4])
 
 packsh_ub.disasm={
 
-	os << "packsh_ub\tr" << (unsigned int)rd << ","r << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
+	os << "packsh_ub\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
 }
 
 op packsh_sb(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b001001001101[12]:rd[4])
@@ -392,7 +392,7 @@ op psubxs_uh(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b001000001011[12]:rd[4])
 
 psubxs_uh.disasm={
 
-	os << "psubxs_uh\tr" << (unsigned int)rd << ",r" << rx (unsigned int)<< ",r" << (unsigned int)ry << endl;
+	os << "psubxs_uh\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
 }
 
 op psubxs_sh(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b001000000111[12]:rd[4])

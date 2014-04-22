@@ -33,7 +33,7 @@ rjmp.var disp :{uint16_t}={(disp_9_8<<8)|disp_7_0}
 
 rjmp.disasm={
 
-	os << "rjmp\t" << cpu->getPC() << "[0x" << std::hex << (int) disp << "]" << endl;
+	os << "rjmp\t" << Operation<CONFIG>::GetAddr() << "[0x" << std::hex << (int) disp << "]" << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ rcall_a.var disp :{uint16_t} ={ (disp_9_8 << 8 )| disp_7_0}
 
 rcall_a.disasm={
 
-	os << "rcall_a\t" << cpu->getPC() << "[" << disp << "]" << endl;
+	os << "rcall_a\t" << Operation<CONFIG>::GetAddr() << "[" << disp << "]" << endl;
 }
 
 op rcall_b(0b111[3]:disp_20_17[4]:0b0101[4]:disp_16[1]:0b0000[4]:><:disp_15_0[16])
@@ -87,7 +87,7 @@ rcall_b.var disp :{uint32_t} = {(disp_20_17 << 17)|(disp_16 << 16)|disp_15_0 }
 
 rcall_b.disasm={
 
-	os << "rcall_b\t" << cpu->getPC() << "[" << disp << "]" << endl;
+	os << "rcall_b\t" << Operation<CONFIG>::GetAddr() << "[" << disp << "]" << endl;
 }
 
 //SCALL - supervisor call

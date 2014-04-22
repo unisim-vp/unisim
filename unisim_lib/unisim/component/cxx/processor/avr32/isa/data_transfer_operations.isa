@@ -228,7 +228,7 @@ ld_w_b.disasm={
 op ld_w_c(0b011[3]:rp[4]:disp5[5]:rd[4])
 
 ld_w_c.disasm={
-	os << "ld_w_c\tr" << (unsigned int)rd << ",r" << (unsigned int)rp << "[0x" <<std:hex << (unsigned int) disp5 << "]" << endl;
+	os << "ld_w_c\tr" << (unsigned int)rd << ",r" << (unsigned int)rp << "[0x" << std::hex << (unsigned int) disp5 << "]" << endl;
 }
 
 
@@ -286,7 +286,7 @@ ld_d_c.disasm={
 op ld_d_d(0b111[3]:rp[4]:0b01110[5]:rd[3]:0b0[1]:><:disp16[16])
 
 ld_d_d.disasm={
-	os << "ld_d_d\tr" << rd (unsigned int) << ",r" << (unsigned int) rp << "[0x" << std::hex << (uint32_t) disp16 << "]" << endl;
+	os << "ld_d_d\tr" << (unsigned int)rd << ",r" << (unsigned int) rp << "[0x" << std::hex << (uint32_t) disp16 << "]" << endl;
 }
 
 
@@ -340,7 +340,7 @@ op lddpc(0b010[3]:0b01[2]:disp7[7]:rd[4])
 
 lddpc.disasm={
 
-	os << "lddpc\tr" << (unsigned int)rd << ",0x" << std::hex << (unsigned int)cpu->getPC() << "[0x" << std::hex << (uint32_t)disp7 << "]"<< endl; 
+	os << "lddpc\tr" << (unsigned int)rd << ",0x" << std::hex << (unsigned int)Operation<CONFIG>::GetAddr() << "[0x" << std::hex << (uint32_t)disp7 << "]"<< endl; 
 }
 
 // LDDSP - load sp relative with displacement
@@ -349,7 +349,7 @@ op lddsp(0b010[3]:0b00[2]:disp7[7]:rd[4])
 
 lddsp.disasm={
 
-	os << "lddsp\tr" << (unsigned int)rd << ",0x" << std::hex<< (unsigned int)cpu->getSP() << "[0x" << std::hex << (uint32_t)disp7 << "]" << endl; 
+	os << "lddsp\tr" << (unsigned int)rd << ",0x" << std::hex<< (unsigned int)cpu->GetSP() << "[0x" << std::hex << (uint32_t)disp7 << "]" << endl; 
 }
 
 
@@ -527,7 +527,7 @@ op st_w_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1001[4]:0b00[2]:sa[2]:r
 
 st_w_e.disasm={
 
-	os << "st_w_e\tr" << (unsigned int)rb << "[r" << (unsigned int)ri << "<<0x" << <<(unsigned int)sa << "],r" << (unsigned int)rs << endl;
+	os << "st_w_e\tr" << (unsigned int)rb << "[r" << (unsigned int)ri << "<<0x" << std::hex<<(unsigned int)sa << "],r" << (unsigned int)rs << endl;
 }
 
 // ST_W_COND4 - conditionally store word
@@ -556,7 +556,7 @@ op stdsp(0b010[3]:0b10[2]:disp7[7]:rs[4])
 
 stdsp.disasm={
 
-	os << "stdsp\t" << std::hex <<(unsigned int) cpu->getSP() << "[0x" << (unsigned int)disp7 << "],r" << (unsigned int)rs << endl;
+	os << "stdsp\t" << std::hex <<(unsigned int) cpu->GetSP() << "[0x" << (unsigned int)disp7 << "],r" << (unsigned int)rs << endl;
 }
 
 // STHH_W - store halfword into word
