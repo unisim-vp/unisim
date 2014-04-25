@@ -513,9 +513,9 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat(
   target_stat->st_rdev = Host2Target(endianness_, (int64_t) host_stat.st_rdev);
   target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
 #if defined(WIN64) // Windows x64
-  target_stat->st_blksize = Host2Target((int32_t) 512);
+  target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
   target_stat->st_blocks =
-      Host2Target((int64_t)((host_stat.st_size + 511) / 512));
+      Host2Target((int64_t)(endianness_, (host_stat.st_size + 511) / 512));
   target_stat->st_atim.tv_sec =
       Host2Target(endianness_, (int64_t) host_stat.st_atim);
   target_stat->st_atim.tv_nsec = 0;
@@ -629,7 +629,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(
     int fd, struct powerpc_stat64 *target_stat) {
   int ret;
 #if defined(WIN32) || defined(WIN64)
@@ -771,6 +771,147 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
+    const char *pathname, struct powerpc_stat64 *target_stat) {
+  int ret;
+#if defined(WIN32) || defined(WIN64)
+  struct _stati64 host_stat;
+  ret = _stati64(pathname, &host_stat);
+#elif defined(linux)
+  struct stat64 host_stat;
+  ret = stat64(pathname, &host_stat);
+#elif defined(__APPLE_CC__)
+  struct stat host_stat;
+  ret = stat(pathname, &host_stat);
+#endif
+
+  if (ret < 0) return ret;
+
+#if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
+  // 64-bit host
+  target_stat->st_dev = Host2Target(endianness_, (uint64_t) host_stat.st_dev);
+  target_stat->st_ino = Host2Target(endianness_, (uint64_t) host_stat.st_ino);
+  target_stat->st_mode = Host2Target(endianness_, (uint32_t) host_stat.st_mode);
+  target_stat->st_nlink = Host2Target(endianness_, (uint64_t) host_stat.st_nlink);
+  target_stat->st_uid = Host2Target(endianness_, (uint32_t) host_stat.st_uid);
+  target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
+  target_stat->st_rdev = Host2Target(endianness_, (int64_t) host_stat.st_rdev);
+  target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
+#if defined(WIN64) // Windows x64
+  target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
+  target_stat->st_blocks =
+      Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
+  target_stat->st_atim.tv_sec =
+      Host2Target(endianness_, (int64_t) host_stat.st_atim);
+  target_stat->st_atim.tv_nsec = 0;
+  target_stat->st_mtim.tv_sec =
+      Host2Target(endianness_, (int64_t) host_stat.st_mtim);
+  target_stat->st_mtim.tv_nsec = 0;
+  target_stat->st_ctim.tv_sec =
+      Host2Target(endianness_, (int64_t) host_stat.st_ctim);
+  target_stat->st_ctim.tv_nsec = 0;
+#elif defined(linux) // Linux x64
+  target_stat->st_blksize =
+      Host2Target(endianness_, (int32_t) host_stat.st_blksize);
+  target_stat->st_blocks =
+      Host2Target(endianness_, (int64_t) host_stat.st_blocks);
+  target_stat->st_atim.tv_sec =
+      Host2Target(endianness_, (int64_t) host_stat.st_atim.tv_sec);
+  target_stat->st_atim.tv_nsec =
+      Host2Target(endianness_, (int64_t) host_stat.st_atim.tv_nsec);
+  target_stat->st_mtim.tv_sec =
+      Host2Target(endianness_, (int64_t) host_stat.st_mtim.tv_sec);
+  target_stat->st_mtim.tv_nsec =
+      Host2Target(endianness_, (int64_t) host_stat.st_mtim.tv_nsec);
+  target_stat->st_ctim.tv_sec =
+      Host2Target(endianness_, (int64_t) host_stat.st_ctim.tv_sec);
+  target_stat->st_ctim.tv_nsec =
+      Host2Target(endianness_, (int64_t) host_stat.st_ctim.tv_nsec);
+#elif defined(__APPLE_CC__) // Darwin PPC64/x86_64
+  target_stat->st_blksize =
+      Host2Target(endianness_, (int32_t) host_stat.st_blksize);
+  target_stat->st_blocks =
+      Host2Target(endianness_, (int64_t) host_stat.st_blocks);
+  target_stat->st_atim.tv_sec =
+      Host2Target(endianness_, (int64_t) host_stat.st_atimespec.tv_sec);
+  target_stat->st_atim.tv_nsec =
+      Host2Target(endianness_, (int64_t) host_stat.st_atimespec.tv_nsec);
+  target_stat->st_mtim.tv_sec =
+      Host2Target(endianness_, (int64_t) host_stat.st_mtimespec.tv_sec);
+  target_stat->st_mtim.tv_nsec =
+      Host2Target(endianness_, (int64_t) host_stat.st_mtimespec.tv_nsec);
+  target_stat->st_ctim.tv_sec =
+      Host2Target(endianness_, (int64_t) host_stat.st_ctimespec.tv_sec);
+  target_stat->st_ctim.tv_nsec =
+      Host2Target(endianness_, (int64_t) host_stat.st_ctimespec.tv_nsec);
+#endif
+
+#else
+  // 32-bit host
+  target_stat->st_dev = Host2Target(endianness_, (uint64_t) host_stat.st_dev);
+  target_stat->st_ino = Host2Target(endianness_, (uint64_t) host_stat.st_ino);
+  target_stat->st_mode = Host2Target(endianness_, (uint32_t) host_stat.st_mode);
+  target_stat->st_nlink = Host2Target(endianness_, (uint32_t) host_stat.st_nlink);
+  target_stat->st_uid = Host2Target(endianness_, (uint32_t) host_stat.st_uid);
+  target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
+  target_stat->st_rdev = Host2Target(endianness_, (int64_t) host_stat.st_rdev);
+  target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
+#if defined(WIN32) // Windows 32
+  target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
+  target_stat->st_blocks =
+      Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
+  target_stat->st_atim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_atime);
+  target_stat->st_atim.tv_nsec = 0;
+  target_stat->st_mtim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_mtime);
+  target_stat->st_mtim.tv_nsec = 0;
+  target_stat->st_ctim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_ctime);
+  target_stat->st_ctim.tv_nsec = 0;
+#elif defined(linux) // Linux 32
+  target_stat->st_blksize =
+      Host2Target(endianness_, (int32_t) host_stat.st_blksize);
+  target_stat->st_blocks =
+      Host2Target(endianness_, (int64_t) host_stat.st_blocks);
+  target_stat->st_atim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_atim.tv_sec);
+  target_stat->st_atim.tv_nsec =
+      Host2Target(endianness_, (int32_t) host_stat.st_atim.tv_nsec);
+  target_stat->st_mtim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_mtim.tv_sec);
+  target_stat->st_mtim.tv_nsec =
+      Host2Target(endianness_, (int32_t) host_stat.st_mtim.tv_nsec);
+  target_stat->st_ctim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_ctim.tv_sec);
+  target_stat->st_ctim.tv_nsec =
+      Host2Target(endianness_, (int32_t) host_stat.st_ctim.tv_nsec);
+#elif defined(__APPLE_CC__) // Darwin PPC32/x86
+  target_stat->st_blksize =
+      Host2Target(endianness_, (int32_t) host_stat.st_blksize);
+  target_stat->st_blocks =
+      Host2Target(endianness_, (int64_t) host_stat.st_blocks);
+  target_stat->st_atim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_atimespec.tv_sec);
+  target_stat->st_atim.tv_nsec =
+      Host2Target(endianness_, (int32_t) host_stat.st_atimespec.tv_nsec);
+  target_stat->st_mtim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_mtimespec.tv_sec);
+  target_stat->st_mtim.tv_nsec =
+      Host2Target(endianness_, (int32_t) host_stat.st_mtimespec.tv_nsec);
+  target_stat->st_ctim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_ctimespec.tv_sec);
+  target_stat->st_ctim.tv_nsec =
+      Host2Target(endianness_, (int32_t) host_stat.st_ctimespec.tv_nsec);
+#endif
+
+#endif
+  target_stat->__pad2 = 0;
+  target_stat->__pad3 = 0;
+  return ret;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(
     int fd, struct arm_stat64 *target_stat) {
   int ret;
 #if defined(WIN32) || defined(WIN64)
@@ -782,6 +923,149 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
 #elif defined(__APPLE_CC__)
   struct stat host_stat;
   ret = fstat(fd, &host_stat);
+#endif
+  if (ret < 0) return ret;
+
+#if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
+  // 64-bit host
+  target_stat->st_dev = Host2Target(endianness_, (uint64_t) host_stat.st_dev);
+  target_stat->__st_ino = Host2Target(endianness_, (uint32_t) host_stat.st_ino);
+  target_stat->st_ino = Host2Target(endianness_, (uint64_t) host_stat.st_ino);
+  target_stat->st_mode = Host2Target(endianness_, (uint32_t) host_stat.st_mode);
+  target_stat->st_nlink = Host2Target(endianness_, (uint64_t) host_stat.st_nlink);
+  target_stat->st_uid = Host2Target(endianness_, (uint32_t) host_stat.st_uid);
+  target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
+  target_stat->st_rdev = Host2Target(endianness_, (uint64_t) host_stat.st_rdev);
+  target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
+#if defined(WIN64) // Windows x64
+  target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
+  target_stat->st_blocks =
+      Host2Target(endianness_, (uint64_t)((host_stat.st_size + 511) / 512));
+  target_stat->st_atim.tv_sec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_atim);
+  target_stat->st_atim.tv_nsec = 0;
+  target_stat->st_mtim.tv_sec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_mtim);
+  target_stat->st_mtim.tv_nsec = 0;
+  target_stat->st_ctim.tv_sec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_ctim);
+  target_stat->st_ctim.tv_nsec = 0;
+#elif defined(linux) // Linux x64
+  target_stat->st_blksize =
+      Host2Target(endianness_, (uint32_t) host_stat.st_blksize);
+  target_stat->st_blocks =
+      Host2Target(endianness_, (uint64_t) host_stat.st_blocks);
+  target_stat->st_atim.tv_sec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_atim.tv_sec);
+  target_stat->st_atim.tv_nsec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_atim.tv_nsec);
+  target_stat->st_mtim.tv_sec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_mtim.tv_sec);
+  target_stat->st_mtim.tv_nsec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_mtim.tv_nsec);
+  target_stat->st_ctim.tv_sec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_ctim.tv_sec);
+  target_stat->st_ctim.tv_nsec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_ctim.tv_nsec);
+#elif defined(__APPLE_CC__) // darwin PPC64/x86_64
+  target_stat->st_blksize =
+      Host2Target(endianness_, (uint32_t) host_stat.st_blksize);
+  target_stat->st_blocks =
+      Host2Target(endianness_, (int64_t) host_stat.st_blocks);
+  target_stat->st_atim.tv_sec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_atimespec.tv_sec);
+  target_stat->st_atim.tv_nsec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_atimespec.tv_nsec);
+  target_stat->st_mtim.tv_sec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_mtimespec.tv_sec);
+  target_stat->st_mtim.tv_nsec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_mtimespec.tv_nsec);
+  target_stat->st_ctim.tv_sec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_ctimespec.tv_sec);
+  target_stat->st_ctim.tv_nsec =
+      Host2Target(endianness_, (uint32_t) host_stat.st_ctimespec.tv_nsec);
+#endif
+
+#else
+  // 32-bit host
+  target_stat->st_dev = Host2Target(endianness_, (uint64_t) host_stat.st_dev);
+  target_stat->__st_ino = Host2Target(endianness_, (uint32_t) host_stat.st_ino);
+  target_stat->st_ino = Host2Target(endianness_, (uint64_t) host_stat.st_ino);
+  target_stat->st_mode = Host2Target(endianness_, (uint32_t) host_stat.st_mode);
+  target_stat->st_nlink = Host2Target(endianness_, (uint32_t) host_stat.st_nlink);
+  target_stat->st_uid = Host2Target(endianness_, (uint32_t) host_stat.st_uid);
+  target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
+  target_stat->st_rdev = Host2Target(endianness_, (uint64_t) host_stat.st_rdev);
+  target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
+#if defined(WIN32) // Windows 32
+  target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
+  target_stat->st_blocks =
+      Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
+  target_stat->st_atim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_atime);
+  target_stat->st_atim.tv_nsec = 0;
+  target_stat->st_mtim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_mtime);
+  target_stat->st_mtim.tv_nsec = 0;
+  target_stat->st_ctim.tv_sec =
+      Host2Target(endianness_, (int32_t) host_stat.st_ctime);
+  target_stat->st_ctim.tv_nsec = 0;
+#elif defined(linux) // Linux 32
+  target_stat->st_blksize = Host2Target(endianness_, (uint32_t)
+                                        host_stat.st_blksize);
+  target_stat->st_blocks = Host2Target(endianness_, (uint64_t)
+                                       host_stat.st_blocks);
+  target_stat->st_atim.tv_sec = Host2Target(endianness_, (uint32_t)
+                                            host_stat.st_atim.tv_sec);
+  target_stat->st_atim.tv_nsec = Host2Target(endianness_, (uint32_t)
+                                             host_stat.st_atim.tv_nsec);
+  target_stat->st_mtim.tv_sec = Host2Target(endianness_, (uint32_t)
+                                            host_stat.st_mtim.tv_sec);
+  target_stat->st_mtim.tv_nsec = Host2Target(endianness_, (uint32_t)
+                                             host_stat.st_mtim.tv_nsec);
+  target_stat->st_ctim.tv_sec = Host2Target(endianness_, (uint32_t)
+                                            host_stat.st_ctim.tv_sec);
+  target_stat->st_ctim.tv_nsec = Host2Target(endianness_, (uint32_t)
+                                             host_stat.st_ctim.tv_nsec);
+#elif defined(__APPLE_CC__) // Darwin PPC32/x86
+  target_stat->st_blksize = Host2Target(endianness_, (uint32_t)
+                                        host_stat.st_blksize);
+  target_stat->st_blocks = Host2Target(endianness_, (uint64_t)
+                                       host_stat.st_blocks);
+  target_stat->st_atim.tv_sec = Host2Target(endianness_, (uint32_t)
+                                            host_stat.st_atimespec.tv_sec);
+  target_stat->st_atim.tv_nsec = Host2Target(endianness_, (uint32_t)
+                                             host_stat.st_atimespec.tv_nsec);
+  target_stat->st_mtim.tv_sec = Host2Target(endianness_, (uint32_t)
+                                            host_stat.st_mtimespec.tv_sec);
+  target_stat->st_mtim.tv_nsec = Host2Target(endianness_, (uint32_t)
+                                             host_stat.st_mtimespec.tv_nsec);
+  target_stat->st_ctim.tv_sec = Host2Target(endianness_, (uint32_t)
+                                            host_stat.st_ctimespec.tv_sec);
+  target_stat->st_ctim.tv_nsec = Host2Target(endianness_, (uint32_t)
+                                             host_stat.st_ctimespec.tv_nsec);
+#endif
+
+#endif
+  target_stat->__pad1 = 0;
+  target_stat->__pad2 = 0;
+  target_stat->__pad3 = 0;
+  return ret;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
+    const char *pathname, struct arm_stat64 *target_stat) {
+  int ret;
+#if defined(WIN32) || defined(WIN64)
+  struct _stati64 host_stat;
+  ret = _stati64(pathname, &host_stat);
+#elif defined(linux)
+  struct stat64 host_stat;
+  ret = stat64(pathname, &host_stat);
+#elif defined(__APPLE_CC__)
+  struct stat host_stat;
+  ret = stat(pathname, &host_stat);
 #endif
   if (ret < 0) return ret;
 
@@ -1211,26 +1495,32 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_mmap2() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_stat64() {
   int ret;
+  ADDRESS_TYPE pathnameaddr;
   ADDRESS_TYPE buf_address;
-  int fd;
+  unsigned int pathnamelen;
+  char *pathname;
 
-  fd = GetSystemCallParam(0);
+  pathnameaddr = GetSystemCallParam(0);
   buf_address = GetSystemCallParam(1);
+  pathnamelen = StringLength(pathnameaddr);
+  pathname = (char *) malloc(pathnamelen + 1);
+  ReadMem(pathnameaddr, (uint8_t *) pathname, pathnamelen + 1);
   if ((system_type_.compare("arm") == 0) ||
       (system_type_.compare("arm-eabi") == 0)) {
     struct arm_stat64 target_stat;
-    ret = Stat64(fd, &target_stat);
+    ret = Stat64(pathname, &target_stat);
     WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
   } else if (system_type_.compare("ppc") == 0) {
     struct powerpc_stat64 target_stat;
-    ret = Stat64(fd, &target_stat);
+    ret = Stat64(pathname, &target_stat);
     WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
   } else ret = -1;
   if (unlikely(verbose_))
     logger_ << DebugInfo
-        << "fd = " << fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
+        << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
         << ", ret = 0x" << std::hex << ret << std::dec
         << EndDebugInfo;
+  free(pathname);
   SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 
@@ -1245,11 +1535,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat64() {
   if ((system_type_.compare("arm") == 0) ||
       (system_type_.compare("arm-eabi") == 0)) {
     struct arm_stat64 target_stat;
-    ret = Stat64(fd, &target_stat);
+    ret = Fstat64(fd, &target_stat);
     WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
   } else if (system_type_.compare("ppc") == 0) {
     struct powerpc_stat64 target_stat;
-    ret = Stat64(fd, &target_stat);
+    ret = Fstat64(fd, &target_stat);
     WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
   } else ret = -1;
   if (unlikely(verbose_))
