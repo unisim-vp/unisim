@@ -135,13 +135,15 @@ AVR32_T2H_Syscalls<MEMORY_ADDR>::AVR32_T2H_Syscalls(const char *name, Object *pa
 	, reg_syscall_num(0)
 	, reg_params()
 	, reg_return_status(0)
+	, reg_errno(0)
 	, t2h_syscall_table()
 	, terminated(false)
 	, exit_status(0)
 	, pc_register_name("pc")
 	, sp_register_name("sp")
 	, syscall_num_register_name("r8")
-	, return_status_register_name("r11")
+	, return_status_register_name("r12")
+	, errno_register_name("r11")
 	, param_register_names()
 	, verbose_all(false)
 	, verbose_syscalls(false)
@@ -297,6 +299,20 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 		return false;
 	}
 
+	reg_errno = registers_import->GetRegister(errno_register_name.c_str());
+
+	if(!reg_errno)
+	{
+		logger << DebugError << "Undefined register " << errno_register_name << "." << EndDebugError;
+		return false;
+	}
+
+	if(reg_errno->GetSize() != 4)
+	{
+		logger << DebugError << "Register " << errno_register_name << " is not a 32-bit register." << EndDebugError;
+		return false;
+	}
+
 	for(i = 0; i < argc; i++)
 	{
 		std::string *arg = new std::string();
@@ -356,6 +372,139 @@ template <class MEMORY_ADDR>
 void AVR32_T2H_Syscalls<MEMORY_ADDR>::SetSystemCallStatus(int32_t ret)
 {
 	reg_return_status->SetValue(&ret);
+}
+
+template <class MEMORY_ADDR>
+void AVR32_T2H_Syscalls<MEMORY_ADDR>::SetErrno(int32_t target_errno)
+{
+	reg_errno->SetValue(&target_errno);
+}
+
+template <class MEMORY_ADDR>
+int32_t AVR32_T2H_Syscalls<MEMORY_ADDR>::Host2TargetErrno(int host_errno)
+{
+	switch(host_errno)
+	{
+		case EPERM: return T2H_EPERM;
+		case ENOENT: return T2H_ENOENT;
+		case ESRCH: return T2H_ESRCH;
+		case EINTR: return T2H_EINTR;
+		case EIO: return T2H_EIO;
+		case ENXIO: return T2H_ENXIO;
+		case E2BIG: return T2H_E2BIG;
+		case ENOEXEC: return T2H_ENOEXEC;
+		case EBADF: return T2H_EBADF;
+		case ECHILD: return T2H_ECHILD;
+		case EAGAIN: return T2H_EAGAIN;
+		case ENOMEM: return T2H_ENOMEM;
+		case EACCES: return T2H_EACCES;
+		case EFAULT: return T2H_EFAULT;
+		case ENOTBLK: return T2H_ENOTBLK;
+		case EBUSY: return T2H_EBUSY;
+		case EEXIST: return T2H_EEXIST;
+		case EXDEV: return T2H_EXDEV;
+		case ENODEV: return T2H_ENODEV;
+		case ENOTDIR: return T2H_ENOTDIR;
+		case EISDIR: return T2H_EISDIR;
+		case EINVAL: return T2H_EINVAL;
+		case ENFILE: return T2H_ENFILE;
+		case EMFILE: return T2H_EMFILE;
+		case ENOTTY: return T2H_ENOTTY;
+		case ETXTBSY: return T2H_ETXTBSY;
+		case EFBIG: return T2H_EFBIG;
+		case ENOSPC: return T2H_ENOSPC;
+		case ESPIPE: return T2H_ESPIPE;
+		case EROFS: return T2H_EROFS;
+		case EMLINK: return T2H_EMLINK;
+		case EPIPE: return T2H_EPIPE;
+		case EDOM: return T2H_EDOM;
+		case ERANGE: return T2H_ERANGE;
+		case EDEADLK: return T2H_EDEADLK;
+		case ENAMETOOLONG: return T2H_ENAMETOOLONG;
+		case ENOLCK: return T2H_ENOLCK;
+		case ENOSYS: return T2H_ENOSYS;
+		case ENOTEMPTY: return T2H_ENOTEMPTY;
+		case ELOOP: return T2H_ELOOP;
+		case ENOMSG: return T2H_ENOMSG;
+		case EIDRM: return T2H_EIDRM;
+		case ECHRNG: return T2H_ECHRNG;
+		case EL2NSYNC: return T2H_EL2NSYNC;
+		case EL3HLT: return T2H_EL3HLT;
+		case EL3RST: return T2H_EL3RST;
+		case ELNRNG: return T2H_ELNRNG;
+		case EUNATCH: return T2H_EUNATCH;
+		case ENOCSI: return T2H_ENOCSI;
+		case EL2HLT: return T2H_EL2HLT;
+		case EBADE: return T2H_EBADE;
+		case EBADR: return T2H_EBADR;
+		case EXFULL: return T2H_EXFULL;
+		case ENOANO: return T2H_ENOANO;
+		case EBADRQC: return T2H_EBADRQC;
+		case EBADSLT: return T2H_EBADSLT;
+		case EBFONT: return T2H_EBFONT;
+		case ENOSTR: return T2H_ENOSTR;
+		case ENODATA: return T2H_ENODATA;
+		case ETIME: return T2H_ETIME;
+		case ENOSR: return T2H_ENOSR;
+		case ENONET: return T2H_ENONET;
+		case ENOPKG: return T2H_ENOPKG;
+		case EREMOTE: return T2H_EREMOTE;
+		case ENOLINK: return T2H_ENOLINK;
+		case EADV: return T2H_EADV;
+		case ESRMNT: return T2H_ESRMNT;
+		case ECOMM: return T2H_ECOMM;
+		case EPROTO: return T2H_EPROTO;
+		case EMULTIHOP: return T2H_EMULTIHOP;
+		case EDOTDOT: return T2H_EDOTDOT;
+		case EBADMSG: return T2H_EBADMSG;
+		case EOVERFLOW: return T2H_EOVERFLOW;
+		case ENOTUNIQ: return T2H_ENOTUNIQ;
+		case EBADFD: return T2H_EBADFD;
+		case EREMCHG: return T2H_EREMCHG;
+		case ELIBACC: return T2H_ELIBACC;
+		case ELIBBAD: return T2H_ELIBBAD;
+		case ELIBSCN: return T2H_ELIBSCN;
+		case ELIBMAX: return T2H_ELIBMAX;
+		case ELIBEXEC: return T2H_ELIBEXEC;
+		case EILSEQ: return T2H_EILSEQ;
+		case EUSERS: return T2H_EUSERS;
+		case ENOTSOCK: return T2H_ENOTSOCK;
+		case EDESTADDRREQ: return T2H_EDESTADDRREQ;
+		case EMSGSIZE: return T2H_EMSGSIZE;
+		case EPROTOTYPE: return T2H_EPROTOTYPE;
+		case ENOPROTOOPT: return T2H_ENOPROTOOPT;
+		case EPROTONOSUPPORT: return T2H_EPROTONOSUPPORT;
+		case ESOCKTNOSUPPORT: return T2H_ESOCKTNOSUPPORT;
+		case EOPNOTSUPP: return T2H_EOPNOTSUPP;
+		case EPFNOSUPPORT: return T2H_EPFNOSUPPORT;
+		case EAFNOSUPPORT: return T2H_EAFNOSUPPORT;
+		case EADDRINUSE: return T2H_EADDRINUSE;
+		case EADDRNOTAVAIL: return T2H_EADDRNOTAVAIL;
+		case ENETDOWN: return T2H_ENETDOWN;
+		case ENETUNREACH: return T2H_ENETUNREACH;
+		case ENETRESET: return T2H_ENETRESET;
+		case ECONNABORTED: return T2H_ECONNABORTED;
+		case ECONNRESET: return T2H_ECONNRESET;
+		case ENOBUFS: return T2H_ENOBUFS;
+		case EISCONN: return T2H_EISCONN;
+		case ENOTCONN: return T2H_ENOTCONN;
+		case ESHUTDOWN: return T2H_ESHUTDOWN;
+		case ETOOMANYREFS: return T2H_ETOOMANYREFS;
+		case ETIMEDOUT: return T2H_ETIMEDOUT;
+		case ECONNREFUSED: return T2H_ECONNREFUSED;
+		case EHOSTDOWN: return T2H_EHOSTDOWN;
+		case EHOSTUNREACH: return T2H_EHOSTUNREACH;
+		case EALREADY: return T2H_EALREADY;
+		case EINPROGRESS: return T2H_EINPROGRESS;
+		case ESTALE: return T2H_ESTALE;
+		case EDQUOT: return T2H_EDQUOT;
+		case ENOMEDIUM: return T2H_ENOMEDIUM;
+		case ECANCELED: return T2H_ECANCELED;
+	}
+	
+	logger << DebugWarning << "Don't how to convert host errno #" << errno << " to target...Silently setting errno to EINVAL." << EndDebugWarning;
+	
+	return T2H_EINVAL;
 }
 
 template <class MEMORY_ADDR>
@@ -558,6 +707,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	else
 	{
 		SetSystemCallStatus(-1);
+		SetErrno(ENOSYS);
 	}
 	
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
@@ -595,27 +745,26 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	}
 	else
 	{
-#if defined(linux)
-		ret = open(pathname, flags, mode);
-#else
 		int host_flags = 0;
 		int host_mode = 0;
-		// non-Linux open flags encoding may differ from a true Linux host
-		if((flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) host_flags = (host_flags & ~O_ACCMODE) | O_RDONLY;
-		if((flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) host_flags = (host_flags & ~O_ACCMODE) | O_WRONLY;
-		if((flags & LINUX_O_ACCMODE) == LINUX_O_RDWR) host_flags = (host_flags & ~O_ACCMODE) | O_RDWR;
-		if(flags & LINUX_O_CREAT) host_flags |= O_CREAT;
-		if(flags & LINUX_O_EXCL) host_flags |= O_EXCL;
-		if(flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
-		if(flags & LINUX_O_APPEND) host_flags |= O_APPEND;
+		// open flags encoding may differ between target and host
+		if((flags & T2H_O_ACCMODE) == T2H_O_RDONLY) host_flags = (host_flags & ~O_ACCMODE) | O_RDONLY;
+		if((flags & T2H_O_ACCMODE) == T2H_O_WRONLY) host_flags = (host_flags & ~O_ACCMODE) | O_WRONLY;
+		if((flags & T2H_O_ACCMODE) == T2H_O_RDWR) host_flags = (host_flags & ~O_ACCMODE) | O_RDWR;
+		if(flags & T2H_O_CREAT) host_flags |= O_CREAT;
+		if(flags & T2H_O_EXCL) host_flags |= O_EXCL;
+		if(flags & T2H_O_TRUNC) host_flags |= O_TRUNC;
+		if(flags & T2H_O_APPEND) host_flags |= O_APPEND;
 #if defined(WIN32) || defined(WIN64)
-		host_flags |= O_BINARY; // Linux opens file as binary files
+		host_flags |= O_BINARY; // target opens file as binary files
 		host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 #else
+		if(flags & T2H_O_SYNC) host_flags |= O_SYNC;
+		if(flags & T2H_O_NONBLOCK) host_flags |= O_NONBLOCK;
+		if(flags & T2H_O_NOCTTY) host_flags |= O_NOCTTY;
 		host_mode = mode; // other UNIX systems should have the same bit encoding for protection
 #endif
 		ret = open(pathname, host_flags, host_mode);
-#endif
 	}
 	if(unlikely(verbose_syscalls))
 	{
@@ -627,6 +776,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	free(pathname);
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
@@ -642,6 +792,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	if(unlikely(verbose_syscalls))
 	logger << DebugInfo << "close(fd=" << fd << ") return " << ret << EndDebugInfo;
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -683,6 +834,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		<< ", count=" << count << ") return " << ret << EndDebugInfo;
 
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -730,6 +882,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	}
 
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -752,9 +905,14 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	}
 
 	if(ret == (off_t) -1)
-		SetSystemCallStatus(errno);
+	{
+		SetSystemCallStatus(-1);
+		SetErrno(errno);
+	}
 	else
+	{
 		SetSystemCallStatus(ret);
+	}
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -804,6 +962,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	free(oldpath);
 	
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	return status;
 }
 
@@ -831,6 +990,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	free(pathname);
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -864,6 +1024,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	free(pathname);
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -890,6 +1051,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		<< ") return " << ret << EndDebugInfo;
 
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -926,6 +1088,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		<< EndDebugInfo;
 
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -943,6 +1106,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		<< EndDebugInfo;
 
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -974,6 +1138,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	free(command);
 	SetSystemCallStatus(ret);
+	if(ret < 0) SetErrno(errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -993,7 +1158,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	terminated = true;
 	exit_status = status;
 
-	SetSystemCallStatus(-1);
+	SetSystemCallStatus(0);
 	
 	Object::Stop(exit_status);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
