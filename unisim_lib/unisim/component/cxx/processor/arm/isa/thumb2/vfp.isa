@@ -1,0 +1,759 @@
+/*
+ *  Copyright (c) 2007-2014,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+ 
+/**********************************************
+
+        THUMB2 VFP INSTRUCTIONS
+
+**********************************************/
+
+op vabs_f32s( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vabs_f32s.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vabs_f32s.disasm = {
+  buffer << "vabs.f32\ts" << sb << ", s" << sa;
+};
+
+op vabs_f64d( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 0[4] :> <: sb0[4] : 0xb[4] : 3[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vabs_f64d.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vabs_f64d.disasm = {
+  buffer << "vabs.f64\td" << sb << ", d" << sa;
+};
+
+op vadd_f32( 0xee[8] : 0[1] : sb0[1] : 3[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 0[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vadd_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vadd_f32.disasm = {
+  buffer << "vadd.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vadd_f64( 0xee[8] : 0[1] : shl<4> sb1[1] : 3[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 0[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vadd_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vadd_f64.disasm = {
+  buffer << "vadd.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vcmp_f64d( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 4[4] :> <: sb0[4] : 0xb[4] : 1[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vcmp_f64d.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcmp_f64d.disasm = {
+  buffer << "vcmp.f64\td" << sb << ", d" << sa;
+};
+
+op vcmp_f64i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 5[4] :> <: sb0[4] : 0xb4[8] : ?[4] );
+vcmp_f64i.var sb : {uint32_t} = {sb1|sb0};
+
+vcmp_f64i.disasm = {
+  buffer << "vcmp.f64\td" << sb << ", #0.0";
+};
+
+op vcmpe_f64d( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 4[4] :> <: sb0[4] : 0xb[4] : 3[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vcmpe_f64d.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcmpe_f64d.disasm = {
+  buffer << "vcmpe.f64\td" << sb << ", d" << sa;
+};
+
+op vcmpe_f64i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 5[4] :> <: sb0[4] : 0xbc[8] : ?[4] );
+vcmpe_f64i.var sb : {uint32_t} = {sb1|sb0};
+
+vcmpe_f64i.disasm = {
+  buffer << "vcmpe.f64\td" << sb << ", #0.0";
+};
+
+op vcmpef32i( 0xee[8] : 1[1] : sb0[1] : 3[2] : 5[4] :> <: shl<1> sb1[4] : 0xac[8] : ?[4] );
+vcmpef32i.var sb : {uint32_t} = {sb1|sb0};
+
+vcmpef32i.disasm = {
+  buffer << "vcmpe.f32\ts" << sb << ", #0.0";
+};
+
+op vcmpef32s( 0xee[8] : 1[1] : sb0[1] : 3[2] : 4[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcmpef32s.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcmpef32s.disasm = {
+  buffer << "vcmpe.f32\ts" << sb << ", s" << sa;
+};
+
+op vcmpf32i( 0xee[8] : 1[1] : sb0[1] : 3[2] : 5[4] :> <: shl<1> sb1[4] : 0xa4[8] : ?[4] );
+vcmpf32i.var sb : {uint32_t} = {sb1|sb0};
+
+vcmpf32i.disasm = {
+  buffer << "vcmp.f32\ts" << sb << ", #0.0";
+};
+
+op vcmpf32s( 0xee[8] : 1[1] : sb0[1] : 3[2] : 4[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcmpf32s.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcmpf32s.disasm = {
+  buffer << "vcmp.f32\ts" << sb << ", s" << sa;
+};
+
+op vcvt_f32f64( 0xee[8] : 1[1] : sb0[1] : 3[2] : 7[4] :> <: shl<1> sb1[4] : 0xb[4] : 3[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vcvt_f32f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f32f64.disasm = {
+  buffer << "vcvt.f32.f64\ts" << sb << ", d" << sa;
+};
+
+op vcvt_f32s32( 0xee[8] : 1[1] : sb0[1] : 3[2] : 8[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvt_f32s32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f32s32.disasm = {
+  buffer << "vcvt.f32.s32\ts" << sb << ", s" << sa;
+};
+
+op vcvt_f32s16i( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xa[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_f32s16i.var imm : {int32_t} = {16-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f32s16i.disasm = {
+  buffer << "vcvt.f32.s16\ts" << sb << ", s" << sb << ", #" << imm;
+};
+
+op vcvt_f32s32i( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xa[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_f32s32i.var imm : {int32_t} = {32-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f32s32i.disasm = {
+  buffer << "vcvt.f32.s32\ts" << sb << ", s" << sb << ", #" << imm;
+};
+
+op vcvt_f32u32( 0xee[8] : 1[1] : sb0[1] : 3[2] : 8[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvt_f32u32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f32u32.disasm = {
+  buffer << "vcvt.f32.u32\ts" << sb << ", s" << sa;
+};
+
+op vcvt_f32u16i( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xb[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_f32u16i.var imm : {int32_t} = {16-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f32u16i.disasm = {
+  buffer << "vcvt.f32.u16\ts" << sb << ", s" << sb << ", #" << imm;
+};
+
+op vcvt_f32u32i( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xb[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_f32u32i.var imm : {int32_t} = {32-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f32u32i.disasm = {
+  buffer << "vcvt.f32.u32\ts" << sb << ", s" << sb << ", #" << imm;
+};
+
+op vcvt_f64f32( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 7[4] :> <: sb0[4] : 0xa[4] : 3[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvt_f64f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f64f32.disasm = {
+  buffer << "vcvt.f64.f32\td" << sb << ", s" << sa;
+};
+
+op vcvt_f64s32( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 8[4] :> <: sb0[4] : 0xb[4] : 3[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvt_f64s32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f64s32.disasm = {
+  buffer << "vcvt.f64.s32\td" << sb << ", s" << sa;
+};
+
+op vcvt_f64s16i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 0xa[4] :> <: sb0[4] : 0xb[4] : 1[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_f64s16i.var imm : {uint32_t} = {16-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f64s16i.disasm = {
+  buffer << "vcvt.f64.s16\td" << sb << ", d" << sb << ", #" << imm;
+};
+
+op vcvt_f64s32i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 0xa[4] :> <: sb0[4] : 0xb[4] : 3[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_f64s32i.var imm : {uint32_t} = {32-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f64s32i.disasm = {
+  buffer << "vcvt.f64.s32\td" << sb << ", d" << sb << ", #" << imm;
+};
+
+op vcvt_f64u32( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 8[4] :> <: sb0[4] : 0xb[4] : 1[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvt_f64u32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f64u32.disasm = {
+  buffer << "vcvt.f64.u32\td" << sb << ", s" << sa;
+};
+
+op vcvt_f64u16i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 0xb[4] :> <: sb0[4] : 0xb[4] : 1[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_f64u16i.var imm : {uint32_t} = {16-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f64u16i.disasm = {
+  buffer << "vcvt.f64.u16\td" << sb << ", d" << sb << ", #" << imm;
+};
+
+op vcvt_f64u32i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 0xb[4] :> <: sb0[4] : 0xb[4] : 3[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_f64u32i.var imm : {uint32_t} = {32-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_f64u32i.disasm = {
+  buffer << "vcvt.f64.u32\td" << sb << ", d" << sb << ", #" << imm;
+};
+
+op vcvt_s16f32i( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xe[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_s16f32i.var imm : {int32_t} = {16-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_s16f32i.disasm = {
+  buffer << "vcvt.s16.f32\ts" << sb << ", s" << sb << ", #" << imm;
+};
+
+op vcvt_s16f64i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 0xe[4] :> <: sb0[4] : 0xb[4] : 1[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_s16f64i.var imm : {uint32_t} = {16-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_s16f64i.disasm = {
+  buffer << "vcvt.s16.f64\td" << sb << ", d" << sb << ", #" << imm;
+};
+
+op vcvt_s32f32( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xd[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvt_s32f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_s32f32.disasm = {
+  buffer << "vcvt.s32.f32\ts" << sb << ", s" << sa;
+};
+
+op vcvt_s32f64( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xd[4] :> <: shl<1> sb1[4] : 0xb[4] : 3[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vcvt_s32f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_s32f64.disasm = {
+  buffer << "vcvt.s32.f64\ts" << sb << ", d" << sa;
+};
+
+op vcvt_s32f32i( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xe[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_s32f32i.var imm : {int32_t} = {32-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_s32f32i.disasm = {
+  buffer << "vcvt.s32.f32\ts" << sb << ", s" << sb << ", #" << imm;
+};
+
+op vcvt_s32f64i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 0xe[4] :> <: sb0[4] : 0xb[4] : 3[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_s32f64i.var imm : {uint32_t} = {32-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_s32f64i.disasm = {
+  buffer << "vcvt.s32.f64\td" << sb << ", d" << sb << ", #" << imm;
+};
+
+op vcvt_u16f32i( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xf[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_u16f32i.var imm : {int32_t} = {16-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_u16f32i.disasm = {
+  buffer << "vcvt.u16.f32\ts" << sb << ", s" << sb << ", #" << imm;
+};
+
+op vcvt_u16f64i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 0xf[4] :> <: sb0[4] : 0xb[4] : 1[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_u16f64i.var imm : {uint32_t} = {16-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_u16f64i.disasm = {
+  buffer << "vcvt.u16.f64\td" << sb << ", d" << sb << ", #" << imm;
+};
+
+op vcvt_u32f64( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xc[4] :> <: shl<1> sb1[4] : 0xb[4] : 3[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vcvt_u32f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_u32f64.disasm = {
+  buffer << "vcvt.u32.f64\ts" << sb << ", d" << sa;
+};
+
+op vcvt_u32f32( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xc[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvt_u32f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_u32f32.disasm = {
+  buffer << "vcvt.u32.f32\ts" << sb << ", s" << sa;
+};
+
+op vcvt_u32f32i( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xf[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_u32f32i.var imm : {int32_t} = {32-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_u32f32i.disasm = {
+  buffer << "vcvt.u32.f32\ts" << sb << ", s" << sb << ", #" << imm;
+};
+
+op vcvt_u32f64i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 0xf[4] :> <: sb0[4] : 0xb[4] : 3[2] : imm0[1] : 0[1] : shl<1> imm1[4] );
+vcvt_u32f64i.var imm : {uint32_t} = {32-(imm1|imm0)}, sb : {uint32_t} = {sb1|sb0};
+
+vcvt_u32f64i.disasm = {
+  buffer << "vcvt.u32.f64\td" << sb << ", d" << sb << ", #" << imm;
+};
+
+op vcvtb_f16f32( 0xee[8] : 1[1] : sb0[1] : 3[2] : 3[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvtb_f16f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvtb_f16f32.disasm = {
+  buffer << "vcvtb.f16.f32\ts" << sb << ", s" << sa;
+};
+
+op vcvtb_f32f16( 0xee[8] : 1[1] : sb0[1] : 3[2] : 2[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvtb_f32f16.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvtb_f32f16.disasm = {
+  buffer << "vcvtb.f32.f16\ts" << sb << ", s" << sa;
+};
+
+op vcvtr_s32f32( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xd[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvtr_s32f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvtr_s32f32.disasm = {
+  buffer << "vcvtr.s32.f32\ts" << sb << ", s" << sa;
+};
+
+op vcvtr_s32f64( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xd[4] :> <: shl<1> sb1[4] : 0xb[4] : 1[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vcvtr_s32f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvtr_s32f64.disasm = {
+  buffer << "vcvtr.s32.f64\ts" << sb << ", d" << sa;
+};
+
+op vcvtr_u32f64( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xc[4] :> <: shl<1> sb1[4] : 0xb[4] : 1[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vcvtr_u32f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvtr_u32f64.disasm = {
+  buffer << "vcvtr.u32.f64\ts" << sb << ", d" << sa;
+};
+
+op vcvtr_u32f32( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0xc[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvtr_u32f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvtr_u32f32.disasm = {
+  buffer << "vcvtr.u32.f32\ts" << sb << ", s" << sa;
+};
+
+op vcvtt_f16f32( 0xee[8] : 1[1] : sb0[1] : 3[2] : 3[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvtt_f16f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvtt_f16f32.disasm = {
+  buffer << "vcvtt.f16.f32\ts" << sb << ", s" << sa;
+};
+
+op vcvtt_f32f16( 0xee[8] : 1[1] : sb0[1] : 3[2] : 2[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vcvtt_f32f16.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vcvtt_f32f16.disasm = {
+  buffer << "vcvtt.f32.f16\ts" << sb << ", s" << sa;
+};
+
+op vdiv_f32( 0xee[8] : 1[1] : sb0[1] : 0[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 0[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vdiv_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vdiv_f32.disasm = {
+  buffer << "vdiv.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vdiv_f64( 0xee[8] : 1[1] : shl<4> sb1[1] : 0[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 0[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vdiv_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vdiv_f64.disasm = {
+  buffer << "vdiv.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vdup8_dr( 0xeec[12] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : 1[3] : ?[4] );
+vdup8_dr.var f : {uint32_t} = {f1|f0};
+
+vdup8_dr.disasm = {
+  buffer << "vdup.8\td" << f << ", " << DisasmRegister(r0);
+};
+
+op vdup8_qr( 0xeee[12] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : 1[3] : ?[4] );
+vdup8_qr.var f : {uint32_t} = {f1|f0};
+
+vdup8_qr.disasm = {
+  buffer << "vdup.8\t" << qnames[f] << ", " << DisasmRegister(r0);
+};
+
+op vdup16_dr( 0xee8[12] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : 3[3] : ?[4] );
+vdup16_dr.var f : {uint32_t} = {f1|f0};
+
+vdup16_dr.disasm = {
+  buffer << "vdup.16\td" << f << ", " << DisasmRegister(r0);
+};
+
+op vdup16_qr( 0xeea[12] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : 3[3] : ?[4] );
+vdup16_qr.var f : {uint32_t} = {f1|f0};
+
+vdup16_qr.disasm = {
+  buffer << "vdup.16\t" << qnames[f] << ", " << DisasmRegister(r0);
+};
+
+op vdup32_dr( 0xee8[12] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : 0b001[3] : ?[4] );
+vdup32_dr.var f : {uint32_t} = {f1|f0};
+
+vdup32_dr.disasm = {
+  buffer << "vdup.32\td" << f << ", " << DisasmRegister(r0);
+};
+
+op vdup32_qr( 0xeea[12] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : 0b001[3] : ?[4] );
+vdup32_qr.var f : {uint32_t} = {f1|f0};
+
+vdup32_qr.disasm = {
+  buffer << "vdup.32\t" << qnames[f] << ", " << DisasmRegister(r0);
+};
+
+op vfma_f32( 0xee[8] : 1[1] : sb0[1] : 2[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 0[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vfma_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vfma_f32.disasm = {
+  buffer << "vfma.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vfma_f64( 0xee[8] : 1[1] : shl<4> sb1[1] : 2[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 0[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vfma_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vfma_f64.disasm = {
+  buffer << "vfma.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vfms_f32( 0xee[8] : 1[1] : sb0[1] : 2[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 1[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vfms_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vfms_f32.disasm = {
+  buffer << "vfms.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vfms_f64( 0xee[8] : 1[1] : shl<4> sb1[1] : 2[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 1[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vfms_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vfms_f64.disasm = {
+  buffer << "vfms.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vfnma_f32( 0xee[8] : 1[1] : sb0[1] : 1[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 1[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vfnma_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vfnma_f32.disasm = {
+  buffer << "vfnma.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vfnma_f64( 0xee[8] : 1[1] : shl<4> sb1[1] : 1[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 1[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vfnma_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vfnma_f64.disasm = {
+  buffer << "vfnma.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vfnms_f32( 0xee[8] : 1[1] : sb0[1] : 1[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 0[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vfnms_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vfnms_f32.disasm = {
+  buffer << "vfnms.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vfnms_f64( 0xee[8] : 1[1] : shl<4> sb1[1] : 1[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 0[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vfnms_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vfnms_f64.disasm = {
+  buffer << "vfnms.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vmla_f32( 0xee[8] : 0[1] : sb0[1] : 0[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 0[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vmla_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vmla_f32.disasm = {
+  buffer << "vmla.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vmla_f64( 0xee[8] : 0[1] : shl<4> sb1[1] : 0[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 0[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vmla_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb0|sb1}, sc : {uint32_t} = {sc1|sc0};
+
+vmla_f64.disasm = {
+  buffer << "vmla.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vmls_f32( 0xee[8] : 0[1] : sb0[1] : 0[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 1[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vmls_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vmls_f32.disasm = {
+  buffer << "vmls.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vmls_f64( 0xee[8] : 0[1] : shl<4> sb1[1] : 0[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 1[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vmls_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb0|sb1}, sc : {uint32_t} = {sc1|sc0};
+
+vmls_f64.disasm = {
+  buffer << "vmls.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vmov( 0xec4[12] : r1[4] :> <: r0[4] : 0xa[4] : 1[4] : shl<1> sr[4] );
+
+vmov.disasm = {
+  buffer << "vmov\ts" << sr << ", s" << (sr+1) << ", " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op vmov_1( 0xec4[12] : r1[4] :> <: r0[4] : 0xa[4] : 3[4] : shl<1> sr[4] );
+
+vmov_1.disasm = {
+  buffer << "vmov\ts" << (sr+1) << ", s" << (sr+2) << ", " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op vmov_d( 0xec4[12] : r1[4] :> <: r0[4] : 0xb[4] : 0b00[2] : shl<4> d1[1] : 1[1] : d0[4] );
+vmov_d.var d : {uint32_t} = {d0|d1}
+
+vmov_d.disasm = {
+  buffer << "vmov\td" << d << ", " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op vmov_f32i( 0xee[8] : 1[1] : sb0[1] : 3[2] : shl<4> imm1[4] :> <: shl<1> sb1[4] : 0xa0[8] : imm0[4] );
+vmov_f32i.var sb : {uint32_t} = {sb1|sb0},  imm : {uint32_t} = {imm1|imm0};
+
+vmov_f32i.disasm = {
+  buffer << "vmov.f32\ts" << sb << ", #" << imm;
+};
+
+op vmov_f32s( 0xee[8] : 1[1] : sb0[1] : 3[2] : 0[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vmov_f32s.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vmov_f32s.disasm = {
+  buffer << "vmov.f32\ts" << sb << ", s" << sa;
+};
+
+op vmov_f64d( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 0[4] :> <: sb0[4] : 0xb[4] : 1[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vmov_f64d.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vmov_f64d.disasm = {
+  buffer << "vmov.f64\td" << sb << ", d" << sa;
+};
+
+op vmov_f64i( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : shl<4> imm1[4] :> <: sb0[4] : 0xb0[8] : imm0[4] );
+vmov_f64i.var sb : {uint32_t} = {sb1|sb0}, imm : {uint32_t} = {imm1|imm0};
+
+vmov_f64i.disasm = {
+  buffer << "vmov.f64\td" << sb << ", #" << imm;
+};
+
+op vmov_rs( 0xee1[12] : shl<1> s1[4] :> <: r0[4] : 0xa[4] : s0[1] : 0b001[3] : 0[4] );
+vmov_rs.var s : {uint32_t} = {s1|s0};
+
+vmov_rs.disasm = {
+  buffer << "vmov\t" << DisasmRegister(r0) << ", s" << s;
+};
+
+op vmov_sr( 0xee0[12] : shl<1> s1[4] :> <: r0[4] : 0xa[4] : s0[1] : 0b001[3] : 0[4] );
+vmov_sr.var s : {uint32_t} = {s1|s0};
+
+vmov_sr.disasm = {
+  buffer << "vmov\ts" << s << ", " << DisasmRegister(r0);
+};
+
+op vmov_s8rd( 0xee[8] : 1[2] : shl<2> part1[1] : 1[1] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : part0[2] : 1[1] : ?[4] );
+vmov_s8rd.var f : {uint32_t} = {f1|f0}, part : {uint32_t} = {part1|part0};
+
+vmov_s8rd.disasm = {
+  buffer << "vmov.s8\t" << DisasmRegister(r0) << ", d" << f << "[" << part << "]";
+};
+
+op vmov_u8rd( 0xee[8] : 3[2] : shl<2> part1[1] : 1[1] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : part0[2] : 1[1] : ?[4] );
+vmov_u8rd.var f : {uint32_t} = {f1|f0}, part : {uint32_t} = {part1|part0};
+
+vmov_u8rd.disasm = {
+  buffer << "vmov.u8\t" << DisasmRegister(r0) << ", d" << f << "[" << part << "]";
+};
+
+op vmov_8dr( 0xee[8] : 1[2] : shl<2> part1[1] : 0[1] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : part0[2] : 1[1] : ?[4] );
+vmov_8dr.var f : {uint32_t} = {f1|f0}, part : {uint32_t} = {part1|part0};
+
+vmov_8dr.disasm = {
+  buffer << "vmov.8\td" << f << "[" << part << "], " << DisasmRegister(r0);
+};
+
+op vmovr( 0xec5[12] : r1[4] :> <: r0[4] : 0xa[4] : 1[4] : shl<1> sr[4] );
+
+vmovr.disasm = {
+  buffer << "vmov\t" << DisasmRegister(r0) << ", " << DisasmRegister(r1) << ", s" << sr << ", s" << (sr+1);
+};
+
+op vmovr_1( 0xec5[12] : r1[4] :> <: r0[4] : 0xa[4] : 3[4] : shl<1> sr[4] );
+
+vmovr_1.disasm = {
+  buffer << "vmov\t" << DisasmRegister(r0) << ", " << DisasmRegister(r1) << ", s" << (sr+1) << ", s" << (sr+2);
+};
+
+op vmovr_d( 0xec5[12] : r1[4] :> <: r0[4] : 0xb[4] : 0b00[2] : shl<4> d1[1] : 1[1] : d0[4] );
+vmovr_d.var d : {uint32_t} = {d0|d1}
+
+vmovr_d.disasm = {
+  buffer << "vmov\t" << DisasmRegister(r0) << ", " << DisasmRegister(r1) << ", d" << d;
+};
+
+
+op vmov16_dr( 0xee[8] : 0[2] : shl<1> part1[1] : 0[1] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : part0[1] : 3[2] : ?[4] );
+vmov16_dr.var f : {uint32_t} = {f1|f0}, part : {uint32_t} = {part1|part0};
+
+vmov16_dr.disasm = {
+  buffer << "vmov.16\td" << f << "[" << part << "], " << DisasmRegister(r0);
+};
+
+op vmov16_rd( 0xee[8] : su[1] : 0[1] : shl<1> part1[1] : 1[1] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : part0[1] : 3[2] : ?[4] );
+vmov16_rd.var f : {uint32_t} = {f1|f0}, part : {uint32_t} = {part1|part0};
+
+vmov16_rd.disasm = {
+  buffer << "vmov." << (su ? 'u' : 's') << "16\t" << DisasmRegister(r0) << ", d" << f << "[" << part << "]";
+};
+
+op vmov32_dr( 0xee[8] : 0[2] : part[1] : 0[1] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : 0b001[3] : ?[4] );
+vmov32_dr.var f : {uint32_t} = {f1|f0};
+
+vmov32_dr.disasm = {
+  buffer << "vmov.32\td" << f << "[" << part << "], " << DisasmRegister(r0);
+};
+
+op vmov32_rd( 0xee[8] : ?[1] : 0[1] : part[1] : 1[1] : f0[4] :> <: r0[4] : 0xb[4] : shl<4> f1[1] : 0b001[3] : ?[4] );
+vmov32_rd.var f : {uint32_t} = {f1|f0};
+
+vmov32_rd.disasm = {
+  buffer << "vmov.32\t" << DisasmRegister(r0) << ", d" << f << "[" << part << "]";
+};
+
+op vmrs( 0xeef[12] : spr[4] :> <: r0[4] : 0xa10[12] );
+
+vmrs.disasm = {
+  char const* const sprnames[] = {
+    "fpsid",          "fpscr",          "<impl def 0x2>", "<impl def 0x3>",
+    "<impl def 0x4>", "<impl def 0x5>", "mvfr1",          "mvfr0",
+    "fpexc",          "fpinst",         "fpinst2",        "<impl def 0xb>",
+    "<impl def 0xc>", "<impl def 0xd>", "<impl def 0xe>", "<impl def 0xf>"
+  };
+  char const* regname = ((r0 != 15) or (spr != 1)) ? DisasmRegister(r0) : "APSR_nzcv";
+  buffer << "vmrs\t" << regname << ", " << (sprnames[spr]);
+  if ((spr == 9) or (spr == 10))
+    buffer << "\t@ Impl def";
+}
+
+op vmsr( 0xeee[12] : spr[4] :> <: r0[4] : 0xa10[12] );
+
+vmsr.disasm = {
+  char const* const sprnames[] = {
+    "fpsid",          "fpscr",          "<impl def 0x2>", "<impl def 0x3>",
+    "<impl def 0x4>", "<impl def 0x5>", "mvfr1",          "mvfr0",
+    "fpexc",          "fpinst",         "fpinst2",        "<impl def 0xb>",
+    "<impl def 0xc>", "<impl def 0xd>", "<impl def 0xe>", "<impl def 0xf>"
+  };
+  buffer << "vmsr\t" << (sprnames[spr]) << ", " << DisasmRegister(r0);
+  if ((spr == 9) or (spr == 10))
+    buffer << "\t@ Impl def";
+}
+
+op vmul_f32( 0xee[8] : 0[1] : sb0[1] : 2[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 0[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vmul_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vmul_f32.disasm = {
+  buffer << "vmul.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vmul_f64( 0xee[8] : 0[1] : shl<4> sb1[1] : 2[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 0[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vmul_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vmul_f64.disasm = {
+  buffer << "vmul.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vneg_f32s( 0xee[8] : 1[1] : sb0[1] : 3[2] : 1[4] :> <: shl<1> sb1[4] : 0xa[4] : 1[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vneg_f32s.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vneg_f32s.disasm = {
+  buffer << "vneg.f32\ts" << sb << ", s" << sa;
+};
+
+op vneg_f64d( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 1[4] :> <: sb0[4] : 0xb[4] : 1[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vneg_f64d.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vneg_f64d.disasm = {
+  buffer << "vneg.f64\td" << sb << ", d" << sa;
+};
+
+op vnmla_f32( 0xee[8] : 0[1] : sb0[1] : 1[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 1[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vnmla_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vnmla_f32.disasm = {
+  buffer << "vnmla.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vnmla_f64( 0xee[8] : 0[1] : shl<4> sb1[1] : 1[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 1[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vnmla_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vnmla_f64.disasm = {
+  buffer << "vnmla.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vnmls_f32( 0xee[8] : 0[1] : sb0[1] : 1[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 0[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vnmls_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vnmls_f32.disasm = {
+  buffer << "vnmls.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vnmls_f64( 0xee[8] : 0[1] : shl<4> sb1[1] : 1[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 0[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vnmls_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vnmls_f64.disasm = {
+  buffer << "vnmls.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vnmul_f32( 0xee[8] : 0[1] : sb0[1] : 2[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 1[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vnmul_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vnmul_f32.disasm = {
+  buffer << "vnmul.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vnmul_f64( 0xee[8] : 0[1] : shl<4> sb1[1] : 2[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 1[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vnmul_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vnmul_f64.disasm = {
+  buffer << "vnmul.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+
+op vsqrt_f32s( 0xee[8] : 1[1] : sb0[1] : 3[2] : 1[4] :> <: shl<1> sb1[4] : 0xa[4] : 3[2] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vsqrt_f32s.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vsqrt_f32s.disasm = {
+  buffer << "vsqrt.f32\ts" << sb << ", s" << sa;
+};
+
+op vsqrt_f64d( 0xee[8] : 1[1] : shl<4> sb1[1] : 3[2] : 1[4] :> <: sb0[4] : 0xb[4] : 3[2] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vsqrt_f64d.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0};
+
+vsqrt_f64d.disasm = {
+  buffer << "vsqrt.f64\td" << sb << ", d" << sa;
+};
+
+op vsub_f32( 0xee[8] : 0[1] : sb0[1] : 3[2] : shl<1> sc1[4] :> <: shl<1> sb1[4] : 0xa[4] : sc0[1] : 1[1] : sa0[1] : 0[1] : shl<1> sa1[4] );
+vsub_f32.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vsub_f32.disasm = {
+  buffer << "vsub.f32\ts" << sb << ", s" << sc << ", s" << sa;
+};
+
+op vsub_f64( 0xee[8] : 0[1] : shl<4> sb1[1] : 3[2] : sc0[4] :> <: sb0[4] : 0xb[4] : shl<4> sc1[1] : 1[1] : shl<4> sa1[1] : 0[1] : sa0[4] );
+vsub_f64.var sa : {uint32_t} = {sa1|sa0}, sb : {uint32_t} = {sb1|sb0}, sc : {uint32_t} = {sc1|sc0};
+
+vsub_f64.disasm = {
+  buffer << "vsub.f64\td" << sb << ", d" << sc << ", d" << sa;
+};
+

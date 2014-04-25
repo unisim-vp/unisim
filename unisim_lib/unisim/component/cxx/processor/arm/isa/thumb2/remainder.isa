@@ -1,0 +1,1066 @@
+/*
+ *  Copyright (c) 2007-2014,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+ 
+/**********************************************
+
+        THUMB2 UNKNOWN INSTRUCTIONS
+
+**********************************************/
+
+op clrex( 0xf3bf[16] :> <: 0x8f2f[16] );
+clrex.disasm = { buffer << "clrex"; };
+
+op cps_i( 0xf3af[16] :> <: 0x81[8] : 0[3] : imm[5] );
+cps_i.disasm = { buffer << "cps\t#" << imm; };
+
+op cpsid_i( 0xf3af[16] :> <: 0x87[8] : bf[3] : imm[5] );
+
+cpsid_i.disasm = {
+  buffer << "cpsid\t";
+  for (int bit = 3; --bit >= 0;)
+    if ((bf >> bit) & 1) buffer << ("fia"[bit]);
+  buffer << ", #" << imm;
+};
+
+op cpsid_w( 0xf3af[16] :> <: 0x86[8] : bf[3] : 0[1] : 0[4] );
+
+cpsid_w.disasm = {
+  buffer << "cpsid.w\t";
+  for (int bit = 3; --bit >= 0;)
+    if ((bf >> bit) & 1) buffer << ("fia"[bit]);
+};
+
+op cpsie_i( 0xf3af[16] :> <: 0x85[8] : bf[3] : imm[5] );
+
+cpsie_i.disasm = {
+  buffer << "cpsie\t";
+  for (int bit = 3; --bit >= 0;)
+    if ((bf >> bit) & 1) buffer << ("fia"[bit]);
+  buffer << ", #" << imm;
+};
+
+op cpsie_w( 0xf3af[16] :> <: 0x84[8] : bf[3] : 0[1] : 0[4] );
+
+cpsie_w.disasm = {
+  buffer << "cpsie.w\t";
+  for (int bit = 3; --bit >= 0;)
+    if ((bf >> bit) & 1) buffer << ("fia"[bit]);
+};
+
+op fldmdbx_mod( 0xed[8] : 0[1] : shl<4> dbase1[1] : 3[2] : r0[4] :> <: dbase0[4] : 0xb[4] : doff[7] : 1[1] );
+fldmdbx_mod.var dbase : {uint32_t} = {dbase1|dbase0};
+
+fldmdbx_mod.disasm = {
+  int32_t dend = ((int32_t)(dbase + doff))-1;
+  if (doff == 1) buffer << "fldmdbx\t" << DisasmRegister(r0) << "!, {d" << dbase << "}";
+  else           buffer << "fldmdbx\t" << DisasmRegister(r0) << "!, {d" << dbase << "-d" << dend << "}";
+};
+
+
+op fldmiax( 0xec[8] : 1[1] : shl<4> dbase1[1] : 1[2] : r0[4] :> <: dbase0[4] : 0xb[4] : doff[7] : 1[1] );
+fldmiax.var dbase : {uint32_t} = {dbase1|dbase0};
+
+fldmiax.disasm = {
+  int32_t dend = ((int32_t)(dbase + doff))-1;
+  if (doff == 1) buffer << "fldmiax\t" << DisasmRegister(r0) << ", {d" << dbase << "}";
+  else           buffer << "fldmiax\t" << DisasmRegister(r0) << ", {d" << dbase << "-d" << dend << "}";
+};
+
+op fldmiax_mod( 0xec[8] : 1[1] : shl<4> dbase1[1] : 3[2] : r0[4] :> <: dbase0[4] : 0xb[4] : doff[7] : 1[1] );
+fldmiax_mod.var dbase : {uint32_t} = {dbase1|dbase0};
+
+fldmiax_mod.disasm = {
+  int32_t dend = ((int32_t)(dbase + doff))-1;
+  if (doff == 1) buffer << "fldmiax\t" << DisasmRegister(r0) << "!, {d" << dbase << "}";
+  else           buffer << "fldmiax\t" << DisasmRegister(r0) << "!, {d" << dbase << "-d" << dend << "}";
+};
+
+op fstmdbx_mod( 0xed[8] : 0[1] : shl<4> dbase1[1] : 2[2] : r0[4] :> <: dbase0[4] : 0xb[4] : doff[7] : 1[1] );
+fstmdbx_mod.var dbase : {uint32_t} = {dbase1|dbase0};
+
+fstmdbx_mod.disasm = {
+  int32_t dend = ((int32_t)(dbase + doff))-1;
+  if (doff == 1) buffer << "fstmdbx\t" << DisasmRegister(r0) << "!, {d" << dbase << "}";
+  else           buffer << "fstmdbx\t" << DisasmRegister(r0) << "!, {d" << dbase << "-d" << dend << "}";
+};
+
+op fstmiax( 0xec[8] : 1[1] : shl<4> dbase1[1] : 0[2] : r0[4] :> <: dbase0[4] : 0xb[4] : doff[7] : 1[1] );
+fstmiax.var dbase : {uint32_t} = {dbase1|dbase0};
+
+fstmiax.disasm = {
+  int32_t dend = ((int32_t)(dbase + doff))-1;
+  if (doff == 1) buffer << "fstmiax\t" << DisasmRegister(r0) << ", {d" << dbase << "}";
+  else           buffer << "fstmiax\t" << DisasmRegister(r0) << ", {d" << dbase << "-d" << dend << "}";
+};
+
+op fstmiax_mod( 0xec[8] : 1[1] : shl<4> dbase1[1] : 2[2] : r0[4] :> <: dbase0[4] : 0xb[4] : doff[7] : 1[1] );
+fstmiax_mod.var dbase : {uint32_t} = {dbase1|dbase0};
+
+fstmiax_mod.disasm = {
+  int32_t dend = ((int32_t)(dbase + doff))-1;
+  if (doff == 1) buffer << "fstmiax\t" << DisasmRegister(r0) << "!, {d" << dbase << "}";
+  else           buffer << "fstmiax\t" << DisasmRegister(r0) << "!, {d" << dbase << "-d" << dend << "}";
+};
+
+op hvc_i( 0xf7e[12] : shl<12> imm1[4] :> <: 0x8[4] : imm0[12] );
+hvc_i.var imm : {uint32_t} = {imm1|imm0};
+hvc_i.disasm = { buffer << "hvc\t#" << imm; };
+
+op ldc( 0xec[8] : pos[1] : 0b001[3] : r1[4] :> <: r0[4] : type[4] : imm[8] );
+
+ldc.disasm = {
+  switch (type) {
+  case 1:  buffer << "ldf" << (r0 < 8 ? 's' : 'd') << "\tf" << (r0 % 8) << ", "; break;
+  case 2:  buffer << "lfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 4 : 1) << ", "; break;
+  case 4:  buffer << "cfldrs\tmvf" << r0 << ", "; break;
+  case 5:  buffer << "cfldr32\tmvfx" << r0 << ", "; break;
+  default: buffer << "ldc\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos) buffer << "[" << DisasmRegister(r1) << "], {" << imm << "}";
+  else     buffer << "[" << DisasmRegister(r1) << "], {" << (imm ? "" : "-") << imm << "}";
+};
+
+op ldc2( 0xfc[8] : pos[1] : 0b001[3] : r1[4] :> <: r0[4] : type[4] : imm[8] );
+
+ldc2.disasm = {
+  buffer << "ldc2\t" << type << ", cr" << r0 << ", ";
+  if (pos) buffer << "[" << DisasmRegister(r1) << "], {" << imm << "}";
+  else     buffer << "[" << DisasmRegister(r1) << "], {" << (imm ? "" : "-") << imm << "}";
+};
+
+op ldc_1( 0xec[8] : pos[1] : 0b011[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+ldc_1.disasm = {
+  switch (type) {
+  case 1:  buffer << "ldf" << (r0 < 8 ? 's' : 'd') << "\tf" << (r0 % 8) << ", "; break;
+  case 2:  buffer << "lfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 4 : 1) << ", "; break;
+  case 4:  buffer << "cfldrs\tmvf" << r0 << ", "; break;
+  case 5:  buffer << "cfldr32\tmvfx" << r0 << ", "; break;
+  default: buffer << "ldc\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << "], #" << (pos?"":"-") << imm;
+};
+
+op ldc_2( 0xed[8] : pos[1] : 0b001[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+ldc_2.disasm = {
+  switch (type) {
+  case 1:  buffer << "ldf" << (r0 < 8 ? 's' : 'd') << "\tf" << (r0 % 8) << ", "; break;
+  case 2:  buffer << "lfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 4 : 1) << ", "; break;
+  case 4:  buffer << "cfldrs\tmvf" << r0 << ", "; break;
+  case 5:  buffer << "cfldr32\tmvfx" << r0 << ", "; break;
+  default: buffer << "ldc\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+};
+
+op ldc_3( 0xed[8] : pos[1] : 0b011[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+ldc_3.disasm = {
+  switch (type) {
+  case 1:  buffer << "ldf" << (r0 < 8 ? 's' : 'd') << "\tf" << (r0 % 8) << ", "; break;
+  case 2:  buffer << "lfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 4 : 1) << ", "; break;
+  case 4:  buffer << "cfldrs\tmvf" << r0 << ", "; break;
+  case 5:  buffer << "cfldr32\tmvfx" << r0 << ", "; break;
+  default: buffer << "ldc\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+  if (imm) buffer << '!';
+};
+
+op ldcl( 0xec[8] : pos[1] : 0b111[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+ldcl.disasm = {
+  switch (type) {
+  case 1:  buffer << "ldf" << (r0 < 8 ? 'e' : 'p') << "\tf" << (r0 % 8); break;
+  case 2:  buffer << "lfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 2 : 3) << ", "; break;
+  case 4:  buffer << "cfldrd\tmvd" << r0 << ", "; break;
+  case 5:  buffer << "cfldr64\tmvdx" << r0 << ", "; break;
+  default: buffer << "ldcl\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << "], #" << (pos?"":"-") << imm;
+};
+
+op ldcl_1( 0xecd[12] : r1[4] :> <: r0[4] : type[4] : imm[8] );
+
+ldcl_1.disasm = {
+  switch (type) {
+  case 1:  buffer << "ldf" << (r0 < 8 ? 'e' : 'p') << "\tf" << (r0 % 8); break;
+  case 2:  buffer << "lfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 2 : 3) << ", "; break;
+  case 4:  buffer << "cfldrd\tmvd" << r0 << ", "; break;
+  case 5:  buffer << "cfldr64\tmvdx" << r0 << ", "; break;
+  default: buffer << "ldcl\t" << type << ", cr" << r0 << ", "; break;
+  }
+  buffer << "[" << DisasmRegister(r1) << "], {" << imm << "}";
+};
+
+op ldcl_2( 0xed[8] : pos[1] : 1[1] : x[1] : 1[1] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+ldcl_2.disasm = {
+  switch (type) {
+  case 1:  buffer << "ldf" << (r0 < 8 ? 'e' : 'p') << "\tf" << (r0 % 8); break;
+  case 2:  buffer << "lfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 2 : 3) << ", "; break;
+  case 4:  buffer << "cfldrd\tmvd" << r0 << ", "; break;
+  case 5:  buffer << "cfldr64\tmvdx" << r0 << ", "; break;
+  default: buffer << "ldcl\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+  if (x and imm) buffer << '!';
+};
+
+op ldc2_1( 0xfc[8] : pos[1] : 0b011[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+ldc2_1.disasm = {
+  buffer << "ldc2\t" << type << ", cr" << r0 << ", ";
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << "], #" << (pos?"":"-") << imm;
+};
+
+op ldc2_2( 0xfd[8] : pos[1] : 0b001[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+ldc2_2.disasm = {
+  buffer << "ldc2\t" << type << ", cr" << r0 << ", ";
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+};
+
+op ldc2_3( 0xfd[8] : pos[1] : 0b011[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+ldc2_3.disasm = {
+  buffer << "ldc2\t" << type << ", cr" << r0 << ", ";
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+  if (imm) buffer << '!';
+};
+
+op ldc2l( 0xfc[8] : pos[1] : 0b111[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+ldc2l.disasm = {
+  buffer << "ldc2l\t" << type << ", cr" << r0 << ", ";
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << "], #" << (pos?"":"-") << imm;
+};
+
+op ldc2l_1( 0xfcd[12] : r1[4] :> <: r0[4] : type[4] : imm[8] );
+
+ldc2l_1.disasm = {
+  buffer << "ldc2l\t" << type << ", cr" << r0 << ", ";
+  buffer << "[" << DisasmRegister(r1) << "], {" << imm << "}";
+};
+
+op ldc2l_2( 0xfd[8] : pos[1] : 1[1] : x[1] : 1[1] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+ldc2l_2.disasm = {
+  buffer << "ldc2l\t" << type << ", cr" << r0 << ", ";
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+  if (x and imm) buffer << '!';
+};
+
+op strXX_all( 0xf86[12] : rc[4] :> <: rb[4] : ?[12] );
+
+strXX_all.disasm = {
+  buffer << "str??.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc) << ", <undefined>]";
+};
+
+op strXX_ria( 0xf8e[12] : rc[4] :> <: rb[4] : imm[12] );
+
+strXX_ria.disasm = {
+  buffer << "str??.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc);
+  if (imm) buffer << ", #" << imm;
+  buffer << "]";
+};
+
+op strXX_wra( 0xf86[12] : rc[4] :> <: rb[4] : 0[4] : ?[2] : shift[2] : ra[4] );
+
+strXX_wra.disasm = {
+  buffer << "str??.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc) << ", " << DisasmRegister(ra);
+  if (shift) buffer << ", lsl #" << shift;
+  buffer << "]";
+};
+
+op strXX_rai( 0xf86[12] : rc[4] :> <: rb[4] : 2[2] : pos[1] : 1[1] : imm0[8] );
+strXX_rai.var imm : {int32_t} = {pos ? imm0 : -imm0};
+
+strXX_rai.disasm = {
+  buffer << "str??.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc) << "], #" << imm;
+};
+
+op strXX_ra2i( 0xf86[12] : rc[4] :> <: rb[4] : 3[2] : pos[1] : x[1]: imm0[8] );
+strXX_ra2i.var imm : {int32_t} = {pos ? imm0 : -imm0};
+
+strXX_ra2i.disasm = {
+  buffer << "str??" << ((pos and not x) ? "t" : ".w") << "\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc);
+  if (imm) buffer << ", #" << imm;
+  buffer << "]" << ((x ? "!" : ""));
+};
+
+op strXX_pc( 0xf86f[16] :> <: rb[4] : imm0[12] );
+strXX_pc.var imm : {int32_t} = {-imm0};
+
+strXX_pc.disasm = {
+  buffer << "str??" << ((((-imm & 0xf00) == 0xe00) ?  "t" : ".w")) << "\t" << DisasmRegister(rb) << ", [pc";
+  if (imm) buffer << ", #" << imm;
+  buffer << "]";
+};
+
+op ldrXX_a_ria( 0xf8f[12] : rc[4] :> <: rb[4] : imm[12] );
+op ldrXX_b_ria( 0xf9d[12] : rc[4] :> <: rb[4] : imm[12] );
+op ldrXX_c_ria( 0xf9f[12] : rc[4] :> <: rb[4] : imm[12] );
+group ldrXX_ria( ldrXX_a_ria, ldrXX_b_ria, ldrXX_c_ria );
+
+ldrXX_ria.disasm = {
+  buffer << "ldr??.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc);
+  if (imm) buffer << ", #" << imm;
+  buffer << "]";
+};
+
+op ldrXX_a_all( 0xf87[12] : rc[4] :> <: rb[4] : ?[12] );
+op ldrXX_b_all( 0xf95[12] : rc[4] :> <: rb[4] : ?[12] );
+op ldrXX_c_all( 0xf97[12] : rc[4] :> <: rb[4] : ?[12] );
+group ldrXX_all (ldrXX_a_all, ldrXX_b_all, ldrXX_c_all);
+
+ldrXX_all.disasm = {
+  buffer << "ldr??.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc) << ", <undefined>]";
+};
+
+op ldrXX_a_wra( 0xf87[12] : rc[4] :> <: rb[4] : 0[4] : ?[2] : shift[2] : ra[4] );
+op ldrXX_b_wra( 0xf95[12] : rc[4] :> <: rb[4] : 0[4] : ?[2] : shift[2] : ra[4] );
+op ldrXX_c_wra( 0xf97[12] : rc[4] :> <: rb[4] : 0[4] : ?[2] : shift[2] : ra[4] );
+group ldrXX_wra (ldrXX_a_wra, ldrXX_b_wra, ldrXX_c_wra);
+
+ldrXX_wra.disasm = {
+  buffer << "ldr??.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc) << ", " << DisasmRegister(ra);
+  if (shift) buffer << ", lsl #" << shift;
+  buffer << "]";
+};
+
+op ldrXX_a_rai( 0xf87[12] : rc[4] :> <: rb[4] : 2[2] : pos[1] : 1[1] : imm0[8] );
+op ldrXX_b_rai( 0xf95[12] : rc[4] :> <: rb[4] : 2[2] : pos[1] : 1[1] : imm0[8] );
+op ldrXX_c_rai( 0xf97[12] : rc[4] :> <: rb[4] : 2[2] : pos[1] : 1[1] : imm0[8] );
+group ldrXX_rai (ldrXX_a_rai, ldrXX_b_rai, ldrXX_c_rai);
+ldrXX_rai.var imm : {int32_t} = {pos ? imm0 : -imm0};
+
+ldrXX_rai.disasm = {
+  buffer << "ldr??.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc) << "], #" << imm;
+};
+
+op ldrXX_a_ra2i( 0xf87[12] : rc[4] :> <: rb[4] : 3[2] : pos[1] : x[1]: imm0[8] );
+op ldrXX_b_ra2i( 0xf95[12] : rc[4] :> <: rb[4] : 3[2] : pos[1] : x[1]: imm0[8] );
+op ldrXX_c_ra2i( 0xf97[12] : rc[4] :> <: rb[4] : 3[2] : pos[1] : x[1]: imm0[8] );
+group ldrXX_ra2i (ldrXX_a_ra2i, ldrXX_b_ra2i, ldrXX_c_ra2i);
+ldrXX_ra2i.var imm : {int32_t} = {pos ? imm0 : -imm0};
+
+ldrXX_ra2i.disasm = {
+  buffer << "ldr??" << ((pos and not x) ? "t" : ".w") << "\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc);
+  if (imm) buffer << ", #" << imm;
+  buffer << "]" << ((x ? "!" : ""));
+};
+
+op ldrXX_a_pc( 0xf87f[16] :> <: rb[4] : imm0[12] );
+op ldrXX_b_pc( 0xf95f[16] :> <: rb[4] : imm0[12] );
+op ldrXX_c_pc( 0xf97f[16] :> <: rb[4] : imm0[12] );
+group ldrXX_pc (ldrXX_a_pc, ldrXX_b_pc, ldrXX_c_pc);
+ldrXX_pc.var imm : {int32_t} = {-imm0};
+
+ldrXX_pc.disasm = {
+  buffer << "ldr??" << ((((-imm & 0xf00) == 0xe00) ?  "t" : ".w")) << "\t" << DisasmRegister(rb) << ", [pc";
+  if (imm) buffer << ", #" << imm;
+  buffer << "]";
+};
+
+op mar( 0xec4[12] : r1[4] :> <: r0[4] : 0[4] : 0[4] : 0[4] );
+
+mar.disasm = {
+  buffer << "mar\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op mia( 0xee20[16] :> <: r1[4] : 0x01[8] : r0[4] );
+
+mia.disasm = {
+  buffer << "mia\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op miaph( 0xee28[16] :> <: r1[4] : 0x01[8] : r0[4] );
+
+miaph.disasm = {
+  buffer << "miaph\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op miaBB( 0xee2c[16] :> <: r1[4] : 0x01[8] : r0[4] );
+
+miaBB.disasm = {
+  buffer << "miaBB\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op miaBT( 0xee2d[16] :> <: r1[4] : 0x01[8] : r0[4] );
+
+miaBT.disasm = {
+  buffer << "miaBT\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op miaTB( 0xee2e[16] :> <: r1[4] : 0x01[8] : r0[4] );
+
+miaTB.disasm = {
+  buffer << "miaTB\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op miaTT( 0xee2f[16] :> <: r1[4] : 0x01[8] : r0[4] );
+
+miaTT.disasm = {
+  buffer << "miaTT\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op mra( 0xec5[12] : r1[4] :> <: r0[4] : 0[4] : 0[4] : 0[4] );
+
+mra.disasm = {
+  buffer << "mra\t" << DisasmRegister(r0) << ", " << DisasmRegister(r1) << ", acc0";
+};
+
+op mrs( 0xf3[8] : 0b111[3] : shl<6> sr2[1] : sr0[4] :> <: 0x8[4] : rd[4] : ?[2] : shl<4> sr1[2] : ?[4] );
+mrs.var sr : {uint32_t} = {sr2|sr1|sr0};
+
+mrs.disasm = {
+  buffer << "mrs\t" << DisasmRegister(rd) << ", " << DisasmSpecReg(sr);
+};
+
+op mrs_IAPSRr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x1[8] );
+mrs_IAPSRr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", IAPSR"; };
+
+op mrs_EAPSRr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x2[8] );
+mrs_EAPSRr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", EAPSR"; };
+
+op mrs_PSRr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x3[8] );
+mrs_PSRr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", PSR"; };
+
+op mrs_IPSRr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x5[8] );
+mrs_IPSRr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", IPSR"; };
+
+op mrs_EPSRr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x6[8] );
+mrs_EPSRr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", EPSR"; };
+
+op mrs_IEPSRr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x7[8] );
+mrs_IEPSRr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", IEPSR"; };
+
+op mrs_MSPr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x8[8] );
+mrs_MSPr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", MSP"; };
+
+op mrs_PSPr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x9[8] );
+mrs_PSPr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", PSP"; };
+
+op mrs_PRIMASKr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x10[8] );
+mrs_PRIMASKr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", PRIMASK"; };
+
+op mrs_BASEPRIr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x11[8] );
+mrs_BASEPRIr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", BASEPRI"; };
+
+op mrs_BASEPRI_MAXr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x12[8] );
+mrs_BASEPRI_MAXr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", BASEPRI_MAX"; };
+
+op mrs_FAULTMASKr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x13[8] );
+mrs_FAULTMASKr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", FAULTMASK"; };
+
+op mrs_CONTROLr( 0xf3[8] : 0b111[3] : ?[1] : ?[4] :> <: 0x8[4] : ra[4] : 0x14[8] );
+mrs_CONTROLr.disasm = { buffer << "mrs\t" << DisasmRegister(ra) << ", CONTROL"; };
+
+op msr_reg( 0xf3[8] : 0b100[3] : shl<5> sr2[1] : rn[4] :> <: 0x8[4] : sr0[4] : ?[2] : shl<4> sr1[2] : ?[4] );
+msr_reg.var sr : {uint32_t} = {sr2|sr1|sr0};
+
+msr_reg.disasm = {
+  buffer << "msr\t" << DisasmSpecReg(sr) << ", " << DisasmRegister(rn);
+};
+
+op msr_reg_psr( 0xf3[8] : 0b100[3] : r[1] : rn[4] :> <: 0x8[4] : mask[4] : 0[8] );
+
+msr_reg_psr.disasm = {
+  buffer << "msr\t" << DisasmPSRMask(r,mask) << ", " << DisasmRegister(rn);
+};
+
+op msr_IAPSRr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x1[8] );
+msr_IAPSRr.disasm = { buffer << "msr\tIAPSR, " << DisasmRegister(ra); };
+
+op msr_EAPSRr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x2[8] );
+msr_EAPSRr.disasm = { buffer << "msr\tEAPSR, " << DisasmRegister(ra); };
+
+op msr_PSRr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x3[8] );
+msr_PSRr.disasm = { buffer << "msr\tPSR, " << DisasmRegister(ra); };
+
+op msr_IPSRr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x5[8] );
+msr_IPSRr.disasm = { buffer << "msr\tIPSR, " << DisasmRegister(ra); };
+
+op msr_EPSRr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x6[8] );
+msr_EPSRr.disasm = { buffer << "msr\tEPSR, " << DisasmRegister(ra); };
+
+op msr_IEPSRr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x7[8] );
+msr_IEPSRr.disasm = { buffer << "msr\tIEPSR, " << DisasmRegister(ra); };
+
+op msr_MSPr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x8[8] );
+msr_MSPr.disasm = { buffer << "msr\tMSP, " << DisasmRegister(ra); };
+
+op msr_PSPr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x9[8] );
+msr_PSPr.disasm = { buffer << "msr\tPSP, " << DisasmRegister(ra); };
+
+op msr_PRIMASKr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x10[8] );
+msr_PRIMASKr.disasm = { buffer << "msr\tPRIMASK, " << DisasmRegister(ra); };
+
+op msr_BASEPRIr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x11[8] );
+msr_BASEPRIr.disasm = { buffer << "msr\tBASEPRI, " << DisasmRegister(ra); };
+
+op msr_BASEPRI_MAXr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x12[8] );
+msr_BASEPRI_MAXr.disasm = { buffer << "msr\tBASEPRI_MAX, " << DisasmRegister(ra); };
+
+op msr_FAULTMASKr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x13[8] );
+msr_FAULTMASKr.disasm = { buffer << "msr\tFAULTMASK, " << DisasmRegister(ra); };
+
+op msr_CONTROLr( 0xf3[8] : 0b100[3] : ?[1] : ra[4] :> <: 0x8[4] : ?[4] : 0x14[8] );
+msr_CONTROLr.disasm = { buffer << "msr\tCONTROL, " << DisasmRegister(ra); };
+
+op nop_f3af( 0xf3af[16] :> <: 0x80[8] : imm[8] );
+
+nop_f3af.disasm = {
+  if (imm) buffer << "nop.w\t{" << imm << "}";
+  else     buffer << "nop.w";
+};
+
+op pkhbt( 0xeac[12] : r2[4] :> <: 0[1] : shl<2> off1[3] : r1[4] : off0[2] : shl<1> trans[1] : 0[1] : r0[4] );
+pkhbt.var off : {uint32_t} = {off1|off0}
+
+pkhbt.disasm = {
+  char const* mnemonic = (trans != 2) ? "pkhbt" : "pkhtb";
+  buffer << "" << mnemonic << "\t" << DisasmRegister(r1) << ", " << DisasmRegister(r2) << ", " << DisasmRegister(r0);
+  buffer << DisasmShImm( trans, off );
+};
+
+// op pld_all( 0xf81[12] : rc[4] :> <: 0xf[4] : ?[12] );
+
+// pld_all.disasm = {
+//   buffer << "pld\t[" << DisasmRegister(rc) << ", <undefined>]";
+// };
+
+// op pldw_all( 0xf83[12] : rc[4] :> <: 0xf[4] : ?[12] );
+
+// pldw_all.disasm = {
+//   buffer << "pldw\t[" << DisasmRegister(rc) << ", <undefined>]";
+// };
+
+// op pli_all( 0xf91[12] : rc[4] :> <: 0xf[4] : ?[12] );
+
+// pli_all.disasm = {
+//   buffer << "pli\t[" << DisasmRegister(rc) << ", <undefined>]";
+// };
+
+op qadd8( 0xfa8[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+qadd8.disasm = { buffer << "qadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op qadd( 0xfa8[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x8[4] : ra[4] );
+qadd.disasm = { buffer << "qadd\t" << DisasmRegister(rb) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op qadd16( 0xfa9[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+qadd16.disasm = { buffer << "qadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op qasx( 0xfaa[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+qasx.disasm = { buffer << "qasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op qdadd( 0xfa8[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x9[4] : ra[4] );
+qdadd.disasm = { buffer << "qdadd\t" << DisasmRegister(rb) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op qdsub( 0xfa8[12] : rc[4] :> <: 0xf[4] : rb[4] : 0xb[4] : ra[4] );
+qdsub.disasm = { buffer << "qdsub\t" << DisasmRegister(rb) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op qsax( 0xfae[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+qsax.disasm = { buffer << "qsax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op qsub( 0xfa8[12] : rc[4] :> <: 0xf[4] : rb[4] : 0xa[4] : ra[4] );
+qsub.disasm = { buffer << "qsub\t" << DisasmRegister(rb) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op qsub8( 0xfac[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+qsub8.disasm = { buffer << "qsub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op qsub16( 0xfad[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+qsub16.disasm = { buffer << "qsub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op rev_w( 0xfa9[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x8[4] : ?[4] );
+rev_w.disasm = { buffer << "rev.w\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc); };
+
+op revsh_w( 0xfa9[12] : rc[4] :> <: 0xf[4] : rb[4] : 0xb[4] : ?[4] );
+revsh_w.disasm = { buffer << "revsh.w\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc); };
+
+op rev16_w( 0xfa9[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x9[4] : ?[4] );
+rev16_w.disasm = { buffer << "rev16.w\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc); };
+
+op rfedb( 0xe8[8] : 0b00[2] : x[1] : 1[1] : r0[4] :> <: 0xc000[16] );
+
+rfedb.disasm = {
+  buffer << "rfedb\t" << DisasmRegister(r0) << (x ? "!" : "");
+};
+
+op rfeia( 0xe9[8] : 0b10[2] : x[1] : 1[1] : r0[4] :> <: 0xc000[16] );
+
+rfeia.disasm = {
+  buffer << "rfeia\t" << DisasmRegister(r0) << (x ? "!" : "");
+};
+
+op sadd8( 0xfa8[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+sadd8.disasm = { buffer << "sadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op sadd16( 0xfa9[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+sadd16.disasm = { buffer << "sadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op sasx( 0xfaa[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+sasx.disasm = { buffer << "sasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op sdiv( 0xfb9[12] : rd[4] :> <: 0xf[4] : rb[4] : 0xf[4] : ra[4] );
+sdiv.disasm = { buffer << "sdiv\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op sel( 0xfaa[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x8[4] : ra[4] );
+sel.disasm = { buffer << "sel\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op shadd8( 0xfa8[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x2[4] : ra[4] );
+shadd8.disasm = { buffer << "shadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op shadd16( 0xfa9[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x2[4] : ra[4] );
+shadd16.disasm = { buffer << "shadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op shasx( 0xfaa[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x2[4] : ra[4] );
+shasx.disasm = { buffer << "shasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op shsax( 0xfae[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x2[4] : ra[4] );
+shsax.disasm = { buffer << "shsax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op shsub8( 0xfac[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x2[4] : ra[4] );
+shsub8.disasm = { buffer << "shsub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op shsub16( 0xfad[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x2[4] : ra[4] );
+shsub16.disasm = { buffer << "shsub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op smc_i( 0xf7f[12] : imm0[4] :> <: 0x8[4] : shl<4> imm1[8] : shl<12> imm2[4] );
+smc_i.var imm : {uint32_t} = {imm2|imm1|imm0};
+smc_i.disasm = { buffer << "smc\t#" << imm; };
+
+op smlabb( 0xfb1[12] : rd[4] :> <: rc[4] : rb[4] : 0x0[4] : ra[4] );
+smlabb.disasm = { buffer << "smlabb\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smlabt( 0xfb1[12] : rd[4] :> <: rc[4] : rb[4] : 0x1[4] : ra[4] );
+smlabt.disasm = { buffer << "smlabt\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smlad( 0xfb2[12] : rd[4] :> <: rc[4] : rb[4] : 0x0[4] : ra[4] );
+smlad.disasm = { buffer << "smlad\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smladx( 0xfb2[12] : rd[4] :> <: rc[4] : rb[4] : 0x1[4] : ra[4] );
+smladx.disasm = { buffer << "smladx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smlal( 0xfbc[12] : rd[4] :> <: rc[4] : rb[4] : 0x0[4] : ra[4] );
+smlal.disasm = { buffer << "smlal\t" << DisasmRegister(rc) << ", " << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smlalbb( 0xfbc[12] : rd[4] :> <: rc[4] : rb[4] : 0x8[4] : ra[4] );
+smlalbb.disasm = { buffer << "smlalbb\t" << DisasmRegister(rc) << ", " << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smlalbt( 0xfbc[12] : rd[4] :> <: rc[4] : rb[4] : 0x9[4] : ra[4] );
+smlalbt.disasm = { buffer << "smlalbt\t" << DisasmRegister(rc) << ", " << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smlald( 0xfbc[12] : rd[4] :> <: rc[4] : rb[4] : 0xc[4] : ra[4] );
+smlald.disasm = { buffer << "smlald\t" << DisasmRegister(rc) << ", " << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smlaldx( 0xfbc[12] : rd[4] :> <: rc[4] : rb[4] : 0xd[4] : ra[4] );
+smlaldx.disasm = { buffer << "smlaldx\t" << DisasmRegister(rc) << ", " << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smlaltb( 0xfbc[12] : rd[4] :> <: rc[4] : rb[4] : 0xa[4] : ra[4] );
+smlaltb.disasm = { buffer << "smlaltb\t" << DisasmRegister(rc) << ", " << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smlaltt( 0xfbc[12] : rd[4] :> <: rc[4] : rb[4] : 0xb[4] : ra[4] );
+smlaltt.disasm = { buffer << "smlaltt\t" << DisasmRegister(rc) << ", " << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smlatb( 0xfb1[12] : rd[4] :> <: rc[4] : rb[4] : 0x2[4] : ra[4] );
+smlatb.disasm = { buffer << "smlatb\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smlatt( 0xfb1[12] : rd[4] :> <: rc[4] : rb[4] : 0x3[4] : ra[4] );
+smlatt.disasm = { buffer << "smlatt\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smlawb( 0xfb3[12] : rd[4] :> <: rc[4] : rb[4] : 0x0[4] : ra[4] );
+smlawb.disasm = { buffer << "smlawb\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smlawt( 0xfb3[12] : rd[4] :> <: rc[4] : rb[4] : 0x1[4] : ra[4] );
+smlawt.disasm = { buffer << "smlawt\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smlsd( 0xfb4[12] : rd[4] :> <: rc[4] : rb[4] : 0x0[4] : ra[4] );
+smlsd.disasm = { buffer << "smlsd\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smlsdx( 0xfb4[12] : rd[4] :> <: rc[4] : rb[4] : 0x1[4] : ra[4] );
+smlsdx.disasm = { buffer << "smlsdx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smlsld( 0xfbd[12] : rd[4] :> <: rc[4] : rb[4] : 0xc[4] : ra[4] );
+smlsld.disasm = { buffer << "smlsld\t" << DisasmRegister(rc) << ", " << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smlsldx( 0xfbd[12] : rd[4] :> <: rc[4] : rb[4] : 0xd[4] : ra[4] );
+smlsldx.disasm = { buffer << "smlsldx\t" << DisasmRegister(rc) << ", " << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smmla( 0xfb5[12] : rd[4] :> <: rc[4] : rb[4] : 0x0[4] : ra[4] );
+smmla.disasm = { buffer << "smmla\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smmlar( 0xfb5[12] : rd[4] :> <: rc[4] : rb[4] : 0x1[4] : ra[4] );
+smmlar.disasm = { buffer << "smmlar\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smmls( 0xfb6[12] : rd[4] :> <: rc[4] : rb[4] : 0x0[4] : ra[4] );
+smmls.disasm = { buffer << "smmls\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smmlsr( 0xfb6[12] : rd[4] :> <: rc[4] : rb[4] : 0x1[4] : ra[4] );
+smmlsr.disasm = { buffer << "smmlsr\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op smmul( 0xfb5[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+smmul.disasm = { buffer << "smmul\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smmulr( 0xfb5[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+smmulr.disasm = { buffer << "smmulr\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smuad( 0xfb2[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+smuad.disasm = { buffer << "smuad\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smuadx( 0xfb2[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+smuadx.disasm = { buffer << "smuadx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smulbb( 0xfb1[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+smulbb.disasm = { buffer << "smulbb\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smulbt( 0xfb1[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+smulbt.disasm = { buffer << "smulbt\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smultb( 0xfb1[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x2[4] : ra[4] );
+smultb.disasm = { buffer << "smultb\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smultt( 0xfb1[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x3[4] : ra[4] );
+smultt.disasm = { buffer << "smultt\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smulwb( 0xfb3[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+smulwb.disasm = { buffer << "smulwb\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smulwt( 0xfb3[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+smulwt.disasm = { buffer << "smulwt\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smusd( 0xfb4[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+smusd.disasm = { buffer << "smusd\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op smusdx( 0xfb4[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x1[4] : ra[4] );
+smusdx.disasm = { buffer << "smusdx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op srsdb( 0xe8[8] : 0b00[2] : x[1] : 0[1] : r0[4] :> <: 0b11000000000[11] : imm[5] );
+
+srsdb.disasm = {
+  buffer << "srsdb\t" << DisasmRegister(r0) << (x ? "!" : "") << ", #" << imm;
+};
+
+op srsia( 0xe9[8] : 0b10[2] : x[1] : 0[1] : r0[4] :> <: 0b11000000000[11] : imm[5] );
+
+srsia.disasm = {
+  buffer << "srsia\t" << DisasmRegister(r0) << (x ? "!" : "") << ", #" << imm;
+};
+
+op ssat_rir( 0b1111001100[10] : sht[1] : 0[1] : rb[4] :> <: 0[1] : shl<2> shv1[3] : ra[4] : shv0[2] : 0[1] : imm[5] );
+ssat_rir.var shv : {uint32_t} = {shv1|shv0};
+
+ssat_rir.disasm = {
+  buffer << "ssat\t" << DisasmRegister(ra) << ", #" << imm << ", " << DisasmRegister(rb);
+  if (shv) buffer << ", " << (sht?"asr":"lsl") << " #" << shv;
+};
+
+op ssat16_rir( 0b1111001100[10] : 1[1] : 0[1] : rb[4] :> <: 0[1] : 0[3] : ra[4] : 0[2] : 0[1] : imm[5] );
+
+ssat16_rir.disasm = {
+  buffer << "ssat16\t" << DisasmRegister(ra) << ", #" << imm << ", " << DisasmRegister(rb);
+};
+
+op ssax( 0xfae[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+ssax.disasm = { buffer << "ssax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op ssub8( 0xfac[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+ssub8.disasm = { buffer << "ssub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op ssub16( 0xfad[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+ssub16.disasm = { buffer << "ssub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op stc( 0xec[8] : pos[1] : 0b000[3] : r1[4] :> <: r0[4] : type[4] : imm[8] );
+
+stc.disasm = {
+  switch (type) {
+  case 1:  buffer << "stf" << (r0 < 8 ? 's' : 'd') << "\tf" << (r0 % 8) << ", "; break;
+  case 2:  buffer << "sfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 4 : 1) << ", "; break;
+  case 4:  buffer << "cfstrs\tmvf" << r0 << ", "; break;
+  case 5:  buffer << "cfstr32\tmvfx" << r0 << ", "; break;
+  default: buffer << "stc\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos) buffer << "[" << DisasmRegister(r1) << "], {" << imm << "}";
+  else     buffer << "[" << DisasmRegister(r1) << "], {" << (imm ? "" : "-") << imm << "}";
+};
+
+op stc2( 0xfc[8] : pos[1] : 0b000[3] : r1[4] :> <: r0[4] : type[4] : imm[8] );
+
+stc2.disasm = {
+  buffer << "stc2\t" << type << ", cr" << r0 << ", ";
+  if (pos) buffer << "[" << DisasmRegister(r1) << "], {" << imm << "}";
+  else     buffer << "[" << DisasmRegister(r1) << "], {" << (imm ? "" : "-") << imm << "}";
+};
+
+op stc_1( 0xec[8] : pos[1] : 0b010[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+stc_1.disasm = {
+  switch (type) {
+  case 1:  buffer << "stf" << (r0 < 8 ? 's' : 'd') << "\tf" << (r0 % 8) << ", "; break;
+  case 2:  buffer << "sfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 4 : 1) << ", "; break;
+  case 4:  buffer << "cfstrs\tmvf" << r0 << ", "; break;
+  case 5:  buffer << "cfstr32\tmvfx" << r0 << ", "; break;
+  default: buffer << "stc\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << "], #" << (pos?"":"-") << imm;
+};
+
+op stc_2( 0xed[8] : pos[1] : 0b000[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+stc_2.disasm = {
+  switch (type) {
+  case 1:  buffer << "stf" << (r0 < 8 ? 's' : 'd') << "\tf" << (r0 % 8) << ", "; break;
+  case 2:  buffer << "sfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 4 : 1) << ", "; break;
+  case 4:  buffer << "cfstrs\tmvf" << r0 << ", "; break;
+  case 5:  buffer << "cfstr32\tmvfx" << r0 << ", "; break;
+  default: buffer << "stc\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+};
+
+op stc_3( 0xed[8] : pos[1] : 0b010[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+stc_3.disasm = {
+  switch (type) {
+  case 1:  buffer << "stf" << (r0 < 8 ? 's' : 'd') << "\tf" << (r0 % 8) << ", "; break;
+  case 2:  buffer << "sfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 4 : 1) << ", "; break;
+  case 4:  buffer << "cfstrs\tmvf" << r0 << ", "; break;
+  case 5:  buffer << "cfstr32\tmvfx" << r0 << ", "; break;
+  default: buffer << "stc\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+  if (imm) buffer << '!';
+};
+
+op stcl( 0xec[8] : pos[1] : 0b110[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+stcl.disasm = {
+  switch (type) {
+  case 1:  buffer << "stf" << (r0 < 8 ? 'e' : 'p') << "\tf" << (r0 % 8); break;
+  case 2:  buffer << "sfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 2 : 3) << ", "; break;
+  case 4:  buffer << "cfstrd\tmvd" << r0 << ", "; break;
+  case 5:  buffer << "cfstr64\tmvdx" << r0 << ", "; break;
+  default: buffer << "stcl\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << "], #" << (pos?"":"-") << imm;
+};
+
+op stcl_1( 0xecc[12] : r1[4] :> <: r0[4] : type[4] : imm[8] );
+
+stcl_1.disasm = {
+  switch (type) {
+  case 1:  buffer << "stf" << (r0 < 8 ? 'e' : 'p') << "\tf" << (r0 % 8); break;
+  case 2:  buffer << "sfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 2 : 3) << ", "; break;
+  case 4:  buffer << "cfstrd\tmvd" << r0 << ", "; break;
+  case 5:  buffer << "cfstr64\tmvdx" << r0 << ", "; break;
+  default: buffer << "stcl\t" << type << ", cr" << r0 << ", "; break;
+  }
+  buffer << "[" << DisasmRegister(r1) << "], {" << imm << "}";
+};
+
+op stcl_2( 0xed[8] : pos[1] : 1[1] : x[1] : 0[1] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+stcl_2.disasm = {
+  switch (type) {
+  case 1:  buffer << "stf" << (r0 < 8 ? 'e' : 'p') << "\tf" << (r0 % 8); break;
+  case 2:  buffer << "sfm\tf" << (r0 % 8) << ", " << ((r0 < 8) ? 2 : 3) << ", "; break;
+  case 4:  buffer << "cfstrd\tmvd" << r0 << ", "; break;
+  case 5:  buffer << "cfstr64\tmvdx" << r0 << ", "; break;
+  default: buffer << "stcl\t" << type << ", cr" << r0 << ", "; break;
+  }
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+  if (x and imm) buffer << '!';
+};
+
+op stc2_1( 0xfc[8] : pos[1] : 0b010[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+stc2_1.disasm = {
+  buffer << "stc2\t" << type << ", cr" << r0 << ", ";
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << "], #" << (pos?"":"-") << imm;
+};
+
+op stc2_2( 0xfd[8] : pos[1] : 0b000[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+stc2_2.disasm = {
+  buffer << "stc2\t" << type << ", cr" << r0 << ", ";
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+};
+
+op stc2_3( 0xfd[8] : pos[1] : 0b010[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+stc2_3.disasm = {
+  buffer << "stc2\t" << type << ", cr" << r0 << ", ";
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+  if (imm) buffer << '!';
+};
+
+op stc2l( 0xfc[8] : pos[1] : 0b110[3] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+stc2l.disasm = {
+  buffer << "stc2l\t" << type << ", cr" << r0 << ", ";
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << "], #" << (pos?"":"-") << imm;
+};
+
+op stc2l_1( 0xfcc[12] : r1[4] :> <: r0[4] : type[4] : imm[8] );
+
+stc2l_1.disasm = {
+  buffer << "stc2l\t" << type << ", cr" << r0 << ", ";
+  buffer << "[" << DisasmRegister(r1) << "], {" << imm << "}";
+};
+
+op stc2l_2( 0xfd[8] : pos[1] : 1[1] : x[1] : 0[1] : r1[4] :> <: r0[4] : type[4] : shl<2> imm[8] );
+
+stc2l_2.disasm = {
+  buffer << "stc2l\t" << type << ", cr" << r0 << ", ";
+  if (pos and not imm) buffer << "[" << DisasmRegister(r1) << "]";
+  else                 buffer << "[" << DisasmRegister(r1) << ", #" << (pos?"":"-") << imm << "]";
+  if (x and imm) buffer << '!';
+};
+
+op str_all( 0xf84[12] : rc[4] :> <: rb[4] : ?[12] );
+
+str_all.disasm = {
+  buffer << "str.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc) << ", <undefined>]";
+};
+
+op strh_all( 0xf82[12] : rc[4] :> <: rb[4] : ?[12] );
+
+strh_all.disasm = {
+  buffer << "strh.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc) << ", <undefined>]";
+};
+
+op strb_all( 0xf80[12] : rc[4] :> <: rb[4] : ?[12] );
+
+strb_all.disasm = {
+  buffer << "strb.w\t" << DisasmRegister(rb) << ", [" << DisasmRegister(rc) << ", <undefined>]";
+};
+
+op uadd8( 0xfa8[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x4[4] : ra[4] );
+uadd8.disasm = { buffer << "uadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uadd16( 0xfa9[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x4[4] : ra[4] );
+uadd16.disasm = { buffer << "uadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uasx( 0xfaa[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x4[4] : ra[4] );
+uasx.disasm = { buffer << "uasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op udiv( 0xfbb[12] : rd[4] :> <: 0xf[4] : rb[4] : 0xf[4] : ra[4] );
+udiv.disasm = { buffer << "udiv\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op uhadd8( 0xfa8[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x6[4] : ra[4] );
+uhadd8.disasm = { buffer << "uhadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uhadd16( 0xfa9[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x6[4] : ra[4] );
+uhadd16.disasm = { buffer << "uhadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uhasx( 0xfaa[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x6[4] : ra[4] );
+uhasx.disasm = { buffer << "uhasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uhsax( 0xfae[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x6[4] : ra[4] );
+uhsax.disasm = { buffer << "uhsax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uhsub8( 0xfac[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x6[4] : ra[4] );
+uhsub8.disasm = { buffer << "uhsub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uhsub16( 0xfad[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x6[4] : ra[4] );
+uhsub16.disasm = { buffer << "uhsub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uqadd8( 0xfa8[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x5[4] : ra[4] );
+uqadd8.disasm = { buffer << "uqadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uqadd16( 0xfa9[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x5[4] : ra[4] );
+uqadd16.disasm = { buffer << "uqadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uqasx( 0xfaa[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x5[4] : ra[4] );
+uqasx.disasm = { buffer << "uqasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uqsax( 0xfae[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x5[4] : ra[4] );
+uqsax.disasm = { buffer << "uqsax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uqsub8( 0xfac[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x5[4] : ra[4] );
+uqsub8.disasm = { buffer << "uqsub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op uqsub16( 0xfad[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x5[4] : ra[4] );
+uqsub16.disasm = { buffer << "uqsub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op usad8( 0xfb7[12] : rd[4] :> <: 0xf[4] : rb[4] : 0x0[4] : ra[4] );
+usad8.disasm = { buffer << "usad8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+
+op usada8( 0xfb7[12] : rd[4] :> <: rc[4] : rb[4] : 0x0[4] : ra[4] );
+usada8.disasm = { buffer << "usada8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+
+op usat_rir( 0b1111001110[10] : sht[1] : 0[1] : rb[4] :> <: 0[1] : shl<2> shv1[3] : ra[4] : shv0[2] : 0[1] : imm[5] );
+usat_rir.var shv : {uint32_t} = {shv1|shv0};
+
+usat_rir.disasm = {
+  buffer << "usat\t" << DisasmRegister(ra) << ", #" << imm << ", " << DisasmRegister(rb);
+  if (shv) buffer << ", " << (sht?"asr":"lsl") << " #" << shv;
+};
+
+op usat16_rir( 0b1111001110[10] : 1[1] : 0[1] : rb[4] :> <: 0[1] : 0[3] : ra[4] : 0[2] : 0[1] : imm[5] );
+
+usat16_rir.disasm = {
+  buffer << "usat16\t" << DisasmRegister(ra) << ", #" << imm << ", " << DisasmRegister(rb);
+};
+
+op usax( 0xfae[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x4[4] : ra[4] );
+usax.disasm = { buffer << "usax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op usub8( 0xfac[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x4[4] : ra[4] );
+usub8.disasm = { buffer << "usub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
+op usub16( 0xfad[12] : rc[4] :> <: 0xf[4] : rb[4] : 0x4[4] : ra[4] );
+usub16.disasm = { buffer << "usub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+
