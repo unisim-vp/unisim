@@ -174,6 +174,21 @@ Generator::iss( char const* prefix, bool sourcelines ) const
   
   std::cerr << std::endl;
   std::cerr << "Instruction Set Encoding: " << (isa().m_little_endian ? "little-endian" : "big-endian") << "\n";
+  /* Statistics about operation and actions */
+  std::cerr << "Operation count: " << isa().m_operations.size() << "\n";
+  std::cerr << "Action count:\n";
+  {
+    typedef std::map<ActionProto_t const*,uint64_t> ActionCount;
+    ActionCount actioncount;
+    for (Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op) {
+      for (Vect_t<Action_t>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action) {
+        actioncount[(**action).m_actionproto] += 1;
+      }
+    }
+    for (ActionCount::const_iterator itr = actioncount.begin(); itr != actioncount.end(); ++itr) {
+      std::cerr << "   ." << itr->first->m_symbol.str() << ": " << itr->second << '\n';
+    }
+  }
   
   /*******************/
   /*** Header file ***/
