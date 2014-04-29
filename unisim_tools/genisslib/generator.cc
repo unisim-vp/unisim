@@ -317,12 +317,12 @@ Generator::isastats()
   log(1) << "Instruction Set Encoding: " << (isa().m_little_endian ? "little-endian" : "big-endian") << "\n";
   /* Statistics about operation and actions */
   log(1) << "Operation count: " << isa().m_operations.size() << "\n";
-  log(1) << "Action count:\n";
   {
+    log(3) << "Operations (actions details):\n";
     typedef std::map<ActionProto_t const*,uint64_t> ActionCount;
     ActionCount actioncount;
     for (Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op) {
-      log(3) << (**op).m_symbol.str() << ':';
+      log(3) << "  " << (**op).m_symbol.str() << ':';
       for (Vect_t<Action_t>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action) {
         ActionProto_t const* ap = (**action).m_actionproto;
         log(3) << " ." << ap->m_symbol.str();
@@ -330,6 +330,7 @@ Generator::isastats()
       }
       log(3) << '\n';
     }
+    log(1) << "Action count:\n";
     for (ActionCount::const_iterator itr = actioncount.begin(); itr != actioncount.end(); ++itr) {
       log(1) << "   ." << itr->first->m_symbol.str() << ": " << itr->second << '\n';
     }
@@ -359,13 +360,13 @@ Generator::iss( char const* prefix, bool sourcelines ) const
     ConstStr_t headerid;
     
     {
-      Str::Buf ns_header_str( Str::Buf::Recycle );
-      char const* sep = "";
+      std::string ns_header_str;
+      std::string sep = "";
       for( vector<ConstStr_t>::const_iterator piece = isa().m_namespace.begin(); piece < isa().m_namespace.end(); ++ piece ) {
-        ns_header_str.write( sep ).write( (*piece).str() );
+        ns_header_str += sep + (*piece).str();
         sep = "__";
       }
-      headerid = Str::fmt( "__%s_%s_HH__", Str::tokenize( prefix ).str(), ns_header_str.m_storage );
+      headerid = Str::fmt( "__%s_%s_HH__", Str::tokenize( prefix ).str(), ns_header_str.c_str() );
     }
 
     sink.code( "#ifndef %s\n", headerid.str() );
@@ -888,7 +889,7 @@ Generator::isa_operations_methods( Product_t& _product ) const {
         _product.code( " char const* Op%s", Str::capitalize( (**op).m_symbol ).str() );
         _product.template_abbrev( isa().m_tparams );
         _product.code( "::%s_text() const\n", xxcode[step] );
-        _product.code( " { return %s; }\n", Str::dqcstring( xxcode_text.m_content.m_storage ).str() );
+        _product.code( " { return %s; }\n", Str::dqcstring( xxcode_text.m_content.c_str() ).str() );
       }
     }
     

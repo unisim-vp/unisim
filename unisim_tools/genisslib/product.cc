@@ -30,7 +30,7 @@ using namespace std;
     @param _filename the filename attached to the output code
 */
 Product_t::Product_t( ConstStr_t filename, bool sourcelines )
-  : m_filename( filename ), m_line( Str::Buf::Recycle ), m_lineno( 1 ), m_sourcelines( sourcelines )
+  : m_filename( filename ), m_lineno( 1 ), m_sourcelines( sourcelines )
 {
   m_indentations.push_back( 0 );
 }
@@ -47,7 +47,7 @@ FProduct_t::FProduct_t( char const* prefix, char const* suffix, bool sourcelines
     @param _prefix the filename prefix attached to the output code
 */
 SProduct_t::SProduct_t( ConstStr_t _filename, bool _sourcelines )
-  : Product_t( _filename, _sourcelines ), m_content( Str::Buf::Recycle )
+  : Product_t( _filename, _sourcelines )
 {}
 
 /** Destructor: Close the Product object */
@@ -215,15 +215,18 @@ Product_t::write( char const* _ptr ) {
       int current_indentation = m_indentations.back();
       int braces = 0;
       // Computing brace depth and right stripping blank characters.
-      char const* rstrip = m_line.m_storage;
-      for( char const* pchr = rstrip; *pchr; ++pchr ) {
-        if( *pchr <= ' ' ) continue;
-        rstrip = pchr + 1;
-        if(      *pchr == '{' ) ++braces;
-        else if( *pchr == '}' ) --braces;
+      {
+        char const* lbuf = m_line.c_str();
+        uintptr_t rstrip = 0;
+        for (uintptr_t ridx = 0; lbuf[ridx]; ++ridx ) {
+          if (lbuf[ridx] <= ' ') continue;
+          rstrip = ridx + 1;
+          if(      lbuf[ridx] == '{' ) ++braces;
+          else if( lbuf[ridx] == '}' ) --braces;
+        }
+        m_line = m_line.substr( 0, rstrip );
       }
-      m_line.truncate( rstrip-m_line.m_storage );
-      if( m_line.empty() ) { xwrite( "\n" ); m_lineno += 1; continue; }
+      if (m_line.empty()) { xwrite( "\n" ); m_lineno += 1; continue; }
       
       if( braces > 0 ) {
         while( (--braces) > 0) m_indentations.push_back( current_indentation );
@@ -239,20 +242,20 @@ Product_t::write( char const* _ptr ) {
         }
       }
       
-      char first_char = m_line.m_storage[0], last_char = m_line.m_storage[m_line.m_index-1];
-      if( first_char == '#' ) current_indentation = 0;
+      char first_char = *m_line.begin(), last_char = *m_line.rbegin();
+      if (first_char == '#') current_indentation = 0;
       else if( /*'{'*/ first_char == '}' ) current_indentation = m_indentations.back();
       else if( last_char == ':' ) --current_indentation;
       
       while( (--current_indentation) >= 0 ) xwrite( "\t" );
-      xwrite( m_line.m_storage );
+      xwrite( m_line.c_str() );
       xwrite( "\n" );
       m_line.clear();
       m_lineno += 1;
       continue;
     }
     if( m_line.empty() and chr <= ' ' ) continue;
-    m_line.write( chr );
+    m_line += chr;
   }
   return *this;
 }
@@ -266,4 +269,4 @@ void FProduct_t::xwrite( char const* _ptr ) { (*m_sink) << _ptr; }
 
 bool FProduct_t::good() const { return m_sink->good(); };
 
-void SProduct_t::xwrite( char const* _ptr ) { m_content.write( _ptr ); }
+void SProduct_t::xwrite( char const* _ptr ) { m_content += _ptr; }

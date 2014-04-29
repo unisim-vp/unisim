@@ -36,13 +36,13 @@ SDClass_t::~SDClass_t() {}
 
 ConstStr_t
 SDClass_t::qd_namespace() const {
-  Str::Buf buffer( Str::Buf::Recycle );
-  char const* sep = "";
+  std::string buffer;
+  std::string sep;
 
   for( std::vector<ConstStr_t>::const_iterator node = m_namespace.begin(); node != m_namespace.end(); ++ node, sep = "::" )
-    buffer.write( sep ).write( *node );
+    buffer += sep + node->str();
   
-  return ConstStr_t( buffer.m_storage );
+  return ConstStr_t( buffer.c_str() );
 }
 
 SDInstance_t::SDInstance_t( ConstStr_t _symbol, SourceCode_t const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc )

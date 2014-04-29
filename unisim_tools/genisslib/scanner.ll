@@ -39,7 +39,6 @@ int                      Scanner::bracecount = 0;
 std::vector<int>         Scanner::scs;
 Vect_t<Comment_t>        Scanner::comments;
 Isa*                     Scanner::s_isa = 0;
-Str::Buf*                Scanner::s_stringbuffer;
 ConstStr_t::Set          Scanner::symbols;
 std::vector<ConstStr_t>  Scanner::s_lookupdirs;
 
@@ -74,48 +73,48 @@ decimal_number [0-9]+
 %%
 
 \" { Scanner::sc_enter( string_context ); }
-<string_context>[^\"\n] { Scanner::strbuf().write( yyleng, yytext ); }
-<string_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.newline(); }
-<string_context>\\\" { Scanner::strbuf().write( yyleng, yytext ); }
-<string_context>\" { if( Scanner::sc_leave() ) { yylval.volatile_string = Scanner::strbuf().m_storage; return TOK_STRING; }
+<string_context>[^\"\n] { Scanner::strbuf().append( yytext, yyleng ); }
+<string_context>\n { Scanner::strbuf().append( yytext, yyleng ); Scanner::fileloc.newline(); }
+<string_context>\\\" { Scanner::strbuf().append( yytext, yyleng ); }
+<string_context>\" { if( Scanner::sc_leave() ) { yylval.volatile_string = Scanner::strbuf().c_str(); return TOK_STRING; }
 }
 
 \{ { Scanner::sc_enter( source_code_context ); }
-<source_code_context>[^/\}\{\"\n\'] {  Scanner::strbuf().write( yyleng, yytext ); }
-<source_code_context>"/" { Scanner::strbuf().write( yyleng, yytext ); }
-<source_code_context>\' { Scanner::sc_enter( char_context ); Scanner::strbuf().write( yyleng, yytext ); }
-<source_code_context>\{ { Scanner::bracecount++; Scanner::strbuf().write( yyleng, yytext ); }
-<source_code_context>\" { Scanner::sc_enter( string_context ); Scanner::strbuf().write( yyleng, yytext ); }
-<source_code_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.newline(); }
+<source_code_context>[^/\}\{\"\n\'] {  Scanner::strbuf().append( yytext, yyleng ); }
+<source_code_context>"/" { Scanner::strbuf().append( yytext, yyleng ); }
+<source_code_context>\' { Scanner::sc_enter( char_context ); Scanner::strbuf().append( yytext, yyleng ); }
+<source_code_context>\{ { Scanner::bracecount++; Scanner::strbuf().append( yytext, yyleng ); }
+<source_code_context>\" { Scanner::sc_enter( string_context ); Scanner::strbuf().append( yytext, yyleng ); }
+<source_code_context>\n { Scanner::strbuf().append( yytext, yyleng ); Scanner::fileloc.newline(); }
 <source_code_context>\} {
   if( Scanner::sc_leave() ) {
-    yylval.sourcecode = new SourceCode_t( Scanner::strbuf().m_storage, Scanner::fileloc_mlt );
+    yylval.sourcecode = new SourceCode_t( Scanner::strbuf().c_str(), Scanner::fileloc_mlt );
     return TOK_SOURCE_CODE;
   }
 }
 
-<char_context>[^\'\n] { Scanner::strbuf().write( yyleng, yytext ); }
-<char_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.newline(); }
-<char_context>\\\' { Scanner::strbuf().write( yyleng, yytext ); }
+<char_context>[^\'\n] { Scanner::strbuf().append( yytext, yyleng ); }
+<char_context>\n { Scanner::strbuf().append( yytext, yyleng ); Scanner::fileloc.newline(); }
+<char_context>\\\' { Scanner::strbuf().append( yytext, yyleng ); }
 <char_context>\' { Scanner::sc_leave(); }
 
-<INITIAL,source_code_context>"/*" { Scanner::sc_enter( c_like_comment_context ); Scanner::strbuf().write( yyleng, yytext ); }
-<c_like_comment_context>[^*\n] { Scanner::strbuf().write( yyleng, yytext ); }
-<c_like_comment_context>"*"+[^/\n] { Scanner::strbuf().write( yyleng, yytext ); }
-<c_like_comment_context>"*"+\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.newline(); }
-<c_like_comment_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.newline(); }
+<INITIAL,source_code_context>"/*" { Scanner::sc_enter( c_like_comment_context ); Scanner::strbuf().append( yytext, yyleng ); }
+<c_like_comment_context>[^*\n] { Scanner::strbuf().append( yytext, yyleng ); }
+<c_like_comment_context>"*"+[^/\n] { Scanner::strbuf().append( yytext, yyleng ); }
+<c_like_comment_context>"*"+\n { Scanner::strbuf().append( yytext, yyleng ); Scanner::fileloc.newline(); }
+<c_like_comment_context>\n { Scanner::strbuf().append( yytext, yyleng ); Scanner::fileloc.newline(); }
 <c_like_comment_context>"*"+"/" {
   if( Scanner::sc_leave() ) {
-    Scanner::strbuf().write( yyleng, yytext );
-    Scanner::comments.append( new Comment_t( Scanner::strbuf().m_storage, Scanner::fileloc_mlt ) );
+    Scanner::strbuf().append( yytext, yyleng );
+    Scanner::comments.append( new Comment_t( Scanner::strbuf().c_str(), Scanner::fileloc_mlt ) );
   }
 }
 
-<INITIAL,source_code_context>"//" { Scanner::sc_enter( cpp_like_comment_context ); Scanner::strbuf().write( yyleng, yytext ); }
-<cpp_like_comment_context>[^\n] { Scanner::strbuf().write( yyleng, yytext ); }
+<INITIAL,source_code_context>"//" { Scanner::sc_enter( cpp_like_comment_context ); Scanner::strbuf().append( yytext, yyleng ); }
+<cpp_like_comment_context>[^\n] { Scanner::strbuf().append( yytext, yyleng ); }
 <cpp_like_comment_context>\n {
   if( Scanner::sc_leave() ) {
-    Scanner::comments.append( new Comment_t( Scanner::strbuf().m_storage, Scanner::fileloc_mlt ) );
+    Scanner::comments.append( new Comment_t( Scanner::strbuf().c_str(), Scanner::fileloc_mlt ) );
   }
   Scanner::fileloc.newline();
 }
@@ -170,6 +169,8 @@ decimal_number [0-9]+
 
 Scanner::Include_t* Scanner::include_stack = 0;
 
+std::string& Scanner::strbuf() { static std::string s_buffer; return s_buffer; }
+
 void
 Scanner::push() {
   YY_BUFFER_STATE state = YY_CURRENT_BUFFER;
@@ -220,8 +221,6 @@ Scanner::parse( char const* _filename, Isa& _isa ) {
     return false;
   bracecount = 0;
   scs.clear();
-  Str::Buf buffer( Str::Buf::Recycle );
-  s_stringbuffer = &buffer;
   
 #if 0
   // This code is only for testing the lexical analyzer
@@ -402,10 +401,10 @@ Scanner::add_lookupdir( char const* _dir ) {
   }
 #endif
   
-  Str::Buf buffer( Str::Buf::Recycle );
-  for( intptr_t capacity = 128; true; capacity *= 2 ) {
+  std::string buffer;
+  for (intptr_t capacity = 128; true; capacity *= 2) {
     char storage[capacity];
-    if( not getcwd( storage, capacity ) ) {
+    if (not getcwd( storage, capacity )) {
       if( errno != ERANGE ) throw CWDError;
       continue; 
     }
@@ -430,28 +429,26 @@ Scanner::add_lookupdir( char const* _dir ) {
       }
       cv_dir[len] = 0;
     }
-    buffer.write( storage );
-    buffer.write( "/" ).write( cv_dir );
+    buffer = buffer + storage + "/" + cv_dir;
 #else
     assert( storage[0] == '/' ); // a directory path does not start with '/' on a windows host !
-    buffer.write( storage );
-    buffer.write( "/" ).write( _dir );
+    buffer = buffer + storage + "/" + _dir;
 #endif
-    s_lookupdirs.push_back( buffer.m_storage );
+    s_lookupdirs.push_back( buffer.c_str() );
     break;
   }
   
 }
 
 ConstStr_t
-Scanner::locate( char const* _name ) {
-  Str::Buf buffer( Str::Buf::Recycle );
-  
-  for( std::vector<ConstStr_t>::iterator iter = s_lookupdirs.begin(); iter != s_lookupdirs.end(); iter++ ) {
-    buffer.clear().write( iter->str() ).write( "/" ).write( _name );
-    if( access( buffer.m_storage, R_OK ) != 0 ) continue;
-    return buffer.m_storage;
-  }
+Scanner::locate( char const* _name )
+{
+  for (std::vector<ConstStr_t>::iterator iter = s_lookupdirs.begin(); iter != s_lookupdirs.end(); iter++)
+    {
+      std::string buffer = std::string() + iter->str() + "/" + _name;
+      if (access( buffer.c_str(), R_OK ) != 0) continue;
+      return buffer.c_str();
+    }
   return _name;
 }
 
@@ -484,7 +481,7 @@ Scanner::sc_leave() {
   }
 
   if( newsc == INITIAL ) return true;
-  strbuf().write( yyleng, yytext );
+  strbuf().append( yytext, yyleng );
   return false;
 }
 
