@@ -47,7 +47,7 @@ CiscGenerator::CiscGenerator()
 */
 void
 
-CiscGenerator::OpCode_t::size_attrs( unsigned int prefixsize, unsigned int fullsize, bool vlen ) {
+CiscOpCode_t::size_attrs( unsigned int prefixsize, unsigned int fullsize, bool vlen ) {
   assert( m_prefixsize == 0 );
   m_prefixsize = prefixsize;
   unsigned int mbsz = maskbytesize();
@@ -60,7 +60,7 @@ CiscGenerator::OpCode_t::size_attrs( unsigned int prefixsize, unsigned int fulls
 
 /** Optimize the size of OpCode object: upper zero-mask bits are stripped. */
 void
-CiscGenerator::OpCode_t::optimize( bool is_little_endian ) {
+CiscOpCode_t::optimize( bool is_little_endian ) {
   unsigned int stripped_size = m_prefixsize;
   if (is_little_endian) {
     for (; stripped_size > 0; stripped_size -= 1) {
@@ -90,8 +90,10 @@ CiscGenerator::OpCode_t::optimize( bool is_little_endian ) {
  *    - Equal
  */
 
-CiscGenerator::OpCode_t::Location_t
-CiscGenerator::OpCode_t::locate( CiscGenerator::OpCode_t const& _that ) const {
+OpCode_t::Location_t
+CiscOpCode_t::locate( OpCode_t const& _oc ) const
+{
+  CiscOpCode_t const& _that = dynamic_cast<CiscOpCode_t const&>( _oc );
   /* this is named A and _that is named B */
   unsigned int abytesize = maskbytesize(), bbytesize = _that.maskbytesize(), maxsize = std::max( abytesize, bbytesize );
   bool some_a_outside_B = false, some_b_outside_A = false;
@@ -111,40 +113,12 @@ CiscGenerator::OpCode_t::locate( CiscGenerator::OpCode_t const& _that ) const {
   return table[(some_a_outside_B ? 1 : 0) | (some_b_outside_A ? 2 : 0)];
 }
 
-/*
- *  @brief update the topology; linking subject to argument opcode
- *  @param _upper the object being linked to
- */
-
-void
-CiscGenerator::OpCode_t::setupper( OpCode_t* _upper ) {
-  if( not m_upper ) {
-    m_upper = _upper;
-    _upper->m_lowercount += 1;
-  } else if( m_upper->locate( *_upper ) == Inside ) {
-    m_upper->m_lowercount -= 1;
-    m_upper = _upper;
-    _upper->m_lowercount += 1;
-  }
-}
-  
-/*
- *  @brief update the topology; unlink subject opcode
- */
-
-void
-CiscGenerator::OpCode_t::unsetupper() {
-  if( not m_upper ) return;
-  m_upper->m_lowercount -= 1;
-  m_upper = 0;
-}
-  
 /**  @brief matches (or not) OpCode bytes according to the OpCode instance
  *   @param _oc the opcode which bytes are to be matched by the OpCode instance
  *   @return true on successful match
  */
 bool
-CiscGenerator::OpCode_t::match( OpCode_t const& _oc ) const {
+CiscOpCode_t::match( CiscOpCode_t const& _oc ) const {
   unsigned int bytesize = std::min( maskbytesize(), _oc.maskbytesize() );
   for( unsigned int byte = 0; byte < bytesize; ++byte ) {
     if( (_oc.m_bits[byte] & m_mask[byte]) != m_bits[byte] )
@@ -158,13 +132,14 @@ CiscGenerator::OpCode_t::match( OpCode_t const& _oc ) const {
     @return a reference to the ostream
 */
 std::ostream&
-operator<<( std::ostream& _sink, CiscGenerator::OpCode_t const& _oc ) {
+CiscOpCode_t::details( std::ostream& _sink ) const
+{
   char hex[] = "0123456789abcdef";
   uint32_t byte;
-  _sink << "{size: " << _oc.maskbytesize() << ", mask: 0x";
-  for( unsigned int idx = 0; idx < _oc.maskbytesize(); ++ idx ) { byte = _oc.m_mask[idx]; _sink << hex[byte/16] << hex[byte%16]; }
+  _sink << "{size: " << this->maskbytesize() << ", mask: 0x";
+  for( unsigned int idx = 0; idx < this->maskbytesize(); ++ idx ) { byte = this->m_mask[idx]; _sink << hex[byte/16] << hex[byte%16]; }
   _sink << ", bits: 0x";
-  for( unsigned int idx = 0; idx < _oc.maskbytesize(); ++ idx ) { byte = _oc.m_bits[idx]; _sink << hex[byte/16] << hex[byte%16]; }
+  for( unsigned int idx = 0; idx < this->maskbytesize(); ++ idx ) { byte = this->m_bits[idx]; _sink << hex[byte/16] << hex[byte%16]; }
   _sink << "}";
   return _sink;
 }
@@ -222,8 +197,10 @@ CiscGenerator::finalize()
   // Finalize size information
   m_code_capacity = ((*m_insnsizes.rbegin()) + 7) / 8;
   
+  Vect_t<Operation_t> const& operations = isa().m_operations;
+  
   // Process the opcodes needed by the decoder
-  for (Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op) {
+  for (Vect_t<Operation_t>::const_iterator op = operations.begin(); op < operations.end(); ++ op) {
     // compute prefix size
     unsigned int prefixsize = 0, insn_size = 0;
     bool vlen = false, outprefix = false, vword = false;
@@ -250,7 +227,7 @@ CiscGenerator::finalize()
     m_opcodes[*op].size_attrs( prefixsize, insn_size, vlen );
     
     // compute opcode
-    OpCode_t& oc = opcode( *op );
+    CiscOpCode_t& oc = opcode( *op );
     for (FieldIterator fi( isa().m_little_endian, (**op).m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
       if (fi.item().sizes() != 1) break;
       if (not fi.item().hasopcode()) continue;
@@ -273,75 +250,7 @@ CiscGenerator::finalize()
     oc.optimize( isa().m_little_endian );
   }
   
-  /* Generating the topological graph of operations, and checking for
-   * conflicts (overlapping encodings) 
-   */
-  for( Vect_t<Operation_t>::const_iterator op1 = isa().m_operations.begin(); op1 < isa().m_operations.end(); ++op1 ) {
-    OpCode_t& opcode1 = opcode( *op1 );
-    for( Vect_t<Operation_t>::const_iterator op2 = isa().m_operations.begin(); op2 < op1; ++ op2 ) {
-      OpCode_t& opcode2 = opcode( *op2 );
-
-      switch( opcode1.locate( opcode2 ) ) {
-      case OpCode_t::Outside: break; // No problem
-      case OpCode_t::Overlaps:
-        if      (isa().m_user_orderings.count( std::make_pair( *op1, *op2 ) ) > 0)
-          {
-            opcode1.setupper( &opcode2 );
-            cerr << "operation `" << (**op1).m_symbol << "' is a forced specialization of operation `" << (**op2).m_symbol << "'" << endl;
-            break;
-          }
-        else if (isa().m_user_orderings.count( std::make_pair( *op2, *op1 ) ) > 0)
-          {
-            opcode2.setupper( &opcode1 );
-            cerr << "operation `" << (**op2).m_symbol << "' is a forced specialization of operation `" << (**op1).m_symbol << "'" << endl;
-            break;
-          }
-      case OpCode_t::Equal:
-        (**op1).m_fileloc.err( "error: operation `%s' conflicts with operation `%s'", (**op1).m_symbol.str(), (**op2).m_symbol.str() );
-        (**op2).m_fileloc.err( "operation `%s' was declared here", (**op2).m_symbol.str() );
-        cerr << (**op1).m_symbol << ": " << opcode1 << endl;
-        cerr << (**op2).m_symbol << ": " << opcode2 << endl;
-        throw GenerationError;
-        break;
-      case OpCode_t::Inside:
-        opcode2.setupper( &opcode1 );
-        cerr << "operation `" << (**op2).m_symbol << "' is a specialization of operation `" << (**op1).m_symbol << "'" << endl;
-        break;
-      case OpCode_t::Contains:
-        opcode1.setupper( &opcode2 );
-        cerr << "operation `" << (**op1).m_symbol << "' is a specialization of operation `" << (**op2).m_symbol << "'" << endl;
-        break;
-      }
-    }
-  }
-  // Topological sort to fix potential precedence problems
-  {
-    intptr_t opcount = isa().m_operations.size();
-    Vect_t<Operation_t> operations( opcount );
-    intptr_t
-      sopidx = opcount, // operation source table index
-      dopidx = opcount, // operation destination table index
-      inf_loop_tracker = opcount; // counter tracking infinite loop
-    
-    while( dopidx > 0 ) {
-      sopidx = (sopidx + opcount - 1) % opcount;
-      Operation_t* op = isa().m_operations[sopidx];
-      if( not op ) continue;
-      
-      OpCode_t& oc = opcode( op );
-      if( oc.m_lowercount > 0 ) {
-        // There is some operations to be placed before this one 
-        --inf_loop_tracker;
-        assert( inf_loop_tracker >= 0 );
-        continue;
-      }
-      inf_loop_tracker = opcount;
-      operations[--dopidx] = op;
-      isa().m_operations[sopidx] = 0;
-      oc.unsetupper();
-    }
-    isa().m_operations = operations;
-  }
+  this->toposort();
 }
 
 void
@@ -469,7 +378,7 @@ CiscGenerator::codetype_impl( Product_t& _product ) const {
 
 void
 CiscGenerator::insn_bits_code( Product_t& _product, Operation_t const& _op ) const {
-  OpCode_t const& oc = opcode( &_op );
+  CiscOpCode_t const& oc = opcode( &_op );
   _product.code( "CodeType( (uint8_t*)( \"" );
   char const* hex = "0123456789abcdef";
   for( unsigned int idx = 0; idx < oc.maskbytesize(); ++idx )
@@ -479,7 +388,7 @@ CiscGenerator::insn_bits_code( Product_t& _product, Operation_t const& _op ) con
 
 void
 CiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) const {
-  OpCode_t const& oc = opcode( &_op );
+  CiscOpCode_t const& oc = opcode( &_op );
   _product.code( "CodeType( (uint8_t*)( \"" );
   char const* hex = "0123456789abcdef";
   for( unsigned int idx = 0; idx < oc.maskbytesize(); ++idx )
@@ -495,7 +404,7 @@ CiscGenerator::insn_match_ifexpr( Product_t& _product, char const* _code, char c
 void
 CiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const
 {
-  OpCode_t const& oc = opcode( &_op );
+  CiscOpCode_t const& oc = opcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "assert( \"Encode method does not work with variable length operations.\" and false );\n" );
@@ -550,7 +459,7 @@ CiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
 void
 CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
-  OpCode_t const& oc = opcode( &_op );
+  CiscOpCode_t const& oc = opcode( &_op );
   _product.code( "if (this->encoding.size < %u) throw CodeType::NotEnoughBytes;\n", oc.m_fullsize );
   _product.code( "this->encoding.size = %u;\n", oc.m_fullsize );
   if (oc.m_vlen) {
@@ -636,14 +545,14 @@ CiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _ref, char 
   _product.code( "%s.match( %s )", _bytes, _ref );
 }
 
-CiscGenerator::OpCode_t const&
+CiscOpCode_t const&
 CiscGenerator::opcode( Operation_t const* _op ) const {
   OpCodes_t::const_iterator res = m_opcodes.find( _op );
   assert( res != m_opcodes.end() );
   return res->second;
 }
 
-CiscGenerator::OpCode_t&
+CiscOpCode_t&
 CiscGenerator::opcode( Operation_t const* _op ) {
   OpCodes_t::iterator res = m_opcodes.find( _op );
   assert( res != m_opcodes.end() );
