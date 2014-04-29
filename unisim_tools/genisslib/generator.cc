@@ -322,9 +322,13 @@ Generator::isastats()
     typedef std::map<ActionProto_t const*,uint64_t> ActionCount;
     ActionCount actioncount;
     for (Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op) {
+      log(3) << (**op).m_symbol.str() << ':';
       for (Vect_t<Action_t>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action) {
-        actioncount[(**action).m_actionproto] += 1;
+        ActionProto_t const* ap = (**action).m_actionproto;
+        log(3) << " ." << ap->m_symbol.str();
+        actioncount[ap] += 1;
       }
+      log(3) << '\n';
     }
     for (ActionCount::const_iterator itr = actioncount.begin(); itr != actioncount.end(); ++itr) {
       log(1) << "   ." << itr->first->m_symbol.str() << ": " << itr->second << '\n';
