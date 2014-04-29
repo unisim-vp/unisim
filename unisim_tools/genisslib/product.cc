@@ -81,7 +81,7 @@ Product_t&
 Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
   if( m_sourcelines ) {
     require_newline();
-    code( "#line %u \"%s\"\n", _fileloc.m_line, _fileloc.m_name.str() );
+    code( "#line %u \"%s\"\n", _fileloc.getline(), _fileloc.getname().str() );
   }
   va_list args;
   for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {

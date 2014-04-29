@@ -55,6 +55,9 @@ void parse_binary_number( char const* s, int length, unsigned int *value );
 # define yylex_destroy() yy_delete_buffer (YY_CURRENT_BUFFER)
 #endif
 
+/* This is for column counting. */
+#define YY_USER_ACTION Scanner::fileloc.newtoken( yyleng );
+
 %}
 
 identifier [a-zA-Z_][a-zA-Z0-9_]*
@@ -72,7 +75,7 @@ decimal_number [0-9]+
 
 \" { Scanner::sc_enter( string_context ); }
 <string_context>[^\"\n] { Scanner::strbuf().write( yyleng, yytext ); }
-<string_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.m_line++; }
+<string_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.newline(); }
 <string_context>\\\" { Scanner::strbuf().write( yyleng, yytext ); }
 <string_context>\" { if( Scanner::sc_leave() ) { yylval.volatile_string = Scanner::strbuf().m_storage; return TOK_STRING; }
 }
@@ -83,7 +86,7 @@ decimal_number [0-9]+
 <source_code_context>\' { Scanner::sc_enter( char_context ); Scanner::strbuf().write( yyleng, yytext ); }
 <source_code_context>\{ { Scanner::bracecount++; Scanner::strbuf().write( yyleng, yytext ); }
 <source_code_context>\" { Scanner::sc_enter( string_context ); Scanner::strbuf().write( yyleng, yytext ); }
-<source_code_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.m_line++; }
+<source_code_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.newline(); }
 <source_code_context>\} {
   if( Scanner::sc_leave() ) {
     yylval.sourcecode = new SourceCode_t( Scanner::strbuf().m_storage, Scanner::fileloc_mlt );
@@ -92,15 +95,15 @@ decimal_number [0-9]+
 }
 
 <char_context>[^\'\n] { Scanner::strbuf().write( yyleng, yytext ); }
-<char_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.m_line++; }
+<char_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.newline(); }
 <char_context>\\\' { Scanner::strbuf().write( yyleng, yytext ); }
 <char_context>\' { Scanner::sc_leave(); }
 
 <INITIAL,source_code_context>"/*" { Scanner::sc_enter( c_like_comment_context ); Scanner::strbuf().write( yyleng, yytext ); }
 <c_like_comment_context>[^*\n] { Scanner::strbuf().write( yyleng, yytext ); }
 <c_like_comment_context>"*"+[^/\n] { Scanner::strbuf().write( yyleng, yytext ); }
-<c_like_comment_context>"*"+\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.m_line++; }
-<c_like_comment_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.m_line++; }
+<c_like_comment_context>"*"+\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.newline(); }
+<c_like_comment_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.newline(); }
 <c_like_comment_context>"*"+"/" {
   if( Scanner::sc_leave() ) {
     Scanner::strbuf().write( yyleng, yytext );
@@ -114,7 +117,7 @@ decimal_number [0-9]+
   if( Scanner::sc_leave() ) {
     Scanner::comments.append( new Comment_t( Scanner::strbuf().m_storage, Scanner::fileloc_mlt ) );
   }
-  Scanner::fileloc.m_line++;
+  Scanner::fileloc.newline();
 }
 
 {binary_number} { parse_binary_number( yytext, yyleng, &yylval.uinteger ); return TOK_INTEGER; }
@@ -126,8 +129,8 @@ decimal_number [0-9]+
     yylval.persistent_string = ConstStr_t( yytext, Scanner::symbols );
   return token;
 }
-\\\n { Scanner::fileloc.m_line++; }
-\n { Scanner::fileloc.m_line++; return TOK_ENDL; }
+\\\n { Scanner::fileloc.newline(); }
+\n { Scanner::fileloc.newline(); return TOK_ENDL; }
 ";" { return TOK_ENDL; }
 "*" { return '*'; }
 "." { return '.'; }
@@ -251,7 +254,7 @@ Scanner::open( ConstStr_t _filename ) {
   }
   
   isa().m_includes.push_back( _filename );
-  fileloc.assign( _filename, 1 );
+  fileloc.assign( _filename, 1, 1 );
   return true;
 }
 
