@@ -35,9 +35,11 @@
 
 decl {
 
+#include <unisim/util/arithmetic/arithmetic.hh>
 #include <iosfwd>
 #include <cmath>
 
+using namespace unisim::util::arithmetic;
 
 }
 

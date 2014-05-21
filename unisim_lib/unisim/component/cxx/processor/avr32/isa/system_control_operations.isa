@@ -2,6 +2,11 @@
 
 op breakpoint(0b1101011[7]:0b00111[5]:0b0011[4])
 
+breakpoint.execute={
+
+	return cpu->Breakpoint();
+}
+
 breakpoint.disasm={
 
 	os << "breakpoint\t"<< endl;
@@ -20,6 +25,13 @@ cache.disasm={
 
 op csrf(0b11010[5]:0b10[2]:bp5[5]:0b0011[4])
 
+csrf.execute={
+
+	uint32_t result =  cpu->GetSR() & ~ ( 1<< bp5 );
+	cpu->SetSR(result);
+	return true;
+}
+
 csrf.disasm={
 
 	os << "csrf\t0x" << std::hex << (int)bp5 << endl;
@@ -28,6 +40,14 @@ csrf.disasm={
 //CSRFCZ - copy status register flag to C and Z
 
 op csrfcz(0b11010[5]:0b00[2]:bp5[5]:0b0011[4])
+
+csrfcz.execute={
+	
+	uint8_t value = (cpu->GetSR() >> bp5 ) & 1;
+	cpu->SetSR_C(value);
+	cpu->SetSR_Z(value);
+	return true;
+}
 
 csrfcz.disasm={
 

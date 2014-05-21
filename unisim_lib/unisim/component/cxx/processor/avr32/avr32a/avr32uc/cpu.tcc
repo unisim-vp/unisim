@@ -236,9 +236,229 @@ void CPU<CONFIG>::Reset()
 template <class CONFIG>
 bool CPU<CONFIG>::Fetch(typename CONFIG::address_t addr, void *buffer,uint32_t size)
 {
-	
 	return IHSBRead(addr,buffer,size);
 }
+
+template <class CONFIG>
+bool CPU<CONFIG>::UintLoadByte(unsigned int rd,uint32_t address)
+{
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[1];
+        bool status=DHSBRead(addr,buffer, 1);                 // read word 
+
+	if(unlikely(!status)) return false;
+	uint32_t value=buffer[0];       
+	SetGPR(rd,value);                                     // put in register 
+
+	//MonitorLoad(addr,1);
+	
+	return true;
+}
+template <class CONFIG>
+bool CPU<CONFIG>::UintLoadHW(unsigned int rd,uint32_t address)
+{
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[2];
+        bool status=DHSBRead(addr,buffer,2);
+	if(unlikely(!status)) return false;
+	uint32_t value=(buffer[0]<<8) || (buffer[1]);
+	SetGPR(rd,value);
+
+	//MonitorLoad(addr, 2);
+	
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::IntLoadWord(unsigned int rd,uint32_t address)
+{
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[4];
+        bool status=DHSBRead(addr,buffer,4);
+	if(unlikely(!status)) return false;
+	uint32_t value=(buffer[0]<<24) | (buffer[1]<<16) | (buffer[2] << 8 );
+	SetGPR(rd,value);
+
+	//MonitorLoad(addr, 4);
+	
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::SintLoadByte(unsigned int rd,uint32_t address)
+{
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[1];
+        bool status=DHSBRead(addr,buffer,1);
+	if(unlikely(!status)) return false;
+	uint32_t value=buffer[0];   
+	value=SignExtend(value,sizeof(value));
+	SetGPR(rd,value);
+	//MonitorLoad(addr,1);
+	
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::SintLoadHW(unsigned int rd,uint32_t address)
+{
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[1];
+        bool status=DHSBRead(addr,buffer,2);
+	if(unlikely(!status)) return false;
+	uint32_t value = (buffer[0]<<8) || (buffer[1]);
+	value= SignExtend((uint32_t)value,16);
+	SetGPR(rd,value);
+	//MonitorLoad(addr,2);
+	
+	return true;
+}
+
+
+
+
+template <class CONFIG>
+
+bool CPU<CONFIG>::IntStoreByte(unsigned int rs,uint32_t adress)
+{
+	typename CONFIG::address_t addr=adress;
+	uint8_t value=GetGPR(rs);
+	uint8_t buffer[1];
+	buffer[0]=value;
+	bool status=DHSBWrite(addr,buffer,1);
+	if(unlikely(!status)) return false;
+	//MonitorStore(addr, 1);
+	return true;
+}
+template <class CONFIG>
+bool CPU<CONFIG>::IntStoreHW(unsigned int rs,uint32_t address)
+{
+	typename CONFIG::address_t addr=address;
+	uint16_t value=GetGPR(rs);
+	uint8_t buffer[2];
+	buffer[0]=value & CONFIG::BOTTOM_BYTE_MASK;
+	buffer[1]=value & CONFIG::LOWER_BYTE_MASK >> 8;
+	bool status=DHSBWrite(addr,buffer,2);
+	if(unlikely(!status)) return false;
+	//MonitorStore(addr, 2);
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::IntStoreWord(unsigned int rs,uint32_t address)
+{
+	typename CONFIG::address_t addr=address;
+	uint32_t value=GetGPR(rs);
+	uint8_t buffer[4];
+	buffer[0]=value & CONFIG::BOTTOM_BYTE_MASK;
+	buffer[1]=value & CONFIG::LOWER_BYTE_MASK >> 8;
+	buffer[2]=value & CONFIG::UPPER_BYTE_MASK >> 16;
+	buffer[3]=value & CONFIG::TOP_BYTE_MASK >>  24;
+	bool status=DHSBWrite(addr,buffer,4);
+	if(unlikely(!status)) return false;
+	//MonitorStore(addr, 4);
+	return true;
+}
+template <class CONFIG>
+bool CPU<CONFIG>::MemReadByte(uint32_t address, uint32_t& value)
+{
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[1];
+	bool status=DHSBRead(addr,buffer,1);
+	if(unlikely(!status)) return false;
+	value =  buffer[0];
+	value= SignExtend((uint32_t)value,16);
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::MemReadHW(uint32_t address, uint32_t& value)
+{
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[2];
+	bool status=DHSBRead(addr,buffer,2);
+	if(unlikely(!status)) return false;
+	value = (buffer[0]<<8) || (buffer[1]);
+	value= SignExtend((uint32_t)value,16);
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::MemReadWord(uint32_t address, uint32_t& value)
+{
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[4];
+	bool status=DHSBRead(addr,buffer,4);
+	if(unlikely(!status)) return false;
+	value=(buffer[0]<<24) | (buffer[1]<<16) | (buffer[2] << 8 );
+	
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::MemWriteByte(uint32_t value,uint32_t address)
+{	
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[1];
+	buffer[0]=value;
+	bool status=DHSBWrite( addr,buffer,1);
+	if(unlikely(!status)) return false;
+	//MonitorStore(addr,1);
+	return true;
+}
+template <class CONFIG>
+bool CPU<CONFIG>::MemWriteHW(uint32_t value,uint32_t address)
+{	
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[2];
+	buffer[0]=value & CONFIG::BOTTOM_BYTE_MASK;
+	buffer[1]=value & CONFIG::LOWER_BYTE_MASK >> 8;
+	bool status=DHSBWrite( addr,buffer,2);
+	if(unlikely(!status)) return false;
+	//MonitorStore(addr,2);
+	return true;
+}
+template <class CONFIG>
+bool CPU<CONFIG>::MemWriteWord(uint32_t value,uint32_t address)
+{	
+	typename CONFIG::address_t addr=address;
+	uint8_t buffer[4];
+	buffer[0]=value & CONFIG::BOTTOM_BYTE_MASK;
+	buffer[1]=value & CONFIG::LOWER_BYTE_MASK >> 8;
+	buffer[2]=value & CONFIG::UPPER_BYTE_MASK >> 16;
+	buffer[3]=value & CONFIG::TOP_BYTE_MASK >>  24;
+	bool status=DHSBWrite( addr,buffer,4);
+	if(unlikely(!status)) return false;
+	//MonitorStore(addr,4);
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::EvaluateCond(uint8_t cond)
+{
+	switch (cond)	
+	{
+		case 0: return GetSR_Z();
+		case 1: return !GetSR_Z();
+		case 2: return !GetSR_C();
+		case 3: return GetSR_C();
+		case 4: return GetSR_N()==GetSR_V();
+		case 5: return (GetSR_N() && !GetSR_V()) || ( !GetSR_N() && GetSR_V());
+		case 6: return GetSR_N();
+		case 7: return !GetSR_N();
+		case 8: return GetSR_C() || GetSR_Z();
+		case 9: return !GetSR_Z() && (GetSR_N()==GetSR_V());
+		case 10:return !GetSR_Z() && ((GetSR_N() && !GetSR_V()) || ( !GetSR_N() && GetSR_V()));
+		case 11:return !GetSR_C() && !GetSR_Z();
+		case 12:return GetSR_V();
+		case 13:return !GetSR_V();
+		case 14:return GetSR_Q();
+		case 15:return true;
+	}
+
+
+ return false;
+} 
 
 template <class CONFIG>
 void CPU<CONFIG>::StepOneInstruction()
@@ -399,6 +619,7 @@ unisim::util::debug::Register *CPU<CONFIG>::GetRegister(const char *name)
 	return 0;
 }
 
+/*
 template <class CONFIG>
 bool CPU<CONFIG>::IHSBRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size)
 {
@@ -419,6 +640,7 @@ bool CPU<CONFIG>::DHSBWrite(typename CONFIG::physical_address_t physical_addr, c
 	// Not implemented here
 	return false;
 }
+*/
 
 template <class CONFIG>
 void CPU<CONFIG>::SetNMIREQ()
@@ -518,6 +740,37 @@ bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void 
 	// TODO
 	return false;
 }
+template <class CONFIG>
+bool CPU<CONFIG>::Breakpoint()
+{
+	if(GetSR_DM())
+	{
+		if(avr32_t2h_syscalls_import)
+		{
+			unisim::service::interfaces::AVR32_T2H_Syscalls::Status status = avr32_t2h_syscalls_import->HandleEmulatorBreakpoint();
+			switch(status)
+			{
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR:
+					logger << DebugWarning << "Was not able to handle system call because of a simulator error" << EndDebugWarning;
+					return false;
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::OK:
+					return true;
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::EXIT:
+					logger << DebugInfo << "Program exited normally" << EndDebugInfo;
+					Stop(0);
+					return true;
+			}
+		}
+		else
+		{
+			logger << DebugWarning << "Attempt to execute a breakpoint instruction while no system call translator is available results in executing the breakpoint as a nop." << EndDebugWarning;
+		}
+	}
+
+	return true;
+}
+
+
 
 } // end of namespace avr32uc
 } // end of namespace avr32a

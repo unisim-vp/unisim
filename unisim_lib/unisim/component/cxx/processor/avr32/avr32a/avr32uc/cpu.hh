@@ -182,12 +182,23 @@ public:
 	uint32_t GetSR_N() { return (GetSR() & CONFIG::SR_N_MASK) >> CONFIG::SR_N_OFFSET; }
 	uint32_t GetSR_Z() { return (GetSR() & CONFIG::SR_Z_MASK) >> CONFIG::SR_Z_OFFSET; }
 	uint32_t GetSR_C() { return (GetSR() & CONFIG::SR_C_MASK) >> CONFIG::SR_C_OFFSET; }
-
+	
+	uint32_t GetEvba() {return evba;}
+	uint32_t GetAcba(){return acba;}
+	uint32_t GetCpucr(){return cpucr;}
+	uint32_t GetConfig0(){return config0;}
+	uint32_t GetConfig1(){return config1;}
+	uint32_t GetCount(){return count;}
+	uint32_t GetCompare(){return compare;}
+		
 	void SetGPR(unsigned int reg_num, uint32_t val) { if(reg_num != 15) gpr[reg_num] = val; else Branch(val); }
 	void SetSP(uint32_t val) { gpr[13] = val; }
+	void SetLR(uint32_t val) { gpr[14]= val; }
 	void SetSP_app(uint32_t val){sp_app=val;}
 	void SetSP_sys(uint32_t val){sp_sys=val;}
-	
+
+	      
+        
 	void Branch(uint32_t target_addr) { npc = target_addr; }
 
 	void SetHW_SR(uint32_t val) { sr = (val & ~CONFIG::HW_SR_MASK) | (val & CONFIG::HW_SR_MASK); }
@@ -251,7 +262,16 @@ public:
 	void SetSR_Z(uint32_t val) { SetSR((GetSR() & ~CONFIG::SR_Z_MASK) | ((val << CONFIG::SR_Z_OFFSET) & CONFIG::SR_Z_MASK)); }
 	void SetSR_C(uint32_t val) { SetSR((GetSR() & ~CONFIG::SR_C_MASK) | ((val << CONFIG::SR_C_OFFSET) & CONFIG::SR_C_MASK)); }
 	
-
+	      
+        void SetEvba(uint32_t val) { evba=val;}
+	void SetAcba(uint32_t val) { acba=val;}
+	void SetCpucr(uint32_t val){cpucr=val;}
+	void SetConfig0(uint32_t val){config0=val;}
+	void SetConfig1(uint32_t val){config1=val;}
+	void SetCount(uint32_t val){count=val;}
+	void SetCompare(uint32_t val){compare=val;}
+	void SetSS_RAR(uint32_t val){ss_rar=val;}
+	void SetSS_RSR(uint32_t val){ss_rsr=val;}
 	void SwitchExecutionMode(uint32_t execution_mode);
 	uint32_t GetPriorityLevel(uint32_t execution_mode);
 	
@@ -312,8 +332,40 @@ public:
 	//=====================================================================
 	
 	bool Fetch(typename CONFIG::address_t addr,void *buffer, uint32_t size);
+	
+	bool UintLoadByte(unsigned int rd,uint32_t addr);
+	bool UintLoadHW(unsigned int rd,uint32_t addr);
+	bool IntLoadWord(unsigned int rd,uint32_t addr);
+	bool SintLoadByte(unsigned int,uint32_t addr);
+	bool SintLoadHW(unsigned int rd,uint32_t addr);
+	
+
+	bool IntStoreByte(unsigned int rs,uint32_t addr);
+	bool IntStoreHW(unsigned int rs,uint32_t addr);
+	bool IntStoreWord(unsigned int rs,uint32_t addr);
+
+	bool MemReadByte(uint32_t adress,uint32_t& value);
+	bool MemReadHW(uint32_t adress,uint32_t& value);
+	bool MemReadWord(uint32_t adress,uint32_t& value);
+	bool MemWriteByte(uint32_t value,uint32_t adress);
+	bool MemWriteHW(uint32_t value,uint32_t adress);
+	bool MemWriteWord(uint32_t value,uint32_t adress);
+	
+	//=====================================================================
+	//=                         System call                               =
+	//=====================================================================
+
+	bool Breakpoint();
+
+	//=====================================================================
+	//=                                                                   =
+	//=====================================================================
+
+	bool EvaluateCond(uint8_t cond);	
+	
 protected:
 
+	
 	//=====================================================================
 	//=                         Timers handling                           =
 	//=====================================================================
@@ -355,9 +407,9 @@ protected:
 	//=                      Bus access methods                           =
 	//=====================================================================
 
-	virtual bool IHSBRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size);
-	virtual bool DHSBRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size);
-	virtual bool DHSBWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size);
+	virtual bool IHSBRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size) = 0;
+	virtual bool DHSBRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size) = 0;
+	virtual bool DHSBWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size) = 0;
 
 public:
 	inline void ProcessExceptions(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation) ALWAYS_INLINE;
@@ -392,20 +444,15 @@ private:
 
 	uint32_t gpr[16];   // register file gpr[15]=pc,gpr[14]=lr , gpr[13]=sp
 	uint32_t npc;       //address of next instruction
-	uint32_t sr;      // stack register
-	
 	uint32_t sp_app;      // sp shadow register for application mode
 	uint32_t sp_sys;      // sp shadow register for privileged mode
 
         //required system registers
 
+	uint32_t sr;      // stack register
         uint32_t evba;
 	uint32_t acba;
 	uint32_t cpucr;
-	//uint32_t ecr;
-	//uint32_t rsr_sup,rsr_int0,rsr_int1,rsr_int2,rsr_int3,rsr_ex,rsr_nmi;
-	//uint32_t rsr_dbg;
-	//uint32_t rar_sup,rar_int0,rar_int1,rar_int2,rar_int3,rar_ex,rar_nmi;
 	uint32_t config0;
 	uint32_t config1;
 	uint32_t count;
@@ -413,8 +460,11 @@ private:
 	 
 
 	//optional system registers
-	uint32_t rar_dbg;
+	uint32_t ecr;
+	uint32_t rsr_dbg;
+	uint32_t rar_dbg;	
 	uint32_t jecr;
+	
  	uint32_t josp;
 	uint32_t java_lv0,java_lv1,java_lv2,java_lv3,java_lv4,java_lv5,java_lv6,java_lv7;
 	uint32_t jtba;
@@ -427,11 +477,23 @@ private:
 	uint32_t tlbarlo;
 	uint32_t tlbarhi;
 	uint32_t pccnt;
-	uint32_t pcnt1;
-	uint32_t pcnt0;
+	uint32_t pcnt0,pcnt1;
 	uint32_t pccr;
 	uint32_t bear;
 	uint32_t mpuar0,mpuar1,mpuar2,mpuar3,mpuar4,mpuar5,mpuar6,mpuar7;
+	uint32_t mpupsr0,mpupsr1,mpupsr2,mpupsr3,mpupsr4,mpupsr5,mpupsr6,mpupsr7;
+	uint32_t mpucra,mpucrb;
+	uint32_t mpubra,mpubrb;
+	uint32_t mpuapra,mpuaprb;
+	uint32_t mpcr;
+	uint32_t ss_status;
+	uint32_t ss_adrf;
+	uint32_t ss_adrr;
+	uint32_t ss_adr0,ss_adr1;
+	uint32_t ss_sp_sys;
+	uint32_t ss_sp_app;
+	uint32_t ss_rar;
+	uint32_t ss_rsr;
 
 	
 	//=====================================================================

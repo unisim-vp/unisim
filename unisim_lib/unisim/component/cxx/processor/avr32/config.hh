@@ -174,7 +174,16 @@ public:
 	static const uint32_t PRIO_LEVEL_MODE_SUPERVISOR  = 0;   
 	static const uint32_t PRIO_LEVEL_MODE_APPLICATION = 0;    
 
+	//mask byte selector
+
+	static const uint32_t TOP_BYTE_MASK    = 0xFF000000;
+	static const uint32_t UPPER_BYTE_MASK  = 0x00FF0000;
+	static const uint32_t LOWER_BYTE_MASK  = 0x0000FF00;	
+	static const uint32_t BOTTOM_BYTE_MASK = 0x000000FF;
+
 	
+	static const uint32_t TOP_HW_MASK    = 0xFFFF0000;	
+	static const uint32_t BOTTOM_HW_MASK = 0x0000FFFF;
 };
 
 } // end of namespace avr32
