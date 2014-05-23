@@ -334,21 +334,22 @@ public:
 	bool Fetch(typename CONFIG::address_t addr,void *buffer, uint32_t size);
 	
 	bool UintLoadByte(unsigned int rd,uint32_t addr);
-	bool UintLoadHW(unsigned int rd,uint32_t addr);
-	bool IntLoadWord(unsigned int rd,uint32_t addr);
+	bool UintLoadHalfWord(unsigned int rd,uint32_t addr,bool swap);
+	bool IntLoadWord(unsigned int rd,uint32_t addr,bool swap);
 	bool SintLoadByte(unsigned int,uint32_t addr);
-	bool SintLoadHW(unsigned int rd,uint32_t addr);
-	
+	bool SintLoadHalfWord(unsigned int rd,uint32_t addr,bool swap);
+	bool LoadAndInsertByte(unsigned int rd,uint32_t address,uint8_t part);
+	bool LoadAndInsertHalfWord(unsigned int rd,uint32_t address,uint8_t part);
 
 	bool IntStoreByte(unsigned int rs,uint32_t addr);
-	bool IntStoreHW(unsigned int rs,uint32_t addr);
+	bool IntStoreHalfWord(unsigned int rs,uint32_t addr);
 	bool IntStoreWord(unsigned int rs,uint32_t addr);
 
 	bool MemReadByte(uint32_t adress,uint32_t& value);
-	bool MemReadHW(uint32_t adress,uint32_t& value);
+	bool MemReadHalfWord(uint32_t adress,uint32_t& value);
 	bool MemReadWord(uint32_t adress,uint32_t& value);
 	bool MemWriteByte(uint32_t value,uint32_t adress);
-	bool MemWriteHW(uint32_t value,uint32_t adress);
+	bool MemWriteHalfWord(uint32_t value,uint32_t adress);
 	bool MemWriteWord(uint32_t value,uint32_t adress);
 	
 	//=====================================================================
