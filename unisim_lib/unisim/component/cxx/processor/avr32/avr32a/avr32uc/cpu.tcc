@@ -223,11 +223,12 @@ void CPU<CONFIG>::Reset()
 {
 	instruction_counter = 0;
 	gpr[15]=0x80000000;
-	int i;
-        for(i=0;i<15;i++) {gpr[i]=0;}
-
+        for(int i=0;i<15;i++) {gpr[i]=0;}
+	npc=gpr[15];
         sr= CONFIG::SR_RESET_VALUE;
 
+	sp_app=0;
+	sp_sys=0;
 	CPU<CONFIG>::InvalidateDecodingCache();
 }
  
@@ -260,9 +261,8 @@ inline void CPU<CONFIG>::MonitorStore(typename CONFIG::address_t ea, uint32_t si
 
 
 template <class CONFIG>
-bool CPU<CONFIG>::UintLoadByte(unsigned int rd,uint32_t address)
+bool CPU<CONFIG>::UintLoadByte(unsigned int rd,typename CONFIG::address_t addr)
 {
-	typename CONFIG::address_t addr=address;
 	uint8_t buffer;
         bool status=DHSBRead(addr,&buffer, 1);                 // read word 
 
@@ -275,9 +275,8 @@ bool CPU<CONFIG>::UintLoadByte(unsigned int rd,uint32_t address)
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::UintLoadHalfWord(unsigned int rd,uint32_t address,bool swap=true)
+bool CPU<CONFIG>::UintLoadHalfWord(unsigned int rd,typename CONFIG::address_t addr,bool swap=true)
 {
-	typename CONFIG::address_t addr=address;
 	uint16_t buffer;
         bool status=DHSBRead(addr,&buffer,2);
 	if(unlikely(!status)) return false;
@@ -289,9 +288,8 @@ bool CPU<CONFIG>::UintLoadHalfWord(unsigned int rd,uint32_t address,bool swap=tr
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::IntLoadWord(unsigned int rd,uint32_t address,bool swap=false)
+bool CPU<CONFIG>::IntLoadWord(unsigned int rd,typename CONFIG::address_t addr,bool swap=false)
 {
-	typename CONFIG::address_t addr=address;
 	uint32_t buffer;
         bool status=DHSBRead(addr,&buffer,4);
 	if(unlikely(!status)) return false;
@@ -303,9 +301,8 @@ bool CPU<CONFIG>::IntLoadWord(unsigned int rd,uint32_t address,bool swap=false)
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::SintLoadByte(unsigned int rd,uint32_t address)
+bool CPU<CONFIG>::SintLoadByte(unsigned int rd,typename CONFIG::address_t addr)
 {
-	typename CONFIG::address_t addr=address;
 	uint8_t buffer;
         bool status=DHSBRead(addr,&buffer,1);
 	if(unlikely(!status)) return false;
@@ -318,9 +315,8 @@ bool CPU<CONFIG>::SintLoadByte(unsigned int rd,uint32_t address)
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::SintLoadHalfWord(unsigned int rd,uint32_t address,bool swap=false)
+bool CPU<CONFIG>::SintLoadHalfWord(unsigned int rd,typename CONFIG::address_t addr,bool swap=false)
 {
-	typename CONFIG::address_t addr=address;
 	uint16_t buffer;
         bool status=DHSBRead(addr,&buffer,2);
 	if(unlikely(!status)) return false;
@@ -333,43 +329,8 @@ bool CPU<CONFIG>::SintLoadHalfWord(unsigned int rd,uint32_t address,bool swap=fa
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::IntStoreByte(unsigned int rs,uint32_t adress)
+bool CPU<CONFIG>::LoadAndInsertByte(unsigned int rd,typename CONFIG::address_t addr,uint8_t part)
 {
-	typename CONFIG::address_t addr=adress;
-	uint8_t value=GetGPR(rs);
-	uint8_t buffer=value;
-	bool status=DHSBWrite(addr,&buffer,1);
-	if(unlikely(!status)) return false;
-	MonitorStore(addr, 1);
-	return true;
-}
-template <class CONFIG>
-bool CPU<CONFIG>::IntStoreHalfWord(unsigned int rs,uint32_t address)
-{
-	typename CONFIG::address_t addr=address;
-	uint16_t value=GetGPR(rs);
-	uint8_t buffer=Host2BigEndian(value);
-	bool status=DHSBWrite(addr,&buffer,2);
-	if(unlikely(!status)) return false;
-	MonitorStore(addr, 2);
-	return true;
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::IntStoreWord(unsigned int rs,uint32_t address)
-{
-	typename CONFIG::address_t addr=address;
-	uint32_t value=GetGPR(rs);
-	uint32_t buffer=Host2BigEndian(value);
-	bool status=DHSBWrite(addr,&buffer,4);
-	if(unlikely(!status)) return false;
-	MonitorStore(addr, 4);
-	return true;
-}
-template <class CONFIG>
-bool CPU<CONFIG>::LoadAndInsertByte(unsigned int rd,uint32_t address,uint8_t part)
-{
-	typename CONFIG::address_t addr=address;
 	uint8_t buffer;
         bool status=DHSBRead(addr,&buffer,1);
 	if(unlikely(!status)) return false;
@@ -385,9 +346,8 @@ bool CPU<CONFIG>::LoadAndInsertByte(unsigned int rd,uint32_t address,uint8_t par
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::LoadAndInsertHalfWord(unsigned int rd,uint32_t address,uint8_t part)
+bool CPU<CONFIG>::LoadAndInsertHalfWord(unsigned int rd,typename CONFIG::address_t addr,uint8_t part)
 {
-	typename CONFIG::address_t addr=address;
 	uint16_t buffer;
         bool status=DHSBRead(addr,&buffer,2);
 	if(unlikely(!status)) return false;
@@ -401,45 +361,131 @@ bool CPU<CONFIG>::LoadAndInsertHalfWord(unsigned int rd,uint32_t address,uint8_t
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::MemReadByte(uint32_t address, uint32_t& value)
+bool CPU<CONFIG>::IntStoreByte(unsigned int rs,typename CONFIG::address_t addr)
 {
-	typename CONFIG::address_t addr=address;
+	uint8_t value=GetGPR(rs);
+	uint8_t buffer=value;
+	bool status=DHSBWrite(addr,&buffer,1);
+	if(unlikely(!status)) return false;
+	MonitorStore(addr, 1);
+	return true;
+}
+template <class CONFIG>
+bool CPU<CONFIG>::IntStoreHalfWord(unsigned int rs,typename CONFIG::address_t addr,bool swap=false)
+{
+	uint16_t value=GetGPR(rs);
+	uint8_t buffer= (swap) ? Host2BigEndian(value): value;
+	bool status=DHSBWrite(addr,&buffer,2);
+	if(unlikely(!status)) return false;
+	MonitorStore(addr, 2);
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::IntStoreWord(unsigned int rs,typename CONFIG::address_t addr,bool swap=false)
+{
+	uint32_t value=GetGPR(rs);
+	uint32_t buffer= (swap) ? Host2BigEndian(value):value;
+	bool status=DHSBWrite(addr,&buffer,4);
+	if(unlikely(!status)) return false;
+	MonitorStore(addr, 4);
+	return true;
+}
+template <class CONFIG>
+bool CPU<CONFIG>::StoreHalfWordIn2Word(unsigned int rx,unsigned int ry,uint8_t x_part,uint8_t y_part,typename CONFIG::address_t addr)
+{
+	uint32_t hight_part=GetGPR(rx);
+	uint32_t low_part=GetGPR(ry);
+	
+	if(x_part==1) hight_part=hight_part & 0xFFFF0000;
+	else hight_part= (hight_part & 0x0000FFFF) << 16;
+
+	if(y_part==1) low_part= (low_part & 0xFFFF0000)>> 16;
+	else low_part= low_part & 0x0000FFFF;
+
+	uint32_t result = hight_part | low_part;
+	uint32_t buffer=Host2BigEndian(result);
+	bool status=DHSBWrite(addr,&buffer,4);
+	if(unlikely(!status)) return false;
+	MonitorStore(addr, 4); 
+	return true;
+}
+template <class CONFIG>
+bool CPU<CONFIG>::ExchangeRegMem(uint8_t rd,uint8_t rx,uint8_t ry)
+{
+	typename CONFIG::address_t addr=GetGPR(rx);
+	
+	uint32_t buffer;
+        bool status=DHSBRead(addr,&buffer,4);
+	if(unlikely(!status)) return false;
+	uint32_t temp= BigEndian2Host(buffer);
+	MonitorLoad(addr, 4);
+	if(!IntStoreWord(ry,addr)) return false;
+	SetGPR(rd,temp);
+
+	return true;
+}
+template <class CONFIG>
+bool CPU<CONFIG>::MemoryBitAccess(typename CONFIG::address_t addr,unsigned int mode,uint8_t pos)
+{
+	uint32_t buffer;                      // read word from memory
+        bool status=DHSBRead(addr,&buffer,4);
+	if(unlikely(!status)) return false;
+	uint32_t temp= BigEndian2Host(buffer);
+	MonitorLoad(addr, 4);
+	switch (mode)                                 
+	{
+		case 1: temp = temp & ~(1UL << pos); break;                                   // clear bit
+		case 2: temp = temp | (1UL << pos); break;                                    // set bit 
+		case 3: temp = (temp & ~(1UL << pos)) | ( ~((temp>>pos)&1) << pos); break;    // toggle bit 
+		default: return false;
+	}
+	buffer= Host2BigEndian(temp);            // write word in memory
+	status=DHSBWrite(addr,&buffer,4);
+	if(unlikely(!status)) return false;
+	MonitorStore(addr, 4);	
+	return true;
+}
+
+
+template <class CONFIG>
+bool CPU<CONFIG>::MemReadByte(typename CONFIG::address_t addr, uint32_t& value)
+{
 	uint8_t buffer;
 	bool status=DHSBRead(addr,&buffer,1);
 	if(unlikely(!status)) return false;
 	value =  buffer;
 	value= SignExtend((uint32_t)value,16);
+	MonitorLoad(addr,1);
 	return true;
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::MemReadHalfWord(uint32_t address, uint32_t& value)
+bool CPU<CONFIG>::MemReadHalfWord(typename CONFIG::address_t addr, uint32_t& value)
 {
-	typename CONFIG::address_t addr=address;
 	uint16_t buffer;
 	bool status=DHSBRead(addr,&buffer,2);
 	if(unlikely(!status)) return false;
 	value=BigEndian2Host(buffer);
 	value= SignExtend((uint32_t)value,16);
+	MonitorLoad(addr,2);
 	return true;
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::MemReadWord(uint32_t address, uint32_t& value)
+bool CPU<CONFIG>::MemReadWord(typename CONFIG::address_t addr, uint32_t& value)
 {
-	typename CONFIG::address_t addr=address;
 	uint32_t buffer;
 	bool status=DHSBRead(addr,&buffer,4);
 	if(unlikely(!status)) return false;
 	value=BigEndian2Host(buffer);
-	
+	MonitorLoad(addr,4);
 	return true;
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::MemWriteByte(uint32_t value,uint32_t address)
+bool CPU<CONFIG>::MemWriteByte(uint32_t value,typename CONFIG::address_t addr)
 {	
-	typename CONFIG::address_t addr=address;
 	uint8_t buffer=value;
 	bool status=DHSBWrite( addr,&buffer,1);
 	if(unlikely(!status)) return false;
@@ -447,9 +493,8 @@ bool CPU<CONFIG>::MemWriteByte(uint32_t value,uint32_t address)
 	return true;
 }
 template <class CONFIG>
-bool CPU<CONFIG>::MemWriteHalfWord(uint32_t value,uint32_t address)
+bool CPU<CONFIG>::MemWriteHalfWord(uint32_t value,typename CONFIG::address_t addr)
 {	
-	typename CONFIG::address_t addr=address;
 	uint16_t buffer=Host2BigEndian(value);
 	bool status=DHSBWrite( addr,&buffer,2);
 	if(unlikely(!status)) return false;
@@ -457,9 +502,8 @@ bool CPU<CONFIG>::MemWriteHalfWord(uint32_t value,uint32_t address)
 	return true;
 }
 template <class CONFIG>
-bool CPU<CONFIG>::MemWriteWord(uint32_t value,uint32_t address)
+bool CPU<CONFIG>::MemWriteWord(uint32_t value,typename CONFIG::address_t addr)
 {	
-	typename CONFIG::address_t addr=address;
 	uint32_t buffer=Host2BigEndian(value);
 	bool status=DHSBWrite( addr,&buffer,4);
 	if(unlikely(!status)) return false;
@@ -562,7 +606,7 @@ void CPU<CONFIG>::StepOneInstruction()
 	//ProcessExceptions(operation);
 
 	/* report a finished instruction */
-	if(unlikely(requires_finished_instruction_reporting))
+	if(unlikely(requires_finisheLD_SHd_instruction_reporting))
 	{
 		if(unlikely(memory_access_reporting_import != 0))
 		{
