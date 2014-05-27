@@ -844,9 +844,9 @@ op lddpc(0b010[3]:0b01[2]:disp7[7]:rd[4])
 lddpc.execute={
 	
 	uint32_t pc=Operation<CONFIG>::GetAddr();
-	uint32_t address= (pc && 0xFFFFFFFC) +( (uint32_t)disp7 << 2);
+	uint32_t address= (pc & 0xFFFFFFFC) +( (uint32_t)disp7 << 2);
 
-	return cpu->UintLoadByte(rd,address);
+	return cpu->IntLoadWord(rd,address);
 }
 
 lddpc.disasm={
@@ -861,9 +861,9 @@ op lddsp(0b010[3]:0b00[2]:disp7[7]:rd[4])
 lddsp.execute={
 	
 	uint32_t sp= cpu->GetSP();
-	uint32_t address= (sp && 0xFFFFFFFC) +( (uint32_t)disp7 << 2);
+	uint32_t address= (sp & 0xFFFFFFFC) +( (uint32_t)disp7 << 2);
 
-	return cpu->UintLoadByte(rd,address);
+	return cpu->IntLoadWord(rd,address);
 }
 
 lddsp.disasm={
@@ -886,9 +886,9 @@ st_b_a.execute={
 
 	if(rp==rs) return false;
 
-	uint32_t addr=cpu->GetGPR(rp);       // get address
-	cpu->IntStoreByte(rs,addr);          // store byte in memory
-	addr++;                              // post increment
+	uint32_t addr=cpu->GetGPR(rp);                        // get address
+	if(!cpu->IntStoreByte(rs,addr++))return false;        // store byte in memory
+		                            		      
 	cpu->SetGPR(rp,addr);  
 	return true;
 }
@@ -904,9 +904,9 @@ st_b_b.execute={
 
 	if(rp==rs) return false;
 
-	uint32_t addr=cpu->GetGPR(rp);        // get address
-	addr--;                               // pre increment
-	cpu->IntStoreByte(rs,addr);           // store byte in memory
+	uint32_t addr=cpu->GetGPR(rp);                   // get address
+	
+	if(!cpu->IntStoreByte(rs,--addr))return false;   // store byte in memory
 	cpu->SetGPR(rp,addr);  
 	return true;
 }
@@ -921,9 +921,8 @@ op st_b_c(0b101[3]:rp[4]:0b01[2]:disp3[3]:rs[4])
 st_b_c.execute={
 
 	uint32_t addr=cpu->GetGPR(rp)+(uint32_t)disp3;
-	cpu->IntStoreByte(rs,addr);
+	return cpu->IntStoreByte(rs,addr);
   
-	return true;
 }
 
 st_b_c.disasm={
@@ -937,9 +936,7 @@ op st_b_d(0b111[3]:rp[4]:0b10110[5]:rs[4]:disp16[16])
 st_b_d.execute={
 
 	uint32_t addr=cpu->GetGPR(rp)+SignExtend((uint32_t)disp16,16);
-	cpu->IntStoreByte(rs,addr);
-  
-	return true;
+	return cpu->IntStoreByte(rs,addr);
 }
 
 
@@ -953,10 +950,8 @@ op st_b_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1011[4]:0b00[2]:sa[2]:r
 
 st_b_e.execute={
 
-	uint32_t addr=cpu->GetGPR(rb)+( cpu->GetGPR(ri)<<(unsigned int)sa);
-	cpu->IntStoreByte(rs,addr);
- 
-	return true;
+	uint32_t addr=cpu->GetGPR(rb)+( cpu->GetGPR(ri)<<(unsigned int)sa );
+	return cpu->IntStoreByte(rs,addr);
 }
 
 st_b_e.disasm={
@@ -967,7 +962,7 @@ st_b_e.disasm={
 
 // ST_B_COND4 - conditional store byte
 
-// erreur dans la documentation (architecure manual) rd au lieu de rs dans l'op code
+// erreur dans la documentation (architecture manual) rd au lieu de rs dans l'op code
 
 op st_b_cond4(0b111[3]:rp[4]:0b11111[5]:rs[4]:><:cond4[4]:0b111[3]:disp9[9])
 
@@ -977,7 +972,7 @@ st_b_cond4.execute={
 	{
 		uint32_t addr= cpu->GetGPR(rp) + (uint32_t)disp9;
 
-		cpu->IntStoreByte(rs,addr);
+		return cpu->IntStoreByte(rs,addr);
 	}
 		
 	return true;
@@ -999,8 +994,8 @@ st_d_a.execute={
 	
 	uint32_t addr= cpu->GetGPR(rp);
 
-	cpu->IntStoreWord(rs+1,addr);
-	cpu->IntStoreWord(rs,addr+4);
+	if(!cpu->IntStoreWord(rs+1,addr)) return false;
+	if(!cpu->IntStoreWord(rs,addr+4))return false;
 
 	addr+=8;
 	cpu->SetGPR(rp,addr);	
@@ -1022,8 +1017,8 @@ st_d_b.execute={
 	uint32_t addr= cpu->GetGPR(rp);
 
 	addr-=8;
-	cpu->IntStoreWord(rs+1,addr);
-	cpu->IntStoreWord(rs,addr+4);
+	if(!cpu->IntStoreWord(rs+1,addr)) return false;
+	if(!cpu->IntStoreWord(rs,addr+4)) return false;
 
 	cpu->SetGPR(rp,addr);	
 	
@@ -1041,8 +1036,8 @@ st_d_c.execute={
 	
 	uint32_t addr= cpu->GetGPR(rp);
 
-	cpu->IntStoreWord(rs+1,addr);
-	cpu->IntStoreWord(rs,addr+4);	
+	if(!cpu->IntStoreWord(rs+1,addr)) return false;
+	if(!cpu->IntStoreWord(rs,addr+4)) return false;	
 	
 	return true;
 }
@@ -1058,8 +1053,8 @@ st_d_d.execute={
 	
 	uint32_t addr= cpu->GetGPR(rp) + SignExtend((uint32_t)disp16,16);
 
-	cpu->IntStoreWord(rs+1,addr);
-	cpu->IntStoreWord(rs,addr + 4);	
+	if(!cpu->IntStoreWord(rs+1,addr)) return false;
+	if(!cpu->IntStoreWord(rs,addr + 4)) return false;	
 	
 	return true;
 }
@@ -1075,8 +1070,8 @@ st_d_e.execute={
 	
 	uint32_t addr= cpu->GetGPR(rb) + (cpu->GetGPR(ri) << sa);
 
-	cpu->IntStoreWord(rs+1,addr+4);
-	cpu->IntStoreWord(rs,addr);	
+	if(!cpu->IntStoreWord(rs+1,addr))return false;
+	if(!cpu->IntStoreWord(rs,addr + 4)) return false;	
 	
 	return true;
 }
@@ -1096,7 +1091,7 @@ st_h_a.execute={
 	if(rp==rs) return false;
 	uint32_t addr=cpu->GetGPR(rp);
 
-	cpu->IntStoreHalfWord(rs,addr);
+	if(!cpu->IntStoreHalfWord(rs,addr))return false;
 
 	addr+=2;
 	cpu->SetGPR(rp,addr);
@@ -1117,7 +1112,7 @@ st_h_b.execute={
 	uint32_t addr=cpu->GetGPR(rp);
 	addr-=2;
 
-	cpu->IntStoreHalfWord(rs,addr);
+	if(!cpu->IntStoreHalfWord(rs,addr))return false;
 	cpu->SetGPR(rp,addr);
 
 	return true;
@@ -1135,9 +1130,7 @@ st_h_c.execute={
 
 	uint32_t addr=cpu->GetGPR(rp)+ ((uint32_t)disp3 << 1) ;
 
-	cpu->IntStoreHalfWord(rs,addr);
-
-	return true;
+	return cpu->IntStoreHalfWord(rs,addr);
 	 
 }
 
@@ -1152,10 +1145,7 @@ st_h_d.execute={
 
 	uint32_t addr=cpu->GetGPR(rp)+ SignExtend((uint32_t)disp16,16);
 
-	cpu->IntStoreHalfWord(rs,addr);
-
-	return true;
-	 
+	return cpu->IntStoreHalfWord(rs,addr);
 }
 
 st_h_d.disasm={
@@ -1169,9 +1159,7 @@ st_h_e.execute={
 
 	uint32_t addr=cpu->GetGPR(rb)+ (cpu->GetGPR(ri)<< sa) ;
 
-	cpu->IntStoreHalfWord(rs,addr);
-
-	return true;
+	return cpu->IntStoreHalfWord(rs,addr);
 	 
 }
 
@@ -1190,7 +1178,7 @@ st_h_cond4.execute={
 	{
 		uint32_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp9 << 2) ;
 
-		cpu->IntStoreHalfWord(rs,addr);
+		return cpu->IntStoreHalfWord(rs,addr);
 
 	}
 
@@ -1213,8 +1201,8 @@ st_w_a.execute={
 
 	uint32_t addr = cpu->GetGPR(rp);
 
-	cpu->IntStoreWord(rs,addr);
-	addr+=4;
+	if(!cpu->IntStoreWord(rs,addr))return false;
+	addr+=4;                                     //post inc
 	cpu->SetGPR(rp,addr);
 
 	return true;
@@ -1233,9 +1221,9 @@ st_w_b.execute={
 	if(rp==rs) return false;
 
 	uint32_t addr = cpu->GetGPR(rp);
-	addr-=4;	
+	addr-=4;	                 //pre inc
 
-	cpu->IntStoreWord(rs,addr);
+	if(!cpu->IntStoreWord(rs,addr)) return false;
 	
 	cpu->SetGPR(rp,addr);
 
@@ -1253,10 +1241,9 @@ st_w_c.execute={
 
 	uint32_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp4 << 2);
 
-	cpu->IntStoreWord(rs,addr);
-
-	return true;
+	return cpu->IntStoreWord(rs,addr);
 }
+
 st_w_c.disasm={
 
 	os << "st_w_d\tr" << (unsigned int)rp << "[0x" << std::hex << (unsigned int)disp4 << "],r" << (unsigned int)rs << endl;
@@ -1268,9 +1255,7 @@ st_w_d.execute={
 
 	uint32_t addr = cpu->GetGPR(rp)+ SignExtend((uint32_t)disp16,16);
 
-	cpu->IntStoreWord(rs,addr);
-
-	return true;
+	return cpu->IntStoreWord(rs,addr);
 }
 
 st_w_d.disasm={
@@ -1285,10 +1270,10 @@ st_w_e.execute={
 
 	uint32_t addr = cpu->GetGPR(rb)+ (cpu->GetGPR(ri) << sa);
 
-	cpu->IntStoreWord(rs,addr);
+	return cpu->IntStoreWord(rs,addr);
 
-	return true;
 }
+
 st_w_e.disasm={
 
 	os << "st_w_e\tr" << (unsigned int)rb << "[r" << (unsigned int)ri << "<<0x" << std::hex<<(unsigned int)sa << "],r" << (unsigned int)rs << endl;
@@ -1306,7 +1291,7 @@ st_w_cond4.execute={
 	{
 		uint32_t addr = cpu->GetGPR(rp) + ((uint32_t)disp9 << 2);
 
-		cpu->IntStoreWord(rs,addr);
+		return cpu->IntStoreWord(rs,addr);
 	}
 
 	return true;
@@ -1322,6 +1307,18 @@ st_w_cond4.disasm={
 
 op stcond(0b111[3]:rp[4]:0b10111[5]:rs[4]:><:disp16[16])
 
+stcond.execute={
+
+	cpu->SetSR_Z(cpu->GetSR_L());
+	if(cpu->GetSR_L())
+	{
+		uint32_t addr = cpu->GetGPR(rp) + SignExtend((uint32_t)disp16,16);
+
+		return cpu->IntStoreWord(rs,addr);
+	}
+	return true;
+}
+
 stcond.disasm={
 
 	os << "stcond\tr" << (unsigned int)rp << "[0x" << std::hex << (unsigned int)disp16 << "],r" << (unsigned int)rs << endl;
@@ -1334,11 +1331,9 @@ op stdsp(0b010[3]:0b10[2]:disp7[7]:rs[4])
 
 stdsp.execute={
 
-	uint32_t addr= cpu->GetSP() && 0xFFFFFFFC + ((uint32_t)disp7 << 2);
+	uint32_t addr= (cpu->GetSP() && 0xFFFFFFFC ) + ((uint32_t)disp7 << 2);
 
-	cpu->IntStoreWord(rs,addr);	
- 	
-	return true;
+	return cpu->IntStoreWord(rs,addr);	
 }
 
 stdsp.disasm={
@@ -1352,22 +1347,26 @@ op sthh_w_a(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b11[2]:x[1]:y[1]:disp8[8]:rp[4])
 
 sthh_w_a.execute={
 
+	/*
 	uint32_t hight_part=cpu->GetGPR(rx);
 	uint32_t low_part=cpu->GetGPR(ry);
 	
+	uint32_t addr = cpu->GetGPR(rp) + ((uint32_t)disp8 << 2);
+
 	if(x==1) hight_part=hight_part & 0xFFFF0000;
 	else hight_part= (hight_part & 0x0000FFFF) << 16;
 
 	if(y==1) low_part= (low_part & 0xFFFF0000)>> 16;
 	else low_part= low_part & 0x0000FFFF;
-	
-	uint32_t addr = cpu->GetGPR(rp) + ((uint32_t)disp8 << 2);
 
 	uint32_t result = hight_part | low_part; 
 	
 	cpu->MemWriteWord(result,addr);  	
+	*/
+	uint32_t addr = cpu->GetGPR(rp) + ((uint32_t)disp8 << 2);
 	
-	return true;
+	return cpu->StoreHalfWordIn2Word(ry,ry,x,y,addr);
+
 }
 
 sthh_w_a.disasm={
@@ -1380,21 +1379,9 @@ op sthh_w_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b10[2]:x[1]:y[1]:ri[4]:0b00[2]:s
 
 sthh_w_b.execute={
 
-	uint32_t hight_part=cpu->GetGPR(rx);
-	uint32_t low_part=cpu->GetGPR(ry);
-	//from rx
-	if(x==1) hight_part=hight_part & 0xFFFF0000;        //get from bit 31 to 16
-	else hight_part= (hight_part & 0x0000FFFF) << 16;   //get from bit 15 to 0
-	// from ry 
-	if(y==1) low_part= (low_part & 0xFFFF0000)>> 16;    // get from bit 31 to 16
-	else low_part= low_part & 0x0000FFFF;               // get from bit 15 to 0
-	
-	uint32_t addr = cpu->GetGPR(rb) + (cpu->GetGPR(ri) << sa);  	
-	uint32_t result = hight_part | low_part;
-
-	cpu->MemWriteWord(result,addr);	       // write result in memory
+	uint32_t addr = cpu->GetGPR(rb) + (cpu->GetGPR(ri) << sa);  
 		
-	return true;
+	return cpu->StoreHalfWordIn2Word(ry,ry,x,y,addr);
 }
 
 sthh_w_b.disasm={
@@ -1409,14 +1396,14 @@ op stswp_h(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1001[4]:disp12[12])
 
 stswp_h.execute={
 
-	uint32_t s = cpu->GetGPR(rs);
-	uint32_t temp= ((s & 0x000000FF)<< 8) | ((s & 0x0000FF00)>> 8);  // swap lower and bottom byte
+	//uint32_t s = cpu->GetGPR(rs);
+	//uint32_t temp= ((s & 0x000000FF)<< 8) | ((s & 0x0000FF00)>> 8);  // swap lower and bottom byte
 
 	uint32_t addr= cpu->GetGPR(rp) + (SignExtend((uint32_t)disp12,12)<<1);
 
-	cpu->MemWriteHalfWord(temp,addr);
+	//cpu->MemWriteHalfWord(temp,addr);
 
-	return true;
+	return cpu->IntStoreHalfWord(rs,addr,true);
 }
 
 stswp_h.disasm={
@@ -1429,15 +1416,15 @@ op stswp_w(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1010[4]:disp12[12])
 
 stswp_w.execute={
 
-	uint32_t s = cpu->GetGPR(rs);
+	//uint32_t s = cpu->GetGPR(rs);
 
-	uint32_t temp= ((s & 0x000000FF)<< 24) | ((s & 0x0000FF00)<< 8) | ((s & 0x00FF0000)>>8 ) | ((s & 0xFF000000)>>24);
+	//uint32_t temp= ((s & 0x000000FF)<< 24) | ((s & 0x0000FF00)<< 8) | ((s & 0x00FF0000)>>8 ) | ((s & 0xFF000000)>>24);
 
 	uint32_t addr= cpu->GetGPR(rp) + (SignExtend((uint32_t)disp12,12)<<2);
 
-	cpu->MemWriteWord(temp,addr);
+	//cpu->MemWriteWord(temp,addr);
 
-	return true;
+	return cpu->IntStoreWord(rs,addr,true);
 }
 
 stswp_w.disasm={
@@ -1451,7 +1438,7 @@ op xchg(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b10110100[8]:rd[4])
 
 xchg.execute={
 	
-	uint32_t addr = cpu->GetGPR(rx); 
+	/*uint32_t addr = cpu->GetGPR(rx); 
 	uint32_t temp;
 	cpu->MemReadWord(addr,temp);
 
@@ -1459,7 +1446,8 @@ xchg.execute={
 	 	
 	cpu->SetGPR(rd,temp);
 	
-	return true;
+	return true;*/
+	return cpu->ExchangeRegMem(rd,rx,ry);
 }
 
 xchg.disasm={
@@ -1848,4 +1836,61 @@ stmts.disasm={
 	os << "stmts\t{--}r" << (unsigned int)rp << "," << std::hex << (unsigned int)reglist16 << endl; 
 
 }
+//------------------------------------------------------------------------------------------
+
+//   read, modify, write instructions
+ 
+//----------------------------------------------------------------------------------------
+
+// MEMC - clear bit in memory
+
+op memc(0b111101100001[12]:bp_4_1[4]:><: bp_0[1]:imm15[15])
+
+memc.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 }
+
+memc.execute={
+
+	uint32_t addr = SignExtend((uint32_t)(imm15<<2),15);
+	return cpu->MemoryBitAccess(addr,1,bp);
+} 
+
+memc.disasm={
+
+	os << "memc\tr0x" << std::hex <<(int)imm15 << ",0x" << std::hex <<(int) bp << endl;
+}
+
+// MEMS - set bit in memory
+
+op mems(0b111110000001[12]:bp_4_1[4]:><: bp_0[1]:imm15[15])
+
+mems.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 } 
+
+mems.execute={
+	
+	uint32_t addr = SignExtend((uint32_t)(imm15<<2),15);
+	return cpu->MemoryBitAccess(addr,2,bp);
+}
+
+mems.disasm={
+
+	os << "mems\tr0x" << std::hex <<(int)imm15 << ",0x" << std::hex <<(int)bp << endl;
+}
+
+// MEMT - toggle bit in memory
+
+op memt(0b111110100001[12]:bp_4_1[4]:><: bp_0[1]:imm15[15])
+
+memt.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 }
+
+memt.execute={
+
+	uint32_t addr = SignExtend((uint32_t)(imm15<<2),15);
+	return cpu->MemoryBitAccess(addr,3,bp);
+} 
+
+memt.disasm={
+
+	os << "memt\tr0x" << std::hex <<(int)imm15 << ",0x" << std::hex<< (int) bp << endl;
+}
+     
 
