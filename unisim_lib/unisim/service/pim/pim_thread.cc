@@ -110,9 +110,9 @@ void PIMThread::run(){
 
 			// qRcmd,cmd;var_name[:value]{;var_name[:value]}
 
-			if (request->getCommand() == DBGData::VAR_LISTEN) {
+			if (request->getCommand() == DBGData::QUERY_VAR_LISTEN) {
 
-				string targetVar = request->getTarget();
+				string targetVar = request->getSlave();
 				for (int i=0; i < simulator_variables.size(); i++) {
 					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 						simulator_variables[i]->AddListener(this);
@@ -120,9 +120,9 @@ void PIMThread::run(){
 					}
 				}
 
-			} else	if (request->getCommand() == DBGData::VAR_UNLISTEN) {
+			} else	if (request->getCommand() == DBGData::QUERY_VAR_UNLISTEN) {
 
-				string targetVar = request->getTarget();
+				string targetVar = request->getSlave();
 
 				for (int i=0; i < simulator_variables.size(); i++) {
 
@@ -135,22 +135,23 @@ void PIMThread::run(){
 
 				}
 
-			} else	if (request->getCommand() == DBGData::VAR_READ) {
+			} else	if (request->getCommand() == DBGData::QUERY_VAR_READ) {
 
-				string targetVar = request->getTarget();
+				string targetVar = request->getSlave();
 
 				for (int i=0; i < simulator_variables.size(); i++) {
 
 					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
-						DBGData *response = new DBGData(DBGData::VAR_READ_RESPONSE);
+						DBGData *response = new DBGData(DBGData::QUERY_VAR_READ);
 
 						response->setSimTime(GetSimTime());
 
-						response->setInitiator(simulator_variables[i]->GetName());
-						response->setInitiatorSite("simulator");
-						response->setTarget(simulator_variables[i]->GetName());
-						response->setTargetSite(request->getInitiatorSite());
+						response->setMaster(simulator_variables[i]->GetName());
+						response->setMasterSite(request->getMasterSite());
+
+						response->setSlave(simulator_variables[i]->GetName());
+						response->setSlaveSite(request->getSlaveSite());
 
 						if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
 							double val = *(simulator_variables[i]);
@@ -177,9 +178,9 @@ void PIMThread::run(){
 					}
 				}
 
-			} else if (request->getCommand() == DBGData::VAR_WRITE) {
+			} else if (request->getCommand() == DBGData::QUERY_VAR_WRITE) {
 
-				string targetVar = request->getTarget();
+				string targetVar = request->getSlave();
 
 				string value = request->getAttribute("value");
 
@@ -228,14 +229,14 @@ void PIMThread::run(){
 
 void PIMThread::VariableBaseNotify(const VariableBase *var) {
 
-	DBGData *response = new DBGData(DBGData::VAR_LISTEN_RESPONSE);
+	DBGData *response = new DBGData(DBGData::QUERY_VAR_LISTEN);
 
 	response->setSimTime(GetSimTime());
 
-	response->setInitiator(var->GetName());
-	response->setInitiatorSite("simulator");
-	response->setTarget(var->GetName());
-	response->setTargetSite("_who_initiate_the_listener_");
+	response->setMaster(var->GetName());
+	response->setMasterSite("_who_initiate_the_listener_");
+	response->setSlave(var->GetName());
+	response->setSlaveSite(DBGData::DEFAULT_SLAVE_SITE);
 
 	if (strcmp(var->GetDataTypeName(), "double precision floating-point") == 0) {
 		double val = *(var);

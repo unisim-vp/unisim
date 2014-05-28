@@ -16,6 +16,8 @@
 #include <unisim/service/pim/network/SocketThread.hpp>
 #include <unisim/service/pim/network/BlockingCircularQueue.hpp>
 
+#include <unisim/util/converter/convert.hh>
+
 using namespace std;
 
 namespace unisim {
@@ -30,102 +32,64 @@ using unisim::service::pim::network::BlockingCircularQueue;
 class DBGData {
 public:
 
-	enum DBGCOMMANDS {TERMINATE, VAR_READ, VAR_WRITE, VAR_LISTEN, VAR_UNLISTEN, VAR_READ_RESPONSE, VAR_LISTEN_RESPONSE, UNKNOWN};
+	static const char* DEFAULT_MASTER;
+	static const char* DEFAULT_MASTER_SITE;
+	static const char* DEFAULT_SLAVE;
+	static const char* DEFAULT_SLAVE_SITE;
+	static const char* NAME_ATTR;
+	static const char* VALUE_ATTR;
+	static const char* REG_NUM_ATTR;
+	static const char* ADDRESS_ATTR;
+	static const char* SIZE_ATTR;
+	static const char* TYPE_ATTR;
+	static const char* FILE_NAME_ATTR;
+	static const char* FILE_COLUMN_ATTR;
+	static const char* FILE_LINE_ATTR;
 
-//	enum TargetCOMMANDS {CONTINUE, SUSPEND, DISCONNECT, READ_REGISTERS, WRITE_REGISTERS, SET_THREAD_CONTEXT, STEP_CYCLE, KILL_COMMAND, READ_MEMORY, WRITE_MEMORY, READ_SELECTED_REGISTER, WRITE_SELECTED_REGISTER, QUERY_VARIABLE, STEP_INSTRUCTION, REMOVE_BREAKPOINT, SET_BREAKPOINT, GET_LAST_SIGNAL, UNKNOWN};
-
-	DBGData(DBGCOMMANDS _command) : command(_command), simTime(0), initiatorSite(std::string()), initiator(std::string()),	target(std::string()) { }
-
-	DBGData(DBGCOMMANDS _name, string _initiatorSite, string _initiator,	string _target) :
-		command(_name), simTime(0), initiatorSite(_initiatorSite), initiator(_initiator),	target(_target) {}
+	enum DBGCOMMANDS {DBG_KILL_COMMAND, DBG_PROCESS_EXIT, DBG_RESET_COMMAND, DBG_EXTENDED_MODE_ENABLE, DBG_SET_THREAD_CONTEXT, DBG_REPORT_STOP, DBG_OK_RESPONSE, DBG_NOK_RESPONSE, DBG_ERROR_MALFORMED_REQUEST, DBG_ERROR_READING_DATA_EPERM, DBG_UNKNOWN, DBG_CONTINUE, DBG_SUSPEND, DBG_VERBOSE_RESUME_ACTIONS, DBG_VERBOSE_RESUME_CONTINUE, DBG_VERBOSE_RESUME_STEP, DBG_DISCONNECT, DBG_READ_REGISTERS, DBG_WRITE_REGISTERS, DBG_STEP_CYCLE, DBG_READ_MEMORY, DBG_WRITE_MEMORY, DBG_READ_SELECTED_REGISTER, DBG_WRITE_SELECTED_REGISTER, DBG_QUERY_VARIABLE, DBG_STEP_INSTRUCTION, DBG_REMOVE_BREAKPOINT_WATCHPOINT, DBG_SET_BREAKPOINT_WATCHPOINT, DBG_READ_WATCHPOINT, DBG_WRITE_WATCHPOINT, DBG_ACCESS_WATCHPOINT, DBG_REPORT_EXTENDED_STOP, DBG_GET_LAST_SIGNAL, DBG_ENABLE_EXTENDED_MODE, TERMINATE, QUERY_DISASM, QUERY_SRCADDR, QUERY_STACK, QUERY_SYMBOLES, QUERY_PARAMETERS, QUERY_PHYSICAL_ADDRESS, QUERY_STATISTICS, QUERY_STRUCTURED_ADDRESS, QUERY_TIME, QUERY_ENDIAN, QUERY_REGISTERS, QUERY_START_PIM, QUERY_PARAMETER, QUERY_SYMBOL, QUERY_SYMBOL_ACCEPT,QUERY_SYMBOL_READ, QUERY_SYMBOL_READ_ALL, QUERY_SYMBOL_WRITE, QUERY_VAR_READ, QUERY_VAR_WRITE, QUERY_VAR_LISTEN, QUERY_VAR_UNLISTEN, UNKNOWN};
 
 
-	~DBGData() { attributes.clear(); }
+	DBGData(DBGCOMMANDS _command);
+	DBGData(DBGCOMMANDS _command, double _simTime);
+	DBGData(DBGCOMMANDS _name, double _simTime, string _masterSite, string _master, string _slaveSite, string _slave);
+	DBGData(DBGCOMMANDS _command, double _simTime, DBGData* refData);
+	~DBGData();
 
-	DBGCOMMANDS getCommand() const { return (command); }
+	DBGCOMMANDS getCommand() const;
 
-	bool addAttribute(std::string name, std::string value) {
+	bool addAttribute(std::string name, std::string value);
+	bool removeAttribute(std::string name);
 
-		if (attributes.find(name) == attributes.end()) {
-			attributes.insert ( std::pair<std::string, std::string>(name, value) );
-		} else {
-			return (false);
-		}
+	bool setAttribute(std::string name, std::string value);
+	std::string getAttribute(std::string name);
+	std::map<std::string, std::string> getAttributes();
 
-		return (true);
-	}
+	void setSimTime(double simTime);
+	double getSimTime() const;
 
-	bool removeAttribute(std::string name) {
+	void setMasterSite(string _masterSite);
+	string getMasterSite() const;
 
-		if (attributes.find(name) == attributes.end()) {
-			return (false);
-		} else {
-			attributes.erase (name);
-		}
+	void setMaster(string _master);
+	string getMaster() const;
 
-		return (true);
-	}
+	void setSlaveSite(string _slaveSite);
+	string getSlaveSite() const;
 
-	std::string getAttribute(std::string name) {
-
-		std::map<std::string, std::string>::iterator it = attributes.find(name);
-		if (it == attributes.end()) {
-			return (std::string());
-		}
-
-		return (it->second);
-	}
-
-	bool setAttribute(std::string name, std::string value) {
-
-		std::map<std::string, std::string>::iterator it = attributes.find(name);
-		if (it == attributes.end()) {
-			return (false);
-		} else {
-			it->second = value;
-		}
-
-		return  (true);
-	}
-
-	std::map<std::string, std::string> getAttributes() { return (attributes); }
-
-	double getSimTime() const {
-		return simTime;
-	}
-
-	void setSimTime(double simTime) {
-		this->simTime = simTime;
-	}
-
-	void setInitiatorSite(string _initiatorSite) { initiatorSite = _initiatorSite; }
-	string getInitiatorSite() const { return (initiatorSite); }
-
-	void setInitiator(string _initiator) { initiator = _initiator; }
-	string getInitiator() const { return (initiator); }
-
-	string getTargetSite() const {
-		return targetSite;
-	}
-
-	void setTargetSite(string _targetSite) {
-		this->targetSite = _targetSite;
-	}
-
-	void setTarget(string _target) { target = _target; }
-	string getTarget() const { return (target); }
+	void setSlave(string _slave);
+	string getSlave() const;
 
 	friend std::ostream& operator << (std::ostream& os, DBGData& data);
 
 protected:
 
 private:
-	double		simTime;
 	DBGCOMMANDS command;
-	string initiatorSite;
-	string initiator;
-	string targetSite;
-	string target;
+	double		simTime;
+	string masterSite;
+	string master;
+	string slaveSite;
+	string slave;
 
 	std::map<std::string, std::string> attributes;
 
@@ -134,45 +98,14 @@ private:
 class GDBThread : public SocketThread {
 public:
 
-	GDBThread(const char *_name, Object *_parent = 0):
-		SocketThread()
-		, name(string(_name))
-		, receiveDataQueue(NULL)
-		, sendDataQueue(NULL)
+	GDBThread(const char *_name, Object *_parent = 0);
+	~GDBThread();
 
-	{
-		receiveDataQueue = new BlockingCircularQueue<DBGData*, QUEUE_SIZE>();
-		sendDataQueue = new BlockingCircularQueue<DBGData*, QUEUE_SIZE>();
+	bool isData();
+	DBGData* receiveData();
+	void sendData(DBGData* data);
 
-		receiver = new ReceiveThread(this, receiveDataQueue);
-		sender = new SendThread(this, sendDataQueue);
-
-	}
-
-	~GDBThread() {
-
-		delete receiveDataQueue; receiveDataQueue = NULL;
-		delete sendDataQueue; sendDataQueue = NULL;
-		delete receiver; receiver = NULL;
-		delete sender; sender = NULL;
-	}
-
-	DBGData* receiveData() {
-		return (receiveDataQueue->next());
-	}
-
-	void sendData(DBGData* data) {
-		sendDataQueue->add(data);
-	}
-
-	virtual void run() {
-
-		waitConnection();
-
-		receiver->start();
-		sender->start();
-
-	}
+	virtual void run();
 
 protected:
 
@@ -184,218 +117,25 @@ private:
 
 	class ReceiveThread: public GenericThread {
 	public:
-		ReceiveThread(GDBThread *_parent, BlockingCircularQueue<DBGData*, QUEUE_SIZE> *_dataQueue) : GenericThread(), parent(_parent), dataQueue(_dataQueue) {}
-		~ReceiveThread() {}
+		ReceiveThread(GDBThread *_parent, BlockingCircularQueue<DBGData*, QUEUE_SIZE> *_dataQueue);
+		~ReceiveThread();
 
-		virtual void run(){
-
-			while (!parent->isTerminated()) {
-
-				string buf_str;
-
-				parent->lockSocket();
-
-				while (parent->GetPacketWithAck(buf_str, false, false)) {
-
-					if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
-						DBGData *request = new DBGData(DBGData::TERMINATE);
-						dataQueue->add(request);
-
-					} else {
-
-						if (1 == 0) {
-
-						}
-						else if(buf_str.substr(0, 6) == "qRcmd,")
-						{
-							HandleQRcmd(buf_str.substr(6));
-						}
-
-					}
-				}
-
-				parent->unlockSocket();
-
-#ifdef WIN32
-				Sleep(1);
-#else
-				usleep(1000);
-#endif
-
-			}
-
-		}
+		virtual void run();
 
 	private:
 		GDBThread *parent;
 		BlockingCircularQueue<DBGData*, QUEUE_SIZE> *dataQueue;
 
-		void HandleQRcmd(string command) {
-
-			// qRcmd,cmd;var_name[:value]{;var_name[:value]}
-			int start_index = 0;
-			int end_index = command.find(';', start_index);
-			string cmdPrefix = command.substr(start_index, end_index-start_index);
-
-			start_index = end_index+1;
-
-			if (cmdPrefix.compare("var_listen") == 0) {
-
-				do {
-
-					DBGData *request = new DBGData(DBGData::VAR_LISTEN);
-
-					string name = command.substr(start_index, end_index-start_index);
-
-					request->setInitiatorSite("workbench");
-					request->setInitiator(name);
-					request->setTargetSite("simulator");
-					request->setTarget(name);
-
-					dataQueue->add(request);
-
-					start_index = end_index+1;
-
-					end_index = command.find(';', start_index);
-					if (end_index != string::npos) {
-						start_index = end_index+1;
-					}
-				} while (end_index != string::npos);
-
-			}
-			else	if (cmdPrefix.compare("var_unlisten") == 0) {
-
-				do {
-					DBGData *request = new DBGData(DBGData::VAR_UNLISTEN);
-
-					string name = command.substr(start_index, end_index-start_index);
-
-					request->setInitiatorSite("workbench");
-					request->setInitiator(name);
-					request->setTargetSite("simulator");
-					request->setTarget(name);
-
-					dataQueue->add(request);
-
-					start_index = end_index+1;
-
-					end_index = command.find(';', start_index);
-					if (end_index != string::npos) {
-						start_index = end_index+1;
-					}
-				} while (end_index != string::npos);
-
-
-			}
-			else	if (cmdPrefix.compare("var_read") == 0) {
-
-				do {
-
-					DBGData *request = new DBGData(DBGData::VAR_READ);
-
-					string name = command.substr(start_index, end_index-start_index);
-
-					request->setInitiatorSite("workbench");
-					request->setInitiator(name);
-					request->setTargetSite("simulator");
-					request->setTarget(name);
-
-					dataQueue->add(request);
-
-					start_index = end_index+1;
-
-					end_index = command.find(';', start_index);
-					if (end_index != string::npos) {
-						start_index = end_index+1;
-					}
-				} while (end_index != string::npos);
-
-			}
-			else if (cmdPrefix.compare("var_write") == 0) {
-
-				DBGData *request = new DBGData(DBGData::VAR_WRITE);
-
-				end_index = command.find(':');
-
-				string name = command.substr(start_index, end_index-start_index);
-				start_index = end_index+1;
-
-				request->setInitiatorSite("workbench");
-				request->setInitiator(name);
-				request->setTargetSite("simulator");
-				request->setTarget(name);
-
-				string value = command.substr(start_index);
-
-				request->addAttribute("value", value);
-
-				dataQueue->add(request);
-
-			} else {
-				DBGData *request = new DBGData(DBGData::UNKNOWN);
-				dataQueue->add(request);
-			}
-
-		}
+		void HandleQRcmd(string command);
 
 	};
 
 	class SendThread: public GenericThread {
 	public:
-		SendThread(GDBThread *_parent, BlockingCircularQueue<DBGData*, QUEUE_SIZE> *_dataQueue) : GenericThread(), parent(_parent), dataQueue(_dataQueue) {}
-		~SendThread() {}
+		SendThread(GDBThread *_parent, BlockingCircularQueue<DBGData*, QUEUE_SIZE> *_dataQueue);
+		~SendThread();
 
-		virtual void run(){
-
-			while (!parent->isTerminated()) {
-
-				DBGData* response = dataQueue->next();
-
-				std::ostringstream os;
-
-				switch (response->getCommand()) {
-					case DBGData::VAR_READ_RESPONSE: {
-						os << response->getSimTime() << SEGMENT_SEPARATOR;
-
-						string targetVar = response->getTarget();
-
-						os << response->getTarget() << FIELD_SEPARATOR;
-
-						os << response->getAttribute("value") << SEGMENT_SEPARATOR;
-
-					} break;
-					case DBGData::VAR_LISTEN_RESPONSE: {
-						os << response->getSimTime() << SEGMENT_SEPARATOR;
-
-						string targetVar = response->getTarget();
-
-						os << response->getTarget() << FIELD_SEPARATOR;
-
-						os << response->getAttribute("value") << SEGMENT_SEPARATOR;
-
-					} break;
-
-					default: cerr << "GDBThread UNKNOWN response => " << std::endl; break;
-				}
-
-				std::string str = os.str();
-
-				parent->lockSocket();
-
-				bool result = parent->PutPacketWithAck(str, false);
-
-				parent->unlockSocket();
-
-				os.str(std::string());
-
-				if (response) { delete response; response = NULL; }
-
-				if (!result) {
-					exit(-1);
-					break;
-				}
-			}
-		}
+		virtual void run();
 
 	private:
 		GDBThread *parent;

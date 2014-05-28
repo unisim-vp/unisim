@@ -80,7 +80,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	isATDON(false),
 
 	baseAddress(0x0080), // MC9S12XDP512V2 - ATD baseAddress
-	param_baseAddress("base-address", this, baseAddress),
+	param_baseAddress("base-address", this, baseAddress, "Base address of ATD/ADC"),
 	interruptOffset(0xD0), // ATD1 - ATDCTL2 (ASCIE)
 	param_interruptOffset("interrupt-offset", this, interruptOffset),
 
@@ -91,8 +91,8 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 	vih(3.25),
 	vil(1.75),
-	param_vih("vih", this, vih),
-	param_vil("vil", this, vil),
+	param_vih("vih", this, vih, "High Voltage Threshold"),
+	param_vil("vil", this, vil, "Low Voltage Threshold"),
 
 	debug_enabled(false),
 	param_debug_enabled("debug-enabled", this, debug_enabled),

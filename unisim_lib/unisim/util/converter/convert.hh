@@ -222,5 +222,24 @@ inline bool getParity(T n)
     return parity;
 }
 
+template <typename T>
+bool ParseHex(const std::string& s, unsigned int& pos, T& value)
+{
+	unsigned int len = s.length();
+	unsigned int n = 0;
+
+	value = 0;
+	while(pos < len && n < 2 * sizeof(T))
+	{
+		uint8_t nibble;
+		if(!isHexChar(s[pos])) break;
+		nibble = hexChar2Nibble(s[pos]);
+		value <<= 4;
+		value |= nibble;
+		pos++;
+		n++;
+	}
+	return (n > 0);
+}
 
 #endif /* CONVERT_HH_ */

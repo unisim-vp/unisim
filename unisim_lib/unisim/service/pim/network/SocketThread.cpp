@@ -52,14 +52,13 @@ uint32_t SocketThread::name_resolve(const char *host_name)
 }
 
 SocketThread::SocketThread(string host, uint16_t port) :
-		GenericThread(),
-		hostname(0),
-		hostport(0),
-		sockfd(-1),
-		input_buffer_size(0),
-		input_buffer_index(0),
-		input_buffer(NULL)
-
+		GenericThread()
+		, hostname(0)
+		, hostport(0)
+		, sockfd(-1)
+		, input_buffer_size(0)
+		, input_buffer_index(0)
+		, input_buffer(NULL)
 
 {
 	hostname = name_resolve(host.c_str());
@@ -96,6 +95,9 @@ void SocketThread::init() {
 	pthread_cond_init (&sockfd_condition_cond, NULL);
 
 	input_buffer = (char*) malloc(MAXDATASIZE+1);
+
+	output_buffer_strm.str(std::string());
+
 }
 
 SocketThread::~SocketThread() {
@@ -103,11 +105,7 @@ SocketThread::~SocketThread() {
     pthread_mutex_lock( &sockfd_mutex );
 
 	if (sockfd) {
-#ifdef WIN32
-		closesocket(sockfd);
-#else
-		close(sockfd);
-#endif
+		closeSockfd();
 	}
 
     pthread_mutex_unlock( &sockfd_mutex );
@@ -116,6 +114,10 @@ SocketThread::~SocketThread() {
 	pthread_mutex_destroy(&sockfd_condition_mutex);
     pthread_mutex_destroy( &sockfd_mutex );
 
+    free(input_buffer);
+    input_buffer = NULL;
+
+    output_buffer_strm.str(std::string());
 }
 
 void SocketThread::startSocketThread(int sockfd) {
@@ -173,6 +175,8 @@ bool SocketThread::PutChar(char c) {
 bool SocketThread::PutPacketWithAck(const string& data, bool Acknowledgment) {
 	char c;
 
+	lockSocket();
+
 	int data_size = data.size();
 
 	uint8_t checksum = 0;
@@ -192,10 +196,15 @@ bool SocketThread::PutPacketWithAck(const string& data, bool Acknowledgment) {
 
 		if (!FlushOutput()) {
 			cerr << "SocketThread unable to send !" << endl;
+
+			unlockSocket();
+
 			return (false);
 		}
 
-	} while(Acknowledgment && (GetChar(c, true) && (c != '+')));
+	} while(!isTerminated() && Acknowledgment && (GetChar(c, true) && (c != '+')));
+
+	unlockSocket();
 
 	return (true);
 
@@ -231,7 +240,7 @@ bool SocketThread::FlushOutput() {
 	fd_set read_flags, write_flags;
 	struct timeval waitd;
 
-	int err;
+	int err = 0;
 
 	waitConnection();
 
@@ -239,7 +248,7 @@ bool SocketThread::FlushOutput() {
 
 	int output_buffer_size = output_buffer.size();
 	int index = 0;
-	while (output_buffer_size > 0) {
+	while ((output_buffer_size > 0) && !isTerminated()) {
 
 		waitd.tv_sec = 0;
 		waitd.tv_usec = 1000;
@@ -317,13 +326,14 @@ bool SocketThread::GetPacketWithAck(string& str, bool blocking, bool Acknowledgm
 	uint8_t pchk;
 	char c;
 
-	while (true) {
-		GetChar(c, blocking);
+	while ((true) && !isTerminated()) {
+
+		if (!GetChar(c, blocking)) { return false; }
 		if (c == 0) {
 			if (blocking) {
-				cerr << "receive EOF " << endl;
+				cerr << "receive EOF - 1" << endl;
 			}
-			break;
+			return false;
 		}
     	switch(c)
     	{
@@ -335,22 +345,53 @@ bool SocketThread::GetPacketWithAck(string& str, bool blocking, bool Acknowledgm
     			cerr << "SocketThread:: Warning receive - " << endl;
     			break;
     		case 3: // '\003'
-    			break;
+    			//break;
+    			str = "DBG_SUSPEND";
+    			return (true);
     		case '$':
 
-    			GetChar(c, blocking);
-    			while (true) {
+    			if (!GetChar(c, blocking)) { return false; }
+    			if (c == 0) {
+    				if (blocking) {
+    					cerr << "receive EOF - 2" << endl;
+    				}
+    				return false;
+    			}
+//    			while (true) {
+    			while (!isTerminated()) {
     				str = str + c;
         			packet_size++;
     				checkSum = checkSum + c;
-    				GetChar(c, blocking);
+
+    				if (!GetChar(c, blocking)) { return false; }
+    				if (c == 0) {
+    					if (blocking) {
+    						cerr << "receive EOF - 3" << endl;
+    					}
+    					return false;
+    				}
 
     				if (c == '#') break;
     			}
 
-    			GetChar(c, blocking);
+    			if (!GetChar(c, blocking)) { return false; }
+    			if (c == 0) {
+    				if (blocking) {
+    					cerr << "receive EOF - 4" << endl;
+    				}
+    				return false;
+    			}
+
     			pchk = hexChar2Nibble(c) << 4;
-    			GetChar(c, blocking);
+
+    			if (!GetChar(c, blocking)) { return false; }
+    			if (c == 0) {
+    				if (blocking) {
+    					cerr << "receive EOF - 5" << endl;
+    				}
+    				return false;
+    			}
+
     			pchk = pchk + hexChar2Nibble(c);
 
 				if (checkSum != pchk) {
@@ -399,13 +440,13 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 	fd_set read_flags, write_flags;
 	struct timeval waitd;
 
-	int err;
+	int err = 0;
 
-	int n;
+	int n = 0;
 
 	waitConnection();
 
-	while (input_buffer_size == 0) {
+	while ((input_buffer_size == 0) && !isTerminated()) {
 		waitd.tv_sec = 0;
 		waitd.tv_usec = 1000;
 
@@ -418,6 +459,7 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 
 		// Now call select
 		err = select(sockfd+1, &read_flags, &write_flags, (fd_set*)0,&waitd);
+
 		if (err < 0) {
 			// If select breaks then pause for 1 milliseconds and then continue
 #ifdef WIN32
@@ -434,9 +476,10 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 
 		// Check if data is available to read
 		if (FD_ISSET(sockfd, &read_flags)) {
+
 			FD_CLR(sockfd, &read_flags);
 
-			memset(input_buffer, 0, sizeof(input_buffer));
+			memset(input_buffer, 0, MAXDATASIZE);
 
 #ifdef WIN32
 			n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
@@ -469,6 +512,7 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 
 
 	if (input_buffer_size > 0) {
+
 		c = input_buffer[input_buffer_index];
 		input_buffer_size--;
 		input_buffer_index++;
@@ -481,119 +525,6 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 	}
 
 }
-
-//bool SocketThread::PutDatagramPacket(const string& data) {
-//
-//	char c;
-//
-//	int data_size = data.size();
-//
-//	output_buffer_strm << '$' << data << '#';
-//
-//	uint8_t checksum = 0;
-//
-//	for (int pos=0; pos < data_size; pos++)
-//	{
-//		checksum += (uint8_t) data[pos];
-//	}
-//
-//	output_buffer_strm << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf);
-//
-//	std::string tmpStr = output_buffer_strm.str();
-//
-//	if (!FlushOutput()) {
-//		cerr << "SocketThread unable to send !" << endl;
-//		return (false);
-//	}
-//
-//	return (true);
-//
-//}
-//
-//
-//bool SocketThread::OutputTextDatagram(const char *s, int count)
-//{
-//	int i;
-//	uint8_t packet[1 + 2 * count + 1];
-//	uint8_t *p = packet;
-//
-//	*p = 'O';
-//	p++;
-//	for(i = 0; i < count; i++, p += 2)
-//	{
-//		p[0] = nibble2HexChar((uint8_t) s[i] >> 4);
-//		p[1] = nibble2HexChar((uint8_t) s[i] & 0xf);
-//	}
-//	*p = 0;
-//	return (PutDatagramPacket((const char *) packet));
-//}
-//
-//bool SocketThread::GetDatagramPacket(string& str, bool blocking) {
-//
-//	str.clear();
-//
-//	uint8_t checkSum = 0;
-//	int packet_size = 0;
-//	uint8_t pchk;
-//	char c;
-//
-//	while (true) {
-//		GetChar(c, blocking);
-//		if (c == 0) {
-//			if (blocking) {
-//				cerr << "receive EOF " << endl;
-//			}
-//
-//			break;
-//		}
-//    	switch(c)
-//    	{
-//    		case '+':
-//    			cerr << "Warning receive + " << endl;
-//    			break;
-//    		case '-':
-//   				// error response => e.g. retransmission of the last packet
-//    			cerr << "Warning receive - " << endl;
-//    			break;
-//    		case 3: // '\003'
-//    			break;
-//    		case '$':
-//
-//    			GetChar(c, blocking);
-//    			while (true) {
-//    				str = str + c;
-//        			packet_size++;
-//    				checkSum = checkSum + c;
-//    				GetChar(c, blocking);
-//
-//    				if (c == '#') break;
-//    			}
-//
-//    			GetChar(c, blocking);
-//    			pchk = hexChar2Nibble(c) << 4;
-//    			GetChar(c, blocking);
-//    			pchk = pchk + hexChar2Nibble(c);
-//
-//				if(str.length() >= 3 && str[2] == ':')
-//				{
-//					if(!PutChar(str[0])) return (false);
-//					if(!PutChar(str[1])) return (false);
-//					if(!FlushOutput()) return (false);
-//					str.erase(0, 3);
-//				}
-//				return (true);
-//
-//    			break;
-//    		default:
-//    			cerr << "receive_packet: protocol error (0x" << nibble2HexChar(c) << ":" << c << ")";
-//    			break;
-//    	}
-//
-//	}
-//
-//	return (false);
-//
-//}
 
 
 } // network 
