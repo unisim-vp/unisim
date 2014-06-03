@@ -355,6 +355,7 @@ unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
 unisim/util/os/linux_os/linux.hh \
 unisim/util/os/linux_os/ppc.hh \
+unisim/util/os/linux_os/errno.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \

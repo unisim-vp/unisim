@@ -59,6 +59,7 @@
 #include "unisim/util/os/linux_os/ppc.hh"
 #include "unisim/util/os/linux_os/environment.hh"
 #include "unisim/util/os/linux_os/aux_table.hh"
+#include "unisim/util/os/linux_os/errno.hh"
 
 namespace unisim {
 namespace util {
