@@ -1,0 +1,255 @@
+//-----------------------------------------------------------------------------
+
+//                           BRANCH INSTRUCTIONS
+
+//------------------------------------------------------------------------------
+
+// BR_COND3 - branch if condition satisfied
+
+op br_cond3(0b110[3]:0b0[1]:disp[8]:0b0[1]:cond3[3])
+
+br_cond3.disasm={
+
+	os << "br_cond3\t0x" << std::hex << (int) disp << endl;
+}
+
+br_cond3.execute={
+
+	uint32_t result;
+	uint32_t npc = Operation<CONFIG>::GetAddr();
+
+	if(cpu->EvaluateCond(cond3))
+	{
+		result= npc+ (SignExtend( (uint32_t)disp, 8) << 1);
+	}
+	/*else
+		result = npc+2;        // a priori effectué dans la methode StepOneInstruction
+        */
+	cpu->SetGPR(15,result);
+
+	return true;
+}
+
+// BR_COND4
+
+op br_cond4(0b111[3]:disp_20_17[4]:0b0100[4]:disp_16[1]:cond4[4]:><:disp_15_0[16])
+
+br_cond4.var disp : {uint32_t}={(disp_20_17<<17)|(disp_16<<16)|disp_15_0}
+
+br_cond4.disasm={
+
+	os << "br_cond4\t0x" << std::hex << (int)disp << endl;
+}
+
+br_cond4.execute={
+
+	uint32_t result;
+	uint32_t npc=Operation<CONFIG>::GetAddr();
+
+	if(cpu->EvaluateCond(cond4))
+	{
+		result = npc+ (SignExtend( (uint32_t)disp, 21) << 1);
+	}
+	/*else
+		result = npc+4;
+        */
+	cpu->SetGPR(15,result);
+
+	return true;
+}
+
+// RJMP - relative jump
+
+op rjmp(0b110[3]:0b0[1]:disp_7_0[8]:0b1[1]:0b0[1]:disp_9_8[2])
+
+rjmp.var disp :{uint16_t}={(disp_9_8<<8)|disp_7_0}
+
+rjmp.execute={
+
+
+	uint32_t result=Operation<CONFIG>::GetAddr()+(SignExtend((uint32_t)disp,10)<<1);
+	
+	cpu->SetGPR(15,result);
+
+	return true;
+}
+
+rjmp.disasm={
+
+	os << "rjmp\t" << Operation<CONFIG>::GetAddr() << "[0x" << std::hex << (int) disp << "]" << endl;
+}
+
+
+
+//------------------------------------------------------------------------------
+
+//                           CALL INSTRUCTIONS
+
+//------------------------------------------------------------------------------
+
+
+//ACALL - application call
+
+op acall(0b1101[4]:disp8[8]:0b000[3]:0b0[1])
+
+acall.execute={
+	
+	uint32_t addr = cpu->GetAcba()+ ((uint32_t)disp8 << 2);
+	uint32_t result;
+	cpu->MemReadWord(addr,result);
+	
+	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
+	cpu->SetGPR(15,result);                         
+	return true;
+}
+
+acall.disasm={
+
+	os << "acall\t" << std::hex << (int) disp8 << endl;
+}
+
+// ICALL - indirect call from subroutine
+
+op icall(0b010[3]:0b1110[4]:0b10001[5]:rd[4])
+
+icall.execute={
+
+	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
+
+	cpu->SetGPR(15,cpu->GetGPR(rd));
+
+	return true;
+}
+
+icall.disasm={
+
+	os << "icall\tr" << (unsigned int)rd << endl;
+}
+
+//MCALL - subroutine call
+
+op mcall(0b111[3]:0b100000001[9]:rp[4]:><:disp16[16])
+
+mcall.execute={
+
+	uint32_t addr = (cpu->GetGPR(rp) & 0xFFFFFFFC) + (SignExtend((uint32_t)disp16,16) << 2);
+
+	uint32_t result; 
+	cpu->MemReadWord(addr,result);
+
+	cpu->SetLR(Operation<CONFIG>::GetAddr()+4);
+
+	cpu->SetGPR(15,result);
+
+	return true;
+}
+
+mcall.disasm={
+
+	os << "mcall\t" << (unsigned int)rp << "[" << disp16 << "]" << endl;
+}
+
+//RCALL - relative subroutine call
+
+op rcall_a(0b110[3]:0b0[1]:disp_7_0[8]:0b1[1]:0b1[1]:disp_9_8[2])
+
+rcall_a.var disp :{uint16_t} ={ (disp_9_8 << 8 )| disp_7_0}
+
+rcall_a.execute={
+
+	uint32_t result = Operation<CONFIG>::GetAddr() + (SignExtend((uint32_t)disp,10) << 1);
+
+	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
+
+	cpu->SetGPR( 15, result);
+
+	return true;
+}
+
+rcall_a.disasm={
+
+	os << "rcall_a\t" << Operation<CONFIG>::GetAddr() << "[" << disp << "]" << endl;
+}
+
+op rcall_b(0b111[3]:disp_20_17[4]:0b0101[4]:disp_16[1]:0b0000[4]:><:disp_15_0[16])
+
+rcall_b.var disp :{uint32_t} = {(disp_20_17 << 17)|(disp_16 << 16)|disp_15_0 }
+
+rcall_b.execute={
+
+	cpu->SetLR(Operation<CONFIG>::GetAddr()+4);
+
+	cpu->SetGPR(15,Operation<CONFIG>::GetAddr() + (SignExtend((uint32_t)disp,21) << 1));
+
+	return true;
+}
+
+rcall_b.disasm={
+
+	os << "rcall_b\t" << Operation<CONFIG>::GetAddr() << "[" << disp << "]" << endl;
+}
+
+//SCALL - supervisor call                             ## declarer la variable microarchitecture dans cpu.hh 
+
+op scall(0b1101011[7]:0b10011[5]:0b0011[4])
+
+scall.execute={
+
+	string microarchitecture="AVR32A";                         
+
+	if(cpu->GetSR_M()==(0b000 || 0b001))
+	{
+		if(microarchitecture=="AVR32A")
+		{
+			cpu->SetGPR(15,cpu->GetEvba()+0x100);
+			cpu->SetSR_M(0b001);
+		}
+		else
+		{
+			cpu->SetGPR(15,cpu->GetEvba()+0x100);
+			cpu->SetSR_M(0b001);
+		}
+	}
+	else
+	{
+		cpu->SetLR(Operation<CONFIG>::GetAddr() + 2);
+		cpu->SetGPR(15,cpu->GetEvba()+0x100);
+	}
+	return true;
+}
+
+scall.disasm={
+
+	os << "scall\t" << endl;
+}
+
+//SSCALL - secure state call                      ?? initialiser microarchitecture
+
+op sscall(0b1101011[7]:0b10101[5]:0b0011[4])
+
+sscall.execute={
+
+	string microarchitecture= "AVR32A";
+
+	cpu->SetSS_RAR(Operation<CONFIG>::GetAddr());
+	cpu->SetSS_RSR(cpu->GetSR());
+	if(microarchitecture=="AVR32A")
+	{
+		cpu->SetGPR(15,0x80000004);
+	}
+	else
+	{
+		cpu->SetGPR(15,0xA0000004);
+	}
+	cpu->SetSR_SS(1);
+	cpu->SetSR_GM(1);
+	if(cpu->GetSR_M()==0) cpu->SetSR_M(0b001);
+
+	return true;
+}
+
+sscall.disasm={
+
+	os << "sscall\t" << endl;
+}
+

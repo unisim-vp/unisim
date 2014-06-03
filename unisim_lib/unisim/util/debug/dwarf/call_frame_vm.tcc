@@ -2038,6 +2038,30 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								if(!cfi) delete dw_expr;
 							}
 							break;
+						
+						case DW_CFA_GNU_args_size:
+							{
+								DWARF_LEB128 argument_size;
+								int64_t sz;
+								
+								if((sz = argument_size.Load(program, program_length)) < 0)
+								{
+									if(debug)
+									{
+										logger << DebugError << "DW_CFA_GNU_args_size: missing LEB128 argument size operand" << EndDebugError;
+									}
+									status = false;
+									break;
+								}
+								program += sz;
+								program_length -= sz;
+								
+								// ignored
+								
+								if(os) *os << "DW_CFA_GNU_args_size(" << argument_size.to_string(false) << ")";
+							}
+							break;
+							
 						default:
 							if(debug)
 							{

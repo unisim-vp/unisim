@@ -2358,6 +2358,12 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id)
 	return id;
 }
 
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+uint32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Host2LinuxErrno(uint32_t host_errno) const
+{
+	return host_errno;
+}
+
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem(
     ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size)

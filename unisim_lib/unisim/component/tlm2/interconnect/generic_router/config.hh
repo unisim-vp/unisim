@@ -45,6 +45,7 @@ namespace generic_router {
 
 class Config {
 public:
+	typedef uint64_t ADDRESS;
 	static const unsigned int INPUT_SOCKETS = 1;
 	static const unsigned int OUTPUT_SOCKETS = 1;
 	static const unsigned int MAX_NUM_MAPPINGS = 256;
@@ -53,13 +54,8 @@ public:
 	static const bool VERBOSE = false;
 };
 
-class VerboseConfig {
+class VerboseConfig : public Config {
 public:
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
 	static const bool VERBOSE = true;
 };
 

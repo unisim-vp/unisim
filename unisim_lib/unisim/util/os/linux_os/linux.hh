@@ -318,6 +318,9 @@ private:
 	bool ReadMem(ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
 	bool WriteMem(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
 
+	// Errno conversion
+	uint32_t Host2LinuxErrno(uint32_t host_errno) const;
+	
 	// The list of linux system calls
 	void LSC_unknown();
 	void LSC_unimplemented();

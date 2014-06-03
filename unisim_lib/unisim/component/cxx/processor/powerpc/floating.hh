@@ -200,7 +200,8 @@ namespace powerpc {
       bool isOverflow() const { return feExcept == FEOverflow; }
       bool isUnderflow() const { return feExcept == FEUnderflow; }
       void clearUnderflow() { feExcept = FENoException; }
-
+      void mergeException(const Flags& source) { if (feExcept == FENoException) feExcept = source.feExcept; }
+      
       void setRoundingMode(unsigned int rn_mode)
          {  switch(rn_mode)
             {
