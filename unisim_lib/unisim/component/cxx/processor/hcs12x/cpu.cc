@@ -472,7 +472,7 @@ uint8_t CPU::step()
 			throw AsynchronousException();
 		}
 		else if (state == STOP) {
-			reportTrap();
+			reportTrap("CPU is in STOP mode");
 		}
 
 	}

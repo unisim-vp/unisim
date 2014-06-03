@@ -138,7 +138,7 @@ void HCS12X ::sleep() {
 	 * The simulation control is done by the debugger engine.
 	 */
 
-	reportTrap();
+	reportTrap("CPU enter STOP mode");
 
 //	wait(irq_event | reset_event);
 

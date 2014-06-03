@@ -187,10 +187,10 @@ GDBThread::GDBThread(const char *_name, Object *_parent):
 
 GDBThread::~GDBThread() {
 
-	delete receiveDataQueue; receiveDataQueue = NULL;
-	delete sendDataQueue; sendDataQueue = NULL;
 	delete receiver; receiver = NULL;
 	delete sender; sender = NULL;
+	delete receiveDataQueue; receiveDataQueue = NULL;
+	delete sendDataQueue; sendDataQueue = NULL;
 }
 
 bool GDBThread::isData() {
@@ -198,11 +198,19 @@ bool GDBThread::isData() {
 }
 
 DBGData* GDBThread::receiveData() {
-	return (receiveDataQueue->next());
+	DBGData* response = NULL;
+
+	bool result = receiveDataQueue->next(response);
+
+	return (response);
 }
 
-void GDBThread::sendData(DBGData* data) {
-	sendDataQueue->add(data);
+bool GDBThread::sendData(DBGData* data) {
+	if (isStarted()) {
+		return (sendDataQueue->add(data));
+	}
+
+	return false;
 }
 
 void GDBThread::run() {
@@ -214,13 +222,20 @@ void GDBThread::run() {
 
 }
 
+void GDBThread::stop() {
+	if (receiver) { receiver->stop(); }
+	if (sender) { sender->stop(); }
+
+	super::stop();
+}
+
+
 GDBThread::ReceiveThread::ReceiveThread(GDBThread *_parent, BlockingCircularQueue<DBGData*, QUEUE_SIZE> *_dataQueue) : GenericThread(), parent(_parent), dataQueue(_dataQueue) {}
 GDBThread::ReceiveThread::~ReceiveThread() {}
 
 void GDBThread::ReceiveThread::run(){
 
-//	while (!parent->isTerminated()) {
-	while (!parent->isTerminated() && !isTerminated()) {
+	while (!isTerminated()) {
 
 		string buf_str;
 
@@ -233,7 +248,6 @@ void GDBThread::ReceiveThread::run(){
 			unsigned int len = buf_str.length();
 
 			if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
-				cout << "gdbThread:: Receive TERMINATE" << endl;
 
 				DBGData *request = new DBGData(DBGData::TERMINATE);
 				dataQueue->add(request);
@@ -865,10 +879,10 @@ GDBThread::SendThread::~SendThread() {}
 
 void GDBThread::SendThread::run(){
 
-//	while (!parent->isTerminated()) {
-	while (!parent->isTerminated() && !isTerminated()) {
+	while (!isTerminated()) {
 
-		DBGData* response = dataQueue->next();
+		DBGData* response = NULL;
+		if (!dataQueue->next(response)) { this->stop(); continue; }
 
 		switch (response->getCommand()) {
 			case DBGData::DBG_OK_RESPONSE: {

@@ -176,7 +176,7 @@ void S12XMMC::xgate_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
 				}
 
 				if (trap_reporting_import && debug_enabled) {
-					trap_reporting_import->ReportTrap();
+					trap_reporting_import->ReportTrap(*this);
 				}
 			}
 		}
@@ -239,7 +239,7 @@ void S12XMMC::cpu_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
 				}
 
 //				if (trap_reporting_import) {
-//					trap_reporting_import->ReportTrap();
+//					trap_reporting_import->ReportTrap(*this);
 //				}
 			}
 		}

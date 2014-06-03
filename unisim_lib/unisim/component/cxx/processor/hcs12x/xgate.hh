@@ -334,7 +334,7 @@ public:
 	virtual void busWrite(MMC_DATA *buffer) = 0;
 	virtual void busRead(MMC_DATA *buffer) = 0;
 
-	inline void reportTrap();
+	inline void reportTrap(const char *c_str);
 
 	//==========================================
 	//=     ISA - MEMORY ACCESS ROUTINES       =
@@ -777,9 +777,9 @@ inline void XGATE::monitorStore(address_t logicalAddress, uint32_t size)
 	}
 }
 
-inline void XGATE::reportTrap() {
+inline void XGATE::reportTrap(const char *c_str) {
 	if (trap_reporting_import) {
-		trap_reporting_import->ReportTrap();
+		trap_reporting_import->ReportTrap(*this, c_str);
 	}
 
 }

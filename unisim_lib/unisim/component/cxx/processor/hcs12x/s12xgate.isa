@@ -83,9 +83,20 @@ action {uint8_t} getCycles () {
 action {void} execute({XGATE *} {cpu}) {
 	std::cerr << "Unknown instruction" << std::endl;
 
+/**
+ 10.4.5 Software Error Detection (page 380)
+      Upon detecting an error condition caused by erratic application code, the XGATE module will
+      immediately terminate program execution and trigger a non-maskable interrupt to the S12X_CPU. There
+      are three error conditions:
+       - Execution of an illegal opcode
+       - Illegal opcode fetches
+       - Illegal load or store accesses
+**/
+
 	cpu->assert_software_error_interrupt();
 
 	cpu->Stop(-1);
+//	cpu->terminateCurrentThread();
 }
 
 // Return to Scheduler and others
@@ -137,7 +148,10 @@ return_scheduler.execute = {
 		 * Put XGATE into Debug Mode and Signals a Software breakpoint to the S12X_DBG module (not emulated).
 		 * It is not possible to single step over a BRK instruction. This instruction does not advance the program counter.
 		 */
-		cpu->reportTrap();
+		cpu->reportTrap("XGATE has encountered BRK instruction. S12X_DBG module (not emulated).");
+		
+		cpu->setXGPC(cpu->getXGPC() - 2);
+		
 	} break;
 	case 1: /* NOP */ {
 		// No Operation for one cycle.

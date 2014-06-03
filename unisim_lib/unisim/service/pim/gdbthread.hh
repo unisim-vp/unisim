@@ -103,10 +103,10 @@ public:
 
 	bool isData();
 	DBGData* receiveData();
-	void sendData(DBGData* data);
+	bool sendData(DBGData* data);
 
 	virtual void run();
-
+	virtual void stop();
 protected:
 
 private:

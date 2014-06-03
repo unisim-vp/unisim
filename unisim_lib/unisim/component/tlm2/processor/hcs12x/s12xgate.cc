@@ -80,6 +80,8 @@ S12XGATE::S12XGATE(const sc_module_name& name, S12XMMC *_mmc, Object *parent) :
 
 	, last_instruction_counter(0)
 
+	, asynchronous_interrupt(false)
+
 {
 
 	param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);

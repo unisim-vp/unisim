@@ -484,7 +484,7 @@ public:
 	inline void monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal);
 	inline void monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal);
 
-	inline void reportTrap();
+	inline void reportTrap(const char *c_str);
 
 	//=====================================================================
 	//=             memory interface methods                              =
@@ -669,9 +669,9 @@ inline void CPU::monitorStore(address_t logicalAddress, uint32_t size, bool isGl
 	}
 }
 
-inline void CPU::reportTrap() {
+inline void CPU::reportTrap(const char *c_str) {
 	if (trap_reporting_import) {
-		trap_reporting_import->ReportTrap();
+		trap_reporting_import->ReportTrap(*this, c_str);
 	}
 
 }

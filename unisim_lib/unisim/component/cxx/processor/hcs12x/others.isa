@@ -163,7 +163,7 @@ bgnd.disasm = {
 
 bgnd.execute = {
 	// TODO
-	cpu->reportTrap();
+	cpu->reportTrap("CPU has encountered BGND instruction. S12X_DBG module (not emulated).");
 }
 
 /* ********** Interrupt instructions ******** */

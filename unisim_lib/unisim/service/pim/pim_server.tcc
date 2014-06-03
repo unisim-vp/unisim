@@ -121,7 +121,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 
 	, socketServer(NULL)
 	, monitorThread(NULL)
-	, pimServerThread(NULL)
 
 	, gdbThread(NULL)
 
@@ -165,15 +164,9 @@ template <class ADDRESS>
 PIMServer<ADDRESS>::~PIMServer()
 {
 
-	if (gdbThread) {
-
-		ReportProgramExit();
-
-		delete gdbThread; gdbThread = NULL;
-	}
+	if (gdbThread) { delete gdbThread; gdbThread = NULL; }
 
 	if (monitorThread) { delete monitorThread; monitorThread = NULL; }
-	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
 
 	if (socketServer) { delete socketServer; socketServer = NULL;}
 
@@ -309,9 +302,11 @@ bool PIMServer<ADDRESS>::EndSetup() {
 template <class ADDRESS>
 void PIMServer<ADDRESS>::Stop(int exit_status) {
 
-	if (socketServer) { socketServer->stop();}
+	ReportProgramExit();
+
+	if (gdbThread) { gdbThread->stop();}
 	if (monitorThread) { monitorThread->stop();}
-	if (pimServerThread) { pimServerThread->stop();}
+	if (socketServer) { socketServer->stop();}
 
 }
 
@@ -1003,11 +998,11 @@ bool PIMServer<ADDRESS>::ReportProgramExit()
 	DBGData* response = new DBGData(DBGData::DBG_PROCESS_EXIT);
 	gdbThread->sendData(response);
 
-#ifdef WIN32
-			Sleep(1);
-#else
-			usleep(1000);
-#endif
+//#ifdef WIN32
+//			Sleep(1);
+//#else
+//			usleep(1000);
+//#endif
 
 	return true;
 }
