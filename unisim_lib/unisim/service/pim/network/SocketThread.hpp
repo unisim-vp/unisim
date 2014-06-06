@@ -45,8 +45,6 @@ public:
 	void setSockfd(int sockfd);
 	int getSockfd() { return (sockfd); }
 	void waitConnection();
-	void lockSocket() { pthread_mutex_lock( &sockfd_mutex ); }
-	void unlockSocket() { pthread_mutex_unlock( &sockfd_mutex ); }
 
 protected:
 

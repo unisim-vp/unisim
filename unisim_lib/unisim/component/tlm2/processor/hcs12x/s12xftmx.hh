@@ -108,6 +108,8 @@ public:
 		FECCR000, FECCR001, FECCR010, FECCR011, FECCR100, FECCR101, FECCR110, FECCR111
 	};
 
+	static const unsigned int REGISTERS_BANK_SIZE = 20;
+
 	static const uint8_t EraseVerifyAllBlocks = 0x01;
 	static const uint8_t EraseVerifyBlock = 0x02;
 	static const uint8_t EraseVerifyPFlashSection = 0x03;
@@ -139,14 +141,14 @@ public:
 	static const uint16_t EEE_NON_VOLATILE_SPACE_SIZE = 8;
 	static const uint16_t BACKDOOR_ACCESS_KEY_SIZE = 8;
 
+	ServiceExport<Registers> registers_export;
+
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
 	tlm_utils::simple_target_socket<S12XFTMX> bus_clock_socket;
 
 	// interface with bus
 	tlm_utils::simple_target_socket<S12XFTMX> slave_socket;
-
-	ServiceExport<Registers> registers_export;
 
 	/**
 	 * Constructor.
@@ -262,14 +264,6 @@ private:
 	Parameter<double>	param_oscillator_cycle_time_int;
 	sc_time		oscillator_cycle_time;
 
-	sc_time		fclk_time;
-	long		min_fclk_time_int;
-	sc_time		min_fclk_time;
-	Parameter<long> param_min_fclk_time;
-	long		max_fclk_time_int;
-	sc_time		max_fclk_time;
-	Parameter<long> param_max_fclk_time;
-
 	sc_event command_launch_event;
 
 	address_t	baseAddress;
@@ -362,13 +356,13 @@ private:
 	uint16_t			min_ratio_dflash_buffer_ram;
 	Parameter<uint16_t>	param_min_ratio_dflash_buffer_ram;
 
-	// Registers map
-	map<string, Register *> registers_registry;
-
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
-
-	uint8_t  fclkdiv_reg, fsec_reg, fccobix_reg, feccrix_reg, fcnfg_reg, fercnfg_reg, fstat_reg, ferstat_reg, fprot_reg, eprot_reg, fopt_reg, frsv0_reg, frsv1_reg, frsv2_reg;
-	uint16_t fccob_reg[6], etag_reg, feccr_reg[8];
+	sc_time		fclk_time;
+	long		min_fclk_time_int;
+	sc_time		min_fclk_time;
+	Parameter<long> param_min_fclk_time;
+	long		max_fclk_time_int;
+	sc_time		max_fclk_time;
+	Parameter<long> param_max_fclk_time;
 
 	vector <uint16_t*> loadDataFieldBuffer;
 	bool partitionDFlashCmd_Launched;
@@ -379,6 +373,14 @@ private:
 	uint16_t sector_erased_count;
 	uint8_t dead_sector_count;
 	uint8_t ready_sector_count;
+
+	// Registers map
+	map<string, Register *> registers_registry;
+
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
+	uint8_t  fclkdiv_reg, fsec_reg, fccobix_reg, feccrix_reg, fcnfg_reg, fercnfg_reg, fstat_reg, ferstat_reg, fprot_reg, eprot_reg, fopt_reg, frsv0_reg, frsv1_reg, frsv2_reg;
+	uint16_t fccob_reg[6], etag_reg, feccr_reg[8];
 
 	inline bool isCommandCompleteInterruptEnable() { return ((fcnfg_reg & 0x80) != 0); }
 	inline bool isignoreSingleBitFault() { return ((fcnfg_reg & 0x10) != 0); }

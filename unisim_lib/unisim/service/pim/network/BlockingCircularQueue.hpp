@@ -170,8 +170,8 @@ protected:
 
 private:
 	T item[MAX_SIZE];
-    int head;
-    int tail;
+    unsigned int head;
+    unsigned int tail;
 
 	bool alive;
 

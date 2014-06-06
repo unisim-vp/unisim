@@ -50,7 +50,7 @@ PIM::PIM(const char *name, Object *parent) :
 
 PIM::~PIM() {
 
-	for (int i=0; i < pim_model.size(); i++) {
+	for (unsigned int i=0; i < pim_model.size(); i++) {
 		if (pim_model[i]) { delete pim_model[i]; pim_model[i] = NULL;}
 	}
 	pim_model.clear();
@@ -66,7 +66,7 @@ bool PIM::Setup() {
 component_t* PIM::findComponent(const string name) {
 
 
-	for (int i=0; i < pim_model.size(); i++) {
+	for (unsigned int i=0; i < pim_model.size(); i++) {
 		if (pim_model[i]->name.compare(name) == 0) {
 			return (pim_model[i]);
 		}
@@ -153,7 +153,7 @@ void PIM::generatePimFile() {
     }
     if (tmp != NULL) xmlFree(tmp);
 
-	for (int i=0; i < pim_model.size(); i++) {
+	for (unsigned int i=0; i < pim_model.size(); i++) {
 
 	    /* Start an element named "component" as child of "pim". */
 	    rc = xmlTextWriterStartElement(writer, BAD_CAST "component");
@@ -189,7 +189,7 @@ void PIM::generatePimFile() {
 	    }
 	    if (tmp != NULL) xmlFree(tmp);
 
-		for (int j=0; j < pim_model[i]->pins.size(); j++) {
+		for (unsigned int j=0; j < pim_model[i]->pins.size(); j++) {
 
 		    rc = xmlTextWriterStartElement(writer, BAD_CAST "pin");
 		    if (rc < 0) {

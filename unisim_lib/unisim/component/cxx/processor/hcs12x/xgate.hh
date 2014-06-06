@@ -437,12 +437,6 @@ protected:
 	bool verbose_exception;
 	Parameter<bool> param_verbose_exception;
 
-	bool trace_enable;
-	Parameter<bool> param_trace_enable;
-
-	uint64_t periodic_trap;
-	Parameter<uint64_t> param_periodic_trap;
-
 	/** indicates if the memory accesses require to be reported */
 	bool requires_memory_access_reporting;
 	Parameter<bool> param_requires_memory_access_reporting;
@@ -451,8 +445,17 @@ protected:
 	bool requires_finished_instruction_reporting;
 	Parameter<bool> param_requires_finished_instruction_reporting;
 
+	bool trace_enable;
+	Parameter<bool> param_trace_enable;
+
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
+
+	uint64_t periodic_trap;
+	Parameter<uint64_t> param_periodic_trap;
+
+	string version;
+	Parameter<string> param_version;
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
@@ -461,9 +464,6 @@ protected:
 
 	uint8_t sofwtare_channel_id[XGATE_SIZE];
 	ParameterArray<uint8_t> param_software_channel_id;
-
-	string version;
-	Parameter<string> param_version;
 
 	bool xgate_enabled;
 	bool stop_current_thread;

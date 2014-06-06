@@ -65,11 +65,27 @@ MMC::MMC(const char *name, S12MPU_IF *_mpu, Object *parent):
 	, registers_export("registers_export", this)
 
 	, mpu(_mpu)
-	, version("V3")
-	, param_version("version", this, version, "MMC version. Supported are V3 and V4. Default is V3")
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
+	, version("V3")
+	, param_version("version", this, version, "MMC version. Supported are V3 and V4. Default is V3")
+
+	, mmcctl0(MMCCTL0_RESET)
+	, mode(MMC_MODE_RESET)
+	, gpage(GLOBAL_RESET_PAGE)
+	, direct(DIRECT_RESET_PAGE)
+	, mmcctl1(mmcctl1_int)
+	, rpage(RAM_RESET_PAGE)
+	, epage(EEPROM_RESET_PAGE)
+	, ppage(FLASH_RESET_PAGE)
+	, ramwpc(RAMWPC_RESET)
+	, ramxgu(RAMXGU_RESET)
+	, ramshl(RAMSHL_RESET)
+	, ramshu(RAMSHU_RESET)
+
+	, directSet(false)
+
 	, mode_int(MMC_MODE_RESET)
 	, mmcctl1_int(MMCCTL1_RESET)
 	, param_mode("mode", this, mode_int)
@@ -78,6 +94,7 @@ MMC::MMC(const char *name, S12MPU_IF *_mpu, Object *parent):
 	, param_address_encoding("address-encoding",this,address_encoding)
 	, ppage_address(0x30)
 	, param_ppage_address("ppage-address", this, ppage_address)
+
 
 {
 

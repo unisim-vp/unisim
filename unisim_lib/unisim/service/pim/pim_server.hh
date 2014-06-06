@@ -121,14 +121,14 @@ typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 template <class ADDRESS>
 class PIMServer :
 	public Service<DebugControl<ADDRESS> >
-	, public Service<DebugEventListener<ADDRESS> >
 	, public Service<TrapReporting>
-	, public Client<DebugEventTrigger<ADDRESS> >
 	, public Client<Memory<ADDRESS> >
 	, public Client<Disassembly<ADDRESS> >
 	, public Client<SymbolTableLookup<ADDRESS> >
 	, public Client<StatementLookup<ADDRESS> >
 	, public Client<Registers>
+	, public Service<DebugEventListener<ADDRESS> >
+	, public Client<DebugEventTrigger<ADDRESS> >
 
 	, public VariableBaseListener
 

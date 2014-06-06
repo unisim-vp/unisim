@@ -110,6 +110,7 @@ public:
 
 	// wake-up request from XINT
 	tlm_target_socket< > xint_interrupt_request;
+
 	tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 	void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t) { }
 	bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm_dmi&  dmi_data) { return (false);}
@@ -173,8 +174,29 @@ private:
 	PayloadFabric<XINT_Payload> xint_init_payload_fabric;
 	XINT_Payload *xint_init_payload;
 
+	sc_event xgate_enable_event;
+	sc_event xgate_idle_event;
+	sc_event xgate_newthread_event;
+
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;
+
+	sc_time nice_time;
+	sc_time next_nice_time;
+	Parameter<sc_time> param_nice_time;
+
+	sc_time cpu_cycle_time;
+	sc_time bus_cycle_time;
+	sc_time cpu_time;
+	sc_time bus_time;
+	sc_time last_cpu_time;
+
+	sc_time core_clock_time;
+	uint64_t core_clock_int;
+	Parameter<uint64_t> param_core_clock;
+
+	bool enable_fine_timing;
+	Parameter<bool> param_enable_fine_timing;
 
 	// verbose parameters
 	bool verbose_tlm_bus_synchronize;
@@ -183,27 +205,6 @@ private:
 	Parameter<bool> param_verbose_tlm_run_thread;
 	bool verbose_tlm_commands;
 	Parameter<bool> param_verbose_tlm_commands;
-
-	uint64_t core_clock_int;
-	sc_time core_clock_time;
-	Parameter<uint64_t> param_core_clock;
-
-	sc_time cpu_cycle_time;
-	sc_time bus_cycle_time;
-	sc_time cpu_time;
-	sc_time bus_time;
-	sc_time last_cpu_time;
-
-	sc_event xgate_enable_event;
-	sc_event xgate_idle_event;
-	sc_event xgate_newthread_event;
-
-	sc_time nice_time;
-	sc_time next_nice_time;
-	Parameter<sc_time> param_nice_time;
-
-	bool enable_fine_timing;
-	Parameter<bool> param_enable_fine_timing;
 
 	uint64_t last_instruction_counter;
 

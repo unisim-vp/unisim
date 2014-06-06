@@ -103,7 +103,7 @@ using unisim::component::tlm2::processor::hcs12x::UNISIM_ATD_ProtocolTypes;
 using unisim::component::tlm2::processor::hcs12x::ATD_Payload;
 
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 class ATD10B :
 	public sc_module,
 	public CallBackObject,
@@ -127,6 +127,8 @@ public:
 		ATDDR5H, ATDDR5L, ATDDR6H, ATDDR6L, ATDDR7H, ATDDR7L, ATDDR8H, ATDDR8L, ATDDR9H, ATDDR9L,
 		ATDDR10H, ATDDR10L, ATDDR11H, ATDDR11L, ATDDR12H, ATDDR12L, ATDDR13H, ATDDR13L,
 		ATDDR14H, ATDDR14L,	ATDDR15H, ATDDR15L};
+
+	static const unsigned int REGISTERS_BANK_SIZE = 48;
 
 	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD_SIZE> > anx_socket;
 
@@ -243,9 +245,6 @@ private:
 	Parameter <double> param_vrl;
 	Parameter <double> param_vrh;
 
-	bool	debug_enabled;
-	Parameter<bool>	param_debug_enabled;
-
 	/**
 	 * Vih and Vil are logical levels
 	 *  - Vih minimum voltage to model logical "1" the default is 3.25 V (min)
@@ -254,6 +253,9 @@ private:
 	double vih, vil;
 	Parameter<double> param_vih;
 	Parameter<double> param_vil;
+
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
 
 	// External Trigger Parameter
 	bool			hasExternalTrigger;

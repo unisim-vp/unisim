@@ -48,59 +48,60 @@ using unisim::util::debug::SimpleRegister;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
-	sc_module(name),
-	unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent),
-	unisim::kernel::service::Service<Registers>(name, parent),
-	unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent),
-	unisim::kernel::service::Client<TrapReporting>(name, parent),
+	Object(name, parent)
+	, sc_module(name)
+	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
+	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Client<TrapReporting>(name, parent)
 
-	anx_socket("anx_socket"),
-	slave_socket("slave_socket"),
-	bus_clock_socket("bus_clock_socket"),
+	, anx_socket("anx_socket")
+	, slave_socket("slave_socket")
+	, bus_clock_socket("bus_clock_socket")
 
-	memory_export("memory_export", this),
-	memory_import("memory_import", this),
-	registers_export("registers_export", this),
-	trap_reporting_import("trap_reporting_import", this),
+	, memory_export("memory_export", this)
+	, memory_import("memory_import", this)
+	, registers_export("registers_export", this)
+	, trap_reporting_import("trap_reporting_import", this)
 
-	input_anx_payload_queue("input_anx_payload_queue"),
+	, input_anx_payload_queue("input_anx_payload_queue")
 
-	bus_cycle_time_int(250000),
-	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
+	, bus_cycle_time_int(250000)
+	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
-	conversionStop(false),
-	abortSequence(false),
-	resultIndex(0),
-	isATDStarted(false),
+	, conversionStop(false)
+	, abortSequence(false)
+	, resultIndex(0)
+	, isATDStarted(false)
 
-	isTriggerModeRunning(false),
-	isATDON(false),
+	, isTriggerModeRunning(false)
+	, isATDON(false)
 
-	baseAddress(0x0080), // MC9S12XDP512V2 - ATD baseAddress
-	param_baseAddress("base-address", this, baseAddress, "Base address of ATD/ADC"),
-	interruptOffset(0xD0), // ATD1 - ATDCTL2 (ASCIE)
-	param_interruptOffset("interrupt-offset", this, interruptOffset),
+	, baseAddress(0x0080) // MC9S12XDP512V2 - ATD baseAddress
+	, param_baseAddress("base-address", this, baseAddress, "Base address of ATD/ADC")
+	, interruptOffset(0xD0) // ATD1 - ATDCTL2 (ASCIE)
+	, param_interruptOffset("interrupt-offset", this, interruptOffset)
 
-	vrl(0),
-	vrh(5.12),
-	param_vrl("vrl", this, vrl),
-	param_vrh("vrh", this, vrh),
+	, vrl(0)
+	, vrh(5.12)
+	, param_vrl("vrl", this, vrl)
+	, param_vrh("vrh", this, vrh)
 
-	vih(3.25),
-	vil(1.75),
-	param_vih("vih", this, vih, "High Voltage Threshold"),
-	param_vil("vil", this, vil, "Low Voltage Threshold"),
+	, vih(3.25)
+	, vil(1.75)
+	, param_vih("vih", this, vih, "High Voltage Threshold")
+	, param_vil("vil", this, vil, "Low Voltage Threshold")
 
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
+	, debug_enabled(false)
+	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
-	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
+	, hasExternalTrigger(false)
+	, param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger)
 
-	hasExternalTrigger(false),
-	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger)
+	, analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins")
+
 {
 	
 	param_bus_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -132,7 +133,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 ATD10B<ATD_SIZE>::~ATD10B() {
 
 	xint_payload->release();
@@ -158,26 +159,26 @@ ATD10B<ATD_SIZE>::~ATD10B() {
 
 
 // Master methods
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	// Leave this empty as it is designed for memory mapped buses
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 unsigned int ATD10B<ATD_SIZE>::transport_dbg(ATD_Payload<ATD_SIZE>& payload)
 {
 	// Leave this empty as it is designed for memory mapped buses
 	return (0);
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::b_transport(ATD_Payload<ATD_SIZE>& payload, sc_core::sc_time& t) {
 	payload.acquire();
 	input_anx_payload_queue.notify(payload, t);
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 bool ATD10B<ATD_SIZE>::get_direct_mem_ptr(ATD_Payload<ATD_SIZE>& payload, tlm_dmi&  dmi_data) {
 	return (false);
 }
@@ -188,7 +189,7 @@ bool ATD10B<ATD_SIZE>::get_direct_mem_ptr(ATD_Payload<ATD_SIZE>& payload, tlm_dm
  * Role :
  * 1/ Sample and Hold machine accepts analog signals from external world and stores them as capacitor charge on a storage node.
  */
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch(phase)
@@ -221,7 +222,7 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 	return (TLM_ACCEPTED);
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::Process()
 {
 	srand(12345);
@@ -252,7 +253,7 @@ void ATD10B<ATD_SIZE>::Process()
  *  2/ The analog input multiplexer connects one of the external analog input channels to the sample and hold machine
  */
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 {
 	ATD_Payload<ATD_SIZE> *last_payload = NULL;
@@ -280,7 +281,7 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 	}
 
 	if (payload) {
-		for (int i=0; i<ATD_SIZE; i++) {
+		for (unsigned int i=0; i<ATD_SIZE; i++) {
 			anValue[i] = payload->anPort[i];
 		}
 		payload->release();
@@ -288,7 +289,7 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::RunTriggerMode() {
 
 	/**
@@ -338,7 +339,7 @@ void ATD10B<ATD_SIZE>::RunTriggerMode() {
 
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::RunScanMode()
 {
 
@@ -462,7 +463,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 }
 
 // Master methods
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
 {
 	if(phase == BEGIN_RESP)
@@ -474,7 +475,7 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_bw( XINT_Payload& payload, tlm_phas
 }
 
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::assertInterrupt() {
 
 //	std::cout << sc_object::name() << "assert ATD_SequenceComplete_Interrupt at " << sc_time_stamp() << std::endl;
@@ -512,7 +513,7 @@ void ATD10B<ATD_SIZE>::assertInterrupt() {
 
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::sequenceComplete() {
 
 	conversionStop = true;
@@ -533,7 +534,7 @@ void ATD10B<ATD_SIZE>::sequenceComplete() {
 
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::abortConversion() {
 
 	conversionStop = true;
@@ -546,7 +547,7 @@ void ATD10B<ATD_SIZE>::abortConversion() {
 
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::abortAndStartNewConversion() {
 
 	conversionStop = false;
@@ -573,7 +574,7 @@ void ATD10B<ATD_SIZE>::abortAndStartNewConversion() {
 //	}
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::setATDClock() {
 
 	uint8_t smpMask = 0x60;
@@ -596,7 +597,7 @@ void ATD10B<ATD_SIZE>::setATDClock() {
  *       ATDCTL5::DJM (justification left/right),
  *       ATDCTL5::DSGN (data sign)
  */
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 uint16_t ATD10B<ATD_SIZE>::getDigitalToken(double analogVoltage) {
 
 	uint16_t digitalToken = 0;
@@ -667,7 +668,7 @@ uint16_t ATD10B<ATD_SIZE>::getDigitalToken(double analogVoltage) {
 //=====================================================================
 //=             registers setters and getters                         =
 //=====================================================================
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 bool ATD10B<ATD_SIZE>::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
@@ -687,12 +688,12 @@ bool ATD10B<ATD_SIZE>::read(unsigned int offset, const void *buffer, unsigned in
 		case ATDDIEN1: *((uint8_t *) buffer) = atddien1_register; break;
 		case PORTAD0: {
 			bool isETRIGE = ((atdctl2_register & 0x04) != 0);
-			int isETRIGCHx = atdctl1_register & 0x0F;
+			uint8_t isETRIGCHx = atdctl1_register & 0x0F;
 			bool isETRIGSEL = ((atdctl1_register & 0x80) != 0);
 
 			portad0_register = 0;
 			uint8_t ienMask = 0x01;
-			for (int i=8; i<ATD_SIZE; i++) {
+			for (unsigned int i=8; i<ATD_SIZE; i++) {
 				if (((atddien0_register & ienMask) != 0) || (isETRIGE && (isETRIGCHx == i) && !isETRIGSEL)) {
 					if (analog_signal[i] >= vih) {
 						portad0_register = portad0_register | ienMask;
@@ -755,7 +756,7 @@ bool ATD10B<ATD_SIZE>::read(unsigned int offset, const void *buffer, unsigned in
 	return (true);
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 bool ATD10B<ATD_SIZE>::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
@@ -845,6 +846,7 @@ bool ATD10B<ATD_SIZE>::write(unsigned int offset, const void *buffer, unsigned i
 		default:
 			if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
 				/* write has no effect */
+				cout << "ATD::write" << endl;
 			} else {
 				return (false);
 			}
@@ -854,7 +856,7 @@ bool ATD10B<ATD_SIZE>::write(unsigned int offset, const void *buffer, unsigned i
 	return (true);
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
 	tlm::tlm_command cmd = trans.get_command();
@@ -862,7 +864,7 @@ void ATD10B<ATD_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& del
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 48))) {
+	if ((address >= baseAddress) && (address < (baseAddress + REGISTERS_BANK_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -878,7 +880,7 @@ void ATD10B<ATD_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& del
 	}
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
@@ -887,7 +889,7 @@ void ATD10B<ATD_SIZE>::ComputeInternalTime() {
 
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
@@ -903,7 +905,7 @@ void ATD10B<ATD_SIZE>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& 
 //=                  Client/Service setup methods                     =
 //=====================================================================
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 bool ATD10B<ATD_SIZE>::BeginSetup() {
 
 	char buf[20];
@@ -1047,17 +1049,17 @@ bool ATD10B<ATD_SIZE>::BeginSetup() {
 	return (true);
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 bool ATD10B<ATD_SIZE>::Setup(ServiceExportBase *srv_export) {
 	return (true);
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 bool ATD10B<ATD_SIZE>::EndSetup() {
 	return (true);
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 Register* ATD10B<ATD_SIZE>::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
@@ -1067,11 +1069,11 @@ Register* ATD10B<ATD_SIZE>::GetRegister(const char *name)
 
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::OnDisconnect() {
 }
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 void ATD10B<ATD_SIZE>::Reset() {
 
 	atdctl0_register = ATD_SIZE - 1;
@@ -1091,7 +1093,7 @@ void ATD10B<ATD_SIZE>::Reset() {
 	portad0_register = 0xFF;
 	portad1_register = 0xFF;
 
-	for (int i=0; i < ATD_SIZE; i++)
+	for (unsigned int i=0; i < ATD_SIZE; i++)
 		atddrhl_register[i] = 0x00;
 
 }
@@ -1100,7 +1102,7 @@ void ATD10B<ATD_SIZE>::Reset() {
 //=====================================================================
 //=             memory interface methods                              =
 //=====================================================================
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 bool ATD10B<ATD_SIZE>::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+(ATDDR0H + 2*ATD_SIZE - 1)))) {
@@ -1169,7 +1171,7 @@ bool ATD10B<ATD_SIZE>::ReadMemory(physical_address_t addr, void *buffer, uint32_
 	return (false);
 }
 
-//template <uint8_t ATD_SIZE>
+//template <unsigned int ATD_SIZE>
 //bool ATD10B<ATD_SIZE>::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 //
 //	if ((addr >= baseAddress) && (addr <= (baseAddress+(ATDDR0H + 2*ATD_SIZE - 1)))) {
@@ -1187,7 +1189,7 @@ bool ATD10B<ATD_SIZE>::ReadMemory(physical_address_t addr, void *buffer, uint32_
 //
 //}
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 bool ATD10B<ATD_SIZE>::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+(ATDDR0H + 2*ATD_SIZE - 1)))) {

@@ -134,7 +134,7 @@ public:
 
 	void Reset();
 
-	void busWrite(MMC_DATA *buffer);
+	virtual void busWrite(MMC_DATA *buffer);
 	void busRead(MMC_DATA *buffer);
 
 	//================================================================

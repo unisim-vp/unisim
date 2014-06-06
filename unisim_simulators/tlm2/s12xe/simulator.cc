@@ -58,32 +58,36 @@ Simulator::Simulator(int argc, char **argv)
 #endif
 	, loaderS19(0)
 	, loaderELF(0)
-	, debugger(0)
-	, pim_server(0)
-	, gdb_server(0)
-	, inline_debugger(0)
 	, profiler(0)
+	, debugger(0)
+	, gdb_server(0)
+	, pim_server(0)
+	, inline_debugger(0)
+
 	, sim_time(0)
 	, host_time(0)
-	, isS19(false)
+
 	, enable_pim_server(false)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
+	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
+	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
+	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
+
 	, sci_enable_telnet(false)
+	, param_sci_enable_telnet("sci-enable-telnet", 0, sci_enable_telnet, "SCI Enable/Disable telnet instantiation")
 	, spi_enable_telnet(false)
+	, param_spi_enable_telnet("spi-enable-telnet", 0, spi_enable_telnet, "SPI Enable/Disable telnet instantiation")
+
+	, endian("")
+	, program_counter_name("")
+
+	, isS19(false)
 
 	, dump_parameters(false)
 	, dump_formulas(false)
 	, dump_statistics(true)
 
-	, endian("")
-	, program_counter_name("")
-
-	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
-	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
-	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
-	, param_sci_enable_telnet("sci-enable-telnet", 0, sci_enable_telnet, "SCI Enable/Disable telnet instantiation")
-	, param_spi_enable_telnet("spi-enable-telnet", 0, spi_enable_telnet, "SPI Enable/Disable telnet instantiation")
 	, param_dump_parameters("dump-parameters", 0, dump_parameters, "")
 	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
@@ -91,6 +95,7 @@ Simulator::Simulator(int argc, char **argv)
 	, null_stat_var(0)
 	, stat_data_load_ratio("data-load-ratio %", 0, null_stat_var, "Data Load Ratio")
 	, stat_data_store_ratio("data-store-ratio %", 0, null_stat_var, "Data Store Ratio")
+
 
 {
 

@@ -57,39 +57,8 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, erase_fail_ratio(0.01)
 	, param_erase_fail_ratio("erase-fail-ratio", this, erase_fail_ratio)
 
-	, dflash_start_address(0x100000)
-	, param_dflash_start_address("dflash-start-address", this, dflash_start_address)
-
-	, dflash_end_address(0x107FFF)
-	, param_dflash_end_address("dflash-end-address", this, dflash_end_address)
-
-	, eee_nonvolatile_information_register_start_address(0x120000)
-	, param_eee_nonvolatile_information_register_start_address("eee-nonvolatile-information-register-start-address", this, eee_nonvolatile_information_register_start_address)
-
-	, eee_nonvolatile_information_register_size(128)
-	, param_eee_nonvolatile_information_register_size("eee-nonvolatile-information-register-size", this, eee_nonvolatile_information_register_size)
-
-	, eee_tag_ram_start_address(0x122000)
-	, param_eee_tag_ram_start_address("eee_tag-ram-start-address", this, eee_tag_ram_start_address)
-
-	, eee_tag_ram_size(256)
-	, param_eee_tag_ram_size("EEE-tag-RAM-size", this, eee_tag_ram_size)
-
-	, eee_protectable_high_address(0x13FFFF)
-	, param_eee_protectable_high_address("eee-protectable-high-address", this, eee_protectable_high_address)
-
-
-	, memory_controller_scratch_ram_start_address(0x124000)
-	, param_memory_controller_scratch_ram_start_address("memory-controller-scratch-ram-start-address", this, memory_controller_scratch_ram_start_address)
-
-	, memory_controller_scratch_ram_size(1024)
-	, param_memory_controller_scratch_ram_size("memory-controller-scratch-ram-size", this, memory_controller_scratch_ram_size)
-
-	, buffer_ram_start_address(0x13F000)
-	, param_buffer_ram_start_address("buffer-ram-start-address", this, buffer_ram_start_address)
-
-	, buffer_ram_end_address(0x13FFFF)
-	, param_buffer_ram_end_address("buffer-ram-end-address", this, buffer_ram_end_address)
+	, pflash_blocks_description_string("7C0000,7FFFFF;7A0000,7BFFFF;780000,79FFFF;740000,77FFFF;700000,73FFFF")
+	, param_pflash_blocks_description_string("pflash-blocks-description", this, pflash_blocks_description_string)
 
 	, pflash_start_address(0x700000)
 	, param_pflash_start_address("pflash-start-address", this, pflash_start_address)
@@ -101,9 +70,6 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, pflash_protectable_low_address(0x7F8000)
 	, param_pflash_protectable_low_address("pflash-protectable-low-address", this, pflash_protectable_low_address)
 
-	, pflash_blocks_description_string("7C0000,7FFFFF;7A0000,7BFFFF;780000,79FFFF;740000,77FFFF;700000,73FFFF")
-	, param_pflash_blocks_description_string("pflash-blocks-description", this, pflash_blocks_description_string)
-
 	, blackdoor_comparison_key_address(0x7FFF00)
 	, param_blackdoor_comparison_key_address("blackdoor-comparison-key-address", this, blackdoor_comparison_key_address)
 	, pflash_protection_byte_address(0x7FFF0C)
@@ -114,6 +80,31 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, param_flash_nonvolatile_byte_address("flash-nonvolatile-byte-address", this, flash_nonvolatile_byte_address, "Flash non-volatile (option) byte address")
 	, flash_security_byte_address(0x7FFF0F)
 	, param_flash_security_byte_address("flash-security-byte-address", this, flash_security_byte_address)
+
+	, dflash_start_address(0x100000)
+	, param_dflash_start_address("dflash-start-address", this, dflash_start_address)
+	, dflash_end_address(0x107FFF)
+	, param_dflash_end_address("dflash-end-address", this, dflash_end_address)
+
+	, eee_nonvolatile_information_register_start_address(0x120000)
+	, param_eee_nonvolatile_information_register_start_address("eee-nonvolatile-information-register-start-address", this, eee_nonvolatile_information_register_start_address)
+	, eee_nonvolatile_information_register_size(128)
+	, param_eee_nonvolatile_information_register_size("eee-nonvolatile-information-register-size", this, eee_nonvolatile_information_register_size)
+	, eee_tag_ram_start_address(0x122000)
+	, param_eee_tag_ram_start_address("eee_tag-ram-start-address", this, eee_tag_ram_start_address)
+	, eee_tag_ram_size(256)
+	, param_eee_tag_ram_size("EEE-tag-RAM-size", this, eee_tag_ram_size)
+	, eee_protectable_high_address(0x13FFFF)
+	, param_eee_protectable_high_address("eee-protectable-high-address", this, eee_protectable_high_address)
+
+	, memory_controller_scratch_ram_start_address(0x124000)
+	, param_memory_controller_scratch_ram_start_address("memory-controller-scratch-ram-start-address", this, memory_controller_scratch_ram_start_address)
+	, memory_controller_scratch_ram_size(1024)
+	, param_memory_controller_scratch_ram_size("memory-controller-scratch-ram-size", this, memory_controller_scratch_ram_size)
+	, buffer_ram_start_address(0x13F000)
+	, param_buffer_ram_start_address("buffer-ram-start-address", this, buffer_ram_start_address)
+	, buffer_ram_end_address(0x13FFFF)
+	, param_buffer_ram_end_address("buffer-ram-end-address", this, buffer_ram_end_address)
 
 	, dflash_partition_user_access_address(0x120000)
 	, param_dflash_partition_user_access_address("dflash-partition-user-access-address", this, dflash_partition_user_access_address)
@@ -133,10 +124,20 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, min_ratio_dflash_buffer_ram(8)
 	, param_min_ratio_dflash_buffer_ram("min-ratio-dflash-buffer-ram", this, min_ratio_dflash_buffer_ram)
 
+	, fclk_time(1250000, SC_PS) // 0.8 MHz
+	, min_fclk_time_int(1250000) // 0.8 MHz
+	, param_min_fclk_time("min-fclk-time", this, min_fclk_time_int, "Specify minimum frequency of FTM")
+	, max_fclk_time_int(952000)  // 1.05 MHz
+	, param_max_fclk_time("max-fclk-time", this, max_fclk_time_int, "Specify maximum frequency of FTM")
+
 	, partitionDFlashCmd_Launched(false)
 	, fullPartitionDFlashCmd_Launched(false)
 	, eepromEmulationEnabled(false)
 	, verifyBackdoorAccessKey_Failed(false)
+
+	, sector_erased_count(0)
+	, dead_sector_count(0)
+	, ready_sector_count(0)
 
 	, fclkdiv_reg(0x00)
 	, fsec_reg(0x00)
@@ -153,18 +154,6 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, frsv1_reg(0x00)
 	, frsv2_reg(0x00)
 	, etag_reg(0x0000)
-
-//	, fclk_time(1250000, SC_PS) // 0.8 MHz
-//	, min_fclk_time(1250000, SC_PS) // 0.8 MHz
-//	, param_min_fclk_time("min-fclk-time", this, min_fclk_time, "Specify minimum frequency of FTM")
-//	, max_fclk_time(952000, SC_PS)  // 1.05 MHz
-//	, param_max_fclk_time("max-fclk-time", this, max_fclk_time, "Specify maximum frequency of FTM")
-
-	, fclk_time(1250000, SC_PS) // 0.8 MHz
-	, min_fclk_time_int(1250000) // 0.8 MHz
-	, param_min_fclk_time("min-fclk-time", this, min_fclk_time_int, "Specify minimum frequency of FTM")
-	, max_fclk_time_int(952000)  // 1.05 MHz
-	, param_max_fclk_time("max-fclk-time", this, max_fclk_time_int, "Specify maximum frequency of FTM")
 
 {
 
@@ -198,18 +187,17 @@ S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 
 	registers_registry.clear();
 
-	unsigned int i;
-	unsigned int n = extended_registers_registry.size();
-	for (i=0; i<n; i++) {
+
+	for (unsigned int i=0; i<extended_registers_registry.size(); i++) {
 		delete extended_registers_registry[i];
 	}
 
-	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+	for (unsigned int i = 0; i < pflash_blocks_description.size(); ++i) {
 		delete pflash_blocks_description[i];
 	}
 	pflash_blocks_description.clear();
 
-	for ( int i = 0; i < loadDataFieldBuffer.size(); ++i) {
+	for (unsigned int i = 0; i < loadDataFieldBuffer.size(); ++i) {
 		free (loadDataFieldBuffer[i]);
 	}
 	loadDataFieldBuffer.clear();
@@ -348,7 +336,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyPFl
 	// Erase Verify P-Flash Section command will verify that a section of code in the P-Flash memory is erased
 
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-	uint16_t number_phrases = fccob_reg[2]; // 1 phrase is a group of 8 bytes
+//	uint16_t number_phrases = fccob_reg[2]; // 1 phrase is a group of 8 bytes
 
 	if (fccobix_reg != 2) {
 		setACCERR();
@@ -457,7 +445,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::loadDataField_
 	}
 
 	if (isLoadDataFieldCommandSequenceActive()) {
-		for ( int i = 0; i < loadDataFieldBuffer.size(); ++i) {
+		for (unsigned int i = 0; i < loadDataFieldBuffer.size(); ++i) {
 			// set FSAT::ACCERR if the selected block has previously been selected in the same command sequence
 			if (((loadDataFieldBuffer[i])[0] & 0xFF) == (fccob_reg[0] & 0xFF)) {
 				setACCERR();
@@ -521,7 +509,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programPFlash_
 	}
 
 	if (isLoadDataFieldCommandSequenceActive()) {
-		for ( int i = 0; i < loadDataFieldBuffer.size(); ++i) {
+		for (unsigned int i = 0; i < loadDataFieldBuffer.size(); ++i) {
 			// set FSAT::ACCERR if the selected block has previously been selected in the same command sequence
 			if (((loadDataFieldBuffer[i])[0] & 0xFF) == (fccob_reg[0] & 0xFF)) {
 				setACCERR();
@@ -555,7 +543,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programPFlash_
 	}
 
 	if (loadDataFieldBuffer.size() > 0) {
-		for ( int i = 0; i < loadDataFieldBuffer.size(); ++i) {
+		for (unsigned int i = 0; i < loadDataFieldBuffer.size(); ++i) {
 			physical_address_t loaded_addr = ((physical_address_t) ((loadDataFieldBuffer[i])[0] & 0x00FF) << 16) | (loadDataFieldBuffer[i])[1];
 
 			for (uint8_t j=0; j<4; j++) {
@@ -581,7 +569,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programOnce_cm
 	 * nonvolatile information register located in P-Flash block 0.
 	 */
 
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+//	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 
 	if (fccobix_reg != 5) {
 		setACCERR();
@@ -642,7 +630,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseAllBlocks
 	// Erase All blocks of P-Flash
 	void *buffer = malloc(PFLASH_SECTOR_SIZE);
 	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
-	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+	for (unsigned int i = 0; i < pflash_blocks_description.size(); ++i) {
 		uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
 		for (uint16_t j=0; j < nbre_sector; j++) {
 			WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
@@ -702,7 +690,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashBlo
 
 	void *buffer = malloc(PFLASH_SECTOR_SIZE);
 	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
-	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+	for (unsigned int i = 0; i < pflash_blocks_description.size(); ++i) {
 		// Identify the P-Flash block
 		if ((addr >= pflash_blocks_description[i]->start_address)
 				&& (addr <= pflash_blocks_description[i]->end_address))
@@ -757,7 +745,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashSec
 
 	void *buffer = malloc(PFLASH_SECTOR_SIZE);
 	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
-	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+	for (unsigned int i = 0; i < pflash_blocks_description.size(); ++i) {
 		uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
 		for (uint16_t j=0; j < nbre_sector; j++) {
 			// Identify the P-Flash sector
@@ -815,7 +803,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::unsecureFlash_
 	// Erase All blocks of P-Flash
 	void *buffer = malloc(PFLASH_SECTOR_SIZE);
 	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
-	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+	for (unsigned int i = 0; i < pflash_blocks_description.size(); ++i) {
 		uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
 		for (uint16_t j=0; j < nbre_sector; j++) {
 			WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
@@ -913,7 +901,7 @@ template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint3
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::fullPartitionDFlash_cmd()
 {
 
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+//	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 	uint16_t nbre_DFlash_user_sector = fccob_reg[1];
 	uint16_t nbre_bufferRAM_EEE_sector = fccob_reg[2];
 
@@ -1444,7 +1432,7 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 
 	vector<string> result;
 	stringSplit(pflash_blocks_description_string, ";", result);
-	for ( int i = 0; i < result.size(); ++i) {
+	for (unsigned int i = 0; i < result.size(); ++i) {
 		vector<string> oneBlockSegments;
 		stringSplit(result[i], ",", oneBlockSegments);
 		BlockDescription *oneBlock = new BlockDescription();
@@ -1513,6 +1501,15 @@ unsigned int S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transp
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 tlm::tlm_sync_enum S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
+	if(phase != tlm::BEGIN_REQ)
+	{
+		inherited::logger << DebugInfo << LOCATION
+				<< ":" << (sc_time_stamp() + t).to_string()
+				<< " : received an unexpected phase " << phase << std::endl
+				<< EndDebugInfo;
+		Object::Stop(-1);
+	}
+
 	tlm::tlm_command cmd = payload.get_command();
 	sc_dt::uint64 address = payload.get_address();
 	void *data_ptr = payload.get_data_ptr();
@@ -1527,21 +1524,20 @@ tlm::tlm_sync_enum S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 
 			write_to_flash(address, data_ptr, data_length);
 
-			if (phase == BEGIN_REQ) {
-				phase = END_REQ; // update the phase
-				payload.acquire();
+			inherited::write_counter++;
 
-				return (TLM_UPDATED);
-			} else {
-				inherited::logger << DebugError << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl << EndDebugError;
-				Object::Stop(-1);
-			}
+			payload.set_response_status(tlm::TLM_OK_RESPONSE);
 
 		}
 
 	} else {
-		payload.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+		payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
 	}
+
+
+	phase = tlm::BEGIN_RESP;
+
+	return tlm::TLM_COMPLETED;
 
 }
 
@@ -1681,7 +1677,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setFLASHClock(
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
 {
-	if ((addr >= baseAddress) && (addr <= (baseAddress+FRSV2))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
 		service_address_t offset = addr-baseAddress;
 		switch (offset) {
 			case FCLKDIV: {
@@ -1770,7 +1766,7 @@ template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint3
 bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+FRSV2))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
 
 		if (size == 0) {
 			return (true);
@@ -2160,7 +2156,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read_write( tl
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address <= (baseAddress + FRSV2))) {
+	if ((address >= baseAddress) && (address <= (baseAddress + REGISTERS_BANK_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);

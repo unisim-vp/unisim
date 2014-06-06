@@ -139,10 +139,10 @@ class S12SCI :
 	, public CallBackObject
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
 	, public Client<TrapReporting >
-	, public Service<Memory<physical_address_t> >
-	, public Service<Registers>
-	, public Client<Memory<physical_address_t> >
 	, public Client<CharIO>
+	, public Service<Memory<physical_address_t> >
+	, public Client<Memory<physical_address_t> >
+	, public Service<Registers>
 
 {
 public:
@@ -182,14 +182,14 @@ public:
 	ServiceImport<TrapReporting > trap_reporting_import;
 	ServiceImport<CharIO > char_io_import;
 
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
+	ServiceExport<Registers> registers_export;
+
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
 	tlm_utils::simple_target_socket<S12SCI> slave_socket;
 	tlm_utils::simple_target_socket<S12SCI> bus_clock_socket;
-
-	ServiceExport<Memory<physical_address_t> > memory_export;
-	ServiceImport<Memory<physical_address_t> > memory_import;
-	ServiceExport<Registers> registers_export;
 
 	S12SCI(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12SCI();

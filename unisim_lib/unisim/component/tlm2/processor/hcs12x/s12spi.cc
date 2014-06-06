@@ -25,24 +25,15 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Client<CharIO>(name, parent)
 
-	, logger(*this)
-
 	, trap_reporting_import("trap_reporting_import", this)
-
-	, bus_clock_socket("bus_clock_socket")
-	, slave_socket("slave_socket")
-
 	, char_io_import("char_io_import", this)
 
 	, memory_export("memory_export", this)
 	, memory_import("memory_import", this)
 	, registers_export("registers_export", this)
 
-	, spicr1_register(0x04)
-	, spicr2_register(0x00)
-	, spibr_register(0x00)
-	, spisr_register(0x20)
-	, spidr_register(0x00)
+	, slave_socket("slave_socket")
+	, bus_clock_socket("bus_clock_socket")
 
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
@@ -56,6 +47,11 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
+	, state(IDLE)
+	, abortTransmission(false)
+	, spisr_read(false)
+	, validFrameWaiting(false)
+
 	, mosi(false)
 	, mosi_pin("MOSI", this, mosi, "master output and slave input pin")
 
@@ -68,14 +64,16 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	, sck(false)
 	, sck_pin("SCK", this, sck, "SPI clock")
 
-	, state(IDLE)
-	, abortTransmission(false)
-	, spisr_read(false)
-	, validFrameWaiting(false)
+	, spicr1_register(0x04)
+	, spicr2_register(0x00)
+	, spibr_register(0x00)
+	, spisr_register(0x20)
+	, spidr_register(0x00)
 
 	, telnet_enabled(false)
 	, param_telnet_enabled("telnet-enabled", this, telnet_enabled)
 
+	, logger(*this)
 
 {
 

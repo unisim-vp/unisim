@@ -44,10 +44,11 @@ S12XGATE::S12XGATE(const sc_module_name& name, S12XMMC *_mmc, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 	, XGATE(name, parent)
-	, mmc(_mmc)
 
 	, target_socket("slave_socket")
 	, xint_interrupt_request("interrupt_request")
+
+	, mmc(_mmc)
 
 	, xgate_enable_event()
 	, xgate_idle_event()

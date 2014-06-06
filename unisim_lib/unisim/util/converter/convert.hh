@@ -79,7 +79,7 @@ inline uint8_t hexChar2Nibble(char ch)
 
 inline void number2HexString(uint8_t* value, unsigned int size, std::string& hex, std::string endian) {
 
-	int i;
+	unsigned int i;
 	char c[2];
 	c[1] = 0;
 
@@ -118,7 +118,7 @@ inline void number2HexString(uint8_t* value, unsigned int size, std::string& hex
 
 inline bool hexString2Number(const std::string& hex, void* value, unsigned int size, std::string endian) {
 
-	int i;
+	unsigned int i;
 	unsigned int len = hex.length();
 	unsigned int pos = 0;
 
@@ -186,7 +186,7 @@ inline void hexToText(const char *s, int count, std::string& packet)
 
 inline void stringSplit(std::string str, const std::string delim, std::vector<std::string>& results)
 {
-	int cutAt;
+	size_t cutAt;
 
 	do {
 

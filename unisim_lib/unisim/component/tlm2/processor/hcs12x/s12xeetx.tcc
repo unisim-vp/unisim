@@ -39,11 +39,19 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, bus_clock_socket("Bus-Clock")
 	, slave_socket("slave_socket")
 
+	, cmd_queue_back(0)
+
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
 	, oscillator_cycle_time_int(250000)
 	, param_oscillator_cycle_time_int("oscillator-cycle-time", this, oscillator_cycle_time_int)
+
+	, min_eeclk_time(6667, SC_PS)
+
+	, sector_erase_abort_active(false)
+	, sector_erase_modify_active(false)
+	, sector_erase_abort_command_req(false)
 
 	, baseAddress(0x0110)
 	, param_baseAddress("base-address", this, baseAddress)
@@ -64,14 +72,6 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, reserved3_reg(0)
 	, eaddr_reg(0)
 	, edata_reg(0)
-
-	, min_eeclk_time(6667, SC_PS)
-
-	, sector_erase_abort_active(false)
-	, sector_erase_modify_active(false)
-	, sector_erase_abort_command_req(false)
-
-	, cmd_queue_back(0)
 
 {
 
@@ -740,6 +740,15 @@ unsigned int S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_S
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
+	if(phase != tlm::BEGIN_REQ)
+	{
+		inherited::logger << DebugInfo << LOCATION
+				<< ":" << (sc_time_stamp() + t).to_string()
+				<< " : received an unexpected phase " << phase << std::endl
+				<< EndDebugInfo;
+		Object::Stop(-1);
+	}
+
 	tlm::tlm_command cmd = payload.get_command();
 	sc_dt::uint64 address = payload.get_address();
 	void *data_ptr = payload.get_data_ptr();
@@ -753,22 +762,19 @@ tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, 
 
 			write_to_eeprom(address, data_ptr, data_length);
 
-			if (phase == BEGIN_REQ) {
-				phase = END_REQ; // update the phase
-				payload.acquire();
+			inherited::write_counter++;
 
-				return (TLM_UPDATED);
-			} else {
-				inherited::logger << DebugError << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl << EndDebugError;
-				Object::Stop(-1);
-			}
+			payload.set_response_status(tlm::TLM_OK_RESPONSE);
 
 		}
 
 	} else {
-		payload.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+		payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
 	}
 
+	phase = tlm::BEGIN_RESP;
+
+	return tlm::TLM_COMPLETED;
 }
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
@@ -892,7 +898,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
 {
-	if ((addr >= baseAddress) && (addr <= (baseAddress+EDATALO))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
 		service_address_t offset = addr-baseAddress;
 		switch (offset) {
 			case ECLKDIV: *((uint8_t *) buffer) = eclkdiv_reg; break;
@@ -951,7 +957,7 @@ template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, 
 bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+EDATALO))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
 
 		if (size == 0) {
 			return (true);
@@ -1258,7 +1264,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+	if ((address >= baseAddress) && (address < (baseAddress + REGISTERS_BANK_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);

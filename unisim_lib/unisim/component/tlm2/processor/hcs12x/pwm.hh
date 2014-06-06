@@ -125,6 +125,8 @@ public:
 						PWMPER0, PWMPER1, PWMPER2, PWMPER3, PWMPER4, PWMPER5, PWMPER6, PWMPER7,
 						PWMDTY0, PWMDTY1, PWMDTY2, PWMDTY3, PWMDTY4, PWMDTY5, PWMDTY6, PWMDTY7, PWMSDN};
 
+	static const unsigned int REGISTERS_BANK_SIZE = 40;
+
 	tlm_initiator_socket<CONFIG::UNISIM2EXTERNAL_BUS_WIDTH, UNISIM_PWM_ProtocolTypes<PWM_SIZE> > master_sock;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
@@ -301,15 +303,17 @@ private:
 	private:
 //		bool output;
 
-		uint8_t channelMask;
+		PWM	*pwmParent;
+		uint8_t channel_index;
+
 		uint8_t *pwmcnt_register_ptr;
 		uint8_t *pwmper_register_value_ptr;
 		uint8_t pwmper_register_buffer;
 		uint8_t *pwmdty_register_value_ptr;
 		uint8_t pwmdty_register_buffer;
 
-		uint8_t channel_index;
-		PWM	*pwmParent;
+		uint8_t channelMask;
+
 		sc_event wakeup_event;
 
 		template <class T> void checkChangeStateAndWait(const sc_time clk);

@@ -357,7 +357,7 @@ void PWM<PWM_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& delay 
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 40))) {
+	if ((address >= baseAddress) && (address < (baseAddress + REGISTERS_BANK_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -899,11 +899,11 @@ void PWM<PWM_SIZE>::Reset() {
 template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::Channel_t::Channel_t(const sc_module_name& name, PWM *parent, const uint8_t channel_num, uint8_t *pwmcnt_ptr, uint8_t *pwmper_ptr, uint8_t *pwmdty_ptr) :
 	sc_module(name),
+	pwmParent(parent),
+	channel_index(channel_num),
 	pwmcnt_register_ptr(pwmcnt_ptr),
 	pwmper_register_value_ptr(pwmper_ptr),
 	pwmdty_register_value_ptr(pwmdty_ptr),
-	channel_index(channel_num),
-	pwmParent(parent),
 	channelMask(0)
 
 {
@@ -1159,7 +1159,7 @@ void PWM<PWM_SIZE>::Channel_t::setPWMDTYBuffer(uint8_t val) { pwmdty_register_bu
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -1220,7 +1220,7 @@ bool PWM<PWM_SIZE>::ReadMemory(physical_address_t addr, void *buffer, uint32_t s
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
 
 		if (size == 0) {
 			return (true);
