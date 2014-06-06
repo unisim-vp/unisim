@@ -221,6 +221,9 @@ private:
 	std::map<std::string, syscall_t> syscall_name_map_;
 	std::map<int, std::string> syscall_name_assoc_map_;
 	std::map<int, syscall_t> syscall_impl_assoc_map_;
+	
+	// errno conversion
+	std::map<int, int32_t> host2linux_errno;
 
 	// current syscall information
 	int current_syscall_id_;
@@ -319,7 +322,7 @@ private:
 	bool WriteMem(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
 
 	// Errno conversion
-	uint32_t Host2LinuxErrno(uint32_t host_errno) const;
+	int32_t Host2LinuxErrno(int host_errno) const;
 	
 	// The list of linux system calls
 	void LSC_unknown();

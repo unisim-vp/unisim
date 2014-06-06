@@ -49,6 +49,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <errno.h>
 
 #include "unisim/util/likely/likely.hh"
 #include "unisim/util/debug/blob/blob.hh"
@@ -136,6 +137,140 @@ Linux(unisim::kernel::logger::Logger& logger,
     , logger_(logger)
     , terminated_(false)
     , return_status_(0) {
+
+	host2linux_errno[EPERM] = LINUX_EPERM;
+	host2linux_errno[ENOENT] = LINUX_ENOENT;
+	host2linux_errno[ESRCH] = LINUX_ESRCH;
+	host2linux_errno[EINTR] = LINUX_EINTR;
+	host2linux_errno[EIO] = LINUX_EIO;
+	host2linux_errno[ENXIO] = LINUX_ENXIO;
+	host2linux_errno[E2BIG] = LINUX_E2BIG;
+	host2linux_errno[ENOEXEC] = LINUX_ENOEXEC;
+	host2linux_errno[EBADF] = LINUX_EBADF;
+	host2linux_errno[ECHILD] = LINUX_ECHILD;
+	host2linux_errno[EAGAIN] = LINUX_EAGAIN;
+	host2linux_errno[ENOMEM] = LINUX_ENOMEM;
+	host2linux_errno[EACCES] = LINUX_EACCES;
+	host2linux_errno[EFAULT] = LINUX_EFAULT;
+	host2linux_errno[ENOTBLK] = LINUX_ENOTBLK;
+	host2linux_errno[EBUSY] = LINUX_EBUSY;
+	host2linux_errno[EEXIST] = LINUX_EEXIST;
+	host2linux_errno[EXDEV] = LINUX_EXDEV;
+	host2linux_errno[ENODEV] = LINUX_ENODEV;
+	host2linux_errno[ENOTDIR] = LINUX_ENOTDIR;
+	host2linux_errno[EISDIR] = LINUX_EISDIR;
+	host2linux_errno[EINVAL] = LINUX_EINVAL;
+	host2linux_errno[ENFILE] = LINUX_ENFILE;
+	host2linux_errno[EMFILE] = LINUX_EMFILE;
+	host2linux_errno[ENOTTY] = LINUX_ENOTTY;
+	host2linux_errno[ETXTBSY] = LINUX_ETXTBSY;
+	host2linux_errno[EFBIG] = LINUX_EFBIG;
+	host2linux_errno[ENOSPC] = LINUX_ENOSPC;
+	host2linux_errno[ESPIPE] = LINUX_ESPIPE;
+	host2linux_errno[EROFS] = LINUX_EROFS;
+	host2linux_errno[EMLINK] = LINUX_EMLINK;
+	host2linux_errno[EPIPE] = LINUX_EPIPE;
+	host2linux_errno[EDOM] = LINUX_EDOM;
+	host2linux_errno[ERANGE] = LINUX_ERANGE;
+	host2linux_errno[EDEADLK] = LINUX_EDEADLK;
+	host2linux_errno[ENAMETOOLONG] = LINUX_ENAMETOOLONG;
+	host2linux_errno[ENOLCK] = LINUX_ENOLCK;
+	host2linux_errno[ENOSYS] = LINUX_ENOSYS;
+	host2linux_errno[ENOTEMPTY] = LINUX_ENOTEMPTY;
+	host2linux_errno[ELOOP] = LINUX_ELOOP;
+	host2linux_errno[EWOULDBLOCK] = LINUX_EWOULDBLOCK;
+	host2linux_errno[ENOMSG] = LINUX_ENOMSG;
+	host2linux_errno[EIDRM] = LINUX_EIDRM;
+	host2linux_errno[ECHRNG] = LINUX_ECHRNG;
+	host2linux_errno[EL2NSYNC] = LINUX_EL2NSYNC;
+	host2linux_errno[EL3HLT] = LINUX_EL3HLT;
+	host2linux_errno[EL3RST] = LINUX_EL3RST;
+	host2linux_errno[ELNRNG] = LINUX_ELNRNG;
+	host2linux_errno[EUNATCH] = LINUX_EUNATCH;
+	host2linux_errno[ENOCSI] = LINUX_ENOCSI;
+	host2linux_errno[EL2HLT] = LINUX_EL2HLT;
+	host2linux_errno[EBADE] = LINUX_EBADE;
+	host2linux_errno[EBADR] = LINUX_EBADR;
+	host2linux_errno[EXFULL] = LINUX_EXFULL;
+	host2linux_errno[ENOANO] = LINUX_ENOANO;
+	host2linux_errno[EBADRQC] = LINUX_EBADRQC;
+	host2linux_errno[EBADSLT] = LINUX_EBADSLT;
+	host2linux_errno[EDEADLOCK] = LINUX_EDEADLOCK;
+	host2linux_errno[EBFONT] = LINUX_EBFONT;
+	host2linux_errno[ENOSTR] = LINUX_ENOSTR;
+	host2linux_errno[ENODATA] = LINUX_ENODATA;
+	host2linux_errno[ETIME] = LINUX_ETIME;
+	host2linux_errno[ENOSR] = LINUX_ENOSR;
+	host2linux_errno[ENONET] = LINUX_ENONET;
+	host2linux_errno[ENOPKG] = LINUX_ENOPKG;
+	host2linux_errno[EREMOTE] = LINUX_EREMOTE;
+	host2linux_errno[ENOLINK] = LINUX_ENOLINK;
+	host2linux_errno[EADV] = LINUX_EADV;
+	host2linux_errno[ESRMNT] = LINUX_ESRMNT;
+	host2linux_errno[ECOMM] = LINUX_ECOMM;
+	host2linux_errno[EPROTO] = LINUX_EPROTO;
+	host2linux_errno[EMULTIHOP] = LINUX_EMULTIHOP;
+	host2linux_errno[EDOTDOT] = LINUX_EDOTDOT;
+	host2linux_errno[EBADMSG] = LINUX_EBADMSG;
+	host2linux_errno[EOVERFLOW] = LINUX_EOVERFLOW;
+	host2linux_errno[ENOTUNIQ] = LINUX_ENOTUNIQ;
+	host2linux_errno[EBADFD] = LINUX_EBADFD;
+	host2linux_errno[EREMCHG] = LINUX_EREMCHG;
+	host2linux_errno[ELIBACC] = LINUX_ELIBACC;
+	host2linux_errno[ELIBBAD] = LINUX_ELIBBAD;
+	host2linux_errno[ELIBSCN] = LINUX_ELIBSCN;
+	host2linux_errno[ELIBMAX] = LINUX_ELIBMAX;
+	host2linux_errno[ELIBEXEC] = LINUX_ELIBEXEC;
+	host2linux_errno[EILSEQ] = LINUX_EILSEQ;
+	host2linux_errno[ERESTART] = LINUX_ERESTART;
+	host2linux_errno[ESTRPIPE] = LINUX_ESTRPIPE;
+	host2linux_errno[EUSERS] = LINUX_EUSERS;
+	host2linux_errno[ENOTSOCK] = LINUX_ENOTSOCK;
+	host2linux_errno[EDESTADDRREQ] = LINUX_EDESTADDRREQ;
+	host2linux_errno[EMSGSIZE] = LINUX_EMSGSIZE;
+	host2linux_errno[EPROTOTYPE] = LINUX_EPROTOTYPE;
+	host2linux_errno[ENOPROTOOPT] = LINUX_ENOPROTOOPT;
+	host2linux_errno[EPROTONOSUPPORT] = LINUX_EPROTONOSUPPORT;
+	host2linux_errno[ESOCKTNOSUPPORT] = LINUX_ESOCKTNOSUPPORT;
+	host2linux_errno[EOPNOTSUPP] = LINUX_EOPNOTSUPP;
+	host2linux_errno[EPFNOSUPPORT] = LINUX_EPFNOSUPPORT;
+	host2linux_errno[EAFNOSUPPORT] = LINUX_EAFNOSUPPORT;
+	host2linux_errno[EADDRINUSE] = LINUX_EADDRINUSE;
+	host2linux_errno[EADDRNOTAVAIL] = LINUX_EADDRNOTAVAIL;
+	host2linux_errno[ENETDOWN] = LINUX_ENETDOWN;
+	host2linux_errno[ENETUNREACH] = LINUX_ENETUNREACH;
+	host2linux_errno[ENETRESET] = LINUX_ENETRESET;
+	host2linux_errno[ECONNABORTED] = LINUX_ECONNABORTED;
+	host2linux_errno[ECONNRESET] = LINUX_ECONNRESET;
+	host2linux_errno[ENOBUFS] = LINUX_ENOBUFS;
+	host2linux_errno[EISCONN] = LINUX_EISCONN;
+	host2linux_errno[ENOTCONN] = LINUX_ENOTCONN;
+	host2linux_errno[ESHUTDOWN] = LINUX_ESHUTDOWN;
+	host2linux_errno[ETOOMANYREFS] = LINUX_ETOOMANYREFS;
+	host2linux_errno[ETIMEDOUT] = LINUX_ETIMEDOUT;
+	host2linux_errno[ECONNREFUSED] = LINUX_ECONNREFUSED;
+	host2linux_errno[EHOSTDOWN] = LINUX_EHOSTDOWN;
+	host2linux_errno[EHOSTUNREACH] = LINUX_EHOSTUNREACH;
+	host2linux_errno[EALREADY] = LINUX_EALREADY;
+	host2linux_errno[EINPROGRESS] = LINUX_EINPROGRESS;
+	host2linux_errno[ESTALE] = LINUX_ESTALE;
+	host2linux_errno[EUCLEAN] = LINUX_EUCLEAN;
+	host2linux_errno[ENOTNAM] = LINUX_ENOTNAM;
+	host2linux_errno[ENAVAIL] = LINUX_ENAVAIL;
+	host2linux_errno[EISNAM] = LINUX_EISNAM;
+	host2linux_errno[EREMOTEIO] = LINUX_EREMOTEIO;
+	host2linux_errno[EDQUOT] = LINUX_EDQUOT;
+	host2linux_errno[ENOMEDIUM] = LINUX_ENOMEDIUM;
+	host2linux_errno[EMEDIUMTYPE] = LINUX_EMEDIUMTYPE;
+	host2linux_errno[ECANCELED] = LINUX_ECANCELED;
+	host2linux_errno[ENOKEY] = LINUX_ENOKEY;
+	host2linux_errno[EKEYEXPIRED] = LINUX_EKEYEXPIRED;
+	host2linux_errno[EKEYREVOKED] = LINUX_EKEYREVOKED;
+	host2linux_errno[EKEYREJECTED] = LINUX_EKEYREJECTED;
+	host2linux_errno[EOWNERDEAD] = LINUX_EOWNERDEAD;
+	host2linux_errno[ENOTRECOVERABLE] = LINUX_ENOTRECOVERABLE;
+	host2linux_errno[ERFKILL] = LINUX_ERFKILL;
+	host2linux_errno[EHWPOISON] = LINUX_EHWPOISON;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -2360,9 +2495,11 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id)
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-uint32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Host2LinuxErrno(uint32_t host_errno) const
+int32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Host2LinuxErrno(int host_errno) const
 {
-	return host_errno;
+	typename std::map<int, int32_t>::const_iterator it = host2linux_errno.find(host_errno);
+	
+	return (it != host2linux_errno.end()) ? (*it).second : LINUX_EINVAL;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
