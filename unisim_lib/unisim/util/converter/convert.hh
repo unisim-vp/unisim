@@ -207,4 +207,39 @@ inline void stringSplit(std::string str, const std::string delim, std::vector<st
 
 }
 
+/* Function to get parity of number n. It returns 1
+   if n has odd parity, and returns 0 if n has even
+   parity */
+template <typename T>
+inline bool getParity(T n)
+{
+    bool parity = false;
+    while (n)
+    {
+        parity = !parity;
+        n      = n & (n - 1);
+    }
+    return parity;
+}
+
+template <typename T>
+bool ParseHex(const std::string& s, unsigned int& pos, T& value)
+{
+	unsigned int len = s.length();
+	unsigned int n = 0;
+
+	value = 0;
+	while(pos < len && n < 2 * sizeof(T))
+	{
+		uint8_t nibble;
+		if(!isHexChar(s[pos])) break;
+		nibble = hexChar2Nibble(s[pos]);
+		value <<= 4;
+		value |= nibble;
+		pos++;
+		n++;
+	}
+	return (n > 0);
+}
+
 #endif /* CONVERT_HH_ */

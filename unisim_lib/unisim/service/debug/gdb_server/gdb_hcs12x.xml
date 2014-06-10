@@ -8,4 +8,5 @@
 	<register name="A" size="1"/>
 	<register name="B" size="1"/>
 	<register name="CCRL" size="1"/>	
+	<register name="PPAGE" size="1"/>
 </architecture>

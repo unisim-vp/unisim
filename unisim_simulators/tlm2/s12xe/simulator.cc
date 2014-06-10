@@ -22,7 +22,8 @@ void DisableDebug()
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	sc_stop();
+//	sc_stop();
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 
 Simulator::Simulator(int argc, char **argv)
@@ -68,6 +69,9 @@ Simulator::Simulator(int argc, char **argv)
 	, enable_pim_server(false)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
+	, sci_enable_telnet(false)
+	, spi_enable_telnet(false)
+
 	, dump_parameters(false)
 	, dump_formulas(false)
 	, dump_statistics(true)
@@ -78,6 +82,8 @@ Simulator::Simulator(int argc, char **argv)
 	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
+	, param_sci_enable_telnet("sci-enable-telnet", 0, sci_enable_telnet, "SCI Enable/Disable telnet instantiation")
+	, param_spi_enable_telnet("spi-enable-telnet", 0, spi_enable_telnet, "SPI Enable/Disable telnet instantiation")
 	, param_dump_parameters("dump-parameters", 0, dump_parameters, "")
 	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
@@ -117,11 +123,11 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 	//  - 68HCS12X processor
 
-	cpu =new CPU("CPU");
-	xgate =new XGATE("XGATE");
-
 	mpu = 	new MPU("MPU");
 	mmc = 	new MMC("MMC", mpu);
+
+	cpu =new CPU("CPU", mmc);
+	xgate =new XGATE("XGATE", mmc);
 
 	crg = new CRG("CRG");
 	ect = new ECT("ECT");
@@ -190,6 +196,11 @@ Simulator::Simulator(int argc, char **argv)
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
 	inline_debugger = enable_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+
+	// - telnet
+	sci_telnet = (sci_enable_telnet) ? new unisim::service::telnet::Telnet("sci_telnet") : 0;
+	spi_telnet = (spi_enable_telnet) ? new unisim::service::telnet::Telnet("spi_telnet") : 0;
+
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
@@ -210,9 +221,6 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
-
-	cpu->socket(mmc->cpu_socket);
-	xgate->initiator_socket(mmc->xgate_socket);
 
 	s12xint->toCPU12X_request(cpu->xint_interrupt_request);
 	s12xint->toXGATE_request(xgate->xint_interrupt_request);
@@ -401,6 +409,8 @@ Simulator::Simulator(int argc, char **argv)
 
 		inline_debugger->backtrace_import >> debugger->backtrace_export;
 		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
+
+		inline_debugger->profiling_import >> profiler->profiling_export;
 	}
 	else if(enable_gdb_server)
 	{
@@ -426,6 +436,16 @@ Simulator::Simulator(int argc, char **argv)
 		pim_server->stmt_lookup_import >> debugger->stmt_lookup_export;
 		pim_server->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 
+	}
+
+	if (sci_enable_telnet)
+	{
+		sci0->char_io_import >> sci_telnet->char_io_export;
+	}
+
+	if(spi_enable_telnet)
+	{
+		spi0->char_io_import >> spi_telnet->char_io_export;
 	}
 
 	if (isS19) {
@@ -456,6 +476,9 @@ Simulator::~Simulator()
 
 	if(gdb_server) { delete gdb_server; gdb_server = NULL; }
 	if(inline_debugger) { delete inline_debugger; inline_debugger = NULL; }
+
+	if (sci_telnet) { delete sci_telnet; sci_telnet = NULL; }
+	if (spi_telnet) { delete spi_telnet; spi_telnet = NULL; }
 
 	if (host_time) { delete host_time; host_time = NULL; }
 	if(sim_time) { delete sim_time; sim_time = NULL; }
@@ -570,28 +593,22 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.atd0-stub-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd1-stub-enabled", false);
 
-	simulator->SetVariable("ATD0.bus-cycle-time", 200000);
+	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);
 	simulator->SetVariable("ATD0.interrupt-offset", 0xd2);
 	simulator->SetVariable("ATD0.vrl", 0.000000e+00);
 	simulator->SetVariable("ATD0.vrh", 5.120000e+00);
 	simulator->SetVariable("ATD0.debug-enabled", false);
-	simulator->SetVariable("ATD0.use-atd-stub", false);
-	simulator->SetVariable("ATD0.atd-anx-stimulus-file", "ATD.xml");
-//	simulator->SetVariable("ATD0.start-scan-at", 900);
 	simulator->SetVariable("ATD0.vih", 3.250000e+00);
 	simulator->SetVariable("ATD0.vil", 1.750000e+00);
 	simulator->SetVariable("ATD0.Has-External-Trigger", false);
 
-	simulator->SetVariable("ATD1.bus-cycle-time", 200000);
+	simulator->SetVariable("ATD1.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD1.base-address", 0x80);
 	simulator->SetVariable("ATD1.interrupt-offset", 0xd0);
 	simulator->SetVariable("ATD1.vrl", 0.000000e+00);
 	simulator->SetVariable("ATD1.vrh", 5.120000e+00);
 	simulator->SetVariable("ATD1.debug-enabled", false);
-	simulator->SetVariable("ATD1.use-atd-stub", false);
-	simulator->SetVariable("ATD1.atd-anx-stimulus-file", "ATD.xml");
-//	simulator->SetVariable("ATD1.start-scan-at", 900);
 	simulator->SetVariable("ATD1.vih", 3.250000e+00);
 	simulator->SetVariable("ATD1.vil", 1.750000e+00);
 	simulator->SetVariable("ATD1.Has-External-Trigger", false);
@@ -620,7 +637,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("XGATE.debug-enabled", false);
 	simulator->SetVariable("XGATE.max-inst", 0xffffffffffffffffULL);
 	simulator->SetVariable("XGATE.nice-time", "1 ms");
-	simulator->SetVariable("XGATE.core-clock", 100000);
+	simulator->SetVariable("XGATE.core-clock", 125000);
 	simulator->SetVariable("XGATE.verbose-tlm-bus-synchronize", false);
 	simulator->SetVariable("XGATE.verbose-tlm-run-thread", false);
 	simulator->SetVariable("XGATE.verbose-tlm-commands", false);
@@ -640,24 +657,23 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.debug-enabled", false);
 	simulator->SetVariable("CPU.max-inst", 0xffffffffffffffffULL);
 	simulator->SetVariable("CPU.nice-time", "1 ms");
-	simulator->SetVariable("CPU.core-clock", 100000);
+	simulator->SetVariable("CPU.core-clock", 125000);
 	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
 	simulator->SetVariable("CPU.verbose-tlm-run-thread", false);
 	simulator->SetVariable("CPU.verbose-tlm-commands", false);
 	simulator->SetVariable("CPU.trap-on-instruction-counter", -1);
 	simulator->SetVariable("CPU.enable-fine-timing", true);
 
-//	simulator->SetVariable("CRG.oscillator-clock", 125000); // 8 MHz
-	simulator->SetVariable("CRG.oscillator-clock", 100000); // 10 MHz
+	simulator->SetVariable("CRG.oscillator-clock", 125000); // 8 MHz
 	simulator->SetVariable("CRG.base-address", 0x34);
 	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
 	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
 	simulator->SetVariable("CRG.interrupt-offset-self-clock-mode", 0xc4);
 	simulator->SetVariable("CRG.debug-enabled", false);
 	simulator->SetVariable("CRG.pll-stabilization-delay", 0.24);
-	simulator->SetVariable("CRG.self-clock-mode-clock", 100000);
+	simulator->SetVariable("CRG.self-clock-mode-clock", 125000);
 
-	simulator->SetVariable("ECT.bus-cycle-time", 200000);
+	simulator->SetVariable("ECT.bus-cycle-time", 250000);
 	simulator->SetVariable("ECT.base-address", 0x40);
 	simulator->SetVariable("ECT.interrupt-offset-channel0", 0xee);
 	simulator->SetVariable("ECT.interrupt-offset-timer-overflow", 0xde);
@@ -667,10 +683,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.modulus-counter-interrupt", 0xCA);
 	simulator->SetVariable("ECT.debug-enabled", false);
 
-	simulator->SetVariable("ECT.built-in-signal-generator-enable", true);
+	simulator->SetVariable("ECT.built-in-signal-generator-enable", false);
 	simulator->SetVariable("ECT.built-in-signal-generator-period", 80000);
 
-	simulator->SetVariable("PIT.bus-cycle-time", 200000);
+	simulator->SetVariable("PIT.bus-cycle-time", 250000);
 	simulator->SetVariable("PIT.base-address", 0x0340);
 	simulator->SetVariable("PIT.interrupt-offset-channel[0]", 0x7A);
 	simulator->SetVariable("PIT.interrupt-offset-channel[1]", 0x78);
@@ -682,63 +698,87 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("PIT.interrupt-offset-channel[7]", 0x58);
 	simulator->SetVariable("PIT.debug-enabled", false);
 
-	simulator->SetVariable("SCI2.bus-cycle-time", 200000);
+	simulator->SetVariable("SCI2.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI2.base-address", 0x00B8);
 	simulator->SetVariable("SCI2.interrupt-offset", 0x8A);
+	simulator->SetVariable("SCI2.telnet-enabled", false);
 	simulator->SetVariable("SCI2.debug-enabled", false);
+	simulator->SetVariable("SCI2.TXD", true);
+	simulator->SetVariable("SCI2.RXD", true);
 
-	simulator->SetVariable("SCI3.bus-cycle-time", 200000);
+	simulator->SetVariable("SCI3.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI3.base-address", 0x00C0);
 	simulator->SetVariable("SCI3.interrupt-offset", 0x88);
+	simulator->SetVariable("SCI3.telnet-enabled", false);
 	simulator->SetVariable("SCI3.debug-enabled", false);
+	simulator->SetVariable("SCI3.TXD", true);
+	simulator->SetVariable("SCI3.RXD", true);
 
-	simulator->SetVariable("SCI0.bus-cycle-time", 200000);
+	simulator->SetVariable("SCI0.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI0.base-address", 0x00C8);
 	simulator->SetVariable("SCI0.interrupt-offset", 0xD6);
+	simulator->SetVariable("SCI0.telnet-enabled", false);
 	simulator->SetVariable("SCI0.debug-enabled", false);
+	simulator->SetVariable("SCI0.TXD", true);
+	simulator->SetVariable("SCI0.RXD", true);
 
-	simulator->SetVariable("SCI1.bus-cycle-time", 200000);
+	simulator->SetVariable("SCI1.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI1.base-address", 0x00D0);
 	simulator->SetVariable("SCI1.interrupt-offset", 0xD4);
+	simulator->SetVariable("SCI1.telnet-enabled", false);
 	simulator->SetVariable("SCI1.debug-enabled", false);
+	simulator->SetVariable("SCI1.TXD", true);
+	simulator->SetVariable("SCI1.RXD", true);
 
-	simulator->SetVariable("SCI4.bus-cycle-time", 200000);
+	simulator->SetVariable("SCI4.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI4.base-address", 0x0130);
 	simulator->SetVariable("SCI4.interrupt-offset", 0x86);
+	simulator->SetVariable("SCI4.telnet-enabled", false);
 	simulator->SetVariable("SCI4.debug-enabled", false);
+	simulator->SetVariable("SCI4.TXD", true);
+	simulator->SetVariable("SCI4.RXD", true);
 
-	simulator->SetVariable("SCI5.bus-cycle-time", 200000);
+	simulator->SetVariable("SCI5.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI5.base-address", 0x0138);
 	simulator->SetVariable("SCI5.interrupt-offset", 0x84);
+	simulator->SetVariable("SCI5.telnet-enabled", false);
 	simulator->SetVariable("SCI5.debug-enabled", false);
+	simulator->SetVariable("SCI5.TXD", true);
+	simulator->SetVariable("SCI5.RXD", true);
 
-	simulator->SetVariable("SPI0.bus-cycle-time", 200000);
+	simulator->SetVariable("SPI0.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI0.base-address", 0x00D8);
 	simulator->SetVariable("SPI0.interrupt-offset", 0xD8);
 	simulator->SetVariable("SPI0.debug-enabled", false);
 
-	simulator->SetVariable("SPI1.bus-cycle-time", 200000);
+	simulator->SetVariable("SPI1.bus-cycle-time", 40000);
 	simulator->SetVariable("SPI1.base-address", 0x00F0);
 	simulator->SetVariable("SPI1.interrupt-offset", 0xBE);
 	simulator->SetVariable("SPI1.debug-enabled", false);
 
-	simulator->SetVariable("SPI2.bus-cycle-time", 200000);
+	simulator->SetVariable("SPI2.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI2.base-address", 0x00F8);
 	simulator->SetVariable("SPI2.interrupt-offset", 0xBC);
 	simulator->SetVariable("SPI2.debug-enabled", false);
 
+	simulator->SetVariable("MMC.version", "V4");
 	simulator->SetVariable("MMC.debug-enabled", false);
 	simulator->SetVariable("MMC.mode", 0x80);
 	simulator->SetVariable("MMC.mmcctl1", 0x5);
 	simulator->SetVariable("MMC.address-encoding", 0x0);
 	simulator->SetVariable("MMC.ppage-address", 0x15); // ppage address for S12XE is 0x15
-	simulator->SetVariable("MMC.version", "V4");
+	simulator->SetVariable("MMC.memory-map",
+"0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;\
+6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0100,0113;11,0114,011F;\
+12,0120,012F;13,0130,0137;14,0138,013F;15,02C0,02EF;16,0300,0327;17,0340,0367;\
+18,0380,03BF;19,0007FF,0FFFFF;20,100000,13FFFF;20,400000,7FFFFF");
+
 
 	simulator->SetVariable("MPU.debug-enabled", false);
 	simulator->SetVariable("MPU.base-address", 0x0114);
 	simulator->SetVariable("MPU.interrupt-offset", 0x14);
 
-	simulator->SetVariable("PWM.bus-cycle-time", 200000);
+	simulator->SetVariable("PWM.bus-cycle-time", 250000);
 	simulator->SetVariable("PWM.base-address", 0x300);
 	simulator->SetVariable("PWM.interrupt-offset", 0x8c);
 	simulator->SetVariable("PWM.debug-enabled", false);
@@ -748,23 +788,55 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("RAM.org", 0x000800);
 	simulator->SetVariable("RAM.bytesize", 1024*1024); // 1MByte
 	simulator->SetVariable("RAM.initial-byte-value", 0x00);
-	simulator->SetVariable("RAM.cycle-time", 200000);
+	simulator->SetVariable("RAM.cycle-time", 250000);
 	simulator->SetVariable("RAM.verbose", false);
 
 	simulator->SetVariable("FTM.org", 0x100000);
 	simulator->SetVariable("FTM.bytesize", 7*1024*1024); // 7MByte
 	simulator->SetVariable("FTM.initial-byte-value", 0xFF);
-	simulator->SetVariable("FTM.cycle-time", 200000);
-	simulator->SetVariable("FTM.oscillator-cycle-time", 100000);
+	simulator->SetVariable("FTM.cycle-time", 250000);
+	simulator->SetVariable("FTM.bus-cycle-time", 250000);
+	simulator->SetVariable("FTM.oscillator-cycle-time", 125000);
 	simulator->SetVariable("FTM.base-address", 0x0100);
 	simulator->SetVariable("FTM.erase-fail-ratio", 0.01);
 	simulator->SetVariable("FTM.flash-Security-Byte-Address", 0x7FFF0F);
+	simulator->SetVariable("FTM.blackdoor-comparison-key-address", 0x7FFF00);
 	simulator->SetVariable("FTM.Protection-Byte-Address", 0x7FFF0C);
 	simulator->SetVariable("FTM.EEE-Protection-Byte-Address", 0x7FFF0D);
 	simulator->SetVariable("FTM.Flash-Option-Byte-Address", 0x7FFF0E);
 	simulator->SetVariable("FTM.flash-fault-detect-interrupt", 0xBA);
 	simulator->SetVariable("FTM.flash-interrupt", 0xB8);
 	simulator->SetVariable("FTM.verbose", false);
+	simulator->SetVariable("FTM.dflash-start-address", 0x100000);
+	simulator->SetVariable("FTM.dflash-end-address", 0x107FFF);
+	simulator->SetVariable("FTM.eee-nonvolatile-information-register-start-address", 0x120000);
+	simulator->SetVariable("FTM.eee-nonvolatile-information-register-size", 128);
+	simulator->SetVariable("FTM.eee_tag-ram-start-address", 0x122000);
+	simulator->SetVariable("FTM.EEE-tag-RAM-size", 256);
+	simulator->SetVariable("FTM.eee-protectable-high-address", 0x13FFFF);
+	simulator->SetVariable("FTM.memory-controller-scratch-ram-start-address", 0x124000);
+	simulator->SetVariable("FTM.memory-controller-scratch-ram-size", 1024);
+	simulator->SetVariable("FTM.buffer-ram-start-address", 0x13F000);
+	simulator->SetVariable("FTM.buffer-ram-end-address", 0x13FFFF);
+	simulator->SetVariable("FTM.pflash-start-address", 0x700000);
+	simulator->SetVariable("FTM.pflash-end-address", 0x7FFFFF);
+	simulator->SetVariable("FTM.pflash-protectable-high-address", 0x7FFFFF);
+	simulator->SetVariable("FTM.pflash-protectable-low-address", 0x7F8000);
+	simulator->SetVariable("FTM.pflash-blocks-description", "7C0000,7FFFFF;7A0000,7BFFFF;780000,79FFFF;740000,77FFFF;700000,73FFFF");
+	simulator->SetVariable("FTM.pflash-protection-byte-address", 0x7FFF0C);
+	simulator->SetVariable("FTM.eee-protection-byte-address", 0x7FFF0D);
+	simulator->SetVariable("FTM.flash-nonvolatile-byte-address", 0x7FFF0E);
+	simulator->SetVariable("FTM.flash-security-byte-address", 0x7FFF0F);
+	simulator->SetVariable("FTM.dflash-partition-user-access-address", 0x120000);
+	simulator->SetVariable("FTM.dflash-partition-user-access-address-duplicate", 0x120002);
+	simulator->SetVariable("FTM.buffer-ram-partition-eee-operation-address", 0x120004);
+	simulator->SetVariable("FTM.buffer-ram-partition-eee-operation-address-duplicate", 0x120006);
+	simulator->SetVariable("FTM.max-number-sectors-dflash", 128);
+	simulator->SetVariable("FTM.max-number-sectors-buffer-ram", 16);
+	simulator->SetVariable("FTM.min-number-sectors-in-dflash-for-eee", 12);
+	simulator->SetVariable("FTM.min-ratio-dflash-buffer-ram", 8);
+	simulator->SetVariable("FTM.min-fclk-time", 1250000); // 0.8 MHz
+	simulator->SetVariable("FTM.max-fclk-time", 952000);   // 1.05 MHz
 
 	simulator->SetVariable("kernel_logger.std_err", true);
 	simulator->SetVariable("kernel_logger.std_out", false);
@@ -780,16 +852,28 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
 }
 
-void Simulator::Stop(Object *object, int _exit_status)
+void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 {
 	exit_status = _exit_status;
 	if(object)
 	{
 		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
 	}
+
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
-	wait();
+	if(!asynchronous)
+	{
+		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		{
+			case SC_THREAD_PROC_:
+			case SC_CTHREAD_PROC_:
+				wait();
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_length) {
@@ -891,23 +975,38 @@ void Simulator::Run() {
 		DumpStatistics(cerr);
 		cerr << endl;
 
-		cerr << "Simulated time         : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "Core Clock   (MHz)     : " << (double) ((1 / (double) (*cpu)["core-clock"]) * 1000000)  << endl;
-		cerr << "Target speed (MIPS)    : " << (((double) (*cpu)["instruction-counter"] / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
-		cerr << "Target speed (MHz)     : " << (((double) ((uint64_t) (*cpu)["cycles-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
-		cerr << "cycles-per-instruction : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+		cerr << "CPU Clock   (MHz)      : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << endl;
+		cerr << "CPU CPI                : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
 
 		uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
 		uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
+		total_access = ((total_access == 0)? 1: total_access);
 
-		cerr << "data-load ratio             : " << (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100 << " %" << endl;
-		cerr << "data-store ratio            : " << (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100 << " %" << endl;
+		cerr << "CPU data-load ratio    : " << (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100 << " %" << endl;
+		cerr << "CPU data-store ratio   : " << (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100 << " %" << endl;
+
 		cerr << endl;
 
-		cerr << "simulation time        : " << spent_time << " seconds" << endl;
-		cerr << "host simulation speed  : " << (((double) (*cpu)["instruction-counter"] / spent_time) / 1000000.0) << " MIPS" << endl;
+		cerr << "XGATE Clock (MHz)      : " << (double) (1 / (double) (*xgate)["core-clock"] * 1000000)  << endl;
+		cerr << "XGATE CPI              : " << (double) ((uint64_t) (*xgate)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
 
-		cerr << "time dilation          : " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+		total_load = (uint64_t) (*xgate)["instruction-counter"] + (uint64_t) (*xgate)["data-load-counter"];
+		total_access = total_load + (uint64_t) (*xgate)["store-counter"];
+		total_access = ((total_access == 0)? 1: total_access);
+
+		cerr << "XGATE data-load ratio    : " << (double) ((uint64_t) (*xgate)["data-load-counter"])/(total_access)*100 << " %" << endl;
+		cerr << "XGATE data-store ratio   : " << (double) ((uint64_t) (*xgate)["data-store-counter"])/(total_access)*100 << " %" << endl;
+
+		cerr << endl;
+
+		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+
+		cerr << "Host simulation time   : " << spent_time << " seconds" << endl;
+		cerr << "Host simulation speed  : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / spent_time) / 1000000.0) << " MIPS" << endl;
+
+		cerr << "Time dilation          : " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 		cerr << endl;
 
 	}

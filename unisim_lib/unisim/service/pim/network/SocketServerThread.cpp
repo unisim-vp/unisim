@@ -35,8 +35,8 @@ namespace service {
 namespace pim {
 namespace network {
 
-SocketServerThread::SocketServerThread(string host, uint16_t port, bool _blocking, uint8_t connection_req_nb) :
-	SocketThread(host, port, _blocking)
+SocketServerThread::SocketServerThread(string host, uint16_t port, uint8_t connection_req_nb) :
+	SocketThread(host, port)
 {
 	request_nbre = connection_req_nb;
 
@@ -128,7 +128,7 @@ void SocketServerThread::run() {
 
 #endif
 
-		protocolHandler->startSocketThread(sockfdTmp, blocking);
+		protocolHandler->startSocketThread(sockfdTmp);
 	}
 
 }

@@ -43,7 +43,7 @@ action.hh \
 cli.hh \
 errtools.hh \
 isa.hh \
-parser.hh \
+parser_defs.hh \
 riscgenerator.hh \
 specialization.hh \
 variable.hh \
@@ -66,7 +66,7 @@ subdecoder.hh"
 UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
 scanner.cc \
 parser.cc \
-parser.h"
+parser_tokens.hh"
 
 UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
 parser.yy \
@@ -135,6 +135,7 @@ unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
+unisim/util/debug/data_object.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/stmt_64.cc \
 unisim/util/debug/dwarf/abbrev.cc \
@@ -148,6 +149,7 @@ unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
+unisim/util/debug/dwarf/c_loc_expr_parser.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
@@ -163,6 +165,7 @@ unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/loader/coff_loader/coff_loader64.cc \
 unisim/util/endian/endian.cc \
+unisim/util/lexer/lexer.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
@@ -176,13 +179,13 @@ unisim/service/loader/elf_loader/elf64_loader.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/profiling/addr_profiler/profiler64.cc \
-unisim/service/telnet/telnet.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/tee/registers/registers_tee.cc \
 unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
 unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
+unisim/service/telnet/telnet.cc \
 unisim/component/cxx/processor/hcs12x/xgate.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \
@@ -211,11 +214,11 @@ unisim/service/pim/pim_server_32.cc \
 unisim/service/pim/pim_server_64.cc \
 unisim/service/pim/pim_server.cc \
 unisim/service/pim/pim_thread.cc \
-unisim/service/pim/network/BlockingQueue.cpp \
 unisim/service/pim/network/GenericThread.cpp \
 unisim/service/pim/network/SocketClientThread.cpp \
 unisim/service/pim/network/SocketServerThread.cpp \
-unisim/service/pim/network/SocketThread.cpp"
+unisim/service/pim/network/SocketThread.cpp \
+unisim/service/pim/gdbthread.cc"
 
 
 UNISIM_LIB_STAR12X_ISA_FILES="\
@@ -288,8 +291,12 @@ unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/util.hh \
+unisim/util/debug/dwarf/version.hh \
+unisim/util/debug/dwarf/option.hh \
+unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/data_object.hh \
 unisim/util/debug/dwarf/data_object.hh \
+unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/event.hh \
@@ -312,6 +319,9 @@ unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/util/singleton/singleton.hh \
 unisim/util/xml/xml.hh \
 unisim/util/likely/likely.hh \
+unisim/util/dictionary/dictionary.hh \
+unisim/util/lexer/lexer.hh \
+unisim/util/parser/parser.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
@@ -379,13 +389,14 @@ unisim/component/tlm2/processor/hcs12x/s12spi.hh \
 unisim/service/pim/pim.hh \
 unisim/service/pim/pim_server.hh \
 unisim/service/pim/pim_thread.hh \
-unisim/service/pim/convert.hh \
+unisim/util/converter/convert.hh \
 unisim/service/pim/network/BlockingQueue.hpp \
-unisim/service/pim/network/BlockingQueue.tcc \
+unisim/service/pim/network/BlockingCircularQueue.hpp \
 unisim/service/pim/network/GenericThread.hpp \
 unisim/service/pim/network/SocketClientThread.hpp \
 unisim/service/pim/network/SocketServerThread.hpp \
-unisim/service/pim/network/SocketThread.hpp"
+unisim/service/pim/network/SocketThread.hpp \
+unisim/service/pim/gdbthread.hh"
 
 UNISIM_LIB_STAR12X_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \
@@ -394,6 +405,7 @@ unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/stmt.tcc \
+unisim/util/debug/data_object.tcc \
 unisim/util/debug/dwarf/data_object.tcc \
 unisim/util/debug/dwarf/addr_range.tcc \
 unisim/util/debug/dwarf/call_frame_prog.tcc \
@@ -421,6 +433,9 @@ unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
+unisim/util/dictionary/dictionary.tcc \
+unisim/util/lexer/lexer.tcc \
+unisim/util/parser/parser.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/debugger/debugger.tcc \
@@ -758,7 +773,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "Generating GENISSLIB Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES} parser.h" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -767,6 +782,16 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+
+# The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
+# Note that parser_tokens.hh has been added to BUILT_SOURCES above
+# assumption: parser.cc and either parser.h or parser.hh are generated at the same time
+   	echo "\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc" >> "${GENISSLIB_MAKEFILE_AM}"
+    	printf "\tif test -f \"\$(top_builddir)/parser.h\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    	printf "\t\tcp -f \"\$(top_builddir)/parser.h\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    	printf "\telif test -f \"\$(top_builddir)/parser.hh\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    	printf "\t\tcp -f \"\$(top_builddir)/parser.hh\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    	printf "\tfi\n" >> "${GENISSLIB_MAKEFILE_AM}"
 
 	echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"

@@ -92,7 +92,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 
 		channel[channel_number] = new Channel_t(channelName, this, channel_number, &pwmcnt16_register[i], &pwmper16_register[i], &pwmdty16_register_value[i]);
 
-		channel_output_reg[i].SetMutable(false);
+		output[i] = false;
 	}
 
 	// Reserved Register for factory testing
@@ -102,6 +102,9 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &PWM::read_write);
 	bus_clock_socket.register_b_transport(this, &PWM::updateBusClock);
+
+	xint_payload = xint_payload_fabric.allocate();
+	pwm_payload = payload_fabric.allocate();
 
 	Reset();
 
@@ -126,6 +129,9 @@ PWM<PWM_SIZE>::~PWM() {
 	for (i=0; i<n; i++) {
 		delete extended_registers_registry[i];
 	}
+
+	xint_payload->release();
+	pwm_payload->release();
 
 }
 
@@ -182,11 +188,11 @@ bool PWM<PWM_SIZE>::isEmergencyShutdownEnable() {
 
 // Master methods
 template <uint8_t PWM_SIZE>
-tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw( XINT_Payload& xint_payload, tlm_phase& phase, sc_core::sc_time& t)
 {
 	if(phase == BEGIN_RESP)
 	{
-		payload.release();
+		xint_payload.release();
 		return (TLM_COMPLETED);
 	}
 	return (TLM_ACCEPTED);
@@ -198,15 +204,16 @@ void PWM<PWM_SIZE>::assertInterrupt() {
 	// assert a PWM Emergency Shutdown Interrupt (vector = VectorBase + 0x8C)
 
 	tlm_phase phase = BEGIN_REQ;
-	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->setInterruptOffset(interruptOffset);
+	xint_payload->acquire();
+
+	xint_payload->setInterruptOffset(interruptOffset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
-	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
 
-	payload->release();
+	xint_payload->release();
 	
 	switch(ret)
 	{
@@ -252,7 +259,7 @@ void PWM<PWM_SIZE>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::
 }
 
 template <uint8_t PWM_SIZE>
-tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t)
+tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& pwm_payload, tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch(phase)
 	{
@@ -266,7 +273,7 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& payload, tlm
 			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
-			payload.release();
+			pwm_payload.release();
 			return (TLM_COMPLETED);
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
@@ -300,10 +307,11 @@ template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 {
 	tlm_phase phase = BEGIN_REQ;
-	PWM_Payload<PWM_SIZE> *payload = payload_fabric.allocate();
+
+	pwm_payload->acquire();
 
 	for (int i=0; i<PWM_SIZE; i++) {
-		payload->pwmChannel[i] = pwmValue[i];
+		pwm_payload->pwmChannel[i] = pwmValue[i];
 	}
 
 	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
@@ -312,13 +320,13 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 	sc_time local_time = quantumkeeper.get_local_time();
 
 	if (debug_enabled) {
-		cout << sc_object::name() << ":: send " << *payload << " - " << sc_time_stamp() << endl;
+		cout << sc_object::name() << ":: send " << *pwm_payload << " - " << sc_time_stamp() << endl;
 	}
 
 
-	tlm_sync_enum ret = master_sock->nb_transport_fw(*payload, phase, local_time);
+	tlm_sync_enum ret = master_sock->nb_transport_fw(*pwm_payload, phase, local_time);
 
-	payload->release();
+	pwm_payload->release();
 	
 	switch(ret)
 	{
@@ -895,7 +903,9 @@ PWM<PWM_SIZE>::Channel_t::Channel_t(const sc_module_name& name, PWM *parent, con
 	pwmper_register_value_ptr(pwmper_ptr),
 	pwmdty_register_value_ptr(pwmdty_ptr),
 	channel_index(channel_num),
-	pwmParent(parent)
+	pwmParent(parent),
+	channelMask(0)
+
 {
 
 	channelMask = (0x01 << channel_index);

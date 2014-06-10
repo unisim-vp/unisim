@@ -504,11 +504,11 @@ void VariableBase::RemoveListener(VariableBaseListener *listener)
 void VariableBase::NotifyListeners()
 {
 	list<VariableBaseListener *>::iterator iter;
-	if ( IsMutable() )
-		for ( iter = listener_list.begin();
-				iter != listener_list.end();
-				iter++)
-			(*iter)->VariableBaseNotify(this);
+
+	for ( iter = listener_list.begin();	iter != listener_list.end(); iter++) {
+		(*iter)->VariableBaseNotify(this);
+	}
+
 }
 
 VariableBase::operator bool () const { return false; }
@@ -733,8 +733,8 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value)
 {
 	if ( IsMutable() ) {
 		TYPE tmp = value ? 1 : 0;
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 
@@ -746,8 +746,8 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value)
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value)
 {
 	if ( IsMutable() ) {
+		SetModified(*storage != (TYPE) value);
 		if (!WriteBack(value)) {
-			SetModified(*storage != (TYPE) value);
 			*storage = value;
 		}
 	}
@@ -758,8 +758,8 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value)
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long long value)
 {
 	if ( IsMutable() ) {
+		SetModified(*storage != (TYPE) value);
 		if (!WriteBack(value)) {
-			SetModified(*storage != (TYPE) value);
 			*storage = value;
 		}
 	}
@@ -770,8 +770,8 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long lo
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 {
 	if ( IsMutable() ) {
+		SetModified(*storage != (TYPE) value);
 		if (!WriteBack((TYPE) value)) {
-			SetModified(*storage != (TYPE) value);
 			*storage = (TYPE) value;
 		}
 	}
@@ -1408,8 +1408,8 @@ template <> VariableBase& Variable<bool>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		bool tmp = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0);
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1420,8 +1420,8 @@ template <> VariableBase& Variable<char>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		char tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1432,8 +1432,8 @@ template <> VariableBase& Variable<short>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		short tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1444,8 +1444,8 @@ template <> VariableBase& Variable<int>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		int tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1456,8 +1456,8 @@ template <> VariableBase& Variable<long>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1468,8 +1468,8 @@ template <> VariableBase& Variable<long long>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		long long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1480,8 +1480,8 @@ template <> VariableBase& Variable<unsigned char>::operator = (const char *value
 {
 	if ( IsMutable() ) {
 		unsigned char tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1492,8 +1492,8 @@ template <> VariableBase& Variable<unsigned short>::operator = (const char *valu
 {
 	if ( IsMutable() ) {
 		unsigned short tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1504,8 +1504,8 @@ template <> VariableBase& Variable<unsigned int>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		unsigned int tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1516,8 +1516,8 @@ template <> VariableBase& Variable<unsigned long>::operator = (const char *value
 {
 	if ( IsMutable() ) {
 		unsigned long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1528,8 +1528,8 @@ template <> VariableBase& Variable<unsigned long long>::operator = (const char *
 {
 	if ( IsMutable() ) {
 		unsigned long long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1540,8 +1540,8 @@ template <> VariableBase& Variable<float>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		float tmp = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1552,8 +1552,8 @@ template <> VariableBase& Variable<double>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		double tmp = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1571,8 +1571,8 @@ template <> VariableBase& Variable<string>::operator = (bool value)
 {
 	if ( IsMutable() ) {
 		string tmp = value ? "true" : "false";
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1586,8 +1586,8 @@ template <> VariableBase& Variable<string>::operator = (long long value)
 		stringstream sstr;
 		sstr << "0x" << hex << value;
 		string tmp = sstr.str();
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1601,8 +1601,8 @@ template <> VariableBase& Variable<string>::operator = (unsigned long long value
 		stringstream sstr;
 		sstr << "0x" << hex << value;
 		string tmp = sstr.str();
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1616,8 +1616,8 @@ template <> VariableBase& Variable<string>::operator = (double value)
 		stringstream sstr;
 		sstr << value;
 		string tmp = sstr.str();
+		SetModified(*storage != tmp);
 		if (!WriteBack(tmp)) {
-			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
 	}
@@ -1628,8 +1628,8 @@ template <> VariableBase& Variable<string>::operator = (const char *value)
 {
 	if ( IsMutable() )
 	{
+		if(storage->compare(value) != 0) SetModified(true);
 		if (!WriteBack(std::string(value))) {
-			if(storage->compare(value) != 0) SetModified(true);
 			*storage = value;
 		}
 	}
@@ -3324,6 +3324,11 @@ void Simulator::GetParameters(list<VariableBase *>& lst)
 void Simulator::GetRegisters(list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_REGISTER);
+}
+
+void Simulator::GetSignals(list<VariableBase *>& lst)
+{
+	GetVariables(lst, VariableBase::VAR_SIGNAL);
 }
 
 void Simulator::GetStatistics(list<VariableBase *>& lst)

@@ -21,14 +21,15 @@ namespace network {
 class SocketThread: public GenericThread {
 public:
 
-	SocketThread(string host, uint16_t port, bool _blocking);
+	SocketThread(string host, uint16_t port);
 	SocketThread();
 
 	virtual ~SocketThread();
 
-	void startSocketThread(int sockfd, bool _blocking);
+	void startSocketThread(int sockfd);
 
 	virtual void run() { };
+	void closeSockfd();
 
 	bool GetChar(char& c, bool blocking);
 	bool GetPacket(string& s, bool blocking);
@@ -37,15 +38,21 @@ public:
 	bool OutputText(const char *s, int count);
 	bool FlushOutput();
 
+	bool GetPacketWithAck(string& s, bool blocking, bool Acknowledgment);
+	bool PutPacketWithAck(const string& data, bool Acknowledgment);
+	bool OutputTextWithAck(const char *s, int count, bool Acknowledgment);
+
 	void setSockfd(int sockfd);
+	int getSockfd() { return (sockfd); }
 	void waitConnection();
+	void lockSocket() { pthread_mutex_lock( &sockfd_mutex ); }
+	void unlockSocket() { pthread_mutex_unlock( &sockfd_mutex ); }
 
 protected:
 
 	uint32_t hostname;
 	uint16_t hostport;
 	int sockfd;
-	bool blocking;
 
 	/*
 	 *  this routine converts the address into an internet ip
@@ -57,6 +64,8 @@ protected:
 	pthread_mutex_t sockfd_mutex;
 	pthread_mutex_t sockfd_condition_mutex;
 	pthread_cond_t  sockfd_condition_cond;
+
+	pthread_mutexattr_t Attr;
 
 private:
 	int input_buffer_size;

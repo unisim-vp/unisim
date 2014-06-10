@@ -132,9 +132,15 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	SC_THREAD(runCOP);
 	SC_THREAD(runClockMonitor);
 
+	xint_payload = xint_payload_fabric.allocate();
+	bus_clk_trans = payloadFabric.allocate();
+
 }
 
 CRG::~CRG() {
+
+	xint_payload->release();
+	bus_clk_trans->release();
 
 	// Release registers_registry
 	map<string, unisim::util::debug::Register *>::iterator reg_iter;
@@ -672,6 +678,7 @@ void CRG::runRTI() {
 		crgflg_register = crgflg_register | 0x80;
 
 		assertInterrupt(interrupt_offset_rti);
+
 	}
 }
 
@@ -681,15 +688,16 @@ void CRG::assertInterrupt(uint8_t interrupt_offset) {
 	if ((interrupt_offset == interrupt_offset_self_clock_mode) && ((crgint_register & 0x02) == 0)) return;
 
 	tlm_phase phase = BEGIN_REQ;
-	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->setInterruptOffset(interrupt_offset);
+	xint_payload->acquire();
+
+	xint_payload->setInterruptOffset(interrupt_offset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
-	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
 
-	payload->release();
+	xint_payload->release();
 
 	switch(ret)
 	{
@@ -794,24 +802,23 @@ void CRG::updateBusClock() {
 	// notify bus_clock update
 	sc_dt::uint64 bus_clock_value = bus_clock.value();
 
-	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
-
-	trans->set_command( tlm::TLM_WRITE_COMMAND );
-	trans->set_data_ptr( (unsigned char *)&bus_clock_value);
+	bus_clk_trans->acquire();
+	bus_clk_trans->set_command( tlm::TLM_WRITE_COMMAND );
+	bus_clk_trans->set_data_ptr( (unsigned char *)&bus_clock_value);
 
 	sc_time delay = SC_ZERO_TIME;
 
 	for (uint8_t i = 0; i < bus_clock_socket.size(); i++) {
-		trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+		bus_clk_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-		bus_clock_socket[i]->b_transport( *trans, delay);
+		bus_clock_socket[i]->b_transport( *bus_clk_trans, delay);
 
-		if (trans->is_response_error() )
+		if (bus_clk_trans->is_response_error() )
 			SC_REPORT_ERROR("CRG : ", "Response error from b_transport");
 
 	}
 
-	trans->release();
+	bus_clk_trans->release();
 }
 
 void CRG::initialize_rti_counter() {

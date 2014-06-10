@@ -171,6 +171,19 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 	return (result);
 }
 
+bool XML_ATD_PWM_STUB::BeginSetup() {
+
+	if (atd0_stub_enabled) {
+		LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
+	}
+
+	if (atd1_stub_enabled) {
+		LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
+	}
+
+	return (inherited::BeginSetup());
+}
+
 void XML_ATD_PWM_STUB::processATD0()
 {
 	srand(12345);
@@ -178,8 +191,6 @@ void XML_ATD_PWM_STUB::processATD0()
 	int atd0_data_size, atd0_data_index = 0;
 
 	if (atd0_stub_enabled) {
-		LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
-
 
 		atd0_data_size = atd0_vect.size();
 
@@ -246,7 +257,6 @@ void XML_ATD_PWM_STUB::processATD1()
 	int atd1_data_size, atd1_data_index = 0;
 
 	if (atd1_stub_enabled) {
-		LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
 
 		atd1_data_size = atd1_vect.size();
 
@@ -307,11 +317,6 @@ void XML_ATD_PWM_STUB::processPWM()
 {
 
 	bool pwmValue[PWM_SIZE];
-
-//	while(enabled)
-//	{
-//		Input(pwmValue);
-//	}
 
 	while(true)
 	{

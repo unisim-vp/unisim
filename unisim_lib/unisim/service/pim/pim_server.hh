@@ -62,10 +62,13 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include <inttypes.h>
 
-#include <unisim/service/pim/convert.hh>
+#include <unisim/util/converter/convert.hh>
+
+#include <unisim/service/pim/gdbthread.hh>
 
 namespace unisim {
 namespace service {
@@ -101,6 +104,8 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Simulator;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Variable;
+using unisim::kernel::service::VariableBaseListener;
 
 using unisim::service::pim::network::SocketThread;
 using unisim::service::pim::network::GenericThread;
@@ -111,6 +116,7 @@ using unisim::service::pim::PIMThread;
 typedef enum { GDBSERVER_MODE_WAITING_GDB_CLIENT, GDBSERVER_MODE_STEP, GDBSERVER_MODE_CONTINUE } GDBServerRunningMode;
 
 typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
+
 
 template <class ADDRESS>
 class PIMServer :
@@ -123,7 +129,8 @@ class PIMServer :
 	public Client<SymbolTableLookup<ADDRESS> >,
 	public Client<StatementLookup<ADDRESS> >,
 	public Client<Registers>,
-	public SocketThread
+	public VariableBaseListener
+
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
@@ -176,36 +183,35 @@ protected:
 
 	SocketServerThread *socketServer;
 
-	SocketThread *target;
+	GDBThread *gdbThread;
+
+	SocketThread *monitorThread;
 	SocketThread *pimServerThread;
 
 private:
 	static const unsigned int MAX_BUFFER_SIZE = 256;
-	bool ParseHex(const string& s, unsigned int& pos, ADDRESS& value);
 
 	bool InternalReadMemory(ADDRESS addr, uint32_t size, string& packet);
 
-	bool ReadRegisters();
 	bool WriteRegisters(const string& hex);
 	bool ReadRegister(unsigned int regnum);
 	bool WriteRegister(unsigned int regnum, const string& hex);
-	bool ReadMemory(ADDRESS addr, uint32_t size);
+
 	bool WriteMemory(ADDRESS addr, const string& hex, uint32_t size);
+
 	bool ReportProgramExit();
 	bool ReportSignal(unsigned int signum);
 	bool ReportTracePointTrap();
 	bool SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
 	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
 
-	void HandleQRcmd(string command);
+	bool HandleQRcmd(DBGData *request);
 	bool HandleSymbolLookup();
 	bool ReadSymbol(const string name);
 	bool WriteSymbol(const string name, const string& hex);
 
-	void Disasm(ADDRESS addr, unsigned int size);
+	virtual void VariableBaseNotify(const VariableBase *var);
 	
-	void Kill();
-
 	unisim::kernel::logger::Logger logger;
 
 	uint16_t tcp_port;
@@ -240,7 +246,6 @@ private:
 	Parameter<string> param_architecture_description_filename;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_host;
-
 
 };
 

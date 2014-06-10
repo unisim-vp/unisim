@@ -82,7 +82,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::RegisterArray;
+using unisim::kernel::service::SignalArray;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -205,10 +205,19 @@ public:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
-	RegisterArray<bool> channel_output_reg;
+	SignalArray<bool> channel_output_reg;
 
 protected:
-	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };
+//	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };
+	void setOutput(uint8_t channel_index, bool value) {
+		assert(channel_index < PWM_SIZE);
+
+		if (value != output[channel_index]) {
+			channel_output_reg[channel_index] = value;
+		}
+
+	};
+
 	bool getOutput(uint8_t channel_index) { assert(channel_index < PWM_SIZE); return (output[channel_index]); }
 
 private:
@@ -219,6 +228,8 @@ private:
 
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
+	XINT_Payload *xint_payload;
+	PWM_Payload<PWM_SIZE> *pwm_payload;
 
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;

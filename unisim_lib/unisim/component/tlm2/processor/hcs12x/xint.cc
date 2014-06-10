@@ -69,7 +69,6 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 	, baseAddress(0x0120)
 	, param_baseAddress("base-address", this, baseAddress)
 
-
 {
 
 	interrupt_request(*this);
@@ -78,6 +77,10 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 
 	toCPU12X_request.register_nb_transport_bw(this, &XINT::cpu_nb_transport_bw);
 	toXGATE_request.register_nb_transport_bw(this, &XINT::xgate_nb_transport_bw);
+
+	trans = payloadFabric.allocate();
+
+	phase = new tlm_phase(BEGIN_REQ);
 
 	SC_HAS_PROCESS(XINT);
 
@@ -112,6 +115,9 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 }
 
 XINT::~XINT() {
+
+	delete phase;
+	trans->release();
 
 	// Release registers_registry
 	map<string, unisim::util::debug::Register *>::iterator reg_iter;
@@ -198,28 +204,24 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 		buffer.setVectorAddress(get_ClockMonitorReset_Vector());
 		buffer.setID(XINT::INT_CLK_MONITOR_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
-
 	}
 	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_COPWatchdogReset_Vector());
 		buffer.setID(XINT::INT_COP_WATCHDOG_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
-
 	}
 	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_IllegalAccessReset_Vector());
 		buffer.setID(XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
-
 	}
 	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_SysReset_Vector());
 		buffer.setID(XINT::INT_SYS_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
-
 	}
 	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_XIRQ_OFFSET/2].getState()) {
 
@@ -235,8 +237,12 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 		buffer.setPriority(0x7);
 	}
 	else {
-		for (int index=0x9; index < 0x79; index++) {
+		for (int index=0x79; index > 0x9; index--) {
 			if (interrupt_flags[index].getState()) {
+
+				if (debug_enabled) {
+					std::cout << sc_object::name() << " Interrupt State true for 0x" << std::hex << (unsigned int) (index * 2) << std::endl;
+				}
 
 				uint8_t dataPriority = 0;
 
@@ -250,7 +256,7 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 					}
 
 				} else {
-					if (((int_cfwdata[index] & 0x80) != 0) && !interrupt_flags[index].getPayload().isXGATE_shared_channel()) {
+					if (((int_cfwdata[index] & 0x80) != 0) && !(interrupt_flags[index].getPayload().isXGATE_shared_channel())) {
 						dataPriority = int_cfwdata[index] & 0x07;
 					}
 				}
@@ -259,6 +265,7 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 					buffer.setPriority(dataPriority);
 					buffer.setID(index);
 					buffer.setVectorAddress(((address_t) getIVBR() << 8) + index * 2);
+					break;
 				}
 
 			}
@@ -266,14 +273,16 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 
 	}
 
-	if (buffer.getVectorAddress() == 0) {
-		buffer.setVectorAddress(get_Spurious_Vector());
-		buffer.setPriority(0x7);
-		buffer.setID(get_Spurious_Vector()/2);
-		return (false);
+	if (debug_enabled) {
+		std::cout << sc_object::name() << " Interrupt 0x" << std::hex << buffer.getVectorAddress() << " at " << sc_time_stamp() << std::endl;
 	}
 
-	cerr << "XINT::selectInterrupt() ID=0x" << std::hex << (unsigned int) buffer.getID() << " vect 0x" << std::hex << buffer.getVectorAddress() << endl;
+	if (buffer.getVectorAddress() == 0) {
+		buffer.setVectorAddress(getIVBR() << 8);
+		buffer.setID((getIVBR() << 8)/2);
+
+		return (false);
+	}
 
 	return (true);
 
@@ -285,16 +294,15 @@ void XINT::run()
 
 	// This thread is waked-up by any not CPU interrupt
 
-	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
-
-	tlm_phase *phase = new tlm_phase(BEGIN_REQ);
-
-	trans->set_command( tlm::TLM_WRITE_COMMAND );
-	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
 	while (true) {
 
 		wait(input_payload_queue.get_event() | retry_event);
+
+		trans->acquire();
+		trans->set_command( tlm::TLM_WRITE_COMMAND );
+		trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+		*phase = BEGIN_REQ;
 
 		bool found_cpu = false;
 		bool found_xgate = false;
@@ -335,20 +343,18 @@ void XINT::run()
 		} while(payload);
 
 		if (found_cpu) {
-
 			tlm_sync_enum ret = toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
 		}
 
 		if (found_xgate) {
-
 			tlm_sync_enum ret = toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
 
 		}
 
+		trans->release();
+
 	}
 
-	delete phase;
-	trans->release();
 
 }
 
@@ -503,9 +509,11 @@ void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
-			read(address - baseAddress, data_ptr, data_length);
+			//read(address - baseAddress, data_ptr, data_length);
+			read(address, data_ptr, data_length);
 		} else if (cmd == tlm::TLM_WRITE_COMMAND) {
-			write(address - baseAddress, data_ptr, data_length);
+			//write(address - baseAddress, data_ptr, data_length);
+			write(address, data_ptr, data_length);
 		}
 
 		trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -518,6 +526,7 @@ void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 bool XINT::write(unsigned int address, const void *buffer, unsigned int data_length)
 {
 	uint8_t value = *((uint8_t *) buffer);
+
 	if (address == XINT_REGS_ADDRESSES[IVBR]) setIVBR(value);
 	else if (address == XINT_REGS_ADDRESSES[INT_XGPRIO]) setINT_XGPRIO(value);
 	else if (address == XINT_REGS_ADDRESSES[INT_CFADDR]) setINT_CFADDR(value);
@@ -559,7 +568,9 @@ uint8_t	XINT::getINT_XGPRIO() { return (int_xgprio); }
 void XINT::setINT_XGPRIO(uint8_t value) { int_xgprio = value; }
 
 uint8_t	XINT::getINT_CFADDR() { return (int_cfaddr); }
-void XINT::setINT_CFADDR(uint8_t value) { int_cfaddr = value; }
+void XINT::setINT_CFADDR(uint8_t value) {
+	int_cfaddr = value;
+}
 
 uint8_t	XINT::read_INT_CFDATA(uint8_t index)
 {

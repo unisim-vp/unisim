@@ -55,7 +55,7 @@ aba.execute = {
 	uint8_t aVal = cpu->getRegA();
 	uint8_t bVal = cpu->getRegB();
 	 
-	Add8(result, carry_out, overflow, sign, aVal, bVal, carry_in);
+	UnsignedAdd8(result, carry_out, overflow, sign, aVal, bVal, carry_in);
 	
 	cpu->setRegA(result);
 	
@@ -96,7 +96,7 @@ abx.execute = {
 	uint8_t bVal = cpu->getRegB();
 	uint16_t xVal = cpu->getRegX();
 	
-	Add16(result, carry_out, overflow, sign, (uint16_t) bVal, xVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, (uint16_t) bVal, xVal, carry_in);
 	
 	cpu->setRegX(result);
 	
@@ -123,7 +123,7 @@ aby.execute = {
 	uint8_t bVal = cpu->getRegB();
 	uint16_t yVal = cpu->getRegY();
 	
-	Add16(result, carry_out, overflow, sign, (uint16_t) bVal, yVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, (uint16_t) bVal, yVal, carry_in);
 	
 	cpu->setRegY(result);
 	
@@ -158,7 +158,7 @@ adc_ab_imm.execute = {
 		regVal = cpu->getRegB();
 	}
 
-	Add8(result, carry_out, overflow, sign, regVal, opr8i, carry_in);
+	UnsignedAdd8(result, carry_out, overflow, sign, regVal, opr8i, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -212,7 +212,7 @@ adc_ab_dir.execute = {
 
 	uint8_t opr8aVal = cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
 
-	Add8(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+	UnsignedAdd8(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -269,7 +269,7 @@ adc_ab_ext.execute = {
 	physical_address_t addr = opr16a;	
 	uint8_t opr16aVal = cpu->memRead8(addr);
 
-	Add8(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+	UnsignedAdd8(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -340,7 +340,7 @@ adc_ab_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint8_t xbVal = cpu->memRead8(addr);
 
-	Add8(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+	UnsignedAdd8(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -393,7 +393,7 @@ add_ab_imm.execute = {
 		regVal = cpu->getRegB();
 	}
 
-	Add8(result, carry_out, overflow, sign, regVal, opr8i, carry_in);
+	UnsignedAdd8(result, carry_out, overflow, sign, regVal, opr8i, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -448,7 +448,7 @@ add_ab_dir.execute = {
 
 	uint8_t opr8aVal = cpu->memRead8(addr, ADDRESS::DIRECT, false);
 
-	Add8(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+	UnsignedAdd8(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -505,7 +505,7 @@ add_ab_ext.execute = {
 	physical_address_t addr = opr16a;		
 	uint8_t opr16aVal = cpu->memRead8(addr);
 
-	Add8(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+	UnsignedAdd8(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -576,7 +576,7 @@ add_ab_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint8_t xbVal = cpu->memRead8(addr);
 
-	Add8(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+	UnsignedAdd8(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -620,7 +620,7 @@ aded_imm.execute = {
 	uint8_t carry_in = cpu->ccr->getC();
 	uint16_t regVal = cpu->getRegD();
 
-	Add16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
 	
 	cpu->setRegD(result);
 		
@@ -654,7 +654,7 @@ aded_dir.execute = {
 
 	uint16_t opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 
-	Add16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	cpu->setRegD(result);	
 	
@@ -689,7 +689,7 @@ aded_ext.execute = {
 	physical_address_t addr = opr16a;	
 	uint16_t opr16aVal = cpu->memRead16(addr);
 
-	Add16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	cpu->setRegD(result);
 		
@@ -738,7 +738,7 @@ aded_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint16_t xbVal = cpu->memRead16(addr);
 
-	Add16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	cpu->setRegD(result);
 		
@@ -779,7 +779,7 @@ ade_xy_imm.execute = {
 		regVal = cpu->getRegY();
 	}
 
-	Add16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -827,7 +827,7 @@ ade_xy_dir.execute = {
 
 	uint16_t opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 
-	Add16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -876,7 +876,7 @@ ade_xy_ext.execute = {
 	physical_address_t addr = opr16a;	
 	uint16_t opr16aVal = cpu->memRead16(addr);
 
-	Add16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -940,7 +940,7 @@ ade_xy_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint16_t xbVal = cpu->memRead16(addr);
 
-	Add16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -986,7 +986,7 @@ add_xy_imm.execute = {
 		regVal = cpu->getRegY();
 	}
 
-	Add16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -1034,7 +1034,7 @@ add_xy_dir.execute = {
 
 	uint16_t opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 
-	Add16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -1083,7 +1083,7 @@ add_xy_ext.execute = {
 	physical_address_t addr = opr16a;		
 	uint16_t opr16aVal = cpu->memRead16(addr);
 
-	Add16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -1147,7 +1147,7 @@ add_xy_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint16_t xbVal = cpu->memRead16(addr);
 
-	Add16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+	UnsignedAdd16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -1192,9 +1192,9 @@ add_sub_d_imm.execute = {
 	uint16_t regVal = cpu->getRegD();
 
 	if (b==0) {
-		Sub16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
+		SignedSub16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
 	} else {
-		Add16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
+		UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
 	}
 	
 	cpu->setRegD(result);
@@ -1234,9 +1234,9 @@ add_sub_d_dir.execute = {
 	uint16_t opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 
 	if (b==0) {
-		Sub16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+		SignedSub16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	} else {
-		Add16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+		UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	}
 	
 	cpu->setRegD(result);
@@ -1279,9 +1279,9 @@ add_sub_d_ext.execute = {
 	uint16_t opr16aVal = cpu->memRead16(addr);
 
 	if (b==0) {
-		Sub16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+		SignedSub16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	} else {
-		Add16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+		UnsignedAdd16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	}
 
 	cpu->setRegD(result);
@@ -1336,9 +1336,9 @@ add_sub_d_idx.execute = {
 	uint16_t xbVal = cpu->memRead16(addr);
 
 	if (b==0) {
-		Sub16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+		SignedSub16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	} else {
-		Add16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+		UnsignedAdd16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	}
 
 	cpu->setRegD(result);
@@ -1372,7 +1372,7 @@ sba.execute = {
 	uint8_t aVal = cpu->getRegA();
 	uint8_t bVal = cpu->getRegB();
 	 
-	Sub8(result, carry_out, overflow, sign, aVal, bVal, carry_in);
+	SignedSub8(result, carry_out, overflow, sign, aVal, bVal, carry_in);
 	
 	cpu->setRegA(result);
 	
@@ -1412,7 +1412,7 @@ sbc_ab_imm.execute = {
 		regVal = cpu->getRegB();
 	}
 
-	Sub8(result, carry_out, overflow, sign, regVal, opr8i, carry_in);
+	SignedSub8(result, carry_out, overflow, sign, regVal, opr8i, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -1458,7 +1458,7 @@ sbc_ab_dir.execute = {
 
 	uint8_t opr8aVal = cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
 
-	Sub8(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+	SignedSub8(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -1505,7 +1505,7 @@ sbc_ab_ext.execute = {
 	physical_address_t addr = opr16a;		
 	uint8_t opr16aVal = cpu->memRead8(addr);
 
-	Sub8(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+	SignedSub8(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -1567,7 +1567,7 @@ sbc_ab_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint8_t xbVal = cpu->memRead8(addr);
 
-	Sub8(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+	SignedSub8(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -1602,7 +1602,7 @@ sbed_imm.execute = {
 	uint8_t carry_in = cpu->ccr->getC();
 	uint16_t regVal = cpu->getRegD();
 
-	Sub16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
 	
 	cpu->setRegD(result);
 		
@@ -1635,7 +1635,7 @@ sbed_dir.execute = {
 
 	uint16_t opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 
-	Sub16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	cpu->setRegD(result);
 		
@@ -1670,7 +1670,7 @@ sbed_ext.execute = {
 	physical_address_t addr = opr16a;		
 	uint16_t opr16aVal = cpu->memRead16(addr);
 
-	Sub16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	cpu->setRegD(result);
 		
@@ -1718,7 +1718,7 @@ sbed_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint16_t xbVal = cpu->memRead16(addr);
 
-	Sub16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	cpu->setRegD(result);
 		
@@ -1759,7 +1759,7 @@ sbe_xy_imm.execute = {
 		regVal = cpu->getRegY();
 	}
 
-	Sub16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -1806,7 +1806,7 @@ sbe_xy_dir.execute = {
 
 	uint16_t opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 
-	Sub16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -1854,7 +1854,7 @@ sbe_xy_ext.execute = {
 	physical_address_t addr = opr16a;		
 	uint16_t opr16aVal = cpu->memRead16(addr);
 
-	Sub16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -1917,7 +1917,7 @@ sbe_xy_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint16_t xbVal = cpu->memRead16(addr);
 
-	Sub16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -1961,7 +1961,7 @@ sub_ab_imm.execute = {
 		regVal = cpu->getRegB();
 	}
 
-	Sub8(result, carry_out, overflow, sign, regVal, opr8i, carry_in);
+	SignedSub8(result, carry_out, overflow, sign, regVal, opr8i, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -2008,7 +2008,7 @@ sub_ab_dir.execute = {
 
 	uint8_t opr8aVal = cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
 
-	Sub8(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+	SignedSub8(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -2056,7 +2056,7 @@ sub_ab_ext.execute = {
 	physical_address_t addr = opr16a;		
 	uint8_t opr16aVal = cpu->memRead8(addr);
 
-	Sub8(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+	SignedSub8(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -2119,7 +2119,7 @@ sub_ab_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint8_t xbVal = cpu->memRead8(addr);
 
-	Sub8(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+	SignedSub8(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegA(result);
@@ -2166,7 +2166,7 @@ sub_xy_imm.execute = {
 		regVal = cpu->getRegY();
 	}
 
-	Sub16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, opr16i, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -2214,7 +2214,7 @@ sub_xy_dir.execute = {
 
 	uint16_t opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 
-	Sub16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, opr8aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -2263,7 +2263,7 @@ sub_xy_ext.execute = {
 	physical_address_t addr = opr16a;		
 	uint16_t opr16aVal = cpu->memRead16(addr);
 
-	Sub16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, opr16aVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -2327,7 +2327,7 @@ sub_xy_idx.execute = {
 	physical_address_t addr = xb->getEAddr(cpu);		
 	uint16_t xbVal = cpu->memRead16(addr);
 
-	Sub16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
+	SignedSub16(result, carry_out, overflow, sign, regVal, xbVal, carry_in);
 	
 	if (b==0) {
 		cpu->setRegX(result);
@@ -2374,7 +2374,7 @@ daa.execute = {
 		(hBit == 0) &&
 		(a30 < 0xA))
 	{
-		Add8(result, carry_out, overflow, sign, aVal, 0x00, 0x00);
+		UnsignedAdd8(result, carry_out, overflow, sign, aVal, 0x00, 0x00);
 		cpu->setRegA(result);
 		cpu->ccr->clrC();
 	}
@@ -2385,7 +2385,7 @@ daa.execute = {
 		(hBit == 0) &&
 		(a30 > 0x9))
 	{
-		Add8(result, carry_out, overflow, sign, aVal, 0x06, 0x00);
+		UnsignedAdd8(result, carry_out, overflow, sign, aVal, 0x06, 0x00);
 		cpu->setRegA(result);
 		cpu->ccr->clrC();
 	}
@@ -2396,7 +2396,7 @@ daa.execute = {
 		(hBit == 1) &&
 		(a30 < 0x4))
 	{
-		Add8(result, carry_out, overflow, sign, aVal, 0x06, 0x00);
+		UnsignedAdd8(result, carry_out, overflow, sign, aVal, 0x06, 0x00);
 		cpu->setRegA(result);
 		cpu->ccr->clrC();
 	}
@@ -2407,7 +2407,7 @@ daa.execute = {
 		(hBit == 0) &&
 		(a30 < 0xA))
 	{
-		Add8(result, carry_out, overflow, sign, aVal, 0x60, 0x00);
+		UnsignedAdd8(result, carry_out, overflow, sign, aVal, 0x60, 0x00);
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
@@ -2418,7 +2418,7 @@ daa.execute = {
 		(hBit == 0) &&
 		(a30 > 0x9))
 	{
-		Add8(result, carry_out, overflow, sign, aVal, 0x66, 0x00);
+		UnsignedAdd8(result, carry_out, overflow, sign, aVal, 0x66, 0x00);
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
@@ -2429,7 +2429,7 @@ daa.execute = {
 		(hBit == 1) &&
 		(a30 < 0x4))
 	{
-		Add8(result, carry_out, overflow, sign, aVal, 0x66, 0x00);
+		UnsignedAdd8(result, carry_out, overflow, sign, aVal, 0x66, 0x00);
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
@@ -2440,7 +2440,7 @@ daa.execute = {
 		(hBit == 0) &&
 		(a30 < 0xA))
 	{
-		Add8(result, carry_out, overflow, sign, aVal, 0x60, 0x00);
+		UnsignedAdd8(result, carry_out, overflow, sign, aVal, 0x60, 0x00);
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
@@ -2451,7 +2451,7 @@ daa.execute = {
 		(hBit == 0) &&
 		(a30 > 0x9))
 	{
-		Add8(result, carry_out, overflow, sign, aVal, 0x66, 0x00);
+		UnsignedAdd8(result, carry_out, overflow, sign, aVal, 0x66, 0x00);
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}
@@ -2462,7 +2462,7 @@ daa.execute = {
 		(hBit == 1) &&
 		(a30 < 0x4))
 	{
-		Add8(result, carry_out, overflow, sign, aVal, 0x66, 0x00);
+		UnsignedAdd8(result, carry_out, overflow, sign, aVal, 0x66, 0x00);
 		cpu->setRegA(result);
 		cpu->ccr->setC();
 	}

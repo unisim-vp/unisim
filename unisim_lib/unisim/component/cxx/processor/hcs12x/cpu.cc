@@ -100,9 +100,9 @@ CPU::CPU(const char *name, Object *parent):
 	param_verbose_exception("verbose-exception", this, verbose_exception),
 	trace_enable(false),
 	param_trace_enable("trace-enabled", this, trace_enable),
-	requires_memory_access_reporting(true),
+	requires_memory_access_reporting(false),
 	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
-	requires_finished_instruction_reporting(true),
+	requires_finished_instruction_reporting(false),
 	param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting),
 	debug_enabled(false),
 	param_debug_enabled("debug-enabled", this, debug_enabled),
@@ -155,22 +155,47 @@ CPU::CPU(const char *name, Object *parent):
 	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("B", this, regB, "Accumulator register B"));
 
 	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);
-	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>("D", this,  &regA, &regB, "Accumulator register D"));
+//	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>("D", this,  &regA, &regB, "Accumulator register D"));
+
+	ConcatenatedRegisterView<uint16_t,uint8_t> *d_var = new ConcatenatedRegisterView<uint16_t,uint8_t>("D", this,  &regA, &regB, "16-bits Accumulator register (D=A:B)");
+	extended_registers_registry.push_back(d_var);
+	d_var->setCallBack(this, D, &CallBackObject::write, NULL);
+
 
 	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("X", this, regX, "Index register X"));
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("X", this, regX, "Index register X"));
+
+	unisim::kernel::service::Register<uint16_t> *x_var = new unisim::kernel::service::Register<uint16_t>("X", this, regX, "16-bits index register (X)");
+	extended_registers_registry.push_back(x_var);
+	x_var->setCallBack(this, X, &CallBackObject::write, NULL);
 
 	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("Y", this, regY, "Index register Y"));
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("Y", this, regY, "Index register Y"));
+
+	unisim::kernel::service::Register<uint16_t> *y_var = new unisim::kernel::service::Register<uint16_t>("Y", this, regY, "16-bits index register (Y)");
+	extended_registers_registry.push_back(y_var);
+	y_var->setCallBack(this, Y, &CallBackObject::write, NULL);
 
 	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("SP", this, regSP, "Stack Pointer SP"));
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("SP", this, regSP, "Stack Pointer SP"));
+
+	unisim::kernel::service::Register<uint16_t> *sp_var = new unisim::kernel::service::Register<uint16_t>("SP", this, regSP, "16-bits stack pointer register (SP)");
+	extended_registers_registry.push_back(sp_var);
+	sp_var->setCallBack(this, SP, &CallBackObject::write, NULL);
 
 	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("PC", this, regPC, "Program counter PC"));
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("PC", this, regPC, "Program counter PC"));
+
+	unisim::kernel::service::Register<uint16_t> *pc_var = new unisim::kernel::service::Register<uint16_t>("PC", this, regPC, "16-bits program counter register (PC)");
+	extended_registers_registry.push_back(pc_var);
+	pc_var->setCallBack(this, PC, &CallBackObject::write, NULL);
 
 	registers_registry[ccr->GetName()] = ccr;
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(ccr->GetName(), this, ccrReg, "CCR"));
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(ccr->GetName(), this, ccrReg, "CCR"));
+
+	unisim::kernel::service::Register<uint16_t> *ccr_var = new unisim::kernel::service::Register<uint16_t>(ccr->GetName(), this, ccrReg, "16-bits condition code register (CCR)");
+	extended_registers_registry.push_back(ccr_var);
+	ccr_var->setCallBack(this, CCR, &CallBackObject::write, NULL);
 
 	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
 	registers_registry[ccrl->GetName()] = ccrl;
@@ -227,6 +252,49 @@ void CPU::Reset()
 
 	ccr->reset();
 	for (unsigned int i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
+}
+
+
+bool CPU::read(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	std::cout << "Read back" << std::endl;
+
+	switch (offset) {
+		case X: *((uint16_t *) buffer) = Host2BigEndian(getRegX()); break;
+		case D: *((uint16_t *) buffer) = Host2BigEndian(getRegD()); break;
+		case Y: *((uint16_t *) buffer) = Host2BigEndian(getRegY()); break;
+		case SP: *((uint16_t *) buffer) = Host2BigEndian(getRegSP()); break;
+		case PC: *((uint16_t *) buffer) = Host2BigEndian(getRegPC()); break;
+		case A: *((uint8_t *) buffer) = getRegA(); break;
+		case B: *((uint8_t *) buffer) = getRegB(); break;
+		case CCRL: *((uint8_t *) buffer) = ccr->getCCRLow(); break;
+		case CCRH: *((uint8_t *) buffer) = ccr->getCCRHigh(); break;
+		case CCR: *((uint16_t *) buffer) = Host2BigEndian(ccr->getCCR()); break;
+		default: return (false);
+	}
+
+	return (true);
+}
+
+bool CPU::write(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	std::cout << "Write back" << std::hex << *((uint16_t *) buffer) << std::endl;
+
+	switch (offset) {
+		case X: setRegX(BigEndian2Host(*((uint16_t *) buffer))); break;
+		case D: setRegD(BigEndian2Host(*((uint16_t *) buffer))); break;
+		case Y: setRegY(BigEndian2Host(*((uint16_t *) buffer))); break;
+		case SP: setRegSP(BigEndian2Host(*((uint16_t *) buffer))); break;
+		case PC: setRegPC(BigEndian2Host(*((uint16_t *) buffer))); break;
+		case A: setRegA(*((uint8_t *) buffer)); break;
+		case B: setRegB(*((uint8_t *) buffer)); break;
+		case CCRL: ccr->setCCRLow(*((uint8_t *) buffer)); break;
+		case CCRH: ccr->setCCRHigh(*((uint8_t *) buffer)); break;
+		case CCR: ccr->setCCR(BigEndian2Host(*((uint16_t *) buffer))); break;
+		default: return (false);
+	}
+
+	return (true);
 }
 
 //=====================================================================
@@ -397,13 +465,6 @@ uint8_t CPU::step()
 				trap_reporting_import->ReportTrap();
 			}
 
-			if(requires_finished_instruction_reporting) {
-				if(memory_access_reporting_import) {
-					memory_access_reporting_import->ReportFinishedInstruction(MMC::getInstance()->getCPU12XPagedAddress(lastPC), MMC::getInstance()->getCPU12XPagedAddress(getRegPC()));
-
-				}
-			}
-
 		}
 
 		if(hasAsynchronousInterrupt())
@@ -426,6 +487,13 @@ uint8_t CPU::step()
 		if(debug_enabled && verbose_step)
 			*logger << DebugError << "uncaught processor exception :" << e.what() << std::endl << EndDebugError;
 		Stop(1);
+	}
+
+	if(requires_finished_instruction_reporting) {
+		if(memory_access_reporting_import) {
+			memory_access_reporting_import->ReportFinishedInstruction(MMC::getInstance()->getCPU12XPagedAddress(lastPC), MMC::getInstance()->getCPU12XPagedAddress(getRegPC()));
+
+		}
 	}
 
 	if (instruction_counter >= max_inst) Stop(0);
@@ -469,12 +537,13 @@ void CPU::queueFill(address_t addr, int position, uint8_t nByte)
 
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = addr;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = buff;
 	mmc_data.data_size = nByte;
 
-	busRead(addr, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 	for (uint8_t i=0; i<nByte; i++)
 	{
@@ -538,7 +607,7 @@ void CPU::saveCPUContext() {
 }
 
 // AsynchronousException
-void CPU::handleException(const AsynchronousException& exc)
+inline void CPU::handleException(const AsynchronousException& exc)
 {
 
 	uint8_t newIPL = ccr->getIPL();
@@ -564,7 +633,7 @@ void CPU::handleException(const AsynchronousException& exc)
 
 }
 
-void CPU::ackAsynchronousInterrupt()
+inline void CPU::ackAsynchronousInterrupt()
 {
 	if (CONFIG::HAS_RESET)  asynchronous_interrupt |= reset;
 	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT)  asynchronous_interrupt |= nonMaskableXIRQ_interrupt;
@@ -578,7 +647,7 @@ void CPU::reqAsynchronousInterrupt()
 }
 
 // Hardware and Software reset
-void CPU::handleResetException(address_t resetVector)
+inline void CPU::handleResetException(address_t resetVector)
 {
 
 	ackReset();
@@ -593,7 +662,7 @@ void CPU::handleResetException(address_t resetVector)
 
 }
 
-void CPU::ackReset()
+inline void CPU::ackReset()
 {
 	reset = false;
 	ackAsynchronousInterrupt();
@@ -605,7 +674,7 @@ void CPU::reqReset()
 }
 
 // NonMaskable XIRQ (X bit) interrupts
-void CPU::handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
+inline void CPU::handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 {
 	ackXIRQInterrupt();
 
@@ -624,7 +693,7 @@ void CPU::handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 
 }
 
-void CPU::ackXIRQInterrupt()
+inline void CPU::ackXIRQInterrupt()
 {
 	nonMaskableXIRQ_interrupt = false;
 	ackAsynchronousInterrupt();
@@ -636,7 +705,7 @@ void CPU::reqXIRQInterrupt()
 }
 
 // Non-maskable MPU Access Error interrupt
-void CPU::handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL)
+inline void CPU::handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL)
 {
 	ackMPUAccessErrorInterrupt();
 
@@ -650,7 +719,7 @@ void CPU::handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t 
 
 }
 
-void CPU::ackMPUAccessErrorInterrupt()
+inline void CPU::ackMPUAccessErrorInterrupt()
 {
 	mpuAccessError_interrupt = false;
 	ackAsynchronousInterrupt();
@@ -662,7 +731,7 @@ void CPU::reqMPUAccessErrorInterrupt()
 }
 
 // Maskable (I bit) interrupt
-void CPU::handleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
+inline void CPU::handleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 {
 	ackIbitInterrupt();
 
@@ -682,7 +751,7 @@ void CPU::handleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 
 }
 
-void CPU::ackIbitInterrupt()
+inline void CPU::ackIbitInterrupt()
 {
 	maskableIbit_interrupt = false;
 	ackAsynchronousInterrupt();
@@ -696,7 +765,7 @@ void CPU::reqIbitInterrupt()
 }
 
 // Unimplemented opcode trap
-void CPU::handleException(const TrapException& exc)
+inline void CPU::handleException(const TrapException& exc)
 {
 	reqTrapInterrupt();
 
@@ -716,18 +785,18 @@ void CPU::handleException(const TrapException& exc)
 	ackTrapInterrupt();
 }
 
-void CPU::ackTrapInterrupt()
+inline void CPU::ackTrapInterrupt()
 {
 	trap_interrupt = false;
 }
 
-void CPU::reqTrapInterrupt()
+inline void CPU::reqTrapInterrupt()
 {
 	trap_interrupt = true;
 }
 
 // A software interrupt instruction (SWI) or BDM vector request
-void CPU::handleException(const NonMaskableSWIInterrupt& exc)
+inline void CPU::handleException(const NonMaskableSWIInterrupt& exc)
 {
 	reqSWIInterrupt();
 
@@ -747,18 +816,18 @@ void CPU::handleException(const NonMaskableSWIInterrupt& exc)
 	ackSWIInterrupt();
 }
 
-void CPU::ackSWIInterrupt()
+inline void CPU::ackSWIInterrupt()
 {
 	nonMascableSWI_interrupt = false;
 }
 
-void CPU::reqSWIInterrupt()
+inline void CPU::reqSWIInterrupt()
 {
 	nonMascableSWI_interrupt = true;
 }
 
 // A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
-void CPU::handleException(const SysCallInterrupt& exc)
+inline void CPU::handleException(const SysCallInterrupt& exc)
 {
 	reqSysInterrupt();
 
@@ -778,18 +847,18 @@ void CPU::handleException(const SysCallInterrupt& exc)
 	ackSysInterrupt();
 }
 
-void CPU::ackSysInterrupt()
+inline void CPU::ackSysInterrupt()
 {
 	syscall_interrupt = false;
 }
 
-void CPU::reqSysInterrupt()
+inline void CPU::reqSysInterrupt()
 {
 	syscall_interrupt = true;
 }
 
 // A spurious interrupt
-void CPU::handleException(const SpuriousInterrupt& exc)
+inline void CPU::handleException(const SpuriousInterrupt& exc)
 {
 	reqSpuriousInterrupt();
 
@@ -809,18 +878,18 @@ void CPU::handleException(const SpuriousInterrupt& exc)
 	ackSpuriousInterrupt();
 }
 
-void CPU::ackSpuriousInterrupt()
+inline void CPU::ackSpuriousInterrupt()
 {
 	spurious_interrupt = false;
 }
 
-void CPU::reqSpuriousInterrupt()
+inline void CPU::reqSpuriousInterrupt()
 {
 	spurious_interrupt = true;
 }
 
 // NonMaskable Access Error interrupts
-void CPU::handleException(const NonMaskableAccessErrorInterrupt& exc)
+inline void CPU::handleException(const NonMaskableAccessErrorInterrupt& exc)
 {
 	reqAccessErrorInterrupt();
 
@@ -836,13 +905,13 @@ void CPU::handleException(const NonMaskableAccessErrorInterrupt& exc)
 
 }
 
-void CPU::ackAccessErrorInterrupt()
+inline void CPU::ackAccessErrorInterrupt()
 {
 	nonMaskableAccessError_interrupt = false;
 	ackAsynchronousInterrupt();
 }
 
-void CPU::reqAccessErrorInterrupt()
+inline void CPU::reqAccessErrorInterrupt()
 {
 	nonMaskableAccessError_interrupt = true;
 	reqAsynchronousInterrupt();

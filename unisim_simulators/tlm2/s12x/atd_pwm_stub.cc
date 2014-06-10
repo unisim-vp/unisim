@@ -74,6 +74,23 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 //	SC_THREAD(ProcessPWM);
 //
 
+	atd1_payload = atd1_payload_fabric.allocate();
+	atd0_payload = atd0_payload_fabric.allocate();
+}
+
+ATD_PWM_STUB::~ATD_PWM_STUB() {
+
+	atd1_payload->release();
+	atd0_payload->release();
+
+	if (trace_enable) {
+		atd0_output_file.close();
+		atd1_output_file.close();
+		pwm_output_file.close();
+	}
+
+	if (anx_stimulus_period_sc) { delete anx_stimulus_period_sc; anx_stimulus_period_sc = NULL; }
+	if (pwm_fetch_period_sc) { delete pwm_fetch_period_sc; pwm_fetch_period_sc = NULL; }
 }
 
 bool ATD_PWM_STUB::BeginSetup() {
@@ -98,18 +115,6 @@ bool ATD_PWM_STUB::Setup(ServiceExportBase *srv_export) {
 
 bool ATD_PWM_STUB::EndSetup() {
 	return (true);
-}
-
-ATD_PWM_STUB::~ATD_PWM_STUB() {
-
-	if (trace_enable) {
-		atd0_output_file.close();
-		atd1_output_file.close();
-		pwm_output_file.close();
-	}
-
-	if (anx_stimulus_period_sc) { delete anx_stimulus_period_sc; anx_stimulus_period_sc = NULL; }
-	if (pwm_fetch_period_sc) { delete pwm_fetch_period_sc; pwm_fetch_period_sc = NULL; }
 }
 
 // Slave methods
@@ -209,22 +214,23 @@ void ATD_PWM_STUB::output_ATD1(double anValue[ATD1_SIZE])
 {
 
 	tlm_phase phase = BEGIN_REQ;
-	ATD_Payload<ATD1_SIZE> *payload = atd1_payload_fabric.allocate();
+
+	atd1_payload->acquire();
 
 	for (int i=0; i<ATD1_SIZE; i++) {
-		payload->anPort[i] = anValue[i];
+		atd1_payload->anPort[i] = anValue[i];
 	}
 
 
 	sc_time local_time = atd1_quantumkeeper.get_local_time();
 
 	if (trace_enable) {
-		atd1_output_file << (atd1_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *payload << std::endl;
+		atd1_output_file << (atd1_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *atd1_payload << std::endl;
 	}
 
-	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*payload, phase, local_time);
+	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*atd1_payload, phase, local_time);
 
-	payload->release();
+	atd1_payload->release();
 	
 	switch(ret)
 	{
@@ -253,22 +259,23 @@ void ATD_PWM_STUB::output_ATD1(double anValue[ATD1_SIZE])
 void ATD_PWM_STUB::output_ATD0(double anValue[ATD0_SIZE])
 {
 	tlm_phase phase = BEGIN_REQ;
-	ATD_Payload<ATD0_SIZE> *payload = atd0_payload_fabric.allocate();
+
+	atd0_payload->acquire();
 
 	for (int i=0; i<ATD0_SIZE; i++) {
-		payload->anPort[i] = anValue[i];
+		atd0_payload->anPort[i] = anValue[i];
 	}
 
 
 	sc_time local_time = atd0_quantumkeeper.get_local_time();
 
 	if (trace_enable) {
-		atd0_output_file << (atd0_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *payload << std::endl;
+		atd0_output_file << (atd0_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *atd0_payload << std::endl;
 	}
 
-	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*payload, phase, local_time);
+	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*atd0_payload, phase, local_time);
 
-	payload->release();
+	atd0_payload->release();
 
 	switch(ret)
 	{

@@ -10,7 +10,7 @@
 
 
 #include <unisim/component/tlm2/processor/hcs12x/s12xftmx.hh>
-
+#include <unisim/util/converter/convert.hh>
 
 #define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 
@@ -75,6 +75,10 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, eee_tag_ram_size(256)
 	, param_eee_tag_ram_size("EEE-tag-RAM-size", this, eee_tag_ram_size)
 
+	, eee_protectable_high_address(0x13FFFF)
+	, param_eee_protectable_high_address("eee-protectable-high-address", this, eee_protectable_high_address)
+
+
 	, memory_controller_scratch_ram_start_address(0x124000)
 	, param_memory_controller_scratch_ram_start_address("memory-controller-scratch-ram-start-address", this, memory_controller_scratch_ram_start_address)
 
@@ -92,20 +96,15 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, pflash_end_address(0x7FFFFF)
 	, param_pflash_end_address("pflash-end-address", this, pflash_end_address)
 
-	, param_pflash_blobk_0_address("pflash-blobk-0-address", this, blockDescriptorArray[0].start_address)
-	, param_pflash_blobk_0_size("pflash-blobk-0-size", this, blockDescriptorArray[0].size)
-	, param_pflash_blobk_1N_address("pflash-blobk-1N-address", this, blockDescriptorArray[1].start_address)
-	, param_pflash_blobk_1N_size("pflash-blobk-1N-size", this, blockDescriptorArray[1].size)
-	, param_pflash_blobk_1S_address("pflash-blobk-1S-address", this, blockDescriptorArray[2].start_address)
-	, param_pflash_blobk_1S_size("pflash-blobk-1S-size", this, blockDescriptorArray[2].size)
-	, param_pflash_blobk_2_address("pflash-blobk-2-address", this, blockDescriptorArray[3].start_address)
-	, param_pflash_blobk_2_size("pflash-blobk-2-size", this, blockDescriptorArray[3].size)
-	, param_pflash_blobk_3_address("pflash-blobk-3-address", this, blockDescriptorArray[4].start_address)
-	, param_pflash_blobk_3_size("pflash-blobk-3-size", this, blockDescriptorArray[4].size)
+	, pflash_protectable_high_address(0x7FFFFF)
+	, param_pflash_protectable_high_address("pflash-protectable-high-address", this, pflash_protectable_high_address)
+	, pflash_protectable_low_address(0x7F8000)
+	, param_pflash_protectable_low_address("pflash-protectable-low-address", this, pflash_protectable_low_address)
 
-	, pflash_blocks_description_string("0x7C0000,0x7FFFFF;0x7A0000,0x7BFFFF;0x780000,0x79FFFF;0x740000,0x77FFFF;0x700000,0x73FFFF")
+	, pflash_blocks_description_string("7C0000,7FFFFF;7A0000,7BFFFF;780000,79FFFF;740000,77FFFF;700000,73FFFF")
 	, param_pflash_blocks_description_string("pflash-blocks-description", this, pflash_blocks_description_string)
 
+	, blackdoor_comparison_key_address(0x7FFF00)
 	, param_blackdoor_comparison_key_address("blackdoor-comparison-key-address", this, blackdoor_comparison_key_address)
 	, pflash_protection_byte_address(0x7FFF0C)
 	, param_pflash_protection_byte_address("pflash-protection-byte-address", this, pflash_protection_byte_address)
@@ -134,6 +133,11 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, min_ratio_dflash_buffer_ram(8)
 	, param_min_ratio_dflash_buffer_ram("min-ratio-dflash-buffer-ram", this, min_ratio_dflash_buffer_ram)
 
+	, partitionDFlashCmd_Launched(false)
+	, fullPartitionDFlashCmd_Launched(false)
+	, eepromEmulationEnabled(false)
+	, verifyBackdoorAccessKey_Failed(false)
+
 	, fclkdiv_reg(0x00)
 	, fsec_reg(0x00)
 	, fccobix_reg(0x00)
@@ -150,16 +154,17 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, frsv2_reg(0x00)
 	, etag_reg(0x0000)
 
-	, loadDataFieldCommandSequenceActive(false)
-
+//	, fclk_time(1250000, SC_PS) // 0.8 MHz
 //	, min_fclk_time(1250000, SC_PS) // 0.8 MHz
+//	, param_min_fclk_time("min-fclk-time", this, min_fclk_time, "Specify minimum frequency of FTM")
 //	, max_fclk_time(952000, SC_PS)  // 1.05 MHz
+//	, param_max_fclk_time("max-fclk-time", this, max_fclk_time, "Specify maximum frequency of FTM")
 
-	, min_fclk_time(1250000, SC_PS) // 0.8 MHz
-	, param_min_fclk_time("min-fclk-time", this, min_fclk_time, "Specify minimum frequency of FTM")
-	, max_fclk_time(952000, SC_PS)  // 1.05 MHz
-	, param_max_fclk_time("max-fclk-time", this, max_fclk_time, "Specify maximum frequency of FTM")
-
+	, fclk_time(1250000, SC_PS) // 0.8 MHz
+	, min_fclk_time_int(1250000) // 0.8 MHz
+	, param_min_fclk_time("min-fclk-time", this, min_fclk_time_int, "Specify minimum frequency of FTM")
+	, max_fclk_time_int(952000)  // 1.05 MHz
+	, param_max_fclk_time("max-fclk-time", this, max_fclk_time_int, "Specify maximum frequency of FTM")
 
 {
 
@@ -172,31 +177,6 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	SC_HAS_PROCESS(S12XFTMX);
 
 	SC_THREAD(Process);
-
-	blockDescriptorArray[0].start_address = 0x7C0000;
-	blockDescriptorArray[0].size = 256;
-	blockDescriptorArray[1].start_address = 0x7A0000;
-	blockDescriptorArray[1].size = 128;
-	blockDescriptorArray[2].start_address = 0x780000;
-	blockDescriptorArray[2].size = 128;
-	blockDescriptorArray[3].start_address = 0x740000;
-	blockDescriptorArray[3].size = 256;
-	blockDescriptorArray[4].start_address = 0x700000;
-	blockDescriptorArray[4].size = 256;
-
-	vector<string> result;
-	split( pflash_blocks_description_string, result, ";" );
-	for ( int i = 0; i < result.size(); ++i) {
-		vector<string> oneBlockSegments;
-		split( result[i], oneBlockSegments, "," );
-		BlockDescription *oneBlock = new BlockDescription();
-		// TODO: *** TO COMPLETE ***
-		oneBlock->start_address = 0;
-		oneBlock->end_address = 0;
-		pflash_blocks_description.push_back(oneBlock);
-		oneBlockSegments.clear();
-	}
-
 
 }
 
@@ -228,6 +208,12 @@ S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 		delete pflash_blocks_description[i];
 	}
 	pflash_blocks_description.clear();
+
+	for ( int i = 0; i < loadDataFieldBuffer.size(); ++i) {
+		free (loadDataFieldBuffer[i]);
+	}
+	loadDataFieldBuffer.clear();
+
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
@@ -279,7 +265,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 			case SetUserMarginLevel: setUserMarginLevel_cmd(); break;
 			case SetFieldMarginLevel: setFieldMarginLevel_cmd(); break;
 			case FullPartitionDFlash: fullPartitionDFlash_cmd(); break;
-			case EraseVerifyDFlashSector: eraseVerifyDFlashSector_cmd(); break;
+			case EraseVerifyDFlashSector: eraseVerifyDFlashSection_cmd(); break;
 			case ProgramDFlash: programDFlash_cmd(); break;
 			case EraseDFlashSector: eraseDFlashSector_cmd(); break;
 			case EnableEEPROMEmulation: enableEEPROMEmulation_cmd(); break;
@@ -287,7 +273,9 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 			case EEPROMEmulationQuery: eEPROMEmulationQuery_cmd(); break;
 			case PartitionDFlash: partitionDFlash_cmd(); break;
 			default: {
-				// TODO: Invalid command
+				// Invalid command
+				inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Invalid command." << std::endl << EndDebugWarning;
+				setACCERR();
 			} break;
 		}
 
@@ -300,7 +288,6 @@ template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint3
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyAllBlocks_cmd()
 {
 	// Erase Verify All Blocks command will verify that all P-Flash and D-Flash blocks have been erased (i.e. all bytes=0xFF)
-	cout << "cmd:: eraseVerifyAllBlocks" << endl;
 
 	if (fccobix_reg != 0) {
 		setACCERR();
@@ -324,7 +311,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyBlo
 {
 	// Erase Verify Block command allows the user to verify that an entire P-Flash or D-Flash block has been erased.
 
-	cout << "cmd:: eraseVerifyBlock" << endl;
 	physical_address_t block_addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16);
 
 	if (fccobix_reg != 0) {
@@ -337,7 +323,17 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyBlo
 		return;
 	}
 
-	// TODO: Set ACCERR if an invalid global address [22:16] is supplied
+	// Set ACCERR if an invalid global address [22:16] is supplied
+	bool find = false;
+	find |= (((dflash_start_address ^ block_addr) & 0xFF0000) == 0);
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= (((pflash_blocks_description[i]->start_address ^ block_addr) & 0xFF0000) == 0);
+	}
+
+	if (!find) {
+		setACCERR();
+		return;
+	}
 
 	// TODO: I have to emulate erase error
 
@@ -351,7 +347,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyPFl
 {
 	// Erase Verify P-Flash Section command will verify that a section of code in the P-Flash memory is erased
 
-	cout << "cmd:: eraseVerifyPFlashSection" << endl;
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 	uint16_t number_phrases = fccob_reg[2]; // 1 phrase is a group of 8 bytes
 
@@ -365,14 +360,23 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyPFl
 		return;
 	}
 
-	if ((addr & 0x7) != 0) {
+	// Set ACCERR if an invalid global address [22:0] is supplied
+	// Set ACCERR if the requested section crosses a 256K byte boundary
+	bool find = false;
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= ((pflash_blocks_description[i]->start_address <= addr) && (pflash_blocks_description[i]->end_address >= (addr + PFLASH_SECTION_SIZE -  1)));
+	}
+
+	if (!find) {
 		setACCERR();
 		return;
 	}
 
-	// TODO: Set ACCERR if an invalid global address [22:0] is supplied
-
-	// TODO: Set ACCERR if the requested section crosses a 256K byte boundary
+	// Set ACCERR if a misaligned phrase address is supplied (global_address[2:0] != 000)
+	if ((addr & 0x7) != 0) {
+		setACCERR();
+		return;
+	}
 
 	// TODO: I have to emulate erase error
 
@@ -387,10 +391,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::readOnce_cmd()
 	// The Read Once command provides read access to a reserved 64 byte field (8 phrases each phrase is 8 bytes)
 	// located in the non-volatile information register of P-Flash block 0.
 
-	cout << "cmd:: readOnce" << endl;
-	uint16_t phrase_index = fccob_reg[1];
-
-
 	if (fccobix_reg != 2) {
 		setACCERR();
 		return;
@@ -401,13 +401,15 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::readOnce_cmd()
 		return;
 	}
 
+	uint16_t phrase_index = fccob_reg[1];
+
 	if (phrase_index > 7) {
 		setACCERR();
 		return;
 	}
 
 	uint16_t word;
-	physical_address_t phrase_address = blockDescriptorArray[0].start_address + (phrase_index*PHRASE_SIZE);
+	physical_address_t phrase_address = (pflash_blocks_description[0])->start_address + (phrase_index*PHRASE_SIZE);
 	for (uint8_t i=0; i<4; i++) {
 		inherited::ReadMemory(phrase_address + (i*WORD_SIZE), &word, WORD_SIZE);
 		fccob_reg[2 + i] = BigEndian2Host(word);
@@ -423,148 +425,195 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::loadDataField_
 	// Load Data Field Command is executed to provide FCCOB parameters for multiple P-Flash blocks
 	// for a future simultaneous program operation in the P-Flash memory space.
 
-	cout << "cmd:: loadDataField" << endl;
-	loadDataFieldCommandSequenceActive = true;
+	/**
+	 * This command allows you to program multiple phrases into separate flash blocks simultaneously.
+	 * Basically you load up the data matching the specification in the command but it will not program
+	 * until you launch the program P-Flash command.
+	 * Used appropriately, this can save time to program the whole flash
+	 */
+
+	if (fccobix_reg != 5) {
+		setACCERR();
+		return;
+	}
 
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 
-/**
- * This command allows you to program mulitple phrases into separate flash blocks simultaneously.
- * Basically you load up the data matching the spec in the command but it will not program
- * until you launch the program P-Flash command.
- * Used appropriately, this can save time to program the whole flash
- *
- * cette command charge la phrase dans un buffer interne à la flash.
- * si elle est suivie par "program P-flash Command" sur le même block alors c'est la phrase pre-loadée qui sera utilisée
- * à la place de celle fournie dans la commande "program P-Flash" => gain de temps
- */
-	loadDataFieldCommandSequenceActive = false;
+	// Set FSAT::ACCERR if an invalid global address [22:0] is supplied
+	bool find = false;
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= ((pflash_blocks_description[i]->start_address <= addr) && (pflash_blocks_description[i]->end_address >= addr));
+	}
+
+	if (!find) {
+		setACCERR();
+		return;
+	}
+
+	// Set FSAT::ACCCERR if a misaligned phrase address is supplied (addr[2:0] != 000)
+	if ((addr & 0x7) != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		for ( int i = 0; i < loadDataFieldBuffer.size(); ++i) {
+			// set FSAT::ACCERR if the selected block has previously been selected in the same command sequence
+			if (((loadDataFieldBuffer[i])[0] & 0xFF) == (fccob_reg[0] & 0xFF)) {
+				setACCERR();
+				return;
+			}
+
+			// set FSAT::ACCERR if global address [17:0] does not match that previously supplied in the same command sequence
+			physical_address_t loaded_addr = ((physical_address_t) ((loadDataFieldBuffer[i])[0] & 0x00FF) << 16) | (loadDataFieldBuffer[i])[1];
+			if ( (loaded_addr & 0x03FFFF) != (addr & 0x03FFFF)) {
+				setACCERR();
+				return;
+			}
+		}
+
+	}
+
+	// set FSAT::FPVIOL if the global address [22:0] points to a protected area
+	if (isPFlashProtected(addr, addr + PHRASE_SIZE - 1)) {
+		setFPVIOL();
+		return;
+	}
+
+	uint16_t *fccob_data = (uint16_t *) malloc(6*sizeof(uint16_t));
+	memcpy (fccob_data, fccob_reg, 6*sizeof(uint16_t));
+
+	loadDataFieldBuffer.push_back(fccob_data);
+
+
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programPFlash_cmd()
 {
-	cout << "cmd:: programPFlash" << endl;
+	/**
+	 * The Program P-Flash operation will program a previously erased phrase in the P-Flash memory
+	 * using an embedded algorithm.
+	 */
+
+	if (fccobix_reg != 5) {
+		setACCERR();
+		return;
+	}
+
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	// Set FSAT::ACCERR if an invalid global address [22:0] is supplied
+	bool find = false;
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= ((pflash_blocks_description[i]->start_address <= addr) && (pflash_blocks_description[i]->end_address >= addr));
+	}
+
+	if (!find) {
+		setACCERR();
+		return;
+	}
+
+	// Set FSAT::ACCCERR if a misaligned phrase address is supplied (addr[2:0] != 000)
+	if ((addr & 0x7) != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		for ( int i = 0; i < loadDataFieldBuffer.size(); ++i) {
+			// set FSAT::ACCERR if the selected block has previously been selected in the same command sequence
+			if (((loadDataFieldBuffer[i])[0] & 0xFF) == (fccob_reg[0] & 0xFF)) {
+				setACCERR();
+				return;
+			}
+
+			// set FSAT::ACCERR if global address [17:0] does not match that previously supplied in the same command sequence
+			physical_address_t loaded_addr = ((physical_address_t) ((loadDataFieldBuffer[i])[0] & 0x00FF) << 16) | (loadDataFieldBuffer[i])[1];
+			if ( (loaded_addr & 0x03FFFF) != (addr & 0x03FFFF)) {
+				setACCERR();
+				return;
+			}
+		}
+
+	}
+
+	// set FSAT::FPVIOL if the global address [22:0] points to a protected area
+	if (isPFlashProtected(addr, addr + PHRASE_SIZE - 1)) {
+		setFPVIOL();
+		return;
+	}
+
+
+	// execute effectif P-Flash program
+	uint16_t word;
+	for (uint8_t i=0; i<4; i++) {
+		word = Host2BigEndian(fccob_reg[2 + i]);
+		inherited::WriteMemory(addr + (i*WORD_SIZE), &word, WORD_SIZE);
+		// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+		// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+	}
+
+	if (loadDataFieldBuffer.size() > 0) {
+		for ( int i = 0; i < loadDataFieldBuffer.size(); ++i) {
+			physical_address_t loaded_addr = ((physical_address_t) ((loadDataFieldBuffer[i])[0] & 0x00FF) << 16) | (loadDataFieldBuffer[i])[1];
+
+			for (uint8_t j=0; j<4; j++) {
+				word = Host2BigEndian((loadDataFieldBuffer[i])[2 + j]);
+				inherited::WriteMemory(loaded_addr + (j*WORD_SIZE), &word, WORD_SIZE);
+				// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+				// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+			}
+
+			free (loadDataFieldBuffer[i]);
+		}
+		loadDataFieldBuffer.clear();
+
+	}
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programOnce_cmd()
 {
-	cout << "cmd:: programOnce" << endl;
+	/**
+	 * The Program Once command restricts programming to a reserved 64 byte field (8 phrases) in the
+	 * nonvolatile information register located in P-Flash block 0.
+	 */
+
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	if (fccobix_reg != 5) {
+		setACCERR();
+		return;
+	}
+
+	uint16_t phrase_index = fccob_reg[1];
+
+	if (phrase_index > 7) {
+		setACCERR();
+		return;
+	}
+
+	uint16_t word;
+	physical_address_t phrase_address = (pflash_blocks_description[0])->start_address + (phrase_index*PHRASE_SIZE);
+	for (uint8_t i=0; i<4; i++) {
+		word = Host2BigEndian(fccob_reg[2 + i]);
+		inherited::WriteMemory(phrase_address + (i*WORD_SIZE), &word, WORD_SIZE);
+		// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+		// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+	}
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseAllBlocks_cmd()
 {
-	cout << "cmd:: eraseAllBlocks" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+	/**
+	 * The Erase All Blocks operation will erase the entire P-Flash and D-Flash memory space
+	 * including the EEE non-volatile information register.
+	 */
 
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashBlock_cmd()
-{
-	cout << "cmd:: erasePFlashBlock" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashSector_cmd()
-{
-	cout << "cmd:: erasePFlashSector" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::unsecureFlash_cmd()
-{
-	cout << "cmd:: unsecureFlash" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::verifyBackdoorAccessKey_cmd()
-{
-	cout << "cmd:: verifyBackdoorAccessKey" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setUserMarginLevel_cmd()
-{
-	cout << "cmd:: setUserMarginLevel" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setFieldMarginLevel_cmd()
-{
-	cout << "cmd:: setFieldMarginLevel" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::fullPartitionDFlash_cmd()
-{
-	cout << "cmd:: fullPartitionDFlash" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyDFlashSector_cmd()
-{
-	cout << "cmd:: eraseVerifyDFlashSector" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programDFlash_cmd()
-{
-	cout << "cmd:: programDFlash" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseDFlashSector_cmd()
-{
-	cout << "cmd:: eraseDFlashSector" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::enableEEPROMEmulation_cmd()
-{
-	cout << "cmd:: enableEEPROMEmulation" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::disableEEPROMEmulation_cmd()
-{
-	cout << "cmd:: disableEEPROMEmulation" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eEPROMEmulationQuery_cmd()
-{
-	cout << "cmd:: eEPROMEmulationQuery" << endl;
 	if (fccobix_reg != 0) {
 		setACCERR();
 		return;
@@ -575,30 +624,295 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eEPROMEmulatio
 		return;
 	}
 
-	// TODO: FSTAT::ACCERR is set if command not available in the current mode
+	// set FSTAT::FPVIOL if any area of the P-Flash memory is protected
+	bool find = false;
+	find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x20) == 0));
+	find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x04) == 0));
+	if (find) {
+		setFPVIOL();
+		return;
+	}
 
-	 inherited::ReadMemory(dflash_partition_user_access_address, &fccob_reg[1], 2);
-	 inherited::ReadMemory(buffer_ram_partition_eee_operation_address, &fccob_reg[2], 2);
-	 fccob_reg[3] = sector_erased_count;
+	// set FERSTAT::EPVIOLIF if any area of the buffer RAM EEE partition is protected
+	if (!((eprot_reg & 0x80) != 0) != !((eprot_reg & 0x08) == 0)) {
+		setEPVIOLIF();
+		return;
+	}
 
-	 /**
-	  *  TODO:
-	  * 	implement dead_sector_count
-	  * 	implement ready_sector_count;
-	  */
+	// Erase All blocks of P-Flash
+	void *buffer = malloc(PFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
+	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+		uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
+		for (uint16_t j=0; j < nbre_sector; j++) {
+			WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
+		}
+	}
+	free(buffer);
 
-	 if ((fccob_reg[1] == 0xFFFF) && (fccob_reg[2] == 0xFFFF)) {
-		 fccob_reg[4] = 0;
-	 } else {
-		 fccob_reg[4] = fccob_reg[1] + fccob_reg[2];
-	 }
+	// Erase All blocks of D-Flash
+	buffer = malloc(DFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , DFLASH_SECTOR_SIZE);
+	uint16_t nbre_sector = (dflash_end_address - dflash_start_address + 1) / DFLASH_SECTOR_SIZE;
+	for (uint16_t i=0; i < nbre_sector; i++) {
+		WriteMemory(dflash_start_address + (i * DFLASH_SECTOR_SIZE), buffer, DFLASH_SECTOR_SIZE);
+	}
+	free(buffer);
+
+
+//	// Erase the EEE non-volatile information register
+	buffer = malloc(EEE_NON_VOLATILE_SPACE_SIZE);
+	memset(buffer, 0xFF , EEE_NON_VOLATILE_SPACE_SIZE);
+	WriteMemory(dflash_partition_user_access_address, buffer, EEE_NON_VOLATILE_SPACE_SIZE);
+	free(buffer);
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::partitionDFlash_cmd()
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashBlock_cmd()
 {
-	cout << "cmd:: partitionDFlash" << endl;
+
+	// The Erase P-Flash Block operation will erase all addresses in a P-Flash block
+
+	if (fccobix_reg != 1) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	// set FSTAT::ACCERR if an invalid global address [22:16] is supplied
+	bool find = false;
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= (((pflash_blocks_description[i]->start_address ^ addr) & 0xFF0000) == 0);
+	}
+
+	if (!find) {
+		setACCERR();
+		return;
+	}
+
+	void *buffer = malloc(PFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
+	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+		// Identify the P-Flash block
+		if ((addr >= pflash_blocks_description[i]->start_address)
+				&& (addr <= pflash_blocks_description[i]->end_address))
+		{
+			// set FSTAT::FPVIOL if an area of the selected P-Flash block is protected
+			if (isPFlashProtected(pflash_blocks_description[i]->start_address, pflash_blocks_description[i]->end_address)) {
+				setFPVIOL();
+				break;
+			}
+
+			uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
+			for (uint16_t j=0; j < nbre_sector; j++) {
+				WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
+			}
+		}
+	}
+	free(buffer);
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashSector_cmd()
+{
+
+	// The Erase P-Flash sector operation will erase all addresses in a p-Flash sector
+
+	if (fccobix_reg != 1) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	// Set FSTAT::ACCERR if an invalid global address [22:16] is supplied
+	bool find = false;
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= (((pflash_blocks_description[i]->start_address ^ addr) & 0xFF0000) == 0);
+	}
+
+	if (!find) {
+		setACCERR();
+		return;
+	}
+
+	void *buffer = malloc(PFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
+	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+		uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
+		for (uint16_t j=0; j < nbre_sector; j++) {
+			// Identify the P-Flash sector
+			physical_address_t sector_addr = pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE);
+			if ((addr >= sector_addr)
+					&& (addr <= (sector_addr + PFLASH_SECTOR_SIZE - 1)))
+			{
+				// set FSTAT::FPVIOL if the selected P-Flash sector is protected
+				if (isPFlashProtected(sector_addr, sector_addr + PFLASH_SECTOR_SIZE - 1)) {
+					setFPVIOL();
+					break;
+				}
+
+				WriteMemory(sector_addr, buffer, PFLASH_SECTOR_SIZE);
+			}
+		}
+
+	}
+	free(buffer);
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::unsecureFlash_cmd()
+{
+
+	/**
+	 * The Unsecure Flash command will erase the entire P-Flash and D-Flash memory space and,
+	 * if the erase is successful, will release security.
+	 */
+
+	if (fccobix_reg != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// set FSTAT::FPVIOL if any area of the P-Flash memory is protected
+	bool find = false;
+	find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x20) == 0));
+	find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x04) == 0));
+	if (find) {
+		setFPVIOL();
+		return;
+	}
+
+	// Erase All blocks of P-Flash
+	void *buffer = malloc(PFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
+	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+		uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
+		for (uint16_t j=0; j < nbre_sector; j++) {
+			WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
+		}
+	}
+	free(buffer);
+
+	// Erase All blocks of D-Flash
+	buffer = malloc(DFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , DFLASH_SECTOR_SIZE);
+	uint16_t nbre_sector = (dflash_end_address - dflash_start_address + 1) / DFLASH_SECTOR_SIZE;
+	for (uint16_t i=0; i < nbre_sector; i++) {
+		WriteMemory(dflash_start_address + (i * DFLASH_SECTOR_SIZE), buffer, DFLASH_SECTOR_SIZE);
+	}
+	free(buffer);
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+
+	// If the memory controller verifies that the entire flash memory space was properly erased, security will be released.
+	unsecureFlash();
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::verifyBackdoorAccessKey_cmd()
+{
+
+	// The verify Backdoor Access Key command release security
+	// if user supplied keys match those stored in the Flash security bytes of the Flash configuration field.
+
+	if (fccobix_reg != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+
+	if (isBackdoorkeySecurityEnabled() && !verifyBackdoorAccessKey_Failed) {
+		uint16_t buffer[BACKDOOR_ACCESS_KEY_SIZE/2];
+		ReadMemory(blackdoor_comparison_key_address, buffer, BACKDOOR_ACCESS_KEY_SIZE);
+
+		bool success = true;
+		for (uint8_t i=0; (i<4) && success; i++) {
+			success &= (buffer[i] == Host2BigEndian(fccob_reg[1+i]));
+		}
+
+		if (success) {
+			unsecureFlash();
+		} {
+			verifyBackdoorAccessKey_Failed = true;
+		}
+	} else {
+		setACCERR();
+		return;
+	}
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setUserMarginLevel_cmd()
+{
+
+	/**
+	 * User margin levels can be used to check that Flash memory contents have adequate margin for normal level read operations.
+	 * If unexpected results are encountered when checking Flash memory contents at user margin levels,
+	 * a potential loss of information has been detected.
+	 */
+
+	inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Set User Margin Level Command is not implemented." << std::endl << EndDebugWarning;
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setFieldMarginLevel_cmd()
+{
+
+	/**
+	 * Field margin levels must only be used during verify of the initial factory programming.
+	 *
+	 * Field margin levels can be used to check that Flash memory contents have adequate margin
+	 * for data retention at the normal level setting.
+	 * If unexpected results are encountered when checking Flash memory contents at field
+	 * margin levels, the Flash memory contents should be erased and reprogrammed.
+	 */
+
+	inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Set Field Margin Level Command is not implemented." << std::endl << EndDebugWarning;
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::fullPartitionDFlash_cmd()
+{
+
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 	uint16_t nbre_DFlash_user_sector = fccob_reg[1];
 	uint16_t nbre_bufferRAM_EEE_sector = fccob_reg[2];
@@ -667,6 +981,270 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::partitionDFlas
 	// Program a duplicate ERPART to the EEE non-volatile information register at global address	0x12_0006
 	WriteMemory(buffer_ram_partition_eee_operation_address_duplicate, &nbre_bufferRAM_EEE_sector, 2);
 
+	fullPartitionDFlashCmd_Launched =true;
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyDFlashSection_cmd()
+{
+
+	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	uint16_t number_words = fccob_reg[2];
+
+	if (fccobix_reg != 2) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	if ((addr & 0x1) != 0) {
+		setACCERR();
+		return;
+	}
+
+	// Set ACCERR if an invalid global address [22:0] is supplied
+	// Set ACCERR if the requested section breaches the end of the D-Flash block
+	if ((dflash_start_address > addr) || (dflash_end_address < (addr + (number_words * WORD_SIZE) - 1) )) {
+		setACCERR();
+		return;
+	}
+
+	// Set ACCERR if the global address [22:0] points to an area of the D-Flash EEE partition
+	// Set ACCERR if the requested section goes into the D-Flash EEE partition
+
+	// Get D-Flash user partition size
+	uint16_t nbre_DFlash_user_sector = 0;
+	ReadMemory(dflash_partition_user_access_address, &nbre_DFlash_user_sector, 2);
+
+	if ((dflash_start_address + nbre_DFlash_user_sector * DFLASH_SECTOR_SIZE) < (addr + number_words * WORD_SIZE) ) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: I have to emulate erase error
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the read
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the read
+
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programDFlash_cmd()
+{
+
+	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	uint8_t number_words = fccobix_reg - 0x2;
+
+	if ((fccobix_reg < 0x2) || (fccobix_reg > 0x5)) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: Set FSTAT::ACCERR if command not available in current mode (Table 29-30)
+
+	// Set FSTAT::ACCERR if an invalid global address [22:0] is supplied
+	// Set FSTAT::ACCERR if the requested group of words breaches the end of the D-Flash block
+	if ((dflash_start_address > addr) || (dflash_end_address < (addr + (number_words * WORD_SIZE) - 1) )) {
+		setACCERR();
+		return;
+	}
+
+	// Set FSTAT::ACCERR if a misaligned word address is supplied
+	if ((addr & 0x1) != 0) {
+		setACCERR();
+		return;
+	}
+
+	// Set ACCERR if the global address [22:0] points to an area of the D-Flash EEE partition
+	// Set ACCERR if the requested section goes into the D-Flash EEE partition
+
+	// Get D-Flash user partition size
+	uint16_t nbre_DFlash_user_sector = 0;
+	ReadMemory(dflash_partition_user_access_address, &nbre_DFlash_user_sector, 2);
+
+	if ((dflash_start_address + nbre_DFlash_user_sector * DFLASH_SECTOR_SIZE) < (addr + number_words * WORD_SIZE) ) {
+		setACCERR();
+		return;
+	}
+
+
+	// execute effective D-Flash program
+	uint16_t word;
+	for (uint8_t i=0; i < number_words; i++) {
+		word = Host2BigEndian(fccob_reg[0x2 + i]);
+		inherited::WriteMemory(addr + (i*WORD_SIZE), &word, WORD_SIZE);
+		// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+		// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+	}
+
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseDFlashSector_cmd()
+{
+
+	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	if ((fccobix_reg & 0x1) != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: set FSTAT::ACCERR if command not available in current mode
+
+	// Set FSTAT::ACCERR if an invalid global address [22:0] is supplied
+	if ((dflash_start_address > addr) || (dflash_end_address < (addr + DFLASH_SECTOR_SIZE - 1) )) {
+		setACCERR();
+		return;
+	}
+
+	// Set FSTAT::ACCERR if a misaligned word address is supplied
+	if ((addr & 0x1) != 0) {
+		setACCERR();
+		return;
+	}
+
+	// set FSAT::ACCERR if the global address [22:0] points to the D-Flash EEE partition
+
+	// Get D-Flash user partition size
+	uint16_t nbre_DFlash_user_sector = 0;
+	ReadMemory(dflash_partition_user_access_address, &nbre_DFlash_user_sector, 2);
+
+	if ((dflash_start_address + nbre_DFlash_user_sector * DFLASH_SECTOR_SIZE) < (addr + DFLASH_SECTOR_SIZE) ) {
+		setACCERR();
+		return;
+	}
+
+	// execute erase D-Flash sector command
+	void *buffer = malloc(DFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , DFLASH_SECTOR_SIZE);
+	uint16_t nbre_sector = (dflash_end_address - dflash_start_address + 1) / DFLASH_SECTOR_SIZE;
+	for (uint16_t j=0; j < nbre_sector; j++) {
+		// Identify the D-Flash sector
+		if ((addr >= (dflash_start_address + (j * DFLASH_SECTOR_SIZE)))
+				&& (addr <= (dflash_start_address + (j * DFLASH_SECTOR_SIZE) + DFLASH_SECTOR_SIZE - 1)))
+		{
+
+			WriteMemory(dflash_start_address + (j * DFLASH_SECTOR_SIZE), buffer, DFLASH_SECTOR_SIZE);
+		}
+	}
+	free(buffer);
+
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::enableEEPROMEmulation_cmd()
+{
+
+	if (fccobix_reg != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	if (!isFullPartitionDFlashCmd_Launched() && !isPartitionDFlashCmd_Launched()) {
+		setACCERR();
+		return;
+	}
+
+	eepromEmulationEnabled = true;
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::disableEEPROMEmulation_cmd()
+{
+
+	if (fccobix_reg != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	if (!isFullPartitionDFlashCmd_Launched() && !isPartitionDFlashCmd_Launched()) {
+		setACCERR();
+		return;
+	}
+
+	eepromEmulationEnabled = false;
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eEPROMEmulationQuery_cmd()
+{
+
+	if (fccobix_reg != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: FSTAT::ACCERR is set if command not available in the current mode
+
+	 inherited::ReadMemory(dflash_partition_user_access_address, &fccob_reg[1], 2);
+	 inherited::ReadMemory(buffer_ram_partition_eee_operation_address, &fccob_reg[2], 2);
+	 fccob_reg[3] = sector_erased_count;
+
+	 /**
+	  *  TODO:
+	  * 	implement dead_sector_count
+	  * 	implement ready_sector_count;
+	  */
+
+	 if ((fccob_reg[1] == 0xFFFF) && (fccob_reg[2] == 0xFFFF)) {
+		 fccob_reg[4] = 0;
+	 } else {
+		 fccob_reg[4] = fccob_reg[1] + fccob_reg[2];
+	 }
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::partitionDFlash_cmd()
+{
+
+	if (isPartitionDFlashCmd_Launched()) {
+		setACCERR();
+		return;
+	}
+
+	fullPartitionDFlash_cmd();
+
+	partitionDFlashCmd_Launched = true;
 }
 
 /* Service methods */
@@ -861,6 +1439,24 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 
 	oscillator_cycle_time = sc_time(oscillator_cycle_time_int, SC_PS);
 
+	min_fclk_time = sc_time(min_fclk_time_int, SC_PS);
+	max_fclk_time = sc_time(max_fclk_time_int, SC_PS);
+
+	vector<string> result;
+	stringSplit(pflash_blocks_description_string, ";", result);
+	for ( int i = 0; i < result.size(); ++i) {
+		vector<string> oneBlockSegments;
+		stringSplit(result[i], ",", oneBlockSegments);
+		BlockDescription *oneBlock = new BlockDescription();
+		std::stringstream ss;
+		ss << std::hex << oneBlockSegments[0] << " " << std::hex << oneBlockSegments[1] << std::dec;
+		ss >> std::hex >> oneBlock->start_address >> std::hex >> oneBlock->end_address;
+
+		pflash_blocks_description.push_back(oneBlock);
+		oneBlockSegments.clear();
+	}
+	result.clear();
+
 	Reset();
 
 	return (inherited::BeginSetup());
@@ -869,7 +1465,7 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write_to_flash(physical_address_t address, void* data_ptr, unsigned int data_length) {
 
-	// TODO: implement write to flash
+	WriteMemory(address, data_ptr, data_length);
 }
 
 /**
@@ -896,16 +1492,21 @@ unsigned int S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transp
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if (cmd == tlm::TLM_READ_COMMAND) {
-		return (inherited::transport_dbg(payload));
+	if ((address >= inherited::GetLowAddress()) && (address <= inherited::GetHighAddress())) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			return (inherited::transport_dbg(payload));
+		} else {
+			write_to_flash( address, data_ptr, data_length);
+
+			payload.set_response_status(tlm::TLM_OK_RESPONSE);
+
+		}
 	} else {
-		write_to_flash( address, data_ptr, data_length);
-
-		payload.set_response_status(tlm::TLM_OK_RESPONSE);
-
-		return (0);
+		payload.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}
 
+
+	return (0);
 
 }
 
@@ -917,24 +1518,29 @@ tlm::tlm_sync_enum S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if (cmd == tlm::TLM_READ_COMMAND) {
-		validateFlashRead(address);
+	if ((address >= inherited::GetLowAddress()) && (address <= inherited::GetHighAddress())) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			validateFlashRead(address);
 
-		return (inherited::nb_transport_fw(payload, phase, t));
-	} else {
-
-		write_to_flash(address, data_ptr, data_length);
-
-		if (phase == BEGIN_REQ) {
-			phase = END_REQ; // update the phase
-			payload.acquire();
-
-			return (TLM_UPDATED);
+			return (inherited::nb_transport_fw(payload, phase, t));
 		} else {
-			inherited::logger << DebugError << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl << EndDebugError;
-			Object::Stop(-1);
+
+			write_to_flash(address, data_ptr, data_length);
+
+			if (phase == BEGIN_REQ) {
+				phase = END_REQ; // update the phase
+				payload.acquire();
+
+				return (TLM_UPDATED);
+			} else {
+				inherited::logger << DebugError << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl << EndDebugError;
+				Object::Stop(-1);
+			}
+
 		}
 
+	} else {
+		payload.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}
 
 }
@@ -948,17 +1554,20 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::b_transport(tl
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if (cmd == tlm::TLM_READ_COMMAND) {
-		validateFlashRead(address);
+	if ((address >= inherited::GetLowAddress()) && (address <= inherited::GetHighAddress())) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			validateFlashRead(address);
 
-		inherited::b_transport(payload, t);
+			inherited::b_transport(payload, t);
+		} else {
+
+			write_to_flash(address, data_ptr, data_length);
+
+			payload.set_response_status( tlm::TLM_OK_RESPONSE );
+		}
 	} else {
-
-		write_to_flash(address, data_ptr, data_length);
-
-		payload.set_response_status( tlm::TLM_OK_RESPONSE );
+		payload.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}
-
 
 }
 
@@ -1037,6 +1646,14 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Reset() {
 	}
 
 	etag_reg = 0x0000;
+
+	fprot_high_low_addr = pflash_protectable_high_address - (pow(2, (((fprot_reg & 0x18) >> 3) + 1)) * 1024) + 1;
+	fprot_low_high_addr = pflash_protectable_low_address - (pow(2, ((fprot_reg & 0x02))) * 1024);
+	eprot_low_addr = eee_protectable_high_address - (((eprot_reg & 0x07) + 1) * 64) + 1;
+
+	partitionDFlashCmd_Launched = false;
+	fullPartitionDFlashCmd_Launched = false;
+	eepromEmulationEnabled = false;
 
 	ComputeInternalTime();
 
@@ -1451,6 +2068,9 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(unsigned
 
 			fprot_reg = ((!newOPEN || oldOPEN ) && (!newHDIS || oldHDIS) && (!newLDIS || oldLDIS))? value : fprot_reg;
 
+			fprot_high_low_addr = pflash_protectable_high_address - (pow(2, (((fprot_reg & 0x18) >> 3) + 1)) * 1024) + 1;
+			fprot_low_high_addr = pflash_protectable_low_address - (pow(2, ((fprot_reg & 0x02))) * 1024);
+
 		} break;
 		case EPROT: {
 
@@ -1462,6 +2082,8 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(unsigned
 			bool newDIS = ((value & 0x08) != 0);
 
 			eprot_reg = ((!newOPEN || oldOPEN ) && (!newDIS || oldDIS))? value : eprot_reg;
+
+			eprot_low_addr = eee_protectable_high_address - (((eprot_reg & 0x07) + 1) * 64) + 1;
 
 		} break;
 		case FCCOBHI: {

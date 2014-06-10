@@ -65,6 +65,8 @@
 #include <unisim/kernel/service/service.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
+#include <unisim/kernel/logger/logger.hh>
+
 #include "unisim/service/interfaces/char_io.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
@@ -100,6 +102,8 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Signal;
+using unisim::kernel::service::Variable;
 
 using unisim::service::interfaces::CharIO;
 using unisim::service::interfaces::Memory;
@@ -122,6 +126,14 @@ using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
+
 class S12SCI :
 	public sc_module
 	, public CallBackObject
@@ -134,6 +146,9 @@ class S12SCI :
 
 {
 public:
+
+	enum SCIMSG {SCIDATA, SCIIDLE, SCIBREAK};
+
 	//=========================================================
 	//=                REGISTERS OFFSETS                      =
 	//=========================================================
@@ -161,6 +176,9 @@ public:
 	static const uint8_t SCIACR1_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x04;	// 1 byte
 	static const uint8_t SCIACR2_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x05; // 1 byte
 
+	static const uint16_t IDLE_11 = 0x07FF; // preamble of 11 logic 1s
+	static const uint16_t IDLE_10 = 0x03FF; // preamble of 10 logic 1s
+
 	ServiceImport<TrapReporting > trap_reporting_import;
 	ServiceImport<CharIO > char_io_import;
 
@@ -178,6 +196,9 @@ public:
 
 	void assertInterrupt(uint8_t interrupt_offset);
 	void ComputeInternalTime();
+
+	void RunRx();
+	void RunTx();
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -234,10 +255,15 @@ private:
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
+	XINT_Payload *xint_payload;
 
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
+
+	sc_time		sci_baud_rate;
+
+	sc_event tx_run_event, tx_load_event, tx_break_event, rx_run_event;
 
 	// S12SCI baseAddress  SCI0=0x00C8:0x00CF  SCI1=0x00D0:0x00D7 SCI2=0x00B8:0x00BF SCI3=0x00C0:0x00C7 SCI4=0x0130:0x0137 SCI5=0x0138:0x013F
 	address_t	baseAddress;
@@ -246,13 +272,30 @@ private:
 	uint8_t interrupt_offset;  // vector offset SCI0=0xD6  SCI1=0xD4 SCI2=0x8A SCI3=0x88 SCI4=0x86 SCI5=0x84
 	Parameter<uint8_t> param_interrupt_offset;
 
-	bool	debug_enabled;
-	Parameter<bool>	param_debug_enabled;
+//	bool	debug_enabled;
+//	Parameter<bool>	param_debug_enabled;
+
+	bool	tx_debug_enabled;
+	Parameter<bool>	param_tx_debug_enabled;
+
+	bool	rx_debug_enabled;
+	Parameter<bool>	param_rx_debug_enabled;
 
 	// Registers map
 	map<string, Register *> registers_registry;
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
+	bool scisr1_read;
+	bool idle_to_send;
+
+	bool txd;
+	Signal<bool> txd_output_pin;
+
+	bool rxd;
+	Signal<bool> rxd_input_pin;
+
+	inline bool getRXD();
 
 	// =============================================
 	// =            Registers                      =
@@ -269,9 +312,274 @@ private:
 
 	uint8_t scicr2_register; // 1 byte
 	uint8_t scisr1_register; // 1 byte
-	uint8_t scisr2_regsiter; // 1 bytes
+	uint8_t scisr2_register; // 1 bytes
 	uint8_t scidrh_register; // 1 bytes
 	uint8_t scidrl_register; // 1 bytes
+
+	uint16_t tx_shift_register, rx_shift_register;
+
+	void ComputeBaudRate();
+	inline bool isInfraredEnabled() { return ((scibdh_register & 0x80) != 0); }
+	inline bool isBaudRateGeneratorEnabled() {
+		uint16_t sbr = (!isInfraredEnabled())? (((scibdh_register & 0x1F) << 8) | scibdl_register) : (((scibdh_register & 0x1F) << 7) | (scibdl_register >> 1));
+		return (sbr != 0);
+	}
+	inline bool isLoopOperationEnabled() {
+		// receiver pin is disconnected and the transmitter output is connected to receiver input
+		return ((scicr1_register & 0x80) != 0);
+	}
+
+	inline bool isTx2RxInternal() { return ((scicr1_register & 0x20) == 0); }
+	inline bool isSCIStopWaitMode() { return ((scicr1_register & 0x40) != 0); }
+	inline bool isNineBitsMode() { /* SCICR1::M ?= 1 */ return ((scicr1_register & 0x10) != 0); }
+	inline bool isIdleLineWakeup() { return ((scicr1_register & 0x08) == 0); }
+	inline bool isIdleLineTypeStop() { return ((scicr1_register & 0x04) != 0); }
+	inline bool isParityEnabled() { return ((scicr1_register & 0x02) != 0); }
+	inline bool isOddParity() { return ((scicr1_register & 0x01) != 0); }
+	inline void setParityError() { scisr1_read = false; scisr1_register = scisr1_register | 0x01;	}
+	inline bool isReceiveInputActiveedgeInterruptEnabled() { return ((sciacr1_register & 0x80) != 0); }
+	inline bool isBitErrorInterruptEnabled() { return ((sciacr1_register & 0x20) != 0); }
+	inline bool isBreakDetectInterruptEnabled() { return ((sciacr1_register & 0x01) != 0); }
+	inline bool isBreakDetectFeatureEnabled() { return ((sciacr2_register & 0x01) != 0); }
+	inline bool isTransmitterEnabled() { return (((scicr2_register & 0x08) != 0)  && isBaudRateGeneratorEnabled()); }
+	inline bool isReceiverEnabled() { return (((scicr2_register & 0x04) != 0) && isBaudRateGeneratorEnabled()); }
+	inline bool isReceiverWakeupEnabled() { return ((scicr2_register & 0x02) != 0); }
+	inline void clearReceiverWakeup() { scicr2_register = scicr2_register & 0xFD; }
+	inline bool isTransmitBreakCharsEnabled() { return ((scicr2_register & 0x01) != 0); }
+	inline bool isSCISR1_Read() { return (scisr1_read); }
+	inline bool isBRK13Set() { return ((scisr2_register & 0x04) != 0);}
+	inline bool isTXD_Output() { return ((scisr2_register & 0x02) != 0); }
+	inline void setTDRE() {
+		 scisr1_read = false;
+		scisr1_register = scisr1_register | 0x80;
+		// is Transmission (TDRE) interrupt enabled ?
+		if ((scicr2_register & 0x80) != 0) {
+			if (tx_debug_enabled)	std::cout << sc_object::name() << "::setTDRE" << std::endl;
+			assertInterrupt(interrupt_offset);
+		}
+	}
+	inline bool isTDRECleared() { return ((scisr1_register & 0x80) == 0); }
+	inline void clearTDRE() {
+		if (isSCISR1_Read()) {
+			// clear SCISR1::TDRE bit
+			(scisr1_register = scisr1_register & 0x7F);
+		}
+	}
+
+	inline bool isSendBreak() { return ((scicr2_register & 0x01) != 0); }
+	inline void clearTC() { scisr1_register = scisr1_register & 0xBF; }
+	inline void setTC() {
+		// SCISR1::TC is set high when the SCISR1::TDRE flag is set and no data, preamble, or break character is being transmitted.
+		if (!(isTDRECleared() || isSendBreak())) {
+			scisr1_register = scisr1_register | 0x40;
+			// Is transmission complete interrupt enabled ?
+			if ((scicr2_register & 0x40) != 0) {
+				if (tx_debug_enabled)	std::cout << sc_object::name() << "::setTC" << std::endl;
+				assertInterrupt(interrupt_offset);
+			}
+		}
+	}
+	inline bool isTransmissionComplete() { return ((scisr1_register & 0x40) != 0); }
+
+	inline bool isIDLE() { return (scisr1_register & 0x10); }
+
+	inline void setIDLE() {
+
+		if (isReceiverStandbay()) return;
+
+		scisr1_read = false;
+		scisr1_register = scisr1_register | 0x10;
+		//is Idle interrupt enabled ?
+		if ((scicr2_register & 0x10) != 0) {
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::setIDLE" << std::endl;
+			assertInterrupt(interrupt_offset);
+		}
+	}
+
+	inline bool isReceiverActive() { return ((scisr2_register & 0x01) != 0); }
+	inline void setReceiverActive() { scisr2_register = scisr2_register | 0x01; }
+	inline void clearReceiverActive() { scisr2_register = scisr2_register & 0xFE; }
+
+	inline bool isIdleCountAfterStop() { return ((scicr1_register & 0x04) != 0); }
+
+	inline uint8_t getBreakLength() {
+		uint8_t length = getDataFrameLength();
+
+		if (isBRK13Set()) {
+			length = length + 3;
+		}
+
+		return (length);
+	}
+
+	inline uint8_t getDataFrameLength() {
+		if (isNineBitsMode()) {
+			return (11);
+		} else {
+			return (10);
+		}
+	}
+
+	inline bool isBreakDetectEnabled() { return ((sciacr2_register & 0x01) != 0); }
+	inline void setBreakDetectInterrupt() {
+
+		if (isReceiverStandbay()) return;
+
+		sciasr1_register = sciasr1_register | 0x01;
+		// is break detect interrupt enabled ?
+		if ((sciacr1_register & 0x01) != 0) {
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::setBreakDetect" << std::endl;
+			assertInterrupt(interrupt_offset);
+		}
+	}
+
+	inline void setNoiseFlag() { scisr1_read = false; scisr1_register = scisr1_register | 0x04; }
+	inline void setFramingError() { scisr1_read = false; scisr1_register = scisr1_register | 0x02; }
+	inline bool isReceiverStandbay() { return ((scicr2_register & 0x02) != 0); }
+
+	inline void setRDRF() {
+
+		if (rx_debug_enabled)	std::cout << sc_object::name() << "::setRDRF received char " << (unsigned int) scidrl_register << std::endl;
+
+		if (isReceiverStandbay()) return;
+
+		scisr1_read = false;
+		scisr1_register = scisr1_register | 0x20;
+		// is receiver full interrupt enabled ?
+		if ((scicr2_register & 0x20) != 0) {
+			assertInterrupt(interrupt_offset);
+		}
+	}
+	inline bool isRDRFCleared() { return ((scisr1_register & 0x20) == 0); }
+
+	inline bool isAddressWakeup() { return ((scicr1_register & 0x08) != 0); }
+
+	inline void setOverrunFlag() {
+
+		if (isReceiverStandbay()) return;
+
+		scisr1_read = false;
+		scisr1_register = scisr1_register | 0x08;
+		// is receiver full interrupt enabled ?
+		if ((scicr2_register & 0x20) != 0) {
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::setOverrunFlag" << std::endl;
+			assertInterrupt(interrupt_offset);
+		}
+	}
+
+	inline void txShiftOut(SCIMSG msgType);
+
+	inline uint16_t buildFrame(uint8_t high, uint8_t low, SCIMSG msgType);
+
+	// *** Telnet ***
+	bool	telnet_enabled;
+	Parameter<bool>	param_telnet_enabled;
+
+	unisim::kernel::logger::Logger logger;
+
+	std::queue<uint8_t> telnet_rx_fifo;
+	std::queue<uint8_t> telnet_tx_fifo;
+	sc_event telnet_rx_event, telnet_tx_event;
+
+	inline void add(std::queue<uint8_t> &buffer_queue, uint8_t data, sc_event &event) {
+	    buffer_queue.push(data);
+	    event.notify();
+	}
+
+	inline void next(std::queue<uint8_t> &buffer_queue, uint8_t& data, sc_event &event) {
+
+		while( isEmpty(buffer_queue))
+		{
+			wait(event);
+		}
+
+		data = buffer_queue.front();
+		buffer_queue.pop();
+
+	}
+
+	inline bool isEmpty(std::queue<uint8_t> &buffer_queue) {
+
+	    return (buffer_queue.empty());
+	}
+
+	inline size_t size(std::queue<uint8_t> &buffer_queue) {
+
+	    return (buffer_queue.size());
+	}
+
+	inline void TelnetSendString(const char *msg) {
+
+		while (*msg != 0)
+			add(telnet_tx_fifo, *msg++, telnet_tx_event) ;
+
+		TelnetProcessOutput(true);
+	}
+
+	inline void TelnetProcessInput()
+	{
+		if(char_io_import)
+		{
+			char c;
+			uint8_t v;
+
+			if(!char_io_import->GetChar(c)) return;
+
+			v = (uint8_t) c;
+			if(rx_debug_enabled)
+			{
+				logger << DebugInfo << "Receiving ";
+				if(v >= 32)
+					logger << "character '" << c << "'";
+				else
+					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+				logger << " from telnet client" << EndDebugInfo;
+			}
+
+			add(telnet_rx_fifo, v, telnet_rx_event);
+
+		} else {
+			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
+		}
+	}
+
+	inline void TelnetProcessOutput(bool flush_telnet_output)
+	{
+		if(char_io_import)
+		{
+			char c;
+			uint8_t v;
+
+			if(!isEmpty(telnet_tx_fifo))
+			{
+				do
+				{
+					next(telnet_tx_fifo, v, telnet_tx_event);
+					c = (char) v;
+					if(tx_debug_enabled)
+					{
+						logger << DebugInfo << "Sending ";
+						if(v >= 32)
+							logger << "character '" << c << "'";
+						else
+							logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+						logger << " to telnet client" << EndDebugInfo;
+					}
+					char_io_import->PutChar(c);
+				}
+				while(!isEmpty(telnet_tx_fifo));
+
+			}
+
+			if(flush_telnet_output)
+			{
+				char_io_import->FlushChars();
+			}
+		} else {
+			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
+		}
+	}
+
 
 
 }; /* end class S12SCI */

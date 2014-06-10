@@ -1,26 +1,28 @@
 /*
- * BlockingQueue.hpp
+ * BlockingCircularQueue.hpp
  *
- *  Created on: 26 avr. 2010
+ *  Created on: 06 fev. 2014
  *      Author: rnouacer
  */
 
-#ifndef BLOCKINGQUEUE_HPP_
-#define BLOCKINGQUEUE_HPP_
+#ifndef _BLOCKINGCIRCULARQUEUE_HPP__
+#define _BLOCKINGCIRCULARQUEUE__
 
 #include<pthread.h>
-#include <queue>
+#include<iostream>
+#include<cstdlib>
 
 namespace unisim {
 namespace service {
 namespace pim {
 namespace network {
 
-template <class T>
-class BlockingQueue {
+template <class T, unsigned int MAX_SIZE=100>
+class BlockingCircularQueue {
 public:
 
-	BlockingQueue() {
+	BlockingCircularQueue() {
+
 //		pthread_mutex_init (&queue_mutex, NULL);
 //		pthread_mutex_init (&condition_mutex, NULL);
 //		pthread_cond_init (&condition_cond, NULL);
@@ -36,16 +38,14 @@ public:
 		pthread_cond_init (&condition_cond, NULL);
 
 		alive = true;
+	    head = 0;
+		tail = 0;
 
 	}
 
-	~BlockingQueue() {
+	~BlockingCircularQueue() {
 
 		alive = false;
-		while (!buffer_queue.empty())
-		{
-			buffer_queue.pop();
-		}
 
 		// wake-up waiting thread
 		pthread_cond_signal( &condition_cond );
@@ -60,17 +60,29 @@ public:
 
 	    pthread_mutex_lock( &condition_mutex );
 
-	    pthread_mutex_lock( &queue_mutex );
-	    buffer_queue.push(data);
-	    pthread_mutex_unlock( &queue_mutex );
+		while( isFull() && alive)
+		{
+			pthread_cond_wait( &condition_cond, &condition_mutex );
+		}
 
-	    pthread_cond_signal( &condition_cond );
+		if (alive) {
+		    pthread_mutex_lock( &queue_mutex );
+
+		    item[tail] = data;
+		    tail = (tail+1) % MAX_SIZE;
+
+		    pthread_mutex_unlock( &queue_mutex );
+
+		    pthread_cond_signal( &condition_cond );
+		}
 
 	    pthread_mutex_unlock( &condition_mutex );
 
 	}
 
-	void next(T& data) {
+	T next() {
+
+		T temp = NULL;
 
 		pthread_mutex_lock( &condition_mutex );
 		while( isEmpty() && alive)
@@ -80,8 +92,10 @@ public:
 
 		if (alive) {
 		    pthread_mutex_lock( &queue_mutex );
-			data = buffer_queue.front();
-			buffer_queue.pop();
+
+		    temp = item[head];
+		    head = (head+1)%MAX_SIZE;
+
 		    pthread_mutex_unlock( &queue_mutex );
 
 		    pthread_cond_signal( &condition_cond );
@@ -90,6 +104,7 @@ public:
 
 		pthread_mutex_unlock( &condition_mutex );
 
+	    return (temp);
 	}
 
 	bool isEmpty() {
@@ -97,21 +112,51 @@ public:
 		bool result = false;
 
 	    pthread_mutex_lock( &queue_mutex );
-	    result = buffer_queue.empty();
+
+	    result = (abs(head == tail));
+
 	    pthread_mutex_unlock( &queue_mutex );
 
 	    return result;
 	}
 
-	size_t size() {
+	bool isFull() {
+
+		bool result = false;
+
+	    pthread_mutex_lock( &queue_mutex );
+
+	    result = (head== ((tail+1) % MAX_SIZE));
+
+	    pthread_mutex_unlock( &queue_mutex );
+
+	    return result;
+	}
+
+	int size() {
 
 		size_t size = 0;
 
 	    pthread_mutex_lock( &queue_mutex );
-	    size = buffer_queue.size();
+
+	    size = (tail - head);
+
 	    pthread_mutex_unlock( &queue_mutex );
 
 	    return size;
+	}
+
+	T* getElements() {
+
+		T* tmp_queue = (T) malloc(MAX_SIZE * sizeof(T));
+
+	    int i;
+	    int j=0;
+        for(i=head; i!=tail; i=(i+1)%MAX_SIZE){
+        	tmp_queue[j++] = item[i];;
+        }
+
+        return (tmp_queue);
 	}
 
 protected:
@@ -124,10 +169,13 @@ protected:
 	pthread_mutexattr_t condition_mutex_Attr;
 
 private:
-	std::queue<T> buffer_queue;
+	T item[MAX_SIZE];
+    int head;
+    int tail;
+
 	bool alive;
 
-	std::queue<T> getQueue() { return buffer_queue; }
+	T* getQueue() { return (item); }
 
 };
 
@@ -137,5 +185,5 @@ private:
 } // end service 
 } // end unisim 
 
-#endif /* BLOCKINGQUEUE_HPP_ */
+#endif /* _BLOCKINGCIRCULARQUEUE_HPP__ */
 

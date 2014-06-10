@@ -198,9 +198,12 @@ protected:
 
 private:
 	tlm_quantumkeeper quantumkeeper;
+
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
+	XINT_Payload *xint_payload;
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
+	tlm::tlm_generic_payload* bus_clk_trans;
 
 	uint32_t	oscillator_clock_value;	// The time unit is PS
 	Parameter<uint32_t>	param_oscillator_clock_int;
