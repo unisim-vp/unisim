@@ -67,7 +67,7 @@
 #include <stack>
 
 #ifdef WIN32
-#include <windows.h>
+#include <windef.h>
 #endif
 
 namespace unisim {

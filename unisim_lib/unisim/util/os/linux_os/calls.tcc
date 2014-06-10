@@ -345,6 +345,22 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getpid()
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_gettid()
+{
+	// Note: in a single threaded environment, the thread ID is equal to the process ID (PID, as returned by getpid)
+	pid_t ret;
+
+	ret = (pid_t) getpid();
+	if(unlikely(verbose_))
+	{
+		logger_ << DebugInfo
+			<< "gettid() return " << ret
+			<< EndDebugInfo;
+	}
+	SetSystemCallStatus(ret, false);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid()
 {
 #ifdef WIN32

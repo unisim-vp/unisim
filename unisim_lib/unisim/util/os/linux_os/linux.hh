@@ -334,6 +334,7 @@ private:
 	void LSC_close();
 	void LSC_lseek();
 	void LSC_getpid();
+	void LSC_gettid();
 	void LSC_getuid();
 	void LSC_access();
 	void LSC_times();
