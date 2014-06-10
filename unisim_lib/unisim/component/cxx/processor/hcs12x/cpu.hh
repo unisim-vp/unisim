@@ -484,7 +484,7 @@ public:
 	inline void monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal);
 	inline void monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal);
 
-	inline void reportTrap();
+	inline void reportTrap(const char *c_str);
 
 	//=====================================================================
 	//=             memory interface methods                              =
@@ -643,7 +643,7 @@ private:
 
 inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
-	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+//	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
 
 	data_load_counter++;
 
@@ -657,7 +657,7 @@ inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlo
 
 inline void CPU::monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
-	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+//	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
 
 	data_store_counter++;
 
@@ -669,9 +669,9 @@ inline void CPU::monitorStore(address_t logicalAddress, uint32_t size, bool isGl
 	}
 }
 
-inline void CPU::reportTrap() {
+inline void CPU::reportTrap(const char *c_str) {
 	if (trap_reporting_import) {
-		trap_reporting_import->ReportTrap();
+		trap_reporting_import->ReportTrap(*this, c_str);
 	}
 
 }
@@ -723,6 +723,7 @@ inline void CPU::memWrite8(address_t logicalAddress,uint8_t data, ADDRESS::MODE 
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
+	mmc_data.isExecute = false;
 
 	busWrite(&mmc_data);
 

@@ -34,7 +34,7 @@ using unisim::kernel::service::VariableBaseListener;
 using unisim::kernel::service::Simulator;
 using unisim::kernel::service::VariableBase;
 
-class PIMThread : public SocketThread, VariableBaseListener, virtual public Object {
+class PIMThread : virtual public Object, public SocketThread, VariableBaseListener {
 public:
 	PIMThread(const char *_name, Object *_parent = 0);
 	~PIMThread();

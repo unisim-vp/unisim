@@ -21,38 +21,20 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 	, sc_module(name)
 
 	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Client<CharIO>(name, parent)
-
-	, logger(*this)
+	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
-
-	, bus_clock_socket("bus_clock_socket")
-	, slave_socket("slave_socket")
-
 	, char_io_import("char_io_import", this)
 
 	, memory_export("memory_export", this)
 	, memory_import("memory_import", this)
 	, registers_export("registers_export", this)
 
-	, scibdh_register(0x00)
-	, scibdl_register(0x00)
-	, scicr1_register(0x00)
-	, sciasr1_register(0x00)
-	, sciacr1_register(0x00)
-	, sciacr2_register(0x00)
-	, scicr2_register(0x00)
-	, scisr1_register(0x00)
-	, scisr2_register(0x00)
-	, scidrh_register(0x00)
-	, scidrl_register(0x00)
-
-	, scisr1_read(false)
-	, idle_to_send(false)
+	, slave_socket("slave_socket")
+	, bus_clock_socket("bus_clock_socket")
 
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
@@ -68,13 +50,30 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 	, rx_debug_enabled(false)
 	, param_rx_debug_enabled("rx-debug-enabled", this, rx_debug_enabled)
 
-	, telnet_enabled(false)
-	, param_telnet_enabled("telnet-enabled", this, telnet_enabled)
+	, scisr1_read(false)
+	, idle_to_send(false)
 
 	, txd(true)
 	, txd_output_pin("TXD", this, txd, "TXD output")
 	, rxd(true)
 	, rxd_input_pin("RXD", this, rxd, "RXD input")
+
+	, scibdh_register(0x00)
+	, scibdl_register(0x00)
+	, scicr1_register(0x00)
+	, sciasr1_register(0x00)
+	, sciacr1_register(0x00)
+	, sciacr2_register(0x00)
+	, scicr2_register(0x00)
+	, scisr1_register(0x00)
+	, scisr2_register(0x00)
+	, scidrh_register(0x00)
+	, scidrl_register(0x00)
+
+	, telnet_enabled(false)
+	, param_telnet_enabled("telnet-enabled", this, telnet_enabled)
+
+	, logger(*this)
 
 {
 
@@ -365,7 +364,6 @@ inline bool S12SCI::getRXD() {
 
 void S12SCI::RunTx() {
 
-	int tx_couter = 0;
 	while (true) {
 
 		/**

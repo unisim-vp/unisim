@@ -105,7 +105,11 @@ SocketThread::~SocketThread() {
     pthread_mutex_lock( &sockfd_mutex );
 
 	if (sockfd) {
-		closeSockfd();
+#ifdef WIN32
+		closesocket(sockfd);
+#else
+		close(sockfd);
+#endif
 	}
 
     pthread_mutex_unlock( &sockfd_mutex );
@@ -175,8 +179,6 @@ bool SocketThread::PutChar(char c) {
 bool SocketThread::PutPacketWithAck(const string& data, bool Acknowledgment) {
 	char c;
 
-	lockSocket();
-
 	int data_size = data.size();
 
 	uint8_t checksum = 0;
@@ -197,14 +199,10 @@ bool SocketThread::PutPacketWithAck(const string& data, bool Acknowledgment) {
 		if (!FlushOutput()) {
 			cerr << "SocketThread unable to send !" << endl;
 
-			unlockSocket();
-
 			return (false);
 		}
 
 	} while(!isTerminated() && Acknowledgment && (GetChar(c, true) && (c != '+')));
-
-	unlockSocket();
 
 	return (true);
 

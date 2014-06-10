@@ -159,14 +159,14 @@ public:
 	ServiceImport<TrapReporting > trap_reporting_import;
 	ServiceImport<CharIO > char_io_import;
 
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
+	ServiceExport<Registers> registers_export;
+
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
 	tlm_utils::simple_target_socket<S12SPI> slave_socket;
 	tlm_utils::simple_target_socket<S12SPI> bus_clock_socket;
-
-	ServiceExport<Memory<physical_address_t> > memory_export;
-	ServiceImport<Memory<physical_address_t> > memory_import;
-	ServiceExport<Registers> registers_export;
 
 	S12SPI(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12SPI();
@@ -260,7 +260,10 @@ private:
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
+	STATUS state;
+	bool abortTransmission;
 	bool spisr_read;
+	bool validFrameWaiting;
 
 	bool mosi;
 	unisim::kernel::service::Signal<bool> mosi_pin;
@@ -273,10 +276,6 @@ private:
 
 	bool sck;
 	unisim::kernel::service::Signal<bool> sck_pin;
-
-	STATUS state;
-	bool abortTransmission;
-	bool validFrameWaiting;
 
 	// =============================================
 	// =            Registers                      =

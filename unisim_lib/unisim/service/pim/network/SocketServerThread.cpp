@@ -86,7 +86,6 @@ void SocketServerThread::run() {
 		socklen_t cli_addr_len;
 #endif
 
-	int connected = 0;
 	struct sockaddr_in cli_addr;
 
     cli_addr_len = sizeof(cli_addr);

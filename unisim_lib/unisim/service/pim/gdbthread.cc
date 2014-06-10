@@ -34,9 +34,61 @@ const string GDBThread::FIELD_SEPARATOR = ":";
 std::ostream& operator << (std::ostream& os, DBGData& data) {
 
 	switch (data.getCommand()) {
+		case DBGData::DBG_KILL_COMMAND: {} break;
+		case DBGData::DBG_PROCESS_EXIT: {} break;
+		case DBGData::DBG_RESET_COMMAND: {} break;
+		case DBGData::DBG_EXTENDED_MODE_ENABLE: {} break;
+		case DBGData::DBG_SET_THREAD_CONTEXT: {} break;
+		case DBGData::DBG_REPORT_STOP: {} break;
+		case DBGData::DBG_OK_RESPONSE: {} break;
+		case DBGData::DBG_NOK_RESPONSE: {} break;
+		case DBGData::DBG_ERROR_MALFORMED_REQUEST: {} break;
+		case DBGData::DBG_ERROR_READING_DATA_EPERM: {} break;
+		case DBGData::DBG_UNKNOWN: {} break;
+		case DBGData::DBG_CONTINUE: {} break;
+		case DBGData::DBG_SUSPEND: {} break;
+		case DBGData::DBG_VERBOSE_RESUME_ACTIONS: {} break;
+		case DBGData::DBG_VERBOSE_RESUME_CONTINUE: {} break;
+		case DBGData::DBG_VERBOSE_RESUME_STEP: {} break;
+		case DBGData::DBG_DISCONNECT: {} break;
+		case DBGData::DBG_READ_REGISTERS: {} break;
+		case DBGData::DBG_WRITE_REGISTERS: {} break;
+		case DBGData::DBG_STEP_CYCLE: {} break;
+		case DBGData::DBG_READ_MEMORY: {} break;
+		case DBGData::DBG_WRITE_MEMORY: {} break;
+		case DBGData::DBG_READ_SELECTED_REGISTER: {} break;
+		case DBGData::DBG_WRITE_SELECTED_REGISTER: {} break;
+		case DBGData::DBG_QUERY_VARIABLE: {} break;
+		case DBGData::DBG_STEP_INSTRUCTION: {} break;
+		case DBGData::DBG_REMOVE_BREAKPOINT_WATCHPOINT: {} break;
+		case DBGData::DBG_SET_BREAKPOINT_WATCHPOINT: {} break;
+		case DBGData::DBG_READ_WATCHPOINT: {} break;
+		case DBGData::DBG_WRITE_WATCHPOINT: {} break;
+		case DBGData::DBG_ACCESS_WATCHPOINT: {} break;
+		case DBGData::DBG_REPORT_EXTENDED_STOP: {} break;
+		case DBGData::DBG_GET_LAST_SIGNAL: {} break;
+		case DBGData::DBG_ENABLE_EXTENDED_MODE: {} break;
 		case DBGData::TERMINATE: {
 			os << "Req./Res.=\"TERMINATE\"";
 		} break;
+		case DBGData::QUERY_DISASM: {} break;
+		case DBGData::QUERY_SRCADDR: {} break;
+		case DBGData::QUERY_STACK: {} break;
+		case DBGData::QUERY_SYMBOLES: {} break;
+		case DBGData::QUERY_PARAMETERS: {} break;
+		case DBGData::QUERY_PHYSICAL_ADDRESS: {} break;
+		case DBGData::QUERY_STATISTICS: {} break;
+		case DBGData::QUERY_STRUCTURED_ADDRESS: {} break;
+		case DBGData::QUERY_TIME: {} break;
+		case DBGData::QUERY_ENDIAN: {} break;
+		case DBGData::QUERY_REGISTERS: {} break;
+		case DBGData::QUERY_START_PIM: {} break;
+		case DBGData::QUERY_PARAMETER: {} break;
+		case DBGData::QUERY_SYMBOL: {} break;
+		case DBGData::QUERY_SYMBOL_ACCEPT: {} break;
+		case DBGData::QUERY_SYMBOL_READ: {} break;
+		case DBGData::QUERY_SYMBOL_READ_ALL: {} break;
+		case DBGData::QUERY_SYMBOL_WRITE: {} break;
 		case DBGData::QUERY_VAR_READ: {
 			os << "InitiatorSite=\"" << data.getMasterSite() << "\" : Initiator=\"" << data.getMaster() << "\" : : Target=\"" << data.getSlave()  << "\" : Req./Res.=\"READ\"";
 		} break;
@@ -187,10 +239,10 @@ GDBThread::GDBThread(const char *_name, Object *_parent):
 
 GDBThread::~GDBThread() {
 
-	delete receiveDataQueue; receiveDataQueue = NULL;
-	delete sendDataQueue; sendDataQueue = NULL;
 	delete receiver; receiver = NULL;
 	delete sender; sender = NULL;
+	delete receiveDataQueue; receiveDataQueue = NULL;
+	delete sendDataQueue; sendDataQueue = NULL;
 }
 
 bool GDBThread::isData() {
@@ -198,11 +250,22 @@ bool GDBThread::isData() {
 }
 
 DBGData* GDBThread::receiveData() {
-	return (receiveDataQueue->next());
+	DBGData* response = NULL;
+
+	if (receiveDataQueue->next(response)) {
+		return (response);
+	} else {
+		return (NULL);
+	}
+
 }
 
-void GDBThread::sendData(DBGData* data) {
-	sendDataQueue->add(data);
+bool GDBThread::sendData(DBGData* data) {
+	if (isStarted()) {
+		return (sendDataQueue->add(data));
+	}
+
+	return false;
 }
 
 void GDBThread::run() {
@@ -214,17 +277,22 @@ void GDBThread::run() {
 
 }
 
+void GDBThread::stop() {
+	if (receiver) { receiver->stop(); }
+	if (sender) { sender->stop(); }
+
+	super::stop();
+}
+
+
 GDBThread::ReceiveThread::ReceiveThread(GDBThread *_parent, BlockingCircularQueue<DBGData*, QUEUE_SIZE> *_dataQueue) : GenericThread(), parent(_parent), dataQueue(_dataQueue) {}
 GDBThread::ReceiveThread::~ReceiveThread() {}
 
 void GDBThread::ReceiveThread::run(){
 
-//	while (!parent->isTerminated()) {
-	while (!parent->isTerminated() && !isTerminated()) {
+	while (!isTerminated()) {
 
 		string buf_str;
-
-//		parent->lockSocket();
 
 //		while (parent->GetPacketWithAck(buf_str, false, false)) {
 		while (parent->GetPacketWithAck(buf_str, true, false)) {
@@ -233,7 +301,6 @@ void GDBThread::ReceiveThread::run(){
 			unsigned int len = buf_str.length();
 
 			if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
-				cout << "gdbThread:: Receive TERMINATE" << endl;
 
 				DBGData *request = new DBGData(DBGData::TERMINATE);
 				dataQueue->add(request);
@@ -463,7 +530,7 @@ void GDBThread::ReceiveThread::run(){
 
 												DBGData *request;
 												if (name.compare("*") == 0) {
-													request = request = new DBGData(DBGData::QUERY_SYMBOL_READ_ALL);
+													request = new DBGData(DBGData::QUERY_SYMBOL_READ_ALL);
 												} else {
 													request = new DBGData(DBGData::QUERY_SYMBOL_READ);
 													request->addAttribute(DBGData::NAME_ATTR, name);
@@ -531,14 +598,6 @@ void GDBThread::ReceiveThread::run(){
 			}
 		}
 
-//		parent->unlockSocket();
-//
-//#ifdef WIN32
-//		Sleep(1);
-//#else
-//		usleep(1000);
-//#endif
-
 	}
 
 }
@@ -549,8 +608,8 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 	// qRcmd,cmd;var_name[:value]{;var_name[:value]}
 
-	int start_index = 0;
-	int end_index = command.find(';', start_index);
+	unsigned int start_index = 0;
+	unsigned int end_index = command.find(';', start_index);
 	string cmdPrefix = command.substr(start_index, end_index-start_index);
 
 	start_index = end_index+1;
@@ -654,7 +713,7 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 		unsigned int separator_index = command.find_first_of(':');
 		string cmdPrefix;
 
-		if (separator_index == static_cast<unsigned int>(string::npos)) {
+		if (separator_index == string::npos) {
 			cmdPrefix = command;
 		} else {
 			cmdPrefix = command.substr(0, separator_index);
@@ -677,7 +736,7 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			separator_index = str.find_first_of(':');
 			string name;
-			if (separator_index == static_cast<unsigned int>(string::npos)) {	  // parameter read request
+			if (separator_index == string::npos) {	  // parameter read request
 				name = str;
 			} else {		  // parameter write request
 				name = str.substr(0, separator_index);
@@ -769,10 +828,8 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			DBGData *request = new DBGData(DBGData::QUERY_PHYSICAL_ADDRESS);
 
-			long logical_address;
-
-			int start_index = 0;
-			int end_index = command.find(':', start_index);
+			unsigned int start_index = 0;
+			unsigned int end_index = command.find(':', start_index);
 			if(end_index != string::npos) {
 
 				string cmd = command.substr(start_index, end_index-start_index);
@@ -792,10 +849,8 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			DBGData *request = new DBGData(DBGData::QUERY_STRUCTURED_ADDRESS);
 
-			long logical_address;
-
-			int start_index = 0;
-			int end_index = command.find(':', start_index);
+			unsigned int start_index = 0;
+			unsigned int end_index = command.find(':', start_index);
 			if(end_index != string::npos) {
 
 				string cmd = command.substr(start_index, end_index-start_index);
@@ -815,8 +870,8 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 			// qRcmd,srcaddr:filename;lineno;colno
 			DBGData *request = new DBGData(DBGData::QUERY_SRCADDR);
 
-			int start_index = separator_index + 1;
-			int end_index = command.find(';');
+			unsigned int start_index = separator_index + 1;
+			unsigned int end_index = command.find(';');
 			if(end_index != string::npos) {
 				string source_filename = command.substr(start_index, end_index-start_index);
 				request->addAttribute(DBGData::FILE_NAME_ATTR, source_filename);
@@ -865,16 +920,21 @@ GDBThread::SendThread::~SendThread() {}
 
 void GDBThread::SendThread::run(){
 
-//	while (!parent->isTerminated()) {
-	while (!parent->isTerminated() && !isTerminated()) {
+	while (!isTerminated()) {
 
-		DBGData* response = dataQueue->next();
+		DBGData* response = NULL;
+		if (!dataQueue->next(response)) { this->stop(); continue; }
 
 		switch (response->getCommand()) {
 			case DBGData::DBG_OK_RESPONSE: {
 				bool result = parent->OutputTextWithAck("OK", 2, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 			} break;
@@ -883,6 +943,11 @@ void GDBThread::SendThread::run(){
 
 				if (response) { delete response; response = NULL; }
 
+				if (!result) {
+					parent->stop();
+					break;
+				}
+
 				continue;
 			} break;
 			case DBGData::DBG_ERROR_MALFORMED_REQUEST: {
@@ -890,12 +955,22 @@ void GDBThread::SendThread::run(){
 
 				if (response) { delete response; response = NULL; }
 
+				if (!result) {
+					parent->stop();
+					break;
+				}
+
 				continue;
 			} break;
 			case DBGData::DBG_ERROR_READING_DATA_EPERM: {
 				bool result = parent->OutputTextWithAck("E01", 3, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 			} break;
@@ -908,11 +983,16 @@ void GDBThread::SendThread::run(){
 				continue;
 			} break;
 			case DBGData::DBG_PROCESS_EXIT: {
-				parent->PutPacketWithAck("W00", false);
+				bool result = parent->PutPacketWithAck("W00", false);
 
 				parent->stop();
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -920,9 +1000,14 @@ void GDBThread::SendThread::run(){
 			case DBGData::DBG_REPORT_STOP: {
 				string packet = "S" + response->getAttribute(DBGData::VALUE_ATTR);
 
-				parent->PutPacketWithAck(packet, false);
+				bool result = parent->PutPacketWithAck(packet, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -930,9 +1015,14 @@ void GDBThread::SendThread::run(){
 			case DBGData::DBG_REPORT_EXTENDED_STOP: {
 				string packet("T05");
 
-				parent->PutPacketWithAck(packet, false);
+				bool result = parent->PutPacketWithAck(packet, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -950,9 +1040,14 @@ void GDBThread::SendThread::run(){
 
 				sstr.str(std::string());
 
-				parent->PutPacketWithAck(packet, false);
+				bool result = parent->PutPacketWithAck(packet, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -970,9 +1065,14 @@ void GDBThread::SendThread::run(){
 
 				sstr.str(std::string());
 
-				parent->PutPacketWithAck(packet, false);
+				bool result = parent->PutPacketWithAck(packet, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -983,11 +1083,11 @@ void GDBThread::SendThread::run(){
 
 				if (response) { delete response; response = NULL; }
 
-//				if(!result)
-//				{
-//					Object::Stop(0);
-//					return (DebugControl<ADDRESS>::DBG_KILL);
-//				}
+				if(!result)
+				{
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1015,7 +1115,7 @@ void GDBThread::SendThread::run(){
 				if (response) { delete response; response = NULL; }
 
 				if (!result) {
-					exit(-1);
+					parent->stop();
 					break;
 				}
 
@@ -1047,18 +1147,28 @@ void GDBThread::SendThread::run(){
 			} break;
 			case DBGData::QUERY_SYMBOL: {
 				string packet = "qSymbol:";
-				parent->PutPacketWithAck(packet, false);
+				bool result = parent->PutPacketWithAck(packet, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
 			} break;
 			case DBGData::DBG_READ_MEMORY: {
 				string packet = response->getAttribute(DBGData::VALUE_ATTR);
-				parent->PutPacketWithAck(packet, false);
+				bool result = parent->PutPacketWithAck(packet, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1086,16 +1196,21 @@ void GDBThread::SendThread::run(){
 
 				std::map<std::string, std::string> attributes = response->getAttributes();
 
-				parent->PutPacketWithAck(stringify(attributes.size()), false);
+				bool result = parent->PutPacketWithAck(stringify(attributes.size()), false);
 
-				for (std::map<std::string, std::string>::iterator it=attributes.begin(); it!=attributes.end(); ++it) {
+				for (std::map<std::string, std::string>::iterator it=attributes.begin(); (it!=attributes.end()) && result; ++it) {
 
 					string str = it->second;
 
-					parent->OutputTextWithAck(str.c_str(), str.size(), false);
+					result = parent->OutputTextWithAck(str.c_str(), str.size(), false);
 				}
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1103,9 +1218,14 @@ void GDBThread::SendThread::run(){
 			case DBGData::QUERY_PARAMETER: {
 
 				std::string value = response->getAttribute(DBGData::VALUE_ATTR);
-				parent->OutputTextWithAck(value.c_str(), value.size(), false);
+				bool result = parent->OutputTextWithAck(value.c_str(), value.size(), false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1120,16 +1240,21 @@ void GDBThread::SendThread::run(){
 
 				std::map<std::string, std::string> attributes = response->getAttributes();
 
-				parent->PutPacketWithAck(stringify(attributes.size()), false);
+				bool result = parent->PutPacketWithAck(stringify(attributes.size()), false);
 
-				for (std::map<std::string, std::string>::iterator it=attributes.begin(); it!=attributes.end(); ++it) {
+				for (std::map<std::string, std::string>::iterator it=attributes.begin(); (it!=attributes.end()) && result; ++it) {
 
 					string str = it->second;
 
-					parent->OutputTextWithAck(str.c_str(), str.size(), false);
+					result = parent->OutputTextWithAck(str.c_str(), str.size(), false);
 				}
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1137,25 +1262,35 @@ void GDBThread::SendThread::run(){
 			case DBGData::QUERY_DISASM: {
 				std::map<std::string, std::string> attributes = response->getAttributes();
 
-				parent->PutPacketWithAck(stringify(attributes.size()), false);
+				bool result = parent->PutPacketWithAck(stringify(attributes.size()), false);
 
-				for (std::map<std::string, std::string>::iterator it=attributes.begin(); it!=attributes.end(); ++it) {
+				for (std::map<std::string, std::string>::iterator it=attributes.begin(); (it!=attributes.end()) && result; ++it) {
 
 					string str = it->second;
 
-					parent->OutputTextWithAck(str.c_str(), str.size(), false);
+					result = parent->OutputTextWithAck(str.c_str(), str.size(), false);
 				}
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
 			} break;
 			case DBGData::QUERY_TIME: {
 
-				parent->PutPacketWithAck(stringify(response->getSimTime()), false);
+				bool result = parent->PutPacketWithAck(stringify(response->getSimTime()), false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1163,9 +1298,14 @@ void GDBThread::SendThread::run(){
 			case DBGData::QUERY_ENDIAN: {
 				string endian = response->getAttribute(DBGData::VALUE_ATTR);
 
-				parent->PutPacketWithAck(endian, false);
+				bool result = parent->PutPacketWithAck(endian, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1173,9 +1313,14 @@ void GDBThread::SendThread::run(){
 			case DBGData::QUERY_REGISTERS: {
 				string registers = response->getAttribute(DBGData::VALUE_ATTR);
 
-				parent->PutPacketWithAck(registers, false);
+				bool result = parent->PutPacketWithAck(registers, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1183,9 +1328,14 @@ void GDBThread::SendThread::run(){
 			case DBGData::QUERY_STACK: {
 				string stack = response->getAttribute(DBGData::VALUE_ATTR);
 
-				parent->OutputTextWithAck(stack.c_str(), stack.length(), false);
+				bool result = parent->OutputTextWithAck(stack.c_str(), stack.length(), false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1193,9 +1343,14 @@ void GDBThread::SendThread::run(){
 			case DBGData::QUERY_PHYSICAL_ADDRESS: {
 				string address = response->getAttribute(DBGData::ADDRESS_ATTR);
 
-				parent->PutPacketWithAck(address, false);
+				bool result = parent->PutPacketWithAck(address, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1203,9 +1358,14 @@ void GDBThread::SendThread::run(){
 			case DBGData::QUERY_STRUCTURED_ADDRESS: {
 				string address = response->getAttribute(DBGData::ADDRESS_ATTR);
 
-				parent->PutPacketWithAck(address, false);
+				bool result = parent->PutPacketWithAck(address, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1213,9 +1373,14 @@ void GDBThread::SendThread::run(){
 			case DBGData::QUERY_SRCADDR: {
 				string address = response->getAttribute(DBGData::ADDRESS_ATTR);
 
-				parent->PutPacketWithAck(address, false);
+				bool result = parent->PutPacketWithAck(address, false);
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 
@@ -1237,11 +1402,16 @@ void GDBThread::SendThread::run(){
 
 				string str = sstr.str();
 
-				parent->OutputTextWithAck(str.c_str(), str.size(), false);
+				bool result = parent->OutputTextWithAck(str.c_str(), str.size(), false);
 
 				sstr.str(std::string());
 
 				if (response) { delete response; response = NULL; }
+
+				if (!result) {
+					parent->stop();
+					break;
+				}
 
 				continue;
 

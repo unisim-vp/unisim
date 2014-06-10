@@ -70,7 +70,6 @@ CPU::CPU(const char *name, Object *parent):
 	unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent),
 	unisim::kernel::service::Client<SymbolTableLookup<physical_address_t> >(name, parent),
 	unisim::kernel::service::Client<TrapReporting>(name, parent),
-	state(CPU::RUNNING),
 	queueCurrentAddress(0xFFFE),
 	queueFirst(-1),
 	queueNElement(0),
@@ -100,6 +99,10 @@ CPU::CPU(const char *name, Object *parent):
 	param_verbose_exception("verbose-exception", this, verbose_exception),
 	trace_enable(false),
 	param_trace_enable("trace-enabled", this, trace_enable),
+	periodic_trap(-1),
+	param_periodic_trap("periodic-trap", this, periodic_trap),
+
+
 	requires_memory_access_reporting(false),
 	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
 	requires_finished_instruction_reporting(false),
@@ -116,6 +119,7 @@ CPU::CPU(const char *name, Object *parent):
 	mpuAccessError_interrupt(false),
 	syscall_interrupt(false),
 	spurious_interrupt(false),
+	state(CPU::RUNNING),
 	instruction_counter(0),
 	cycles_counter(0),
 	data_load_counter(0),
@@ -125,10 +129,8 @@ CPU::CPU(const char *name, Object *parent):
 	stat_cycles_counter("cycles-counter", this, cycles_counter),
 	stat_load_counter("data-load-counter", this, data_load_counter),
 	stat_store_counter("data-store-counter", this, data_store_counter),
-	param_max_inst("max-inst",this,max_inst),
 
-	periodic_trap(-1),
-	param_periodic_trap("periodic-trap", this, periodic_trap)
+	param_max_inst("max-inst",this,max_inst)
 
 
 {
@@ -472,7 +474,7 @@ uint8_t CPU::step()
 			throw AsynchronousException();
 		}
 		else if (state == STOP) {
-			reportTrap();
+			reportTrap("CPU is in STOP mode");
 		}
 
 	}

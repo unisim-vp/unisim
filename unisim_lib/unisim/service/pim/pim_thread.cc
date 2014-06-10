@@ -45,14 +45,13 @@ bool PIMThread::UpdateTimeRatio() {
 }
 
 PIMThread::PIMThread(const char *_name, Object *_parent) :
-	SocketThread()
+	 Object(_name, _parent)
+	, SocketThread()
 	, VariableBaseListener()
-	, Object(_name, _parent)
-
-	, gdbThread(NULL)
 
 	, name(string(_name))
 	, last_time_ratio(-1)
+	, gdbThread(NULL)
 
 {
 
@@ -113,7 +112,7 @@ void PIMThread::run(){
 			if (request->getCommand() == DBGData::QUERY_VAR_LISTEN) {
 
 				string targetVar = request->getSlave();
-				for (int i=0; i < simulator_variables.size(); i++) {
+				for (unsigned int i=0; i < simulator_variables.size(); i++) {
 					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 						simulator_variables[i]->AddListener(this);
 						break;
@@ -124,7 +123,7 @@ void PIMThread::run(){
 
 				string targetVar = request->getSlave();
 
-				for (int i=0; i < simulator_variables.size(); i++) {
+				for (unsigned int i=0; i < simulator_variables.size(); i++) {
 
 					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
@@ -139,7 +138,7 @@ void PIMThread::run(){
 
 				string targetVar = request->getSlave();
 
-				for (int i=0; i < simulator_variables.size(); i++) {
+				for (unsigned int i=0; i < simulator_variables.size(); i++) {
 
 					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
@@ -184,7 +183,7 @@ void PIMThread::run(){
 
 				string value = request->getAttribute("value");
 
-				for (int i=0; i < simulator_variables.size(); i++) {
+				for (unsigned int i=0; i < simulator_variables.size(); i++) {
 
 					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 

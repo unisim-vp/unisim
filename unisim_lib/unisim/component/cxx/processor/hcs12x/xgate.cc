@@ -52,18 +52,18 @@ using unisim::util::debug::SimpleRegister;
 
 XGATE::XGATE(const char *name, Object *parent):
 	Object(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Client<DebugControl<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
+	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent)
 	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Client<SymbolTableLookup<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Client<TrapReporting>(name, parent)
 
 	, registers_export("registers_export", this)
-	, memory_access_reporting_control_export("memory_access_reporting_control_export", this)
 	, memory_export("memory_export", this)
+	, memory_access_reporting_control_export("memory_access_reporting_control_export", this)
 	, debug_control_import("debug_control_import", this)
 	, memory_access_reporting_import("memory_access_reporting_import", this)
 	, memory_import("memory_import", this)
@@ -76,20 +76,6 @@ XGATE::XGATE(const char *name, Object *parent):
 	, bus_cycle_time()
 	, cpu_cycle()
 	, bus_cycle()
-	, xgate_enabled(false)
-	, stop_current_thread(false)
-	, state(IDLE)
-	, mode(NORMAL)
-	, currentThreadTerminated(true)
-
-	, xgmctl_register(0x0000)
-	, xgispsel_register(0x00)
-	, xgswt_register(0x0000)
-	, xgsem_register(0x0000)
-	, currentRegisterBank(&registerBank[0])
-
-	, isPendingThread(false)
-	, pendingThreadRegisterBank(0)
 
 	, verbose_all(false)
 	, param_verbose_all("verbose-all", this, verbose_all)
@@ -115,21 +101,33 @@ XGATE::XGATE(const char *name, Object *parent):
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled, "")
 
+	, periodic_trap(-1)
+	, param_periodic_trap("periodic-trap", this, periodic_trap)
+
+	, version("V2")
+	, param_version("version", this, version, "XGATE version. Supported are V2 and V3. Default is V2")
+
 	, baseAddress(0x0380)
 	, param_baseAddress("base-address", this, baseAddress, "XGATE base Address")
 
 	, param_software_channel_id("software_channel_id", this, sofwtare_channel_id, XGATE_SIZE, "XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.")
+
+	, xgate_enabled(false)
+	, stop_current_thread(false)
+	, state(IDLE)
+	, mode(NORMAL)
+
+	, currentThreadTerminated(true)
+
+	, currentRegisterBank(&registerBank[0])
+	, isPendingThread(false)
+	, pendingThreadRegisterBank(0)
 
 	, interrupt_software_error(0x62)
 	, param_interrupt_software_error("software-error-interrupt", this, interrupt_software_error, "XGATE Software error interrupt")
 
 	, max_inst((uint64_t) -1)
 	, param_max_inst("max-inst", this, max_inst)
-	, periodic_trap(-1)
-	, param_periodic_trap("periodic-trap", this, periodic_trap)
-
-	, version("V2")
-	, param_version("version", this, version, "XGATE version. Supported are V2 and V3. Default is V2")
 
 	, instruction_counter(0)
 	, stat_instruction_counter("instruction-counter", this, instruction_counter)
@@ -139,6 +137,13 @@ XGATE::XGATE(const char *name, Object *parent):
 	, stat_load_counter("data-load-counter", this, data_load_counter)
 	, data_store_counter(0)
 	, stat_store_counter("data-store-counter", this, data_store_counter)
+
+	, xgmctl_register(0x0000)
+	, xgswt_register(0x0000)
+	, xgsem_register(0x0000)
+	, xgispsel_register(0x00)
+
+
 
 {
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -1299,7 +1304,6 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			 */
 			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 			uint16_t mask = val >> 8;
-			uint16_t old_xgswt_register = xgswt_register;
 
 			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {

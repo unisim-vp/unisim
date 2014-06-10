@@ -153,16 +153,18 @@ public:
 	static const uint8_t PITLD7	= 0x24; // 2 bytes
 	static const uint8_t PITCNT7	= 0x26; // 2 bytes
 
+	static const unsigned int REGISTERS_BANK_SIZE = 40;
+
 	ServiceImport<TrapReporting > trap_reporting_import;
+
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
+	ServiceExport<Registers> registers_export;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
 	tlm_utils::simple_target_socket<S12PIT24B> slave_socket;
 	tlm_utils::simple_target_socket<S12PIT24B> bus_clock_socket;
-
-	ServiceExport<Memory<physical_address_t> > memory_export;
-	ServiceImport<Memory<physical_address_t> > memory_import;
-	ServiceExport<Registers> registers_export;
 
 	S12PIT24B(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12PIT24B();

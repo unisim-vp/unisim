@@ -387,6 +387,7 @@ const char *VariableBase::GetTypeName() const
 		case VAR_STATISTIC: return "statistic";
 		case VAR_REGISTER: return "register";
 		case VAR_FORMULA: return "formula";
+		case VAR_SIGNAL: return "signal";
 	}
 	return "invalid";
 }

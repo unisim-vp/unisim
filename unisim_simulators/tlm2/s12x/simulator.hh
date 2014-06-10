@@ -263,12 +263,13 @@ private:
 	unisim::service::time::host_time::HostTime *host_time;
 
 	bool enable_pim_server;
-	bool enable_gdb_server;
-	bool enable_inline_debugger;
-	string filename;
 	Parameter<bool> param_enable_pim_server;
+	bool enable_gdb_server;
 	Parameter<bool> param_enable_gdb_server;
+	bool enable_inline_debugger;
 	Parameter<bool> param_enable_inline_debugger;
+
+	string filename;
 
 	bool sci_enable_telnet;
 	Parameter<bool>  param_sci_enable_telnet;
@@ -284,10 +285,10 @@ private:
 	bool isS19;
 
 	bool dump_parameters;
-	bool dump_formulas;
-	bool dump_statistics;
 	Parameter<bool> param_dump_parameters;
+	bool dump_formulas;
 	Parameter<bool> param_dump_formulas;
+	bool dump_statistics;
 	Parameter<bool> param_dump_statistics;
 
 	enum {DATA_LOAD_RATIO, DATA_STORE_RATIO} ReadBackOffsets;

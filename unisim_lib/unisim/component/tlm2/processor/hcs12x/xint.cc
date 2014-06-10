@@ -343,12 +343,11 @@ void XINT::run()
 		} while(payload);
 
 		if (found_cpu) {
-			tlm_sync_enum ret = toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+			toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
 		}
 
 		if (found_xgate) {
-			tlm_sync_enum ret = toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
-
+			toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
 		}
 
 		trans->release();

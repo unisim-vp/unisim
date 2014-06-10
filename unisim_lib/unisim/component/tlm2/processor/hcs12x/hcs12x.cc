@@ -59,9 +59,10 @@ HCS12X(const sc_module_name& name, S12XMMC *_mmc, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 	, CPU(name, parent)
-	, mmc(_mmc)
 
 	, xint_interrupt_request("interrupt_request")
+
+	, mmc(_mmc)
 
 	, cpu_cycle_time()
 	, bus_cycle_time()
@@ -138,7 +139,7 @@ void HCS12X ::sleep() {
 	 * The simulation control is done by the debugger engine.
 	 */
 
-	reportTrap();
+	reportTrap("CPU enter STOP mode");
 
 //	wait(irq_event | reset_event);
 

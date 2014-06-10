@@ -26,21 +26,12 @@ S12PIT24B<PIT_SIZE>::S12PIT24B(const sc_module_name& name, Object *parent) :
 
 	, trap_reporting_import("trap_reporting_import", this)
 
-	, bus_clock_socket("bus_clock_socket")
-	, slave_socket("slave_socket")
-
 	, memory_export("memory_export", this)
 	, memory_import("memory_import", this)
 	, registers_export("registers_export", this)
 
-	, pitcflmt_register(0x00)
-	, pitflt_register(0x00)
-	, pitce_register(0x00)
-	, pitmux_register(0x00)
-	, pitinte_register(0x00)
-	, pittf_register(0x00)
-	, pitmtld0_register(0x00)
-	, pitmtld1_register(0x0000)
+	, slave_socket("slave_socket")
+	, bus_clock_socket("bus_clock_socket")
 
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
@@ -52,6 +43,15 @@ S12PIT24B<PIT_SIZE>::S12PIT24B(const sc_module_name& name, Object *parent) :
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
+
+	, pitcflmt_register(0x00)
+	, pitflt_register(0x00)
+	, pitce_register(0x00)
+	, pitmux_register(0x00)
+	, pitinte_register(0x00)
+	, pittf_register(0x00)
+	, pitmtld0_register(0x00)
+	, pitmtld1_register(0x0000)
 
 {
 
@@ -143,7 +143,7 @@ void S12PIT24B<PIT_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& 
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 40))) {
+	if ((address >= baseAddress) && (address < (baseAddress + REGISTERS_BANK_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -568,7 +568,7 @@ void S12PIT24B<PIT_SIZE>::Reset() {
 template <uint8_t PIT_SIZE>
 bool S12PIT24B<PIT_SIZE>::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+40))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress+REGISTERS_BANK_SIZE))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -604,7 +604,7 @@ bool S12PIT24B<PIT_SIZE>::ReadMemory(physical_address_t addr, void *buffer, uint
 template <uint8_t PIT_SIZE>
 bool S12PIT24B<PIT_SIZE>::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+40))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress+REGISTERS_BANK_SIZE))) {
 
 		if (size == 0) {
 			return (true);
@@ -619,31 +619,31 @@ bool S12PIT24B<PIT_SIZE>::WriteMemory(physical_address_t addr, const void *buffe
 		} break;
 		case PITFLT: {
 			uint8_t val = *((uint8_t *) buffer);
-			*((uint8_t *) buffer) = pitflt_register; // 1 byte
+			pitflt_register = val; // 1 byte
 		} break;
 		case PITCE: {
 			uint8_t val = *((uint8_t *) buffer);
-			*((uint8_t *) buffer) = pitce_register; // 1 byte
+			pitce_register = val; // 1 byte
 		} break;
 		case PITMUX: {
 			uint8_t val = *((uint8_t *) buffer);
-			*((uint8_t *) buffer) = pitmux_register; // 1 byte
+			pitmux_register = val; // 1 byte
 		} break;
 		case PITINTE: {
 			uint8_t val = *((uint8_t *) buffer);
-			*((uint8_t *) buffer) = pitinte_register; // 1 byte
+			pitinte_register = val; // 1 byte
 		} break;
 		case PITTF: {
 			uint8_t val = *((uint8_t *) buffer);
-			*((uint8_t *) buffer) = pittf_register; // 1 byte
+			pittf_register = val; // 1 byte
 		} break;
 		case PITMTLD0: {
 			uint8_t val = *((uint8_t *) buffer);
-			*((uint8_t *) buffer) = pitmtld0_register; // 1 byte
+			pitmtld0_register = val; // 1 byte
 		} break;
 		case PITMTLD1: {
 			uint8_t val = *((uint8_t *) buffer);
-			*((uint8_t *) buffer) = pitmtld1_register; // 1 byte
+			pitmtld1_register = val; // 1 byte
 		} break;
 		default: {
 			if ((offset >= PITLD0) && (offset < (PITLD0 + PIT_SIZE*4))) {

@@ -504,6 +504,8 @@ private:
 		}
 
 	private:
+		ECT	*ectParent;
+
 		sc_event edge_event;
 		sc_event shared_edge_event;
 
@@ -511,8 +513,6 @@ private:
 		uint8_t iocMask;
 		uint8_t valideEdge;
 		uint8_t outputAction;
-
-		ECT	*ectParent;
 
 		uint16_t* tc_register_ptr;
 		uint16_t* tch_register_ptr;

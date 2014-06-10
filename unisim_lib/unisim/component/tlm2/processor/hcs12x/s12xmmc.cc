@@ -50,9 +50,9 @@ S12XMMC::S12XMMC(const sc_module_name& name, S12MPU_IF *_mpu, Object *parent) :
 	, sc_module(name)
 	, MMC(name, _mpu, parent)
 	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, init_socket("init-socket")
 
 	, trap_reporting_import("trap_reporting_import", this)
+	, init_socket("init-socket")
 
 	, busSemaphore()
 	, busSemaphore_event()
@@ -80,7 +80,7 @@ bool S12XMMC::accessBus(physical_address_t addr, MMC_DATA *buffer, tlm::tlm_comm
 
 	bool find = false;
 
-	for (uint16_t i; i <memoryMap.size(); i++) {
+	for (uint16_t i=0; i <memoryMap.size(); i++) {
 		if ((addr >= memoryMap[i]->start_address) && (addr <= memoryMap[i]->end_address)) {
 			find = true;
 
@@ -109,7 +109,10 @@ bool S12XMMC::accessBus(physical_address_t addr, MMC_DATA *buffer, tlm::tlm_comm
 			mmc_trans->set_address( addr & 0x7FFFFF);
 
 			init_socket[memoryMap[i]->module_index]->b_transport( *mmc_trans, tlm2_btrans_time );
-			tlm::tlm_response_status response = mmc_trans->get_response_status();
+
+//			tlm::tlm_response_status response = mmc_trans->get_response_status();
+
+			if (mmc_trans->is_response_error()) { return (false); }
 
 			mmc_trans->release();
 
@@ -176,7 +179,7 @@ void S12XMMC::xgate_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
 				}
 
 				if (trap_reporting_import && debug_enabled) {
-					trap_reporting_import->ReportTrap();
+					trap_reporting_import->ReportTrap(*this);
 				}
 			}
 		}
@@ -239,7 +242,7 @@ void S12XMMC::cpu_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
 				}
 
 //				if (trap_reporting_import) {
-//					trap_reporting_import->ReportTrap();
+//					trap_reporting_import->ReportTrap(*this);
 //				}
 			}
 		}
@@ -254,7 +257,7 @@ bool S12XMMC::BeginSetup() {
 	vector<string> result;
 	stringSplit(memoryMapStr, ";", result);
 	vector<string> oneMemoryMapEntrySegments;
-	for ( int i = 0; i < result.size(); ++i) {
+	for (unsigned int i = 0; i < result.size(); i++) {
 		stringSplit(result[i], ",", oneMemoryMapEntrySegments);
 		MemoryMapEntry *oneMemoryMapEntry = new MemoryMapEntry();
 		std::stringstream ss;

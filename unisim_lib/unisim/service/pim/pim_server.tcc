@@ -80,7 +80,7 @@ using std::endl;
 using std::hex;
 using std::dec;
 using std::list;
-//using unisim::service::interfaces::operator<<;
+
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;
@@ -99,19 +99,20 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	: Object(_name, _parent, "PIM Server")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
-	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<Memory<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<Disassembly<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<Registers>(_name, _parent)
+	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
+	, VariableBaseListener()
 
 	, debug_control_export("debug-control-export", this)
-	, debug_event_listener_export("debug-event-listener-export", this)
-	, debug_event_trigger_import("debug-event-trigger-import", this)
 	, memory_access_reporting_export("memory-access-reporting-export", this)
 	, trap_reporting_export("trap-reporting-export", this)
+	, debug_event_listener_export("debug-event-listener-export", this)
+	, debug_event_trigger_import("debug-event-trigger-import", this)
 	, memory_access_reporting_control_import("memory_access_reporting_control_import", this)
 	, memory_import("memory-import", this)
 	, registers_import("cpu-registers-import", this)
@@ -120,10 +121,8 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, stmt_lookup_import("stmt-lookup-import", this)
 
 	, socketServer(NULL)
-	, monitorThread(NULL)
-	, pimServerThread(NULL)
-
 	, gdbThread(NULL)
+	, monitorThread(NULL)
 
 	, logger(*this)
 	, tcp_port(12345)
@@ -165,15 +164,9 @@ template <class ADDRESS>
 PIMServer<ADDRESS>::~PIMServer()
 {
 
-	if (gdbThread) {
-
-		ReportProgramExit();
-
-		delete gdbThread; gdbThread = NULL;
-	}
+	if (gdbThread) { delete gdbThread; gdbThread = NULL; }
 
 	if (monitorThread) { delete monitorThread; monitorThread = NULL; }
-	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
 
 	if (socketServer) { delete socketServer; socketServer = NULL;}
 
@@ -309,9 +302,11 @@ bool PIMServer<ADDRESS>::EndSetup() {
 template <class ADDRESS>
 void PIMServer<ADDRESS>::Stop(int exit_status) {
 
-	if (socketServer) { socketServer->stop();}
+	ReportProgramExit();
+
+	if (gdbThread) { gdbThread->stop();}
 	if (monitorThread) { monitorThread->stop();}
-	if (pimServerThread) { pimServerThread->stop();}
+	if (socketServer) { socketServer->stop();}
 
 }
 
@@ -388,8 +383,6 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 		}
 
 		counter = period;
-
-		char c;
 
 		if(gdbThread->isData())
 		{
@@ -912,7 +905,6 @@ bool PIMServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 
 	string packet;
 	ADDRESS val = 0;
-	unsigned int pos = 0;
 
 	if (hexString2Number(hex, &val, (simulator_registers[regnum])->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
 		*(simulator_registers[regnum]) = val;
@@ -1003,11 +995,11 @@ bool PIMServer<ADDRESS>::ReportProgramExit()
 	DBGData* response = new DBGData(DBGData::DBG_PROCESS_EXIT);
 	gdbThread->sendData(response);
 
-#ifdef WIN32
-			Sleep(1);
-#else
-			usleep(1000);
-#endif
+//#ifdef WIN32
+//			Sleep(1);
+//#else
+//			usleep(1000);
+//#endif
 
 	return true;
 }
@@ -1195,7 +1187,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 	if (request->getCommand() == DBGData::QUERY_VAR_LISTEN) {
 
 		string targetVar = request->getSlave();
-		for (int i=0; i < simulator_variables.size(); i++) {
+		for (unsigned int i=0; i < simulator_variables.size(); i++) {
 			if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 				simulator_variables[i]->AddListener(this);
 				break;
@@ -1206,7 +1198,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 		string targetVar = request->getSlave();
 
-		for (int i=0; i < simulator_variables.size(); i++) {
+		for (unsigned int i=0; i < simulator_variables.size(); i++) {
 
 			if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
@@ -1221,7 +1213,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 		string targetVar = request->getSlave();
 
-		for (int i=0; i < simulator_variables.size(); i++) {
+		for (unsigned int i=0; i < simulator_variables.size(); i++) {
 
 			if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
@@ -1266,7 +1258,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 		string value = request->getAttribute("value");
 
-		for (int i=0; i < simulator_variables.size(); i++) {
+		for (unsigned int i=0; i < simulator_variables.size(); i++) {
 
 			if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
@@ -1591,7 +1583,6 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 				sstr << hex << ":";
 
-				unsigned int i;
 				if(stmt_lookup_import)
 				{
 					stmt = stmt_lookup_import->FindStatement(mcuAddress);

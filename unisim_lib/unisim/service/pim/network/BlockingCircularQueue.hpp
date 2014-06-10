@@ -54,9 +54,9 @@ public:
 	void lock() { pthread_mutex_lock( &queue_mutex ); };
 	void unlock() { pthread_mutex_unlock( &queue_mutex ); };
 
-	void add(T data) {
+	bool add(T data) {
 
-		if (!alive) return;
+		if (!alive) { return (false); }
 
 	    pthread_mutex_lock( &condition_mutex );
 
@@ -65,24 +65,25 @@ public:
 			pthread_cond_wait( &condition_cond, &condition_mutex );
 		}
 
-		if (alive) {
-		    pthread_mutex_lock( &queue_mutex );
+		if (!alive) { return (false); }
 
-		    item[tail] = data;
-		    tail = (tail+1) % MAX_SIZE;
+	    pthread_mutex_lock( &queue_mutex );
 
-		    pthread_mutex_unlock( &queue_mutex );
+	    item[tail] = data;
+	    tail = (tail+1) % MAX_SIZE;
 
-		    pthread_cond_signal( &condition_cond );
-		}
+	    pthread_mutex_unlock( &queue_mutex );
+
+	    pthread_cond_signal( &condition_cond );
 
 	    pthread_mutex_unlock( &condition_mutex );
 
+	    return (true);
 	}
 
-	T next() {
+	bool next(T& temp) {
 
-		T temp = NULL;
+		if (!alive) { return (false); }
 
 		pthread_mutex_lock( &condition_mutex );
 		while( isEmpty() && alive)
@@ -90,21 +91,20 @@ public:
 			pthread_cond_wait( &condition_cond, &condition_mutex );
 		}
 
-		if (alive) {
-		    pthread_mutex_lock( &queue_mutex );
+		if (!alive) { return (false); }
 
-		    temp = item[head];
-		    head = (head+1)%MAX_SIZE;
+	    pthread_mutex_lock( &queue_mutex );
 
-		    pthread_mutex_unlock( &queue_mutex );
+	    temp = item[head];
+	    head = (head+1) % MAX_SIZE;
 
-		    pthread_cond_signal( &condition_cond );
+	    pthread_mutex_unlock( &queue_mutex );
 
-		}
+	    pthread_cond_signal( &condition_cond );
 
 		pthread_mutex_unlock( &condition_mutex );
 
-	    return (temp);
+	    return (true);
 	}
 
 	bool isEmpty() {
@@ -117,7 +117,7 @@ public:
 
 	    pthread_mutex_unlock( &queue_mutex );
 
-	    return result;
+	    return (result);
 	}
 
 	bool isFull() {
@@ -130,7 +130,7 @@ public:
 
 	    pthread_mutex_unlock( &queue_mutex );
 
-	    return result;
+	    return (result);
 	}
 
 	int size() {
@@ -143,7 +143,7 @@ public:
 
 	    pthread_mutex_unlock( &queue_mutex );
 
-	    return size;
+	    return (size);
 	}
 
 	T* getElements() {
@@ -170,8 +170,8 @@ protected:
 
 private:
 	T item[MAX_SIZE];
-    int head;
-    int tail;
+    unsigned int head;
+    unsigned int tail;
 
 	bool alive;
 

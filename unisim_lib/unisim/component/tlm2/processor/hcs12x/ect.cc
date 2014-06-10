@@ -90,12 +90,12 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
-	, portt_pin_reg("ioc", this, portt_pin, 8, "ECT pins")
-
 	, builtin_signal_generator(false)
 	, param_builtin_signal_generator("built-in-signal-generator-enable", this, builtin_signal_generator, "Use built-in signal generator or external instrument")
 	, signal_generator_period_int(500000)
 	, param_signal_generator_period("built-in-signal-generator-period", this, signal_generator_period_int, "Built-in Signal generator period in pico-seconds. Default 25000ps.")
+
+	, portt_pin_reg("ioc", this, portt_pin, 8, "ECT pins")
 
 	, prnt_write(false)
 	, icsys_write(false)
@@ -1112,9 +1112,10 @@ inline void ECT::computeDelayCounter() {
 }
 
 ECT::PulseAccumulator8Bit::PulseAccumulator8Bit(ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr) :
-	pacn_register_ptr(pacn_ptr)
+	  pacn_index(pacn_number)
+	, ectParent(parent)
+	, pacn_register_ptr(pacn_ptr)
 	, pah_register_ptr(pah_ptr)
-	, pacn_index(pacn_number)
 
 {
 
@@ -1150,11 +1151,11 @@ void ECT::PulseAccumulator8Bit::latchToHoldingRegisters() {
 }
 
 ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(const sc_module_name& name, ECT *parent, bool* pinLogic, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
-	sc_module(name)
+   	  sc_module(name)
 	, ectParent(parent)
+	, channelPinLogic(pinLogic)
 	, pacn_high_ptr(pacn_high)
 	, pacn_low_ptr(pacn_low)
-	, channelPinLogic(pinLogic)
 
 {
 
@@ -1322,12 +1323,18 @@ inline void ECT::latchToHoldingRegisters() {
 ECT::IOC_Channel_t::IOC_Channel_t(const sc_module_name& name, ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator8Bit* pc8bit) :
 	  sc_module(name)
 	, ectParent(parent)
+
+	, edge_event()
+	, shared_edge_event()
+
 	, ioc_index(index)
+	, valideEdge(1)
+	, outputAction(0)
+
 	, tc_register_ptr(tc_ptr)
 	, tch_register_ptr(tch_ptr)
 	, pulseAccumulator(pc8bit)
 	, channelPinLogic(pinLogic)
-	, edge_event()
 
 {
 
@@ -1709,8 +1716,6 @@ bool ECT::BeginSetup() {
 	unisim::kernel::service::Register<uint8_t> *paflg_var = new unisim::kernel::service::Register<uint8_t>("PAFLG", this, paflg_register, "Pulse Accumulator A Flag Register");
 	extended_registers_registry.push_back(paflg_var);
 	paflg_var->setCallBack(this, PAFLG, &CallBackObject::write, NULL);
-
-	uint8_t pacn_number;
 
 	for (uint8_t i=0; i<4; i++) {
 		sprintf(buf, "%s.PACN%d",sc_object::name(), i);
