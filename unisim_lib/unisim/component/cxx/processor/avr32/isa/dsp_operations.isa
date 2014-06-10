@@ -1,0 +1,870 @@
+//----------------------------------------------------------------------------------------------------
+
+//                                           DSP - OPERATIONS
+
+//----------------------------------------------------------------------------------------------------
+
+// ADDHH_W - add halfwords into word                         ?? without carry
+
+op addhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1110[4]:0b00[2]:x[1]:y[1]:rd[4])
+
+// X=t=0 high part ; X=b=1 low part
+
+
+addhh_w.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t op1,op2;
+	if(x==0){op1=SignExtend((x & 0xFFFF0000)>>16,16);}
+	else{op1=SignExtend(x & 0x0000FFFF,16);}
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=0;                                    
+	uint8_t carry_out;
+	
+	SignedAdd32(result,carry_out, overflow,sign,op1,op2,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0 && cpu->GetSR_Z());
+	cpu->SetSR_C(carry_out);
+
+	
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+addhh_w.disasm={
+
+	os << "addhh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
+}
+
+
+// MACHH_D - multiply halfwords and accumulate in doubleword
+
+op machh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0101[4]:0b10[2]:x[1]:y[1]:rd[4])
+
+machh_d.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t d=cpu->GetGPR(rd);
+	uint32_t d1=cpu->GetGPR(rd+1);
+	uint64_t op1,op2;
+	if(x==0){op1=SignExtend((x & 0xFFFF0000)>>16,16);}
+	else{op1=SignExtend(x & 0x0000FFFF,16);}
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	uint64_t result;
+	uint64_t acc = ((uint64_t)d1 << 32) | (d & 0xFFFF0000);
+	result = (((op1 * op2) & 0x00000000FFFFFFFF) + acc)<<16;
+
+	cpu->SetGPR(rd,result & 0x00000000FFFFFFFF);
+	cpu->SetGPR(rd+1,(result & 0xFFFFFFFF00000000)>>32);
+ 
+	return true;
+}
+
+machh_d.disasm={
+
+	os << "machh_d\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
+}
+
+// MACHH_W - multiply halfwords and accumulate in word
+
+op machh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0100[4]:0b10[2]:x[1]:y[1]:rd[4])
+
+machh_w.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t d=cpu->GetGPR(rd);
+	uint32_t op1,op2;
+	if(x==0){op1=SignExtend((x & 0xFFFF0000)>>16,16);}
+	else{op1=SignExtend(x & 0x0000FFFF,16);}
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	
+	uint32_t result = (op1 * op2) + d;
+
+	cpu->SetGPR(rd,result);
+ 
+	return true;
+}
+
+machh_w.disasm={
+
+	os << "machh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
+}
+
+
+//MACWH_D - multiply word with halfword and accumulate in doubleword
+
+op macwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1100[4]:0b100[3]:y[1]:rd[4])
+
+// y=t=0 high part ; y=b=1 low part
+
+macwh_d.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t d=cpu->GetGPR(rd);
+	uint32_t d1=cpu->GetGPR(rd+1);
+	uint64_t op1,op2;
+	op1=x;
+	if(y==0){op2=SignExtend((uint64_t)((y & 0xFFFF0000)>>16),16);}
+	else{op2=SignExtend((uint64_t)(y & 0x0000FFFF),16);}
+	uint64_t result;
+	uint64_t acc = ((uint64_t)d1 << 32) | (d & 0xFFFF0000);
+	result = (((op1 * op2) & 0x000000FFFFFFFFFF) + acc)<<16;
+
+	cpu->SetGPR(rd,result & 0x00000000FFFFFFFF);
+	cpu->SetGPR(rd+1,(result & 0xFFFFFFFF00000000)>>32);
+ 
+	return true;
+}
+
+macwh_d.disasm={
+
+	os << "macwh_d\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << ":<" << y << ">" << endl;
+}
+
+//MULHH_W - multiply halfword with halfword
+
+op mulhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b00000111[8]:0b10[2]:x[1]:y[1]:rd[4])
+
+mulhh_w.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t op1,op2;
+	if(x==0){op1=SignExtend((x & 0xFFFF0000)>>16,16);}
+	else{op1=SignExtend(x & 0x0000FFFF,16);}
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	
+	uint32_t result = (op1 * op2);
+
+	cpu->SetGPR(rd,result);
+ 
+	return true;
+}
+
+mulhh_w.disasm={
+
+	os << "mulhh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x <<">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
+}
+
+// MULWH_D - multiply word with halfword
+
+op mulwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1101[4]:0b100[3]:y[1]:rd[4])
+
+mulwh_d.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+
+	uint64_t op1,op2;
+	op1=SignExtend((uint64_t)x,32);
+	if(y==0){op2=SignExtend((uint64_t)((y & 0xFFFF0000)>>16),16);}
+	else{op2=SignExtend((uint64_t)(y & 0x0000FFFF),16);}
+	
+	uint64_t result = (op1 * op2) << 16;
+
+	cpu->SetGPR(rd,result & 0x00000000FFFFFFFF);
+	cpu->SetGPR(rd+1,(result & 0xFFFFFFFF00000000)>>32);
+ 
+	return true;
+}
+mulwh_d.disasm={
+
+	os << "mulwh_d\tr" << (unsigned int)rd << ",r" <<(unsigned int) rx << ",r" << (unsigned int)ry << ":<" << y << ">" << endl;
+}
+
+// MULNHH_W - multiply halword with negative halfword
+
+op mulnhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b00000001[8]:0b10[2]:x[1]:y[1]:rd[4])
+
+mulnhh_w.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t op1,op2;
+	if(x==0){op1=SignExtend((x & 0xFFFF0000)>>16,16);}
+	else{op1=SignExtend(x & 0x0000FFFF,16);}
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	
+	uint32_t result = -(op1 * op2);
+
+	cpu->SetGPR(rd,result);
+ 
+	return true;
+}
+mulnhh_w.disasm={
+
+	os << "mulnhh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x <<">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
+}
+
+//MULNWH_D - multiply word with negative halfword
+
+op mulnwh_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0010[4]:0b100[3]:y[1]:rd[4])
+
+mulnwh_d.execute={
+	
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+
+	uint64_t op1,op2;
+	op1=SignExtend((uint64_t)x,32);
+	if(y==0){op2=SignExtend((uint64_t)((y & 0xFFFF0000)>>16),16);}
+	else{op2=SignExtend((uint64_t)(y & 0x0000FFFF),16);}
+	
+	uint64_t result = -(op1 * op2) << 16;
+
+	cpu->SetGPR(rd,result & 0x00000000FFFFFFFF);
+	cpu->SetGPR(rd+1,(result & 0xFFFFFFFF00000000)>>32);
+ 
+	return true;
+}
+
+mulnwh_d.disasm={
+
+	os << "mulnwh_d\tr" << (unsigned int) rd << ",r" << (unsigned int)rx << ",r" <<(unsigned int) ry << ":<" << y << ">" << endl;
+}
+
+
+//SATADD_H - saturated add of halfwords
+
+op satadd_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00101100[8]:rd[4])
+
+satadd_h.execute={
+	
+	uint32_t x = cpu->GetGPR(rx);
+	uint32_t y = cpu->GetGPR(ry);
+	uint32_t d = cpu->GetGPR(rd); 
+	uint16_t temp;
+	
+	uint8_t q ;
+	uint8_t carry_in=0;
+	uint8_t carry_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	SignedAdd16(temp, carry_out, overflow, sign, (uint16_t)(x & 0x0000FFFF) , (uint16_t)(y & 0x0000FFFF), carry_in);
+	
+	uint8_t x15= (x >> 15) & 1;
+	uint8_t y15= (y >> 15) & 1;
+	uint8_t t15= (temp >> 15) & 1;
+	q  = (x15 && y15 && !t15) || (!x15 && !y15 && t15) || cpu->GetSR_Q();
+	uint32_t result;
+	if( ((x15 && y15 && !t15) || (!x15 && !y15 && t15))==1 )
+	{
+		if(x15 == 0) result = 0x00007FFF;
+		else result = 0xFFFF8000;
+	}
+	else result = SignExtend(((uint32_t)temp & 0x0000FFFF),16);
+
+	cpu->SetGPR(rd,result);
+
+	cpu->SetSR_Q(q);
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(d < 0);
+	cpu->SetSR_Z(d==0);
+	cpu->SetSR_C(0);
+
+	return true;
+}
+
+satadd_h.disasm={
+
+	os << "satadd_h\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
+}
+
+//SATADD_W - saturated add of words                  ?? sign add without carry
+
+op satadd_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00001100[8]:rd[4])
+
+satadd_w.execute={
+
+	uint32_t x = cpu->GetGPR(rx);
+	uint32_t y = cpu->GetGPR(ry);
+	uint32_t d = cpu->GetGPR(rd);  
+	uint32_t temp;
+	uint32_t result;
+	uint8_t q ;
+	uint8_t carry_in=0;
+	uint8_t carry_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	//SignedAdd32(temp, carry_out, overflow, sign, x,y, carry_in);
+	SignedSatAdd32(result, carry_out, overflow, sign, x,y, carry_in);
+	temp=result;
+	uint8_t x31= (x >> 31) & 1;
+	uint8_t y31= (y >> 31) & 1;
+	uint8_t t31= (temp >> 31) & 1;
+	q  = (x31 && y31 && !t31) || (!x31 && !y31 && t31) || cpu->GetSR_Q();
+	
+	/*if( ((x31 && y31 && !t31) || (!x31 && !y31 && t31))==1 )
+	{
+		if( ( x31 == 0 ) result = 0x7FFFFFFF;
+		else result = 0x80000000;
+	}
+	else result = temp;
+        */
+	cpu->SetGPR(rd,result);
+
+	cpu->SetSR_Q(q);
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(d < 0);
+	cpu->SetSR_Z(d==0);
+	cpu->SetSR_C(0);
+
+	return true;
+}
+
+satadd_w.disasm={
+
+	os << "satadd_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
+}
+
+//SATSUB_H - saturate subtract of halfwords
+
+op satsub_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00111100[8]:rd[4])
+
+satsub_h.execute={
+
+	uint32_t x = cpu->GetGPR(rx);
+	uint32_t y = cpu->GetGPR(ry); 
+	uint32_t d = cpu->GetGPR(rd); 
+	uint16_t temp;
+	
+	uint8_t q ;
+	uint8_t borrow_in=0;
+	uint8_t borrow_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	SignedSub16(temp, borrow_out, overflow, sign, (uint16_t)(x & 0x0000FFFF) , (uint16_t)(y & 0x0000FFFF), borrow_in);
+	
+	uint8_t x15= (x >> 15) & 1;
+	uint8_t y15= (y >> 15) & 1;
+	uint8_t t15= (temp >> 15) & 1;
+	q  = (x15 && y15 && !t15) || (!x15 && !y15 && t15) || cpu->GetSR_Q();
+	uint32_t result;
+	if( ((x15 && y15 && !t15) || (!x15 && !y15 && t15))==1 )
+	{
+		if( x15 == 0 ) result = 0x00007FFF;
+		else result = 0xFFFF8000;
+	}
+	else result = SignExtend(((uint32_t)temp & 0x0000FFFF),16);
+
+	cpu->SetGPR(rd,result);
+
+	cpu->SetSR_Q(q);
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(d < 0);
+	cpu->SetSR_Z(d==0);
+	cpu->SetSR_C(0);
+
+	return true;
+
+
+}
+
+satsub_h.disasm={
+
+	os << "satsub_h\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
+}
+
+//SATSUB_W_A saturate subtract of words
+
+op satsub_w_a(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00011100[8]:rd[4])
+
+satsub_w_a.execute={
+
+	uint32_t x = cpu->GetGPR(rx);
+	uint32_t y = cpu->GetGPR(ry); 
+	uint32_t d = cpu->GetGPR(rd); 
+	uint32_t temp;
+	
+	uint8_t q ;
+	uint8_t borrow_in=0;
+	uint8_t borrow_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	SignedSub32(temp, borrow_out, overflow, sign, x,y, borrow_in);
+	
+	uint8_t x31= (x >> 31) & 1;
+	uint8_t y31= (y >> 31) & 1;
+	uint8_t t31= (temp >> 31) & 1;
+	q  = (x31 && y31 && !t31) || (!x31 && !y31 && t31) || cpu->GetSR_Q();
+	uint32_t result;
+	if( ((x31 && y31 && !t31) || (!x31 && !y31 && t31))==1 )
+	{
+		if( x31 == 0 ) result = 0x7FFFFFFF;
+		else result = 0x80000000;
+	}
+	else result = temp;
+
+	cpu->SetGPR(rd,result);
+
+	cpu->SetSR_Q(q);
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(d < 0);
+	cpu->SetSR_Z(d==0);
+	cpu->SetSR_C(0);
+
+	return true;
+}
+
+satsub_w_a.disasm={
+
+	os << "satsub_w_a\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
+}
+
+//SATSUB_W_B
+
+op satsub_w_b(0b111[3]:rs[4]:0b01101[5]:rd[4]:><:imm16[16])
+
+satsub_w_b.execute={
+
+	uint32_t op1 = cpu->GetGPR(rs);
+	uint32_t op2 = SignExtend((uint32_t)imm16,16); 
+	uint32_t temp;
+	
+	uint8_t q;
+	uint8_t borrow_in=0;
+	uint8_t borrow_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	SignedSub32(temp, borrow_out, overflow, sign, op1,op2, borrow_in);
+	
+	uint8_t op1_31= (op1 >> 31) & 1;
+	uint8_t op2_31= (op2 >> 31) & 1;
+	uint8_t t31= (temp >> 31) & 1;
+	q  = (op1_31 && op2_31 && !t31) || (!op1_31 && !op2_31 && t31) || cpu->GetSR_Q();
+	uint32_t result;
+	if( ((op1_31 && op2_31 && !t31) || (!op1_31 && !op2_31 && t31))==1 )
+	{
+		if( op1_31 == 0 ) result = 0x7FFFFFFF;
+		else result = 0x80000000;
+	}
+	else result = temp;
+
+	cpu->SetGPR(rd,result);
+
+	cpu->SetSR_Q(q);
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(temp==0);
+	cpu->SetSR_C(0);
+
+	return true;
+}
+
+satsub_w_b.disasm={
+
+	os << "satsub_w_b\tr" << (unsigned int)rd << ",r" << (unsigned int)rs << ",0x" << std::hex<< (unsigned int)imm16 << endl;
+}
+
+//SATRNDS - saturate with rounding signed
+
+op satrnds(0b111[3]:0b1001[4]:0b11011[5]:rd[4]:><:0b0000[4]:0b00[2]:bp5[5]:sa5[5])
+
+satrnds.execute={
+	
+	uint32_t d = cpu->GetGPR(rd);
+	int32_t temp = d >> sa5;
+	uint32_t result;
+	bool sat=false;
+	if(sa5 != 0)
+	{
+		uint8_t rnd= (rd >> (sa5-1)) & 1;
+		temp= temp + rnd;
+	}
+	uint32_t mask = (1UL << bp5)-1; 
+	if( (temp == SignExtend((uint32_t)(temp & mask),(unsigned int)bp5)) || (bp5 == 0))
+	{
+		result = temp;
+	}
+	else
+	{
+		sat=true;
+		if( ((temp >> 31)&1) == 1 ) result = - (uint32_t)pow(2,(int)bp5-1);
+		else result = (uint32_t)pow(2,(int)bp5-1)-1;
+	}
+
+	cpu->SetGPR(rd,result);
+	if( (sat==true) || (cpu->GetSR_Q()==1)) cpu->SetSR_Q(1);
+	else cpu->SetSR_Q(0);
+
+	return true;
+}
+
+satrnds.disasm={
+	os << "satrnds\tr" << (unsigned int)rd  << ">>0x" <<std::hex << (unsigned int)sa5 << ",0x" <<std::hex <<(unsigned int) bp5 << endl; 
+}
+
+//SATRNDU - saturate with rounding unsigned
+
+op satrndu(0b111[3]:0b1001[4]:0b11011[5]:rd[4]:><:0b0000[4]:0b01[2]:bp5[5]:sa5[5])
+
+satrndu.execute={
+	
+	uint32_t d = cpu->GetGPR(rd);
+	int32_t temp = d >> sa5;
+	uint32_t result;
+	bool sat=false;
+	if(sa5 != 0)
+	{
+		uint32_t rnd= (rd >> (sa5-1)) & 1;
+		temp= temp + rnd;
+	}
+	uint32_t mask = (1UL << bp5)-1 ;
+	if( (temp == (uint32_t)(temp & mask)) || (bp5 == 0) )
+	{
+		result = temp;
+	}
+	else
+	{
+		sat=true;
+		if( ((temp >> 31)&1) == 1 ) result = 0x00000000;
+		else result = (uint32_t)pow(2,(int)bp5)-1;            // verifier pour power
+	}
+
+	cpu->SetGPR(rd,result);
+	if( (sat==true) || (cpu->GetSR_Q()==1)) cpu->SetSR_Q(1);
+	else cpu->SetSR_Q(0);
+
+	return true;
+}
+
+satrndu.disasm={
+	os << "satrndu\tr" << (unsigned int)rd << ">>0x" << std::hex <<(unsigned int) sa5 << ",0x" << std::hex <<(unsigned int) bp5 << endl; 
+}
+
+
+//SATS - saturate signed
+
+op sats(0b111[3]:0b1000[4]:0b11011[5]:rd[4]:><:0b0000[4]:0b00[2]:bp5[5]:sa5[5])
+
+sats.execute={
+
+	uint32_t d = cpu->GetGPR(rd);
+	int32_t temp = d >> sa5;
+	uint32_t result;
+	bool sat=false;
+	
+	uint32_t mask = (1UL << bp5)-1 ;
+	if( (temp == SignExtend((uint32_t)(temp & mask),(unsigned int)bp5)) || (bp5 == 0) )
+	{
+		result = temp;
+	}
+	else
+	{
+		sat=true;
+		if( ((temp >> 31)&1) == 1 ) result = - (uint32_t)pow(2,(int)bp5-1);
+		else result = (uint32_t)pow(2,(int)bp5-1)-1;  // verifier pour power
+	}
+
+	cpu->SetGPR(rd,result);
+	if( (sat==true) || (cpu->GetSR_Q()==1)) cpu->SetSR_Q(1);
+	else cpu->SetSR_Q(0);
+
+	return true;
+}
+
+sats.disasm={
+	os << "sats\tr" << (unsigned int)rd << ">>0x" <<std::hex<< (unsigned int)sa5 << ",0x" <<std::hex <<(unsigned int) bp5 << endl; 
+}
+
+
+//SATU - saturate unsigned
+
+op satu(0b111[3]:0b1000[4]:0b11011[5]:rd[4]:><:0b0000[4]:0b01[2]:bp5[5]:sa5[5])
+
+satu.execute={
+	
+	uint32_t d = cpu->GetGPR(rd);
+	int32_t temp = d >> sa5;
+	uint32_t result;
+	bool sat=false;
+	
+	uint32_t mask = (1UL << bp5)-1 ;
+	if( (temp == (uint32_t)(temp & mask)) || (bp5 == 0) )
+	{
+		result = temp;
+	}
+	else
+	{
+		sat=true;
+		if( ((temp >> 31)&1) == 1 ) result = 0x00000000;
+		else result = (uint32_t)pow(2,(int)bp5)-1;            // verifier pour power
+	}
+
+	cpu->SetGPR(rd,result);
+	if( (sat==true) || (cpu->GetSR_Q()==1)) cpu->SetSR_Q(1);
+	else cpu->SetSR_Q(0);
+
+	return true;
+}
+
+satu.disasm={
+
+	os << "satu\tr" << (unsigned int)rd << ">>0x"<< std::hex << (unsigned int)sa5 << ",0x" << std::hex<<(unsigned int)bp5 << endl; 
+}
+
+//SUBHH_W - subtract halfwords into word
+
+op subhh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b111100[6]:x[1]:y[1]:rd[4])
+
+subhh_w.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t op1,op2;
+	if(x==0){op1=SignExtend((x & 0xFFFF0000)>>16,16);}
+	else{op1=SignExtend(x & 0x0000FFFF,16);}
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t borrow_in=0;                           // case without carry               
+	uint8_t borrow_out;
+	
+	SignedSub32(result,borrow_out, overflow,sign,op1,op2,borrow_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(borrow_out);
+
+	
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+subhh_w.disasm={
+
+	os << "msubhh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry << ":<" << y << ">" << endl;
+}
+
+
+// MULSATHH_H - multiply halfword with saturation into halfword                       ## not clear
+
+op mulsathh_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1000[4]:0b10[2]:x[1]:y[1]:rd[4])
+
+mulsathh_h.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t op1,op2;
+	if(x==0){op1=SignExtend((x & 0xFFFF0000)>>16,16);}
+	else{op1=SignExtend(x & 0x0000FFFF,16);}
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	uint32_t result;
+	bool sat=false;
+	if(((uint16_t)op1 == 0x8000) && ((uint16_t)op2 == 0x8000)) 
+	{
+		result = 0x7FFF;
+		sat=true;
+	}	
+	else result = SignExtend(((op1 * op2) >> 15),16);
+	
+	cpu->SetGPR(rd,result);   
+	if(sat==true) cpu->SetSR_Q(1);
+	
+	return true;
+}
+
+mulsathh_h.disasm={
+
+	os << "mulsathh_h\tr" << (unsigned int)rd << ",r" <<(unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
+}
+
+
+// MULSATHH_W - multiply halfword with saturation into word                         ## not clear
+
+op mulsathh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1001[4]:0b10[2]:x[1]:y[1]:rd[4])
+
+mulsathh_w.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t op1,op2;
+	if(x==0){op1=SignExtend((x & 0xFFFF0000)>>16,16);}
+	else{op1=SignExtend(x & 0x0000FFFF,16);}
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	uint32_t result;
+	bool sat=false;
+	if(((uint16_t)op1 == 0x8000) && ((uint16_t)op2 == 0x8000)) 
+	{
+		result = 0x7FFFFFFF;
+		sat=true;
+	}	
+	else result = (op1 * op2) << 1;
+	
+	cpu->SetGPR(rd,result);   
+	if(sat==true) cpu->SetSR_Q(1);
+	
+	return true;
+}
+
+mulsathh_w.disasm={
+
+	os << "mulsathh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
+}
+
+
+// MULSATRNDHH_H - multiply halfwords with saturation and rounding into halfword
+
+op mulsatrndhh_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1010[4]:0b10[2]:x[1]:y[1]:rd[4])
+
+mulsatrndhh_h.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t op1,op2;
+	if(x==0){op1=SignExtend((x & 0xFFFF0000)>>16,16);}
+	else{op1=SignExtend(x & 0x0000FFFF,16);}
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	uint32_t result;
+	bool sat=false;
+	if(((uint16_t)op1 == 0x8000) && ((uint16_t)op2 == 0x8000)) 
+	{
+		result = 0x7FFF;
+		sat=true;
+	}	
+	else result = SignExtend(((op1 * op2) + 0x4000) >> 15,16);
+	
+	cpu->SetGPR(rd,result);   
+	if(sat==true) cpu->SetSR_Q(1);
+	return true;
+}
+
+mulsatrndhh_h.disasm={
+
+	os << "mulsatrndhh_h\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" <<(unsigned int) ry <<":<" << y << ">" << endl;
+}
+
+
+// MULSATRNDWH_W - multiply word and halfwords with saturation and rounding into word
+
+op mulsatrndwh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1011[4]:0b100[3]:y[1]:rd[4])
+
+mulsatrndwh_w.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t op1,op2;
+	op1=x;
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	uint32_t result;
+	bool sat=false;
+	if(((uint16_t)op1 == 0x8000) && ((uint16_t)op2 == 0x8000)) 
+	{
+		result = 0x7FFFFFFF;
+		sat=true;
+	}	
+	else result = SignExtend(((op1 * op2) + 0x4000) >> 15,16);
+	
+	cpu->SetGPR(rd,result);   
+	if(sat==true) cpu->SetSR_Q(1);
+	return true;
+
+}
+
+mulsatrndwh_w.disasm={
+
+	os << "mulsatrndwh_w\tr" <<(unsigned int) rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry <<":<" << y << ">" << endl;
+}
+
+
+// MULSATWH_W - multiply word and halfword with saturation into word
+
+op mulsatwh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1110[4]:0b100[3]:y[1]:rd[4])
+
+mulsatwh_w.execute={
+
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t op1,op2;
+	op1=x;
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	uint32_t result;
+	bool sat=false;
+	if( (op1 == 0x80000000) || ((uint16_t)op2 == 0x8000) ) 
+	{
+		result = 0x7FFF;
+		sat=true;
+	}	
+	else result = (op1 * op2)  >> 15;
+	
+	cpu->SetGPR(rd,result);   
+	if(sat==true) cpu->SetSR_Q(1);
+	return true;
+}
+
+mulsatwh_w.disasm={
+
+	os << "mulsatwh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry <<":<" << y << ">" << endl;
+}
+
+
+
+// MACSATHH_W - multiply accumulate halfwords with saturation into word     ?? vérifier pour sat
+
+op macsathh_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0110[4]:0b10[2]:x[1]:y[1]:rd[4])
+
+macsathh_w.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t d=cpu->GetGPR(rd);
+	uint32_t op1,op2;
+	if(x==0){op1=SignExtend((x & 0xFFFF0000)>>16,16);}
+	else{op1=SignExtend(x & 0x0000FFFF,16);}
+	if(y==0){op2=SignExtend((y & 0xFFFF0000)>>16,16);}
+	else{op2=SignExtend(y & 0x0000FFFF,16);}
+	uint32_t result,product;
+	bool sat=false;
+	if(((uint16_t)op1 == 0x8000) && ((uint16_t)op2 == 0x8000)) 
+	{
+		product = 0x7FFFFFFF;
+		sat=true;
+	}	
+	else product = (op1 * op2) << 1;
+	uint8_t sign,carry_out,overflow;
+	uint8_t carry_in=0;
+	SignedSatAdd32(result,carry_out,overflow,sign,product,d,carry_in);            
+	
+	cpu->SetGPR(rd,result);  
+ 
+	if(sat==true) cpu->SetSR_Q(1);
+	return true;
+}
+
+macsathh_w.disasm={
+
+	os << "macsathh_w\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry <<":<" << y << ">" << endl;
+}
+
+
