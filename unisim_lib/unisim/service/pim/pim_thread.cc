@@ -67,11 +67,7 @@ void PIMThread::run(){
 				cerr << "PIM-Target receive **NULL**" << endl;
 				break;
 			} else {
-#ifdef WIN32
-				Sleep(1);
-#else
 				usleep(1000);
-#endif
 				continue;
 			}
 		}
