@@ -1,0 +1,208 @@
+//BREAKPOINT - software debug breakpoint
+
+op breakpoint(0b1101011[7]:0b00111[5]:0b0011[4])
+
+breakpoint.execute={
+
+	return cpu->Breakpoint();
+}
+
+breakpoint.disasm={
+
+	os << "breakpoint\t"<< endl;
+}
+
+//CACHE - perform cache control operation
+
+op cache(0b111101000001[12]:rp[4]:><:op5[5]:disp11[11])
+
+cache.disasm={
+
+	os << "cache\tr" << (unsigned int)rp << "[" << disp11 << "]" << "," << op5 << endl;
+}
+
+// CSRF - Clear status register flag
+
+op csrf(0b11010[5]:0b10[2]:bp5[5]:0b0011[4])
+
+csrf.execute={
+
+	uint32_t result =  cpu->GetSR() & ~ ( 1<< bp5 );
+	cpu->SetSR(result);
+	return true;
+}
+
+csrf.disasm={
+
+	os << "csrf\t0x" << std::hex << (int)bp5 << endl;
+}
+
+//CSRFCZ - copy status register flag to C and Z
+
+op csrfcz(0b11010[5]:0b00[2]:bp5[5]:0b0011[4])
+
+csrfcz.execute={
+	
+	uint8_t value = (cpu->GetSR() >> bp5 ) & 1;
+	cpu->SetSR_C(value);
+	cpu->SetSR_Z(value);
+	return true;
+}
+
+csrfcz.disasm={
+
+	os << "csrfcz\t0x" << std::hex << (int)bp5 << endl;
+}
+
+// FRS - flush return stack
+
+op frs(0b1101011[7]:0b10100[5]:0b0011[4])
+
+frs.disasm={
+
+	os << "frs\t" << endl;
+}
+
+// MFDR - move from debug register
+
+op mfdr(0b111001011011[12]:rd[4]:><:0b00000000[8]: debugRegisterAdress[8])
+
+mfdr.disasm={
+
+	os << "mfdr\tr" << (unsigned int)rd << ",0x" << std::hex << (int)debugRegisterAdress << endl; 
+}
+
+// MFSR - move from system register
+
+op mfsr(0b111000011011[12]:rd[4]:><:0b00000000[8]: systemRegisterAdress[8])
+
+mfsr.disasm={
+
+	os << "mfsr\tr" << (unsigned int)rd << ",0x" << std::hex << (int) systemRegisterAdress << endl; 
+}
+
+// MTDR - move to debug register
+
+op mtdr(0b111001111011[12]:rs[4]:><:0b00000000[8]: debugRegisterAdress[8])
+
+mtdr.disasm={
+
+	os << "mtdr\t0x" << std::hex << (int)debugRegisterAdress << ",r" << (unsigned int)rs << endl;
+}
+
+// MTSR - move to system register
+
+op mtsr(0b111000111011[12]:rs[4]:><:0b00000000[8]: systemRegisterAdress[8])
+
+mtsr.disasm={
+
+	os << "mtsr\t0x" << std::hex << (int)systemRegisterAdress << ",r" << (unsigned int)rs << endl;
+}
+   
+// MUSFR - copy register to status register
+
+op musfr(0b010[3]:0b1110[4]:0b10011[5]:rs[4])
+
+musfr.disasm={
+
+	os << "musfr\tr" << (unsigned int)rs << endl;
+}
+
+//MUSTR - copy status register to register
+
+op mustr(0b010[3]:0b1110[4]:0b10010[5]:rd[4])
+
+mustr.disasm={
+
+	os << "mustr\tr" << (unsigned int)rd << endl;
+}
+
+//NOP - no operation
+
+op nop(0b1101011[7]:0b10000[5]:0b0011[4])
+
+nop.disasm={
+
+	os << "none\t" << endl;
+}
+
+
+// PREF - cache prefetch
+
+op pref(0b111[3]:0b100100001[9]:rp[4]:><:disp16[16])
+
+pref.disasm={
+
+	os << "pref\tr" << (unsigned int)rp << "[0x" << std::hex << (int)disp16 << "]" << endl;
+}
+ 
+// SLEEP - set CPU activity mode
+
+op sleep(0b111[3]: 0b0100[4]: 0b11011[5]:0b0000[4]:><:0b00000000[8]:op8[8])
+
+sleep.disasm={
+
+	os << "sleep\t0x" << std::hex << (int)op8 << endl;
+}
+
+// SR_COND4 - set register conditionally
+
+op sr_cond4(0b010[3]:0b1111[4]:0b1[1]:cond4[4]:rd[4])
+
+sr_cond4.disasm={
+
+	os << "sr_cond4\tr" << (unsigned int)rd << endl;
+}
+
+// SSRF - set status condition flag
+
+op ssrf(0b11010[5]:0b01[2]:bp5[5]:0b0011[4])
+
+ssrf.disasm={
+
+	os << "ssrf\t0x" << std::hex<< (int)bp5 << endl;
+}
+
+// SYNC - synchronize memory
+
+op sync(0b111[3]:0b0101[4]:0b11011[5]:0b0000[4]:><:0b00000000[8]:op8[8])
+
+sync.disasm={
+
+	os << "sync\t0x" <<std::hex << (int)op8 << endl;
+}
+
+//TLBR - read tlb entry
+
+op tlbr(0b1101011[7]:0b00100[5]:0b0011[4])
+
+tlbr.disasm={
+
+	os << "tlbr\t" << endl;
+}
+
+
+
+//TLBS - search tlb for entry
+
+op tlbs(0b1101011[7]:0b00101[5]:0b0011[4])
+
+tlbs.disasm={
+
+	os << "tlbs\t" << endl;
+}
+
+
+//TLBW - write tlb entry
+
+op tlbw(0b1101011[7]:0b00110[5]:0b0011[4])
+
+tlbw.disasm={
+
+	os << "tlbw\t" << endl;
+}
+
+
+
+
+

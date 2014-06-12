@@ -24,18 +24,22 @@
 #include <errtools.hh>
 #include <referencecounting.hh>
 #include <vect.hh>
+#include <set>
 
 /** A SubDecoder class object */
 struct SDClass_t :  virtual ReferenceCounter {
   std::vector<ConstStr_t>       m_namespace;         /**< The namespace in which the decoder is defined */
-  unsigned int                  m_minsize;           /**< The minimum size (in bytes) of the decoder's operations */
-  unsigned int                  m_maxsize;           /**< The maximum size (in bytes) of the decoder's operations */
+  std::set<unsigned int>        m_insnsizes;         /**< instructions size set (in bytes) of the decoder's operations */
   FileLoc_t                     m_fileloc;           /**< The file location where subdecoder was declared */
 
-  SDClass_t( std::vector<ConstStr_t>& _namespace, unsigned int _minsize, unsigned int _maxsize, FileLoc_t const& _fileloc );
+  template<typename _InputIterator>
+  SDClass_t( std::vector<ConstStr_t>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc_t const& _fileloc );
   ~SDClass_t();
 
   ConstStr_t                    qd_namespace() const;
+  
+  unsigned int                  maxsize() const { return *m_insnsizes.rbegin(); }
+  unsigned int                  minsize() const { return *m_insnsizes.begin(); }
 };
 
 /** A SubDecoder instance object */
@@ -51,5 +55,17 @@ struct SDInstance_t : virtual ReferenceCounter {
 };
 
 // std::ostream& operator<<( std::ostream& _sink, SubDecoder_t const& _op );
+
+/** Create a subdecoder class object
+    @param _namespace a namespace in which the decoder is defined
+    @param _minsize a minimum bit size for the decoder operations
+    @param _maxsize a maximum bit size for the decoder operations
+    @param _fileloc a fileloc pointing at the subdecoder declaration
+*/
+template<typename _InputIterator>
+SDClass_t::SDClass_t( std::vector<ConstStr_t>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc_t const& _fileloc )
+  : m_namespace( _namespace ), m_insnsizes( szbeg, szend ), m_fileloc( _fileloc )
+{}
+
 
 #endif // __SUBDECODER_HH__

@@ -1,0 +1,940 @@
+//---------------------------------------------------------------------------------------------
+
+// 				       ARITHMETIC OPERATIONS
+
+//---------------------------------------------------------------------------------------------
+
+// ABS - absolute value                                           ?? signed add
+
+op abs(0b010[3]:0b1110[4]:0b00100[5]:rd[4])
+
+
+abs.execute={
+
+	uint32_t d= cpu->GetGPR(rd);
+	uint32_t result;
+			
+	if(d!=0x80000000) result=abs(d);
+	else result=d;  
+	uint8_t zero= result==0;
+	
+	cpu->SetGPR(rd,result);
+	cpu->SetSR_Z(zero);
+	
+	return true;
+	
+}
+abs.disasm={
+
+	os<< "abs\tr" << (unsigned int) rd << endl ;
+}
+
+
+// ACR - add carry to register
+
+op acr(0b010[3]:0b1110[4]:0b00000[5]:rd[4])
+
+acr.execute={
+
+	uint32_t d = cpu->GetGPR(rd);
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in = cpu->GetSR_C();
+	uint8_t carry_out;
+
+	SignedAdd32(result,carry_out, overflow,sign,d,0,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0 && cpu->GetSR_Z());
+	cpu->SetSR_C(carry_out);
+	
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+acr.disasm={
+
+	os<< "acr\tr" << (unsigned int) rd << endl ;
+}
+
+// ADC - add with carry                                      ?? signed add
+
+op adc(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00000100[8]:rd[4])
+
+adc.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=cpu->GetSR_C();
+	uint8_t carry_out;
+	
+	SignedAdd32(result,carry_out, overflow,sign,x,y,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0 && cpu->GetSR_Z());
+	cpu->SetSR_C(carry_out);
+
+	
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+adc.disasm={
+
+	os<< "adc\tr" << (unsigned int) rd << ",r" << (unsigned int) rx << ",r" << (unsigned int) ry << endl ;
+}
+
+// ADD - add without carry                                 ?? signed add
+
+op add_a(0b000[3]:rs[4]:0b00000[5]:rd[4]) 
+
+add_a.execute={
+
+	uint32_t d=cpu->GetGPR(rd);
+	uint32_t s=cpu->GetGPR(rs);
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=0;
+	uint8_t carry_out;
+	
+ 	SignedAdd32(result,carry_out, overflow,sign,d,s,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+	
+}
+
+add_a.disasm={
+
+	os<< "add_a\tr" << (unsigned int) rd << ",r" << (unsigned int) rs << endl ;
+
+}
+
+op add_b(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0000[4]:0b00[2]:sa[2]:rd[4])
+
+add_b.execute={
+
+	uint32_t x=cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=0;
+	uint8_t carry_out;
+	
+ 	SignedAdd32(result,carry_out, overflow,sign,x,y << sa,carry_in);
+	
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+add_b.disasm={
+
+	os << "add_b\tr" << (unsigned int) rd << ",r" << (unsigned int) rx << ",r" << (unsigned int) ry << "<<0x" << std::hex << (unsigned int) sa << endl;
+}
+
+// ADD_COND4 - conditional add                                        ?? signed without carry                    
+
+op add_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0000[4]:rd[4])
+
+add_cond4.execute={
+
+	uint32_t x =cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	
+	if(cpu->EvaluateCond((uint8_t)cond4))
+ 	{
+		uint32_t result;
+		uint8_t carry_in=0;
+		uint8_t overflow,sign,carry_out;
+		SignedAdd32(result,carry_out, overflow,sign,x,y,carry_in);
+		cpu->SetGPR(rd,result);
+	}
+	return true;
+}
+add_cond4.disasm={
+
+	os<< "add_cond4\tr" << (unsigned int) rd << ",r" << (unsigned int) rx << ",r" << (unsigned int) ry << endl ;
+
+}
+
+// ADDABS - add absolute value                           ?? signed add without carry
+
+op addabs(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11100100[8]:rd[4])
+
+addabs.execute={
+	
+	uint32_t x =cpu->GetGPR(rx);
+	uint32_t y=cpu->GetGPR(ry);
+	uint32_t result;
+	uint8_t carry_in=0;
+	uint8_t overflow,sign,carry_out;
+
+	SignedAdd32(result,carry_out, overflow,sign,x,abs(y),carry_in);
+	
+	cpu->SetGPR(rd,result);
+	cpu->SetSR_Z(result == 0);
+  	
+	return true;
+}
+
+addabs.disasm={
+
+	os<< "addabs\tr" << (unsigned int) rd << ",r" << (unsigned int) rx << ",r" << (unsigned int) ry << endl ;
+
+}
+
+// CP_B - compare byte
+
+op cp_b(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b1000[4]:0b00000000[8])
+
+cp_b.execute={
+
+	uint8_t d =cpu->GetGPR(rd) & CONFIG::BOTTOM_BYTE_MASK ;
+	//uint8_t s = ~(cpu->GetGPR(rs) & CONFIG::BOTTOM_BYTE_MASK )+1;
+	uint8_t s = cpu->GetGPR(rs) & CONFIG::BOTTOM_BYTE_MASK;
+	uint8_t result;
+	uint8_t carry_in=0;
+	uint8_t carry_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	//SignedAdd8(result, carry_out, overflow, sign, d, s, carry_in);
+	SignedSub8(result, carry_out, overflow, sign, d, s, carry_in);
+  
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	return true;
+}
+
+
+cp_b.disasm={
+
+	os<< "cp_b\tr" << (unsigned int) rd << ",r" << (unsigned int) rs << endl ;
+
+}
+
+// CP_H - compare halfword
+
+op cp_h(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b1001[4]:0b00000000[8])
+
+cp_h.execute={
+
+	uint16_t d = cpu->GetGPR(rd) & CONFIG::BOTTOM_HW_MASK;
+	//uint16_t s = ~(cpu->GetGPR(rs) & CONFIG::BOTTOM_HW_MASK)+1;
+	uint16_t s = cpu->GetGPR(rs) & CONFIG::BOTTOM_HW_MASK ;
+	uint16_t result;
+	uint8_t carry_in=0;
+	uint8_t carry_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	//SignedAdd16(result, carry_out, overflow, sign, d, s, carry_in);  
+	SignedSub16(result, carry_out, overflow, sign, d, s, carry_in);  
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	return true;
+}
+
+
+cp_h.disasm={
+
+	os<< "cp_h\tr" << (unsigned int) rd << ",r" << (unsigned int) rs << endl ;
+
+}
+
+// CP_W - compare word
+
+op cp_w_a(0b000[3]:rs[4]:0b00011[5]:rd[4])
+
+cp_w_a.execute={
+
+	uint32_t d =cpu->GetGPR(rd);
+	//uint32_t s = ~(cpu->GetGPR(rs))+1;
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t result;
+	uint8_t carry_in=0;
+	uint8_t carry_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	//SignedAdd32(result, carry_out, overflow, sign, d, s, carry_in);  
+	SignedSub32(result, carry_out, overflow, sign, d, s, carry_in);  
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	return true;
+}
+
+cp_w_a.disasm={
+
+	os<< "cp_w_a\tr" << (unsigned int) rd << ",r" << (int) rs << endl ;
+
+}
+
+op cp_w_b(0b010[3]:0b110[3]:imm6[6]:rd[4])
+
+cp_w_b.execute={
+
+	uint32_t d =cpu->GetGPR(rd);
+	//uint32_t s = ~(SignExtend((uint32_t)imm6,6))+1;
+	uint32_t s = SignExtend((uint32_t)imm6,6);
+	uint32_t result;
+	uint8_t carry_in=0;
+	uint8_t carry_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	//SignedAdd32(result, carry_out, overflow, sign, d, s, carry_in);
+	SignedSub32(result, carry_out, overflow, sign, d, s, carry_in); 
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	return true;
+}
+
+cp_w_b.disasm={
+
+	os<< "cp_w_b\tr" << (unsigned int) rd << ","<< (int) imm6 << endl ;
+
+}
+
+op cp_w_c(0b111[3]:imm_20_17[4]:0b0010[4]:imm_15[1]:rd[4]:><:imm_15_0[16])
+
+cp_w_c.var imm : { uint32_t } = { (imm_20_17 << 17) | (imm_15 << 15) | imm_15_0 }
+
+cp_w_c.execute={
+
+	uint32_t d =cpu->GetGPR(rd);
+	//uint32_t s = ~(SignExtend(imm,21))+1;
+	uint32_t s = SignExtend(imm,21);
+	uint32_t result;
+	uint8_t carry_in=0;
+	uint8_t carry_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	//SignedAdd32(result, carry_out, overflow, sign, d, s, carry_in);  
+	SignedSub32(result, carry_out, overflow, sign, d, s, carry_in); 
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	return true;
+}
+cp_w_c.disasm={
+
+	os<< "cp_w_c\tr" << (unsigned int) rd << "," <<(int) imm << endl ;
+
+}
+
+
+
+// CPC - compare with carry
+
+op cpc_a(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0011[4]:0b00000000[8])
+
+cpc_a.execute={
+
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t d = cpu->GetGPR(rd);
+
+	uint8_t borrow_in = cpu->GetSR_C();
+	uint8_t sign;
+	uint8_t overflow;
+	uint8_t borrow_out;
+	uint32_t result;
+	
+	SignedSub32(result,borrow_out, overflow, sign, d, s, borrow_in);
+	
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0 && cpu->GetSR_Z());
+	cpu->SetSR_C(borrow_out);
+
+	return true;
+}
+
+cpc_a.disasm={
+
+	os<< "cpc_a\tr"<< (unsigned int) rd << ",r" << (unsigned int) rs << endl;
+}
+
+op cpc_b(0b010[3]:0b1110[4]:0b00010[5]:rd[4])
+
+
+cpc_b.execute={
+
+	uint32_t d = cpu->GetGPR(rd);
+
+	uint8_t borrow_in = cpu->GetSR_C();
+	uint8_t sign;
+	uint8_t overflow;
+	uint8_t borrow_out;
+	uint32_t result;
+	
+	SignedSub32(result,borrow_out, overflow, sign, d, 0, borrow_in);
+	
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0 && cpu->GetSR_Z());
+	cpu->SetSR_C(borrow_out);
+
+	return true;
+}
+cpc_b.disasm={
+
+	os<< "cpc_b\tr"<< (unsigned int) rd << endl;
+}
+
+// MAX - return maximum value
+
+op max(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11000100[8]:rd[4])
+
+max.execute={
+
+	int32_t x =  cpu->GetGPR(rx);
+	int32_t y = cpu->GetGPR(ry);
+	uint32_t result;
+ 	
+	if(x>y)result=x;
+	else result=y;
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+max.disasm={
+
+	os << "max\tr" << (unsigned int) rd << ",r" << (unsigned int) rx << ",r" << (unsigned int) ry << endl;
+}
+
+//MIN - return minimum value
+
+op min(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11010100[8]:rd[4])
+//erreur dans la doc (AVR32 Architecture Manual) rd au lieu de ry
+
+min.execute={
+
+	int32_t x =  cpu->GetGPR(rx);
+	int32_t y = cpu->GetGPR(ry);
+	uint32_t result;
+ 	
+	if(x<y)result=x;
+	else result=y;
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+min.disasm={
+
+	os << "min\tr" << (unsigned int) rd << ",r" << (unsigned int) rx << ",r" << (unsigned int) ry << endl;
+}
+
+//NEG - two's complement
+
+op neg(0b010[3]:0b1110[4]:0b00011[5]:rd[4])
+
+neg.execute={
+
+	//uint32_t d = ~(cpu->GetGPR(rd))+1;
+	uint32_t d = cpu->GetGPR(rd);
+	uint32_t result;
+	uint8_t carry_in=0;
+	uint8_t carry_out;
+	uint8_t overflow;
+	uint8_t sign;
+
+	//SignedAdd32(result, carry_out, overflow, sign, 0, d, carry_in);  
+	SignedSub32(result, carry_out, overflow, sign, 0, d, carry_in);  
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	return true;
+}
+
+
+neg.disasm={
+
+	os << "neg\tr" << (unsigned int) rd << endl;
+}
+
+// RSUB - reverse subtract                      ?? signed sub without carry
+
+op rsub_a(0b000[3]:rs[4]:0b00010[5]:rd[4])
+
+rsub_a.execute = {
+
+	
+	uint32_t s= cpu->GetGPR(rs);     // rs
+	uint32_t d= cpu->GetGPR(rd);     // rd
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=0;            
+	uint8_t carry_out;
+	
+ 	//SignedAdd32(result,carry_out, overflow,sign,s,~d+1,carry_in);
+	SignedSub32(result,carry_out, overflow,sign,s,d,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+
+rsub_a.disasm={
+
+	os << "rsub_a\tr" << (unsigned int) rd << ",r" << (unsigned int) rs << endl;
+}
+
+op rsub_b(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0001[4]:imm8[8])
+
+rsub_b.execute = {
+
+	
+	uint32_t s = cpu->GetGPR(rs);                 // rs
+	uint32_t imm  = SignExtend((uint32_t)imm8,8); // 32 bits extension of imm8          
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=0;            
+	uint8_t carry_out;
+	
+ 	//SignedAdd32(result,carry_out, overflow,sign,imm,~s+1,carry_in);
+	SignedSub32(result,carry_out, overflow,sign,imm,s,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+rsub_b.disasm={
+
+	os << "rsub_b\tr" << (unsigned int) rd << ",r" << (unsigned int) rs << "," << (int) imm8 << endl;
+}
+
+// conditional reverse subtract                                     ?? signed sub without carry
+
+op rsub_cond4(0b111[3]:0b1101[4]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:imm8[8])
+
+rsub_cond4.execute={
+
+	if(cpu->EvaluateCond((uint8_t)cond4))
+	{
+		uint32_t d = cpu->GetGPR(rd);                  // rd
+		uint32_t imm = SignExtend((uint32_t)imm8,8);   // 32 bits extension of imm8       
+		uint32_t result;
+ 
+		uint8_t overflow;
+		uint8_t sign;
+		uint8_t carry_in=0;            
+		uint8_t carry_out;
+		
+	 	//SignedAdd32(result,carry_out, overflow,sign,imm,~d+1,carry_in);
+		SignedSub32(result,carry_out, overflow,sign,imm,d,carry_in);
+	
+		cpu->SetSR_V(overflow);
+		cpu->SetSR_N(sign);
+		cpu->SetSR_Z(result==0);
+		cpu->SetSR_C(carry_out);
+	
+		cpu->SetGPR(rd,result);
+	}
+	return true;
+}
+
+rsub_cond4.disasm={
+
+	os << "rsub_cond4\tr" << (unsigned int) rd << "," << (int) imm8 << endl;
+}
+
+// subtract with carry                     ?? signed sub
+
+op sbc(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00010100[8]:rd[4])
+
+sbc.execute = {
+
+	
+	uint32_t x= cpu->GetGPR(rx);     // rx
+	uint32_t y= cpu->GetGPR(ry);     //ry
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in = cpu->GetSR_C();            
+	uint8_t carry_out;
+	
+ 	//SignedAdd32(result,carry_out, overflow,sign,x,~y+1,-carry_in);
+	SignedSub32(result,carry_out, overflow,sign,x,y,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+sbc.disasm={
+
+	
+os << "sbc\tr" << (unsigned int) rd << ",r" << (unsigned int) rx << ",r" << (unsigned int) ry << endl;
+}
+
+//SCR - subtract carry from register                        ?? signed sub/add
+
+op scr(0b010[3]:0b1110[4]:0b00001[5]:rd[4])
+
+scr.execute = {
+
+	
+	uint32_t d=cpu->GetGPR(rd);     // rd
+        
+	uint32_t result;
+     	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in = cpu->GetSR_C();            
+	uint8_t carry_out;
+	
+ 	//SignedAdd32(result,carry_out, overflow,sign,d,0,-carry_in);
+	SignedSub32(result,carry_out, overflow,sign,d,0,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0 && cpu->GetSR_Z());
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+scr.disasm={
+
+	os << "scr\tr" << (unsigned int) rd << endl;
+}
+
+//SUB - subtract without carry                             ?? signed sub
+
+op sub_a(0b000[3]:rs[4]:0b00001[5]:rd[4])
+
+sub_a.execute = {
+
+	
+	uint32_t d=cpu->GetGPR(rd); // rd
+	uint32_t s=cpu->GetGPR(rs); //rs
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=0;            
+	uint8_t carry_out;
+	
+ 	//SignedAdd32(result,carry_out, overflow,sign,d,~ s+1,carry_in);
+	SignedSub32(result,carry_out, overflow,sign,d,s,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+sub_a.disasm={
+
+	os << "sub_a\tr" << (unsigned int) rd << ",r" << (unsigned int) rs << endl;
+}
+
+op sub_b(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b0001[4]:0b00[2]:sa[2]:rd[4])
+
+sub_b.execute = {
+
+	
+	uint32_t x= cpu->GetGPR(rx);         // rd
+	uint32_t y= cpu->GetGPR(ry) << sa;  //ry << sa
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=0;            
+	uint8_t carry_out;
+	
+ 	//SignedAdd32(result,carry_out, overflow,sign,x,~y+1,carry_in);
+	SignedSub32(result,carry_out, overflow,sign,x,y,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+sub_b.disasm={
+
+	os << "sub_b\tr" << (unsigned int) rd << ",r" << (unsigned int) rx << ",r" << (unsigned int) ry << "<<0x" << std::hex << (unsigned int) sa << endl;
+}
+
+op sub_c(0b001[3]:0b0[1]:imm8[8]:rd[4])
+
+sub_c.execute = {
+
+	
+	uint32_t d=cpu->GetGPR(rd);     // rd
+	uint32_t s;
+
+     	if(d == cpu->GetSP()){ s= SignExtend((uint32_t)imm8 << 2,10);} 
+	else {s = SignExtend((uint32_t)imm8,8);}
+	
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=0;            
+	uint8_t carry_out;
+	
+ 	//SignedAdd32(result,carry_out, overflow,sign,d,~s+1,carry_in);
+	SignedSub32(result,carry_out, overflow,sign,d,s,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+
+sub_c.disasm={
+
+	os << "sub_c\tr" << (unsigned int) rd << ",0x" << (int) imm8 << endl;
+}
+
+op sub_d(0b111[3]:imm_20_17[4]:0b0001[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
+sub_d.var imm :{uint32_t}= {(imm_20_17 << 17)|(imm_16 <<16 )|imm_15_0}
+
+sub_d.execute = {
+
+	
+	uint32_t x= cpu->GetGPR(rd);     // rd
+	uint32_t y= SignExtend((uint32_t)imm,21);  // 32 bits extension of imm21
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=0;            
+	uint8_t carry_out;
+	
+ 	//SignedAdd32(result,carry_out, overflow,sign,x,~y+1,carry_in);
+	SignedAdd32(result,carry_out, overflow,sign,x,y,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+sub_d.disasm={
+
+	os << "sub_d\tr" << (unsigned int) rd << ","  << (int) imm << endl;
+}
+
+op sub_e(0b111[3]:rs[4]:0b01100[5]:rd[4]:><:imm16[16])
+
+sub_e.execute = {
+
+	
+	uint32_t s= cpu->GetGPR(rs);                  // rs
+	uint32_t y= SignExtend((uint32_t)imm16,16);   // 32 bits extension of imm16
+	uint32_t result;
+ 
+	uint8_t overflow;
+	uint8_t sign;
+	uint8_t carry_in=0;            
+	uint8_t carry_out;
+	
+ 	//SignedAdd32(result,carry_out, overflow,sign,s,~y+1,carry_in);
+	SignedAdd32(result,carry_out, overflow,sign,s,y,carry_in);
+
+	cpu->SetSR_V(overflow);
+	cpu->SetSR_N(sign);
+	cpu->SetSR_Z(result==0);
+	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
+
+	return true;
+}
+
+
+sub_e.disasm={
+
+	os << "sub_e\tr" << (unsigned int) rd << ",r" << (unsigned int) rs << "," << (int) imm16 << endl;
+}
+
+//SUB_CON4 - conditional subtract                      ?? signed sub without carry
+
+op sub_f_cond4(0b111[3]:0b101[3]:f[1]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:imm8[8])
+
+sub_f_cond4.execute = {
+
+	if(cpu->EvaluateCond((uint8_t)cond4))
+	{
+		uint32_t d= cpu->GetGPR(rd);           // rd
+		uint32_t y= (uint32_t)imm8;           // imm8
+		uint32_t result;
+ 
+		uint8_t overflow;
+		uint8_t sign;
+		uint8_t carry_in=0;            
+		uint8_t carry_out;
+	
+	 	//SignedAdd32(result,carry_out, overflow,sign,d,~y+1,carry_in);
+		SignedSub32(result,carry_out, overflow,sign,d,y,carry_in);
+
+		if(f==1)           //set flag
+		{
+			cpu->SetSR_V(overflow);
+			cpu->SetSR_N(sign);
+			cpu->SetSR_Z(result==0);
+			cpu->SetSR_C(carry_out);
+	
+		}	
+		cpu->SetGPR(rd,result);
+
+	}
+	return true;
+}
+
+sub_f_cond4.disasm={
+
+	os << "sub_f_cond4\tr" << (unsigned int) rd << "," <<(int) imm8 << endl;
+
+}
+
+op sub_cond4(0b111[3]:rx[4]:0b11011[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0001[4]:rd[4])
+
+sub_cond4.execute = {
+
+	if(cpu->EvaluateCond((uint8_t)cond4))
+	{
+		uint32_t x= cpu->GetGPR(rx);           // rx
+		uint32_t y= cpu->GetGPR(ry);           // -ry
+		uint32_t result;
+ 
+		uint8_t overflow;
+		uint8_t sign;
+		uint8_t carry_in=0;            
+		uint8_t carry_out;
+	
+	 	//SignedAdd32(result,carry_out, overflow,sign,x,~y+1,carry_in);
+		SignedSub32(result,carry_out, overflow,sign,x,y,carry_in);
+
+		cpu->SetSR_V(overflow);
+		cpu->SetSR_N(sign);
+		cpu->SetSR_Z(result==0);
+		cpu->SetSR_C(carry_out);
+	
+		cpu->SetGPR(rd,result);	
+	}
+	return true;
+}
+sub_cond4.disasm={
+
+	os << "sub_cond4\tr" << (unsigned int) rd << ",r" << (unsigned int) rx << ",r" << (unsigned int) ry << endl;
+}
+
+//TNBZ - test if no byte equal to zero
+
+op tnbz(0b010[3]:0b1110[4]:0b01110[5]:rd[4])
+
+tnbz.execute={
+	
+	uint32_t d = cpu-> GetGPR(rd);
+
+	bool test = ((d & 0xFF000000)==0)||((d & 0x00FF0000)==0)||((d & 0x0000FF00)==0)||((d & 0x000000FF)==0);
+
+	uint8_t zero;
+	if (test==true) zero=1;
+	else zero=0;
+	
+	cpu->SetSR_Z(zero);
+	return true;
+}
+
+tnbz.disasm={
+
+	os << "tnbz\tr" << (unsigned int) rd << endl;
+}
+

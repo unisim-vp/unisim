@@ -20,14 +20,14 @@
 
 #include <fwd.hh>
 #include <conststr.hh>
+#include <set>
 
 struct Generator {
   enum Exception_t { GenerationError };
   
   Isa*                                m_isa;
   unsigned int                        m_minwordsize;
-  unsigned int                        m_insn_maxsize;
-  unsigned int                        m_insn_minsize;
+  std::set<unsigned int>              m_insnsizes;
   
   Generator();
   virtual ~Generator() {};
@@ -50,6 +50,8 @@ struct Generator {
   Isa const&                          isa() const { return *m_isa; }
   Isa&                                isa() { return *m_isa; }
   
+  unsigned int                        gcd() const;
+  
   virtual void                        codetype_decl( Product_t& _product ) const = 0;
   virtual void                        codetype_impl( Product_t& _product ) const = 0;
   virtual ConstStr_t                  codetype_name() const = 0;
@@ -65,7 +67,6 @@ struct Generator {
   virtual void                        additional_impl_includes( Product_t& _product ) const = 0;
   virtual void                        additional_decl_includes( Product_t& _product ) const = 0;
   
-  virtual void                        subdecoder_bounds( Product_t& _product ) const = 0;
   virtual void                        insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const = 0;
   virtual void                        insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const = 0;
   virtual void                        op_getlen_decl( Product_t& _product ) const = 0;

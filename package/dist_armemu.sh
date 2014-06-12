@@ -448,7 +448,8 @@ m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
-m4/real_path.m4"
+m4/real_path.m4 \
+m4/pthread.m4"
 
 UNISIM_LIB_ARMEMU_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_armv5l.xml \
@@ -948,6 +949,13 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "AC_LANG([C++])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${ARMEMU_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${ARMEMU_CONFIGURE_AC}"
+	echo "case \"\${host}\" in" >> "${ARMEMU_CONFIGURE_AC}"
+	printf "\t*mingw*)\n" >> "${ARMEMU_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${ARMEMU_CONFIGURE_AC}"
+	printf "\t*)\n" >> "${ARMEMU_CONFIGURE_AC}"
+	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${ARMEMU_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${ARMEMU_CONFIGURE_AC}"
+	echo "esac" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TIMES(main)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_ENDIAN(main)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES(main)" >> "${ARMEMU_CONFIGURE_AC}"

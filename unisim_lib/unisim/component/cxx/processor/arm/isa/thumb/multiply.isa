@@ -49,6 +49,8 @@ mul.disasm = {
 };
 
 mul.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t res = cpu.GetGPR(rd) * cpu.GetGPR(rm);
   cpu.SetGPR(rd, res);
   if (not cpu.itblock())

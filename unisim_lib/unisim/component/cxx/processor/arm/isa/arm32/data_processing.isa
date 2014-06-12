@@ -1146,16 +1146,16 @@ movw.execute = {
  */
 
 { ARCH::insnsT2 }:                              \
-op movt( cond[4]:0x34[8]:shl<12> imm1[4]:rsd[4]:imm0[12] );
+op movt( cond[4]:0x34[8]:shl<12> imm1[4]:rd[4]:imm0[12] );
 movt.var imm : {uint32_t} = {imm1|imm0};
 
 movt.disasm = {
   buffer << "movt" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rsd) << ", " << DisasmI(imm);
+         << DisasmRegister(rd) << ", " << DisasmI(imm);
 };
 
 movt.execute = {
-  cpu.SetGPR( rsd, (cpu.GetGPR( rsd ) & 0xffff) | (imm << 16) );
+  cpu.SetGPR( rd, (cpu.GetGPR( rd ) & 0xffff) | (imm << 16) );
 };
 
 /*

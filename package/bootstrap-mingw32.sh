@@ -3,8 +3,18 @@ case $(lsb_release -s -i) in
 	Ubuntu* | Debian*)
 		HOST=i586-mingw32msvc
 		;;
-	Mageia* | Mandriva*)
+	Mandriva*)
 		HOST=i586-pc-mingw32
+		;;
+	Mageia*)
+		case $(lsb_release -r) in
+			1 | 2 | 3)
+				HOST=i586-pc-mingw32
+				;;
+			*)
+				HOST=i686-w64-mingw32
+				;;
+		esac
 		;;
 	RedHat* | Fedora* | SUSE*)
 		HOST=i686-pc-mingw32
@@ -17,8 +27,8 @@ esac
 #BUILD=i686-pc-linux-gnu
 SDL_VERSION=1.2.14
 LIBXML2_VERSION=2.7.8
-EXPAT_VERSION=2.0.1
-CROSS_GDB_VERSION=7.2a
+EXPAT_VERSION=2.1.0-1 #2.0.1
+CROSS_GDB_VERSION=7.6.2
 CROSS_GDB_ARCHITECTURES="powerpc-440fp-linux-gnu powerpc-7450-linux-gnu armel-linux-gnu m6811-elf"
 ZLIB_VERSION=1.2.5
 BOOST_VERSION=1_47_0
@@ -234,15 +244,15 @@ CMD=$1
 case ${CMD} in
 	all)
 		# expat
-		if [ ! -e ${PACKAGES_DIR}/expat-${EXPAT_VERSION}-mingw32.tar.bz2 ]; then
-			Clean
-			Download expat-${EXPAT_VERSION} expat-${EXPAT_VERSION}.tar.gz http://ovh.dl.sourceforge.net/expat/expat-${EXPAT_VERSION}.tar.gz
-			Configure expat-${EXPAT_VERSION} --host=${HOST}
-			Compile expat-${EXPAT_VERSION}
-			Install expat-${EXPAT_VERSION}
-			Package expat-${EXPAT_VERSION}
-			Clean
-		fi
+# 		if [ ! -e ${PACKAGES_DIR}/expat-${EXPAT_VERSION}-mingw32.tar.bz2 ]; then
+# 			Clean
+# 			Download expat-${EXPAT_VERSION} expat-${EXPAT_VERSION}.tar.gz http://ovh.dl.sourceforge.net/expat/expat-${EXPAT_VERSION}.tar.gz
+# 			Configure expat-${EXPAT_VERSION} --host=${HOST}
+# 			Compile expat-${EXPAT_VERSION}
+# 			Install expat-${EXPAT_VERSION}
+# 			Package expat-${EXPAT_VERSION}
+# 			Clean
+# 		fi
 
 		# zlib
 		if [ ! -e ${PACKAGES_DIR}/zlib-${ZLIB_VERSION}-mingw32.tar.bz2 ]; then
@@ -263,8 +273,10 @@ case ${CMD} in
 			if [ ! -e ${PACKAGES_DIR}/cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}-mingw32.tar.bz2 ]; then
 				Clean
 				CROSS_GDB_STRIPPED_VERSION=$(printf "${CROSS_GDB_VERSION}" | sed -e 's/^\(.*\)a$/\1/g')   # remove 'a' at the end of version number
-				Download gdb-${CROSS_GDB_STRIPPED_VERSION} gdb-${CROSS_GDB_VERSION}.tar.bz2 ftp://ftp.gnu.org/pub/gnu/gdb/gdb-${CROSS_GDB_VERSION}a.tar.bz2
-				InstallBinArchive expat-${EXPAT_VERSION}-mingw32.tar.bz2 '' expat-${EXPAT_VERSION}
+				Download gdb-${CROSS_GDB_STRIPPED_VERSION} gdb-${CROSS_GDB_VERSION}.tar.bz2 ftp://ftp.gnu.org/pub/gnu/gdb/gdb-${CROSS_GDB_VERSION}.tar.bz2
+				#InstallBinArchive expat-${EXPAT_VERSION}-mingw32.tar.bz2 '' expat-${EXPAT_VERSION}
+				InstallBinArchive expat-${EXPAT_VERSION}-mingw32-dll.tar.lzma '' expat-${EXPAT_VERSION}
+				InstallBinArchive expat-${EXPAT_VERSION}-mingw32-dev.tar.lzma '' expat-${EXPAT_VERSION}
 				mv ${BUILD_DIR}/gdb-${CROSS_GDB_STRIPPED_VERSION} ${BUILD_DIR}/cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}
 				Configure cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION} --host=${HOST} --target=${CROSS_GDB_ARCH} \
 							--disable-sim --disable-werror \

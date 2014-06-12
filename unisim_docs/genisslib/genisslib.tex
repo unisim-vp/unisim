@@ -53,7 +53,7 @@ action {void} execute() {
     exit(-1);
 }
 
-action {void} disasm({uint16_t pc, char *s}) {
+action {void} disasm({uint16_t} {pc}, {char *} {s}) {
     sprintf(s, "?");
 }
 \end{verbatim}
@@ -182,6 +182,7 @@ add.disasm = {
 \begin{verbatim}
 {
 #include <inttypes.h>
+#include <stdio.h>
 
 extern uint16_t cia;
 extern uint16_t nia;

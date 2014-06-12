@@ -50,6 +50,8 @@ adc.disasm = {
 };
 
 adc.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 + op2 + cpu.CPSR().C().Get();
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusAdd( cpu, res, op1, op2 );
@@ -71,6 +73,8 @@ add_1.disasm = {
 };
 
 add_1.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 + op2;
   cpu.SetGPR( rd, res );
   if (not cpu.itblock()) UpdateStatusAdd( cpu, res, op1, op2 );
@@ -91,6 +95,8 @@ add_2.disasm = {
 };
 
 add_2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = imm, res = op1 + op2;
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusAdd( cpu, res, op1, op2 );
@@ -111,6 +117,8 @@ add_3.disasm = {
 };
 
 add_3.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rn ), op2 = cpu.GetGPR( rm ), res = op1 + op2;
   cpu.SetGPR( rd, res );
   if (not cpu.itblock()) UpdateStatusAdd( cpu, res, op1, op2 );
@@ -132,6 +140,8 @@ add_4.disasm = {
 };
 
 add_4.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR( rdn, cpu.GetGPR( rdn ) + cpu.GetGPR( rm ) );
 };
 
@@ -142,6 +152,8 @@ add_4_pc.disasm = {
 };
 
 add_4_pc.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR( 15, cpu.GetGPR(cpu.PC_reg) + cpu.GetGPR( rm ) );
 };
 
@@ -160,6 +172,8 @@ adr.disasm = {
 };
 
 adr.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR( rd, (cpu.GetGPR(cpu.PC_reg) & -4) + imm );
 };
 
@@ -178,6 +192,8 @@ add_6.disasm = {
 };
 
 add_6.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR( rd, cpu.GetGPR(cpu.SP_reg) + imm );
 };
 
@@ -196,6 +212,8 @@ add_7.disasm = {
 };
 
 add_7.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR(cpu.SP_reg, cpu.GetGPR(cpu.SP_reg) + imm);
 };
 
@@ -214,6 +232,8 @@ and.disasm = {
 };
 
 and.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 & op2;
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock())
@@ -238,6 +258,8 @@ asr_reg.disasm = {
 };
 
 asr_reg.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR(rdn), op2 = cpu.GetGPR(rm),
            res = ComputeRegShift( cpu, op1, /*asr*/2, op2 );;
   cpu.SetGPR( rdn, res );
@@ -259,6 +281,8 @@ bic.disasm = {
 };
 
 bic.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 & ~op2;
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock())
@@ -283,6 +307,8 @@ cmn.disasm = {
 };
 
 cmn.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rn ), op2 = cpu.GetGPR( rm ), res = op1 + op2;
   UpdateStatusAdd( cpu, res, op1, op2 );
 };
@@ -302,6 +328,8 @@ cmp_1.disasm = {
 };
 
 cmp_1.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
   UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -324,6 +352,8 @@ cmp_rr.disasm = {
 };
 
 cmp_rr.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rn ), op2 = cpu.GetGPR( rm ), res = op1 - op2;
   UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -343,6 +373,8 @@ eor.disasm = {
 };
 
 eor.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 ^ op2;
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock())
@@ -367,6 +399,8 @@ lsl_reg.disasm = {
 };
 
 lsl_reg.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR(rdn), op2 = cpu.GetGPR(rm),
            res = ComputeRegShift( cpu, op1, /*lsl*/0, op2 );;
   cpu.SetGPR( rdn, res );
@@ -388,6 +422,8 @@ lsr_reg.disasm = {
 };
 
 lsr_reg.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR(rdn), op2 = cpu.GetGPR(rm),
            res = ComputeRegShift( cpu, op1, /*lsr*/1, op2 );;
   cpu.SetGPR( rdn, res );
@@ -409,6 +445,8 @@ mov_1.disasm = {
 };
 
 mov_1.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t res = imm;
   cpu.SetGPR( rd, res );
   if (not cpu.itblock())
@@ -434,6 +472,8 @@ mov_reg_shift.disasm = {
 };
 
 mov_reg_shift.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t rmval = cpu.GetGPR( rm ), res = ComputeImmShift( cpu, rmval, shift, imm );
   cpu.SetGPR( rd, res );
   if (not cpu.itblock()) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
@@ -455,6 +495,8 @@ mov_3.disasm = {
 };
 
 mov_3.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR( rd, cpu.GetGPR(rm) );
 };
 
@@ -465,6 +507,8 @@ mov_3_pc.disasm = {
 };
 
 mov_3_pc.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.Branch( cpu.GetGPR( rm ) );
 };
 
@@ -483,6 +527,8 @@ mvn.disasm = {
 };
 
 mvn.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t res = ~(cpu.GetGPR( rm ));
   cpu.SetGPR( rd, res );
   if (not cpu.itblock())
@@ -507,6 +553,8 @@ neg.disasm = {
 };
 
 neg.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = 0, op2 = cpu.GetGPR( rm ), res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
@@ -527,6 +575,8 @@ orr.disasm = {
 };
 
 orr.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 | op2;
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock())
@@ -551,6 +601,8 @@ ror_reg.disasm = {
 };
 
 ror_reg.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR(rdn), op2 = cpu.GetGPR(rm),
            res = ComputeRegShift( cpu, op1, /*ror*/3, op2 );;
   cpu.SetGPR( rdn, res );
@@ -572,6 +624,8 @@ sbc.disasm = {
 };
 
 sbc.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
@@ -592,6 +646,8 @@ sub_1.disasm = {
 };
 
 sub_1.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
@@ -612,6 +668,8 @@ sub_2.disasm = {
 };
 
 sub_2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rdn ), op2 = imm, res = op1 - op2;
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
@@ -632,6 +690,8 @@ sub_3.disasm = {
 };
 
 sub_3.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR( rn ), op2 = cpu.GetGPR( rm ), res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
@@ -652,6 +712,8 @@ sub_4.disasm = {
 };
 
 sub_4.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR( cpu.SP_reg, cpu.GetGPR( cpu.SP_reg ) - imm );
 };
 
@@ -670,6 +732,8 @@ tst.disasm = {
 };
 
 tst.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res = op1 & op2;
   cpu.CPSR().N().Set( (res >> 31) & 1 );
   cpu.CPSR().Z().Set( res == 0 );

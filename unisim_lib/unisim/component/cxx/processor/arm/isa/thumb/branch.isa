@@ -69,6 +69,8 @@ b_2.disasm = {
 };
 
 b_2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.Branch(cpu.GetGPR(cpu.PC_reg) + imm);
 };
 
@@ -90,6 +92,8 @@ bx.disasm = {
 };
 
 bx.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.BranchExchange( cpu.GetGPR(rm) );
 };
 
@@ -112,6 +116,8 @@ blx.disasm = {
 };
 
 blx.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   uint32_t address = cpu.GetGPR(rm);
   cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() | 1 );
   cpu.BranchExchange( address );

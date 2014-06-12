@@ -578,7 +578,6 @@ bool CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
 	bool status = EmuStore<uint32_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
 	MonitorStore(ea, sizeof(value));
-	if(trap_reporting_import && (ea = 0xc816ffd0) && (value == 0xfe4dd34UL)) trap_reporting_import->ReportTrap("Got a store of 0xfe4dd34 at @0xc816ffd0");
 	return true;
 }
 
@@ -749,14 +748,12 @@ bool CPU<CONFIG>::InjectReadMemory(typename CONFIG::address_t addr, void *buffer
 {
 	if(size > 0)
 	{
-		typename CONFIG::address_t buf_addr = addr;
-		uint32_t buf_size = size;
 		uint32_t sz;
 		uint8_t *dst = (uint8_t *) buffer;
 		do
 		{
-			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
-			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
+			uint32_t size_to_word_boundary = 8 - (addr & 7);
+			sz = size > size_to_word_boundary ? size_to_word_boundary : size;
 
 			MMUAccess<CONFIG> mmu_access;
 			mmu_access.addr = addr;
@@ -770,12 +767,11 @@ bool CPU<CONFIG>::InjectReadMemory(typename CONFIG::address_t addr, void *buffer
 
 			if(unlikely(!EmuLoad(mmu_access, dst, sz))) return false;
 			
+			MonitorLoad(addr, sz);
 			dst += sz;
 			addr += sz;
 			size -= sz;
 		} while(size > 0);
-		
-		MonitorLoad(buf_addr, buf_size);
 	}
 	return true;
 }
@@ -785,14 +781,12 @@ bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void 
 {
 	if(size > 0)
 	{
-		typename CONFIG::address_t buf_addr = addr;
-		uint32_t buf_size = size;
 		uint32_t sz;
 		const uint8_t *src = (const uint8_t *) buffer;
 		do
 		{
-			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
-			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
+			uint32_t size_to_word_boundary = 8 - (addr & 7);
+			sz = size > size_to_word_boundary ? size_to_word_boundary : size;
 			
 			MMUAccess<CONFIG> mmu_access;
 			mmu_access.addr = addr;
@@ -806,12 +800,11 @@ bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void 
 			
 			if(unlikely(!EmuStore(mmu_access, src, sz))) return false;
 			
+			MonitorStore(addr, sz);
 			src += sz;
 			addr += sz;
 			size -= sz;
 		} while(size > 0);
-		
-		MonitorStore(buf_addr, buf_size);
 	}
 	return true;
 }

@@ -50,6 +50,8 @@ swi.disasm = {
 };
 
 swi.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SWI( imm );
 };
 
@@ -70,6 +72,8 @@ bkpt.disasm = {
 };
 
 bkpt.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.BKPT( imm );
 };
 

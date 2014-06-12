@@ -478,8 +478,13 @@ TBuiltDouble<TypeTraits>::setFloat(const FloatConversion& fcValue, StatusAndCont
                if (scfFlags.upApproximateInversionForNear() && scfFlags.isNearestRound()) {
                   typename FloatConversion::Mantissa fcmMantissa = fcValue.mantissa();
                   int uShift = fcValue.querySizeMantissa() - bitSizeMantissa();
-                  if (uShift > 0)
+                  if (uShift > 0) {
                      trightShift(fcmMantissa, uShift, 0U, scfFlags, fNegative, fcValue.querySizeMantissa());
+                     if (scfFlags.upApproximateInversionForNear()) {
+                        if (scfFlags.hasEffectiveRoundToEven())
+                           scfFlags.setApproximate(scfFlags.isUpApproximate() ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
+                     };
+                  };
                }
                else
                   scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);

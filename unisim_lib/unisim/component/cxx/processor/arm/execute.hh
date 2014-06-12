@@ -40,6 +40,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
 
 #include <inttypes.h>
+#include <cassert>
 
 namespace unisim {
 namespace component {
