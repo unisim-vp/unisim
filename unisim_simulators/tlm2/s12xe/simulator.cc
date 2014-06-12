@@ -82,6 +82,7 @@ Simulator::Simulator(int argc, char **argv)
 	, endian("")
 	, program_counter_name("")
 
+	, exit_status(-1)
 	, isS19(false)
 
 	, dump_parameters(false)

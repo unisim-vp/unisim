@@ -161,6 +161,7 @@ class Literal : public Token<ABSTRACT_VALUE>
 {
 public:
 	Literal(const char *text, unsigned int id, const unisim::util::lexer::Location& loc);
+	virtual ~Literal() {}
 	
 	virtual AST<ABSTRACT_VALUE> *nud(Parser<ABSTRACT_VALUE> *parser);
 private:
@@ -184,6 +185,8 @@ public:
 	InfixOperator(char c, char end_of_subscript_c, const unisim::util::lexer::Location& loc, unsigned token_lbp);
 	InfixOperator(const char *text, unsigned int id, unsigned int end_of_subscript_id, const unisim::util::lexer::Location& loc, unsigned token_lbp);
 
+	virtual ~InfixOperator() {}
+
 	virtual AST<ABSTRACT_VALUE> *led(Parser<ABSTRACT_VALUE> *parser, AST<ABSTRACT_VALUE> *left);
 private:
 	unsigned int bp;
@@ -203,6 +206,8 @@ public:
 	PrefixOperator(char c, char closing_c, const unisim::util::lexer::Location& loc);
 	PrefixOperator(const char *text, unsigned int id, unsigned int closing_id, const unisim::util::lexer::Location& loc);
 	
+	virtual ~PrefixOperator() {}
+
 	virtual AST<ABSTRACT_VALUE> *nud(Parser<ABSTRACT_VALUE> *parser);
 private:
 	unsigned int bp;
@@ -225,6 +230,9 @@ class SuffixOperator : virtual public Token<ABSTRACT_VALUE>
 public:
 	SuffixOperator(char c, const unisim::util::lexer::Location& loc, unsigned int token_lbp);
 	SuffixOperator(const char *text, unsigned int id, const unisim::util::lexer::Location& loc, unsigned int token_lbp);
+
+	virtual ~SuffixOperator() {}
+
 	virtual AST<ABSTRACT_VALUE> *led(Parser<ABSTRACT_VALUE> *parser, AST<ABSTRACT_VALUE> *left);
 private:
 };

@@ -62,7 +62,7 @@ public:
 
 	PIM(const char *name, Object *parent = 0);
 
-	~PIM();
+	virtual ~PIM();
 	virtual bool Setup();
 
 	void generatePimFile();

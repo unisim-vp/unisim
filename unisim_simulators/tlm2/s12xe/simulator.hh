@@ -292,7 +292,7 @@ private:
 	Parameter<bool> param_dump_formulas;
 	Parameter<bool> param_dump_statistics;
 
-	enum {DATA_LOAD_RATIO, DATA_STORE_RATIO} ReadBackOffsets;
+	enum ReadBackOffsets {DATA_LOAD_RATIO, DATA_STORE_RATIO};
 
 	double null_stat_var;
 	Statistic<double> stat_data_load_ratio;

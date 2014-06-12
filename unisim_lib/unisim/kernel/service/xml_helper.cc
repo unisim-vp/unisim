@@ -49,6 +49,8 @@ const char *XMLHelper::XML_ENCODING = "UTF-8";
 XMLHelper::
 XMLHelper(Simulator *_simulator) :
 	simulator(_simulator),
+	cur_var(0),
+	cur_status(NONE),
 	name_token(0),
 	variables_token(0),
 	object_token(0),

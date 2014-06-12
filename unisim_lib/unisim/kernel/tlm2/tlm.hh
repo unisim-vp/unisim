@@ -236,6 +236,9 @@ protected:
 
 	ManagedPayload(const ManagedPayload& x) :
 		extensions(tlm::max_num_extensions())
+		, memory_manager(0)
+		, ref_count(0)
+
 	{
 		for(unsigned int i=0; i<extensions.size(); i++)
 		{
@@ -355,6 +358,8 @@ public:
 	             bool (MODULE::*cb_get_direct_mem_ptr)(unsigned int, typename TYPES::tlm_payload_type& payload, tlm::tlm_dmi& dmi_data)
 	);
 	
+	virtual ~FwRedirector() {};
+
 	virtual tlm::tlm_sync_enum nb_transport_fw(typename TYPES::tlm_payload_type& payload, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t);
 	virtual void b_transport(typename TYPES::tlm_payload_type& payload, sc_core::sc_time& t);
 	virtual unsigned int transport_dbg(typename TYPES::tlm_payload_type& payload);
@@ -419,6 +424,8 @@ public:
 	             void (MODULE::*cb_invalidate_direct_mem_ptr)(unsigned int, sc_dt::uint64, sc_dt::uint64)
 	);
 	
+	virtual ~BwRedirector() {}
+
 	virtual tlm::tlm_sync_enum nb_transport_bw(typename TYPES::tlm_payload_type& payload, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t);
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 

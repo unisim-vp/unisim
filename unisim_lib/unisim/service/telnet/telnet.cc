@@ -99,6 +99,10 @@ Telnet::Telnet(const char *name, Object *parent)
 	, param_telnet_tcp_port("telnet-tcp-port", this, telnet_tcp_port, "TCP/IP port of telnet")
 	, param_guest_os("guest-os", this, guest_os, "Guest operating system")
 	, param_enable_negotiation("enable-negotiation", this, enable_negotiation, "Enable negotiation with client")
+	, telnet_input_buffer_size(0)
+	, telnet_input_buffer_index(0)
+	, telnet_output_buffer_size(0)
+
 {
 	param_telnet_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_guest_os.AddEnumeratedValue("unknown");
