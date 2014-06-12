@@ -557,6 +557,8 @@ bool Telnet::GetChar(char& c)
 		}
 	}
 	while(1);
+
+	return false;
 }
 
 void Telnet::PutChar(char c)

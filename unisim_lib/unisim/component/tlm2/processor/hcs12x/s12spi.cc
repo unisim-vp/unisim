@@ -87,6 +87,8 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	SC_THREAD(TxRun);
 	SC_THREAD(RxRun);
 
+	SC_THREAD(TelnetProcessInput);
+
 	xint_payload = xint_payload_fabric.allocate();
 
 }
@@ -210,7 +212,8 @@ void S12SPI::RxRun() {
 
 				if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (5) " << std::endl;
 
-				TelnetProcessInput();
+
+//				TelnetProcessInput();
 
 				newFrameStart = !isEmpty(telnet_rx_fifo);
 
@@ -285,6 +288,47 @@ void S12SPI::RxRun() {
 
 		setIdle();
 	}
+}
+
+void S12SPI::TelnetProcessInput()
+{
+	while (telnet_enabled) {
+		while (!isSPIEnabled()) {
+
+			wait(rx_run_event);
+		}
+
+		if(char_io_import)
+		{
+			char c;
+			uint8_t v;
+
+			if(!char_io_import->GetChar(c)) {
+				wait(telnet_process_input_period);
+
+				continue;
+
+			} else {
+				v = (uint8_t) c;
+				if(debug_enabled)
+				{
+					logger << DebugInfo << "Receiving ";
+					if(v >= 32)
+						logger << "character '" << c << "'";
+					else
+						logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+					logger << " from telnet client" << EndDebugInfo;
+				}
+
+				add(telnet_rx_fifo, v, telnet_rx_event);
+			}
+
+		} else {
+			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
+		}
+
+	}
+
 }
 
 //=====================================================================
@@ -521,10 +565,21 @@ void S12SPI::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 void S12SPI::ComputeBaudRate() {
 
+	/**
+	 * The baud rate divisor equation is as follows:
+           BaudRateDivisor = (SPPR + 1) * 2(SPR + 1)
+
+       The baud rate can be calculated with the following equation:
+           Baud Rate = BusClock / BaudRateDivisor
+	 */
 	uint16_t sppr = (spibr_register >> 4) & 0x07;
 	uint16_t spr = spibr_register & 0x07;
 	uint16_t baudRateDivisor = (sppr + 1) * pow(2, spr+1);
-	spi_baud_rate = bus_cycle_time / baudRateDivisor;
+
+	spi_baud_rate = bus_cycle_time * baudRateDivisor;
+
+//	telnet_process_input_period = sc_time(1, SC_MS);
+	telnet_process_input_period = spi_baud_rate * 8 * 8;
 
 }
 

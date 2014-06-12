@@ -262,6 +262,7 @@ private:
 	sc_time		bus_cycle_time;
 
 	sc_time		sci_baud_rate;
+	sc_time		telnet_process_input_period;
 
 	sc_event tx_run_event, tx_load_event, tx_break_event, rx_run_event;
 
@@ -516,33 +517,34 @@ private:
 		TelnetProcessOutput(true);
 	}
 
-	inline void TelnetProcessInput()
-	{
-		if(char_io_import)
-		{
-			char c;
-			uint8_t v;
+//	inline void TelnetProcessInput()
+//	{
+//		if(char_io_import)
+//		{
+//			char c;
+//			uint8_t v;
+//
+//			if(!char_io_import->GetChar(c)) return;
+//
+//			v = (uint8_t) c;
+//			if(rx_debug_enabled)
+//			{
+//				logger << DebugInfo << "Receiving ";
+//				if(v >= 32)
+//					logger << "character '" << c << "'";
+//				else
+//					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+//				logger << " from telnet client" << EndDebugInfo;
+//			}
+//
+//			add(telnet_rx_fifo, v, telnet_rx_event);
+//
+//		} else {
+//			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
+//		}
+//	}
 
-			if(!char_io_import->GetChar(c)) return;
-
-			v = (uint8_t) c;
-			if(rx_debug_enabled)
-			{
-				logger << DebugInfo << "Receiving ";
-				if(v >= 32)
-					logger << "character '" << c << "'";
-				else
-					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
-				logger << " from telnet client" << EndDebugInfo;
-			}
-
-			add(telnet_rx_fifo, v, telnet_rx_event);
-
-		} else {
-			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
-		}
-	}
-
+	void TelnetProcessInput();
 	inline void TelnetProcessOutput(bool flush_telnet_output)
 	{
 		if(char_io_import)

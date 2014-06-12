@@ -106,6 +106,7 @@ void SocketServerThread::run() {
 
 #ifdef WIN32
 
+		/* Ask for non-blocking reads on socket */
 		u_long NonBlock = 1;
 		if(ioctlsocket(sockfdTmp, FIONBIO, &NonBlock) != 0) {
 			int array[] = {sockfdTmp};
@@ -120,6 +121,7 @@ void SocketServerThread::run() {
 			error(array, "fcntl <F_GETFL> failed");
 		}
 
+		/* Ask for non-blocking reads on socket */
 		if (fcntl(sockfdTmp, F_SETFL, flags | O_NONBLOCK) < 0) {
 			int array[] = {sockfdTmp};
 			error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
