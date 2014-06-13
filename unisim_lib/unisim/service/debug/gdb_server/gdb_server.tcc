@@ -1102,7 +1102,11 @@ bool GDBServer<ADDRESS>::WriteRegisters(const string& hex)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 {
-	if(regnum >= gdb_registers.size()) return false;
+	if(regnum >= gdb_registers.size())
+	{
+		logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
+		return false;
+	}
 	const GDBRegister& gdb_reg = gdb_registers[regnum];
 	string packet;
 	gdb_reg.GetValue(packet);
@@ -1112,7 +1116,11 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 {
-	if(regnum >= gdb_registers.size()) return false;
+	if(regnum >= gdb_registers.size())
+	{
+		logger << DebugError << "Register #" << regnum << " can't be written because it is unknown" << EndDebugError;
+		return false;
+	}
 	GDBRegister& gdb_reg = gdb_registers[regnum];
 	return gdb_reg.SetValue(hex) ? PutPacket("OK") : PutPacket("E00");
 }

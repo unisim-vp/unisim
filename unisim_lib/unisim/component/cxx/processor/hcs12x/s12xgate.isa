@@ -83,9 +83,20 @@ action {uint8_t} getCycles () {
 action {void} execute({XGATE *} {cpu}) {
 	std::cerr << "Unknown instruction" << std::endl;
 
+/**
+ 10.4.5 Software Error Detection (page 380)
+      Upon detecting an error condition caused by erratic application code, the XGATE module will
+      immediately terminate program execution and trigger a non-maskable interrupt to the S12X_CPU. There
+      are three error conditions:
+       - Execution of an illegal opcode
+       - Illegal opcode fetches
+       - Illegal load or store accesses
+**/
+
 	cpu->assert_software_error_interrupt();
 
 	cpu->Stop(-1);
+//	cpu->terminateCurrentThread();
 }
 
 // Return to Scheduler and others
@@ -137,7 +148,10 @@ return_scheduler.execute = {
 		 * Put XGATE into Debug Mode and Signals a Software breakpoint to the S12X_DBG module (not emulated).
 		 * It is not possible to single step over a BRK instruction. This instruction does not advance the program counter.
 		 */
-		cpu->reportTrap();
+		cpu->reportTrap("XGATE has encountered BRK instruction. S12X_DBG module (not emulated).");
+		
+		cpu->setXGPC(cpu->getXGPC() - 2);
+		
 	} break;
 	case 1: /* NOP */ {
 		// No Operation for one cycle.
@@ -165,6 +179,7 @@ semaphore.getCycles = {
 	case 3: /* SSEM RS */ return 2;
 	}
 
+    return 0; 
 }
 
 semaphore.disasm = {
@@ -229,6 +244,7 @@ single_register.getCycles = {
 	case 3: /* SIF RS */ return 2;
 	}
 
+    return 0; 
 }
 
 single_register.disasm = {
@@ -311,7 +327,7 @@ special_move.getCycles = {
 	case 2: /* TFR RD, PC */ return 1;
 	case 3: /* not used */ return 0;
 	}
-
+    return 0;
 }
 
 special_move.disasm = {
@@ -369,6 +385,8 @@ shift_dyadic.getCycles = {
 	case 6: /* ROL RD, RS */ return 1;
 	case 7: /* ROR RD, RS */ return 1;
 	}
+	
+    return 0;	
 }
 
 shift_dyadic.disasm = {
@@ -595,6 +613,7 @@ shift_imm4.getCycles = {
 	case 7: /* ROR RD, #IMM4 */ return 1;
 	}
 
+    return 0;
 }
 
 shift_imm4.disasm = {
@@ -788,6 +807,7 @@ logical_triadic.getCycles = {
 	case 3: /* XNOR RD, RS1, RS2 */ return 1;
 	}
 
+    return 0;
 }
 
 logical_triadic.disasm = {
@@ -868,6 +888,7 @@ arithmetic_triadic.getCycles = {
 	case 3: /* ADC RD, RS1, RS2 */ return 1;
 	}
 
+    return 0;
 }
 
 arithmetic_triadic.disasm = {
@@ -906,7 +927,7 @@ arithmetic_triadic.execute = {
 		uint16_t rs1_reg = cpu->getXGRx(reg2);
 		uint16_t rs2_reg = cpu->getXGRx(reg3);
 
-		Sub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
+		SignedSub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
 
 		cpu->setXGRx(reg1, rd_reg);
 
@@ -927,7 +948,7 @@ arithmetic_triadic.execute = {
 		uint16_t rs1_reg = cpu->getXGRx(reg2);
 		uint16_t rs2_reg = cpu->getXGRx(reg3);
 
-		Sub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
+		SignedSub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
 
 		cpu->setXGRx(reg1, rd_reg);
 
@@ -946,7 +967,7 @@ arithmetic_triadic.execute = {
 		uint16_t rs1_reg = cpu->getXGRx(reg2);
 		uint16_t rs2_reg = cpu->getXGRx(reg3);
 
-		Add16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
+		UnsignedAdd16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
 
 		cpu->setXGRx(reg1, rd_reg);
 
@@ -967,7 +988,7 @@ arithmetic_triadic.execute = {
 		uint16_t rs1_reg = cpu->getXGRx(reg2);
 		uint16_t rs2_reg = cpu->getXGRx(reg3);
 
-		Add16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
+		UnsignedAdd16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
 
 		cpu->setXGRx(reg1, rd_reg);
 
@@ -1041,6 +1062,7 @@ branches.getCycles = {
 	} break;
 	}
 
+    return 0;
 }
 
 branches.disasm = {
@@ -1195,6 +1217,7 @@ ld_st_offs5.getCycles = {
 	case 3: /* STW RD, (RB, #OFFS5) */ return 2;
 	}
 
+    return 0;
 }
 
 ld_st_offs5.disasm = { 
@@ -1256,6 +1279,8 @@ ldb.getCycles = {
 		case 2: /* LDB RD, (RD, -RI) */ return 2;
 		case 3: /* BFEXT RD, RS1, RS2 */ return 1;
 		}
+		
+		return 0;
 }
 
 ldb.disasm = {
@@ -1345,6 +1370,7 @@ ldw.getCycles = {
 	case 3: /* BFINS RD, RS1, RS2 */ return 1;
 	}
 
+    return 0;
 }
 
 ldw.disasm = {
@@ -1436,6 +1462,8 @@ stb.getCycles = {
 	case 2: /* STB RD, (RD, -RI) */ return 2;
 	case 3: /* BFINSI RD, RS1, RS2 */ return 1;
 	}
+	
+    return 0;	
 }
 
 stb.disasm = {
@@ -1526,6 +1554,7 @@ stw.getCycles = {
 	case 3: /* BFINSX RD, RS1, RS2 */ return 1;
 	}
 
+    return 0;
 }
 
 stw.disasm = {
@@ -1628,6 +1657,8 @@ logic_imm8.getCycles = {
 		case 6: /* XNORL RD, #IMM8 */ return 1;
 		case 7: /* XNORH RD, #IMM8 */ return 1;
 		}
+		
+    return 0;		
 }
 
 logic_imm8.disasm = {
@@ -1783,6 +1814,7 @@ arithmetic_imm8.getCycles = {
 	case 7: /* LDH RD, #IMM8 */ return 1;
 	}
 
+    return 0;
 }
 
 arithmetic_imm8.disasm = {
@@ -1833,7 +1865,7 @@ arithmetic_imm8.execute = {
 
 		uint16_t reg1_val = cpu->getXGRx(reg1);
 
-		Sub16(result, carry_out, overflow, sign, reg1_val, (0x00FF & imm8), carry_in);
+		SignedSub16(result, carry_out, overflow, sign, reg1_val, (0x00FF & imm8), carry_in);
 
 		cpu->setXGRx(reg1, result);
 
@@ -1854,7 +1886,7 @@ arithmetic_imm8.execute = {
 		uint16_t reg1_val = cpu->getXGRx(reg1);
 		uint16_t to_subract = (imm8 << 8);
 
-		Sub16(result, carry_out, overflow, sign, reg1_val, to_subract, carry_in);
+		SignedSub16(result, carry_out, overflow, sign, reg1_val, to_subract, carry_in);
 
 		cpu->setXGRx(reg1, result);
 
@@ -1871,7 +1903,7 @@ arithmetic_imm8.execute = {
 		carry_in = 0;
 		uint8_t regVal = cpu->getXGRx(reg1) & 0x00FF;
 
-		Sub8(result, carry_out, overflow, sign, regVal, imm8, carry_in);
+		SignedSub8(result, carry_out, overflow, sign, regVal, imm8, carry_in);
 
 		if (carry_out) { cpu->getCCR()->setC();} else { cpu->getCCR()->clrC();}
 		if (overflow) { cpu->getCCR()->setV();} else { cpu->getCCR()->clrV();}
@@ -1885,7 +1917,7 @@ arithmetic_imm8.execute = {
 		uint8_t carry_in = cpu->getCCR()->getC();
 		uint8_t regVal = cpu->getXGRx(reg1) >> 8;
 
-		Sub8(result, carry_out, overflow, sign, regVal, imm8, carry_in);
+		SignedSub8(result, carry_out, overflow, sign, regVal, imm8, carry_in);
 
 		if (carry_out) { cpu->getCCR()->setC();} else { cpu->getCCR()->clrC();}
 		if (overflow) { cpu->getCCR()->setV();} else { cpu->getCCR()->clrV();}
@@ -1901,7 +1933,7 @@ arithmetic_imm8.execute = {
 
 		uint16_t rd_reg = cpu->getXGRx(reg1);
 
-		Add16(result, carry_out, overflow, sign, rd_reg, (0x00FF & imm8), 0);
+		UnsignedAdd16(result, carry_out, overflow, sign, rd_reg, (0x00FF & imm8), 0);
 
 		cpu->setXGRx(reg1, result);
 
@@ -1920,7 +1952,7 @@ arithmetic_imm8.execute = {
 
 		uint16_t rd_reg = cpu->getXGRx(reg1);
 
-		Add16(result, carry_out, overflow, sign, rd_reg, (0xFF00 & (imm8 << 8)), 0);
+		UnsignedAdd16(result, carry_out, overflow, sign, rd_reg, (0xFF00 & (imm8 << 8)), 0);
 
 		cpu->setXGRx(reg1, result);
 

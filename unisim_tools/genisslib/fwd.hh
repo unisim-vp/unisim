@@ -40,6 +40,6 @@ struct Specialization_t;
 struct Constraint_t;
 template <class Type_t> struct Vect_t;
 struct StringVect_t;
-namespace Str { struct Buf; }
+struct UIntVect_t;
 
 #endif // __FWD_HH__

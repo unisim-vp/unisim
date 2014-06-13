@@ -111,10 +111,10 @@ using unisim::util::endian::Host2BigEndian;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::util::endian::LittleEndian2Host;
 
-using unisim::util::arithmetic::Add8;
-using unisim::util::arithmetic::Add16;
-using unisim::util::arithmetic::Sub8;
-using unisim::util::arithmetic::Sub16;
+using unisim::util::arithmetic::UnsignedAdd8;
+using unisim::util::arithmetic::UnsignedAdd16;
+using unisim::util::arithmetic::SignedSub8;
+using unisim::util::arithmetic::SignedSub16;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::address_t;
@@ -244,7 +244,7 @@ public:
 	static const unsigned int XGCHPL = 0x03; // 1-byte For XGATE.V2 this byte is reserved. For XGATE.V3 it hold the current thread priority.
 	static const unsigned int RESERVED2 = 0x04; // 1-byte
 	static const unsigned int XGISPSEL = 0x05; // 1-byte For XGATE.V2 this byte is reserved. For XGATE.V3 it is mapped to selection register.
-	static const unsigned int XGVBR = 6; // 2-bytes For XGATE.V3 this 2-bytes depending on the content of XGISPSEL is mapped to {XGVBR, XGISP74, XGISP31}
+	static const unsigned int XGVBR = 0x06; // 2-bytes For XGATE.V3 this 2-bytes depending on the content of XGISPSEL is mapped to {XGVBR, XGISP74, XGISP31}
 	static const unsigned int XGIF_7F_70 = 0x08; // 2-bytes
 	static const unsigned int XGIF_6F_60 = 0x0A; // 2-bytes
 	static const unsigned int XGIF_5F_50 = 0x0C; // 2-bytes
@@ -331,10 +331,10 @@ public:
 		 */
 	}
 
-	virtual void busWrite(address_t addr, void *buffer, uint32_t size) = 0;
-	virtual void busRead(address_t addr, void *buffer, uint32_t size) = 0;
+	virtual void busWrite(MMC_DATA *buffer) = 0;
+	virtual void busRead(MMC_DATA *buffer) = 0;
 
-	inline void reportTrap();
+	inline void reportTrap(const char *c_str);
 
 	//==========================================
 	//=     ISA - MEMORY ACCESS ROUTINES       =
@@ -437,12 +437,6 @@ protected:
 	bool verbose_exception;
 	Parameter<bool> param_verbose_exception;
 
-	bool trace_enable;
-	Parameter<bool> param_trace_enable;
-
-	uint64_t periodic_trap;
-	Parameter<uint64_t> param_periodic_trap;
-
 	/** indicates if the memory accesses require to be reported */
 	bool requires_memory_access_reporting;
 	Parameter<bool> param_requires_memory_access_reporting;
@@ -451,8 +445,17 @@ protected:
 	bool requires_finished_instruction_reporting;
 	Parameter<bool> param_requires_finished_instruction_reporting;
 
+	bool trace_enable;
+	Parameter<bool> param_trace_enable;
+
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
+
+	uint64_t periodic_trap;
+	Parameter<uint64_t> param_periodic_trap;
+
+	string version;
+	Parameter<string> param_version;
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
@@ -461,9 +464,6 @@ protected:
 
 	uint8_t sofwtare_channel_id[XGATE_SIZE];
 	ParameterArray<uint8_t> param_software_channel_id;
-
-	string version;
-	Parameter<string> param_version;
 
 	bool xgate_enabled;
 	bool stop_current_thread;
@@ -680,12 +680,13 @@ inline uint8_t XGATE::memRead8(address_t logicalAddress) {
 	uint8_t data;
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
-	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 	monitorLoad(logicalAddress, sizeof(data));
 
@@ -697,12 +698,13 @@ inline uint16_t XGATE::memRead16(address_t logicalAddress) {
 	uint16_t data;
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
-	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 	data = BigEndian2Host(data);
 
@@ -715,12 +717,13 @@ inline void XGATE::memWrite8(address_t logicalAddress,uint8_t data) {
 
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
-	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busWrite(&mmc_data);
 
 	monitorStore(logicalAddress, sizeof(data));
 
@@ -732,12 +735,13 @@ inline void XGATE::memWrite16(address_t logicalAddress,uint16_t data) {
 
 	data = Host2BigEndian(data);
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
-	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busWrite(&mmc_data);
 
 	monitorStore(logicalAddress, sizeof(data));
 
@@ -773,9 +777,9 @@ inline void XGATE::monitorStore(address_t logicalAddress, uint32_t size)
 	}
 }
 
-inline void XGATE::reportTrap() {
+inline void XGATE::reportTrap(const char *c_str) {
 	if (trap_reporting_import) {
-		trap_reporting_import->ReportTrap();
+		trap_reporting_import->ReportTrap(*this, c_str);
 	}
 
 }

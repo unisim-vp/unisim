@@ -520,7 +520,12 @@ public:
   /** Determine wether the processor instruction stream is inside an
    * IT block.  Always false before ARMv6T2 architectures.
    */
-  bool itblock() { return false; }
+  bool itblock() const { return false; }
+  
+  /** Return the current condition associated to the IT state of the
+   * processor. Always "AL" before ARMv6T2 architectures.
+   */
+  uint32_t itcond() const { return this->COND_AL; }
   
   /**************************************************************/
   /* Coprocessor methods          START                         */

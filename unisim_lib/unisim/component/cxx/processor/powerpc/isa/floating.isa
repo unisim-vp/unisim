@@ -866,24 +866,42 @@ fmadds.execute = {
 	uint32_t old_fpscr = fpscr;
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
-	SoftFloat result(cpu->GetFPR(fa), flags);
-	flags.clear();
-	SoftFloat b(cpu->GetFPR(fb), flags);
-	flags.clear();
-	SoftFloat c(cpu->GetFPR(fc), flags);
-	flags.clear();
+	SoftDouble intermediate_result = cpu->GetFPR(fa);
+	const SoftDouble& b = cpu->GetFPR(fb);
+	const SoftDouble& c = cpu->GetFPR(fc);
+
+	// Compute the intermediate result before rounding
+	intermediate_result.multAndAddAssign(c, b, flags);
 	
-	// Compute the result
-	result.multAndAddAssign(c, b, flags);
-	
-	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<CONFIG>(fpscr, flags);
-	GenFPSCR_UX<CONFIG>(fpscr, flags);
+	// Round the result
+	Flags flags_conv;
+	flags_conv.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
+    flags_conv.clearKeepSignalingConversion();
+	flags_conv.setUpApproximateInfty();
+	SoftFloat result(intermediate_result, flags_conv);
+	if(!flags_conv.isApproximate())
+	{
+		if(flags.isUpApproximate())
+		{
+			flags_conv.setApproximate(Flags::Up);
+		}
+		if(flags.isDownApproximate())
+		{
+			flags_conv.setApproximate(Flags::Down);
+		}
+	};
+	flags_conv.mergeException(flags);
+
+	// Generate FR
+	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags_conv);
+
+	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FI, FPRF, XX, FX, VX, FEX
+	GenFPSCR_OX<CONFIG>(fpscr, flags_conv);
+	GenFPSCR_UX<CONFIG>(fpscr, flags_conv);
 	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
 	GenFPSCR_VXISI<CONFIG>(fpscr, flags);
 	GenFPSCR_VXIMZ<CONFIG>(fpscr, flags);
-	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags);
-	GenFPSCR_FI<CONFIG>(fpscr, flags);
+	GenFPSCR_FI<CONFIG>(fpscr, flags_conv);
 	GenFPSCR_FPRF<CONFIG, SoftFloat>(fpscr, result);
 	GenFPSCR_XX<CONFIG>(fpscr);
 	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
@@ -1001,24 +1019,42 @@ fmsubs.execute = {
 	uint32_t old_fpscr = fpscr;
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
-	SoftFloat result(cpu->GetFPR(fa), flags);
-	flags.clear();
-	SoftFloat b(cpu->GetFPR(fb), flags);
-	flags.clear();
-	SoftFloat c(cpu->GetFPR(fc), flags);
-	flags.clear();
+	SoftDouble intermediate_result = cpu->GetFPR(fa);
+	const SoftDouble& b = cpu->GetFPR(fb);
+	const SoftDouble& c = cpu->GetFPR(fc);
 
-	// Compute the result
-	result.multAndSubAssign(c, b, flags);
+	// Compute the intermediate result before rounding
+	intermediate_result.multAndSubAssign(c, b, flags);
+	
+	// Round the result
+	Flags flags_conv;
+	flags_conv.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
+    flags_conv.clearKeepSignalingConversion();
+	flags_conv.setUpApproximateInfty();
+	SoftFloat result(intermediate_result, flags_conv);
+	if(!flags_conv.isApproximate())
+	{
+		if(flags.isUpApproximate())
+		{
+			flags_conv.setApproximate(Flags::Up);
+		}
+		if(flags.isDownApproximate())
+		{
+			flags_conv.setApproximate(Flags::Down);
+		}
+	}
+	flags_conv.mergeException(flags);
 
-	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<CONFIG>(fpscr, flags);
-	GenFPSCR_UX<CONFIG>(fpscr, flags);
+	// Generate FR
+	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags_conv);
+
+	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FI, FPRF, XX, FX, VX, FEX
+	GenFPSCR_OX<CONFIG>(fpscr, flags_conv);
+	GenFPSCR_UX<CONFIG>(fpscr, flags_conv);
 	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
 	GenFPSCR_VXISI<CONFIG>(fpscr, flags);
 	GenFPSCR_VXIMZ<CONFIG>(fpscr, flags);
-	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags);
-	GenFPSCR_FI<CONFIG>(fpscr, flags);
+	GenFPSCR_FI<CONFIG>(fpscr, flags_conv);
 	GenFPSCR_FPRF<CONFIG, SoftFloat>(fpscr, result);
 	GenFPSCR_XX<CONFIG>(fpscr);
 	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
@@ -1139,27 +1175,45 @@ fnmadds.execute = {
 	uint32_t old_fpscr = fpscr;
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
-	SoftFloat result(cpu->GetFPR(fa), flags);
-	flags.clear();
-	SoftFloat b(cpu->GetFPR(fb), flags);
-	flags.clear();
-	SoftFloat c(cpu->GetFPR(fc), flags);
-	flags.clear();
+	SoftDouble intermediate_result = cpu->GetFPR(fa);
+	const SoftDouble& b = cpu->GetFPR(fb);
+	const SoftDouble& c = cpu->GetFPR(fc);
 
-	// Compute the result
-	result.multAndAddAssign(c, b, flags);
+	// Compute the intermediate result before rounding and opposite
+	intermediate_result.multAndAddAssign(c, b, flags);
+	
+	// Round the result
+	Flags flags_conv;
+	flags_conv.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
+    flags_conv.clearKeepSignalingConversion();
+	flags_conv.setUpApproximateInfty();
+	SoftFloat result(intermediate_result, flags_conv);
+	if(!flags_conv.isApproximate())
+	{
+		if(flags.isUpApproximate())
+		{
+			flags_conv.setApproximate(Flags::Up);
+		}
+		if(flags.isDownApproximate())
+		{
+			flags_conv.setApproximate(Flags::Down);
+		}
+	}
+	flags_conv.mergeException(flags);
 
-	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags);
+	// Generate FR
+	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags_conv);
 
+	// Compute the final result
 	if(likely(!result.isQNaN())) result.opposite();
-
-	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<CONFIG>(fpscr, flags);
-	GenFPSCR_UX<CONFIG>(fpscr, flags);
+	
+	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FI, FPRF, XX, FX, VX, FEX
+	GenFPSCR_OX<CONFIG>(fpscr, flags_conv);
+	GenFPSCR_UX<CONFIG>(fpscr, flags_conv);
 	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
 	GenFPSCR_VXISI<CONFIG>(fpscr, flags);
 	GenFPSCR_VXIMZ<CONFIG>(fpscr, flags);
-	GenFPSCR_FI<CONFIG>(fpscr, flags);
+	GenFPSCR_FI<CONFIG>(fpscr, flags_conv);
 	GenFPSCR_FPRF<CONFIG, SoftFloat>(fpscr, result);
 	GenFPSCR_XX<CONFIG>(fpscr);
 	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
@@ -1280,26 +1334,45 @@ fnmsubs.execute = {
 	uint32_t old_fpscr = fpscr;
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
-	SoftFloat result(cpu->GetFPR(fa), flags);
-	flags.clear();
-	SoftFloat b(cpu->GetFPR(fb), flags);
-	SoftFloat c(cpu->GetFPR(fc), flags);
-	flags.clear();
+	SoftDouble intermediate_result = cpu->GetFPR(fa);
+	const SoftDouble& b = cpu->GetFPR(fb);
+	const SoftDouble& c = cpu->GetFPR(fc);
 
-	// Compute the result
-	result.multAndSubAssign(c, b, flags);
+	// Compute the intermediate result before rounding and opposite
+	intermediate_result.multAndSubAssign(c, b, flags);
+	
+	// Round the result
+	Flags flags_conv;
+	flags_conv.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
+    flags_conv.clearKeepSignalingConversion();
+	flags_conv.setUpApproximateInfty();
+	SoftFloat result(intermediate_result, flags_conv);
+	if(!flags_conv.isApproximate())
+	{
+		if(flags.isUpApproximate())
+		{
+			flags_conv.setApproximate(Flags::Up);
+		}
+		if(flags.isDownApproximate())
+		{
+			flags_conv.setApproximate(Flags::Down);
+		}
+	}
+	flags_conv.mergeException(flags);
 
-	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags);
+	// Generate FR
+	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags_conv);
 
+	// Compute the final result
 	if(likely(!result.isQNaN())) result.opposite();
-
-	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<CONFIG>(fpscr, flags);
-	GenFPSCR_UX<CONFIG>(fpscr, flags);
+	
+	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FI, FPRF, XX, FX, VX, FEX
+	GenFPSCR_OX<CONFIG>(fpscr, flags_conv);
+	GenFPSCR_UX<CONFIG>(fpscr, flags_conv);
 	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
 	GenFPSCR_VXISI<CONFIG>(fpscr, flags);
 	GenFPSCR_VXIMZ<CONFIG>(fpscr, flags);
-	GenFPSCR_FI<CONFIG>(fpscr, flags);
+	GenFPSCR_FI<CONFIG>(fpscr, flags_conv);
 	GenFPSCR_FPRF<CONFIG, SoftFloat>(fpscr, result);
 	GenFPSCR_XX<CONFIG>(fpscr);
 	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);

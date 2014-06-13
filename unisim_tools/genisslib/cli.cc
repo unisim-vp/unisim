@@ -95,39 +95,40 @@ CLI::prototype() {
   cerr << endl;
 }
 
-struct Screen_t {
-  intptr_t  m_tabstop, m_width;
-  Str::Buf  m_buffer;
-  intptr_t  m_lastblank;
-  bool      m_lastwasblank;
+struct Screen_t
+{
+  uintptr_t    m_tabstop, m_width;
+  std::string  m_buffer;
+  uintptr_t    m_lastblank;
+  bool         m_lastwasblank;
   
-  Screen_t( intptr_t _tabstop, intptr_t _width )
-    : m_tabstop( _tabstop ), m_width( _width ), m_lastblank( -1 ), m_lastwasblank( true ) {}
+  Screen_t( uintptr_t _tabstop, uintptr_t _width )
+    : m_tabstop( _tabstop ), m_width( _width ), m_lastblank( std::string::npos ), m_lastwasblank( true ) {}
   
   Screen_t& tab() {
-    if( m_buffer.m_index >= m_tabstop) return write( '\n' );
-    while( m_buffer.m_index < m_tabstop ) m_buffer.write( " " );
+    if( m_buffer.size() >= m_tabstop) return write( '\n' );
+    while( m_buffer.size() < m_tabstop ) m_buffer += ' ';
     return *this;
   }
   
   Screen_t& reset() {
     m_buffer.clear();
-    m_lastblank = -1;
+    m_lastblank = std::string::npos;
     m_lastwasblank = true;
     return *this;
   }
   
   Screen_t& flush() {
-    for( char const* ptr = m_buffer.m_storage; *ptr; ++ptr )
+    for( char const* ptr = m_buffer.c_str(); *ptr; ++ptr )
       if( *ptr > ' ' ) return write( '\n' );
     return *this;
   }
   
   Screen_t& write( char ch ) {
-    intptr_t index = m_buffer.m_index;
-    m_buffer.write( 1, &ch );
+    intptr_t index = m_buffer.size();
+    m_buffer += ch;
     if( ch == '\n' ) {
-      cerr << m_buffer.m_storage;
+      cerr << m_buffer.c_str();
       reset();
       return tab();
     } else if( ch <= ' ' ) { // considered as blank
@@ -136,12 +137,12 @@ struct Screen_t {
       m_lastwasblank = false;
     }
     
-    if( m_buffer.m_index > m_width and m_lastblank > 0 and not m_lastwasblank ) {
-      char flushbuf[m_buffer.m_index + 1];
-      memcpy( flushbuf, m_buffer.m_storage, m_lastblank );
+    if ((m_buffer.size() > m_width) and (m_lastblank > 0) and (m_lastblank != std::string::npos) and (not m_lastwasblank)) {
+      char flushbuf[m_buffer.size() + 1];
+      memcpy( flushbuf, m_buffer.c_str(), m_lastblank );
       flushbuf[m_lastblank] = '\0';
       cerr << flushbuf << endl;
-      char const* remainder = m_buffer.m_storage + m_lastblank;
+      char const* remainder = m_buffer.c_str() + m_lastblank;
       while( *remainder != '\0' and *remainder <= ' ' ) remainder++;
       strcpy( flushbuf, remainder );
       reset();

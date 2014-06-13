@@ -234,6 +234,10 @@ private:
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
+	tlm::tlm_generic_payload* trans;;
+
+	tlm_phase *phase;
+
 	class PendingInterrupt {
 	public:
 		PendingInterrupt() : state(false), payload(0) {}

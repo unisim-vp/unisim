@@ -41,7 +41,6 @@
 #include <string>
 #include <getopt.h>
 #include <stdlib.h>
-#include <signal.h>
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
@@ -61,6 +60,14 @@
 #include "unisim/service/profiling/addr_profiler/profiler.hh"
 #include "unisim/service/tee/memory_access_reporting/tee.hh"
 
+#ifdef WIN32
+
+#include <winsock2.h>
+#include <windows.h>
+
+#else
+#include <signal.h>
+#endif
 
 class Simulator
   : public unisim::kernel::service::Simulator
@@ -118,6 +125,11 @@ class Simulator
   unisim::kernel::service::Formula<double> *formula_caches_total_leakage_power;
   unisim::kernel::service::Formula<double> *formula_caches_total_power;
   int exit_status;
+#ifdef WIN32
+  static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
+#else
+  static void SigIntHandler(int signum);
+#endif
 };
 
 #endif /* SIMULATOR_HH_ */

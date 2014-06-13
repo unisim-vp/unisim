@@ -799,9 +799,20 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 		{
 			logger << DebugInfo << "Loading DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugInfo;
 		}
-		if(!dw_reg_num_mapping->Load(reg_num_mapping_filename.c_str(), blob->GetArchitecture()))
+		const char *architecture = blob->GetArchitecture();
+
+		if(strcmp(architecture, "") != 0)
 		{
-			logger << DebugWarning << "Can't load DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugWarning;
+			if(!dw_reg_num_mapping->Load(reg_num_mapping_filename.c_str(), architecture))
+			{
+				logger << DebugWarning << "Can't load DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugWarning;
+				delete dw_reg_num_mapping;
+				dw_reg_num_mapping = 0;
+			}
+		}
+		else
+		{
+			logger << DebugWarning << "Unknown architecture" << EndDebugWarning;
 			delete dw_reg_num_mapping;
 			dw_reg_num_mapping = 0;
 		}

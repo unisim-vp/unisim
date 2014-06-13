@@ -23,6 +23,7 @@
 
 #include <conststr.hh>
 #include <referencecounting.hh>
+#include <vector>
 
 /**
  * @brief A base bitfield Object
@@ -32,27 +33,46 @@
  * extraction.
  *
  */
-struct BitField_t : virtual ReferenceCounter {
-  unsigned int          m_size;
-  
+struct BitField_t : virtual ReferenceCounter
+{
   enum Exception_t { InternalError, };
-  enum Type_t { Opcode, Operand, Unused, Separator, SubOp, SpecializedOperand };
   
-  BitField_t( unsigned int _size ) : m_size( _size ) {}
+  BitField_t() {}
   virtual ~BitField_t() {}
-  virtual Type_t        type() const = 0;
-  virtual BitField_t*   clone() const = 0;
-  virtual void          fills( std::ostream& _sink ) const = 0;
+
   virtual ConstStr_t    symbol() const { return 0; }
+  
   virtual bool          hasopcode() const { return false; }
   virtual uint64_t      bits() const { throw InternalError; return 0; }
-  uint64_t              mask() const { return (0xffffffffffffffffULL >> (64-m_size)); }
-  virtual unsigned int  minsize() const { return m_size; }
-  virtual unsigned int  maxsize() const { return m_size; }
+  virtual uint64_t      mask() const { throw InternalError; return 0; };
+  
+  virtual BitField_t*   clone() const = 0;
+  virtual void          fills( std::ostream& _sink ) const = 0;
+  
+  virtual uintptr_t     sizes() const = 0;
+  virtual void          sizes( unsigned int* _sizes ) const = 0;
+  virtual unsigned int  minsize() const = 0;
+  virtual unsigned int  maxsize() const = 0;
 };
 
 std::ostream&
 operator<<( std::ostream& _sink, BitField_t const& _bf );
+
+struct FixedSizeBitField_t : public BitField_t
+{
+  unsigned int          m_size;
+  
+  FixedSizeBitField_t( unsigned int _size ) : m_size( _size ) {}
+  virtual ~FixedSizeBitField_t() {}
+
+  uint64_t              mask() const { return (0xffffffffffffffffULL >> (64-m_size)); }
+  
+  uintptr_t             sizes() const { return 1; }
+  void                  sizes( unsigned int* _sizes ) const { _sizes[0] = m_size; }
+  unsigned int          minsize() const { return m_size; }
+  unsigned int          maxsize() const { return m_size; }
+};
+
 
 /**
  *  @brief  An opcode bitfield 
@@ -61,17 +81,18 @@ operator<<( std::ostream& _sink, BitField_t const& _bf );
  *
  */
 
-struct OpcodeBitField_t : public BitField_t {
+struct OpcodeBitField_t : public FixedSizeBitField_t
+{
   unsigned int          m_value;
   
   OpcodeBitField_t( unsigned int _size, unsigned int _value );
   OpcodeBitField_t( OpcodeBitField_t const& _src );
   
-  Type_t                type() const { return Opcode; };
-  OpcodeBitField_t*     clone() const { return new OpcodeBitField_t( *this ); }
-  void                  fills( std::ostream& _sink ) const;
   bool                  hasopcode() const { return true; }
   uint64_t              bits() const { return m_value; };
+  
+  OpcodeBitField_t*     clone() const { return new OpcodeBitField_t( *this ); }
+  void                  fills( std::ostream& _sink ) const;
 };
 
 /**
@@ -82,7 +103,8 @@ struct OpcodeBitField_t : public BitField_t {
  *
  */
 
-struct OperandBitField_t : public BitField_t {
+struct OperandBitField_t : public FixedSizeBitField_t
+{
   ConstStr_t            m_symbol;
   int                   m_shift;
   unsigned int          m_size_modifier;
@@ -93,10 +115,10 @@ struct OperandBitField_t : public BitField_t {
 
   unsigned int          dstsize() const;
   
-  Type_t                type() const { return Operand; };
+  ConstStr_t            symbol() const { return m_symbol; };
+  
   OperandBitField_t*    clone() const { return new OperandBitField_t( *this ); }
   void                  fills( std::ostream& _sink ) const;
-  ConstStr_t            symbol() const { return m_symbol; };
 };
 
 /**
@@ -107,11 +129,11 @@ struct OperandBitField_t : public BitField_t {
  *  
  */
 
-struct UnusedBitField_t : public BitField_t {
+struct UnusedBitField_t : public FixedSizeBitField_t
+{
   UnusedBitField_t( unsigned int _size );
   UnusedBitField_t( UnusedBitField_t const& _src );
   
-  Type_t                type() const { return Unused; };
   UnusedBitField_t*     clone() const { return new UnusedBitField_t( *this ); }
   void                  fills( std::ostream& _sink ) const;
 };
@@ -125,15 +147,20 @@ struct UnusedBitField_t : public BitField_t {
  *  
  */
 
-struct SeparatorBitField_t : public BitField_t {
+struct SeparatorBitField_t : public BitField_t
+{
   bool                  m_rewind;
   
   SeparatorBitField_t( bool _rewind );
   SeparatorBitField_t( SeparatorBitField_t const& _src );
   
-  Type_t                type() const { return Separator; };
   SeparatorBitField_t*  clone() const { return new SeparatorBitField_t( *this ); }
   void                  fills( std::ostream& _sink ) const;
+
+  uintptr_t             sizes() const { return 1; }
+  void                  sizes( unsigned int* _sizes ) const { _sizes[0] = 0; }
+  unsigned int          minsize() const { return 0; }
+  unsigned int          maxsize() const { return 0; }
 };
 
 /**
@@ -146,17 +173,21 @@ struct SeparatorBitField_t : public BitField_t {
  *  
  */
 
-struct SubOpBitField_t : public BitField_t {
+struct SubOpBitField_t : public BitField_t
+{
   ConstStr_t            m_symbol;
   SDInstance_t const*   m_sdinstance;
   
   SubOpBitField_t( ConstStr_t _symbol, SDInstance_t const* _sdinstance );
   SubOpBitField_t( SubOpBitField_t const& _src );
 
-  Type_t                type() const { return SubOp; };
   ConstStr_t            symbol() const { return m_symbol; };
+  
   SubOpBitField_t*      clone() const { return new SubOpBitField_t( *this ); }
   void                  fills( std::ostream& _sink ) const;
+  
+  uintptr_t             sizes() const;
+  void                  sizes( unsigned int* _sizes ) const;
   unsigned int          minsize() const;
   unsigned int          maxsize() const;
 };
@@ -175,7 +206,8 @@ struct SubOpBitField_t : public BitField_t {
  *
  */
 
-struct SpOperandBitField_t : public BitField_t {
+struct SpOperandBitField_t : public FixedSizeBitField_t
+{
   ConstStr_t            m_symbol;
   int                   m_shift;
   unsigned int          m_size_modifier;
@@ -188,12 +220,13 @@ struct SpOperandBitField_t : public BitField_t {
   unsigned int          dstsize() const;
   ConstStr_t            constval() const;
   
-  Type_t                type() const { return SpecializedOperand; };
-  SpOperandBitField_t*  clone() const { return new SpOperandBitField_t( *this ); }
-  void                  fills( std::ostream& _sink ) const { throw InternalError; }
   ConstStr_t            symbol() const { return m_symbol; };
+
   bool                  hasopcode() const { return true; }
   uint64_t              bits() const { return m_value; };
+  
+  SpOperandBitField_t*  clone() const { return new SpOperandBitField_t( *this ); }
+  void                  fills( std::ostream& _sink ) const { throw InternalError; }
 };
 
 #endif // __BITFIELD_HH__

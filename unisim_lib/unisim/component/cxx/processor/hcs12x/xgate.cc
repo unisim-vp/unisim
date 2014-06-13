@@ -52,18 +52,18 @@ using unisim::util::debug::SimpleRegister;
 
 XGATE::XGATE(const char *name, Object *parent):
 	Object(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Client<DebugControl<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
+	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent)
 	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Client<SymbolTableLookup<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Client<TrapReporting>(name, parent)
 
 	, registers_export("registers_export", this)
-	, memory_access_reporting_control_export("memory_access_reporting_control_export", this)
 	, memory_export("memory_export", this)
+	, memory_access_reporting_control_export("memory_access_reporting_control_export", this)
 	, debug_control_import("debug_control_import", this)
 	, memory_access_reporting_import("memory_access_reporting_import", this)
 	, memory_import("memory_import", this)
@@ -76,20 +76,6 @@ XGATE::XGATE(const char *name, Object *parent):
 	, bus_cycle_time()
 	, cpu_cycle()
 	, bus_cycle()
-	, xgate_enabled(false)
-	, stop_current_thread(false)
-	, state(IDLE)
-	, mode(NORMAL)
-	, currentThreadTerminated(true)
-
-	, xgmctl_register(0x0000)
-	, xgispsel_register(0x00)
-	, xgswt_register(0x0000)
-	, xgsem_register(0x0000)
-	, currentRegisterBank(&registerBank[0])
-
-	, isPendingThread(false)
-	, pendingThreadRegisterBank(0)
 
 	, verbose_all(false)
 	, param_verbose_all("verbose-all", this, verbose_all)
@@ -115,21 +101,33 @@ XGATE::XGATE(const char *name, Object *parent):
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled, "")
 
+	, periodic_trap(-1)
+	, param_periodic_trap("periodic-trap", this, periodic_trap)
+
+	, version("V2")
+	, param_version("version", this, version, "XGATE version. Supported are V2 and V3. Default is V2")
+
 	, baseAddress(0x0380)
 	, param_baseAddress("base-address", this, baseAddress, "XGATE base Address")
 
 	, param_software_channel_id("software_channel_id", this, sofwtare_channel_id, XGATE_SIZE, "XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.")
+
+	, xgate_enabled(false)
+	, stop_current_thread(false)
+	, state(IDLE)
+	, mode(NORMAL)
+
+	, currentThreadTerminated(true)
+
+	, currentRegisterBank(&registerBank[0])
+	, isPendingThread(false)
+	, pendingThreadRegisterBank(0)
 
 	, interrupt_software_error(0x62)
 	, param_interrupt_software_error("software-error-interrupt", this, interrupt_software_error, "XGATE Software error interrupt")
 
 	, max_inst((uint64_t) -1)
 	, param_max_inst("max-inst", this, max_inst)
-	, periodic_trap(-1)
-	, param_periodic_trap("periodic-trap", this, periodic_trap)
-
-	, version("V2")
-	, param_version("version", this, version, "XGATE version. Supported are V2 and V3. Default is V2")
 
 	, instruction_counter(0)
 	, stat_instruction_counter("instruction-counter", this, instruction_counter)
@@ -139,6 +137,13 @@ XGATE::XGATE(const char *name, Object *parent):
 	, stat_load_counter("data-load-counter", this, data_load_counter)
 	, data_store_counter(0)
 	, stat_store_counter("data-store-counter", this, data_store_counter)
+
+	, xgmctl_register(0x0000)
+	, xgswt_register(0x0000)
+	, xgsem_register(0x0000)
+	, xgispsel_register(0x00)
+
+
 
 {
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -333,7 +338,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgif_6f_60_var = new unisim::kernel::service::Register<uint16_t>("XGIF_6F_60", this, xgif_register[1], "XGATE Channel (6F-60) Interrupt Flag Register (XGIF_6F_60)");
 	extended_registers_registry.push_back(xgif_6f_60_var);
-	xgvbr_var->setCallBack(this, XGIF_6F_60, &CallBackObject::write, NULL);
+	xgif_6f_60_var->setCallBack(this, XGIF_6F_60, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_5f_50_register_name;
 	sstr_xgif_5f_50_register_name << GetName() << ".XGIF_5F_50";
@@ -341,7 +346,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgif_5f_50_var = new unisim::kernel::service::Register<uint16_t>("XGIF_5F_50", this, xgif_register[2], "XGATE Channel (5F-60) Interrupt Flag Register (XGIF_5F_50)");
 	extended_registers_registry.push_back(xgif_5f_50_var);
-	xgvbr_var->setCallBack(this, XGIF_5F_50, &CallBackObject::write, NULL);
+	xgif_5f_50_var->setCallBack(this, XGIF_5F_50, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_4f_40_register_name;
 	sstr_xgif_4f_40_register_name << GetName() << ".XGIF_4F_40";
@@ -349,7 +354,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgif_4F_40_var = new unisim::kernel::service::Register<uint16_t>("XGIF_4F_40", this, xgif_register[3], "XGATE Channel (4F_40) Register (XGIF_4F_40)");
 	extended_registers_registry.push_back(xgif_4F_40_var);
-	xgvbr_var->setCallBack(this, XGIF_4F_40, &CallBackObject::write, NULL);
+	xgif_4F_40_var->setCallBack(this, XGIF_4F_40, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_3f_30_register_name;
 	sstr_xgif_3f_30_register_name << GetName() << ".XGIF_3F_30";
@@ -357,7 +362,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgif_3f_30_var = new unisim::kernel::service::Register<uint16_t>("XGIF_3F_30", this, xgif_register[4], "XGATE channel (3F-30) Register (XGIF_3F_30)");
 	extended_registers_registry.push_back(xgif_3f_30_var);
-	xgvbr_var->setCallBack(this, XGIF_3F_30, &CallBackObject::write, NULL);
+	xgif_3f_30_var->setCallBack(this, XGIF_3F_30, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_2f_20_register_name;
 	sstr_xgif_2f_20_register_name << GetName() << ".XGIF_2F_20";
@@ -365,7 +370,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgif_2f_20_var = new unisim::kernel::service::Register<uint16_t>("XGIF_2F_20", this, xgif_register[5], "XGATE Channel (2F-20) Register (XGIF_2F_20)");
 	extended_registers_registry.push_back(xgif_2f_20_var);
-	xgvbr_var->setCallBack(this, XGIF_2F_20, &CallBackObject::write, NULL);
+	xgif_2f_20_var->setCallBack(this, XGIF_2F_20, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_1f_10_register_name;
 	sstr_xgif_1f_10_register_name << GetName() << ".XGIF_1F_10";
@@ -373,7 +378,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgif_1f_10_var = new unisim::kernel::service::Register<uint16_t>("XGIF_1F_10", this, xgif_register[6], "XGATE Channel (1F-10) Register (XGIF_1F_10)");
 	extended_registers_registry.push_back(xgif_1f_10_var);
-	xgvbr_var->setCallBack(this, XGIF_1F_10, &CallBackObject::write, NULL);
+	xgif_1f_10_var->setCallBack(this, XGIF_1F_10, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgif_0f_00_register_name;
 	sstr_xgif_0f_00_register_name << GetName() << ".XGIF_0F_00";
@@ -381,7 +386,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgif_0f_00_var = new unisim::kernel::service::Register<uint16_t>("XGIF_0F_00", this, xgif_register[7], "XGATE Channel (0F-00) Register (XGIF_0F_00)");
 	extended_registers_registry.push_back(xgif_0f_00_var);
-	xgvbr_var->setCallBack(this, XGIF_0F_00, &CallBackObject::write, NULL);
+	xgif_0f_00_var->setCallBack(this, XGIF_0F_00, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgswt_register_name;
 	sstr_xgswt_register_name << GetName() << ".XGSWT";
@@ -389,7 +394,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgswt_var = new unisim::kernel::service::Register<uint16_t>("XGSWT", this, xgswt_register, "XGATE Software Trigger Register (XGSWT)");
 	extended_registers_registry.push_back(xgswt_var);
-	xgvbr_var->setCallBack(this, XGSWT, &CallBackObject::write, NULL);
+	xgswt_var->setCallBack(this, XGSWT, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgsemm_register_name;
 	sstr_xgsemm_register_name << GetName() << ".XGSEMM";
@@ -397,7 +402,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgsemm_var = new unisim::kernel::service::Register<uint16_t>("XGSEMM", this, xgsem_register, "XGATE Semaphore Register (XGSEMM)");
 	extended_registers_registry.push_back(xgsemm_var);
-	xgvbr_var->setCallBack(this, XGSEM, &CallBackObject::write, NULL);
+	xgsemm_var->setCallBack(this, XGSEM, &CallBackObject::write, NULL);
 
 	std::stringstream sstr_xgccr_register_name;
 	sstr_xgccr_register_name << GetName() << ".XGCCR";
@@ -405,7 +410,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint8_t> *xgccr_var = new unisim::kernel::service::Register<uint8_t>("XGCCR", this, *(currentRegisterBank->getXGCCRPtr()), "XGATE Condition Code Register (XGCCR)");
 	extended_registers_registry.push_back(xgccr_var);
-	xgvbr_var->setCallBack(this, XGCCR, &CallBackObject::write, &CallBackObject::read);
+	xgccr_var->setCallBack(this, XGCCR, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgpc_register_name;
 	sstr_xgpc_register_name << GetName() << ".XGPC";
@@ -413,7 +418,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgpc_var = new unisim::kernel::service::Register<uint16_t>("XGPC", this, *(currentRegisterBank->getXGPCPtr()), "XGATE Program Counter Register (XGPC)");
 	extended_registers_registry.push_back(xgpc_var);
-	xgvbr_var->setCallBack(this, XGPC, &CallBackObject::write, &CallBackObject::read);
+	xgpc_var->setCallBack(this, XGPC, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr1_register_name;
 	sstr_xgr1_register_name << GetName() << ".XGR1";
@@ -421,7 +426,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgr1_var = new unisim::kernel::service::Register<uint16_t>("XGR1", this, *(currentRegisterBank->getXGRxPtr(1)), "XGATE Register 1 (XGR1)");
 	extended_registers_registry.push_back(xgr1_var);
-	xgvbr_var->setCallBack(this, XGR1, &CallBackObject::write, &CallBackObject::read);
+	xgr1_var->setCallBack(this, XGR1, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr2_register_name;
 	sstr_xgr2_register_name << GetName() << ".XGR2";
@@ -429,7 +434,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgr2_var = new unisim::kernel::service::Register<uint16_t>("XGR2", this, *(currentRegisterBank->getXGRxPtr(2)), "XGATE Register 2 (XGR2)");
 	extended_registers_registry.push_back(xgr2_var);
-	xgvbr_var->setCallBack(this, XGR2, &CallBackObject::write, &CallBackObject::read);
+	xgr2_var->setCallBack(this, XGR2, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr3_register_name;
 	sstr_xgr3_register_name << GetName() << ".XGR3";
@@ -437,7 +442,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgr3_var = new unisim::kernel::service::Register<uint16_t>("XGR3", this, *(currentRegisterBank->getXGRxPtr(3)), "XGATE Register 3 (XGR3)");
 	extended_registers_registry.push_back(xgr3_var);
-	xgvbr_var->setCallBack(this, XGR3, &CallBackObject::write, &CallBackObject::read);
+	xgr3_var->setCallBack(this, XGR3, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr4_register_name;
 	sstr_xgr4_register_name << GetName() << ".XGR4";
@@ -445,7 +450,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgr4_var = new unisim::kernel::service::Register<uint16_t>("XGR4", this, *(currentRegisterBank->getXGRxPtr(4)), "XGATE Register 4 (XGR4)");
 	extended_registers_registry.push_back(xgr4_var);
-	xgvbr_var->setCallBack(this, XGR4, &CallBackObject::write, &CallBackObject::read);
+	xgr4_var->setCallBack(this, XGR4, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr5_register_name;
 	sstr_xgr5_register_name << GetName() << ".XGR5";
@@ -453,7 +458,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgr5_var = new unisim::kernel::service::Register<uint16_t>("XGR5", this, *(currentRegisterBank->getXGRxPtr(5)), "XGATE Register 5 (XGR5)");
 	extended_registers_registry.push_back(xgr5_var);
-	xgvbr_var->setCallBack(this, XGR5, &CallBackObject::write, &CallBackObject::read);
+	xgr5_var->setCallBack(this, XGR5, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr6_register_name;
 	sstr_xgr6_register_name << GetName() << ".XGR6";
@@ -461,7 +466,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgr6_var = new unisim::kernel::service::Register<uint16_t>("XGR6", this, *(currentRegisterBank->getXGRxPtr(6)), "XGATE Register 6 (XGR6)");
 	extended_registers_registry.push_back(xgr6_var);
-	xgvbr_var->setCallBack(this, XGR6, &CallBackObject::write, &CallBackObject::read);
+	xgr6_var->setCallBack(this, XGR6, &CallBackObject::write, &CallBackObject::read);
 
 	std::stringstream sstr_xgr7_register_name;
 	sstr_xgr7_register_name << GetName() << ".XGR7";
@@ -469,7 +474,7 @@ bool XGATE::BeginSetup() {
 
 	unisim::kernel::service::Register<uint16_t> *xgr7_var = new unisim::kernel::service::Register<uint16_t>("XGR7", this, *(currentRegisterBank->getXGRxPtr(7)), "XGATE Register 7 (XGR7)");
 	extended_registers_registry.push_back(xgr7_var);
-	xgvbr_var->setCallBack(this, XGR7, &CallBackObject::write, &CallBackObject::read);
+	xgr7_var->setCallBack(this, XGR7, &CallBackObject::write, &CallBackObject::read);
 
 	Reset();
 
@@ -531,12 +536,13 @@ void XGATE::Sync()
 
 }
 
+Decoder decoder;
+
 uint8_t XGATE::step()
 {
 
 	uint8_t 	buffer[MAX_INS_SIZE];
 
-	Decoder decoder;
 	Operation 	*op;
 	uint8_t	opCycles = 0;
 
@@ -728,12 +734,13 @@ void XGATE::fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte)
 
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = addr;
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = ins;
 	mmc_data.data_size = nByte;
 
-	busRead(addr, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 }
 
@@ -811,31 +818,150 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 		}
 
 		physical_address_t offset = addr-baseAddress;
+
 		switch (offset) {
-			case XGMCTL: *((uint16_t *) buffer) = xgmctl_register; break;
+			case XGMCTL: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = xgmctl_register;
+				} else {
+					*((uint8_t *)buffer) = xgmctl_register >> 8;
+				}
+
+			} break;
+			case XGMCTL+1: {
+				*((uint8_t *)buffer) = xgmctl_register & 0x00FF;
+			} break;
+
 			case XGCHID: *((uint8_t *) buffer) = getXGCHID(); break;
 			case XGCHPL: *((uint8_t *) buffer) = getXGCHPL(); break;
 			case RESERVED2: *((uint16_t *) buffer) = 0; break;
 			case XGISPSEL: *((uint8_t *) buffer) = getXGISPSEL(); break;
-			case XGVBR: *((uint16_t *) buffer) = getXGVBR(); break;
-			case XGSWT: *((uint16_t *) buffer) = xgswt_register; break;
-			case XGSEM: *((uint16_t *) buffer) = xgsem_register; break;
+			case XGVBR: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = getXGVBR();
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (getXGVBR() >> 8);
+				}
+			} break;
+			case XGVBR+1: {
+				*((uint8_t *) buffer) = (uint8_t) getXGVBR();
+			} break;
+			case XGSWT: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = xgswt_register;
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (xgswt_register >> 8);
+				}
+			} break;
+			case XGSWT+1: {
+				*((uint8_t *) buffer) = (uint8_t) xgswt_register;
+			} break;
+			case XGSEM: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = xgsem_register;
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (xgsem_register >> 8);
+				}
+			} break;
+			case XGSEM+1: {
+				*((uint8_t *) buffer) = (uint8_t) xgsem_register;
+			} break;
 			case RESERVED4: *((uint16_t *) buffer) = 0; break;
 			case XGCCR: *((uint8_t *) buffer) = getXGCCR(); break;
-			case XGPC: *((uint16_t *) buffer) = getXGPC(); break;
+			case XGPC: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = getXGPC();
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (getXGPC() >> 8);
+				}
+			} break;
+			case XGPC+1: {
+				*((uint8_t *) buffer) = (uint8_t) getXGPC();
+			} break;
 			case RESERVED5: *((uint16_t *) buffer) = 0; break;
 			case RESERVED6: *((uint16_t *) buffer) = 0; break;
-			case XGR1: *((uint16_t *) buffer) = getXGRx(1); break;
-			case XGR2: *((uint16_t *) buffer) = getXGRx(2); break;
-			case XGR3: *((uint16_t *) buffer) = getXGRx(3); break;
-			case XGR4: *((uint16_t *) buffer) = getXGRx(4); break;
-			case XGR5: *((uint16_t *) buffer) = getXGRx(5); break;
-			case XGR6: *((uint16_t *) buffer) = getXGRx(6); break;
-			case XGR7: *((uint16_t *) buffer) = getXGRx(7); break;
+			case XGR1: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = getXGRx(1);
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (getXGRx(1) >> 8);
+				}
+			} break;
+			case XGR1+1: {
+				*((uint8_t *) buffer) = (uint8_t) getXGRx(1);
+			} break;
+			case XGR2: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = getXGRx(2);
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (getXGRx(2) >> 8);
+				}
+			} break;
+			case XGR2+1: {
+				*((uint8_t *) buffer) = (uint8_t) getXGRx(2);
+			} break;
+			case XGR3: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = getXGRx(3);
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (getXGRx(3) >> 8);
+				}
+			} break;
+			case XGR3+1: {
+				*((uint8_t *) buffer) = (uint8_t) getXGRx(3);
+			} break;
+			case XGR4: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = getXGRx(4);
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (getXGRx(4) >> 8);
+				}
+			} break;
+			case XGR4+1: {
+				*((uint8_t *) buffer) = (uint8_t) getXGRx(4);
+			} break;
+			case XGR5: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = getXGRx(5);
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (getXGRx(5) >> 8);
+				}
+			} break;
+			case XGR5+1: {
+				*((uint8_t *) buffer) = (uint8_t) getXGRx(5);
+			} break;
+			case XGR6: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = getXGRx(6);
+				} else {
+					*((uint16_t *) buffer) = (uint8_t) (getXGRx(6) >> 8);
+				}
+			} break;
+			case XGR6+1: {
+				*((uint8_t *) buffer) = (uint8_t) getXGRx(6);
+			} break;
+			case XGR7: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = getXGRx(7);
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (getXGRx(7) >> 8);
+				}
+			} break;
+			case XGR7+1: {
+				*((uint8_t *) buffer) = (uint8_t) getXGRx(7);
+			} break;
 
 			default: {
 				if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
-					*((uint16_t *) buffer) = xgif_register[(offset - XGIF_7F_70)/2];
+					if (size == 2) {
+						*((uint16_t *) buffer) = xgif_register[(offset - XGIF_7F_70)/2];
+					} else {
+						if (((offset - XGIF_7F_70) % 2) == 0) {
+							*((uint8_t *) buffer) = (uint8_t) (xgif_register[(offset - XGIF_7F_70)/2] >> 8);
+						} else {
+							*((uint8_t *) buffer) = (uint8_t) xgif_register[(offset - XGIF_7F_70)/2];
+						}
+					}
 
 				} else {
 					return (false);
@@ -862,8 +988,16 @@ bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t si
 
 		switch (offset) {
 			case XGMCTL: {
-				uint16_t val = *((uint16_t *) buffer);
-				xgmctl_register = val;
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					xgmctl_register = val;
+				} else {
+					xgmctl_register = (xgmctl_register & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8);
+				}
+
+			} break;
+			case XGMCTL+1: {
+				xgmctl_register = (xgmctl_register & 0xFF00) | ((uint16_t) *((uint8_t *)buffer));
 			} break;
 			case XGCHID: {
 				uint8_t val = *((uint8_t *) buffer);
@@ -879,16 +1013,37 @@ bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t si
 				setXGISPSEL(val);
 			} break;
 			case XGVBR: {
-				uint16_t val = *((uint16_t *) buffer);
-				setXGVBR(val);
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					setXGVBR(val);
+				} else {
+					setXGVBR((getXGVBR() & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8));
+				}
+			} break;
+			case XGVBR+1: {
+				setXGVBR((getXGVBR() & 0xFF00) | ((uint16_t) *((uint8_t *)buffer)));
 			} break;
 			case XGSWT: {
-				uint16_t val = *((uint16_t *) buffer);
-				xgswt_register = val;
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					xgswt_register = val;
+				} else {
+					xgswt_register = (xgswt_register & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8);
+				}
+			} break;
+			case XGSWT+1: {
+				xgswt_register = (xgswt_register & 0xFF00) | ((uint16_t) *((uint8_t *)buffer));
 			} break;
 			case XGSEM: {
-				uint16_t val = *((uint16_t *) buffer);
-				xgsem_register = val;
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					xgsem_register = val;
+				} else {
+					xgsem_register = (xgsem_register & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8);
+				}
+			} break;
+			case XGSEM+1: {
+				xgsem_register = (xgsem_register & 0xFF00) | ((uint16_t) *((uint8_t *)buffer));
 			} break;
 			case RESERVED4: break;
 			case XGCCR: {
@@ -896,44 +1051,108 @@ bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t si
 				currentRegisterBank->setXGCCR(val);
 			} break;
 			case XGPC: {
-				uint16_t val = *((uint16_t *) buffer);
-				currentRegisterBank->setXGPC(val);
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					currentRegisterBank->setXGPC(val);
+				} else {
+					currentRegisterBank->setXGPC((currentRegisterBank->getXGPC() & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8));
+				}
+			} break;
+			case XGPC+1: {
+				currentRegisterBank->setXGPC((currentRegisterBank->getXGPC() & 0xFF00) | ((uint16_t) *((uint8_t *)buffer)));
 			} break;
 			case RESERVED5: break;
 			case RESERVED6: break;
 			case XGR1: {
-				uint16_t val = *((uint16_t *) buffer);
-				currentRegisterBank->setXGRx(1, val);
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					currentRegisterBank->setXGRx(1, val);
+				} else {
+					currentRegisterBank->setXGRx(1, (currentRegisterBank->getXGRx(1) & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8));
+				}
+			} break;
+			case XGR1+1:{
+				currentRegisterBank->setXGRx(1, (currentRegisterBank->getXGRx(1) & 0xFF00) | ((uint16_t) *((uint8_t *)buffer)));
 			} break;
 			case XGR2: {
-				uint16_t val = *((uint16_t *) buffer);
-				currentRegisterBank->setXGRx(2, val);
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					currentRegisterBank->setXGRx(2, val);
+				} else {
+					currentRegisterBank->setXGRx(2, (currentRegisterBank->getXGRx(2) & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8));
+				}
+			} break;
+			case XGR2+1:{
+				currentRegisterBank->setXGRx(2, (currentRegisterBank->getXGRx(2) & 0xFF00) | ((uint16_t) *((uint8_t *)buffer)));
 			} break;
 			case XGR3: {
-				uint16_t val = *((uint16_t *) buffer);
-				currentRegisterBank->setXGRx(3, val);
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					currentRegisterBank->setXGRx(3, val);
+				} else {
+					currentRegisterBank->setXGRx(3, (currentRegisterBank->getXGRx(3) & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8));
+				}
+			} break;
+			case XGR3+1:{
+				currentRegisterBank->setXGRx(3, (currentRegisterBank->getXGRx(3) & 0xFF00) | ((uint16_t) *((uint8_t *)buffer)));
 			} break;
 			case XGR4: {
-				uint16_t val = *((uint16_t *) buffer);
-				currentRegisterBank->setXGRx(4, val);
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					currentRegisterBank->setXGRx(4, val);
+				} else {
+					currentRegisterBank->setXGRx(4, (currentRegisterBank->getXGRx(4) & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8));
+				}
+			} break;
+			case XGR4+1:{
+				currentRegisterBank->setXGRx(4, (currentRegisterBank->getXGRx(4) & 0xFF00) | ((uint16_t) *((uint8_t *)buffer)));
 			} break;
 			case XGR5: {
-				uint16_t val = *((uint16_t *) buffer);
-				currentRegisterBank->setXGRx(5, val);
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					currentRegisterBank->setXGRx(5, val);
+				} else {
+					currentRegisterBank->setXGRx(5, (currentRegisterBank->getXGRx(5) & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8));
+				}
+			} break;
+			case XGR5+1:{
+				currentRegisterBank->setXGRx(5, (currentRegisterBank->getXGRx(5) & 0xFF00) | ((uint16_t) *((uint8_t *)buffer)));
 			} break;
 			case XGR6: {
-				uint16_t val = *((uint16_t *) buffer);
-				currentRegisterBank->setXGRx(6, val);
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					currentRegisterBank->setXGRx(6, val);
+				} else {
+					currentRegisterBank->setXGRx(6, (currentRegisterBank->getXGRx(6) & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8));
+				}
+			} break;
+			case XGR6+1:{
+				currentRegisterBank->setXGRx(6, (currentRegisterBank->getXGRx(6) & 0xFF00) | ((uint16_t) *((uint8_t *)buffer)));
 			} break;
 			case XGR7: {
-				uint16_t val = *((uint16_t *) buffer);
-				currentRegisterBank->setXGRx(7, val);
+				if (size == 2) {
+					uint16_t val = *((uint16_t *) buffer);
+					currentRegisterBank->setXGRx(7, val);
+				} else {
+					currentRegisterBank->setXGRx(7, (currentRegisterBank->getXGRx(7) & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8));
+				}
+			} break;
+			case XGR7+1:{
+				currentRegisterBank->setXGRx(7, (currentRegisterBank->getXGRx(7) & 0xFF00) | ((uint16_t) *((uint8_t *)buffer)));
 			} break;
 
 			default: {
 				if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
-					uint16_t val = *((uint16_t *) buffer);
-					xgif_register[(offset - XGIF_7F_70)/2] = val;
+					if (size == 2) {
+						uint16_t val = *((uint16_t *) buffer);
+						xgif_register[(offset - XGIF_7F_70)/2] = val;
+					} else {
+						if (((offset - XGIF_7F_70) % 2) == 0) {
+							xgif_register[(offset - XGIF_7F_70)/2] = (xgif_register[(offset - XGIF_7F_70)/2] & 0x00FF) | (((uint16_t) *((uint8_t *)buffer)) << 8);
+						} else {
+							xgif_register[(offset - XGIF_7F_70)/2] = (xgif_register[(offset - XGIF_7F_70)/2] & 0xFF00) | ((uint16_t) *((uint8_t *)buffer));
+						}
+					}
 				}
 
 				break;
@@ -962,15 +1181,15 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 		case XGCHID: {
 			*((uint8_t *) buffer) = getXGCHID();
 		} break;
-		case XGCHPL: *((uint16_t *) buffer) = getXGCHPL(); break;
+		case XGCHPL: *((uint8_t *) buffer) = getXGCHPL(); break;
 		case RESERVED2: *((uint16_t *) buffer) = 0; break;
-		case XGISPSEL: *((uint16_t *) buffer) = getXGISPSEL(); break;
+		case XGISPSEL: *((uint8_t *) buffer) = getXGISPSEL(); break;
 		case XGVBR: *((uint16_t *) buffer) = Host2BigEndian(getXGVBR() & 0xFFFE); break;
 		case XGSWT: *((uint16_t *) buffer) = Host2BigEndian(xgswt_register & 0x00FF); break;
 		case XGSEM: *((uint16_t *) buffer) = Host2BigEndian(xgsem_register & 0x00FF); break;
 		case RESERVED4: *((uint16_t *) buffer) = 0; break;
 		case XGCCR: *((uint8_t *) buffer) = currentRegisterBank->getXGCCR() & 0x0F; break;
-		case XGPC: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGPC()); break;
+		case XGPC: *((address_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGPC()); break;
 		case RESERVED5: *((uint16_t *) buffer) = 0; break;
 		case RESERVED6: *((uint16_t *) buffer) = 0; break;
 		case XGR1: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGRx(1)); break;
@@ -1085,7 +1304,6 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			 */
 			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 			uint16_t mask = val >> 8;
-			uint16_t old_xgswt_register = xgswt_register;
 
 			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {

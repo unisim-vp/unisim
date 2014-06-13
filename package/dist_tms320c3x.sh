@@ -406,7 +406,8 @@ m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
-m4/real_path.m4"
+m4/real_path.m4 \
+m4/pthread.m4"
 
 UNISIM_LIB_TMS320C3X_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_tms320c3x.xml \
@@ -1053,6 +1054,13 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 	echo "AC_PROG_LN_S" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${TMS320C3X_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "case \"\${host}\" in" >> "${TMS320C3X_CONFIGURE_AC}"
+	printf "\t*mingw*)\n" >> "${TMS320C3X_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${TMS320C3X_CONFIGURE_AC}"
+	printf "\t*)\n" >> "${TMS320C3X_CONFIGURE_AC}"
+	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${TMS320C3X_CONFIGURE_AC}"
+	printf "\t;;\n" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "esac" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_ENDIAN(main)" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TIMES(main)" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_WITH_BOOST(main)" >> "${TMS320C3X_CONFIGURE_AC}"

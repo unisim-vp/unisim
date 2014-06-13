@@ -1,0 +1,112 @@
+/*
+ *  Copyright (c) 2007-2014,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+ 
+/**********************************************
+
+        THUMB2 COPROCESSOR INSTRUCTIONS
+
+**********************************************/
+
+op mrc( 0xee[8] : op1[3] : 1[1] : crn[4] :> <: rd[4] : cp_num[4] : op2[3] : 1[1] : crm[4] );
+
+mrc.disasm = {
+  if (rd == 15)
+    buffer << "mrc\t" << cp_num << ", " << op1 << ", APSR_nzcv, cr" << crn << ", cr" << crm << ", {" << op2 << "}";
+  else
+    buffer << "mrc\t" << cp_num << ", " << op1 << ", " << DisasmRegister(rd) << ", cr" << crn << ", cr" << crm << ", {" << op2 << "}";
+};
+
+mrc.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint32_t res = cpu.readcopro( cp_num, op1, op2, crn, crm );
+  if (rd == 15)
+    assert( false );
+  else
+    cpu.SetGPR( rd, res );
+}
+
+op mrc2( 0xfe[8] : op1[3] : 1[1] : crn[4] :> <: rd[4] : cp_num[4] : op2[3] : 1[1] : crm[4] );
+
+mrc2.disasm = {
+  buffer << "mrc2\t" << cp_num << ", " << op1 << ", " << DisasmRegister(rd) << ", cr" << crn << ", cr" << crm << ", {" << op2 << "}";
+};
+
+op mcr( 0xee[8] : y[3] : 0[1] : cr1[4] :> <: r0[4] : cp_num[4] : imm[3] : 1[1] : cr0[4] );
+
+mcr.disasm = {
+  buffer << "mcr\t" << cp_num << ", " << y << ", " << DisasmRegister(r0) << ", cr" << cr1 << ", cr" << cr0 << ", {" << imm << "}";
+};
+
+op mcr2( 0xfe[8] : y[3] : 0[1] : cr1[4] :> <: r0[4] : cp_num[4] : imm[3] : 1[1] : cr0[4] );
+
+mcr2.disasm = {
+  buffer << "mcr2\t" << cp_num << ", " << y << ", " << DisasmRegister(r0) << ", cr" << cr1 << ", cr" << cr0 << ", {" << imm << "}";
+};
+
+op cdp( 0xee[8] : y[4] : cr2[4] :> <: cr1[4] : cp_num[4] : imm[3] : 0[1] : cr0[4] );
+
+cdp.disasm = {
+  buffer << "cdp\t" << cp_num << ", " << y << ", cr" << cr1 << ", cr" << cr2 << ", cr" << cr0 << ", {" << imm << "}";
+};
+
+op cdp2( 0xfe[8] : y[4] : cr2[4] :> <: cr1[4] : cp_num[4] : imm[3] : 0[1] : cr0[4] );
+
+cdp2.disasm = {
+  buffer << "cdp2\t" << cp_num << ", " << y << ", cr" << cr1 << ", cr" << cr2 << ", cr" << cr0 << ", {" << imm << "}";
+};
+
+op mrrc( 0xec5[12] : rn[4] :> <: rd[4] : cp_num[4] : op1[4] : crm[4] );
+
+mrrc.disasm = {
+  buffer << "mrrc\t" << cp_num << ", " << op1 << ", " << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", cr" << crm;
+};
+
+op mrrc2( 0xfc5[12] : rn[4] :> <: rd[4] : cp_num[4] : op1[4] : crm[4] );
+
+mrrc2.disasm = {
+  buffer << "mrrc2\t" << cp_num << ", " << op1 << ", " << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", cr" << crm;
+};
+
+op mcrr( 0xec4[12] : r1[4] :> <: r0[4] : cp_num[4] : x[4] : cr[4] );
+
+mcrr.disasm = {
+  buffer << "mcrr\t" << cp_num << ", " << x << ", " << DisasmRegister(r0) << ", " << DisasmRegister(r1) << ", cr" << cr;
+};
+
+op mcrr2( 0xfc4[12] : r1[4] :> <: r0[4] : cp_num[4] : x[4] : cr[4] );
+
+mcrr2.disasm = {
+  buffer << "mcrr2\t" << cp_num << ", " << x << ", " << DisasmRegister(r0) << ", " << DisasmRegister(r1) << ", cr" << cr;
+};

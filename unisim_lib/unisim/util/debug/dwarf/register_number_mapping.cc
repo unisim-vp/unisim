@@ -99,6 +99,8 @@ bool DWARF_RegisterNumberMapping::Load(const char *filename, const char *archite
 		}
 	}
 	
+	logger << DebugError << root_node->Filename() << ": no matching architecture tag for Architecture \"" << architecture << "\"" << EndDebugError;
+
 	delete root_node;
 	return false;
 }

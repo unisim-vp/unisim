@@ -49,6 +49,8 @@ ldr_1.disasm = {
 };
 
 ldr_1.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR(rn) + imm ) );
 };
 
@@ -67,6 +69,8 @@ ldr_2.disasm = {
 };
 
 ldr_2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
 
@@ -85,6 +89,8 @@ ldr_3.disasm = {
 };
 
 ldr_3.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemRead32( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
 };
 
@@ -103,6 +109,8 @@ ldr_4.disasm = {
 };
 
 ldr_4.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR(cpu.SP_reg) + imm ) );
 };
 
@@ -121,6 +129,8 @@ ldrb_1.disasm = {
 };
 
 ldrb_1.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR(rn) + imm ) );
 };
 
@@ -139,6 +149,8 @@ ldrb_2.disasm = {
 };
 
 ldrb_2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
 
@@ -157,6 +169,8 @@ ldrh_1.disasm = {
 };
 
 ldrh_1.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemRead16( cpu.GetGPR(rn) + imm ) );
 };
 
@@ -175,6 +189,8 @@ ldrh_2.disasm = {
 };
 
 ldrh_2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemRead16( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
 
@@ -193,6 +209,8 @@ ldrsb.disasm = {
 };
 
 ldrsb.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemReadS8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
 
@@ -211,6 +229,8 @@ ldrsh.disasm = {
 };
 
 ldrsh.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemReadS16( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) );
 };
 
@@ -229,6 +249,8 @@ str_1.disasm = {
 };
 
 str_1.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.MemWrite32(cpu.GetGPR(rn) + imm, cpu.GetGPR(rt));
 };
 
@@ -247,6 +269,8 @@ str_2.disasm = {
 };
 
 str_2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.MemWrite32( cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rt) );
 };
 
@@ -265,6 +289,8 @@ str_3.disasm = {
 };
 
 str_3.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.MemWrite32(cpu.GetGPR(cpu.SP_reg) + imm, cpu.GetGPR(rt));
 };
 
@@ -283,6 +309,8 @@ strb_1.disasm = {
 };
 
 strb_1.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.MemWrite8(cpu.GetGPR(rn) + imm, cpu.GetGPR(rt));
 };
 
@@ -301,6 +329,8 @@ strb_2.disasm = {
 };
 
 strb_2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.MemWrite8(cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rt));
 };
 
@@ -319,6 +349,8 @@ strh_1.disasm = {
 };
 
 strh_1.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.MemWrite16(cpu.GetGPR(rn) + imm, cpu.GetGPR(rt));
 };
 
@@ -337,6 +369,8 @@ strh_2.disasm = {
 };
 
 strh_2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   cpu.MemWrite16(cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rt));
 };
 
@@ -361,6 +395,8 @@ ldmia.disasm = {
 };
 
 ldmia.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
   while (itr.next()) {
     cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
@@ -386,6 +422,8 @@ pop.disasm = {
 };
 
 pop.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( cpu.SP_reg ));
   while (itr.next()) {
     cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
@@ -411,6 +449,8 @@ push.disasm = {
 };
 
 push.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   LSMIter itr(LSMIter::DB, reglist, cpu.GetGPR( cpu.SP_reg ));
   while (itr.next()) {
     cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
@@ -434,6 +474,8 @@ stmia.disasm = {
 };
 
 stmia.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
   LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
   while (itr.next()) {
     cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );

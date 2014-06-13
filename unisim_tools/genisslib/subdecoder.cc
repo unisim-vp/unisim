@@ -30,31 +30,19 @@
 
 using namespace std;
 
-/** Create a subdecoder class object
-    @param _namespace a namespace in which the decoder is defined
-    @param _minsize a minimum bit size for the decoder operations
-    @param _maxsize a maximum bit size for the decoder operations
-    @param _fileloc a fileloc pointing at the subdecoder declaration
-*/
-SDClass_t::SDClass_t( std::vector<ConstStr_t>& _namespace, unsigned int _minsize, unsigned int _maxsize, FileLoc_t const& _fileloc )
-  : m_namespace( _namespace ), m_minsize( _minsize ), m_maxsize( _maxsize ), m_fileloc( _fileloc )
-{
-  assert( m_minsize <= m_maxsize  );
-}
-
 /** Delete a subdecoder object
 */
 SDClass_t::~SDClass_t() {}
 
 ConstStr_t
 SDClass_t::qd_namespace() const {
-  Str::Buf buffer( Str::Buf::Recycle );
-  char const* sep = "";
+  std::string buffer;
+  std::string sep;
 
   for( std::vector<ConstStr_t>::const_iterator node = m_namespace.begin(); node != m_namespace.end(); ++ node, sep = "::" )
-    buffer.write( sep ).write( *node );
+    buffer += sep + node->str();
   
-  return ConstStr_t( buffer.m_storage );
+  return ConstStr_t( buffer.c_str() );
 }
 
 SDInstance_t::SDInstance_t( ConstStr_t _symbol, SourceCode_t const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc )

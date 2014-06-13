@@ -177,6 +177,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<constraint_list> constraint_list
 %type<specialization> specialization
 %type<string_list> namespace_list
+%type<uint_list> uinteger_list
 %%
 
 input: declaration_list { };
@@ -234,16 +235,23 @@ template_scheme:
 }
 ;
 
+uinteger_list:
+  TOK_INTEGER
+{
+  $$ = new UIntVect_t( $1 );
+}
+  | uinteger_list ',' TOK_INTEGER
+{
+  $1->push_back( $3 );
+  $$ = $1;
+}
+;
+
 subdecoder_class:
-  TOK_SUBDECODER namespace_list '[' TOK_INTEGER ':' TOK_INTEGER ']'
+  TOK_SUBDECODER namespace_list '[' uinteger_list ']'
 {
   StringVect_t* nmspc_in = $2;
-  unsigned int minsize = $4, maxsize = $6;
-
-  if( minsize > maxsize ) {
-    Scanner::fileloc.err( "error: subdecoder operation range is reversed" );
-    YYABORT;
-  }
+  UIntVect_t* insnsizes = $4;
   
   std::vector<ConstStr_t> nmspc( nmspc_in->size(), ConstStr_t() );
   for( intptr_t idx = nmspc_in->size(); (--idx) >= 0; )
@@ -258,7 +266,8 @@ subdecoder_class:
     YYABORT;
   }
   
-  Scanner::isa().m_sdclasses.append( new SDClass_t( nmspc, minsize, maxsize, Scanner::fileloc ) );
+  Scanner::isa().m_sdclasses.append( new SDClass_t( nmspc, insnsizes->begin(), insnsizes->end(), Scanner::fileloc ) );
+  delete insnsizes;
 }
 ;
 
@@ -269,7 +278,7 @@ global_ident_parameter: TOK_SET TOK_IDENT TOK_IDENT
   
   try {
     Scanner::isa().setparam( key, val );
-  } catch( Isa::UnknownIdent ui ) {
+  } catch (Isa::UnknownIdent ui) {
     Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }
@@ -281,7 +290,7 @@ global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
   SourceCode_t* val = $3;
   try {
     Scanner::isa().setparam( key, val );
-  } catch( Isa::UnknownIdent ui ) {
+  } catch (Isa::UnknownIdent ui) {
     Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }
@@ -293,7 +302,7 @@ global_uinteger_parameter: TOK_SET TOK_IDENT TOK_INTEGER
   unsigned int val = $3;
   try {
     Scanner::isa().setparam( key, val );
-  } catch( Isa::UnknownIdent ui ) {
+  } catch (Isa::UnknownIdent ui) {
     Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }

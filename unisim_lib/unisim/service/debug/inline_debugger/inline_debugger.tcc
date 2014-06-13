@@ -59,6 +59,7 @@
 #include <iostream>
 
 #if defined(WIN32)
+#include <windows.h>
 #include <io.h>     // for function access()
 #else
 #include <unistd.h>

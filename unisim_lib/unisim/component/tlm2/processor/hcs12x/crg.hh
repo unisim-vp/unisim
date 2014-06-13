@@ -198,9 +198,12 @@ protected:
 
 private:
 	tlm_quantumkeeper quantumkeeper;
+
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
+	XINT_Payload *xint_payload;
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
+	tlm::tlm_generic_payload* bus_clk_trans;
 
 	uint32_t	oscillator_clock_value;	// The time unit is PS
 	Parameter<uint32_t>	param_oscillator_clock_int;
@@ -240,11 +243,12 @@ private:
 	sc_event	cop_enable_event;
 
 	bool armcop_write_enabled;
-	bool cop_timeout_reset;
-	bool cop_timeout_restart;
 	bool clock_monitor_enabled; // reset to TRUE; the clock monitor is enabled by default
 
+	bool cop_timeout_reset;
+	bool cop_timeout_restart;
 	bool copwai_write; // CLKSEL::WOPWAI is write once bit
+
 	bool rti_enabled;
 	bool cop_enabled;
 	bool scme_write;

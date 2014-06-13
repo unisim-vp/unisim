@@ -90,12 +90,12 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
-	, portt_pin_reg("ioc", this, portt_pin, 8, "ECT pins")
-
-	, builtin_signal_generator(true)
+	, builtin_signal_generator(false)
 	, param_builtin_signal_generator("built-in-signal-generator-enable", this, builtin_signal_generator, "Use built-in signal generator or external instrument")
 	, signal_generator_period_int(500000)
 	, param_signal_generator_period("built-in-signal-generator-period", this, signal_generator_period_int, "Built-in Signal generator period in pico-seconds. Default 25000ps.")
+
+	, portt_pin_reg("ioc", this, portt_pin, 8, "ECT pins")
 
 	, prnt_write(false)
 	, icsys_write(false)
@@ -116,7 +116,8 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	for (uint8_t i=0; i<8; i++) {
 
-		portt_pin[i] = false;
+//		portt_pin[i] = false;
+		portt_pin_reg[i] = false;
 
 		portt_pin_reg[i].SetMutable(true);
 
@@ -154,11 +155,15 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	pacB = new PulseAccumulatorB("PACB", this, &portt_pin[0], pc8bit[1], pc8bit[0]);
 	portt_pin_reg[0].AddListener(pacB);
 
-	Reset();
+//	Reset();
+
+	xint_payload = xint_payload_fabric.allocate();
 
 }
 
 ECT::~ECT() {
+
+	xint_payload->release();
 
 	// Release registers_registry
 	map<string, unisim::util::debug::Register *>::iterator reg_iter;
@@ -366,13 +371,16 @@ void ECT::assertInterrupt(uint8_t interrupt_offset) {
 	if ((interrupt_offset == modulus_counter_interrupt) && (mcctl_register & 0x80) == 0) return;
 
 	tlm_phase phase = BEGIN_REQ;
-	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->setInterruptOffset(interrupt_offset);
+	xint_payload->acquire();
+
+	xint_payload->setInterruptOffset(interrupt_offset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
-	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
+
+	xint_payload->release();
 
 	switch(ret)
 	{
@@ -1104,9 +1112,10 @@ inline void ECT::computeDelayCounter() {
 }
 
 ECT::PulseAccumulator8Bit::PulseAccumulator8Bit(ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr) :
-	pacn_register_ptr(pacn_ptr)
+	  pacn_index(pacn_number)
+	, ectParent(parent)
+	, pacn_register_ptr(pacn_ptr)
 	, pah_register_ptr(pah_ptr)
-	, pacn_index(pacn_number)
 
 {
 
@@ -1142,18 +1151,18 @@ void ECT::PulseAccumulator8Bit::latchToHoldingRegisters() {
 }
 
 ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(const sc_module_name& name, ECT *parent, bool* pinLogic, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
-	sc_module(name)
+   	  sc_module(name)
 	, ectParent(parent)
+	, channelPinLogic(pinLogic)
 	, pacn_high_ptr(pacn_high)
 	, pacn_low_ptr(pacn_low)
-	, channelPinLogic(pinLogic)
 
 {
 
 	SC_HAS_PROCESS(ECT::PulseAccumulator16Bit);
 
 	SC_THREAD(process);
-	sensitive << pulse_accumulator_enable_event;
+//	sensitive << pulse_accumulator_enable_event;
 
 }
 
@@ -1314,7 +1323,14 @@ inline void ECT::latchToHoldingRegisters() {
 ECT::IOC_Channel_t::IOC_Channel_t(const sc_module_name& name, ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator8Bit* pc8bit) :
 	  sc_module(name)
 	, ectParent(parent)
+
+	, edge_event()
+	, shared_edge_event()
+
 	, ioc_index(index)
+	, valideEdge(1)
+	, outputAction(0)
+
 	, tc_register_ptr(tc_ptr)
 	, tch_register_ptr(tch_ptr)
 	, pulseAccumulator(pc8bit)
@@ -1327,7 +1343,7 @@ ECT::IOC_Channel_t::IOC_Channel_t(const sc_module_name& name, ECT *parent, const
 	SC_HAS_PROCESS(IOC_Channel_t);
 
 	SC_THREAD(runInputCapture);
-	sensitive << edge_event;
+//	sensitive << edge_event;
 
 }
 
@@ -1498,20 +1514,23 @@ void ECT::runChannelOutputCompareAction(uint8_t ioc_index) {
 			 * will be transfered to the timer port on a successful channel 7 output compare ?
 			 */
 			if (isOutputCompareMaskSet(ioc_index) && !isInputCapture(ioc_index)) {
-				portt_pin[ioc_index] = getOC7Dx(ioc_index);
+//				portt_pin[ioc_index] = getOC7Dx(ioc_index);
+				portt_pin_reg[ioc_index] = getOC7Dx(ioc_index);
 			}
 
 		} break;
 		case 2: {
 			// Clear OCx output line to zero
 			if (!isOutputCompareMaskSet(ioc_index)) {
-				portt_pin[ioc_index] = false;
+//				portt_pin[ioc_index] = false;
+				portt_pin_reg[ioc_index] = false;
 			}
 		} break;
 		case 3: {
 			// Set OCx output line to one
 			if (!isOutputCompareMaskSet(ioc_index)) {
-				portt_pin[ioc_index] = true;
+//				portt_pin[ioc_index] = true;
+				portt_pin_reg[ioc_index] = true;
 			}
 		} break;
 	}
@@ -1698,8 +1717,6 @@ bool ECT::BeginSetup() {
 	extended_registers_registry.push_back(paflg_var);
 	paflg_var->setCallBack(this, PAFLG, &CallBackObject::write, NULL);
 
-	uint8_t pacn_number;
-
 	for (uint8_t i=0; i<4; i++) {
 		sprintf(buf, "%s.PACN%d",sc_object::name(), i);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &pacn_register[i]));
@@ -1831,6 +1848,7 @@ bool ECT::BeginSetup() {
 	extended_registers_registry.push_back(tc3h_var);
 	tc3h_var->setCallBack(this, TC3H_HIGH, &CallBackObject::write, NULL);
 
+	Reset();
 
 	computeInternalTime();
 
@@ -1865,45 +1883,47 @@ void ECT::OnDisconnect() {
 
 void ECT::Reset() {
 
-		tios_register = 0x00;
-		cforc_register = 0x00;
-		oc7m_register = 0x00;
-		oc7d_register = 0x00;
-		tcnt_register = 0x0000;
-		tscr1_register = 0x0000;
-		ttov_register = 0x00;
-		tctl12_register = 0x0000;
-		tctl34_register = 0x0000;
-		tie_register = 0x0000;
-		tscr2_register = 0x00;
-		tflg1_register = 0x00;
-		tflg2_register = 0x00;
-		for (uint8_t i=0; i<8; i++) { tc_registers[i] = 0x0000; }
-		pactl_register = 0x00;
-		paflg_register = 0x00;
-		for (uint8_t i=0; i<4; i++) { pacn_register[i] = 0x00; }
-		mcctl_register = 0x00;
-		mcflg_register = 0x00;
-		icpar_register = 0x00;
-		dlyct_register = 0x00;
-		icovw_register = 0x00;
-		icsys_register = 0x00;
-		timtst_register = 0x00;
-		ptpsr_register = 0x00;
-		ptmcpsr_register = 0x00;
-		pbctl_register = 0x00;
-		pbflg_register = 0x00;
-		for (uint8_t i=0; i<4; i++) { paxh_registers[i] = 0x00; }
-		mccnt_register = 0xFFFF;
-		for (uint8_t i=0; i<4; i++) { tcxh_registers[i] = 0x0000; }
+	tios_register = 0x00;
+	cforc_register = 0x00;
+	oc7m_register = 0x00;
+	oc7d_register = 0x00;
+	tcnt_register = 0x0000;
+	tscr1_register = 0x0000;
+	ttov_register = 0x00;
+	tctl12_register = 0x0000;
+	tctl34_register = 0x0000;
+	tie_register = 0x0000;
+	tscr2_register = 0x00;
+	tflg1_register = 0x00;
+	tflg2_register = 0x00;
+	for (uint8_t i=0; i<8; i++) { tc_registers[i] = 0x0000; }
+	pactl_register = 0x00;
+	paflg_register = 0x00;
+	for (uint8_t i=0; i<4; i++) { pacn_register[i] = 0x00; }
+	mcctl_register = 0x00;
+	mcflg_register = 0x00;
+	icpar_register = 0x00;
+	dlyct_register = 0x00;
+	icovw_register = 0x00;
+	icsys_register = 0x00;
+	timtst_register = 0x00;
+	ptpsr_register = 0x00;
+	ptmcpsr_register = 0x00;
+	pbctl_register = 0x00;
+	pbflg_register = 0x00;
+	for (uint8_t i=0; i<4; i++) { paxh_registers[i] = 0x00; }
+	mccnt_register = 0xFFFF;
+	for (uint8_t i=0; i<4; i++) { tcxh_registers[i] = 0x0000; }
 
-		prnt_write = false;
-		icsys_write = false;
-		main_timer_enabled = false;
-		down_counter_enabled = false;
-		delay_counter_enabled = false;
+	prnt_write = false;
+	icsys_write = false;
+	main_timer_enabled = false;
+	down_counter_enabled = false;
+	delay_counter_enabled = false;
 
-		for (uint8_t i=0; i<8; i++) { portt_pin[i] = false; }
+	for (uint8_t i=0; i<8; i++) {
+		portt_pin_reg[i] = false;
+	}
 
 }
 

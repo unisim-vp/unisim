@@ -32,13 +32,6 @@ S12MPU::S12MPU(const sc_module_name& name, Object *parent) :
 	, memory_import("memory_import", this)
 	, registers_export("registers_export", this)
 
-	, mpuflg_register(0x00)
-	, mpuastat0_register(0x00)
-	, mpuastat1_register(0x00)
-	, mpuastat2_register(0x00)
-	, reserved(0x00)
-	, mpusel_register(0x00)
-
 	, baseAddress(0x0114)
 	, param_baseAddress("base-address", this, baseAddress)
 
@@ -47,6 +40,13 @@ S12MPU::S12MPU(const sc_module_name& name, Object *parent) :
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
+
+	, mpuflg_register(0x00)
+	, mpuastat0_register(0x00)
+	, mpuastat1_register(0x00)
+	, mpuastat2_register(0x00)
+	, reserved(0x00)
+	, mpusel_register(0x00)
 
 {
 

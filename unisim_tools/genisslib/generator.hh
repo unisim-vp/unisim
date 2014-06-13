@@ -20,21 +20,45 @@
 
 #include <fwd.hh>
 #include <conststr.hh>
+#include <set>
+#include <iosfwd>
+#include <inttypes.h>
+
+struct OpCode_t {
+  // Topology methods
+  enum Location_t { Outside, Overlaps, Inside, Contains, Equal };
+  virtual Location_t          locate( OpCode_t const& _oc ) const = 0;
+  void                        setupper( OpCode_t* _upper );
+  void                        unsetupper();
+  // Topology information
+  OpCode_t*                   m_upper;
+  intptr_t                    m_lowercount;
+  
+  OpCode_t() : m_upper( 0 ), m_lowercount( 0 ) {}
+  
+  virtual std::ostream&       details( std::ostream& _sink ) const = 0;
+  friend std::ostream&        operator << ( std::ostream& _sink, OpCode_t const& _oc );
+};
 
 struct Generator {
   enum Exception_t { GenerationError };
   
   Isa*                                m_isa;
   unsigned int                        m_minwordsize;
-  unsigned int                        m_insn_maxsize;
-  unsigned int                        m_insn_minsize;
+  std::set<unsigned int>              m_insnsizes;
+  unsigned int                        m_verblevel;
   
   Generator();
   virtual ~Generator() {};
   
-  Generator&                          init( Isa& _isa );
+  Generator&                          init( Isa& _isa, unsigned int verblevel );
   virtual void                        finalize() = 0;
-
+  
+  virtual OpCode_t const&             opcode( Operation_t const* _op ) const = 0;
+  virtual OpCode_t&                   opcode( Operation_t const* _op ) = 0;
+  
+  void                                toposort();
+  void                                isastats();
   void                                iss( char const* prefix, bool sourcelines ) const;
   /* header file */
   void                                decoder_decl( Product_t& _product ) const;
@@ -49,6 +73,8 @@ struct Generator {
   
   Isa const&                          isa() const { return *m_isa; }
   Isa&                                isa() { return *m_isa; }
+  
+  unsigned int                        gcd() const;
   
   virtual void                        codetype_decl( Product_t& _product ) const = 0;
   virtual void                        codetype_impl( Product_t& _product ) const = 0;
@@ -65,14 +91,14 @@ struct Generator {
   virtual void                        additional_impl_includes( Product_t& _product ) const = 0;
   virtual void                        additional_decl_includes( Product_t& _product ) const = 0;
   
-  virtual void                        subdecoder_bounds( Product_t& _product ) const = 0;
   virtual void                        insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const = 0;
   virtual void                        insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const = 0;
   virtual void                        op_getlen_decl( Product_t& _product ) const = 0;
   virtual void                        insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const = 0;
   
   static unsigned int                 least_ctype_size( unsigned int bits );
-
+  
+  std::ostream&                       log( unsigned int level ) const;
 };
 
 struct FieldIterator {

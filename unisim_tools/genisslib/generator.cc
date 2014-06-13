@@ -31,48 +31,111 @@
 #include <main.hh>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
+#include <cassert>
+// #include <streambuf>
+// #include <ostream>
+
 
 using namespace std;
 
 Generator::Generator()
-  : m_isa( 0 ), m_minwordsize( 32 ), m_insn_maxsize( 0 ), m_insn_minsize( 0 )
+  : m_isa( 0 ), m_minwordsize( 32 ), m_verblevel( 1 )
 {}
 
-struct OpProperties {
-  unsigned int m_minsize, m_maxsize;
+/**
+ *  @brief computes the greatest common divisor of instruction lengths (in bits).
+ */
+unsigned int
+Generator::gcd() const
+{
+  unsigned int res = *m_insnsizes.begin();
+  for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); ++itr) {
+    unsigned int cur = *itr;
+    for (;;) {
+      unsigned int rem = cur % res;
+      if (rem == 0) break;
+      cur = res;
+      res = rem;
+    }
+  }
+  return res;
+}
 
+/**
+ *  @brief a null ouput stream useful for ignoring too verbose logs
+ */
+struct onullstream: public std::ostream
+{
+  struct nullstreambuf: public std::streambuf
+  {
+    int_type overflow( int_type c ) { return traits_type::not_eof(c); }
+  };
+  onullstream() : std::ostream(0) { rdbuf(&m_sbuf); }
+  nullstreambuf m_sbuf;
+};
+
+/**
+ *  @brief returns the output stream for a given level of verbosity
+ */
+std::ostream&
+Generator::log( unsigned int level ) const
+{
+  if (level > m_verblevel) {
+    // Return a null ostream
+    static onullstream ons;
+    return ons;
+  }
+  return std::cerr;
+}
+
+struct OpProperties
+{
+  std::set<unsigned int> m_insnsizes;
+  typedef std::vector<unsigned int> insnsizes_t;
+  typedef Vect_t<BitField_t>::const_iterator bfiter_t;
+  
+  
+  void
+  dig( unsigned int cursize, unsigned int rwdsize, unsigned int minsize, bfiter_t bfitr, bfiter_t bfend )
+  {
+    for (;; ++bfitr) {
+      if (bfitr == bfend) {
+        m_insnsizes.insert( std::max( cursize, minsize ) );
+        return;
+      }
+      
+      BitField_t const& bitfield = **bfitr;
+      if (SeparatorBitField_t const* sbf = dynamic_cast<SeparatorBitField_t const*>( &bitfield ))
+        {
+          if (not sbf->m_rewind) { rwdsize = cursize; continue; }
+          if (minsize < cursize) minsize = cursize;
+          cursize = rwdsize;
+        }
+      uintptr_t count = bitfield.sizes();
+      if (count < 1) throw std::logic_error( "empty instruction sizes list" );
+      unsigned int bfsizes[count];
+      bitfield.sizes( &bfsizes[0] );
+      
+      while (--count > 0)
+        this->dig( cursize + bfsizes[count], rwdsize, minsize, bfitr + 1, bfend );
+      
+      cursize += bfsizes[0];
+    }
+  }
+  
   OpProperties( Operation_t const& op )
-    : m_minsize( 0 ), m_maxsize( 0 )
   {
     Vect_t<BitField_t> const& bitfields = op.m_bitfields;
-    
-    unsigned int minsize = 0, maxsize = 0, lastminsize = 0, lastmaxsize = 0;
-
-    for (Vect_t<BitField_t>::const_iterator bf = bitfields.begin(); bf < bitfields.end(); ++ bf) {
-      BitField_t const& bitfield = **bf;
-      if (bitfield.type() == BitField_t::Separator) {
-        SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( bitfield );
-        if (not sepbf.m_rewind) {
-          lastminsize = minsize;
-          lastmaxsize = maxsize;
-          continue;
-        }
-        if (m_minsize < minsize) m_minsize = minsize;
-        if (m_maxsize < maxsize) m_maxsize = maxsize;
-        minsize = lastminsize;
-        maxsize = lastmaxsize;
-      }
-      minsize += bitfield.minsize();
-      maxsize += bitfield.maxsize();
-    }
-    if (m_minsize < minsize) m_minsize = minsize;
-    if (m_maxsize < maxsize) m_maxsize = maxsize;
+    dig( 0, 0, 0, bitfields.begin(), bitfields.end() );
   }
 };
 
 Generator&
-Generator::init( Isa& _isa ) {
+Generator::init( Isa& _isa, unsigned int verblevel )
+{
   m_isa = &_isa;
+  m_verblevel = verblevel;
   m_minwordsize =
     least_ctype_size( std::max( Opts::shared().minwordsize, /* coming from the command line */
                                 _isa.m_minwordsize          /* coming from the isa source */
@@ -101,7 +164,7 @@ Generator::init( Isa& _isa ) {
       
         uintptr_t fbeg = 0, fend = 0, fmax = bitfields.size();
         for ( ; fbeg < fmax; fbeg = fend = fend + 1) {
-          while ((fend < fmax) and (bitfields[fend]->type() != BitField_t::Separator)) fend += 1;
+          while ((fend < fmax) and (not dynamic_cast<SeparatorBitField_t const*>( &*bitfields[fend] ))) fend += 1;
           if ((fend - fbeg) < 2) continue;
           uintptr_t lo = fbeg, hi = fend - 1;
         
@@ -114,35 +177,174 @@ Generator::init( Isa& _isa ) {
   }
   
   // Compute min/max sizes
-  m_insn_maxsize = 0;
-  m_insn_minsize = std::numeric_limits<unsigned int>::max();
-
+  m_insnsizes.clear();
   for( Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
     OpProperties opprops( **op );
-    if( m_insn_maxsize < opprops.m_maxsize  ) m_insn_maxsize = opprops.m_maxsize;
-    if( m_insn_minsize > opprops.m_minsize  ) m_insn_minsize = opprops.m_minsize;
+    m_insnsizes.insert( opprops.m_insnsizes.begin(), opprops.m_insnsizes.end() );
   }
-
+  
   return *this;
+}
+
+/*
+ *  @brief update the topology; linking subject to argument opcode
+ *  @param _upper the object being linked to
+ */
+void
+OpCode_t::setupper( OpCode_t* _upper )
+{
+  if (not m_upper) {
+    m_upper = _upper;
+    _upper->m_lowercount += 1;
+  }
+  else if (m_upper->locate( *_upper ) == Inside) {
+    m_upper->m_lowercount -= 1;
+    m_upper = _upper;
+    _upper->m_lowercount += 1;
+  }
+}
+  
+/*
+ *  @brief update the topology; unlink subject opcode
+ */
+void
+OpCode_t::unsetupper()
+{
+  if (not m_upper) return;
+  m_upper->m_lowercount -= 1;
+  m_upper = 0;
+}
+
+std::ostream& operator<<( std::ostream& _sink, OpCode_t const& _oc ) { return _oc.details( _sink ); }
+  
+/* Generates the topological graph of operations, checks for conflicts (overlapping encodings), and sort operations accordingly.
+ */
+void
+Generator::toposort()
+{
+  Vect_t<Operation_t>& operations = isa().m_operations;
+  
+  for( Vect_t<Operation_t>::const_iterator op1 = operations.begin(); op1 < operations.end(); ++op1 ) {
+    OpCode_t& opcode1 = opcode( *op1 );
+    for( Vect_t<Operation_t>::const_iterator op2 = operations.begin(); op2 < op1; ++ op2 ) {
+      OpCode_t& opcode2 = opcode( *op2 );
+
+      switch( opcode1.locate( opcode2 ) ) {
+      case OpCode_t::Outside: break; // No problem
+      case OpCode_t::Overlaps:
+        if      (isa().m_user_orderings.count( std::make_pair( *op1, *op2 ) ) > 0)
+          {
+            opcode1.setupper( &opcode2 );
+            log(2) << "operation `" << (**op1).m_symbol << "' is a forced specialization of operation `" << (**op2).m_symbol << "'" << endl;
+            break;
+          }
+        else if (isa().m_user_orderings.count( std::make_pair( *op2, *op1 ) ) > 0)
+          {
+            opcode2.setupper( &opcode1 );
+            log(2) << "operation `" << (**op2).m_symbol << "' is a forced specialization of operation `" << (**op1).m_symbol << "'" << endl;
+            break;
+          }
+      case OpCode_t::Equal:
+        (**op1).m_fileloc.err( "error: operation `%s' conflicts with operation `%s'", (**op1).m_symbol.str(), (**op2).m_symbol.str() );
+        (**op2).m_fileloc.err( "operation `%s' was declared here", (**op2).m_symbol.str() );
+        std::cerr << (**op1).m_symbol << ": " << opcode1 << endl;
+        std::cerr << (**op2).m_symbol << ": " << opcode2 << endl;
+        throw GenerationError;
+        break;
+      case OpCode_t::Inside:
+        opcode2.setupper( &opcode1 );
+        log(2) << "operation `" << (**op2).m_symbol << "' is a specialization of operation `" << (**op1).m_symbol << "'" << endl;
+        break;
+      case OpCode_t::Contains:
+        opcode1.setupper( &opcode2 );
+        log(2) << "operation `" << (**op1).m_symbol << "' is a specialization of operation `" << (**op2).m_symbol << "'" << endl;
+        break;
+      }
+    }
+  }
+  
+  // Topological sort to fix potential precedence problems
+  {
+    intptr_t opcount = operations.size();
+    Vect_t<Operation_t> noperations( opcount );
+    intptr_t
+      sopidx = opcount, // operation source table index
+      dopidx = opcount, // operation destination table index
+      inf_loop_tracker = opcount; // counter tracking infinite loop
+    
+    while( dopidx > 0 ) {
+      sopidx = (sopidx + opcount - 1) % opcount;
+      Operation_t* op = operations[sopidx];
+      if (not op) continue;
+      
+      OpCode_t& oc = opcode( op );
+      if( oc.m_lowercount > 0 ) {
+        // There is some operations to be placed before this one 
+        --inf_loop_tracker;
+        assert( inf_loop_tracker >= 0 );
+        continue;
+      }
+      inf_loop_tracker = opcount;
+      noperations[--dopidx] = op;
+      operations[sopidx] = 0;
+      oc.unsetupper();
+    }
+    operations = noperations;
+  }
+}
+
+/** Dumps ISA statistics
+    @param _sink a std::ostream reference where to dump statistics
+    @param verbosity the level of verbosity
+ */
+void
+Generator::isastats()
+{
+  log(1) << "Instruction Size: ";
+  if (m_insnsizes.size() == 1)
+    log(1) << (*m_insnsizes.begin());
+  else
+    {
+      char const* sep = "[";
+      for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); ++itr) {
+        log(1) << sep << *itr;
+        sep = ",";
+      }
+      log(1) << "] (gcd=" << this->gcd() << ")";
+    }
+  
+  log(1) << std::endl;
+  log(1) << "Instruction Set Encoding: " << (isa().m_little_endian ? "little-endian" : "big-endian") << "\n";
+  /* Statistics about operation and actions */
+  log(1) << "Operation count: " << isa().m_operations.size() << "\n";
+  {
+    log(3) << "Operations (actions details):\n";
+    typedef std::map<ActionProto_t const*,uint64_t> ActionCount;
+    ActionCount actioncount;
+    for (Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op) {
+      log(3) << "  " << (**op).m_symbol.str() << ':';
+      for (Vect_t<Action_t>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action) {
+        ActionProto_t const* ap = (**action).m_actionproto;
+        log(3) << " ." << ap->m_symbol.str();
+        actioncount[ap] += 1;
+      }
+      log(3) << '\n';
+    }
+    log(1) << "Action count:\n";
+    for (ActionCount::const_iterator itr = actioncount.begin(); itr != actioncount.end(); ++itr) {
+      log(1) << "   ." << itr->first->m_symbol.str() << ": " << itr->second << '\n';
+    }
+  }
 }
 
 /** Generates one C source file and one C header
     @param output a C string containing the name of the output filenames without the file name extension
     @param word_size define the minimum word size to hold the operand bit field,
     if zero uses the smallest type which hold the operand bit field
-    @return non-zero if no error occurs during generation
 */
 void
 Generator::iss( char const* prefix, bool sourcelines ) const
 {
-  std::cerr << "Instruction Size: ";
-  if (m_insn_minsize != m_insn_maxsize)
-    std::cerr << "[" << m_insn_minsize << ":" << m_insn_maxsize << "]";
-  else
-    std::cerr << m_insn_maxsize;
-  std::cerr << std::endl;
-  std::cerr << "Instruction Set Encoding: " << (isa().m_little_endian ? "little-endian" : "big-endian") << "\n";
-  
   /*******************/
   /*** Header file ***/
   /*******************/
@@ -158,13 +360,13 @@ Generator::iss( char const* prefix, bool sourcelines ) const
     ConstStr_t headerid;
     
     {
-      Str::Buf ns_header_str( Str::Buf::Recycle );
-      char const* sep = "";
+      std::string ns_header_str;
+      std::string sep = "";
       for( vector<ConstStr_t>::const_iterator piece = isa().m_namespace.begin(); piece < isa().m_namespace.end(); ++ piece ) {
-        ns_header_str.write( sep ).write( (*piece).str() );
+        ns_header_str += sep + (*piece).str();
         sep = "__";
       }
-      headerid = Str::fmt( "__%s_%s_HH__", Str::tokenize( prefix ).str(), ns_header_str.m_storage );
+      headerid = Str::fmt( "__%s_%s_HH__", Str::tokenize( prefix ).str(), ns_header_str.c_str() );
     }
 
     sink.code( "#ifndef %s\n", headerid.str() );
@@ -255,14 +457,20 @@ Generator::iss( char const* prefix, bool sourcelines ) const
       cerr << GENISSLIB << ": can't open header file '" << sink.m_filename << "'.\n";
       throw GenerationError;
     }
-    sink.code( "subdecoder" );
+    
+    sink.code( "subdecoder " );
+    
     std::vector<ConstStr_t> const& nmspc = isa().m_namespace;
-    char const* sep = " ";
+    char const* sep = "";
     for( std::vector<ConstStr_t>::const_iterator ns = nmspc.begin(); ns < nmspc.end(); sep = "::", ++ ns )
       sink.code( "%s%s", sep, (*ns).str() );
-    sink.code( " " );
-    subdecoder_bounds( sink );
-    sink.code( "\n" );
+    
+    sink.code( " [" );
+    sep = "";
+    for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); sep = ",", ++itr)
+      sink.code( "%s%u", sep, *itr );
+    
+    sink.code( "]\n" );
     
     sink.flush();
   }
@@ -413,8 +621,8 @@ Generator::operation_decl( Product_t& _product ) const {
   op_getlen_decl( _product );
   _product.code( " inline const char *GetName() const { return name; }\n" );
   
-  _product.code( " static unsigned int const minsize = %d;\n", m_insn_minsize );
-  _product.code( " static unsigned int const maxsize = %d;\n", m_insn_maxsize );
+  _product.code( " static unsigned int const minsize = %d;\n", (*m_insnsizes.begin()) );
+  _product.code( " static unsigned int const maxsize = %d;\n", (*m_insnsizes.rbegin()) );
   
   for( Vect_t<Variable_t>::const_iterator var = isa().m_vars.begin(); var < isa().m_vars.end(); ++ var ) {
     _product.usercode( (**var).m_ctype->m_fileloc, " %s %s;", (**var).m_ctype->m_content.str(), (**var).m_symbol.str() );
@@ -471,7 +679,8 @@ Generator::operation_decl( Product_t& _product ) const {
 
 
 void
-Generator::isa_operations_decl( Product_t& _product ) const {
+Generator::isa_operations_decl( Product_t& _product ) const
+{
   for( Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
     _product.template_signature( isa().m_tparams );
     _product.code( "class Op%s : public Operation", Str::capitalize( (**op).m_symbol ).str() );
@@ -487,30 +696,32 @@ Generator::isa_operations_decl( Product_t& _product ) const {
     if (isa().m_withencode)
       _product.code( " void Encode(%s code) const;\n", codetype_ref().str() );
     
-    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
-      BitField_t::Type_t bftype = (**bf).type();
-      if( bftype == BitField_t::Operand ) {
-        OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
-        int dstsize = std::max( m_minwordsize, least_ctype_size( opbf.dstsize() ) );
-        _product.code( "%sint%d_t %s;\n", (opbf.m_sext ? "" : "u"), dstsize, opbf.m_symbol.str() );
-      } else if( bftype == BitField_t::SpecializedOperand ) {
-        SpOperandBitField_t const& sopbf = dynamic_cast<SpOperandBitField_t const&>( **bf );
-        ConstStr_t constval = sopbf.constval();
-        int dstsize = std::max( m_minwordsize, least_ctype_size( sopbf.dstsize() ) );
-        _product.code( "static %sint%d_t const %s = %s;\n",
-                       (sopbf.m_sext ? "" : "u"), dstsize, sopbf.m_symbol.str(), sopbf.constval().str() );
-      } else if( bftype == BitField_t::SubOp ) {
-        SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bf );
-        SDInstance_t const* sdinstance = sobf.m_sdinstance;
-        SDClass_t const* sdclass = sdinstance->m_sdclass;
-        SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
+    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf )
+      {
+        if      (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &**bf ))
+          {
+            int dstsize = std::max( m_minwordsize, least_ctype_size( opbf->dstsize() ) );
+            _product.code( "%sint%d_t %s;\n", (opbf->m_sext ? "" : "u"), dstsize, opbf->m_symbol.str() );
+          }
+        else if (SpOperandBitField_t const* sopbf = dynamic_cast<SpOperandBitField_t const*>( &**bf ))
+          {
+            ConstStr_t constval = sopbf->constval();
+            int dstsize = std::max( m_minwordsize, least_ctype_size( sopbf->dstsize() ) );
+            _product.code( "static %sint%d_t const %s = %s;\n",
+                           (sopbf->m_sext ? "" : "u"), dstsize, sopbf->m_symbol.str(), sopbf->constval().str() );
+          }
+        else if (SubOpBitField_t const* sobf = dynamic_cast<SubOpBitField_t const*>( &**bf ))
+          {
+            SDInstance_t const* sdinstance = sobf->m_sdinstance;
+            SDClass_t const* sdclass = sdinstance->m_sdclass;
+            SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
         
-        _product.usercode( sdclass->m_fileloc, " %s::Operation", sdclass->qd_namespace().str() );
-        if( tpscheme )
-          _product.usercode( *tpscheme, "< %s >" );
-        _product.code( "* %s;\n", sobf.m_symbol.str() );
+            _product.usercode( sdclass->m_fileloc, " %s::Operation", sdclass->qd_namespace().str() );
+            if( tpscheme )
+              _product.usercode( *tpscheme, "< %s >" );
+            _product.code( "* %s;\n", sobf->m_symbol.str() );
+          }
       }
-    }
 
     if( not (**op).m_variables.empty() ) {
       for( Vect_t<Variable_t>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var ) {
@@ -678,7 +889,7 @@ Generator::isa_operations_methods( Product_t& _product ) const {
         _product.code( " char const* Op%s", Str::capitalize( (**op).m_symbol ).str() );
         _product.template_abbrev( isa().m_tparams );
         _product.code( "::%s_text() const\n", xxcode[step] );
-        _product.code( " { return %s; }\n", Str::dqcstring( xxcode_text.m_content.m_storage ).str() );
+        _product.code( " { return %s; }\n", Str::dqcstring( xxcode_text.m_content.c_str() ).str() );
       }
     }
     
@@ -1107,13 +1318,13 @@ FieldIterator::next() {
   m_idx += 1;
   BitField_t const& field = *(m_bitfields[m_idx]);
   if (m_ref == 0) m_pos += m_size;
-  else            m_pos -= field.m_size;
-  m_size = field.m_size;
-  if (field.type() == BitField_t::Separator) {
-    SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( field );
-    if (sepbf.m_rewind) { m_pos = m_chkpt_pos; m_size = m_chkpt_size; }
-    else                { m_chkpt_pos = m_pos; m_chkpt_size = m_size; }
+  else            m_pos -= field.maxsize();
+  m_size = field.maxsize();
+  if (SeparatorBitField_t const* sbf = dynamic_cast<SeparatorBitField_t const*>( &field )) {
+    if (sbf->m_rewind) { m_pos = m_chkpt_pos; m_size = m_chkpt_size; }
+    else               { m_chkpt_pos = m_pos; m_chkpt_size = m_size; }
   }
   
   return true;
 }
+

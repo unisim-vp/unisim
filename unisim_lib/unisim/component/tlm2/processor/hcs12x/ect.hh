@@ -94,7 +94,7 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::RegisterArray;
+using unisim::kernel::service::SignalArray;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::VariableBaseListener;
 using unisim::service::interfaces::TrapReporting;
@@ -347,7 +347,7 @@ private:
 
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
-
+	XINT_Payload *xint_payload;
 
 	double	bus_cycle_time_int;	// The time unit is PS
 	Parameter<double>	param_bus_cycle_time_int;
@@ -401,7 +401,7 @@ private:
 	sc_time signal_generator_period;
 
 	bool portt_pin[8];
-	RegisterArray<bool> portt_pin_reg;
+	SignalArray<bool> portt_pin_reg;
 
 	// Registers map
 	map<string, Register *> registers_registry;
@@ -504,6 +504,8 @@ private:
 		}
 
 	private:
+		ECT	*ectParent;
+
 		sc_event edge_event;
 		sc_event shared_edge_event;
 
@@ -511,8 +513,6 @@ private:
 		uint8_t iocMask;
 		uint8_t valideEdge;
 		uint8_t outputAction;
-
-		ECT	*ectParent;
 
 		uint16_t* tc_register_ptr;
 		uint16_t* tch_register_ptr;

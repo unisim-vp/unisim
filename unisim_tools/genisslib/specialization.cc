@@ -88,11 +88,11 @@ Operation_t*
 Specialization_t::newop() {
   ConstStr_t symbol; // The symbol of the operation
   {
-    Str::Buf buffer( Str::Buf::Recycle );
-    buffer.write( "__spec__" ).write( m_operation->m_symbol );
+    std::string buffer;
+    buffer.append( "__spec__" ).append( m_operation->m_symbol );
     for( Vect_t<Constraint_t>::const_iterator expr = m_constraints.begin(); expr < m_constraints.end(); ++ expr )
-      buffer.write( Str::fmt( "_%s_%x", (**expr).m_symbol.str(), (**expr).m_value ) );
-    symbol = Str::tokenize( buffer.m_storage );
+      buffer+= Str::fmt( "_%s_%x", (**expr).m_symbol.str(), (**expr).m_value ).str();
+    symbol = Str::tokenize( buffer.c_str() );
   }
 
   //  Actions, comments, variables, conditions, and fileloc are
@@ -106,10 +106,10 @@ Specialization_t::newop() {
   Vect_t<BitField_t>& bflist = m_operation->m_bitfields;
   
   for( Vect_t<BitField_t>::const_iterator bf = bflist.begin(); bf < bflist.end(); ++ bf ) {
+    OperandBitField_t const* opbf;
     Constraint_t* expr;
-    if( (**bf).type() == BitField_t::Operand and (expr = constraint( (**bf).symbol() )) ) {
-      OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
-      res->m_bitfields.push_back( new SpOperandBitField_t( opbf, expr->m_value ) );
+    if ((opbf = dynamic_cast<OperandBitField_t const*>( &**bf )) and (expr = constraint( (**bf).symbol() )) ) {
+      res->m_bitfields.push_back( new SpOperandBitField_t( *opbf, expr->m_value ) );
     } else {
       res->m_bitfields.push_back( *bf );
     }
