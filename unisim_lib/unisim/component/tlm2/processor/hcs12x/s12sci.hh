@@ -254,7 +254,6 @@ private:
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
-	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 	XINT_Payload *xint_payload;
 
 	double	bus_cycle_time_int;
