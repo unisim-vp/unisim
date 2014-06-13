@@ -570,8 +570,7 @@ m4/real_path.m4 \
 m4/pthread.m4"
 
 UNISIM_LIB_VIRTEX5FXT_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_ppc440.xml \
-unisim/service/debug/gdb_server/gdb_ppc440fp.xml \
+unisim/service/debug/gdb_server/gdb_powerpc.xml \
 unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
 
