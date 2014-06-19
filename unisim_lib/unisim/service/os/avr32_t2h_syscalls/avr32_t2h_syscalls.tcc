@@ -697,6 +697,25 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::GetTimeOfDay(struct avr32_timeval *target_t
 template <class MEMORY_ADDR>
 unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMORY_ADDR>::HandleEmulatorBreakpoint()
 {
+	// read PC
+	uint32_t pc_value = 0;
+	reg_pc->GetValue(&pc_value);
+
+	// read a 6-byte pattern at PC
+	uint8_t pattern[6];
+	if(!memory_injection_import->InjectReadMemory(pc_value, pattern, 6))
+	{
+		return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+	}
+	
+	// try to recognize pattern breakpoint/mov r12,-1/mov r11,...
+	if((pattern[0] != 0xd6) || (pattern[1] != 0x73) || // breakpoint
+	   (pattern[2] != 0x3f) || (pattern[3] != 0xfc) || // mov r12,-1
+	   ((pattern[4] & 0xf0) != 0x30) || ((pattern[5] & 0x0f) != 0x0b)) // mov r11,...
+	{
+		return unisim::service::interfaces::AVR32_T2H_Syscalls::UNHANDLED;
+	}
+
 	uint32_t syscall_num;
 	reg_syscall_num->GetValue(&syscall_num);
 	
@@ -716,8 +735,6 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	}
 
 	// skip 2 bytes of breakpoint instruction plus next 4 bytes
-	uint32_t pc_value = 0;
-	reg_pc->GetValue(&pc_value);
 	pc_value = pc_value + 6;
 	reg_pc->SetValue(&pc_value);
 	

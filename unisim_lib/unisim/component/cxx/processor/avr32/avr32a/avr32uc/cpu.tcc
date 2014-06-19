@@ -948,7 +948,7 @@ bool CPU<CONFIG>::Breakpoint()
 			switch(status)
 			{
 				case unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR:
-					logger << DebugWarning << "Was not able to handle system call because of a simulator error" << EndDebugWarning;
+					logger << DebugWarning << "Was not able to handle or recognize a system call because of a simulator error" << EndDebugWarning;
 					return false;
 				case unisim::service::interfaces::AVR32_T2H_Syscalls::OK:
 					return true;
@@ -956,12 +956,19 @@ bool CPU<CONFIG>::Breakpoint()
 					logger << DebugInfo << "Program exited normally" << EndDebugInfo;
 					Stop(0);
 					return true;
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::UNHANDLED:
+					// Attempt to execute a breakpoint instruction while system call translator not recognizing a system call results in executing the breakpoint as a nop
+					break;
 			}
 		}
 		else
 		{
-			logger << DebugWarning << "Attempt to execute a breakpoint instruction while no system call translator is available results in executing the breakpoint as a nop." << EndDebugWarning;
+			// Attempt to execute a breakpoint instruction while no system call translator is available results in executing the breakpoint as a nop
 		}
+	}
+	else
+	{
+		// TODO
 	}
 
 	return true;
