@@ -187,6 +187,7 @@ bool DWARF_Frame<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR&
 		default:
 			return false;
 	}
+//	std::cerr << "ReadAddrFromMemory(0x" << std::hex << addr << ", 0x" << read_addr << ", " << std::dec << read_size << ");" << std::endl;
 	return true;
 }
 
@@ -429,7 +430,7 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 			WriteRegister(sp_reg_num, cfa);
 			break;
 		case DW_CFA_IS_SP_VALUE_ON_ENTRY_TO_THE_CURRENT_FRAME:
-			WriteRegister(sp_reg_num, cfa + dw_handler->GetReturnAddressSize(pc));
+			WriteRegister(sp_reg_num, cfa + dw_handler->GetReturnAddressSize(cfi_row->GetLocation()));
 			break;
 	}
 

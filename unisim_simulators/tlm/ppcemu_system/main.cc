@@ -771,7 +771,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	uint32_t display_depth = 15; // in bits per pixel
 	uint32_t display_vfb_size = 8 * 1024 * 1024; // 8 MB
 	uint32_t video_refresh_period = 40; // every 40 ms (25 fps)
-	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
+	uint32_t memory_size = 512 * 1024 * 1024; // 512 MB
 	double cpu_ipc = 1.0; // in instructions per cycle
 	double cpu_cycle_time = (double)(1.0e6 / cpu_frequency); // in picoseconds
 	double fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;

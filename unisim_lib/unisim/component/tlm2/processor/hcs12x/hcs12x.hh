@@ -50,6 +50,7 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xmmc.hh>
 
 
 #include <inttypes.h>
@@ -68,6 +69,10 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::CPU;
+using unisim::component::cxx::processor::hcs12x::MMC_DATA;
+
+using unisim::component::tlm2::processor::hcs12x::S12XMMC;
+
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
@@ -91,49 +96,46 @@ class HCS12X :
 public:
 	typedef CPU inherited;
 
-	// Initiator socket
-	tlm_utils::simple_initiator_socket<HCS12X> socket;
-
 	// wake-up request from XINT
 	tlm_target_socket< > xint_interrupt_request;
-	virtual tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
-	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t) { }
-	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm_dmi&  dmi_data) { return (false);}
-	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload) { return (0); }
-	virtual tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& payload,	tlm_phase& phase, sc_core::sc_time& t) { return (TLM_ACCEPTED); }
+	void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t) { }
+	bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm_dmi&  dmi_data) { return (false);}
+	unsigned int transport_dbg(tlm::tlm_generic_payload& payload) { return (0); }
+	tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& payload,	tlm_phase& phase, sc_core::sc_time& t) { return (TLM_ACCEPTED); }
 
 	tlm_utils::simple_target_socket<HCS12X> bus_clock_socket;
 
-	HCS12X(const sc_module_name& name, Object *parent = 0);
+	HCS12X(const sc_module_name& name, S12XMMC *_mmc, Object *parent = 0);
 	virtual ~HCS12X();
 
-	virtual void Stop(int ret);
-	virtual void Sync();
+	void Stop(int ret);
+	void Sync();
 
 	/* TODO:
 	 * Stop All Clocks and puts the device in standby mode.
 	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode.
 	 */
-	virtual void sleep();
+	void sleep();
 
 	/* TODO:
 	 * Enter a wait state for an integer number of bus clock cycle
 	 * Only CPU12 clocks are stopped
 	 * Wait for not masked interrupt
 	 */
-	virtual void wai();
+	void wai();
 
-	virtual bool BeginSetup();
-	virtual bool Setup(ServiceExportBase *srv_export);
-	virtual bool EndSetup();
+	bool BeginSetup();
+	bool Setup(ServiceExportBase *srv_export);
+	bool EndSetup();
 
 	void Run();
 
-	virtual void Reset();
+	void Reset();
 
-	virtual void busWrite(address_t addr, const void *buffer, uint32_t size);
-	virtual void busRead(address_t addr, void *buffer, uint32_t size);
+	virtual void busWrite(MMC_DATA *buffer);
+	void busRead(MMC_DATA *buffer);
 
 	//================================================================
     //=                    tlm2 Interface                            =
@@ -149,13 +151,15 @@ public:
 	 * If (RAM_ACC_VIOL | SYS || SWI || TRAP) return IVBR;
 	 * Else return INT_Vector
 	 */
-	virtual address_t getIntVector(uint8_t &ipl);
+	address_t getIntVector(uint8_t &ipl);
 
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:
 	void Synchronize();
 	void computeInternalTime();
+
+	S12XMMC *mmc;
 
 	sc_event	irq_event,		// I-bit-Maskable Interrupt Requests and X-bit Non-Maskable Interrupt Requests
 				reset_event;	// Hardware and Software Reset
@@ -191,6 +195,9 @@ private:
 	uint64_t last_instruction_counter;
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
+
+	tlm::tlm_generic_payload* xint_trans;
+	tlm_phase *xint_phase;
 
 };
 

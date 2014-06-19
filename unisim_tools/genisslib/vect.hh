@@ -72,4 +72,9 @@ struct StringVect_t : std::vector<char const*> {
 
 };
 
+struct UIntVect_t : std::vector<unsigned int>
+{
+  UIntVect_t( unsigned int value ) : std::vector<unsigned int>( 1, value ) {}
+};
+
 #endif // __VECT_HH__

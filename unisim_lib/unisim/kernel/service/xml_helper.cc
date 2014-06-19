@@ -327,6 +327,9 @@ XmlfyVariable(xmlTextWriterPtr writer,
 		case VariableBase::VAR_REGISTER:
 			rc = xmlTextWriterWriteFormatString(writer, "register");
 			break;
+		case VariableBase::VAR_SIGNAL:
+			rc = xmlTextWriterWriteFormatString(writer, "signal");
+			break;
 		case VariableBase::VAR_VOID:
 		case VariableBase::VAR_ARRAY:
 		case VariableBase::VAR_FORMULA:

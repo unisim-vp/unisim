@@ -108,6 +108,8 @@ public:
 		FECCR000, FECCR001, FECCR010, FECCR011, FECCR100, FECCR101, FECCR110, FECCR111
 	};
 
+	static const unsigned int REGISTERS_BANK_SIZE = 20;
+
 	static const uint8_t EraseVerifyAllBlocks = 0x01;
 	static const uint8_t EraseVerifyBlock = 0x02;
 	static const uint8_t EraseVerifyPFlashSection = 0x03;
@@ -132,9 +134,14 @@ public:
 	static const uint8_t PartitionDFlash = 0x20;
 
 	static const uint16_t WORD_SIZE = 2;
-	static const uint16_t DFLASH_SECTOR_SIZE = 64;
+	static const uint16_t DFLASH_SECTOR_SIZE = 256;
 	static const uint16_t PHRASE_SIZE = 8;
 	static const uint16_t PFLASH_SECTOR_SIZE = 1024;
+	static const uint16_t PFLASH_SECTION_SIZE = 128*PFLASH_SECTOR_SIZE;
+	static const uint16_t EEE_NON_VOLATILE_SPACE_SIZE = 8;
+	static const uint16_t BACKDOOR_ACCESS_KEY_SIZE = 8;
+
+	ServiceExport<Registers> registers_export;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
@@ -142,8 +149,6 @@ public:
 
 	// interface with bus
 	tlm_utils::simple_target_socket<S12XFTMX> slave_socket;
-
-	ServiceExport<Registers> registers_export;
 
 	/**
 	 * Constructor.
@@ -180,7 +185,7 @@ public:
 	void setUserMarginLevel_cmd();
 	void setFieldMarginLevel_cmd();
 	void fullPartitionDFlash_cmd();
-	void eraseVerifyDFlashSector_cmd();
+	void eraseVerifyDFlashSection_cmd();
 	void programDFlash_cmd();
 	void eraseDFlashSector_cmd();
 	void enableEEPROMEmulation_cmd();
@@ -259,12 +264,6 @@ private:
 	Parameter<double>	param_oscillator_cycle_time_int;
 	sc_time		oscillator_cycle_time;
 
-	sc_time		fclk_time;
-	sc_time		min_fclk_time;
-	Parameter<sc_time> param_min_fclk_time;
-	sc_time		max_fclk_time;
-	Parameter<sc_time> param_max_fclk_time;
-
 	sc_event command_launch_event;
 
 	address_t	baseAddress;
@@ -279,26 +278,26 @@ private:
 	double erase_fail_ratio;
 	Parameter<double> param_erase_fail_ratio;
 
-	struct {
-		physical_address_t	start_address;
-		uint16_t			size;	// unit is K-Bytes
-	} blockDescriptorArray[5];
+	string			pflash_blocks_description_string;
+	Parameter<string> param_pflash_blocks_description_string;
+	struct BlockDescription {
+		physical_address_t start_address;
+		physical_address_t end_address;
+	};
+	vector<BlockDescription*> pflash_blocks_description;
 
 	physical_address_t	pflash_start_address;
 	Parameter<physical_address_t> param_pflash_start_address;
 	physical_address_t	pflash_end_address;
 	Parameter<physical_address_t> param_pflash_end_address;
 
-	Parameter<physical_address_t> param_pflash_blobk_0_address;
-	Parameter<uint16_t> param_pflash_blobk_0_size;		// 256 K
-	Parameter<physical_address_t> param_pflash_blobk_1N_address;
-	Parameter<uint16_t> param_pflash_blobk_1N_size;		// 128 K
-	Parameter<physical_address_t> param_pflash_blobk_1S_address;
-	Parameter<uint16_t> param_pflash_blobk_1S_size;		// 128 K
-	Parameter<physical_address_t> param_pflash_blobk_2_address;
-	Parameter<uint16_t> param_pflash_blobk_2_size;		// 256 K
-	Parameter<physical_address_t> param_pflash_blobk_3_address;
-	Parameter<uint16_t> param_pflash_blobk_3_size;		// 256 K
+	physical_address_t pflash_protectable_high_address;
+	Parameter<physical_address_t> param_pflash_protectable_high_address;
+	physical_address_t pflash_protectable_low_address;
+	Parameter<physical_address_t> param_pflash_protectable_low_address;
+
+	physical_address_t fprot_high_low_addr;
+	physical_address_t fprot_low_high_addr;
 
 	physical_address_t	blackdoor_comparison_key_address;	// 8 bytes
 	Parameter<physical_address_t> param_blackdoor_comparison_key_address;
@@ -315,6 +314,7 @@ private:
 	Parameter<physical_address_t> param_dflash_start_address;
 	physical_address_t	dflash_end_address;
 	Parameter<physical_address_t> param_dflash_end_address;
+
 	physical_address_t	eee_nonvolatile_information_register_start_address;
 	Parameter<physical_address_t> param_eee_nonvolatile_information_register_start_address;
 	uint16_t			eee_nonvolatile_information_register_size;
@@ -323,6 +323,12 @@ private:
 	Parameter<physical_address_t> param_eee_tag_ram_start_address;
 	uint16_t			eee_tag_ram_size;
 	Parameter<uint16_t> param_eee_tag_ram_size;
+
+	physical_address_t eee_protectable_high_address;
+	Parameter<physical_address_t> param_eee_protectable_high_address;
+
+	physical_address_t eprot_low_addr;
+
 	physical_address_t	memory_controller_scratch_ram_start_address;
 	Parameter<physical_address_t> param_memory_controller_scratch_ram_start_address;
 	uint16_t			memory_controller_scratch_ram_size;
@@ -350,13 +356,23 @@ private:
 	uint16_t			min_ratio_dflash_buffer_ram;
 	Parameter<uint16_t>	param_min_ratio_dflash_buffer_ram;
 
-	string			pflash_blocks_description_string;
-	Parameter<string> param_pflash_blocks_description_string;
-	struct BlockDescription {
-		physical_address_t start_address;
-		physical_address_t end_address;
-	};
-	vector<BlockDescription*> pflash_blocks_description;
+	sc_time		fclk_time;
+	long		min_fclk_time_int;
+	sc_time		min_fclk_time;
+	Parameter<long> param_min_fclk_time;
+	long		max_fclk_time_int;
+	sc_time		max_fclk_time;
+	Parameter<long> param_max_fclk_time;
+
+	vector <uint16_t*> loadDataFieldBuffer;
+	bool partitionDFlashCmd_Launched;
+	bool fullPartitionDFlashCmd_Launched;
+	bool eepromEmulationEnabled;
+	bool verifyBackdoorAccessKey_Failed;
+
+	uint16_t sector_erased_count;
+	uint8_t dead_sector_count;
+	uint8_t ready_sector_count;
 
 	// Registers map
 	map<string, Register *> registers_registry;
@@ -365,11 +381,6 @@ private:
 
 	uint8_t  fclkdiv_reg, fsec_reg, fccobix_reg, feccrix_reg, fcnfg_reg, fercnfg_reg, fstat_reg, ferstat_reg, fprot_reg, eprot_reg, fopt_reg, frsv0_reg, frsv1_reg, frsv2_reg;
 	uint16_t fccob_reg[6], etag_reg, feccr_reg[8];
-
-	bool loadDataFieldCommandSequenceActive;
-	uint16_t sector_erased_count;
-	uint8_t dead_sector_count;
-	uint8_t ready_sector_count;
 
 	inline bool isCommandCompleteInterruptEnable() { return ((fcnfg_reg & 0x80) != 0); }
 	inline bool isignoreSingleBitFault() { return ((fcnfg_reg & 0x10) != 0); }
@@ -409,6 +420,22 @@ private:
 	inline bool isACCERR() { return ((fstat_reg & 0x20) != 0); }
 	inline void setACCERR() { fstat_reg = fstat_reg | 0x20; }
 	inline bool isFPVIOL() { return ((fstat_reg & 0x10) != 0); }
+	inline void setFPVIOL() { fstat_reg = fstat_reg | 0x10; }
+	inline void setEPVIOLIF() { ferstat_reg =ferstat_reg | 0x10; }
+
+	inline bool isPFlashProtected(physical_address_t low_addr, physical_address_t high_addr) {
+
+		bool find = false;
+		find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x20) == 0)) && (fprot_high_low_addr <= high_addr) && (low_addr <= pflash_protectable_high_address);
+		find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x04) == 0)) && (pflash_protectable_low_address <= high_addr) && (low_addr <= fprot_low_high_addr);
+
+		return find;
+	}
+
+	inline bool isEEEProtected(physical_address_t low_addr, physical_address_t high_addr) {
+
+		return (!((eprot_reg & 0x80) != 0) != !((eprot_reg & 0x08) == 0)) && (eprot_low_addr <= high_addr) && (low_addr <= eee_protectable_high_address);
+	}
 
 	inline void setSFDIF() {
 		ferstat_reg = ferstat_reg | 0x01;
@@ -420,32 +447,36 @@ private:
 	}
 
 	inline bool isLoadDataFieldCommandSequenceActive() {
-		return (loadDataFieldCommandSequenceActive);
+		return (loadDataFieldBuffer.size() > 0);
 	}
 
-	void split( string str, vector<string> result, const char * delimiters ) {
-		vector<string> vec_String;
-		char * cstr = new char [str.length()+1];
-		std::strcpy (cstr, str.c_str());
-		char *token = strtok( cstr, delimiters );
+	inline bool isPartitionDFlashCmd_Launched() {
+		return (partitionDFlashCmd_Launched);
+	}
 
-		cout << "Extracting and storing data in a vector..\n\n\n";
+	inline bool isFullPartitionDFlashCmd_Launched() {
+		return (fullPartitionDFlashCmd_Launched);
+	}
 
-		while( token != NULL )
-		{
-			vec_String.push_back(token);
-			token = strtok( NULL, delimiters );
-		}
+	inline bool isEepromEmulationEnabled() {
+		return (eepromEmulationEnabled);
+	}
 
-//		cout << "Displaying end result in  vector line storage..\n\n";
-//
-//		for ( int i = 0; i < vec_String.size(); ++i) {
-//			cout << vec_String[i] << "\n";
-//		}
-//
-//		cout << "\n\n\n";
+	inline void unsecureFlash() {
+		/**
+		 *  FSEC::SEC bits values
+		 *  00, 01, 11 => Flash secured
+		 *  10 => Flash unsecured
+		 */
+		fsec_reg = (fsec_reg & 0xFC) | 0x02;
+	}
 
-		delete[] cstr;
+	inline bool isFlashSecured() {
+		return ((fsec_reg & 0x03) != 0x02);
+	}
+
+	inline bool isBackdoorkeySecurityEnabled() {
+		return ((fsec_reg & 0x80) == 0x80);
 	}
 };
 

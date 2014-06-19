@@ -59,6 +59,7 @@
 #include <iostream>
 
 #if defined(WIN32)
+#include <windows.h>
 #include <io.h>     // for function access()
 #else
 #include <unistd.h>
@@ -1032,6 +1033,9 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<r | run>" << endl;
 	(*std_output_stream) << "    restart the simulation from the beginning" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<fin | finish>" << endl;
+	(*std_output_stream) << "    continue executing instructions until returning from current function" << endl;
 	(*std_output_stream) << "================================ INSPECT =======================================" << endl;
 	(*std_output_stream) << "<dis | disasm | disassemble> [<symbol | *address>]" << endl;
 	(*std_output_stream) << "    continue to disassemble starting from 'symbol', 'address', or after" << endl;

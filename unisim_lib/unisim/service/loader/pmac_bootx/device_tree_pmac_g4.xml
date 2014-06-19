@@ -13,7 +13,7 @@
 	<devnode>
 		<string_property name="name" value="memory"/>
 		<string_property name="device_type" value="memory"/>
-		<hex_property name="reg" value="00000000 10000000"/>
+		<hex_property name="reg" value="00000000 20000000"/>
 	</devnode>
 	
 	<devnode>

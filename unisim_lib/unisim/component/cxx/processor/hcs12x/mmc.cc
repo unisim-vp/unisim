@@ -65,11 +65,27 @@ MMC::MMC(const char *name, S12MPU_IF *_mpu, Object *parent):
 	, registers_export("registers_export", this)
 
 	, mpu(_mpu)
-	, version("V3")
-	, param_version("version", this, version, "MMC version. Supported are V3 and V4. Default is V3")
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
+	, version("V3")
+	, param_version("version", this, version, "MMC version. Supported are V3 and V4. Default is V3")
+
+	, mmcctl0(MMCCTL0_RESET)
+	, mode(MMC_MODE_RESET)
+	, gpage(GLOBAL_RESET_PAGE)
+	, direct(DIRECT_RESET_PAGE)
+	, mmcctl1(mmcctl1_int)
+	, rpage(RAM_RESET_PAGE)
+	, epage(EEPROM_RESET_PAGE)
+	, ppage(FLASH_RESET_PAGE)
+	, ramwpc(RAMWPC_RESET)
+	, ramxgu(RAMXGU_RESET)
+	, ramshl(RAMSHL_RESET)
+	, ramshu(RAMSHU_RESET)
+
+	, directSet(false)
+
 	, mode_int(MMC_MODE_RESET)
 	, mmcctl1_int(MMCCTL1_RESET)
 	, param_mode("mode", this, mode_int)
@@ -78,6 +94,7 @@ MMC::MMC(const char *name, S12MPU_IF *_mpu, Object *parent):
 	, param_address_encoding("address-encoding",this,address_encoding)
 	, ppage_address(0x30)
 	, param_ppage_address("ppage-address", this, ppage_address)
+
 
 {
 
@@ -217,6 +234,7 @@ bool MMC::BeginSetup() {
 		unisim::kernel::service::Register<uint8_t> *ramshu_var = new unisim::kernel::service::Register<uint8_t>("RAMSHU", this, ramshu, "RAM Shared Region Upper Boundary Register (RAMSHU)");
 		extended_registers_registry.push_back(ramshu_var);
 		ramshu_var->setCallBack(this, RAMSHU, &CallBackObject::write, NULL);
+
 	}
 
 	MMC_REGS_ADDRESSES[MMCCTL0] = 0x000A;
@@ -310,7 +328,7 @@ bool MMC::ReadMemory(physical_address_t paged_addr, void *buffer, uint32_t size)
 
 
 	if (memory_import) {
-		return (memory_import->ReadMemory(addr, (uint8_t *) buffer, size));
+		return (memory_import->ReadMemory(addr, buffer, size));
 	}
 
 	return (false);
@@ -338,9 +356,8 @@ bool MMC::WriteMemory(physical_address_t paged_addr, const void *buffer, uint32_
 		}
 	}
 
-
 	if (memory_import) {
-		return (memory_import->WriteMemory(addr, (uint8_t *) buffer, size));
+		return (memory_import->WriteMemory(addr, buffer, size));
 	}
 
 	return (false);

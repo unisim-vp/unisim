@@ -1,0 +1,138 @@
+\mode<article>{\usepackage{fullpage}}
+\mode<presentation>{\usetheme{CEA}}
+% everyone:
+\usepackage[english]{babel}
+\usepackage{pgf}
+\usepackage{graphicx}
+\usepackage{pstricks}
+\usepackage{pdfpages}
+\usepackage{listings}
+\usepackage{verbatim}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+
+\mode<article> {
+	\usepackage[center]{caption}
+}
+%%\usepackage{xmpmulti}
+%%\pgfdeclareimage[height=1cm]{myimage}{filename}
+
+\mode<article> {
+	\setjobnamebeamerversion{main.beamer}
+}
+
+
+\title{System-C \& System-C TLM Tutorial}
+\author{Gilles Mouchard \\ Reda Nouacer \\ Daniel Gracia P\'erez}
+\date{2 June, 2008}
+
+\usetheme{CEA}
+
+\begin{document}
+\mode<presentation>{
+\lstset{% general command to set parameter(s)
+language=c++,
+basicstyle=\tiny, % print whole listing tiny
+keywordstyle=\color{black}\bfseries, % bold black keywords
+identifierstyle=, % nothing happens
+commentstyle=\color{blue}, % white comments
+stringstyle=\ttfamily, % typewriter type for strings
+showstringspaces=false,
+tabsize=4,
+breaklines=true,
+numbers=left,
+framexleftmargin=7.5mm,
+xleftmargin=0.13\textwidth,
+xrightmargin=0.1\textwidth,
+frame=tlbr}
+}
+\mode<article>{
+\lstset{% general command to set parameter(s)
+language=c++,
+basicstyle=\footnotesize, % print whole listing small
+keywordstyle=\color{black}\bfseries, % bold black keywords
+identifierstyle=, % nothing happens
+commentstyle=\color{blue}, % white comments
+stringstyle=\ttfamily, % typewriter type for strings
+showstringspaces=false,
+tabsize=4,
+breaklines=true,
+numbers=left,
+framexleftmargin=7.5mm,
+xleftmargin=0.13\textwidth,
+xrightmargin=0.1\textwidth,
+frame=tlbr}
+}
+% \lstset{language=c++,basicstyle={\ttfamily\footnotesize},tabsize=4,breaklines=true,numbers=left,framexleftmargin=7.5mm,xleftmargin=0.13\textwidth,xrightmargin=0.1\textwidth,frame=tlbr}
+\maketitle
+
+\mode<article>{
+\chapter*{Outline}
+}
+
+\mode<presentation>{
+\part{Outline}
+}
+
+\mode<presentation>{
+\begin{frame}
+	\frametitle{Outline}
+	\begin{itemize}
+		\item Introduction
+		\item System-C basics/CLM
+		\item System-C TLM\newline
+		\item {\color{blue}\ldots and your questions}
+	\end{itemize}
+\end{frame}
+}
+
+\mode<article>{
+Welcome to the SystemC tutorial. 
+We will introduce you to the exciting world of System-C and the possibilities opened to you with System-C Transaction Level Modelling (aka TLM).
+We start with a presentation on what is System-C and what you can use it for.
+Then the basics of System-C programming will be introduced, so you can start coding System-C cycle level models.
+The third part introduces System-C TLM programming model, and more concretely TLM 2.0, which is deemed to become an IEEE standard like its big brother SystemC.
+%Once the basics have been introduced, we will give an overview of the different existent frameworks that use System-C.
+%A special section will be reserved for the UNISIM simulation framework.
+%More on them at the end of the tutorial.
+
+% \begin{figure}[!h]
+% 	\begin{center}
+% 		\includegraphics[page=1,height=6cm]{main_beamer.pdf}
+% 	\end{center}
+% 	\caption{Outline slide.}
+% 	\label{slide:outline}
+% \end{figure}
+}
+
+\newpage
+
+\mode<article>{
+\tableofcontents
+\listoffigures
+\listoftables
+}
+
+\input{introduction/intro_main}
+
+\newpage
+
+\input{systemc_cycle/main}
+
+\newpage
+
+\input{tlm/main}
+
+% \newpage
+
+% \input{systemc_basics/basics_main}
+
+% \newpage
+
+% \input{tlm/tlm_main}
+
+% \newpage
+
+% \input{services/services_main}
+
+\end{document}

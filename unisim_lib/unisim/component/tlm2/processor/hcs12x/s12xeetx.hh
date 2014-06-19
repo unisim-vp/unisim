@@ -106,14 +106,16 @@ public:
 
 	enum REGS_OFFSETS {ECLKDIV, RESERVED1, RESERVED2, ECNFG, EPROT, ESTAT, ECMD, RESERVED3, EADDRHI, EADDRLO, EDATAHI, EDATALO};
 
+	static const unsigned int REGISTERS_BANK_SIZE = 12;
+
+	ServiceExport<Registers> registers_export;
+
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
 	tlm_utils::simple_target_socket<S12XEETX> bus_clock_socket;
 
 	// interface with bus
 	tlm_utils::simple_target_socket<S12XEETX> slave_socket;
-
-	ServiceExport<Registers> registers_export;
 
 	/**
 	 * Constructor.
@@ -208,10 +210,10 @@ private:
 		void invalidateCmdWrite() { cmdWrite = false; }
 
 	private:
-		bool    cmdWrite;
 		uint8_t cmd;
 		uint16_t addr;
 		uint16_t data;
+		bool    cmdWrite;
 	} ;
 
 	queue<TCommand*> cmd_queue;
@@ -228,6 +230,7 @@ private:
 	tlm_quantumkeeper quantumkeeper;
 
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
+	XINT_Payload *xint_payload;
 
 	double	bus_cycle_time_int;	// The time unit is PS
 	Parameter<double>	param_bus_cycle_time_int;

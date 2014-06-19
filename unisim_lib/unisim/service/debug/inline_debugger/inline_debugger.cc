@@ -38,6 +38,10 @@
 #include <signal.h>
 #endif
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 #include <iostream>
 
 namespace unisim {

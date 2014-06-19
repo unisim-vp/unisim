@@ -43,10 +43,6 @@ public:
 
 };
 
-#ifdef _WIN32
-  typedef ptw32_handle_t pthread_t;
-#endif
-
 class GenericThread : public TObject
 {
 public:

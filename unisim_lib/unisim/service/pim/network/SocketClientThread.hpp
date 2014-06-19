@@ -20,10 +20,12 @@ class SocketClientThread: public SocketThread {
 public:
 
 	SocketClientThread(string host, uint16_t port, bool _blocking) :
-			SocketThread(host, port, _blocking) { };
+			SocketThread(host, port), blocking(_blocking) { };
 
 	virtual void run();
 
+private:
+	bool blocking;
 };
 
 } // network 

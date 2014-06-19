@@ -56,7 +56,8 @@ Isa::~Isa() {}
     @return the matching operation object, null if no operation object matches
 */
 Operation_t*
-Isa::operation( ConstStr_t _symbol ) {
+Isa::operation( ConstStr_t _symbol )
+{
   for( Vect_t<Operation_t>::iterator op = m_operations.begin(); op < m_operations.end(); ++ op )
     if( (*op)->m_symbol == _symbol ) return *op;
   
@@ -67,7 +68,8 @@ Isa::operation( ConstStr_t _symbol ) {
     @param operation the operation object to remove
 */
 void
-Isa::remove( Operation_t* _op ) {
+Isa::remove( Operation_t* _op )
+{
   for( Vect_t<Operation_t>::iterator iter = m_operations.begin(); iter < m_operations.end(); ++ iter ) {
     if( *iter != _op ) continue;
     m_operations.erase( iter );
@@ -80,7 +82,8 @@ Isa::remove( Operation_t* _op ) {
     @return the found group
 */
 Group_t*
-Isa::group( ConstStr_t _symbol ) {
+Isa::group( ConstStr_t _symbol )
+{
   for( Vect_t<Group_t>::iterator group = m_groups.begin(); group < m_groups.end(); ++ group )
     if( (*group)->m_symbol == _symbol ) return *group;
   
@@ -92,7 +95,8 @@ Isa::group( ConstStr_t _symbol ) {
     @return the matching action prototype object, null if no action prototype object matches
 */
 ActionProto_t const*
-Isa::actionproto( ConstStr_t _symbol ) const {
+Isa::actionproto( ConstStr_t _symbol ) const
+{
   for( Vect_t<ActionProto_t>::const_iterator proto = m_actionprotos.begin(); proto < m_actionprotos.end(); ++ proto )
     if( (*proto)->m_symbol == _symbol ) return *proto;
 
@@ -103,7 +107,8 @@ Isa::actionproto( ConstStr_t _symbol ) const {
     @param actionproto the action prototype object to remove
 */
 void
-Isa::remove( ActionProto_t const* _ap ) {
+Isa::remove( ActionProto_t const* _ap )
+{
   for( Vect_t<ActionProto_t>::iterator iter = m_actionprotos.begin(); iter < m_actionprotos.end(); ++ iter ) {
     if( *iter != _ap ) continue;
     m_actionprotos.erase( iter );
@@ -116,7 +121,8 @@ Isa::remove( ActionProto_t const* _ap ) {
     @param _sink a stream
 */
 void
-Isa::expand( ostream& _sink ) const {
+Isa::expand( ostream& _sink ) const
+{
   // dumping namespace
   if( not m_namespace.empty() ) {
     _sink << "namespace ";
@@ -165,7 +171,8 @@ Isa::expand( ostream& _sink ) const {
 }
 
 auto_ptr<Generator>
-Isa::generator() const {
+Isa::generator() const
+{
   switch( m_decoder ) {
   case RiscDecoder: return auto_ptr<Generator>( new RiscGenerator() );
   case CiscDecoder: return auto_ptr<Generator>( new CiscGenerator() );
@@ -177,7 +184,8 @@ Isa::generator() const {
 }
 
 bool
-Isa::sanity_checks() const {
+Isa::sanity_checks() const
+{
   if( not m_addrtype ) {
     // FIXME: Downgraded warning to error (default pointer size for
     // target architecture is nonsense)
@@ -237,7 +245,8 @@ Isa::sanity_checks() const {
     @param _sink a stream
 */
 void
-Isa::deps( ostream& _sink, char const* _prefix ) const {
+Isa::deps( ostream& _sink, char const* _prefix ) const
+{
   if( m_tparams.empty() ) {
     _sink << _prefix << ".cc " << _prefix << ".hh:";
   } else {
@@ -249,14 +258,16 @@ Isa::deps( ostream& _sink, char const* _prefix ) const {
 }
 
 void
-Isa::specialize() {
+Isa::specialize()
+{
   for( Vect_t<Specialization_t>::iterator spec = m_specializations.begin(); spec < m_specializations.end(); ++ spec ) {
     m_operations.push_back( (**spec).newop() );
   }
 }
 
 void
-Isa::setparam( ConstStr_t key, ConstStr_t value ) {
+Isa::setparam( ConstStr_t key, ConstStr_t value )
+{
   static ConstStr_t   codetype( "codetype",        Scanner::symbols );
   static ConstStr_t     scalar( "scalar",          Scanner::symbols );
   static ConstStr_t     buffer( "buffer",          Scanner::symbols );
@@ -318,7 +329,8 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
 }
 
 void
-Isa::setparam( ConstStr_t key, SourceCode_t* value ) {
+Isa::setparam( ConstStr_t key, SourceCode_t* value )
+{
   static ConstStr_t  addressclass( "addressclass",  Scanner::symbols );
   static ConstStr_t codetypeclass( "codetypeclass", Scanner::symbols );
   
@@ -334,8 +346,9 @@ Isa::setparam( ConstStr_t key, SourceCode_t* value ) {
 }
 
 void
-Isa::setparam( ConstStr_t key, unsigned int value ) {
-  static ConstStr_t minwordsize( "minwordsize", Scanner::symbols );
+Isa::setparam( ConstStr_t key, unsigned int value )
+{
+  static ConstStr_t  minwordsize( "minwordsize", Scanner::symbols );
   
   if        (key == minwordsize) {
     m_minwordsize = value;
@@ -345,7 +358,8 @@ Isa::setparam( ConstStr_t key, unsigned int value ) {
 }
 
 SDClass_t const*
-Isa::sdclass( std::vector<ConstStr_t>& _namespace ) const {
+Isa::sdclass( std::vector<ConstStr_t>& _namespace ) const
+{
   for( Vect_t<SDClass_t>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc ) {
     if( (**sdc).m_namespace == _namespace ) return *sdc;
   }
@@ -353,7 +367,8 @@ Isa::sdclass( std::vector<ConstStr_t>& _namespace ) const {
 }
 
 SDInstance_t const*
-Isa::sdinstance( ConstStr_t _symbol ) const {
+Isa::sdinstance( ConstStr_t _symbol ) const
+{
   for( Vect_t<SDInstance_t>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi ) {
     if( (**sdi).m_symbol == _symbol ) return *sdi;
   }

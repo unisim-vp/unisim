@@ -87,7 +87,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::RegisterArray;
+using unisim::kernel::service::SignalArray;
 
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
@@ -103,7 +103,7 @@ using unisim::component::tlm2::processor::hcs12x::UNISIM_ATD_ProtocolTypes;
 using unisim::component::tlm2::processor::hcs12x::ATD_Payload;
 
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 class ATD10B :
 	public sc_module,
 	public CallBackObject,
@@ -127,6 +127,8 @@ public:
 		ATDDR5H, ATDDR5L, ATDDR6H, ATDDR6L, ATDDR7H, ATDDR7L, ATDDR8H, ATDDR8L, ATDDR9H, ATDDR9L,
 		ATDDR10H, ATDDR10L, ATDDR11H, ATDDR11L, ATDDR12H, ATDDR12L, ATDDR13H, ATDDR13L,
 		ATDDR14H, ATDDR14L,	ATDDR15H, ATDDR15L};
+
+	static const unsigned int REGISTERS_BANK_SIZE = 48;
 
 	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD_SIZE> > anx_socket;
 
@@ -209,6 +211,7 @@ private:
 	peq_with_get<ATD_Payload<ATD_SIZE> > input_anx_payload_queue;
 
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
+	XINT_Payload *xint_payload;
 
 	PayloadFabric<ATD_Payload<ATD_SIZE> > payload_fabric;
 
@@ -226,6 +229,7 @@ private:
 	bool conversionStop;
 	bool abortSequence;
 	uint8_t resultIndex;
+	bool isATDStarted;
 
 	bool isTriggerModeRunning;
 	bool isATDON;
@@ -241,15 +245,6 @@ private:
 	Parameter <double> param_vrl;
 	Parameter <double> param_vrh;
 
-	bool	debug_enabled;
-	Parameter<bool>	param_debug_enabled;
-
-	bool	use_atd_stub;
-	Parameter<bool>		param_use_atd_stub;
-
-	RegisterArray<double> analog_signal_reg;
-
-
 	/**
 	 * Vih and Vil are logical levels
 	 *  - Vih minimum voltage to model logical "1" the default is 3.25 V (min)
@@ -258,6 +253,9 @@ private:
 	double vih, vil;
 	Parameter<double> param_vih;
 	Parameter<double> param_vil;
+
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
 
 	// External Trigger Parameter
 	bool			hasExternalTrigger;
@@ -310,20 +308,12 @@ private:
 	 * Analog signals are modeled as sample potential within VSSA and VDDA given by external tool
 	 */
 	double analog_signal[ATD_SIZE];
-//	int start_scan_at;
-//	Parameter<int> param_start_scan_at;
+	SignalArray<double> analog_signal_reg;
 
 	struct data_t {
 		double volte[ATD_SIZE];
 		double time;
 	};
-
-	std::vector<data_t > atd_vect;
-	string atd_anx_stimulus_file;
-	Parameter<string>	param_atd_anx_stimulus_file;
-
-	void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t &data);
-	void LoadXmlData(const char *filename, std::vector<data_t > &vect);
 
 	// Authorised Bus Clock
 	struct {

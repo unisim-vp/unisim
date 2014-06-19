@@ -1,0 +1,8 @@
+~/systemc-2.2.0$ mkdir obj; cd obj
+~/systemc-2.2.0$ mkdir /opt/systemc-2.2.0
+~/systemc-2.2.0/obj$ ../configure --prefix=/opt/systemc-2.2.0
+~/systemc-2.2.0/obj$ make
+~/systemc-2.2.0/obj$ make install
+~/systemc-2.2.0/obj$ ls /opt/systemc-2.2.0
+AUTHORS    COPYING  examples  INSTALL    LICENSE  README
+ChangeLog  docs     include   lib-linux  NEWS     RELEASENOTES

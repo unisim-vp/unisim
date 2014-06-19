@@ -446,7 +446,7 @@ inline bool CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 			{
 				unsigned int dirty_dword_num = 0; // dirty 64-bit word to evict
 				if(GetCCR1_FFF() || // force full flush
-				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_evict.status.dirty) && ((l1_block_to_evict.status.dirty >> dirty_dword_num) != 1))) // more than one 64-bit word is dirty
+				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_evict.status.dirty) && (l1_block_to_evict.status.dirty != (1 << dirty_dword_num)))) // more than one 64-bit word is dirty
 				{
 					// dirty DL1 block eviction
 					if(unlikely(IsVerboseDL1()))
@@ -725,7 +725,7 @@ bool CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 				// Copy back to memory
 				unsigned int dirty_dword_num = 0; // dirty 64-bit word to flush
 				if(GetCCR1_FFF() || // force full flush
-				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_flush.status.dirty) && ((l1_block_to_flush.status.dirty >> dirty_dword_num) != 1))) // more than one 64-bit word is dirty
+				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_flush.status.dirty) && (l1_block_to_flush.status.dirty != (1 << dirty_dword_num)))) // more than one 64-bit word is dirty
 				{
 					// dirty DL1 block eviction
 					if(unlikely(IsVerboseDL1()))
@@ -845,7 +845,7 @@ bool CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 				// Copy back to memory
 				unsigned int dirty_dword_num = 0; // dirty 64-bit word to copy back
 				if(GetCCR1_FFF() || // force full flush
-				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_copy_back.status.dirty) && ((l1_block_to_copy_back.status.dirty >> dirty_dword_num) != 1))) // more than one 64-bit word is dirty
+				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_copy_back.status.dirty) && (l1_block_to_copy_back.status.dirty != (1 << dirty_dword_num)))) // more than one 64-bit word is dirty
 				{
 					// dirty DL1 block eviction
 					if(unlikely(IsVerboseDL1()))

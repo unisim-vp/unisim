@@ -75,8 +75,8 @@ by one.
 	
 */
 
-// Grade of Membership (gm) ⇒ M(Y)
-	uint8_t gm;
+// Grade of Membership (gm(A)) ⇒ M(Y)
+
 	uint8_t p1, p2;
 
 	uint8_t aVal = cpu->getRegA();
@@ -87,7 +87,7 @@ by one.
 	p2 = cpu->memRead8(xVal+1);
 	
 	if ((aVal < p1) or (aVal > p2)) {
-		gm = 0;
+		cpu->memWrite8(yVal, 0);
 	} else {
 		uint8_t s1, s2, min1, min2;
 

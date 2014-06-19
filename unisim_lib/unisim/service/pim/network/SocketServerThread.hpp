@@ -20,7 +20,7 @@ namespace network {
 class SocketServerThread: public SocketThread {
 public:
 
-	SocketServerThread(string host, uint16_t port, bool _blocking, uint8_t connection_req_nb);
+	SocketServerThread(string host, uint16_t port, uint8_t connection_req_nb);
 	~SocketServerThread();
 
 	virtual void run();

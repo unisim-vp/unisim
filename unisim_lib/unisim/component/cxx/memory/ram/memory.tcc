@@ -101,6 +101,18 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::~Memory()
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+PHYSICAL_ADDR Memory<PHYSICAL_ADDR, PAGE_SIZE>::GetLowAddress()
+{
+	return (lo_addr);
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+PHYSICAL_ADDR Memory<PHYSICAL_ADDR, PAGE_SIZE>::GetHighAddress()
+{
+	return (hi_addr);
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 void Memory<PHYSICAL_ADDR, PAGE_SIZE>::OnDisconnect()
 {
 }

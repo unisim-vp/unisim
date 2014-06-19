@@ -90,6 +90,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
+using unisim::kernel::service::CallBackObject;
 
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::DebugControl;
@@ -112,10 +113,10 @@ using unisim::kernel::logger::EndDebug;
 
 using unisim::util::debug::Register;
 
-using unisim::util::arithmetic::Add8;
-using unisim::util::arithmetic::Add16;
-using unisim::util::arithmetic::Sub8;
-using unisim::util::arithmetic::Sub16;
+using unisim::util::arithmetic::UnsignedAdd8;
+using unisim::util::arithmetic::UnsignedAdd16;
+using unisim::util::arithmetic::SignedSub8;
+using unisim::util::arithmetic::SignedSub16;
 
 using unisim::util::endian::endian_type;
 using unisim::util::endian::BigEndian2Host;
@@ -152,7 +153,7 @@ public:
 	EBLB(CPU *cpu) { this->cpu = cpu; }
 	~EBLB() { cpu = NULL; }
 
-	static string getRegName(uint8_t num) {
+	inline static string getRegName(uint8_t num) {
 		switch (num) {
 		case EBLBRegs::A: return ("A");
 		case EBLBRegs::B: return ("B");
@@ -171,7 +172,7 @@ public:
 		}
 	}
 
-	static uint8_t getRegSize(uint8_t num) {
+	inline static uint8_t getRegSize(uint8_t num) {
 		switch (num) {
 		case EBLBRegs::A: return (8);
 		case EBLBRegs::B: return (8);
@@ -206,26 +207,30 @@ private:
 };	/***********   END EBLB  **********/
 
 
-class CPU : public Decoder,
-public Client<DebugControl<physical_address_t> >,
-public Client<MemoryAccessReporting<physical_address_t> >,
-public Service<MemoryAccessReportingControl>,
-public Service<Disassembly<physical_address_t> >,
-public Service<Registers>,
-public Service<Memory<physical_address_t> >,
-public Client<Memory<physical_address_t> >,
-public Client<SymbolTableLookup<physical_address_t> >,
-public Client<TrapReporting >
+class CPU :
+		public Decoder,
+		public Client<DebugControl<physical_address_t> >,
+		public Client<MemoryAccessReporting<physical_address_t> >,
+		public Service<MemoryAccessReportingControl>,
+		public Service<Disassembly<physical_address_t> >,
+		public Service<Registers>,
+		public Service<Memory<physical_address_t> >,
+		public Client<Memory<physical_address_t> >,
+		public Client<SymbolTableLookup<physical_address_t> >,
+		public Client<TrapReporting >,
+		public CallBackObject
 
 {
 public:
+	enum REGS_OFFSETS {X, D, Y, SP, PC, A, B, CCRL, CCRH, CCR};
+
 	//#define MAX_INS_SIZE	CodeType::maxsize;
 	static const uint8_t MAX_INS_SIZE = 8;
 	static const uint8_t QUEUE_SIZE = MAX_INS_SIZE;
 
 
-	void queueFlush(uint8_t nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
-	uint8_t* queueFetch(address_t addr, uint8_t* ins, uint8_t nByte);
+	inline void queueFlush(uint8_t nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
+	inline uint8_t* queueFetch(address_t addr, uint8_t* ins, uint8_t nByte);
 
 private:
 	address_t	queueCurrentAddress;
@@ -233,7 +238,7 @@ private:
 
 	int		queueFirst, queueNElement;
 
-	void queueFill(address_t addr, int position, uint8_t nByte);
+	inline void queueFill(address_t addr, int position, uint8_t nByte);
 
 public:
 
@@ -295,7 +300,7 @@ public:
 	 *     if S control bit = 1, the STOP instruction is disabled and acts like two-cycle NOP
 	 */
 
-	void setState(STATES st) { state = st; }
+	inline void setState(STATES st) { state = st; }
 	virtual void sleep() = 0;
 	virtual void wai() = 0;
 
@@ -334,49 +339,49 @@ public:
 	void saveCPUContext();
 
 	// Asynchronous Interrupts (including Resets, I-bit, XIRQ, IRQ)
-	void handleException(const AsynchronousException& exc);
+	inline void handleException(const AsynchronousException& exc);
 
 	// Hardware and Software reset (including COP, clock monitor, and pin)
-	void handleResetException(address_t resetVector);
+	inline void handleResetException(address_t resetVector);
 
 	// Non-maskable (X bit) interrupts
-	void handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL);
+	inline void handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL);
 
 	// Non-maskable MPU Access Error interrupt
-	void handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL);
+	inline void handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL);
 
 	// Maskable (I bit) interrupt
-	void handleMaskableIbitException(address_t ibitVector, uint8_t newIPL);
+	inline void handleMaskableIbitException(address_t ibitVector, uint8_t newIPL);
 
 	// A software interrupt instruction (SWI) or BDM vector request
-	void handleException(const NonMaskableSWIInterrupt& exc);
+	inline void handleException(const NonMaskableSWIInterrupt& exc);
 
 	// Unimplemented opcode trap
-	void handleException(const TrapException& exc);
+	inline void handleException(const TrapException& exc);
 
 	// A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
-	void handleException(const SysCallInterrupt& exc);
+	inline void handleException(const SysCallInterrupt& exc);
 
 	// A spurious interrupt
-	void handleException(const SpuriousInterrupt& exc);
+	inline void handleException(const SpuriousInterrupt& exc);
 
 	// Non-maskable Access Error interrupts
-	void handleException(const NonMaskableAccessErrorInterrupt& exc);
+	inline void handleException(const NonMaskableAccessErrorInterrupt& exc);
 
 	//=====================================================================
 	//=               Hardware check/acknowledgement methods              =
 	//=====================================================================
 
-	void ackAsynchronousInterrupt();
-	void ackIbitInterrupt();
-	void ackXIRQInterrupt();
-	void ackAccessErrorInterrupt();
-	void ackSWIInterrupt();
-	void ackTrapInterrupt();
-	void ackReset();
-	void ackMPUAccessErrorInterrupt();
-	void ackSysInterrupt();
-	void ackSpuriousInterrupt();
+	inline void ackAsynchronousInterrupt();
+	inline void ackIbitInterrupt();
+	inline void ackXIRQInterrupt();
+	inline void ackAccessErrorInterrupt();
+	inline void ackSWIInterrupt();
+	inline void ackTrapInterrupt();
+	inline void ackReset();
+	inline void ackMPUAccessErrorInterrupt();
+	inline void ackSysInterrupt();
+	inline void ackSpuriousInterrupt();
 
 	//=====================================================================
 	//=                    Hardware interrupt request                     =
@@ -420,10 +425,13 @@ public:
 	inline void    setRegTMP(uint8_t index, uint16_t val);
 	inline uint16_t getRegTMP(uint8_t index);
 
+	bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	bool write(unsigned int offset, const void *buffer, unsigned int data_length);
+
 	/********************************************************************
 	 * *******  Used for Indexed Operations XB: Postbyte Code  **********
 	 * ******************************************************************/
-	static string xb_getAddrRegLabel(uint8_t rr) {
+	inline static string xb_getAddrRegLabel(uint8_t rr) {
 		switch (rr) {
 		case 0:
 			return ("X");
@@ -437,7 +445,7 @@ public:
 		return ("unknown");
 	}
 
-	static string xb_getAccRegLabel(uint8_t rr) {
+	inline static string xb_getAccRegLabel(uint8_t rr) {
 		switch (rr) {
 		case 0:
 			return ("A");
@@ -476,7 +484,7 @@ public:
 	inline void monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal);
 	inline void monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal);
 
-	inline void reportTrap();
+	inline void reportTrap(const char *c_str);
 
 	//=====================================================================
 	//=             memory interface methods                              =
@@ -488,8 +496,8 @@ public:
 	//=====================================================================
 	//=             bus interface methods                              =
 	//=====================================================================
-	virtual void busWrite(address_t addr, const void *buffer, uint32_t size) = 0;
-	virtual void busRead(address_t addr, void *buffer, uint32_t size) = 0;
+	virtual void busWrite(MMC_DATA *buffer) = 0;
+	virtual void busRead(MMC_DATA *buffer) = 0;
 
 	//=====================================================================
 	//=             CPURegistersInterface interface methods               =
@@ -526,7 +534,7 @@ public:
 	inline uint64_t getInstructionCounter() const { return (instruction_counter); }
 	inline bool isVerboseException() const { return (debug_enabled && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception)); }
 
-	address_t getLastPC() {return (lastPC); }
+	inline address_t getLastPC() {return (lastPC); }
 
 	//protected:
 	class CCR_t *ccr;
@@ -635,33 +643,35 @@ private:
 
 inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
-	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+//	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
 
 	data_load_counter++;
 
 	// Memory access reporting
-	if(memory_access_reporting_import)
+	if(memory_access_reporting_import && requires_memory_access_reporting)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, pea, size);
+//		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, pea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, logicalAddress, size);
 	}
 }
 
 inline void CPU::monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
-	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+//	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
 
 	data_store_counter++;
 
 	// Memory access reporting
-	if(memory_access_reporting_import)
+	if(memory_access_reporting_import && requires_memory_access_reporting)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, pea, size);
+//		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, pea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, logicalAddress, size);
 	}
 }
 
-inline void CPU::reportTrap() {
+inline void CPU::reportTrap(const char *c_str) {
 	if (trap_reporting_import) {
-		trap_reporting_import->ReportTrap();
+		trap_reporting_import->ReportTrap(*this, c_str);
 	}
 
 }
@@ -671,12 +681,13 @@ inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool 
 	uint8_t data;
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
-	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 	monitorLoad(logicalAddress, sizeof(data), isGlobal);
 
@@ -688,12 +699,13 @@ inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, boo
 	uint16_t data;
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
-	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busRead(&mmc_data);
 
 	data = BigEndian2Host(data);
 
@@ -706,12 +718,14 @@ inline void CPU::memWrite8(address_t logicalAddress,uint8_t data, ADDRESS::MODE 
 
 	MMC_DATA mmc_data;
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
+	mmc_data.isExecute = false;
 
-	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busWrite(&mmc_data);
 
 	monitorStore(logicalAddress, sizeof(data), isGlobal);
 
@@ -723,12 +737,13 @@ inline void CPU::memWrite16(address_t logicalAddress,uint16_t data, ADDRESS::MOD
 
 	data = Host2BigEndian(data);
 
+	mmc_data.logicalAddress = logicalAddress;
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
-	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	busWrite(&mmc_data);
 
 	monitorStore(logicalAddress, sizeof(data), isGlobal);
 

@@ -79,7 +79,7 @@ inline uint8_t hexChar2Nibble(char ch)
 
 inline void number2HexString(uint8_t* value, unsigned int size, std::string& hex, std::string endian) {
 
-	int i;
+	unsigned int i;
 	char c[2];
 	c[1] = 0;
 
@@ -118,7 +118,7 @@ inline void number2HexString(uint8_t* value, unsigned int size, std::string& hex
 
 inline bool hexString2Number(const std::string& hex, void* value, unsigned int size, std::string endian) {
 
-	int i;
+	unsigned int i;
 	unsigned int len = hex.length();
 	unsigned int pos = 0;
 
@@ -186,7 +186,7 @@ inline void hexToText(const char *s, int count, std::string& packet)
 
 inline void stringSplit(std::string str, const std::string delim, std::vector<std::string>& results)
 {
-	int cutAt;
+	size_t cutAt;
 
 	do {
 
@@ -205,6 +205,41 @@ inline void stringSplit(std::string str, const std::string delim, std::vector<st
 		results.push_back(str);
 	}
 
+}
+
+/* Function to get parity of number n. It returns 1
+   if n has odd parity, and returns 0 if n has even
+   parity */
+template <typename T>
+inline bool getParity(T n)
+{
+    bool parity = false;
+    while (n)
+    {
+        parity = !parity;
+        n      = n & (n - 1);
+    }
+    return parity;
+}
+
+template <typename T>
+bool ParseHex(const std::string& s, unsigned int& pos, T& value)
+{
+	unsigned int len = s.length();
+	unsigned int n = 0;
+
+	value = 0;
+	while(pos < len && n < 2 * sizeof(T))
+	{
+		uint8_t nibble;
+		if(!isHexChar(s[pos])) break;
+		nibble = hexChar2Nibble(s[pos]);
+		value <<= 4;
+		value |= nibble;
+		pos++;
+		n++;
+	}
+	return (n > 0);
 }
 
 #endif /* CONVERT_HH_ */
