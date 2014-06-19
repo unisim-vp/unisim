@@ -4,16 +4,16 @@ op and_a(0b000[3]:rs[4]:0b00110[5]:rd[4])
 
 and_a.execute={
 
-	uint32_t d=cpu->GetGPR(rd);
+	uint32_t d=cpu->GetGPR(rd);      // get values
 	uint32_t s=cpu->GetGPR(rs);
 
-	uint32_t result=d & s;
+	uint32_t result=d & s;           // perform rd AND rs
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
-	cpu->SetGPR(rd,result);
+	cpu->SetGPR(rd,result);          // write back result
 
-	cpu->SetSR_N(neg);
+	cpu->SetSR_N(neg);               // set flags
 	cpu->SetSR_Z(zero);
 
 	return true;
@@ -21,7 +21,7 @@ and_a.execute={
 }
 
 and_a.disasm={
-	os << "and_a\tr" << (unsigned int)rd << ",r" << (unsigned int)rs << endl; 
+	os << "and\t" << REG_NAME[rd] << "," << REG_NAME[rs]; 
 }
 
 op and_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0000000[7]:sa5[5]:rd[4])
@@ -31,7 +31,7 @@ and_b.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 
-	uint32_t result=x & ShiftLeft(y,(unsigned int)sa5);
+	uint32_t result=x & (y << sa5); // perform rx AND (ry << sa5)
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
 
@@ -44,30 +44,31 @@ and_b.execute={
 }
 
 and_b.disasm={
-	os << "and_b\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry <<  "<<0x" << std::hex <<(int)sa5 << endl; 
+	os << "and\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] <<  "<<0x" << std::hex <<(int)sa5; 
 }
 
 op and_c(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0000001[7]:sa5[5]:rd[4])
 
 and_c.execute={
 
-	uint32_t x=cpu->GetGPR(rx);
+	uint32_t x=cpu->GetGPR(rx);           // get values
 	uint32_t y=cpu->GetGPR(ry);
 
-	uint32_t result=x & ShiftRight(y,(unsigned int)sa5); 
+	//uint32_t result=x & ShiftRight(y,(unsigned int)sa5);
+	uint32_t result= x & (y >> sa5);	 // perform y >> sa5
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
 
-	cpu->SetGPR(rd,result);
+	cpu->SetGPR(rd,result);    	// write back result
 
-	cpu->SetSR_N(neg);
+	cpu->SetSR_N(neg);              // set flags
 	cpu->SetSR_Z(zero);
 	
 	return true;
 }
 
 and_c.disasm={
-	os << "and_c\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry <<  ">>0x" << std::hex << (int)sa5 << endl; 
+	os << "and\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] <<  ">>0x" << std::hex << (int)sa5; 
 }
 
 
@@ -78,7 +79,7 @@ op and_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0010[4]:rd[
 
 and_cond4.execute={
 
-	if(cond4)  // representation de cond4
+	if(cpu->EvaluateCond((uint8_t)cond4))  
 	{
 		uint32_t x=cpu->GetGPR(rx);
 		uint32_t y=cpu->GetGPR(ry);
@@ -94,7 +95,7 @@ and_cond4.execute={
 
 
 and_cond4.disasm={
-	os << "and_cond4\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl; 
+	os << "and" << COND[cond4]<< "\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry]; 
 }
 
 //ANDN - logical and not
@@ -120,14 +121,14 @@ andn.execute={
 
 
 andn.disasm={
-	os << "andn\tr" << (unsigned int) rd << ",r" << (unsigned int)rs<< endl; 
+	os << "andn\t" << REG_NAME[rd] << "," << REG_NAME[rs]; 
 }
 
-//ANDH/L - logical and into hight or low half to register   // utiliser al specialisation pour coh=0 ou 1
+//ANDH/L - logical and into hight or low half to register   
 
 op andh(0b111[3]:0b00[2]:0b1[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
 
-andh.execute={                                                                // !!!  IMPLEMENTATION A VERIFIER
+andh.execute={                                                                
 
 	uint32_t d=cpu->GetGPR(rd);
 
@@ -154,12 +155,12 @@ andh.execute={                                                                //
 }
 
 andh.disasm={
-	os << "andh\tr" << (unsigned int)rd << ",0x" << std::hex <<(int)imm16 << ( coh ? ",coh" : "") << endl;
+	os << "andh\t" << REG_NAME[rd] << ",0x" << std::hex <<(int)imm16 << ( coh ? ",coh" : "");
 }
 
 op andl(0b111[3]:0b00[2]:0b0[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
 
-andl.execute={ 							// !!!  IMPLEMENTATION A VERIFIER
+andl.execute={ 							
 
 	uint32_t d=cpu->GetGPR(rd);
 
@@ -168,18 +169,18 @@ andl.execute={ 							// !!!  IMPLEMENTATION A VERIFIER
 
 	if(coh==0)
 	{
-		result= (d & 0xFFFF0000) | d_l; // preserve rd[15:0]          
+		result= (d & 0xFFFF0000) | d_l; // preserve rd[31:16]          
 	}
 	else
         {
-		result=d_l;                    // clear rd[15:0]
+		result=d_l;                     // clear rd[31:16]
 	}
 	uint8_t neg=(int32_t)result <0;
 	uint8_t zero=result==0;
 
-	cpu->SetGPR(rd,result);
+	cpu->SetGPR(rd,result);          // write back result
 
-	cpu->SetSR_N(neg);
+	cpu->SetSR_N(neg);               // set flags
 	cpu->SetSR_Z(zero);
 
 	return true;
@@ -187,7 +188,7 @@ andl.execute={ 							// !!!  IMPLEMENTATION A VERIFIER
 
 
 andl.disasm={
-	os << "andl\tr" <<(unsigned int) rd << ",0x" << std::hex << (int) imm16 << ( coh ? ",coh" : "" ) << endl;
+	os << "andl\t" << REG_NAME[rd] << ",0x" << std::hex << (int) imm16 << ( coh ? ",coh" : "" );
 }
 
 
@@ -212,7 +213,7 @@ com.execute={
 
 com.disasm={
 
-	os << "com\tr" << (unsigned int)rd << endl;
+	os << "com\t" << REG_NAME[rd];
 }
 
 //EOR - logical exclusive or with optional logical shift
@@ -224,7 +225,7 @@ eor_a.execute={
 	uint32_t d=cpu->GetGPR(rd);
 	uint32_t s=cpu->GetGPR(rs);
 
-	uint32_t result= (d & ~s) | (~d | s);
+	uint32_t result= (d & ~s) | (~d & s);
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
 
@@ -237,7 +238,7 @@ eor_a.execute={
 }
 
 eor_a.disasm={
-	os << "eor_a\tr" << (unsigned int)rd << ",r" << (unsigned int)rs << endl;
+	os << "eor\t" << REG_NAME[rd] << "," << REG_NAME[rs];
 }
 
 op eor_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0010000[7]:sa5[5]:rd[4])
@@ -247,7 +248,8 @@ eor_b.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 
-	uint32_t result=(x & ShiftLeft(y,(unsigned int)sa5)) | (~x & ShiftLeft(y, (unsigned int)sa5));
+	//uint32_t result=(x & ~ShiftLeft(y,(unsigned int)sa5)) | (~x & ShiftLeft(y, (unsigned int)sa5));
+	uint32_t result= (x & ~(y << sa5)) | (~x & (y << sa5)); 	
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -260,7 +262,7 @@ eor_b.execute={
 }
 
 eor_b.disasm={
-	os << "eor_b\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << "<<0x" <<std::hex << (int)sa5 <<endl;
+	os << "eor\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] << "<<0x" <<std::hex << (int)sa5;
 }
 
 
@@ -271,7 +273,8 @@ eor_c.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 
-	uint32_t result=(x & ShiftRight(y,(unsigned int)sa5)) | (~x & ShiftRight(y, (unsigned int)sa5)); 
+	//uint32_t result=(x & ShiftRight(y,(unsigned int)sa5)) | (~x & ShiftRight(y, (unsigned int)sa5));
+	uint32_t result= (x & ~(y >> sa5)) | (~x & (y >> sa5));  
 	uint8_t neg=(int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -286,7 +289,7 @@ eor_c.execute={
 
 eor_c.disasm={
 
-	os << "eor_c\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << ">>0x"<< std::hex << (int)sa5 <<endl;
+	os << "eor\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] << ">>0x"<< std::hex << (int)sa5;
 }
 
 
@@ -296,7 +299,7 @@ op eor_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0100[4]:rd[
 
 eor_cond4.execute={
 
-	if(cond4)
+	if(cpu->EvaluateCond((uint8_t)cond4))
 	{
    		uint32_t x=cpu->GetGPR(rx);
 		uint32_t y=cpu->GetGPR(ry);
@@ -304,6 +307,8 @@ eor_cond4.execute={
 		uint32_t result= (x & ~y) | (~x & y);
 
 		cpu->SetGPR(rd,result);
+
+		// flags are not affected
 		
 	}
 	return true;
@@ -311,7 +316,7 @@ eor_cond4.execute={
 
 eor_cond4.disasm={
 
-	os << "eor_cond4\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
+	os << "eor"<< COND[cond4]<<"\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 
@@ -323,7 +328,7 @@ eorh.execute={
 
 	uint32_t d=cpu->GetGPR(rd);
 
-	uint32_t d_h= ((d & 0xFFFF0000) & ~((uint32_t)imm16 << 16) ) |( ~(d & 0xFFFF0000) & ((uint32_t)imm16 << 16));
+	uint32_t d_h= ((d & 0xFFFF0000) & ~((uint32_t)imm16 << 16) ) | ( ~(d & 0xFFFF0000) & ((uint32_t)imm16 << 16));
 	uint32_t result= d_h | (d & 0x0000FFFF);     
 	uint8_t neg=(int32_t)result <0;
 	uint8_t zero=result==0;
@@ -337,7 +342,7 @@ eorh.execute={
 }
 
 eorh.disasm={
-	os << "eorh\tr" << (unsigned int)rd << ",0x" <<std::hex<< (int)imm16 << endl;
+	os << "eorh\t" << REG_NAME[rd] << ",0x" <<std::hex<< (int)imm16;
 }
 
 //EORL - logical EOR into low half register
@@ -348,7 +353,7 @@ eorl.execute={ 							// !!!  IMPLEMENTATION A VERIFIER
 
 	uint32_t d=cpu->GetGPR(rd);
 
-	uint32_t d_l= ((d & 0x0000FFFF) & ~(uint32_t)imm16 ) | ( ~(d & 0x0000FFFF) & (uint32_t)imm16 );
+	uint32_t d_l= ((d & 0x0000FFFF) & ~((uint32_t)imm16) ) | ( ~(d & 0x0000FFFF) & (uint32_t)imm16 );
 	
 
 	uint32_t result= (d & 0xFFFF0000) | d_l;         
@@ -365,7 +370,7 @@ eorl.execute={ 							// !!!  IMPLEMENTATION A VERIFIER
 
 
 eorl.disasm={
-	os << "eorl\tr" << (unsigned int)rd << ",r" << std::hex <<(int )imm16 << endl;
+	os << "eorl\t" << REG_NAME[rd] << "," << std::hex <<(int )imm16;
 }
 
 //OR - logical or with optional logical shift
@@ -390,7 +395,7 @@ or_a.execute={
 }
 
 or_a.disasm={
-	os << "or_a\tr" << (unsigned int)rd << ",r" << (unsigned int)rs << endl;
+	os << "or\t" << REG_NAME[rd] << "," << REG_NAME[rs];
 }
 
 op or_b(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0001000[7]:sa5[5]:rd[4])
@@ -400,7 +405,8 @@ or_b.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 
-	uint32_t result=x | ShiftLeft(y,(unsigned int)sa5);
+	//uint32_t result=x | ShiftLeft(y,(unsigned int)sa5);
+	uint32_t result = x | (y >> sa5);
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -413,7 +419,7 @@ or_b.execute={
 }
 
 or_b.disasm={
-	os << "or_b\tr" << (unsigned int) rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << "<<0x" << std::hex<<(int) sa5 <<endl;
+	os << "or\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] << "<<0x" << std::hex<< (int) sa5;
 }
 
 op or_c(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0001001[7]:sa5[5]:rd[4])
@@ -423,7 +429,8 @@ or_c.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 
-	uint32_t result=x | ShiftRight(y,(unsigned int)sa5); 
+	//uint32_t result=x | ShiftRight(y,(unsigned int)sa5);
+	uint32_t result = x | (y << sa5); 
 	uint8_t neg=(int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -436,7 +443,7 @@ or_c.execute={
 }
 
 or_c.disasm={
-	os << "or_c\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << ">>0x" << std::hex << (int)sa5 << endl;
+	os << "or\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] << ">>0x" << std::hex << (int)sa5;
 }
 
 
@@ -446,21 +453,21 @@ op or_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0011[4]:rd[4
 
 or_cond4.execute={
 
-	if(cond4)  // representation de cond4
+	if(cpu->EvaluateCond((uint8_t)cond4))  
 	{
 		uint32_t x= cpu->GetGPR(rx);
 		uint32_t y=cpu->GetGPR(ry);
 
 		uint32_t result= x | y;
 
-		cpu->SetGPR(rd,result);
-		//flag not affected		
+		cpu->SetGPR(rd,result);    // write back result in rd
+		//flags are not affected		
 	}
 	return true;
 }
 
 or_cond4.disasm={
-	os << "or_cond4\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ",r" << (unsigned int)ry << endl;
+	os << "or" << COND[cond4]<<"\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 //ORH - logical OR into hight half register
@@ -486,7 +493,7 @@ orh.execute={
 
 
 orh.disasm={
-	os << "orh\tr" << (unsigned int)rd << ",0x" << std::hex << (int)imm16 << endl;
+	os << "orh\t" << REG_NAME[rd] << ",0x" << std::hex << (int)imm16;
 }
 
 //ORL- logical OR into low
@@ -513,7 +520,7 @@ orl.execute={
 }
 
 orl.disasm={
-	os << "orl\tr" << (unsigned int)rd << ",r" << std::hex << (int)imm16 << endl;
+	os << "orl\t" << REG_NAME[rd] << "," << std::hex << (int)imm16;
 }
 
 
@@ -538,7 +545,7 @@ tst.execute={
 }
 
 tst.disasm={
-	os << "tst\tr" << (unsigned int)rd << ",r" << (unsigned int)rs << endl;
+	os << "tst\t" << REG_NAME[rd] << "," << REG_NAME[rs];
 }
 
 

@@ -48,6 +48,28 @@ set codetype buffer
 set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
+impl {
+
+static const char *REG_NAME[16] = {
+	"r0", "r1",  "r2",  "r3",  "r4", "r5", "r6", "r7",
+	"r8", "r9", "r10", "r11", "r12", "sp", "lr", "pc"
+};
+
+static const char *BYTE_PART_NAME[4] = {
+	"t",  "u","l",  "b"
+};
+
+static const char *HALF_WORD_PART_NAME[2] = {
+	"t",  "b"
+};
+
+static const char *COND[16] = {
+	"eq",  "ne", "cc/hs", "cs/lo", "ge", "lt", "mi", "pl","ls","gt","le","hi","vs","vc","qs","al" 
+};
+
+
+}
+
 action {bool} execute({typename CONFIG::STATE *} {cpu}) {
 	return false;
 }

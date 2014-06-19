@@ -19,7 +19,7 @@ divs.execute={
 
 divs.disasm={
 
-	os << "divs " << rd << "," << rx << "," << ry << endl;
+	os << "divs\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 
@@ -44,7 +44,7 @@ divu.execute={
 
 divu.disasm={
 
-	os << "divu " << rd << "," << rx << "," << ry << endl;
+	os << "divu\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 
@@ -68,7 +68,7 @@ mac.execute={
 
 mac.disasm={
 
-	os << "mac " << rd << "," << rx << "," << ry << endl;
+	os << "mac\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 //multiply accumulate signed
@@ -92,7 +92,7 @@ macs_d.execute={
 
 macs_d.disasm={
 
-	os << "macs_d " << rd << "," << rx << "," << ry << endl;
+	os << "macs_d\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 
@@ -118,7 +118,7 @@ macu_d.execute={
 
 macu_d.disasm={
 
-	os << "macu_d " << rd << "," << rx << "," << ry << endl;
+	os << "macu_d\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 
@@ -140,7 +140,7 @@ mul_a.execute={
 
 mul_a.disasm={
 
-	os << "mul_a " << rd << "," << rs << endl;
+	os << "mul\t" << REG_NAME[rd] << "," << REG_NAME[rs];
 }
 
 op mul_b(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00100100[8]:rd[4])
@@ -160,7 +160,7 @@ mul_b.execute={
 
 mul_b.disasm={
 
-	os << "mul_b " << rd << "," << rx << "," << ry << endl;
+	os << "mul\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 
@@ -182,7 +182,7 @@ mul_c.execute={
 
 mul_c.disasm={
 
-	os << "mul_c " << rd << "," << rs << "," << imm8 << endl;
+	os << "mul\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << std::hex << (int)imm8;
 }
 
 //multiply signed
@@ -205,7 +205,7 @@ muls_d.execute={
 
 muls_d.disasm={
 
-	os << "muls_d " << rd << "," << rx << "," << ry << endl;
+	os << "muls\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 
@@ -230,7 +230,7 @@ mulu_d.execute={
 
 mulu_d.disasm={
 
-	os << "mulu_d " << rd << "," << rx << "," << ry << endl;
+	os << "mulu\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 

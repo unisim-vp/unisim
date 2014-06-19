@@ -9,7 +9,7 @@ breakpoint.execute={
 
 breakpoint.disasm={
 
-	os << "breakpoint\t"<< endl;
+	os << "breakpoint\t";
 }
 
 //CACHE - perform cache control operation
@@ -18,7 +18,7 @@ op cache(0b111101000001[12]:rp[4]:><:op5[5]:disp11[11])
 
 cache.disasm={
 
-	os << "cache\tr" << (unsigned int)rp << "[" << disp11 << "]" << "," << op5 << endl;
+	os << "cache\t" << REG_NAME[rp] << "[" << disp11 << "]" << "," << op5;
 }
 
 // CSRF - Clear status register flag
@@ -34,7 +34,7 @@ csrf.execute={
 
 csrf.disasm={
 
-	os << "csrf\t0x" << std::hex << (int)bp5 << endl;
+	os << "csrf\t0x" << std::hex << (int)bp5;
 }
 
 //CSRFCZ - copy status register flag to C and Z
@@ -51,7 +51,7 @@ csrfcz.execute={
 
 csrfcz.disasm={
 
-	os << "csrfcz\t0x" << std::hex << (int)bp5 << endl;
+	os << "csrfcz\t0x" << std::hex << (int)bp5;
 }
 
 // FRS - flush return stack
@@ -60,7 +60,7 @@ op frs(0b1101011[7]:0b10100[5]:0b0011[4])
 
 frs.disasm={
 
-	os << "frs\t" << endl;
+	os << "frs\t";
 }
 
 // MFDR - move from debug register
@@ -69,7 +69,7 @@ op mfdr(0b111001011011[12]:rd[4]:><:0b00000000[8]: debugRegisterAdress[8])
 
 mfdr.disasm={
 
-	os << "mfdr\tr" << (unsigned int)rd << ",0x" << std::hex << (int)debugRegisterAdress << endl; 
+	os << "mfdr\t" << REG_NAME[rd] << ",0x" << std::hex << (int)debugRegisterAdress ; 
 }
 
 // MFSR - move from system register
@@ -78,7 +78,7 @@ op mfsr(0b111000011011[12]:rd[4]:><:0b00000000[8]: systemRegisterAdress[8])
 
 mfsr.disasm={
 
-	os << "mfsr\tr" << (unsigned int)rd << ",0x" << std::hex << (int) systemRegisterAdress << endl; 
+	os << "mfsr\t" << REG_NAME[rd] << ",0x" << std::hex << (int) systemRegisterAdress; 
 }
 
 // MTDR - move to debug register
@@ -87,7 +87,7 @@ op mtdr(0b111001111011[12]:rs[4]:><:0b00000000[8]: debugRegisterAdress[8])
 
 mtdr.disasm={
 
-	os << "mtdr\t0x" << std::hex << (int)debugRegisterAdress << ",r" << (unsigned int)rs << endl;
+	os << "mtdr\t0x" << std::hex << (int)debugRegisterAdress << "," << REG_NAME[rs];
 }
 
 // MTSR - move to system register
@@ -96,7 +96,7 @@ op mtsr(0b111000111011[12]:rs[4]:><:0b00000000[8]: systemRegisterAdress[8])
 
 mtsr.disasm={
 
-	os << "mtsr\t0x" << std::hex << (int)systemRegisterAdress << ",r" << (unsigned int)rs << endl;
+	os << "mtsr\t0x" << std::hex << (int)systemRegisterAdress << "," << REG_NAME[rs];
 }
    
 // MUSFR - copy register to status register
@@ -105,7 +105,7 @@ op musfr(0b010[3]:0b1110[4]:0b10011[5]:rs[4])
 
 musfr.disasm={
 
-	os << "musfr\tr" << (unsigned int)rs << endl;
+	os << "musfr\t" << REG_NAME[rs];
 }
 
 //MUSTR - copy status register to register
@@ -114,7 +114,7 @@ op mustr(0b010[3]:0b1110[4]:0b10010[5]:rd[4])
 
 mustr.disasm={
 
-	os << "mustr\tr" << (unsigned int)rd << endl;
+	os << "mustr\t" << REG_NAME[rd];
 }
 
 //NOP - no operation
@@ -123,7 +123,7 @@ op nop(0b1101011[7]:0b10000[5]:0b0011[4])
 
 nop.disasm={
 
-	os << "none\t" << endl;
+	os << "none\t";
 }
 
 
@@ -133,7 +133,7 @@ op pref(0b111[3]:0b100100001[9]:rp[4]:><:disp16[16])
 
 pref.disasm={
 
-	os << "pref\tr" << (unsigned int)rp << "[0x" << std::hex << (int)disp16 << "]" << endl;
+	os << "pref\t" << REG_NAME[rp] << "[0x" << std::hex << (int)disp16 << "]";
 }
  
 // SLEEP - set CPU activity mode
@@ -142,7 +142,7 @@ op sleep(0b111[3]: 0b0100[4]: 0b11011[5]:0b0000[4]:><:0b00000000[8]:op8[8])
 
 sleep.disasm={
 
-	os << "sleep\t0x" << std::hex << (int)op8 << endl;
+	os << "sleep\t0x" << std::hex << (int)op8;
 }
 
 // SR_COND4 - set register conditionally
@@ -151,7 +151,7 @@ op sr_cond4(0b010[3]:0b1111[4]:0b1[1]:cond4[4]:rd[4])
 
 sr_cond4.disasm={
 
-	os << "sr_cond4\tr" << (unsigned int)rd << endl;
+	os << "sr" << COND[cond4]<< "\t" << REG_NAME[rd];
 }
 
 // SSRF - set status condition flag
@@ -160,7 +160,7 @@ op ssrf(0b11010[5]:0b01[2]:bp5[5]:0b0011[4])
 
 ssrf.disasm={
 
-	os << "ssrf\t0x" << std::hex<< (int)bp5 << endl;
+	os << "ssrf\t0x" << std::hex<< (int)bp5;
 }
 
 // SYNC - synchronize memory
@@ -169,7 +169,7 @@ op sync(0b111[3]:0b0101[4]:0b11011[5]:0b0000[4]:><:0b00000000[8]:op8[8])
 
 sync.disasm={
 
-	os << "sync\t0x" <<std::hex << (int)op8 << endl;
+	os << "sync\t0x" <<std::hex << (int)op8;
 }
 
 //TLBR - read tlb entry
@@ -178,7 +178,7 @@ op tlbr(0b1101011[7]:0b00100[5]:0b0011[4])
 
 tlbr.disasm={
 
-	os << "tlbr\t" << endl;
+	os << "tlbr\t";
 }
 
 
@@ -189,7 +189,7 @@ op tlbs(0b1101011[7]:0b00101[5]:0b0011[4])
 
 tlbs.disasm={
 
-	os << "tlbs\t" << endl;
+	os << "tlbs\t";
 }
 
 
@@ -199,7 +199,7 @@ op tlbw(0b1101011[7]:0b00110[5]:0b0011[4])
 
 tlbw.disasm={
 
-	os << "tlbw\t" << endl;
+	os << "tlbw\t";
 }
 
 

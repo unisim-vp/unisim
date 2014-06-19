@@ -255,7 +255,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	//  - PowerPC processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
 	simulator->SetVariable("cpu.cpu-cycle-time", sc_time(cpu_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("cpu.bus-cycle-time", sc_time(hsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("cpu.hsb-cycle-time", sc_time(hsb_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.max-inst", maxinst);
 	simulator->SetVariable("cpu.nice-time", "1 ms");
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
@@ -264,6 +264,9 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	//  - Memory router
 	simulator->SetVariable("memory-router.cycle_time", sc_time(hsb_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("memory-router.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\""); // RAM
+
+	// - Loader
+	simulator->SetVariable("loader.file0.force-use-virtual-address", false);
 
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;

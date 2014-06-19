@@ -702,13 +702,24 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	
 	if((syscall_num >= T2H_SYSCALL_OPEN) && (syscall_num <= T2H_SYSCALL_INIT_ARGV))
 	{
-		(this->*t2h_syscall_table[syscall_num])();
+		if((this->*t2h_syscall_table[syscall_num])() == unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR)
+		{
+			logger << DebugWarning << "System call #" << syscall_num << " failure" << EndDebugWarning;
+			return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		}
 	}
 	else
 	{
+		logger << DebugWarning << "System call #" << syscall_num << " does not exist" << EndDebugWarning;
 		SetSystemCallStatus(-1);
 		SetErrno(ENOSYS);
 	}
+
+	// skip 2 bytes of breakpoint instruction plus next 4 bytes
+	uint32_t pc_value = 0;
+	reg_pc->GetValue(&pc_value);
+	pc_value = pc_value + 6;
+	reg_pc->SetValue(&pc_value);
 	
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
@@ -788,9 +799,30 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	int ret;
 
 	fd = GetSystemCallParam(0);
-	ret = close(fd);
+
+	switch(fd)
+	{
+		case 0:
+		case 1:
+		case 2:
+			ret = 0;
+			logger << DebugWarning << "attempt to close ";
+			switch(fd)
+			{
+				case 0: logger << "standard input"; break;
+				case 1: logger << "standard output"; break;
+				case 2: logger << "standard error output"; break;
+			}
+			logger << EndDebugWarning;
+			break;
+		default:
+			ret = close(fd);
+			break;
+	}
 	if(unlikely(verbose_syscalls))
-	logger << DebugInfo << "close(fd=" << fd << ") return " << ret << EndDebugInfo;
+	{
+		logger << DebugInfo << "close(fd=" << fd << ") return " << ret << EndDebugInfo;
+	}
 	SetSystemCallStatus(ret);
 	if(ret < 0) SetErrno(errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
@@ -1168,16 +1200,20 @@ template <class MEMORY_ADDR>
 unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMORY_ADDR>::t2h_syscall_init_argv()
 {
 	// Initialize argv, use stack for keeping arguments. 
-    // _init_argv() returns argc in r12 and argv in r11
+	// _init_argv() returns argc in r12 and argv in r11
 	// and the total size used for the arguments in r10.
+	// Signal that we are storing the arguments in a stackwise top down approach (i.e. r11=0). */	
+	// If initialization of argv is not handled then _init_argv
+        // returns -1 so set argc to 0 and make sure no space is 
+	// allocated on the stack. */
 
 	MEMORY_ADDR sp = GetSystemCallParam(0); // high address (next byte address) of argv
 	MEMORY_ADDR high_addr = sp;
 	
 	std::vector<MEMORY_ADDR> argv_ptr;
 	int i; // this is signed for a good reason
-	unsigned int n = argv.size();
-	for(i = n; i >= 0; i--)
+	int n = argv.size();
+	for(i = 0; i < n; i++)
 	{
 		const std::string& arg = *argv[i];
 		sp -= arg.length() + 1;
@@ -1188,8 +1224,10 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		
 		argv_ptr.push_back(sp); // keep string pointer
 	}
-	
-	for(i = 0; i < n; i++)
+
+	argv_ptr.push_back(0);
+
+	for(i = n; i >= 0; i--) // n elements + null terminal pointer
 	{
 		MEMORY_ADDR arg_addr = Host2BigEndian(argv_ptr[i]);
 		sp -= 4;
@@ -1197,11 +1235,18 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		// Write pointer to argument string
 		if(!memory_injection_import->InjectWriteMemory(sp, &arg_addr, 4)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
 	}
+
 	MEMORY_ADDR low_addr = sp;
 	
 	SetSystemCallParam(0, argc);                 // r12 = argc
 	SetSystemCallParam(1, sp);                   // r11 = argv
-	SetSystemCallParam(2, high_addr - low_addr); // r10 = byte size of argv
+	SetSystemCallParam(2, high_addr - low_addr); // r10 = byte size of argv + argc on the stack
+
+	if(unlikely(verbose_syscalls))
+	{
+		logger << DebugInfo << "init_argv(): argc=" << argc << ", argv=0x" << std::hex << sp << std::dec << ", byte size of argv=" << high_addr - low_addr << EndDebugInfo;
+	}
+
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 

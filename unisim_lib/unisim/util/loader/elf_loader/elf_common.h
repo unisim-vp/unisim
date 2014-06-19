@@ -245,13 +245,14 @@ typedef struct {
 #define EM_ARCA         109     /* Arca RISC Microprocessor. */
 #define EM_UNICORE      110     /* Microprocessor series from PKU-Unity Ltd.
                                    and MPRC of Peking University */
-#define EM_AVR32        185     /* Atmel Corporation 32-bit microprocessor family */
+//#define EM_AVR32        185     /* Atmel Corporation 32-bit microprocessor family */
 
 /* Non-standard or deprecated. */
 #define EM_486          6       /* Intel i486. */
 #define EM_MIPS_RS4_BE  10      /* MIPS R4000 Big-Endian */
 #define EM_ALPHA_STD    41      /* Digital Alpha (standard value). */
 #define EM_ALPHA        0x9026  /* Alpha (written in the absence of an ABI) */
+#define EM_AVR32        0x18ad  /* Atmel AVR32 */
 
 /* Special section indexes. */
 #define SHN_UNDEF            0          /* Undefined, missing, irrelevant. */
