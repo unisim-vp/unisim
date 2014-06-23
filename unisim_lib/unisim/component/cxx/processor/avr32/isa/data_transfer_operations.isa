@@ -12,7 +12,6 @@ op mov_a(0b001[3]:0b1[1]:sext<32>imm8[8]:rd[4])
 
 mov_a.execute={
 
-
 	cpu->SetGPR(rd,imm8); 
 
 	return true; 
@@ -37,7 +36,7 @@ mov_b.execute={
 
 mov_b.disasm={
 
-	os << "mov\t" << REG_NAME[rd] << "," << std::hex << (uint32_t)imm;
+	os << "mov\t" << REG_NAME[rd] << ",0x" << std::hex << imm;
 }
 
 op mov_c(0b000[3]:rs[4]:0b01001[5]:rd[4])
@@ -76,21 +75,20 @@ mov_cond4_a.disasm={
 	os << "mov" << COND[cond4] <<"\t"<< REG_NAME[rd] << "," << REG_NAME[rs];
 }
 
-op mov_cond4_b(0b111[3]:0b1100[4]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:imm8[8])
+op mov_cond4_b(0b111[3]:0b1100[4]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:sext<32>imm8[8])
 
 mov_cond4_b.execute={
 
 	if(cpu->EvaluateCond((uint8_t)cond4))
 	{
-		uint32_t result= SignExtend((uint32_t)imm8,8);
-		cpu->SetGPR(rd,result); 
+		cpu->SetGPR(rd,imm8); 
 	}
 	return true;
 }
 
 mov_cond4_b.disasm={
 
-	os << "mov"<< COND[cond4] <<"\t" << REG_NAME[rd] << ",Ox" << std::hex << (uint32_t) imm8;
+	os << "mov"<< COND[cond4] <<"\t" << REG_NAME[rd] << ",Ox" << std::hex << imm8;
 }
 
 // MOVH - move data into high halfword of register
@@ -99,7 +97,7 @@ op movh(0b111[3]:0b1110[4]:0b00001[5]:rd[4]:><:imm16[16])
 
 movh.execute={
 
-	uint32_t result = (uint32_t)imm16 << 16;
+	uint32_t result = (uint32_t)imm16 << 16;   //low halfword is cleared 
 
 	cpu->SetGPR(rd,result);
 
@@ -108,7 +106,7 @@ movh.execute={
 
 movh.disasm={
 
-	os << "movh\t" << REG_NAME[rd] << ",0x" << std::hex <<(uint32_t) imm16;
+	os << "movh\t" << REG_NAME[rd] << ",0x" << std::hex << (uint32_t) imm16;
 }
 
 //----------------------------------------------------------------------------
@@ -130,13 +128,19 @@ ld_ub_a.execute={
 	if(!cpu->UintLoadByte(rd,addr++))      // load data in register rd
 		return false;
 	
-        cpu->SetGPR(rp,addr);
+        cpu->SetGPR(rp,addr);             // restore rp with increment
 
 	return true;
 }
 
 ld_ub_a.disasm={
 	os << "ld.ub\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "++";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
+
 }
 
 op ld_ub_b(0b000[3]:rp[4]:0b10111[5]:rd[4])
@@ -157,6 +161,11 @@ ld_ub_b.execute={
 
 ld_ub_b.disasm={
 	os << "ld.ub\t" << REG_NAME[rd] << ",--" << REG_NAME[rp];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)-1;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op ld_ub_c(0b000[3]:rp[4]:0b11[2]:disp[3]:rd[4])
@@ -170,21 +179,31 @@ ld_ub_c.execute={
 
 ld_ub_c.disasm={
 	os << "ld.ub\t" << REG_NAME[rd] << "," << REG_NAME[rp] <<"[0x" << std::hex <<(unsigned int) disp << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)+ (uint32_t)disp;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
-op ld_ub_d(0b111[3]:rp[4]:0b10011[5]:rd[4]:><:disp16[16])
+op ld_ub_d(0b111[3]:rp[4]:0b10011[5]:rd[4]:><:sext<32>disp16[16])
 
 
 ld_ub_d.execute={
 
-	uint32_t addr= cpu->GetGPR(rp)+ SignExtend((uint32_t)disp16,16);   
+	uint32_t addr= cpu->GetGPR(rp)+ disp16;   
 	
 	return cpu->UintLoadByte(rd,addr);
 }
 
 ld_ub_d.disasm={
 	os << "ld.ub\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex<<(uint32_t) disp16 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp) + disp16;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -201,6 +220,11 @@ ld_ub_e.execute={
 
 ld_ub_e.disasm={
 	os << "ld.ub\t" << REG_NAME[rd] << ","<< REG_NAME[rb] << "[" << REG_NAME[ri] << "<<0x" << std::hex << (unsigned int) sa << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rb)+(cpu->GetGPR(ri)<< sa);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -212,7 +236,7 @@ ld_ub_cond4.execute={
 
 	if(cpu->EvaluateCond((uint8_t)cond4))
 	{
-		uint32_t addr = cpu->GetGPR(rp)+ (uint32_t)disp9;
+		uint32_t addr = cpu->GetGPR(rp)+(uint32_t) disp9;
 
 		return cpu->UintLoadByte(rd,addr);
 	}
@@ -222,15 +246,21 @@ ld_ub_cond4.execute={
 
 ld_ub_cond4.disasm={
 	os << "ld.ub"<<  COND[cond4] << "\t" << REG_NAME[rd] << ","<< REG_NAME[rp] <<",[0x" << std::hex <<(unsigned int) disp9 <<"]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)+(uint32_t) disp9;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
+	
 }
 
 //LD_SB - load sign-extended byte
 
-op ld_sb_a(0b111[3]:rp[4]:0b10010[5]:rd[4]:><:disp16[16])
+op ld_sb_a(0b111[3]:rp[4]:0b10010[5]:rd[4]:><:sext<32>disp16[16])
 
 ld_sb_a.execute={
 
-	uint32_t addr= cpu->GetGPR(rp)+ SignExtend((uint32_t)disp16,16);   
+	uint32_t addr= cpu->GetGPR(rp)+ disp16;   
 	
 	return cpu->SintLoadByte(rd,addr);
 }
@@ -238,6 +268,11 @@ ld_sb_a.execute={
 
 ld_sb_a.disasm={
 	os << "ld.sb\t" << REG_NAME[rd] << ","<< REG_NAME[rp] << "[0x" << std::hex << (uint32_t) disp16 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)+ disp16;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op ld_sb_b(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0110[4]:0b00[2]:sa[2]:rd[4])
@@ -251,6 +286,11 @@ ld_sb_b.execute={
 
 ld_sb_b.disasm={
 	os << "ld.sb\t" << REG_NAME[rd] << "," << REG_NAME[rb] << "[" << REG_NAME[ri] << "<<0x" <<std::hex<< (unsigned int) sa << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr=cpu->GetGPR(rb)+(cpu->GetGPR(ri)<< sa) ;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 // LD_SB_COND4 - conditionally load sign-extended byte
@@ -271,9 +311,14 @@ ld_sb_cond4.execute={
 
 ld_sb_cond4.disasm={
 	os << "ld.sb"<< COND[cond4]<<"\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x"<< std::hex << (unsigned int) disp9 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ (uint32_t)disp9;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
-// LD_UH - load zero extended half word
+// LD_UH - load zero extended halfword
 
 op ld_uh_a(0b000[3]:rp[4]:0b10010[5]:rd[4])
 
@@ -286,13 +331,18 @@ ld_uh_a.execute={
 	if (!cpu->UintLoadHalfWord(rd,addr)) return false;
 	
 	addr=addr+2;
-        cpu->SetGPR(rp,addr);
+        cpu->SetGPR(rp,addr);            // restore rp
 
 	return true;
 }
 
 ld_uh_a.disasm={
 	os << "ld.uh\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "++";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -305,7 +355,7 @@ ld_uh_b.execute={
 	uint32_t addr= cpu->GetGPR(rp);   
 	addr=addr-2;
 	
-	if(! cpu->UintLoadHalfWord(rd,addr)) return false;        
+	if(! cpu->UintLoadHalfWord(rd,addr)) return false;
 	
 	cpu->SetGPR(rp,addr);
 
@@ -314,6 +364,11 @@ ld_uh_b.execute={
 
 ld_uh_b.disasm={
 	os << "ld.uh\t" << REG_NAME[rd] << ",--" << REG_NAME[rp];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)-2;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -329,19 +384,29 @@ ld_uh_c.execute={
 
 ld_uh_c.disasm={
 	os << "ld.uh\t" << REG_NAME[rd] << ","<< REG_NAME[rp] << "[0x" << std::hex << (unsigned int) disp3 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp3<<1);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
-op ld_uh_d(0b111[3]:rp[4]:0b10001[5]:rd[4]:><:disp16[16])
+op ld_uh_d(0b111[3]:rp[4]:0b10001[5]:rd[4]:><:sext<32>disp16[16])
 
 ld_uh_d.execute={
 
-	uint32_t addr= cpu->GetGPR(rp)+ SignExtend((uint32_t)disp16,16);   
+	uint32_t addr= cpu->GetGPR(rp)+ disp16;   
 	
 	return cpu->UintLoadHalfWord(rd,addr);
 }
 
 ld_uh_d.disasm={
 	os << "ld.uh\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << (uint32_t) disp16 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ disp16;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op ld_uh_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0101[4]:0b00[2]:sa[2]:rd[4])
@@ -355,6 +420,11 @@ ld_uh_e.execute={
 
 ld_uh_e.disasm={
 	os << "ld.uh\t" << REG_NAME[rd] << "," << REG_NAME[rb] << "[" << REG_NAME[ri] << "<<0x" << std::hex << (unsigned int) sa << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rb)+(cpu->GetGPR(ri)<< sa);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -376,6 +446,11 @@ ld_uh_cond4.execute={
 
 ld_uh_cond4.disasm={
 	os << "ld.uh"<< COND[cond4] << "\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex <<disp9 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp9 << 1);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 //LD_SH - load sign extended halfword
@@ -391,7 +466,7 @@ ld_sh_a.execute={
 	if(!cpu->SintLoadHalfWord(rd,addr)) return false;
 	
 	addr=addr+2;
-        cpu->SetGPR(rp,addr);
+        cpu->SetGPR(rp,addr);            //back up rp
 
 	return true;
 }
@@ -399,6 +474,11 @@ ld_sh_a.execute={
 
 ld_sh_a.disasm={
 	os << "ld.sh\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "++";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op ld_sh_b(0b000[3]:rp[4]:0b10101[5]:rd[4])
@@ -412,13 +492,18 @@ ld_sh_b.execute={
 	
 	if(!cpu->SintLoadHalfWord(rd,addr)) return false;        
 	
-	cpu->SetGPR(rp,addr);
+	cpu->SetGPR(rp,addr);            //back up rp
 
 	return true;
 }
 
 ld_sh_b.disasm={
 	os << "ld.sh\t" << REG_NAME[rd] << ",--" << REG_NAME[rp];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)-2;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op ld_sh_c(0b100[3]:rp[4]:0b00[2]:disp3[3]:rd[4])
@@ -433,20 +518,30 @@ ld_sh_c.execute={
 
 ld_sh_c.disasm={
 	os << "ld.sh\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << (unsigned int)disp3 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+((uint32_t)disp3<<1);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
-op ld_sh_d(0b111[3]:rp[4]:0b10000[5]:rd[4]:><:disp16[16])
+op ld_sh_d(0b111[3]:rp[4]:0b10000[5]:rd[4]:><:sext<32>disp16[16])
 
 ld_sh_d.execute={
 
-	uint32_t addr= cpu->GetGPR(rp)+ SignExtend((uint32_t)disp16,16);   
+	uint32_t addr= cpu->GetGPR(rp)+ disp16;   
 	
 	return cpu->SintLoadHalfWord(rd,addr);
 }
 
 
 ld_sh_d.disasm={
-	os << "ld.sh\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x"<< std::hex << (uint32_t) disp16 << "]";
+	os << "ld.sh\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x"<< std::hex << disp16 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ disp16;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op ld_sh_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0100[4]:0b00[2]:sa[2]:rd[4])
@@ -463,6 +558,11 @@ ld_sh_e.execute={
 
 ld_sh_e.disasm={
 	os << "ld.sh\t" << REG_NAME[rd] << "," << REG_NAME[rb] << "[" << REG_NAME[ri] << "<<0x" << std::hex<< (unsigned int)sa << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rb)+(cpu->GetGPR(ri)<< sa);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -484,6 +584,11 @@ ld_sh_cond4.execute={
 
 ld_sh_cond4.disasm={
 	os << "ld.sh" << COND[cond4] << "\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << (unsigned int)disp9 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp9 << 1);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -574,7 +679,7 @@ ld_w_d.disasm={
 	os << "ld.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" <<std::hex<< (int)disp16 << "]";
 	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
 	{
-		uint32_t addr=cpu->GetGPR(rp) + disp16;;
+		uint32_t addr=cpu->GetGPR(rp) + disp16;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
 }
@@ -591,6 +696,11 @@ ld_w_e.execute={
 
 ld_w_e.disasm={
 	os << "ld.w\t" << REG_NAME[rd] << "," <<  REG_NAME[rb] << "[" << REG_NAME[ri] << "<<0x" << std::hex <<REG_NAME[sa] << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rb) + (cpu->GetGPR(ri)<<sa);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -601,13 +711,12 @@ op ld_w_f(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b111110[6]:x[1]:y[1]:rd[
 // x=1, y=0 for upper
 // x=1, y=1 for top           à confirmer 
 
-ld_w_f.var part : {unsigned int}= {x| (y << 1)}
+ld_w_f.var part : {unsigned int}= {y| (x << 1)}
 
 ld_w_f.execute={
 
 	uint32_t b = cpu->GetGPR(rb);
-	uint32_t i = cpu->GetGPR(ri);
-	unsigned int part=(x<<1)| y; 
+	uint32_t i = cpu->GetGPR(ri); 
 	uint32_t addr;
 	/*
 	if(part==0)
@@ -635,6 +744,14 @@ ld_w_f.execute={
 
 ld_w_f.disasm={
 	os << "ld.w\t" << REG_NAME[rd] << "," << REG_NAME[rb] << "[" << REG_NAME[ri] << ":<" << BYTE_PART_NAME[part]  << "> << 2]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t i = cpu->GetGPR(ri); 
+		uint32_t mask = 0x000000FF << (part*8);
+		uint32_t addr = cpu->GetGPR(rb) + (((i & mask) >> (8*i)) << 2);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
+	
 }
 
 
@@ -656,6 +773,11 @@ ld_w_cond4.execute={
 
 ld_w_cond4.disasm={
 	os << "ld.w" << COND[cond4] <<"\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << (unsigned int)disp9 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp) + ((uint32_t)disp9 << 2);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -680,6 +802,11 @@ ld_d_a.execute={
 
 ld_d_a.disasm={
 	os << "ld.d\t" << REG_NAME[2 * rd] << "," << REG_NAME[rp] << "++";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op ld_d_b(0b101[3]:rp[4]:0b100[3]:0b01[2]:rd[3]:0b0[1])
@@ -701,6 +828,11 @@ ld_d_b.execute={
 
 ld_d_b.disasm={
 	os << "ld.d\t" << REG_NAME[2*rd] << ",--" << REG_NAME[rp];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)-8;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op ld_d_c(0b101[3]:rp[4]:0b100[3]:0b00[2]:rd[3]:0b0[1])
@@ -717,21 +849,31 @@ ld_d_c.execute={
 
 ld_d_c.disasm={
 	os << "ld.d\t" << REG_NAME[2*rd] << "," << REG_NAME[rp] ;
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
-op ld_d_d(0b111[3]:rp[4]:0b01110[5]:rd[3]:0b0[1]:><:disp16[16])
+op ld_d_d(0b111[3]:rp[4]:0b01110[5]:rd[3]:0b0[1]:><:sext<32>disp16[16])
 
 ld_d_d.execute={
 
-	uint32_t addr= cpu->GetGPR(rp)+ SignExtend((uint32_t)disp16,16);
+	uint32_t addr= cpu->GetGPR(rp)+disp16;
 
 	if (!cpu->IntLoadWord((2*rd)+1,addr)) return false;
 	return cpu->IntLoadWord(2*rd,addr+4);
 }
 
 ld_d_d.disasm={
-	os << "ld.d\t" << REG_NAME[2*rd] << "," << REG_NAME[rp] << "[0x" << std::hex << (uint32_t) disp16 << "]";
+	os << "ld.d\t" << REG_NAME[2*rd] << "," << REG_NAME[rp] << "[0x" << std::hex << disp16 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ disp16;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -748,18 +890,23 @@ ld_d_e.execute={
 }
 
 ld_d_e.disasm={
-	os << "ld.d\t" << REG_NAME[2*rd] << "," <<  REG_NAME[rb] << "[" << REG_NAME[ri] << "<<" << std::hex << (uint32_t)sa << "]";
+	os << "ld.d\t" << REG_NAME[2*rd] << "," <<  REG_NAME[rb] << "[" << REG_NAME[ri] << "<<" << std::hex << (unsigned int)sa << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rb) + (cpu->GetGPR(ri)<< sa);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
 // LDINS_B - load and insert byte  into register
 // part=0 for top,1 for upper, 2 for low, 3 for bottom
 
-op ldins_b(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b01[2]:part[2]:disp12[12])
+op ldins_b(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b01[2]:part[2]:sext<32>disp12[12])
 
 ldins_b.execute={
 
-	uint32_t addr= cpu->GetGPR(rp)+ SignExtend((uint32_t)disp12,12);
+	uint32_t addr= cpu->GetGPR(rp)+ disp12;
 	/*uint32_t d = cpu->GetGPR(rd);
 
 	uint32_t val;
@@ -776,17 +923,22 @@ ldins_b.execute={
 }
 
 ldins_b.disasm={
-	os << "ldins.b\t" << REG_NAME[rd] << ":<" << BYTE_PART_NAME[part] << ">," << REG_NAME[rp] << "[0x" << std::hex << (uint32_t)disp12 << "]";
+	os << "ldins.b\t" << REG_NAME[rd] << ":<" << BYTE_PART_NAME[part] << ">," << REG_NAME[rp] << "[0x" << std::hex << disp12 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ disp12;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 // LDINS_H - load and insert halfword into register
 // part=0 for top, 1 for bottom
 
-op ldins_h(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b000[3]:part[1]:disp12[12])
+op ldins_h(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b000[3]:part[1]:sext<32>disp12[12])
 
 ldins_h.execute={
 
-	uint32_t addr = cpu->GetGPR(rp) + (SignExtend((uint32_t)disp12,12) << 1);	
+	uint32_t addr = cpu->GetGPR(rp) + (disp12<< 1);	        // parenthesage non explicite ??
 	/*uint32_t d = cpu->GetGPR(rd);
 	uint32_t val;
 	cpu ->MemReadHalfWord(addr,val);
@@ -800,16 +952,21 @@ ldins_h.execute={
 }
 
 ldins_h.disasm={
-	os << "ldins.h\t" << REG_NAME[rd] << ":<" << HALF_WORD_PART_NAME[part] << ">," << REG_NAME[rp] << "[0x" << std::hex << (uint32_t)disp12 << "]";
+	os << "ldins.h\t" << REG_NAME[rd] << ":<" << HALF_WORD_PART_NAME[part] << ">," << REG_NAME[rp] << "[0x" << std::hex << disp12 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ (disp12<<1);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 // LDSWP_SH/UH/W  - load and swap    
 
-op ldswp_sh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0010[4]:disp12[12])
+op ldswp_sh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0010[4]:sext<32>disp12[12])
 
 ldswp_sh.execute={
 
-	uint32_t addr = cpu->GetGPR(rp)+ (SignExtend((uint32_t)disp12,12) << 1);
+	uint32_t addr = cpu->GetGPR(rp)+ (disp12 << 1);
 	/*uint32_t temp;
 	cpu->MemReadHalfWord(addr,temp);
 	uint32_t result = SignExtend(((temp & 0x000000FF)<<8 ) | ((temp & 0x0000FF00)>>8),16);// utiliser ByteSwap
@@ -820,15 +977,20 @@ ldswp_sh.execute={
 }
 
 ldswp_sh.disasm={
-	os << "ldswp.sh\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" <<std::hex << (uint32_t)disp12 << "]";
+	os << "ldswp.sh\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" <<std::hex << disp12 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ (disp12<<1);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
-op ldswp_uh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0011[4]:disp12[12])
+op ldswp_uh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0011[4]:sext<32>disp12[12])
 
 ldswp_uh.execute={
 
-	uint32_t addr = cpu->GetGPR(rp)+ (SignExtend((uint32_t)disp12,12) << 1);
+	uint32_t addr = cpu->GetGPR(rp)+ (disp12 << 1);
 	/*uint32_t temp;
 	cpu->MemReadHalfWord(addr,temp);
 	uint32_t result =((temp & 0x000000FF)<<8 ) | ((temp & 0x0000FF00)>>8);
@@ -839,15 +1001,20 @@ ldswp_uh.execute={
 }
 
 ldswp_uh.disasm={
-	os << "ldswp.uh\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << (uint32_t)disp12 << "]";
+	os << "ldswp.uh\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << disp12 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ (disp12<<1);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
-op ldswp_w(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b1000[4]:disp12[12])
+op ldswp_w(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b1000[4]:sext<32>disp12[12])
 
 ldswp_w.execute={
 
-	uint32_t addr = cpu->GetGPR(rp)+ (SignExtend((uint32_t)disp12,12) << 2);
+	uint32_t addr = cpu->GetGPR(rp)+ (disp12 << 2);
 	/*uint32_t temp;
 	cpu->MemReadWord(addr,temp);
 	uint32_t result = ((temp & 0x000000FF)<<24 ) | ((temp & 0x0000FF00)<<8) | ((temp & 0x00FF0000)>>8) | ((temp & 0xFF000000)>>24);
@@ -858,7 +1025,12 @@ ldswp_w.execute={
 }
 
 ldswp_w.disasm={
-	os << "ldswp.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << (uint32_t)disp12 << "]";
+	os << "ldswp.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << disp12 << "]";
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr = cpu->GetGPR(rp)+ (disp12<<2);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -897,7 +1069,7 @@ lddsp.execute={
 lddsp.disasm={
 
 	os << "lddsp\t" << REG_NAME[rd] << ",0x" << std::hex<< (unsigned int)cpu->GetSP() << "[0x" << std::hex << (uint32_t)disp7 << "]"; 
-		if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
 	{
 		uint32_t sp= cpu->GetSP();
 		uint32_t addr=(sp & 0xFFFFFFFC ) + ((uint32_t)disp7 << 2);
@@ -924,13 +1096,18 @@ st_b_a.execute={
 	uint32_t addr=cpu->GetGPR(rp);                        // get address
 	if(!cpu->IntStoreByte(rs,addr++))return false;        // store byte in memory
 		                            		      
-	cpu->SetGPR(rp,addr);  
+	cpu->SetGPR(rp,addr);                                 // restore rp
 	return true;
 }
 
 st_b_a.disasm={
 
 	os << "st.b\t" << REG_NAME[rp] << "++," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op st_b_b(0b000[3]:rp[4]:0b01111[5]:rs[4])
@@ -949,6 +1126,11 @@ st_b_b.execute={
 st_b_b.disasm={
 
 	os << "st.b\t--" << REG_NAME[rp] << "," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)-1;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op st_b_c(0b101[3]:rp[4]:0b01[2]:disp3[3]:rs[4])
@@ -963,21 +1145,31 @@ st_b_c.execute={
 st_b_c.disasm={
 
 	os << "st.b\t" << REG_NAME[rp] << "[0x" << std::hex<<(unsigned int)disp3 << "]," << (unsigned int)rs;
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)+(uint32_t)disp3;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
-op st_b_d(0b111[3]:rp[4]:0b10110[5]:rs[4]:disp16[16])
+op st_b_d(0b111[3]:rp[4]:0b10110[5]:rs[4]:sext<32>disp16[16])
 
 st_b_d.execute={
 
-	uint32_t addr=cpu->GetGPR(rp)+SignExtend((uint32_t)disp16,16);
+	uint32_t addr=cpu->GetGPR(rp)+disp16;
 	return cpu->IntStoreByte(rs,addr);
 }
 
 
 st_b_d.disasm={
 
-	os << "st.b\t" << REG_NAME[rp] << "[0x"<< std::hex << (uint32_t)disp16 << "]," << (unsigned int)rs;
+	os << "st.b\t" << REG_NAME[rp] << "[0x"<< std::hex << disp16 << "]," << (unsigned int)rs;
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)+disp16;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -992,6 +1184,11 @@ st_b_e.execute={
 st_b_e.disasm={
 
 	os << "st.b\t" << REG_NAME[rb] << "[0x" << std::hex << REG_NAME[ri] << "<<0x" << std::hex << (unsigned int) sa <<"]," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr=cpu->GetGPR(rb)+( cpu->GetGPR(ri)<<(unsigned int)sa );
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -1016,6 +1213,11 @@ st_b_cond4.execute={
 st_b_cond4.disasm={
 
 	os << "st.b"<< COND[cond4]<<"\t" << REG_NAME[rp] << "[" << disp9 << "]," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp) + (uint32_t)disp9;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -1041,6 +1243,11 @@ st_d_a.execute={
 st_d_a.disasm={
 
 	os << "st.d\t" << REG_NAME[rp] << "++," << REG_NAME[2*rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op st_d_b(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b1[1])
@@ -1063,6 +1270,11 @@ st_d_b.execute={
 st_d_b.disasm={
 
 	os << "st.d\t--" << REG_NAME[rp] << "," << REG_NAME[2*rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp) -8;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op st_d_c(0b101[3]:rp[4]:0b100[3]:0b01[2]:rs[3]:0b1[1])
@@ -1080,13 +1292,18 @@ st_d_c.execute={
 st_d_c.disasm={
 
 	os << "st.d\t" << REG_NAME[rp]  << "," << REG_NAME[2*rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
-op st_d_d(0b111[3]:rp[4]:0b01110[5]:rs[3]:0b1[1]:><:disp16[16])
+op st_d_d(0b111[3]:rp[4]:0b01110[5]:rs[3]:0b1[1]:><:sext<32>disp16[16])
 
 st_d_d.execute={
 	
-	uint32_t addr= cpu->GetGPR(rp) + SignExtend((uint32_t)disp16,16);
+	uint32_t addr= cpu->GetGPR(rp) + disp16;
 
 	if(!cpu->IntStoreWord((2*rs)+1,addr)) return false;
 	if(!cpu->IntStoreWord(2*rs,addr + 4)) return false;	
@@ -1096,7 +1313,12 @@ st_d_d.execute={
 
 st_d_d.disasm={
 
-	os << "st.d\t" << REG_NAME[rp] << "[" << std::hex << (uint32_t)disp16 << "]," << REG_NAME[2*rs];
+	os << "st.d\t" << REG_NAME[rp] << "[" << std::hex << disp16 << "]," << REG_NAME[2*rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp) + disp16 ;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op st_d_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1000[4]:0b00[2]:sa[2]:rs[4])
@@ -1114,6 +1336,11 @@ st_d_e.execute={
 st_d_e.disasm={
 
 	os << "st.d\t" << REG_NAME[rb] << "[" << REG_NAME[ri] << "<<0x"<< std::hex << (unsigned int)sa << "]," << REG_NAME[2*rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rb) +(cpu->GetGPR(ri) << sa);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -1137,6 +1364,11 @@ st_h_a.execute={
 st_h_a.disasm={
 
 	os << "st.h\t" << REG_NAME[rp] << "++," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op st_h_b(0b000[3]:rp[4]:0b01110[5]:rs[4])
@@ -1157,6 +1389,11 @@ st_h_b.execute={
 st_h_b.disasm={
 
 	os << "st.h\t--" << REG_NAME[rp] << "," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)-2;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op st_h_c(0b101[3]:rp[4]:0b00[2]:disp3[3]:rs[4])
@@ -1172,20 +1409,30 @@ st_h_c.execute={
 st_h_c.disasm={
 
 	os << "st.h\t" << REG_NAME[rp] << "[0x" << std::hex << (unsigned int)disp3 << "]," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)+((uint32_t)disp3 << 1);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
-op st_h_d(0b111[3]:rp[4]:0b10101[5]:rs[4]:><:disp16[16])
+op st_h_d(0b111[3]:rp[4]:0b10101[5]:rs[4]:><:sext<32>disp16[16])
 
 st_h_d.execute={
 
-	uint32_t addr=cpu->GetGPR(rp)+ SignExtend((uint32_t)disp16,16);
+	uint32_t addr=cpu->GetGPR(rp)+ disp16;
 
 	return cpu->IntStoreHalfWord(rs,addr);
 }
 
 st_h_d.disasm={
 
-	os << "st.h\t" << REG_NAME[rp] << "[0x"<< std::hex << (unsigned int)disp16 << "]," << REG_NAME[rs];
+	os << "st.h\t" << REG_NAME[rp] << "[0x"<< std::hex << disp16 << "]," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)+ disp16;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op st_h_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1010[4]:0b00[2]:sa[2]:rs[4])
@@ -1201,6 +1448,11 @@ st_h_e.execute={
 st_h_e.disasm={
 
 	os << "st.h\t" << REG_NAME[rb] << "[" << REG_NAME[ri] << "<<0x" << std::hex << (unsigned int) sa << "]," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rb)+(cpu->GetGPR(ri)<< sa);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 // ST_H_COND4 - conditionally store halfword
@@ -1211,7 +1463,7 @@ st_h_cond4.execute={
 
 	if(cpu->EvaluateCond(cond4))
 	{
-		uint32_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp9 << 2) ;
+		uint32_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp9 << 1) ;
 
 		return cpu->IntStoreHalfWord(rs,addr);
 
@@ -1223,6 +1475,11 @@ st_h_cond4.execute={
 st_h_cond4.disasm={
 
 	os << "st.h" << COND[cond4] <<"\t" << REG_NAME[rp] << "[0x" << std::hex << (unsigned int) disp9 << "]," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)+((uint32_t)disp9 << 1);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 // ST_W - store word
@@ -1246,6 +1503,11 @@ st_w_a.execute={
 st_w_a.disasm={
 
 	os << "st.w\t" << REG_NAME[rp] << "++," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op st_w_b(0b000[3]:rp[4]:0b01101[5]:rs[4])
@@ -1268,6 +1530,11 @@ st_w_b.execute={
 st_w_b.disasm={
 
 	os << "st.w\t--" << REG_NAME[rp] << "," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)-4;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 op st_w_c(0b100[3]:rp[4]:0b1[1]:disp4[4]:rs[4])
@@ -1301,7 +1568,7 @@ st_w_d.execute={
 
 st_w_d.disasm={
 
-	os << "st.w\t" << REG_NAME[rp] << "[0x" << std::hex << (uint32_t)disp16 << "]," << REG_NAME[rs];
+	os << "st.w\t" << REG_NAME[rp] << "[0x" << std::hex << disp16 << "]," << REG_NAME[rs];
 	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
 	{
 		uint32_t addr = cpu->GetGPR(rp)+ disp16;
@@ -1323,6 +1590,11 @@ st_w_e.execute={
 st_w_e.disasm={
 
 	os << "st.w\t" << REG_NAME[rb] << "[" << REG_NAME[ri] << "<<0x" << std::hex<<(unsigned int)sa << "]," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rb)+ (cpu->GetGPR(ri) << sa);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 // ST_W_COND4 - conditionally store word
@@ -1346,19 +1618,24 @@ st_w_cond4.execute={
 st_w_cond4.disasm={
 
 	os << "st.w"<< COND[cond4]<<"\t" << REG_NAME[rp] << "[0x" << std::hex << (unsigned int)disp9 << "]," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)+ ((uint32_t)disp9 << 2);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
 // STCOND - store word conditionally
 
-op stcond(0b111[3]:rp[4]:0b10111[5]:rs[4]:><:disp16[16])
+op stcond(0b111[3]:rp[4]:0b10111[5]:rs[4]:><:sext<32>disp16[16])
 
 stcond.execute={
 
 	cpu->SetSR_Z(cpu->GetSR_L());
 	if(cpu->GetSR_L())
 	{
-		uint32_t addr = cpu->GetGPR(rp) + SignExtend((uint32_t)disp16,16);
+		uint32_t addr = cpu->GetGPR(rp) + disp16;
 
 		return cpu->IntStoreWord(rs,addr);
 	}
@@ -1368,6 +1645,11 @@ stcond.execute={
 stcond.disasm={
 
 	os << "stcond\t" << REG_NAME[rp] << "[0x" << std::hex << (unsigned int)disp16 << "]," << REG_NAME[rs];
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		uint32_t addr= cpu->GetGPR(rp)+ disp16;
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 
@@ -1520,7 +1802,8 @@ op ldm(0b111[3]:0b000[3]:postinc[1]:0b11100[5]:rp[4]:><:reglist16[16])
 
  // reglist16={R0,R1,R2,R3,R4,R5,R6,R7...R12,LR,SP,PC}
 
-ldm.execute={   
+ldm.execute={
+		   
 
 	//Emtpy Reglist16 gives UNDEFINED result.
 	if(reglist16 == 0) 
@@ -1532,7 +1815,7 @@ ldm.execute={
 	uint32_t p = cpu->GetGPR(rp);
 	uint32_t pc = Operation<CONFIG>::GetAddr();
 	uint32_t loadAddress = p;
-	if(((reglist16 >> 15)& 1)==1)                  //reglist16[PC]==1
+	if(reglist16 & REG_LIST16_PC)                  //reglist16[PC]==1
 	{
 		if(p == pc) loadAddress= cpu->GetSP();
 		
@@ -1555,17 +1838,17 @@ ldm.execute={
 		}
 		else
 		{
-			if(  ((reglist16 >> 13)&1) == 1 )
+			if(  reglist16 & REG_LIST16_SP)
 			{
  				if(!cpu->IntLoadWord(14,loadAddress)) return false;  
 				  loadAddress+=4;  
 			}
-			if(  ((reglist16 >> 14)&1) == 1 )
+			if(  reglist16 & REG_LIST16_LR )
 			{
  				if(!cpu->IntLoadWord(13,loadAddress)) return false;      
 				loadAddress+=4;
 			}
-			if(  ((reglist16 >> 12)&1) == 1 )
+			if(  reglist16 & REG_LIST16_R12 )
 			{
  				if(!cpu->IntLoadWord(12,loadAddress)) // load R12
 					return false;      
@@ -1580,19 +1863,19 @@ ldm.execute={
 	}
 	else
 	{
-			if(  ((reglist16 >> 13)&1) == 1 )
+			if(  reglist16 & REG_LIST16_LR )
 			{
  				if(!cpu->IntLoadWord(14,loadAddress)) // load LR
 					return false;
 				loadAddress+=4;      
 			}
-			if(  ((reglist16 >> 14)&1) == 1 )
+			if(  reglist16 & REG_LIST16_SP )
 			{
  				if(!cpu->IntLoadWord(13,loadAddress)) // load SP
 					return false;
 				loadAddress+=4;
 			}
-			if(  ((reglist16 >> 12)&1) == 1 )
+			if(  reglist16 & REG_LIST16_R12 )
 			{
  				if(!cpu->IntLoadWord(12,loadAddress)) // load R12
 					return false; 
@@ -1614,30 +1897,13 @@ ldm.execute={
 		else cpu->SetGPR(rp,loadAddress);	
 	}
 	 	
-
+	
 	return true;
 }
 
 ldm.disasm={
 
 	os << "ldm\t" << REG_NAME[rp] << "{++}";
-
-	const uint16_t REG_LIST16_R0 = 1;
-	const uint16_t REG_LIST16_R1 = 2;
-	const uint16_t REG_LIST16_R2 = 4;
-	const uint16_t REG_LIST16_R3 = 8;
-	const uint16_t REG_LIST16_R4 = 16;
-	const uint16_t REG_LIST16_R5 = 32;
-	const uint16_t REG_LIST16_R6 = 64;
-	const uint16_t REG_LIST16_R7 = 128;
-	const uint16_t REG_LIST16_R8 = 256;
-	const uint16_t REG_LIST16_R9 = 512;
-	const uint16_t REG_LIST16_R10 = 1024;
-	const uint16_t REG_LIST16_R11 = 2048;
-	const uint16_t REG_LIST16_R12 = 4096;
-	const uint16_t REG_LIST16_LR = 8192;
-	const uint16_t REG_LIST16_SP = 16384;
-	const uint16_t REG_LIST16_PC = 32768;
 
 	
 	if(reglist16 & REG_LIST16_R0)
@@ -1734,15 +2000,15 @@ ldmts.execute={
 	//Emtpy Reglist16 gives UNDEFINED result.
 	if(reglist16==0) return false;
 	//PC in Reglist16 gives UNDEFINED result.
-	if( (reglist16 & 1) == 1) return false;
+	if(reglist16 & REG_LIST16_PC) return false;
 
 	uint32_t loadAddress = cpu->GetGPR(rp);
 
 	for(int i=15;i>=0;i--)                // for R15 to R0
 	{
-		if( ((reglist16 >>i)&1) == 1 ) // if reglist=1
+		if((reglist16 >>i)&1) // if reglist=1
 		{
-			if(!cpu->IntLoadWord(i,loadAddress)) // Load Ri
+			if(!cpu->IntLoadWord(i,loadAddress)) // Load Ri. ?? The target registers reside in the User Register Context
 				return false;	
 			loadAddress+=4;
 		}
@@ -1755,8 +2021,92 @@ ldmts.execute={
 
 ldmts.disasm={
 
-	os << "ldmts\t" << REG_NAME[rp] << "{++}," << std::hex <<(unsigned int)reglist16;
+	os << "ldmts\t" << REG_NAME[rp] << "{++}";
+
+	if(reglist16 & REG_LIST16_R0)
+	{
+		if(reglist16) os << ",";
+		os <<"R0";
+	}
+	if(reglist16 & REG_LIST16_R1)
+	{
+		if(reglist16 & REG_LIST16_R0 ) os << ",";
+		os <<"R1";
+	}
+	if(reglist16 & REG_LIST16_R2)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1) ) os << ",";
+		os <<"R2";
+	}
+	if(reglist16 & REG_LIST16_R3)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2) ) os << ",";
+		os <<"R3";
+	}
+	if(reglist16 & REG_LIST16_R4)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3) ) os << ",";
+		os <<"R4";
+	}
+	if(reglist16 & REG_LIST16_R5)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4) ) os << ",";
+		os <<"R5";
+	}
+	if(reglist16 & REG_LIST16_R6)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5) ) os << ",";
+		os <<"R6";
+	}
+	if(reglist16 & REG_LIST16_R7)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6) ) os << ",";
+		os <<"R7";
+	}
+	if(reglist16 & REG_LIST16_R8)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7) ) os << ",";
+		os <<"R8";
+	}
+	if(reglist16 & REG_LIST16_R9)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8) ) os << ",";
+		os <<"R9";
+	}
+	if(reglist16 & REG_LIST16_R10)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9) ) os << ",";
+		os <<"R10";
+	}
+	if(reglist16 & REG_LIST16_R11)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10) ) os << ",";
+		os <<"R11";
+	}
+	if(reglist16 & REG_LIST16_R12)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11) ) os << ",";
+		os <<"R12";
+	}
+	if(reglist16 & REG_LIST16_LR)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12) ) os << ",";
+		os <<"LR";
+	}
+	if(reglist16 & REG_LIST16_SP)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR) ) os << ",";
+		os <<"SP";
+	}
+	if(reglist16 & REG_LIST16_PC)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR | REG_LIST16_PC) ) os << ",";
+		os <<"PC";
+	}
+
+		
 }
+
  
 // POPM - pop multiple registers from stack
 
@@ -1766,18 +2116,22 @@ op popm(0b110[3]:0b1[1]:reglist8[8]:k[1]:0b010[3])
 
 popm.execute={
 	
+	
+	//Emtpy Reglist8 gives UNDEFINED result.
+	if(reglist8==0) return false;
+	
 	uint32_t sp = cpu->GetGPR(13);
 	
-	if( ( ((reglist8>>7) &1) && k ) == 1 )     // if reglist8[PC]=1 and k=1
+	if( ( reglist8 & REG_LIST8_PC) && k  )     // if reglist8[PC]=1 and k=1
 	{
 		if(!cpu->IntLoadWord(15,sp))     // load PC
 			return false;
 		sp+=4;
 
-		if( ((reglist8>>5)&3)==0b00 )      // if reglist[LR,R12]=00
+		if( (reglist8 & REG_LIST8_R12_LR)==0b00 )      // if reglist[LR,R12]=00
 			cpu->SetGPR(12,0);         // set 0 in R12
 		
-		else if( ((reglist8>>5)&3)==0b01 ) // if reglist[LR,R12]=01
+		else if( (reglist8 & REG_LIST8_R12_LR)==0b01 ) // if reglist[LR,R12]=01
 			cpu->SetGPR(12,1);         // set 1
 
 		else cpu->SetGPR(12,-1);           // set -1
@@ -1790,25 +2144,25 @@ popm.execute={
 	}
 	else
 	{
-		if(((reglist8 >>7)&1)==1)               // if reglist[PC]=1
+		if(reglist8 & REG_LIST8_PC)               // if reglist[PC]=1
 		{
 			if(!cpu->IntLoadWord(15,sp))  // load PC
 				return false;
 			sp+=4;
 		}
-		if(((reglist8>>6) &1)==1) 		// if reglist[LR]=1
+		if(reglist8 & REG_LIST8_LR) 		// if reglist[LR]=1
 		{
 			if(!cpu->IntLoadWord(14,sp))  // load LR
 				return false;
 			sp+=4;
 		}
-		if(((reglist8>>5) &1)==1)		// if reglist[R12]=1
+		if(reglist8 & REG_LIST8_R12)		// if reglist[R12]=1
 		{
 			if(!cpu->IntLoadWord(12,sp))  // load R12
 				return false;
 			sp+=4;
 		}
-		if(((reglist8 >>7)&1) == 1)		// if reglist[PC]=1
+		if(reglist8 & REG_LIST8_PC)		// if reglist[PC]=1
 		{
 			uint32_t res=cpu->GetGPR(12);   // test r12 and update flags
 			cpu->SetSR_V(0);
@@ -1818,19 +2172,19 @@ popm.execute={
 		}
 	
 	}
-	if(((reglist8>>4) &1)==1)
+	if(reglist8 & REG_LIST8_R11)
 		{
 			if(!cpu->IntLoadWord(11,sp))  // load R11
 				return false;
 			sp+=4;
 		}
-	if(((reglist8>>3) &1)==1)
+	if(reglist8 & REG_LIST8_R10)
 		{
 			if(!cpu->IntLoadWord(10,sp))  // load R10
 				return false;
 			sp+=4;
 		}
-	if(((reglist8>>2) &1)==1)
+	if(reglist8 & REG_LIST8_R8_R9)
 		{
 			if(!cpu->IntLoadWord(9,sp))  // load R9
 				return false;
@@ -1839,7 +2193,7 @@ popm.execute={
 				return false;
 			sp+=4;
 		}
-	if(((reglist8>>1) &1)==1)
+	if(reglist8 & REG_LIST8_R4_R7)
 		{
 			if(!cpu->IntLoadWord(7,sp)) // load R7
 				return false;
@@ -1854,7 +2208,7 @@ popm.execute={
 				return false;
 			sp+=4;
 		}
-	if((reglist8 &1)==1)
+	if(reglist8 & REG_LIST8_R0_R3)
 		{
 			if(!cpu->IntLoadWord(3,sp))  // load R3
 				return false;
@@ -1878,16 +2232,6 @@ popm.disasm={
 //	os << "popm\t" << std::hex <<(unsigned int)reglist8;
 	os << "popm";
 	if(reglist8 || k) os << "\t";
-
-	const uint8_t REG_LIST8_R0_R3 = 1;
-	const uint8_t REG_LIST8_R4_R7 = 2;
-	const uint8_t REG_LIST8_R8_R9 = 4;
-	const uint8_t REG_LIST8_R10 = 8;
-	const uint8_t REG_LIST8_R11 = 16;
-	const uint8_t REG_LIST8_R12 = 32;
-	const uint8_t REG_LIST8_LR = 64;
-	const uint8_t REG_LIST8_R12_LR = REG_LIST8_R12 | REG_LIST8_LR;
-	const uint8_t REG_LIST8_PC = 128;
 
 	if(reglist8 & REG_LIST8_R0_R3)
 	{
@@ -1947,10 +2291,13 @@ popm.disasm={
 op pushm(0b110[3]:0b1[1]:reglist8[8]:0b0001[4])
 
 pushm.execute={
+	
+	//Emtpy Reglist8 gives UNDEFINED result.
+	if(reglist8==0) return false;
 
 	uint32_t sp= cpu->GetGPR(13);
 	
-	if( (reglist8 & 1)==1 )
+	if(reglist8 & REG_LIST8_R0_R3 )
 	{
 		sp-=4;
 		if(!cpu->IntStoreWord(0,sp)) return false;
@@ -1961,7 +2308,7 @@ pushm.execute={
 		sp-=4;
 		if(!cpu->IntStoreWord(3,sp)) return false;
 	}
-	if( ((reglist8>>1) & 1)==1 )
+	if( reglist8 & REG_LIST8_R4_R7 )
 	{
 		sp-=4;
 		if(!cpu->IntStoreWord(4,sp)) return false;
@@ -1972,35 +2319,35 @@ pushm.execute={
 		sp-=4;
 		if(!cpu->IntStoreWord(7,sp)) return false;
 	}
-	if( ((reglist8>>2) & 1)==1 )
+	if(reglist8 & REG_LIST8_R8_R9 )
 	{
 		sp-=4;
 		if(!cpu->IntStoreWord(8,sp)) return false;
 		sp-=4;
 		if(!cpu->IntStoreWord(9,sp)) return false;
 	}
-	if( ((reglist8>>3) & 1)==1 )
+	if(reglist8 & REG_LIST8_R10 )
 	{
 		sp-=4;
 		if(!cpu->IntStoreWord(10,sp)) return false;
 
 	}
-	if( ((reglist8>>4) & 1)==1 )
+	if(reglist8 & REG_LIST8_R11)
 	{
 		sp-=4;
 		if(!cpu->IntStoreWord(11,sp)) return false;
 	}
-	if( ((reglist8>>5) & 1)==1 )
+	if(reglist8  & REG_LIST8_R12)
 	{
 		sp-=4;
 		if(!cpu->IntStoreWord(12,sp)) return false;
 	}
-	if( ((reglist8>>6) & 1)==1 )
+	if(reglist8 & REG_LIST8_LR)
 	{
 		sp-=4;
 		if(!cpu->IntStoreWord(14,sp)) return false;
 	}
-	if( ((reglist8>>7) & 1)==1 )
+	if( reglist8 & REG_LIST8_PC )
 	{
 		sp-=4;
 		if(!cpu->IntStoreWord(15,sp)) return false;
@@ -2013,15 +2360,6 @@ pushm.disasm={
 
 	os << "pushm";
 	if(reglist8) os << "\t";
-
-	const uint8_t REG_LIST8_R0_R3 = 1;
-	const uint8_t REG_LIST8_R4_R7 = 2;
-	const uint8_t REG_LIST8_R8_R9 = 4;
-	const uint8_t REG_LIST8_R10 = 8;
-	const uint8_t REG_LIST8_R11 = 16;
-	const uint8_t REG_LIST8_R12 = 32;
-	const uint8_t REG_LIST8_LR = 64;
-	const uint8_t REG_LIST8_PC = 128;
 
 	if(reglist8 & REG_LIST8_R0_R3)
 	{
@@ -2076,7 +2414,7 @@ stm.execute={
 	//Emtpy Reglist16 gives UNDEFINED result.
 	if(reglist16==0) return false;
 	//PC in Reglist16 gives UNDEFINED result.
-	if( (reglist16 & 1) == 1) return false;
+	if(reglist16 & REG_LIST16_PC) return false;
 
 	uint32_t storeAddress= cpu->GetGPR(rp);
 
@@ -2084,7 +2422,7 @@ stm.execute={
 	{
 		for(int i=0;i<16;i++)
 		{
-			if( ((reglist16 >> i)&1) == 1 )
+			if( (reglist16 >> i)&1)
 			{
 				storeAddress-=4;
 				if(!cpu->IntStoreWord(i,storeAddress)) return false;
@@ -2096,7 +2434,7 @@ stm.execute={
 	{
 		for(int i=15;i>=0;i--)
 		{
-			if( ((reglist16 >> i)&1) == 1 )
+			if( (reglist16 >> i)&1 )
 			{
 				if(!cpu->IntStoreWord(i,storeAddress)) return false;
 				storeAddress+=4;
@@ -2108,8 +2446,90 @@ stm.execute={
 
 stm.disasm={
 
-	os << "stm\t{--}" <<REG_NAME[rp] << "," <<std::hex << (unsigned int)reglist16 ; 
+	os << "stm\t{--}" <<REG_NAME[rp] << ",";
 
+	if(reglist16 & REG_LIST16_R0)
+	{
+		if(reglist16) os << ",";
+		os <<"R0";
+	}
+	if(reglist16 & REG_LIST16_R1)
+	{
+		if(reglist16 & REG_LIST16_R0 ) os << ",";
+		os <<"R1";
+	}
+	if(reglist16 & REG_LIST16_R2)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1) ) os << ",";
+		os <<"R2";
+	}
+	if(reglist16 & REG_LIST16_R3)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2) ) os << ",";
+		os <<"R3";
+	}
+	if(reglist16 & REG_LIST16_R4)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3) ) os << ",";
+		os <<"R4";
+	}
+	if(reglist16 & REG_LIST16_R5)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4) ) os << ",";
+		os <<"R5";
+	}
+	if(reglist16 & REG_LIST16_R6)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5) ) os << ",";
+		os <<"R6";
+	}
+	if(reglist16 & REG_LIST16_R7)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6) ) os << ",";
+		os <<"R7";
+	}
+	if(reglist16 & REG_LIST16_R8)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7) ) os << ",";
+		os <<"R8";
+	}
+	if(reglist16 & REG_LIST16_R9)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8) ) os << ",";
+		os <<"R9";
+	}
+	if(reglist16 & REG_LIST16_R10)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9) ) os << ",";
+		os <<"R10";
+	}
+	if(reglist16 & REG_LIST16_R11)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10) ) os << ",";
+		os <<"R11";
+	}
+	if(reglist16 & REG_LIST16_R12)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11) ) os << ",";
+		os <<"R12";
+	}
+	if(reglist16 & REG_LIST16_LR)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12) ) os << ",";
+		os <<"LR";
+	}
+	if(reglist16 & REG_LIST16_SP)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR) ) os << ",";
+		os <<"SP";
+	}
+	if(reglist16 & REG_LIST16_PC)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR | REG_LIST16_PC) ) os << ",";
+		os <<"PC";
+	}
+
+		
 }
 
 // STMTS - store multiple registers for task switch
@@ -2121,7 +2541,7 @@ stmts.execute={
 	//Emtpy Reglist16 gives UNDEFINED result.
 	if(reglist16==0) return false;
 	//PC in Reglist16 gives UNDEFINED result.
-	if( (reglist16 & 1) == 1) return false;
+	if(reglist16 & REG_LIST16_PC) return false;
 
 	uint32_t storeAddress= cpu->GetGPR(rp);
 
@@ -2150,13 +2570,95 @@ stmts.execute={
 	}
 	return true;
 }
-
-
 stmts.disasm={
 
-	os << "stmts\t{--}" << REG_NAME[rp] << "," << std::hex << (unsigned int)reglist16 ; 
+	os << "stmts\t{--}" << REG_NAME[rp] << ",";
 
+	if(reglist16 & REG_LIST16_R0)
+	{
+		if(reglist16) os << ",";
+		os <<"R0";
+	}
+	if(reglist16 & REG_LIST16_R1)
+	{
+		if(reglist16 & REG_LIST16_R0 ) os << ",";
+		os <<"R1";
+	}
+	if(reglist16 & REG_LIST16_R2)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1) ) os << ",";
+		os <<"R2";
+	}
+	if(reglist16 & REG_LIST16_R3)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2) ) os << ",";
+		os <<"R3";
+	}
+	if(reglist16 & REG_LIST16_R4)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3) ) os << ",";
+		os <<"R4";
+	}
+	if(reglist16 & REG_LIST16_R5)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4) ) os << ",";
+		os <<"R5";
+	}
+	if(reglist16 & REG_LIST16_R6)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5) ) os << ",";
+		os <<"R6";
+	}
+	if(reglist16 & REG_LIST16_R7)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6) ) os << ",";
+		os <<"R7";
+	}
+	if(reglist16 & REG_LIST16_R8)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7) ) os << ",";
+		os <<"R8";
+	}
+	if(reglist16 & REG_LIST16_R9)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8) ) os << ",";
+		os <<"R9";
+	}
+	if(reglist16 & REG_LIST16_R10)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9) ) os << ",";
+		os <<"R10";
+	}
+	if(reglist16 & REG_LIST16_R11)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10) ) os << ",";
+		os <<"R11";
+	}
+	if(reglist16 & REG_LIST16_R12)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11) ) os << ",";
+		os <<"R12";
+	}
+	if(reglist16 & REG_LIST16_LR)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12) ) os << ",";
+		os <<"LR";
+	}
+	if(reglist16 & REG_LIST16_SP)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR) ) os << ",";
+		os <<"SP";
+	}
+	if(reglist16 & REG_LIST16_PC)
+	{
+		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR | REG_LIST16_PC) ) os << ",";
+		os <<"PC";
+	}
+
+		
 }
+
+
 //------------------------------------------------------------------------------------------
 
 //   read, modify, write instructions

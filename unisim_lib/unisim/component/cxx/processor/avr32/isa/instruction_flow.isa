@@ -6,7 +6,7 @@
 
 // BR_COND3 - branch if condition satisfied
 
-op br_cond3(0b110[3]:0b0[1]:disp[8]:0b0[1]:cond3[3])
+op br_cond3(0b110[3]:0b0[1]:sext<32>disp[8]:0b0[1]:cond3[3])
 
 br_cond3.execute={
 
@@ -15,7 +15,7 @@ br_cond3.execute={
 
 	if(cpu->EvaluateCond(cond3))
 	{
-		result= npc+ (SignExtend( (uint32_t)disp, 8) << 1);
+		result= npc+ (disp << 1);
 	}
 	else
 		result = npc+2;        // a priori effectué dans la methode StepOneInstruction
@@ -27,6 +27,14 @@ br_cond3.execute={
 br_cond3.disasm={
 
 	os << "br"<< COND[cond3]<<"\t0x" << std::hex << (int) disp ;
+	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	{
+		if(cpu->EvaluateCond(cond3))
+		{
+			uint32_t addr=Operation<CONFIG>::GetAddr()+(disp <<1) ;
+			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+		}	
+	}
 }
 
 

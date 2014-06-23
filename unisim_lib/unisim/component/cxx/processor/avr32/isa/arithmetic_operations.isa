@@ -308,13 +308,13 @@ cp_w_a.disasm={
 
 }
 
-op cp_w_b(0b010[3]:0b110[3]:imm6[6]:rd[4])
+op cp_w_b(0b010[3]:0b110[3]:sext<32>imm6[6]:rd[4])
 
 cp_w_b.execute={
 
 	uint32_t d =cpu->GetGPR(rd);
 	//uint32_t s = ~(SignExtend((uint32_t)imm6,6))+1;
-	uint32_t s = SignExtend((uint32_t)imm6,6);
+	//uint32_t s = SignExtend((uint32_t)imm6,6);
 	uint32_t result;
 	uint8_t carry_in=0;
 	uint8_t carry_out;
@@ -322,7 +322,7 @@ cp_w_b.execute={
 	uint8_t sign;
 
 	//SignedAdd32(result, carry_out, overflow, sign, d, s, carry_in);
-	SignedSub32(result, carry_out, overflow, sign, d, s, carry_in); 
+	SignedSub32(result, carry_out, overflow, sign, d, imm6, carry_in); 
 
 	cpu->SetSR_V(overflow);
 	cpu->SetSR_N(sign);
@@ -334,7 +334,7 @@ cp_w_b.execute={
 
 cp_w_b.disasm={
 
-	os<< "cp.w\t" << REG_NAME[rd] << ","<<  (int)SignExtend((uint32_t)imm6,6);
+	os<< "cp.w\t" << REG_NAME[rd] << ","<< imm6;
 
 }
 
@@ -541,13 +541,13 @@ rsub_a.disasm={
 	os << "rsub\t" << REG_NAME[rd] << "," << REG_NAME[rs];
 }
 
-op rsub_b(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0001[4]:imm8[8])
+op rsub_b(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0001[4]:sext<32>imm8[8])
 
 rsub_b.execute = {
 
 							// get values
 	uint32_t s = cpu->GetGPR(rs);                 // rs
-	uint32_t imm  = SignExtend((uint32_t)imm8,8); // 32 bits extension of imm8          
+	//uint32_t imm  = SignExtend((uint32_t)imm8,8); // 32 bits extension of imm8          
 	
 	uint32_t result;
  	uint8_t overflow;
@@ -556,7 +556,7 @@ rsub_b.execute = {
 	uint8_t carry_out;
 	
  	//SignedAdd32(result,carry_out, overflow,sign,imm,~s+1,carry_in);
-	SignedSub32(result,carry_out, overflow,sign,imm,s,carry_in);       // perform SE(imm8) - rs
+	SignedSub32(result,carry_out, overflow,sign,imm8,s,carry_in);       // perform SE(imm8) - rs
 
 	cpu->SetSR_V(overflow);                   // Set flags
 	cpu->SetSR_N(sign);
@@ -570,19 +570,19 @@ rsub_b.execute = {
 
 rsub_b.disasm={
 
-	os << "rsub\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << (int) imm8;
+	os << "rsub\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << imm8;
 }
 
 // RSUB_COND4 - conditional reverse subtract                                     ?? signed sub without carry
 
-op rsub_cond4(0b111[3]:0b1101[4]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:imm8[8])
+op rsub_cond4(0b111[3]:0b1101[4]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:sext<32>imm8[8])
 
 rsub_cond4.execute={
 
 	if(cpu->EvaluateCond((uint8_t)cond4))
 	{
 		uint32_t d = cpu->GetGPR(rd);                  // rd
-		uint32_t imm = SignExtend((uint32_t)imm8,8);   // 32 bits extension of imm8       
+		//uint32_t imm = SignExtend((uint32_t)imm8,8);   // 32 bits extension of imm8       
 		uint32_t result;
  
 		uint8_t overflow;
@@ -591,7 +591,7 @@ rsub_cond4.execute={
 		uint8_t carry_out;
 		
 	 	//SignedAdd32(result,carry_out, overflow,sign,imm,~d+1,carry_in);
-		SignedSub32(result,carry_out, overflow,sign,imm,d,carry_in);         //perform SE(imm8) -Rd
+		SignedSub32(result,carry_out, overflow,sign,imm8,d,carry_in);         //perform SE(imm8) -Rd
 	
 		// flags not affected
 	
@@ -602,7 +602,7 @@ rsub_cond4.execute={
 
 rsub_cond4.disasm={
 
-	os << "rsub" << COND[cond4] <<"\t" << REG_NAME[rd] << "," << (int) imm8;
+	os << "rsub" << COND[cond4] <<"\t" << REG_NAME[rd] << "," <<  imm8;
 }
 
 //SBC -  subtract with carry                     ?? signed sub
@@ -738,14 +738,14 @@ sub_b.disasm={
 	os << "sub\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] << "<<"<< (int) sa;
 }
 
-op sub_c(0b001[3]:0b0[1]:imm8[8]:rd[4])
+op sub_c(0b001[3]:0b0[1]:sext<32>imm8[8]:rd[4])
 
 sub_c.execute = {
 
 	
 	uint32_t d=cpu->GetGPR(rd);     // rd
 		
-	uint32_t s = (d == cpu->GetSP()) ? SignExtend((uint32_t)imm8 << 2,10) : SignExtend((uint32_t)imm8,8);
+	uint32_t s = (d == cpu->GetSP()) ? imm8 << 2 : imm8;
                    
 	//?? choisir extension sur 10 chiffre à cause du shift ou 8
      	
@@ -807,14 +807,14 @@ sub_d.disasm={
 	os << "sub\t" << REG_NAME[rd] << ","  << (int) imm ;
 }
 
-op sub_e(0b111[3]:rs[4]:0b01100[5]:rd[4]:><:imm16[16])
+op sub_e(0b111[3]:rs[4]:0b01100[5]:rd[4]:><:sext<32>imm16[16])
 
 sub_e.execute = {
 
 	
 	uint32_t op1= cpu->GetGPR(rs);                  // rs
-	uint32_t op2= SignExtend((uint32_t)imm16,16);   // 32 bits extension of imm16
-	
+	//uint32_t op2= SignExtend((uint32_t)imm16,16);   // 32 bits extension of imm16
+	uint32_t op2=imm16;
 	uint32_t result;
  	uint8_t overflow;
 	uint8_t sign;
@@ -837,7 +837,7 @@ sub_e.execute = {
 
 sub_e.disasm={
 
-	os << "sub\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << (int) imm16;
+	os << "sub\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << imm16;
 }
 
 //SUB_CON4 - conditional subtract                                          ?? signed sub without carry case  Z is set

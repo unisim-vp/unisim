@@ -67,7 +67,35 @@ static const char *COND[16] = {
 	"eq",  "ne", "cc/hs", "cs/lo", "ge", "lt", "mi", "pl","ls","gt","le","hi","vs","vc","qs","al" 
 };
 
+static const uint8_t REG_LIST8_R0_R3 = 1;
+static const uint8_t REG_LIST8_R4_R7 = 2;
+static const uint8_t REG_LIST8_R8_R9 = 4;
+static const uint8_t REG_LIST8_R10 = 8;
+static const uint8_t REG_LIST8_R11 = 16;
+static const uint8_t REG_LIST8_R12 = 32;
+static const uint8_t REG_LIST8_LR = 64;
+static const uint8_t REG_LIST8_R12_LR = REG_LIST8_R12 | REG_LIST8_LR;
+static const uint8_t REG_LIST8_PC = 128;
 
+static const uint16_t REG_LIST16_R0 = 1;
+static const uint16_t REG_LIST16_R1 = 2;
+static const uint16_t REG_LIST16_R2 = 4;
+static const uint16_t REG_LIST16_R3 = 8;
+static const uint16_t REG_LIST16_R4 = 16;
+static const uint16_t REG_LIST16_R5 = 32;
+static const uint16_t REG_LIST16_R6 = 64;
+static const uint16_t REG_LIST16_R7 = 128;
+static const uint16_t REG_LIST16_R8 = 256;
+static const uint16_t REG_LIST16_R9 = 512;
+static const uint16_t REG_LIST16_R10 = 1024;
+static const uint16_t REG_LIST16_R11 = 2048;
+static const uint16_t REG_LIST16_R12 = 4096;
+static const uint16_t REG_LIST16_LR = 8192;
+static const uint16_t REG_LIST16_SP = 16384;
+static const uint16_t REG_LIST16_PC = 32768;
+
+
+static const unsigned int REG_PC = 15;
 }
 
 action {bool} execute({typename CONFIG::STATE *} {cpu}) {
