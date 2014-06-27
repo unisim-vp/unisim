@@ -781,7 +781,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	{
 		if((this->*t2h_syscall_table[syscall_num])() == unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR)
 		{
-			logger << DebugWarning << "System call #" << syscall_num << " failure" << EndDebugWarning;
+			logger << DebugWarning << "System call #" << syscall_num << " (" << GetSyscallFriendlyName(syscall_num) << ")" << EndDebugWarning;
 			return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
 		}
 	}
@@ -811,17 +811,18 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	int32_t target_errno = 0;
 
 	addr = GetSystemCallParam(0);
+	flags = GetSystemCallParam(1);
+	mode = GetSystemCallParam(2);
+	
 	if(!StringLength(addr, pathnamelen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+	
 	pathname = (char *) malloc(pathnamelen + 1);
 	
-	if(memory_injection_import->InjectReadMemory(addr, pathname, pathnamelen + 1))
+	if(!memory_injection_import->InjectReadMemory(addr, pathname, pathnamelen + 1))
 	{
 		free(pathname);
 		return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
 	}
-	
-	flags = GetSystemCallParam(1);
-	mode = GetSystemCallParam(2);
 	
 	if(((strncmp(pathname, "/dev", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))) ||
 		((strncmp(pathname, "/proc", 5) == 0) && ((pathname[5] == 0) || (pathname[5] == '/'))) ||
@@ -1117,9 +1118,9 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	int32_t target_errno = 0;
 
 	oldpathaddr = GetSystemCallParam(0);
-	if(!StringLength(oldpathaddr, oldpathlen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
-	
 	newpathaddr = GetSystemCallParam(1);
+	
+	if(!StringLength(oldpathaddr, oldpathlen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
 	if(!StringLength(newpathaddr, newpathlen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
 	
 	oldpath = (char *) malloc(oldpathlen + 1);
