@@ -775,13 +775,13 @@ sub_c.disasm={
 }
 
 op sub_d(0b111[3]:imm_20_17[4]:0b0001[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
-sub_d.var imm :{uint32_t}= {(imm_20_17 << 17)|(imm_16 <<16 )|imm_15_0}
+sub_d.var imm :{int32_t}= {SignExtend((uint32_t)(imm_20_17 << 17)|(imm_16 <<16 )|imm_15_0,21)}
 
 sub_d.execute = {
 
 	
 	uint32_t op1= cpu->GetGPR(rd);     // rd
-	uint32_t op2= SignExtend(imm,21);  // 32 bits extension of imm21
+	uint32_t op2= imm;                 // 32 bits extension of imm21
 	
 	uint32_t result;
  	uint8_t overflow;

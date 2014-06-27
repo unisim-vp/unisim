@@ -4,15 +4,15 @@ op divs(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11000000[8]:rd[4])
 
 divs.execute={
 	
-	int32_t x = cpu->GetGPR(rx);
-	int32_t y = cpu->GetGPR(ry);
+	int32_t x = (int32_t)cpu->GetGPR(rx);
+	int32_t y = (int32_t)cpu->GetGPR(ry);
 	if(y==0) return false;
 	
-	int32_t result = x / y;
-	int32_t remainder = x % y;
+	uint32_t result = x / y;
+	uint32_t remainder = x % y;
 
-	cpu->SetGPR(rd,(uint32_t)result);
-	cpu->SetGPR(rd+1,(uint32_t)remainder); 	
+	cpu->SetGPR(rd,result);
+	cpu->SetGPR(rd+1,remainder); 	
 
 	return true;
 }
@@ -82,11 +82,11 @@ macs_d.execute={
  	int32_t d= cpu->GetGPR(rd);
 	int32_t d1= cpu->GetGPR(rd+1);
 	int64_t acc = ((int64_t)d1 << 32) | (int64_t)d;
-	int64_t prod = x * y;
+	int64_t prod = (int64_t)x *(int64_t) y;
 	int64_t res = prod + acc; 
 
-	cpu-> SetGPR(rd,  (uint32_t)(res & 0x00000000FFFFFFFF));
-	cpu-> SetGPR(rd+1,(uint32_t)(res & 0xFFFFFFFF00000000));
+	cpu-> SetGPR(rd,res);
+	cpu-> SetGPR(rd+1,res>>32);
 	return true;
 }
 
@@ -107,11 +107,11 @@ macu_d.execute={
  	uint32_t d= cpu->GetGPR(rd);
 	uint32_t d1= cpu->GetGPR(rd+1);
 	uint64_t acc = ((uint64_t)d1 << 32) | (uint64_t)d;
-	uint64_t prod = x * y;
+	uint64_t prod = (uint64_t)x *(uint64_t) y;
 	uint64_t res = prod + acc; 
 
-	cpu-> SetGPR(rd,  (uint32_t)(res &  0x00000000FFFFFFFF));
-	cpu-> SetGPR(rd+1,(uint32_t)((res & 0xFFFFFFFF00000000 )>>32 ));
+	cpu-> SetGPR(rd,res );
+	cpu-> SetGPR(rd+1,res >>32 );
 	return true;
 }
 
@@ -165,14 +165,14 @@ mul_b.disasm={
 
 
 
-op mul_c(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0000[4]:imm8[8])
+op mul_c(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0000[4]:sext<32>imm8[8])
 
 mul_c.execute={
 
 	uint32_t s = cpu->GetGPR(rs);
 	
 
-	uint32_t result = s * SignExtend((uint32_t)imm8,8);
+	uint32_t result = s * imm8;
 
 	cpu->SetGPR(rd,(uint32_t)result);
 
@@ -182,7 +182,7 @@ mul_c.execute={
 
 mul_c.disasm={
 
-	os << "mul\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << std::hex << (int)imm8;
+	os << "mul\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << std::hex << imm8;
 }
 
 //multiply signed
@@ -193,10 +193,10 @@ muls_d.execute={
 	
 	int32_t x = cpu->GetGPR(rx);
 	int32_t y = cpu->GetGPR(ry);
-	int64_t res = x * y;
+	int64_t res =(int64_t)x *(int64_t) y;
 	
-	cpu-> SetGPR(rd, (uint32_t)(res &  0x00000000FFFFFFFF));
-	cpu-> SetGPR(rd+1,(uint32_t)((res & 0xFFFFFFFF00000000 )>>32 ));
+	cpu-> SetGPR(rd,res);
+	cpu-> SetGPR(rd+1,res>>32);
 
 	
 	return true;
@@ -217,10 +217,10 @@ mulu_d.execute={
 	
 	uint32_t x = cpu->GetGPR(rx);
 	uint32_t y = cpu->GetGPR(ry);
-	uint64_t res = x * y;
+	uint64_t res = (uint64_t)x *(uint64_t) y;
 	
-	cpu-> SetGPR(rd, (uint32_t)(res &  0x00000000FFFFFFFF));
-	cpu-> SetGPR(rd+1,(uint32_t)((res & 0xFFFFFFFF00000000 )>>32 ));
+	cpu-> SetGPR(rd, res);
+	cpu-> SetGPR(rd+1,res >>32 );
 
 	
 	return true;

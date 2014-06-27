@@ -94,9 +94,42 @@ static const uint16_t REG_LIST16_LR = 8192;
 static const uint16_t REG_LIST16_SP = 16384;
 static const uint16_t REG_LIST16_PC = 32768;
 
-
+static const unsigned int REG_R0 = 0;
+static const unsigned int REG_R1 = 1;
+static const unsigned int REG_R2 = 2;
+static const unsigned int REG_R3 = 3;
+static const unsigned int REG_R4 = 4;
+static const unsigned int REG_R5 = 5;
+static const unsigned int REG_R6 = 6;
+static const unsigned int REG_R7 = 7;
+static const unsigned int REG_R8 = 8;
+static const unsigned int REG_R9 = 9;
+static const unsigned int REG_R10 = 10;
+static const unsigned int REG_R11 = 11;
+static const unsigned int REG_R12 = 12;
+static const unsigned int REG_SP = 13;
+static const unsigned int REG_LR = 14;
 static const unsigned int REG_PC = 15;
+
+static const unsigned int COND_EQ = 0;
+static const unsigned int COND_NE = 1;
+static const unsigned int COND_CC_HS=2;
+static const unsigned int COND_CS_LO=3;
+static const unsigned int COND_GE=4;
+static const unsigned int COND_LT=5;
+static const unsigned int COND_MI=6;
+static const unsigned int COND_PL=7;
+static const unsigned int COND_LS=8;
+static const unsigned int COND_GT=9;
+static const unsigned int COND_LE=10;
+static const unsigned int COND_HI=11;
+static const unsigned int COND_VS=12;
+static const unsigned int COND_VC=13;
+static const unsigned int COND_QS=14;
+static const unsigned int COND_AL=15;
 }
+
+
 
 action {bool} execute({typename CONFIG::STATE *} {cpu}) {
 	return false;

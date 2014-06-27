@@ -10,28 +10,28 @@ op br_cond3(0b110[3]:0b0[1]:sext<32>disp[8]:0b0[1]:cond3[3])
 
 br_cond3.execute={
 
-	uint32_t result;
-	uint32_t npc = Operation<CONFIG>::GetAddr();
+	typename CONFIG::address_t addr;
+	typename CONFIG::address_t npc = Operation<CONFIG>::GetAddr();
 
 	if(cpu->EvaluateCond(cond3))
 	{
-		result= npc+ (disp << 1);
+		addr= npc+ (disp << 1);
 	}
 	else
-		result = npc+2;        // a priori effectué dans la methode StepOneInstruction
+		addr = npc+2;        // a priori effectué dans la methode StepOneInstruction
         
-	cpu->SetGPR(15,result);
+	cpu->SetGPR(REG_PC,addr);
 
 	return true;
 }
 br_cond3.disasm={
 
 	os << "br"<< COND[cond3]<<"\t0x" << std::hex << (int) disp ;
-	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		if(cpu->EvaluateCond(cond3))
 		{
-			uint32_t addr=Operation<CONFIG>::GetAddr()+(disp <<1) ;
+			typename CONFIG::address_t addr=Operation<CONFIG>::GetAddr()+(disp <<1) ;
 			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 		}	
 	}
@@ -42,27 +42,35 @@ br_cond3.disasm={
 
 op br_cond4(0b111[3]:disp_20_17[4]:0b0100[4]:disp_16[1]:cond4[4]:><:disp_15_0[16])
 
-br_cond4.var disp : {uint32_t}={(disp_20_17<<17)|(disp_16<<16)|disp_15_0}
+br_cond4.var disp : {uint32_t} = {(disp_20_17<<17)|(disp_16<<16)|disp_15_0}
 
 br_cond4.execute={
 
-	uint32_t result;
-	uint32_t npc=Operation<CONFIG>::GetAddr();
+	typename CONFIG::address_t addr;
+	typename CONFIG::address_t npc=Operation<CONFIG>::GetAddr();
 
 	if(cpu->EvaluateCond(cond4))
 	{
-		result = npc+ (SignExtend( (uint32_t)disp, 21) << 1);
+		addr = npc+ (SignExtend(disp, 21) << 1);
 	}
 	else
-		result = npc+4;
+		addr = npc+4;
         
-	cpu->SetGPR(15,result);
+	cpu->SetGPR(REG_PC,addr);
 
 	return true;
 }
 br_cond4.disasm={
 
 	os << "br"<< COND[cond4]<< "\t0x" << std::hex << (int)disp;
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		if(cpu->EvaluateCond(cond4))
+		{
+			typename CONFIG::address_t addr=Operation<CONFIG>::GetAddr()+(SignExtend(disp, 21) << 1) ;
+			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+		}	
+	}
 }
 
 // RJMP - relative jump
@@ -71,14 +79,12 @@ op rjmp(0b110[3]:0b0[1]:disp_7_0[8]:0b1[1]:0b0[1]:disp_9_8[2])
 
 rjmp.var disp :{uint16_t}={(disp_9_8<<8)|disp_7_0}
 
-rjmp.var rjmp_addr : {uint32_t}={Operation<CONFIG>::GetAddr()+(SignExtend((uint32_t)disp,10)<<1)}
+rjmp.var rjmp_addr : {typename CONFIG::address_t}={Operation<CONFIG>::GetAddr()+(SignExtend((uint32_t)disp,10)<<1)}
 
 rjmp.execute={
 
 
-	uint32_t result=rjmp_addr;
-	
-	cpu->SetGPR(15,result);
+	cpu->SetGPR(REG_PC,rjmp_addr);
 
 	return true;
 }
@@ -103,10 +109,10 @@ op acall(0b1101[4]:disp8[8]:0b000[3]:0b0[1])
 
 acall.execute={
 	
-	uint32_t addr = cpu->GetAcba()+ ((uint32_t)disp8 << 2);
+	typename CONFIG::address_t addr = cpu->GetAcba()+ ((uint32_t)disp8 << 2);
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
 	
-       	return cpu->IntLoadWord(15,addr);
+       	return cpu->IntLoadWord(REG_PC,addr);
 }
 
 acall.disasm={
@@ -120,10 +126,11 @@ acall.disasm={
 op icall(0b010[3]:0b1110[4]:0b10001[5]:rd[4])
 
 icall.execute={
+	
 
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
 
-	cpu->SetGPR(15,cpu->GetGPR(rd));
+	cpu->SetGPR(REG_PC,cpu->GetGPR(rd));
 
 	return true;
 }
@@ -139,10 +146,10 @@ op mcall(0b111[3]:0b100000001[9]:rp[4]:><:sext<32> disp16[16])
 
 mcall.execute={
 
-	uint32_t addr = (cpu->GetGPR(rp) & 0xFFFFFFFC) + (disp16 << 2);
+	typename CONFIG::address_t addr = (cpu->GetGPR(rp) & 0xFFFFFFFC) + (disp16 << 2);
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+4);
 
-	return cpu->IntLoadWord(15,addr);
+	return cpu->IntLoadWord(REG_PC,addr);
 }
 
 mcall.disasm={
@@ -162,7 +169,7 @@ rcall_a.execute={
 
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
 
-	cpu->SetGPR( 15, rcall_target_addr);
+	cpu->SetGPR( REG_PC, rcall_target_addr);
 
 	return true;
 }
@@ -171,7 +178,7 @@ rcall_a.disasm={
 
 	os << "rcall\t" << std::hex << "0x"<<Operation<CONFIG>::GetAddr() << std::dec <<"[" << disp << "]";
 
-	if(cpu->GetGPR(15) == Operation<CONFIG>::GetAddr())
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		os << " <" << cpu->GetFunctionFriendlyName(rcall_target_addr) << ">";
 	}
@@ -185,7 +192,7 @@ rcall_b.execute={
 
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+4);
 
-	cpu->SetGPR(15,Operation<CONFIG>::GetAddr() + (SignExtend((uint32_t)disp,21) << 1));
+	cpu->SetGPR(REG_PC,Operation<CONFIG>::GetAddr() + (SignExtend((uint32_t)disp,21) << 1));
 
 	return true;
 }
@@ -206,19 +213,19 @@ scall.execute={
 	{
 		if(cpu->GetMicroArchitecture()=="AVR32A")
 		{
-			cpu->SetGPR(15,cpu->GetEvba()+0x100);
+			cpu->SetGPR(REG_PC,cpu->GetEvba()+0x100);
 			cpu->SetSR_M(0b001);
 		}
 		else
 		{
-			cpu->SetGPR(15,cpu->GetEvba()+0x100);
+			cpu->SetGPR(REG_PC,cpu->GetEvba()+0x100);
 			cpu->SetSR_M(0b001);
 		}
 	}
 	else
 	{
 		cpu->SetLR(Operation<CONFIG>::GetAddr() + 2);
-		cpu->SetGPR(15,cpu->GetEvba()+0x100);
+		cpu->SetGPR(REG_PC,cpu->GetEvba()+0x100);
 	}
 	return true;
 }
@@ -239,11 +246,11 @@ sscall.execute={
 	cpu->SetSS_RSR(cpu->GetSR());
 	if(cpu->GetMicroArchitecture()=="AVR32A")
 	{
-		cpu->SetGPR(15,0x80000004);
+		cpu->SetGPR(REG_PC,0x80000004);
 	}
 	else
 	{
-		cpu->SetGPR(15,0xA0000004);
+		cpu->SetGPR(REG_PC,0xA0000004);
 	}
 	cpu->SetSR_SS(1);
 	cpu->SetSR_GM(1);
@@ -271,22 +278,22 @@ rete.execute={
 		uint32_t sp=cpu->GetSP_sys();
 		if(!cpu->LoadSR(sp))return false;
 		sp+=4;
-		cpu->SetGPR(15,sp);
+		cpu->SetGPR(REG_PC,sp);
 		sp+=4;
 
 		if(cpu->GetSR_M()==(0b010 |0b011|0b100|0b101))
 		{
-			if(!cpu->IntLoadWord(14,sp))return false;    
+			if(!cpu->IntLoadWord(REG_LR,sp))return false;    
 			sp+=4;
-			if(!cpu->IntLoadWord(12,sp))return false;
+			if(!cpu->IntLoadWord(REG_R12,sp))return false;
 			sp+=4;
-			if(!cpu->IntLoadWord(11,sp))return false;
+			if(!cpu->IntLoadWord(REG_R11,sp))return false;
 			sp+=4;
-			if(!cpu->IntLoadWord(10,sp))return false;
+			if(!cpu->IntLoadWord(REG_R10,sp))return false;
 			sp+=4;
-			if(!cpu->IntLoadWord(9,sp))return false;
+			if(!cpu->IntLoadWord(REG_R9,sp))return false;
 			sp+=4;
-			if(!cpu->IntLoadWord(8,sp))return false;
+			if(!cpu->IntLoadWord(REG_R8,sp))return false;
 			sp+=4;
 
 		}
@@ -308,7 +315,7 @@ op retd(0b1101011[7]:0b00010[5]:0b0011[4])
 retd.execute={
 
 	if(!cpu->LoadSR(cpu->GetRSR_DBG()))return false;
-	cpu->SetGPR(15,cpu->GetRAR_DBG());
+	cpu->SetGPR(REG_PC,cpu->GetRAR_DBG());
 	
 	return true;
 }
@@ -331,13 +338,13 @@ rets.execute={
 			uint32_t sp = cpu->GetSP_sys();
 			if(!cpu->LoadSR(sp))return false;
 			sp+=4;
-			if(!cpu->IntLoadWord(15,sp))return false;
+			if(!cpu->IntLoadWord(REG_PC,sp))return false;
 			sp+=4;
 			cpu->SetSR(sp);
 		}
 		// others architectures
 	}
-	else cpu->SetGPR(15,cpu->GetGPR(14));
+	else cpu->SetGPR(REG_PC,cpu->GetGPR(REG_LR));
 	
 	return true;
 }
@@ -354,7 +361,7 @@ retss.execute={
 	else
 	{
 		if(!cpu->LoadSR(cpu->GetSS_RSR()))return false;
-		cpu->SetGPR(15,cpu->GetSS_RAR());
+		cpu->SetGPR(REG_PC,cpu->GetSS_RAR());
 	}
 
 	return true;
@@ -374,18 +381,18 @@ ret_cond4.execute={
 	{
 		uint32_t result;	
 	
-		if((rs!=15) && (rs!=14) && (rs!=13)) { result = cpu->GetGPR(rs); }
-		else if (rs==13) {result=-1;}
-		else if (rs==14) {result=0;}	
+		if((rs!=REG_PC) && (rs!=REG_LR) && (rs!=REG_SP)) { result = cpu->GetGPR(rs); }
+		else if (rs==REG_LR) {result=-1;}
+		else if (rs==REG_SP) {result=0;}	
 		else { result=1;}
-		cpu->SetGPR(12,result);
+		cpu->SetGPR(REG_R12,result);
 
 		cpu->SetSR_V(0);                     // set flags
 		cpu->SetSR_N((int32_t)result<0);
 		cpu->SetSR_Z(result==0);
 		cpu->SetSR_C(0);
 
-		cpu->SetGPR(15,cpu->GetGPR(14));
+		cpu->SetGPR(REG_PC,cpu->GetGPR(REG_LR));
 	}
 
 	return true;
@@ -393,6 +400,10 @@ ret_cond4.execute={
 
 ret_cond4.disasm={
 
-	os << "rete" << COND[cond4] << "\t" << REG_NAME[rs];
+	os << "ret" << COND[cond4] << "\t";
+	if((rs!=REG_PC) && (rs!=REG_LR) && (rs!=REG_SP)) { os << REG_NAME[rs]; }
+		else if (rs==REG_LR) {os << "-1";}
+		else if (rs==REG_SP) {os << "0";}	
+		else { os << "1";}
 }
 

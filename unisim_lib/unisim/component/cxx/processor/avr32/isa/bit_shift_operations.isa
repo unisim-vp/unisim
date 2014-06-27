@@ -619,7 +619,7 @@ lsr_b.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftRight(d,(unsigned int)sa,bit_out);
+	result=ShiftRight(d,sa,bit_out);
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 

@@ -16,7 +16,7 @@ addhh_w.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 	uint32_t op1,op2;
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):  // select halfword of rx
+	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):  // select halfword of rx and sign extend
 	SignExtend(x & 0x0000FFFF,16);
 	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):  // select halfword of ry
 	SignExtend(y & 0x0000FFFF,16);
@@ -24,18 +24,18 @@ addhh_w.execute={
  
 	uint8_t overflow;
 	uint8_t sign;
-	uint8_t carry_in=0;                                    
+	uint8_t carry_in=0;                                             // without carry                         
 	uint8_t carry_out;
 	
-	SignedAdd32(result,carry_out, overflow,sign,op1,op2,carry_in); // add in word 
+	SignedAdd32(result,carry_out, overflow,sign,op1,op2,carry_in); // add 2 words 
 
-	cpu->SetSR_V(overflow);
+	cpu->SetSR_V(overflow);                                        // set flags
 	cpu->SetSR_N(sign);
 	cpu->SetSR_Z(result==0);
 	cpu->SetSR_C(carry_out);
 
 	
-	cpu->SetGPR(rd,result);
+	cpu->SetGPR(rd,result);                                       // set result
 
 	return true;
 }
@@ -58,18 +58,18 @@ machh_d.execute={
 	uint32_t y=cpu->GetGPR(ry);
 	uint32_t d=cpu->GetGPR(rd);
 	uint32_t d1=cpu->GetGPR(rd+1);
-	uint64_t op1,op2;
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):  // select halfword of rx
-	SignExtend(x & 0x0000FFFF,16);
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):  // select halfword of ry
-	SignExtend(y & 0x0000FFFF,16);
-	uint64_t result;
+	
+	int32_t op1= (x==0) ? SignExtend(x >>16,16)  // select halfword of rx
+	                    : SignExtend(x,16);
+			  
+	int32_t op2= (y==0) ? SignExtend(y >>16,16)  // select halfword of ry
+	                    : SignExtend(y,16);
+			  
+	uint64_t acc = ((uint64_t)(d1 << 16)) | ((uint64_t) d >> 16); // Rd+1[31:0] || Rd[31:16]
+	uint64_t result = (uint64_t)(op1 * op2) + acc;
 
-	uint64_t acc = ((uint64_t)d1 << 32) | ((uint64_t)(d & 0xFFFF0000));
-	result = (((op1 * op2) & 0x00000000FFFFFFFF) + acc)<<16;
-
-	cpu->SetGPR(rd,(uint32_t)(result & 0x00000000FFFFFFFF));          // write back result in 2 registers
-	cpu->SetGPR(rd+1,(uint32_t)((result & 0xFFFFFFFF00000000)>>32));
+	cpu->SetGPR(rd,result << 16);          // Rd[31:16]<-result[15:0], Rd[15:0]<-0  write back result in 2 registers
+	cpu->SetGPR(rd+1,result >> 16);        // Rd+1[31:0]<-result[47:16]
  
 	return true;
 }
@@ -451,12 +451,12 @@ satsub_w_a.disasm={
 
 //SATSUB_W_B                                  
 
-op satsub_w_b(0b111[3]:rs[4]:0b01101[5]:rd[4]:><:imm16[16])
+op satsub_w_b(0b111[3]:rs[4]:0b01101[5]:rd[4]:><:sext<32>imm16[16])
 
 satsub_w_b.execute={
 
 	uint32_t op1 = cpu->GetGPR(rs);
-	uint32_t op2 = SignExtend((uint32_t)imm16,16); 
+	uint32_t op2 = imm16; 
 	uint32_t temp;
 	
 	uint8_t q;

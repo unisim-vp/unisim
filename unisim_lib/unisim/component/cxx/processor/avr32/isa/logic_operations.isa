@@ -225,7 +225,7 @@ eor_a.execute={
 	uint32_t d=cpu->GetGPR(rd);
 	uint32_t s=cpu->GetGPR(rs);
 
-	uint32_t result= (d & ~s) | (~d & s);
+	uint32_t result= d^s;
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
 
@@ -249,7 +249,7 @@ eor_b.execute={
 	uint32_t y=cpu->GetGPR(ry);
 
 	//uint32_t result=(x & ~ShiftLeft(y,(unsigned int)sa5)) | (~x & ShiftLeft(y, (unsigned int)sa5));
-	uint32_t result= (x & ~(y << sa5)) | (~x & (y << sa5)); 	
+	uint32_t result= x^(y << sa5); 	
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -274,7 +274,7 @@ eor_c.execute={
 	uint32_t y=cpu->GetGPR(ry);
 
 	//uint32_t result=(x & ShiftRight(y,(unsigned int)sa5)) | (~x & ShiftRight(y, (unsigned int)sa5));
-	uint32_t result= (x & ~(y >> sa5)) | (~x & (y >> sa5));  
+	uint32_t result= x ^(y >> sa5);  
 	uint8_t neg=(int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -304,7 +304,7 @@ eor_cond4.execute={
    		uint32_t x=cpu->GetGPR(rx);
 		uint32_t y=cpu->GetGPR(ry);
 		
-		uint32_t result= (x & ~y) | (~x & y);
+		uint32_t result= x^y;
 
 		cpu->SetGPR(rd,result);
 
@@ -328,7 +328,7 @@ eorh.execute={
 
 	uint32_t d=cpu->GetGPR(rd);
 
-	uint32_t d_h= ((d & 0xFFFF0000) & ~((uint32_t)imm16 << 16) ) | ( ~(d & 0xFFFF0000) & ((uint32_t)imm16 << 16));
+	uint32_t d_h= (d & 0xFFFF0000) ^ ((uint32_t)imm16 << 16) ;
 	uint32_t result= d_h | (d & 0x0000FFFF);     
 	uint8_t neg=(int32_t)result <0;
 	uint8_t zero=result==0;
@@ -353,7 +353,7 @@ eorl.execute={ 							// !!!  IMPLEMENTATION A VERIFIER
 
 	uint32_t d=cpu->GetGPR(rd);
 
-	uint32_t d_l= ((d & 0x0000FFFF) & ~((uint32_t)imm16) ) | ( ~(d & 0x0000FFFF) & (uint32_t)imm16 );
+	uint32_t d_l= (d & 0x0000FFFF) ^ ((uint32_t)imm16) ;
 	
 
 	uint32_t result= (d & 0xFFFF0000) | d_l;         
@@ -406,7 +406,7 @@ or_b.execute={
 	uint32_t y=cpu->GetGPR(ry);
 
 	//uint32_t result=x | ShiftLeft(y,(unsigned int)sa5);
-	uint32_t result = x | (y >> sa5);
+	uint32_t result = x | (y << sa5);
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -430,7 +430,7 @@ or_c.execute={
 	uint32_t y=cpu->GetGPR(ry);
 
 	//uint32_t result=x | ShiftRight(y,(unsigned int)sa5);
-	uint32_t result = x | (y << sa5); 
+	uint32_t result = x | (y >> sa5); 
 	uint8_t neg=(int32_t)result < 0;
 	uint8_t zero= result==0;
 

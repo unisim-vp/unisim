@@ -589,22 +589,22 @@ bool CPU<CONFIG>::EvaluateCond(uint8_t cond)
 {
 	switch (cond)	
 	{
-		case 0: return GetSR_Z();
-		case 1: return !GetSR_Z();
-		case 2: return !GetSR_C();
-		case 3: return GetSR_C();
-		case 4: return GetSR_N()==GetSR_V();
-		case 5: return (GetSR_N() && !GetSR_V()) || ( !GetSR_N() && GetSR_V());
-		case 6: return GetSR_N();
-		case 7: return !GetSR_N();
-		case 8: return GetSR_C() || GetSR_Z();
-		case 9: return !GetSR_Z() && (GetSR_N()==GetSR_V());
-		case 10:return !GetSR_Z() && ((GetSR_N() && !GetSR_V()) || ( !GetSR_N() && GetSR_V()));
-		case 11:return !GetSR_C() && !GetSR_Z();
-		case 12:return GetSR_V();
-		case 13:return !GetSR_V();
-		case 14:return GetSR_Q();
-		case 15:return true;
+		case COND_EQ: return GetSR_Z();					// =
+		case COND_NE: return !GetSR_Z();					// !=
+		case COND_CC_HS: return !GetSR_C();					// >= (unsigned)
+		case COND_CS_LO: return GetSR_C();					// <  (unsigned)
+		case COND_GE: return GetSR_N()==GetSR_V();			// >= (signed)
+		case COND_LT: return GetSR_N()^GetSR_V();				// < (signed)
+		case COND_MI: return GetSR_N();					// minus/negative (signed)
+		case COND_PL: return !GetSR_N();					// plus/positive  (signed)
+		case COND_LS: return GetSR_C() || GetSR_Z();			// <= (unsigned)
+		case COND_GT: return !GetSR_Z() && (GetSR_N()==GetSR_V()); 	// > (signed)
+		case COND_LE:return !GetSR_Z() || (GetSR_N()^GetSR_V());	// <= (signed)
+		case COND_HI:return !GetSR_C() && !GetSR_Z();			// > (unsigned)
+		case COND_VS:return GetSR_V();					// overflow
+		case COND_VC:return !GetSR_V();					// no overflow
+		case COND_QS:return GetSR_Q();					// saturation
+		case COND_AL:return true;						// always
 	}
 
 
