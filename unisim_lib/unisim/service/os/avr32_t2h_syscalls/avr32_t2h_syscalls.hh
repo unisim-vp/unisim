@@ -44,6 +44,7 @@
 #include <errno.h>
 #include <fstream>
 #include <sstream>
+#include <queue>
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
@@ -302,6 +303,10 @@ private:
 	unisim::util::debug::Register *reg_return_status;
 	unisim::util::debug::Register *reg_errno;
 
+	// target to host file descriptors
+	std::map<int32_t, int> target_to_host_fildes;
+	std::queue<int32_t> target_fildes_free_list;
+	
 	// system call table
 	unisim::service::interfaces::AVR32_T2H_Syscalls::Status (unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls<MEMORY_ADDR>::*t2h_syscall_table[NUM_SYSCALLS])();
 
@@ -341,6 +346,11 @@ private:
 	void SetSystemCallStatus(int32_t ret);
 	void SetErrno(int32_t target_errno);
 	int32_t Host2TargetErrno(int host_errno);
+	int Target2HostFileDescriptor(int32_t fd);
+	int32_t AllocateFileDescriptor();
+	void FreeFileDescriptor(int32_t fd);
+	void MapTargetToHostFileDescriptor(int32_t target_fd, int host_fd);
+	void UnmapTargetToHostFileDescriptor(int32_t target_fd);
 	
 	unisim::service::interfaces::AVR32_T2H_Syscalls::Status t2h_syscall_open();
 	unisim::service::interfaces::AVR32_T2H_Syscalls::Status t2h_syscall_close();

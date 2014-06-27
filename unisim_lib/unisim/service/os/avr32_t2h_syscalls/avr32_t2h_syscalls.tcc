@@ -327,6 +327,10 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 	MEMORY_ADDR entry_point = blob->GetEntryPoint();
 	reg_pc->SetValue(&entry_point);
 
+	MapTargetToHostFileDescriptor(0, 0); // map stdin
+	MapTargetToHostFileDescriptor(1, 1); // map stdout
+	MapTargetToHostFileDescriptor(2, 2); // map stderr
+
 	return true;
 }
 
@@ -505,6 +509,60 @@ int32_t AVR32_T2H_Syscalls<MEMORY_ADDR>::Host2TargetErrno(int host_errno)
 	logger << DebugWarning << "Don't how to convert host errno #" << errno << " to target...Silently setting errno to EINVAL." << EndDebugWarning;
 	
 	return T2H_EINVAL;
+}
+
+template <class MEMORY_ADDR>
+int AVR32_T2H_Syscalls<MEMORY_ADDR>::Target2HostFileDescriptor(int32_t fd)
+{
+	// Return an error if file descriptor does not exist
+	typename std::map<int32_t, int>::iterator iter = target_to_host_fildes.find(fd);
+	if(iter == target_to_host_fildes.end()) return -1;
+
+	// Translate the target file descriptor to an host file descriptor
+	return (*iter).second;
+}
+
+template <class MEMORY_ADDR>
+int32_t AVR32_T2H_Syscalls<MEMORY_ADDR>::AllocateFileDescriptor()
+{
+	if(!target_fildes_free_list.empty())
+	{
+		int32_t fildes = target_fildes_free_list.front();
+		target_fildes_free_list.pop();
+		return fildes;
+	}
+	
+	std::map<int32_t, int>::reverse_iterator iter = target_to_host_fildes.rbegin();
+	
+	if(iter != target_to_host_fildes.rend())
+	{
+		return (*iter).first + 1;
+	}
+	
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+void AVR32_T2H_Syscalls<MEMORY_ADDR>::FreeFileDescriptor(int32_t fd)
+{
+	target_fildes_free_list.push(fd);
+}
+
+template <class MEMORY_ADDR>
+void AVR32_T2H_Syscalls<MEMORY_ADDR>::MapTargetToHostFileDescriptor(int32_t target_fd, int host_fd)
+{
+	target_to_host_fildes.insert(std::pair<int32_t, int>(target_fd, host_fd));
+}
+
+template <class MEMORY_ADDR>
+void AVR32_T2H_Syscalls<MEMORY_ADDR>::UnmapTargetToHostFileDescriptor(int32_t target_fd)
+{
+	std::map<int32_t, int>::iterator iter = target_to_host_fildes.find(target_fd);
+	
+	if(iter != target_to_host_fildes.end())
+	{
+		target_to_host_fildes.erase(iter);
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -750,6 +808,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	int flags;
 	int ret;
 	mode_t mode;
+	int32_t target_errno = 0;
 
 	addr = GetSystemCallParam(0);
 	if(!StringLength(addr, pathnamelen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
@@ -763,13 +822,15 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	
 	flags = GetSystemCallParam(1);
 	mode = GetSystemCallParam(2);
+	
 	if(((strncmp(pathname, "/dev", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))) ||
 		((strncmp(pathname, "/proc", 5) == 0) && ((pathname[5] == 0) || (pathname[5] == '/'))) ||
 		((strncmp(pathname, "/sys", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))) ||
 		((strncmp(pathname, "/var", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))))
 	{
 		// deny access to /dev, /proc, /sys, /var
-		ret = -EACCES;
+		target_errno = T2H_EACCES;
+		ret = -1;
 	}
 	else
 	{
@@ -794,6 +855,21 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 #endif
 		ret = open(pathname, host_flags, host_mode);
 	}
+	
+	int host_fd = ret;
+	int32_t target_fd = -1;
+	
+	if(ret == -1)
+	{
+		target_errno = Host2TargetErrno(errno);
+	}
+	else
+	{
+		target_fd = AllocateFileDescriptor();
+		// keep relation between the target file descriptor and the host file descriptor
+		MapTargetToHostFileDescriptor(target_fd, host_fd);
+	}
+	
 	if(unlikely(verbose_syscalls))
 	{
 		logger << DebugInfo
@@ -803,8 +879,8 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	}
 
 	free(pathname);
-	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	SetSystemCallStatus(target_fd);
+	if(target_fd == -1) SetErrno(errno);
 	
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
@@ -812,156 +888,218 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 template <class MEMORY_ADDR>
 unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMORY_ADDR>::t2h_syscall_close()
 {
-	int fd;
+	int host_fd;
+	int32_t target_fd;
 	int ret;
-
-	fd = GetSystemCallParam(0);
-
-	switch(fd)
+	int32_t target_errno = 0;
+	
+	target_fd = GetSystemCallParam(0);
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
 	{
-		case 0:
-		case 1:
-		case 2:
-			ret = 0;
-			logger << DebugWarning << "attempt to close ";
-			switch(fd)
-			{
-				case 0: logger << "standard input"; break;
-				case 1: logger << "standard output"; break;
-				case 2: logger << "standard error output"; break;
-			}
-			logger << EndDebugWarning;
-			break;
-		default:
-			ret = close(fd);
-			break;
+		target_errno = T2H_EBADF;
+		ret = -1;
 	}
+	else
+	{
+		switch(host_fd)
+		{
+			case 0:
+			case 1:
+			case 2:
+				UnmapTargetToHostFileDescriptor(target_fd);
+				FreeFileDescriptor(target_fd);
+				ret = 0;
+				break;
+			default:
+				ret = close(host_fd);
+				if(ret == 0)
+				{
+					UnmapTargetToHostFileDescriptor(target_fd);
+					FreeFileDescriptor(target_fd);
+				}
+		}
+		
+		if(ret == -1) target_errno = Host2TargetErrno(errno);
+	}
+	
 	if(unlikely(verbose_syscalls))
 	{
-		logger << DebugInfo << "close(fd=" << fd << ") return " << ret << EndDebugInfo;
+		logger << DebugInfo << "close(fd=" << target_fd << ") return " << ret << EndDebugInfo;
 	}
+	
 	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	if(ret == -1) SetErrno(target_errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
 template <class MEMORY_ADDR>
 unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMORY_ADDR>::t2h_syscall_read()
 {
-	int fd;
+	int32_t target_fd;
+	int host_fd;
 	size_t count;
 	MEMORY_ADDR buf_addr;
 	void *buf;
 	size_t ret;
+	int32_t target_errno = 0;
 
-	fd = GetSystemCallParam(0);
+	target_fd = GetSystemCallParam(0);
 	buf_addr = (MEMORY_ADDR) GetSystemCallParam(1);
 	count = (size_t) GetSystemCallParam(2);
 
-	buf = malloc(count);
-
-	if(buf)
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
 	{
-		ret = read(fd, buf, count);
-		if(ret > 0)
-		{
-			if(!memory_injection_import->InjectWriteMemory(buf_addr, buf, ret))
-			{
-				free(buf);
-				return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
-			}
-		}
-		free(buf);
+		target_errno = T2H_EBADF;
+		ret = -1;
 	}
 	else
 	{
-		ret = (size_t) -1;
+		buf = malloc(count);
+
+		if(buf)
+		{
+			ret = read(host_fd, buf, count);
+			if(ret > 0)
+			{
+				if(!memory_injection_import->InjectWriteMemory(buf_addr, buf, ret))
+				{
+					free(buf);
+					return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+				}
+			}
+			
+			if(ret == -1)
+			{
+				target_errno = Host2TargetErrno(errno);
+			}
+			free(buf);
+		}
+		else
+		{
+			target_errno = T2H_ENOMEM;
+			ret = (size_t) -1;
+		}
 	}
 
 	if(unlikely(verbose_syscalls))
-	logger << DebugInfo << "read(fd=" << fd << ", buf=0x" << std::hex << buf_addr << std::dec
+	logger << DebugInfo << "read(fd=" << target_fd << ", buf=0x" << std::hex << buf_addr << std::dec
 		<< ", count=" << count << ") return " << ret << EndDebugInfo;
 
 	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	if(ret == -1) SetErrno(target_errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
 template <class MEMORY_ADDR>
 unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMORY_ADDR>::t2h_syscall_write()
 {
-	int fd;
+	int32_t target_fd;
+	int host_fd;
 	size_t count;
 	void *buf;
 	MEMORY_ADDR buf_addr;
 	size_t ret;
+	int32_t target_errno = 0;
 
-	fd = GetSystemCallParam(0);
+	target_fd = GetSystemCallParam(0);
 	buf_addr = GetSystemCallParam(1);
 	count = (size_t)GetSystemCallParam(2);
-	buf = malloc(count);
-
-	ret = (size_t) -1;
-
-	if(buf)
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
 	{
-		if(!memory_injection_import->InjectReadMemory(buf_addr, buf, count))
-		{
-			free(buf);
-			return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
-		}
-		ret = write(fd, buf, count);
-		if(unlikely(verbose_syscalls))
-		{
-			logger << DebugInfo
-			<< "write(fd=" << fd << ", buf=0x" << std::hex << buf_addr << std::dec
-			<< ", count=" << count << ") return " << ret << std::endl
-			<< "buffer =";
-			for (size_t i = 0; i < count; i++)
-			{
-				logger << " " << std::hex << (unsigned int)((uint8_t *) buf)[i] << std::dec;
-			}
-			logger << EndDebugInfo;
-		}
-		free(buf);
+		target_errno = T2H_EBADF;
+		ret = -1;
 	}
 	else
 	{
+		buf = malloc(count);
+
 		ret = (size_t) -1;
+
+		if(buf)
+		{
+			if(!memory_injection_import->InjectReadMemory(buf_addr, buf, count))
+			{
+				free(buf);
+				return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+			}
+			ret = write(host_fd, buf, count);
+			
+			if(ret == -1)
+			{
+				target_errno = Host2TargetErrno(errno);
+			}
+			
+			if(unlikely(verbose_syscalls))
+			{
+				logger << DebugInfo
+				<< "write(fd=" << target_fd << ", buf=0x" << std::hex << buf_addr << std::dec
+				<< ", count=" << count << ") return " << ret << std::endl
+				<< "buffer =";
+				for (size_t i = 0; i < count; i++)
+				{
+					logger << " " << std::hex << (unsigned int)((uint8_t *) buf)[i] << std::dec;
+				}
+				logger << EndDebugInfo;
+			}
+			
+			free(buf);
+		}
+		else
+		{
+			target_errno = T2H_ENOMEM;
+			ret = (size_t) -1;
+		}
 	}
 
 	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	if(ret == -1) SetErrno(target_errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
 template <class MEMORY_ADDR>
 unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMORY_ADDR>::t2h_syscall_lseek()
 {
-	int fildes;
+	int32_t target_fd;
+	int host_fd;
 	off_t offset;
 	int whence;
 	off_t ret;
+	int32_t target_errno = 0;
 
-	fildes = GetSystemCallParam(0);
+	target_fd = GetSystemCallParam(0);
 	offset = GetSystemCallParam(1);
 	whence = GetSystemCallParam(2);
-	ret = lseek(fildes, offset, whence);
-	if(unlikely(verbose_syscalls))
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
 	{
-		logger << DebugInfo << "lseek(fildes=" << fildes << ", offset=" << offset
-			<< ", whence=" << whence << ") return " << ret << EndDebugInfo;
-	}
-
-	if(ret == (off_t) -1)
-	{
-		SetSystemCallStatus(-1);
-		SetErrno(errno);
+		target_errno = T2H_EBADF;
+		ret = -1;
 	}
 	else
 	{
-		SetSystemCallStatus(ret);
+		ret = lseek(host_fd, offset, whence);
+		
+		if(ret == -1) target_errno = Host2TargetErrno(errno);
 	}
+	if(unlikely(verbose_syscalls))
+	{
+		logger << DebugInfo << "lseek(fildes=" << target_fd << ", offset=" << offset
+			<< ", whence=" << whence << ") return " << ret << EndDebugInfo;
+	}
+
+	SetSystemCallStatus(ret);
+	if(ret == (off_t) -1) SetErrno(target_errno);
+	
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -976,6 +1114,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	char *oldpath;
 	char *newpath;
 	int ret;
+	int32_t target_errno = 0;
 
 	oldpathaddr = GetSystemCallParam(0);
 	if(!StringLength(oldpathaddr, oldpathlen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
@@ -990,6 +1129,8 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		if(memory_injection_import->InjectReadMemory(newpathaddr, newpath, newpathlen + 1))
 		{
 			ret = rename(oldpath, newpath);
+			
+			if(ret == -1) target_errno = Host2TargetErrno(errno);
 			
 			if(unlikely(verbose_syscalls))
 			{
@@ -1011,7 +1152,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	free(oldpath);
 	
 	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	if(ret == -1) SetErrno(target_errno);
 	return status;
 }
 
@@ -1022,6 +1163,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	int pathnamelen;
 	char *pathname;
 	int ret;
+	int32_t target_errno = 0;
 
 	pathnameaddr = GetSystemCallParam(0);
 	if(!StringLength(pathnameaddr, pathnamelen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
@@ -1032,6 +1174,9 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
 	}
 	ret = unlink(pathname);
+	
+	if(ret == -1) target_errno = Host2TargetErrno(errno);
+	
 	if(unlikely(verbose_syscalls))
 	logger << DebugInfo
 		<< "unlink(pathname=\"" << pathname << "\") return " << ret << std::endl
@@ -1039,7 +1184,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	free(pathname);
 	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	if(ret == -1) SetErrno(target_errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -1051,6 +1196,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	char *pathname;
 	MEMORY_ADDR buf_address;
 	int ret;
+	int32_t target_errno = 0;
 
 	addr = GetSystemCallParam(0);
 	if(!StringLength(addr, pathnamelen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
@@ -1064,6 +1210,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	struct avr32_stat target_stat;
 	ret = Stat(pathname, &target_stat);
 	if(ret == 0) memory_injection_import->InjectWriteMemory(buf_address, &target_stat, sizeof(target_stat));
+	if(ret == -1) target_errno = Host2TargetErrno(errno);
 
 	if(unlikely(verbose_syscalls))
 	logger << DebugInfo
@@ -1073,7 +1220,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	free(pathname);
 	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	if(ret == -1) SetErrno(target_errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -1081,26 +1228,40 @@ template <class MEMORY_ADDR>
 unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMORY_ADDR>::t2h_syscall_fstat()
 {
 	int ret;
-	int fd;
+	int32_t target_fd;
+	int host_fd;
 	MEMORY_ADDR buf_address;
+	int32_t target_errno = 0;
 
-	fd = GetSystemCallParam(0);
+	target_fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	struct avr32_stat target_stat;
-	ret = Fstat(fd, &target_stat);
-	if(ret == 0)
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
 	{
-		if(!memory_injection_import->InjectWriteMemory(buf_address, &target_stat, sizeof(target_stat))) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		target_errno = T2H_EBADF;
+		ret = -1;
+	}
+	else
+	{
+		struct avr32_stat target_stat;
+		ret = Fstat(target_fd, &target_stat);
+		if(ret == 0)
+		{
+			if(!memory_injection_import->InjectWriteMemory(buf_address, &target_stat, sizeof(target_stat))) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		}
+		if(ret == -1) target_errno = Host2TargetErrno(errno);
 	}
 
 	if(unlikely(verbose_syscalls))
 	logger << DebugInfo
-		<< "fstat(fd=" << fd
+		<< "fstat(fd=" << target_fd
 		<< ", buf_addr=0x" << std::hex << buf_address << std::dec
 		<< ") return " << ret << EndDebugInfo;
 
 	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	if(ret == -1) SetErrno(target_errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -1110,6 +1271,8 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	int ret = -1;
 	MEMORY_ADDR tv_addr;
 	MEMORY_ADDR tz_addr;
+	int32_t target_errno = 0;
+	
 	tv_addr = GetSystemCallParam(0);
 	tz_addr = GetSystemCallParam(1);
 
@@ -1129,6 +1292,8 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 			if(!memory_injection_import->InjectWriteMemory(tz_addr, &target_tz, sizeof(target_tz))) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
 		}
 	}
+	
+	if(ret == -1) target_errno = Host2TargetErrno(errno);
 
 	if(unlikely(verbose_syscalls))
 	logger << DebugInfo
@@ -1137,17 +1302,31 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		<< EndDebugInfo;
 
 	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	if(ret == -1) SetErrno(target_errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
 template <class MEMORY_ADDR>
 unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMORY_ADDR>::t2h_syscall_isatty()
 {
-	int fd = GetSystemCallParam(0);
+	int32_t target_fd = GetSystemCallParam(0);
+	int host_fd;
 	int ret;
-
-	ret = isatty(fd);
+	int32_t target_errno = 0;
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
+	{
+		target_errno = T2H_EBADF;
+		ret = -1;
+	}
+	else
+	{
+		ret = isatty(target_fd);
+		
+		if(ret == -1) target_errno = Host2TargetErrno(errno);
+	}
 	
 	if(unlikely(verbose_syscalls))
 	logger << DebugInfo
@@ -1155,7 +1334,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		<< EndDebugInfo;
 
 	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	if(ret == -1) SetErrno(target_errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
@@ -1166,8 +1345,10 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	int command_len;
 	char *command;
 	int ret;
+	int32_t target_errno = 0;
 
 	addr = GetSystemCallParam(0);
+	
 	if(!StringLength(addr, command_len)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
 	command = (char *) malloc(command_len + 1);
 	if(!memory_injection_import->InjectReadMemory(addr, command, command_len + 1))
@@ -1178,6 +1359,11 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	
 	ret = system(command);
 	
+	if(ret == -1)
+	{
+		target_errno = T2H_EINVAL;
+	}
+	
 	if(unlikely(verbose_syscalls))
 	{
 		logger << DebugInfo
@@ -1187,7 +1373,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	free(command);
 	SetSystemCallStatus(ret);
-	if(ret < 0) SetErrno(errno);
+	if(ret == -1) SetErrno(target_errno);
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }
 
