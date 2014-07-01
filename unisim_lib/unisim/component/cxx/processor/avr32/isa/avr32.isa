@@ -127,6 +127,11 @@ static const unsigned int COND_VS=12;
 static const unsigned int COND_VC=13;
 static const unsigned int COND_QS=14;
 static const unsigned int COND_AL=15;
+
+static const unsigned int SIZE_BYTE = 8;
+static const unsigned int SIZE_HALF_WORD = 16;
+static const unsigned int SIZE_WORD = 32;
+static const unsigned int SIZE_DOUBLE_WORD = 64;
 }
 
 

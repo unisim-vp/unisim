@@ -287,7 +287,7 @@ public:
 	void SetSR_C(uint32_t val) { SetSR((GetSR() & ~CONFIG::SR_C_MASK) | ((val << CONFIG::SR_C_OFFSET) & CONFIG::SR_C_MASK)); }
 	
 	      
-        void SetEvba(uint32_t val) { evba=val;}
+	void SetEvba(uint32_t val) { evba=val;}
 	void SetAcba(uint32_t val) { acba=val;}
 	void SetCpucr(uint32_t val){cpucr=val;}
 	void SetConfig0(uint32_t val){config0=val;}
@@ -376,6 +376,7 @@ public:
 	bool SintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::address_t addr);
 	bool ExchangeRegMem(unsigned int rd,unsigned int rx,unsigned int ry);
 	bool MemoryBitAccess(typename CONFIG::address_t addr,unsigned int mode, unsigned int pos);
+	
 	/*
 	bool MemReadByte(typename CONFIG::address_t addr,uint32_t& value);
 	bool MemReadHalfWord(typename CONFIG::address_t addr,uint32_t& value);

@@ -66,7 +66,7 @@ machh_d.execute={
 	                    : SignExtend(y,16);
 			  
 	uint64_t acc = ((uint64_t)(d1 << 16)) | ((uint64_t) d >> 16); // Rd+1[31:0] || Rd[31:16]
-	uint64_t result = (uint64_t)(op1 * op2) + acc;
+	uint64_t result = (op1 * op2) + (int32_t)acc;
 
 	cpu->SetGPR(rd,result << 16);          // Rd[31:16]<-result[15:0], Rd[15:0]<-0  write back result in 2 registers
 	cpu->SetGPR(rd+1,result >> 16);        // Rd+1[31:0]<-result[47:16]
@@ -91,14 +91,14 @@ machh_w.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 	uint32_t d=cpu->GetGPR(rd);
-	uint32_t op1,op2;
 
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):  // select halfword of rx 
-	SignExtend(x & 0x0000FFFF,16);
-	op2= (y==0)? SignExtend((y & 0xFFFF0000)>>16,16):  // select halfword of ry
-	SignExtend(y & 0x0000FFFF,16);
+	int32_t op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16)  // select halfword of rx 
+	                    : SignExtend(x & 0x0000FFFF,16);
+				   
+	int32_t op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16)  // select halfword of ry
+	                    : SignExtend(y & 0x0000FFFF,16);
 	
-	uint32_t result = (op1 * op2) + d;
+	uint32_t result = (op1 * op2) + (int32_t)d;
 
 	cpu->SetGPR(rd,result);
  
@@ -123,16 +123,16 @@ macwh_d.execute={
 	uint32_t y=cpu->GetGPR(ry);
 	uint32_t d=cpu->GetGPR(rd);
 	uint32_t d1=cpu->GetGPR(rd+1);
-	uint64_t op1,op2;
-	op1=SignExtend((uint64_t)x,32);                                   // ?? sign extend x ?
-	op2= (y==0) ? SignExtend((uint64_t)((y & 0xFFFF0000)>>16),16):   // select halfword of ry
-	SignExtend((uint64_t)(y & 0x0000FFFF),16);
-	uint64_t result;
-	uint64_t acc = ((uint64_t)d1 << 32) | (d & 0xFFFF0000);
-	result = (((op1 * op2) & 0x0000000000FFFFFF) + acc)<<16;
+	
+	int32_t op1=SignExtend((uint64_t)x,32);                                   // ?? sign extend x ?
+	int32_t op2 = (y==0) ? SignExtend((uint64_t)((y & 0xFFFF0000)>>16),16)   // select halfword of ry
+                           : SignExtend((uint64_t)(y & 0x0000FFFF),16);
 
-	cpu->SetGPR(rd, (uint32_t)(result & 0x00000000FFFFFFFF));
-	cpu->SetGPR(rd+1,(uint32_t)((result & 0xFFFFFFFF00000000)>>32));
+	int64_t acc = ((uint64_t)d1 << 32) | (d & 0xFFFF0000);
+	uint64_t result = (((op1 * op2) & 0x0000000000FFFFFF) + (acc >> 16)) << 16;
+
+	cpu->SetGPR(rd,result);
+	cpu->SetGPR(rd+1,result >>32);
  
 	return true;
 }
@@ -149,13 +149,14 @@ mulhh_w.execute={
 
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
-	uint32_t op1,op2;
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):  // select halfword of rx 
-	SignExtend(x & 0x0000FFFF,16);
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):  // select halfword of ry 
-	SignExtend(y & 0x0000FFFF,16);
 	
-	uint32_t result = (op1 * op2);
+	int32_t op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16)  // select halfword of rx 
+	                    : SignExtend(x & 0x0000FFFF,16);
+				  
+	int32_t op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16)  // select halfword of ry 
+	                    : SignExtend(y & 0x0000FFFF,16);
+	
+	uint32_t result = op1 * op2;
 
 	cpu->SetGPR(rd,result);
  
@@ -178,15 +179,15 @@ mulwh_d.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 
-	uint64_t op1,op2;
-	op1=SignExtend((uint64_t)x,32);                                     // ?? sign extend x ?                     
-	op2= (y==0) ? SignExtend((uint64_t)((y & 0xFFFF0000)>>16),16):      // select halfword of ry
-	SignExtend((uint64_t)(y & 0x0000FFFF),16);
+	
+	int64_t op1=SignExtend((uint64_t)x,32);                                     // ?? sign extend x ?                     
+	int64_t op2= (y==0) ? SignExtend((uint64_t)(y >>16),16)      // select halfword of ry
+	                    : SignExtend((uint64_t)y,16);
 	
 	uint64_t result = (op1 * op2) << 16;
 
-	cpu->SetGPR(rd,(uint32_t)(result & 0x00000000FFFFFFFF));
-	cpu->SetGPR( rd+1,(uint32_t)((result & 0xFFFFFFFF00000000)>>32) );
+	cpu->SetGPR(rd,result);
+	cpu->SetGPR( rd+1,result >> 32);
  
 	return true;
 }
@@ -203,11 +204,12 @@ mulnhh_w.execute={
 
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
-	uint32_t op1,op2;
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16): // select halfword of rx 
-	SignExtend(x & 0x0000FFFF,16);
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16): // select halfword of ry
-	SignExtend(y & 0x0000FFFF,16);
+	
+	int32_t op1= (x==0) ? SignExtend(x >>16,16) // select halfword of rx 
+	                    :SignExtend(x,16);
+	
+	int32_t op2= (y==0) ? SignExtend( y >>16,16) // select halfword of ry
+	                    :SignExtend(y ,16);
 	
 	uint32_t result = -(op1 * op2);
 
@@ -231,15 +233,19 @@ mulnwh_d.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 
-	uint64_t op1,op2;
-	op1=SignExtend((uint64_t)x,32);		   			 // ?? sign extend x ? 
-	op2= (y==0) ? SignExtend((uint64_t)((y & 0xFFFF0000)>>16),16):   // select halfword of ry
-	SignExtend((uint64_t)(y & 0x0000FFFF),16);
+	int64_t op1=SignExtend((uint64_t)x,32);		   			        // ?? sign extend x ? 
+	int64_t op2= (y==0) ? SignExtend((uint64_t)((y & 0xFFFF0000)>>16),16)    // select halfword of ry
+	                    :SignExtend((uint64_t)(y & 0x0000FFFF),16);
 	
 	uint64_t result = (-(op1 * op2)) << 16;
 
-	cpu->SetGPR(rd,(uint32_t)(result & 0x00000000FFFFFFFF));
-	cpu->SetGPR(rd+1,(uint32_t)((result & 0xFFFFFFFF00000000)>>32));
+	cpu->SetGPR(rd,result);/*if( ((x15 && y15 && !t15) || (!x15 && !y15 && t15))==1 )
+	{
+		if(x15 == 0) result = 0x00007FFF;
+		else result = 0xFFFF8000;
+	}
+	else result = SignExtend((uint32_t)temp,16);*/
+	cpu->SetGPR(rd+1,result >> 32);
  
 	return true;
 }
@@ -256,12 +262,11 @@ op satadd_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00101100[8]:rd[4])
 
 satadd_h.execute={
 	
-	uint16_t x = (uint16_t)(cpu->GetGPR(rx) & 0x0000FFFF);
-	uint16_t y = (uint16_t)(cpu->GetGPR(ry) & 0x0000FFFF);
+	uint16_t x = cpu->GetGPR(rx);
+	uint16_t y = cpu->GetGPR(ry);
 	uint32_t d = cpu->GetGPR(rd); 
 	uint16_t temp;
 	
-	uint8_t q ;
 	uint8_t carry_in=0;   // without carry
 	uint8_t carry_out;
 	uint8_t overflow;
@@ -269,22 +274,11 @@ satadd_h.execute={
 
 	SignedSatAdd16(temp, carry_out, overflow, sign, x , y , carry_in);
 	
-	uint8_t x15= (x >> 15) & 1;
-	uint8_t y15= (y >> 15) & 1;
-	uint8_t t15= (temp >> 15) & 1;
-	q  = (x15 && y15 && !t15) || (!x15 && !y15 && t15) || cpu->GetSR_Q();
-	uint32_t result;
-	/*if( ((x15 && y15 && !t15) || (!x15 && !y15 && t15))==1 )
-	{
-		if(x15 == 0) result = 0x00007FFF;
-		else result = 0xFFFF8000;
-	}
-	else result = SignExtend((uint32_t)temp,16);*/
-	result = SignExtend((uint32_t)temp,16);
+	uint32_t result = SignExtend((uint32_t)temp,16);
 
 	cpu->SetGPR(rd,result);
 
-	cpu->SetSR_Q(q);
+	cpu->SetSR_Q(overflow || cpu->GetSR_Q());
 	cpu->SetSR_V(overflow);
 	cpu->SetSR_N(d < 0);           // rd avant ou après le calcul ??
 	cpu->SetSR_Z(d==0);
@@ -305,39 +299,22 @@ op satadd_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00001100[8]:rd[4])
 satadd_w.execute={
 
 	uint32_t x = cpu->GetGPR(rx);
-	uint32_t y = cpu->GetGPR(ry);
-	uint32_t d = cpu->GetGPR(rd);  
-	uint32_t temp;
+	uint32_t y = cpu->GetGPR(ry);  
 	uint32_t result;
-	uint8_t q ;
 	
 	uint8_t carry_in=0;
 	uint8_t carry_out;
 	uint8_t overflow;
 	uint8_t sign;
 
-	//SignedAdd32(temp, carry_out, overflow, sign, x,y, carry_in);
 	SignedSatAdd32(result, carry_out, overflow, sign, x,y, carry_in);
-	temp=result;
-	uint8_t x31= (x >> 31) & 1;
-	uint8_t y31= (y >> 31) & 1;
-	uint8_t t31= (temp >> 31) & 1;
-	q  = (x31 && y31 && !t31) || (!x31 && !y31 && t31) || cpu->GetSR_Q();
 	
-	/*if( ((x31 && y31 && !t31) || (!x31 && !y31 && t31))==1 )
-	{
-		if( ( x31 == 0 ) result = 0x7FFFFFFF;
-		else result = 0x80000000;
-	}
-	else result = temp;
-        */
-	result = temp;
 	cpu->SetGPR(rd,result);
 
-	cpu->SetSR_Q(q);
+	cpu->SetSR_Q(overflow || cpu->GetSR_Q());
 	cpu->SetSR_V(overflow);
-	cpu->SetSR_N(d < 0);                           // rd avant ou après le calcul ??
-	cpu->SetSR_Z(d==0);
+	cpu->SetSR_N(result < 0);                           // rd avant ou après le calcul ??
+	cpu->SetSR_Z(result == 0);
 	cpu->SetSR_C(0);
 
 	return true;
@@ -354,36 +331,23 @@ op satsub_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00111100[8]:rd[4])
 
 satsub_h.execute={
 
-	uint16_t x = (uint16_t)(cpu->GetGPR(rx) & 0x0000FFFF);
-	uint16_t y = (uint16_t)(cpu->GetGPR(ry) & 0x0000FFFF); 
+	uint16_t x = (uint16_t)cpu->GetGPR(rx);
+	uint16_t y = (uint16_t)cpu->GetGPR(ry); 
 	uint32_t d = cpu->GetGPR(rd); 
 	uint16_t temp;
 	
-	uint8_t q ;
 	uint8_t borrow_in=0;
 	uint8_t borrow_out;
 	uint8_t overflow;
 	uint8_t sign;
 
-	//SignedSub16(temp, borrow_out, overflow, sign, x , y, borrow_in);
 	SignedSatSub16(temp, borrow_out, overflow, sign, x , y, borrow_in);
 
-	uint8_t x15= (x >> 15) & 1;
-	uint8_t y15= (y >> 15) & 1;
-	uint8_t t15= (temp >> 15) & 1;
-	q  = (x15 && y15 && !t15) || (!x15 && !y15 && t15) || cpu->GetSR_Q();
-	uint32_t result;
-	/*if( ((x15 && y15 && !t15) || (!x15 && !y15 && t15))==1 )
-	{
-		if( x15 == 0 ) result = 0x7FFF;
-		else result = 0x8000;
-	}
-	else result = SignExtend(((uint32_t)temp & 0x0000FFFF),16);*/
-	result = SignExtend(((uint32_t)temp & 0x0000FFFF),16);
+	uint32_t result = SignExtend(((uint32_t)temp),16);
 
 	cpu->SetGPR(rd,result);
 
-	cpu->SetSR_Q(q);
+	cpu->SetSR_Q(overflow || cpu->GetSR_Q());
 	cpu->SetSR_V(overflow);
 	cpu->SetSR_N(d < 0);		// rd avant ou après le calcul ??
 	cpu->SetSR_Z(d==0);

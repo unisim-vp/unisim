@@ -92,6 +92,10 @@ rjmp.execute={
 rjmp.disasm={
 
 	os << "rjmp\t" << std::hex << "0x"<< rjmp_addr;
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{;
+		os << " <" << cpu->GetFunctionFriendlyName(rjmp_addr) << ">";
+	}
 }
 
 
@@ -118,6 +122,11 @@ acall.execute={
 acall.disasm={
 
 	os << "acall\t" << std::hex << (int) disp8;
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		typename CONFIG::address_t addr = cpu->GetAcba()+ ((uint32_t)disp8 << 2);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
 // ICALL - indirect call from subroutineq
@@ -138,6 +147,11 @@ icall.execute={
 icall.disasm={
 
 	os << "icall\t" << REG_NAME[rd];
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		os << " <" << cpu->GetFunctionFriendlyName(cpu->GetGPR(rd)) << ">";
+		
+	}
 }
 
 //MCALL - subroutine call
@@ -155,6 +169,13 @@ mcall.execute={
 mcall.disasm={
 
 	os << "mcall\t" << REG_NAME[rp] << "[" << disp16 << "]";
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		typename CONFIG::address_t addr = (cpu->GetGPR(rp) & 0xFFFFFFFC) + (disp16 << 2);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+		
+	}
+	
 }
 
 //RCALL - relative subroutine call
@@ -176,7 +197,7 @@ rcall_a.execute={
 
 rcall_a.disasm={
 
-	os << "rcall\t" << std::hex << "0x"<<Operation<CONFIG>::GetAddr() << std::dec <<"[" << disp << "]";
+	os << "rcall\tPC[Ox"<< std::hex << disp << "]" << std::dec;
 
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
@@ -188,47 +209,28 @@ op rcall_b(0b111[3]:disp_20_17[4]:0b0101[4]:disp_16[1]:0b0000[4]:><:disp_15_0[16
 
 rcall_b.var disp :{uint32_t} = {(disp_20_17 << 17)|(disp_16 << 16)|disp_15_0 }
 
+rcall_b.var rcall_addr : {typename CONFIG::address_t} = { Operation<CONFIG>::GetAddr() + (SignExtend((uint32_t)disp,21) << 1) }
+
 rcall_b.execute={
 
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+4);
-
-	cpu->SetGPR(REG_PC,Operation<CONFIG>::GetAddr() + (SignExtend((uint32_t)disp,21) << 1));
+	cpu->SetGPR(REG_PC,rcall_addr);
 
 	return true;
 }
 
 rcall_b.disasm={
 
-	os << "rcall\t"<< std::hex  << "0x"<< Operation<CONFIG>::GetAddr() << std::dec <<"[" << disp << "]";
+	os << "rcall\tPC[0x" << std::hex << disp << std::dec << "]";
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		os << " <" << cpu->GetFunctionFriendlyName(rcall_addr) << ">";
+	}
 }
 
 //SCALL - supervisor call                             ## declarer la variable microarchitecture dans cpu.hh 
 
-op scall(0b1101011[7]:0b10011[5]:0b0011[4])
-
-scall.execute={
-                  
-
-	if(cpu->GetSR_M()==(0b000 || 0b001))
-	{
-		if(cpu->GetMicroArchitecture()=="AVR32A")
-		{
-			cpu->SetGPR(REG_PC,cpu->GetEvba()+0x100);
-			cpu->SetSR_M(0b001);
-		}
-		else
-		{
-			cpu->SetGPR(REG_PC,cpu->GetEvba()+0x100);
-			cpu->SetSR_M(0b001);
-		}
-	}
-	else
-	{
-		cpu->SetLR(Operation<CONFIG>::GetAddr() + 2);
-		cpu->SetGPR(REG_PC,cpu->GetEvba()+0x100);
-	}
-	return true;
-}
+op scall(0b1101011[7]:0b10011[5]:0b0011[4]) // architecture dependent instruction (see avr32a or avr32b sub-directory)
 
 scall.disasm={
 

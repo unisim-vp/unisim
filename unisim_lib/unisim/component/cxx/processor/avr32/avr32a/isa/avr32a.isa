@@ -34,3 +34,4 @@
  */
 
 include "unisim/component/cxx/processor/avr32/isa/avr32.isa"
+include "unisim/component/cxx/processor/avr32/avr32a/isa/instruction_flow.isa"

@@ -706,10 +706,10 @@ ld_w_e.disasm={
 
 op ld_w_f(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b111110[6]:x[1]:y[1]:rd[4])
 
-// x=0, y=0 for bottom
-// x=0, y=1 for lower
-// x=1, y=0 for upper
-// x=1, y=1 for top           à confirmer 
+// x=0, y=0 for top
+// x=0, y=1 for upper
+// x=1, y=0 for lower
+// x=1, y=1 for bottom        
 
 ld_w_f.var part : {unsigned int}= {y| (x << 1)}
 
@@ -718,10 +718,7 @@ ld_w_f.execute={
 	uint32_t b = cpu->GetGPR(rb);
 	uint32_t i = cpu->GetGPR(ri); 
 
-	
-	/*uint32_t mask = 0x000000FF << (part*8);
-	addr = b + (((i & mask) >> (8*i)) << 2);*/
-	typename CONFIG::address_t addr = b + (((i >> (8 * part)) & 0xFF) << 2);
+	typename CONFIG::address_t addr = b + ((i >> (8 *(3-part)) & 0xFF) << 2);
 	
 	return cpu->IntLoadWord(rd,addr);
 }
@@ -732,7 +729,7 @@ ld_w_f.disasm={
 	{
 		uint32_t i = cpu->GetGPR(ri); 
 		uint32_t b = cpu->GetGPR(rb);
-		typename CONFIG::address_t addr = b + (((i >> (8 * part)) & 0xFF) << 2);
+		typename CONFIG::address_t addr = b + ((i >> (8 *(3- part)) & 0xFF) << 2);
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
 	
@@ -770,7 +767,7 @@ ld_w_cond4.disasm={
 op ld_d_a(0b101[3]:rp[4]:0b100[3]:0b00[2]:rd[3]:0b1[1])
 
 ld_d_a.execute={
-
+	
 	if(rd==rp || rp==(rd+1)) return false;
 
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);
@@ -894,18 +891,7 @@ op ldins_b(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b01[2]:part[2]:sext<32>disp12[12]
 ldins_b.execute={
 
 	typename CONFIG::address_t addr= cpu->GetGPR(rp)+ disp12;
-	/*uint32_t d = cpu->GetGPR(rd);
 
-	uint32_t val;
-	cpu->MemReadByte(addr,val);	
-
-	if(part==3){d= (d & 0xFFFFFF00) | (val & 0x000000FF); }
-	else if(part==2){d= (d & 0xFFFF00FF) | ((val<<4) & 0x0000FF00);}
-	else if(part==1){d= (d & 0xFF00FFFF) | ((val<<16) & 0x00FF0000);}
-	else{d= (d & 0x00FFFFFF) | ((val<<24) & 0xFF000000);}
-
-	cpu->SetGPR(rd,d);	
-	*/
 	return cpu->LoadAndInsertByte(rd,addr,part);
 }
 
@@ -1038,7 +1024,7 @@ lddpc.execute={
 
 lddpc.disasm={
 
-	os << "lddpc\t" << REG_NAME[rd] << "PC[,0x" << std::hex << ((uint32_t)disp7 << 2) << "] <" << cpu->GetObjectFriendlyName(lddpc_addr) << ">";
+	os << "lddpc\t" << REG_NAME[rd] << ",PC[0x" << std::hex << ((uint32_t)disp7 << 2) << "] <" << cpu->GetObjectFriendlyName(lddpc_addr) << ">";
 }
 
 // LDDSP - load sp relative with displacement
@@ -1055,7 +1041,7 @@ lddsp.execute={
 
 lddsp.disasm={
 
-	os << "lddsp\t" << REG_NAME[rd] << "SP[0x" << std::hex << ((uint32_t)disp7 <<2) << "]"; 
+	os << "lddsp\t" << REG_NAME[rd] << ",SP[0x" << std::hex << ((uint32_t)disp7 <<2) << "]"; 
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		uint32_t sp= cpu->GetSP();

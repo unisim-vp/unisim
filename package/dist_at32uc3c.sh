@@ -199,6 +199,7 @@ unisim/component/cxx/processor/avr32/isa/multiplication_operations.isa \
 unisim/component/cxx/processor/avr32/isa/simd_operations.isa \
 unisim/component/cxx/processor/avr32/isa/system_control_operations.isa \
 unisim/component/cxx/processor/avr32/avr32a/isa/avr32a.isa \
+unisim/component/cxx/processor/avr32/avr32a/isa/instruction_flow.isa \
 unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.isa \
 "
 
