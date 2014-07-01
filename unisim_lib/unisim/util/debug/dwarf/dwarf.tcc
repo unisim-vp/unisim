@@ -790,7 +790,8 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	
 	BuildStatementMatrix();
-
+	//DumpStatementMatrix();
+	
 	if(!reg_num_mapping_filename.empty())
 	{
 		dw_reg_num_mapping = new DWARF_RegisterNumberMapping(logger, regs_if);

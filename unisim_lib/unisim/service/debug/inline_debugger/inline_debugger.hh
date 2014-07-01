@@ -262,7 +262,7 @@ private:
 	bool IsListDataObjectsCommand(const char *cmd) const;
 
 	void Help();
-	void Disasm(ADDRESS addr, int count);
+	void Disasm(ADDRESS addr, int count, ADDRESS& next_addr);
 	bool HasBreakpoint(ADDRESS addr);
 	void SetBreakpoint(ADDRESS addr);
 	void SetReadWatchpoint(ADDRESS addr, uint32_t size);

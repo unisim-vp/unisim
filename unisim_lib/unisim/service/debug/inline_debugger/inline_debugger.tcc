@@ -44,6 +44,7 @@
 #include <stdexcept>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/data_object.tcc>
+#include <unisim/util/likely/likely.hh>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -300,32 +301,39 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 	uint64_t value;
 	ADDRESS cont_addr;
 	unsigned int size;
+	ADDRESS next_addr;
 
-	if(!trap && (running_mode == INLINE_DEBUGGER_MODE_CONTINUE || running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL))
+	if(unlikely(trap))
 	{
-		return DebugControl<ADDRESS>::DBG_STEP;
+		if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
+		{
+			DeleteBreakpoint(cont_until_addr);
+		}
 	}
-	
-	if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
+	else
 	{
-		DeleteBreakpoint(cont_until_addr);
-	}
-	
-	if(running_mode == INLINE_DEBUGGER_MODE_RESET)
-	{
-		running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
-		return DebugControl<ADDRESS>::DBG_STEP;
-	}
-	
-	if(running_mode == INLINE_DEBUGGER_MODE_STEP)
-	{
-		const Statement<ADDRESS> *stmt = FindStatement(cia);
-		if(!stmt || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
+		if(likely((running_mode == INLINE_DEBUGGER_MODE_CONTINUE) || (running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)))
+		{
+			return DebugControl<ADDRESS>::DBG_STEP;
+		}
+		
+		if(running_mode == INLINE_DEBUGGER_MODE_RESET)
+		{
+			running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
+			return DebugControl<ADDRESS>::DBG_STEP;
+		}
+		
+		if(running_mode == INLINE_DEBUGGER_MODE_STEP)
+		{
+			const Statement<ADDRESS> *stmt = FindStatement(cia);
+			if(!stmt || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
+		}
 	}
 
 	int nparms = 0;
 
-	Disasm(cia, 1);
+	
+	Disasm(cia, 1, next_addr);
 
 	while(1)
 	{
@@ -437,8 +445,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsDisasmCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					Disasm(disasm_addr, 10);
-					disasm_addr += 10 * 4;
+					Disasm(disasm_addr, 10, disasm_addr);
 					break;
 				}
 
@@ -627,8 +634,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsDisasmCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), disasm_addr))
 				{
 					recognized = true;
-					Disasm(disasm_addr, 10);
-					disasm_addr += 10 * 4;
+					Disasm(disasm_addr, 10, disasm_addr);
 					break;
 				}
 
@@ -1164,13 +1170,12 @@ void InlineDebugger<ADDRESS>::Help()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
+void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr)
 {
 	if(count > 0)
 	{
 		bool first = true;
 		const Symbol<ADDRESS> *last_symbol = 0;
-		ADDRESS next_addr;
 		do
 		{
 			const Statement<ADDRESS> *stmt = FindStatement(addr, first ? unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT : unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);

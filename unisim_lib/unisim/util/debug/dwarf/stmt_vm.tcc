@@ -90,8 +90,10 @@ bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
 }
 
 template <class MEMORY_ADDR>
-void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix)
+void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu)
 {
+	if(dw_cu && !dw_cu->HasOverlap(address, 1)) return; // do not insert row if address is not in current compilation unit
+	
 	const DWARF_Filename *dw_filename = (file >= 1 && file <= filenames.size()) ? &filenames[file - 1] : 0;
 	const char *filename = dw_filename ? dw_filename->GetFilename() : 0;
 	const char *dirname = 0;
@@ -133,7 +135,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> *matrix)
+bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> *matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu)
 {
 	// Initialize machine state
 	address = 0;
@@ -212,7 +214,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						case DW_LNS_copy:
 							// Copy
 							if(os) (*os) << "Copy" << std::endl;
-							if(matrix) AddRow(dw_stmt_prog, *matrix);
+							if(matrix) AddRow(dw_stmt_prog, *matrix, dw_cu);
 							// Reset basic_block
 							basic_block = false;
 							// Reset prologue_end
@@ -323,7 +325,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					op_index = (op_index + operation_advance) % dw_stmt_prog->maximum_operations_per_instruction;
 					line += line_increment;
 					// Add a row to matrix
-					if(matrix) AddRow(dw_stmt_prog, *matrix);
+					if(matrix) AddRow(dw_stmt_prog, *matrix, dw_cu);
 					// Reset basic_block
 					basic_block = false;
 					// Reset prologue_end
@@ -363,7 +365,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						// End of Sequence
 						end_sequence = true;
 						// Add a row to matrix
-						if(matrix) AddRow(dw_stmt_prog, *matrix);
+						if(matrix) AddRow(dw_stmt_prog, *matrix, dw_cu);
 						// Reset machine state but end_sequence !
 						address = 0;
 						file = 1;
