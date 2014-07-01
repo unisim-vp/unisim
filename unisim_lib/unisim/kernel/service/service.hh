@@ -294,8 +294,8 @@ public:
 	virtual double GetHostTime()	{ return (0);	}
 
 	// ********** The following methods are added by Reda and used by PIMServer *****
-	virtual long   GetStructuredAddress(long logicalAddress) { return (logicalAddress); }
-	virtual long   GetPhysicalAddress(long logicalAddress) { return (logicalAddress); }
+	virtual unsigned long long   GetStructuredAddress(unsigned long long logicalAddress) { return (logicalAddress); }
+	virtual unsigned long long   GetPhysicalAddress(unsigned long long logicalAddress) { return (logicalAddress); }
 	// *******************************************************************************
 
 	bool IsWarningEnabled() const;

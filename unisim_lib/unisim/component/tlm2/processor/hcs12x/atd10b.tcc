@@ -846,7 +846,6 @@ bool ATD10B<ATD_SIZE>::write(unsigned int offset, const void *buffer, unsigned i
 		default:
 			if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
 				/* write has no effect */
-				cout << "ATD::write" << endl;
 			} else {
 				return (false);
 			}
