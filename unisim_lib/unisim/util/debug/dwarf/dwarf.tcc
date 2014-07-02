@@ -377,12 +377,15 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning;
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		if(debug)
 		{
-			logger << "In File \"" << GetFilename() << "\", ";
+			logger << DebugInfo;
+			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			{
+				logger << "In File \"" << GetFilename() << "\", ";
+			}
+			logger << "no DWARF v2/v3 .debug_abbrev section found" << EndDebugInfo;
 		}
-		logger << "no DWARF v2/v3 .debug_abbrev section found" << EndDebugWarning;
 	}
 
 	if(debug_info_section)
@@ -418,12 +421,15 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning;
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		if(debug)
 		{
-			logger << "In File \"" << GetFilename() << "\", ";
+			logger << DebugInfo;
+			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			{
+				logger << "In File \"" << GetFilename() << "\", ";
+			}
+			logger << "no DWARF v2/v3 .debug_info section found" << EndDebugInfo;
 		}
-		logger << "no DWARF v2/v3 .debug_info section found" << EndDebugWarning;
 	}
 
 	if(debug_frame_section)
@@ -471,12 +477,15 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning;
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		if(debug)
 		{
-			logger << "In File \"" << GetFilename() << "\", ";
+			logger << DebugInfo;
+			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			{
+				logger << "In File \"" << GetFilename() << "\", ";
+			}
+			logger << "no DWARF v2/v3 .debug_frame section found" << EndDebugInfo;
 		}
-		logger << "no DWARF v2/v3 .debug_frame section found" << EndDebugWarning;
 	}
 
 	if(eh_frame_section)
@@ -566,12 +575,15 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning;
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		if(debug)
 		{
-			logger << "In File \"" << GetFilename() << "\", ";
+			logger << DebugInfo;
+			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			{
+				logger << "In File \"" << GetFilename() << "\", ";
+			}
+			logger << "no DWARF v2/v3 .debug_aranges section found" << EndDebugInfo;
 		}
-		logger << "no DWARF v2/v3 .debug_aranges section found" << EndDebugWarning;
 	}
 
 	if(debug_pubnames_section)
@@ -607,12 +619,15 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning;
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		if(debug)
 		{
-			logger << "In File \"" << GetFilename() << "\", ";
+			logger << DebugInfo;
+			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			{
+				logger << "In File \"" << GetFilename() << "\", ";
+			}
+			logger << "no DWARF v2/v3 .debug_pubnames section found" << EndDebugInfo;
 		}
-		logger << "no DWARF v2/v3 .debug_pubnames section found" << EndDebugWarning;
 	}
 
 	if(debug_pubtypes_section)
@@ -648,22 +663,28 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning;
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		if(debug)
 		{
-			logger << "In File \"" << GetFilename() << "\", ";
+			logger << DebugInfo;
+			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			{
+				logger << "In File \"" << GetFilename() << "\", ";
+			}
+			logger << "no DWARF v3 .debug_pubtypes section found" << EndDebugInfo;
 		}
-		logger << "no DWARF v3 .debug_pubtypes section found" << EndDebugWarning;
 	}
 
 	if(!debug_ranges_section)
 	{
-		logger << DebugWarning;
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		if(debug)
 		{
-			logger << "In File \"" << GetFilename() << "\", ";
+			logger << DebugInfo;
+			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			{
+				logger << "In File \"" << GetFilename() << "\", ";
+			}
+			logger << "no DWARF v3 .debug_ranges section found" << EndDebugInfo;
 		}
-		logger << "no DWARF v3 .debug_ranges section found" << EndDebugWarning;
 	}
 	
 	// Fix all pointer cross-references

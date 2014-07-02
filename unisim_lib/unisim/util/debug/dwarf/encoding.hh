@@ -408,6 +408,21 @@ const uint8_t DW_OP_stack_value = 0x9f;         // DWARF v4
 const uint8_t DW_OP_lo_user = 0xe0;
 const uint8_t DW_OP_hi_user = 0xff;
 
+// GNU extensions
+const uint8_t DW_OP_GNU_push_tls_address = 0xe0;
+const uint8_t DW_OP_GNU_uninit = 0xf0;
+const uint8_t DW_OP_GNU_encoded_addr = 0xf1;
+const uint8_t DW_OP_GNU_implicit_pointer = 0xf2;
+const uint8_t DW_OP_GNU_entry_value = 0xf3;
+const uint8_t DW_OP_GNU_const_type = 0xf4;
+const uint8_t DW_OP_GNU_regval_type = 0xf5;
+const uint8_t DW_OP_GNU_deref_type = 0xf6;
+const uint8_t DW_OP_GNU_convert = 0xf7;
+const uint8_t DW_OP_GNU_reinterpret = 0xf9;
+const uint8_t DW_OP_GNU_parameter_ref = 0xfa;
+const uint8_t DW_OP_GNU_addr_index = 0xfb;
+const uint8_t DW_OP_GNU_const_index = 0xfc;
+
 const uint8_t DW_ATE_address = 0x01;          // DWARF v2
 const uint8_t DW_ATE_boolean = 0x02;          // DWARF v2
 const uint8_t DW_ATE_complex_float = 0x03;    // DWARF v2
@@ -598,6 +613,7 @@ const char *DWARF_GetINLName(uint8_t dw_inl);
 const char *DWARF_GetORDName(uint8_t dw_ord);
 const char *DWARF_GetDSCName(uint8_t dw_dsc);
 const char *DWARF_GetCHILDRENName(uint8_t dw_children);
+const char *DWARF_GetOPName(uint8_t dw_opcode);
 
 namespace hc12
 {

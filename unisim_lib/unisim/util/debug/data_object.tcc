@@ -153,7 +153,103 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			}
 			break;
 		case T_FLOAT:
-			(*os) << "?";
+			{
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				if(data_object)
+				{
+					if(!data_object->IsOptimizedOut())
+					{
+						if(data_object->Fetch())
+						{
+							uint64_t data_object_bit_size = data_object->GetBitSize();
+							
+							switch(data_object_bit_size)
+							{
+								case 32:
+									{
+										uint64_t data_object_value64 = 0;
+										if(data_object->Read(0, data_object_value64, 32))
+										{
+											uint32_t data_object_value32 = data_object_value64;
+											float data_object_value;
+											memcpy(&data_object_value, &data_object_value32, 4);
+											
+											(*os) << data_object_value;
+										}
+										else
+										{
+											(*os) << "<unreadable>";
+										}
+										
+										
+									}
+									break;
+								case 64:
+									{
+										uint64_t data_object_value64 = 0;
+										if(data_object->Read(0, data_object_value64, 64))
+										{
+											double data_object_value;
+											memcpy(&data_object_value, &data_object_value64, 8);
+											
+											(*os) << data_object_value;
+										}
+										else
+										{
+											(*os) << "<unreadable>";
+										}
+										
+										
+									}
+									break;
+								case 128:
+									{
+										uint8_t data_object_value128[16];
+										if(data_object->Read(0, data_object_value128, 0, 128))
+										{
+											if(data_object->GetEndian() != unisim::util::endian::GetHostEndian())
+											{
+												unsigned int i;
+												for(i = 0; i < 8; i++)
+												{
+													uint8_t tmp = data_object_value128[i];
+													data_object_value128[i] = data_object_value128[15 - i];
+													data_object_value128[15 - i] = tmp;
+												}
+											}
+											
+											long double data_object_value;
+											memcpy(&data_object_value, data_object_value128, 16);
+											
+											(*os) << data_object_value;
+										}
+										else
+										{
+											(*os) << "<unreadable>";
+										}
+									}
+									break;
+								default:
+									(*os) << "<unprintable " << data_object_bit_size << "-bit floating-point value>";
+									break;
+							}
+						}
+						else
+						{
+							(*os) << "<unfetchable>";
+						}
+					}
+					else
+					{
+						(*os) << "<optimized out>";
+					}
+					delete data_object;
+				}
+				else
+				{
+					(*os) << "<not found>";
+				}
+			}
 			break;
 		case T_BOOL:
 			{
