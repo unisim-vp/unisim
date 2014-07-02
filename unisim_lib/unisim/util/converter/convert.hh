@@ -223,10 +223,10 @@ inline bool getParity(T n)
 }
 
 template <typename T>
-bool ParseHex(const std::string& s, unsigned int& pos, T& value)
+bool ParseHex(const std::string& s, size_t& pos, T& value)
 {
-	unsigned int len = s.length();
-	unsigned int n = 0;
+	size_t len = s.length();
+	size_t n = 0;
 
 	value = 0;
 	while(pos < len && n < 2 * sizeof(T))

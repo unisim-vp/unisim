@@ -675,13 +675,13 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 			}
 				break;
 
-			case DBGData::UNKNOWN: {
-
-				DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
-
-				gdbThread->sendData(response);
-			}
-				break;
+//			case DBGData::UNKNOWN: {
+//
+//				DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
+//
+//				gdbThread->sendData(response);
+//			}
+//				break;
 			default:
 
 				if(request->getCommand() == DBGData::QUERY_SYMBOL_READ) {
@@ -848,22 +848,14 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 					return (DebugControl<ADDRESS>::DBG_STEP);
 				}
-				else if (request->getCommand()  == DBGData::DBG_UNKNOWN) {
-					if(verbose)
-					{
-						logger << DebugWarning << "Received an unknown GDB remote protocol packet" << EndDebugWarning;
-					}
-
-					DBGData *response =  new DBGData(DBGData::DBG_UNKNOWN);
-					gdbThread->sendData(response);
-
-				}
 				else if (!HandleQRcmd(request)) {
 					if(verbose)
 					{
 						logger << DebugWarning << "Received an unknown command" << EndDebugWarning;
 					}
 
+					DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
+					gdbThread->sendData(response);
 				}
 
 				break;
