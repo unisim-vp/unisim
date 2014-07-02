@@ -223,7 +223,7 @@ inline bool getParity(T n)
 }
 
 template <typename T>
-bool ParseHex(const std::string& s, size_t& pos, T& value)
+inline bool ParseHex(const std::string& s, size_t& pos, T& value)
 {
 	size_t len = s.length();
 	size_t n = 0;
