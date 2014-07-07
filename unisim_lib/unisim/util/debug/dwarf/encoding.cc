@@ -108,6 +108,25 @@ const char *DWARF_GetTagName(uint16_t dw_tag)
 		case DW_TAG_type_unit: return "DW_TAG_type_unit";
 		case DW_TAG_rvalue_reference_type: return "DW_TAG_rvalue_reference_type";
 		case DW_TAG_template_alias: return "DW_TAG_template_alias";
+		case DW_TAG_MIPS_loop: return "DW_TAG_MIPS_loop";
+		case DW_TAG_HP_array_descriptor: return "DW_TAG_HP_array_descriptor";
+		case DW_TAG_HP_Bliss_field: return "DW_TAG_HP_Bliss_field";
+		case DW_TAG_HP_Bliss_field_set: return "DW_TAG_HP_Bliss_field_set";
+		case DW_TAG_format_label: return "DW_TAG_format_label";
+		case DW_TAG_function_template: return "DW_TAG_function_template";
+		case DW_TAG_class_template: return "DW_TAG_class_template";
+		case DW_TAG_GNU_BINCL: return "DW_TAG_GNU_BINCL";
+		case DW_TAG_GNU_EINCL: return "DW_TAG_GNU_EINCL";
+		case DW_TAG_GNU_template_template_param: return "DW_TAG_GNU_template_template_param";
+		case DW_TAG_GNU_template_parameter_pack: return "DW_TAG_GNU_template_parameter_pack";
+		case DW_TAG_GNU_formal_parameter_pack: return "DW_TAG_GNU_formal_parameter_pack";
+		case DW_TAG_GNU_call_site: return "DW_TAG_GNU_call_site";
+		case DW_TAG_GNU_call_site_parameter: return "DW_TAG_GNU_call_site_parameter";
+		case DW_TAG_upc_shared_type: return "DW_TAG_upc_shared_type";
+		case DW_TAG_upc_strict_type: return "DW_TAG_upc_strict_type";
+		case DW_TAG_upc_relaxed_type: return "DW_TAG_upc_relaxed_type";
+		case DW_TAG_PGI_kanji_type: return "DW_TAG_PGI_kanji_type";
+		case DW_TAG_PGI_interface_block: return "DW_TAG_PGI_interface_block";
 	}
 	std::stringstream sstr;
 	sstr << "DW_TAG_" << (((dw_tag >= DW_TAG_lo_user) && (dw_tag <= DW_TAG_hi_user)) ? "user" : "unknown") << "_0x" << std::hex << dw_tag << std::dec;
@@ -212,6 +231,78 @@ const char *DWARF_GetATName(uint16_t dw_at)
 		case DW_AT_const_expr: return "DW_AT_const_expr";
 		case DW_AT_enum_class: return "DW_AT_enum_class";
 		case DW_AT_linkage_name: return "DW_AT_linkage_name";
+
+		//case DW_AT_MIPS_fde: return "DW_AT_MIPS_fde";
+		case DW_AT_MIPS_loop_begin: return "DW_AT_MIPS_loop_begin";
+		case DW_AT_MIPS_tail_loop_begin: return "DW_AT_MIPS_tail_loop_begin";
+		case DW_AT_MIPS_epilog_begin: return "DW_AT_MIPS_epilog_begin";
+		//case DW_AT_MIPS_loop_unroll_factor: return "DW_AT_MIPS_loop_unroll_factor";
+		case DW_AT_MIPS_software_pipeline_depth: return "DW_AT_MIPS_software_pipeline_depth";
+		case DW_AT_MIPS_linkage_name: return "DW_AT_MIPS_linkage_name";
+		//case DW_AT_MIPS_stride: return "DW_AT_MIPS_stride";
+		case DW_AT_MIPS_abstract_name: return "DW_AT_MIPS_abstract_name";
+		case DW_AT_MIPS_clone_origin: return "DW_AT_MIPS_clone_origin";
+		case DW_AT_MIPS_has_inlines: return "DW_AT_MIPS_has_inlines";
+		case DW_AT_HP_block_index: return "DW_AT_HP_block_index";
+		//case DW_AT_HP_unmodifiable: return "DW_AT_HP_unmodifiable";
+		//case DW_AT_HP_prologue: return "DW_AT_HP_prologue";
+		//case DW_AT_HP_epilogue: return "DW_AT_HP_epilogue";
+		case DW_AT_HP_actuals_stmt_list: return "DW_AT_HP_actuals_stmt_list";
+		case DW_AT_HP_proc_per_section: return "DW_AT_HP_proc_per_section";
+		case DW_AT_HP_raw_data_ptr: return "DW_AT_HP_raw_data_ptr";
+		case DW_AT_HP_pass_by_reference: return "DW_AT_HP_pass_by_reference";
+		case DW_AT_HP_opt_level: return "DW_AT_HP_opt_level";
+		case DW_AT_HP_prof_version_id: return "DW_AT_HP_prof_version_id";
+		case DW_AT_HP_opt_flags: return "DW_AT_HP_opt_flags";
+		case DW_AT_HP_cold_region_low_pc: return "DW_AT_HP_cold_region_low_pc";
+		case DW_AT_HP_cold_region_high_pc: return "DW_AT_HP_cold_region_high_pc";
+		case DW_AT_HP_all_variables_modifiable: return "DW_AT_HP_all_variables_modifiable";
+		case DW_AT_HP_linkage_name: return "DW_AT_HP_linkage_name";
+		case DW_AT_HP_prof_flags: return "DW_AT_HP_prof_flags";
+		case DW_AT_HP_unit_name: return "DW_AT_HP_unit_name";
+		case DW_AT_HP_unit_size: return "DW_AT_HP_unit_size";
+		case DW_AT_HP_widened_byte_size: return "DW_AT_HP_widened_byte_size";
+		case DW_AT_HP_definition_points: return "DW_AT_HP_definition_points";
+		case DW_AT_HP_default_location: return "DW_AT_HP_default_location";
+		case DW_AT_HP_is_result_param: return "DW_AT_HP_is_result_param";
+		case DW_AT_sf_names: return "DW_AT_sf_names";
+		case DW_AT_src_info: return "DW_AT_src_info";
+		case DW_AT_mac_info: return "DW_AT_mac_info";
+		case DW_AT_src_coords: return "DW_AT_src_coords";
+		case DW_AT_body_begin: return "DW_AT_body_begin";
+		case DW_AT_body_end: return "DW_AT_body_end";
+		case DW_AT_GNU_vector: return "DW_AT_GNU_vector";
+		case DW_AT_GNU_guarded_by: return "DW_AT_GNU_guarded_by";
+		case DW_AT_GNU_pt_guarded_by: return "DW_AT_GNU_pt_guarded_by";
+		case DW_AT_GNU_guarded: return "DW_AT_GNU_guarded";
+		case DW_AT_GNU_pt_guarded: return "DW_AT_GNU_pt_guarded";
+		case DW_AT_GNU_locks_excluded: return "DW_AT_GNU_locks_excluded";
+		case DW_AT_GNU_exclusive_locks_required: return "DW_AT_GNU_exclusive_locks_required";
+		case DW_AT_GNU_shared_locks_required: return "DW_AT_GNU_shared_locks_required";
+		case DW_AT_GNU_odr_signature: return "DW_AT_GNU_odr_signature";
+		case DW_AT_GNU_template_name: return "DW_AT_GNU_template_name";
+		case DW_AT_GNU_call_site_value: return "DW_AT_GNU_call_site_value";
+		case DW_AT_GNU_call_site_data_value: return "DW_AT_GNU_call_site_data_value";
+		case DW_AT_GNU_call_site_target: return "DW_AT_GNU_call_site_target";
+		case DW_AT_GNU_call_site_target_clobbered: return "DW_AT_GNU_call_site_target_clobbered";
+		case DW_AT_GNU_tail_call: return "DW_AT_GNU_tail_call";
+		case DW_AT_GNU_all_tail_call_sites: return "DW_AT_GNU_all_tail_call_sites";
+		case DW_AT_GNU_all_call_sites: return "DW_AT_GNU_all_call_sites";
+		case DW_AT_GNU_all_source_call_sites: return "DW_AT_GNU_all_source_call_sites";
+		case DW_AT_GNU_macros: return "DW_AT_GNU_macros";
+		case DW_AT_GNU_dwo_name: return "DW_AT_GNU_dwo_name";
+		case DW_AT_GNU_dwo_id: return "DW_AT_GNU_dwo_id";
+		case DW_AT_GNU_ref_base: return "DW_AT_GNU_ref_base";
+		case DW_AT_GNU_addr_base: return "DW_AT_GNU_addr_base";
+		case DW_AT_GNU_pubnames: return "DW_AT_GNU_pubnames";
+		case DW_AT_GNU_pubtypes: return "DW_AT_GNU_pubtypes";
+		case DW_AT_VMS_rtnbeg_pd_address: return "DW_AT_VMS_rtnbeg_pd_address";
+		case DW_AT_use_GNAT_descriptive_type: return "DW_AT_use_GNAT_descriptive_type";
+		case DW_AT_GNAT_descriptive_type: return "DW_AT_GNAT_descriptive_type";
+		case DW_AT_upc_threads_scaled: return "DW_AT_upc_threads_scaled";
+		case DW_AT_PGI_lbase: return "DW_AT_PGI_lbase";
+		case DW_AT_PGI_soffset: return "DW_AT_PGI_soffset ";
+		case DW_AT_PGI_lstride: return "DW_AT_PGI_lstride ";
 	}
 	std::stringstream sstr;
 	sstr << "DW_AT_" << (((dw_at >= DW_AT_lo_user) && (dw_at <= DW_AT_hi_user)) ? "user" : "unknown") << "_0x" << std::hex << dw_at << std::dec;
@@ -273,6 +364,23 @@ const char *DWARF_GetATEName(uint8_t dw_ate)
 		case DW_ATE_signed_fixed: return "DW_ATE_signed_fixed";
 		case DW_ATE_unsigned_fixed: return "DW_ATE_unsigned_fixed";
 		case DW_ATE_decimal_float: return "DW_ATE_decimal_float";
+		case DW_ATE_UTF: return "DW_ATE_UTF";
+		case DW_ATE_HP_float80: return "DW_ATE_HP_float80";
+		case DW_ATE_HP_complex_float80: return "DW_ATE_HP_complex_float80";
+		case DW_ATE_HP_float128: return "DW_ATE_HP_float128";
+		case DW_ATE_HP_complex_float128: return "DW_ATE_HP_complex_float128";
+		case DW_ATE_HP_floathpintel: return "DW_ATE_HP_floathpintel";
+		case DW_ATE_HP_imaginary_float80: return "DW_ATE_HP_imaginary_float80";
+		case DW_ATE_HP_imaginary_float128: return "DW_ATE_HP_imaginary_float128";
+		case DW_ATE_HP_VAX_float: return "DW_ATE_HP_VAX_float";
+		case DW_ATE_HP_VAX_float_d: return "DW_ATE_HP_VAX_float_d";
+		case DW_ATE_HP_packed_decimal: return "DW_ATE_HP_packed_decimal";
+		case DW_ATE_HP_zoned_decimal: return "DW_ATE_HP_zoned_decimal";
+		case DW_ATE_HP_edited: return "DW_ATE_HP_edited";
+		case DW_ATE_HP_signed_fixed: return "DW_ATE_HP_signed_fixed";
+		case DW_ATE_HP_unsigned_fixed: return "DW_ATE_HP_unsigned_fixed";
+		case DW_ATE_HP_VAX_complex_float: return "DW_ATE_HP_VAX_complex_float";
+		case DW_ATE_HP_VAX_complex_float_d: return "DW_ATE_HP_VAX_complex_float_d";
 	}
 	std::stringstream sstr;
 	sstr << "DW_ATE_unknown_0x" << std::hex << (unsigned int) dw_ate << std::dec;
@@ -299,6 +407,23 @@ const char *DWARF_GetFriendlyATEName(uint8_t dw_ate)
 		case DW_ATE_signed_fixed: return "a signed fixed";
 		case DW_ATE_unsigned_fixed: return "an unsigned fixed";
 		case DW_ATE_decimal_float: return "a decimal float";
+		case DW_ATE_UTF: return "unicode character";
+		case DW_ATE_HP_float80: return "80-bit floating-point";
+		case DW_ATE_HP_complex_float80: return "80-bit complex floating-point";
+		case DW_ATE_HP_float128: return "128-bit floating point";
+		case DW_ATE_HP_complex_float128: return "128-bit complex floating point";
+		case DW_ATE_HP_floathpintel: return "82-bit IA64 floating-point";
+		case DW_ATE_HP_imaginary_float80: return "80-bit imaginary floating-point";
+		case DW_ATE_HP_imaginary_float128: return "128-bit imaginary floating-point";
+		case DW_ATE_HP_VAX_float: return "F or G floating";
+		case DW_ATE_HP_VAX_float_d: return "D floating";
+		case DW_ATE_HP_packed_decimal: return "Cobol packed decimal";
+		case DW_ATE_HP_zoned_decimal: return "Cobol zoned decimal";
+		case DW_ATE_HP_edited: return "Cobol edited";
+		case DW_ATE_HP_signed_fixed: return "Cobol signed fixed";
+		case DW_ATE_HP_unsigned_fixed: return "Cobol unsigned fixed";
+		case DW_ATE_HP_VAX_complex_float: return "F or G floating complex";
+		case DW_ATE_HP_VAX_complex_float_d: return "D floating complex";
 	}
 	return "an unknown type";
 }
@@ -328,8 +453,15 @@ const char *DWARF_GetLANGName(uint16_t dw_lang)
 		case DW_LANG_UPC: return "DW_LANG_UPC";
 		case DW_LANG_D: return "DW_LANG_D";
 		case DW_LANG_python: return "DW_LANG_python";
+		case DW_LANG_Go: return "DW_LANG_Go";
 		case DW_LANG_Mips_Assembler: return "DW_LANG_Mips_Assembler";
 		case DW_LANG_Upc: return "DW_LANG_Upc";
+		case DW_LANG_HP_Bliss: return "DW_LANG_HP_Bliss";
+		case DW_LANG_HP_Basic91: return "DW_LANG_HP_Basic91";
+		case DW_LANG_HP_Pascal91: return "DW_LANG_HP_Pascal91";
+		case DW_LANG_HP_IMacro: return "DW_LANG_HP_IMacro";
+		case DW_LANG_HP_Assembler: return "DW_LANG_HP_Assembler";
+		
 	}
 	std::stringstream sstr;
 	sstr << "DW_LANG_unknown_0x" << std::hex << (unsigned int) dw_lang << std::dec;
@@ -360,9 +492,15 @@ const char *DWARF_GetFriendlyLANGName(uint16_t dw_lang)
 		case DW_LANG_ObjC_plus_plus: return "Objective-C++";
 		case DW_LANG_UPC: return "Unified Parallel C";
 		case DW_LANG_D: return "D";
-		case DW_LANG_python: return "DW_LANG_python";
+		case DW_LANG_python: return "Python";
+		case DW_LANG_Go: return "Go";
 		case DW_LANG_Mips_Assembler: return "MIPS assembler";
 		case DW_LANG_Upc: return "Unified Parallel C";
+		case DW_LANG_HP_Bliss: return "HP Bliss";
+		case DW_LANG_HP_Basic91: return "HP Basic91";
+		case DW_LANG_HP_Pascal91: return "HP Pascal91";
+		case DW_LANG_HP_IMacro: return "HP IMacro";
+		case DW_LANG_HP_Assembler: return "HP Assembler";
 	}
 	return "an unknown programming language";
 }
@@ -709,7 +847,7 @@ const char *DWARF_GetOPName(uint8_t dw_opcode)
 		case DW_OP_GNU_const_index: return "DW_OP_GNU_const_index";
 	}
 	std::stringstream sstr;
-	sstr << "DW_OP_" << (((dw_opcode >= DW_OP_lo_user) && (dw_opcode <= DW_OP_hi_user)) ? "user" : "unknown") << "_0x" << std::hex << dw_opcode << std::dec;
+	sstr << "DW_OP_" << (((dw_opcode >= DW_OP_lo_user) && (dw_opcode <= DW_OP_hi_user)) ? "user" : "unknown") << "_0x" << std::hex << (unsigned int) dw_opcode << std::dec;
 	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }

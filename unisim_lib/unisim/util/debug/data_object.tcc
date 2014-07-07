@@ -36,6 +36,8 @@
 #define __UNISIM_UTIL_DEBUG_DATA_OBJECT_TCC__
 
 #include <iostream>
+#include <unisim/util/ieee754/ieee754.hh>
+#include <unisim/util/simfloat/floating.tcc>
 
 namespace unisim {
 namespace util {
@@ -162,76 +164,68 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 						if(data_object->Fetch())
 						{
 							uint64_t data_object_bit_size = data_object->GetBitSize();
+							uint64_t data_object_byte_size = (data_object_bit_size + 7 ) / 8;
 							
-							switch(data_object_bit_size)
+							uint8_t data_object_raw_value[data_object_byte_size];
+							if(data_object->Read(0, data_object_raw_value, 0, data_object_bit_size))
 							{
-								case 32:
+								if(data_object->GetEndian() != unisim::util::endian::GetHostEndian())
+								{
+									// Swap bytes
+									unsigned int i;
+									for(i = 0; i < (data_object_byte_size / 2); i++)
 									{
-										uint64_t data_object_value64 = 0;
-										if(data_object->Read(0, data_object_value64, 32))
-										{
-											uint32_t data_object_value32 = data_object_value64;
-											float data_object_value;
-											memcpy(&data_object_value, &data_object_value32, 4);
-											
-											(*os) << data_object_value;
-										}
-										else
-										{
-											(*os) << "<unreadable>";
-										}
-										
-										
+										//std::cerr << "d[" << i << "] <-> d[" << (data_object_byte_size - 1 - i) << "] (0x" << std::hex << (unsigned int) data_object_raw_value[i] << " <-> 0x" << (unsigned int) data_object_raw_value[data_object_byte_size - 1 - i] << std::dec << ")" << std::endl;
+										uint8_t tmp = data_object_raw_value[i];
+										data_object_raw_value[i] = data_object_raw_value[data_object_byte_size - 1 - i];
+										data_object_raw_value[data_object_byte_size - 1 - i] = tmp;
 									}
-									break;
-								case 64:
-									{
-										uint64_t data_object_value64 = 0;
-										if(data_object->Read(0, data_object_value64, 64))
-										{
-											double data_object_value;
-											memcpy(&data_object_value, &data_object_value64, 8);
-											
-											(*os) << data_object_value;
-										}
-										else
-										{
-											(*os) << "<unreadable>";
-										}
-										
-										
-									}
-									break;
-								case 128:
-									{
-										uint8_t data_object_value128[16];
-										if(data_object->Read(0, data_object_value128, 0, 128))
-										{
-											if(data_object->GetEndian() != unisim::util::endian::GetHostEndian())
-											{
-												unsigned int i;
-												for(i = 0; i < 8; i++)
-												{
-													uint8_t tmp = data_object_value128[i];
-													data_object_value128[i] = data_object_value128[15 - i];
-													data_object_value128[15 - i] = tmp;
-												}
-											}
-											
-											long double data_object_value;
-											memcpy(&data_object_value, data_object_value128, 16);
-											
-											(*os) << data_object_value;
-										}
-										else
-										{
-											(*os) << "<unreadable>";
-										}
-									}
-									break;
-								default:
+								}
+								
+								// TODO: use unisim::util::ieee754 for printing in ostream
+// 								switch(data_object_bit_size)
+// 								{
+// 									case 32:
+// 										{
+// 											uint32_t value = 0;
+// 											memcpy(&value, data_object_raw_value, 4);
+// 											unisim::util::ieee754::SoftFloat sf_value = unisim::util::ieee754::SoftFloat(unisim::util::endian::Target2Host(data_object->GetEndian(), value));
+// 											sf_value.writeDecimal(*os);
+// 										}
+// 										break;
+// 									case 64:
+// 										{
+// 											uint64_t value = 0;
+// 											memcpy(&value, data_object_raw_value, 8);
+// 											unisim::util::ieee754::SoftDouble sd_value = unisim::util::ieee754::SoftDouble(unisim::util::endian::Target2Host(data_object->GetEndian(), value));
+// 											sd_value.writeDecimal(*os);
+// 										}
+// 										break;
+// 									default:
+// 										(*os) << "<unprintable " << data_object_bit_size << "-bit floating-point value>";
+// 										break;
+// 								}
+								
+								if(data_object_byte_size == sizeof(float))
+								{
+									float data_object_value;
+									memcpy(&data_object_value, data_object_raw_value, data_object_byte_size);
+									(*os) << data_object_value;
+								}
+								else if(data_object_byte_size == sizeof(double))
+								{
+									double data_object_value;
+									memcpy(&data_object_value, data_object_raw_value, data_object_byte_size);
+									(*os) << data_object_value;
+								}
+								else
+								{
 									(*os) << "<unprintable " << data_object_bit_size << "-bit floating-point value>";
-									break;
+								}
+							}
+							else
+							{
+								(*os) << "<unreadable>";
 							}
 						}
 						else
@@ -363,6 +357,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 		case T_TYPEDEF:
 			break;
 		case T_FUNCTION:
+			(*os) << "<function>";
 			break;
 		case T_CONST:
 			break;
@@ -404,6 +399,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			}
 			break;
 		case T_VOID:
+			(*os) << "<void>";
 			break;
 		case T_VOLATILE:
 			break;

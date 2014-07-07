@@ -55,6 +55,7 @@
 #include <unisim/util/debug/watchpoint.hh>
 #include <unisim/util/loader/elf_loader/elf32_loader.hh>
 #include <unisim/util/loader/elf_loader/elf64_loader.hh>
+#include <unisim/util/ieee754/ieee754.hh>
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -220,7 +221,8 @@ private:
 	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);
 	bool ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size);
-	bool ParseValue(const char *s, uint64_t& value);
+	bool ParseIntegerValue(const char *s, uint64_t& value);
+	bool ParseFloatValue(const char *s, unisim::util::ieee754::SoftDouble& value);
 	bool GetLine(const char *prompt, std::string& line, bool& interactive);
 	bool IsBlankLine(const std::string& line) const;
 	bool IsQuitCommand(const char *cmd) const;
@@ -318,6 +320,8 @@ private:
 	void PrintDataObject(const char *data_object_name, ADDRESS cia);
 	bool EditDataObject(const char *data_object_name, ADDRESS cia);
 	bool SetDataObject(const char *data_object_name, ADDRESS cia, uint64_t value);
+	bool SetDataObject(const char *data_object_name, ADDRESS cia, const unisim::util::ieee754::SoftDouble& value);
+	bool SetDataObject(const char *data_object_name, ADDRESS cia, const char *value);
 	void ListDataObjects(ADDRESS cia, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL);
 };
 

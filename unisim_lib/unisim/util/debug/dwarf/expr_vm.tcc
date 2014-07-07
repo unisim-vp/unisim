@@ -373,6 +373,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 	uint8_t opcode;
 	
 	bool in_dw_op_reg = false;
+	bool got_unknown_opcode = false;
 	bool got_unsupported_vendor_specific_extension = false;
 	
 	if(expr_length)
@@ -384,9 +385,12 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 			opcode = expr[expr_pos];
 			expr_pos++;
 			
-			if(got_unsupported_vendor_specific_extension)
+			if(got_unknown_opcode || got_unsupported_vendor_specific_extension)
 			{
-				if(os) *os << "0x" << std::hex << opcode << std::dec;
+				if(os)
+				{
+					*os << "0x" << std::hex << (unsigned int) opcode << std::dec;
+				}
 			}
 			else
 			{
@@ -1895,15 +1899,78 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							}
 						}
 						break;
+						
+					case DW_OP_implicit_value:
+						{
+							DWARF_LEB128 dw_length_leb128;
+							int64_t sz;
+							if((sz = dw_length_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_implicit_value: missing LEB128 length operand" << EndDebugError;
+								return false;
+							}
+							expr_pos += sz;
+							
+							uint64_t dw_length = (uint64_t) dw_length_leb128;
+							
+							if((expr_pos + dw_length) > expr_length)
+							{
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_implicit_value: missing " << dw_length << "-byte block value operand" << EndDebugError;
+								return false;
+							}
+							
+							uint8_t dw_block[dw_length];
+							memcpy(dw_block, expr + expr_pos, dw_length);
+							
+							expr_pos += dw_length;
+							
+							if(os)
+							{
+								*os << "DW_OP_implicit_value " << dw_length << ",";
+								uint64_t i;
+								for(i = 0; i < dw_length; i++)
+								{
+									*os << " 0x" << std::hex << dw_block[i] << std::dec;
+								}
+							}
+							
+							if(executing)
+							{
+								// Currently unimplemented.
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_implicit_value: currently unimplemented" << EndDebugError;
+								return false;
+							}
+						}
+						break;
+					case DW_OP_stack_value:
+						{
+							if(os) *os << "DW_OP_stack_value";
+							if(executing)
+							{
+								// Currently unimplemented.
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_stack_value: currently unimplemented" << EndDebugError;
+								return false;
+							}
+						}
+						break;
+						
 					default:
+						const char *producer = dw_cu ? dw_cu->GetProducer() : 0;
+						logger << DebugWarning << "In File \"" << dw_handler->GetFilename() << "\", in DWARF expression, unsupported ";
 						if((opcode >= DW_OP_lo_user) && (opcode <= DW_OP_hi_user))
 						{
-							const char *producer = dw_cu ? dw_cu->GetProducer() : 0;
-							logger << DebugWarning << "In File \"" << dw_handler->GetFilename() << "\", in DWARF expression, unsupported vendor specific extension " << DWARF_GetOPName(opcode) << " (opcode 0x" << std::hex << (unsigned int) opcode << std::dec << ") from " << (producer ? producer : "an unknown producer") << EndDebugWarning;
+							logger << "vendor specific extension";
 							got_unsupported_vendor_specific_extension = true;
 						}
+						else
+						{
+							logger << "unknown operation";
+							got_unknown_opcode = true;
+						}
 						
-						if(os) *os << "0x" << std::hex << (unsigned int) opcode << std::dec;
+						logger << " " << DWARF_GetOPName(opcode) << " (opcode 0x" << std::hex << (unsigned int) opcode << std::dec << ") from " << (producer ? producer : "an unknown producer") << EndDebugWarning;
+						
+						if(os) *os << DWARF_GetOPName(opcode);
 						if(executing)
 						{
 							logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", while evaluating a DWARF expression, unknown or invalid operation (0x" << std::hex << (unsigned int) opcode << std::dec << ")" << EndDebugError;
@@ -1938,7 +2005,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 		}
 	}
 
-	return !got_unsupported_vendor_specific_extension;
+	return !got_unsupported_vendor_specific_extension && !got_unknown_opcode;
 }
 
 template <class MEMORY_ADDR>

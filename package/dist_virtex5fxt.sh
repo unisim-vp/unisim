@@ -338,6 +338,7 @@ unisim/util/queue/queue.hh \
 unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
+unisim/util/ieee754/ieee754.hh \
 unisim/util/device/register.hh \
 unisim/util/random/random.hh \
 unisim/util/allocator/allocator.hh \

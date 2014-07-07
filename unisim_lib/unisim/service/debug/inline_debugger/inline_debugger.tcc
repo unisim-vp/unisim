@@ -45,6 +45,7 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/data_object.tcc>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/simfloat/floating.tcc>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -298,7 +299,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 {
 	bool recognized = false;
 	ADDRESS addr;
-	uint64_t value;
 	ADDRESS cont_addr;
 	unsigned int size;
 	ADDRESS next_addr;
@@ -913,10 +913,10 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
-				if(IsSetDataObjectCommand(parm[0].c_str()) && ParseValue(parm[2].c_str(), value))
+				if(IsSetDataObjectCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					SetDataObject(parm[1].c_str(), cia, value);
+					SetDataObject(parm[1].c_str(), cia, parm[2].c_str());
 					break;
 				}
 
@@ -2359,7 +2359,7 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::ParseValue(const char *s, uint64_t& value)
+bool InlineDebugger<ADDRESS>::ParseIntegerValue(const char *s, uint64_t& value)
 {
 	if(strcmp(s, "true") == 0)
 	{
@@ -2391,6 +2391,22 @@ bool InlineDebugger<ADDRESS>::ParseValue(const char *s, uint64_t& value)
 	}
 
 	return false;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::ParseFloatValue(const char *s, unisim::util::ieee754::SoftDouble& value)
+{
+	std::stringstream sstr(s);
+
+	unisim::util::ieee754::Flags flags;
+	value.read(sstr, flags);
+	
+// 	if(sscanf(s, "%lf", &value) == 1)
+// 	{
+// 		return true;
+// 	}
+
+	return sstr.eof();
 }
 
 template <class ADDRESS>
@@ -2928,6 +2944,207 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 					{
 						status = false;
 						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
+					}
+				}
+				else
+				{
+					status = false;
+					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+				}
+			}
+			else
+			{
+				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+			}
+			
+			delete data_object;
+		}
+		else
+		{
+			status = false;
+			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+		}
+	}
+	else
+	{
+		status = false;
+		(*std_output_stream) << "Can't lookup data objects" << endl;
+	}
+	return status;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRESS cia, const unisim::util::ieee754::SoftDouble& float_value)
+{
+	bool status = true;
+
+	if(data_object_lookup_import)
+	{
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		
+		if(data_object)
+		{
+			if(!data_object->IsOptimizedOut())
+			{
+				if(data_object->Fetch())
+				{
+					ADDRESS data_object_bit_size = data_object->GetBitSize();
+					
+					uint64_t value = 0;
+					switch(data_object_bit_size)
+					{
+						case 32:
+							{
+								unisim::util::ieee754::Flags flags;
+								
+								unisim::util::ieee754::SoftFloat sf = unisim::util::ieee754::SoftFloat(float_value, flags);
+								value = sf.queryValue();
+							}
+							break;
+						case 64:
+							value = float_value.queryValue();
+							break;
+						default:
+							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << endl;
+							break;
+					}
+					
+					if(data_object->Write(0, value, data_object_bit_size))
+					{
+						if(!data_object->Commit())
+						{
+							status = false;
+							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+						}
+					}
+					else
+					{
+						status = false;
+						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
+					}
+				}
+				else
+				{
+					status = false;
+					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+				}
+			}
+			else
+			{
+				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+			}
+			
+			delete data_object;
+		}
+		else
+		{
+			status = false;
+			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+		}
+	}
+	else
+	{
+		status = false;
+		(*std_output_stream) << "Can't lookup data objects" << endl;
+	}
+	return status;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRESS cia, const char *value)
+{
+	bool status = true;
+
+	if(data_object_lookup_import)
+	{
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		
+		if(data_object)
+		{
+			if(!data_object->IsOptimizedOut())
+			{
+				if(data_object->Fetch())
+				{
+					uint64_t data_object_raw_value = 0;
+					
+					ADDRESS data_object_bit_size = data_object->GetBitSize();
+						
+					const unisim::util::debug::Type *data_object_type = data_object->GetType();
+					
+					switch(data_object_type->GetClass())
+					{
+						case unisim::util::debug::T_UNKNOWN:
+							break;
+						case unisim::util::debug::T_CHAR:
+						case unisim::util::debug::T_INTEGER:
+						case unisim::util::debug::T_BOOL:
+						case unisim::util::debug::T_POINTER:
+						case unisim::util::debug::T_ENUM:
+							if(!ParseIntegerValue(value, data_object_raw_value))
+							{
+								status = false;
+								(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts an integral value" << endl;
+							}
+							break;
+						case unisim::util::debug::T_FLOAT:
+							{
+								unisim::util::ieee754::SoftDouble float_value;
+								
+								if(!ParseFloatValue(value, float_value))
+								{
+									status = false;
+									(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts a floating-point value" << endl;
+									break;
+								}
+								switch(data_object_bit_size)
+								{
+									case 32:
+										{
+											unisim::util::ieee754::Flags flags;
+											
+											unisim::util::ieee754::SoftFloat sf = unisim::util::ieee754::SoftFloat(float_value, flags);
+											data_object_raw_value = sf.queryValue();
+										}
+										break;
+									case 64:
+										data_object_raw_value = float_value.queryValue();
+										break;
+									default:
+										(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << endl;
+										break;
+								}
+							}
+							break;
+						case unisim::util::debug::T_STRUCT:
+						case unisim::util::debug::T_UNION:
+						case unisim::util::debug::T_CLASS:
+						case unisim::util::debug::T_INTERFACE:
+						case unisim::util::debug::T_ARRAY:
+						case unisim::util::debug::T_TYPEDEF:
+						case unisim::util::debug::T_FUNCTION:
+						case unisim::util::debug::T_CONST:
+						case unisim::util::debug::T_VOID:
+						case unisim::util::debug::T_VOLATILE:
+							status = false;
+							(*std_output_stream) << "Data object \"" << data_object_name << "\" is not a base type" << endl;
+							break;
+					}
+					
+					if(status)
+					{
+						if(data_object->Write(0, data_object_raw_value, data_object_bit_size))
+						{
+							if(!data_object->Commit())
+							{
+								status = false;
+								(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+							}
+						}
+						else
+						{
+							status = false;
+							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
+						}
 					}
 				}
 				else

@@ -312,7 +312,6 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						case DW_AT_bit_offset:
 						case DW_AT_bit_size:
 						case DW_AT_string_length:
-						case DW_AT_const_value:
 						case DW_AT_lower_bound:
 						case DW_AT_return_addr:
 						case DW_AT_upper_bound:
@@ -360,7 +359,6 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						case DW_AT_bit_offset:
 						case DW_AT_bit_size:
 						case DW_AT_string_length:
-						case DW_AT_const_value:
 						case DW_AT_lower_bound:
 						case DW_AT_return_addr:
 						case DW_AT_upper_bound:
@@ -516,7 +514,6 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						case DW_AT_bit_offset:
 						case DW_AT_bit_size:
 						case DW_AT_string_length:
-						case DW_AT_const_value:
 						case DW_AT_lower_bound:
 						case DW_AT_return_addr:
 						case DW_AT_upper_bound:
@@ -565,7 +562,6 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						case DW_AT_bit_offset:
 						case DW_AT_bit_size:
 						case DW_AT_string_length:
-						case DW_AT_const_value:
 						case DW_AT_lower_bound:
 						case DW_AT_return_addr:
 						case DW_AT_upper_bound:
