@@ -180,7 +180,6 @@ public:
 	inline GDBEndian GetEndian() const { return (endian); }
 
 protected:
-	vector<SocketThread*> protocolHandlers;
 
 	SocketServerThread *socketServer;
 
