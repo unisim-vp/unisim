@@ -2916,142 +2916,7 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRESS cia, uint64_t value)
-{
-	bool status = true;
-
-	if(data_object_lookup_import)
-	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
-		
-		if(data_object)
-		{
-			if(!data_object->IsOptimizedOut())
-			{
-				if(data_object->Fetch())
-				{
-					ADDRESS data_object_bit_size = data_object->GetBitSize();
-						
-					if(data_object->Write(0, value, data_object_bit_size))
-					{
-						if(!data_object->Commit())
-						{
-							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
-						}
-					}
-					else
-					{
-						status = false;
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
-					}
-				}
-				else
-				{
-					status = false;
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
-				}
-			}
-			else
-			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
-			}
-			
-			delete data_object;
-		}
-		else
-		{
-			status = false;
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
-		}
-	}
-	else
-	{
-		status = false;
-		(*std_output_stream) << "Can't lookup data objects" << endl;
-	}
-	return status;
-}
-
-template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRESS cia, const unisim::util::ieee754::SoftDouble& float_value)
-{
-	bool status = true;
-
-	if(data_object_lookup_import)
-	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
-		
-		if(data_object)
-		{
-			if(!data_object->IsOptimizedOut())
-			{
-				if(data_object->Fetch())
-				{
-					ADDRESS data_object_bit_size = data_object->GetBitSize();
-					
-					uint64_t value = 0;
-					switch(data_object_bit_size)
-					{
-						case 32:
-							{
-								unisim::util::ieee754::Flags flags;
-								
-								unisim::util::ieee754::SoftFloat sf = unisim::util::ieee754::SoftFloat(float_value, flags);
-								value = sf.queryValue();
-							}
-							break;
-						case 64:
-							value = float_value.queryValue();
-							break;
-						default:
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << endl;
-							break;
-					}
-					
-					if(data_object->Write(0, value, data_object_bit_size))
-					{
-						if(!data_object->Commit())
-						{
-							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
-						}
-					}
-					else
-					{
-						status = false;
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
-					}
-				}
-				else
-				{
-					status = false;
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
-				}
-			}
-			else
-			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
-			}
-			
-			delete data_object;
-		}
-		else
-		{
-			status = false;
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
-		}
-	}
-	else
-	{
-		status = false;
-		(*std_output_stream) << "Can't lookup data objects" << endl;
-	}
-	return status;
-}
-
-template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRESS cia, const char *value)
+bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRESS cia, const char *literal)
 {
 	bool status = true;
 
@@ -3071,6 +2936,12 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 						
 					const unisim::util::debug::Type *data_object_type = data_object->GetType();
 					
+					// follow typedefs
+					while(data_object_type->GetClass() == unisim::util::debug::T_TYPEDEF)
+					{
+						data_object_type = ((unisim::util::debug::Typedef *) data_object_type)->GetType();
+					}
+					
 					switch(data_object_type->GetClass())
 					{
 						case unisim::util::debug::T_UNKNOWN:
@@ -3080,7 +2951,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 						case unisim::util::debug::T_BOOL:
 						case unisim::util::debug::T_POINTER:
 						case unisim::util::debug::T_ENUM:
-							if(!ParseIntegerValue(value, data_object_raw_value))
+							if(!ParseIntegerValue(literal, data_object_raw_value))
 							{
 								status = false;
 								(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts an integral value" << endl;
@@ -3090,7 +2961,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 							{
 								unisim::util::ieee754::SoftDouble float_value;
 								
-								if(!ParseFloatValue(value, float_value))
+								if(!ParseFloatValue(literal, float_value))
 								{
 									status = false;
 									(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts a floating-point value" << endl;

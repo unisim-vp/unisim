@@ -169,58 +169,27 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 							uint8_t data_object_raw_value[data_object_byte_size];
 							if(data_object->Read(0, data_object_raw_value, 0, data_object_bit_size))
 							{
-								if(data_object->GetEndian() != unisim::util::endian::GetHostEndian())
+								switch(data_object_bit_size)
 								{
-									// Swap bytes
-									unsigned int i;
-									for(i = 0; i < (data_object_byte_size / 2); i++)
-									{
-										//std::cerr << "d[" << i << "] <-> d[" << (data_object_byte_size - 1 - i) << "] (0x" << std::hex << (unsigned int) data_object_raw_value[i] << " <-> 0x" << (unsigned int) data_object_raw_value[data_object_byte_size - 1 - i] << std::dec << ")" << std::endl;
-										uint8_t tmp = data_object_raw_value[i];
-										data_object_raw_value[i] = data_object_raw_value[data_object_byte_size - 1 - i];
-										data_object_raw_value[data_object_byte_size - 1 - i] = tmp;
-									}
-								}
-								
-								// TODO: use unisim::util::ieee754 for printing in ostream
-// 								switch(data_object_bit_size)
-// 								{
-// 									case 32:
-// 										{
-// 											uint32_t value = 0;
-// 											memcpy(&value, data_object_raw_value, 4);
-// 											unisim::util::ieee754::SoftFloat sf_value = unisim::util::ieee754::SoftFloat(unisim::util::endian::Target2Host(data_object->GetEndian(), value));
-// 											sf_value.writeDecimal(*os);
-// 										}
-// 										break;
-// 									case 64:
-// 										{
-// 											uint64_t value = 0;
-// 											memcpy(&value, data_object_raw_value, 8);
-// 											unisim::util::ieee754::SoftDouble sd_value = unisim::util::ieee754::SoftDouble(unisim::util::endian::Target2Host(data_object->GetEndian(), value));
-// 											sd_value.writeDecimal(*os);
-// 										}
-// 										break;
-// 									default:
-// 										(*os) << "<unprintable " << data_object_bit_size << "-bit floating-point value>";
-// 										break;
-// 								}
-								
-								if(data_object_byte_size == sizeof(float))
-								{
-									float data_object_value;
-									memcpy(&data_object_value, data_object_raw_value, data_object_byte_size);
-									(*os) << data_object_value;
-								}
-								else if(data_object_byte_size == sizeof(double))
-								{
-									double data_object_value;
-									memcpy(&data_object_value, data_object_raw_value, data_object_byte_size);
-									(*os) << data_object_value;
-								}
-								else
-								{
-									(*os) << "<unprintable " << data_object_bit_size << "-bit floating-point value>";
+									case 32:
+										{
+											uint32_t value = 0;
+											memcpy(&value, data_object_raw_value, 4);
+											unisim::util::ieee754::SoftFloat sf_value = unisim::util::ieee754::SoftFloat(unisim::util::endian::Target2Host(data_object->GetEndian(), value));
+											sf_value.writeDecimal(*os);
+										}
+										break;
+									case 64:
+										{
+											uint64_t value = 0;
+											memcpy(&value, data_object_raw_value, 8);
+											unisim::util::ieee754::SoftDouble sd_value = unisim::util::ieee754::SoftDouble(unisim::util::endian::Target2Host(data_object->GetEndian(), value));
+											sd_value.writeDecimal(*os);
+										}
+										break;
+									default:
+										(*os) << "<unprintable " << data_object_bit_size << "-bit floating-point value>";
+										break;
 								}
 							}
 							else
