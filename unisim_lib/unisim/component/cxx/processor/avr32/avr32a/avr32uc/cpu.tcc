@@ -402,8 +402,8 @@ bool CPU<CONFIG>::LoadAndInsertByte(unsigned int rd,typename CONFIG::address_t a
 	if(unlikely(!status)) return false;
 	uint32_t val=buffer;
 	uint32_t d=GetGPR(rd);
-	uint32_t mask=0xFF000000 >> (part * 8);
-	d=(d & ~mask) | (val << (part* 8));
+	uint32_t mask=0x000000FF << (part * 8);
+	d=(d & ~mask) | (val << (part * 8));
 	SetGPR(rd,d);
 	MonitorLoad(addr,1);
 	return true;
@@ -417,9 +417,9 @@ bool CPU<CONFIG>::LoadAndInsertHalfWord(unsigned int rd,typename CONFIG::address
 	if(unlikely(!status)) return false;
 	uint32_t val=BigEndian2Host(buffer);
 	uint32_t d=GetGPR(rd);
-	uint32_t mask=0xFFFF0000 >> (part *16);
+	uint32_t mask=0x0000FFFF << (part * 16);
 	
-	d=(d & ~mask) | (val << (part* 16));	
+	d=(d & ~mask) | (val << (part * 16));	
 	SetGPR(rd,d);
 	MonitorLoad(addr,2);
 	return true;
@@ -463,8 +463,8 @@ bool CPU<CONFIG>::StoreHalfWordIntoWord(unsigned int rx,unsigned int ry,unsigned
 {
 	uint32_t high_part=GetGPR(rx);
 	uint32_t low_part=GetGPR(ry);
-	high_part=high_part &(0xFFFF0000>>(x_part*8));
-	low_part=low_part &(0xFFFF0000>>(y_part*8));
+	high_part=high_part & (0x0000FFFF << (x_part * 8));
+	low_part=low_part & (0x0000FFFF << (y_part * 8));
 
 	uint32_t result = high_part | low_part;
 	uint32_t buffer=Host2BigEndian(result);
@@ -593,7 +593,7 @@ bool CPU<CONFIG>::EvaluateCond(uint8_t cond)
 		case COND_PL: return !GetSR_N();					// plus/positive  (signed)
 		case COND_LS: return GetSR_C() || GetSR_Z();			// <= (unsigned)
 		case COND_GT: return !GetSR_Z() && (GetSR_N()==GetSR_V()); 	// > (signed)
-		case COND_LE:return !GetSR_Z() || (GetSR_N()^GetSR_V());	// <= (signed)
+		case COND_LE:return GetSR_Z() || (GetSR_N()^GetSR_V());	// <= (signed)
 		case COND_HI:return !GetSR_C() && !GetSR_Z();			// > (unsigned)
 		case COND_VS:return GetSR_V();					// overflow
 		case COND_VC:return !GetSR_V();					// no overflow

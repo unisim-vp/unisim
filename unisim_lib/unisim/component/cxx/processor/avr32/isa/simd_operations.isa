@@ -3,7 +3,7 @@
 op pabs_sb(0b111000000000[12]:rs[4]:><:0b001000111110[12]:rd[4])
 
 pabs_sb.disasm={
-	os << "pabs_sb\tr" << (unsigned int)rd << ",r" << (unsigned int)rs;
+	os << "pabs.sb\tr" << (unsigned int)rd << ",r" << (unsigned int)rs;
 }
 
 op pabs_sh(0b111000000000[12]:rs[4]:><:0b001000111111[12]:rd[4])
@@ -312,7 +312,7 @@ op psubadds_uh(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0010001001[10]:x[1]:y[1]:rd[
 
 psubadds_uh.disasm={
 
-	os << "psubadds_uh\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << x << ">,r" << (unsigned int)ry << ":<" << y << ">";
+	os << "psubadds_uh\tr" << (unsigned int)rd << ",r" << (unsigned int)rx << ":<" << HALF_WORD_PART_NAME[x] << ">,r" << (unsigned int)ry << ":<" << HALF_WORD_PART_NAME[y] << ">";
 }
 
 op psubadds_sh(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0010000111[10]:x[1]:y[1]:rd[4])

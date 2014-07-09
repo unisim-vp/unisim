@@ -706,10 +706,10 @@ ld_w_e.disasm={
 
 op ld_w_f(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b111110[6]:x[1]:y[1]:rd[4])
 
-// x=0, y=0 for top
-// x=0, y=1 for upper
-// x=1, y=0 for lower
-// x=1, y=1 for bottom        
+// x=0, y=0 for bottom 
+// x=0, y=1 for lower
+// x=1, y=0 for upper
+// x=1, y=1 for top        
 
 ld_w_f.var part : {unsigned int}= {y| (x << 1)}
 
@@ -718,7 +718,7 @@ ld_w_f.execute={
 	uint32_t b = cpu->GetGPR(rb);
 	uint32_t i = cpu->GetGPR(ri); 
 
-	typename CONFIG::address_t addr = b + ((i >> (8 *(3-part)) & 0xFF) << 2);
+	typename CONFIG::address_t addr = b + ((i >> (8 *part) & 0xFF) << 2);
 	
 	return cpu->IntLoadWord(rd,addr);
 }
@@ -729,7 +729,7 @@ ld_w_f.disasm={
 	{
 		uint32_t i = cpu->GetGPR(ri); 
 		uint32_t b = cpu->GetGPR(rb);
-		typename CONFIG::address_t addr = b + ((i >> (8 *(3- part)) & 0xFF) << 2);
+		typename CONFIG::address_t addr = b + ((i >> (8 * part) & 0xFF) << 2);
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
 	
@@ -884,7 +884,7 @@ ld_d_e.disasm={
 
 
 // LDINS_B - load and insert byte  into register
-// part=0 for top,1 for upper, 2 for low, 3 for bottom
+// part=0 for bottom,1 for lower, 2 for upper, 3 for top
 
 op ldins_b(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b01[2]:part[2]:sext<32>disp12[12])
 
@@ -905,7 +905,7 @@ ldins_b.disasm={
 }
 
 // LDINS_H - load and insert halfword into register
-// part=0 for top, 1 for bottom
+// part=0 for bottom, 1 for top
 
 op ldins_h(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b000[3]:part[1]:sext<32>disp12[12])
 

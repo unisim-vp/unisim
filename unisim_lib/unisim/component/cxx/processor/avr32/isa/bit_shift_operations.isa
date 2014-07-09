@@ -264,7 +264,7 @@ castu_b.execute={
 	cpu->SetSR_C(carry);
 
 	return true;
-}
+} 
 
 castu_b.disasm={
 	os << "castu.b\t" << REG_NAME[rd];
@@ -371,7 +371,7 @@ swap_bh.execute={
 	uint32_t temp = cpu->GetGPR(rd);
 
 	uint32_t result= ((temp & 0x00FF0000)<<8) | ((temp & 0xFF000000)>>8) |((temp & 0x000000FF)<<8) | ((temp & 0x0000FF00)>>8);
-
+	
 	cpu->SetGPR(rd,result);
 
 	return true;
@@ -391,9 +391,10 @@ swap_h.execute={
 
 	uint32_t temp = cpu->GetGPR(rd);
 
-	uint32_t result= ((temp & 0x0000FFFF)<<16) | ((temp & 0xFFFF0000)>>16);
-
-	cpu->SetGPR(rd,result);	
+	//uint32_t result= ((temp & 0x0000FFFF)<<16) | ((temp & 0xFFFF0000)>>16);
+	uint32_t result= RotateRight(temp,16);
+	
+	cpu->SetGPR(rd,result);
 
 	return true;
 }

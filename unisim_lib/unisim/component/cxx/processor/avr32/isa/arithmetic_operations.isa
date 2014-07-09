@@ -4,14 +4,14 @@
 
 //---------------------------------------------------------------------------------------------
 
-// ABS - absolute value                                           ?? signed add
+// ABS - absolute value                                         
 
 op abs(0b010[3]:0b1110[4]:0b00100[5]:rd[4])
 
 
 abs.execute={
 
-	uint32_t d= cpu->GetGPR(rd);
+	int32_t d= cpu->GetGPR(rd);
 	uint32_t result;
 			
 	if(d!=0x80000000) result=abs(d);
@@ -191,7 +191,7 @@ op addabs(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11100100[8]:rd[4])
 addabs.execute={
 	
 	uint32_t x =cpu->GetGPR(rx);
-	uint32_t y=abs(cpu->GetGPR(ry));
+	uint32_t y=abs((int32_t)cpu->GetGPR(ry));
 	uint32_t result;
 	uint8_t carry_in=0;
 	uint8_t overflow,sign,carry_out;
