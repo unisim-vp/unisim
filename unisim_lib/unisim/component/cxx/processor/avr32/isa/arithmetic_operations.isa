@@ -745,7 +745,7 @@ sub_c.execute = {
 	
 	uint32_t d=cpu->GetGPR(rd);     // rd
 		
-	uint32_t s = (d == cpu->GetSP()) ? imm8 << 2 : imm8;
+	uint32_t s = (rd == REG_SP) ? imm8 << 2 : imm8;
                    
 	//?? choisir extension sur 10 chiffre à cause du shift ou 8
      	
@@ -771,7 +771,7 @@ sub_c.execute = {
 
 sub_c.disasm={
 
-	os << "sub\t" << REG_NAME[rd] << "," << (int) imm8;
+	os << "sub\t" << REG_NAME[rd] << "," << (rd == REG_SP) ? imm8 << 2 : imm8;
 }
 
 op sub_d(0b111[3]:imm_20_17[4]:0b0001[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
