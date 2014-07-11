@@ -1782,24 +1782,22 @@ ldm.execute={
 	if(reglist16 == 0) 
 		return false;                      
 	//If Rp is in Reglist16 and pointer is written back the result is UNDEFINED.
-	if((rp >= 0 && rp< 16) && (((reglist16>>rp)&1)==1))
+	if((rp != REG_PC) && (((reglist16>>rp)&1)==1))
 		return false;
 
-	uint32_t p = cpu->GetGPR(rp);
-	typename CONFIG::address_t pc = Operation<CONFIG>::GetAddr();
-	typename CONFIG::address_t loadAddress = p;
+	typename CONFIG::address_t loadAddress = cpu->GetGPR(rp);
 	if(reglist16 & REG_LIST16_PC)                  //reglist16[PC]==1
 	{
-		if(p == pc) loadAddress= cpu->GetSP();
+		if(rp == REG_PC) loadAddress= cpu->GetSP();
 		
 		if(!cpu->IntLoadWord(REG_PC,loadAddress))return false;
 		loadAddress+=4;
-		pc=cpu->GetNPC();
-		if(p==pc)
-		{
-			if( ((reglist16 >> 12)&3)==0b00 ) cpu->SetGPR(REG_R12,0);
 
-			else if ( ((reglist16 >> 12)&3)==0b01  ) cpu->SetGPR(REG_R12,1);
+		if(rp==REG_PC)
+		{
+			if( (reglist16 & REG_LIST16_LR_R12) == 0) cpu->SetGPR(REG_R12,0);
+			
+			else if ( (reglist16 & REG_LIST16_LR_R12) == REG_LIST16_R12 ) cpu->SetGPR(REG_R12,1);
 
 			else cpu->SetGPR(REG_R12,-1);
 
@@ -1866,7 +1864,7 @@ ldm.execute={
 	}
 	if(postinc==1)
 	{
-		if(p==pc) cpu->SetGPR(REG_SP,loadAddress);
+		if(rp==REG_PC) cpu->SetGPR(REG_SP,loadAddress);
 		else cpu->SetGPR(rp,loadAddress);	
 	}
 	 	
@@ -1876,12 +1874,12 @@ ldm.execute={
 
 ldm.disasm={
 
-	os << "ldm\t" << REG_NAME[rp] << "{++}";
-
+	os << "ldm\t" << (rp == REG_PC) ? "SP" : REG_NAME[rp];
+	if(postinc) os << "++";
+	os << ",";
 	
 	if(reglist16 & REG_LIST16_R0)
 	{
-		if(reglist16) os << ",";
 		os <<"R0";
 	}
 	if(reglist16 & REG_LIST16_R1)
@@ -2101,10 +2099,10 @@ popm.execute={
 			return false;
 		sp+=4;
 
-		if( (reglist8 & REG_LIST8_R12_LR)==0b00 )      // if reglist[LR,R12]=00
+		if( (reglist8 & REG_LIST8_LR_R12)==0 )      // if reglist[LR,R12]=00
 			cpu->SetGPR(REG_R12,0);         // set 0 in R12
 		
-		else if( (reglist8 & REG_LIST8_R12_LR)==0b01 ) // if reglist[LR,R12]=01
+		else if( (reglist8 & REG_LIST8_LR_R12)==REG_LIST8_R12 ) // if reglist[LR,R12]=01
 			cpu->SetGPR(REG_R12,1);         // set 1
 
 		else cpu->SetGPR(REG_R12,-1);           // set -1
@@ -2234,7 +2232,7 @@ popm.disasm={
 	if((reglist8 & REG_LIST8_PC) && k)     // if reglist8[PC]=1 and k=1
 	{
 		if(reglist8 & (REG_LIST8_R0_R3 | REG_LIST8_R4_R7 | REG_LIST8_R8_R9 | REG_LIST8_R10 | REG_LIST8_R11)) os << ",";
-		os << "r12=" << (!(reglist8 & REG_LIST8_R12_LR) ? "0": (((reglist8 & REG_LIST8_R12_LR)==REG_LIST8_R12) ? "1" : "-1"));
+		os << "r12=" << (!(reglist8 & REG_LIST8_LR_R12) ? "0": (((reglist8 & REG_LIST8_LR_R12)==REG_LIST8_R12) ? "1" : "-1"));
 		os << ",pc";
 	}
 	else
