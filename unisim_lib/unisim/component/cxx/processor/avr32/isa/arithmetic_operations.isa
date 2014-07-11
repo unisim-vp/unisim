@@ -880,7 +880,7 @@ sub_f_cond4.disasm={
 
 }
 
-op sub_cond4(0b111[3]:rx[4]:0b11011[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0001[4]:rd[4])
+op sub_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0001[4]:rd[4])
 
 sub_cond4.execute = {
 
