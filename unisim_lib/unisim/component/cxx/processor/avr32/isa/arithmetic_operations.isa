@@ -771,7 +771,7 @@ sub_c.execute = {
 
 sub_c.disasm={
 
-	os << "sub\t" << REG_NAME[rd] << "," << (rd == REG_SP) ? imm8 << 2 : imm8;
+	os << "sub\t" << REG_NAME[rd] << "," << ((rd == REG_SP) ? imm8 << 2 : imm8);
 }
 
 op sub_d(0b111[3]:imm_20_17[4]:0b0001[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
@@ -840,11 +840,11 @@ sub_e.disasm={
 	os << "sub\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << imm16;
 }
 
-//SUB_CON4 - conditional subtract                                          ?? signed sub without carry case  Z is set
+//SUB_COND4_F and SUB_COND4 - conditional subtract                                          ?? signed sub without carry case  Z is set
 
-op sub_f_cond4(0b111[3]:0b101[3]:f[1]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:imm8[8])
+op sub_flag_cond4(0b111[3]:0b101[3]:f[1]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:imm8[8])
 
-sub_f_cond4.execute = {
+sub_flag_cond4.execute = {
 
 	if(cpu->EvaluateCond((uint8_t)cond4))
 	{
@@ -874,9 +874,9 @@ sub_f_cond4.execute = {
 	return true;
 }
 
-sub_f_cond4.disasm={
+sub_flag_cond4.disasm={
 
-	os << "sub.f"<< COND[cond4]<<"\t" << REG_NAME[rd] << "," <<(int) imm8;
+	os << "subf"<< COND[cond4]<<"\t" << REG_NAME[rd] << "," <<(int) imm8;
 
 }
 

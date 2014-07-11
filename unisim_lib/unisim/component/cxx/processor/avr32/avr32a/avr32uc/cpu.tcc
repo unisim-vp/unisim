@@ -669,8 +669,13 @@ void CPU<CONFIG>::StepOneInstruction()
 		}
 		else
 		{
+			logger << DebugError << "Got an exception: " << std::endl;
+			stringstream sstr;
+			operation->disasm((CPU<CONFIG> *) this, sstr);
+			logger << "#" << instruction_counter << ":0x" << std::hex << pc << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugError;
 		//ProcessExceptions(operation);
-
+			Object::Stop(-1);
+			return;
 		}
 	}
 
@@ -972,6 +977,14 @@ bool CPU<CONFIG>::Breakpoint()
 }
 
 template <class CONFIG>
+bool CPU<CONFIG>::MoveFromSystemRegister(unsigned int rd, unsigned int sr_num)
+{
+	// TODO
+	SetGPR(rd, 0);
+	return true;
+}
+
+template <class CONFIG>
 PCRegisterInterface<CONFIG>::PCRegisterInterface(const char *_name, typename CONFIG::address_t *_r15_value, typename CONFIG::address_t *_npc_value) :
 	name(_name),
 	r15_value(_r15_value),
@@ -1007,7 +1020,6 @@ int PCRegisterInterface<CONFIG>::GetSize() const
 {
 	return sizeof(typename CONFIG::address_t);
 }
-
 
 } // end of namespace avr32uc
 } // end of namespace avr32a

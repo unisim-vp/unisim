@@ -768,7 +768,7 @@ op ld_d_a(0b101[3]:rp[4]:0b100[3]:0b00[2]:rd[3]:0b1[1])
 
 ld_d_a.execute={
 	
-	if(rd==rp || rp==(rd+1)) return false;
+	if((rp==(2*rd)) || (rp==((2*rd)+1))) return false;
 
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);
 	
@@ -794,7 +794,7 @@ op ld_d_b(0b101[3]:rp[4]:0b100[3]:0b01[2]:rd[3]:0b0[1])
 
 ld_d_b.execute={
 
-	if(rd==rp || rp==(rd+1)) return false;
+	if((rp==(2*rd)) || (rp==((2*rd)+1))) return false;
 
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);
 	
@@ -1200,7 +1200,7 @@ op st_d_a(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b0[1])
 
 st_d_a.execute={
 
-	if(rp==rs) return false;
+	if((rp==(2*rs)) || (rp==((2*rs)+1))) return false;
 	
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);
 
@@ -1227,7 +1227,7 @@ op st_d_b(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b1[1])
 
 st_d_b.execute={
 
-	if(rp==rs) return false;
+	if((rp==(2*rs)) || (rp==((2*rs)+1))) return false;
 	
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);
 
@@ -1795,13 +1795,15 @@ ldm.execute={
 
 		if(rp==REG_PC)
 		{
-			if( (reglist16 & REG_LIST16_LR_R12) == 0) cpu->SetGPR(REG_R12,0);
+			uint32_t res = -1;
 			
-			else if ( (reglist16 & REG_LIST16_LR_R12) == REG_LIST16_R12 ) cpu->SetGPR(REG_R12,1);
+			if( (reglist16 & REG_LIST16_LR_R12) == 0) res = 0;
+			
+			else if ( (reglist16 & REG_LIST16_LR_R12) == REG_LIST16_R12 ) res = 1;
 
-			else cpu->SetGPR(REG_R12,-1);
-
-			uint32_t res=cpu->GetGPR(REG_R12); 	// test r12 and update flags
+			cpu->SetGPR(REG_R12, res);
+			
+			// test r12 and update flags
 			cpu->SetSR_V(0);
 			cpu->SetSR_N((int32_t)res<0);
 			cpu->SetSR_Z(res==0);
@@ -1809,20 +1811,20 @@ ldm.execute={
 		}
 		else
 		{
-			if(  reglist16 & REG_LIST16_SP)
-			{
- 				if(!cpu->IntLoadWord(REG_SP,loadAddress)) return false;  
-				  loadAddress+=4;  
-			}
 			if(  reglist16 & REG_LIST16_LR )
 			{
  				if(!cpu->IntLoadWord(REG_LR,loadAddress)) return false;      
 				loadAddress+=4;
 			}
+			if(  reglist16 & REG_LIST16_SP)
+			{
+ 				if(!cpu->IntLoadWord(REG_SP,loadAddress)) return false;  
+				loadAddress+=4;  
+			}
 			if(  reglist16 & REG_LIST16_R12 )
 			{
- 				if(!cpu->IntLoadWord(REG_R12,loadAddress)) // load R12
-					return false;      
+ 				if(!cpu->IntLoadWord(REG_R12,loadAddress)) return false; // load R12
+				loadAddress+=4;
 			}
 			
 			uint32_t res=cpu->GetGPR(REG_R12);	// test r12 and update flags
@@ -1836,20 +1838,17 @@ ldm.execute={
 	{
 			if(  reglist16 & REG_LIST16_LR )
 			{
- 				if(!cpu->IntLoadWord(REG_LR,loadAddress)) // load LR
-					return false;
+ 				if(!cpu->IntLoadWord(REG_LR,loadAddress)) return false; // load LR
 				loadAddress+=4;      
 			}
 			if(  reglist16 & REG_LIST16_SP )
 			{
- 				if(!cpu->IntLoadWord(REG_SP,loadAddress)) // load SP
-					return false;
+ 				if(!cpu->IntLoadWord(REG_SP,loadAddress)) return false; // load SP
 				loadAddress+=4;
 			}
 			if(  reglist16 & REG_LIST16_R12 )
 			{
- 				if(!cpu->IntLoadWord(REG_R12,loadAddress)) // load R12
-					return false; 
+ 				if(!cpu->IntLoadWord(REG_R12,loadAddress)) return false; // load R12
 				loadAddress+=4;
 			}
 	}
@@ -1874,7 +1873,7 @@ ldm.execute={
 
 ldm.disasm={
 
-	os << "ldm\t" << (rp == REG_PC) ? "SP" : REG_NAME[rp];
+	os << "ldm\t" << ((rp == REG_PC) ? "SP" : REG_NAME[rp]);
 	if(postinc) os << "++";
 	os << ",";
 	

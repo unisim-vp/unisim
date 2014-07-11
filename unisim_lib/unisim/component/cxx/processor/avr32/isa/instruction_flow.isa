@@ -182,7 +182,7 @@ mcall.disasm={
 
 op rcall_a(0b110[3]:0b0[1]:disp_7_0[8]:0b1[1]:0b1[1]:disp_9_8[2])
 
-rcall_a.var disp :{int32_t} ={ SignExtend((uint32_t)(disp_9_8 << 8 )| disp_7_0, 10) }
+rcall_a.var disp :{int32_t} ={ SignExtend(((uint32_t) disp_9_8 << 8 )| (uint32_t) disp_7_0, 10) }
 
 rcall_a.var rcall_target_addr :{typename CONFIG::address_t} ={ Operation<CONFIG>::GetAddr() + (disp << 1) }
 
@@ -197,7 +197,7 @@ rcall_a.execute={
 
 rcall_a.disasm={
 
-	os << "rcall\tPC[Ox"<< std::hex << disp << "]" << std::dec;
+	os << "rcall\tPC[Ox"<< std::hex << (disp << 1) << "]" << std::dec;
 
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
