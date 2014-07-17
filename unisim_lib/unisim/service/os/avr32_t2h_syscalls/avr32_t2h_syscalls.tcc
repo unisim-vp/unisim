@@ -145,6 +145,12 @@ AVR32_T2H_Syscalls<MEMORY_ADDR>::AVR32_T2H_Syscalls(const char *name, Object *pa
 	, return_status_register_name("r12")
 	, errno_register_name("r11")
 	, param_register_names()
+	, stdin_pipe_filename()
+	, stdout_pipe_filename()
+	, stderr_pipe_filename()
+	, stdin_pipe_fd(-1)
+	, stdout_pipe_fd(-1)
+	, stderr_pipe_fd(-1)
 	, verbose_all(false)
 	, verbose_syscalls(false)
 	, verbose_setup(false)
@@ -152,7 +158,12 @@ AVR32_T2H_Syscalls<MEMORY_ADDR>::AVR32_T2H_Syscalls(const char *name, Object *pa
 	, param_verbose_syscalls("verbose-syscalls", this, verbose_syscalls, "enable/disable verbosity while system calls")
 	, param_verbose_setup("verbose-setup", this, verbose_setup, "enable/disable verbosity while setup")
 	, param_argc("argc", this, argc, "Number of program arguments")
+	, param_stdin_pipe_filename("stdin-pipe-filename", this, stdin_pipe_filename, "stdin pipe filename")
+	, param_stdout_pipe_filename("stdout-pipe-filename", this, stdout_pipe_filename, "stdout pipe filename")
+	, param_stderr_pipe_filename("stderr-pipe-filename", this, stderr_pipe_filename, "stderr pipe filename")
 {
+	param_argc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	reg_params[0] = 0;
 	reg_params[1] = 0;
 	reg_params[2] = 0;
@@ -197,6 +208,10 @@ AVR32_T2H_Syscalls<MEMORY_ADDR>::~AVR32_T2H_Syscalls()
 	{
 		if(*it_param_argv) delete (*it_param_argv);
 	}
+	
+	if(stdin_pipe_fd != -1) close(stdin_pipe_fd);
+	if(stdout_pipe_fd != -1) close(stdout_pipe_fd);
+	if(stderr_pipe_fd != -1) close(stderr_pipe_fd);
 }
 
 template <class MEMORY_ADDR>
@@ -327,9 +342,52 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 	MEMORY_ADDR entry_point = blob->GetEntryPoint();
 	reg_pc->SetValue(&entry_point);
 
-	MapTargetToHostFileDescriptor(0, 0); // map stdin
-	MapTargetToHostFileDescriptor(1, 1); // map stdout
-	MapTargetToHostFileDescriptor(2, 2); // map stderr
+	if(!stdin_pipe_filename.empty())
+	{
+		int stdin_pipe_flags = O_RDONLY;
+#if defined(WIN32) || defined(WIN64)
+		int stdin_pipe_flags |= O_BINARY;
+#endif
+		stdin_pipe_fd = open(stdin_pipe_filename.c_str(), stdin_pipe_flags);
+		if(stdin_pipe_fd == -1)
+		{
+			logger << DebugError << "Can't open \"" << stdin_pipe_filename << "\"" << EndDebugError;
+			return false;
+		}
+	}
+	
+	
+	if(!stdout_pipe_filename.empty())
+	{
+		int stdout_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+#if defined(WIN32) || defined(WIN64)
+		stdout_pipe_flags |= O_BINARY;
+#endif
+		stdout_pipe_fd = open(stdout_pipe_filename.c_str(), stdout_pipe_flags);
+		if(stdout_pipe_fd == -1)
+		{
+			logger << DebugError << "Can't open \"" << stdout_pipe_filename << "\"" << EndDebugError;
+			return false;
+		}
+	}
+	
+	if(!stderr_pipe_filename.empty())
+	{
+		int stderr_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+#if defined(WIN32) || defined(WIN64)
+		stderr_pipe_flags |= O_BINARY;
+#endif
+		stderr_pipe_fd = open(stderr_pipe_filename.c_str(), stderr_pipe_flags);
+		if(stderr_pipe_fd == -1)
+		{
+			logger << DebugError << "Can't open \"" << stderr_pipe_filename << "\"" << EndDebugError;
+			return false;
+		}
+	}
+
+	MapTargetToHostFileDescriptor(0, (stdin_pipe_fd == -1) ? 0 : stdin_pipe_fd); // map target stdin file descriptor to either host stdin file descriptor or host input file descriptor
+	MapTargetToHostFileDescriptor(1, (stdout_pipe_fd == -1) ? 0 : stdout_pipe_fd); // map target stdout file descriptor to either host stdout file descriptor or host output file descriptor
+	MapTargetToHostFileDescriptor(2, (stderr_pipe_fd == -1) ? 0 : stderr_pipe_fd); // map target stdout file descriptor to either host stderr file descriptor or host output file descriptor
 
 	return true;
 }
@@ -871,7 +929,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		MapTargetToHostFileDescriptor(target_fd, host_fd);
 	}
 	
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	{
 		logger << DebugInfo
 			<< "open(pathname=\"" << pathname << "\", flags=0x" << std::hex << flags
@@ -926,7 +984,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		if(ret == -1) target_errno = Host2TargetErrno(errno);
 	}
 	
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	{
 		logger << DebugInfo << "close(fd=" << target_fd << ") return " << ret << EndDebugInfo;
 	}
@@ -987,7 +1045,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		}
 	}
 
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	logger << DebugInfo << "read(fd=" << target_fd << ", buf=0x" << std::hex << buf_addr << std::dec
 		<< ", count=" << count << ") return " << ret << EndDebugInfo;
 
@@ -1038,7 +1096,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 				target_errno = Host2TargetErrno(errno);
 			}
 			
-			if(unlikely(verbose_syscalls))
+			if(unlikely(IsVerboseSyscalls()))
 			{
 				logger << DebugInfo
 				<< "write(fd=" << target_fd << ", buf=0x" << std::hex << buf_addr << std::dec
@@ -1092,7 +1150,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		
 		if(ret == -1) target_errno = Host2TargetErrno(errno);
 	}
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	{
 		logger << DebugInfo << "lseek(fildes=" << target_fd << ", offset=" << offset
 			<< ", whence=" << whence << ") return " << ret << EndDebugInfo;
@@ -1133,7 +1191,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 			
 			if(ret == -1) target_errno = Host2TargetErrno(errno);
 			
-			if(unlikely(verbose_syscalls))
+			if(unlikely(IsVerboseSyscalls()))
 			{
 				logger << DebugInfo
 					<< "rename(oldpath=\"" << oldpath << "\", newpath=\"" << newpath << "\") return " << ret << std::endl
@@ -1178,7 +1236,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	
 	if(ret == -1) target_errno = Host2TargetErrno(errno);
 	
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	logger << DebugInfo
 		<< "unlink(pathname=\"" << pathname << "\") return " << ret << std::endl
 		<< EndDebugInfo;
@@ -1213,7 +1271,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	if(ret == 0) memory_injection_import->InjectWriteMemory(buf_address, &target_stat, sizeof(target_stat));
 	if(ret == -1) target_errno = Host2TargetErrno(errno);
 
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	logger << DebugInfo
 		<< "stat(pathname=\"" << pathname << "\""
 		<< ", buf_addr=0x" << std::hex << buf_address << std::dec
@@ -1255,7 +1313,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		if(ret == -1) target_errno = Host2TargetErrno(errno);
 	}
 
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	logger << DebugInfo
 		<< "fstat(fd=" << target_fd
 		<< ", buf_addr=0x" << std::hex << buf_address << std::dec
@@ -1296,7 +1354,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	
 	if(ret == -1) target_errno = Host2TargetErrno(errno);
 
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	logger << DebugInfo
 		<< "gettimeofday(tv = 0x" << std::hex << tv_addr << std::dec
 		<< ", tz = 0x" << std::hex << tz_addr << std::dec << ") return " << ret
@@ -1329,7 +1387,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		if(ret == -1) target_errno = Host2TargetErrno(errno);
 	}
 	
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	logger << DebugInfo
 		<< "isatty() return " << ret
 		<< EndDebugInfo;
@@ -1365,7 +1423,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		target_errno = T2H_EINVAL;
 	}
 	
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	{
 		logger << DebugInfo
 			<< "system(command=\"" << command << "\") return " << ret
@@ -1385,7 +1443,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	status = GetSystemCallParam(0);
 	
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	{
 		logger << DebugInfo
 			<< "exit(status=" << status << EndDebugInfo;
@@ -1446,7 +1504,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	SetSystemCallParam(1, sp);                   // r11 = argv
 	SetSystemCallParam(2, high_addr - low_addr); // r10 = byte size of argv + argc on the stack
 
-	if(unlikely(verbose_syscalls))
+	if(unlikely(IsVerboseSyscalls()))
 	{
 		logger << DebugInfo << "init_argv(): argc=" << argc << ", argv=0x" << std::hex << sp << std::dec << ", byte size of argv=" << high_addr - low_addr << EndDebugInfo;
 	}
