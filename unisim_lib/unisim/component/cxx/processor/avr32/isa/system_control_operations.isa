@@ -76,6 +76,10 @@ mfdr.disasm={
 
 op mfsr(0b111000011011[12]:rd[4]:><:0b00000000[8]: systemRegisterAdress[8])
 
+mfsr.execute={
+	return cpu->MoveFromSystemRegister(rd, systemRegisterAdress);
+}
+
 mfsr.disasm={
 
 	os << "mfsr\t" << REG_NAME[rd] << ",0x" << std::hex << (int) systemRegisterAdress; 
@@ -148,6 +152,17 @@ sleep.disasm={
 // SR_COND4 - set register conditionally
 
 op sr_cond4(0b010[3]:0b1111[4]:0b1[1]:cond4[4]:rd[4])
+
+sr_cond4.execute={
+	
+	uint32_t val;
+	if(cpu->EvaluateCond((uint8_t)cond4)) val=1;
+	else val=0;
+	
+	cpu->SetGPR(rd,val);
+	
+	return true;
+}
 
 sr_cond4.disasm={
 

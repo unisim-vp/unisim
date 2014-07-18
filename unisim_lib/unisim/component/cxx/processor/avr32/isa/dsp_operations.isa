@@ -15,11 +15,11 @@ addhh_w.execute={
 
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
-	uint32_t op1,op2;
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):  // select halfword of rx and sign extend
-	SignExtend(x & 0x0000FFFF,16);
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):  // select halfword of ry
-	SignExtend(y & 0x0000FFFF,16);
+
+	uint32_t op1= (x==1) ? SignExtend(x >>16,16)  // select halfword of rx and sign extend
+				   :SignExtend(x ,16);
+	uint32_t op2= (y==1) ? SignExtend(y >> 16,16)  // select halfword of ry
+				   :SignExtend(y ,16);
 	uint32_t result;
  
 	uint8_t overflow;
@@ -59,10 +59,10 @@ machh_d.execute={
 	uint32_t d=cpu->GetGPR(rd);
 	uint32_t d1=cpu->GetGPR(rd+1);
 	
-	int32_t op1= (x==0) ? SignExtend(x >>16,16)  // select halfword of rx
+	int32_t op1= (x==1) ? SignExtend(x >>16,16)  // select halfword of rx
 	                    : SignExtend(x,16);
 			  
-	int32_t op2= (y==0) ? SignExtend(y >>16,16)  // select halfword of ry
+	int32_t op2= (y==1) ? SignExtend(y >>16,16)  // select halfword of ry
 	                    : SignExtend(y,16);
 			  
 	uint64_t acc = ((uint64_t)(d1 << 16)) | ((uint64_t) d >> 16); // Rd+1[31:0] || Rd[31:16]
@@ -92,11 +92,11 @@ machh_w.execute={
 	uint32_t y=cpu->GetGPR(ry);
 	uint32_t d=cpu->GetGPR(rd);
 
-	int32_t op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16)  // select halfword of rx 
-	                    : SignExtend(x & 0x0000FFFF,16);
+	int32_t op1= (x==1) ? SignExtend(x >> 16,16)  // select halfword of rx 
+	                    : SignExtend(x ,16);
 				   
-	int32_t op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16)  // select halfword of ry
-	                    : SignExtend(y & 0x0000FFFF,16);
+	int32_t op2= (y==1) ? SignExtend(y >> 16,16)  // select halfword of ry
+	                    : SignExtend(y,16);
 	
 	uint32_t result = (op1 * op2) + (int32_t)d;
 
@@ -124,9 +124,9 @@ macwh_d.execute={
 	uint32_t d=cpu->GetGPR(rd);
 	uint32_t d1=cpu->GetGPR(rd+1);
 	
-	int32_t op1=SignExtend((uint64_t)x,32);                                   // ?? sign extend x ?
-	int32_t op2 = (y==0) ? SignExtend((uint64_t)((y & 0xFFFF0000)>>16),16)   // select halfword of ry
-                           : SignExtend((uint64_t)(y & 0x0000FFFF),16);
+	int64_t op1=SignExtend((uint64_t)x,32);                                   // ?? sign extend x ?
+	int64_t op2 = (y==1) ? SignExtend((uint64_t)y >> 16,16)                   // select halfword of ry
+                           : SignExtend((uint64_t)y ,16);
 
 	int64_t acc = ((uint64_t)d1 << 32) | (d & 0xFFFF0000);
 	uint64_t result = (((op1 * op2) & 0x0000000000FFFFFF) + (acc >> 16)) << 16;
@@ -150,11 +150,11 @@ mulhh_w.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 	
-	int32_t op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16)  // select halfword of rx 
-	                    : SignExtend(x & 0x0000FFFF,16);
+	int32_t op1= (x==1) ? SignExtend(x >> 16,16)  // select halfword of rx 
+	                    : SignExtend(x ,16);
 				  
-	int32_t op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16)  // select halfword of ry 
-	                    : SignExtend(y & 0x0000FFFF,16);
+	int32_t op2= (y==1) ? SignExtend(y >> 16,16)  // select halfword of ry 
+	                    : SignExtend(y ,16);
 	
 	uint32_t result = op1 * op2;
 
@@ -181,7 +181,7 @@ mulwh_d.execute={
 
 	
 	int64_t op1=SignExtend((uint64_t)x,32);                                     // ?? sign extend x ?                     
-	int64_t op2= (y==0) ? SignExtend((uint64_t)(y >>16),16)      // select halfword of ry
+	int64_t op2= (y==1) ? SignExtend((uint64_t)(y >>16),16)      // select halfword of ry
 	                    : SignExtend((uint64_t)y,16);
 	
 	uint64_t result = (op1 * op2) << 16;
@@ -205,10 +205,10 @@ mulnhh_w.execute={
 	uint32_t x=cpu->GetGPR(rx);
 	uint32_t y=cpu->GetGPR(ry);
 	
-	int32_t op1= (x==0) ? SignExtend(x >>16,16) // select halfword of rx 
+	int32_t op1= (x==1) ? SignExtend(x >>16,16) // select halfword of rx 
 	                    :SignExtend(x,16);
 	
-	int32_t op2= (y==0) ? SignExtend( y >>16,16) // select halfword of ry
+	int32_t op2= (y==1) ? SignExtend( y >>16,16) // select halfword of ry
 	                    :SignExtend(y ,16);
 	
 	uint32_t result = -(op1 * op2);
@@ -234,17 +234,12 @@ mulnwh_d.execute={
 	uint32_t y=cpu->GetGPR(ry);
 
 	int64_t op1=SignExtend((uint64_t)x,32);		   			        // ?? sign extend x ? 
-	int64_t op2= (y==0) ? SignExtend((uint64_t)((y & 0xFFFF0000)>>16),16)    // select halfword of ry
-	                    :SignExtend((uint64_t)(y & 0x0000FFFF),16);
+	int64_t op2= (y==1) ? SignExtend((uint64_t)(y >> 16),16)    // select halfword of ry
+	                    :SignExtend((uint64_t)y ,16);
 	
 	uint64_t result = (-(op1 * op2)) << 16;
 
-	cpu->SetGPR(rd,result);/*if( ((x15 && y15 && !t15) || (!x15 && !y15 && t15))==1 )
-	{
-		if(x15 == 0) result = 0x00007FFF;
-		else result = 0xFFFF8000;
-	}
-	else result = SignExtend((uint32_t)temp,16);*/
+	cpu->SetGPR(rd,result);
 	cpu->SetGPR(rd+1,result >> 32);
  
 	return true;
@@ -263,8 +258,7 @@ op satadd_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00101100[8]:rd[4])
 satadd_h.execute={
 	
 	uint16_t x = cpu->GetGPR(rx);
-	uint16_t y = cpu->GetGPR(ry);
-	uint32_t d = cpu->GetGPR(rd); 
+	uint16_t y = cpu->GetGPR(ry); 
 	uint16_t temp;
 	
 	uint8_t carry_in=0;   // without carry
@@ -280,8 +274,8 @@ satadd_h.execute={
 
 	cpu->SetSR_Q(overflow || cpu->GetSR_Q());
 	cpu->SetSR_V(overflow);
-	cpu->SetSR_N(d < 0);           // rd avant ou après le calcul ??
-	cpu->SetSR_Z(d==0);
+	cpu->SetSR_N((int32_t)result < 0);          
+	cpu->SetSR_Z(result == 0);
 	cpu->SetSR_C(0);
 
 	return true;
@@ -292,7 +286,7 @@ satadd_h.disasm={
 	os << "satadd.h\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
-//SATADD_W - saturated add of words                  ?? sign add without carry
+//SATADD_W - saturated add of words                  
 
 op satadd_w(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00001100[8]:rd[4])
 
@@ -313,7 +307,7 @@ satadd_w.execute={
 
 	cpu->SetSR_Q(overflow || cpu->GetSR_Q());
 	cpu->SetSR_V(overflow);
-	cpu->SetSR_N(result < 0);                           // rd avant ou après le calcul ??
+	cpu->SetSR_N((int32_t)result < 0);                           
 	cpu->SetSR_Z(result == 0);
 	cpu->SetSR_C(0);
 
@@ -332,8 +326,7 @@ op satsub_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00111100[8]:rd[4])
 satsub_h.execute={
 
 	uint16_t x = (uint16_t)cpu->GetGPR(rx);
-	uint16_t y = (uint16_t)cpu->GetGPR(ry); 
-	uint32_t d = cpu->GetGPR(rd); 
+	uint16_t y = (uint16_t)cpu->GetGPR(ry);  
 	uint16_t temp;
 	
 	uint8_t borrow_in=0;
@@ -349,8 +342,8 @@ satsub_h.execute={
 
 	cpu->SetSR_Q(overflow || cpu->GetSR_Q());
 	cpu->SetSR_V(overflow);
-	cpu->SetSR_N(d < 0);		// rd avant ou après le calcul ??
-	cpu->SetSR_Z(d==0);
+	cpu->SetSR_N((int32_t)result < 0);
+	cpu->SetSR_Z(result == 0);
 	cpu->SetSR_C(0);
 
 	return true;
@@ -369,40 +362,23 @@ op satsub_w_a(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00011100[8]:rd[4])
 
 satsub_w_a.execute={
 
-	uint32_t x = cpu->GetGPR(rx);
-	uint32_t y = cpu->GetGPR(ry); 
-	uint32_t d = cpu->GetGPR(rd); 
-	uint32_t temp;
+	uint32_t op1 = cpu->GetGPR(rx);
+	uint32_t op2 = cpu->GetGPR(ry); 
+	uint32_t result;
 	
-	uint8_t q ;
-	uint8_t borrow_in=0;                 // without borrow
+	uint8_t borrow_in=0;                 
 	uint8_t borrow_out;
 	uint8_t overflow;
 	uint8_t sign;
 
-	//SignedSub32(temp, borrow_out, overflow, sign, x,y, borrow_in);
-	SignedSatSub32(temp, borrow_out, overflow, sign, x,y, borrow_in);
+	SignedSatSub32(result, borrow_out, overflow, sign,op1 ,op2 ,borrow_in);
 	
-	uint8_t x31= (x >> 31) & 1;
-	uint8_t y31= (y >> 31) & 1;
-	uint8_t t31= (temp >> 31) & 1;
-	q  = (x31 && y31 && !t31) || (!x31 && !y31 && t31) || cpu->GetSR_Q();
-	uint32_t result;
-	/*if( ((x31 && y31 && !t31) || (!x31 && !y31 && t31))==1 )
-	{
-		if( x31 == 0 ) result = 0x7FFFFFFF;
-		else result = 0x80000000;
-	}
-	else result = temp;
-	*/
-	result = temp;
+      cpu->SetGPR(rd,result);
 
-	cpu->SetGPR(rd,result);
-
-	cpu->SetSR_Q(q);
+	cpu->SetSR_Q(overflow || cpu->GetSR_Q());
 	cpu->SetSR_V(overflow);
-	cpu->SetSR_N(d < 0);			// rd avant ou après le calcul ??
-	cpu->SetSR_Z(d==0);
+	cpu->SetSR_N((int32_t)result < 0);
+	cpu->SetSR_Z(result==0);
 	cpu->SetSR_C(0);
 
 	return true;
@@ -421,34 +397,21 @@ satsub_w_b.execute={
 
 	uint32_t op1 = cpu->GetGPR(rs);
 	uint32_t op2 = imm16; 
-	uint32_t temp;
+	uint32_t result;
 	
-	uint8_t q;
 	uint8_t borrow_in=0;
 	uint8_t borrow_out;
 	uint8_t overflow;
 	uint8_t sign;
 
-	//SignedSub32(temp, borrow_out, overflow, sign, op1,op2, borrow_in);
-	SignedSatSub32(temp, borrow_out, overflow, sign, op1,op2, borrow_in);
-	uint8_t op1_31= (op1 >> 31) & 1;
-	uint8_t op2_31= (op2 >> 31) & 1;
-	uint8_t t31= (temp >> 31) & 1;
-	q  = (op1_31 && op2_31 && !t31) || (!op1_31 && !op2_31 && t31) || cpu->GetSR_Q();
-	uint32_t result;
-	/*if( ((op1_31 && op2_31 && !t31) || (!op1_31 && !op2_31 && t31))==1 )
-	{
-		if( op1_31 == 0 ) result = 0x7FFFFFFF;
-		else result = 0x80000000;
-	}
-	else result = temp;*/
-	result=temp;
-	cpu->SetGPR(rd,result);
+	SignedSatSub32(result, borrow_out, overflow, sign, op1,op2, borrow_in);
+	
+      cpu->SetGPR(rd,result);
 
-	cpu->SetSR_Q(q);
+	cpu->SetSR_Q(overflow || cpu->GetSR_Q());
 	cpu->SetSR_V(overflow); 
-	cpu->SetSR_N(sign);                       // rd avant ou après le calcul ??
-	cpu->SetSR_Z(temp==0);
+	cpu->SetSR_N((int32_t)result <0);                       
+	cpu->SetSR_Z(result==0);
 	cpu->SetSR_C(0);
 
 	return true;
@@ -466,24 +429,25 @@ op satrnds(0b111[3]:0b1001[4]:0b11011[5]:rd[4]:><:0b0000[4]:0b00[2]:bp5[5]:sa5[5
 satrnds.execute={
 	
 	uint32_t d = cpu->GetGPR(rd);
-	uint32_t temp = ShiftArithmeticRight(d,(unsigned int)sa5);                // arithmetic shift
+	uint8_t rnd;
+	uint32_t temp = ShiftArithmeticRight(d,sa5,rnd);                // arithmetic shift
 	uint32_t result;
 	uint8_t q = cpu->GetSR_Q();                                // if Q=1 sat flag is set cleared otherwise
+	
 	if(sa5 != 0)
 	{
-		uint8_t rnd= (rd >> (sa5-1)) & 1;
-		temp= temp + rnd;
+		temp= (int32_t)temp + (int32_t)rnd;
 	}
-	uint32_t mask = (1UL << bp5)-1; 
-	if( (temp == SignExtend((uint32_t)(temp & mask),(unsigned int)bp5)) || (bp5 == 0))
+	
+	if( (temp == SignExtend(temp,bp5)) || (bp5 == 0))
 	{
 		result = temp;
 	}
 	else                                                       // saturation occurs
 	{
 		q=1;						   // sat flag is set
-		if( ((temp >> 31)&1) == 1 ) result = - (uint32_t)pow(2,(int)bp5-1); // min signed value with bp5 bits
-		else result = (uint32_t)pow(2,(int)bp5-1)-1;                        // max signed value
+		result = ((temp >> 31)&1) ? - ((uint32_t) 1 << (bp5 - 1)) // min signed value with bp5 bits
+		                          :   ((uint32_t) 1 << (bp5 - 1))-1;                        // max signed value
 	}
 
 	cpu->SetGPR(rd,result);                                    // write back result
@@ -503,14 +467,16 @@ op satrndu(0b111[3]:0b1001[4]:0b11011[5]:rd[4]:><:0b0000[4]:0b01[2]:bp5[5]:sa5[5
 satrndu.execute={
 	
 	uint32_t d = cpu->GetGPR(rd);
-	uint32_t temp = ShiftArithmeticRight(d,(unsigned int)sa5);           // arithmetic shift
+	uint8_t rnd;
+	int32_t temp = ShiftArithmeticRight(d,(unsigned int)sa5,rnd);           // arithmetic shift
 	uint32_t result;
-	uint8_t q= cpu->GetSR_Q();                            // if Q=1 sat flag is set cleared otherwise
+	uint8_t q= cpu->GetSR_Q();    // if Q=1 sat flag is set cleared otherwise
+	
 	if(sa5 != 0)
 	{
-		uint32_t rnd= (rd >> (sa5-1)) & 1;
-		temp= temp + rnd;
+		temp= temp + (int8_t)rnd;
 	}
+	
 	uint32_t mask = (1UL << bp5)-1 ;
 	if( (temp == (uint32_t)(temp & mask)) || (bp5 == 0) )
 	{
@@ -519,8 +485,8 @@ satrndu.execute={
 	else							// saturation occurs
 	{
 		q=1;						// Q flag is set
-		if( ((temp >> 31)&1) == 1 ) result = 0x00000000; 
-		else result = (uint32_t)pow(2,(int)bp5)-1;       // max unsigned value with bp5 bits     
+		result= ((temp >> 31)&1) ? 0x00000000 
+						 : ((uint32_t) 1 << bp5)-1;                                 // max unsigned value with bp5 bits     
 	}
 
 	cpu->SetGPR(rd,result);                        //write back result
@@ -545,16 +511,17 @@ sats.execute={
 	uint32_t result;
 	uint8_t q = cpu->GetSR_Q();                                              // get last saturation flag
 	
-	uint32_t mask = (1UL << bp5)-1 ;
-	if( (temp == SignExtend((uint32_t)(temp & mask),(unsigned int)bp5)) || (bp5 == 0) )
+
+	if( (temp == SignExtend(temp,bp5)) || (bp5 == 0) )
 	{
 		result = temp;
 	}
 	else						// saturation occurs
 	{
 		q=1;					// Q flag is set
-		result = ( ((temp >> 31)&1) == 1 ) ? -(uint32_t)pow(2,(int)bp5-1): // max signed value with bp5 bits
-			(uint32_t)pow(2,(int)bp5-1)-1;                             // min signed value with bp5 bits
+
+		result = ((temp >> 31)&1) ? -((uint32_t)1 <<(bp5-1))               // max signed value with bp5 bits
+			                    : ((uint32_t)1 << (bp5-1))-1;            // min signed value with bp5 bits
 	}
 
 	cpu->SetGPR(rd,result);                            //write back result
@@ -580,14 +547,15 @@ satu.execute={
 	uint8_t q=cpu->GetSR_Q();                // get last saturation flag
 	
 	uint32_t mask = (1UL << bp5)-1 ;
-	if( (temp == (uint32_t)(temp & mask)) || (bp5 == 0) )
+	if( (temp == (temp & mask)) || (bp5 == 0) )
 	{
 		result = temp;
 	}
 	else					// saturation occurs
 	{
 		q = 1;
-		result = ( ((temp >> 31)&1) == 1 ) ? 0x00000000: (uint32_t)pow(2,(int)bp5)-1;     
+		result = ((temp >> 31)&1)  ? 0x00000000
+				               : ((uint32_t)1<< bp5)-1;     
 	}
 
 	cpu->SetGPR(rd,result);			//write back result in rd
@@ -612,11 +580,11 @@ subhh_w.execute={
 
 	uint32_t x=cpu->GetGPR(rx);			   // get values in registers
 	uint32_t y=cpu->GetGPR(ry);
-	uint32_t op1,op2;
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):  // select halfword of rx
-	SignExtend(x & 0x0000FFFF,16);
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):  // select halfword of ry
-	SignExtend(y & 0x0000FFFF,16);
+	
+	uint32_t op1= (x==1) ? SignExtend(x >> 16,16)  // select halfword of rx
+				   :SignExtend(x,16);
+	uint32_t op2= (y==1) ? SignExtend(y >> 16,16)  // select halfword of ry
+				   :SignExtend(y ,16);
 	uint32_t result;
  
 	uint8_t overflow;
@@ -652,22 +620,22 @@ op mulsathh_h(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b1000[4]:0b10[2]:x[1
 
 mulsathh_h.execute={
 
-	uint32_t x=cpu->GetGPR(rx);				 // get values in registers
+	uint32_t x=cpu->GetGPR(rx);			// select halfword	 // get values in registers
 	uint32_t y=cpu->GetGPR(ry);
-	uint32_t op1,op2;                                      // select halfword
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):
-	SignExtend(x & 0x0000FFFF,16);
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):
-	SignExtend(y & 0x0000FFFF,16);
+	      
+	int32_t op1= (x==1) ? SignExtend(x >> 16,16)
+			        :SignExtend(x ,16);
+	int32_t op2= (y==1) ? SignExtend(y >> 16,16)
+				  :SignExtend(y ,16);
 	uint32_t result;
 	uint8_t q=cpu->GetSR_Q();				// get last saturation flag
 
 	if(((uint16_t)op1 == 0x8000) && ((uint16_t)op2 == 0x8000))   // op1=op2=-1
 	{ 
-		result = 0x7FFF;				    // saturation occured
+		result = 0x00007FFF;				    // saturation occured
 		q=1;                                                // set Q flag
 	}	
-	else result = SignExtend(((op1 * op2) >> 15),16);
+	else result = SignExtend((uint32_t)((op1 * op2) >> 15),16);
 	
 	cpu->SetGPR(rd,result);                                       
 	cpu->SetSR_Q(q);                                             //write Q flag                                
@@ -692,11 +660,11 @@ mulsathh_w.execute={
 
 	uint32_t x=cpu->GetGPR(rx);			    // get values in registers
 	uint32_t y=cpu->GetGPR(ry);
-	uint32_t op1,op2;
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):  // select halword into word
-	SignExtend(x & 0x0000FFFF,16);
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):
-	SignExtend(y & 0x0000FFFF,16);
+	
+	int32_t op1= (x==1) ? SignExtend(x >> 16,16)  // select halword into word
+				  :SignExtend(x ,16);
+	int32_t op2= (y==1) ? SignExtend(y >> 16,16)
+				  :SignExtend(y,16);
 	uint32_t result;
 	uint8_t q = cpu->GetSR_Q();			      // get last saturation flag
 
@@ -730,20 +698,20 @@ mulsatrndhh_h.execute={
 
 	uint32_t x=cpu->GetGPR(rx);                               // get values in registers
 	uint32_t y=cpu->GetGPR(ry);
-	uint32_t op1,op2;
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):        // select halfword
-	SignExtend(x & 0x0000FFFF,16);
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):
-	SignExtend(y & 0x0000FFFF,16);
+	
+	int32_t op1= (x==1) ? SignExtend(x >>16,16)        // select halfword
+				  :SignExtend(x ,16);
+	int32_t op2= (y==1) ? SignExtend(y >>16,16)
+				  :SignExtend(y,16);
 	uint32_t result;
 	uint8_t q= cpu->GetSR_Q();                                  // get last saturation flag
 
 	if(((uint16_t)op1 == 0x8000) && ((uint16_t)op2 == 0x8000)) // if op1=op2=-1
 	{
-		result = 0x7FFF;				// saturation occurs
+		result = 0x00007FFF;				// saturation occurs
 		q=1;
 	}	
-	else result = SignExtend(((op1 * op2) + 0x4000) >> 15,16);
+	else result = SignExtend((uint32_t)((op1 * op2) + 0x4000) >> 15,16);
 	
 	cpu->SetGPR(rd,result);   
 	cpu->SetSR_Q(q);			 //write Q flag
@@ -767,10 +735,10 @@ mulsatrndwh_w.execute={
 
 	uint32_t x=cpu->GetGPR(rx);			 // get values in registers
 	uint32_t y=cpu->GetGPR(ry);
-	uint32_t op1,op2;
-	op1=x;                                
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):  // select halfword
-	SignExtend(y & 0x0000FFFF,16);
+	
+	int32_t op1=x;                                
+	int32_t op2 = (y==1) ? SignExtend(y >> 16,16)  // select halfword
+				   :SignExtend(y,16);
 	uint32_t result;
 	uint8_t q=cpu->GetSR_Q();                       // get last saturation flag
 
@@ -779,7 +747,7 @@ mulsatrndwh_w.execute={
 		result = 0x7FFFFFFF;                          // saturation occurs
 		q=1;
 	}	
-	else result = SignExtend(((op1 * op2) + 0x4000) >> 15,16);
+	else result = SignExtend((uint32_t)((op1 * op2) + 0x4000) >> 15,16);
 	
 	cpu->SetGPR(rd,result);   
 	cpu->SetSR_Q(q);                          //write Q flag
@@ -804,14 +772,14 @@ mulsatwh_w.execute={
 
 	uint32_t x=cpu->GetGPR(rx);                                // get value in registers
 	uint32_t y=cpu->GetGPR(ry);
-	uint32_t op1,op2;
-	op1=x;
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):          // select halfword
-	SignExtend(y & 0x0000FFFF,16);
+
+	int32_t op1=x;
+	int32_t op2= (y==1) ? SignExtend(y >>16,16)          // select halfword
+				  : SignExtend(y,16);
 	uint32_t result;
 	uint8_t q=cpu->GetSR_Q();                                    // get last Q
 
-	if( (op1 == 0x80000000) && (op2 == 0x80000000) )// if op1=op2=-1
+	if( (op1 == 0x80000000) && ((uint16_t)op2 == 0x8000) )// if op1=op2=-1
 	{
 		result = 0x7FFFFFFF;
 		q=1;
@@ -843,11 +811,11 @@ macsathh_w.execute={
 	uint32_t x=cpu->GetGPR(rx);                        //  get value in registers
 	uint32_t y=cpu->GetGPR(ry);
 	uint32_t d=cpu->GetGPR(rd);
-	uint32_t op1,op2;
-	op1= (x==0) ? SignExtend((x & 0xFFFF0000)>>16,16):   // select halfword
-	SignExtend(x & 0x0000FFFF,16);
-	op2= (y==0) ? SignExtend((y & 0xFFFF0000)>>16,16):
-	SignExtend(y & 0x0000FFFF,16);
+	
+	int32_t op1= (x==1) ? SignExtend(x >> 16,16)   // select halfword
+				  :SignExtend(x ,16);
+	int32_t op2= (y==1) ? SignExtend(y>>16,16)
+				  :SignExtend(y,16);
 	uint32_t result,product;
 	uint8_t q= cpu->GetSR_Q();                   // get last Q flag
 
@@ -856,11 +824,14 @@ macsathh_w.execute={
 		product = 0x7FFFFFFF;                // saturation occurs
 		q=1;                                 // set Q
 	}	
-	else product = (op1 * op2) << 1;             //  arithmetic shift ??
+	else product = (op1 * op2) << 1;             
+	
 	uint8_t sign,carry_out,overflow;
 	uint8_t carry_in=0;
+	
 	SignedSatAdd32(result,carry_out,overflow,sign,product,d,carry_in);            
-	if(overflow==1) q=1;                        // set if overflow on accumulate          à verifier ??	
+	
+	if(overflow==1) q=1;                        // set if overflow on accumulate          	
 
 	cpu->SetGPR(rd,result);                     // write back result
  	cpu->SetSR_Q(q);			    // write Q flag

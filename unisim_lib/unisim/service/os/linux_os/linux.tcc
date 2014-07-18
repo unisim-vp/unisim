@@ -102,6 +102,12 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
 	, param_debug_dwarf_("debug-dwarf", this, debug_dwarf_)
     , param_dwarf_to_html_output_directory_("dwarf-to-html-output-directory", this, dwarf_to_html_output_directory_)
     , param_dwarf_to_xml_output_filename_("dwarf-to-xml-output-filename", this, dwarf_to_xml_output_filename_)
+    , stdin_pipe_filename()
+    , stdout_pipe_filename()
+    , stderr_pipe_filename()
+    , param_stdin_pipe_filename("stdin-pipe-filename", this, stdin_pipe_filename, "stdin pipe filename")
+    , param_stdout_pipe_filename("stdout-pipe-filename", this, stdout_pipe_filename, "stdout pipe filename")
+    , param_stderr_pipe_filename("stderr-pipe-filename", this, stderr_pipe_filename, "stderr pipe filename")
     , linuxlib_(0)
     , system_("")
     , param_system_("system", this, system_, "Emulated system architecture "
@@ -344,6 +350,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
                      utsname_release_.c_str(), utsname_version_.c_str(),
                      utsname_machine_.c_str(), utsname_domainname_.c_str());
   linuxlib_->SetHWCap(hwcap_.c_str());
+  // .. and the stdin/stdout/stderr pipe filenames (if any)
+  linuxlib_->SetStdinPipeFilename(stdin_pipe_filename.c_str());
+  linuxlib_->SetStdoutPipeFilename(stdout_pipe_filename.c_str());
+  linuxlib_->SetStderrPipeFilename(stderr_pipe_filename.c_str());
 
   // now it is time to try to run the initialization of the linuxlib
   {

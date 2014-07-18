@@ -107,8 +107,14 @@ public:
 	              char const * const utsname_version,
 	              char const * const utsname_machine,
 	              char const * const utsname_domainname);
-
+	
+	// HWCap
 	void SetHWCap(const char *hwcap);
+
+	// Set stdin/stdout/stderr pipe filenames
+	void SetStdinPipeFilename(const char *filename);
+	void SetStdoutPipeFilename(const char *filename);
+	void SetStderrPipeFilename(const char *filename);
 
 	// TODO: Remove
 	// // Sets the registers to be used
@@ -244,6 +250,18 @@ private:
 	// program termination and return status
 	bool terminated_;
 	int return_status_;
+	
+	// stdin/stdout/stderr pipes
+	std::string stdin_pipe_filename;
+	std::string stdout_pipe_filename;
+	std::string stderr_pipe_filename;
+	int stdin_pipe_fd;
+	int stdout_pipe_fd;
+	int stderr_pipe_fd;
+
+	// target to host file descriptors
+	std::map<int32_t, int> target_to_host_fildes;
+	std::queue<int32_t> target_fildes_free_list;
 
 	// Maps the registers depending on the system
 	// Returns true on success
@@ -301,7 +319,7 @@ private:
 
 	// Set the system calls mapping between names and their implementation
 	void SetSyscallNameMap();
-
+	
 	// Determine if a syscall is available
 	bool HasSyscall(const char *syscall_name);
 	bool HasSyscall(int syscall_id);
@@ -323,6 +341,13 @@ private:
 
 	// Errno conversion
 	int32_t Host2LinuxErrno(int host_errno) const;
+	
+	// File descriptors mapping
+	int Target2HostFileDescriptor(int32_t fd);
+	int32_t AllocateFileDescriptor();
+	void FreeFileDescriptor(int32_t fd);
+	void MapTargetToHostFileDescriptor(int32_t target_fd, int host_fd);
+	void UnmapTargetToHostFileDescriptor(int32_t target_fd);
 	
 	// The list of linux system calls
 	void LSC_unknown();

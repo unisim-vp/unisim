@@ -4,14 +4,14 @@
 
 //---------------------------------------------------------------------------------------------
 
-// ABS - absolute value                                           ?? signed add
+// ABS - absolute value                                         
 
 op abs(0b010[3]:0b1110[4]:0b00100[5]:rd[4])
 
 
 abs.execute={
 
-	uint32_t d= cpu->GetGPR(rd);
+	int32_t d= cpu->GetGPR(rd);
 	uint32_t result;
 			
 	if(d!=0x80000000) result=abs(d);
@@ -191,7 +191,7 @@ op addabs(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11100100[8]:rd[4])
 addabs.execute={
 	
 	uint32_t x =cpu->GetGPR(rx);
-	uint32_t y=abs(cpu->GetGPR(ry));
+	uint32_t y=abs((int32_t)cpu->GetGPR(ry));
 	uint32_t result;
 	uint8_t carry_in=0;
 	uint8_t overflow,sign,carry_out;
@@ -745,7 +745,7 @@ sub_c.execute = {
 	
 	uint32_t d=cpu->GetGPR(rd);     // rd
 		
-	uint32_t s = (d == cpu->GetSP()) ? imm8 << 2 : imm8;
+	uint32_t s = (rd == REG_SP) ? imm8 << 2 : imm8;
                    
 	//?? choisir extension sur 10 chiffre à cause du shift ou 8
      	
@@ -771,7 +771,7 @@ sub_c.execute = {
 
 sub_c.disasm={
 
-	os << "sub\t" << REG_NAME[rd] << "," << (int) imm8;
+	os << "sub\t" << REG_NAME[rd] << "," << ((rd == REG_SP) ? imm8 << 2 : imm8);
 }
 
 op sub_d(0b111[3]:imm_20_17[4]:0b0001[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
@@ -840,11 +840,11 @@ sub_e.disasm={
 	os << "sub\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << imm16;
 }
 
-//SUB_CON4 - conditional subtract                                          ?? signed sub without carry case  Z is set
+//SUB_COND4_F and SUB_COND4 - conditional subtract                                          ?? signed sub without carry case  Z is set
 
-op sub_f_cond4(0b111[3]:0b101[3]:f[1]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:imm8[8])
+op sub_flag_cond4(0b111[3]:0b101[3]:f[1]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:imm8[8])
 
-sub_f_cond4.execute = {
+sub_flag_cond4.execute = {
 
 	if(cpu->EvaluateCond((uint8_t)cond4))
 	{
@@ -874,13 +874,13 @@ sub_f_cond4.execute = {
 	return true;
 }
 
-sub_f_cond4.disasm={
+sub_flag_cond4.disasm={
 
-	os << "sub.f"<< COND[cond4]<<"\t" << REG_NAME[rd] << "," <<(int) imm8;
+	os << "subf"<< COND[cond4]<<"\t" << REG_NAME[rd] << "," <<(int) imm8;
 
 }
 
-op sub_cond4(0b111[3]:rx[4]:0b11011[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0001[4]:rd[4])
+op sub_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0001[4]:rd[4])
 
 sub_cond4.execute = {
 

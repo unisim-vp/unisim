@@ -299,6 +299,7 @@ public:
 	void SwitchExecutionMode(uint32_t execution_mode);
 	uint32_t GetPriorityLevel(uint32_t execution_mode);
 	
+	bool MoveFromSystemRegister(unsigned int rd, unsigned int sr_num);
 	
 	//=====================================================================
 	//=                  Client/Service setup methods                     =

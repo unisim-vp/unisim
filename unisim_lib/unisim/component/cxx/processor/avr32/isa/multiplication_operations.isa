@@ -48,7 +48,7 @@ divu.disasm={
 }
 
 
-// MAC - multiply accumulate                                ## no specified if numbers are signed or unsigned
+// MAC - multiply accumulate                              
 
 op mac(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00110100[8]:rd[4])
 
@@ -83,7 +83,7 @@ macs_d.execute={
 	int32_t d1= cpu->GetGPR(rd+1);
 	int64_t acc = ((int64_t)d1 << 32) | (int64_t)d;
 	int64_t prod = (int64_t)x *(int64_t) y;
-	int64_t res = prod + acc; 
+	uint64_t res = prod + acc; 
 
 	cpu-> SetGPR(rd,res);
 	cpu-> SetGPR(rd+1,res>>32);
@@ -128,8 +128,8 @@ op mul_a(0b101[3]:rs[4]:0b10011[5]:rd[4])
 
 mul_a.execute={
 
-	uint32_t s = cpu->GetGPR(rs);
-	uint32_t d = cpu->GetGPR(rd);
+	int32_t s = cpu->GetGPR(rs);
+	int32_t d = cpu->GetGPR(rd);
 
 	uint32_t result = s * d;
 
@@ -147,12 +147,12 @@ op mul_b(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b00100100[8]:rd[4])
 
 mul_b.execute={
 
-	uint32_t x = cpu->GetGPR(rx);
-	uint32_t y = cpu->GetGPR(ry);
+	int32_t x = cpu->GetGPR(rx);
+	int32_t y = cpu->GetGPR(ry);
 
 	uint32_t result = x * y;
 
-	cpu->SetGPR(rd,(uint32_t)result);
+	cpu->SetGPR(rd,result);
 
 	return true;
 }
@@ -169,12 +169,10 @@ op mul_c(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0000[4]:sext<32>imm8[8])
 
 mul_c.execute={
 
-	uint32_t s = cpu->GetGPR(rs);
-	
+	int32_t s = cpu->GetGPR(rs);
+	uint32_t result = s * (int32_t)imm8;
 
-	uint32_t result = s * imm8;
-
-	cpu->SetGPR(rd,(uint32_t)result);
+	cpu->SetGPR(rd,result);
 
 	return true;
 }
@@ -193,7 +191,7 @@ muls_d.execute={
 	
 	int32_t x = cpu->GetGPR(rx);
 	int32_t y = cpu->GetGPR(ry);
-	int64_t res =(int64_t)x *(int64_t) y;
+	uint64_t res =(int64_t)x *(int64_t) y;
 	
 	cpu-> SetGPR(rd,res);
 	cpu-> SetGPR(rd+1,res>>32);
