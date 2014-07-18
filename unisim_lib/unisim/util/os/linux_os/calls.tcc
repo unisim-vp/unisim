@@ -132,37 +132,48 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_exit() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_read()
 {
-	int fd;
+	int32_t target_fd;
+	int host_fd;
 	size_t count;
 	ADDRESS_TYPE buf_addr;
 	void *buf;
 	ssize_t ret;
 	int32_t target_errno = 0;
 
-	fd = GetSystemCallParam(0);
+	target_fd = GetSystemCallParam(0);
 	buf_addr = (ADDRESS_TYPE) GetSystemCallParam(1);
 	count = (size_t) GetSystemCallParam(2);
 
-	buf = malloc(count);
-
-	if(buf)
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
 	{
-		ret = read(fd, buf, count);
-		if(ret == -1) target_errno = Host2LinuxErrno(errno);
-		if(ret > 0) WriteMem(buf_addr, (uint8_t *)buf, ret);
-		free(buf);
+		target_errno = LINUX_EBADF;
+		ret = -1;
 	}
 	else
 	{
-		ret = (ssize_t) -1;
-		target_errno = LINUX_ENOMEM;
-		logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
+		buf = malloc(count);
+
+		if(buf)
+		{
+			ret = read(host_fd, buf, count);
+			if(ret == -1) target_errno = Host2LinuxErrno(errno);
+			if(ret > 0) WriteMem(buf_addr, (uint8_t *)buf, ret);
+			free(buf);
+		}
+		else
+		{
+			ret = (ssize_t) -1;
+			target_errno = LINUX_ENOMEM;
+			logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
+		}
 	}
 
 	if(unlikely(verbose_))
 	{
 		logger_ << DebugInfo
-			<< "read(fd=" << fd << ", buf=0x" << std::hex << buf_addr << std::dec
+			<< "read(fd=" << target_fd << ", buf=0x" << std::hex << buf_addr << std::dec
 			<< ", count=" << count << ") return " << ret << EndDebugInfo;
 	}
 
@@ -172,42 +183,54 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_read()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_write()
 {
-	int fd;
+	int32_t target_fd;
+	int host_fd;
 	size_t count;
 	void *buf;
 	ADDRESS_TYPE buf_addr;
 	ssize_t ret;
 	int32_t target_errno = 0;
 
-	fd = GetSystemCallParam(0);
+	target_fd = GetSystemCallParam(0);
 	buf_addr = GetSystemCallParam(1);
 	count = (size_t)GetSystemCallParam(2);
-	buf = malloc(count);
-
-	if(buf)
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
 	{
-		ReadMem(buf_addr, (uint8_t *)buf, count);
-		ret = write(fd, buf, count);
-		if(ret == -1) target_errno = Host2LinuxErrno(errno);
-		if(unlikely(verbose_))
-		{
-			logger_ << DebugInfo
-				<< "write(fd=" << fd << ", buf=0x" << std::hex << buf_addr << std::dec
-				<< ", count=" << count << ") return " << ret << std::endl
-				<< "buffer =";
-			for (size_t i = 0; i < count; i++)
-			{
-				logger_ << " " << std::hex << (unsigned int)((uint8_t *)buf)[i] << std::dec;
-			}
-			logger_ << EndDebugInfo;
-		}
-		free(buf);
+		target_errno = LINUX_EBADF;
+		ret = -1;
 	}
 	else
 	{
-		ret = (ssize_t) -1;
-		target_errno = LINUX_ENOMEM;
-		logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
+		buf = malloc(count);
+
+		if(buf)
+		{
+			ReadMem(buf_addr, (uint8_t *)buf, count);
+			ret = write(host_fd, buf, count);
+			if(ret == -1) target_errno = Host2LinuxErrno(errno);
+			if(unlikely(verbose_))
+			{
+				logger_ << DebugInfo
+					<< "write(fd=" << target_fd << ", buf=0x" << std::hex << buf_addr << std::dec
+					<< ", count=" << count << ") return " << ret << std::endl
+					<< "buffer =";
+				for (size_t i = 0; i < count; i++)
+				{
+					logger_ << " " << std::hex << (unsigned int)((uint8_t *)buf)[i] << std::dec;
+				}
+				logger_ << EndDebugInfo;
+			}
+			free(buf);
+		}
+		else
+		{
+			ret = (ssize_t) -1;
+			target_errno = LINUX_ENOMEM;
+			logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
+		}
 	}
 
 	SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
@@ -223,6 +246,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_open()
 	int64_t ret;
 	mode_t mode;
 	int32_t target_errno = 0;
+	int32_t target_fd = -1;
 
 	addr = GetSystemCallParam(0);
 	pathnamelen = StringLength(addr);
@@ -267,6 +291,15 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_open()
 #endif
 			if(ret == -1) target_errno = Host2LinuxErrno(errno);
 		}
+		
+		if(ret != -1)
+		{
+			int host_fd = ret;
+			target_fd = AllocateFileDescriptor();
+			// keep relation between the target file descriptor and the host file descriptor
+			MapTargetToHostFileDescriptor(target_fd, host_fd);
+		}
+		
 		if(unlikely(verbose_))
 		{
 			logger_ << DebugInfo
@@ -284,22 +317,52 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_open()
 		logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
 	}
 	
-	SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+	SetSystemCallStatus((ret == -1) ? -target_errno : target_fd, (ret == -1));
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_close()
 {
-	int fd;
+	int host_fd;
+	int32_t target_fd;
 	int ret;
 	int32_t target_errno = 0;
 
-	fd = GetSystemCallParam(0);
-	ret = close(fd);
-	if(ret == -1) target_errno = Host2LinuxErrno(errno);
+	target_fd = GetSystemCallParam(0);
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
+	{
+		target_errno = LINUX_EBADF;
+		ret = -1;
+	}
+	else
+	{
+		switch(host_fd)
+		{
+			case 0:
+			case 1:
+			case 2:
+				UnmapTargetToHostFileDescriptor(target_fd);
+				FreeFileDescriptor(target_fd);
+				ret = 0;
+				break;
+			default:
+				ret = close(host_fd);
+				if(ret == 0)
+				{
+					UnmapTargetToHostFileDescriptor(target_fd);
+					FreeFileDescriptor(target_fd);
+				}
+		}
+		
+		if(ret == -1) target_errno = Host2LinuxErrno(errno);
+	}
+
 	if(unlikely(verbose_))
 	logger_ << DebugInfo
-		<< "close(fd=" << fd << ") return " << ret
+		<< "close(fd=" << target_fd << ") return " << ret
 		<< EndDebugInfo;
 	SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
 }
@@ -307,21 +370,34 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_close()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_lseek()
 {
-	int fildes;
+	int32_t target_fd;
+	int host_fd;
 	off_t offset;
 	int whence;
 	off_t ret;
 	int32_t target_errno = 0;
 
-	fildes = GetSystemCallParam(0);
+	target_fd = GetSystemCallParam(0);
 	offset = GetSystemCallParam(1);
 	whence = GetSystemCallParam(2);
-	ret = lseek(fildes, offset, whence);
-	if(ret == -1) target_errno = Host2LinuxErrno(errno);
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
+	{
+		target_errno = LINUX_EBADF;
+		ret = -1;
+	}
+	else
+	{
+		ret = lseek(host_fd, offset, whence);
+		if(ret == -1) target_errno = Host2LinuxErrno(errno);
+	}
+	
 	if(unlikely(verbose_))
 	{
 		logger_ << DebugInfo
-			<< "lseek(fildes=" << fildes << ", offset=" << offset
+			<< "lseek(fildes=" << target_fd << ", offset=" << offset
 			<< ", whence=" << whence << ") return " << ret
 			<< EndDebugInfo;
 	}
@@ -1445,36 +1521,47 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat()
 {
 	int ret;
-	int fd;
+	int32_t target_fd;
+	int host_fd;
 	ADDRESS_TYPE buf_address;
 	int32_t target_errno = 0;
 
-	fd = GetSystemCallParam(0);
+	target_fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
 	
-	if((system_type_.compare("arm") == 0) ||
-		(system_type_.compare("arm-eabi") == 0))
+	host_fd = Target2HostFileDescriptor(target_fd);
+
+	if(host_fd == -1)
 	{
+		target_errno = LINUX_EBADF;
 		ret = -1;
-		target_errno = LINUX_ENOSYS;
-	}
-	else if(system_type_.compare("ppc") == 0)
-	{
-		struct powerpc_stat target_stat;
-		ret = Stat(fd, &target_stat);
-		if(ret == -1) target_errno = Host2LinuxErrno(errno);
-		if(ret >= 0) WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
 	}
 	else
 	{
-		ret = -1;
-		target_errno = LINUX_ENOSYS;
+		if((system_type_.compare("arm") == 0) ||
+			(system_type_.compare("arm-eabi") == 0))
+		{
+			ret = -1;
+			target_errno = LINUX_ENOSYS;
+		}
+		else if(system_type_.compare("ppc") == 0)
+		{
+			struct powerpc_stat target_stat;
+			ret = Stat(host_fd, &target_stat);
+			if(ret == -1) target_errno = Host2LinuxErrno(errno);
+			if(ret >= 0) WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+		}
+		else
+		{
+			ret = -1;
+			target_errno = LINUX_ENOSYS;
+		}
 	}
 
 	if(unlikely(verbose_))
 	{
 		logger_ << DebugInfo
-			<< "stat(fd=" << fd
+			<< "fstat(fd=" << target_fd
 			<< ", buf_addr=0x" << std::hex << buf_address << std::dec
 			<< ") return " << ret << EndDebugInfo;
 	}
@@ -1537,7 +1624,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_uname()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC__llseek()
 {
-	int fd;
+	int32_t target_fd;
+	int host_fd;
 	uint32_t offset_high;
 	uint32_t offset_low;
 	off64_t offset;
@@ -1547,35 +1635,45 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC__llseek()
 	int whence;
 	int32_t target_errno = 0;
 
-	fd = GetSystemCallParam(0);
+	target_fd = GetSystemCallParam(0);
 	offset_high = GetSystemCallParam(1);
 	offset_low = GetSystemCallParam(2);
 	offset = ((uint64_t) offset_high << 32) | (uint64_t) offset_low;
 	result_addr = GetSystemCallParam(3);
 	whence = GetSystemCallParam(4);
 	
+	host_fd = Target2HostFileDescriptor(target_fd);
+
+	if(host_fd == -1)
+	{
+		target_errno = LINUX_EBADF;
+		lseek_ret = -1;
+	}
+	else
+	{
+		lseek_ret = lseek64(host_fd, offset, whence);
+			
+		if(lseek_ret == -1)
+		{
+			target_errno = Host2LinuxErrno(errno);
+		}
+		else
+		{
+			lseek_result64 = unisim::util::endian::Host2Target(endianness_, (uint64_t) lseek_ret);
+			WriteMem(result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
+		}
+	}
+
 	if(unlikely(verbose_))
 	{
 		logger_ << DebugInfo
-			<< "_llseek(fd=" << fd
+			<< "_llseek(fd=" << target_fd
 			<< ", offset_high=" << offset_high
 			<< ", offset_low=" << offset_low
 			<< ", result_addr=0x" << std::hex << result_addr << std::dec
 			<< ", whence=" << whence << ")" << EndDebugInfo;
 	}
 	
-	lseek_ret = lseek64(fd, offset, whence);
-		
-	if(lseek_ret == -1)
-	{
-		target_errno = Host2LinuxErrno(errno);
-	}
-	else
-	{
-		lseek_result64 = unisim::util::endian::Host2Target(endianness_, (uint64_t) lseek_ret);
-		WriteMem(result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
-	}
-
 	SetSystemCallStatus((PARAMETER_TYPE) (lseek_ret == -1) ? -target_errno : lseek_ret, (lseek_ret == -1));
 }
 
@@ -1753,38 +1851,50 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat64()
 {
 	int ret;
 	ADDRESS_TYPE buf_address;
-	int fd;
+	int32_t target_fd;
+	int host_fd;
 	int32_t target_errno = 0;
 
-	fd = GetSystemCallParam(0);
+	target_fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	if((system_type_.compare("arm") == 0) ||
-		(system_type_.compare("arm-eabi") == 0))
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
 	{
-		struct arm_stat64 target_stat;
-		ret = Fstat64(fd, &target_stat);
-		if(ret == -1) target_errno = Host2LinuxErrno(errno);
-		
-		WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
-	}
-	else if(system_type_.compare("ppc") == 0)
-	{
-		struct powerpc_stat64 target_stat;
-		ret = Fstat64(fd, &target_stat);
-		if(ret == -1) target_errno = Host2LinuxErrno(errno);
-		
-		WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+		target_errno = LINUX_EBADF;
+		ret = -1;
 	}
 	else
 	{
-		ret = -1;
-		target_errno = LINUX_ENOSYS;
+		if((system_type_.compare("arm") == 0) ||
+			(system_type_.compare("arm-eabi") == 0))
+		{
+			struct arm_stat64 target_stat;
+			ret = Fstat64(host_fd, &target_stat);
+			if(ret == -1) target_errno = Host2LinuxErrno(errno);
+			
+			WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+		}
+		else if(system_type_.compare("ppc") == 0)
+		{
+			struct powerpc_stat64 target_stat;
+			ret = Fstat64(host_fd, &target_stat);
+			if(ret == -1) target_errno = Host2LinuxErrno(errno);
+			
+			WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+		}
+		else
+		{
+			ret = -1;
+			target_errno = LINUX_ENOSYS;
+		}
 	}
 	
 	if(unlikely(verbose_))
 	{
 		logger_ << DebugInfo
-			<< "fd = " << fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
+			<< "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
 			<< ", ret = 0x" << std::hex << ret << std::dec
 			<< EndDebugInfo;
 	}
@@ -1897,22 +2007,39 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_exit_group()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl()
 {
+	int32_t target_fd;
+	int host_fd;
+	int32_t cmd;
+	int32_t arg;
 	int64_t ret;
 	int32_t target_errno = 0;
 
+	target_fd = GetSystemCallParam(0);
+	cmd = GetSystemCallParam(1);
+	arg = (size_t)GetSystemCallParam(2);
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
+	{
+		target_errno = LINUX_EBADF;
+		ret = -1;
+	}
+	else
+	{
 #if defined(WIN32) || defined(WIN64)
-	ret = -1;
-	SetSystemCallStatus((PARAMETER_TYPE) -LINUX_ENOSYS, true);
+		ret = -1;
+		SetSystemCallStatus((PARAMETER_TYPE) -LINUX_ENOSYS, true);
 #else
-	ret = fcntl(GetSystemCallParam(0),
-				GetSystemCallParam(1),
-				GetSystemCallParam(2));
-	if(ret == -1) target_errno = Host2LinuxErrno(errno);
+		ret = fcntl(host_fd, cmd, arg);
+		if(ret == -1) target_errno = Host2LinuxErrno(errno);
 #endif
+	}
+	
 	if(unlikely(verbose_))
 	{
 		logger_ << DebugInfo
-			<< "ret = " <<  ((PARAMETER_TYPE)ret)
+			<< "fd=" << target_fd << ",cmd=" << cmd << ",arg=" << arg << ", ret = " <<  ((PARAMETER_TYPE)ret)
 			<< EndDebugInfo;
 	}
 	
@@ -1922,41 +2049,59 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl64()
 {
+	int32_t target_fd;
+	int host_fd;
+	int32_t cmd;
 	int64_t ret;
-#if defined(WIN32) || defined(WIN64)
-	ret = -1;
-	SetSystemCallStatus((PARAMETER_TYPE) -LINUX_ENOSYS, true);
-#else
-	int fd = GetSystemCallParam(0);
-	int cmd = GetSystemCallParam(1);
+	int32_t target_errno = 0;
 
-	switch(cmd)
+	target_fd = GetSystemCallParam(0);
+	cmd = GetSystemCallParam(1);
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
 	{
-		case F_DUPFD:
-		//    case F_DUPFD_CLOEXEC:
-		case F_GETFD:
-		case F_SETFD:
-		case F_GETFL:
-		case F_SETFL:
-			ret = fcntl(fd, cmd);
-			break;
-		case F_GETLK:
-		case F_SETLK:
-		case F_SETLKW:
-		default:
-			ret = -1;
-			break;
+		target_errno = LINUX_EBADF;
+		ret = -1;
+	}
+	else
+	{
+#if defined(WIN32) || defined(WIN64)
+		ret = -1;
+		target_errno = LINUX_ENOSYS;
+#else
+		switch(cmd)
+		{
+			case F_DUPFD:
+			//    case F_DUPFD_CLOEXEC:
+			case F_GETFD:
+			case F_SETFD:
+			case F_GETFL:
+			case F_SETFL:
+				ret = fcntl(host_fd, cmd);
+				if(ret == -1) target_errno = Host2LinuxErrno(errno);
+				break;
+			case F_GETLK:
+			case F_SETLK:
+			case F_SETLKW:
+			default:
+				ret = -1;
+				target_errno = LINUX_EINVAL;
+				break;
+		}
+		
+#endif
 	}
 	
 	if(ret == -1)
 	{
-		SetSystemCallStatus((PARAMETER_TYPE) -Host2LinuxErrno(errno), true);
+		SetSystemCallStatus((PARAMETER_TYPE) -target_errno, true);
 	}
 	else
 	{
 		SetSystemCallStatus((PARAMETER_TYPE) ret, false);
 	}
-#endif
 	if(unlikely(verbose_))
 	{
 		logger_ << DebugInfo
@@ -1968,21 +2113,45 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl64()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_dup()
 {
+	int32_t target_oldfd;
+	int host_oldfd;
+	int32_t target_newfd = -1;
 	int ret;
 	int32_t target_errno = 0;
-	int oldfd = GetSystemCallParam(0);
+	
+	target_oldfd = GetSystemCallParam(0);
 
-	ret = dup(oldfd);
-	if(ret == -1) target_errno = Host2LinuxErrno(errno);
+	host_oldfd = Target2HostFileDescriptor(target_oldfd);
+	
+	if(host_oldfd == -1)
+	{
+		target_errno = LINUX_EBADF;
+		ret = -1;
+	}
+	else
+	{
+		ret = dup(host_oldfd);
+		if(ret == -1)
+		{
+			target_errno = Host2LinuxErrno(errno);
+		}
+		else
+		{
+			int host_newfd = ret;
+			target_newfd = AllocateFileDescriptor();
+			// keep relation between the target file descriptor and the host file descriptor
+			MapTargetToHostFileDescriptor(target_newfd, host_newfd);
+		}
+	}
 	
 	if(unlikely(verbose_))
 	{
 		logger_ << DebugInfo
-			<< "oldfd = " << oldfd << ", new fd = " << ((PARAMETER_TYPE)ret)
+			<< "oldfd = " << target_oldfd << ", new fd = " << ((PARAMETER_TYPE)target_newfd)
 			<< EndDebugInfo;
 	}
 	
-	SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+	SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : target_newfd, (ret == -1));
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -2236,12 +2405,28 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_tgkill()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_ftruncate()
 {
+	int host_fd;
+	int32_t target_fd;
+	int32_t length;
 	int ret;
 	int32_t target_errno = 0;
 
-	ret = ftruncate(GetSystemCallParam(0), GetSystemCallParam(1));
-	if(ret == -1) target_errno = Host2LinuxErrno(errno);
-
+	target_fd = GetSystemCallParam(0);
+	length = GetSystemCallParam(1);
+	
+	host_fd = Target2HostFileDescriptor(target_fd);
+	
+	if(host_fd == -1)
+	{
+		target_errno = LINUX_EBADF;
+		ret = -1;
+	}
+	else
+	{
+		ret = ftruncate(host_fd, length);
+		if(ret == -1) target_errno = Host2LinuxErrno(errno);
+	}
+	
 	if(unlikely(verbose_))
 	{
 		logger_ << DebugInfo
