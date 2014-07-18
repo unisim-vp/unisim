@@ -125,45 +125,11 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, cont_until_addr(0)
 	, last_stmt(0)
 	, prompt(string(_name) + "> ")
-	, hex_addr_fmt(0)
-	, int_addr_fmt(0)
 	, output_stream(0)
 	, std_output_stream(&std::cout)
 	, std_error_stream(&std::cerr)
 {
 	trap = false;
-
-	switch(sizeof(ADDRESS))
-	{
-		case 1:
-			hex_addr_fmt = strdup(PRIx8);
-			break;
-		case 2:
-			hex_addr_fmt = strdup(PRIx16);
-			break;
-		case 4:
-			hex_addr_fmt = strdup(PRIx32);
-			break;
-		case 8:
-			hex_addr_fmt = strdup(PRIx64);
-			break;
-	}
-
-	switch(sizeof(ADDRESS))
-	{
-		case 1:
-			int_addr_fmt = strdup(PRIu8);
-			break;
-		case 2:
-			int_addr_fmt = strdup(PRIu16);
-			break;
-		case 4:
-			int_addr_fmt = strdup(PRIu32);
-			break;
-		case 8:
-			int_addr_fmt = strdup(PRIu64);
-			break;
-	}
 }
 
 template <class ADDRESS>
@@ -173,9 +139,6 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 	{
 		delete output_stream;
 	}
-	
-	free(hex_addr_fmt);
-	free(int_addr_fmt);
 }
 
 template<class ADDRESS>
@@ -2276,30 +2239,26 @@ bool InlineDebugger<ADDRESS>::GetReturnAddress(ADDRESS cia, ADDRESS& ret_addr) c
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size)
 {
-	char fmt1[16];
-	char fmt2[16];
-	snprintf(fmt1, sizeof(fmt1), "*%%%s#%%%s", hex_addr_fmt, int_addr_fmt);
-	snprintf(fmt2, sizeof(fmt2), "*%%%s#%%%s", int_addr_fmt, int_addr_fmt);
-
-	if(sscanf(s, fmt1, &addr, &size) == 2 ||
-	   sscanf(s, fmt2, &addr, &size) == 2)
+	if(*s == '*')
 	{
-		addr *= memory_atom_size;
-		size *= memory_atom_size;
-		return true;
+		std::string str(s + 1);
+		
+		size_t pos = str.find_first_of('#');
+		
+		std::stringstream sstr_addr(str.substr(0, pos));
+		std::stringstream sstr_size(str.substr(pos + 1));
+		
+		if((sstr_addr >> std::hex >> addr) && (sstr_size >> std::dec >> size))
+		{
+			if(sstr_addr.eof() && !sstr_size.eof())
+			{
+				addr *= memory_atom_size;
+				size *= memory_atom_size;
+				return true;
+			}
+		}
 	}
-
-	snprintf(fmt1, sizeof(fmt1), "*%%%s", hex_addr_fmt);
-	snprintf(fmt2, sizeof(fmt2), "*%%%s", int_addr_fmt);
-
-	if(sscanf(s, fmt1, &addr) == 1 ||
-	   sscanf(s, fmt2, &addr) == 1)
-	{
-		addr *= memory_atom_size;
-		size = memory_atom_size;
-		return true;
-	}
-
+	
 	const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 	
 	if(symbol)
@@ -2317,18 +2276,21 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 {
-	char fmt1[16];
-	char fmt2[16];
-	snprintf(fmt1, sizeof(fmt1), "*%%%s", hex_addr_fmt);
-	snprintf(fmt2, sizeof(fmt2), "*%%%s", int_addr_fmt);
-
-	if(sscanf(s, fmt1, &addr) == 1 ||
-	   sscanf(s, fmt2, &addr) == 1)
+	if(*s == '*')
 	{
-		addr *= memory_atom_size;
-		return true;
+		std::string str(s + 1);
+		
+		std::stringstream sstr_addr(str);
+		
+		if(sstr_addr >> std::hex >> addr)
+		{
+			if(!sstr_addr.eof()) return false;
+			
+			addr *= memory_atom_size;
+			return true;
+		}
 	}
-	
+
 	const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 	
 	if(symbol)
@@ -2345,7 +2307,10 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 		s++;
 	}
 	if(*s == ':') s++;
-	if(sscanf(s, "%u", &lineno) != 1) return false;
+	
+	std::stringstream sstr_lineno(s);
+	if(!(sstr_lineno >> lineno)) return false;
+	if(!sstr_lineno.eof()) return false;
 	
 	const Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(filename.c_str(), lineno, 0);
 	
@@ -2373,21 +2338,37 @@ bool InlineDebugger<ADDRESS>::ParseIntegerValue(const char *s, uint64_t& value)
 		return true;
 	}
 	
-	if(sscanf(s, "0x%" PRIx64, &value) == 1)
+	bool neg = false;
+	
+	if(*s == '-')
 	{
-		return true;
+		neg = true;
+		s++;
+	}
+	
+	if((strlen(s) >= 2) && (*s == '0') && ((*(s + 1) == 'x') || (*(s + 1) == 'X')))
+	{
+		std::string str(s);
+		std::stringstream sstr_hex_value(str);
+		if(sstr_hex_value >> std::hex >> value)
+		{
+			if(sstr_hex_value.eof())
+			{
+				if(neg) value = -value;
+				return true;
+			}
+		}
 	}
 
-	if(sscanf(s, "%" PRIu64, &value) == 1)
+	std::string str(s);
+	std::stringstream sstr_dec_value(str);
+	if(sstr_dec_value >> value)
 	{
-		return true;
-	}
-
-	int64_t signed_value = 0;
-	if(sscanf(s, "%" PRIi64, &signed_value) == 1)
-	{
-		value = signed_value;
-		return true;
+		if(sstr_dec_value.eof())
+		{
+			if(neg) value = -value;
+			return true;
+		}
 	}
 
 	return false;
@@ -2400,11 +2381,6 @@ bool InlineDebugger<ADDRESS>::ParseFloatValue(const char *s, unisim::util::ieee7
 
 	unisim::util::ieee754::Flags flags;
 	value.read(sstr, flags);
-	
-// 	if(sscanf(s, "%lf", &value) == 1)
-// 	{
-// 		return true;
-// 	}
 
 	return sstr.eof();
 }

@@ -178,7 +178,7 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
     , param_utsname_domainname_("utsname-domainname", this, utsname_domainname_,
                                "The domain name information that the uname"
                                " system call should return.")
-    , hwcap_("hwcap")
+    , hwcap_("")
     , param_hwcap_("hwcap", this, hwcap_,
                    "CPU Hardware capabilities to enable (e.g. \"swp thumb fastmult vfp\".") {
   param_argc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
