@@ -209,8 +209,6 @@ private:
 
 	std::list<std::string> exec_queue;
 	string prompt;
-	char *hex_addr_fmt;
-	char *int_addr_fmt;
 	std::string last_line;
 	std::string line;
 	std::vector<std::string> parm;
