@@ -1,0 +1,377 @@
+// **************risc16 instructions***************
+
+
+set addressclass {uint16_t}
+//set endianness little
+
+decl {
+
+#include <inttypes.h>
+#include <stdio.h>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <bitset>
+
+#include <unisim/component/cxx/processor/risc16/initCPU.hh>
+#include <unisim/util/endian/endian.hh>
+
+using unisim::util::endian::Host2BigEndian;
+
+//extern uint16_t cia;
+//extern uint16_t nia;
+//extern uint16_t gpr[16];
+
+//extern uint16_t mem_read16(uint16_t addr);
+//extern void mem_write16(uint16_t addr, uint16_t value);
+
+}
+
+impl {
+}
+
+/****** action implementation*********/
+
+/**** execute*****/
+action {void} execute({CPU*} {cpu}){
+printf("unknown instruction\n");
+exit (-1);
+}
+
+/****disasm*****/
+
+action{void} disasm({uint16_t} {pc}, {char*} {s}) {
+sprintf(s, "?");
+}
+
+action{void} binary({std::ostream&} {os}) {
+ os << "";
+}
+
+/*******Operations implematation*******/
+
+
+/*****add instruction******/
+
+op add (0b0000[4]:rd[4]:rs1[4]:rs2[4])
+
+
+add.execute = {
+			cpu->gpr[rd] = cpu->gpr[rs1] + cpu->gpr[rs2];
+			
+			}
+
+add.disasm = {
+	sprintf(s, "add r%d, r%d, r%d", rd, rs1, rs2);
+
+}
+
+add.binary = {
+
+	uint16_t code = (0b0000) << 12;	
+	code = code | ((rd & 0xF) << 8);
+	code = code | ((rs1 & 0xF) << 4);
+	code = code | ((rs2 & 0xF));
+
+	code = Host2BigEndian(code);
+	
+	os.write((char*) &code, 2);
+	
+	}
+	
+
+/*****sub instruction******/
+op sub(0b0001[4]:rd[4]:rs1[4]:rs2[4])
+
+sub.execute = {
+				cpu->gpr[rd] = cpu->gpr[rs1] - cpu->gpr[rs2];
+			}
+
+sub.disasm = {
+	
+	sprintf(s, "sub r%d, r%d, r%d", rd, rs1, rs2);
+			}
+			
+sub.binary = {
+	uint16_t code = (0b0001) << 12;	
+	code = code | ((rd & 0xF) << 8);
+	code = code | ((rs1 & 0xF) << 4);
+	code = code | ((rs2 & 0xF));
+	
+	code = Host2BigEndian(code);
+	
+	os.write((char*) &code, 2);
+	
+	}
+	
+
+/*****or instruction******/
+
+op or(0b0010[4]:rd[4]:rs1[4]:rs2[4])
+
+or.execute = {
+				cpu->gpr[rd] = cpu->gpr[rs1] | cpu->gpr[rs2];
+			}
+or.disasm = {
+	sprintf(s, "or r%d, r%d, r%d", rd, rs1, rs2);
+}				
+
+or.binary = {
+	uint16_t code = (0b0010) << 12;	
+	code = code | ((rd & 0xF) << 8);
+	code = code | ((rs1 & 0xF) << 4);
+	code = code | ((rs2 & 0xF));
+	
+
+	code = Host2BigEndian(code);
+	
+	os.write((char*) &code, 2);
+	
+	}
+	
+				
+/*****and instruction******/
+
+op and(0b0011[4]:rd[4]:rs1[4]:rs2[4])
+
+and.execute = {
+				cpu->gpr[rd] = cpu->gpr[rs1] & cpu->gpr[rs2];
+			}
+			
+and.disasm = {
+	sprintf(s, "and r%d, r%d, r%d", rd, rs1, rs2);
+}			
+
+and.binary = {
+	uint16_t code = (0b0011) << 12;	
+	code = code | ((rd & 0xF) << 8);
+	code = code | ((rs1 & 0xF) << 4);
+	code = code | ((rs2 & 0xF));
+	
+	code = Host2BigEndian(code);
+
+	os.write((char*) &code, 2);
+	
+	}
+
+
+/*****not instruction******/
+
+op not(0b0100[4]:rd[4]:rs[4])
+
+not.execute = {	
+		cpu->gpr[rd] = ~cpu->gpr[rs];
+			}
+			
+not.disasm = {
+	sprintf(s, "not r%d, r%d", rd, rs);
+}				
+
+not.binary = {
+	uint16_t code = (0b0100) << 12;	
+	code = code | ((rd & 0xF) << 8);
+	code = code | ((rs & 0xF) << 4);
+	
+	code = Host2BigEndian(code);
+	
+	os.write((char*) &code, 2);
+	
+	}
+
+
+/* ****shl instruction***** */
+
+op shlx(0b0101[4]:rd[4]:rs[4]:val[4])
+
+shlx.execute = {	
+std::cout << "shift val " << std::dec << val << std::endl;
+
+		cpu->gpr[rd] = cpu->gpr[rs] << val;
+			}
+			
+shlx.disasm = {
+	sprintf(s, "shl r%d, r%d", rd, rs);
+}				
+
+shlx.binary = {
+	uint16_t code = (0b0101) << 12;	
+	code = code | ((rd & 0xF) << 8);
+	code = code | ((rs & 0xF) << 4);
+	code = code | ((val & 0xF));
+	
+	code = Host2BigEndian(code);
+	
+	os.write((char*) &code, 2);
+	
+	}	
+		
+				
+/*****shr instruction******/
+
+op shrx(0b0110[4]:rd[4]:rs[4]:val[4])
+
+shrx.execute = {	
+		cpu->gpr[rd] = cpu->gpr[rs] >> val;
+			}
+shrx.disasm = {
+	sprintf(s, "shr r%d, r%d", rd, rs);
+	}
+
+shrx.binary = {
+	uint16_t code = (0b0110) << 12;	
+	code = code | ((rd & 0xF) << 8);
+	code = code | ((rs & 0xF) << 4);
+	code = code | ((val & 0xF));
+	
+	code = Host2BigEndian(code);
+
+	os.write((char*) &code, 2);
+	
+	}
+	
+/*****load instruction******/
+
+op load(0b0111[4]:rd[4]:base[4]:sext<16> immed[4])
+
+
+load.execute = {	
+
+				cpu->gpr[rd] = cpu->mem_read16(cpu->gpr[base] + immed);
+				
+				}
+			
+load.disasm = {
+	sprintf(s, "load  r%d, %d(r%d)", rd, immed, base);
+	}
+	
+load.binary = {
+	uint16_t code = (0b0111) << 12;	
+	code = code | ((rd & 0xF) << 8);
+	code = code | ((base & 0xF) << 4);
+	code = code | ((immed & 0xF));
+	
+	code = Host2BigEndian(code);
+
+	os.write((char*) &code, 2);
+	
+	}
+
+
+/*****store instruction******/
+
+op store(0b1000[4]:rd[4]:base[4]:sext<16> immed[4])
+
+store.execute = {	
+
+			cpu->mem_write16(cpu->gpr[base] + immed, cpu->gpr[rd]);
+			std::cout << "store  addr " << std::hex << cpu->gpr[base] + immed <<  "val  " << std::hex << cpu->gpr[rd] << std::endl;
+		  
+				}
+			
+store.disasm = {
+	sprintf(s, "store  r%d, %d(r%d)", rd, immed, base);
+	}
+
+store.binary = {
+	uint16_t code = (0b1000) << 12;	
+	code = code | ((rd & 0xF) << 8);
+	code = code | ((base & 0xF) << 4);
+	code = code | (immed & 0xF);
+
+	code = Host2BigEndian(code);
+	
+	os.write((char*) &code, 2);
+	
+	}
+
+/*****branch instruction******/
+
+op branch(0b1001[4]:addr[12])
+
+branch.execute = {	
+				
+	cpu->nia = addr;
+					
+}
+			
+branch.disasm = {
+	sprintf(s, "branch,  0x%12x", addr);
+	}
+	
+branch.binary = {
+	uint16_t code = (0b1000) << 12;	
+	code = code | (addr & 0xFFF);
+	
+	code = Host2BigEndian(code);
+
+	os.write((char*) &code, 2);
+	
+	}
+
+/*****bne instruction******/
+
+op bne(0b1010[4]:rs[4]:sext<16> offset[8])
+
+bne.execute = {	
+				if (cpu->gpr[rs] != 0)
+				
+					cpu->nia = cpu->cia + offset;
+				}
+			
+bne.disasm = {
+	sprintf(s, "bne  r%d, 0x%04x", rs, pc + offset);
+	}
+
+bne.binary = {
+	uint16_t code = (0b1010) << 12;	
+	code = code | ((rs & 0xF) << 8);
+	code = code | (offset & 0xFF);
+	
+	code = Host2BigEndian(code);
+	
+	os.write((char*) &code, 2);
+	
+	}
+	
+/*****loadi instruction******/
+
+op loadi(0b1011[4]:rd[4]:sext<16> val[8])
+
+loadi.execute = {
+					cpu->gpr[rd]=val;
+				}	
+loadi.disasm = {
+	sprintf(s, "loadi  r%d, %d", rd, val);
+	}
+loadi.binary = {
+
+	uint16_t code = (0b1011) << 12;	
+	code = code | ((rd & 0xF) << 8);
+	code = code | ((val & 0xFF));
+	
+	code = Host2BigEndian(code);
+	
+	os.write((char*) &code, 2);
+	}
+
+
+op rti(0b1111[4]:?[12])
+		
+rti.execute = {		
+		 
+			cpu->rti();
+	
+		 	  }	
+		 	  
+		 	  
+rti.disasm = {
+               sprintf(s, "RTI");
+             }		 
+		 
+rti.binary = {
+		 		uint16_t code = (0b1111) << 12;
+		 				 
+		 				 code = Host2BigEndian(code);
+		 				 os.write((char*) &code, 2);	
+				}
+				
