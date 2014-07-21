@@ -52,6 +52,8 @@ namespace avr32a {
 class Config : public unisim::component::cxx::processor::avr32::Config
 {
 public:
+	// Architecture
+	static const Architecture ARCH = ARCH_AVR32A;
 };
 
 } // end of namespace avr32a

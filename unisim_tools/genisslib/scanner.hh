@@ -23,6 +23,7 @@
 #include <referencecounting.hh>
 #include <errtools.hh>
 #include <vect.hh>
+#include <string>
 
 struct Scanner {
   static FileLoc_t                fileloc;        ///< file location in scanned file
@@ -31,7 +32,6 @@ struct Scanner {
   static std::vector<int>         scs;
   static ConstStr_t::Set          symbols;        ///< The symbol database
   static Vect_t<Comment_t>        comments;       ///< Comments accumulator;
-  static Str::Buf*                s_stringbuffer;
   static Isa*                     s_isa;
   static std::vector<ConstStr_t>  s_lookupdirs;   ///< Directory searched when opening files
   
@@ -62,7 +62,7 @@ struct Scanner {
   static bool                     include( char const* _filename );
   static bool                     open( ConstStr_t _filename );
   static bool                     parse( char const* _filename, Isa& _isa );
-  static Str::Buf&                strbuf() { return *s_stringbuffer; }
+  static std::string&             strbuf();
   static Isa&                     isa() { return *s_isa; }
   static int                      token( char const* _text );
   static ConstStr_t               charname( char _ch );

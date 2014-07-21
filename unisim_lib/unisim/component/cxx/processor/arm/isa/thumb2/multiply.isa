@@ -1,0 +1,134 @@
+/*
+ *  Copyright (c) 2007-2014,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+ 
+/**********************************************
+
+        THUMB2 MULTIPLY INSTRUCTIONS
+
+**********************************************/
+
+/* MUL, MLA, MLS instructions */
+
+op mul_w( 0xfb0[12] : rm[4] :> <: 0xf[4] : rd[4] : 0x0[4] : rs[4] );
+
+mul_w.disasm = { buffer << "mul.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs); };
+
+mul_w.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetGPR( rd, cpu.GetGPR_npc( rm ) * cpu.GetGPR_npc( rs ) );
+};
+
+op mla( 0xfb0[12] : rm[4] :> <: rn[4] : rd[4] : 0x0[4] : rs[4] );
+
+mla.disasm = {
+  buffer << "mla\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs) << ", " << DisasmRegister(rn);
+};
+
+mla.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetGPR( rd, cpu.GetGPR_npc( rn ) + (cpu.GetGPR_npc( rm ) * cpu.GetGPR_npc( rs )) );
+};
+
+op mls( 0xfb0[12] : rm[4] :> <: rn[4] : rd[4] : 0x1[4] : rs[4] );
+
+mls.disasm = {
+  buffer << "mls\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs) << ", " << DisasmRegister(rn);
+};
+
+mls.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetGPR( rd, cpu.GetGPR_npc( rn ) - (cpu.GetGPR_npc( rm ) * cpu.GetGPR_npc( rs )) );
+};
+
+/* UMULL, UMLAL, UMAAL instructions */
+
+op umull( 0xfba[12] : rm[4] :> <: rdlo[4] : rdhi[4] : 0x0[4] : rs[4] );
+
+umull.disasm = {
+  buffer << "umull\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+};
+
+umull.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint64_t res = (uint64_t)cpu.GetGPR_npc( rm ) * (uint64_t)cpu.GetGPR_npc( rs );
+  cpu.SetGPR( rdlo, res >> 0 );
+  cpu.SetGPR( rdhi, res >> 32 );
+};
+
+op umlal( 0xfbe[12] : rm[4] :> <: rdlo[4] : rdhi[4] : 0x0[4] : rs[4] );
+umlal.disasm = {
+  buffer << "umlal\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+};
+
+umlal.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint64_t res = (((uint64_t)cpu.GetGPR_npc( rdlo )) <<  0) |
+                 (((uint64_t)cpu.GetGPR_npc( rdhi )) << 32);
+  res += (uint64_t)cpu.GetGPR_npc( rm ) * (uint64_t)cpu.GetGPR_npc( rs );
+  cpu.SetGPR( rdlo, res >> 0 );
+  cpu.SetGPR( rdhi, res >> 32 );
+};
+
+op umaal( 0xfbe[12] : rm[4] :> <: rdlo[4] : rdhi[4] : 0x6[4] : rs[4] );
+umaal.disasm = {
+  buffer << "umaal\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+};
+
+umaal.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint64_t res = ((uint64_t)cpu.GetGPR_npc( rm ) * (uint64_t)cpu.GetGPR_npc( rs )) +
+                 cpu.GetGPR_npc( rdlo ) + cpu.GetGPR_npc( rdhi );
+  cpu.SetGPR( rdlo, res >> 0 );
+  cpu.SetGPR( rdhi, res >> 32 );
+};
+
+op smull( 0xfb8[12] : rm[4] :> <: rdlo[4] : rdhi[4] : 0x0[4] : rs[4] );
+
+smull.disasm = {
+  buffer << "smull\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+};
+
+smull.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint64_t res = (int64_t)(int32_t)cpu.GetGPR_npc( rm ) * (int64_t)(int32_t)cpu.GetGPR_npc( rs );
+  cpu.SetGPR( rdlo, res >> 0 );
+  cpu.SetGPR( rdhi, res >> 32 );
+};

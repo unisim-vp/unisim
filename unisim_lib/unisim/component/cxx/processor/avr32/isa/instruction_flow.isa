@@ -6,56 +6,71 @@
 
 // BR_COND3 - branch if condition satisfied
 
-op br_cond3(0b110[3]:0b0[1]:disp[8]:0b0[1]:cond3[3])
-
-br_cond3.disasm={
-
-	os << "br_cond3\t0x" << std::hex << (int) disp << endl;
-}
+op br_cond3(0b110[3]:0b0[1]:sext<32>disp[8]:0b0[1]:cond3[3])
 
 br_cond3.execute={
 
-	uint32_t result;
-	uint32_t npc = Operation<CONFIG>::GetAddr();
+	typename CONFIG::address_t addr;
+	typename CONFIG::address_t npc = Operation<CONFIG>::GetAddr();
 
 	if(cpu->EvaluateCond(cond3))
 	{
-		result= npc+ (SignExtend( (uint32_t)disp, 8) << 1);
+		addr= npc+ (disp << 1);
 	}
-	/*else
-		result = npc+2;        // a priori effectué dans la methode StepOneInstruction
-        */
-	cpu->SetGPR(15,result);
+	else
+		addr = npc+2;        // a priori effectué dans la methode StepOneInstruction
+        
+	cpu->SetGPR(REG_PC,addr);
 
 	return true;
 }
+br_cond3.disasm={
+
+	os << "br"<< COND[cond3]<<"\t0x" << std::hex << (int) disp ;
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		if(cpu->EvaluateCond(cond3))
+		{
+			typename CONFIG::address_t addr=Operation<CONFIG>::GetAddr()+(disp <<1) ;
+			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+		}	
+	}
+}
+
 
 // BR_COND4
 
 op br_cond4(0b111[3]:disp_20_17[4]:0b0100[4]:disp_16[1]:cond4[4]:><:disp_15_0[16])
 
-br_cond4.var disp : {uint32_t}={(disp_20_17<<17)|(disp_16<<16)|disp_15_0}
-
-br_cond4.disasm={
-
-	os << "br_cond4\t0x" << std::hex << (int)disp << endl;
-}
+br_cond4.var disp : {uint32_t} = {(disp_20_17<<17)|(disp_16<<16)|disp_15_0}
 
 br_cond4.execute={
 
-	uint32_t result;
-	uint32_t npc=Operation<CONFIG>::GetAddr();
+	typename CONFIG::address_t addr;
+	typename CONFIG::address_t npc=Operation<CONFIG>::GetAddr();
 
 	if(cpu->EvaluateCond(cond4))
 	{
-		result = npc+ (SignExtend( (uint32_t)disp, 21) << 1);
+		addr = npc+ (SignExtend(disp, 21) << 1);
 	}
-	/*else
-		result = npc+4;
-        */
-	cpu->SetGPR(15,result);
+	else
+		addr = npc+4;
+        
+	cpu->SetGPR(REG_PC,addr);
 
 	return true;
+}
+br_cond4.disasm={
+
+	os << "br"<< COND[cond4]<< "\t0x" << std::hex << (int)disp;
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		if(cpu->EvaluateCond(cond4))
+		{
+			typename CONFIG::address_t addr=Operation<CONFIG>::GetAddr()+(SignExtend(disp, 21) << 1) ;
+			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+		}	
+	}
 }
 
 // RJMP - relative jump
@@ -64,19 +79,23 @@ op rjmp(0b110[3]:0b0[1]:disp_7_0[8]:0b1[1]:0b0[1]:disp_9_8[2])
 
 rjmp.var disp :{uint16_t}={(disp_9_8<<8)|disp_7_0}
 
+rjmp.var rjmp_addr : {typename CONFIG::address_t}={Operation<CONFIG>::GetAddr()+(SignExtend((uint32_t)disp,10)<<1)}
+
 rjmp.execute={
 
 
-	uint32_t result=Operation<CONFIG>::GetAddr()+(SignExtend((uint32_t)disp,10)<<1);
-	
-	cpu->SetGPR(15,result);
+	cpu->SetGPR(REG_PC,rjmp_addr);
 
 	return true;
 }
 
 rjmp.disasm={
 
-	os << "rjmp\t" << Operation<CONFIG>::GetAddr() << "[0x" << std::hex << (int) disp << "]" << endl;
+	os << "rjmp\t" << std::hex << "0x"<< rjmp_addr;
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{;
+		os << " <" << cpu->GetFunctionFriendlyName(rjmp_addr) << ">";
+	}
 }
 
 
@@ -94,133 +113,128 @@ op acall(0b1101[4]:disp8[8]:0b000[3]:0b0[1])
 
 acall.execute={
 	
-	uint32_t addr = cpu->GetAcba()+ ((uint32_t)disp8 << 2);
-	uint32_t result;
-	cpu->MemReadWord(addr,result);
-	
+	typename CONFIG::address_t addr = cpu->GetAcba()+ ((uint32_t)disp8 << 2);
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
-	cpu->SetGPR(15,result);                         
-	return true;
+	
+       	return cpu->IntLoadWord(REG_PC,addr);
 }
 
 acall.disasm={
 
-	os << "acall\t" << std::hex << (int) disp8 << endl;
+	os << "acall\t" << std::hex << (int) disp8;
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		typename CONFIG::address_t addr = cpu->GetAcba()+ ((uint32_t)disp8 << 2);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+	}
 }
 
-// ICALL - indirect call from subroutine
+// ICALL - indirect call from subroutineq
+
 
 op icall(0b010[3]:0b1110[4]:0b10001[5]:rd[4])
 
 icall.execute={
+	
 
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
 
-	cpu->SetGPR(15,cpu->GetGPR(rd));
+	cpu->SetGPR(REG_PC,cpu->GetGPR(rd));
 
 	return true;
 }
 
 icall.disasm={
 
-	os << "icall\tr" << (unsigned int)rd << endl;
+	os << "icall\t" << REG_NAME[rd];
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		os << " <" << cpu->GetFunctionFriendlyName(cpu->GetGPR(rd)) << ">";
+		
+	}
 }
 
 //MCALL - subroutine call
 
-op mcall(0b111[3]:0b100000001[9]:rp[4]:><:disp16[16])
+op mcall(0b111[3]:0b100000001[9]:rp[4]:><:sext<32> disp16[16])
 
 mcall.execute={
 
-	uint32_t addr = (cpu->GetGPR(rp) & 0xFFFFFFFC) + (SignExtend((uint32_t)disp16,16) << 2);
-
-	uint32_t result; 
-	cpu->MemReadWord(addr,result);
-
+	typename CONFIG::address_t addr = (cpu->GetGPR(rp) & 0xFFFFFFFC) + (disp16 << 2);
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+4);
 
-	cpu->SetGPR(15,result);
-
-	return true;
+	return cpu->IntLoadWord(REG_PC,addr);
 }
 
 mcall.disasm={
 
-	os << "mcall\t" << (unsigned int)rp << "[" << disp16 << "]" << endl;
+	os << "mcall\t" << REG_NAME[rp] << "[" << disp16 << "]";
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		typename CONFIG::address_t addr = (cpu->GetGPR(rp) & 0xFFFFFFFC) + (disp16 << 2);
+		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
+		
+	}
+	
 }
 
 //RCALL - relative subroutine call
 
 op rcall_a(0b110[3]:0b0[1]:disp_7_0[8]:0b1[1]:0b1[1]:disp_9_8[2])
 
-rcall_a.var disp :{uint16_t} ={ (disp_9_8 << 8 )| disp_7_0}
+rcall_a.var disp :{int32_t} ={ SignExtend(((uint32_t) disp_9_8 << 8 )| (uint32_t) disp_7_0, 10) }
+
+rcall_a.var rcall_target_addr :{typename CONFIG::address_t} ={ Operation<CONFIG>::GetAddr() + (disp << 1) }
 
 rcall_a.execute={
 
-	uint32_t result = Operation<CONFIG>::GetAddr() + (SignExtend((uint32_t)disp,10) << 1);
-
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
 
-	cpu->SetGPR( 15, result);
+	cpu->SetGPR( REG_PC, rcall_target_addr);
 
 	return true;
 }
 
 rcall_a.disasm={
 
-	os << "rcall_a\t" << Operation<CONFIG>::GetAddr() << "[" << disp << "]" << endl;
+	os << "rcall\tPC[Ox"<< std::hex << (disp << 1) << "]" << std::dec;
+
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		os << " <" << cpu->GetFunctionFriendlyName(rcall_target_addr) << ">";
+	}
 }
 
 op rcall_b(0b111[3]:disp_20_17[4]:0b0101[4]:disp_16[1]:0b0000[4]:><:disp_15_0[16])
 
 rcall_b.var disp :{uint32_t} = {(disp_20_17 << 17)|(disp_16 << 16)|disp_15_0 }
 
+rcall_b.var rcall_addr : {typename CONFIG::address_t} = { Operation<CONFIG>::GetAddr() + (SignExtend((uint32_t)disp,21) << 1) }
+
 rcall_b.execute={
 
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+4);
-
-	cpu->SetGPR(15,Operation<CONFIG>::GetAddr() + (SignExtend((uint32_t)disp,21) << 1));
+	cpu->SetGPR(REG_PC,rcall_addr);
 
 	return true;
 }
 
 rcall_b.disasm={
 
-	os << "rcall_b\t" << Operation<CONFIG>::GetAddr() << "[" << disp << "]" << endl;
+	os << "rcall\tPC[0x" << std::hex << disp << std::dec << "]";
+	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
+	{
+		os << " <" << cpu->GetFunctionFriendlyName(rcall_addr) << ">";
+	}
 }
 
 //SCALL - supervisor call                             ## declarer la variable microarchitecture dans cpu.hh 
 
-op scall(0b1101011[7]:0b10011[5]:0b0011[4])
-
-scall.execute={
-
-	string microarchitecture="AVR32A";                         
-
-	if(cpu->GetSR_M()==(0b000 || 0b001))
-	{
-		if(microarchitecture=="AVR32A")
-		{
-			cpu->SetGPR(15,cpu->GetEvba()+0x100);
-			cpu->SetSR_M(0b001);
-		}
-		else
-		{
-			cpu->SetGPR(15,cpu->GetEvba()+0x100);
-			cpu->SetSR_M(0b001);
-		}
-	}
-	else
-	{
-		cpu->SetLR(Operation<CONFIG>::GetAddr() + 2);
-		cpu->SetGPR(15,cpu->GetEvba()+0x100);
-	}
-	return true;
-}
+op scall(0b1101011[7]:0b10011[5]:0b0011[4]) // architecture dependent instruction (see avr32a or avr32b sub-directory)
 
 scall.disasm={
 
-	os << "scall\t" << endl;
+	os << "scall\t";
 }
 
 //SSCALL - secure state call                      ?? initialiser microarchitecture
@@ -229,17 +243,16 @@ op sscall(0b1101011[7]:0b10101[5]:0b0011[4])
 
 sscall.execute={
 
-	string microarchitecture= "AVR32A";
 
 	cpu->SetSS_RAR(Operation<CONFIG>::GetAddr());
 	cpu->SetSS_RSR(cpu->GetSR());
-	if(microarchitecture=="AVR32A")
+	if(cpu->GetMicroArchitecture()=="AVR32A")
 	{
-		cpu->SetGPR(15,0x80000004);
+		cpu->SetGPR(REG_PC,0x80000004);
 	}
 	else
 	{
-		cpu->SetGPR(15,0xA0000004);
+		cpu->SetGPR(REG_PC,0xA0000004);
 	}
 	cpu->SetSR_SS(1);
 	cpu->SetSR_GM(1);
@@ -250,6 +263,149 @@ sscall.execute={
 
 sscall.disasm={
 
-	os << "sscall\t" << endl;
+	os << "sscall\t";
+}
+
+op rete(0b1101011[7]:0b00000[5]:0b0011[4])
+
+
+// RETE -Return from event handler
+
+//Execution in Application or Supervisor modes will trigger a Privilege Violation exception.
+
+rete.execute={
+
+	if(cpu->GetMicroArchitecture()=="AVR32A")
+	{
+		uint32_t sp=cpu->GetSP_sys();
+		if(!cpu->LoadSR(sp))return false;
+		sp+=4;
+		cpu->SetGPR(REG_PC,sp);
+		sp+=4;
+
+		if(cpu->GetSR_M()==(0b010 |0b011|0b100|0b101))
+		{
+			if(!cpu->IntLoadWord(REG_LR,sp))return false;    
+			sp+=4;
+			if(!cpu->IntLoadWord(REG_R12,sp))return false;
+			sp+=4;
+			if(!cpu->IntLoadWord(REG_R11,sp))return false;
+			sp+=4;
+			if(!cpu->IntLoadWord(REG_R10,sp))return false;
+			sp+=4;
+			if(!cpu->IntLoadWord(REG_R9,sp))return false;
+			sp+=4;
+			if(!cpu->IntLoadWord(REG_R8,sp))return false;
+			sp+=4;
+
+		}
+		cpu->SetSR_L(0);
+		cpu->SetSP_sys(sp);
+	}						// flags are not affected
+	return true;
+}
+
+rete.disasm={
+
+	os << "rete";
+}
+
+// RETD - Return from Debug mode
+
+op retd(0b1101011[7]:0b00010[5]:0b0011[4])
+
+retd.execute={
+
+	if(!cpu->LoadSR(cpu->GetRSR_DBG()))return false;
+	cpu->SetGPR(REG_PC,cpu->GetRAR_DBG());
+	
+	return true;
+}
+retd.disasm={
+
+	os << "retd";
+}
+
+// RETS – Return from supervisor call
+
+op rets(0b1101011[7]:0b00001[5]:0b0011[4])
+
+rets.execute={
+
+	if(cpu->GetSR_M()==0b000);  // Exception
+	else if (cpu->GetSR_M()==0b001)
+	{
+		if(cpu->GetMicroArchitecture()=="AVR32A")
+		{
+			uint32_t sp = cpu->GetSP_sys();
+			if(!cpu->LoadSR(sp))return false;
+			sp+=4;
+			if(!cpu->IntLoadWord(REG_PC,sp))return false;
+			sp+=4;
+			cpu->SetSR(sp);
+		}
+		// others architectures
+	}
+	else cpu->SetGPR(REG_PC,cpu->GetGPR(REG_LR));
+	
+	return true;
+}
+rets.disasm={
+
+	os << "rets";
+}
+
+op retss(0b1101011[7]:0b10110[5]:0b0011[4])
+
+retss.execute={
+
+	if(cpu->GetSR_SS()==0); // Issue Privilege Violation Exception
+	else
+	{
+		if(!cpu->LoadSR(cpu->GetSS_RSR()))return false;
+		cpu->SetGPR(REG_PC,cpu->GetSS_RAR());
+	}
+
+	return true;
+}
+retss.disasm={
+
+	os << "retss";
+}
+
+// RET{cond4} – Conditional Return from Subroutine
+
+op ret_cond4(0b010[3]:0b1111[4]:0b0[1]:cond4[4]:rs[4])
+
+ret_cond4.execute={
+
+	if(cpu->EvaluateCond((unsigned int)cond4))
+	{
+		uint32_t result;	
+	
+		if((rs!=REG_PC) && (rs!=REG_LR) && (rs!=REG_SP)) { result = cpu->GetGPR(rs); }
+		else if (rs==REG_LR) {result=-1;}
+		else if (rs==REG_SP) {result=0;}	
+		else { result=1;}
+		cpu->SetGPR(REG_R12,result);
+
+		cpu->SetSR_V(0);                     // set flags
+		cpu->SetSR_N((int32_t)result<0);
+		cpu->SetSR_Z(result==0);
+		cpu->SetSR_C(0);
+
+		cpu->SetGPR(REG_PC,cpu->GetGPR(REG_LR));
+	}
+
+	return true;
+}
+
+ret_cond4.disasm={
+
+	os << "ret" << COND[cond4] << "\t";
+	if((rs!=REG_PC) && (rs!=REG_LR) && (rs!=REG_SP)) { os << REG_NAME[rs]; }
+		else if (rs==REG_LR) {os << "-1";}
+		else if (rs==REG_SP) {os << "0";}	
+		else { os << "1";}
 }
 

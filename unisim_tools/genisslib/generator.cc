@@ -32,13 +32,20 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <cassert>
+// #include <streambuf>
+// #include <ostream>
+
 
 using namespace std;
 
 Generator::Generator()
-  : m_isa( 0 ), m_minwordsize( 32 )
+  : m_isa( 0 ), m_minwordsize( 32 ), m_verblevel( 1 )
 {}
 
+/**
+ *  @brief computes the greatest common divisor of instruction lengths (in bits).
+ */
 unsigned int
 Generator::gcd() const
 {
@@ -53,6 +60,33 @@ Generator::gcd() const
     }
   }
   return res;
+}
+
+/**
+ *  @brief a null ouput stream useful for ignoring too verbose logs
+ */
+struct onullstream: public std::ostream
+{
+  struct nullstreambuf: public std::streambuf
+  {
+    int_type overflow( int_type c ) { return traits_type::not_eof(c); }
+  };
+  onullstream() : std::ostream(0) { rdbuf(&m_sbuf); }
+  nullstreambuf m_sbuf;
+};
+
+/**
+ *  @brief returns the output stream for a given level of verbosity
+ */
+std::ostream&
+Generator::log( unsigned int level ) const
+{
+  if (level > m_verblevel) {
+    // Return a null ostream
+    static onullstream ons;
+    return ons;
+  }
+  return std::cerr;
 }
 
 struct OpProperties
@@ -98,8 +132,10 @@ struct OpProperties
 };
 
 Generator&
-Generator::init( Isa& _isa ) {
+Generator::init( Isa& _isa, unsigned int verblevel )
+{
   m_isa = &_isa;
+  m_verblevel = verblevel;
   m_minwordsize =
     least_ctype_size( std::max( Opts::shared().minwordsize, /* coming from the command line */
                                 _isa.m_minwordsize          /* coming from the isa source */
@@ -150,31 +186,165 @@ Generator::init( Isa& _isa ) {
   return *this;
 }
 
-/** Generates one C source file and one C header
-    @param output a C string containing the name of the output filenames without the file name extension
-    @param word_size define the minimum word size to hold the operand bit field,
-    if zero uses the smallest type which hold the operand bit field
-    @return non-zero if no error occurs during generation
-*/
+/*
+ *  @brief update the topology; linking subject to argument opcode
+ *  @param _upper the object being linked to
+ */
 void
-Generator::iss( char const* prefix, bool sourcelines ) const
+OpCode_t::setupper( OpCode_t* _upper )
 {
-  std::cerr << "Instruction Size: ";
+  if (not m_upper) {
+    m_upper = _upper;
+    _upper->m_lowercount += 1;
+  }
+  else if (m_upper->locate( *_upper ) == Inside) {
+    m_upper->m_lowercount -= 1;
+    m_upper = _upper;
+    _upper->m_lowercount += 1;
+  }
+}
+  
+/*
+ *  @brief update the topology; unlink subject opcode
+ */
+void
+OpCode_t::unsetupper()
+{
+  if (not m_upper) return;
+  m_upper->m_lowercount -= 1;
+  m_upper = 0;
+}
+
+std::ostream& operator<<( std::ostream& _sink, OpCode_t const& _oc ) { return _oc.details( _sink ); }
+  
+/* Generates the topological graph of operations, checks for conflicts (overlapping encodings), and sort operations accordingly.
+ */
+void
+Generator::toposort()
+{
+  Vect_t<Operation_t>& operations = isa().m_operations;
+  
+  for( Vect_t<Operation_t>::const_iterator op1 = operations.begin(); op1 < operations.end(); ++op1 ) {
+    OpCode_t& opcode1 = opcode( *op1 );
+    for( Vect_t<Operation_t>::const_iterator op2 = operations.begin(); op2 < op1; ++ op2 ) {
+      OpCode_t& opcode2 = opcode( *op2 );
+
+      switch( opcode1.locate( opcode2 ) ) {
+      case OpCode_t::Outside: break; // No problem
+      case OpCode_t::Overlaps:
+        if      (isa().m_user_orderings.count( std::make_pair( *op1, *op2 ) ) > 0)
+          {
+            opcode1.setupper( &opcode2 );
+            log(2) << "operation `" << (**op1).m_symbol << "' is a forced specialization of operation `" << (**op2).m_symbol << "'" << endl;
+            break;
+          }
+        else if (isa().m_user_orderings.count( std::make_pair( *op2, *op1 ) ) > 0)
+          {
+            opcode2.setupper( &opcode1 );
+            log(2) << "operation `" << (**op2).m_symbol << "' is a forced specialization of operation `" << (**op1).m_symbol << "'" << endl;
+            break;
+          }
+      case OpCode_t::Equal:
+        (**op1).m_fileloc.err( "error: operation `%s' conflicts with operation `%s'", (**op1).m_symbol.str(), (**op2).m_symbol.str() );
+        (**op2).m_fileloc.err( "operation `%s' was declared here", (**op2).m_symbol.str() );
+        std::cerr << (**op1).m_symbol << ": " << opcode1 << endl;
+        std::cerr << (**op2).m_symbol << ": " << opcode2 << endl;
+        throw GenerationError;
+        break;
+      case OpCode_t::Inside:
+        opcode2.setupper( &opcode1 );
+        log(2) << "operation `" << (**op2).m_symbol << "' is a specialization of operation `" << (**op1).m_symbol << "'" << endl;
+        break;
+      case OpCode_t::Contains:
+        opcode1.setupper( &opcode2 );
+        log(2) << "operation `" << (**op1).m_symbol << "' is a specialization of operation `" << (**op2).m_symbol << "'" << endl;
+        break;
+      }
+    }
+  }
+  
+  // Topological sort to fix potential precedence problems
+  {
+    intptr_t opcount = operations.size();
+    Vect_t<Operation_t> noperations( opcount );
+    intptr_t
+      sopidx = opcount, // operation source table index
+      dopidx = opcount, // operation destination table index
+      inf_loop_tracker = opcount; // counter tracking infinite loop
+    
+    while( dopidx > 0 ) {
+      sopidx = (sopidx + opcount - 1) % opcount;
+      Operation_t* op = operations[sopidx];
+      if (not op) continue;
+      
+      OpCode_t& oc = opcode( op );
+      if( oc.m_lowercount > 0 ) {
+        // There is some operations to be placed before this one 
+        --inf_loop_tracker;
+        assert( inf_loop_tracker >= 0 );
+        continue;
+      }
+      inf_loop_tracker = opcount;
+      noperations[--dopidx] = op;
+      operations[sopidx] = 0;
+      oc.unsetupper();
+    }
+    operations = noperations;
+  }
+}
+
+/** Dumps ISA statistics
+    @param _sink a std::ostream reference where to dump statistics
+    @param verbosity the level of verbosity
+ */
+void
+Generator::isastats()
+{
+  log(1) << "Instruction Size: ";
   if (m_insnsizes.size() == 1)
-    std::cerr << (*m_insnsizes.begin());
+    log(1) << (*m_insnsizes.begin());
   else
     {
       char const* sep = "[";
       for (std::set<unsigned int>::const_iterator itr = m_insnsizes.begin(); itr != m_insnsizes.end(); ++itr) {
-        std::cerr << sep << *itr;
+        log(1) << sep << *itr;
         sep = ",";
       }
-      std::cerr << "] (gcd=" << this->gcd() << ")";
+      log(1) << "] (gcd=" << this->gcd() << ")";
     }
   
-  std::cerr << std::endl;
-  std::cerr << "Instruction Set Encoding: " << (isa().m_little_endian ? "little-endian" : "big-endian") << "\n";
-  
+  log(1) << std::endl;
+  log(1) << "Instruction Set Encoding: " << (isa().m_little_endian ? "little-endian" : "big-endian") << "\n";
+  /* Statistics about operation and actions */
+  log(1) << "Operation count: " << isa().m_operations.size() << "\n";
+  {
+    log(3) << "Operations (actions details):\n";
+    typedef std::map<ActionProto_t const*,uint64_t> ActionCount;
+    ActionCount actioncount;
+    for (Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op) {
+      log(3) << "  " << (**op).m_symbol.str() << ':';
+      for (Vect_t<Action_t>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action) {
+        ActionProto_t const* ap = (**action).m_actionproto;
+        log(3) << " ." << ap->m_symbol.str();
+        actioncount[ap] += 1;
+      }
+      log(3) << '\n';
+    }
+    log(1) << "Action count:\n";
+    for (ActionCount::const_iterator itr = actioncount.begin(); itr != actioncount.end(); ++itr) {
+      log(1) << "   ." << itr->first->m_symbol.str() << ": " << itr->second << '\n';
+    }
+  }
+}
+
+/** Generates one C source file and one C header
+    @param output a C string containing the name of the output filenames without the file name extension
+    @param word_size define the minimum word size to hold the operand bit field,
+    if zero uses the smallest type which hold the operand bit field
+*/
+void
+Generator::iss( char const* prefix, bool sourcelines ) const
+{
   /*******************/
   /*** Header file ***/
   /*******************/
@@ -190,13 +360,13 @@ Generator::iss( char const* prefix, bool sourcelines ) const
     ConstStr_t headerid;
     
     {
-      Str::Buf ns_header_str( Str::Buf::Recycle );
-      char const* sep = "";
+      std::string ns_header_str;
+      std::string sep = "";
       for( vector<ConstStr_t>::const_iterator piece = isa().m_namespace.begin(); piece < isa().m_namespace.end(); ++ piece ) {
-        ns_header_str.write( sep ).write( (*piece).str() );
+        ns_header_str += sep + (*piece).str();
         sep = "__";
       }
-      headerid = Str::fmt( "__%s_%s_HH__", Str::tokenize( prefix ).str(), ns_header_str.m_storage );
+      headerid = Str::fmt( "__%s_%s_HH__", Str::tokenize( prefix ).str(), ns_header_str.c_str() );
     }
 
     sink.code( "#ifndef %s\n", headerid.str() );
@@ -719,7 +889,7 @@ Generator::isa_operations_methods( Product_t& _product ) const {
         _product.code( " char const* Op%s", Str::capitalize( (**op).m_symbol ).str() );
         _product.template_abbrev( isa().m_tparams );
         _product.code( "::%s_text() const\n", xxcode[step] );
-        _product.code( " { return %s; }\n", Str::dqcstring( xxcode_text.m_content.m_storage ).str() );
+        _product.code( " { return %s; }\n", Str::dqcstring( xxcode_text.m_content.c_str() ).str() );
       }
     }
     

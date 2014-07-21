@@ -44,8 +44,10 @@ using namespace std;
  *    - Equal
  */
 
-RiscGenerator::OpCode_t::Location_t
-RiscGenerator::OpCode_t::locate( RiscGenerator::OpCode_t const& _that ) const {
+OpCode_t::Location_t
+RiscOpCode_t::locate( OpCode_t const& _oc ) const
+{
+  RiscOpCode_t const& _that = dynamic_cast<RiscOpCode_t const&>( _oc );
   /* this is named A and _that is named B */
   bool some_a_outside_B = false, some_b_outside_A = false;
 
@@ -63,34 +65,17 @@ RiscGenerator::OpCode_t::locate( RiscGenerator::OpCode_t const& _that ) const {
   return table[(some_a_outside_B ? 1 : 0) | (some_b_outside_A ? 2 : 0)];
 }
 
-/*
- *  @brief update the topology; linking subject to argument opcode
- *  @param _upper the object being linked to
- */
-
-void
-RiscGenerator::OpCode_t::setupper( OpCode_t* _upper ) {
-  if( not m_upper ) {
-    m_upper = _upper;
-    _upper->m_lowercount += 1;
-  } else if( m_upper->locate( *_upper ) == Inside ) {
-    m_upper->m_lowercount -= 1;
-    m_upper = _upper;
-    _upper->m_lowercount += 1;
-  }
+/** Logs the content of the OpCode to an ostream
+    @param _sink the ostream where the OpCode is logged.
+    @return a reference to the ostream
+*/
+std::ostream&
+RiscOpCode_t::details( std::ostream& _sink ) const
+{
+  _sink << "{size: " << std::dec << this->m_size << ", mask: 0x" << std::hex << this->m_mask << ", bits: 0x" << this->m_bits << "}";
+  return _sink;
 }
-  
-/*
- *  @brief update the topology; unlink subject opcode
- */
 
-void
-RiscGenerator::OpCode_t::unsetupper() {
-  if( not m_upper ) return;
-  m_upper->m_lowercount -= 1;
-  m_upper = 0;
-}
-  
 /**
  *  @brief  Default constructor, create a RiscGenerator.
  */
@@ -149,70 +134,10 @@ RiscGenerator::finalize() {
       bits |= fi.item().bits() << fi.pos();
       mask |= fi.item().mask() << fi.pos();
     }
-    m_opcodes[*op] = OpCode_t( mask, bits, insn_size, vlen );
+    m_opcodes[*op] = RiscOpCode_t( mask, bits, insn_size, vlen );
   }
   
-  /* Generating the topological graph of operations, checking for
-   * conflicts (overlapping encodings), and checking for operations
-   * with weird size.
-   */
-  for( Vect_t<Operation_t>::const_iterator op1 = operations.begin(); op1 < operations.end(); ++op1 ) {
-    OpCode_t& opcode1 = opcode( *op1 );
-    for( Vect_t<Operation_t>::const_iterator op2 = operations.begin(); op2 < op1; ++ op2 ) {
-      OpCode_t& opcode2 = opcode( *op2 );
-
-      switch( opcode1.locate( opcode2 ) ) {
-      case OpCode_t::Outside: break; // No problem
-      case OpCode_t::Overlaps:
-        if      (isa().m_user_orderings.count( std::make_pair( *op1, *op2 ) ) > 0)
-          { opcode1.setupper( &opcode2 ); break; }
-        else if (isa().m_user_orderings.count( std::make_pair( *op2, *op1 ) ) > 0)
-          { opcode2.setupper( &opcode1 ); break; }
-      case OpCode_t::Equal:
-        (**op1).m_fileloc.err( "error: operation `%s' conflicts with operation `%s'", (**op1).m_symbol.str(), (**op2).m_symbol.str() );
-        (**op2).m_fileloc.err( "operation `%s' was declared here", (**op2).m_symbol.str() );
-        throw GenerationError;
-        break;
-      case OpCode_t::Inside:
-        opcode2.setupper( &opcode1 );
-        cerr << "operation `" << (**op2).m_symbol << "' is a specialization of operation `" << (**op1).m_symbol << "'" << endl;
-        break;
-      case OpCode_t::Contains:
-        opcode1.setupper( &opcode2 );
-        cerr << "operation `" << (**op1).m_symbol << "' is a specialization of operation `" << (**op2).m_symbol << "'" << endl;
-        break;
-      }
-    }
-  }
-  
-  // Topological sort to fix potential precedence problems
-  {
-    intptr_t opcount = isa().m_operations.size();
-    Vect_t<Operation_t> noperations( opcount );
-    intptr_t
-      sopidx = opcount, // operation source table index
-      dopidx = opcount, // operation destination table index
-      inf_loop_tracker = opcount; // counter tracking infinite loop
-    
-    while( dopidx > 0 ) {
-      sopidx = (sopidx + opcount - 1) % opcount;
-      Operation_t* op = isa().m_operations[sopidx];
-      if( not op ) continue;
-      
-      OpCode_t& oc = opcode( op );
-      if( oc.m_lowercount > 0 ) {
-        // There is some operations to be placed before this one 
-        --inf_loop_tracker;
-        assert( inf_loop_tracker >= 0 );
-        continue;
-      }
-      inf_loop_tracker = opcount;
-      noperations[--dopidx] = op;
-      isa().m_operations[sopidx] = 0;
-      oc.unsetupper();
-    }
-    isa().m_operations = noperations;
-  }
+  this->toposort();
 }
 
 void
@@ -223,7 +148,7 @@ RiscGenerator::codetype_decl( Product_t& _product ) const {
 void
 RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const
 {
-  OpCode_t const& oc = opcode( &_op );
+  RiscOpCode_t const& oc = opcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "assert( \"Encode method does not work with variable length operations.\" and false );\n" );
@@ -255,7 +180,7 @@ RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
 void
 RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
-  OpCode_t const& oc = opcode( &_op );
+  RiscOpCode_t const& oc = opcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "this->gil_length = %u;\n", oc.m_size );
@@ -332,14 +257,14 @@ RiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _old, char 
   _product.code( "%s == %s", _old, _new );
 }
 
-RiscGenerator::OpCode_t const&
+RiscOpCode_t const&
 RiscGenerator::opcode( Operation_t const* _op ) const {
   OpCodes_t::const_iterator res = m_opcodes.find( _op );
   assert( res != m_opcodes.end() );
   return res->second;
 }
 
-RiscGenerator::OpCode_t&
+RiscOpCode_t&
 RiscGenerator::opcode( Operation_t const* _op ) {
   OpCodes_t::iterator res = m_opcodes.find( _op );
   assert( res != m_opcodes.end() );
@@ -360,7 +285,7 @@ RiscGenerator::insn_getlen_decl( Product_t& _product, Operation_t const& _op ) c
   if ((*m_insnsizes.begin()) == (*m_insnsizes.rbegin()))
     return;
   
-  OpCode_t const& oc = opcode( &_op );
+  RiscOpCode_t const& oc = opcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "unsigned int gil_length;\n" );

@@ -48,7 +48,8 @@ public:
 	{
 		ERROR = -1,
 		OK    = 0,
-		EXIT  = 1
+		EXIT  = 1,
+		UNHANDLED = 2
 	} Status;
 
 	virtual Status HandleEmulatorBreakpoint() = 0;

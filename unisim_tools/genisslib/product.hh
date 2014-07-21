@@ -24,10 +24,11 @@
 #include <errtools.hh>
 #include <strtools.hh>
 #include <vector>
+#include <string>
 
 struct Product_t {
   ConstStr_t          m_filename;
-  Str::Buf            m_line;
+  std::string         m_line;
   unsigned int        m_lineno;
   std::vector<int>    m_indentations;
   bool                m_sourcelines;
@@ -62,7 +63,7 @@ struct FProduct_t : public Product_t {
 };
 
 struct SProduct_t : public Product_t {
-  Str::Buf            m_content;
+  std::string         m_content;
   
   SProduct_t( ConstStr_t _prefix, bool _sourcelines );
   

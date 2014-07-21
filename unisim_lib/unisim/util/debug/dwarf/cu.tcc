@@ -318,6 +318,12 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_AD
 }
 
 template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const
+{
+	return dw_die->HasOverlap(addr, length);
+}
+
+template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const
 {
 	if(dw_die)

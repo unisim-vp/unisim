@@ -646,7 +646,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("schematic", "virtex5fxt/fig_schematic.pdf");
 
 	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = CONFIG::CPU_CONFIG::HAS_FPU ? "gdb_ppc440fp.xml" : "gdb_ppc440.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
 	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	double cpu_frequency = 400.0; // in Mhz
@@ -1022,10 +1022,11 @@ void Simulator<CONFIG>::Stop(Object *object, int _exit_status, bool asynchronous
 	{
 		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
 	}
-#ifdef DEBUG_VIRTEX5FXT
-	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
-#endif
+	if(CONFIG::DEBUG_INFORMATION)
+	{
+		std::cerr << "Call stack:" << std::endl;
+		std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	}
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
 	if(!asynchronous)
