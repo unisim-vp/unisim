@@ -2,7 +2,7 @@
 
 
 set addressclass {uint16_t}
-//set endianness little
+set endianness big
 
 decl {
 
