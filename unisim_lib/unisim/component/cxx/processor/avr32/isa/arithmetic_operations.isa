@@ -164,11 +164,10 @@ op add_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0000[4]:rd[
 
 add_cond4.execute={
 
-	uint32_t x =cpu->GetGPR(rx);
-	uint32_t y=cpu->GetGPR(ry);
-	
-	if(cpu->EvaluateCond((uint8_t)cond4))
- 	{
+	if(cpu->EvaluateCond(cond4))
+	{
+		uint32_t x =cpu->GetGPR(rx);
+		uint32_t y=cpu->GetGPR(ry);
 		uint32_t result;
 		uint8_t carry_in=0;
 		uint8_t overflow,sign,carry_out;
@@ -340,13 +339,13 @@ cp_w_b.disasm={
 
 op cp_w_c(0b111[3]:imm_20_17[4]:0b0010[4]:imm_15[1]:rd[4]:><:imm_15_0[16])
 
-cp_w_c.var imm : { uint32_t } = { (imm_20_17 << 17) | (imm_15 << 15) | imm_15_0 }
+cp_w_c.var imm : { int32_t } = { SignExtend(((uint32_t) imm_20_17 << 17) | ((uint32_t) imm_15 << 15) | (uint32_t) imm_15_0, 21) }
 
 cp_w_c.execute={
 
 	uint32_t d =cpu->GetGPR(rd);
 	//uint32_t s = ~(SignExtend(imm,21))+1;
-	uint32_t s = SignExtend(imm,21);
+	uint32_t s = imm;
 	uint32_t result;
 	uint8_t carry_in=0;
 	uint8_t carry_out;
@@ -365,7 +364,7 @@ cp_w_c.execute={
 }
 cp_w_c.disasm={
 
-	os<< "cp.w\t" << REG_NAME[rd] << "," << (int) imm;
+	os<< "cp.w\t" << REG_NAME[rd] << "," << imm;
 
 }
 
@@ -436,10 +435,7 @@ max.execute={
 
 	int32_t x =  cpu->GetGPR(rx);
 	int32_t y = cpu->GetGPR(ry);
-	uint32_t result;
- 	
-	if(x>y)result=x;
-	else result=y;
+	uint32_t result = (x > y) ? x : y;
 
 	cpu->SetGPR(rd,result);
 
@@ -460,10 +456,7 @@ min.execute={
 
 	int32_t x =  cpu->GetGPR(rx);
 	int32_t y = cpu->GetGPR(ry);
-	uint32_t result;
- 	
-	if(x<y)result=x;
-	else result=y;
+	uint32_t result = (x < y) ? x : y;
 
 	cpu->SetGPR(rd,result);
 
@@ -496,6 +489,8 @@ neg.execute={
 	cpu->SetSR_N(sign);
 	cpu->SetSR_Z(result==0);
 	cpu->SetSR_C(carry_out);
+
+	cpu->SetGPR(rd,result);
 
 	return true;
 }
@@ -579,7 +574,7 @@ op rsub_cond4(0b111[3]:0b1101[4]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:sext<32>
 
 rsub_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		uint32_t d = cpu->GetGPR(rd);                  // rd
 		//uint32_t imm = SignExtend((uint32_t)imm8,8);   // 32 bits extension of imm8       
@@ -775,7 +770,7 @@ sub_c.disasm={
 }
 
 op sub_d(0b111[3]:imm_20_17[4]:0b0001[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
-sub_d.var imm :{int32_t}= {SignExtend((uint32_t)(imm_20_17 << 17)|(imm_16 <<16 )|imm_15_0,21)}
+sub_d.var imm :{int32_t}= {SignExtend((uint32_t)(imm_20_17 << 17)|((uint32_t) imm_16 <<16 )|(uint32_t) imm_15_0,21)}
 
 sub_d.execute = {
 
@@ -846,7 +841,7 @@ op sub_flag_cond4(0b111[3]:0b101[3]:f[1]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:
 
 sub_flag_cond4.execute = {
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		uint32_t d= cpu->GetGPR(rd);           // rd
 		uint32_t y= (uint32_t)imm8;           // imm8
@@ -884,7 +879,7 @@ op sub_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0001[4]:rd[
 
 sub_cond4.execute = {
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		uint32_t x= cpu->GetGPR(rx);           // rx
 		uint32_t y= cpu->GetGPR(ry);           // ry
