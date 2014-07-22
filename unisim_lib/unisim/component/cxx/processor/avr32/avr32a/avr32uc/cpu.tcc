@@ -345,7 +345,7 @@ bool CPU<CONFIG>::SintLoadByte(unsigned int rd,typename CONFIG::address_t addr)
 	bool status=DHSBRead(addr,&buffer,1);
 	if(unlikely(!status)) return false;
 	uint32_t value=buffer;   
-	value=SignExtend(value,sizeof(value));
+	value=SignExtend(value,8);
 	SetGPR(rd,value);
 	MonitorLoad(addr,1);
 	

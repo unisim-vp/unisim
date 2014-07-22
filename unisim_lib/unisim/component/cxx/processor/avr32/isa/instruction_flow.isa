@@ -12,26 +12,26 @@ op br_cond3(0b110[3]:0b0[1]:sext<32>disp[8]:0b0[1]:cond3[3])
 
 br_cond3.execute={
 
-	typename CONFIG::address_t addr;
-	typename CONFIG::address_t npc = Operation<CONFIG>::GetAddr();
-
 	if(cpu->EvaluateCond(cond3))
 	{
-		addr= npc+ (disp << 1);
+		typename CONFIG::address_t pc = Operation<CONFIG>::GetAddr();
+		typename CONFIG::address_t addr= pc+ (disp << 1);
 		cpu->SetGPR(REG_PC,addr);
 	}
-	
 
 	return true;
 }
 br_cond3.disasm={
 
-	os << "br"<< COND[cond3]<<"\t0x" << std::hex << (int) disp ;
+	typename CONFIG::address_t pc = Operation<CONFIG>::GetAddr();
+	typename CONFIG::address_t addr= pc+ (disp << 1);
+	
+	os << "br"<< COND[cond3]<<"\t0x" << std::hex << addr ;
+	
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		if(cpu->EvaluateCond(cond3))
 		{
-			typename CONFIG::address_t addr=Operation<CONFIG>::GetAddr()+(disp <<1) ;
 			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 		}	
 	}
@@ -42,32 +42,30 @@ br_cond3.disasm={
 
 op br_cond4(0b111[3]:disp_20_17[4]:0b0100[4]:disp_16[1]:cond4[4]:><:disp_15_0[16])
 
-br_cond4.var disp : {uint32_t} = {(disp_20_17<<17)|(disp_16<<16)|disp_15_0}
+br_cond4.var disp : {int32_t} = {SignExtend(((uint32_t) disp_20_17<<17)|((uint32_t) disp_16<<16)|(uint32_t)disp_15_0,21)}
 
 br_cond4.execute={
 
-	typename CONFIG::address_t addr;
-	typename CONFIG::address_t npc=Operation<CONFIG>::GetAddr();
-
 	if(cpu->EvaluateCond(cond4))
 	{
-		addr = npc+ (SignExtend(disp, 21) << 1);
+		typename CONFIG::address_t pc=Operation<CONFIG>::GetAddr();
+		typename CONFIG::address_t addr = pc+ (disp << 1);
+		cpu->SetGPR(REG_PC,addr);
 	}
-	else
-		addr = npc+4;
-        
-	cpu->SetGPR(REG_PC,addr);
 
 	return true;
 }
 br_cond4.disasm={
 
-	os << "br"<< COND[cond4]<< "\t0x" << std::hex << (int)disp;
+	typename CONFIG::address_t pc=Operation<CONFIG>::GetAddr();
+	typename CONFIG::address_t addr = pc+ (disp << 1);
+	
+	os << "br"<< COND[cond4]<< "\t0x" << std::hex << addr;
+	
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		if(cpu->EvaluateCond(cond4))
 		{
-			typename CONFIG::address_t addr=Operation<CONFIG>::GetAddr()+(SignExtend(disp, 21) << 1) ;
 			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 		}	
 	}

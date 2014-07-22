@@ -234,7 +234,7 @@ op ld_ub_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b100[3]:disp9[9])
 
 ld_ub_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+(uint32_t) disp9;
 
@@ -299,7 +299,7 @@ op ld_sb_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b011[3]:disp9[9])
 
 ld_sb_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+ (uint32_t)disp9;
 
@@ -434,7 +434,7 @@ op ld_uh_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b010[3]:disp9[9])
 
 ld_uh_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp9 << 1) ;
 
@@ -572,7 +572,7 @@ op ld_sh_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b001[3]:disp9[9])
 
 ld_sh_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp9 << 1);
 
@@ -655,7 +655,7 @@ ld_w_c.execute={
 }
 
 ld_w_c.disasm={
-	os << "ld.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << ((int) disp5 << 2) << "]";
+	os << "ld.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << ((uint32_t) disp5 << 2) << "]";
 
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
@@ -676,7 +676,7 @@ ld_w_d.execute={
 
 
 ld_w_d.disasm={
-	os << "ld.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" <<std::hex<< (int)disp16 << "]";
+	os << "ld.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" <<std::hex<< disp16 << "]";
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t addr=cpu->GetGPR(rp) + disp16;
@@ -743,7 +743,7 @@ op ld_w_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b000[3]:disp9[9])
 
 ld_w_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t) cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rp) + ((uint32_t)disp9 << 2);
 
@@ -1040,7 +1040,7 @@ lddsp.execute={
 
 lddsp.disasm={
 
-	os << "lddsp\t" << REG_NAME[rd] << ",SP[0x" << std::hex << ((uint32_t)disp7 <<2) << "]"; 
+	os << "lddsp\t" << REG_NAME[rd] << ",sp[0x" << std::hex << ((uint32_t)disp7 <<2) << "]"; 
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		uint32_t sp= cpu->GetSP();
@@ -1149,7 +1149,7 @@ op st_b_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1011[4]:0b00[2]:sa[2]:r
 
 st_b_e.execute={
 
-	typename CONFIG::address_t addr=cpu->GetGPR(rb)+( cpu->GetGPR(ri)<<(unsigned int)sa );
+	typename CONFIG::address_t addr=cpu->GetGPR(rb)+( cpu->GetGPR(ri)<<sa );
 	return cpu->IntStoreByte(rs,addr);
 }
 
@@ -1638,7 +1638,8 @@ stdsp.execute={
 
 stdsp.disasm={
 
-	os << "stdsp\t" << std::hex  << "sp[0x" << (unsigned int)disp7 << "]," << REG_NAME[rs];
+	os << "stdsp\t" << std::hex  << "sp[0x" << ((uint32_t)disp7 << 2) << "]," << REG_NAME[rs];
+
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		uint32_t sp=cpu->GetSP();

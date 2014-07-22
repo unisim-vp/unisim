@@ -155,7 +155,7 @@ andh.execute={
 }
 
 andh.disasm={
-	os << "andh\t" << REG_NAME[rd] << ",0x" << std::hex <<(int)imm16 << ( coh ? ",coh" : "");
+	os << "andh\t" << REG_NAME[rd] << ",0x" << std::hex <<imm16 << ( coh ? ",coh" : "");
 }
 
 op andl(0b111[3]:0b00[2]:0b0[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
@@ -188,7 +188,7 @@ andl.execute={
 
 
 andl.disasm={
-	os << "andl\t" << REG_NAME[rd] << ",0x" << std::hex << (int) imm16 << ( coh ? ",coh" : "" );
+	os << "andl\t" << REG_NAME[rd] << ",0x" << std::hex << imm16 << ( coh ? ",coh" : "" );
 }
 
 
@@ -370,7 +370,7 @@ eorl.execute={ 							// !!!  IMPLEMENTATION A VERIFIER
 
 
 eorl.disasm={
-	os << "eorl\t" << REG_NAME[rd] << "," << std::hex <<(int )imm16;
+	os << "eorl\t" << REG_NAME[rd] << ",0x" << std::hex <<(int )imm16;
 }
 
 //OR - logical or with optional logical shift
@@ -520,7 +520,7 @@ orl.execute={
 }
 
 orl.disasm={
-	os << "orl\t" << REG_NAME[rd] << "," << std::hex << (int)imm16;
+	os << "orl\t" << REG_NAME[rd] << ",0x" << std::hex << (int)imm16;
 }
 
 

@@ -16,7 +16,7 @@ bfexts.execute={
 
 	s= s >> bp5;           // shift
 	s= s & ((1UL<< w5)-1); // extract with mask            
-	uint32_t result=SignExtend(s,(unsigned int)w5);
+	uint32_t result=SignExtend(s,w5);
 	uint8_t neg=(int32_t)result<0;
 	uint8_t zero=result==0;
 	uint8_t carry=((result>>31) & 1);
@@ -424,7 +424,7 @@ asr_a.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftArithmeticRight(x, (unsigned int)sa,bit_out);
+	result=ShiftArithmeticRight(x,sa,bit_out);
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
 	
@@ -451,7 +451,7 @@ asr_b.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftArithmeticRight(d, (unsigned int)sa,bit_out);
+	result=ShiftArithmeticRight(d,sa,bit_out);
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
 
@@ -478,7 +478,7 @@ asr_c.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftArithmeticRight(s,(unsigned int)sa5,bit_out);
+	result=ShiftArithmeticRight(s,sa5,bit_out);
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -510,7 +510,7 @@ lsl_a.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftLeft(x, (unsigned int)sa,bit_out);
+	result=ShiftLeft(x,sa,bit_out);
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
 
@@ -537,7 +537,7 @@ lsl_b.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftLeft(d, (unsigned int)sa,bit_out);
+	result=ShiftLeft(d,sa,bit_out);
 	uint8_t neg= (int32_t) result < 0;
 	uint8_t zero= result==0;
 
@@ -563,7 +563,7 @@ lsl_c.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftLeft(s,(unsigned int)sa5,bit_out);
+	result=ShiftLeft(s,sa5,bit_out);
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -592,7 +592,7 @@ lsr_a.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftRight(x, (unsigned int)sa,bit_out);
+	result=ShiftRight(x, sa,bit_out);
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -645,7 +645,7 @@ lsr_c.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftRight(s,(unsigned int)sa5,bit_out);
+	result=ShiftRight(s,sa5,bit_out);
 	uint8_t neg=(int32_t)result < 0;
 	uint8_t zero= result==0;
 
