@@ -161,6 +161,8 @@ DWARF_Location<MEMORY_ADDR>::DWARF_Location()
 	: dw_loc_type(DW_LOC_NULL)
 	, dw_reg_num(0)
 	, dw_addr(0)
+	, dw_implicit_simple_value(0)
+	, dw_implicit_block_value(0)
 	, dw_byte_size(0)
 	, dw_bit_offset(0)
 	, dw_bit_size(0)
@@ -171,6 +173,7 @@ DWARF_Location<MEMORY_ADDR>::DWARF_Location()
 template <class MEMORY_ADDR>
 DWARF_Location<MEMORY_ADDR>::~DWARF_Location()
 {
+	Clear();
 }
 
 template <class MEMORY_ADDR>
@@ -179,11 +182,18 @@ void DWARF_Location<MEMORY_ADDR>::Clear()
 	dw_loc_type = DW_LOC_NULL;
 	dw_reg_num = 0;
 	dw_addr = 0;
+	dw_implicit_simple_value = 0;
 	dw_byte_size = 0;
 	dw_bit_offset = 0;
 	dw_bit_size = 0;
 	dw_encoding = 0;
-	
+
+	if(dw_implicit_block_value)
+	{
+		delete dw_implicit_block_value;
+		dw_implicit_block_value = 0;
+	}
+
 	unsigned int num_location_pieces = dw_location_pieces.size();
 	unsigned int i;
 	
@@ -230,6 +240,22 @@ void DWARF_Location<MEMORY_ADDR>::SetAddress(MEMORY_ADDR _dw_addr)
 	if(dw_loc_type != DW_LOC_NULL) throw std::runtime_error("Internal error");
 	dw_loc_type = DW_LOC_SIMPLE_MEMORY;
 	dw_addr = _dw_addr;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::SetImplicitValue(MEMORY_ADDR dw_implicit_value)
+{
+	if(dw_loc_type != DW_LOC_NULL) throw std::runtime_error("Internal error");
+	dw_loc_type = DW_LOC_IMPLICIT_SIMPLE_VALUE;
+	dw_implicit_simple_value = dw_implicit_value;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::SetImplicitValue(DWARF_Block<MEMORY_ADDR> *dw_implicit_value)
+{
+	if(dw_loc_type != DW_LOC_NULL) throw std::runtime_error("Internal error");
+	dw_loc_type = DW_LOC_IMPLICIT_BLOCK_VALUE;
+	dw_implicit_block_value = dw_implicit_value;
 }
 
 template <class MEMORY_ADDR>
@@ -373,6 +399,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 	uint8_t opcode;
 	
 	bool in_dw_op_reg = false;
+	bool in_dw_op_stack_value = false;
 	bool got_unknown_opcode = false;
 	bool got_unsupported_vendor_specific_extension = false;
 	
@@ -1919,8 +1946,8 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								return false;
 							}
 							
-							uint8_t dw_block[dw_length];
-							memcpy(dw_block, expr + expr_pos, dw_length);
+							uint8_t dw_block_data[dw_length];
+							memcpy(dw_block_data, expr + expr_pos, dw_length);
 							
 							expr_pos += dw_length;
 							
@@ -1930,15 +1957,21 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								uint64_t i;
 								for(i = 0; i < dw_length; i++)
 								{
-									*os << " 0x" << std::hex << dw_block[i] << std::dec;
+									*os << " 0x" << std::hex << dw_block_data[i] << std::dec;
 								}
 							}
 							
 							if(executing)
 							{
-								// Currently unimplemented.
-								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_implicit_value: currently unimplemented" << EndDebugError;
-								return false;
+								if(!dw_location)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_implicit_value: only supported in location expressions" << EndDebugError;
+									return false; // DW_OP_implicit_value is only supported in location expressions
+								}
+								
+								DWARF_Block<MEMORY_ADDR> *dw_block = new DWARF_Block<MEMORY_ADDR>(dw_length, dw_block_data);
+								
+								dw_location->SetImplicitValue(dw_block);
 							}
 						}
 						break;
@@ -1947,9 +1980,23 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							if(os) *os << "DW_OP_stack_value";
 							if(executing)
 							{
-								// Currently unimplemented.
-								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_stack_value: currently unimplemented" << EndDebugError;
-								return false;
+// 								// Currently unimplemented.
+// 								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_stack_value: currently unimplemented" << EndDebugError;
+// 								return false;
+								if(!dw_location)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_stack_value: only allowed in location expressions" << EndDebugError;
+									return false; // DW_OP_stack_value is only allowed in location expressions
+								}
+								
+								// DW_OP_stack_value terminates the expression
+								if(expr_pos != expr_length)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_stack_value shall terminate the expression" << EndDebugError;
+									return false;
+								}
+								
+								in_dw_op_stack_value = true; // indicate that we started a DW_OP_stack_value and that the actual value is at top of the stack
 							}
 						}
 						break;
@@ -1996,6 +2043,12 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 			// register location
 			MEMORY_ADDR dw_reg_num = dw_stack.back();
 			dw_location->SetRegisterNumber(dw_reg_num);
+		}
+		else if(in_dw_op_stack_value)
+		{
+			// implicit value
+			MEMORY_ADDR dw_stack_value = dw_stack.back();
+			dw_location->SetImplicitValue(dw_stack_value);
 		}
 		else
 		{
