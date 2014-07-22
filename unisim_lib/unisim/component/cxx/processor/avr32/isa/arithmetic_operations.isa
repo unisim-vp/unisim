@@ -155,10 +155,11 @@ add_b.execute={
 
 add_b.disasm={
 
-	os << "add\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] << "<<"<< (int) sa;
+	os << "add\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry]  << std::hex << "<< 0x" <<(unsigned int) sa 
+ << std::dec;
 }
 
-// ADD_COND4 - conditional add                                        ?? signed without carry                    
+// ADD_COND4 - conditional add                                                            
 
 op add_cond4(0b111[3]:rx[4]:0b11101[5]:ry[4]:><:0b1110[4]:cond4[4]:0b0000[4]:rd[4])
 

@@ -342,7 +342,7 @@ eorh.execute={
 }
 
 eorh.disasm={
-	os << "eorh\t" << REG_NAME[rd] << ",0x" <<std::hex<< (int)imm16;
+	os << "eorh\t" << REG_NAME[rd] << "," << (int)imm16;
 }
 
 //EORL - logical EOR into low half register
@@ -370,7 +370,7 @@ eorl.execute={ 							// !!!  IMPLEMENTATION A VERIFIER
 
 
 eorl.disasm={
-	os << "eorl\t" << REG_NAME[rd] << ",0x" << std::hex <<(int )imm16;
+	os << "eorl\t" << REG_NAME[rd] << "," << std::dec <<(int )imm16;
 }
 
 //OR - logical or with optional logical shift
