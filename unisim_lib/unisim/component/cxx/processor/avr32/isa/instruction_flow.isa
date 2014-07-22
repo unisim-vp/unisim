@@ -4,6 +4,8 @@
 
 //------------------------------------------------------------------------------
 
+// revenir sur les instruction de branchement
+
 // BR_COND3 - branch if condition satisfied
 
 op br_cond3(0b110[3]:0b0[1]:sext<32>disp[8]:0b0[1]:cond3[3])
@@ -16,11 +18,9 @@ br_cond3.execute={
 	if(cpu->EvaluateCond(cond3))
 	{
 		addr= npc+ (disp << 1);
+		cpu->SetGPR(REG_PC,addr);
 	}
-	else
-		addr = npc+2;        // a priori effectué dans la methode StepOneInstruction
-        
-	cpu->SetGPR(REG_PC,addr);
+	
 
 	return true;
 }
@@ -93,7 +93,7 @@ rjmp.disasm={
 
 	os << "rjmp\t" << std::hex << "0x"<< rjmp_addr;
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
-	{;
+	{
 		os << " <" << cpu->GetFunctionFriendlyName(rjmp_addr) << ">";
 	}
 }
@@ -197,7 +197,7 @@ rcall_a.execute={
 
 rcall_a.disasm={
 
-	os << "rcall\tPC[Ox"<< std::hex << (disp << 1) << "]" << std::dec;
+	os << "rcall\tpc[Ox"<< std::hex << (disp << 1) << "]" << std::dec;
 
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
@@ -221,7 +221,7 @@ rcall_b.execute={
 
 rcall_b.disasm={
 
-	os << "rcall\tPC[0x" << std::hex << disp << std::dec << "]";
+	os << "rcall\tpc[0x" << std::hex << disp << std::dec << "]";
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		os << " <" << cpu->GetFunctionFriendlyName(rcall_addr) << ">";

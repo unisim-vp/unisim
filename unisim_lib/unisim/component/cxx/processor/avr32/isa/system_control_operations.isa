@@ -127,7 +127,7 @@ op nop(0b1101011[7]:0b10000[5]:0b0011[4])
 
 nop.disasm={
 
-	os << "none\t";
+	os << "nop\t";
 }
 
 
