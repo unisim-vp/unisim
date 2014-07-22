@@ -323,6 +323,10 @@ unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/util/singleton/singleton.hh \
 unisim/util/xml/xml.hh \
+unisim/util/simfloat/floating.hh \
+unisim/util/simfloat/integer.hh \
+unisim/util/simfloat/host_floating.hh \
+unisim/util/ieee754/ieee754.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
@@ -437,6 +441,9 @@ unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
+unisim/util/simfloat/floating.tcc \
+unisim/util/simfloat/integer.tcc \
+unisim/util/simfloat/host_floating.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/debugger/debugger.tcc \

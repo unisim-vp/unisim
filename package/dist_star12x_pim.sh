@@ -322,6 +322,10 @@ unisim/util/likely/likely.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \
+unisim/util/simfloat/floating.hh \
+unisim/util/simfloat/integer.hh \
+unisim/util/simfloat/host_floating.hh \
+unisim/util/ieee754/ieee754.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
@@ -436,6 +440,9 @@ unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
+unisim/util/simfloat/floating.tcc \
+unisim/util/simfloat/integer.tcc \
+unisim/util/simfloat/host_floating.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/debugger/debugger.tcc \
