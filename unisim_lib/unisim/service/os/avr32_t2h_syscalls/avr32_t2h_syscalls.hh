@@ -44,6 +44,7 @@
 #include <errno.h>
 #include <fstream>
 #include <sstream>
+#include <queue>
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
@@ -109,9 +110,9 @@ struct avr32_timeval
 
 struct avr32_timezone
 {
-  int32_t tz_minuteswest;
-  int32_t tz_dsttime;
-};
+	int32_t tz_minuteswest;
+	int32_t tz_dsttime;
+} PACKED;
 
 template <class MEMORY_ADDR>
 class AVR32_T2H_Syscalls :
@@ -127,10 +128,10 @@ public:
 	ServiceImport<Registers> registers_import;
 	ServiceImport<Blob<MEMORY_ADDR> > blob_import;
 
-    AVR32_T2H_Syscalls(const char *name, Object *parent = 0);
-    virtual ~AVR32_T2H_Syscalls();
+	AVR32_T2H_Syscalls(const char *name, Object *parent = 0);
+	virtual ~AVR32_T2H_Syscalls();
 
-    virtual void OnDisconnect();
+	virtual void OnDisconnect();
 	virtual bool EndSetup();
 
     virtual unisim::service::interfaces::AVR32_T2H_Syscalls::Status HandleEmulatorBreakpoint();
@@ -206,90 +207,90 @@ private:
 	static const int32_t T2H_ECHRNG          = 37;    // Channel number out of range
 	static const int32_t T2H_EL2NSYNC        = 38;    // Level 2 not synchronized
 	static const int32_t T2H_EL3HLT          = 39;    // Level 3 halted
-    static const int32_t T2H_EL3RST          = 40;    // Level 3 reset
-    static const int32_t T2H_ELNRNG          = 41;    // Link number out of range
-    static const int32_t T2H_EUNATCH         = 42;    // Protocol driver not attached
-    static const int32_t T2H_ENOCSI          = 43;    // No CSI structure available
-    static const int32_t T2H_EL2HLT          = 44;    // Level 2 halted
-    static const int32_t T2H_EDEADLK         = 45;    // Deadlock condition
-    static const int32_t T2H_ENOLCK          = 46;    // No record locks available
-    static const int32_t T2H_EBADE           = 50;    // Invalid exchange
-    static const int32_t T2H_EBADR           = 51;    // Invalid request descriptor
-    static const int32_t T2H_EXFULL          = 52;    // Exchange full
-    static const int32_t T2H_ENOANO          = 53;    // No anode
-    static const int32_t T2H_EBADRQC         = 54;    // Invalid request code
-    static const int32_t T2H_EBADSLT         = 55;    // Invalid slot
-    static const int32_t T2H_EDEADLOCK       = 56;    // File locking deadlock error
-    static const int32_t T2H_EBFONT          = 57;    // Bad font file fmt
-    static const int32_t T2H_ENOSTR          = 60;    // Device not a stream
-    static const int32_t T2H_ENODATA         = 61;    // No data (for no delay io)
-    static const int32_t T2H_ETIME           = 62;    // Timer expired
-    static const int32_t T2H_ENOSR           = 63;    // Out of streams resources
-    static const int32_t T2H_ENONET          = 64;    // Machine is not on the network
-    static const int32_t T2H_ENOPKG          = 65;    // Package not installed
-    static const int32_t T2H_EREMOTE         = 66;    // The object is remote
-    static const int32_t T2H_ENOLINK         = 67;    // The link has been severed
-    static const int32_t T2H_EADV            = 68;    // Advertise error
-    static const int32_t T2H_ESRMNT          = 69;    // Srmount error
-    static const int32_t T2H_ECOMM           = 70;    // Communication error on send
-    static const int32_t T2H_EPROTO          = 71;    // Protocol error
-    static const int32_t T2H_EMULTIHOP       = 74;    // Multihop attempted
-    static const int32_t T2H_ELBIN           = 75;    // Inode is remote (not really error)
-    static const int32_t T2H_EDOTDOT         = 76;    // Cross mount point (not really error)
-    static const int32_t T2H_EBADMSG         = 77;    // Trying to read unreadable message
-    static const int32_t T2H_EFTYPE          = 79;    // Inappropriate file type or format
-    static const int32_t T2H_ENOTUNIQ        = 80;    // Given log. name not unique
-    static const int32_t T2H_EBADFD          = 81;    // f.d. invalid for this operation
-    static const int32_t T2H_EREMCHG         = 82;    // Remote address changed
-    static const int32_t T2H_ELIBACC         = 83;    // Can't access a needed shared lib
-    static const int32_t T2H_ELIBBAD         = 84;    // Accessing a corrupted shared lib
-    static const int32_t T2H_ELIBSCN         = 85;    // .lib section in a.out corrupted
-    static const int32_t T2H_ELIBMAX         = 86;    // Attempting to link in too many libs
-    static const int32_t T2H_ELIBEXEC        = 87;    // Attempting to exec a shared library
-    static const int32_t T2H_ENOSYS          = 88;    // Function not implemented
-    static const int32_t T2H_ENMFILE         = 89;    // No more files
-    static const int32_t T2H_ENOTEMPTY       = 90;    // Directory not empty
-    static const int32_t T2H_ENAMETOOLONG    = 91;    // File or path name too long
-    static const int32_t T2H_ELOOP           = 92;    // Too many symbolic links
-    static const int32_t T2H_EOPNOTSUPP      = 95;    // Operation not supported on transport endpoint
-    static const int32_t T2H_EPFNOSUPPORT    = 96;    // Protocol family not supported
-    static const int32_t T2H_ECONNRESET      = 104;   // Connection reset by peer
-    static const int32_t T2H_ENOBUFS         = 105;   // No buffer space available
-    static const int32_t T2H_EAFNOSUPPORT    = 106;   // Address family not supported by protocol family
-    static const int32_t T2H_EPROTOTYPE      = 107;   // Protocol wrong type for socket
-    static const int32_t T2H_ENOTSOCK        = 108;   // Socket operation on non-socket
-    static const int32_t T2H_ENOPROTOOPT     = 109;   // Protocol not available
-    static const int32_t T2H_ESHUTDOWN       = 110;   // Can't send after socket shutdown
-    static const int32_t T2H_ECONNREFUSED    = 111;   // Connection refused
-    static const int32_t T2H_EADDRINUSE      = 112;   // Address already in use
-    static const int32_t T2H_ECONNABORTED    = 113;   // Connection aborted
-    static const int32_t T2H_ENETUNREACH     = 114;   // Network is unreachable
-    static const int32_t T2H_ENETDOWN        = 115;   // Network interface is not configured
-    static const int32_t T2H_ETIMEDOUT       = 116;   // Connection timed out
-    static const int32_t T2H_EHOSTDOWN       = 117;   // Host is down
-    static const int32_t T2H_EHOSTUNREACH    = 118;   // Host is unreachable
-    static const int32_t T2H_EINPROGRESS     = 119;   // Connection already in progress
-    static const int32_t T2H_EALREADY        = 120;   // Socket already connected
-    static const int32_t T2H_EDESTADDRREQ    = 121;   // Destination address required
-    static const int32_t T2H_EMSGSIZE        = 122;   // Message too long
-    static const int32_t T2H_EPROTONOSUPPORT = 123;   // Unknown protocol
-    static const int32_t T2H_ESOCKTNOSUPPORT = 124;   // Socket type not supported
-    static const int32_t T2H_EADDRNOTAVAIL   = 125;   // Address not available
-    static const int32_t T2H_ENETRESET       = 126;
-    static const int32_t T2H_EISCONN         = 127;   // Socket is already connected
-    static const int32_t T2H_ENOTCONN        = 128;   // Socket is not connected
-    static const int32_t T2H_ETOOMANYREFS    = 129;
-    static const int32_t T2H_EPROCLIM        = 130;
-    static const int32_t T2H_EUSERS          = 131;
-    static const int32_t T2H_EDQUOT          = 132;
-    static const int32_t T2H_ESTALE          = 133;
-    static const int32_t T2H_ENOTSUP         = 134;   // Not supported
-    static const int32_t T2H_ENOMEDIUM       = 135;   // No medium (in tape drive)
-    static const int32_t T2H_ENOSHARE        = 136;   // No such host or network path
-    static const int32_t T2H_ECASECLASH      = 137;   // Filename exists with different case
-    static const int32_t T2H_EILSEQ          = 138;
-    static const int32_t T2H_EOVERFLOW       = 139;   // Value too large for defined data type
-    static const int32_t T2H_ECANCELED       = 140;   // Operation canceled.
+	static const int32_t T2H_EL3RST          = 40;    // Level 3 reset
+	static const int32_t T2H_ELNRNG          = 41;    // Link number out of range
+	static const int32_t T2H_EUNATCH         = 42;    // Protocol driver not attached
+	static const int32_t T2H_ENOCSI          = 43;    // No CSI structure available
+	static const int32_t T2H_EL2HLT          = 44;    // Level 2 halted
+	static const int32_t T2H_EDEADLK         = 45;    // Deadlock condition
+	static const int32_t T2H_ENOLCK          = 46;    // No record locks available
+	static const int32_t T2H_EBADE           = 50;    // Invalid exchange
+	static const int32_t T2H_EBADR           = 51;    // Invalid request descriptor
+	static const int32_t T2H_EXFULL          = 52;    // Exchange full
+	static const int32_t T2H_ENOANO          = 53;    // No anode
+	static const int32_t T2H_EBADRQC         = 54;    // Invalid request code
+	static const int32_t T2H_EBADSLT         = 55;    // Invalid slot
+	static const int32_t T2H_EDEADLOCK       = 56;    // File locking deadlock error
+	static const int32_t T2H_EBFONT          = 57;    // Bad font file fmt
+	static const int32_t T2H_ENOSTR          = 60;    // Device not a stream
+	static const int32_t T2H_ENODATA         = 61;    // No data (for no delay io)
+	static const int32_t T2H_ETIME           = 62;    // Timer expired
+	static const int32_t T2H_ENOSR           = 63;    // Out of streams resources
+	static const int32_t T2H_ENONET          = 64;    // Machine is not on the network
+	static const int32_t T2H_ENOPKG          = 65;    // Package not installed
+	static const int32_t T2H_EREMOTE         = 66;    // The object is remote
+	static const int32_t T2H_ENOLINK         = 67;    // The link has been severed
+	static const int32_t T2H_EADV            = 68;    // Advertise error
+	static const int32_t T2H_ESRMNT          = 69;    // Srmount error
+	static const int32_t T2H_ECOMM           = 70;    // Communication error on send
+	static const int32_t T2H_EPROTO          = 71;    // Protocol error
+	static const int32_t T2H_EMULTIHOP       = 74;    // Multihop attempted
+	static const int32_t T2H_ELBIN           = 75;    // Inode is remote (not really error)
+	static const int32_t T2H_EDOTDOT         = 76;    // Cross mount point (not really error)
+	static const int32_t T2H_EBADMSG         = 77;    // Trying to read unreadable message
+	static const int32_t T2H_EFTYPE          = 79;    // Inappropriate file type or format
+	static const int32_t T2H_ENOTUNIQ        = 80;    // Given log. name not unique
+	static const int32_t T2H_EBADFD          = 81;    // f.d. invalid for this operation
+	static const int32_t T2H_EREMCHG         = 82;    // Remote address changed
+	static const int32_t T2H_ELIBACC         = 83;    // Can't access a needed shared lib
+	static const int32_t T2H_ELIBBAD         = 84;    // Accessing a corrupted shared lib
+	static const int32_t T2H_ELIBSCN         = 85;    // .lib section in a.out corrupted
+	static const int32_t T2H_ELIBMAX         = 86;    // Attempting to link in too many libs
+	static const int32_t T2H_ELIBEXEC        = 87;    // Attempting to exec a shared library
+	static const int32_t T2H_ENOSYS          = 88;    // Function not implemented
+	static const int32_t T2H_ENMFILE         = 89;    // No more files
+	static const int32_t T2H_ENOTEMPTY       = 90;    // Directory not empty
+	static const int32_t T2H_ENAMETOOLONG    = 91;    // File or path name too long
+	static const int32_t T2H_ELOOP           = 92;    // Too many symbolic links
+	static const int32_t T2H_EOPNOTSUPP      = 95;    // Operation not supported on transport endpoint
+	static const int32_t T2H_EPFNOSUPPORT    = 96;    // Protocol family not supported
+	static const int32_t T2H_ECONNRESET      = 104;   // Connection reset by peer
+	static const int32_t T2H_ENOBUFS         = 105;   // No buffer space available
+	static const int32_t T2H_EAFNOSUPPORT    = 106;   // Address family not supported by protocol family
+	static const int32_t T2H_EPROTOTYPE      = 107;   // Protocol wrong type for socket
+	static const int32_t T2H_ENOTSOCK        = 108;   // Socket operation on non-socket
+	static const int32_t T2H_ENOPROTOOPT     = 109;   // Protocol not available
+	static const int32_t T2H_ESHUTDOWN       = 110;   // Can't send after socket shutdown
+	static const int32_t T2H_ECONNREFUSED    = 111;   // Connection refused
+	static const int32_t T2H_EADDRINUSE      = 112;   // Address already in use
+	static const int32_t T2H_ECONNABORTED    = 113;   // Connection aborted
+	static const int32_t T2H_ENETUNREACH     = 114;   // Network is unreachable
+	static const int32_t T2H_ENETDOWN        = 115;   // Network interface is not configured
+	static const int32_t T2H_ETIMEDOUT       = 116;   // Connection timed out
+	static const int32_t T2H_EHOSTDOWN       = 117;   // Host is down
+	static const int32_t T2H_EHOSTUNREACH    = 118;   // Host is unreachable
+	static const int32_t T2H_EINPROGRESS     = 119;   // Connection already in progress
+	static const int32_t T2H_EALREADY        = 120;   // Socket already connected
+	static const int32_t T2H_EDESTADDRREQ    = 121;   // Destination address required
+	static const int32_t T2H_EMSGSIZE        = 122;   // Message too long
+	static const int32_t T2H_EPROTONOSUPPORT = 123;   // Unknown protocol
+	static const int32_t T2H_ESOCKTNOSUPPORT = 124;   // Socket type not supported
+	static const int32_t T2H_EADDRNOTAVAIL   = 125;   // Address not available
+	static const int32_t T2H_ENETRESET       = 126;
+	static const int32_t T2H_EISCONN         = 127;   // Socket is already connected
+	static const int32_t T2H_ENOTCONN        = 128;   // Socket is not connected
+	static const int32_t T2H_ETOOMANYREFS    = 129;
+	static const int32_t T2H_EPROCLIM        = 130;
+	static const int32_t T2H_EUSERS          = 131;
+	static const int32_t T2H_EDQUOT          = 132;
+	static const int32_t T2H_ESTALE          = 133;
+	static const int32_t T2H_ENOTSUP         = 134;   // Not supported
+	static const int32_t T2H_ENOMEDIUM       = 135;   // No medium (in tape drive)
+	static const int32_t T2H_ENOSHARE        = 136;   // No such host or network path
+	static const int32_t T2H_ECASECLASH      = 137;   // Filename exists with different case
+	static const int32_t T2H_EILSEQ          = 138;
+	static const int32_t T2H_EOVERFLOW       = 139;   // Value too large for defined data type
+	static const int32_t T2H_ECANCELED       = 140;   // Operation canceled.
 	
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;
@@ -302,6 +303,10 @@ private:
 	unisim::util::debug::Register *reg_return_status;
 	unisim::util::debug::Register *reg_errno;
 
+	// target to host file descriptors
+	std::map<int32_t, int> target_to_host_fildes;
+	std::queue<int32_t> target_fildes_free_list;
+	
 	// system call table
 	unisim::service::interfaces::AVR32_T2H_Syscalls::Status (unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls<MEMORY_ADDR>::*t2h_syscall_table[NUM_SYSCALLS])();
 
@@ -320,6 +325,14 @@ private:
 	// program arguments
 	int argc;
 	std::vector<std::string *> argv;
+	
+	// input/output pipes
+	std::string stdin_pipe_filename;
+	std::string stdout_pipe_filename;
+	std::string stderr_pipe_filename;
+	int stdin_pipe_fd;
+	int stdout_pipe_fd;
+	int stderr_pipe_fd;
 
 	bool verbose_all;
 	bool verbose_syscalls;
@@ -329,7 +342,14 @@ private:
 	Parameter<bool> param_verbose_setup;
 	Parameter<int> param_argc;
 	std::vector<Parameter<std::string> *> param_argv;
+	Parameter<std::string> param_stdin_pipe_filename;
+	Parameter<std::string> param_stdout_pipe_filename;
+	Parameter<std::string> param_stderr_pipe_filename;
 
+	
+	bool IsVerboseSyscalls() const { return verbose_all || verbose_syscalls; }
+	bool IsVerboseSetup() const { return verbose_all || verbose_setup; }
+	
 	const char *GetSyscallFriendlyName(uint32_t syscall_num);
 
 	uint32_t GetSystemCallParam(unsigned int arg_num);
@@ -341,6 +361,11 @@ private:
 	void SetSystemCallStatus(int32_t ret);
 	void SetErrno(int32_t target_errno);
 	int32_t Host2TargetErrno(int host_errno);
+	int Target2HostFileDescriptor(int32_t fd);
+	int32_t AllocateFileDescriptor();
+	void FreeFileDescriptor(int32_t fd);
+	void MapTargetToHostFileDescriptor(int32_t target_fd, int host_fd);
+	void UnmapTargetToHostFileDescriptor(int32_t target_fd);
 	
 	unisim::service::interfaces::AVR32_T2H_Syscalls::Status t2h_syscall_open();
 	unisim::service::interfaces::AVR32_T2H_Syscalls::Status t2h_syscall_close();

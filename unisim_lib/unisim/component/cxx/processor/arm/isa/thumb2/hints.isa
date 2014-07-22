@@ -1,0 +1,126 @@
+/*
+ *  Copyright (c) 2007-2014,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+ 
+/**********************************************
+
+        THUMB2 HINTS INSTRUCTIONS
+
+**********************************************/
+
+op dbg_i( 0xf3af[16] :> <: 0x80f[12] : imm[4] );
+dbg_i.disasm = { buffer << "dbg\t#" << imm; };
+
+/* DMB instruction */
+
+op dmb( 0xf3bf[16] :> <: 0x8f5[12] : imm[4] );
+dmb.disasm = {
+  buffer << "dmb\t" << bimm( 0xcccc, imm ).str();
+};
+
+dmb.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+};
+
+/* DSB instruction */
+
+op dsb( 0xf3bf[16] :> <: 0x8f4[12] : imm[4] );
+dsb.disasm = {
+  buffer << "dsb\t" << bimm( 0xcccc, imm ).str();
+};
+
+dsb.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+};
+
+/* ISB instruction */
+
+op isb( 0xf3bf[16] :> <: 0x8f6[12] : imm[4] );
+isb.disasm = {
+  buffer << "isb\t" << bimm( 0x8000, imm ).str();
+};
+
+isb.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+};
+
+{ ARCH::insns7 }:                               \
+op yield( 0xbf10[16] );
+yield.disasm = {
+  buffer << "yield";
+};
+
+{ ARCH::insns7 }:                               \
+op wfe( 0xbf20[16] );
+wfe.disasm = {
+  buffer << "wfe";
+};
+
+{ ARCH::insns7 }:                               \
+op wfi( 0xbf30[16] );
+wfi.disasm = {
+  buffer << "wfi";
+};
+
+{ ARCH::insns7 }:                               \
+op sev( 0xbf40[16] );
+sev.disasm = {
+  buffer << "sev";
+};
+
+{ ARCH::insns7 }:                               \
+op yield_w( 0xf3af[16] :> <: 0x8001[16] );
+yield_w.disasm = {
+  buffer << "yield.w";
+};
+
+{ ARCH::insns7 }:                               \
+op wfe_w( 0xf3af[16] :> <: 0x8002[16] );
+wfe_w.disasm = {
+  buffer << "wfe.w";
+};
+
+{ ARCH::insns7 }:                               \
+op wfi_w( 0xf3af[16] :> <: 0x8003[16] );
+wfi_w.disasm = {
+  buffer << "wfi.w";
+};
+
+{ ARCH::insns7 }:                               \
+op sev_w( 0xf3af[16] :> <: 0x8004[16] );
+sev_w.disasm = {
+  buffer << "sev.w";
+};

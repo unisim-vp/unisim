@@ -81,6 +81,7 @@ public:
 	std::ostream& to_HTML(std::ostream& os);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CompilationUnit& dw_cu);
 	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
+	bool HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
 	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;

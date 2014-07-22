@@ -32,6 +32,7 @@ struct Opts {
   Opts();
   
   char const*      outputprefix;
+  unsigned int     verbosity;
   char const*      expandname;
   char const*      inputname;
   char const*      depfilename;

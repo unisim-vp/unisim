@@ -50,10 +50,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #if defined(WIN32) || defined(WIN64)
 #include <stdlib.h>
-#include <fcntl.h>
 #endif
 
 #include "unisim/util/likely/likely.hh"
@@ -90,58 +90,63 @@ supported_system_types_(tmp_supported_system_types,
                         sizeof(tmp_supported_system_types) / sizeof(char *));
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
-Linux(unisim::kernel::logger::Logger& logger,
-  unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if,
-  unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if)
-    : is_load_(false)
-    , system_type_("arm-eabi")
-    , endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
-    , load_files_()
-    , entry_point_(0)
-    , load_addr_set_(false)
-    , load_addr_(0)
-    , start_code_(0)
-    , end_code_(0)
-    , start_data_(0)
-    , end_data_(0)
-    , elf_stack_(0)
-    , elf_brk_(0)
-    , num_segments_(0)
-    , stack_base_(0)
-    , memory_page_size_(0)
-    , mmap_base_(0xd4000000)
-    , mmap_brk_point_(0)
-    , brk_point_(0)
-    , argc_(0)
-    , argv_()
-    , envc_(0)
-    , envp_()
-    , apply_host_environnement_(false)
-    , target_envp_()
-    , utsname_sysname_()
-    , utsname_nodename_()
-    , utsname_release_()
-    , utsname_version_()
-    , utsname_machine_()
-    , utsname_domainname_()
-    , blob_(NULL)
-    , regs_if_(regs_if)
-    , mem_if_(mem_if)
-    , mem_inject_if_(mem_inject_if)
-    , syscall_name_map_()
-    , syscall_name_assoc_map_()
-    , syscall_impl_assoc_map_()
-    , current_syscall_id_(0)
-    , current_syscall_name_("(NONE)")
-    , verbose_(false)
-    , parse_dwarf_(false)
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(unisim::kernel::logger::Logger& logger,
+      unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if,
+      unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if)
+	: is_load_(false)
+	, system_type_("arm-eabi")
+	, endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
+	, load_files_()
+	, entry_point_(0)
+	, load_addr_set_(false)
+	, load_addr_(0)
+	, start_code_(0)
+	, end_code_(0)
+	, start_data_(0)
+	, end_data_(0)
+	, elf_stack_(0)
+	, elf_brk_(0)
+	, num_segments_(0)
+	, stack_base_(0)
+	, memory_page_size_(0)
+	, mmap_base_(0xd4000000)
+	, mmap_brk_point_(0)
+	, brk_point_(0)
+	, argc_(0)
+	, argv_()
+	, envc_(0)
+	, envp_()
+	, apply_host_environnement_(false)
+	, target_envp_()
+	, utsname_sysname_()
+	, utsname_nodename_()
+	, utsname_release_()
+	, utsname_version_()
+	, utsname_machine_()
+	, utsname_domainname_()
+	, blob_(NULL)
+	, regs_if_(regs_if)
+	, mem_if_(mem_if)
+	, mem_inject_if_(mem_inject_if)
+	, syscall_name_map_()
+	, syscall_name_assoc_map_()
+	, syscall_impl_assoc_map_()
+	, current_syscall_id_(0)
+	, current_syscall_name_("(NONE)")
+	, verbose_(false)
+	, parse_dwarf_(false)
 	, debug_dwarf_(false)
-    , dwarf_to_html_output_directory_()
-    , dwarf_to_xml_output_filename_()
-    , logger_(logger)
-    , terminated_(false)
-    , return_status_(0)
+	, dwarf_to_html_output_directory_()
+	, dwarf_to_xml_output_filename_()
+	, logger_(logger)
+	, terminated_(false)
+	, return_status_(0)
+	, stdin_pipe_filename()
+	, stdout_pipe_filename()
+	, stderr_pipe_filename()
+	, stdin_pipe_fd(-1)
+	, stdout_pipe_fd(-1)
+	, stderr_pipe_fd(-1)
 {
 
 #if defined(WIN32) || defined(WIN64)
@@ -552,19 +557,28 @@ Linux(unisim::kernel::logger::Logger& logger,
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux() {
-  typename std::map<std::string, unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>::const_iterator it;
-  for(it = load_files_.begin(); it != load_files_.end(); it++)
-  {
-     const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob = (*it).second;
-     blob->Release();
-  }
-  load_files_.clear();
-  if(blob_)
-  {
-     blob_->Release();
-     blob_ = 0;
-  }
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
+{
+	typename std::map<std::string, unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>::const_iterator it;
+	for(it = load_files_.begin(); it != load_files_.end(); it++)
+	{
+		const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob = (*it).second;
+		blob->Release();
+	}
+	
+	load_files_.clear();
+	
+	if(blob_)
+	{
+		blob_->Release();
+		blob_ = 0;
+	}
+	
+	if(stdin_pipe_fd != -1) close(stdin_pipe_fd);
+	
+	if(stdout_pipe_fd != -1) close(stdout_pipe_fd);
+	
+	if(stderr_pipe_fd != -1) close(stderr_pipe_fd);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -744,6 +758,24 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetHWCap(const char *hwcap)
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStdinPipeFilename(const char *filename)
+{
+	stdin_pipe_filename = filename;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStdoutPipeFilename(const char *filename)
+{
+	stdout_pipe_filename = filename;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStderrPipeFilename(const char *filename)
+{
+	stderr_pipe_filename = filename;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 unisim::util::debug::Register * Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegisterFromId(uint32_t id) {
   if (!regs_if_) return NULL;
   char const * reg_name = 0;
@@ -833,107 +865,176 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id,
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
-  // set the environment to be used
-  if (apply_host_environnement_) GetHostEnvironment(envp_, &target_envp_);
-  else target_envp_ = envp_;
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
+{
+	// set the environment to be used
+	if (apply_host_environnement_) GetHostEnvironment(envp_, &target_envp_);
+	else target_envp_ = envp_;
 
-  // create the root blob that will be used to store the image that will be
-  // loaded
-  unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob =
-      new unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
-  blob->Catch();
-  blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF32);
-  
-  // load and add files to the blob
-  if (verbose_)
-    logger_ << DebugInfo
-        << "Loading elf files." << EndDebugInfo;
-  if (!LoadFiles(blob)) {
-    logger_ << DebugError
-        << "Could not load elf files." << EndDebugError;
-    blob->Release();
-    return false;
-  }
+	// create the root blob that will be used to store the image that will be
+	// loaded
+	unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob =
+	new unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
+	blob->Catch();
+	blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF32);
+	
+	// load and add files to the blob
+	if(verbose_)
+	{
+		logger_ << DebugInfo
+			<< "Loading elf files." << EndDebugInfo;
+	}
+	if(!LoadFiles(blob))
+	{
+		logger_ << DebugError
+			<< "Could not load elf files." << EndDebugError;
+		blob->Release();
+		return false;
+	}
 
-  // create the stack footprint and add it to the blob
-  uint64_t stack_size = 0;
-  if (verbose_)
-    logger_ << DebugInfo
-        << "Creating the Linux software stack." << EndDebugInfo;
-  if (!CreateStack(blob, stack_size)) {
-    // TODO
-    // Remove non finished state (i.e., unfinished blob, reset values, ...)
-    logger_ << DebugError
-        << "Could not create the Linux software stack." << EndDebugError;
-    blob->Release();
-    return false;
-  }
+	// create the stack footprint and add it to the blob
+	uint64_t stack_size = 0;
+	if(verbose_)
+	{
+		logger_ << DebugInfo
+			<< "Creating the Linux software stack." << EndDebugInfo;
+	}
+	if (!CreateStack(blob, stack_size))
+	{
+		// TODO
+		// Remove non finished state (i.e., unfinished blob, reset values, ...)
+		logger_ << DebugError
+			<< "Could not create the Linux software stack." << EndDebugError;
+		blob->Release();
+		return false;
+	}
 
-  // finish the state of the memory image depending on the system we are running
-  // on
-  if (verbose_)
-    logger_ << DebugInfo
-        << "Setting the system blob." << EndDebugInfo;
-  if (!SetSystemBlob(blob)) {
-    // TODO
-    // Remove non finished state (i.e., unfinished blob, reset values, ...)
-    logger_ << DebugError
-        << "Could not set the system blob." << EndDebugError;
-    blob->Release();
-    return false;
-  }
+	// finish the state of the memory image depending on the system we are running
+	// on
+	if(verbose_)
+	{
+		logger_ << DebugInfo
+			<< "Setting the system blob." << EndDebugInfo;
+	}
+	if (!SetSystemBlob(blob))
+	{
+		// TODO
+		// Remove non finished state (i.e., unfinished blob, reset values, ...)
+		logger_ << DebugError
+			<< "Could not set the system blob." << EndDebugError;
+		blob->Release();
+		return false;
+	}
 
-  // Set the linux calls maps
-  syscall_impl_assoc_map_.clear();
-  SetSyscallNameMap();
-  if ((system_type_.compare("arm") == 0) ||
-      (system_type_.compare("arm-eabi") == 0)) {
-    if (!SetupLinuxOSARM()) {
-      logger_ << DebugError
-          << "Error while trying to setup the linux os arm"
-          << EndDebugError;
-      blob->Release();
-      return false;
-    }
-  }
-  if (system_type_.compare("ppc") == 0) {
-    if (!SetupLinuxOSPPC()) {
-      logger_ << DebugError
-          << "Error while trying to setup the linux os ppc"
-          << EndDebugError;
-      blob->Release();
-      return false;
-    }
-  }
+	// Set the linux calls maps
+	syscall_impl_assoc_map_.clear();
+	SetSyscallNameMap();
+	if ((system_type_.compare("arm") == 0) ||
+	(system_type_.compare("arm-eabi") == 0))
+	{
+		if(!SetupLinuxOSARM())
+		{
+			logger_ << DebugError
+				<< "Error while trying to setup the linux os arm"
+				<< EndDebugError;
+			blob->Release();
+			return false;
+		}
+	}
+	
+	if(system_type_.compare("ppc") == 0)
+	{
+		if(!SetupLinuxOSPPC())
+		{
+			logger_ << DebugError
+				<< "Error while trying to setup the linux os ppc"
+				<< EndDebugError;
+			blob->Release();
+			return false;
+		}
+	}
 
-  // Set mmap_brk_point and brk_point
-  mmap_brk_point_ = mmap_base_;
+	// Set mmap_brk_point and brk_point
+	mmap_brk_point_ = mmap_base_;
 
-  ADDRESS_TYPE top_addr = stack_base_ + stack_size - 1;
-  if(verbose_) {
-    logger_ << DebugInfo << "=== top_addr = 0x" << std::hex << top_addr << std::dec
-      << EndDebugInfo;
-  }
+	ADDRESS_TYPE top_addr = stack_base_ + stack_size - 1;
+	if(verbose_)
+	{
+		logger_ << DebugInfo << "=== top_addr = 0x" << std::hex << top_addr << std::dec
+		<< EndDebugInfo;
+	}
 
-  brk_point_ = top_addr +
-      (memory_page_size_ - (top_addr % memory_page_size_));
+	brk_point_ = top_addr +
+	(memory_page_size_ - (top_addr % memory_page_size_));
 
-  if(verbose_) {
-    logger_ << DebugInfo
-        << "=== stack_size_ = 0x" << std::hex << stack_size << " (" << std::dec << stack_size << ")" << std::endl
-        << "=== brk_point_ = 0x" << std::hex << brk_point_ << std::endl
-        << "=== mmap_brk_point_ = 0x" << mmap_brk_point_ << std::endl
-        << "=== mmap_base_ = 0x" << mmap_base_ << std::endl
-        << "=== memory_page_size_ = 0x" << memory_page_size_ << " ("
-        << std::dec << memory_page_size_ << ")" << EndDebugInfo;
-  }
+	if(verbose_)
+	{
+		logger_ << DebugInfo
+			<< "=== stack_size_ = 0x" << std::hex << stack_size << " (" << std::dec << stack_size << ")" << std::endl
+			<< "=== brk_point_ = 0x" << std::hex << brk_point_ << std::endl
+			<< "=== mmap_brk_point_ = 0x" << mmap_brk_point_ << std::endl
+			<< "=== mmap_base_ = 0x" << mmap_base_ << std::endl
+			<< "=== memory_page_size_ = 0x" << memory_page_size_ << " ("
+			<< std::dec << memory_page_size_ << ")" << EndDebugInfo;
+	}
 
-  if(blob_) blob_->Release();
-  blob_ = blob;
-  is_load_ = true;
+	if(blob_) blob_->Release();
+	blob_ = blob;
+	is_load_ = true;
 
-  return true;
+	if(!stdin_pipe_filename.empty())
+	{
+		int stdin_pipe_flags = O_RDONLY;
+#if defined(WIN32) || defined(WIN64)
+		int stdin_pipe_flags |= O_BINARY;
+#endif
+		stdin_pipe_fd = open(stdin_pipe_filename.c_str(), stdin_pipe_flags);
+		if(stdin_pipe_fd == -1)
+		{
+			logger_ << DebugError << "Can't open \"" << stdin_pipe_filename << "\"" << EndDebugError;
+			return false;
+		}
+	}
+	
+	if(!stdout_pipe_filename.empty())
+	{
+		int stdout_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+		mode_t stdout_pipe_mode = S_IRWXU;
+#if defined(WIN32) || defined(WIN64)
+		stdout_pipe_flags |= O_BINARY;
+#else
+		stdout_pipe_mode |= S_IRWXG | S_IRWXO;
+#endif
+		stdout_pipe_fd = open(stdout_pipe_filename.c_str(), stdout_pipe_flags, stdout_pipe_mode);
+		if(stdout_pipe_fd == -1)
+		{
+			logger_ << DebugError << "Can't open \"" << stdout_pipe_filename << "\"" << EndDebugError;
+			return false;
+		}
+	}
+	
+	if(!stderr_pipe_filename.empty())
+	{
+		int stderr_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+		mode_t stderr_pipe_mode = S_IRWXU;
+#if defined(WIN32) || defined(WIN64)
+		stderr_pipe_flags |= O_BINARY;
+#else
+		stderr_pipe_mode |= S_IRWXG | S_IRWXO;
+#endif
+		stderr_pipe_fd = open(stderr_pipe_filename.c_str(), stderr_pipe_flags, stderr_pipe_mode);
+		if(stderr_pipe_fd == -1)
+		{
+			logger_ << DebugError << "Can't open \"" << stderr_pipe_filename << "\"" << EndDebugError;
+			return false;
+		}
+	}
+
+	MapTargetToHostFileDescriptor(0, (stdin_pipe_fd == -1) ? 0 : stdin_pipe_fd); // map target stdin file descriptor to either host stdin file descriptor or host input file descriptor
+	MapTargetToHostFileDescriptor(1, (stdout_pipe_fd == -1) ? 1 : stdout_pipe_fd); // map target stdout file descriptor to either host stdout file descriptor or host output file descriptor
+	MapTargetToHostFileDescriptor(2, (stderr_pipe_fd == -1) ? 2 : stderr_pipe_fd); // map target stdout file descriptor to either host stderr file descriptor or host output file descriptor
+
+	return true;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -2779,6 +2880,60 @@ int32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Host2LinuxErrno(int host_errno) con
 	typename std::map<int, int32_t>::const_iterator it = host2linux_errno.find(host_errno);
 	
 	return (it != host2linux_errno.end()) ? (*it).second : LINUX_EINVAL;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Target2HostFileDescriptor(int32_t fd)
+{
+	// Return an error if file descriptor does not exist
+	typename std::map<int32_t, int>::iterator iter = target_to_host_fildes.find(fd);
+	if(iter == target_to_host_fildes.end()) return -1;
+
+	// Translate the target file descriptor to an host file descriptor
+	return (*iter).second;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AllocateFileDescriptor()
+{
+	if(!target_fildes_free_list.empty())
+	{
+		int32_t fildes = target_fildes_free_list.front();
+		target_fildes_free_list.pop();
+		return fildes;
+	}
+	
+	std::map<int32_t, int>::reverse_iterator iter = target_to_host_fildes.rbegin();
+	
+	if(iter != target_to_host_fildes.rend())
+	{
+		return (*iter).first + 1;
+	}
+	
+	return 0;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FreeFileDescriptor(int32_t fd)
+{
+	target_fildes_free_list.push(fd);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::MapTargetToHostFileDescriptor(int32_t target_fd, int host_fd)
+{
+	target_to_host_fildes.insert(std::pair<int32_t, int>(target_fd, host_fd));
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::UnmapTargetToHostFileDescriptor(int32_t target_fd)
+{
+	std::map<int32_t, int>::iterator iter = target_to_host_fildes.find(target_fd);
+	
+	if(iter != target_to_host_fildes.end())
+	{
+		target_to_host_fildes.erase(iter);
+	}
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>

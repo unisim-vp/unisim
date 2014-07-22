@@ -41,6 +41,5 @@ struct Constraint_t;
 template <class Type_t> struct Vect_t;
 struct StringVect_t;
 struct UIntVect_t;
-namespace Str { struct Buf; }
 
 #endif // __FWD_HH__

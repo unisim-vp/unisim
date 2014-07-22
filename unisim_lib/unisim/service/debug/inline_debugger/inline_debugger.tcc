@@ -44,6 +44,8 @@
 #include <stdexcept>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/data_object.tcc>
+#include <unisim/util/likely/likely.hh>
+#include <unisim/util/simfloat/floating.tcc>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -123,45 +125,11 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, cont_until_addr(0)
 	, last_stmt(0)
 	, prompt(string(_name) + "> ")
-	, hex_addr_fmt(0)
-	, int_addr_fmt(0)
 	, output_stream(0)
 	, std_output_stream(&std::cout)
 	, std_error_stream(&std::cerr)
 {
 	trap = false;
-
-	switch(sizeof(ADDRESS))
-	{
-		case 1:
-			hex_addr_fmt = strdup(PRIx8);
-			break;
-		case 2:
-			hex_addr_fmt = strdup(PRIx16);
-			break;
-		case 4:
-			hex_addr_fmt = strdup(PRIx32);
-			break;
-		case 8:
-			hex_addr_fmt = strdup(PRIx64);
-			break;
-	}
-
-	switch(sizeof(ADDRESS))
-	{
-		case 1:
-			int_addr_fmt = strdup(PRIu8);
-			break;
-		case 2:
-			int_addr_fmt = strdup(PRIu16);
-			break;
-		case 4:
-			int_addr_fmt = strdup(PRIu32);
-			break;
-		case 8:
-			int_addr_fmt = strdup(PRIu64);
-			break;
-	}
 }
 
 template <class ADDRESS>
@@ -171,9 +139,6 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 	{
 		delete output_stream;
 	}
-	
-	free(hex_addr_fmt);
-	free(int_addr_fmt);
 }
 
 template<class ADDRESS>
@@ -297,35 +262,41 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 {
 	bool recognized = false;
 	ADDRESS addr;
-	uint64_t value;
 	ADDRESS cont_addr;
 	unsigned int size;
+	ADDRESS next_addr;
 
-	if(!trap && (running_mode == INLINE_DEBUGGER_MODE_CONTINUE || running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL))
+	if(unlikely(trap))
 	{
-		return DebugControl<ADDRESS>::DBG_STEP;
+		if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
+		{
+			DeleteBreakpoint(cont_until_addr);
+		}
 	}
-	
-	if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
+	else
 	{
-		DeleteBreakpoint(cont_until_addr);
-	}
-	
-	if(running_mode == INLINE_DEBUGGER_MODE_RESET)
-	{
-		running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
-		return DebugControl<ADDRESS>::DBG_STEP;
-	}
-	
-	if(running_mode == INLINE_DEBUGGER_MODE_STEP)
-	{
-		const Statement<ADDRESS> *stmt = FindStatement(cia);
-		if(!stmt || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
+		if(likely((running_mode == INLINE_DEBUGGER_MODE_CONTINUE) || (running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)))
+		{
+			return DebugControl<ADDRESS>::DBG_STEP;
+		}
+		
+		if(running_mode == INLINE_DEBUGGER_MODE_RESET)
+		{
+			running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
+			return DebugControl<ADDRESS>::DBG_STEP;
+		}
+		
+		if(running_mode == INLINE_DEBUGGER_MODE_STEP)
+		{
+			const Statement<ADDRESS> *stmt = FindStatement(cia);
+			if(!stmt || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
+		}
 	}
 
 	int nparms = 0;
 
-	Disasm(cia, 1);
+	
+	Disasm(cia, 1, next_addr);
 
 	while(1)
 	{
@@ -437,8 +408,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsDisasmCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					Disasm(disasm_addr, 10);
-					disasm_addr += 10 * 4;
+					Disasm(disasm_addr, 10, disasm_addr);
 					break;
 				}
 
@@ -627,8 +597,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsDisasmCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), disasm_addr))
 				{
 					recognized = true;
-					Disasm(disasm_addr, 10);
-					disasm_addr += 10 * 4;
+					Disasm(disasm_addr, 10, disasm_addr);
 					break;
 				}
 
@@ -907,10 +876,10 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
-				if(IsSetDataObjectCommand(parm[0].c_str()) && ParseValue(parm[2].c_str(), value))
+				if(IsSetDataObjectCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					SetDataObject(parm[1].c_str(), cia, value);
+					SetDataObject(parm[1].c_str(), cia, parm[2].c_str());
 					break;
 				}
 
@@ -1033,6 +1002,9 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<r | run>" << endl;
 	(*std_output_stream) << "    restart the simulation from the beginning" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<fin | finish>" << endl;
+	(*std_output_stream) << "    continue executing instructions until returning from current function" << endl;
 	(*std_output_stream) << "================================ INSPECT =======================================" << endl;
 	(*std_output_stream) << "<dis | disasm | disassemble> [<symbol | *address>]" << endl;
 	(*std_output_stream) << "    continue to disassemble starting from 'symbol', 'address', or after" << endl;
@@ -1161,13 +1133,12 @@ void InlineDebugger<ADDRESS>::Help()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
+void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr)
 {
 	if(count > 0)
 	{
 		bool first = true;
 		const Symbol<ADDRESS> *last_symbol = 0;
-		ADDRESS next_addr;
 		do
 		{
 			const Statement<ADDRESS> *stmt = FindStatement(addr, first ? unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT : unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
@@ -2268,30 +2239,26 @@ bool InlineDebugger<ADDRESS>::GetReturnAddress(ADDRESS cia, ADDRESS& ret_addr) c
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size)
 {
-	char fmt1[16];
-	char fmt2[16];
-	snprintf(fmt1, sizeof(fmt1), "*%%%s#%%%s", hex_addr_fmt, int_addr_fmt);
-	snprintf(fmt2, sizeof(fmt2), "*%%%s#%%%s", int_addr_fmt, int_addr_fmt);
-
-	if(sscanf(s, fmt1, &addr, &size) == 2 ||
-	   sscanf(s, fmt2, &addr, &size) == 2)
+	if(*s == '*')
 	{
-		addr *= memory_atom_size;
-		size *= memory_atom_size;
-		return true;
+		std::string str(s + 1);
+		
+		size_t pos = str.find_first_of('#');
+		
+		std::stringstream sstr_addr(str.substr(0, pos));
+		std::stringstream sstr_size(str.substr(pos + 1));
+		
+		if((sstr_addr >> std::hex >> addr) && (sstr_size >> std::dec >> size))
+		{
+			if(sstr_addr.eof() && !sstr_size.eof())
+			{
+				addr *= memory_atom_size;
+				size *= memory_atom_size;
+				return true;
+			}
+		}
 	}
-
-	snprintf(fmt1, sizeof(fmt1), "*%%%s", hex_addr_fmt);
-	snprintf(fmt2, sizeof(fmt2), "*%%%s", int_addr_fmt);
-
-	if(sscanf(s, fmt1, &addr) == 1 ||
-	   sscanf(s, fmt2, &addr) == 1)
-	{
-		addr *= memory_atom_size;
-		size = memory_atom_size;
-		return true;
-	}
-
+	
 	const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 	
 	if(symbol)
@@ -2309,18 +2276,21 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 {
-	char fmt1[16];
-	char fmt2[16];
-	snprintf(fmt1, sizeof(fmt1), "*%%%s", hex_addr_fmt);
-	snprintf(fmt2, sizeof(fmt2), "*%%%s", int_addr_fmt);
-
-	if(sscanf(s, fmt1, &addr) == 1 ||
-	   sscanf(s, fmt2, &addr) == 1)
+	if(*s == '*')
 	{
-		addr *= memory_atom_size;
-		return true;
+		std::string str(s + 1);
+		
+		std::stringstream sstr_addr(str);
+		
+		if(sstr_addr >> std::hex >> addr)
+		{
+			if(!sstr_addr.eof()) return false;
+			
+			addr *= memory_atom_size;
+			return true;
+		}
 	}
-	
+
 	const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 	
 	if(symbol)
@@ -2337,7 +2307,10 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 		s++;
 	}
 	if(*s == ':') s++;
-	if(sscanf(s, "%u", &lineno) != 1) return false;
+	
+	std::stringstream sstr_lineno(s);
+	if(!(sstr_lineno >> lineno)) return false;
+	if(!sstr_lineno.eof()) return false;
 	
 	const Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(filename.c_str(), lineno, 0);
 	
@@ -2351,7 +2324,7 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::ParseValue(const char *s, uint64_t& value)
+bool InlineDebugger<ADDRESS>::ParseIntegerValue(const char *s, uint64_t& value)
 {
 	if(strcmp(s, "true") == 0)
 	{
@@ -2365,24 +2338,51 @@ bool InlineDebugger<ADDRESS>::ParseValue(const char *s, uint64_t& value)
 		return true;
 	}
 	
-	if(sscanf(s, "0x%" PRIx64, &value) == 1)
+	bool neg = false;
+	
+	if(*s == '-')
 	{
-		return true;
+		neg = true;
+		s++;
+	}
+	
+	if((strlen(s) >= 2) && (*s == '0') && ((*(s + 1) == 'x') || (*(s + 1) == 'X')))
+	{
+		std::string str(s);
+		std::stringstream sstr_hex_value(str);
+		if(sstr_hex_value >> std::hex >> value)
+		{
+			if(sstr_hex_value.eof())
+			{
+				if(neg) value = -value;
+				return true;
+			}
+		}
 	}
 
-	if(sscanf(s, "%" PRIu64, &value) == 1)
+	std::string str(s);
+	std::stringstream sstr_dec_value(str);
+	if(sstr_dec_value >> value)
 	{
-		return true;
-	}
-
-	int64_t signed_value = 0;
-	if(sscanf(s, "%" PRIi64, &signed_value) == 1)
-	{
-		value = signed_value;
-		return true;
+		if(sstr_dec_value.eof())
+		{
+			if(neg) value = -value;
+			return true;
+		}
 	}
 
 	return false;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::ParseFloatValue(const char *s, unisim::util::ieee754::SoftDouble& value)
+{
+	std::stringstream sstr(s);
+
+	unisim::util::ieee754::Flags flags;
+	value.read(sstr, flags);
+
+	return sstr.eof();
 }
 
 template <class ADDRESS>
@@ -2892,7 +2892,7 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRESS cia, uint64_t value)
+bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRESS cia, const char *literal)
 {
 	bool status = true;
 
@@ -2906,20 +2906,92 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 			{
 				if(data_object->Fetch())
 				{
+					uint64_t data_object_raw_value = 0;
+					
 					ADDRESS data_object_bit_size = data_object->GetBitSize();
 						
-					if(data_object->Write(0, value, data_object_bit_size))
+					const unisim::util::debug::Type *data_object_type = data_object->GetType();
+					
+					// follow typedefs
+					while(data_object_type->GetClass() == unisim::util::debug::T_TYPEDEF)
 					{
-						if(!data_object->Commit())
+						data_object_type = ((unisim::util::debug::Typedef *) data_object_type)->GetType();
+					}
+					
+					switch(data_object_type->GetClass())
+					{
+						case unisim::util::debug::T_UNKNOWN:
+							break;
+						case unisim::util::debug::T_CHAR:
+						case unisim::util::debug::T_INTEGER:
+						case unisim::util::debug::T_BOOL:
+						case unisim::util::debug::T_POINTER:
+						case unisim::util::debug::T_ENUM:
+							if(!ParseIntegerValue(literal, data_object_raw_value))
+							{
+								status = false;
+								(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts an integral value" << endl;
+							}
+							break;
+						case unisim::util::debug::T_FLOAT:
+							{
+								unisim::util::ieee754::SoftDouble float_value;
+								
+								if(!ParseFloatValue(literal, float_value))
+								{
+									status = false;
+									(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts a floating-point value" << endl;
+									break;
+								}
+								switch(data_object_bit_size)
+								{
+									case 32:
+										{
+											unisim::util::ieee754::Flags flags;
+											
+											unisim::util::ieee754::SoftFloat sf = unisim::util::ieee754::SoftFloat(float_value, flags);
+											data_object_raw_value = sf.queryValue();
+										}
+										break;
+									case 64:
+										data_object_raw_value = float_value.queryValue();
+										break;
+									default:
+										(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << endl;
+										break;
+								}
+							}
+							break;
+						case unisim::util::debug::T_STRUCT:
+						case unisim::util::debug::T_UNION:
+						case unisim::util::debug::T_CLASS:
+						case unisim::util::debug::T_INTERFACE:
+						case unisim::util::debug::T_ARRAY:
+						case unisim::util::debug::T_TYPEDEF:
+						case unisim::util::debug::T_FUNCTION:
+						case unisim::util::debug::T_CONST:
+						case unisim::util::debug::T_VOID:
+						case unisim::util::debug::T_VOLATILE:
+							status = false;
+							(*std_output_stream) << "Data object \"" << data_object_name << "\" is not a base type" << endl;
+							break;
+					}
+					
+					if(status)
+					{
+						if(data_object->Write(0, data_object_raw_value, data_object_bit_size))
+						{
+							if(!data_object->Commit())
+							{
+								status = false;
+								(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+							}
+						}
+						else
 						{
 							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
 						}
-					}
-					else
-					{
-						status = false;
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
 					}
 				}
 				else

@@ -103,6 +103,22 @@ using unisim::kernel::logger::EndDebugError;
 using namespace std;
 
 template <class CONFIG>
+class PCRegisterInterface : public unisim::util::debug::Register
+{
+public:
+	PCRegisterInterface(const char *name, typename CONFIG::address_t *r15_value, typename CONFIG::address_t *npc_value);
+	virtual ~PCRegisterInterface();
+	virtual const char *GetName() const;
+	virtual void GetValue(void *buffer) const;
+	virtual void SetValue(const void *buffer);
+	virtual int GetSize() const;
+private:
+	std::string name;
+	typename CONFIG::address_t *r15_value;
+	typename CONFIG::address_t *npc_value;
+};
+
+template <class CONFIG>
 class CPU :
 	public unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>,
 	public Client<Loader>,
@@ -156,6 +172,9 @@ public:
    	uint32_t GetLR(){return gpr[14];}
 	uint32_t GetSP_app(){return sp_app;}
 	uint32_t GetSP_sys(){return sp_sys;}
+	
+	string GetMicroArchitecture(){return micro_architecture;}
+	uint32_t GetNPC(){return npc;}
 
 	uint32_t GetSR() { return sr; }
 	uint32_t GetSR_SS() { return (GetSR() & CONFIG::SR_SS_MASK) >> CONFIG::SR_SS_OFFSET; }
@@ -190,6 +209,11 @@ public:
 	uint32_t GetConfig1(){return config1;}
 	uint32_t GetCount(){return count;}
 	uint32_t GetCompare(){return compare;}
+	
+	uint32_t GetRSR_DBG(){return rsr_dbg;}
+	uint32_t GetRAR_DBG(){return rar_dbg;}
+	uint32_t GetSS_RSR(){return ss_rsr;}
+	uint32_t GetSS_RAR(){return ss_rar;}
 		
 	void SetGPR(unsigned int reg_num, uint32_t val) { if(reg_num != 15) gpr[reg_num] = val; else Branch(val); }
 	void SetSP(uint32_t val) { gpr[13] = val; }
@@ -263,7 +287,7 @@ public:
 	void SetSR_C(uint32_t val) { SetSR((GetSR() & ~CONFIG::SR_C_MASK) | ((val << CONFIG::SR_C_OFFSET) & CONFIG::SR_C_MASK)); }
 	
 	      
-        void SetEvba(uint32_t val) { evba=val;}
+	void SetEvba(uint32_t val) { evba=val;}
 	void SetAcba(uint32_t val) { acba=val;}
 	void SetCpucr(uint32_t val){cpucr=val;}
 	void SetConfig0(uint32_t val){config0=val;}
@@ -275,6 +299,7 @@ public:
 	void SwitchExecutionMode(uint32_t execution_mode);
 	uint32_t GetPriorityLevel(uint32_t execution_mode);
 	
+	bool MoveFromSystemRegister(unsigned int rd, unsigned int sr_num);
 	
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -333,25 +358,34 @@ public:
 	
 	bool Fetch(typename CONFIG::address_t addr,void *buffer, uint32_t size);
 	
-	bool UintLoadByte(unsigned int rd,uint32_t addr);
-	bool UintLoadHalfWord(unsigned int rd,uint32_t addr,bool swap);
-	bool IntLoadWord(unsigned int rd,uint32_t addr,bool swap);
-	bool SintLoadByte(unsigned int,uint32_t addr);
-	bool SintLoadHalfWord(unsigned int rd,uint32_t addr,bool swap);
-	bool LoadAndInsertByte(unsigned int rd,uint32_t address,uint8_t part);
-	bool LoadAndInsertHalfWord(unsigned int rd,uint32_t address,uint8_t part);
+	bool UintLoadByte(unsigned int rd,typename CONFIG::address_t addr);
+	bool UintLoadHalfWord(unsigned int rd,typename CONFIG::address_t addr);
+	bool IntLoadWord(unsigned int rd,typename CONFIG::address_t addr);
+	bool SintLoadByte(unsigned int,typename CONFIG::address_t addr);
+	bool SintLoadHalfWord(unsigned int rd,typename CONFIG::address_t addr);
+	bool LoadAndInsertByte(unsigned int rd,typename CONFIG::address_t addr,unsigned int part);
+	bool LoadAndInsertHalfWord(unsigned int rd,typename CONFIG::address_t addr,unsigned int part);
+	bool LoadSR(typename CONFIG::address_t addr);
 
-	bool IntStoreByte(unsigned int rs,uint32_t addr);
-	bool IntStoreHalfWord(unsigned int rs,uint32_t addr);
-	bool IntStoreWord(unsigned int rs,uint32_t addr);
-
-	bool MemReadByte(uint32_t adress,uint32_t& value);
-	bool MemReadHalfWord(uint32_t adress,uint32_t& value);
-	bool MemReadWord(uint32_t adress,uint32_t& value);
-	bool MemWriteByte(uint32_t value,uint32_t adress);
-	bool MemWriteHalfWord(uint32_t value,uint32_t adress);
-	bool MemWriteWord(uint32_t value,uint32_t adress);
+	bool IntStoreByte(unsigned int rs,typename CONFIG::address_t addr);
+	bool IntStoreHalfWord(unsigned int rs,typename CONFIG::address_t addr);
+	bool IntStoreWord(unsigned int rs,typename CONFIG::address_t addr);
+	bool StoreHalfWordIntoWord(unsigned int rx,unsigned int ry,unsigned int x_part,unsigned int y_part,typename CONFIG::address_t addr);
 	
+	bool UintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::address_t addr);
+	bool IntLoadWordAndSwap(unsigned int rd,typename CONFIG::address_t addr);
+	bool SintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::address_t addr);
+	bool ExchangeRegMem(unsigned int rd,unsigned int rx,unsigned int ry);
+	bool MemoryBitAccess(typename CONFIG::address_t addr,unsigned int mode, unsigned int pos);
+	
+	/*
+	bool MemReadByte(typename CONFIG::address_t addr,uint32_t& value);
+	bool MemReadHalfWord(typename CONFIG::address_t addr,uint32_t& value);
+	bool MemReadWord(typename CONFIG::address_t addr,uint32_t& value);
+	bool MemWriteByte(uint32_t value,typename CONFIG::address_t addr);
+	bool MemWriteHalfWord(uint32_t value,typename CONFIG::address_t addr);
+	bool MemWriteWord(uint32_t value,typename CONFIG::address_t addr);
+	*/
 	//=====================================================================
 	//=                         System call                               =
 	//=====================================================================
@@ -362,7 +396,8 @@ public:
 	//=                                                                   =
 	//=====================================================================
 
-	bool EvaluateCond(uint8_t cond);	
+	bool EvaluateCond(uint8_t cond);
+	string GetCond(uint8_t cond);	
 	
 protected:
 
@@ -448,6 +483,7 @@ private:
 	uint32_t sp_app;      // sp shadow register for application mode
 	uint32_t sp_sys;      // sp shadow register for privileged mode
 
+
         //required system registers
 
 	uint32_t sr;      // stack register
@@ -495,6 +531,8 @@ private:
 	uint32_t ss_sp_app;
 	uint32_t ss_rar;
 	uint32_t ss_rsr;
+
+	string micro_architecture;
 
 	
 	//=====================================================================

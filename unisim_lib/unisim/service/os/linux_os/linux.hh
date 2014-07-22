@@ -112,6 +112,14 @@ class Linux :
   unisim::kernel::service::Parameter<std::string> param_dwarf_to_html_output_directory_;
   unisim::kernel::service::Parameter<std::string> param_dwarf_to_xml_output_filename_;
   
+  /* stdin/stdout/stderr pipes */
+  std::string stdin_pipe_filename;
+  std::string stdout_pipe_filename;
+  std::string stderr_pipe_filename;
+  unisim::kernel::service::Parameter<std::string> param_stdin_pipe_filename;
+  unisim::kernel::service::Parameter<std::string> param_stdout_pipe_filename;
+  unisim::kernel::service::Parameter<std::string> param_stderr_pipe_filename;
+  
   /* the linux library */
   unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE> *linuxlib_;
 

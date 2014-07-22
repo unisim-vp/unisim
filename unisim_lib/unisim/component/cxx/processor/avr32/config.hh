@@ -44,6 +44,12 @@ namespace cxx {
 namespace processor {
 namespace avr32 {
 
+typedef enum
+{
+	ARCH_AVR32A,
+	ARCH_ARV32B
+} Architecture;
+	
 //=====================================================================
 //=                    AVR32 common configuration                     =
 //=====================================================================

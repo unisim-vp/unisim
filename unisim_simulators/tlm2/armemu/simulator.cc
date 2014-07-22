@@ -36,11 +36,6 @@
 
 bool debug_enabled;
 
-void SigIntHandler(int signum) {
-  cerr << "Interrupted by Ctrl-C or SIGINT signal (" << signum << ")" << endl;
-  sc_stop();
-}
-
 using namespace std;
 
 Simulator::Simulator(int argc, char **argv)
@@ -241,11 +236,17 @@ Run()
 
   double time_start = host_time->GetTime();
 
+#ifndef WIN32
   void (*prev_sig_int_handler)(int) = 0;
-
+#endif
+  
   if ( ! inline_debugger )
   {
-    prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+#ifdef WIN32
+    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
+#else
+    prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
+#endif
   }
 
   sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
@@ -262,7 +263,11 @@ Run()
 
   if ( !inline_debugger )
   {
+#ifdef WIN32
+    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
+#else
     signal(SIGINT, prev_sig_int_handler);
+#endif
   }
 
   cerr << "Simulation finished" << endl;
@@ -297,11 +302,17 @@ Run(double time, sc_time_unit unit)
 
   double time_start = host_time->GetTime();
 
+#ifndef WIN32
   void (*prev_sig_int_handler)(int) = 0;
+#endif
 
   if ( ! inline_debugger )
   {
-    prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+#ifdef WIN32
+    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
+#else
+    prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
+#endif
   }
 
   sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
@@ -318,7 +329,11 @@ Run(double time, sc_time_unit unit)
 
   if ( !inline_debugger )
   {
+#ifdef WIN32
+    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
+#else
     signal(SIGINT, prev_sig_int_handler);
+#endif
   }
 
   double time_stop = host_time->GetTime();
@@ -495,3 +510,41 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable("dl1-power-estimator.access-mode", "fast");
   sim->SetVariable("dl1-power-estimator.verbose", false);
 }
+
+#ifdef WIN32
+BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
+{
+	bool stop = false;
+	switch(dwCtrlType)
+	{
+		case CTRL_C_EVENT:
+			cerr << "Interrupted by Ctrl-C" << endl;
+			stop = true;
+			break;
+		case CTRL_BREAK_EVENT:
+			cerr << "Interrupted by Ctrl-Break" << endl;
+			stop = true;
+			break;
+		case CTRL_CLOSE_EVENT:
+			cerr << "Interrupted by a console close" << endl;
+			stop = true;
+			break;
+		case CTRL_LOGOFF_EVENT:
+			cerr << "Interrupted because of logoff" << endl;
+			stop = true;
+			break;
+		case CTRL_SHUTDOWN_EVENT:
+			cerr << "Interrupted because of shutdown" << endl;
+			stop = true;
+			break;
+	}
+	if(stop) sc_stop();
+	return stop ? TRUE : FALSE;
+}
+#else
+void Simulator::SigIntHandler(int signum)
+{
+	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+}
+#endif

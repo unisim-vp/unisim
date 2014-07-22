@@ -161,6 +161,8 @@ DWARF_Location<MEMORY_ADDR>::DWARF_Location()
 	: dw_loc_type(DW_LOC_NULL)
 	, dw_reg_num(0)
 	, dw_addr(0)
+	, dw_implicit_simple_value(0)
+	, dw_implicit_block_value(0)
 	, dw_byte_size(0)
 	, dw_bit_offset(0)
 	, dw_bit_size(0)
@@ -171,6 +173,7 @@ DWARF_Location<MEMORY_ADDR>::DWARF_Location()
 template <class MEMORY_ADDR>
 DWARF_Location<MEMORY_ADDR>::~DWARF_Location()
 {
+	Clear();
 }
 
 template <class MEMORY_ADDR>
@@ -179,11 +182,18 @@ void DWARF_Location<MEMORY_ADDR>::Clear()
 	dw_loc_type = DW_LOC_NULL;
 	dw_reg_num = 0;
 	dw_addr = 0;
+	dw_implicit_simple_value = 0;
 	dw_byte_size = 0;
 	dw_bit_offset = 0;
 	dw_bit_size = 0;
 	dw_encoding = 0;
-	
+
+	if(dw_implicit_block_value)
+	{
+		delete dw_implicit_block_value;
+		dw_implicit_block_value = 0;
+	}
+
 	unsigned int num_location_pieces = dw_location_pieces.size();
 	unsigned int i;
 	
@@ -230,6 +240,22 @@ void DWARF_Location<MEMORY_ADDR>::SetAddress(MEMORY_ADDR _dw_addr)
 	if(dw_loc_type != DW_LOC_NULL) throw std::runtime_error("Internal error");
 	dw_loc_type = DW_LOC_SIMPLE_MEMORY;
 	dw_addr = _dw_addr;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::SetImplicitValue(MEMORY_ADDR dw_implicit_value)
+{
+	if(dw_loc_type != DW_LOC_NULL) throw std::runtime_error("Internal error");
+	dw_loc_type = DW_LOC_IMPLICIT_SIMPLE_VALUE;
+	dw_implicit_simple_value = dw_implicit_value;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::SetImplicitValue(DWARF_Block<MEMORY_ADDR> *dw_implicit_value)
+{
+	if(dw_loc_type != DW_LOC_NULL) throw std::runtime_error("Internal error");
+	dw_loc_type = DW_LOC_IMPLICIT_BLOCK_VALUE;
+	dw_implicit_block_value = dw_implicit_value;
 }
 
 template <class MEMORY_ADDR>
@@ -373,7 +399,9 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 	uint8_t opcode;
 	
 	bool in_dw_op_reg = false;
-	bool got_vendor_specific_extension = false;
+	bool in_dw_op_stack_value = false;
+	bool got_unknown_opcode = false;
+	bool got_unsupported_vendor_specific_extension = false;
 	
 	if(expr_length)
 	{
@@ -384,9 +412,12 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 			opcode = expr[expr_pos];
 			expr_pos++;
 			
-			if(got_vendor_specific_extension)
+			if(got_unknown_opcode || got_unsupported_vendor_specific_extension)
 			{
-				if(os) *os << "0x" << std::hex << opcode << std::dec;
+				if(os)
+				{
+					*os << "0x" << std::hex << (unsigned int) opcode << std::dec;
+				}
 			}
 			else
 			{
@@ -438,10 +469,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							MEMORY_ADDR addr;
 							if((expr_pos + address_size) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_addr: missing " << address_size << "-byte address operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_addr: missing " << address_size << "-byte address operand" << EndDebugError;
 								return false;
 							}
 							switch(address_size)
@@ -463,10 +491,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									}
 									break;
 								default:
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_addr: unsupported address operand size (" << address_size << " bytes)" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_addr: unsupported address operand size (" << address_size << " bytes)" << EndDebugError;
 									return false;
 							}
 							expr_pos += address_size;
@@ -479,10 +504,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint8_t dw_const;
 							if((expr_pos + sizeof(dw_const)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const1u: missing 1-byte unsigned constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const1u: missing 1-byte unsigned constant operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
@@ -501,10 +523,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint8_t dw_const;
 							if((expr_pos + sizeof(dw_const)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const1s: missing 1-byte signed constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const1s: missing 1-byte signed constant operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
@@ -523,10 +542,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint16_t dw_const;
 							if((expr_pos + sizeof(dw_const)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const2u: missing 2-byte unsigned constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const2u: missing 2-byte unsigned constant operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
@@ -545,10 +561,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint16_t dw_const;
 							if((expr_pos + sizeof(dw_const)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const2s: missing 2-byte signed constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const2s: missing 2-byte signed constant operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
@@ -567,10 +580,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint32_t dw_const;
 							if((expr_pos + sizeof(dw_const)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const4u: missing 4-byte unsigned constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const4u: missing 4-byte unsigned constant operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
@@ -589,10 +599,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint32_t dw_const;
 							if((expr_pos + sizeof(dw_const)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const4s: missing 4-byte signed constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const4s: missing 4-byte signed constant operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
@@ -611,10 +618,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint64_t dw_const;
 							if((expr_pos + sizeof(dw_const)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const8u: missing 8-byte unsigned constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const8u: missing 8-byte unsigned constant operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
@@ -633,10 +637,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint64_t dw_const;
 							if((expr_pos + sizeof(dw_const)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const8s: missing 8-byte signed constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const8s: missing 8-byte signed constant operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
@@ -656,10 +657,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int64_t sz;
 							if((sz = dw_const_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_constu: missing LEB128 unsigned constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_constu: missing LEB128 unsigned constant operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -679,10 +677,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int64_t sz;
 							if((sz = dw_const_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_consts: missing LEB128 signed constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_consts: missing LEB128 signed constant operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -702,10 +697,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int64_t sz;
 							if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_fbreg: missing LEB128 signed offset operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_fbreg: missing LEB128 signed offset operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -717,10 +709,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								// push onto the stack (frame base + offset)
 								if(!has_frame_base)
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_fbreg " << offset << ": frame base address is not set" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_fbreg " << offset << ": frame base address is not set" << EndDebugError;
 									return false;
 								}
 								dw_stack.push_back(frame_base + offset);
@@ -765,10 +754,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int64_t sz;
 							if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_breg" << (unsigned int) dw_reg_num << ": missing LEB128 signed offset operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_breg" << (unsigned int) dw_reg_num << ": missing LEB128 signed offset operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -790,10 +776,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int64_t sz;
 							if((sz = dw_reg_num_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bregx: missing LEB128 register number operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bregx: missing LEB128 register number operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -803,10 +786,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							DWARF_LEB128 dw_offset_leb128;
 							if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bregx: missing LEB128 signed offset operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bregx: missing LEB128 signed offset operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -829,10 +809,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.empty())
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_dup: DWARF stack is empty" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_dup: DWARF stack is empty" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR addr = dw_stack.back();
@@ -845,10 +822,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.empty())
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_drop: DWARF stack is empty" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_drop: DWARF stack is empty" << EndDebugError;
 								return false;
 							}
 							dw_stack.pop_back();
@@ -859,10 +833,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint8_t dw_index;
 							if((expr_pos + sizeof(dw_index)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_pick: missing 1-byte unsigned index operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_pick: missing 1-byte unsigned index operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_index, expr + expr_pos, sizeof(dw_index));
@@ -874,10 +845,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								unsigned int dw_stack_size = dw_stack.size();
 								if(dw_index >= dw_stack_size)
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_pick: DWARF stack index (" << (unsigned int)  dw_index << ") is out of range (must be < " << dw_stack_size << ")" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_pick: DWARF stack index (" << (unsigned int)  dw_index << ") is out of range (must be < " << dw_stack_size << ")" << EndDebugError;
 									return false;
 								}
 								MEMORY_ADDR pick_value = dw_stack[dw_stack_size - 1 - dw_index];
@@ -893,10 +861,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							unsigned int dw_stack_size = dw_stack.size();
 							if(dw_index >= dw_stack_size)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_over: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_over: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR pick_value = dw_stack[dw_stack_size - 1 - dw_index];
@@ -910,10 +875,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							unsigned int dw_stack_size = dw_stack.size();
 							if(dw_stack_size < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_swap: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_swap: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR second_value = dw_stack[dw_stack_size - 2];
@@ -930,10 +892,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							unsigned int dw_stack_size = dw_stack.size();
 							if(dw_stack_size < 3)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_rot: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_rot: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR third_value = dw_stack[dw_stack_size - 3];
@@ -951,10 +910,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.empty())
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref: DWARF stack is empty" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref: DWARF stack is empty" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR addr = dw_stack.back();
@@ -963,10 +919,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							
 							if(!ReadAddrFromMemory(addr, read_addr))
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
 								return false;
 							}
 							dw_stack.push_back(read_addr);
@@ -977,10 +930,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint8_t dw_size;
 							if((expr_pos + sizeof(dw_size)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref_size: missing 1-byte size operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref_size: missing 1-byte size operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_size, expr + expr_pos, sizeof(dw_size));
@@ -991,10 +941,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							{
 								if(dw_stack.empty())
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref_size: DWARF stack is empty" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref_size: DWARF stack is empty" << EndDebugError;
 									return false;
 								}
 								MEMORY_ADDR addr = dw_stack.back();
@@ -1003,10 +950,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								
 								if(!ReadAddrFromMemory(addr, read_addr, dw_size))
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref_size: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref_size: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
 									return false;
 								}
 								dw_stack.push_back(read_addr);
@@ -1020,10 +964,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							unsigned int dw_stack_size = dw_stack.size();
 							if(dw_stack_size < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR addr = dw_stack.back();
@@ -1034,10 +975,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							
 							if(!ReadAddrFromMemory(addr, read_addr, 0, addr_space))
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
 								return false;
 							}
 							dw_stack.push_back(read_addr);
@@ -1048,10 +986,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							uint8_t dw_size;
 							if((expr_pos + sizeof(dw_size)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef_size: missing 1-byte size operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef_size: missing 1-byte size operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_size, expr + expr_pos, sizeof(dw_size));
@@ -1063,10 +998,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								unsigned int dw_stack_size = dw_stack.size();
 								if(dw_stack_size < 2)
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef_size: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef_size: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
 									return false;
 								}
 								MEMORY_ADDR addr = dw_stack.back();
@@ -1077,10 +1009,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								
 								if(!ReadAddrFromMemory(addr, read_addr, dw_size, addr_space))
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef_size: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef_size: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
 									return false;
 								}
 								dw_stack.push_back(read_addr);
@@ -1095,29 +1024,20 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							// there is no object context to provide a value to push.
 							if(dw_cfp)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_push_object_address: not meaningful in a call frame program" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_push_object_address: not meaningful in a call frame program" << EndDebugError;
 								return false;
 							}
 
 							if(!dw_cu)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_push_object_address: only meaningful in a DIE" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_push_object_address: only meaningful in a DIE" << EndDebugError;
 								return false;
 							}
 							
 							// push object address
 							if(!has_object_addr)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_push_object_address: object address is not set" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_push_object_address: object address is not set" << EndDebugError;
 								return false;
 							}
 							dw_stack.push_back(object_addr);
@@ -1128,10 +1048,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						if(executing)
 						{
 							// Currently unimplemented.
-							if(debug)
-							{
-								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_form_tls_address: currently unimplemented" << EndDebugError;
-							}
+							logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_form_tls_address: currently unimplemented" << EndDebugError;
 							return false;
 						}
 						break;
@@ -1143,29 +1060,20 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							// would be circular.
 							if(dw_cfp)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: not meaningful in a call frame program" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: not meaningful in a call frame program" << EndDebugError;
 								return false;
 							}
 							
 							if(!has_pc)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: don't know PC" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: don't know PC" << EndDebugError;
 								return false;
 							}
 							
 							MEMORY_ADDR cfa = 0;
 							if(!dw_handler->ComputeCFA(pc, cfa))
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: computing of CFA failed" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: computing of CFA failed" << EndDebugError;
 								return false;
 							}
 							// Push CFA
@@ -1179,10 +1087,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.empty())
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_abs: DWARF stack is empty" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_abs: DWARF stack is empty" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1198,10 +1103,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_and: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_and: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1217,10 +1119,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_div: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_div: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							int64_t op1 = dw_stack.back();
@@ -1229,10 +1128,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							dw_stack.pop_back();
 							if(!op1)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_div: division by zero" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_div: division by zero" << EndDebugError;
 								return false; // division by zero
 							}
 							dw_stack.push_back(op2 / op1);
@@ -1244,10 +1140,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_minus: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_minus: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1263,10 +1156,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_mod: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_mod: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1275,10 +1165,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							dw_stack.pop_back();
 							if(!op1)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_mod: division by zero" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_mod: division by zero" << EndDebugError;
 								return false; // division by zero
 							}
 							dw_stack.push_back(op2 % op1); // Note: unsigned modulus
@@ -1290,10 +1177,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_mul: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_mul: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1309,10 +1193,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.empty())
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_neg: DWARF stack is empty" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_neg: DWARF stack is empty" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1325,10 +1206,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.empty())
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_not: DWARF stack is empty" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_not: DWARF stack is empty" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1341,10 +1219,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_or: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_or: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1360,10 +1235,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_plus: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_plus: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1379,10 +1251,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int64_t sz;
 							if((sz = dw_uconst_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_plus_uconst: missing LEB128 unsigned constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_plus_uconst: missing LEB128 unsigned constant operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -1393,10 +1262,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							{
 								if(dw_stack.empty())
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_plus_uconst: DWARF stack is empty" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_plus_uconst: DWARF stack is empty" << EndDebugError;
 									return false;
 								}
 								MEMORY_ADDR op1 = dw_stack.back();
@@ -1411,10 +1277,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_shl: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_shl: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1430,10 +1293,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_shr: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_shr: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1449,10 +1309,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_shra: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_shra: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1468,10 +1325,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xor: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xor: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1487,10 +1341,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_le: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_le: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1506,10 +1357,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_ge: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_ge: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1525,10 +1373,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_eq: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_eq: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1544,10 +1389,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_lt: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_lt: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1563,10 +1405,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_gt: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_gt: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1582,10 +1421,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						{
 							if(dw_stack.size() < 2)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_ne: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_ne: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
 								return false;
 							}
 							MEMORY_ADDR op1 = dw_stack.back();
@@ -1600,10 +1436,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int16_t dw_skip_amount;
 							if((expr_pos + sizeof(dw_skip_amount)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_skip: missing 2-byte signed constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_skip: missing 2-byte signed constant operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_skip_amount, expr + expr_pos, sizeof(dw_skip_amount));
@@ -1616,10 +1449,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								{
 									if(expr_pos + dw_skip_amount > expr_length)
 									{
-										if(debug)
-										{
-											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_skip: forward skip amount is out of range" << EndDebugError;
-										}
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_skip: forward skip amount is out of range" << EndDebugError;
 										return false;
 									}
 								}
@@ -1627,10 +1457,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								{
 									if(expr_pos < (uint64_t) -dw_skip_amount)
 									{
-										if(debug)
-										{
-											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_skip: backward skip amount is out of range" << EndDebugError;
-										}
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_skip: backward skip amount is out of range" << EndDebugError;
 										return false;
 									}
 								}
@@ -1644,10 +1471,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int16_t dw_skip_amount;
 							if((expr_pos + sizeof(dw_skip_amount)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: missing 2-byte signed constant operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: missing 2-byte signed constant operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&dw_skip_amount, expr + expr_pos, sizeof(dw_skip_amount));
@@ -1658,10 +1482,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							{
 								if(dw_stack.empty())
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: DWARF stack is empty" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: DWARF stack is empty" << EndDebugError;
 									return false;
 								}
 								MEMORY_ADDR cond = dw_stack.back();
@@ -1672,10 +1493,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									{
 										if(expr_pos + dw_skip_amount > expr_length)
 										{
-											if(debug)
-											{
-												logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: forward skip amount is out of range" << EndDebugError;
-											}
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: forward skip amount is out of range" << EndDebugError;
 											return false;
 										}
 									}
@@ -1683,10 +1501,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									{
 										if(expr_pos < (uint64_t) -dw_skip_amount)
 										{
-											if(debug)
-											{
-												logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: backward skip amount is out of range" << EndDebugError;
-											}
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: backward skip amount is out of range" << EndDebugError;
 											return false;
 										}
 									}
@@ -1703,20 +1518,14 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							// offset.
 							if(dw_cfp)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: not meaningful in a call frame program" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: not meaningful in a call frame program" << EndDebugError;
 								return false;
 							}
 							
 							uint16_t debug_info_offset16;
 							if((expr_pos + sizeof(debug_info_offset16)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: missing 2-byte unsigned offset operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: missing 2-byte unsigned offset operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&debug_info_offset16, expr + expr_pos, sizeof(debug_info_offset16));
@@ -1728,10 +1537,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								const DWARF_DIE<MEMORY_ADDR> *dw_die = dw_handler->FindDIE(debug_info_offset16);
 								if(!dw_die)
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: can't find DIE at offset 0x" << std::hex << debug_info_offset16 << std::dec << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: can't find DIE at offset 0x" << std::hex << debug_info_offset16 << std::dec << EndDebugError;
 									return false;
 								}
 								const DWARF_Attribute<MEMORY_ADDR> *dw_at_location = dw_die->FindAttribute(DW_AT_location);
@@ -1740,10 +1546,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_location_value = dw_at_location->GetValue();
 									if(dw_at_location_value->GetClass() != DW_CLASS_EXPRESSION)
 									{
-										if(debug)
-										{
-											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: DW_AT_location attribute of referenced DIE is not a DWARF expression" << EndDebugError;
-										}
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: DW_AT_location attribute of referenced DIE is not a DWARF expression" << EndDebugError;
 										return false;
 									}
 									const DWARF_Expression<MEMORY_ADDR> *dw_at_location_expr = (const DWARF_Expression<MEMORY_ADDR> *) dw_at_location_value;
@@ -1752,19 +1555,13 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									bool call_status = Run(dw_at_location_expr, os, &call_result_addr, &dw_call_location);
 									if(!call_status)
 									{
-										if(debug)
-										{
-											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: DWARF expression evaluation failed" << EndDebugError;
-										}
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: DWARF expression evaluation failed" << EndDebugError;
 										return false;
 									}
 								}
 								else
 								{
-									if(debug)
-									{
-										logger << DebugWarning << "DW_OP_call2: operation has no effect because referenced DIE has no DW_AT_location attribute" << EndDebugWarning;
-									}
+									logger << DebugWarning << "DW_OP_call2: operation has no effect because referenced DIE has no DW_AT_location attribute" << EndDebugWarning;
 								}
 							}
 						}
@@ -1777,20 +1574,14 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							// offset.
 							if(dw_cfp)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: not meaningful in a call frame program" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: not meaningful in a call frame program" << EndDebugError;
 								return false;
 							}
 							
 							uint32_t debug_info_offset32;
 							if((expr_pos + sizeof(debug_info_offset32)) > expr_length)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: missing 4-byte unsigned offset operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: missing 4-byte unsigned offset operand" << EndDebugError;
 								return false;
 							}
 							memcpy(&debug_info_offset32, expr + expr_pos, sizeof(debug_info_offset32));
@@ -1802,10 +1593,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								const DWARF_DIE<MEMORY_ADDR> *dw_die = dw_handler->FindDIE(debug_info_offset32);
 								if(!dw_die)
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: can't find DIE at offset 0x" << std::hex << debug_info_offset32 << std::dec << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: can't find DIE at offset 0x" << std::hex << debug_info_offset32 << std::dec << EndDebugError;
 									return false;
 								}
 								const DWARF_Attribute<MEMORY_ADDR> *dw_at_location = dw_die->FindAttribute(DW_AT_location);
@@ -1814,10 +1602,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_location_value = dw_at_location->GetValue();
 									if(dw_at_location_value->GetClass() != DW_CLASS_EXPRESSION)
 									{
-										if(debug)
-										{
-											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: DW_AT_location attribute of referenced DIE is not a DWARF expression" << EndDebugError;
-										}
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: DW_AT_location attribute of referenced DIE is not a DWARF expression" << EndDebugError;
 										return false;
 									}
 									const DWARF_Expression<MEMORY_ADDR> *dw_at_location_expr = (const DWARF_Expression<MEMORY_ADDR> *) dw_at_location_value;
@@ -1826,19 +1611,13 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									bool call_status = Run(dw_at_location_expr, os, &call_result_addr, &dw_call_location);
 									if(!call_status)
 									{
-										if(debug)
-										{
-											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: DWARF expression evaluation failed" << EndDebugError;
-										}
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: DWARF expression evaluation failed" << EndDebugError;
 										return false;
 									}
 								}
 								else
 								{
-									if(debug)
-									{
-										logger << DebugWarning << "DW_OP_call4: operation has no effect because referenced DIE has no DW_AT_location attribute" << EndDebugWarning;
-									}
+									logger << DebugWarning << "DW_OP_call4: operation has no effect because referenced DIE has no DW_AT_location attribute" << EndDebugWarning;
 								}
 							}
 						}
@@ -1851,19 +1630,13 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							// offset.
 							if(dw_cfp)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: not meaningful in a call frame program" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: not meaningful in a call frame program" << EndDebugError;
 								return false;
 							}
 							
 							if(!dw_cu)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: only meaningful in a DIE" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: only meaningful in a DIE" << EndDebugError;
 								return false;
 							}
 							uint64_t debug_info_offset;
@@ -1875,10 +1648,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									
 										if((expr_pos + sizeof(debug_info_offset32)) > expr_length)
 										{
-											if(debug)
-											{
-												logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: missing 4-byte unsigned offset operand" << EndDebugError;
-											}
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: missing 4-byte unsigned offset operand" << EndDebugError;
 											return false;
 										}
 										memcpy(&debug_info_offset32, expr + expr_pos, sizeof(debug_info_offset32));
@@ -1893,10 +1663,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									
 										if((expr_pos + sizeof(debug_info_offset64)) > expr_length)
 										{
-											if(debug)
-											{
-												logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: missing 8-byte unsigned offset operand" << EndDebugError;
-											}
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: missing 8-byte unsigned offset operand" << EndDebugError;
 											return false;
 										}
 										memcpy(&debug_info_offset64, expr + expr_pos, sizeof(debug_info_offset64));
@@ -1906,10 +1673,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									}
 									break;
 								default:
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: unsupported unsigned offset operand size" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: unsupported unsigned offset operand size" << EndDebugError;
 									return false;
 							}
 							if(os) *os << "DW_OP_call_ref " << debug_info_offset;
@@ -1918,10 +1682,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								const DWARF_DIE<MEMORY_ADDR> *dw_die = dw_handler->FindDIE(debug_info_offset);
 								if(!dw_die)
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: can't find DIE at offset 0x" << std::hex << debug_info_offset << std::dec << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: can't find DIE at offset 0x" << std::hex << debug_info_offset << std::dec << EndDebugError;
 									return false;
 								}
 								const DWARF_Attribute<MEMORY_ADDR> *dw_at_location = dw_die->FindAttribute(DW_AT_location);
@@ -1930,10 +1691,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_location_value = dw_at_location->GetValue();
 									if(dw_at_location_value->GetClass() != DW_CLASS_EXPRESSION)
 									{
-										if(debug)
-										{
-											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: DW_AT_location attribute of referenced DIE is not a DWARF expression" << EndDebugError;
-										}
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: DW_AT_location attribute of referenced DIE is not a DWARF expression" << EndDebugError;
 										return false;
 									}
 									const DWARF_Expression<MEMORY_ADDR> *dw_at_location_expr = (const DWARF_Expression<MEMORY_ADDR> *) dw_at_location_value;
@@ -1942,19 +1700,13 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									bool call_status = Run(dw_at_location_expr, os, &call_result_addr, &dw_call_location);
 									if(!call_status)
 									{
-										if(debug)
-										{
-											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: DWARF expression evaluation failed" << EndDebugError;
-										}
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: DWARF expression evaluation failed" << EndDebugError;
 										return false;
 									}
 								}
 								else
 								{
-									if(debug)
-									{
-										logger << DebugWarning << "DW_OP_call_ref: operation has no effect because referenced DIE has no DW_AT_location attribute" << EndDebugWarning;
-									}
+									logger << DebugWarning << "DW_OP_call_ref: operation has no effect because referenced DIE has no DW_AT_location attribute" << EndDebugWarning;
 								}
 							}
 						}
@@ -2001,10 +1753,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							{
 								if(!dw_location)
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_reg" << (unsigned int) dw_reg_num << ": only allowed in location expressions" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_reg" << (unsigned int) dw_reg_num << ": only allowed in location expressions" << EndDebugError;
 									return false; // DW_OP_reg* are only allowed in location expressions
 								}
 								
@@ -2012,10 +1761,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								// consisting of just that one operation).
 								if((expr_pos != expr_length) && (expr[expr_pos] != DW_OP_piece))
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_reg" << (unsigned int) dw_reg_num << ": each register name operator must be used alone" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_reg" << (unsigned int) dw_reg_num << ": each register name operator must be used alone" << EndDebugError;
 									return false;
 								}
 								
@@ -2030,10 +1776,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int64_t sz;
 							if((sz = dw_reg_num_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_regx: missing LEB128 register number operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_regx: missing LEB128 register number operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -2044,10 +1787,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							{
 								if(!dw_location)
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_regx " << dw_reg_num << ": only allowed in location expressions" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_regx " << dw_reg_num << ": only allowed in location expressions" << EndDebugError;
 									return false; // DW_OP_reg* are only allowed in location expressions
 								}
 
@@ -2055,10 +1795,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								// consisting of just that one operation).
 								if((expr_pos != expr_length) && (expr[expr_pos] != DW_OP_piece))
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_regx" << dw_reg_num << ": each register name operator must be used alone" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_regx" << dw_reg_num << ": each register name operator must be used alone" << EndDebugError;
 									return false;
 								}
 								
@@ -2073,10 +1810,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int64_t sz;
 							if((sz = dw_byte_size_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_piece: missing LEB128 byte size operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_piece: missing LEB128 byte size operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -2088,19 +1822,13 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								uint64_t dw_bit_size = dw_byte_size * 8;
 								if(!dw_location)
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_piece: only allowed in location expressions" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_piece: only allowed in location expressions" << EndDebugError;
 									return false; // DW_OP_piece is only allowed in location expressions
 								}
 
 								if(dw_stack.empty())
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_piece: DWARF stack is empty" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_piece: DWARF stack is empty" << EndDebugError;
 									return false; // DW_OP_piece must be preceeded by a register name operator or an address operation that have pushed a register number or an address on the stack
 								}
 								
@@ -2137,10 +1865,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							int64_t sz;
 							if((sz = dw_bit_size_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bit_piece: missing LEB128 bit size operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bit_piece: missing LEB128 bit size operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -2150,10 +1875,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							DWARF_LEB128 dw_bit_offset_leb128;
 							if((sz = dw_bit_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bit_piece: missing LEB128 offset operand" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bit_piece: missing LEB128 offset operand" << EndDebugError;
 								return false;
 							}
 							expr_pos += sz;
@@ -2165,10 +1887,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							{
 								if(!dw_location)
 								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bit_piece: only allowed in location expressions" << EndDebugError;
-									}
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bit_piece: only allowed in location expressions" << EndDebugError;
 									return false; // DW_OP_bit_piece is only allowed in location expressions
 								}
 								
@@ -2207,24 +1926,101 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							}
 						}
 						break;
+						
+					case DW_OP_implicit_value:
+						{
+							DWARF_LEB128 dw_length_leb128;
+							int64_t sz;
+							if((sz = dw_length_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_implicit_value: missing LEB128 length operand" << EndDebugError;
+								return false;
+							}
+							expr_pos += sz;
+							
+							uint64_t dw_length = (uint64_t) dw_length_leb128;
+							
+							if((expr_pos + dw_length) > expr_length)
+							{
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_implicit_value: missing " << dw_length << "-byte block value operand" << EndDebugError;
+								return false;
+							}
+							
+							uint8_t dw_block_data[dw_length];
+							memcpy(dw_block_data, expr + expr_pos, dw_length);
+							
+							expr_pos += dw_length;
+							
+							if(os)
+							{
+								*os << "DW_OP_implicit_value " << dw_length << ",";
+								uint64_t i;
+								for(i = 0; i < dw_length; i++)
+								{
+									*os << " 0x" << std::hex << dw_block_data[i] << std::dec;
+								}
+							}
+							
+							if(executing)
+							{
+								if(!dw_location)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_implicit_value: only supported in location expressions" << EndDebugError;
+									return false; // DW_OP_implicit_value is only supported in location expressions
+								}
+								
+								DWARF_Block<MEMORY_ADDR> *dw_block = new DWARF_Block<MEMORY_ADDR>(dw_length, dw_block_data);
+								
+								dw_location->SetImplicitValue(dw_block);
+							}
+						}
+						break;
+					case DW_OP_stack_value:
+						{
+							if(os) *os << "DW_OP_stack_value";
+							if(executing)
+							{
+// 								// Currently unimplemented.
+// 								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_stack_value: currently unimplemented" << EndDebugError;
+// 								return false;
+								if(!dw_location)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_stack_value: only allowed in location expressions" << EndDebugError;
+									return false; // DW_OP_stack_value is only allowed in location expressions
+								}
+								
+								// DW_OP_stack_value terminates the expression
+								if(expr_pos != expr_length)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_stack_value shall terminate the expression" << EndDebugError;
+									return false;
+								}
+								
+								in_dw_op_stack_value = true; // indicate that we started a DW_OP_stack_value and that the actual value is at top of the stack
+							}
+						}
+						break;
+						
 					default:
+						const char *producer = dw_cu ? dw_cu->GetProducer() : 0;
+						logger << DebugWarning << "In File \"" << dw_handler->GetFilename() << "\", in DWARF expression, unsupported ";
 						if((opcode >= DW_OP_lo_user) && (opcode <= DW_OP_hi_user))
 						{
-							if(debug)
-							{
-								const char *producer = dw_cu ? dw_cu->GetProducer() : 0;
-								logger << DebugWarning << "In File \"" << dw_handler->GetFilename() << "\", in DWARF expression, unsupported vendor specific extension (opcode 0x" << std::hex << (unsigned int) opcode << std::dec << ") from " << (producer ? producer : "an unknown producer") << EndDebugWarning;
-							}
-							got_vendor_specific_extension = true;
+							logger << "vendor specific extension";
+							got_unsupported_vendor_specific_extension = true;
+						}
+						else
+						{
+							logger << "unknown operation";
+							got_unknown_opcode = true;
 						}
 						
-						if(os) *os << "0x" << std::hex << (unsigned int) opcode << std::dec;
+						logger << " " << DWARF_GetOPName(opcode) << " (opcode 0x" << std::hex << (unsigned int) opcode << std::dec << ") from " << (producer ? producer : "an unknown producer") << EndDebugWarning;
+						
+						if(os) *os << DWARF_GetOPName(opcode);
 						if(executing)
 						{
-							if(debug)
-							{
-								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", while evaluating a DWARF expression, unknown or invalid operation (0x" << std::hex << (unsigned int) opcode << std::dec << ")" << EndDebugError;
-							}
+							logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", while evaluating a DWARF expression, unknown or invalid operation (0x" << std::hex << (unsigned int) opcode << std::dec << ")" << EndDebugError;
 							return false;
 						}
 						break;
@@ -2248,6 +2044,12 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 			MEMORY_ADDR dw_reg_num = dw_stack.back();
 			dw_location->SetRegisterNumber(dw_reg_num);
 		}
+		else if(in_dw_op_stack_value)
+		{
+			// implicit value
+			MEMORY_ADDR dw_stack_value = dw_stack.back();
+			dw_location->SetImplicitValue(dw_stack_value);
+		}
 		else
 		{
 			// memory location
@@ -2256,7 +2058,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 		}
 	}
 
-	return !got_vendor_specific_extension;
+	return !got_unsupported_vendor_specific_extension && !got_unknown_opcode;
 }
 
 template <class MEMORY_ADDR>
@@ -2300,10 +2102,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadRegister(unsigned int dw_reg_num, MEMO
 				}
 				return true;
 			default:
-				if(debug)
-				{
-					logger << DebugError << "register size (" << reg_size << " bytes) is unsupported for reading" << EndDebugError;
-				}
+				logger << DebugError << "register size (" << reg_size << " bytes) is unsupported for reading" << EndDebugError;
 				return false;
 		}
 	}
@@ -2316,10 +2115,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMOR
 	// FIXME: addr_space is currently ignored in our implementation
 	if(read_size > arch_address_size)
 	{
-		if(debug)
-		{
-			logger << DebugError << "memory read of " << read_size << " bytes is unsupported" << EndDebugError;
-		}
+		logger << DebugError << "memory read of " << read_size << " bytes is unsupported" << EndDebugError;
 		return false;
 	}
 	if(!read_size) read_size = arch_address_size;
@@ -2427,10 +2223,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMOR
 			}
 			break;
 		default:
-			if(debug)
-			{
-				logger << DebugError << "memory read of " << read_size << " bytes is unsupported" << EndDebugError;
-			}
+			logger << DebugError << "memory read of " << read_size << " bytes is unsupported" << EndDebugError;
 			return false;
 	}
 	return true;
