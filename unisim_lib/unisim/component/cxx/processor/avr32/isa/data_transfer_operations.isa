@@ -1638,7 +1638,7 @@ stdsp.execute={
 
 stdsp.disasm={
 
-	os << "stdsp\t" << std::hex <<(unsigned int) cpu->GetSP() << "[0x" << (unsigned int)disp7 << "]," << REG_NAME[rs];
+	os << "stdsp\t" << std::hex  << "sp[0x" << (unsigned int)disp7 << "]," << REG_NAME[rs];
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		uint32_t sp=cpu->GetSP();
