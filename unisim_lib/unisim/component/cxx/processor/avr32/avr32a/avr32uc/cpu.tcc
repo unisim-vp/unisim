@@ -463,8 +463,8 @@ bool CPU<CONFIG>::StoreHalfWordIntoWord(unsigned int rx,unsigned int ry,unsigned
 {
 	uint32_t high_part=GetGPR(rx);
 	uint32_t low_part=GetGPR(ry);
-	high_part=high_part & (0x0000FFFF << (x_part * 8));
-	low_part=low_part & (0x0000FFFF << (y_part * 8));
+	high_part=high_part & (0x0000FFFF << (x_part * 16));
+	low_part=low_part & (0x0000FFFF << (y_part * 16));
 
 	uint32_t result = high_part | low_part;
 	uint32_t buffer=Host2BigEndian(result);
@@ -500,10 +500,9 @@ bool CPU<CONFIG>::MemoryBitAccess(typename CONFIG::address_t addr,unsigned int m
 	MonitorLoad(addr, 4);
 	switch (mode)                                 
 	{
-		case 1: temp = temp & ~(1UL << pos); break;                                   // clear bit
-		case 2: temp = temp | (1UL << pos); break;                                    // set bit 
-		case 3: temp = temp ^ (1UL << pos);    //(temp & ~(1UL << pos)) | ( ~((temp>>pos)&1) << pos); 
-break;    
+		case 1: temp = temp & ~(1UL << pos); break;  // clear bit
+		case 2: temp = temp | (1UL << pos); break;   // set bit 
+		case 3: temp = temp ^ (1UL << pos); break;   // invert bit
 		default: return false;
 	}
 	buffer= Host2BigEndian(temp);            // write word in memory

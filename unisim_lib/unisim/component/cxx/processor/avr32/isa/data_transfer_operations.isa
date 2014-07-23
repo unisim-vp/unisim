@@ -1672,7 +1672,7 @@ sthh_w_a.execute={
 	*/
 	typename CONFIG::address_t addr = cpu->GetGPR(rp) + ((uint32_t)disp8 << 2);
 	
-	return cpu->StoreHalfWordIntoWord(ry,ry,x,y,addr);
+	return cpu->StoreHalfWordIntoWord(rx,ry,x,y,addr);
 
 }
 
@@ -1688,7 +1688,7 @@ sthh_w_b.execute={
 
 	typename CONFIG::address_t addr = cpu->GetGPR(rb) + (cpu->GetGPR(ri) << sa);  
 		
-	return cpu->StoreHalfWordIntoWord(ry,ry,x,y,addr);
+	return cpu->StoreHalfWordIntoWord(rx,ry,x,y,addr);
 }
 
 sthh_w_b.disasm={
