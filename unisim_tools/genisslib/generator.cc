@@ -193,15 +193,9 @@ Generator::init( Isa& _isa, unsigned int verblevel )
 void
 OpCode_t::setupper( OpCode_t* _upper )
 {
-  if (not m_upper) {
-    m_upper = _upper;
-    _upper->m_lowercount += 1;
-  }
-  else if (m_upper->locate( *_upper ) == Inside) {
-    m_upper->m_lowercount -= 1;
-    m_upper = _upper;
-    _upper->m_lowercount += 1;
-  }
+  if (m_uppers.count( _upper )) return;
+  m_uppers.insert( _upper );
+  _upper->m_lowercount += 1;
 }
   
 /*
@@ -210,9 +204,9 @@ OpCode_t::setupper( OpCode_t* _upper )
 void
 OpCode_t::unsetupper()
 {
-  if (not m_upper) return;
-  m_upper->m_lowercount -= 1;
-  m_upper = 0;
+  for (std::set<OpCode_t*>::iterator itr = m_uppers.begin(), end = m_uppers.end(); itr != end; ++itr)
+    (**itr).m_lowercount -= 1;
+  m_uppers.clear();
 }
 
 std::ostream& operator<<( std::ostream& _sink, OpCode_t const& _oc ) { return _oc.details( _sink ); }

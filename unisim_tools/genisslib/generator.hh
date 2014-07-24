@@ -31,10 +31,10 @@ struct OpCode_t {
   void                        setupper( OpCode_t* _upper );
   void                        unsetupper();
   // Topology information
-  OpCode_t*                   m_upper;
+  std::set<OpCode_t*>         m_uppers;
   intptr_t                    m_lowercount;
   
-  OpCode_t() : m_upper( 0 ), m_lowercount( 0 ) {}
+  OpCode_t() : m_lowercount( 0 ) {}
   
   virtual std::ostream&       details( std::ostream& _sink ) const = 0;
   friend std::ostream&        operator << ( std::ostream& _sink, OpCode_t const& _oc );
