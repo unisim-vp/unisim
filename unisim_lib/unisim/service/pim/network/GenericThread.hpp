@@ -5,8 +5,8 @@
  *      Author: rnouacer
  */
 
-#ifndef GENERIC_THREAD_H_
-#define GENERIC_THREAD_H_
+#ifndef GENERIC_THREAD_HPP_
+#define GENERIC_THREAD_HPP_
 
 #include <stdio.h>
 #include <stdlib.h>

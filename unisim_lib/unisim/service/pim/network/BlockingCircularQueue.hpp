@@ -6,7 +6,7 @@
  */
 
 #ifndef _BLOCKINGCIRCULARQUEUE_HPP__
-#define _BLOCKINGCIRCULARQUEUE__
+#define _BLOCKINGCIRCULARQUEUE_HPP__
 
 #include<pthread.h>
 #include<iostream>
