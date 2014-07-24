@@ -360,10 +360,13 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 	if(!stdout_pipe_filename.empty())
 	{
 		int stdout_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+		mode_t stdout_pipe_mode = S_IRUSR | S_IWUSR;
 #if defined(WIN32) || defined(WIN64)
 		stdout_pipe_flags |= O_BINARY;
+#else
+		stdout_pipe_mode |= S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 #endif
-		stdout_pipe_fd = open(stdout_pipe_filename.c_str(), stdout_pipe_flags);
+		stdout_pipe_fd = open(stdout_pipe_filename.c_str(), stdout_pipe_flags, stdout_pipe_mode);
 		if(stdout_pipe_fd == -1)
 		{
 			logger << DebugError << "Can't open \"" << stdout_pipe_filename << "\"" << EndDebugError;
@@ -374,10 +377,13 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 	if(!stderr_pipe_filename.empty())
 	{
 		int stderr_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+		mode_t stderr_pipe_mode = S_IRUSR | S_IWUSR;
 #if defined(WIN32) || defined(WIN64)
 		stderr_pipe_flags |= O_BINARY;
+#else
+		stderr_pipe_mode |= S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 #endif
-		stderr_pipe_fd = open(stderr_pipe_filename.c_str(), stderr_pipe_flags);
+		stderr_pipe_fd = open(stderr_pipe_filename.c_str(), stderr_pipe_flags, stderr_pipe_mode);
 		if(stderr_pipe_fd == -1)
 		{
 			logger << DebugError << "Can't open \"" << stderr_pipe_filename << "\"" << EndDebugError;
@@ -386,8 +392,8 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 	}
 
 	MapTargetToHostFileDescriptor(0, (stdin_pipe_fd == -1) ? 0 : stdin_pipe_fd); // map target stdin file descriptor to either host stdin file descriptor or host input file descriptor
-	MapTargetToHostFileDescriptor(1, (stdout_pipe_fd == -1) ? 0 : stdout_pipe_fd); // map target stdout file descriptor to either host stdout file descriptor or host output file descriptor
-	MapTargetToHostFileDescriptor(2, (stderr_pipe_fd == -1) ? 0 : stderr_pipe_fd); // map target stdout file descriptor to either host stderr file descriptor or host output file descriptor
+	MapTargetToHostFileDescriptor(1, (stdout_pipe_fd == -1) ? 1 : stdout_pipe_fd); // map target stdout file descriptor to either host stdout file descriptor or host output file descriptor
+	MapTargetToHostFileDescriptor(2, (stderr_pipe_fd == -1) ? 2 : stderr_pipe_fd); // map target stdout file descriptor to either host stderr file descriptor or host output file descriptor
 
 	return true;
 }
@@ -939,7 +945,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	free(pathname);
 	SetSystemCallStatus(target_fd);
-	if(target_fd == -1) SetErrno(errno);
+	if(target_fd == -1) SetErrno(target_errno);
 	
 	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
 }

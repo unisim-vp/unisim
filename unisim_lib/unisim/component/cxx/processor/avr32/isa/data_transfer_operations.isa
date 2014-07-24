@@ -61,7 +61,7 @@ op mov_cond4_a(0b111[3]:rs[4]:0b00000[5]:rd[4]:><:0b0001[4]:0b0111[4]:cond4[4]:0
 
 mov_cond4_a.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		uint32_t result = cpu->GetGPR(rs);
 		cpu->SetGPR(rd,result);
@@ -79,7 +79,7 @@ op mov_cond4_b(0b111[3]:0b1100[4]:0b11011[5]:rd[4]:><:0b0000[4]:cond4[4]:sext<32
 
 mov_cond4_b.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		cpu->SetGPR(rd,imm8); 
 	}
@@ -88,7 +88,7 @@ mov_cond4_b.execute={
 
 mov_cond4_b.disasm={
 
-	os << "mov"<< COND[cond4] <<"\t" << REG_NAME[rd] << ",Ox" << std::hex << imm8;
+	os << "mov"<< COND[cond4] <<"\t" << REG_NAME[rd] << ",0x" << std::hex << imm8;
 }
 
 // MOVH - move data into high halfword of register
@@ -234,7 +234,7 @@ op ld_ub_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b100[3]:disp9[9])
 
 ld_ub_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+(uint32_t) disp9;
 
@@ -299,7 +299,7 @@ op ld_sb_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b011[3]:disp9[9])
 
 ld_sb_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+ (uint32_t)disp9;
 
@@ -434,7 +434,7 @@ op ld_uh_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b010[3]:disp9[9])
 
 ld_uh_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp9 << 1) ;
 
@@ -572,7 +572,7 @@ op ld_sh_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b001[3]:disp9[9])
 
 ld_sh_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t)cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp9 << 1);
 
@@ -655,7 +655,7 @@ ld_w_c.execute={
 }
 
 ld_w_c.disasm={
-	os << "ld.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << (int) disp5 << "]";
+	os << "ld.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" << std::hex << ((uint32_t) disp5 << 2) << "]";
 
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
@@ -676,7 +676,7 @@ ld_w_d.execute={
 
 
 ld_w_d.disasm={
-	os << "ld.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" <<std::hex<< (int)disp16 << "]";
+	os << "ld.w\t" << REG_NAME[rd] << "," << REG_NAME[rp] << "[0x" <<std::hex<< disp16 << "]";
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t addr=cpu->GetGPR(rp) + disp16;
@@ -695,7 +695,7 @@ ld_w_e.execute={
 
 
 ld_w_e.disasm={
-	os << "ld.w\t" << REG_NAME[rd] << "," <<  REG_NAME[rb] << "[" << REG_NAME[ri] << "<<0x" << std::hex <<REG_NAME[sa] << "]";
+	os << "ld.w\t" << REG_NAME[rd] << "," <<  REG_NAME[rb] << "[" << REG_NAME[ri] << "<<0x" << std::hex <<(unsigned int)sa << "]";
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rb) + (cpu->GetGPR(ri)<<sa);
@@ -743,7 +743,7 @@ op ld_w_cond4(0b111[3]:rp[4]:0b11111[5]:rd[4]:><:cond4[4]:0b000[3]:disp9[9])
 
 ld_w_cond4.execute={
 
-	if(cpu->EvaluateCond((uint8_t) cond4))
+	if(cpu->EvaluateCond(cond4))
 	{
 		typename CONFIG::address_t addr = cpu->GetGPR(rp) + ((uint32_t)disp9 << 2);
 
@@ -1015,16 +1015,15 @@ lddpc.var lddpc_addr : {uint32_t}= { (Operation<CONFIG>::GetAddr() & 0xFFFFFFFC)
 
 lddpc.execute={
 	
-	//uint32_t pc=Operation<CONFIG>::GetAddr();
 	//std::cerr << "op::GetAddr()=0x" << std::hex << pc << std::dec << ", pc=0x" << std::hex << cpu->GetGPR(15) << std::dec;
-	//uint32_t addr= (pc & 0xFFFFFFFC) +( (uint32_t)disp7 << 2);
+	
 	typename CONFIG::address_t address= lddpc_addr;
 	return cpu->IntLoadWord(rd,address);
 }
 
 lddpc.disasm={
 
-	os << "lddpc\t" << REG_NAME[rd] << ",PC[0x" << std::hex << ((uint32_t)disp7 << 2) << "] <" << cpu->GetObjectFriendlyName(lddpc_addr) << ">";
+	os << "lddpc\t" << REG_NAME[rd] << ",[0x" << std::hex << ((uint32_t)disp7 << 2) << "] <" << cpu->GetObjectFriendlyName(lddpc_addr) << ">";
 }
 
 // LDDSP - load sp relative with displacement
@@ -1041,7 +1040,7 @@ lddsp.execute={
 
 lddsp.disasm={
 
-	os << "lddsp\t" << REG_NAME[rd] << ",SP[0x" << std::hex << ((uint32_t)disp7 <<2) << "]"; 
+	os << "lddsp\t" << REG_NAME[rd] << ",sp[0x" << std::hex << ((uint32_t)disp7 <<2) << "]"; 
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		uint32_t sp= cpu->GetSP();
@@ -1117,7 +1116,7 @@ st_b_c.execute={
 
 st_b_c.disasm={
 
-	os << "st.b\t" << REG_NAME[rp] << "[0x" << std::hex<<(unsigned int)disp3 << "]," << (unsigned int)rs;
+	os << "st.b\t" << REG_NAME[rp] << "[0x" << std::hex<<(unsigned int)disp3 << "]," << REG_NAME[rs];
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t addr= cpu->GetGPR(rp)+(uint32_t)disp3;
@@ -1137,7 +1136,7 @@ st_b_d.execute={
 
 st_b_d.disasm={
 
-	os << "st.b\t" << REG_NAME[rp] << "[0x"<< std::hex << disp16 << "]," << (unsigned int)rs;
+	os << "st.b\t" << REG_NAME[rp] << "[0x"<< std::hex << disp16 << "]," << REG_NAME[rs];
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t addr= cpu->GetGPR(rp)+disp16;
@@ -1150,7 +1149,7 @@ op st_b_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1011[4]:0b00[2]:sa[2]:r
 
 st_b_e.execute={
 
-	typename CONFIG::address_t addr=cpu->GetGPR(rb)+( cpu->GetGPR(ri)<<(unsigned int)sa );
+	typename CONFIG::address_t addr=cpu->GetGPR(rb)+( cpu->GetGPR(ri)<<sa );
 	return cpu->IntStoreByte(rs,addr);
 }
 
@@ -1639,7 +1638,8 @@ stdsp.execute={
 
 stdsp.disasm={
 
-	os << "stdsp\t" << std::hex <<(unsigned int) cpu->GetSP() << "[0x" << (unsigned int)disp7 << "]," << REG_NAME[rs];
+	os << "stdsp\t" << std::hex  << "sp[0x" << ((uint32_t)disp7 << 2) << "]," << REG_NAME[rs];
+
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		uint32_t sp=cpu->GetSP();
@@ -1672,7 +1672,7 @@ sthh_w_a.execute={
 	*/
 	typename CONFIG::address_t addr = cpu->GetGPR(rp) + ((uint32_t)disp8 << 2);
 	
-	return cpu->StoreHalfWordIntoWord(ry,ry,x,y,addr);
+	return cpu->StoreHalfWordIntoWord(rx,ry,x,y,addr);
 
 }
 
@@ -1688,7 +1688,7 @@ sthh_w_b.execute={
 
 	typename CONFIG::address_t addr = cpu->GetGPR(rb) + (cpu->GetGPR(ri) << sa);  
 		
-	return cpu->StoreHalfWordIntoWord(ry,ry,x,y,addr);
+	return cpu->StoreHalfWordIntoWord(rx,ry,x,y,addr);
 }
 
 sthh_w_b.disasm={
@@ -1879,82 +1879,82 @@ ldm.disasm={
 	
 	if(reglist16 & REG_LIST16_R0)
 	{
-		os <<"R0";
+		os <<"r0";
 	}
 	if(reglist16 & REG_LIST16_R1)
 	{
 		if(reglist16 & REG_LIST16_R0 ) os << ",";
-		os <<"R1";
+		os <<"r1";
 	}
 	if(reglist16 & REG_LIST16_R2)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1) ) os << ",";
-		os <<"R2";
+		os <<"r2";
 	}
 	if(reglist16 & REG_LIST16_R3)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2) ) os << ",";
-		os <<"R3";
+		os <<"r3";
 	}
 	if(reglist16 & REG_LIST16_R4)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3) ) os << ",";
-		os <<"R4";
+		os <<"r4";
 	}
 	if(reglist16 & REG_LIST16_R5)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4) ) os << ",";
-		os <<"R5";
+		os <<"r5";
 	}
 	if(reglist16 & REG_LIST16_R6)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5) ) os << ",";
-		os <<"R6";
+		os <<"r6";
 	}
 	if(reglist16 & REG_LIST16_R7)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6) ) os << ",";
-		os <<"R7";
+		os <<"r7";
 	}
 	if(reglist16 & REG_LIST16_R8)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7) ) os << ",";
-		os <<"R8";
+		os <<"r8";
 	}
 	if(reglist16 & REG_LIST16_R9)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8) ) os << ",";
-		os <<"R9";
+		os <<"r9";
 	}
 	if(reglist16 & REG_LIST16_R10)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9) ) os << ",";
-		os <<"R10";
+		os <<"r10";
 	}
 	if(reglist16 & REG_LIST16_R11)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10) ) os << ",";
-		os <<"R11";
+		os <<"r11";
 	}
 	if(reglist16 & REG_LIST16_R12)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11) ) os << ",";
-		os <<"R12";
+		os <<"r12";
 	}
 	if(reglist16 & REG_LIST16_LR)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12) ) os << ",";
-		os <<"LR";
+		os <<"lr";
 	}
 	if(reglist16 & REG_LIST16_SP)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR) ) os << ",";
-		os <<"SP";
+		os <<"sp";
 	}
 	if(reglist16 & REG_LIST16_PC)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR | REG_LIST16_PC) ) os << ",";
-		os <<"PC";
+		os <<"pc";
 	}
 
 		
@@ -1996,82 +1996,82 @@ ldmts.disasm={
 	if(reglist16 & REG_LIST16_R0)
 	{
 		if(reglist16) os << ",";
-		os <<"R0";
+		os <<"r0";
 	}
 	if(reglist16 & REG_LIST16_R1)
 	{
 		if(reglist16 & REG_LIST16_R0 ) os << ",";
-		os <<"R1";
+		os <<"r1";
 	}
 	if(reglist16 & REG_LIST16_R2)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1) ) os << ",";
-		os <<"R2";
+		os <<"r2";
 	}
 	if(reglist16 & REG_LIST16_R3)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2) ) os << ",";
-		os <<"R3";
+		os <<"r3";
 	}
 	if(reglist16 & REG_LIST16_R4)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3) ) os << ",";
-		os <<"R4";
+		os <<"r4";
 	}
 	if(reglist16 & REG_LIST16_R5)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4) ) os << ",";
-		os <<"R5";
+		os <<"r5";
 	}
 	if(reglist16 & REG_LIST16_R6)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5) ) os << ",";
-		os <<"R6";
+		os <<"r6";
 	}
 	if(reglist16 & REG_LIST16_R7)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6) ) os << ",";
-		os <<"R7";
+		os <<"r7";
 	}
 	if(reglist16 & REG_LIST16_R8)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7) ) os << ",";
-		os <<"R8";
+		os <<"r8";
 	}
 	if(reglist16 & REG_LIST16_R9)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8) ) os << ",";
-		os <<"R9";
+		os <<"r9";
 	}
 	if(reglist16 & REG_LIST16_R10)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9) ) os << ",";
-		os <<"R10";
+		os <<"r10";
 	}
 	if(reglist16 & REG_LIST16_R11)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10) ) os << ",";
-		os <<"R11";
+		os <<"r11";
 	}
 	if(reglist16 & REG_LIST16_R12)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11) ) os << ",";
-		os <<"R12";
+		os <<"r12";
 	}
 	if(reglist16 & REG_LIST16_LR)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12) ) os << ",";
-		os <<"LR";
+		os <<"lr";
 	}
 	if(reglist16 & REG_LIST16_SP)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR) ) os << ",";
-		os <<"SP";
+		os <<"sp";
 	}
 	if(reglist16 & REG_LIST16_PC)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR | REG_LIST16_PC) ) os << ",";
-		os <<"PC";
+		os <<"pc";
 	}
 
 		
@@ -2421,82 +2421,82 @@ stm.disasm={
 	if(reglist16 & REG_LIST16_R0)
 	{
 		if(reglist16) os << ",";
-		os <<"R0";
+		os <<"r0";
 	}
 	if(reglist16 & REG_LIST16_R1)
 	{
 		if(reglist16 & REG_LIST16_R0 ) os << ",";
-		os <<"R1";
+		os <<"r1";
 	}
 	if(reglist16 & REG_LIST16_R2)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1) ) os << ",";
-		os <<"R2";
+		os <<"r2";
 	}
 	if(reglist16 & REG_LIST16_R3)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2) ) os << ",";
-		os <<"R3";
+		os <<"r3";
 	}
 	if(reglist16 & REG_LIST16_R4)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3) ) os << ",";
-		os <<"R4";
+		os <<"r4";
 	}
 	if(reglist16 & REG_LIST16_R5)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4) ) os << ",";
-		os <<"R5";
+		os <<"r5";
 	}
 	if(reglist16 & REG_LIST16_R6)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5) ) os << ",";
-		os <<"R6";
+		os <<"r6";
 	}
 	if(reglist16 & REG_LIST16_R7)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6) ) os << ",";
-		os <<"R7";
+		os <<"r7";
 	}
 	if(reglist16 & REG_LIST16_R8)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7) ) os << ",";
-		os <<"R8";
+		os <<"r8";
 	}
 	if(reglist16 & REG_LIST16_R9)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8) ) os << ",";
-		os <<"R9";
+		os <<"r9";
 	}
 	if(reglist16 & REG_LIST16_R10)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9) ) os << ",";
-		os <<"R10";
+		os <<"r10";
 	}
 	if(reglist16 & REG_LIST16_R11)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10) ) os << ",";
-		os <<"R11";
+		os <<"r11";
 	}
 	if(reglist16 & REG_LIST16_R12)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11) ) os << ",";
-		os <<"R12";
+		os <<"r12";
 	}
 	if(reglist16 & REG_LIST16_LR)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12) ) os << ",";
-		os <<"LR";
+		os <<"lr";
 	}
 	if(reglist16 & REG_LIST16_SP)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR) ) os << ",";
-		os <<"SP";
+		os <<"sp";
 	}
 	if(reglist16 & REG_LIST16_PC)
 	{
 		if(reglist16 & (REG_LIST16_R0 | REG_LIST16_R1 | REG_LIST16_R2 | REG_LIST16_R3 | REG_LIST16_R4 | REG_LIST16_R5 | REG_LIST16_R6 | REG_LIST16_R7 | REG_LIST16_R8 | REG_LIST16_R9 | REG_LIST16_R10 | REG_LIST16_R11 | REG_LIST16_R12 | REG_LIST16_LR | REG_LIST16_PC) ) os << ",";
-		os <<"PC";
+		os <<"pc";
 	}
 
 		
