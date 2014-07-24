@@ -69,6 +69,7 @@ Lexer<TOKEN>::Lexer(std::istream *_stream, unisim::kernel::logger::Logger& _logg
 	, loc()
 	, logger(_logger)
 	, debug(_debug)
+	, finished_scanning_line(false)
 	, lexer_error(false)
 {
 }
@@ -195,6 +196,7 @@ TOKEN *Lexer<TOKEN>::Next()
 							{
 								line.clear();
 								loc.IncLineNo();
+								finished_scanning_line = false;
 							}
 						}
 					}
@@ -231,6 +233,7 @@ TOKEN *Lexer<TOKEN>::Next()
 					{
 						line.clear();
 						loc.IncLineNo();
+						finished_scanning_line = false;
 						if(debug)
 						{
 							logger << DebugInfo << state << ":eat" << EndDebugInfo;
@@ -411,6 +414,21 @@ TOKEN *Lexer<TOKEN>::Next()
 }
 
 template <class TOKEN>
+void Lexer<TOKEN>::FinishScanningLine()
+{
+	if(!finished_scanning_line)
+	{
+		char c;
+		while(stream->get(c))
+		{
+			if((c == '\n') || (c == '\r')) break;
+			line += c;
+		}
+		finished_scanning_line = true;
+	}
+}
+
+template <class TOKEN>
 const char *Lexer<TOKEN>::GetLine() const
 {
 	return line.c_str();
@@ -451,6 +469,7 @@ void Lexer<TOKEN>::PrintFriendlyLocation(const Location& _loc) const
 template <class TOKEN>
 void Lexer<TOKEN>::ErrorUnknownToken(char c)
 {
+	FinishScanningLine();
 	lexer_error = true;
 	PrintFriendlyLocation(loc);
 	logger << DebugError << loc << ", unknown token '" << c << "'" << EndDebugError; 
@@ -459,6 +478,7 @@ void Lexer<TOKEN>::ErrorUnknownToken(char c)
 template <class TOKEN>
 void Lexer<TOKEN>::ErrorExpectedToken(const char *_text)
 {
+	FinishScanningLine();
 	lexer_error = true;
 	PrintFriendlyLocation(loc);
 	logger << DebugError << loc << ", expected token '" << _text << "'" << EndDebugError; 

@@ -115,6 +115,8 @@ public:
 	void SetImplicitValue(DWARF_Block<MEMORY_ADDR> *dw_implicit_value);
 	unsigned int GetRegisterNumber() const;
 	MEMORY_ADDR GetAddress() const;
+	MEMORY_ADDR GetImplicitSimpleValue() const;
+	const DWARF_Block<MEMORY_ADDR> *GetImplicitBlockValue() const;
 	void SetByteSize(uint64_t byte_size);
 	void SetBitOffset(int64_t bit_offset);
 	void SetBitSize(uint64_t bit_size);
