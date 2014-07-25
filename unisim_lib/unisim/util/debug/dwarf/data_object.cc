@@ -86,7 +86,7 @@ void DWARF_BitVector::Append(uint64_t source_value, unsigned int source_bit_offs
 	}
 }
 
-void DWARF_BitVector::Append(uint8_t *source_buffer, unsigned int source_bit_offset, unsigned int source_bit_size)
+void DWARF_BitVector::Append(const uint8_t *source_buffer, unsigned int source_bit_offset, unsigned int source_bit_size)
 {
 	unsigned int remaining_bits = source_bit_size;
 	
@@ -209,7 +209,7 @@ bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint8_t *dest_buffer,
 	return true;
 }
 
-bool DWARF_BitVector::Write(unsigned int dest_bit_offset, uint8_t *source_buffer, unsigned int source_bit_offset, unsigned int source_bit_size)
+bool DWARF_BitVector::Write(unsigned int dest_bit_offset, const uint8_t *source_buffer, unsigned int source_bit_offset, unsigned int source_bit_size)
 {
 	unsigned int remaining_bits = source_bit_size;
 	
