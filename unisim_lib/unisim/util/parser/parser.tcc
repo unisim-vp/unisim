@@ -529,6 +529,7 @@ bool Parser<ABSTRACT_VALUE>::Advance(unsigned int token_id)
 template <class ABSTRACT_VALUE>
 void Parser<ABSTRACT_VALUE>::ErrorExpectedToken(unsigned int expected_token_id, const Token<ABSTRACT_VALUE> *token)
 {
+	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine();
 	parser_error = true;
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::PrintFriendlyLocation(token->GetLocation());
 	logger << DebugError << token->GetLocation() << ", expected '" << unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetTokenText(expected_token_id) << "'";
@@ -539,6 +540,7 @@ void Parser<ABSTRACT_VALUE>::ErrorExpectedToken(unsigned int expected_token_id, 
 template <class ABSTRACT_VALUE>
 void Parser<ABSTRACT_VALUE>::ErrorUnexpectedToken(const Token<ABSTRACT_VALUE> *token)
 {
+	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine();
 	parser_error = true;
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::PrintFriendlyLocation(token->GetLocation());
 	logger << DebugError << token->GetLocation() << ", unexpected '" << token->GetText() << "'" << EndDebugError;
@@ -547,6 +549,7 @@ void Parser<ABSTRACT_VALUE>::ErrorUnexpectedToken(const Token<ABSTRACT_VALUE> *t
 template <class ABSTRACT_VALUE>
 void Parser<ABSTRACT_VALUE>::ErrorExpectedExpression()
 {
+	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::FinishScanningLine();
 	parser_error = true;
 	unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::PrintFriendlyLocation(unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetLocation());
 	logger << DebugError << unisim::util::lexer::Lexer<Token<ABSTRACT_VALUE> >::GetLocation() << ", expected expression" << EndDebugError;

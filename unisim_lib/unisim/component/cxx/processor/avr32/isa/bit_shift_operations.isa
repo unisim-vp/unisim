@@ -10,7 +10,7 @@ op bfexts(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1011[4]:0b00[2]:bp5[5]:w5[5])
 
 bfexts.execute={
 
-	if ((w5 == 0) || (bp5 + w5 > 32)) return false; // the result is undefined
+	if ((w5 == 0) || ((bp5 + w5) > 32)) return false; // the result is undefined
 	
 	uint32_t s= cpu->GetGPR(rs);
 
@@ -40,7 +40,7 @@ op bfextu(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1100[4]:0b00[2]:bp5[5]:w5[5])
 
 bfextu.execute={
 	
-	if ((w5 == 0) || (bp5 + w5 > 32)) return false; // the result is undefined
+	if ((w5 == 0) || ((bp5 + w5) > 32)) return false; // the result is undefined
 	
 	uint32_t s= cpu->GetGPR(rs);
 
@@ -71,7 +71,7 @@ op bfins(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1101[4]:0b00[2]:bp5[5]:w5[5])
 
 bfins.execute={
 
-   	if ((w5 == 0) || (bp5 + w5 > 32)) return false; // the result is undefined
+   	if ((w5 == 0) || ((bp5 + w5) > 32)) return false; // the result is undefined
 
 	uint32_t s=cpu->GetGPR(rs);
 	uint32_t d=cpu->GetGPR(rd);
@@ -370,6 +370,11 @@ swap_bh.execute={
 	uint32_t temp = cpu->GetGPR(rd);
 
 	uint32_t result= ((temp & 0x00FF0000)<<8) | ((temp & 0xFF000000)>>8) |((temp & 0x000000FF)<<8) | ((temp & 0x0000FF00)>>8);
+	
+// 	uint32_t d = cpu->GetGPR(rd);
+// 	uint16_t d_l = d;
+// 	uint16_t d_h = d >> 16;
+// 	uint32_t result= ((uint32_t) ByteSwap(d_h) << 16) | ByteSwap(d_l);
 	
 	cpu->SetGPR(rd,result);
 

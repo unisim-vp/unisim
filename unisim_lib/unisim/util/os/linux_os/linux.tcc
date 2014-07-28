@@ -999,10 +999,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	if(!stdout_pipe_filename.empty())
 	{
 		int stdout_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+		mode_t stdout_pipe_mode = S_IRWXU;
 #if defined(WIN32) || defined(WIN64)
 		stdout_pipe_flags |= O_BINARY;
+#else
+		stdout_pipe_mode |= S_IRWXG | S_IRWXO;
 #endif
-		stdout_pipe_fd = open(stdout_pipe_filename.c_str(), stdout_pipe_flags);
+		stdout_pipe_fd = open(stdout_pipe_filename.c_str(), stdout_pipe_flags, stdout_pipe_mode);
 		if(stdout_pipe_fd == -1)
 		{
 			logger_ << DebugError << "Can't open \"" << stdout_pipe_filename << "\"" << EndDebugError;
@@ -1013,10 +1016,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	if(!stderr_pipe_filename.empty())
 	{
 		int stderr_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+		mode_t stderr_pipe_mode = S_IRWXU;
 #if defined(WIN32) || defined(WIN64)
 		stderr_pipe_flags |= O_BINARY;
+#else
+		stderr_pipe_mode |= S_IRWXG | S_IRWXO;
 #endif
-		stderr_pipe_fd = open(stderr_pipe_filename.c_str(), stderr_pipe_flags);
+		stderr_pipe_fd = open(stderr_pipe_filename.c_str(), stderr_pipe_flags, stderr_pipe_mode);
 		if(stderr_pipe_fd == -1)
 		{
 			logger_ << DebugError << "Can't open \"" << stderr_pipe_filename << "\"" << EndDebugError;
