@@ -1178,7 +1178,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	int newpathlen;
 	char *oldpath;
 	char *newpath;
-	int ret;
+	int ret = -1;
 	int32_t target_errno = 0;
 
 	oldpathaddr = GetSystemCallParam(0);
