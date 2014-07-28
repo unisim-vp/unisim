@@ -4,7 +4,6 @@
 
 //------------------------------------------------------------------------------
 
-// revenir sur les instruction de branchement
 
 // BR_COND3 - branch if condition satisfied
 
@@ -134,7 +133,6 @@ op icall(0b010[3]:0b1110[4]:0b10001[5]:rd[4])
 
 icall.execute={
 	
-
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
 
 	cpu->SetGPR(REG_PC,cpu->GetGPR(rd));
