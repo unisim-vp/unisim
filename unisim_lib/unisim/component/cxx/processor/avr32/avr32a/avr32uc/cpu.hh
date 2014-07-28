@@ -371,6 +371,8 @@ public:
 	bool IntStoreHalfWord(unsigned int rs,typename CONFIG::address_t addr);
 	bool IntStoreWord(unsigned int rs,typename CONFIG::address_t addr);
 	bool StoreHalfWordIntoWord(unsigned int rx,unsigned int ry,unsigned int x_part,unsigned int y_part,typename CONFIG::address_t addr);
+	bool SwapAndStoreHalfWord(unsigned int rs, typename CONFIG::address_t addr);
+	bool SwapAndStoreWord(unsigned int rs, typename CONFIG::address_t addr);
 	
 	bool UintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::address_t addr);
 	bool IntLoadWordAndSwap(unsigned int rd,typename CONFIG::address_t addr);

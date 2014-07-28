@@ -475,6 +475,32 @@ bool CPU<CONFIG>::StoreHalfWordIntoWord(unsigned int rx,unsigned int ry,unsigned
 }
 
 template <class CONFIG>
+bool CPU<CONFIG>::SwapAndStoreHalfWord(unsigned int rs, typename CONFIG::address_t addr)
+{
+	uint16_t value=GetGPR(rs);
+#if BYTE_ORDER == BIG_ENDIAN
+	BSwap(value);
+#endif
+	bool status=DHSBWrite(addr,&value,2);
+	if(unlikely(!status)) return false;
+	MonitorStore(addr, 2);
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::SwapAndStoreWord(unsigned int rs, typename CONFIG::address_t addr)
+{
+	uint32_t value=GetGPR(rs);
+#if BYTE_ORDER == BIG_ENDIAN
+	BSwap(value);
+#endif
+	bool status=DHSBWrite(addr,&value,4);
+	if(unlikely(!status)) return false;
+	MonitorStore(addr, 4);
+	return true;
+}
+
+template <class CONFIG>
 bool CPU<CONFIG>::ExchangeRegMem(unsigned int rd,unsigned int rx,unsigned int ry)
 {
 	typename CONFIG::address_t addr=GetGPR(rx);
