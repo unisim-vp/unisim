@@ -162,23 +162,14 @@ public:
 	typedef uint32_t physical_address_t;
 
 	// Execution Mode
-	static const uint32_t EXEC_MODE_NMI         = 1;    // Non-Maskable Interrupt
-	static const uint32_t EXEC_MODE_EXC         = 2;    // Exception
-	static const uint32_t EXEC_MODE_INT_LEVEL3  = 3;    // Interrupt Level 3
+	static const uint32_t EXEC_MODE_NMI         = 7;    // Non-Maskable Interrupt
+	static const uint32_t EXEC_MODE_EXC         = 6;    // Exception
+	static const uint32_t EXEC_MODE_INT_LEVEL3  = 5;    // Interrupt Level 3
 	static const uint32_t EXEC_MODE_INT_LEVEL2  = 4;    // Interrupt Level 2
-	static const uint32_t EXEC_MODE_INT_LEVEL1  = 5;    // Interrupt Level 1
-	static const uint32_t EXEC_MODE_INT_LEVEL0  = 6;    // Interrupt Level 0
-	static const uint32_t EXEC_MODE_SUPERVISOR  = 7;    // Supervisor
+	static const uint32_t EXEC_MODE_INT_LEVEL1  = 3;    // Interrupt Level 1
+	static const uint32_t EXEC_MODE_INT_LEVEL0  = 2;    // Interrupt Level 0
+	static const uint32_t EXEC_MODE_SUPERVISOR  = 1;    // Supervisor
 	static const uint32_t EXEC_MODE_APPLICATION = 0;    // Application
-
-	static const uint32_t PRIO_LEVEL_MODE_NMI         = 7;  
-	static const uint32_t PRIO_LEVEL_MODE_EXC         = 6;   
-	static const uint32_t PRIO_LEVEL_MODE_INT_LEVEL3  = 5;    
-	static const uint32_t PRIO_LEVEL_MODE_INT_LEVEL2  = 4;    
-	static const uint32_t PRIO_LEVEL_MODE_INT_LEVEL1  = 3;    
-	static const uint32_t PRIO_LEVEL_MODE_INT_LEVEL0  = 2;    
-	static const uint32_t PRIO_LEVEL_MODE_SUPERVISOR  = 0;   
-	static const uint32_t PRIO_LEVEL_MODE_APPLICATION = 0;    
 
 	//mask byte selector
 
@@ -190,6 +181,70 @@ public:
 	
 	static const uint32_t TOP_HW_MASK    = 0xFFFF0000;	
 	static const uint32_t BOTTOM_HW_MASK = 0x0000FFFF;
+	
+	// Exceptions in order of priority
+	static const unsigned int EXC_UNDEFINED_BEHAVIOR = 0;
+	static const unsigned int EXC_RESET = 1;
+	static const unsigned int EXC_OCD_STOP_CPU = 2;
+	static const unsigned int EXC_UNRECOVERABLE = 3;
+	static const unsigned int EXC_TLB_MULTIPLE_HIT = 4;
+	static const unsigned int EXC_BUS_ERROR_DATA_FETCH = 5;
+	static const unsigned int EXC_BUS_ERROR_INSTRUCTION_FETCH = 6;
+	static const unsigned int EXC_NMI = 7;
+	static const unsigned int EXC_IRQ3 = 8;
+	static const unsigned int EXC_IRQ2 = 9;
+	static const unsigned int EXC_IRQ1 = 10;
+	static const unsigned int EXC_IRQ0 = 11;
+	static const unsigned int EXC_INSTRUCTION_ADDR = 12;
+	static const unsigned int EXC_ITLB_MISS = 13;
+	static const unsigned int EXC_ITLB_PROTECTION = 14;
+	static const unsigned int EXC_BREAKPOINT = 15;
+	static const unsigned int EXC_ILLEGAL_OPCODE = 16;
+	static const unsigned int EXC_UNIMPLEMENTED_INSTRUCTION = 17;
+	static const unsigned int EXC_PRIVILEGE_VIOLATION = 18;
+	static const unsigned int EXC_FLOATING_POINT = 19;
+	static const unsigned int EXC_COPROCESSOR_ABSENT = 20;
+	static const unsigned int EXC_SUPERVISOR_CALL = 21;
+	static const unsigned int EXC_DATA_ADDRESS_READ = 22;
+	static const unsigned int EXC_DATA_ADDRESS_WRITE = 23;
+	static const unsigned int EXC_DTLB_MISS_READ = 24;
+	static const unsigned int EXC_DTLB_MISS_WRITE = 25;
+	static const unsigned int EXC_DTLB_PROTECTION_READ = 26;
+	static const unsigned int EXC_DTLB_PROTECTION_WRITE = 27;
+	static const unsigned int EXC_DTLB_MODIFIED = 28;
+	
+	static const unsigned int NUM_EXCEPTIONS = 29;
+	
+	// Exceptions masks
+	static const uint32_t EXC_ENABLE_RESET = 1 << EXC_RESET;
+	static const uint32_t EXC_ENABLE_OCD_STOP_CPU = 1 << EXC_OCD_STOP_CPU;
+	static const uint32_t EXC_ENABLE_UNRECOVERABLE = 1 << EXC_UNRECOVERABLE;
+	static const uint32_t EXC_ENABLE_TLB_MULTIPLE_HIT = 1 << EXC_TLB_MULTIPLE_HIT;
+	static const uint32_t EXC_ENABLE_BUS_ERROR_DATA_FETCH = 1 << EXC_BUS_ERROR_DATA_FETCH;
+	static const uint32_t EXC_ENABLE_BUS_ERROR_INSTRUCTION_FETCH = 1 << EXC_BUS_ERROR_INSTRUCTION_FETCH;
+	static const uint32_t EXC_ENABLE_NMI = 1 << EXC_NMI;
+	static const uint32_t EXC_ENABLE_IRQ3 = 1 << EXC_IRQ3;
+	static const uint32_t EXC_ENABLE_IRQ2 = 1 << EXC_IRQ2;
+	static const uint32_t EXC_ENABLE_IRQ1 = 1 << EXC_IRQ1;
+	static const uint32_t EXC_ENABLE_IRQ0 = 1 << EXC_IRQ0;
+	static const uint32_t EXC_ENABLE_INSTRUCTION_ADDR = 1 << EXC_INSTRUCTION_ADDR;
+	static const uint32_t EXC_ENABLE_ITLB_MISS = 1 << EXC_ITLB_MISS;
+	static const uint32_t EXC_ENABLE_ITLB_PROTECTION = 1 << EXC_ITLB_PROTECTION;
+	static const uint32_t EXC_ENABLE_BREAKPOINT = 1 << EXC_BREAKPOINT;
+	static const uint32_t EXC_ENABLE_ILLEGAL_OPCODE = 1 << EXC_ILLEGAL_OPCODE;
+	static const uint32_t EXC_ENABLE_UNIMPLEMENTED_INSTRUCTION = 1 << EXC_UNIMPLEMENTED_INSTRUCTION;
+	static const uint32_t EXC_ENABLE_PRIVILEGE_VIOLATION = 1 << EXC_PRIVILEGE_VIOLATION;
+	static const uint32_t EXC_ENABLE_FLOATING_POINT = 1 << EXC_FLOATING_POINT;
+	static const uint32_t EXC_ENABLE_COPROCESSOR_ABSENT = 1 << EXC_COPROCESSOR_ABSENT;
+	static const uint32_t EXC_ENABLE_SUPERVISOR_CALL = 1 << EXC_SUPERVISOR_CALL;
+	static const uint32_t EXC_ENABLE_DATA_ADDRESS_READ = 1 << EXC_DATA_ADDRESS_READ;
+	static const uint32_t EXC_ENABLE_DATA_ADDRESS_WRITE = 1 << EXC_DATA_ADDRESS_WRITE;
+	static const uint32_t EXC_ENABLE_DTLB_MISS_READ = 1 << EXC_DTLB_MISS_READ;
+	static const uint32_t EXC_ENABLE_DTLB_MISS_WRITE = 1 << EXC_DTLB_MISS_WRITE;
+	static const uint32_t EXC_ENABLE_DTLB_PROTECTION_READ = 1 << EXC_DTLB_PROTECTION_READ;
+	static const uint32_t EXC_ENABLE_DTLB_PROTECTION_WRITE = 1 << EXC_DTLB_PROTECTION_WRITE;
+	static const uint32_t EXC_ENABLE_DTLB_MODIFIED = 1 << EXC_DTLB_MODIFIED;
+	static const uint32_t EXC_ENABLE_UNDEFINED_BEHAVIOR = 1 << EXC_UNDEFINED_BEHAVIOR;
 };
 
 } // end of namespace avr32

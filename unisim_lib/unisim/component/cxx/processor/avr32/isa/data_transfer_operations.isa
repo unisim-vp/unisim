@@ -121,7 +121,11 @@ op ld_ub_a(0b000[3]:rp[4]:0b10011[5]:rd[4])
 
 ld_ub_a.execute={
 
-	if (rp==rd) return false;         // the result is undefined
+	if (rp==rd)
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;         // the result is undefined
+	}
 
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);   //get address in rp
 	
@@ -2316,8 +2320,8 @@ stm.execute={
 
 	//Emtpy Reglist16 gives UNDEFINED result.
 	if(reglist16==0) return false;
-	//PC in Reglist16 gives UNDEFINED result.
-	if(reglist16 & REG_LIST16_PC) return false;
+	//rp in Reglist16 gives UNDEFINED result.
+	if((reglist16 >> rp) & 1) return false;
 
 	typename CONFIG::address_t storeAddress= cpu->GetGPR(rp);
 
@@ -2570,53 +2574,56 @@ stmts.disasm={
 
 // MEMC - clear bit in memory
 
-op memc(0b111101100001[12]:bp_4_1[4]:><: bp_0[1]:imm15[15])
+op memc(0b111101100001[12]:bp_4_1[4]:><: bp_0[1]:sext<32>imm15[15])
 
 memc.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 }
 
 memc.execute={
 
-	typename CONFIG::address_t addr = SignExtend((uint32_t)(imm15<<2),15);
+	typename CONFIG::address_t addr =imm15<<2;
 	return cpu->MemoryBitAccess(addr,1,bp);
 } 
 
 memc.disasm={
 
-	os << "memc\tr0x" << std::hex <<(int)imm15 << ",0x" << std::dec <<(int) bp ;
+	typename CONFIG::address_t addr =imm15<<2;
+	os << "memc\tr0x" << std::hex << addr  << ",0x" << std::dec <<(int) bp ;
 }
 
 // MEMS - set bit in memory
 
-op mems(0b111110000001[12]:bp_4_1[4]:><: bp_0[1]:imm15[15])
+op mems(0b111110000001[12]:bp_4_1[4]:><: bp_0[1]:sext<32>imm15[15])
 
 mems.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 } 
 
 mems.execute={
 	
-	typename CONFIG::address_t addr = SignExtend((uint32_t)(imm15<<2),15);
+	typename CONFIG::address_t addr =imm15<<2;
 	return cpu->MemoryBitAccess(addr,2,bp);
 }
 
 mems.disasm={
 
-	os << "mems\tr0x" << std::hex <<(int)imm15 << ",0x" << std::hex <<(int)bp;
+	typename CONFIG::address_t addr =imm15<<2;
+	os << "mems\tr0x" << std::hex << addr << ",0x" << std::dec <<(int)bp;
 }
 
 // MEMT - toggle bit in memory
 
-op memt(0b111110100001[12]:bp_4_1[4]:><: bp_0[1]:imm15[15])
+op memt(0b111110100001[12]:bp_4_1[4]:><: bp_0[1]:sext<32>imm15[15])
 
 memt.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 }
 
 memt.execute={
 
-	typename CONFIG::address_t addr = SignExtend((uint32_t)(imm15<<2),15);
+	typename CONFIG::address_t addr =imm15<<2;
 	return cpu->MemoryBitAccess(addr,3,bp);
 } 
 
 memt.disasm={
 
-	os << "memt\tr0x" << std::hex <<(int)imm15 << ",0x" << std::hex<< (int) bp;
+	typename CONFIG::address_t addr =imm15<<2;
+	os << "memt\tr0x" << std::hex << addr << ",0x" << std::dec<< (unsigned int) bp;
 }
      
 

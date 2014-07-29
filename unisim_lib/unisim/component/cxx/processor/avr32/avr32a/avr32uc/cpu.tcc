@@ -113,6 +113,37 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
+	enter_isr_table[CONFIG::EXC_UNDEFINED_BEHAVIOR] = &CPU<CONFIG>::EnterUndefinedBehaviorException;
+	enter_isr_table[CONFIG::EXC_RESET] = &CPU<CONFIG>::EnterResetException;
+	enter_isr_table[CONFIG::EXC_OCD_STOP_CPU] = &CPU<CONFIG>::EnterOCDStopCPUException;
+	enter_isr_table[CONFIG::EXC_UNRECOVERABLE] = &CPU<CONFIG>::EnterUnrecoverableException;
+	enter_isr_table[CONFIG::EXC_TLB_MULTIPLE_HIT] = &CPU<CONFIG>::EnterTLBMultipleHitException;
+	enter_isr_table[CONFIG::EXC_BUS_ERROR_DATA_FETCH] = &CPU<CONFIG>::EnterBusErrorDataFetchException;
+	enter_isr_table[CONFIG::EXC_BUS_ERROR_INSTRUCTION_FETCH] = &CPU<CONFIG>::EnterBusErrorInstructionFetchException;
+	enter_isr_table[CONFIG::EXC_NMI] = &CPU<CONFIG>::EnterNMIException;
+	enter_isr_table[CONFIG::EXC_IRQ3] = &CPU<CONFIG>::EnterIRQ3Exception;
+	enter_isr_table[CONFIG::EXC_IRQ2] = &CPU<CONFIG>::EnterIRQ2Exception;
+	enter_isr_table[CONFIG::EXC_IRQ1] = &CPU<CONFIG>::EnterIRQ1Exception;
+	enter_isr_table[CONFIG::EXC_IRQ0] = &CPU<CONFIG>::EnterIRQ0Exception;
+	enter_isr_table[CONFIG::EXC_INSTRUCTION_ADDR] = &CPU<CONFIG>::EnterInstructionAddrException;
+	enter_isr_table[CONFIG::EXC_ITLB_MISS] = &CPU<CONFIG>::EnterITLBMissException;
+	enter_isr_table[CONFIG::EXC_ITLB_PROTECTION] = &CPU<CONFIG>::EnterITLBProtectionException;
+	enter_isr_table[CONFIG::EXC_BREAKPOINT] = &CPU<CONFIG>::EnterBreakpointException;
+	enter_isr_table[CONFIG::EXC_ILLEGAL_OPCODE] = &CPU<CONFIG>::EnterIllegalOpcodeException;
+	enter_isr_table[CONFIG::EXC_UNIMPLEMENTED_INSTRUCTION] = &CPU<CONFIG>::EnterUnimplementedInstructionException;
+	enter_isr_table[CONFIG::EXC_PRIVILEGE_VIOLATION] = &CPU<CONFIG>::EnterPrivilegeViolationException;
+	enter_isr_table[CONFIG::EXC_FLOATING_POINT] = &CPU<CONFIG>::EnterFloatingPointException;
+	enter_isr_table[CONFIG::EXC_COPROCESSOR_ABSENT] = &CPU<CONFIG>::EnterCoprocessorAbsentException;
+	enter_isr_table[CONFIG::EXC_SUPERVISOR_CALL] = &CPU<CONFIG>::EnterSupervisorCallException;
+	enter_isr_table[CONFIG::EXC_DATA_ADDRESS_READ] = &CPU<CONFIG>::EnterDataAddressReadException;
+	enter_isr_table[CONFIG::EXC_DATA_ADDRESS_WRITE] = &CPU<CONFIG>::EnterDataAddressWriteException;
+	enter_isr_table[CONFIG::EXC_DTLB_MISS_READ] = &CPU<CONFIG>::EnterDTLBMissReadException;
+	enter_isr_table[CONFIG::EXC_DTLB_MISS_WRITE] = &CPU<CONFIG>::EnterDTLBMissWriteException;
+	enter_isr_table[CONFIG::EXC_DTLB_PROTECTION_READ] = &CPU<CONFIG>::EnterDTLBProtectionReadException;
+	enter_isr_table[CONFIG::EXC_DTLB_PROTECTION_WRITE] = &CPU<CONFIG>::EnterDTLBProtectionWriteException;
+	enter_isr_table[CONFIG::EXC_DTLB_MODIFIED] = &CPU<CONFIG>::EnterDTLBModifiedException;
+
+	
 	unsigned int i;
 
 	for(i = 0; i < 13; i++)
@@ -238,6 +269,14 @@ void CPU<CONFIG>::Reset()
 	{
 		sr = sr | CONFIG::SR_DM_MASK;
 	}
+	
+	exc_enable = CONFIG::EXC_ENABLE_RESET | CONFIG::EXC_ENABLE_NMI | CONFIG::EXC_ENABLE_UNRECOVERABLE | CONFIG::EXC_ENABLE_TLB_MULTIPLE_HIT | CONFIG::EXC_ENABLE_BUS_ERROR_DATA_FETCH | CONFIG::EXC_ENABLE_BUS_ERROR_INSTRUCTION_FETCH |
+		       CONFIG::EXC_ENABLE_OCD_STOP_CPU | CONFIG::EXC_ENABLE_INSTRUCTION_ADDR | CONFIG::EXC_ENABLE_ITLB_MISS | CONFIG::EXC_ENABLE_ITLB_PROTECTION |
+			 CONFIG::EXC_ENABLE_BREAKPOINT | CONFIG::EXC_ENABLE_ILLEGAL_OPCODE | CONFIG::EXC_ENABLE_UNIMPLEMENTED_INSTRUCTION | CONFIG::EXC_ENABLE_PRIVILEGE_VIOLATION |
+			 CONFIG::EXC_ENABLE_FLOATING_POINT | CONFIG::EXC_ENABLE_COPROCESSOR_ABSENT | CONFIG::EXC_ENABLE_SUPERVISOR_CALL | CONFIG::EXC_ENABLE_DATA_ADDRESS_READ |
+			 CONFIG::EXC_ENABLE_DATA_ADDRESS_WRITE | CONFIG::EXC_ENABLE_DTLB_MISS_READ | CONFIG::EXC_ENABLE_DTLB_MISS_WRITE | CONFIG::EXC_ENABLE_DTLB_PROTECTION_READ |
+			 CONFIG::EXC_ENABLE_DTLB_PROTECTION_WRITE | CONFIG::EXC_ENABLE_DTLB_MODIFIED | CONFIG::EXC_ENABLE_UNDEFINED_BEHAVIOR;
+	exc_flags = 0;
 }
  
 template <class CONFIG>
@@ -692,19 +731,9 @@ void CPU<CONFIG>::StepOneInstruction()
 			//std::cerr << endl;
 			instruction_counter++;
 		}
-		else
-		{
-			logger << DebugError << "Got an exception: " << std::endl;
-			stringstream sstr;
-			operation->disasm((CPU<CONFIG> *) this, sstr);
-			logger << "#" << instruction_counter << ":0x" << std::hex << pc << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugError;
-		//ProcessExceptions(operation);
-			Object::Stop(-1);
-			return;
-		}
 	}
 
-	//ProcessExceptions(operation);
+	ProcessExceptions(operation);
 
 	/* report a finished instruction */
 	if(unlikely(requires_finished_instruction_reporting))
@@ -745,25 +774,6 @@ void CPU<CONFIG>::SwitchExecutionMode(uint32_t execution_mode)
 		// Restore
 		SetSP(sp_sys);
 	}
-}
-template<class CONFIG>
-uint32_t CPU<CONFIG>::GetPriorityLevel(uint32_t execution_mode)
-{
- 	switch(execution_mode)
- 	{
-		case CONFIG::EXEC_MODE_NMI: return CONFIG::PRIO_LEVEL_MODE_NMI;break;
-		case CONFIG::EXEC_MODE_EXC: return CONFIG::PRIO_LEVEL_MODE_EXC;break;
-		case CONFIG::EXEC_MODE_INT_LEVEL3: return CONFIG::PRIO_LEVEL_MODE_INT_LEVEL3;break;
-		case CONFIG::EXEC_MODE_INT_LEVEL2: return CONFIG::PRIO_LEVEL_MODE_INT_LEVEL2;break;
-		case CONFIG::EXEC_MODE_INT_LEVEL1:return CONFIG::PRIO_LEVEL_MODE_INT_LEVEL1;break;
-		case CONFIG::EXEC_MODE_INT_LEVEL0 :return CONFIG::PRIO_LEVEL_MODE_INT_LEVEL0;break;
-		case CONFIG::EXEC_MODE_SUPERVISOR :return CONFIG::PRIO_LEVEL_MODE_SUPERVISOR;break;
-		case CONFIG::EXEC_MODE_APPLICATION:return CONFIG::PRIO_LEVEL_MODE_APPLICATION;break;
-	}
-	
-	std::runtime_error("Internal Error");
-
-	return 0;
 }
 
 template <class CONFIG>
@@ -1045,6 +1055,258 @@ int PCRegisterInterface<CONFIG>::GetSize() const
 {
 	return sizeof(typename CONFIG::address_t);
 }
+
+template <class CONFIG>
+inline void CPU<CONFIG>::ProcessExceptions(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	std::cerr << "exc_flags=0x" << std::hex << exc_flags << std::dec << ", exc_enable=0x" << std::hex << exc_enable << std::dec << std::endl;
+	unsigned int exception_num;
+	if(unisim::util::arithmetic::BitScanForward(exception_num, exc_flags & exc_enable))
+	{
+		logger << DebugError << "Got an exception: " << std::endl;
+		stringstream sstr;
+		if(operation)
+		{
+			operation->disasm((CPU<CONFIG> *) this, sstr);
+			logger << "#" << instruction_counter << ":0x" << std::hex << operation->GetAddr() << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugError;
+		}
+		
+		(this->*enter_isr_table[exception_num])(operation);
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterUndefinedBehaviorException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterResetException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterOCDStopCPUException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterUnrecoverableException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterTLBMultipleHitException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterBusErrorDataFetchException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterBusErrorInstructionFetchException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterNMIException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterIRQ3Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterIRQ2Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterIRQ1Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterIRQ0Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterInstructionAddrException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterITLBMissException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterITLBProtectionException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterBreakpointException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterIllegalOpcodeException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterUnimplementedInstructionException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterPrivilegeViolationException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterFloatingPointException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterCoprocessorAbsentException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterSupervisorCallException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDataAddressReadException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDataAddressWriteException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDTLBMissReadException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDTLBMissWriteException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDTLBProtectionReadException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDTLBProtectionWriteException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDTLBModifiedException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+
 
 } // end of namespace avr32uc
 } // end of namespace avr32a
