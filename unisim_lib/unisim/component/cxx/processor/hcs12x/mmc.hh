@@ -90,6 +90,7 @@ friend class Singleton<MMC >;
 public:
 
 	enum MODE {SS = 0x00, ES = 0x20, ST = 0x40, EX = 0x60, NS = 0x80, NX = 0xA0};
+	enum ACCESS {READ, WRITE};
 
 	//==============================================================================
 	//=   MEMORY MAP (Logical Memories Offsets) and RESET VALUES OF MMC REGISTERS  =

@@ -42,11 +42,6 @@
 #include <inttypes.h>
 #include <string>
 
-static const unsigned int RN_NEAREST = 0;
-static const unsigned int RN_ZERO = 1;
-static const unsigned int RN_UP = 2;
-static const unsigned int RN_DOWN = 3;
-
 #ifdef powerpc
 #undef powerpc
 #endif
@@ -56,6 +51,11 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace powerpc {
+
+static const unsigned int RN_NEAREST = 0;
+static const unsigned int RN_ZERO = 1;
+static const unsigned int RN_UP = 2;
+static const unsigned int RN_DOWN = 3;
 
    class Flags {
      protected:
@@ -200,7 +200,8 @@ namespace powerpc {
       bool isOverflow() const { return feExcept == FEOverflow; }
       bool isUnderflow() const { return feExcept == FEUnderflow; }
       void clearUnderflow() { feExcept = FENoException; }
-
+      void mergeException(const Flags& source) { if (feExcept == FENoException) feExcept = source.feExcept; }
+      
       void setRoundingMode(unsigned int rn_mode)
          {  switch(rn_mode)
             {

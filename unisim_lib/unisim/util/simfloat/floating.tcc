@@ -478,8 +478,13 @@ TBuiltDouble<TypeTraits>::setFloat(const FloatConversion& fcValue, StatusAndCont
                if (scfFlags.upApproximateInversionForNear() && scfFlags.isNearestRound()) {
                   typename FloatConversion::Mantissa fcmMantissa = fcValue.mantissa();
                   int uShift = fcValue.querySizeMantissa() - bitSizeMantissa();
-                  if (uShift > 0)
+                  if (uShift > 0) {
                      trightShift(fcmMantissa, uShift, 0U, scfFlags, fNegative, fcValue.querySizeMantissa());
+                     if (scfFlags.upApproximateInversionForNear()) {
+                        if (scfFlags.hasEffectiveRoundToEven())
+                           scfFlags.setApproximate(scfFlags.isUpApproximate() ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
+                     };
+                  };
                }
                else
                   scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
@@ -3612,6 +3617,8 @@ TBuiltDouble<TypeTraits>::writeDecimal(std::ostream& osOut) const {
    assert((dSource >= thisType(1U)) && (dSource < thisType(10U)));
    bool fFirst = true;
    int uSignificantBits = (int) (((double) bitSizeMantissa())*log(2.0)/log(10.0));
+   std::string result;
+   thisType ten(10U), five(5U);
    do {
       StatusAndControlFlags scfFlags;
       scfFlags.setNearestRound();
@@ -3633,17 +3640,37 @@ TBuiltDouble<TypeTraits>::writeDecimal(std::ostream& osOut) const {
          }
          else
             assert(false);
-         osOut.put((char) (uWriteValue + '0'));
+         result.push_back((char) (uWriteValue + '0'));
          dSource.minusAssign(thisType(uWriteValue), scfFlags);
       }
       else
-         osOut.put('0');
+         result.push_back('0');
       if (fFirst) {
-         osOut.put('.');
+         result.push_back('.');
          fFirst = false;
       };
       dSource.multAssign(10U, scfFlags);
+      if ((uSignificantBits > 0) ? (dSource == ten) : (dSource > five)) {
+         int length = result.length();
+         while (length > 0) {
+            char ch = result[length-1];
+            if (ch == '9') {
+               result[length-1] = '0';
+               --length;
+            }
+            else if ((ch >= '0') && (ch < '9')) {
+               result[length-1] = (char) (ch + 1);
+               break;
+            }
+            else // ch == '.'
+               --length;
+         };
+         if (length == 0)
+            result.insert('1', 0);
+         break;      
+      }
    } while (--uSignificantBits >= 0);
+   osOut << result;
    if (fNegativeExponent)
       uDecimalExponent = uAddNegativeDecimalExponent-uDecimalExponent;
    if (uDecimalExponent)

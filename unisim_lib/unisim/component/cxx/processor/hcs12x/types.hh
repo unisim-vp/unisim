@@ -64,8 +64,9 @@ class ADDRESS {
 
 class MMC_DATA {
 public:
-	MMC_DATA() : type(ADDRESS::EXTENDED), isGlobal(false), buffer(0), data_size(0), isExecute(false) {}
+	MMC_DATA() : logicalAddress(0x00), type(ADDRESS::EXTENDED), isGlobal(false), buffer(0), data_size(0), isExecute(false) {}
 
+	address_t logicalAddress;
 	ADDRESS::MODE type;
 	bool isGlobal;
 	void *buffer;

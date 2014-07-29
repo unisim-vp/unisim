@@ -54,6 +54,11 @@ inline uint32_t Mask(uint32_t mb, uint32_t me)
 	return (mb > me) ? ~(((uint32_t) -1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1))) : (((uint32_t)-1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1)));
 }
 
+inline uint32_t Mask(uint32_t n)
+{
+	return (n < 32) ? (n ? (1 << (32 - n)) - 1 : 0xffffffffUL) : 0;
+}
+
 } // end of namespace powerpc
 } // end of namespace processor
 } // end of namespace cxx
@@ -1892,34 +1897,33 @@ sraw.execute = {
 	// Compute the result
 	int32_t result;
 
-	if(b == 0)
+#if 0	
+	uint32_t n = b & 0x3f;
+	uint32_t r = RotateLeft(s, 32 - n);
+	uint32_t m = Mask(n);
+	result = (r & m) | (((int32_t) s >> 31) & ~m);
+	xer = (((int32_t) s < 0) && ((r & ~m) != 0)) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+#else
+	if(b & 0x20)
 	{
-		result = s;
-		// Generate XER[CA]: XER[CA]=1
-		xer = xer & ~CONFIG::XER_CA_MASK;
-	}
-	else if(b & 0x20)
-	{
-		if(s < 0)
-		{
-			result = 0xffffffff;
-			// Generate XER[CA]
-			xer = (s & 0x7fffffff) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
-		}
-		else
-		{
-			result = 0;
-			// Generate XER[CA]: XER[CA]=0
-			xer = xer & ~CONFIG::XER_CA_MASK;
-		}
+		result = ((int32_t) s < 0) ? 0xffffffffUL : 0;
+		xer = (((int32_t) s < 0) && ((s & 0x7fffffffUL) != 0)) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
 	}
 	else
 	{
-		b = b & 0x1f;
-		result = (int32_t) s >> b;
-		// Generate XER[CA]
-		xer = (s < 0 && (s << (32 - b)) != 0) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+		uint32_t n = b & 0x1f;
+		if(n)
+		{
+			result = (int32_t) s >> n;
+			xer = (((int32_t) s < 0) && ((s << (32 - n)) != 0)) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+		}
+		else
+		{
+			result = s;
+			xer = xer & ~CONFIG::XER_CA_MASK;
+		}
 	}
+#endif
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

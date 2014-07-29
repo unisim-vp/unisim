@@ -312,7 +312,6 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						case DW_AT_bit_offset:
 						case DW_AT_bit_size:
 						case DW_AT_string_length:
-						case DW_AT_const_value:
 						case DW_AT_lower_bound:
 						case DW_AT_return_addr:
 						case DW_AT_upper_bound:
@@ -360,7 +359,6 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						case DW_AT_bit_offset:
 						case DW_AT_bit_size:
 						case DW_AT_string_length:
-						case DW_AT_const_value:
 						case DW_AT_lower_bound:
 						case DW_AT_return_addr:
 						case DW_AT_upper_bound:
@@ -516,7 +514,6 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						case DW_AT_bit_offset:
 						case DW_AT_bit_size:
 						case DW_AT_string_length:
-						case DW_AT_const_value:
 						case DW_AT_lower_bound:
 						case DW_AT_return_addr:
 						case DW_AT_upper_bound:
@@ -565,7 +562,6 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						case DW_AT_bit_offset:
 						case DW_AT_bit_size:
 						case DW_AT_string_length:
-						case DW_AT_const_value:
 						case DW_AT_lower_bound:
 						case DW_AT_return_addr:
 						case DW_AT_upper_bound:
@@ -1101,7 +1097,7 @@ void DWARF_DIE<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, const St
 				const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = dw_line_ptr->GetValue();
 				
 				DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>(dw_cu->GetHandler());
-				if(!dw_stmt_vm.Run(dw_stmt_prog, 0, &stmt_matrix))
+				if(!dw_stmt_vm.Run(dw_stmt_prog, 0, &stmt_matrix, dw_cu))
 				{
 					std::cerr << "Invalid DWARF2 statement program. Statement matrix may be incomplete." << std::endl;
 				}
@@ -1121,22 +1117,6 @@ void DWARF_DIE<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, const St
 template <class MEMORY_ADDR>
 void DWARF_DIE<MEMORY_ADDR>::GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const
 {
-	MEMORY_ADDR low_pc = 0;
-	if(GetLowPC(low_pc))
-	{
-		MEMORY_ADDR high_pc = 0;
-		if(GetHighPC(high_pc))
-		{
-			ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(low_pc, high_pc));
-		}
-		else
-		{
-			// single address
-			ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(low_pc, low_pc + 1));
-		}
-		return;
-	}
-
 	// DW_AT_ranges is only available in DWARF3 and more
 	const DWARF_Attribute<MEMORY_ADDR> *dw_at_ranges = FindAttribute(DW_AT_ranges);
 	
@@ -1177,29 +1157,29 @@ void DWARF_DIE<MEMORY_ADDR>::GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_AD
 		}
 		return;
 	}
-	
-	if(dw_parent_die) dw_parent_die->GetRanges(ranges);
-}
 
-template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const
-{
 	MEMORY_ADDR low_pc = 0;
 	if(GetLowPC(low_pc))
 	{
 		MEMORY_ADDR high_pc = 0;
 		if(GetHighPC(high_pc))
 		{
-			return unisim::util::debug::dwarf::HasOverlapEx(low_pc, high_pc, addr, addr + length);
+			ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(low_pc, high_pc));
 		}
 		else
 		{
 			// single address
-			return (addr == low_pc);
+			ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(low_pc, low_pc + 1));
 		}
-		return false;
+		return;
 	}
 
+	if(dw_parent_die) dw_parent_die->GetRanges(ranges);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const
+{
 	// DW_AT_ranges is only available in DWARF3 and more
 	const DWARF_Attribute<MEMORY_ADDR> *dw_at_ranges = FindAttribute(DW_AT_ranges);
 	
@@ -1239,6 +1219,23 @@ bool DWARF_DIE<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) co
 			while((range_list_entry = range_list_entry->GetNext()) != 0);
 		}
 	}
+
+	MEMORY_ADDR low_pc = 0;
+	if(GetLowPC(low_pc))
+	{
+		MEMORY_ADDR high_pc = 0;
+		if(GetHighPC(high_pc))
+		{
+			return unisim::util::debug::dwarf::HasOverlapEx(low_pc, high_pc, addr, addr + length);
+		}
+		else
+		{
+			// single address
+			return (addr == low_pc);
+		}
+		return false;
+	}
+
 	return false;
 }
 

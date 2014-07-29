@@ -60,8 +60,11 @@ public:
 		double time;
 	};
 
+	template <int SIZE> int RandomizeData(std::vector<data_t<SIZE> > &vect);
 	template <int SIZE> int LoadXmlData(const char *filename, std::vector<data_t<SIZE> > &vect);
 	template <int SIZE> void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t<SIZE> &data);
+
+	virtual bool BeginSetup();
 
 private:
 
@@ -85,7 +88,6 @@ private:
 
 	uint8_t atd1_anx_wrap_around_channel;
 	Parameter<uint8_t> param_atd1_anx_wrap_around_channel;
-
 
 };
 

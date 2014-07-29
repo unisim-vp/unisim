@@ -1948,6 +1948,24 @@ void CPU<CONFIG>::StepOneInstruction()
 			logger << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugInfo;
 		}
 
+// 		{
+// 			std::cerr << "pc=0x" << std::hex << addr << std::dec;
+// 			std::cerr << " cr=0x" << std::hex << cr << std::dec;
+// 			std::cerr << " lr=0x" << std::hex << lr << std::dec;
+// 			std::cerr << " ctr=0x" << std::hex << ctr << std::dec;
+// 			std::cerr << " xer=0x" << std::hex << xer << std::dec;
+// 			std::cerr << " fpscr=0x" << std::hex << fpscr << std::dec;
+// 			unsigned i;
+// 			for(i = 0; i < 32; i++)
+// 			{
+// 				std::cerr << " r" << i << "=0x" << std::hex << gpr[i] << std::dec;
+// 			}
+// 			for(i = 0; i < 32; i++)
+// 			{
+// 				std::cerr << " f" << i << "=0x" << std::hex << fpr[i].queryValue() << std::dec;
+// 			}
+// 			std::cerr << std::endl;
+// 		}
 		/* execute the instruction */
 		if(likely(operation->execute(this)))
 		{

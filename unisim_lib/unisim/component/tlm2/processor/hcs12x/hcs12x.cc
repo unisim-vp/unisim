@@ -55,12 +55,14 @@ using unisim::kernel::logger::EndDebug;
 
 
 HCS12X::
-HCS12X(const sc_module_name& name, Object *parent) :
+HCS12X(const sc_module_name& name, S12XMMC *_mmc, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 	, CPU(name, parent)
 
 	, xint_interrupt_request("interrupt_request")
+
+	, mmc(_mmc)
 
 	, cpu_cycle_time()
 	, bus_cycle_time()
@@ -94,18 +96,24 @@ HCS12X(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(Run);
 
+
+	xint_trans = payloadFabric.allocate();
+	xint_phase = new tlm_phase(BEGIN_REQ);
+
 }
 
 
 HCS12X ::
 ~HCS12X() {
+
+	delete xint_phase;
+	xint_trans->release();
+
 }
 
 void
 HCS12X ::
 Stop(int ret) {
-//	// Call BusSynchronize to account for the remaining time spent in the cpu core
-//	BusSynchronize();
 	Object::Stop(-1);
 }
 
@@ -131,7 +139,7 @@ void HCS12X ::sleep() {
 	 * The simulation control is done by the debugger engine.
 	 */
 
-	reportTrap();
+	reportTrap("CPU enter STOP mode");
 
 //	wait(irq_event | reset_event);
 
@@ -233,7 +241,7 @@ HCS12X::Synchronize()
 	}
 	wait(time_spent);
 	cpu_time = sc_time_stamp();
-//	next_nice_sctime = sc_time_stamp() + nice_sctime;
+
 }
 
 
@@ -280,50 +288,17 @@ Reset() {
 	inherited::Reset();
 }
 
-void HCS12X::busWrite(address_t addr, const void *buffer, uint32_t size)
+void HCS12X::busWrite(MMC_DATA *buffer)
 {
-	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+	mmc->cpu_access(MMC::WRITE, buffer);
 
-	trans->set_command( tlm::TLM_WRITE_COMMAND );
-	trans->set_address( addr );
-	trans->set_data_ptr( (unsigned char *)buffer );
-
-	trans->set_data_length( size );
-	trans->set_streaming_width( size );
-
-	trans->set_byte_enable_ptr( 0 );
-	trans->set_dmi_allowed( false );
-	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
-	socket->b_transport( *trans, tlm2_btrans_time );
-
-	if (trans->is_response_error() )
-		SC_REPORT_ERROR("HCS12X : ", "Response error from b_transport");
-
-	trans->release();
 }
 
-void HCS12X::busRead(address_t addr, void *buffer, uint32_t size)
+void HCS12X::busRead(MMC_DATA *buffer)
 {
-	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
-	trans->set_command( tlm::TLM_READ_COMMAND );
-	trans->set_address( addr );
-	trans->set_data_ptr( (unsigned char *)buffer );
+	mmc->cpu_access(MMC::READ, buffer);
 
-	trans->set_data_length( size );
-	trans->set_streaming_width( size );
-
-	trans->set_byte_enable_ptr( 0 );
-	trans->set_dmi_allowed( false );
-	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
-	socket->b_transport( *trans, tlm2_btrans_time );
-
-	if (trans->is_response_error() )
-		SC_REPORT_ERROR("HCS12X : ", "Response error from b_transport");
-
-	trans->release();
 }
 
 void HCS12X::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
@@ -366,27 +341,24 @@ address_t HCS12X ::getIntVector(uint8_t &ipl)
 
 	INT_TRANS_T *buffer = new INT_TRANS_T(0, 0, ipl);
 
-	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+	xint_trans->acquire();
 
-	trans->set_command( tlm::TLM_READ_COMMAND );
-	trans->set_address( 0 );
-	trans->set_data_ptr( (unsigned char *) buffer );
+	xint_trans->set_command( tlm::TLM_READ_COMMAND );
+	xint_trans->set_address( 0 );
+	xint_trans->set_data_ptr( (unsigned char *) buffer );
 
-	trans->set_data_length( sizeof(INT_TRANS_T) );
-	trans->set_streaming_width( sizeof(INT_TRANS_T) );
+	xint_trans->set_data_length( sizeof(INT_TRANS_T) );
+	xint_trans->set_streaming_width( sizeof(INT_TRANS_T) );
 
-	trans->set_byte_enable_ptr( 0 );
-	trans->set_dmi_allowed( false );
-	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+	xint_trans->set_byte_enable_ptr( 0 );
+	xint_trans->set_dmi_allowed( false );
+	xint_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-	tlm_phase *phase = new tlm_phase(BEGIN_REQ);
-	xint_interrupt_request->nb_transport_bw(*trans, *phase, tlm2_btrans_time);
+	*xint_phase = BEGIN_REQ;
+	xint_interrupt_request->nb_transport_bw(*xint_trans, *xint_phase, tlm2_btrans_time);
 
-	if (trans->is_response_error() )
+	if (xint_trans->is_response_error() )
 		SC_REPORT_ERROR("HCS12X : ", "Unable to compute interrupt vector");
-
-	delete phase;
-	trans->release();
 
 	if (hasNonMaskableAccessErrorInterrupt() || hasNonMaskableSWIInterrupt() || hasTrapInterrupt() || hasSysCallInterrupt())
 	{
@@ -410,6 +382,7 @@ address_t HCS12X ::getIntVector(uint8_t &ipl)
 
 		switch (buffer->getVectorAddress() & 0x00FF)
 		{
+			case 0: /* There is no interrupt with higher priority than current IPL*/ break;
 			case XINT::INT_SYS_RESET_OFFSET: {
 				/*
 				 * Are mapped to vector 0xFFFE: Pin reset, Power-on reset, low-voltage reset, illegal address reset

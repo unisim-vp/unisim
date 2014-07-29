@@ -99,17 +99,6 @@ public:
 
 	tlm_target_socket<UNISIM2RTB_BUS_WIDTH, UNISIM_PWM_ProtocolTypes<PWM_SIZE> > slave_sock;
 
-	tlm_quantumkeeper atd0_quantumkeeper;
-	tlm_quantumkeeper atd1_quantumkeeper;
-	tlm_quantumkeeper pwm_quantumkeeper;
-
-	peq_with_get<PWM_Payload<PWM_SIZE> > input_payload_queue;
-	PayloadFabric<ATD_Payload<ATD1_SIZE> > atd1_payload_fabric;
-	PayloadFabric<ATD_Payload<ATD0_SIZE> > atd0_payload_fabric;
-
-	double	bus_cycle_time;
-	sc_time		cycle_time;
-
 	ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
 	~ATD_PWM_STUB();
 
@@ -153,7 +142,25 @@ protected:
 	bool	atd1_stub_enabled;
 	Parameter<bool>		param_atd1_stub_enabled;
 
+	tlm_quantumkeeper atd0_quantumkeeper;
+	tlm_quantumkeeper atd1_quantumkeeper;
+
 private:
+
+	tlm_quantumkeeper pwm_quantumkeeper;
+
+	peq_with_get<PWM_Payload<PWM_SIZE> > input_payload_queue;
+
+	PayloadFabric<ATD_Payload<ATD1_SIZE> > atd1_payload_fabric;
+	ATD_Payload<ATD1_SIZE> *atd1_payload;
+
+	PayloadFabric<ATD_Payload<ATD0_SIZE> > atd0_payload_fabric;
+	ATD_Payload<ATD0_SIZE> *atd0_payload;
+
+	double	bus_cycle_time;
+	sc_time		cycle_time;
+
+
 	Parameter<double>	param_anx_stimulus_period;
 	Parameter<double>	param_pwm_fetch_period;
 

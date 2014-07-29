@@ -41,16 +41,6 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="use-atd-stub">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
 		<variable name="vih">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
@@ -72,12 +62,6 @@
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
-		</variable>
-		<variable name="atd-anx-stimulus-file">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>ATD.xml</value>
-			<description></description>
 		</variable>
 	</object>
 	<object name="ATD1">
@@ -121,16 +105,6 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="use-atd-stub">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
 		<variable name="vih">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
@@ -152,12 +126,6 @@
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
-		</variable>
-		<variable name="atd-anx-stimulus-file">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>ATD.xml</value>
-			<description></description>
 		</variable>
 	</object>
 	<object name="CPU">
@@ -465,7 +433,7 @@
 		<variable name="built-in-signal-generator-enable">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description>Use built-in signal generator or external instrument</description>
 			<enumeration>
 				<item>true</item>
@@ -479,7 +447,7 @@
 			<description>Built-in Signal generator period in pico-seconds. Default 25000ps.</description>
 		</variable>
 	</object>
-	<object name="EEPROM">
+	<object name="FTM">
 		<variable name="org">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
@@ -489,7 +457,7 @@
 		<variable name="bytesize">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>262144</value>
+			<value>7340032</value>
 			<description>memory size in bytes</description>
 		</variable>
 		<variable name="initial-byte-value">
@@ -538,71 +506,215 @@
 			<value>125000</value>
 			<description></description>
 		</variable>
+		<variable name="min-fclk-time">
+			<type>parameter</type>
+			<data_type>signed 64-bit integer</data_type>
+			<value>0x00000000001312d0</value>
+			<description>Specify minimum frequency of FTM</description>
+		</variable>
+		<variable name="max-fclk-time">
+			<type>parameter</type>
+			<data_type>signed 64-bit integer</data_type>
+			<value>0x00000000000e86c0</value>
+			<description>Specify maximum frequency of FTM</description>
+		</variable>
 		<variable name="base-address">
 			<type>parameter</type>
 			<data_type>unsigned 16-bit integer</data_type>
-			<value>0x0110</value>
+			<value>0x0100</value>
 			<description></description>
 		</variable>
-		<variable name="command-interrupt">
+		<variable name="flash-fault-detect-interrupt">
 			<type>parameter</type>
 			<data_type>unsigned 8-bit integer</data_type>
 			<value>0xba</value>
+			<description></description>
+		</variable>
+		<variable name="flash-interrupt">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xb8</value>
 			<description></description>
 		</variable>
 		<variable name="erase-fail-ratio">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
 			<value>0.01</value>
-			<description>Ration to emulate erase failing. </description>
-		</variable>
-	</object>
-	<object name="FLASH">
-		<variable name="org">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00400000</value>
-			<description>memory origin/base address</description>
-		</variable>
-		<variable name="bytesize">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>4194304</value>
-			<description>memory size in bytes</description>
-		</variable>
-		<variable name="initial-byte-value">
-			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xff</value>
 			<description></description>
 		</variable>
-		<variable name="cycle-time">
+		<variable name="pflash-blocks-description">
 			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>250000 s</value>
-			<description>memory cycle time</description>
+			<data_type>string</data_type>
+			<value>7C0000,7FFFFF;7A0000,7BFFFF;780000,79FFFF;740000,77FFFF;700000,73FFFF</value>
+			<description></description>
 		</variable>
-		<variable name="read-latency">
+		<variable name="pflash-start-address">
 			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory read latency</description>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00700000</value>
+			<description></description>
 		</variable>
-		<variable name="write-latency">
+		<variable name="pflash-end-address">
 			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory write latency</description>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x007fffff</value>
+			<description></description>
 		</variable>
-		<variable name="verbose">
+		<variable name="pflash-protectable-high-address">
 			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>enable/disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x007fffff</value>
+			<description></description>
+		</variable>
+		<variable name="pflash-protectable-low-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x007f8000</value>
+			<description></description>
+		</variable>
+		<variable name="blackdoor-comparison-key-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x007fff00</value>
+			<description></description>
+		</variable>
+		<variable name="pflash-protection-byte-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x007fff0c</value>
+			<description></description>
+		</variable>
+		<variable name="eee-protection-byte-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x007fff0d</value>
+			<description></description>
+		</variable>
+		<variable name="flash-nonvolatile-byte-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x007fff0e</value>
+			<description>Flash non-volatile (option) byte address</description>
+		</variable>
+		<variable name="flash-security-byte-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x007fff0f</value>
+			<description></description>
+		</variable>
+		<variable name="dflash-start-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00100000</value>
+			<description></description>
+		</variable>
+		<variable name="dflash-end-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00107fff</value>
+			<description></description>
+		</variable>
+		<variable name="eee-nonvolatile-information-register-start-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00120000</value>
+			<description></description>
+		</variable>
+		<variable name="eee-nonvolatile-information-register-size">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0080</value>
+			<description></description>
+		</variable>
+		<variable name="eee_tag-ram-start-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00122000</value>
+			<description></description>
+		</variable>
+		<variable name="EEE-tag-RAM-size">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0100</value>
+			<description></description>
+		</variable>
+		<variable name="eee-protectable-high-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0013ffff</value>
+			<description></description>
+		</variable>
+		<variable name="memory-controller-scratch-ram-start-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00124000</value>
+			<description></description>
+		</variable>
+		<variable name="memory-controller-scratch-ram-size">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0400</value>
+			<description></description>
+		</variable>
+		<variable name="buffer-ram-start-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0013f000</value>
+			<description></description>
+		</variable>
+		<variable name="buffer-ram-end-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0013ffff</value>
+			<description></description>
+		</variable>
+		<variable name="dflash-partition-user-access-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00120000</value>
+			<description></description>
+		</variable>
+		<variable name="dflash-partition-user-access-address-duplicate">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00120002</value>
+			<description></description>
+		</variable>
+		<variable name="buffer-ram-partition-eee-operation-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00120004</value>
+			<description></description>
+		</variable>
+		<variable name="buffer-ram-partition-eee-operation-address-duplicate">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00120006</value>
+			<description></description>
+		</variable>
+		<variable name="max-number-sectors-dflash">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0080</value>
+			<description></description>
+		</variable>
+		<variable name="max-number-sectors-buffer-ram">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0010</value>
+			<description></description>
+		</variable>
+		<variable name="min-number-sectors-in-dflash-for-eee">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x000c</value>
+			<description></description>
+		</variable>
+		<variable name="min-ratio-dflash-buffer-ram">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0008</value>
+			<description></description>
 		</variable>
 	</object>
 	<object name="MMC">
@@ -615,6 +727,12 @@
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
+		</variable>
+		<variable name="version">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>V4</value>
+			<description>MMC version. Supported are V3 and V4. Default is V3</description>
 		</variable>
 		<variable name="mode">
 			<type>parameter</type>
@@ -639,6 +757,36 @@
 			<data_type>unsigned 16-bit integer</data_type>
 			<value>0x0015</value>
 			<description></description>
+		</variable>
+		<variable name="memory-map">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0100,0113;11,0114,011F;12,0120,012F;13,0130,0137;14,0138,013F;15,02C0,02EF;16,0300,0327;17,0340,0367;18,0380,03BF;19,0007FF,0FFFFF;20,100000,13FFFF;20,400000,7FFFFF</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="MPU">
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0114</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x14</value>
+			<description>MPU Access Error interrupt</description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 	</object>
 	<object name="PIT">
@@ -810,7 +958,27 @@
 			<value>0xd6</value>
 			<description></description>
 		</variable>
-		<variable name="debug-enabled">
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -840,7 +1008,27 @@
 			<value>0xd4</value>
 			<description></description>
 		</variable>
-		<variable name="debug-enabled">
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -870,7 +1058,27 @@
 			<value>0x8a</value>
 			<description></description>
 		</variable>
-		<variable name="debug-enabled">
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -900,7 +1108,27 @@
 			<value>0x88</value>
 			<description></description>
 		</variable>
-		<variable name="debug-enabled">
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -930,7 +1158,27 @@
 			<value>0x86</value>
 			<description></description>
 		</variable>
-		<variable name="debug-enabled">
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -960,7 +1208,27 @@
 			<value>0x84</value>
 			<description></description>
 		</variable>
-		<variable name="debug-enabled">
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -1000,12 +1268,22 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
 	<object name="SPI1">
 		<variable name="bus-cycle-time">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
-			<value>250000</value>
+			<value>40000</value>
 			<description></description>
 		</variable>
 		<variable name="base-address">
@@ -1021,6 +1299,16 @@
 			<description></description>
 		</variable>
 		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -1051,6 +1339,16 @@
 			<description></description>
 		</variable>
 		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -1310,6 +1608,12 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0120</value>
+			<description></description>
+		</variable>
 	</object>
 	<object name="atd-pwm-stub">
 		<variable name="trace-enabled">
@@ -1418,7 +1722,7 @@
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>true</value>
-			<description>force use of virtual addresses instead of physical addresses</description>
+			<description>force use of virtual addresses instead of physical addresses (default false)</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -1460,6 +1764,12 @@
 			<value></value>
 			<description>DWARF v2/v3 to HTML output directory</description>
 		</variable>
+		<variable name="dwarf-to-xml-output-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>DWARF v2/v3 to XML output filename</description>
+		</variable>
 		<variable name="dwarf-register-number-mapping-filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
@@ -1476,25 +1786,17 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="debug-dwarf">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debugging of DWARF</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
-	<variable name="authors">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>Reda Nouacer &lt;reda.nouacer@cea.fr&gt;</value>
-		<description>Authors</description>
-	</variable>
-	<variable name="copyright">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>Copyright (C) 2008-2010, Commissariat a l'Energie Atomique (CEA)</value>
-		<description>Copyright</description>
-	</variable>
-	<variable name="description">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>UNISIM star12x, a Star12X System-on-Chip simulator with support of ELF32 binaries and s19 hex files, and targeted for automotive applications</value>
-		<description>Description</description>
-	</variable>
 	<variable name="dump-formulas">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -1585,7 +1887,7 @@
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.txt</value>
-		<description>Filename to keep logger output (the option file must be activated)</description>
+		<description>Filename to keep logger output _(the option file must be activated)</description>
 	</variable>
 	<variable name="kernel_logger.std_err">
 		<type>parameter</type>
@@ -1601,7 +1903,7 @@
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
-		<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+		<description>Colorize logger output through the standard error output _(only works if std_err is active)</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
@@ -1621,7 +1923,7 @@
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
-		<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+		<description>Colorize logger output through the standard output _(only works if std_out is active)</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
@@ -1651,13 +1953,7 @@
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.xml</value>
-		<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
-	</variable>
-	<variable name="license">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>BSD (see file COPYING)</value>
-		<description>License</description>
+		<description>Filename to keep logger xml output _(the option xml_file must be activated)</description>
 	</variable>
 	<variable name="program-counter-name">
 		<type>parameter</type>
@@ -1665,22 +1961,24 @@
 		<value>CPU.PC</value>
 		<description>Target CPU program counter name</description>
 	</variable>
-	<variable name="program-name">
+	<variable name="sci-enable-telnet">
 		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>UNISIM star12x</value>
-		<description>Program name</description>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>SCI Enable/Disable telnet instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
 	</variable>
-	<variable name="schematic">
+	<variable name="spi-enable-telnet">
 		<type>parameter</type>
-		<data_type>string</data_type>
-		<value></value>
-		<description>path to simulator schematic</description>
-	</variable>
-	<variable name="version">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>1.0</value>
-		<description>Version</description>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>SPI Enable/Disable telnet instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
 	</variable>
 </variables>

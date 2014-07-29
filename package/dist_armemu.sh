@@ -131,11 +131,6 @@ unisim/service/power/cache_dynamic_power.cc \
 unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_dynamic_energy.cc \
-unisim/service/pim/pim_server.cc \
-unisim/service/pim/pim_server_64.cc \
-unisim/service/pim/pim_server_32.cc \
-unisim/service/pim/pim_thread.cc \
-unisim/service/pim/pim.cc \
 unisim/service/os/linux_os/linux.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
@@ -251,17 +246,6 @@ unisim/service/power/cache_profile.hh \
 unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/power/cache_dynamic_energy.hh \
-unisim/service/pim/pim_thread.hh \
-unisim/service/pim/convert.hh \
-unisim/service/pim/pim.hh \
-unisim/service/pim/pim_server.hh \
-unisim/service/pim/network/SocketWriter.hpp \
-unisim/service/pim/network/GenericThread.hpp \
-unisim/service/pim/network/BlockingQueue.hpp \
-unisim/service/pim/network/SocketReader.hpp \
-unisim/service/pim/network/SocketClientThread.hpp \
-unisim/service/pim/network/SocketThread.hpp \
-unisim/service/pim/network/SocketServerThread.hpp \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
@@ -356,6 +340,7 @@ unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
 unisim/util/os/linux_os/linux.hh \
 unisim/util/os/linux_os/ppc.hh \
+unisim/util/os/linux_os/errno.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \
@@ -366,6 +351,10 @@ unisim/util/arithmetic/arithmetic.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/queue/queue.hh \
+unisim/util/simfloat/floating.hh \
+unisim/util/simfloat/integer.hh \
+unisim/util/simfloat/host_floating.hh \
+unisim/util/ieee754/ieee754.hh \
 unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/cxx/processor/arm/psr.hh \
@@ -387,8 +376,6 @@ unisim/service/debug/sim_debugger/sim_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
-unisim/service/pim/network/BlockingQueue.tcc \
-unisim/service/pim/pim_server.tcc \
 unisim/service/os/linux_os/linux.tcc \
 unisim/util/debug/profile.tcc \
 unisim/util/debug/data_object.tcc \
@@ -423,6 +410,9 @@ unisim/util/debug/stmt.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
+unisim/util/simfloat/floating.tcc \
+unisim/util/simfloat/integer.tcc \
+unisim/util/simfloat/host_floating.tcc \
 unisim/util/os/linux_os/calls.tcc \
 unisim/util/os/linux_os/linux.tcc \
 unisim/util/dictionary/dictionary.tcc \
@@ -949,13 +939,7 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "AC_LANG([C++])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${ARMEMU_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "case \"\${host}\" in" >> "${ARMEMU_CONFIGURE_AC}"
-	printf "\t*mingw*)\n" >> "${ARMEMU_CONFIGURE_AC}"
-	printf "\t;;\n" >> "${ARMEMU_CONFIGURE_AC}"
-	printf "\t*)\n" >> "${ARMEMU_CONFIGURE_AC}"
-	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${ARMEMU_CONFIGURE_AC}"
-	printf "\t;;\n" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "esac" >> "${ARMEMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_PTHREAD(main)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TIMES(main)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_ENDIAN(main)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES(main)" >> "${ARMEMU_CONFIGURE_AC}"

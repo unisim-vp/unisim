@@ -49,6 +49,12 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <errno.h>
+#include <fcntl.h>
+
+#if defined(WIN32) || defined(WIN64)
+#include <stdlib.h>
+#endif
 
 #include "unisim/util/likely/likely.hh"
 #include "unisim/util/debug/blob/blob.hh"
@@ -59,6 +65,7 @@
 #include "unisim/util/os/linux_os/ppc.hh"
 #include "unisim/util/os/linux_os/environment.hh"
 #include "unisim/util/os/linux_os/aux_table.hh"
+#include "unisim/util/os/linux_os/errno.hh"
 
 namespace unisim {
 namespace util {
@@ -83,74 +90,495 @@ supported_system_types_(tmp_supported_system_types,
                         sizeof(tmp_supported_system_types) / sizeof(char *));
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
-Linux(unisim::kernel::logger::Logger& logger,
-  unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if,
-  unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if)
-    : is_load_(false)
-    , system_type_("arm-eabi")
-    , endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
-    , load_files_()
-    , entry_point_(0)
-    , load_addr_set_(false)
-    , load_addr_(0)
-    , start_code_(0)
-    , end_code_(0)
-    , start_data_(0)
-    , end_data_(0)
-    , elf_stack_(0)
-    , elf_brk_(0)
-    , num_segments_(0)
-    , stack_base_(0)
-    , memory_page_size_(0)
-    , mmap_base_(0xd4000000)
-    , mmap_brk_point_(0)
-    , brk_point_(0)
-    , argc_(0)
-    , argv_()
-    , envc_(0)
-    , envp_()
-    , apply_host_environnement_(false)
-    , target_envp_()
-    , utsname_sysname_()
-    , utsname_nodename_()
-    , utsname_release_()
-    , utsname_version_()
-    , utsname_machine_()
-    , utsname_domainname_()
-    , blob_(NULL)
-    , regs_if_(regs_if)
-    , mem_if_(mem_if)
-    , mem_inject_if_(mem_inject_if)
-    , syscall_name_map_()
-    , syscall_name_assoc_map_()
-    , syscall_impl_assoc_map_()
-    , current_syscall_id_(0)
-    , current_syscall_name_("(NONE)")
-    , verbose_(false)
-    , parse_dwarf_(false)
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(unisim::kernel::logger::Logger& logger,
+      unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if,
+      unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if)
+	: is_load_(false)
+	, system_type_("arm-eabi")
+	, endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
+	, load_files_()
+	, entry_point_(0)
+	, load_addr_set_(false)
+	, load_addr_(0)
+	, start_code_(0)
+	, end_code_(0)
+	, start_data_(0)
+	, end_data_(0)
+	, elf_stack_(0)
+	, elf_brk_(0)
+	, num_segments_(0)
+	, stack_base_(0)
+	, memory_page_size_(0)
+	, mmap_base_(0xd4000000)
+	, mmap_brk_point_(0)
+	, brk_point_(0)
+	, argc_(0)
+	, argv_()
+	, envc_(0)
+	, envp_()
+	, apply_host_environnement_(false)
+	, target_envp_()
+	, utsname_sysname_()
+	, utsname_nodename_()
+	, utsname_release_()
+	, utsname_version_()
+	, utsname_machine_()
+	, utsname_domainname_()
+	, blob_(NULL)
+	, regs_if_(regs_if)
+	, mem_if_(mem_if)
+	, mem_inject_if_(mem_inject_if)
+	, syscall_name_map_()
+	, syscall_name_assoc_map_()
+	, syscall_impl_assoc_map_()
+	, current_syscall_id_(0)
+	, current_syscall_name_("(NONE)")
+	, verbose_(false)
+	, parse_dwarf_(false)
 	, debug_dwarf_(false)
-    , dwarf_to_html_output_directory_()
-    , dwarf_to_xml_output_filename_()
-    , logger_(logger)
-    , terminated_(false)
-    , return_status_(0) {
+	, dwarf_to_html_output_directory_()
+	, dwarf_to_xml_output_filename_()
+	, logger_(logger)
+	, terminated_(false)
+	, return_status_(0)
+	, stdin_pipe_filename()
+	, stdout_pipe_filename()
+	, stderr_pipe_filename()
+	, stdin_pipe_fd(-1)
+	, stdout_pipe_fd(-1)
+	, stderr_pipe_fd(-1)
+{
+
+#if defined(WIN32) || defined(WIN64)
+	_setmode(0, _O_BINARY); // force binary mode for the standard input file descriptor (0)
+	_setmode(1, _O_BINARY); // force binary mode for the standard output file descriptor (1)
+	_setmode(2, _O_BINARY); // force binary mode for the standard error file descriptor (2)
+#endif
+
+#ifdef EPERM
+	host2linux_errno[EPERM] = LINUX_EPERM;
+#endif
+#ifdef ENOENT
+	host2linux_errno[ENOENT] = LINUX_ENOENT;
+#endif
+#ifdef ESRCH
+	host2linux_errno[ESRCH] = LINUX_ESRCH;
+#endif
+#ifdef EINTR
+	host2linux_errno[EINTR] = LINUX_EINTR;
+#endif
+#ifdef EIO
+	host2linux_errno[EIO] = LINUX_EIO;
+#endif
+#ifdef ENXIO
+	host2linux_errno[ENXIO] = LINUX_ENXIO;
+#endif
+#ifdef E2BIG
+	host2linux_errno[E2BIG] = LINUX_E2BIG;
+#endif
+#ifdef ENOEXEC
+	host2linux_errno[ENOEXEC] = LINUX_ENOEXEC;
+#endif
+#ifdef EBADF
+	host2linux_errno[EBADF] = LINUX_EBADF;
+#endif
+#ifdef ECHILD
+	host2linux_errno[ECHILD] = LINUX_ECHILD;
+#endif
+#ifdef EAGAIN
+	host2linux_errno[EAGAIN] = LINUX_EAGAIN;
+#endif
+#ifdef ENOMEM
+	host2linux_errno[ENOMEM] = LINUX_ENOMEM;
+#endif
+#ifdef EACCES
+	host2linux_errno[EACCES] = LINUX_EACCES;
+#endif
+#ifdef EFAULT
+	host2linux_errno[EFAULT] = LINUX_EFAULT;
+#endif
+#ifdef ENOTBLK
+	host2linux_errno[ENOTBLK] = LINUX_ENOTBLK;
+#endif
+#ifdef EBUSY
+	host2linux_errno[EBUSY] = LINUX_EBUSY;
+#endif
+#ifdef EEXIST
+	host2linux_errno[EEXIST] = LINUX_EEXIST;
+#endif
+#ifdef EXDEV
+	host2linux_errno[EXDEV] = LINUX_EXDEV;
+#endif
+#ifdef ENODEV
+	host2linux_errno[ENODEV] = LINUX_ENODEV;
+#endif
+#ifdef ENOTDIR
+	host2linux_errno[ENOTDIR] = LINUX_ENOTDIR;
+#endif
+#ifdef EISDIR
+	host2linux_errno[EISDIR] = LINUX_EISDIR;
+#endif
+#ifdef EINVAL
+	host2linux_errno[EINVAL] = LINUX_EINVAL;
+#endif
+#ifdef ENFILE
+	host2linux_errno[ENFILE] = LINUX_ENFILE;
+#endif
+#ifdef EMFILE
+	host2linux_errno[EMFILE] = LINUX_EMFILE;
+#endif
+#ifdef ENOTTY
+	host2linux_errno[ENOTTY] = LINUX_ENOTTY;
+#endif
+#ifdef ETXTBSY
+	host2linux_errno[ETXTBSY] = LINUX_ETXTBSY;
+#endif
+#ifdef EFBIG
+	host2linux_errno[EFBIG] = LINUX_EFBIG;
+#endif
+#ifdef ENOSPC
+	host2linux_errno[ENOSPC] = LINUX_ENOSPC;
+#endif
+#ifdef ESPIPE
+	host2linux_errno[ESPIPE] = LINUX_ESPIPE;
+#endif
+#ifdef EROFS
+	host2linux_errno[EROFS] = LINUX_EROFS;
+#endif
+#ifdef EMLINK
+	host2linux_errno[EMLINK] = LINUX_EMLINK;
+#endif
+#ifdef EPIPE
+	host2linux_errno[EPIPE] = LINUX_EPIPE;
+#endif
+#ifdef EDOM
+	host2linux_errno[EDOM] = LINUX_EDOM;
+#endif
+#ifdef ERANGE
+	host2linux_errno[ERANGE] = LINUX_ERANGE;
+#endif
+#ifdef EDEADLK
+	host2linux_errno[EDEADLK] = LINUX_EDEADLK;
+#endif
+#ifdef ENAMETOOLONG
+	host2linux_errno[ENAMETOOLONG] = LINUX_ENAMETOOLONG;
+#endif
+#ifdef ENOLCK
+	host2linux_errno[ENOLCK] = LINUX_ENOLCK;
+#endif
+#ifdef ENOSYS
+	host2linux_errno[ENOSYS] = LINUX_ENOSYS;
+#endif
+#ifdef ENOTEMPTY
+	host2linux_errno[ENOTEMPTY] = LINUX_ENOTEMPTY;
+#endif
+#ifdef ELOOP
+	host2linux_errno[ELOOP] = LINUX_ELOOP;
+#endif
+#ifdef EWOULDBLOCK
+	host2linux_errno[EWOULDBLOCK] = LINUX_EWOULDBLOCK;
+#endif
+#ifdef ENOMSG
+	host2linux_errno[ENOMSG] = LINUX_ENOMSG;
+#endif
+#ifdef EIDRM
+	host2linux_errno[EIDRM] = LINUX_EIDRM;
+#endif
+#ifdef ECHRNG
+	host2linux_errno[ECHRNG] = LINUX_ECHRNG;
+#endif
+#ifdef EL2NSYNC
+	host2linux_errno[EL2NSYNC] = LINUX_EL2NSYNC;
+#endif
+#ifdef EL3HLT
+	host2linux_errno[EL3HLT] = LINUX_EL3HLT;
+#endif
+#ifdef EL3RST
+	host2linux_errno[EL3RST] = LINUX_EL3RST;
+#endif
+#ifdef ELNRNG
+	host2linux_errno[ELNRNG] = LINUX_ELNRNG;
+#endif
+#ifdef EUNATCH
+	host2linux_errno[EUNATCH] = LINUX_EUNATCH;
+#endif
+#ifdef ENOCSI
+	host2linux_errno[ENOCSI] = LINUX_ENOCSI;
+#endif
+#ifdef EL2HLT
+	host2linux_errno[EL2HLT] = LINUX_EL2HLT;
+#endif
+#ifdef EBADE
+	host2linux_errno[EBADE] = LINUX_EBADE;
+#endif
+#ifdef EBADR
+	host2linux_errno[EBADR] = LINUX_EBADR;
+#endif
+#ifdef EXFULL
+	host2linux_errno[EXFULL] = LINUX_EXFULL;
+#endif
+#ifdef ENOANO
+	host2linux_errno[ENOANO] = LINUX_ENOANO;
+#endif
+#ifdef EBADRQC
+	host2linux_errno[EBADRQC] = LINUX_EBADRQC;
+#endif
+#ifdef EBADSLT
+	host2linux_errno[EBADSLT] = LINUX_EBADSLT;
+#endif
+#ifdef EDEADLOCK
+	host2linux_errno[EDEADLOCK] = LINUX_EDEADLOCK;
+#endif
+#ifdef EBFONT
+	host2linux_errno[EBFONT] = LINUX_EBFONT;
+#endif
+#ifdef ENOSTR
+	host2linux_errno[ENOSTR] = LINUX_ENOSTR;
+#endif
+#ifdef ENODATA
+	host2linux_errno[ENODATA] = LINUX_ENODATA;
+#endif
+#ifdef ETIME
+	host2linux_errno[ETIME] = LINUX_ETIME;
+#endif
+#ifdef ENOSR
+	host2linux_errno[ENOSR] = LINUX_ENOSR;
+#endif
+#ifdef ENONET
+	host2linux_errno[ENONET] = LINUX_ENONET;
+#endif
+#ifdef ENOPKG
+	host2linux_errno[ENOPKG] = LINUX_ENOPKG;
+#endif
+#ifdef EREMOTE
+	host2linux_errno[EREMOTE] = LINUX_EREMOTE;
+#endif
+#ifdef ENOLINK
+	host2linux_errno[ENOLINK] = LINUX_ENOLINK;
+#endif
+#ifdef EADV
+	host2linux_errno[EADV] = LINUX_EADV;
+#endif
+#ifdef ESRMNT
+	host2linux_errno[ESRMNT] = LINUX_ESRMNT;
+#endif
+#ifdef ECOMM
+	host2linux_errno[ECOMM] = LINUX_ECOMM;
+#endif
+#ifdef EPROTO
+	host2linux_errno[EPROTO] = LINUX_EPROTO;
+#endif
+#ifdef EMULTIHOP
+	host2linux_errno[EMULTIHOP] = LINUX_EMULTIHOP;
+#endif
+#ifdef EDOTDOT
+	host2linux_errno[EDOTDOT] = LINUX_EDOTDOT;
+#endif
+#ifdef EBADMSG
+	host2linux_errno[EBADMSG] = LINUX_EBADMSG;
+#endif
+#ifdef EOVERFLOW
+	host2linux_errno[EOVERFLOW] = LINUX_EOVERFLOW;
+#endif
+#ifdef ENOTUNIQ
+	host2linux_errno[ENOTUNIQ] = LINUX_ENOTUNIQ;
+#endif
+#ifdef EBADFD
+	host2linux_errno[EBADFD] = LINUX_EBADFD;
+#endif
+#ifdef EREMCHG
+	host2linux_errno[EREMCHG] = LINUX_EREMCHG;
+#endif
+#ifdef ELIBACC
+	host2linux_errno[ELIBACC] = LINUX_ELIBACC;
+#endif
+#ifdef ELIBBAD
+	host2linux_errno[ELIBBAD] = LINUX_ELIBBAD;
+#endif
+#ifdef ELIBSCN
+	host2linux_errno[ELIBSCN] = LINUX_ELIBSCN;
+#endif
+#ifdef ELIBMAX
+	host2linux_errno[ELIBMAX] = LINUX_ELIBMAX;
+#endif
+#ifdef ELIBEXEC
+	host2linux_errno[ELIBEXEC] = LINUX_ELIBEXEC;
+#endif
+#ifdef EILSEQ
+	host2linux_errno[EILSEQ] = LINUX_EILSEQ;
+#endif
+#ifdef ERESTART
+	host2linux_errno[ERESTART] = LINUX_ERESTART;
+#endif
+#ifdef ESTRPIPE
+	host2linux_errno[ESTRPIPE] = LINUX_ESTRPIPE;
+#endif
+#ifdef EUSERS
+	host2linux_errno[EUSERS] = LINUX_EUSERS;
+#endif
+#ifdef ENOTSOCK
+	host2linux_errno[ENOTSOCK] = LINUX_ENOTSOCK;
+#endif
+#ifdef EDESTADDRREQ
+	host2linux_errno[EDESTADDRREQ] = LINUX_EDESTADDRREQ;
+#endif
+#ifdef EMSGSIZE
+	host2linux_errno[EMSGSIZE] = LINUX_EMSGSIZE;
+#endif
+#ifdef EPROTOTYPE
+	host2linux_errno[EPROTOTYPE] = LINUX_EPROTOTYPE;
+#endif
+#ifdef ENOPROTOOPT
+	host2linux_errno[ENOPROTOOPT] = LINUX_ENOPROTOOPT;
+#endif
+#ifdef EPROTONOSUPPORT
+	host2linux_errno[EPROTONOSUPPORT] = LINUX_EPROTONOSUPPORT;
+#endif
+#ifdef ESOCKTNOSUPPORT
+	host2linux_errno[ESOCKTNOSUPPORT] = LINUX_ESOCKTNOSUPPORT;
+#endif
+#ifdef EOPNOTSUPP
+	host2linux_errno[EOPNOTSUPP] = LINUX_EOPNOTSUPP;
+#endif
+#ifdef EPFNOSUPPORT
+	host2linux_errno[EPFNOSUPPORT] = LINUX_EPFNOSUPPORT;
+#endif
+#ifdef EAFNOSUPPORT
+	host2linux_errno[EAFNOSUPPORT] = LINUX_EAFNOSUPPORT;
+#endif
+#ifdef EADDRINUSE
+	host2linux_errno[EADDRINUSE] = LINUX_EADDRINUSE;
+#endif
+#ifdef EADDRNOTAVAIL
+	host2linux_errno[EADDRNOTAVAIL] = LINUX_EADDRNOTAVAIL;
+#endif
+#ifdef ENETDOWN
+	host2linux_errno[ENETDOWN] = LINUX_ENETDOWN;
+#endif
+#ifdef ENETUNREACH
+	host2linux_errno[ENETUNREACH] = LINUX_ENETUNREACH;
+#endif
+#ifdef ENETRESET
+	host2linux_errno[ENETRESET] = LINUX_ENETRESET;
+#endif
+#ifdef ECONNABORTED
+	host2linux_errno[ECONNABORTED] = LINUX_ECONNABORTED;
+#endif
+#ifdef ECONNRESET
+	host2linux_errno[ECONNRESET] = LINUX_ECONNRESET;
+#endif
+#ifdef ENOBUFS
+	host2linux_errno[ENOBUFS] = LINUX_ENOBUFS;
+#endif
+#ifdef EISCONN
+	host2linux_errno[EISCONN] = LINUX_EISCONN;
+#endif
+#ifdef ENOTCONN
+	host2linux_errno[ENOTCONN] = LINUX_ENOTCONN;
+#endif
+#ifdef ESHUTDOWN
+	host2linux_errno[ESHUTDOWN] = LINUX_ESHUTDOWN;
+#endif
+#ifdef ETOOMANYREFS
+	host2linux_errno[ETOOMANYREFS] = LINUX_ETOOMANYREFS;
+#endif
+#ifdef ETIMEDOUT
+	host2linux_errno[ETIMEDOUT] = LINUX_ETIMEDOUT;
+#endif
+#ifdef ECONNREFUSED
+	host2linux_errno[ECONNREFUSED] = LINUX_ECONNREFUSED;
+#endif
+#ifdef EHOSTDOWN
+	host2linux_errno[EHOSTDOWN] = LINUX_EHOSTDOWN;
+#endif
+#ifdef EHOSTUNREACH
+	host2linux_errno[EHOSTUNREACH] = LINUX_EHOSTUNREACH;
+#endif
+#ifdef EALREADY
+	host2linux_errno[EALREADY] = LINUX_EALREADY;
+#endif
+#ifdef EINPROGRESS
+	host2linux_errno[EINPROGRESS] = LINUX_EINPROGRESS;
+#endif
+#ifdef ESTALE
+	host2linux_errno[ESTALE] = LINUX_ESTALE;
+#endif
+#ifdef EUCLEAN
+	host2linux_errno[EUCLEAN] = LINUX_EUCLEAN;
+#endif
+#ifdef ENOTNAM
+	host2linux_errno[ENOTNAM] = LINUX_ENOTNAM;
+#endif
+#ifdef ENAVAIL
+	host2linux_errno[ENAVAIL] = LINUX_ENAVAIL;
+#endif
+#ifdef EISNAM
+	host2linux_errno[EISNAM] = LINUX_EISNAM;
+#endif
+#ifdef EREMOTEIO
+	host2linux_errno[EREMOTEIO] = LINUX_EREMOTEIO;
+#endif
+#ifdef EDQUOT
+	host2linux_errno[EDQUOT] = LINUX_EDQUOT;
+#endif
+#ifdef ENOMEDIUM
+	host2linux_errno[ENOMEDIUM] = LINUX_ENOMEDIUM;
+#endif
+#ifdef EMEDIUMTYPE
+	host2linux_errno[EMEDIUMTYPE] = LINUX_EMEDIUMTYPE;
+#endif
+#ifdef ECANCELED
+	host2linux_errno[ECANCELED] = LINUX_ECANCELED;
+#endif
+#ifdef ENOKEY
+	host2linux_errno[ENOKEY] = LINUX_ENOKEY;
+#endif
+#ifdef EKEYEXPIRED
+	host2linux_errno[EKEYEXPIRED] = LINUX_EKEYEXPIRED;
+#endif
+#ifdef EKEYREVOKED
+	host2linux_errno[EKEYREVOKED] = LINUX_EKEYREVOKED;
+#endif
+#ifdef EKEYREJECTED
+	host2linux_errno[EKEYREJECTED] = LINUX_EKEYREJECTED;
+#endif
+#ifdef EOWNERDEAD
+	host2linux_errno[EOWNERDEAD] = LINUX_EOWNERDEAD;
+#endif
+#ifdef ENOTRECOVERABLE
+	host2linux_errno[ENOTRECOVERABLE] = LINUX_ENOTRECOVERABLE;
+#endif
+#ifdef ERFKILL
+	host2linux_errno[ERFKILL] = LINUX_ERFKILL;
+#endif
+#ifdef EHWPOISON
+	host2linux_errno[EHWPOISON] = LINUX_EHWPOISON;
+#endif
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux() {
-  typename std::map<std::string, unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>::const_iterator it;
-  for(it = load_files_.begin(); it != load_files_.end(); it++)
-  {
-     const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob = (*it).second;
-     blob->Release();
-  }
-  load_files_.clear();
-  if(blob_)
-  {
-     blob_->Release();
-     blob_ = 0;
-  }
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
+{
+	typename std::map<std::string, unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>::const_iterator it;
+	for(it = load_files_.begin(); it != load_files_.end(); it++)
+	{
+		const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob = (*it).second;
+		blob->Release();
+	}
+	
+	load_files_.clear();
+	
+	if(blob_)
+	{
+		blob_->Release();
+		blob_ = 0;
+	}
+	
+	if(stdin_pipe_fd != -1) close(stdin_pipe_fd);
+	
+	if(stdout_pipe_fd != -1) close(stdout_pipe_fd);
+	
+	if(stderr_pipe_fd != -1) close(stderr_pipe_fd);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -330,6 +758,24 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetHWCap(const char *hwcap)
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStdinPipeFilename(const char *filename)
+{
+	stdin_pipe_filename = filename;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStdoutPipeFilename(const char *filename)
+{
+	stdout_pipe_filename = filename;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStderrPipeFilename(const char *filename)
+{
+	stderr_pipe_filename = filename;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 unisim::util::debug::Register * Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegisterFromId(uint32_t id) {
   if (!regs_if_) return NULL;
   char const * reg_name = 0;
@@ -419,107 +865,170 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id,
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
-  // set the environment to be used
-  if (apply_host_environnement_) GetHostEnvironment(envp_, &target_envp_);
-  else target_envp_ = envp_;
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
+{
+	// set the environment to be used
+	if (apply_host_environnement_) GetHostEnvironment(envp_, &target_envp_);
+	else target_envp_ = envp_;
 
-  // create the root blob that will be used to store the image that will be
-  // loaded
-  unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob =
-      new unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
-  blob->Catch();
-  blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF32);
-  
-  // load and add files to the blob
-  if (verbose_)
-    logger_ << DebugInfo
-        << "Loading elf files." << EndDebugInfo;
-  if (!LoadFiles(blob)) {
-    logger_ << DebugError
-        << "Could not load elf files." << EndDebugError;
-    blob->Release();
-    return false;
-  }
+	// create the root blob that will be used to store the image that will be
+	// loaded
+	unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob =
+	new unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
+	blob->Catch();
+	blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF32);
+	
+	// load and add files to the blob
+	if(verbose_)
+	{
+		logger_ << DebugInfo
+			<< "Loading elf files." << EndDebugInfo;
+	}
+	if(!LoadFiles(blob))
+	{
+		logger_ << DebugError
+			<< "Could not load elf files." << EndDebugError;
+		blob->Release();
+		return false;
+	}
 
-  // create the stack footprint and add it to the blob
-  uint64_t stack_size = 0;
-  if (verbose_)
-    logger_ << DebugInfo
-        << "Creating the Linux software stack." << EndDebugInfo;
-  if (!CreateStack(blob, stack_size)) {
-    // TODO
-    // Remove non finished state (i.e., unfinished blob, reset values, ...)
-    logger_ << DebugError
-        << "Could not create the Linux software stack." << EndDebugError;
-    blob->Release();
-    return false;
-  }
+	// create the stack footprint and add it to the blob
+	uint64_t stack_size = 0;
+	if(verbose_)
+	{
+		logger_ << DebugInfo
+			<< "Creating the Linux software stack." << EndDebugInfo;
+	}
+	if (!CreateStack(blob, stack_size))
+	{
+		// TODO
+		// Remove non finished state (i.e., unfinished blob, reset values, ...)
+		logger_ << DebugError
+			<< "Could not create the Linux software stack." << EndDebugError;
+		blob->Release();
+		return false;
+	}
 
-  // finish the state of the memory image depending on the system we are running
-  // on
-  if (verbose_)
-    logger_ << DebugInfo
-        << "Setting the system blob." << EndDebugInfo;
-  if (!SetSystemBlob(blob)) {
-    // TODO
-    // Remove non finished state (i.e., unfinished blob, reset values, ...)
-    logger_ << DebugError
-        << "Could not set the system blob." << EndDebugError;
-    blob->Release();
-    return false;
-  }
+	// finish the state of the memory image depending on the system we are running
+	// on
+	if(verbose_)
+	{
+		logger_ << DebugInfo
+			<< "Setting the system blob." << EndDebugInfo;
+	}
+	if (!SetSystemBlob(blob))
+	{
+		// TODO
+		// Remove non finished state (i.e., unfinished blob, reset values, ...)
+		logger_ << DebugError
+			<< "Could not set the system blob." << EndDebugError;
+		blob->Release();
+		return false;
+	}
 
-  // Set the linux calls maps
-  syscall_impl_assoc_map_.clear();
-  SetSyscallNameMap();
-  if ((system_type_.compare("arm") == 0) ||
-      (system_type_.compare("arm-eabi") == 0)) {
-    if (!SetupLinuxOSARM()) {
-      logger_ << DebugError
-          << "Error while trying to setup the linux os arm"
-          << EndDebugError;
-      blob->Release();
-      return false;
-    }
-  }
-  if (system_type_.compare("ppc") == 0) {
-    if (!SetupLinuxOSPPC()) {
-      logger_ << DebugError
-          << "Error while trying to setup the linux os ppc"
-          << EndDebugError;
-      blob->Release();
-      return false;
-    }
-  }
+	// Set the linux calls maps
+	syscall_impl_assoc_map_.clear();
+	SetSyscallNameMap();
+	if ((system_type_.compare("arm") == 0) ||
+	(system_type_.compare("arm-eabi") == 0))
+	{
+		if(!SetupLinuxOSARM())
+		{
+			logger_ << DebugError
+				<< "Error while trying to setup the linux os arm"
+				<< EndDebugError;
+			blob->Release();
+			return false;
+		}
+	}
+	
+	if(system_type_.compare("ppc") == 0)
+	{
+		if(!SetupLinuxOSPPC())
+		{
+			logger_ << DebugError
+				<< "Error while trying to setup the linux os ppc"
+				<< EndDebugError;
+			blob->Release();
+			return false;
+		}
+	}
 
-  // Set mmap_brk_point and brk_point
-  mmap_brk_point_ = mmap_base_;
+	// Set mmap_brk_point and brk_point
+	mmap_brk_point_ = mmap_base_;
 
-  ADDRESS_TYPE top_addr = stack_base_ + stack_size - 1;
-  if(verbose_) {
-    logger_ << DebugInfo << "=== top_addr = 0x" << std::hex << top_addr << std::dec
-      << EndDebugInfo;
-  }
+	ADDRESS_TYPE top_addr = stack_base_ + stack_size - 1;
+	if(verbose_)
+	{
+		logger_ << DebugInfo << "=== top_addr = 0x" << std::hex << top_addr << std::dec
+		<< EndDebugInfo;
+	}
 
-  brk_point_ = top_addr +
-      (memory_page_size_ - (top_addr % memory_page_size_));
+	brk_point_ = top_addr +
+	(memory_page_size_ - (top_addr % memory_page_size_));
 
-  if(verbose_) {
-    logger_ << DebugInfo
-        << "=== stack_size_ = 0x" << std::hex << stack_size << " (" << std::dec << stack_size << ")" << std::endl
-        << "=== brk_point_ = 0x" << std::hex << brk_point_ << std::endl
-        << "=== mmap_brk_point_ = 0x" << mmap_brk_point_ << std::endl
-        << "=== mmap_base_ = 0x" << mmap_base_ << std::endl
-        << "=== memory_page_size_ = 0x" << memory_page_size_ << " ("
-        << std::dec << memory_page_size_ << ")" << EndDebugInfo;
-  }
+	if(verbose_)
+	{
+		logger_ << DebugInfo
+			<< "=== stack_size_ = 0x" << std::hex << stack_size << " (" << std::dec << stack_size << ")" << std::endl
+			<< "=== brk_point_ = 0x" << std::hex << brk_point_ << std::endl
+			<< "=== mmap_brk_point_ = 0x" << mmap_brk_point_ << std::endl
+			<< "=== mmap_base_ = 0x" << mmap_base_ << std::endl
+			<< "=== memory_page_size_ = 0x" << memory_page_size_ << " ("
+			<< std::dec << memory_page_size_ << ")" << EndDebugInfo;
+	}
 
-  if(blob_) blob_->Release();
-  blob_ = blob;
-  is_load_ = true;
+	if(blob_) blob_->Release();
+	blob_ = blob;
+	is_load_ = true;
 
-  return true;
+	if(!stdin_pipe_filename.empty())
+	{
+		int stdin_pipe_flags = O_RDONLY;
+#if defined(WIN32) || defined(WIN64)
+		int stdin_pipe_flags |= O_BINARY;
+#endif
+		stdin_pipe_fd = open(stdin_pipe_filename.c_str(), stdin_pipe_flags);
+		if(stdin_pipe_fd == -1)
+		{
+			logger_ << DebugError << "Can't open \"" << stdin_pipe_filename << "\"" << EndDebugError;
+			return false;
+		}
+	}
+	
+	if(!stdout_pipe_filename.empty())
+	{
+		int stdout_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+#if defined(WIN32) || defined(WIN64)
+		stdout_pipe_flags |= O_BINARY;
+#endif
+		stdout_pipe_fd = open(stdout_pipe_filename.c_str(), stdout_pipe_flags);
+		if(stdout_pipe_fd == -1)
+		{
+			logger_ << DebugError << "Can't open \"" << stdout_pipe_filename << "\"" << EndDebugError;
+			return false;
+		}
+	}
+	
+	if(!stderr_pipe_filename.empty())
+	{
+		int stderr_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+#if defined(WIN32) || defined(WIN64)
+		stderr_pipe_flags |= O_BINARY;
+#endif
+		stderr_pipe_fd = open(stderr_pipe_filename.c_str(), stderr_pipe_flags);
+		if(stderr_pipe_fd == -1)
+		{
+			logger_ << DebugError << "Can't open \"" << stderr_pipe_filename << "\"" << EndDebugError;
+			return false;
+		}
+	}
+
+	MapTargetToHostFileDescriptor(0, (stdin_pipe_fd == -1) ? 0 : stdin_pipe_fd); // map target stdin file descriptor to either host stdin file descriptor or host input file descriptor
+	MapTargetToHostFileDescriptor(1, (stdout_pipe_fd == -1) ? 1 : stdout_pipe_fd); // map target stdout file descriptor to either host stdout file descriptor or host output file descriptor
+	MapTargetToHostFileDescriptor(2, (stderr_pipe_fd == -1) ? 2 : stderr_pipe_fd); // map target stdout file descriptor to either host stderr file descriptor or host output file descriptor
+
+	return true;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -2214,6 +2723,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap()
 	syscall_name_map_["close"] = &thistype::LSC_close;
 	syscall_name_map_["lseek"] = &thistype::LSC_lseek;
 	syscall_name_map_["getpid"] = &thistype::LSC_getpid;
+	syscall_name_map_["gettid"] = &thistype::LSC_gettid;
 	syscall_name_map_["getuid"] = &thistype::LSC_getuid;
 	syscall_name_map_["access"] = &thistype::LSC_access;
 	syscall_name_map_["times"] = &thistype::LSC_times;
@@ -2356,6 +2866,68 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id)
 {
 	return id;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Host2LinuxErrno(int host_errno) const
+{
+	typename std::map<int, int32_t>::const_iterator it = host2linux_errno.find(host_errno);
+	
+	return (it != host2linux_errno.end()) ? (*it).second : LINUX_EINVAL;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Target2HostFileDescriptor(int32_t fd)
+{
+	// Return an error if file descriptor does not exist
+	typename std::map<int32_t, int>::iterator iter = target_to_host_fildes.find(fd);
+	if(iter == target_to_host_fildes.end()) return -1;
+
+	// Translate the target file descriptor to an host file descriptor
+	return (*iter).second;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AllocateFileDescriptor()
+{
+	if(!target_fildes_free_list.empty())
+	{
+		int32_t fildes = target_fildes_free_list.front();
+		target_fildes_free_list.pop();
+		return fildes;
+	}
+	
+	std::map<int32_t, int>::reverse_iterator iter = target_to_host_fildes.rbegin();
+	
+	if(iter != target_to_host_fildes.rend())
+	{
+		return (*iter).first + 1;
+	}
+	
+	return 0;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FreeFileDescriptor(int32_t fd)
+{
+	target_fildes_free_list.push(fd);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::MapTargetToHostFileDescriptor(int32_t target_fd, int host_fd)
+{
+	target_to_host_fildes.insert(std::pair<int32_t, int>(target_fd, host_fd));
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::UnmapTargetToHostFileDescriptor(int32_t target_fd)
+{
+	std::map<int32_t, int>::iterator iter = target_to_host_fildes.find(target_fd);
+	
+	if(iter != target_to_host_fildes.end())
+	{
+		target_to_host_fildes.erase(iter);
+	}
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>

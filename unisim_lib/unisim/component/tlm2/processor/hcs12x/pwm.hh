@@ -82,7 +82,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::RegisterArray;
+using unisim::kernel::service::SignalArray;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -124,6 +124,8 @@ public:
 						PWMCNT0, PWMCNT1, PWMCNT2, PWMCNT3, PWMCNT4, PWMCNT5, PWMCNT6, PWMCNT7,
 						PWMPER0, PWMPER1, PWMPER2, PWMPER3, PWMPER4, PWMPER5, PWMPER6, PWMPER7,
 						PWMDTY0, PWMDTY1, PWMDTY2, PWMDTY3, PWMDTY4, PWMDTY5, PWMDTY6, PWMDTY7, PWMSDN};
+
+	static const unsigned int REGISTERS_BANK_SIZE = 40;
 
 	tlm_initiator_socket<CONFIG::UNISIM2EXTERNAL_BUS_WIDTH, UNISIM_PWM_ProtocolTypes<PWM_SIZE> > master_sock;
 
@@ -205,10 +207,19 @@ public:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
-	RegisterArray<bool> channel_output_reg;
+	SignalArray<bool> channel_output_reg;
 
 protected:
-	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };
+//	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };
+	void setOutput(uint8_t channel_index, bool value) {
+		assert(channel_index < PWM_SIZE);
+
+		if (value != output[channel_index]) {
+			channel_output_reg[channel_index] = value;
+		}
+
+	};
+
 	bool getOutput(uint8_t channel_index) { assert(channel_index < PWM_SIZE); return (output[channel_index]); }
 
 private:
@@ -219,6 +230,8 @@ private:
 
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
+	XINT_Payload *xint_payload;
+	PWM_Payload<PWM_SIZE> *pwm_payload;
 
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;
@@ -290,15 +303,17 @@ private:
 	private:
 //		bool output;
 
-		uint8_t channelMask;
+		PWM	*pwmParent;
+		uint8_t channel_index;
+
 		uint8_t *pwmcnt_register_ptr;
 		uint8_t *pwmper_register_value_ptr;
 		uint8_t pwmper_register_buffer;
 		uint8_t *pwmdty_register_value_ptr;
 		uint8_t pwmdty_register_buffer;
 
-		uint8_t channel_index;
-		PWM	*pwmParent;
+		uint8_t channelMask;
+
 		sc_event wakeup_event;
 
 		template <class T> void checkChangeStateAndWait(const sc_time clk);

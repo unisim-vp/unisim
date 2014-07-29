@@ -1,0 +1,81 @@
+%\documentclass[11pt]{book}
+\documentclass[a4paper,11pt,onecolumn]{mathese}
+% \usepackage[frenchb]{babel}
+% \usepackage[latin1]{inputenc}
+% \usepackage[T1]{fontenc}
+% \usepackage[french]{varioref}
+%\usepackage{fullpage}
+% \usepackage{graphicx}
+% \usepackage{lgrind}
+%\usepackage{progSTF}
+% \usepackage{subfigure}
+% \usepackage{moreverb}
+\usepackage{ulem}
+% \usepackage{srctex}
+% \usepackage{geometry}
+\usepackage{pifont}
+\usepackage{multirow}
+\usepackage{supertabular}
+\usepackage{placeins}
+
+\usepackage{hyperref}%                   % Utilisation de HyperTeX
+
+\usepackage[utf8x]{inputenc}
+
+%\lhead{\includegraphics[width=1.0cm]{logo_unisim.pdf}}
+
+\hypersetup{
+    pdfauthor   = {Julien Lisita},%
+    pdftitle    = {Mémoire de stage},%
+    pdfsubject  = {Développement d'un simulateur de jeu d'instructions},%
+    pdfkeywords = {Environnement de simulation, exploration d'architecture, conception des systèmes embarqués, vérification du système},%
+    pdfcreator  = {rubber},%
+    pdfproducer = {rubber}
+}
+
+
+%\geometry{hmargin=3.0cm,vmargin=2.5cm}
+
+\begin{document}
+\selectlanguage{french}
+\setlength{\parskip}{0.5em}%0.15cm}
+\baselineskip 14pt
+
+
+\title{\bf \huge Développement d'un simulateur de jeu d'instructions}
+\author{Julien Lisita}
+\date{1$^{er}$ Septembre 2014}
+
+\begin{titlepage}
+%\frontmatter
+\begin{figure}
+\begin{center}
+%\includegraphics[width=8cm,natwidth=11.0cm,natheight=11.0cm]{logo_unisim.pdf}
+\maketitle
+\end{center}
+\end{figure}
+\end{titlepage}
+%\input{abstract}
+%\input{acknowledgements}
+%\tableofcontents
+
+
+%\addcontentsline{toc}{chapter}{Table des mati�res} 
+\tableofcontents \markboth{Table of content}{Table of content}
+\listoffigures
+
+\mainmatter
+
+\chapter{Introduction}
+\label{introduction}
+\input{memoire_lisita/introduction/introduction}
+
+% \input{filename}
+% \begin{appendix}
+% \input{filename} 
+% \end{appendix}
+
+\bibliographystyle{plain}
+\bibliography{memoire_lisita/biblio}
+
+\end{document}

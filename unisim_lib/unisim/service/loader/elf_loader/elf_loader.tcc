@@ -92,7 +92,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 			"if true force base address for a unique program segment")
 	, param_force_use_virtual_address("force-use-virtual-address", this, 
 			force_use_virtual_address, 
-			"force use of virtual addresses instead of physical addresses")
+			"force use of virtual addresses instead of physical addresses (default false)")
 	, param_initialize_extra_segment_bytes("initialize-extra-segment-bytes", this, initialize_extra_segment_bytes, "whether to initialize extra bytes in segments (p_filesz < p_memsz) to zero (true for standard ELF files)")
 	, param_dump_headers("dump-headers", this, dump_headers, 
 			"dump headers while loading ELF file")

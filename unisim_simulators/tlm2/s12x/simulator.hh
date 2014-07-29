@@ -37,6 +37,8 @@
 #include <unisim/service/tee/registers/registers_tee.hh>
 #include <unisim/service/tee/memory_import_export/memory_import_export_tee.hh>
 
+#include <unisim/service/telnet/telnet.hh>
+
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 
@@ -116,6 +118,7 @@ using unisim::kernel::service::CallBackObject;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
 
+using unisim::service::telnet::Telnet;
 
 class Simulator :
 	public unisim::kernel::service::Simulator
@@ -250,18 +253,28 @@ private:
 	//  - Inline debugger
 	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
 
+	// - telnet
+	unisim::service::telnet::Telnet *sci_telnet;
+	unisim::service::telnet::Telnet *spi_telnet;
+
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
 
 	bool enable_pim_server;
-	bool enable_gdb_server;
-	bool enable_inline_debugger;
-	string filename;
 	Parameter<bool> param_enable_pim_server;
+	bool enable_gdb_server;
 	Parameter<bool> param_enable_gdb_server;
+	bool enable_inline_debugger;
 	Parameter<bool> param_enable_inline_debugger;
+
+	string filename;
+
+	bool sci_enable_telnet;
+	Parameter<bool>  param_sci_enable_telnet;
+	bool spi_enable_telnet;
+	Parameter<bool>  param_spi_enable_telnet;
 
 	string endian;
 	Parameter<string> *param_endian;
@@ -272,10 +285,10 @@ private:
 	bool isS19;
 
 	bool dump_parameters;
-	bool dump_formulas;
-	bool dump_statistics;
 	Parameter<bool> param_dump_parameters;
+	bool dump_formulas;
 	Parameter<bool> param_dump_formulas;
+	bool dump_statistics;
 	Parameter<bool> param_dump_statistics;
 
 	enum {DATA_LOAD_RATIO, DATA_STORE_RATIO} ReadBackOffsets;
