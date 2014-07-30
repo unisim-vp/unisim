@@ -313,7 +313,11 @@ bool CPU<CONFIG>::UintLoadByte(unsigned int rd,typename CONFIG::address_t addr)
 	uint8_t buffer;
         bool status=DHSBRead(addr,&buffer, 1);                 // read word 
 
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value=buffer;       
 	SetGPR(rd,value);                                     // put in register 
 	MonitorLoad(addr,1);
@@ -326,7 +330,11 @@ bool CPU<CONFIG>::UintLoadHalfWord(unsigned int rd,typename CONFIG::address_t ad
 {
 	uint16_t buffer;
         bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = BigEndian2Host(buffer);
 	SetGPR(rd,value);
 	MonitorLoad(addr, 2);
@@ -338,7 +346,11 @@ bool CPU<CONFIG>::UintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::addre
 {
 	uint16_t buffer;
         bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = buffer;
 #if BYTE_ORDER == BIG_ENDIAN
 	BSwap(value);
@@ -353,7 +365,11 @@ bool CPU<CONFIG>::IntLoadWord(unsigned int rd,typename CONFIG::address_t addr)
 {
 	uint32_t buffer;
 	bool status=DHSBRead(addr,&buffer,4);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = BigEndian2Host(buffer);
 	SetGPR(rd,value);
 	MonitorLoad(addr, 4);
@@ -366,7 +382,11 @@ bool CPU<CONFIG>::IntLoadWordAndSwap(unsigned int rd,typename CONFIG::address_t 
 {
 	uint32_t buffer;
 	bool status=DHSBRead(addr,&buffer,4);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = buffer;
 #if BYTE_ORDER == BIG_ENDIAN
 	BSwap(value);
@@ -382,7 +402,11 @@ bool CPU<CONFIG>::SintLoadByte(unsigned int rd,typename CONFIG::address_t addr)
 {
 	uint8_t buffer;
 	bool status=DHSBRead(addr,&buffer,1);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value=buffer;   
 	value=SignExtend(value,8);
 	SetGPR(rd,value);
@@ -396,7 +420,11 @@ bool CPU<CONFIG>::SintLoadHalfWord(unsigned int rd,typename CONFIG::address_t ad
 {
 	uint16_t buffer;
 	bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = BigEndian2Host(buffer);
 	value= SignExtend((uint32_t)value,16);
 	SetGPR(rd,value);
@@ -409,7 +437,11 @@ bool CPU<CONFIG>::SintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::addre
 {
 	uint16_t buffer;
 	bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	
 #if BYTE_ORDER == BIG_ENDIAN
 	BSwap(buffer);
@@ -427,7 +459,11 @@ bool CPU<CONFIG>::LoadSR(typename CONFIG::address_t addr)
 {
 	uint32_t buffer;
 	bool status=DHSBRead(addr,&buffer,4);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = BigEndian2Host(buffer);
 	SetSR(value);
 	MonitorLoad(addr,4);
@@ -438,7 +474,11 @@ bool CPU<CONFIG>::LoadAndInsertByte(unsigned int rd,typename CONFIG::address_t a
 {
 	uint8_t buffer;
 	bool status=DHSBRead(addr,&buffer,1);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t val=buffer;
 	uint32_t d=GetGPR(rd);
 	uint32_t mask=0x000000FF << (part * 8);
@@ -453,7 +493,11 @@ bool CPU<CONFIG>::LoadAndInsertHalfWord(unsigned int rd,typename CONFIG::address
 {
 	uint16_t buffer;
 	bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t val=BigEndian2Host(buffer);
 	uint32_t d=GetGPR(rd);
 	uint32_t mask=0x0000FFFF << (part * 16);
@@ -470,7 +514,11 @@ bool CPU<CONFIG>::IntStoreByte(unsigned int rs,typename CONFIG::address_t addr)
 	uint8_t value=GetGPR(rs);
 	uint8_t buffer=value;
 	bool status=DHSBWrite(addr,&buffer,1);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	MonitorStore(addr, 1);
 	return true;
 }
@@ -577,71 +625,6 @@ bool CPU<CONFIG>::MemoryBitAccess(typename CONFIG::address_t addr,unsigned int m
 	return true;
 }
 
-/*
-template <class CONFIG>
-bool CPU<CONFIG>::MemReadByte(typename CONFIG::address_t addr, uint32_t& value)
-{
-	uint8_t buffer;
-	bool status=DHSBRead(addr,&buffer,1);
-	if(unlikely(!status)) return false;
-	value =  buffer;
-	value= SignExtend((uint32_t)value,16);
-	MonitorLoad(addr,1);
-	return true;
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::MemReadHalfWord(typename CONFIG::address_t addr, uint32_t& value)
-{
-	uint16_t buffer;
-	bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
-	value=BigEndian2Host(buffer);
-	value= SignExtend((uint32_t)value,16);
-	MonitorLoad(addr,2);
-	return true;
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::MemReadWord(typename CONFIG::address_t addr, uint32_t& value)
-{
-	uint32_t buffer;
-	bool status=DHSBRead(addr,&buffer,4);
-	if(unlikely(!status)) return false;
-	value=BigEndian2Host(buffer);
-	MonitorLoad(addr,4);
-	return true;
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::MemWriteByte(uint32_t value,typename CONFIG::address_t addr)
-{	
-	uint8_t buffer=value;
-	bool status=DHSBWrite( addr,&buffer,1);
-	if(unlikely(!status)) return false;
-	MonitorStore(addr,1);
-	return true;
-}
-template <class CONFIG>
-bool CPU<CONFIG>::MemWriteHalfWord(uint32_t value,typename CONFIG::address_t addr)
-{	
-	uint16_t buffer=Host2BigEndian(value);
-	bool status=DHSBWrite( addr,&buffer,2);
-	if(unlikely(!status)) return false;
-	MonitorStore(addr,2);
-	return true;
-}
-template <class CONFIG>
-bool CPU<CONFIG>::MemWriteWord(uint32_t value,typename CONFIG::address_t addr)
-{	
-	uint32_t buffer=Host2BigEndian(value);
-	bool status=DHSBWrite( addr,&buffer,4);
-	if(unlikely(!status)) return false;
-	
-	MonitorStore(addr,4);
-	return true;
-}
-*/
 template <class CONFIG>
 bool CPU<CONFIG>::EvaluateCond(uint8_t cond)
 {
