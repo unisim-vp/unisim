@@ -346,7 +346,8 @@ MEMOIRE_LISITA_TARGET_PDF=memoire_lisita.pdf
 # memoire Julien Lisita (2014) ###############
 MEMOIRE_LISITA_LATEX_SOURCES= \
 memoire_lisita.tex \
-memoire_lisita/introduction/introduction.tex
+memoire_lisita/introduction/introduction.tex \
+memoire_lisita/annexe/annexe.tex
 
 MEMOIRE_LISITA_GENERATED_LATEX=
 

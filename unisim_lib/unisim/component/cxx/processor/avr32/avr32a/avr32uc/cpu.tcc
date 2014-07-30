@@ -1042,9 +1042,9 @@ int PCRegisterInterface<CONFIG>::GetSize() const
 template <class CONFIG>
 inline void CPU<CONFIG>::ProcessExceptions(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
 {
-	std::cerr << "exc_flags=0x" << std::hex << exc_flags << std::dec << ", exc_enable=0x" << std::hex << exc_enable << std::dec << std::endl;
+	//std::cerr << "exc_flags=0x" << std::hex << exc_flags << std::dec << ", exc_enable=0x" << std::hex << exc_enable << std::dec << std::endl;
 	unsigned int exception_num;
-	if(unisim::util::arithmetic::BitScanForward(exception_num, exc_flags & exc_enable))
+	if(unlikely(unisim::util::arithmetic::BitScanForward(exception_num, exc_flags & exc_enable)))
 	{
 		logger << DebugError << "Got an exception: " << std::endl;
 		stringstream sstr;
