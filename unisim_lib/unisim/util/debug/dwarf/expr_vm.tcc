@@ -271,6 +271,18 @@ MEMORY_ADDR DWARF_Location<MEMORY_ADDR>::GetAddress() const
 }
 
 template <class MEMORY_ADDR>
+MEMORY_ADDR DWARF_Location<MEMORY_ADDR>::GetImplicitSimpleValue() const
+{
+	return dw_implicit_simple_value;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_Block<MEMORY_ADDR> *DWARF_Location<MEMORY_ADDR>::GetImplicitBlockValue() const
+{
+	return dw_implicit_block_value;
+}
+
+template <class MEMORY_ADDR>
 void DWARF_Location<MEMORY_ADDR>::SetByteSize(uint64_t _dw_byte_size)
 {
 	dw_byte_size = _dw_byte_size;

@@ -261,6 +261,65 @@ public:
 			SetHW_SR((GetSR() & ~CONFIG::SR_APP_MASK) | (val & CONFIG::SR_APP_MASK));
 		}
 	}
+	
+	inline void SetSRWithExceptionUpdate(uint32_t val) ALWAYS_INLINE
+	{
+		if(IsPrivilegedMode())
+		{
+			SetHW_SR((GetSR() & ~CONFIG::SR_MASK) | (val & CONFIG::SR_MASK));
+		}
+		else
+		{
+			SetHW_SR((GetSR() & ~CONFIG::SR_APP_MASK) | (val & CONFIG::SR_APP_MASK));
+		}
+		UpdateExcEnable();
+	}
+
+	inline void UpdateExcEnable()
+	{
+		if(GetSR_EM() || GetSR_GM() || GetSR_I0M())
+			exc_enable &= ~CONFIG::EXC_ENABLE_IRQ0;
+		else
+			exc_enable |= CONFIG::EXC_ENABLE_IRQ0;
+		
+		if(GetSR_EM() || GetSR_GM() || GetSR_I1M())
+			exc_enable &= ~CONFIG::EXC_ENABLE_IRQ1;
+		else
+			exc_enable |= CONFIG::EXC_ENABLE_IRQ1;
+
+		if(GetSR_EM() || GetSR_GM() || GetSR_I2M())
+			exc_enable &= ~CONFIG::EXC_ENABLE_IRQ2;
+		else
+			exc_enable |= CONFIG::EXC_ENABLE_IRQ2;
+
+		if(GetSR_EM() || GetSR_GM() || GetSR_I3M())
+			exc_enable &= ~CONFIG::EXC_ENABLE_IRQ3;
+		else
+			exc_enable |= CONFIG::EXC_ENABLE_IRQ3;
+
+		if(GetSR_EM())
+		{
+			exc_enable &= ~0;
+		}
+		else
+		{
+			exc_enable |= CONFIG::EXC_ENABLE_RESET | CONFIG::EXC_ENABLE_NMI | CONFIG::EXC_ENABLE_UNRECOVERABLE | CONFIG::EXC_ENABLE_TLB_MULTIPLE_HIT | CONFIG::EXC_ENABLE_BUS_ERROR_DATA_FETCH | CONFIG::EXC_ENABLE_BUS_ERROR_INSTRUCTION_FETCH |
+			              CONFIG::EXC_ENABLE_OCD_STOP_CPU | CONFIG::EXC_ENABLE_INSTRUCTION_ADDR | CONFIG::EXC_ENABLE_ITLB_MISS | CONFIG::EXC_ENABLE_ITLB_PROTECTION |
+			              CONFIG::EXC_ENABLE_BREAKPOINT | CONFIG::EXC_ENABLE_ILLEGAL_OPCODE | CONFIG::EXC_ENABLE_UNIMPLEMENTED_INSTRUCTION | CONFIG::EXC_ENABLE_PRIVILEGE_VIOLATION |
+			              CONFIG::EXC_ENABLE_FLOATING_POINT | CONFIG::EXC_ENABLE_COPROCESSOR_ABSENT | CONFIG::EXC_ENABLE_SUPERVISOR_CALL | CONFIG::EXC_ENABLE_DATA_ADDRESS_READ |
+			              CONFIG::EXC_ENABLE_DATA_ADDRESS_WRITE | CONFIG::EXC_ENABLE_DTLB_MISS_READ | CONFIG::EXC_ENABLE_DTLB_MISS_WRITE | CONFIG::EXC_ENABLE_DTLB_PROTECTION_READ |
+			              CONFIG::EXC_ENABLE_DTLB_PROTECTION_WRITE | CONFIG::EXC_ENABLE_DTLB_MODIFIED | CONFIG::EXC_ENABLE_UNDEFINED_BEHAVIOR;
+		}
+	}
+
+	inline void SetSRBit(unsigned int n)
+	{
+		SetSRWithExceptionUpdate(GetSR() | (1 << n));
+	}
+	inline void ClearSRBit(unsigned int n)
+	{
+		SetSRWithExceptionUpdate(GetSR() & ~(1 << n));
+	}
 
 	inline void SetSR_SS(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_SS_MASK) | ((val << CONFIG::SR_SS_OFFSET) & CONFIG::SR_SS_MASK)); }
 	inline void SetSR_H(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_H_MASK) | ((val << CONFIG::SR_H_OFFSET) & CONFIG::SR_H_MASK)); }
@@ -271,12 +330,12 @@ public:
 	inline void SetSR_M1(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_M1_MASK) | ((val << CONFIG::SR_M1_OFFSET) & CONFIG::SR_M1_MASK)); }
 	inline void SetSR_M0(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_M0_MASK) | ((val << CONFIG::SR_M0_OFFSET) & CONFIG::SR_M0_MASK)); }
 	inline void SetSR_M(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_M_MASK) | ((val << CONFIG::SR_M_OFFSET) & CONFIG::SR_M_MASK)); }
-	inline void SetSR_EM(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_EM_MASK) | ((val << CONFIG::SR_EM_OFFSET) & CONFIG::SR_EM_MASK)); }
-	inline void SetSR_I3M(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_I3M_MASK) | ((val << CONFIG::SR_I3M_OFFSET) & CONFIG::SR_I3M_MASK)); }
-	inline void SetSR_I2M(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_I2M_MASK) | ((val << CONFIG::SR_I2M_OFFSET) & CONFIG::SR_I2M_MASK)); }
-	inline void SetSR_I1M(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_I1M_MASK) | ((val << CONFIG::SR_I1M_OFFSET) & CONFIG::SR_I1M_MASK)); }
-	inline void SetSR_I0M(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_I0M_MASK) | ((val << CONFIG::SR_I0M_OFFSET) & CONFIG::SR_I0M_MASK)); }
-	inline void SetSR_GM(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_GM_MASK) | ((val << CONFIG::SR_GM_OFFSET) & CONFIG::SR_GM_MASK)); }
+	inline void SetSR_EM(uint32_t val) ALWAYS_INLINE { SetSRWithExceptionUpdate((GetSR() & ~CONFIG::SR_EM_MASK) | ((val << CONFIG::SR_EM_OFFSET) & CONFIG::SR_EM_MASK)); }
+	inline void SetSR_I3M(uint32_t val) ALWAYS_INLINE { SetSRWithExceptionUpdate((GetSR() & ~CONFIG::SR_I3M_MASK) | ((val << CONFIG::SR_I3M_OFFSET) & CONFIG::SR_I3M_MASK)); }
+	inline void SetSR_I2M(uint32_t val) ALWAYS_INLINE { SetSRWithExceptionUpdate((GetSR() & ~CONFIG::SR_I2M_MASK) | ((val << CONFIG::SR_I2M_OFFSET) & CONFIG::SR_I2M_MASK)); }
+	inline void SetSR_I1M(uint32_t val) ALWAYS_INLINE { SetSRWithExceptionUpdate((GetSR() & ~CONFIG::SR_I1M_MASK) | ((val << CONFIG::SR_I1M_OFFSET) & CONFIG::SR_I1M_MASK)); }
+	inline void SetSR_I0M(uint32_t val) ALWAYS_INLINE { SetSRWithExceptionUpdate((GetSR() & ~CONFIG::SR_I0M_MASK) | ((val << CONFIG::SR_I0M_OFFSET) & CONFIG::SR_I0M_MASK)); }
+	inline void SetSR_GM(uint32_t val) ALWAYS_INLINE { SetSRWithExceptionUpdate((GetSR() & ~CONFIG::SR_GM_MASK) | ((val << CONFIG::SR_GM_OFFSET) & CONFIG::SR_GM_MASK)); }
 	inline void SetSR_R(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_R_MASK) | ((val << CONFIG::SR_R_OFFSET) & CONFIG::SR_R_MASK)); }
 	inline void SetSR_T(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_T_MASK) | ((val << CONFIG::SR_T_OFFSET) & CONFIG::SR_T_MASK)); }
 	inline void SetSR_L(uint32_t val) ALWAYS_INLINE { SetSR((GetSR() & ~CONFIG::SR_L_MASK) | ((val << CONFIG::SR_L_OFFSET) & CONFIG::SR_L_MASK)); }
@@ -297,7 +356,6 @@ public:
 	inline void SetSS_RAR(uint32_t val) ALWAYS_INLINE {ss_rar=val;}
 	inline void SetSS_RSR(uint32_t val) ALWAYS_INLINE {ss_rsr=val;}
 	void SwitchExecutionMode(uint32_t execution_mode);
-	uint32_t GetPriorityLevel(uint32_t execution_mode);
 	
 	bool MoveFromSystemRegister(unsigned int rd, unsigned int sr_num);
 	
@@ -351,6 +409,13 @@ public:
 	void ResetNMIREQ();
 	void SetIRQ(unsigned int irq);
 	void ResetIRQ(unsigned int irq);
+	
+	inline void SetException(unsigned int exc_num) ALWAYS_INLINE { SetExceptionFlags(1 << exc_num); }
+	inline void ResetException(unsigned int exc_num) ALWAYS_INLINE { ResetExceptionFlags(1 << exc_num); }
+	inline void SetExceptionFlags(uint32_t _exc_flags) ALWAYS_INLINE { exc_flags = exc_flags | _exc_flags;  }
+	inline void ResetExceptionFlags(uint32_t _exc_flags) ALWAYS_INLINE { exc_flags = exc_flags & ~_exc_flags;  }
+	inline void SetExceptionEnable(uint32_t _exc_enable) ALWAYS_INLINE { exc_enable = exc_enable | _exc_enable;  }
+	inline void ResetExceptionEnable(uint32_t _exc_enable) ALWAYS_INLINE { exc_enable = exc_enable & ~_exc_enable;  }
 
 	//=====================================================================
 	//=                     Memory access methods                         =
@@ -371,6 +436,8 @@ public:
 	bool IntStoreHalfWord(unsigned int rs,typename CONFIG::address_t addr);
 	bool IntStoreWord(unsigned int rs,typename CONFIG::address_t addr);
 	bool StoreHalfWordIntoWord(unsigned int rx,unsigned int ry,unsigned int x_part,unsigned int y_part,typename CONFIG::address_t addr);
+	bool SwapAndStoreHalfWord(unsigned int rs, typename CONFIG::address_t addr);
+	bool SwapAndStoreWord(unsigned int rs, typename CONFIG::address_t addr);
 	
 	bool UintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::address_t addr);
 	bool IntLoadWordAndSwap(unsigned int rd,typename CONFIG::address_t addr);
@@ -534,6 +601,45 @@ private:
 
 	string micro_architecture;
 
+	//=====================================================================
+	//=                            Exceptions                             =
+	//=====================================================================
+	
+	uint32_t exc_flags;                                       //!< exception flags (bits are ordered according to exception priority)
+	uint32_t exc_enable;                                      //!< exception enable  (bits are ordered according to exception priority)
+//	typename CONFIG::address_t exc_addr;                      //!< effective address, if any, that caused the exception
+//	typename CONFIG::MemoryAccessType exc_memory_access_type; //!< memory access type, if any, that caused the exception
+	void (unisim::component::cxx::processor::avr32::avr32a::avr32uc::CPU<CONFIG>::*enter_isr_table[CONFIG::NUM_EXCEPTIONS])(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	
+	void EnterUndefinedBehaviorException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterResetException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterOCDStopCPUException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterUnrecoverableException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterTLBMultipleHitException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterBusErrorDataFetchException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterBusErrorInstructionFetchException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterNMIException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterIRQ3Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterIRQ2Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterIRQ1Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterIRQ0Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterInstructionAddrException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterITLBMissException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterITLBProtectionException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterBreakpointException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterIllegalOpcodeException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterUnimplementedInstructionException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterPrivilegeViolationException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterFloatingPointException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterCoprocessorAbsentException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterSupervisorCallException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterDataAddressReadException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterDataAddressWriteException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterDTLBMissReadException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterDTLBMissWriteException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterDTLBProtectionReadException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterDTLBProtectionWriteException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
+	void EnterDTLBModifiedException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation);
 	
 	//=====================================================================
 	//=                    CPU run-time parameters                        =

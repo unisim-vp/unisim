@@ -86,6 +86,7 @@ public:
 	void EnableEatingSpace();
 	void EnableEatingTab();
 	void EnableEatingEndOfLine();
+	void FinishScanningLine();
 	const char *GetLine() const;
 	const char *GetText() const;
 	const Location& GetLocation() const;
@@ -114,6 +115,7 @@ private:
 	Location loc;
 	unisim::kernel::logger::Logger& logger;
 	bool debug;
+	bool finished_scanning_line;
 	
 	bool IsDecimalDigit(char c) const;
 	bool IsAlpha(char c) const;

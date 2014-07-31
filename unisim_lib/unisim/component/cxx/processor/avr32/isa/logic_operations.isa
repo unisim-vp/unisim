@@ -44,7 +44,7 @@ and_b.execute={
 }
 
 and_b.disasm={
-	os << "and\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] <<  "<<0x" << std::hex <<(int)sa5; 
+	os << "and\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] <<  "<<0x" << std::hex <<(int)sa5 << std::dec; 
 }
 
 op and_c(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b0000001[7]:sa5[5]:rd[4])
@@ -54,7 +54,6 @@ and_c.execute={
 	uint32_t x=cpu->GetGPR(rx);           // get values
 	uint32_t y=cpu->GetGPR(ry);
 
-	//uint32_t result=x & ShiftRight(y,(unsigned int)sa5);
 	uint32_t result= x & (y >> sa5);	 // perform y >> sa5
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
@@ -68,7 +67,7 @@ and_c.execute={
 }
 
 and_c.disasm={
-	os << "and\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] <<  ">>0x" << std::hex << (int)sa5; 
+	os << "and\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry] <<  ">>0x" << std::hex << (int)sa5 << std::dec; 
 }
 
 
@@ -155,7 +154,7 @@ andh.execute={
 }
 
 andh.disasm={
-	os << "andh\t" << REG_NAME[rd] << ",0x" << std::hex <<imm16 << ( coh ? ",coh" : "");
+	os << "andh\t" << REG_NAME[rd] << ",0x" << std::hex <<imm16 << std::dec <<( coh ? ",coh" : "");
 }
 
 op andl(0b111[3]:0b00[2]:0b0[1]:coh[1]:0b00001[5]:rd[4]:><:imm16[16])
@@ -188,7 +187,7 @@ andl.execute={
 
 
 andl.disasm={
-	os << "andl\t" << REG_NAME[rd] << ",0x" << std::hex << imm16 << ( coh ? ",coh" : "" );
+	os << "andl\t" << REG_NAME[rd] << ",0x" << std::hex << imm16 << std::dec << ( coh ? ",coh" : "" );
 }
 
 
@@ -461,6 +460,7 @@ or_cond4.execute={
 		uint32_t result= x | y;
 
 		cpu->SetGPR(rd,result);    // write back result in rd
+		
 		//flags are not affected		
 	}
 	return true;

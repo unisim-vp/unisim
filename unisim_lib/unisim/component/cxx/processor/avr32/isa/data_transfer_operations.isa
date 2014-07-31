@@ -121,7 +121,11 @@ op ld_ub_a(0b000[3]:rp[4]:0b10011[5]:rd[4])
 
 ld_ub_a.execute={
 
-	if (rp==rd) return false;         // the result is undefined
+	if (rp==rd)
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;         // the result is undefined
+	}
 
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);   //get address in rp
 	
@@ -147,8 +151,12 @@ op ld_ub_b(0b000[3]:rp[4]:0b10111[5]:rd[4])
 
 ld_ub_b.execute={
 
-	if (rp==rd) return false;         // the result is undefined
-
+	if (rp==rd) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;         // the result is undefined
+	}
+	
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);   
 	
 	if(!cpu->UintLoadByte(rd,--addr))       // load in register rd
@@ -324,8 +332,12 @@ op ld_uh_a(0b000[3]:rp[4]:0b10010[5]:rd[4])
 
 ld_uh_a.execute={
 
-	if (rp==rd) return false;         // the result is undefined
-
+	if (rp==rd) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;         // the result is undefined
+	}
+	
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);   
 	
 	if (!cpu->UintLoadHalfWord(rd,addr)) return false;
@@ -350,8 +362,11 @@ op ld_uh_b(0b000[3]:rp[4]:0b10110[5]:rd[4])
 
 ld_uh_b.execute={
 
-	if (rp==rd) return false;         // the result is undefined
-
+	if (rp==rd)
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;         // the result is undefined
+	}
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);   
 	addr=addr-2;
 	
@@ -459,8 +474,12 @@ op ld_sh_a(0b000[3]:rp[4]:0b10001[5]:rd[4])
 
 ld_sh_a.execute={
 
-	if (rp==rd) return false;         // the result is undefined
-
+	if (rp==rd) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;         // the result is undefined
+	}
+	
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);   
 	
 	if(!cpu->SintLoadHalfWord(rd,addr)) return false;
@@ -485,8 +504,12 @@ op ld_sh_b(0b000[3]:rp[4]:0b10101[5]:rd[4])
 
 ld_sh_b.execute={
 
-	if (rp==rd) return false;         // the result is undefined
-
+	if (rp==rd) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;         // the result is undefined
+	}
+	
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);   
 	addr=addr-2;
 	
@@ -598,8 +621,12 @@ op ld_w_a(0b000[3]:rp[4]:0b10000[5]:rd[4])
 
 ld_w_a.execute={
 
-	if(rp==rd)return false;
-
+	if(rp==rd)
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
+	
 	typename CONFIG::address_t addr=cpu->GetGPR(rp);
 	
 	if(!cpu->IntLoadWord(rd,addr)) return false;
@@ -623,8 +650,12 @@ op ld_w_b(0b000[3]:rp[4]:0b10100[5]:rd[4])
 
 ld_w_b.execute={
 
-	if(rp==rd)return false;
-
+	if(rp==rd)
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
+	
 	typename CONFIG::address_t addr=cpu->GetGPR(rp);
 	
 	addr=addr-4;
@@ -718,7 +749,7 @@ ld_w_f.execute={
 	uint32_t b = cpu->GetGPR(rb);
 	uint32_t i = cpu->GetGPR(ri); 
 
-	typename CONFIG::address_t addr = b + ((i >> (8 *part) & 0xFF) << 2);
+	typename CONFIG::address_t addr = b + (((i >> (8 *part)) & 0xFF) << 2);
 	
 	return cpu->IntLoadWord(rd,addr);
 }
@@ -768,8 +799,11 @@ op ld_d_a(0b101[3]:rp[4]:0b100[3]:0b00[2]:rd[3]:0b1[1])
 
 ld_d_a.execute={
 	
-	if((rp==(2*rd)) || (rp==((2*rd)+1))) return false;
-
+	if((rp==(2*rd)) || (rp==((2*rd)+1))) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);
 	
 	if(!cpu->IntLoadWord((2*rd)+1,addr)) return false;
@@ -794,8 +828,12 @@ op ld_d_b(0b101[3]:rp[4]:0b100[3]:0b01[2]:rd[3]:0b0[1])
 
 ld_d_b.execute={
 
-	if((rp==(2*rd)) || (rp==((2*rd)+1))) return false;
-
+	if((rp==(2*rd)) || (rp==((2*rd)+1)))
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
+	
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);
 	
 	addr-=8;
@@ -823,9 +861,7 @@ ld_d_c.execute={
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);
 
 	if(!cpu->IntLoadWord((2*rd)+1,addr)) return false;
-	if(!cpu->IntLoadWord(2*rd,addr+4)) return false;
-
-	return true;
+	return cpu->IntLoadWord(2*rd,addr+4);
 }
 
 ld_d_c.disasm={
@@ -862,14 +898,10 @@ op ld_d_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0010[4]:0b00[2]:sa[2]:r
 
 ld_d_e.execute={
 
-	if(rd & 1 )return false; 			// rd should be even
-
 	typename CONFIG::address_t addr= cpu->GetGPR(rb) + (cpu->GetGPR(ri)<< sa);
 
 	if(!cpu->IntLoadWord(rd+1,addr)) return false;
 	return cpu->IntLoadWord(rd,addr+4);
-
-	return true;
 }
 
 ld_d_e.disasm={
@@ -912,15 +944,7 @@ op ldins_h(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b000[3]:part[1]:sext<32>disp12[12
 ldins_h.execute={
 
 	typename CONFIG::address_t addr = cpu->GetGPR(rp) + (disp12<< 1);	        // parenthesage non explicite ??
-	/*uint32_t d = cpu->GetGPR(rd);
-	uint32_t val;
-	cpu ->MemReadHalfWord(addr,val);
 
-	if(part==1){d = (d & 0xFFFF0000)|(val & 0x0000FFFF);}
-	else{d = (d & 0x0000FFFF)|( (val << 16) & 0xFFFF0000);}	
-	
-	cpu->SetGPR(rd,d);	
-	*/
 	return cpu->LoadAndInsertHalfWord(rd,addr,part);
 }
 
@@ -940,12 +964,7 @@ op ldswp_sh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0010[4]:sext<32>disp12[12])
 ldswp_sh.execute={
 
 	typename CONFIG::address_t addr = cpu->GetGPR(rp)+ (disp12 << 1);
-	/*uint32_t temp;
-	cpu->MemReadHalfWord(addr,temp);
-	uint32_t result = SignExtend(((temp & 0x000000FF)<<8 ) | ((temp & 0x0000FF00)>>8),16);// utiliser ByteSwap
-	
-	cpu->SetGPR(rd,result);
-	*/
+
 	return cpu->SintLoadHalfWordAndSwap(rd,addr);
 }
 
@@ -964,12 +983,7 @@ op ldswp_uh(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b0011[4]:sext<32>disp12[12])
 ldswp_uh.execute={
 
 	typename CONFIG::address_t addr = cpu->GetGPR(rp)+ (disp12 << 1);
-	/*uint32_t temp;
-	cpu->MemReadHalfWord(addr,temp);
-	uint32_t result =((temp & 0x000000FF)<<8 ) | ((temp & 0x0000FF00)>>8);
 
-	cpu->SetGPR(rd,result);
-	*/
 	return cpu->UintLoadHalfWordAndSwap(rd,addr);
 }
 
@@ -988,12 +1002,7 @@ op ldswp_w(0b111[3]:rp[4]:0b11101[5]:rd[4]:><:0b1000[4]:sext<32>disp12[12])
 ldswp_w.execute={
 
 	typename CONFIG::address_t addr = cpu->GetGPR(rp)+ (disp12 << 2);
-	/*uint32_t temp;
-	cpu->MemReadWord(addr,temp);
-	uint32_t result = ((temp & 0x000000FF)<<24 ) | ((temp & 0x0000FF00)<<8) | ((temp & 0x00FF0000)>>8) | ((temp & 0xFF000000)>>24);
 
-	cpu->SetGPR(rd,result);
-	*/
 	return cpu->IntLoadWordAndSwap(rd,addr);
 }
 
@@ -1014,8 +1023,6 @@ op lddpc(0b010[3]:0b01[2]:disp7[7]:rd[4])
 lddpc.var lddpc_addr : {uint32_t}= { (Operation<CONFIG>::GetAddr() & 0xFFFFFFFC) + ((uint32_t)disp7 << 2)}
 
 lddpc.execute={
-	
-	//std::cerr << "op::GetAddr()=0x" << std::hex << pc << std::dec << ", pc=0x" << std::hex << cpu->GetGPR(15) << std::dec;
 	
 	typename CONFIG::address_t address= lddpc_addr;
 	return cpu->IntLoadWord(rd,address);
@@ -1063,8 +1070,12 @@ op st_b_a(0b000[3]:rp[4]:0b01100[5]:rs[4])
 
 st_b_a.execute={
 
-	if(rp==rs) return false;
-
+	if(rp==rs)
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
+	
 	typename CONFIG::address_t addr=cpu->GetGPR(rp);                        // get address
 	if(!cpu->IntStoreByte(rs,addr++))return false;        // store byte in memory
 		                            		      
@@ -1086,8 +1097,11 @@ op st_b_b(0b000[3]:rp[4]:0b01111[5]:rs[4])
 
 st_b_b.execute={
 
-	if(rp==rs) return false;
-
+	if(rp==rs)
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 	typename CONFIG::address_t addr=cpu->GetGPR(rp);                   // get address
 	
 	if(!cpu->IntStoreByte(rs,--addr))return false;   // store byte in memory
@@ -1199,7 +1213,11 @@ op st_d_a(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b0[1])
 
 st_d_a.execute={
 
-	if((rp==(2*rs)) || (rp==((2*rs)+1))) return false;
+	if((rp==(2*rs)) || (rp==((2*rs)+1))) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 	
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);
 
@@ -1226,7 +1244,11 @@ op st_d_b(0b101[3]:rp[4]:0b100[3]:0b10[2]:rs[3]:0b1[1])
 
 st_d_b.execute={
 
-	if((rp==(2*rs)) || (rp==((2*rs)+1))) return false;
+	if((rp==(2*rs)) || (rp==((2*rs)+1))) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 	
 	typename CONFIG::address_t addr= cpu->GetGPR(rp);
 
@@ -1322,7 +1344,11 @@ op st_h_a(0b000[3]:rp[4]:0b01011[5]:rs[4])
 
 st_h_a.execute={
 	
-	if(rp==rs) return false;
+	if(rp==rs) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 	typename CONFIG::address_t addr=cpu->GetGPR(rp);
 
 	if(!cpu->IntStoreHalfWord(rs,addr))return false;
@@ -1347,7 +1373,11 @@ op st_h_b(0b000[3]:rp[4]:0b01110[5]:rs[4])
 
 st_h_b.execute={
 
-	if(rp==rs) return false;
+	if(rp==rs) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 	typename CONFIG::address_t addr=cpu->GetGPR(rp);
 	addr-=2;
 
@@ -1461,7 +1491,11 @@ op st_w_a(0b000[3]:rp[4]:0b01010[5]:rs[4])
 st_w_a.execute={
 
 
-	if(rp==rs) return false;
+	if(rp==rs) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 
 	typename CONFIG::address_t addr = cpu->GetGPR(rp);
 
@@ -1487,10 +1521,14 @@ op st_w_b(0b000[3]:rp[4]:0b01101[5]:rs[4])
 st_w_b.execute={
 
 
-	if(rp==rs) return false;
+	if(rp==rs) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 
 	typename CONFIG::address_t addr = cpu->GetGPR(rp);
-	addr-=4;	                 //pre inc
+	addr-=4;	                 //pre dec
 
 	if(!cpu->IntStoreWord(rs,addr)) return false;
 	
@@ -1654,22 +1692,6 @@ op sthh_w_a(0b111[3]:rx[4]:0b11110[5]:ry[4]:><:0b11[2]:x[1]:y[1]:disp8[8]:rp[4])
 
 sthh_w_a.execute={
 
-	/*
-	uint32_t hight_part=cpu->GetGPR(rx);
-	uint32_t low_part=cpu->GetGPR(ry);
-	
-	uint32_t addr = cpu->GetGPR(rp) + ((uint32_t)disp8 << 2);
-
-	if(x==1) hight_part=hight_part & 0xFFFF0000;
-	else hight_part= (hight_part & 0x0000FFFF) << 16;
-
-	if(y==1) low_part= (low_part & 0xFFFF0000)>> 16;
-	else low_part= low_part & 0x0000FFFF;
-
-	uint32_t result = hight_part | low_part; 
-	
-	cpu->MemWriteWord(result,addr);  	
-	*/
 	typename CONFIG::address_t addr = cpu->GetGPR(rp) + ((uint32_t)disp8 << 2);
 	
 	return cpu->StoreHalfWordIntoWord(rx,ry,x,y,addr);
@@ -1699,18 +1721,13 @@ sthh_w_b.disasm={
 
 // STSWP_H/W - swap and store
 
-op stswp_h(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1001[4]:disp12[12])
+op stswp_h(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1001[4]:sext<32> disp12[12])
 
 stswp_h.execute={
 
-	//uint32_t s = cpu->GetGPR(rs);
-	//uint32_t temp= ((s & 0x000000FF)<< 8) | ((s & 0x0000FF00)>> 8);  // swap lower and bottom byte
+	typename CONFIG::address_t addr= cpu->GetGPR(rp) + (disp12 <<1);
 
-	typename CONFIG::address_t addr= cpu->GetGPR(rp) + (SignExtend((uint32_t)disp12,12)<<1);
-
-	//cpu->MemWriteHalfWord(temp,addr);
-
-	return cpu->IntStoreHalfWord(rs,addr);
+	return cpu->SwapAndStoreHalfWord(rs,addr);
 }
 
 stswp_h.disasm={
@@ -1719,19 +1736,13 @@ stswp_h.disasm={
 }
 
 
-op stswp_w(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1010[4]:disp12[12])
+op stswp_w(0b111[3]:rp[4]:0b11101[5]:rs[4]:><:0b1010[4]:sext<32> disp12[12])
 
 stswp_w.execute={
 
-	//uint32_t s = cpu->GetGPR(rs);
+	typename CONFIG::address_t addr= cpu->GetGPR(rp) + (disp12 <<2);
 
-	//uint32_t temp= ((s & 0x000000FF)<< 24) | ((s & 0x0000FF00)<< 8) | ((s & 0x00FF0000)>>8 ) | ((s & 0xFF000000)>>24);
-
-	typename CONFIG::address_t addr= cpu->GetGPR(rp) + (SignExtend((uint32_t)disp12,12)<<2);
-
-	//cpu->MemWriteWord(temp,addr);
-
-	return cpu->IntStoreWord(rs,addr);
+	return cpu->SwapAndStoreWord(rs,addr);
 }
 
 stswp_w.disasm={
@@ -1745,15 +1756,6 @@ op xchg(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b10110100[8]:rd[4])
 
 xchg.execute={
 	
-	/*uint32_t addr = cpu->GetGPR(rx); 
-	uint32_t temp;
-	cpu->MemReadWord(addr,temp);
-
-	cpu->IntStoreWord(ry,addr);
-	 	
-	cpu->SetGPR(rd,temp);
-	
-	return true;*/
 	return cpu->ExchangeRegMem(rd,rx,ry);
 }
 
@@ -1776,14 +1778,19 @@ op ldm(0b111[3]:0b000[3]:postinc[1]:0b11100[5]:rp[4]:><:reglist16[16])
  // reglist16={R0,R1,R2,R3,R4,R5,R6,R7...R12,LR,SP,PC}
 
 ldm.execute={
-		   
 
-	//Emtpy Reglist16 gives UNDEFINED result.
+	//Empty Reglist16 gives UNDEFINED result.
 	if(reglist16 == 0) 
-		return false;                      
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false
+	};                      
 	//If Rp is in Reglist16 and pointer is written back the result is UNDEFINED.
-	if((rp != REG_PC) && (((reglist16>>rp)&1)==1))
+	if(postinc && (rp != REG_PC) && (((reglist16>>rp)&1)==1)) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
 		return false;
+	}
 
 	typename CONFIG::address_t loadAddress = cpu->GetGPR(rp);
 	if(reglist16 & REG_LIST16_PC)                  //reglist16[PC]==1
@@ -1961,16 +1968,25 @@ ldm.disasm={
 }
 
 
-//LDMTS load multiple registers for atsk switch
+//LDMTS load multiple registers for task switch
 
+//FIXME: check implementation of User Register Context
 op ldmts(0b111[3]:0b001[3]:postinc[1]:0b11100[5]:rp[4]:><:reglist16[16])
 
 ldmts.execute={
 	
 	//Emtpy Reglist16 gives UNDEFINED result.
-	if(reglist16==0) return false;
+	if(reglist16==0) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 	//PC in Reglist16 gives UNDEFINED result.
-	if(reglist16 & REG_LIST16_PC) return false;
+	if(reglist16 & REG_LIST16_PC) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 
 	typename CONFIG::address_t loadAddress = cpu->GetGPR(rp);
 
@@ -2088,7 +2104,11 @@ popm.execute={
 	
 	
 	//Emtpy Reglist8 gives UNDEFINED result.
-	if(reglist8==0) return false;
+	if(reglist8==0) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 	
 	uint32_t sp = cpu->GetGPR(13);
 	
@@ -2263,7 +2283,11 @@ op pushm(0b110[3]:0b1[1]:reglist8[8]:0b0001[4])
 pushm.execute={
 	
 	//Emtpy Reglist8 gives UNDEFINED result.
-	if(reglist8==0) return false;
+	if(reglist8==0) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 
 	uint32_t sp= cpu->GetGPR(13);
 	
@@ -2382,9 +2406,17 @@ op stm(0b111[3]:0b010[3]:predec[1]:0b11100[5]:rp[4]:><:reglist16[16])
 stm.execute={
 
 	//Emtpy Reglist16 gives UNDEFINED result.
-	if(reglist16==0) return false;
-	//PC in Reglist16 gives UNDEFINED result.
-	if(reglist16 & REG_LIST16_PC) return false;
+	if(reglist16==0) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
+	//rp in Reglist16 gives UNDEFINED result.
+	if((reglist16 >> rp) & 1) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 
 	typename CONFIG::address_t storeAddress= cpu->GetGPR(rp);
 
@@ -2509,9 +2541,17 @@ op stmts(0b111[3]:0b011[3]:predec[1]:0b11100[5]:rp[4]:><:reglist16[16])
 stmts.execute={
 
 	//Emtpy Reglist16 gives UNDEFINED result.
-	if(reglist16==0) return false;
+	if(reglist16==0) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 	//PC in Reglist16 gives UNDEFINED result.
-	if(reglist16 & REG_LIST16_PC) return false;
+	if(reglist16 & REG_LIST16_PC) 
+	{
+		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
+		return false;
+	}
 
 	typename CONFIG::address_t storeAddress= cpu->GetGPR(rp);
 
@@ -2637,53 +2677,56 @@ stmts.disasm={
 
 // MEMC - clear bit in memory
 
-op memc(0b111101100001[12]:bp_4_1[4]:><: bp_0[1]:imm15[15])
+op memc(0b111101100001[12]:bp_4_1[4]:><: bp_0[1]:sext<32>imm15[15])
 
 memc.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 }
 
 memc.execute={
 
-	typename CONFIG::address_t addr = SignExtend((uint32_t)(imm15<<2),15);
+	typename CONFIG::address_t addr =imm15<<2;
 	return cpu->MemoryBitAccess(addr,1,bp);
 } 
 
 memc.disasm={
 
-	os << "memc\tr0x" << std::hex <<(int)imm15 << ",0x" << std::dec <<(int) bp ;
+	typename CONFIG::address_t addr =imm15<<2;
+	os << "memc\tr0x" << std::hex << addr  << ",0x" << std::dec <<(int) bp ;
 }
 
 // MEMS - set bit in memory
 
-op mems(0b111110000001[12]:bp_4_1[4]:><: bp_0[1]:imm15[15])
+op mems(0b111110000001[12]:bp_4_1[4]:><: bp_0[1]:sext<32>imm15[15])
 
 mems.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 } 
 
 mems.execute={
 	
-	typename CONFIG::address_t addr = SignExtend((uint32_t)(imm15<<2),15);
+	typename CONFIG::address_t addr =imm15<<2;
 	return cpu->MemoryBitAccess(addr,2,bp);
 }
 
 mems.disasm={
 
-	os << "mems\tr0x" << std::hex <<(int)imm15 << ",0x" << std::hex <<(int)bp;
+	typename CONFIG::address_t addr =imm15<<2;
+	os << "mems\tr0x" << std::hex << addr << ",0x" << std::dec <<(int)bp;
 }
 
 // MEMT - toggle bit in memory
 
-op memt(0b111110100001[12]:bp_4_1[4]:><: bp_0[1]:imm15[15])
+op memt(0b111110100001[12]:bp_4_1[4]:><: bp_0[1]:sext<32>imm15[15])
 
 memt.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 }
 
 memt.execute={
 
-	typename CONFIG::address_t addr = SignExtend((uint32_t)(imm15<<2),15);
+	typename CONFIG::address_t addr =imm15<<2;
 	return cpu->MemoryBitAccess(addr,3,bp);
 } 
 
 memt.disasm={
 
-	os << "memt\tr0x" << std::hex <<(int)imm15 << ",0x" << std::hex<< (int) bp;
+	typename CONFIG::address_t addr =imm15<<2;
+	os << "memt\tr0x" << std::hex << addr << ",0x" << std::dec<< (unsigned int) bp;
 }
      
 

@@ -113,6 +113,37 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
+	enter_isr_table[CONFIG::EXC_UNDEFINED_BEHAVIOR] = &CPU<CONFIG>::EnterUndefinedBehaviorException;
+	enter_isr_table[CONFIG::EXC_RESET] = &CPU<CONFIG>::EnterResetException;
+	enter_isr_table[CONFIG::EXC_OCD_STOP_CPU] = &CPU<CONFIG>::EnterOCDStopCPUException;
+	enter_isr_table[CONFIG::EXC_UNRECOVERABLE] = &CPU<CONFIG>::EnterUnrecoverableException;
+	enter_isr_table[CONFIG::EXC_TLB_MULTIPLE_HIT] = &CPU<CONFIG>::EnterTLBMultipleHitException;
+	enter_isr_table[CONFIG::EXC_BUS_ERROR_DATA_FETCH] = &CPU<CONFIG>::EnterBusErrorDataFetchException;
+	enter_isr_table[CONFIG::EXC_BUS_ERROR_INSTRUCTION_FETCH] = &CPU<CONFIG>::EnterBusErrorInstructionFetchException;
+	enter_isr_table[CONFIG::EXC_NMI] = &CPU<CONFIG>::EnterNMIException;
+	enter_isr_table[CONFIG::EXC_IRQ3] = &CPU<CONFIG>::EnterIRQ3Exception;
+	enter_isr_table[CONFIG::EXC_IRQ2] = &CPU<CONFIG>::EnterIRQ2Exception;
+	enter_isr_table[CONFIG::EXC_IRQ1] = &CPU<CONFIG>::EnterIRQ1Exception;
+	enter_isr_table[CONFIG::EXC_IRQ0] = &CPU<CONFIG>::EnterIRQ0Exception;
+	enter_isr_table[CONFIG::EXC_INSTRUCTION_ADDR] = &CPU<CONFIG>::EnterInstructionAddrException;
+	enter_isr_table[CONFIG::EXC_ITLB_MISS] = &CPU<CONFIG>::EnterITLBMissException;
+	enter_isr_table[CONFIG::EXC_ITLB_PROTECTION] = &CPU<CONFIG>::EnterITLBProtectionException;
+	enter_isr_table[CONFIG::EXC_BREAKPOINT] = &CPU<CONFIG>::EnterBreakpointException;
+	enter_isr_table[CONFIG::EXC_ILLEGAL_OPCODE] = &CPU<CONFIG>::EnterIllegalOpcodeException;
+	enter_isr_table[CONFIG::EXC_UNIMPLEMENTED_INSTRUCTION] = &CPU<CONFIG>::EnterUnimplementedInstructionException;
+	enter_isr_table[CONFIG::EXC_PRIVILEGE_VIOLATION] = &CPU<CONFIG>::EnterPrivilegeViolationException;
+	enter_isr_table[CONFIG::EXC_FLOATING_POINT] = &CPU<CONFIG>::EnterFloatingPointException;
+	enter_isr_table[CONFIG::EXC_COPROCESSOR_ABSENT] = &CPU<CONFIG>::EnterCoprocessorAbsentException;
+	enter_isr_table[CONFIG::EXC_SUPERVISOR_CALL] = &CPU<CONFIG>::EnterSupervisorCallException;
+	enter_isr_table[CONFIG::EXC_DATA_ADDRESS_READ] = &CPU<CONFIG>::EnterDataAddressReadException;
+	enter_isr_table[CONFIG::EXC_DATA_ADDRESS_WRITE] = &CPU<CONFIG>::EnterDataAddressWriteException;
+	enter_isr_table[CONFIG::EXC_DTLB_MISS_READ] = &CPU<CONFIG>::EnterDTLBMissReadException;
+	enter_isr_table[CONFIG::EXC_DTLB_MISS_WRITE] = &CPU<CONFIG>::EnterDTLBMissWriteException;
+	enter_isr_table[CONFIG::EXC_DTLB_PROTECTION_READ] = &CPU<CONFIG>::EnterDTLBProtectionReadException;
+	enter_isr_table[CONFIG::EXC_DTLB_PROTECTION_WRITE] = &CPU<CONFIG>::EnterDTLBProtectionWriteException;
+	enter_isr_table[CONFIG::EXC_DTLB_MODIFIED] = &CPU<CONFIG>::EnterDTLBModifiedException;
+
+	
 	unsigned int i;
 
 	for(i = 0; i < 13; i++)
@@ -238,6 +269,14 @@ void CPU<CONFIG>::Reset()
 	{
 		sr = sr | CONFIG::SR_DM_MASK;
 	}
+	
+	exc_enable = CONFIG::EXC_ENABLE_RESET | CONFIG::EXC_ENABLE_NMI | CONFIG::EXC_ENABLE_UNRECOVERABLE | CONFIG::EXC_ENABLE_TLB_MULTIPLE_HIT | CONFIG::EXC_ENABLE_BUS_ERROR_DATA_FETCH | CONFIG::EXC_ENABLE_BUS_ERROR_INSTRUCTION_FETCH |
+		       CONFIG::EXC_ENABLE_OCD_STOP_CPU | CONFIG::EXC_ENABLE_INSTRUCTION_ADDR | CONFIG::EXC_ENABLE_ITLB_MISS | CONFIG::EXC_ENABLE_ITLB_PROTECTION |
+			 CONFIG::EXC_ENABLE_BREAKPOINT | CONFIG::EXC_ENABLE_ILLEGAL_OPCODE | CONFIG::EXC_ENABLE_UNIMPLEMENTED_INSTRUCTION | CONFIG::EXC_ENABLE_PRIVILEGE_VIOLATION |
+			 CONFIG::EXC_ENABLE_FLOATING_POINT | CONFIG::EXC_ENABLE_COPROCESSOR_ABSENT | CONFIG::EXC_ENABLE_SUPERVISOR_CALL | CONFIG::EXC_ENABLE_DATA_ADDRESS_READ |
+			 CONFIG::EXC_ENABLE_DATA_ADDRESS_WRITE | CONFIG::EXC_ENABLE_DTLB_MISS_READ | CONFIG::EXC_ENABLE_DTLB_MISS_WRITE | CONFIG::EXC_ENABLE_DTLB_PROTECTION_READ |
+			 CONFIG::EXC_ENABLE_DTLB_PROTECTION_WRITE | CONFIG::EXC_ENABLE_DTLB_MODIFIED | CONFIG::EXC_ENABLE_UNDEFINED_BEHAVIOR;
+	exc_flags = 0;
 }
  
 template <class CONFIG>
@@ -274,7 +313,11 @@ bool CPU<CONFIG>::UintLoadByte(unsigned int rd,typename CONFIG::address_t addr)
 	uint8_t buffer;
         bool status=DHSBRead(addr,&buffer, 1);                 // read word 
 
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value=buffer;       
 	SetGPR(rd,value);                                     // put in register 
 	MonitorLoad(addr,1);
@@ -287,7 +330,11 @@ bool CPU<CONFIG>::UintLoadHalfWord(unsigned int rd,typename CONFIG::address_t ad
 {
 	uint16_t buffer;
         bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = BigEndian2Host(buffer);
 	SetGPR(rd,value);
 	MonitorLoad(addr, 2);
@@ -299,7 +346,11 @@ bool CPU<CONFIG>::UintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::addre
 {
 	uint16_t buffer;
         bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = buffer;
 #if BYTE_ORDER == BIG_ENDIAN
 	BSwap(value);
@@ -314,7 +365,11 @@ bool CPU<CONFIG>::IntLoadWord(unsigned int rd,typename CONFIG::address_t addr)
 {
 	uint32_t buffer;
 	bool status=DHSBRead(addr,&buffer,4);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = BigEndian2Host(buffer);
 	SetGPR(rd,value);
 	MonitorLoad(addr, 4);
@@ -327,7 +382,11 @@ bool CPU<CONFIG>::IntLoadWordAndSwap(unsigned int rd,typename CONFIG::address_t 
 {
 	uint32_t buffer;
 	bool status=DHSBRead(addr,&buffer,4);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = buffer;
 #if BYTE_ORDER == BIG_ENDIAN
 	BSwap(value);
@@ -343,7 +402,11 @@ bool CPU<CONFIG>::SintLoadByte(unsigned int rd,typename CONFIG::address_t addr)
 {
 	uint8_t buffer;
 	bool status=DHSBRead(addr,&buffer,1);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value=buffer;   
 	value=SignExtend(value,8);
 	SetGPR(rd,value);
@@ -357,7 +420,11 @@ bool CPU<CONFIG>::SintLoadHalfWord(unsigned int rd,typename CONFIG::address_t ad
 {
 	uint16_t buffer;
 	bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = BigEndian2Host(buffer);
 	value= SignExtend((uint32_t)value,16);
 	SetGPR(rd,value);
@@ -370,7 +437,11 @@ bool CPU<CONFIG>::SintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::addre
 {
 	uint16_t buffer;
 	bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	
 #if BYTE_ORDER == BIG_ENDIAN
 	BSwap(buffer);
@@ -388,7 +459,11 @@ bool CPU<CONFIG>::LoadSR(typename CONFIG::address_t addr)
 {
 	uint32_t buffer;
 	bool status=DHSBRead(addr,&buffer,4);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t value = BigEndian2Host(buffer);
 	SetSR(value);
 	MonitorLoad(addr,4);
@@ -399,7 +474,11 @@ bool CPU<CONFIG>::LoadAndInsertByte(unsigned int rd,typename CONFIG::address_t a
 {
 	uint8_t buffer;
 	bool status=DHSBRead(addr,&buffer,1);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t val=buffer;
 	uint32_t d=GetGPR(rd);
 	uint32_t mask=0x000000FF << (part * 8);
@@ -414,7 +493,11 @@ bool CPU<CONFIG>::LoadAndInsertHalfWord(unsigned int rd,typename CONFIG::address
 {
 	uint16_t buffer;
 	bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	uint32_t val=BigEndian2Host(buffer);
 	uint32_t d=GetGPR(rd);
 	uint32_t mask=0x0000FFFF << (part * 16);
@@ -431,7 +514,11 @@ bool CPU<CONFIG>::IntStoreByte(unsigned int rs,typename CONFIG::address_t addr)
 	uint8_t value=GetGPR(rs);
 	uint8_t buffer=value;
 	bool status=DHSBWrite(addr,&buffer,1);
-	if(unlikely(!status)) return false;
+	if(unlikely(!status)) 
+	{
+		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		return false;
+	}
 	MonitorStore(addr, 1);
 	return true;
 }
@@ -475,6 +562,32 @@ bool CPU<CONFIG>::StoreHalfWordIntoWord(unsigned int rx,unsigned int ry,unsigned
 }
 
 template <class CONFIG>
+bool CPU<CONFIG>::SwapAndStoreHalfWord(unsigned int rs, typename CONFIG::address_t addr)
+{
+	uint16_t value=GetGPR(rs);
+#if BYTE_ORDER == BIG_ENDIAN
+	BSwap(value);
+#endif
+	bool status=DHSBWrite(addr,&value,2);
+	if(unlikely(!status)) return false;
+	MonitorStore(addr, 2);
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::SwapAndStoreWord(unsigned int rs, typename CONFIG::address_t addr)
+{
+	uint32_t value=GetGPR(rs);
+#if BYTE_ORDER == BIG_ENDIAN
+	BSwap(value);
+#endif
+	bool status=DHSBWrite(addr,&value,4);
+	if(unlikely(!status)) return false;
+	MonitorStore(addr, 4);
+	return true;
+}
+
+template <class CONFIG>
 bool CPU<CONFIG>::ExchangeRegMem(unsigned int rd,unsigned int rx,unsigned int ry)
 {
 	typename CONFIG::address_t addr=GetGPR(rx);
@@ -512,71 +625,6 @@ bool CPU<CONFIG>::MemoryBitAccess(typename CONFIG::address_t addr,unsigned int m
 	return true;
 }
 
-/*
-template <class CONFIG>
-bool CPU<CONFIG>::MemReadByte(typename CONFIG::address_t addr, uint32_t& value)
-{
-	uint8_t buffer;
-	bool status=DHSBRead(addr,&buffer,1);
-	if(unlikely(!status)) return false;
-	value =  buffer;
-	value= SignExtend((uint32_t)value,16);
-	MonitorLoad(addr,1);
-	return true;
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::MemReadHalfWord(typename CONFIG::address_t addr, uint32_t& value)
-{
-	uint16_t buffer;
-	bool status=DHSBRead(addr,&buffer,2);
-	if(unlikely(!status)) return false;
-	value=BigEndian2Host(buffer);
-	value= SignExtend((uint32_t)value,16);
-	MonitorLoad(addr,2);
-	return true;
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::MemReadWord(typename CONFIG::address_t addr, uint32_t& value)
-{
-	uint32_t buffer;
-	bool status=DHSBRead(addr,&buffer,4);
-	if(unlikely(!status)) return false;
-	value=BigEndian2Host(buffer);
-	MonitorLoad(addr,4);
-	return true;
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::MemWriteByte(uint32_t value,typename CONFIG::address_t addr)
-{	
-	uint8_t buffer=value;
-	bool status=DHSBWrite( addr,&buffer,1);
-	if(unlikely(!status)) return false;
-	MonitorStore(addr,1);
-	return true;
-}
-template <class CONFIG>
-bool CPU<CONFIG>::MemWriteHalfWord(uint32_t value,typename CONFIG::address_t addr)
-{	
-	uint16_t buffer=Host2BigEndian(value);
-	bool status=DHSBWrite( addr,&buffer,2);
-	if(unlikely(!status)) return false;
-	MonitorStore(addr,2);
-	return true;
-}
-template <class CONFIG>
-bool CPU<CONFIG>::MemWriteWord(uint32_t value,typename CONFIG::address_t addr)
-{	
-	uint32_t buffer=Host2BigEndian(value);
-	bool status=DHSBWrite( addr,&buffer,4);
-	if(unlikely(!status)) return false;
-	
-	MonitorStore(addr,4);
-	return true;
-}
-*/
 template <class CONFIG>
 bool CPU<CONFIG>::EvaluateCond(uint8_t cond)
 {
@@ -666,19 +714,9 @@ void CPU<CONFIG>::StepOneInstruction()
 			//std::cerr << endl;
 			instruction_counter++;
 		}
-		else
-		{
-			logger << DebugError << "Got an exception: " << std::endl;
-			stringstream sstr;
-			operation->disasm((CPU<CONFIG> *) this, sstr);
-			logger << "#" << instruction_counter << ":0x" << std::hex << pc << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugError;
-		//ProcessExceptions(operation);
-			Object::Stop(-1);
-			return;
-		}
 	}
 
-	//ProcessExceptions(operation);
+	ProcessExceptions(operation);
 
 	/* report a finished instruction */
 	if(unlikely(requires_finished_instruction_reporting))
@@ -719,25 +757,6 @@ void CPU<CONFIG>::SwitchExecutionMode(uint32_t execution_mode)
 		// Restore
 		SetSP(sp_sys);
 	}
-}
-template<class CONFIG>
-uint32_t CPU<CONFIG>::GetPriorityLevel(uint32_t execution_mode)
-{
- 	switch(execution_mode)
- 	{
-		case CONFIG::EXEC_MODE_NMI: return CONFIG::PRIO_LEVEL_MODE_NMI;break;
-		case CONFIG::EXEC_MODE_EXC: return CONFIG::PRIO_LEVEL_MODE_EXC;break;
-		case CONFIG::EXEC_MODE_INT_LEVEL3: return CONFIG::PRIO_LEVEL_MODE_INT_LEVEL3;break;
-		case CONFIG::EXEC_MODE_INT_LEVEL2: return CONFIG::PRIO_LEVEL_MODE_INT_LEVEL2;break;
-		case CONFIG::EXEC_MODE_INT_LEVEL1:return CONFIG::PRIO_LEVEL_MODE_INT_LEVEL1;break;
-		case CONFIG::EXEC_MODE_INT_LEVEL0 :return CONFIG::PRIO_LEVEL_MODE_INT_LEVEL0;break;
-		case CONFIG::EXEC_MODE_SUPERVISOR :return CONFIG::PRIO_LEVEL_MODE_SUPERVISOR;break;
-		case CONFIG::EXEC_MODE_APPLICATION:return CONFIG::PRIO_LEVEL_MODE_APPLICATION;break;
-	}
-	
-	std::runtime_error("Internal Error");
-
-	return 0;
 }
 
 template <class CONFIG>
@@ -1019,6 +1038,258 @@ int PCRegisterInterface<CONFIG>::GetSize() const
 {
 	return sizeof(typename CONFIG::address_t);
 }
+
+template <class CONFIG>
+inline void CPU<CONFIG>::ProcessExceptions(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	//std::cerr << "exc_flags=0x" << std::hex << exc_flags << std::dec << ", exc_enable=0x" << std::hex << exc_enable << std::dec << std::endl;
+	unsigned int exception_num;
+	if(unlikely(unisim::util::arithmetic::BitScanForward(exception_num, exc_flags & exc_enable)))
+	{
+		logger << DebugError << "Got an exception: " << std::endl;
+		stringstream sstr;
+		if(operation)
+		{
+			operation->disasm((CPU<CONFIG> *) this, sstr);
+			logger << "#" << instruction_counter << ":0x" << std::hex << operation->GetAddr() << std::dec << ":0x" << std::hex << operation->GetEncoding() << std::dec << ":" << sstr.str() << endl << EndDebugError;
+		}
+		
+		(this->*enter_isr_table[exception_num])(operation);
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterUndefinedBehaviorException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterResetException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterOCDStopCPUException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterUnrecoverableException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterTLBMultipleHitException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterBusErrorDataFetchException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterBusErrorInstructionFetchException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterNMIException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterIRQ3Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterIRQ2Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterIRQ1Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterIRQ0Exception(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterInstructionAddrException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterITLBMissException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterITLBProtectionException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterBreakpointException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterIllegalOpcodeException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterUnimplementedInstructionException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterPrivilegeViolationException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterFloatingPointException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterCoprocessorAbsentException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterSupervisorCallException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDataAddressReadException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDataAddressWriteException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDTLBMissReadException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDTLBMissWriteException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDTLBProtectionReadException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDTLBProtectionWriteException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::EnterDTLBModifiedException(unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation)
+{
+	logger << DebugError << "Got an unhandled exception" << EndDebugError;
+	Object::Stop(-1);
+}
+
+
+
 
 } // end of namespace avr32uc
 } // end of namespace avr32a
