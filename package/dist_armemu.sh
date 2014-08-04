@@ -216,6 +216,7 @@ unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
+unisim/component/cxx/processor/arm/isa/arm32/hints.isa \
 unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
 unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
 unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
