@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 /**********************************************
@@ -44,7 +44,7 @@
  * ldr instruction
  */
 
-op ldr_imm12(0xf8d[12]:rn[4]:> <:rt[4]:imm[12]);
+op ldr_imm12( 0b111110001101[12]: rn[4]:> <: rt[4]: imm[12] );
 
 ldr_imm12.disasm = {
   buffer << "ldr.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -57,10 +57,11 @@ ldr_imm12.execute = {
   cpu.SetGPR_mem( rt, cpu.MemRead32( addr ) );
 };
 
-op ldr_imm(0xf85[12]:rn[4]:> <:rt[4]:1[1]:p[1]:u[1]:w[1]:offset[8]);
+op ldr_imm( 0b111110000101[12]: rn[4]:> <: rt[4]: 0b1[1]: p[1]: u[1]: w[1]: offset[8] );
 ldr_imm.var imm : {int32_t} = {u?offset:-offset};
 
 ldr_imm.disasm = {
+  if ((not p) and (not w)) { buffer << "<undefined>"; return; }
   buffer << "ldr.w\t"
          << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << (p?"":"]")
          << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
@@ -74,7 +75,7 @@ ldr_imm.execute = {
   cpu.SetGPR_mem( rt, cpu.MemRead32( p?oaddr:addr ) );
 };
 
-op ldr_lit(0xf8[8]:u[1]:0b101[3]:0b1111[4]:> <:rt[4]:offset[12]);
+op ldr_lit( 0b11111[5]: 0b00[2]: 0b0[1]: u[1]: 0b10[2]: 0b1[1]: 0b1111[4]:> <: rt[4]: offset[12] );
 ldr_lit.var imm : {int32_t} = {u?offset:-offset};
 
 ldr_lit.disasm = {
@@ -87,7 +88,7 @@ ldr_lit.execute = {
   cpu.SetGPR_mem( rt, cpu.MemRead32( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
 };
 
-op ldr_reg(0xf85[12]:rn[4]:> <:rt[4]:0[1]:0[5]:imm[2]:rm[4]);
+op ldr_reg( 0b111110000101[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 ldr_reg.disasm = {
   buffer << "ldr.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", "
@@ -109,7 +110,7 @@ ldr_reg.execute = {
  * ldrh instruction
  */
 
-op ldrh_imm12(0xf8b[12]:rn[4]:> <:rt[4]:imm[12]);
+op ldrh_imm12( 0b111110001011[12]: rn[4]:> <: rt[4]: imm[12] );
 
 ldrh_imm12.disasm = {
   buffer << "ldrh.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -122,10 +123,11 @@ ldrh_imm12.execute = {
   cpu.SetGPR_mem( rt, cpu.MemRead16( addr ) );
 };
 
-op ldrh_imm(0xf83[12]:rn[4]:> <:rt[4]:1[1]:p[1]:u[1]:w[1]:offset[8]);
+op ldrh_imm( 0b111110000011[12]: rn[4]:> <: rt[4]: 0b1[1]: p[1]: u[1]: w[1]: offset[8] );
 ldrh_imm.var imm : {int32_t} = {u?offset:-offset};
 
 ldrh_imm.disasm = {
+  if ((not p) and (not w)) { buffer << "<undefined>"; return; }
   buffer << "ldrh.w\t"
          << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << (p?"":"]")
          << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
@@ -139,7 +141,7 @@ ldrh_imm.execute = {
   cpu.SetGPR_mem( rt, cpu.MemRead16( p?oaddr:addr ) );
 };
 
-op ldrh_lit(0xf8[8]:u[1]:0b011[3]:0b1111[4]:> <:rt[4]:offset[12]);
+op ldrh_lit( 0b11111000[8]: u[1]: 0b011[3]: 0b1111[4]:> <: rt[4]: offset[12] );
 ldrh_lit.var imm : {int32_t} = {u?offset:-offset};
 
 ldrh_lit.disasm = {
@@ -152,7 +154,7 @@ ldrh_lit.execute = {
   cpu.SetGPR_mem( rt, cpu.MemRead16( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
 };
 
-op ldrh_reg(0xf83[12]:rn[4]:> <:rt[4]:0[1]:0[5]:imm[2]:rm[4]);
+op ldrh_reg( 0b111110000011[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 ldrh_reg.disasm = {
   buffer << "ldrh.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", "
@@ -174,7 +176,7 @@ ldrh_reg.execute = {
  * ldrsh instruction
  */
 
-op ldrsh_imm12(0xf9b[12]:rn[4]:> <:rt[4]:imm[12]);
+op ldrsh_imm12( 0b111110011011[12]: rn[4]:> <: rt[4]: imm[12] );
 
 ldrsh_imm12.disasm = {
   buffer << "ldrsh.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -187,10 +189,11 @@ ldrsh_imm12.execute = {
   cpu.SetGPR_mem( rt, cpu.MemReadS16( addr ) );
 };
 
-op ldrsh_imm(0xf93[12]:rn[4]:> <:rt[4]:1[1]:p[1]:u[1]:w[1]:offset[8]);
+op ldrsh_imm( 0b111110010011[12]: rn[4]:> <: rt[4]: 0b1[1]: p[1]: u[1]: w[1]: offset[8] );
 ldrsh_imm.var imm : {int32_t} = {u?offset:-offset};
 
 ldrsh_imm.disasm = {
+  if ((not p) and (not w)) { buffer << "<undefined>"; return; }
   buffer << "ldrsh.w\t"
          << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << (p?"":"]")
          << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
@@ -204,7 +207,7 @@ ldrsh_imm.execute = {
   cpu.SetGPR_mem( rt, cpu.MemReadS16( p?oaddr:addr ) );
 };
 
-op ldrsh_lit(0xf9[8]:u[1]:0b011[3]:0b1111[4]:> <:rt[4]:offset[12]);
+op ldrsh_lit( 0b11111001[8]: u[1]: 0b011[3]: 0b1111[4]:> <: rt[4]: offset[12] );
 ldrsh_lit.var imm : {int32_t} = {u?offset:-offset};
 
 ldrsh_lit.disasm = {
@@ -217,7 +220,7 @@ ldrsh_lit.execute = {
   cpu.SetGPR_mem( rt, cpu.MemReadS16( (cpu.GetGPR(cpu.PC_reg) & -4) - imm ) );
 };
 
-op ldrsh_reg(0xf93[12]:rn[4]:> <:rt[4]:0[1]:0[5]:imm[2]:rm[4]);
+op ldrsh_reg( 0b111110010011[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 ldrsh_reg.disasm = {
   buffer << "ldrsh.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", "
@@ -239,7 +242,7 @@ ldrsh_reg.execute = {
  * ldrb instruction
  */
 
-op ldrb_imm12(0xf89[12]:rn[4]:> <:rt[4]:imm[12]);
+op ldrb_imm12( 0b111110001001[12]: rn[4]:> <: rt[4]: imm[12] );
 
 ldrb_imm12.disasm = {
   buffer << "ldrb.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -252,10 +255,11 @@ ldrb_imm12.execute = {
   cpu.SetGPR_mem( rt, cpu.MemRead8( addr ) );
 };
 
-op ldrb_imm(0xf81[12]:rn[4]:> <:rt[4]:1[1]:p[1]:u[1]:w[1]:offset[8]);
+op ldrb_imm( 0b11111[5]: 0b00[2]: 0b0[1]: 0b0[1]: 0b00[2]: 0b1[1]: rn[4]:> <: rt[4]: 0b1[1]: p[1]: u[1]: w[1]: offset[8] );
 ldrb_imm.var imm : {int32_t} = {u?offset:-offset};
 
 ldrb_imm.disasm = {
+  if ((not p) and (not w)) { buffer << "<undefined>"; return; }
   buffer << "ldrb.w\t"
          << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << (p?"":"]")
          << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
@@ -269,7 +273,7 @@ ldrb_imm.execute = {
   cpu.SetGPR_mem( rt, cpu.MemRead8( p?oaddr:addr ) );
 };
 
-op ldrb_lit(0xf8[8]:u[1]:0b001[3]:0b1111[4]:> <:rt[4]:offset[12]);
+op ldrb_lit( 0b11111000[8]: u[1]: 0b001[3]: 0b1111[4]:> <: rt[4]: offset[12] );
 ldrb_lit.var imm : {int32_t} = {u?offset:-offset};
 
 ldrb_lit.disasm = {
@@ -282,7 +286,7 @@ ldrb_lit.execute = {
   cpu.SetGPR_mem( rt, cpu.MemRead8( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
 };
 
-op ldrb_reg(0xf81[12]:rn[4]:> <:rt[4]:0[1]:0[5]:imm[2]:rm[4]);
+op ldrb_reg( 0b111110000001[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 ldrb_reg.disasm = {
   buffer << "ldrb.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", "
@@ -304,7 +308,7 @@ ldrb_reg.execute = {
  * ldrsb instruction
  */
 
-op ldrsb_imm12(0xf99[12]:rn[4]:> <:rt[4]:imm[12]);
+op ldrsb_imm12( 0b111110011001[12]: rn[4]:> <: rt[4]: imm[12] );
 
 ldrsb_imm12.disasm = {
   buffer << "ldrsb.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -317,10 +321,11 @@ ldrsb_imm12.execute = {
   cpu.SetGPR_mem( rt, cpu.MemReadS8( addr ) );
 };
 
-op ldrsb_imm(0xf91[12]:rn[4]:> <:rt[4]:1[1]:p[1]:u[1]:w[1]:offset[8]);
+op ldrsb_imm( 0b11111[5]: 0b00[2]: 0b1[1]: 0b0[1]: 0b00[2]: 0b1[1]: rn[4]:> <: rt[4]: 0b1[1]: p[1]: u[1]: w[1]: offset[8] );
 ldrsb_imm.var imm : {int32_t} = {u?offset:-offset};
 
 ldrsb_imm.disasm = {
+  if ((not p) and (not w)) { buffer << "<undefined>"; return; }
   buffer << "ldrsb.w\t"
          << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << (p?"":"]")
          << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
@@ -334,7 +339,7 @@ ldrsb_imm.execute = {
   cpu.SetGPR_mem( rt, cpu.MemReadS8( p?oaddr:addr ) );
 };
 
-op ldrsb_lit(0xf9[8]:u[1]:0b001[3]:0b1111[4]:> <:rt[4]:offset[12]);
+op ldrsb_lit( 0b11111[5]: 0b00[2]: 0b1[1]: u[1]: 0b00[2]: 0b1[1]: 0b1111[4]:> <: rt[4]: offset[12] );
 ldrsb_lit.var imm : {int32_t} = {u?offset:-offset};
 
 ldrsb_lit.disasm = {
@@ -347,7 +352,7 @@ ldrsb_lit.execute = {
   cpu.SetGPR_mem( rt, cpu.MemReadS8( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
 };
 
-op ldrsb_reg(0xf91[12]:rn[4]:> <:rt[4]:0[1]:0[5]:imm[2]:rm[4]);
+op ldrsb_reg( 0b111110010001[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 ldrsb_reg.disasm = {
   buffer << "ldrsb.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", "
@@ -369,10 +374,11 @@ ldrsb_reg.execute = {
  * ldrd instruction
  */
 
-op ldrd(0b1110100[7]:p[1]:u[1]:1[1]:w[1]:1[1]:rn[4]:> <:rt1[4]:rt2[4]:shl<2> offset[8]);
+op ldrd( 0b1110100[7]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]:> <: rt1[4]: rt2[4]: shl<2> offset[8] );
 ldrd.var imm : {int32_t} = {u?offset:-offset};
 
 ldrd.disasm = {
+  if ((not p) and (not w)) { buffer << "<undefined>"; return; }
   buffer << "ldrd\t" << DisasmRegister(rt1) << ", " << DisasmRegister(rt2) << ", ["
          << DisasmRegister(rn) << (p?"":"]") << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
 };
@@ -386,7 +392,7 @@ ldrd.execute = {
   cpu.SetGPR_mem( rt2, cpu.MemRead32( (p?oaddr:addr) + 4 ) );
 };
 
-op ldrd_lit(0b1110100[7]:1[1]:u[1]:1[1]:0[1]:1[1]:0b1111[4]:> <:rt1[4]:rt2[4]:shl<2> offset[8]);
+op ldrd_lit( 0b1110100[7]: 0b1[1]: u[1]: 0b1[1]: 0b0[1]: 0b1[1]: 0b1111[4]:> <: rt1[4]: rt2[4]: shl<2> offset[8] );
 ldrd_lit.var imm : {int32_t} = {u?offset:-offset};
 
 ldrd_lit.disasm = {
@@ -409,7 +415,7 @@ ldrd_lit.execute = {
  * str instruction
  */
 
-op str_imm12(0xf8c[12]:rn[4]:> <:rt[4]:imm[12]);
+op str_imm12( 0b111110001100[12]: rn[4]:> <: rt[4]: imm[12] );
 
 str_imm12.disasm = {
   buffer << "str.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -422,10 +428,11 @@ str_imm12.execute = {
   cpu.MemWrite32( addr, cpu.GetGPR_npc( rt ) );
 };
 
-op str_imm(0xf84[12]:rn[4]:> <:rt[4]:1[1]:p[1]:u[1]:w[1]:offset[8]);
+op str_imm( 0b111110000100[12]: rn[4]:> <: rt[4]: 0b1[1]: p[1]: u[1]: w[1]: offset[8] );
 str_imm.var imm : {int32_t} = {u?offset:-offset};
 
 str_imm.disasm = {
+  if ((rn == 15) or ((not p) and (not w))) { buffer << "<undefined>"; return; }
   buffer << "str.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << (p?"":"]")
          << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
 };
@@ -438,9 +445,10 @@ str_imm.execute = {
   cpu.MemWrite32( p?oaddr:addr, cpu.GetGPR_npc( rt ) );
 };
 
-op str_reg(0xf84[12]:rn[4]:> <:rt[4]:0[1]:0[5]:imm[2]:rm[4]);
+op str_reg( 0b111110000100[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 str_reg.disasm = {
+  if (rn == 15) { buffer << "<undefined>"; return; }
   buffer << "str.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << DisasmShImm(0,imm) << "]";
 };
@@ -460,7 +468,7 @@ str_reg.execute = {
  * strh instruction
  */
 
-op strh_imm12(0xf8a[12]:rn[4]:> <:rt[4]:imm[12]);
+op strh_imm12( 0b111110001010[12]: rn[4]:> <: rt[4]: imm[12] );
 
 strh_imm12.disasm = {
   buffer << "strh.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -473,10 +481,11 @@ strh_imm12.execute = {
   cpu.MemWrite16( addr, cpu.GetGPR_npc( rt ) );
 };
 
-op strh_imm(0xf82[12]:rn[4]:> <:rt[4]:1[1]:p[1]:u[1]:w[1]:offset[8]);
+op strh_imm( 0b111110000010[12]: rn[4]:> <: rt[4]: 0b1[1]: p[1]: u[1]: w[1]: offset[8] );
 strh_imm.var imm : {int32_t} = {u?offset:-offset};
 
 strh_imm.disasm = {
+  if ((rn == 15) or ((not p) and (not w))) { buffer << "<undefined>"; return; }
   buffer << "strh.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << (p?"":"]")
          << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
 };
@@ -489,9 +498,10 @@ strh_imm.execute = {
   cpu.MemWrite16( p?oaddr:addr, cpu.GetGPR_npc( rt ) );
 };
 
-op strh_reg(0xf82[12]:rn[4]:> <:rt[4]:0[1]:0[5]:imm[2]:rm[4]);
+op strh_reg( 0b111110000010[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 strh_reg.disasm = {
+  if (rn == 15) { buffer << "<undefined>"; return; }
   buffer << "strh.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << DisasmShImm(0,imm) << "]";
 };
@@ -511,7 +521,7 @@ strh_reg.execute = {
  * strb instruction
  */
 
-op strb_imm12(0xf88[12]:rn[4]:> <:rt[4]:imm[12]);
+op strb_imm12( 0b111110001000[12]: rn[4]:> <: rt[4]: imm[12] );
 
 strb_imm12.disasm = {
   buffer << "strb.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -524,10 +534,11 @@ strb_imm12.execute = {
   cpu.MemWrite8( addr, cpu.GetGPR_npc( rt ) );
 };
 
-op strb_imm(0xf80[12]:rn[4]:> <:rt[4]:1[1]:p[1]:u[1]:w[1]:offset[8]);
+op strb_imm( 0b111110000000[12]: rn[4]:> <: rt[4]: 0b1[1]: p[1]: u[1]: w[1]: offset[8] );
 strb_imm.var imm : {int32_t} = {u?offset:-offset};
 
 strb_imm.disasm = {
+  if ((rn == 15) or ((not p) and (not w))) { buffer << "<undefined>"; return; }
   buffer << "strb.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << (p?"":"]")
          << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
 };
@@ -540,9 +551,10 @@ strb_imm.execute = {
   cpu.MemWrite8( p?oaddr:addr, cpu.GetGPR_npc( rt ) );
 };
 
-op strb_reg(0xf80[12]:rn[4]:> <:rt[4]:0[1]:0[5]:imm[2]:rm[4]);
+op strb_reg( 0b111110000000[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 strb_reg.disasm = {
+  if (rn == 15) { buffer << "<undefined>"; return; }
   buffer << "strb.w\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn)
          << ", " << DisasmRegister(rm) << DisasmShImm(0,imm) << "]";
 };
@@ -562,12 +574,13 @@ strb_reg.execute = {
  * strd instruction
  */
 
-op strd(0b1110100[7]:p[1]:u[1]:1[1]:w[1]:0[1]:rn[4]:> <:rt1[4]:rt2[4]:shl<2> offset[8]);
+op strd( 0b1110100[7]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]:> <: rt1[4]: rt2[4]: shl<2> offset[8] );
 strd.var imm : {int32_t} = {u?offset:-offset};
 
 strd.disasm = {
+  if ((not p) and (not w)) { buffer << "<undefined>"; return; }
   buffer << "strd\t" << DisasmRegister(rt1) << ", " << DisasmRegister(rt2) << ", ["
-         << DisasmRegister(rn) << (p?"":"]") << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
+         << DisasmRegister(rn) << (p?"":"]") << ", " << DisasmI(imm) << (p?((w)?"]!":"]"):"");
 };
 
 strd.execute = {
@@ -588,7 +601,7 @@ strd.execute = {
  * TODO: force user running mode access
  */
 
-op ldrt(0xf85[12]:rn[4]:> <:rt[4]:1[1]:0b110[3]:imm[8]);
+op ldrt( 0b111110000101[12]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
 
 ldrt.disasm = {
   buffer << "ldrt\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -610,7 +623,7 @@ ldrt.execute = {
  * TODO: force user running mode access
  */
 
-op ldrht(0xf83[12]:rn[4]:> <:rt[4]:1[1]:0b110[3]:imm[8]);
+op ldrht( 0b111110000011[12]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
 
 ldrht.disasm = {
   buffer << "ldrht\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -632,7 +645,7 @@ ldrht.execute = {
  * TODO: force user running mode access
  */
 
-op ldrsht(0xf93[12]:rn[4]:> <:rt[4]:1[1]:0b110[3]:imm[8]);
+op ldrsht( 0b111110010011[12]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
 
 ldrsht.disasm = {
   buffer << "ldrsht\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -654,7 +667,7 @@ ldrsht.execute = {
  * TODO: force user running mode access
  */
 
-op ldrbt(0xf81[12]:rn[4]:> <:rt[4]:1[1]:0b110[3]:imm[8]);
+op ldrbt( 0b111110000001[12]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
 
 ldrbt.disasm = {
   buffer << "ldrbt\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -676,7 +689,7 @@ ldrbt.execute = {
  * TODO: force user running mode access
  */
 
-op ldrsbt(0xf91[12]:rn[4]:> <:rt[4]:1[1]:0b110[3]:imm[8]);
+op ldrsbt( 0b11111[5]: 0b00[2]: 0b1[1]: 0b0[1]: 0b00[2]: 0b1[1]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
 
 ldrsbt.disasm = {
   buffer << "ldrsbt\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -698,9 +711,10 @@ ldrsbt.execute = {
  * TODO: force user running mode access
  */
 
-op strt(0xf84[12]:rn[4]:> <:rt[4]:1[1]:0b110[3]:imm[8]);
+op strt( 0b11111[5]: 0b00[2]: 0b0[1]: 0b0[1]: 0b10[2]: 0b0[1]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
 
 strt.disasm = {
+  if (rn == 15) { buffer << "<undefined>"; return; }
   buffer << "strt\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
 }
 
@@ -720,9 +734,10 @@ strt.execute = {
  * TODO: force user running mode access
  */
 
-op strht(0xf82[12]:rn[4]:> <:rt[4]:1[1]:0b110[3]:imm[8]);
+op strht( 0b11111[5]: 0b00[2]: 0b0[1]: 0b0[1]: 0b01[2]: 0b0[1]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
 
 strht.disasm = {
+  if (rn == 15) { buffer << "<undefined>"; return; }
   buffer << "strht\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
 }
 
@@ -742,9 +757,10 @@ strht.execute = {
  * TODO: force user running mode access
  */
 
-op strbt(0xf80[12]:rn[4]:> <:rt[4]:1[1]:0b110[3]:imm[8]);
+op strbt( 0b11111[5]: 0b00[2]: 0b0[1]: 0b0[1]: 0b00[2]: 0b0[1]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
 
 strbt.disasm = {
+  if (rn == 15) { buffer << "<undefined>"; return; }
   buffer << "strbt\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
 }
 
@@ -771,9 +787,9 @@ strbt.execute = {
  * TODO: Implement prefetching
  */
 
-op pld_imm12(0xf8[8]:0b10[2]:w[1]:1[1]:rn[4]:> <:0xf[4]:imm[12]);
+op pld_imm12( 0b11111000[8]: 0b10[2]: w[1]: 0b1[1]: rn[4]:> <: 0b1111[4]: imm[12] );
 
-op pld_nimm(0xf8[8]:0b00[2]:w[1]:1[1]:rn[4]:> <:0xf[4]:1[1]:0b100[3]:offset[8]);
+op pld_nimm( 0b11111000[8]: 0b00[2]: w[1]: 0b1[1]: rn[4]:> <: 0b1111[4]: 0b1[1]: 0b100[3]: offset[8] );
 pld_nimm.var imm:{int32_t} = {-offset};
 
 group pld_imm( pld_imm12, pld_nimm );
@@ -782,14 +798,14 @@ pld_imm.disasm = {
   buffer << "pld" << (w?"w":"") << "\t[" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
 };
 
-op pld_lit(0xf8[8]:u[1]:0[1]:w[1]:1[1]:0b1111[4]:> <:0xf[4]:offset[12]);
+op pld_lit( 0b11111000[8]: u[1]: 0b0[1]: w[1]: 0b1[1]: 0b1111[4]:> <: 0b1111[4]: offset[12] );
 pld_lit.var imm:{int32_t} = {u?offset:-offset};
 
 pld_lit.disasm = {
   buffer << "pld" << (w?"w":"") << "\t[pc, " << DisasmI(imm) << "]";
 };
 
-op pld_reg(0xf8[8]:0b00[2]:w[1]:1[1]:rn[4]:> <:0xf[4]:0[1]:0[5]:imm[2]:rm[4]);
+op pld_reg( 0b11111000[8]: 0b00[2]: w[1]: 0b1[1]: rn[4]:> <: 0b1111[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 pld_reg.disasm = {
   buffer << "pld" << (w?"w":"") << "\t[" << DisasmRegister(rn) << ", "
@@ -813,9 +829,9 @@ pld_reg.disasm = {
  * TODO: Implement prefetching
  */
 
-op pli_imm12( 0xf99[12]:rn[4]:> <:0xf[4]:imm[12] );
+op pli_imm12( 0b111110011001[12]: rn[4]:> <: 0b1111[4]: imm[12] );
 
-op pli_nimm( 0xf91[12]:rn[4]:> <:0xf[4]:1[1]:0b100[3]:offset[8] );
+op pli_nimm( 0b111110010001[12]: rn[4]:> <: 0b1111[4]: 0b1[1]: 0b100[3]: offset[8] );
 pli_nimm.var imm:{int32_t} = {-offset};
 
 group pli_imm( pli_imm12, pli_nimm );
@@ -824,14 +840,14 @@ pli_imm.disasm = {
   buffer << "pli\t[" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
 };
 
-op pli_lit( 0xf9[8]:u[1]:0b001[3]:0b1111[4]:> <:0xf[4]:offset[12] );
+op pli_lit( 0b11111001[8]: u[1]: 0b001[3]: 0b1111[4]:> <: 0b1111[4]: offset[12] );
 pli_lit.var imm:{int32_t} = {u?offset:-offset};
 
 pli_lit.disasm = {
   buffer << "pli\t[pc, " << DisasmI(imm) << "]";
 };
 
-op pli_reg( 0xf91[12]:rn[4]:> <:0xf[4]:0[1]:0[5]:imm[2]:rm[4] );
+op pli_reg( 0b111110010001[12]: rn[4]:> <: 0b1111[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 pli_reg.disasm = {
   buffer << "pli\t[" << DisasmRegister(rn) << ", "
@@ -852,7 +868,7 @@ pli_reg.disasm = {
  * to a loaded address.
  */
 
-op ldmdb(0b1110100100[10]:w[1]:1[1]:rn[4]:> <:reglist[16]);
+op ldmdb( 0b1110100100[10]: w[1]: 0b1[1]: rn[4]:> <: reglist[16] );
 
 ldmdb.disasm = { 
   buffer << "ldmdb\t" << DisasmRegister(rn) << (w?"!":"") << ", {" << DisasmRegList(reglist) << "}";
@@ -870,7 +886,7 @@ ldmdb.execute = {
   if (w and not overwritten) cpu.SetGPR( rn, itr.addr() );
 };
 
-op ldmia_w(0b1110100010[10]:w[1]:1[1]:rn[4]:> <:reglist[16]);
+op ldmia_w( 0b1110100010[10]: w[1]: 0b1[1]: rn[4]:> <: reglist[16] );
 
 ldmia_w.disasm = {
   buffer << "ldmia.w\t" << DisasmRegister(rn) << (w?"!":"") << ", {" << DisasmRegList(reglist) << "}";
@@ -900,7 +916,7 @@ ldmia_w.execute = {
  * locations can optionally be written back to the base register.
  */
 
-op stmdb(0b1110100100[10]:w[1]:0[1]:rn[4]:> <:reglist[16]);
+op stmdb( 0b1110100100[10]: w[1]: 0b0[1]: rn[4]:> <: reglist[16] );
 
 stmdb.disasm = {
   buffer << "stmdb\t" << DisasmRegister(rn) << (w?"!":"") << ", {" << DisasmRegList(reglist) << "}";
@@ -917,7 +933,7 @@ stmdb.execute = {
   if (w) cpu.SetGPR( rn, itr.addr() );
 };
 
-op stmia_w(0xe8[8]:2[2]:w[1]:0[1]:rn[4]:> <:reglist[16]);
+op stmia_w( 0b11101000[8]: 0b10[2]: w[1]: 0b0[1]: rn[4]:> <: reglist[16] );
 
 stmia_w.disasm = {
   buffer << "stmia.w\t" << DisasmRegister(rn) << (w?"!":"") << ", {" << DisasmRegList(reglist) << "}";
@@ -987,7 +1003,7 @@ stmia_w.execute = {
  * exclusive access in the local monitor.
  */
 
-op ldrex(0xe85[12]:rn[4]:> <:rt[4]:0xf[4]:shl<2> imm[8]);
+op ldrex( 0b111010000101[12]: rn[4]:> <: rt[4]: 0b1111[4]: shl<2> imm[8] );
 
 ldrex.disasm = {
   buffer << "ldrex\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -1007,7 +1023,7 @@ ldrex.execute = {
  * ldrexh (Load Register Exclusive Halfword) instruction
  */
 
-op ldrexh(0xe8d[12]:rn[4]:> <:rt[4]:0xf5f[12]);
+op ldrexh( 0b111010001101[12]: rn[4]:> <: rt[4]: 0b111101011111[12] );
 
 ldrexh.disasm = {
   buffer << "ldrexh\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << "]";
@@ -1023,7 +1039,7 @@ ldrexh.execute = {
  * ldrexb (Load Register Exclusive Byte) instruction
  */
 
-op ldrexb(0xe8d[12]:rn[4]:> <:rt[4]:0xf4f[12]);
+op ldrexb( 0b111010001101[12]: rn[4]:> <: rt[4]: 0b111101001111[12] );
 
 ldrexb.disasm = {
   buffer << "ldrexb\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << "]";
@@ -1043,7 +1059,7 @@ ldrexb.execute = {
  * ldrexd (Load Register Exclusive Doubleword) instruction
  */
 
-op ldrexd(0xe8d[12]:rn[4]:> <:rt1[4]:rt2[4]:0x7f[8]);
+op ldrexd( 0b111010001101[12]: rn[4]:> <: rt1[4]: rt2[4]: 0b01111111[8] );
 
 ldrexd.disasm = {
   buffer << "ldrexd\t" << DisasmRegister(rt1) << ", " << DisasmRegister(rt2) << ", [" << DisasmRegister(rn) << "]";
@@ -1070,7 +1086,7 @@ ldrexd.execute = {
  * addressed.
  */
 
-op strex(0xe84[12]:rn[4]:> <:rt[4]:rd[4]:shl<2> imm[8]);
+op strex( 0b111010000100[12]: rn[4]:> <: rt[4]: rd[4]: shl<2> imm[8] );
 
 strex.disasm = {
   buffer << "strex\t" << DisasmRegister(rd) << ", " << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
@@ -1091,7 +1107,7 @@ strex.execute = {
  * strexh (Store Register Exclusive Halfword) instruction
  */
 
-op strexh(0xe8c[12]:rn[4]:> <:rt[4]:0xf5[8]:rd[4]);
+op strexh( 0b111010001100[12]: rn[4]:> <: rt[4]: 0b11110101[8]: rd[4] );
 
 strexh.disasm = {
   buffer << "strexh\t" << DisasmRegister(rd) << ", " << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << "]";
@@ -1112,7 +1128,7 @@ strexh.execute = {
  * strexb (Store Register Exclusive Byte) instruction
  */
 
-op strexb(0xe8c[12]:rn[4]:> <:rt[4]:0xf4[8]:rd[4]);
+op strexb( 0b111010001100[12]: rn[4]:> <: rt[4]: 0b11110100[8]: rd[4] );
 
 strexb.disasm = { buffer << "strexb\t" << DisasmRegister(rd) << ", " << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << "]"; };
 
@@ -1131,7 +1147,7 @@ strexb.execute = {
  * strexd (Store Register Exclusive Doubleword) instruction
  */
 
-op strexd(0xe8c[12]:rn[4]:> <:rt1[4]:rt2[4]:0x7[4]:rd[4]);
+op strexd( 0b111010001100[12]: rn[4]:> <: rt1[4]: rt2[4]: 0b0111[4]: rd[4] );
 
 strexd.disasm = { buffer << "strexd\t" << DisasmRegister(rd) << ", " << DisasmRegister(rt1) << ", " << DisasmRegister(rt2) << ", [" << DisasmRegister(rn) << "]"; };
 
@@ -1143,6 +1159,18 @@ strexd.execute = {
   cpu.MemWrite32( addr + 4, cpu.GetGPR_npc( rt2 ) );
   cpu.SetGPR( rd, 0 );
 };
+
+/*
+ * end of strexd instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * clrex (Clear Exclusive) instruction
+ */
+
+op clrex( 0b11110[5]: 0b0[1]: 0b111[3]: 0b01[2]: 0b1[1]: 0b1111[4]:> <: 0b10[2]: 0b0[1]: 0b0[1]: 0b1111[4]: 0b0010[4]: 0b1111[4] );
+
+clrex.disasm = { buffer << "clrex"; };
 
 /*
  * end of strexd instruction

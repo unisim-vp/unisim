@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,38 +29,53 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
- */
- 
-/**********************************************
-
-         THUMB MULTIPLY INSTRUCTIONS
-
-**********************************************/
-
-/*******************************************************************
- * mul (multiply) instruction
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-op mul( 0b010000[6]: 0b1101[4]: rm[3]: rd[3] );
+op mar( 0b111011000100[12]: r1[4]:> <: r0[4]: 0b0000[4]: 0b0000[4]: 0b0000[4] );
 
-mul.disasm = {
-  buffer << "muls\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+mar.disasm = {
+  buffer << "mar\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
 };
 
-mul.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
-  
-  uint32_t res = cpu.GetGPR(rd) * cpu.GetGPR(rm);
-  cpu.SetGPR(rd, res);
-  if (not cpu.itblock())
-    {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
-    }
+op mia( 0b1110111000100000[16]:> <: r1[4]: 0b00000001[8]: r0[4] );
+
+mia.disasm = {
+  buffer << "mia\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
 };
 
-/*
- * end of mul (multiply) instruction
- *******************************************************************/
+op miaph( 0b1110111000101000[16]:> <: r1[4]: 0b00000001[8]: r0[4] );
 
+miaph.disasm = {
+  buffer << "miaph\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op miaBB( 0b1110111000101100[16]:> <: r1[4]: 0b00000001[8]: r0[4] );
+
+miaBB.disasm = {
+  buffer << "miaBB\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op miaBT( 0b1110111000101101[16]:> <: r1[4]: 0b00000001[8]: r0[4] );
+
+miaBT.disasm = {
+  buffer << "miaBT\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op miaTB( 0b1110111000101110[16]:> <: r1[4]: 0b00000001[8]: r0[4] );
+
+miaTB.disasm = {
+  buffer << "miaTB\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op miaTT( 0b1110111000101111[16]:> <: r1[4]: 0b00000001[8]: r0[4] );
+
+miaTT.disasm = {
+  buffer << "miaTT\tacc0, " << DisasmRegister(r0) << ", " << DisasmRegister(r1);
+};
+
+op mra( 0b111011000101[12]: r1[4]:> <: r0[4]: 0b0000[4]: 0b0000[4]: 0b0000[4] );
+
+mra.disasm = {
+  buffer << "mra\t" << DisasmRegister(r0) << ", " << DisasmRegister(r1) << ", acc0";
+};

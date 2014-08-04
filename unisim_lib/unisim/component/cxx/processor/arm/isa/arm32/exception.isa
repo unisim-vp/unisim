@@ -43,7 +43,7 @@
  * NOTE: this instruction is used to make the system calls
  */
 
-op swi(cond[4]:0b1111[4]:imm[24]);
+op swi( cond[4]: 0b1111[4]: imm[24] );
 
 swi.disasm = {
   buffer << "swi" << DisasmCondition(cond) << "\t" << DisasmI(imm);
@@ -63,7 +63,7 @@ swi.execute = {
  * bkpt (breakpoint) instruction
  */
 
-op bkpt(0b1110[4]:0b00010010[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
+op bkpt( 0b1110[4]: 0b00010010[8]: shl<4> im1[12]: 0b0111[4]: im0[4] );
 bkpt.var imm : {uint32_t} = {im1|im0};
 
 bkpt.disasm = {
@@ -82,7 +82,7 @@ bkpt.execute = {
  * hvc () instruction
  */
 
-op hvc(cond[4]:0b00010100[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
+op hvc( cond[4]: 0b00010100[8]: shl<4> im1[12]: 0b0111[4]: im0[4] );
 hvc.var imm : {uint32_t} = {im1|im0};
 
 hvc.disasm = {
@@ -97,7 +97,7 @@ hvc.disasm = {
  * smc () instruction
  */
 
-op smc(cond[4]:0b00010110[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
+op smc( cond[4]: 0b00010110[8]: shl<4> im1[12]: 0b0111[4]: im0[4] );
 smc.var imm : {uint32_t} = {im1|im0};
 
 smc.disasm = {
@@ -112,7 +112,7 @@ smc.disasm = {
  * eret (Exception Return) instruction
  */
 
-op eret(cond[4]:0b0001011000000000000001101110[28]);
+op eret( cond[4]: 0b0001011000000000000001101110[28] );
 
 eret.disasm = {
   buffer << "eret" << DisasmCondition(cond);

@@ -59,10 +59,14 @@ namespace arm {
   struct DisasmCondition : public DisasmObject
   {
     DisasmCondition( uint32_t cond, char const* postfix = 0 )
-      : m_cond( cond ), m_postfix( postfix ? postfix : "" ) {}
+      : m_cond( cond ), m_postfix( postfix ? postfix : "" ), m_explicit_always( implicit_always ) {}
+    enum explicit_always_t { implicit_always = 0, explicit_always = 1 };
+    DisasmCondition( uint32_t cond, explicit_always_t _explicit_always )
+      : m_cond( cond ), m_postfix( "" ), m_explicit_always( _explicit_always ) {}
     void operator() ( std::ostream& sink ) const;
     uint32_t    m_cond;
     char const* m_postfix;
+    explicit_always_t m_explicit_always;
   };
   
   /* Immediate disassembly */
@@ -97,6 +101,14 @@ namespace arm {
     uint32_t m_shift;
   };
   
+  /* Barrier option disassembling method */
+  struct DisasmBarrierOption : public DisasmObject
+  {
+    DisasmBarrierOption( uint32_t option ) : m_option( option ) {}
+    void operator() ( std::ostream& sink ) const;
+    uint8_t m_option;
+  };
+
   /* PSR mask disassembling method */
   struct DisasmPSRMask : public DisasmObject
   {
@@ -137,6 +149,14 @@ namespace arm {
     uint32_t m_mode;
   };
 
+  /* IT sequence disassembly */
+  struct DisasmITSequence : public DisasmObject
+  {
+    DisasmITSequence( uint32_t _mask ) : m_mask( _mask ) {}
+    void operator() ( std::ostream& sink ) const;
+    uint32_t m_mask;
+  };
+  
   enum controltype_t { ctNormal, ctBranch, ctCondBranch, ctCall, ctLeave };
   
 } // end of namespace arm

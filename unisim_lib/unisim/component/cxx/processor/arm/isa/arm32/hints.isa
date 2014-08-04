@@ -42,7 +42,7 @@
  * nop instruction
  */
 
-op nop( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:idx[8] );
+op nop( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: idx[8] );
 
 nop.disasm = {
   buffer << "nop" << DisasmCondition(cond) << "\t{" << idx << "}";
@@ -56,7 +56,7 @@ nop.disasm = {
  * yield instruction
  */
 
-op yield( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:1[8] );
+op yield( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b00000001[8] );
 
 yield.disasm = {
   buffer << "yield" << DisasmCondition(cond);
@@ -70,7 +70,7 @@ yield.disasm = {
  * wfe instruction
  */
 
-op wfe( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:2[8] );
+op wfe( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b00000010[8] );
 
 wfe.disasm = {
   buffer << "wfe" << DisasmCondition(cond);
@@ -84,7 +84,7 @@ wfe.disasm = {
  * wfi instruction
  */
 
-op wfi( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:3[8] );
+op wfi( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b00000011[8] );
 
 wfi.disasm = {
   buffer << "wfi" << DisasmCondition(cond);
@@ -98,7 +98,7 @@ wfi.disasm = {
  * sev instruction
  */
 
-op sev( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:4[8] );
+op sev( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b00000100[8] );
 
 sev.disasm = {
   buffer << "sev" << DisasmCondition(cond);
@@ -112,7 +112,7 @@ sev.disasm = {
  * dbg instruction
  */
 
-op dbg( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:0b1111[4]:idx[4] );
+op dbg( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b1111[4]: idx[4] );
 
 dbg.disasm = {
   buffer << "dbg" << DisasmCondition(cond) << '\t' << DisasmI(idx);

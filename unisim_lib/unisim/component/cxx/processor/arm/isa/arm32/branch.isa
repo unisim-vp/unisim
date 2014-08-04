@@ -42,7 +42,7 @@
  * b (branch) instruction
  */
 
-op b(cond[4]:0b1010[4]:shl<2> sext<32> imm[24]);
+op b( cond[4]: 0b1010[4]: shl<2> sext<32> imm[24] );
 
 b.disasm = {
   buffer << "b" << DisasmCondition(cond) << "\t" << std::hex << (this->GetAddr() + 8 + imm) << std::dec;
@@ -62,7 +62,7 @@ b.execute = {
  * bl (branch & link) instruction
  */
 
-op bl(cond[4]:0b1011[4]:shl<2> sext<32> imm[24]);
+op bl( cond[4]: 0b1011[4]: shl<2> sext<32> imm[24] );
 
 bl.disasm = {
   buffer << "bl" << DisasmCondition(cond) << "\t" << std::hex << (this->GetAddr() + 8 + imm) << std::dec;
@@ -84,7 +84,7 @@ bl.execute = {
  */
 
 { ARCH::insns4T }: \
-op bx(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0001[4]:rm[4]);
+op bx( cond[4]: 0b00010010[8]: 0b1111[4]: 0b1111[4]: 0b1111[4]: 0b0001[4]: rm[4] );
 
 bx.disasm = {
   buffer << "bx" << DisasmCondition(cond) << "\t" << DisasmRegister(rm);
@@ -109,7 +109,7 @@ bx.execute = {
  */
 
 { ARCH::insns5J }:                                      \
-op bxj(cond[4]:0b00010010[8]:0b1111[4]:0b1111[4]:0b1111[4]:0b0010[4]:rm[4]);
+op bxj( cond[4]: 0b00010010[8]: 0b1111[4]: 0b1111[4]: 0b1111[4]: 0b0010[4]: rm[4] );
 
 bxj.disasm = {
   buffer << "bxj" << DisasmCondition(cond) << '\t' << DisasmRegister(rm);
@@ -127,7 +127,7 @@ bxj.disasm = {
  */
 
 { ARCH::insns5T }: \
-op blx_pcrel(0b1111101[7]:shl<1> im0[1]:shl<2> sext<32> im1[24]);
+op blx_pcrel( 0b1111101[7]: shl<1> im0[1]: shl<2> sext<32> im1[24] );
 blx_pcrel.var imm : {uint32_t} = {im1|im0};
 
 blx_pcrel.disasm = {
@@ -140,7 +140,7 @@ blx_pcrel.execute = {
 };
 
 { ARCH::insns5T }: \
-op blx_reg(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0011[4]:rm[4]);
+op blx_reg( cond[4]: 0b00010010[8]: 0b1111[4]: 0b1111[4]: 0b1111[4]: 0b0011[4]: rm[4] );
 
 blx_reg.disasm = {
   buffer << "blx" << DisasmCondition(cond) << "\t" << DisasmRegister(rm);
