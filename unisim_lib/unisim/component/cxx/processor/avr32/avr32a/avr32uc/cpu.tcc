@@ -315,7 +315,7 @@ bool CPU<CONFIG>::UintLoadByte(unsigned int rd,typename CONFIG::address_t addr)
 
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	uint32_t value=buffer;       
@@ -332,7 +332,7 @@ bool CPU<CONFIG>::UintLoadHalfWord(unsigned int rd,typename CONFIG::address_t ad
         bool status=DHSBRead(addr,&buffer,2);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	uint32_t value = BigEndian2Host(buffer);
@@ -348,7 +348,7 @@ bool CPU<CONFIG>::UintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::addre
         bool status=DHSBRead(addr,&buffer,2);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	uint32_t value = buffer;
@@ -367,7 +367,7 @@ bool CPU<CONFIG>::IntLoadWord(unsigned int rd,typename CONFIG::address_t addr)
 	bool status=DHSBRead(addr,&buffer,4);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	uint32_t value = BigEndian2Host(buffer);
@@ -384,7 +384,7 @@ bool CPU<CONFIG>::IntLoadWordAndSwap(unsigned int rd,typename CONFIG::address_t 
 	bool status=DHSBRead(addr,&buffer,4);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	uint32_t value = buffer;
@@ -404,7 +404,7 @@ bool CPU<CONFIG>::SintLoadByte(unsigned int rd,typename CONFIG::address_t addr)
 	bool status=DHSBRead(addr,&buffer,1);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	uint32_t value=buffer;   
@@ -422,7 +422,7 @@ bool CPU<CONFIG>::SintLoadHalfWord(unsigned int rd,typename CONFIG::address_t ad
 	bool status=DHSBRead(addr,&buffer,2);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	uint32_t value = BigEndian2Host(buffer);
@@ -439,7 +439,7 @@ bool CPU<CONFIG>::SintLoadHalfWordAndSwap(unsigned int rd,typename CONFIG::addre
 	bool status=DHSBRead(addr,&buffer,2);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	
@@ -461,7 +461,7 @@ bool CPU<CONFIG>::LoadSR(typename CONFIG::address_t addr)
 	bool status=DHSBRead(addr,&buffer,4);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	uint32_t value = BigEndian2Host(buffer);
@@ -476,7 +476,7 @@ bool CPU<CONFIG>::LoadAndInsertByte(unsigned int rd,typename CONFIG::address_t a
 	bool status=DHSBRead(addr,&buffer,1);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	uint32_t val=buffer;
@@ -495,7 +495,7 @@ bool CPU<CONFIG>::LoadAndInsertHalfWord(unsigned int rd,typename CONFIG::address
 	bool status=DHSBRead(addr,&buffer,2);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	uint32_t val=BigEndian2Host(buffer);
@@ -516,7 +516,7 @@ bool CPU<CONFIG>::IntStoreByte(unsigned int rs,typename CONFIG::address_t addr)
 	bool status=DHSBWrite(addr,&buffer,1);
 	if(unlikely(!status)) 
 	{
-		cpu->SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
+		SetException(CONFIG::EXC_BUS_ERROR_DATA_FETCH);
 		return false;
 	}
 	MonitorStore(addr, 1);

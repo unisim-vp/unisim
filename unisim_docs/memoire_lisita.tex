@@ -1,23 +1,26 @@
 %\documentclass[11pt]{book}
-\documentclass[a4paper,11pt,onecolumn]{mathese}
-% \usepackage[frenchb]{babel}
-% \usepackage[latin1]{inputenc}
-% \usepackage[T1]{fontenc}
-% \usepackage[french]{varioref}
-%\usepackage{fullpage}
-% \usepackage{graphicx}
-% \usepackage{lgrind}
-%\usepackage{progSTF}
-% \usepackage{subfigure}
-% \usepackage{moreverb}
-\usepackage{ulem}
-% \usepackage{srctex}
-% \usepackage{geometry}
+\documentclass[a4paper,11pt]{article}
+\usepackage{graphicx}
 \usepackage{pifont}
+\usepackage{ulem}
 \usepackage{multirow}
 \usepackage{supertabular}
+\usepackage{fancyhdr}
+\usepackage{rotating}
+\usepackage{verbatim}
+\usepackage{appendix}
 \usepackage{placeins}
+\usepackage[frenchb]{babel}
 
+\voffset -1.5cm
+\hoffset 0.0cm
+\textheight 25cm
+\textwidth 16cm
+\topmargin 0.0cm
+\oddsidemargin 0.0cm
+\evensidemargin 0.0cm
+
+\newcommand{\VROT}[1]{\begin{turn}{90}#1\end{turn}}     % vertical text
 \def\X{$\surd$}     % tick symbol
 
 \usepackage{hyperref}%                   % Utilisation de HyperTeX
@@ -48,39 +51,43 @@
 \author{Julien Lisita}
 \date{1$^{er}$ Septembre 2014}
 
-\begin{titlepage}
-%\frontmatter
-\begin{figure}
-\begin{center}
-%\includegraphics[width=8cm,natwidth=11.0cm,natheight=11.0cm]{logo_unisim.pdf}
 \maketitle
-\end{center}
-\end{figure}
-\end{titlepage}
-%\input{abstract}
-%\input{acknowledgements}
-%\tableofcontents
+
+\newpage
+
+% \begin{titlepage}
+% %\frontmatter
+% \begin{figure}
+% \begin{center}
+% %\includegraphics[width=8cm,natwidth=11.0cm,natheight=11.0cm]{logo_unisim.pdf}
+% \maketitle
+% \end{center}
+% \end{figure}
+% \end{titlepage}
+% %\input{abstract}
+% %\input{acknowledgements}
+% %\tableofcontents
 
 
 %\addcontentsline{toc}{chapter}{Table des mati�res} 
 \tableofcontents \markboth{Table of content}{Table of content}
 \listoffigures
 
-\mainmatter
+%\mainmatter
 
-\chapter{Introduction}
+\section{Introduction}
 \label{introduction}
 \input{memoire_lisita/introduction/introduction}
-\chapter{Contexte du stage}
-\chapter{Prise en main du problème}
-\chapter{Méthodologie}
-\chapter{Evaluation}
-\chapter{Discussion des résultats}
-\chapter{Conclusion}
-\chapter{Apport du stage}
+\section{Contexte du stage}
+\section{Prise en main du problème}
+\section{Méthodologie}
+\section{Évaluation}
+\section{Discussion des résultats}
+\section{Conclusion}
+\section{Apport du stage}
 
 \begin{appendix}
-\chapter{Inplantation et couverture du jeu d'instructions par benchmarking}
+\section{Implantation et couverture du jeu d'instructions par benchmarking}
 \input{memoire_lisita/annexe/annexe} 
 \end{appendix}
 

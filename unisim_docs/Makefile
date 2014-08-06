@@ -349,7 +349,10 @@ memoire_lisita.tex \
 memoire_lisita/introduction/introduction.tex \
 memoire_lisita/annexe/annexe.tex
 
-MEMOIRE_LISITA_GENERATED_LATEX=
+MEMOIRE_LISITA_CPP_SOURCES=
+
+MEMOIRE_LISITA_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(MEMOIRE_LISITA_CPP_SOURCES))
+
 
 MEMOIRE_LISITA_FIGURES=
 ##############################################
