@@ -1783,8 +1783,8 @@ ldm.execute={
 	if(reglist16 == 0) 
 	{
 		cpu->SetException(CONFIG::EXC_UNDEFINED_BEHAVIOR);
-		return false
-	};                      
+		return false;
+	}                      
 	//If Rp is in Reglist16 and pointer is written back the result is UNDEFINED.
 	if(postinc && (rp != REG_PC) && (((reglist16>>rp)&1)==1)) 
 	{
