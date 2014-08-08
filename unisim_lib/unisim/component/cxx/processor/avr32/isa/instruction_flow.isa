@@ -34,6 +34,7 @@ br_cond3.disasm={
 			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 		}	
 	}
+	os << "\t\tcond3";
 }
 
 
@@ -68,6 +69,7 @@ br_cond4.disasm={
 			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 		}	
 	}
+	os << "\t\tcond4";
 }
 
 // RJMP - relative jump
@@ -88,7 +90,7 @@ rjmp.execute={
 
 rjmp.disasm={
 
-	os << "rjmp\t" << std::hex << "0x"<< rjmp_addr;
+	os << "rjmp\t"<< std::hex << disp << "\t\t0x"<< rjmp_addr;
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		os << " <" << cpu->GetFunctionFriendlyName(rjmp_addr) << ">";

@@ -19,7 +19,7 @@ mov_a.execute={
 
 mov_a.disasm={
 
-	os << "mov\t" <<  REG_NAME[rd] << "," << imm8;
+	os << "mov\t" <<  REG_NAME[rd] << "," << imm8 << "\t\t//imm8";
 }
 
 op mov_b(0b111[3]:imm_20_17[4]:0b0011[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
@@ -36,7 +36,7 @@ mov_b.execute={
 
 mov_b.disasm={
 
-	os << "mov\t" << REG_NAME[rd] << ",0x" << std::hex << imm;
+	os << "mov\t" << REG_NAME[rd] << ",0x" << std::hex << imm << "\t\t//imm21";
 }
 
 op mov_c(0b000[3]:rs[4]:0b01001[5]:rd[4])
@@ -192,6 +192,7 @@ ld_ub_c.disasm={
 		typename CONFIG::address_t addr= cpu->GetGPR(rp)+ (uint32_t)disp;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	os << "\t\t//disp3";
 }
 
 
@@ -212,6 +213,7 @@ ld_ub_d.disasm={
 		typename CONFIG::address_t addr= cpu->GetGPR(rp) + disp16;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	os <<"\t\t//disp16";
 }
 
 
