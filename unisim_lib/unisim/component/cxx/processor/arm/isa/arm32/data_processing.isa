@@ -46,7 +46,7 @@ op and_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b0000[4]: s[1]: rn[4]: rd[4]: shl<1> im
 and_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 and_32imm.disasm = {
-  buffer << "and" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "and" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
@@ -66,7 +66,7 @@ and_32imm.execute = {
 op and_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0000[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 and_imm_shift.disasm = {
-  buffer << "and" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "and" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
@@ -84,7 +84,7 @@ and_imm_shift.execute = {
 op and_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0000[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 and_reg_shift.disasm = {
-  buffer << "and" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "and" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
@@ -110,7 +110,7 @@ op eor_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b0001[4]: s[1]: rn[4]: rd[4]: shl<1> im
 eor_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 eor_32imm.disasm = {
-  buffer << "eor" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "eor" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
@@ -130,7 +130,7 @@ eor_32imm.execute = {
 op eor_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0001[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 eor_imm_shift.disasm = {
-  buffer << "eor" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "eor" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
@@ -147,7 +147,7 @@ eor_imm_shift.execute = {
 op eor_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0001[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 eor_reg_shift.disasm = {
-  buffer << "eor" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "eor" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
@@ -173,7 +173,7 @@ op sub_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b0010[4]: s[1]: rn[4]: rd[4]: shl<1> im
 sub_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 sub_32imm.disasm = {
-  buffer << "sub" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "sub" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
@@ -188,7 +188,7 @@ sub_32imm.execute = {
 op sub_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0010[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 sub_imm_shift.disasm = {
-  buffer << "sub" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "sub" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
@@ -205,7 +205,7 @@ sub_imm_shift.execute = {
 op sub_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0010[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 sub_reg_shift.disasm = {
-  buffer << "sub" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "sub" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
@@ -231,7 +231,7 @@ op rsb_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b0011[4]: s[1]: rn[4]: rd[4]: shl<1> im
 rsb_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 rsb_32imm.disasm = {
-  buffer << "rsb" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "rsb" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
@@ -246,7 +246,7 @@ rsb_32imm.execute = {
 op rsb_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0011[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 rsb_imm_shift.disasm = {
-  buffer << "rsb" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "rsb" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
@@ -264,7 +264,7 @@ rsb_imm_shift.execute = {
 op rsb_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0011[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 rsb_reg_shift.disasm = {
-  buffer << "rsb" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "rsb" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
@@ -290,7 +290,7 @@ op add_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b0100[4]: s[1]: rn[4]: rd[4]: shl<1> im
 add_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 add_32imm.disasm = {
-  buffer << "add" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "add" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
@@ -305,7 +305,7 @@ add_32imm.execute = {
 op add_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0100[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 add_imm_shift.disasm = {
-  buffer << "add" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "add" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
@@ -323,7 +323,7 @@ add_imm_shift.execute = {
 op add_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0100[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 add_reg_shift.disasm = {
-  buffer << "add" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "add" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
@@ -349,7 +349,7 @@ op adc_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b0101[4]: s[1]: rn[4]: rd[4]: shl<1> im
 adc_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 adc_32imm.disasm = {
-  buffer << "adc" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "adc" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
@@ -364,7 +364,7 @@ adc_32imm.execute = {
 op adc_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0101[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 adc_imm_shift.disasm = {
-  buffer << "adc" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "adc" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
@@ -382,7 +382,7 @@ adc_imm_shift.execute = {
 op adc_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0101[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 adc_reg_shift.disasm = {
-  buffer << "adc" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "adc" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
@@ -408,7 +408,7 @@ op sbc_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b0110[4]: s[1]: rn[4]: rd[4]: shl<1> im
 sbc_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 sbc_32imm.disasm = {
-  buffer << "sbc" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "sbc" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
@@ -423,7 +423,7 @@ sbc_32imm.execute = {
 op sbc_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0110[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 sbc_imm_shift.disasm = {
-  buffer << "sbc" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "sbc" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
@@ -441,7 +441,7 @@ sbc_imm_shift.execute = {
 op sbc_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0110[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 sbc_reg_shift.disasm = {
-  buffer << "sbc" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "sbc" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
@@ -467,7 +467,7 @@ op rsc_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b0111[4]: s[1]: rn[4]: rd[4]: shl<1> im
 rsc_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 rsc_32imm.disasm = {
-  buffer << "rsc" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "rsc" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
@@ -482,7 +482,7 @@ rsc_32imm.execute = {
 op rsc_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0111[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 rsc_imm_shift.disasm = {
-  buffer << "rsc" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "rsc" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
@@ -499,7 +499,7 @@ rsc_imm_shift.execute = {
 op rsc_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0111[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 rsc_reg_shift.disasm = {
-  buffer << "rsc" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "rsc" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
@@ -525,7 +525,7 @@ op orr_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b1100[4]: s[1]: rn[4]: rd[4]: shl<1> im
 orr_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 orr_32imm.disasm = {
-  buffer << "orr" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "orr" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
@@ -545,7 +545,7 @@ orr_32imm.execute = {
 op orr_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1100[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 orr_imm_shift.disasm = {
-  buffer << "orr" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "orr" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
@@ -562,7 +562,7 @@ orr_imm_shift.execute = {
 op orr_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1100[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 orr_reg_shift.disasm = {
-  buffer << "orr" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "orr" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
@@ -588,7 +588,7 @@ op bic_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b1110[4]: s[1]: rn[4]: rd[4]: shl<1> im
 bic_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 bic_32imm.disasm = {
-  buffer << "bic" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "bic" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
@@ -608,7 +608,7 @@ bic_32imm.execute = {
 op bic_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1110[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 bic_imm_shift.disasm = {
-  buffer << "bic" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "bic" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
@@ -625,7 +625,7 @@ bic_imm_shift.execute = {
 op bic_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1110[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 bic_reg_shift.disasm = {
-  buffer << "bic" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "bic" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
@@ -875,7 +875,7 @@ op mov_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b1101[4]: s[1]: 0b0000[4]: rd[4]: shl<1
 mov_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 mov_32imm.disasm = {
-  buffer << "mov" << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << "mov" << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmI(imm);
 };
 
@@ -895,20 +895,16 @@ mov_32imm.execute = {
 op mov_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1101[4]: s[1]: 0b0000[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 mov_imm_shift.disasm = {
-  DisasmCondition postfix(cond, s?"s":"");
   uint32_t shift_value = imm;
   
   if (imm == 0) {
-    char const* mnemonic = shift ? "rrx" : "mov";
     if (shift == 0 or shift == 3) {
-      buffer << mnemonic << postfix << '\t'
-             << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+      buffer << (shift ? "rrx" : "mov") << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm);
       return;
     }
     shift_value = 32;
   }
-  buffer << DisasmShift(shift) << postfix << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << shift_value;
+  buffer << DisasmShift(shift) << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << shift_value;
 };
 
 mov_imm_shift.execute = {
@@ -922,7 +918,7 @@ mov_imm_shift.execute = {
 op mov_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1101[4]: s[1]: 0b0000[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 mov_reg_shift.disasm = {
-  buffer << DisasmShift(shift) << DisasmCondition(cond, s?"s":"") << '\t'
+  buffer << DisasmShift(shift) << (s?"s":"") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
 };
 
@@ -948,8 +944,7 @@ op mvn_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b1111[4]: s[1]: 0b0000[4]: rd[4]: shl<1
 mvn_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 mvn_32imm.disasm = {
-  buffer << "mvn" << DisasmCondition(cond, s?"s":"") << '\t'
-         << DisasmRegister(rd) << ", " << DisasmI(imm);
+  buffer << "mvn" << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmI(imm);
 };
 
 mvn_32imm.execute = {
@@ -968,8 +963,7 @@ mvn_32imm.execute = {
 op mvn_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1111[4]: s[1]: 0b0000[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
 
 mvn_imm_shift.disasm = {
-  buffer << "mvn" << DisasmCondition(cond, s?"s":"") << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "mvn" << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 mvn_imm_shift.execute = {
@@ -980,12 +974,10 @@ mvn_imm_shift.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op mvn_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1111[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+op mvn_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1111[4]: s[1]: 0b0000[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
 
 mvn_reg_shift.disasm = {
-  buffer << "mvn" << DisasmCondition(cond, s?"s":"") << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
-         << DisasmShReg( shift, rs );
+  buffer << "mvn" << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 mvn_reg_shift.execute = {
@@ -1160,4 +1152,21 @@ movt.execute = {
 
 /*
  * end of movt (Move Top) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * setend (Set Endianness) instruction
+ *
+ * SETEND writes a new value to ENDIANSTATE.
+ */
+
+{ ARCH::insns6 }:                               \
+op setend( 0b1111[4]: 0b00010000[8]: 0b0001[4]: 0b000000[6]: end[1]: 0b0[1]: 0b0000[4]: 0b0000[4] );
+
+setend.disasm = {
+  buffer << "setend\t" << (end ? "be":"le");
+};
+
+/*
+ * end of setend instruction
  *******************************************************************/

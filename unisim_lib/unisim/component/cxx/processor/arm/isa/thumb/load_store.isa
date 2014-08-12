@@ -45,7 +45,8 @@
 op ldr_1( 0b01101[5]: shl<2> imm[5]: rn[3]: rt[3] );
 
 ldr_1.disasm = {
-  buffer << "ldr\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+  buffer << "ldr\t" << DisasmRegister(rt) << ", "
+         << DisasmMemoryRI(rn,imm,true,false);
 };
 
 ldr_1.execute = {
@@ -65,7 +66,7 @@ ldr_1.execute = {
 op ldr_2( 0b0101100[7]: rm[3]: rn[3]: rt[3] );
 
 ldr_2.disasm = {
-  buffer << "ldr\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+  buffer << "ldr\t" << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,true,true,false);
 };
 
 ldr_2.execute = {
@@ -125,7 +126,8 @@ ldr_4.execute = {
 op ldrb_1( 0b01111[5]: imm[5]: rn[3]: rt[3] );
 
 ldrb_1.disasm = {
-  buffer << "ldrb\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+  buffer << "ldrb\t" << DisasmRegister(rt) << ", "
+         << DisasmMemoryRI(rn,imm,true,false);
 };
 
 ldrb_1.execute = {
@@ -145,7 +147,7 @@ ldrb_1.execute = {
 op ldrb_2( 0b0101110[7]: rm[3]: rn[3]: rt[3] );
 
 ldrb_2.disasm = {
-  buffer << "ldrb\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+  buffer << "ldrb\t" << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,true,true,false);
 };
 
 ldrb_2.execute = {
@@ -165,7 +167,8 @@ ldrb_2.execute = {
 op ldrh_1( 0b10001[5]: shl<1> imm[5]: rn[3]: rt[3] );
 
 ldrh_1.disasm = {
-  buffer << "ldrh\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+  buffer << "ldrh\t" << DisasmRegister(rt) << ", "
+         << DisasmMemoryRI(rn,imm,true,false);
 };
 
 ldrh_1.execute = {
@@ -185,7 +188,7 @@ ldrh_1.execute = {
 op ldrh_2( 0b0101101[7]: rm[3]: rn[3]: rt[3] );
 
 ldrh_2.disasm = {
-  buffer << "ldrh\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+  buffer << "ldrh\t" << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,true,true,false);
 };
 
 ldrh_2.execute = {
@@ -205,7 +208,7 @@ ldrh_2.execute = {
 op ldrsb( 0b0101011[7]: rm[3]: rn[3]: rt[3] );
 
 ldrsb.disasm = {
-  buffer << "ldrsb\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+  buffer << "ldrsb\t" << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,true,true,false);
 };
 
 ldrsb.execute = {
@@ -225,7 +228,7 @@ ldrsb.execute = {
 op ldrsh( 0b0101111[7]: rm[3]: rn[3]: rt[3] );
 
 ldrsh.disasm = {
-  buffer << "ldrsh\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+  buffer << "ldrsh\t" << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,true,true,false);
 };
 
 ldrsh.execute = {
@@ -245,7 +248,8 @@ ldrsh.execute = {
 op str_1( 0b01100[5]: shl<2> imm[5]: rn[3]: rt[3] );
 
 str_1.disasm = {
-  buffer << "str\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+  buffer << "str\t" << DisasmRegister(rt) << ", "
+         << DisasmMemoryRI(rn,imm,true,false);
 };
 
 str_1.execute = {
@@ -265,7 +269,7 @@ str_1.execute = {
 op str_2( 0b0101000[7]: rm[3]: rn[3]: rt[3] );
 
 str_2.disasm = {
-  buffer << "str\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+  buffer << "str\t" << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,true,true,false);
 };
 
 str_2.execute = {
@@ -305,7 +309,8 @@ str_3.execute = {
 op strb_1( 0b01110[5]: imm[5]: rn[3]: rt[3] );
 
 strb_1.disasm = {
-  buffer << "strb\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+  buffer << "strb\t" << DisasmRegister(rt) << ", "
+         << DisasmMemoryRI(rn,imm,true,false);
 };
 
 strb_1.execute = {
@@ -325,7 +330,7 @@ strb_1.execute = {
 op strb_2( 0b0101010[7]: rm[3]: rn[3]: rt[3] );
 
 strb_2.disasm = {
-  buffer << "strb\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+  buffer << "strb\t" << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,true,true,false);
 };
 
 strb_2.execute = {
@@ -345,7 +350,8 @@ strb_2.execute = {
 op strh_1( 0b10000[5]: shl<1> imm[5]: rn[3]: rt[3] );
 
 strh_1.disasm = {
-  buffer << "strh\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmI(imm) << "]";
+  buffer << "strh\t" << DisasmRegister(rt) << ", "
+         << DisasmMemoryRI(rn,imm,true,false);
 };
 
 strh_1.execute = {
@@ -365,7 +371,7 @@ strh_1.execute = {
 op strh_2( 0b0101001[7]: rm[3]: rn[3]: rt[3] );
 
 strh_2.disasm = {
-  buffer << "strh\t" << DisasmRegister(rt) << ", [" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]";
+  buffer << "strh\t" << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,true,true,false);
 };
 
 strh_2.execute = {

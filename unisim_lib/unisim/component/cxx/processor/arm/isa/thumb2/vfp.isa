@@ -491,20 +491,18 @@ fldmiax.disasm = {
  * address from an ARM core register, with optional offset.
  */
 
-op vldr( 0b11101101[8]: u[1]: vd0[1]: 0b01[2]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: shl<2> imm[8] );
-vldr.var vd : {uint32_t} = {vd1|vd0};
+op vldr( 0b11101101[8]: u[1]: vd0[1]: 0b01[2]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: shl<2> offset[8] );
+vldr.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
 
 vldr.disasm = {
-  if (u and not imm) buffer << "vldr\ts" << vd << ", [" << DisasmRegister(rn) << "]";
-  else                 buffer << "vldr\ts" << vd << ", [" << DisasmRegister(rn) << ", #" << (u?"":"-") << imm << "]";
+  buffer << "vldr\ts" << vd << ", " << DisasmMemoryRI(rn,imm,true,false);
 };
 
-op vldr_d( 0b11101101[8]: u[1]: shl<4> vd1[1]: 0b01[2]: rn[4]:> <: vd0[4]: 0b1011[4]: shl<2> imm[8] );
-vldr_d.var vd : {uint32_t} = {vd1|vd0};
+op vldr_d( 0b11101101[8]: u[1]: shl<4> vd1[1]: 0b01[2]: rn[4]:> <: vd0[4]: 0b1011[4]: shl<2> offset[8] );
+vldr_d.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
 
 vldr_d.disasm = {
-  if (u and not imm) buffer << "vldr\td" << vd << ", [" << DisasmRegister(rn) << "]";
-  else                 buffer << "vldr\td" << vd << ", [" << DisasmRegister(rn) << ", #" << (u?"":"-") << imm << "]";
+  buffer << "vldr\td" << vd << ", " << DisasmMemoryRI(rn,imm,true,false);
 };
 
 /* VMLA, VMLS; Multiplies corresponding elements in two vectors, and
@@ -546,14 +544,14 @@ op vmov_f32i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: n[1]: exp[3]:> <: shl<1> v
 vmov_f32i.var vd : {uint32_t} = {vd1|vd0}, fpimm : {float} = {(n?-1:1)*(float((0x10+man)<<(exp^4))/128)};
 
 vmov_f32i.disasm = {
-  buffer << "vmov.f32\ts" << vd << ", #" << fpimm;
+  buffer << "vmov.f32\ts" << vd << ", #" << uint32_t((n << 7) | (exp << 4) | man) << "; " << fpimm;
 };
 
 op vmov_f64i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: n[1]: exp[3]:> <: vd0[4]: 0b10110000[8]: man[4] );
 vmov_f64i.var vd : {uint32_t} = {vd1|vd0}, fpimm : {float} = {(n?-1:1)*(float((0x10+man)<<(exp^4))/128)};
 
 vmov_f64i.disasm = {
-  buffer << "vmov.f64\td" << vd << ", #" << fpimm;
+  buffer << "vmov.f64\td" << vd << ", #" << uint32_t((n << 7) | (exp << 4) | man) << "; " << fpimm;
 };
 
 /* VMOV; move register */
@@ -691,38 +689,37 @@ vmov_drr.disasm = {
 op vmrs( 0b1110[4]: 0b11101111[8]: spr[4]:> <: rt[4]: 0b1010[4]: 0b0001[4]: 0b0000[4] );
 
 vmrs.disasm = {
-  char const* spr_reg = 0;
-  switch (spr) {
-  default: buffer << "<undefined>"; return;
-  case 0: spr_reg = "fpsid"; break;
-  case 1: spr_reg = "fpscr"; break;
-  case 6: spr_reg = "mvfr1"; break;
-  case 7: spr_reg = "mvfrt"; break;
-  case 8: spr_reg = "fpexc"; break;
-  case 9: spr_reg = "fpinst\t@ Impl def"; break;
-  case 10: spr_reg = "fpinst2\t@ Impl def"; break;
-  }
   buffer << "vmrs\t";
   if ((rt == 15) and (spr == 1)) buffer << "APSR_nzcv";
   else                           buffer << DisasmRegister(rt);
-  buffer << ", " << spr_reg;
+  buffer << ", ";
+  switch (spr) {
+  default: buffer << "<undefined>"; return;
+  case 0:  buffer << "fpsid"; break;
+  case 1:  buffer << "fpscr"; break;
+  case 6:  buffer << "mvfr1"; break;
+  case 7:  buffer << "mvfrt"; break;
+  case 8:  buffer << "fpexc"; break;
+  case 9:  buffer << "fpinst @ Impl def"; break;
+  case 10: buffer << "fpinst2 @ Impl def"; break;
+  }
 };
 
 op vmsr( 0b1110[4]: 0b11101110[8]: spr[4]:> <: rt[4]: 0b1010[4]: 0b0001[4]: 0b0000[4] );
 
 vmsr.disasm = {
-  char const* spr_reg = 0;
+  buffer << "vmsr\t";
   switch (spr) {
   default: buffer << "<undefined>"; return;
-  case 0: spr_reg = "fpsid"; break;
-  case 1: spr_reg = "fpscr"; break;
-  case 6: spr_reg = "mvfr1"; break;
-  case 7: spr_reg = "mvfr0"; break;
-  case 8: spr_reg = "fpexc"; break;
-  case 9: spr_reg = "fpinst\t@ Impl def"; break;
-  case 10: spr_reg = "fpinst2\t@ Impl def"; break;
+  case 0:  buffer << "fpsid"; break;
+  case 1:  buffer << "fpscr"; break;
+  case 6:  buffer << "mvfr1"; break;
+  case 7:  buffer << "mvfr0"; break;
+  case 8:  buffer << "fpexc"; break;
+  case 9:  buffer << "fpinst @ Impl def"; break;
+  case 10: buffer << "fpinst2 @ Impl def"; break;
   }
-  buffer << "vmsr\t" << (spr_reg) << ", " << DisasmRegister(rt);
+  buffer << ", " << DisasmRegister(rt);
 };
 
 /* VMUL; Multiplies corresponding elements in two vectors, and places the results in the destination vector. */
@@ -857,7 +854,7 @@ vstmdb_f64.disasm = {
   else                buffer << "{d" << vd << "-<overflow reg d" << dend << ">}";
 };
 
-op fstmdbx( 0b11101101[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: r0[4]:> <: vd0[4]: 0b1011[4]: doff[7]: 0b1[1] );
+op fstmdbx( 0b1110110[7]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: r0[4]:> <: vd0[4]: 0b1011[4]: doff[7]: 0b1[1] );
 fstmdbx.var vd : {uint32_t} = {vd1|vd0};
 
 fstmdbx.disasm = {
@@ -902,20 +899,18 @@ fstmiax.disasm = {
  * offset.
  */
 
-op vstr( 0b11101101[8]: u[1]: vn0[1]: 0b00[2]: rn[4]:> <: shl<1> vn1[4]: 0b1010[4]: shl<2> imm[8] );
-vstr.var vn : {uint32_t} = {vn1|vn0};
+op vstr( 0b11101101[8]: u[1]: vn0[1]: 0b00[2]: rn[4]:> <: shl<1> vn1[4]: 0b1010[4]: shl<2> offset[8] );
+vstr.var vn : {uint32_t} = {vn1|vn0}, imm : {int32_t} = {u?offset:-offset};
 
 vstr.disasm = {
-  if (u and not imm) buffer << "vstr\ts" << vn << ", [" << DisasmRegister(rn) << "]";
-  else               buffer << "vstr\ts" << vn << ", [" << DisasmRegister(rn) << ", #" << (u?"":"-") << imm << "]";
+  buffer << "vstr\ts" << vn << ", " << DisasmMemoryRI(rn,imm,true,false);
 };
 
-op vstr_d( 0b11101101[8]: u[1]: shl<4> vn1[1]: 0b00[2]: rn[4]:> <: vn0[4]: 0b1011[4]: shl<2> imm[8] );
-vstr_d.var vn : {uint32_t} = {vn1|vn0};
+op vstr_d( 0b11101101[8]: u[1]: shl<4> vn1[1]: 0b00[2]: rn[4]:> <: vn0[4]: 0b1011[4]: shl<2> offset[8] );
+vstr_d.var vn : {uint32_t} = {vn1|vn0}, imm : {int32_t} = {u?offset:-offset};
 
 vstr_d.disasm = {
-  if (u and not imm) buffer << "vstr\td" << vn << ", [" << DisasmRegister(rn) << "]";
-  else               buffer << "vstr\td" << vn << ", [" << DisasmRegister(rn) << ", #" << (u?"":"-") << imm << "]";
+  buffer << "vstr\td" << vn << ", " << DisasmMemoryRI(rn,imm,true,false);
 };
 
 /* VSUB; Subtracts the elements of one vector from the corresponding

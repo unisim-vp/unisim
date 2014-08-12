@@ -122,3 +122,39 @@ dbg.disasm = {
  * end of dbg instruction
  *******************************************************************/
 
+/* DMB instruction */
+
+op dmb( 0b1111[4]: 0b01010111[8]: 0b1111[4]: 0b1111[4]: 0b0000[4]: 0b0101[4]: opt[4] );
+
+dmb.disasm = {
+  if (0x3333 >> opt) { buffer << "<undefined>"; return; }
+  buffer << "dmb\t" << DisasmBarrierOption( opt );
+};
+
+dmb.execute = {
+};
+
+/* DSB instruction */
+
+op dsb( 0b1111[4]: 0b01010111[8]: 0b1111[4]: 0b1111[4]: 0b0000[4]: 0b0100[4]: opt[4] );
+
+dsb.disasm = {
+  if (0x3333 >> opt) { buffer << "<undefined>"; return; }
+  buffer << "dsb\t" << DisasmBarrierOption( opt );
+};
+
+dsb.execute = {
+};
+
+/* ISB instruction */
+
+op isb( 0b1111[4]: 0b01010111[8]: 0b1111[4]: 0b1111[4]: 0b0000[4]: 0b0110[4]: opt[4] );
+
+isb.disasm = {
+  if (opt != 15) { buffer << "<undefined>"; return; }
+  buffer << "isb\t" << DisasmBarrierOption( opt );
+};
+
+isb.execute = {
+};
+

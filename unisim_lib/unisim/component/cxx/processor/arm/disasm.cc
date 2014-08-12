@@ -57,13 +57,8 @@ namespace arm {
   /* Condition opcode bytes disassembling method */
   void DisasmCondition::operator() ( std::ostream& sink ) const
   {
-    /* Printing opcode postfix before condition, as in GNU toolchains (binutils and GCC). */
-    sink << m_postfix;
-    
     if         (m_cond >= 15) {
-      sink << "?";
-      std::cerr << "ERROR(" << __FUNCTION__ << "): "
-                << "unknown condition code (" << m_cond << ")" << std::endl;
+      sink << "<illegal condition code: " << m_cond << ">";
       return;
     }
     
@@ -97,6 +92,21 @@ namespace arm {
       case 3: sink << ", rrx"; break;
       }
     }
+  }
+  
+  void DisasmMemoryRI::operator () ( std::ostream& _sink ) const
+  {
+    _sink << "[" << DisasmRegister(rn) << (p?"":"]") << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
+  }
+
+  void DisasmMemoryRR::operator () ( std::ostream& _sink ) const
+  {
+    _sink << "[" << DisasmRegister(rn) << (p?"":"]") << ", " << (u?"":"-") << DisasmRegister(rm) << (p?(w?"]!":"]"):"");
+  }
+  
+  void DisasmMemoryRRI::operator () ( std::ostream& _sink ) const
+  {
+    _sink << "[" << DisasmRegister(rn) << (p?"":"]") << ", " << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm) << (p?(w?"]!":"]"):"");
   }
   
   static char const* const register_dis[] =

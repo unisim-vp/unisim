@@ -121,3 +121,72 @@ eret.disasm = {
 /*
  * end of eret (Exception Return) instruction
  *******************************************************************/
+
+/*******************************************************************
+ * cps (Change Processor State) instruction
+ * 
+ * CPS changes one or more of the CPSR.{A, I, F} interrupt mask bits
+ * and the CPSR.M mode field, without changing the other CPSR bits.
+ */ 
+
+op cps_chmod( 0b1111[4]: 0b00010000[8]: 0b00[2]: 0b1[1]: 0b0[1]: 0b0000000[7]: aif[3]: 0b0[1]: mode[5] );
+
+cps_chmod.disasm = {
+  buffer << "cps\t" << DisasmI( mode );
+};
+
+op cps_chint( 0b1111[4]: 0b00010000[8]: 0b1[1]: dis[1]: 0b0[1]: 0b0[1]: 0b0000000[7]: aif[3]: 0b0[1]: 0b00000[5] );
+
+cps_chint.disasm = {
+  buffer << "cpsi" << (dis?'d':'e') << (aif ? "\t" : "");
+  for (int bit = 3; --bit >= 0;)
+    if ((aif >> bit) & 1) buffer << ("fia"[bit]);
+};
+
+op cps_chintmod( 0b1111[4]: 0b00010000[8]: 0b1[1]: dis[1]: 0b1[1]: 0b0[1]: 0b0000000[7]: aif[3]: 0b0[1]: mode[5] );
+
+cps_chintmod.disasm = {
+  buffer << "cpsi" << (dis?'d':'e') << '\t';
+  for (int bit = 3; --bit >= 0;)
+    if ((aif >> bit) & 1) buffer << ("fia"[bit]);
+  buffer << "," << DisasmI( mode );
+};
+
+/*
+ * end of cps (Change Processor State) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * rfe (Return From Exception) instruction
+ * 
+ * RFE changes one or more of the RFER.{A, I, F} interrupt mask bits
+ * and the RFER.M mode field, without changing the other RFER bits.
+ */ 
+
+op rfe( 0b1111[4]: 0b100[3]: mod[2]: 0b0[1]: w[1]: 0b1[1]: rn[4]: 0b0000101000000000[16] );
+
+rfe.disasm = {
+  buffer << "rfe" << DisasmLSMMode(mod) << '\t' << DisasmRegister(rn) << (w ? "!" : "");
+};
+
+/*
+ * end of rfe (Return From Exception) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * srs (Store Return State) instruction
+ * 
+ * SRS stores the LR and SPSR of the current mode to the stack of a
+ * specified mode.
+ */ 
+
+op srs( 0b1111[4]: 0b100[3]: mod[2]: 0b1[1]: w[1]: 0b0[1]: 0b1101[4]: 0b00000101000[11]: mode[5] );
+
+srs.disasm = {
+  buffer << "srs" << DisasmLSMMode(mod) << '\t' << DisasmRegister(13) << (w ? "!" : "") << ", " << DisasmI(mode);
+};
+
+/*
+ * end of srs (Store Return State) instruction
+ *******************************************************************/
+

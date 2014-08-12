@@ -114,8 +114,7 @@ it.disasm = {
 };
 
 it.execute = {
-  cpu.SetITInstruction(); /* Prevent Execution of PSR::ITAdvance() at the end of instruction */
-  cpu.CPSR().ITSetState( cond, mask );
+  cpu.ITSetState( cond, mask );
 };
 
 op nop( 0b10111111[8]: idx[4]: 0b0000[4] );
@@ -127,12 +126,13 @@ nop.disasm = {
 
 nop.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
-  
 };
 
 op tbb( 0b111010001101[12]: rn[4]:> <: 0b111100000000[12]: rm[4] );
 
-tbb.disasm = { buffer << "tbb\t[" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]"; };
+tbb.disasm = {
+  buffer << "tbb\t" << DisasmMemoryRR(rn,rm,true,true,false);
+};
 
 tbb.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -142,7 +142,9 @@ tbb.execute = {
 
 op tbh( 0b111010001101[12]: rn[4]:> <: 0b111100000001[12]: rm[4] );
 
-tbh.disasm = { buffer << "tbh\t[" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", lsl #1]"; };
+tbh.disasm = {
+  buffer << "tbh\t" << DisasmMemoryRRI(rn,rm,0,1,true,true,false);
+};
 
 tbh.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
