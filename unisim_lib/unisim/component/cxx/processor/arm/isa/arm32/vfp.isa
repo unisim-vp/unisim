@@ -97,7 +97,7 @@ op vcmp_f32i( cond[4]: 0b1110[4]: 0b1[1]: vd1[1]: 0b11[2]: 0b0101[4]: shl<1> vd0
 vcmp_f32i.var vd : {uint32_t} = {vd1|vd0};
 
 vcmp_f32i.disasm = {
-  buffer << "vcmp" << (e?"e":"") << DisasmCondition(cond) << ".f32\td" << vd << ", #0.0";
+  buffer << "vcmp" << (e?"e":"") << DisasmCondition(cond) << ".f32\ts" << vd << ", #0.0";
 };
 
 op vcmp_f64i( cond[4]: 0b1110[4]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0101[4]: vd0[4]: 0b1011[4]: e[1]: 0b100[3]: 0b0000[4] );
