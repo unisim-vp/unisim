@@ -942,3 +942,25 @@ vsub_f64.disasm = {
   buffer << "vsub" << DisasmCondition(cond) << ".f64\td" << vd << ", d" << vn << ", d" << vm;
 };
 
+group vfp_cond(vabs_f32s,vabs_f64d,vadd_f32,vadd_f64,vcmp_f32d,vcmp_f64d,vcmp_f32i,vcmp_f64i,\
+               vcvt_f32u32,vcvt_f64u32,vcvt_f32s32,vcvt_f64s32,vcvt_u32f32,vcvt_u32f64,vcvt_s32f32,vcvt_s32f64, \
+               vcvtr_u32f32,vcvtr_u32f64,vcvtr_s32f32,vcvtr_s32f64,vcvt_f32s16i,vcvt_f32s32i,vcvt_f64s16i,vcvt_f64s32i, \
+               vcvt_f32u16i,vcvt_f32u32i,vcvt_f64u16i,vcvt_f64u32i,vcvt_s16f32i,vcvt_s16f64i,vcvt_s32f32i,vcvt_s32f64i, \
+               vcvt_u16f32i,vcvt_u16f64i,vcvt_u32f32i,vcvt_u32f64i,vcvt_f64f32,vcvt_f32f64,vcvtb_f16f32,vcvtb_f32f16, \
+               vdiv_f32,vdiv_f64,vfma_f32,vfma_f64,vfms_f32,vfms_f64,vfnma_f32,vfnma_f64, \
+               vfnms_f32,vfnms_f64,vldmdb_f32,vldmdb_f64,fldmdbx,vldmia_f32,vldmia_f64,fldmiax, \
+               vldr,vldr_d,vmla_f32,vmla_f64,vmls_f32,vmls_f64,vmov_f32i,vmov_f64i, \
+               vmov_f32s,vmov_f64d,vmov32_dr,vmov16_dr,vmov8_dr,vmov_32rd,vmov_s16rd,vmov_u16rd, \
+               vmov_s8rd,vmov_u8rd,vmov_rs,vmov_sr,vmov_ssrr,vmov_rrss,vmov_rrd,vmov_drr, \
+               vmrs,vmsr,vmul_f32,vmul_f64,vneg_f32s,vneg_f64d,vnmla_f32,vnmla_f64, \
+               vnmls_f32,vnmls_f64,vnmul_f32,vnmul_f64,vsqrt_f32s,vsqrt_f64d,vstmdb_f32,vstmdb_f64, \
+               fstmdbx,vstmia_f32,vstmia_f64,fstmiax,vstr,vstr_d,vsub_f32,vsub_f64);
+unconditional.specialize(vfp_cond);
+
+vldmia_f32.specialize( ldc_unindexed )
+vldmia_f64.specialize( ldc_unindexed )
+fldmiax.specialize( ldc_unindexed )
+vstmia_f32.specialize( stc_unindexed )
+vstmia_f64.specialize( stc_unindexed )
+fstmiax.specialize( stc_unindexed )
+

@@ -7810,19 +7810,5 @@ vzip_32q.disasm = {
   buffer << "vzip.32\tq" << vd << ", q" << vm;
 };
 
-// vldmdb_mod.specialize( ldc_3, ldcl_2 );
-// vldmdb_mod1.specialize( ldc_3, ldcl_2 );
-// vldmia.specialize( ldc, ldcl_1 );
-// vldmia_1.specialize( ldc, ldcl_1 );
-// vldmia_mod.specialize( ldc_1, ldcl );
-// vldmia_mod1.specialize( ldc_1, ldcl );
-// vldr.specialize( ldc_2, ldcl_2 );
-// vldr_d.specialize( ldc_2, ldcl_2 );
-// vstmdb_mod.specialize( stc_3, stcl_2 );
-// vstmdb_mod1.specialize( stc_3, stcl_2 );
-// vstmia.specialize( stc, stcl_1 );
-// vstmia_1.specialize( stc, stcl_1 );
-// vstmia_mod.specialize( stc_1, stcl );
-// vstmia_mod1.specialize( stc_1, stcl );
-// vstr.specialize( stc_2, stcl_2 );
-// vstr_d.specialize( stc_2, stcl_2 );
+group neon_cond(vdup8_dr,vdup16_dr,vdup32_dr,vdup8_qr,vdup16_qr,vdup32_qr);
+unconditional.specialize(neon_cond);

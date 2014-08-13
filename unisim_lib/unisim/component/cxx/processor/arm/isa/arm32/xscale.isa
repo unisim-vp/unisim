@@ -61,3 +61,6 @@ op mra( cond[4]: 0b11000101[8]: r1[4]: r0[4]: 0b0000[4]: 0b0000[4]: 0b0000[4] );
 mra.disasm = {
   buffer << "mra" << DisasmCondition(cond) << "\t" << DisasmRegister(r0) << ", " << DisasmRegister(r1) << ", acc0";
 };
+
+group xscale_cond( mar,mia,miaph,miaXY,mra );
+unconditional.specialize( xscale_cond );

@@ -304,14 +304,14 @@ Generator::toposort()
     OpV aboves;
     if (not isa().operations( *symitr, aboves ))
       {
-        itr->fileloc.loc( log(2) ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
+        itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
         throw GenerationError;
       }
     OpV belows;
     while ((++symitr) != symend) {
       if (not isa().operations( *symitr, belows ))
         {
-          itr->fileloc.loc( log(2) ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
+          itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
           throw GenerationError;
         }
     }

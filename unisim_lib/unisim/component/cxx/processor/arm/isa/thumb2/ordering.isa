@@ -59,9 +59,3 @@ pli_imm12.specialize( ldrsb_lit );
 pli_nimm.specialize( ldrsb_lit );
 pli_lit.specialize( ldrsb_imm12, ldrsb_imm, ldrsb_reg, ldrsbt, pli_imm12, pli_nimm, pli_reg );
 pli_reg.specialize( ldrsb_lit );
-vldmia_f32.specialize( ldc_unindexed )
-vldmia_f64.specialize( ldc_unindexed )
-fldmiax.specialize( ldc_unindexed )
-vstmia_f32.specialize( stc_unindexed )
-vstmia_f64.specialize( stc_unindexed )
-fstmiax.specialize( stc_unindexed )

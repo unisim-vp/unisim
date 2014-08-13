@@ -932,3 +932,9 @@ vsub_f64.disasm = {
   buffer << "vsub.f64\td" << vd << ", d" << vn << ", d" << vm;
 };
 
+vldmia_f32.specialize( ldc_unindexed )
+vldmia_f64.specialize( ldc_unindexed )
+fldmiax.specialize( ldc_unindexed )
+vstmia_f32.specialize( stc_unindexed )
+vstmia_f64.specialize( stc_unindexed )
+fstmiax.specialize( stc_unindexed )
