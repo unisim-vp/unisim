@@ -201,6 +201,7 @@ rcall_a.disasm={
 	{
 		os << " <" << cpu->GetFunctionFriendlyName(rcall_target_addr) << ">";
 	}
+	os << "\t\t//disp10";
 }
 
 op rcall_b(0b111[3]:disp_20_17[4]:0b0101[4]:disp_16[1]:0b0000[4]:><:disp_15_0[16])
@@ -224,6 +225,7 @@ rcall_b.disasm={
 	{
 		os << " <" << cpu->GetFunctionFriendlyName(rcall_addr) << ">";
 	}
+	os << "\t\t//disp21";
 }
 
 //SCALL - supervisor call                             ## declarer la variable microarchitecture dans cpu.hh 

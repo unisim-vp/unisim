@@ -1,0 +1,108 @@
+\subsection{Méthodologie}
+
+\subsubsection{Découpage et phasage du problème}
+Dès mon arrivée, mon maître de stage m'a expliqué les spécificités du développement d'un simulateur et les principales difficultés que j'allais rencontrer. 
+En effet dans ce type de développement la difficulté ne réside pas dans la compléxité du code car les spécifications des instructions utilisent des opérations aryhtmétiques et logiques simples,
+Les sources d'erreur viennent plus de la comprèhension du modèle à simuler que de la façon de l'implémenter.
+Le nombre d'instruction executé (par seconde en moyenne de dans le cas du simulateur réalisé) amplifie l'effet des ces erreurs et les rendent plus difficile à détecter. 
+La pluspart du temps il s'agit d'une mauvaise traductions de la spécifications ou d'erreurs dans des expressions aryhtmétiques ou logique. 
+En pratique il est impossible d'écrire un simulateur sans introduire de telles erreurs mais il est important de les réduire le plus possible.
+C'est pour cela que la lecture des spécifications doit faire l'objet d'une attention particulière afin d'éviter toute ambiguité sur le rôle de chaque instruction. 
+De plus le simulateurs ne peut être testé qu'à partir d'un certain niveau d'avancement, l'exécution des programmes les plus simples utilisant déjà un certain nombres d'instruction principales.
+Pour cela on m'a conseillé de suivre au cours de mon stages les étapes de développement décrites ci-dessus.
+
+\begin{itemize}
+\item Etude des spécifications.
+\item Implémentation des fonctions de désassemblage.
+\item Vérification du désassemblage.
+\item Implémentation des instructions (fonctions execute).
+\item Tests avec benchmarks et correction des bogues.
+\end{itemize}
+
+L'étude des spécifications consiste à comprendre le fonctionnement du processeur et ses caractéristiques. 
+Cela permet d'une part d'établir un modèle de représentation du CPU mais aussi de définir les fonctions utilisé lors de l'implémentation. 
+La documentation officiel du processeur, disponible sur le site du constructeur ATMEL, contient un document appelé "AVR32 architecture manual" qui donne une description détaillé pour chaque instruction du processeur contenant:
+
+\begin{itemize}
+\item une description du rôle de l'instruction.
+\item les opérations effectué (rd <- rd \& rs).
+\item la synthaxe en assembleur (ex: and rd, rs).
+\item le code opération associé.
+\end{itemize}
+
+La première partie du développement fut d'écrire pour chaque instruction les opcodes et les fonctions de désassemblage.
+Les instructions sont régroupé selon les catégorie suivantes:
+
+\begin{description}
+\item[arithmetic\_operations :] contient les opérations arithétique tel que l'addition, la soustraction, la compraraison de byte,word.
+\item[bit\_shift\_operations :] contient les opérations sur les bits tel que les cast, extension de signe, swap et les opérations de décalages et rotation des bits.
+\item[coprocessor\_interface :] non implémenté
+\item[data\_transfer\_operations :] contient les opérations de chargement, rangement et écriture de bit en mémoire.
+\item[dsp\_operations :] instructions avec saturations
+\item[instruction\_flow :] contient les instructions de brachement, de saut, d'appel et retour de sous routine.
+\item[logic\_operations :] contient les opérations logiques tel que AND et OR. 
+\item[multiplication\_operations :] contient les différentes instructions de multiplication.
+\item[simd\_operations :] instruction sur plusieurs données. 
+\item[system\_control\_operations :] instructions contrôlant le comportement du système.
+\end{description}
+
+voir la couverture du jeu d'instruction en annexe pour la liste complète des instructions.
+
+Cette étape permet de charger des programmes en mémoire que l'on peux utiliser pour vérifier la synthaxe du désassemblage des instructions. 
+Pour cela on utilise l'outils de la chaine ATMEL Objdump qui convertis le code source d'un programme en instruction assembleur. 
+Pour chaque programme executé sur la machine cible il est important de vérfier le bon désassemblage des instructions utilisé en comparant avec celui d'objdump
+afin de vérifier qu'il n'y ai pas eu d'erreur mais surtous que la synthaxe soit conforme.
+
+L'implémentation des fonctions execute se fait également en suivant les opérations de la documentation. Pour la pluspart des instructions sont divisé en 3 parties:
+\begin{itemize}
+\item récupération des données.
+\item traitement et calcul du résultat.
+\item mise à jour des registres.
+\item mise à jour des flags si nécessaire.
+\end{itemize}
+ 
+
+Enfin la phase de tests consiste à éxecuter des programmes spécifiques sur le simulateurs afin de tester la fiablité du processeur. 
+Lorsque le programme plante à l'exécution, la recherche des causes permet de retrouver les erreurs d'implémentation dans le code source.
+Cette étape est décrite en détail dans la partie suivante.
+
+\subsubsection{Méthodes de débogage}
+
+Les différents types de bogues rencontré sont:
+\begin{itemize}
+\item décodage
+\item endian
+\item erreur typographique
+\item mauvaise interprétation d'une spécification
+\item erreur arythmétique
+\item réutilisation d'un bloque de code inaproprié
+\end{itemize}
+
+Dans la pluspart des cas ceux-ci sont introduits par inattention, par exemple lors de l'implémenatation d'une série d'instruction qui différent très peu les unes 
+des autres. A cause du nombre important d'instruction éxecuté,la présence de bogues se manifeste part des effets de bord. Afin de retrouver les causes j'ai du avoir aux méthodes suivantes:
+
+\begin{itemize}
+\item recherche par dichotomie.
+\item excécution instruction par instruction. 
+\item relecture de code.
+\end{itemize}
+
+La recherche de bug par dichotomie consiste à découper le programme en morceaux jusqu'à trouver l'instruction qui cause l'erreur.
+
+L'exécution instruction par instruction consiste à excecuter les instructions les unes après les autres et vérfier à chaque fois si les valeurs dans les regsitres
+sont celles attendus. Cette méthode est assez longue donc nécessite de cibler 
+
+Dans certains cas, il fut impossible de retrouver la cause d'un bogues par les 2 précèdentes méthodes. 
+Dans ce cas la seule solution consiste à réanalyser le code avec les spécifiations afin de detecté une erreur directement dans le code source.
+Plusieurs relecture successive d'un essemble d'instructions m'ont permis de retrouver certaines erreurs de cette façon.
+
+De plus au fur et à mesure, il devient de plus en plus difficile de trouver les bogues car ceux. 
+
+\subsection{Evaluation et résultats expérimentaux}
+
+\subsubsection{Présentation des benchmarks utilisés}
+\subsubsection{Grandeurs mesurées}
+
+\subsection{Résultats obtenues}
+
+\subsection{Discussion des résultats}

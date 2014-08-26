@@ -325,7 +325,7 @@ cp_w_b.execute={
 
 cp_w_b.disasm={
 
-	os<< "cp.w\t" << REG_NAME[rd] << ","<< imm6 << "\t\t// RD-SE(imm_S)";
+	os<< "cp.w\t" << REG_NAME[rd] << ","<< imm6 << "\t\t//imm6";
 
 }
 
@@ -353,7 +353,7 @@ cp_w_c.execute={
 }
 cp_w_c.disasm={
 
-	os<< "cp.w\t" << REG_NAME[rd] << "," << imm << "\t\t// RD-SE(imm_L)";
+	os<< "cp.w\t" << REG_NAME[rd] << "," << imm << "\t\t//imm21";
 
 }
 
@@ -772,7 +772,7 @@ sub_d.execute = {
 
 sub_d.disasm={
 
-	os << "sub\t" << REG_NAME[rd] << ","  << imm << "\t\t//imm16";
+	os << "sub\t" << REG_NAME[rd] << ","  << imm << "\t\t//imm21";
 }
 
 op sub_e(0b111[3]:rs[4]:0b01100[5]:rd[4]:><:sext<32>imm16[16])
