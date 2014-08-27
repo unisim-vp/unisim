@@ -3951,7 +3951,8 @@ TBuiltDouble<TypeTraits>::nthRootAssign(int n) {
       scfFlags.clear();
       bdNext.divAssign(thisType(bdResult).nthExponentAssign(n-1), scfFlags);
       scfFlags.clear();
-      bdNext.plusAssign(thisType(bdResult).multAssign(n-1, StatusAndControlFlags(scfFlags)), scfFlags);
+      StatusAndControlFlags scfFlagsCopy(scfFlags);
+      bdNext.plusAssign(thisType(bdResult).multAssign(n-1, scfFlagsCopy), scfFlags);
       scfFlags.clear();
       bdNext.divAssign(n, scfFlags);
       ComparisonResult crCompare = bdNext.compare(bdResult);

@@ -387,7 +387,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
       Mantissa() {}
       Mantissa(const Mantissa& mSource) : inherited(mSource) {}
       Mantissa(const ExtendedMantissa& emSource)
-         {  for (register int uIndex = 0; uIndex < inherited::uCellSizeMantissa; ++uIndex)
+         {  for (register int uIndex = 0; uIndex < inherited::uCellSize; ++uIndex)
                inherited::array(uIndex) = emSource[uIndex];
          }
       void normalizeLastCell() { inherited::normalizeLastCell(); }
