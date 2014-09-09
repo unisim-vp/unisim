@@ -52,7 +52,7 @@ public:
 	static const int kill_signo = SIGKILL;
 #endif
 
-	GenericThread() : ret(0), terminated(false), started(false) {}
+	GenericThread() : thid(), ret(0), terminated(false), started(false) {}
 
 	virtual ~GenericThread() {
 		if (!isTerminated()) stop();
