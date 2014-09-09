@@ -45,7 +45,6 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/data_object.tcc>
 #include <unisim/util/likely/likely.hh>
-#include <unisim/util/simfloat/floating.tcc>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
