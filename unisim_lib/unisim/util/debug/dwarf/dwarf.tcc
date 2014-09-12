@@ -2252,59 +2252,62 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 		
 		if(stmt)
 		{
-			if(stmt->GetLineNo() == lineno && (!colno || (stmt->GetColNo() == colno)))
+			if(stmt->IsBeginningOfSourceStatement())
 			{
-				std::string source_path;
-				const char *source_filename = stmt->GetSourceFilename();
-				if(source_filename)
+				if(stmt->GetLineNo() == lineno && (!colno || (stmt->GetColNo() == colno)))
 				{
-					const char *source_dirname = stmt->GetSourceDirname();
-					if(source_dirname)
+					std::string source_path;
+					const char *source_filename = stmt->GetSourceFilename();
+					if(source_filename)
 					{
-						source_path += source_dirname;
-						source_path += '/';
-					}
-					source_path += source_filename;
-
-					std::vector<std::string> hierarchical_source_path;
-					
-					s.clear();
-					p = source_path.c_str();
-					do
-					{
-						if(*p == 0 || *p == '/' || *p == '\\')
+						const char *source_dirname = stmt->GetSourceDirname();
+						if(source_dirname)
 						{
-							hierarchical_source_path.push_back(s);
-							s.clear();
+							source_path += source_dirname;
+							source_path += '/';
 						}
-						else
-						{
-							s += *p;
-						}
-					} while(*(p++));
+						source_path += source_filename;
 
-					int hierarchical_source_path_depth = hierarchical_source_path.size();
-					
-					if((!requested_filename_is_absolute && hierarchical_source_path_depth >= hierarchical_requested_filename_depth) ||
-					   (requested_filename_is_absolute && hierarchical_source_path_depth == hierarchical_requested_filename_depth))
-					{
-						int i;
-						bool match = true;
+						std::vector<std::string> hierarchical_source_path;
 						
-						for(i = 0; i < hierarchical_requested_filename_depth; i++)
+						s.clear();
+						p = source_path.c_str();
+						do
 						{
-							if(hierarchical_source_path[hierarchical_source_path_depth - 1 - i] != hierarchical_requested_filename[hierarchical_requested_filename_depth - 1 - i])
+							if(*p == 0 || *p == '/' || *p == '\\')
 							{
-								match = false;
-								break;
+								hierarchical_source_path.push_back(s);
+								s.clear();
 							}
-						}
+							else
+							{
+								s += *p;
+							}
+						} while(*(p++));
+
+						int hierarchical_source_path_depth = hierarchical_source_path.size();
 						
-						if(match)
+						if((!requested_filename_is_absolute && hierarchical_source_path_depth >= hierarchical_requested_filename_depth) ||
+						(requested_filename_is_absolute && hierarchical_source_path_depth == hierarchical_requested_filename_depth))
 						{
-							if(!stmts) return stmt;
-							if(!ret) ret = stmt;
-							stmts->push_back(stmt);
+							int i;
+							bool match = true;
+							
+							for(i = 0; i < hierarchical_requested_filename_depth; i++)
+							{
+								if(hierarchical_source_path[hierarchical_source_path_depth - 1 - i] != hierarchical_requested_filename[hierarchical_requested_filename_depth - 1 - i])
+								{
+									match = false;
+									break;
+								}
+							}
+							
+							if(match)
+							{
+								if(!stmts) return stmt;
+								if(!ret) ret = stmt;
+								stmts->push_back(stmt);
+							}
 						}
 					}
 				}
