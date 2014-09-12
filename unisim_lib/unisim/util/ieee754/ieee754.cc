@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,50 +31,9 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#include <unisim/util/ieee754/ieee754.hh>
+#include <unisim/util/simfloat/floating.tcc>
 
-#ifndef __UNISIM_UTIL_DEBUG_STMT_H__
-#define __UNISIM_UTIL_DEBUG_STMT_H__
-
-#include <iosfwd>
-#include <string>
-
-namespace unisim {
-namespace util {
-namespace debug {
-
-template <class MEMORY_ADDR> class Statement;
-template <class MEMORY_ADDR>
-std::ostream& operator << (std::ostream& os, const Statement<MEMORY_ADDR>& stmt);
-
-template <class MEMORY_ADDR>
-class Statement
-{
-public:
-	Statement(MEMORY_ADDR addr, bool is_beginning_of_source_statement, bool is_beginning_of_basic_block, const char *source_dirname, const char *source_filename, unsigned int lineno, unsigned int colno, unsigned int isa, unsigned int discriminator);
-	MEMORY_ADDR GetAddress() const;
-	bool IsBeginningOfSourceStatement() const;
-	bool IsBeginningOfBasicBlock() const;
-	const char *GetSourceDirname() const;
-	const char *GetSourceFilename() const;
-	unsigned int GetLineNo() const;
-	unsigned int GetColNo() const;
-	unsigned int GetISA() const;
-	unsigned int GetDiscriminator() const;
-	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const Statement<MEMORY_ADDR>& stmt);
-private:
-	MEMORY_ADDR addr;
-	bool is_beginning_of_source_statement;
-	bool is_beginning_of_basic_block;
-	const char *source_dirname;
-	const char *source_filename;
-	unsigned int lineno;
-	unsigned int colno;
-	unsigned int isa;
-	unsigned int discriminator;
-};
-
-} // end of namespace debug
-} // end of namespace util
-} // end of namespace unisim
-
-#endif
+template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::util::ieee754::BuiltFloatTraits>;
+template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::util::ieee754::BuiltDoubleTraits>;

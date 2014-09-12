@@ -107,9 +107,7 @@ void Logger::EndDebugInfo() {
 		return;
 	}
 	mode_ = NO_MODE;
-  if (buffer_.str().length() != 0) {
   	server_->DebugInfo(obj_, buffer_.str().c_str());
-  }
 }
 
 void Logger::DebugWarning() {
@@ -122,9 +120,7 @@ void Logger::DebugWarning() {
 void Logger::EndDebugWarning() {
 	if (mode_ != WARNING_MODE) return;
 	mode_ = NO_MODE;
-  if (buffer_.str().length() != 0) {
   	server_->DebugWarning(obj_, buffer_.str().c_str());
-  }
 }
 
 void Logger::DebugError() {
@@ -137,9 +133,7 @@ void Logger::DebugError() {
 void Logger::EndDebugError() {
 	if (mode_ != ERROR_MODE) return;
 	mode_ = NO_MODE;
-  if (buffer_.str().length() != 0) {
   	server_->DebugError(obj_, buffer_.str().c_str());
-  }
 }
 
 void Logger::EndDebug() {

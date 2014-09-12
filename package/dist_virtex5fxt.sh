@@ -156,6 +156,7 @@ unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/os/linux_os/environment.cc \
 unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
+unisim/util/ieee754/ieee754.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
