@@ -166,6 +166,7 @@ unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/loader/coff_loader/coff_loader64.cc \
 unisim/util/endian/endian.cc \
 unisim/util/lexer/lexer.cc \
+unisim/util/ieee754/ieee754.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
