@@ -61,7 +61,7 @@ S12PIT24B<PIT_SIZE>::S12PIT24B(const sc_module_name& name, Object *parent) :
 	slave_socket.register_b_transport(this, &S12PIT24B::read_write);
 	bus_clock_socket.register_b_transport(this, &S12PIT24B::updateBusClock);
 
-	SC_HAS_PROCESS(S12PIT24B);
+//	SC_HAS_PROCESS(S12PIT24B);
 
 	char counterName[20];
 
