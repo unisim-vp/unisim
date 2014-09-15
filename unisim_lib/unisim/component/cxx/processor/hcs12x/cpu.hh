@@ -546,7 +546,7 @@ protected:
 	//=====================================================================
 
 //	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
-	uint64_t voltage;        //!< CPU voltage in mV
+//	uint64_t voltage;        //!< CPU voltage in mV
 //	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
 	uint64_t cpu_cycle;      //!< Number of cpu cycles
 	uint64_t bus_cycle;      //!< Number of front side bus cycles

@@ -125,6 +125,8 @@ public:
 	enum REGS_OFFSETS {SYNR, REFDV, CTFLG, CRGFLG, CRGINT, CLKSEL, PLLCTL, RTICTL,
 					COPCTL, FORBYP, CTCTL, ARMCOP};
 
+	static const unsigned int MEMORY_MAP_SIZE = 12;
+
 	ServiceImport<TrapReporting > trap_reporting_import;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;

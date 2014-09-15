@@ -645,15 +645,15 @@ uint16_t ATD10B<ATD_SIZE>::getDigitalToken(double analogVoltage) {
 
 	if (isDataSigned) {
 		if (analogVoltage == vrh) {
-			digitalToken =  0xFFFF & llround((analogVoltage - zeroAnalogVoltage - delta) / delta);
+			digitalToken =  0xFFFF & lround((analogVoltage - zeroAnalogVoltage - delta) / delta);
 		} else {
-			digitalToken = 0xFFFF & llround((analogVoltage - zeroAnalogVoltage) / delta);
+			digitalToken = 0xFFFF & lround((analogVoltage - zeroAnalogVoltage) / delta);
 		}
 	} else {
 		if ((analogVoltage < zeroAnalogVoltage) || (analogVoltage == vrh)) {
-			digitalToken = 0xFFFF & llround((analogVoltage - vrl) / delta);
+			digitalToken = 0xFFFF & lround((analogVoltage - vrl) / delta);
 		} else {
-			digitalToken = 0xFFFF & llround((analogVoltage - vrl + delta) / delta);
+			digitalToken = 0xFFFF & lround((analogVoltage - vrl + delta) / delta);
 		}
 	}
 

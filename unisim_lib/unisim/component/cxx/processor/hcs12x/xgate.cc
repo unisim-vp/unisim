@@ -175,6 +175,7 @@ XGATE::XGATE(const char *name, Object *parent):
 	xgif_register[6] = 0x0000;
 	xgif_register[7] = 0x0000;
 
+	lastPC = 0;
 }
 
 XGATE::~XGATE()
@@ -811,7 +812,7 @@ void XGATE::RequiresFinishedInstructionReporting(bool report)
 
 bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+64))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (size == 0) {
 			return (true);
@@ -978,7 +979,7 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+64))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (size == 0) {
 			return (true);

@@ -244,6 +244,7 @@ Generator::toposort()
             log(2) << "operation `" << (**op2).m_symbol << "' is a forced specialization of operation `" << (**op1).m_symbol << "'" << endl;
             break;
           }
+        //no break
       case OpCode_t::Equal:
         (**op1).m_fileloc.err( "error: operation `%s' conflicts with operation `%s'", (**op1).m_symbol.str(), (**op2).m_symbol.str() );
         (**op2).m_fileloc.err( "operation `%s' was declared here", (**op2).m_symbol.str() );

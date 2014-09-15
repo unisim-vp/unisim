@@ -36,7 +36,7 @@ namespace pim {
 namespace network {
 
 SocketServerThread::SocketServerThread(string host, uint16_t port, uint8_t connection_req_nb) :
-	SocketThread(host, port)
+	SocketThread(host, port), protocolHandler(NULL)
 {
 	request_nbre = connection_req_nb;
 

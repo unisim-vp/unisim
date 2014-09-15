@@ -154,6 +154,8 @@ public:
 	static const uint8_t RESERVED2	= 0x06; // 1 bytes
 	static const uint8_t RESERVED3	= 0x07; // 1 bytes
 
+	static const unsigned int MEMORY_MAP_SIZE = 8;
+
 	enum STATUS {IDLE, ACTIVE};
 
 	ServiceImport<TrapReporting > trap_reporting_import;

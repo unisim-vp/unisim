@@ -140,6 +140,8 @@ public:
 						TC0H_HIGH, TC0H_LOW, TC1H_HIGH, TC1H_LOW,
 						TC2H_HIGH, TC2H_LOW, TC3H_HIGH, TC3H_LOW};
 
+	static const unsigned int MEMORY_MAP_SIZE = 64;
+
 	//=========================================================
 	//=                MODULE INTERFACE                       =
 	//=========================================================

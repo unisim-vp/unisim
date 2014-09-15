@@ -36,7 +36,9 @@ struct RiscOpCode_t : public OpCode_t
   RiscOpCode_t( uint64_t mask, uint64_t bits, unsigned int size, bool vlen )
     : m_mask( mask ), m_bits( bits ), m_size( size ), m_vlen( vlen )
   {}
-    
+
+  virtual ~RiscOpCode_t() {}
+
   // Topology methods
   Location_t                  locate( OpCode_t const& _oc ) const;
   

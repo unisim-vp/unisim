@@ -37,7 +37,7 @@ struct CiscOpCode_t : public OpCode_t
   CiscOpCode_t()
     : m_mask( 0 ), m_bits( 0 ), m_prefixsize( 0 ), m_fullsize( 0 ), m_vlen( false ),
       m_lowercount( 0 ) {}
-  ~CiscOpCode_t() { delete [] m_mask; }
+  virtual ~CiscOpCode_t() { delete [] m_mask; }
     
   void                        size_attrs( unsigned int prefixsize, unsigned int fullsize, bool vlen );
   bool                        match( CiscOpCode_t const& _oc ) const;

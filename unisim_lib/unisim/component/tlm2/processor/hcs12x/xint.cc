@@ -112,6 +112,7 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 
 	XINT_REGS_ADDRESSES[INT_CFDATA7] = 0x012F;
 
+	Reset();
 }
 
 XINT::~XINT() {
@@ -504,7 +505,7 @@ void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 16))) {
+	if ((address >= baseAddress) && (address < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);

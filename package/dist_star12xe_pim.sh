@@ -715,7 +715,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM star12x Standalone simulator], [${STAR12X_VERSION}], [Reda Nouacer <reda.nouacer@cea.fr>], [unisim-star12x])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM star12x Standalone simulator], [${STAR12X_VERSION}], [reda.nouacer@cea.fr], [unisim-star12x])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -832,7 +832,7 @@ fi
 
 if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "Generating star12x configure.ac"
-	echo "AC_INIT([UNISIM star12x C++ simulator], [${STAR12X_VERSION}], [Reda Nouacer <reda.nouacer@cea.fr>], [star12x_cxx])" > "${STAR12X_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM star12x C++ simulator], [${STAR12X_VERSION}], [reda.nouacer@cea.fr], [star12x_cxx])" > "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${STAR12X_CONFIGURE_AC}"

@@ -135,6 +135,7 @@ public:
 	static const uint8_t	INT_SYSCALL_OFFSET				= 0x12;
 	static const uint8_t	INT_SPURIOUS_OFFSET				= 0x10;
 
+	static const unsigned int MEMORY_MAP_SIZE = 16;
 
 	/*
 	 * 0xFFFE				: pin reset, power-on reset, low-voltage reset, illegal address reset

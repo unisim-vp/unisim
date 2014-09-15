@@ -35,6 +35,7 @@ struct OpCode_t {
   intptr_t                    m_lowercount;
   
   OpCode_t() : m_upper( 0 ), m_lowercount( 0 ) {}
+  virtual ~OpCode_t() {}
   
   virtual std::ostream&       details( std::ostream& _sink ) const = 0;
   friend std::ostream&        operator << ( std::ostream& _sink, OpCode_t const& _oc );

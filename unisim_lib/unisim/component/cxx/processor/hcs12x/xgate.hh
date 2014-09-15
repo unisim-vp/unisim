@@ -269,6 +269,8 @@ public:
 	static const unsigned int XGR7 = 0x2E; // 2-bytes
 	static const unsigned int RESERVED7 = 0x30; // 5*2-bytes internal registers not visible outside XGATE
 
+	static const unsigned int MEMORY_MAP_SIZE = 64;
+
 	//=====================================================================
 	//=                  public service imports/exports                   =
 	//=====================================================================

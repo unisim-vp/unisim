@@ -149,6 +149,8 @@ public:
 
 	enum SCIMSG {SCIDATA, SCIIDLE, SCIBREAK};
 
+	static const unsigned int MEMORY_MAP_SIZE = 8;
+
 	//=========================================================
 	//=                REGISTERS OFFSETS                      =
 	//=========================================================

@@ -155,7 +155,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	pacB = new PulseAccumulatorB("PACB", this, &portt_pin[0], pc8bit[1], pc8bit[0]);
 	portt_pin_reg[0].AddListener(pacB);
 
-//	Reset();
+	Reset();
 
 	xint_payload = xint_payload_fabric.allocate();
 
@@ -428,7 +428,7 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 64))) {
+	if ((address >= baseAddress) && (address < (baseAddress + (unsigned int) MEMORY_MAP_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -1178,7 +1178,7 @@ void ECT::PulseAccumulator16Bit::latchToHoldingRegisters() {
 
 ECT::PulseAccumulatorA::PulseAccumulatorA(const sc_module_name& name, ECT *parent, bool* pinLogic, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
 	ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(name, parent, pinLogic, pacn_high, pacn_low)
-	, isGatedTimeMode(false)
+	, isGatedTimeMode(false), valideEdge(0)
 {
 
 }
@@ -1981,7 +1981,7 @@ void ECT::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 bool ECT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress + (unsigned int) TC3H_LOW))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -2193,7 +2193,7 @@ bool ECT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool ECT::WriteMemory(physical_address_t addr, const void *value, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress + (unsigned int) TC3H_LOW))) {
 
 		if (size == 0) {
 			return (true);

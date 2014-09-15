@@ -100,6 +100,8 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
+	, rti_fdr(1)
+
 	, synr_register(0x09)
 	, refdv_register(0x00)
 	, ctflg_register(0x00)
@@ -175,7 +177,7 @@ void CRG::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+	if ((address >= baseAddress) && (address < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -1017,7 +1019,7 @@ void CRG::Reset() {
 
 bool CRG::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress + (unsigned int) ARMCOP))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -1063,7 +1065,7 @@ bool CRG::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool CRG::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress + (unsigned int) ARMCOP))) {
 
 		if (size == 0) {
 			return (true);

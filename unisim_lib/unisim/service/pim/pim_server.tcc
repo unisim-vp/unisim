@@ -387,7 +387,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 		if(gdbThread->isData())
 		{
 			DBGData* request = gdbThread->receiveData();
-			if(request->getCommand() == DBGData::DBG_SUSPEND)
+			if(request->getCommand() == DBGData::DBG_SUSPEND_ACTION)
 			{
 				running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
 				ReportTracePointTrap();
@@ -571,7 +571,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 			}
 				break;
 
-			case DBGData::DBG_CONTINUE: {
+			case DBGData::DBG_CONTINUE_ACTION: {
 				std::string addr_str = request->getAttribute(DBGData::ADDRESS_ATTR);
 				if (addr_str.empty()) {
 					running_mode = GDBSERVER_MODE_CONTINUE;

@@ -120,6 +120,7 @@ CPU::CPU(const char *name, Object *parent):
 	syscall_interrupt(false),
 	spurious_interrupt(false),
 	state(CPU::RUNNING),
+	lastPC(0),
 	instruction_counter(0),
 	cycles_counter(0),
 	data_load_counter(0),

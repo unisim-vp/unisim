@@ -59,6 +59,10 @@
 #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #endif
 
+#ifdef GCC_INLINE
+#undef GCC_INLINE
+#endif
+
 #if defined(__GNUC__) && (GCC_VERSION >= 29600) && defined(EXTENSIVE_INLINING)
 #define GCC_INLINE __attribute__((always_inline))
 #else
