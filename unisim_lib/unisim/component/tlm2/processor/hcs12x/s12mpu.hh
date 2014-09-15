@@ -156,6 +156,8 @@ public:
 	static const uint8_t MPU_DESC_BANKS_OFFSET = 0x0C;	// This offset is used to instruments all descriptors
 	static const uint8_t MPU_DESC_WINDOW_SIZE = 6;
 
+	static const unsigned int MEMORY_MAP_SIZE = 12;
+
 	ServiceImport<TrapReporting > trap_reporting_import;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
