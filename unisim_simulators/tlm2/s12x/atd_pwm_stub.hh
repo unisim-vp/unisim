@@ -106,6 +106,7 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
+	virtual void Stop(int exit_status);
 
 	// Slave methods
 	virtual bool get_direct_mem_ptr( PWM_Payload<PWM_SIZE>& payload, tlm_dmi&  dmi_data);
@@ -122,6 +123,8 @@ public:
 	void input(bool pwmValue[PWM_SIZE]);
 	void output_ATD1(double anValue[ATD1_SIZE]);
 	void output_ATD0(double anValue[ATD0_SIZE]);
+
+	bool isTerminated() { return terminated; }
 
 //	virtual void ProcessATD();
 //	virtual void ProcessPWM();
@@ -167,6 +170,8 @@ private:
 	ofstream atd0_output_file;
 	ofstream atd1_output_file;
 	ofstream pwm_output_file;
+
+	bool terminated;
 
 };
 

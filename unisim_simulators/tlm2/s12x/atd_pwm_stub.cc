@@ -45,7 +45,7 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	, slave_sock("slave_sock")
 
 	, anx_stimulus_period(80000000) // 80 us
-	, anx_stimulus_period_sc(0)
+	, anx_stimulus_period_sc(NULL)
 
 	, pwm_fetch_period(1e9) // 1 ms
 	, pwm_fetch_period_sc(0)
@@ -63,6 +63,8 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 
 	, param_anx_stimulus_period("anx-stimulus-period", this, anx_stimulus_period)
 	, param_pwm_fetch_period("pwm-fetch-period", this, pwm_fetch_period)
+
+	, terminated(false)
 
 {
 	atd1_master_sock(*this);
@@ -116,6 +118,10 @@ bool ATD_PWM_STUB::Setup(ServiceExportBase *srv_export) {
 
 bool ATD_PWM_STUB::EndSetup() {
 	return (true);
+}
+
+void ATD_PWM_STUB::Stop(int exit_status) {
+	terminated = true;
 }
 
 // Slave methods
@@ -229,7 +235,8 @@ void ATD_PWM_STUB::output_ATD1(double anValue[ATD1_SIZE])
 		atd1_output_file << (atd1_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *atd1_payload << std::endl;
 	}
 
-	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*atd1_payload, phase, local_time);
+//	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*atd1_payload, phase, local_time);
+	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*atd1_payload, phase, (sc_core::sc_time&) SC_ZERO_TIME);
 
 	atd1_payload->release();
 	
@@ -274,7 +281,8 @@ void ATD_PWM_STUB::output_ATD0(double anValue[ATD0_SIZE])
 		atd0_output_file << (atd0_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *atd0_payload << std::endl;
 	}
 
-	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*atd0_payload, phase, local_time);
+//	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*atd0_payload, phase, local_time);
+	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*atd0_payload, phase, (sc_core::sc_time&) SC_ZERO_TIME);
 
 	atd0_payload->release();
 

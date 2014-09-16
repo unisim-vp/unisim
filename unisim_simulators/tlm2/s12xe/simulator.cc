@@ -204,8 +204,8 @@ Simulator::Simulator(int argc, char **argv)
 	inline_debugger = enable_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
 
 	// - telnet
-	sci_telnet = (sci_enable_telnet) ? new unisim::service::telnet::Telnet("sci_telnet") : 0;
-	spi_telnet = (spi_enable_telnet) ? new unisim::service::telnet::Telnet("spi_telnet") : 0;
+	sci_telnet = (sci_enable_telnet) ? new unisim::service::telnet::Telnet("sci-telnet") : 0;
+	spi_telnet = (spi_enable_telnet) ? new unisim::service::telnet::Telnet("spi-telnet") : 0;
 
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");

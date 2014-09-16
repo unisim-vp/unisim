@@ -221,12 +221,6 @@ void XML_ATD_PWM_STUB::processATD0()
 
 	atd0_data_size = atd0_vect.size();
 
-	if (atd0_data_size == 0) {
-		cerr << sc_object::name() << " Warning: ATD0 random inputs values will be used during simulation !" << endl;
-		RandomizeData<ATD0_SIZE>(atd0_vect);
-		atd0_data_size = atd0_vect.size();
-	}
-
 	/**
 	 * Note: The Software sample the ATDDRx every 1024us.
 	 * The injected trace file start at 20ms. The interval between two sample is 80us
@@ -251,18 +245,21 @@ void XML_ATD_PWM_STUB::processATD0()
 		atd0_start = 0;
 	}
 
-	atd0_data_index = (atd0_data_index + 1) % atd0_data_size;
-
-	uint8_t j = 0;
-	for (uint8_t i=0; i < ATD0_SIZE; i++) {
-		if ((i < atd0_start) || (i > atd0_wrap_around)) {
-			atd0_anValue[i] = 0;
-		} else {
-			atd0_anValue[i] = atd0_vect.at(atd0_data_index).volte[j++];
+	while (!isTerminated()) {
+		uint8_t j = 0;
+		for (uint8_t i=0; i < ATD0_SIZE; i++) {
+			if ((i < atd0_start) || (i > atd0_wrap_around)) {
+				atd0_anValue[i] = 0;
+			} else {
+				atd0_anValue[i] = atd0_vect.at(atd0_data_index).volte[j++];
+			}
 		}
-	}
 
-	output_ATD0(atd0_anValue);
+		output_ATD0(atd0_anValue);
+
+		atd0_data_index = (atd0_data_index + 1) % atd0_data_size;
+
+	}
 
 }
 
@@ -274,12 +271,6 @@ void XML_ATD_PWM_STUB::processATD1()
 	int atd1_data_size, atd1_data_index = 0;
 
 	atd1_data_size = atd1_vect.size();
-
-	if (atd1_data_size == 0) {
-		cerr << sc_object::name() << " Warning: ATD1 random inputs values will be used during simulation !" << endl;
-		RandomizeData<ATD1_SIZE>(atd1_vect);
-		atd1_data_size = atd1_vect.size();
-	}
 
 	/**
 	 * Note: The Software sample the ATDDRx every 1024us.
@@ -304,18 +295,23 @@ void XML_ATD_PWM_STUB::processATD1()
 		atd1_start = 0;
 	}
 
-	atd1_data_index = (atd1_data_index + 1) % atd1_data_size;
+	while (!isTerminated()) {
 
-	uint8_t j = 0;
-	for (uint8_t i=0; i < ATD1_SIZE; i++) {
-		if ((i < atd1_start) || (i > atd1_wrap_around)) {
-			atd1_anValue[i] = 0;
-		} else {
-			atd1_anValue[i] = atd1_vect.at(atd1_data_index).volte[j++];
+		uint8_t j = 0;
+		for (uint8_t i=0; i < ATD1_SIZE; i++) {
+			if ((i < atd1_start) || (i > atd1_wrap_around)) {
+				atd1_anValue[i] = 0;
+			} else {
+				atd1_anValue[i] = atd1_vect.at(atd1_data_index).volte[j++];
+			}
 		}
-	}
 
-	output_ATD1(atd1_anValue);
+		output_ATD1(atd1_anValue);
+
+		atd1_data_index = (atd1_data_index + 1) % atd1_data_size;
+
+//		wait(*anx_stimulus_period_sc);
+	}
 
 }
 
@@ -324,7 +320,7 @@ void XML_ATD_PWM_STUB::processPWM()
 
 	bool pwmValue[PWM_SIZE];
 
-	while(true)
+	while (!isTerminated())
 	{
 		input(pwmValue);
 	}
