@@ -373,28 +373,34 @@ const uint16_t DW_AT_PGI_lstride  = 0x3a02;
 //                                   Forms                                   //
 ///////////////////////////////////////////////////////////////////////////////
 
-const uint16_t DW_FORM_addr       = 0x01;
-const uint16_t DW_FORM_block2     = 0x03;
-const uint16_t DW_FORM_block4     = 0x04;
-const uint16_t DW_FORM_data2      = 0x05;
-const uint16_t DW_FORM_data4      = 0x06;
-const uint16_t DW_FORM_data8      = 0x07;
-const uint16_t DW_FORM_string     = 0x08;
-const uint16_t DW_FORM_block      = 0x09;
-const uint16_t DW_FORM_block1     = 0x0a;
-const uint16_t DW_FORM_data1      = 0x0b;
-const uint16_t DW_FORM_flag       = 0x0c;
-const uint16_t DW_FORM_sdata      = 0x0d;
-const uint16_t DW_FORM_strp       = 0x0e;
-const uint16_t DW_FORM_udata      = 0x0f;
-const uint16_t DW_FORM_ref_addr   = 0x10;
-const uint16_t DW_FORM_ref1       = 0x11;
-const uint16_t DW_FORM_ref2       = 0x12;
-const uint16_t DW_FORM_ref4       = 0x13;
-const uint16_t DW_FORM_ref8       = 0x14;
-const uint16_t DW_FORM_ref_udata  = 0x15;
-const uint16_t DW_FORM_indirect   = 0x16;
-const uint16_t DW_FORM_sec_offset = 0x17;
+// DWARF v2
+const uint16_t DW_FORM_addr         = 0x01;
+const uint16_t DW_FORM_block2       = 0x03;
+const uint16_t DW_FORM_block4       = 0x04;
+const uint16_t DW_FORM_data2        = 0x05;
+const uint16_t DW_FORM_data4        = 0x06;
+const uint16_t DW_FORM_data8        = 0x07;
+const uint16_t DW_FORM_string       = 0x08;
+const uint16_t DW_FORM_block        = 0x09;
+const uint16_t DW_FORM_block1       = 0x0a;
+const uint16_t DW_FORM_data1        = 0x0b;
+const uint16_t DW_FORM_flag         = 0x0c;
+const uint16_t DW_FORM_sdata        = 0x0d;
+const uint16_t DW_FORM_strp         = 0x0e;
+const uint16_t DW_FORM_udata        = 0x0f;
+const uint16_t DW_FORM_ref_addr     = 0x10;
+const uint16_t DW_FORM_ref1         = 0x11;
+const uint16_t DW_FORM_ref2         = 0x12;
+const uint16_t DW_FORM_ref4         = 0x13;
+const uint16_t DW_FORM_ref8         = 0x14;
+const uint16_t DW_FORM_ref_udata    = 0x15;
+const uint16_t DW_FORM_indirect     = 0x16;
+
+// DWARF v4
+const uint16_t DW_FORM_sec_offset   = 0x17;
+const uint16_t DW_FORM_expr_loc     = 0x18;
+const uint16_t DW_FORM_flag_present = 0x19;
+const uint16_t DW_FORM_ref_sig8     = 0x20;
 
 ///////////////////////////////////////////////////////////////////////////////
 //                       DWARF expression operations                         //

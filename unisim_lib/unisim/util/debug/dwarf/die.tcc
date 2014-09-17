@@ -78,6 +78,7 @@ DWARF_DIE<MEMORY_ADDR>::~DWARF_DIE()
 	unsigned int num_children = children.size();
 	for(i = 0; i < num_children; i++)
 	{
+		dw_cu->UnRegister(children[i]);
 		delete children[i];
 	}
 }
@@ -908,7 +909,45 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						return -1;
 				}
 				break;
+				
+			case DW_FORM_expr_loc:
+				{
+					DWARF_LEB128 leb128_info_bytes_length;
+					int64_t sz;
+					if((sz = leb128_info_bytes_length.Load(rawdata, max_size)) < 0) return -1;
+					rawdata += sz;
+					size += sz;
+					max_size -= sz;
+
+					uint64_t info_bytes_length = (uint64_t) leb128_info_bytes_length;
+					if(max_size < info_bytes_length) return -1;
+
+					DWARF_AttributeValue<MEMORY_ADDR> *dw_value;
+					
+					dw_value = new DWARF_Expression<MEMORY_ADDR>(dw_cu, info_bytes_length, rawdata);
+					
+					rawdata += info_bytes_length;
+					size += info_bytes_length;
+					max_size -= info_bytes_length;
+					
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_value);
+				}
+				break;
+				
+			case DW_FORM_flag_present:
+				{
+					DWARF_Flag<MEMORY_ADDR> *dw_flag = new DWARF_Flag<MEMORY_ADDR>(true);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_flag);
+				}
+				break;
+				
+			case DW_FORM_ref_sig8:
+				std::cerr << "unimplemented form DW_FORM_ref_sig8" << std::endl;
+				return -1;
+				break;
+				
 			default:
+				std::cerr << "Unknown form 0x" << std::hex << dw_form << std::dec << std::endl;
 				return -1;
 		}
 		
@@ -1162,9 +1201,10 @@ void DWARF_DIE<MEMORY_ADDR>::GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_AD
 	if(GetLowPC(low_pc))
 	{
 		MEMORY_ADDR high_pc = 0;
-		if(GetHighPC(high_pc))
+		bool high_pc_is_offset = false;
+		if(GetHighPC(high_pc, high_pc_is_offset))
 		{
-			ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(low_pc, high_pc));
+			ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(low_pc, high_pc_is_offset ? low_pc + high_pc : high_pc));
 		}
 		else
 		{
@@ -1224,9 +1264,10 @@ bool DWARF_DIE<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) co
 	if(GetLowPC(low_pc))
 	{
 		MEMORY_ADDR high_pc = 0;
-		if(GetHighPC(high_pc))
+		bool high_pc_is_offset = false;
+		if(GetHighPC(high_pc, high_pc_is_offset))
 		{
-			return unisim::util::debug::dwarf::HasOverlapEx(low_pc, high_pc, addr, addr + length);
+			return unisim::util::debug::dwarf::HasOverlapEx(low_pc, high_pc_is_offset ? low_pc + high_pc : high_pc, addr, addr + length);
 		}
 		else
 		{
@@ -1421,21 +1462,37 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLowPC(MEMORY_ADDR& low_pc) const
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetHighPC(MEMORY_ADDR& high_pc) const
+bool DWARF_DIE<MEMORY_ADDR>::GetHighPC(MEMORY_ADDR& high_pc, bool& is_offset) const
 {
-	const DWARF_Address<MEMORY_ADDR> *dw_at_high_pc;
-	if(GetAttributeValue(DW_AT_high_pc, dw_at_high_pc))
+	const DWARF_Address<MEMORY_ADDR> *dw_at_high_pc_addr;
+	if(GetAttributeValue(DW_AT_high_pc, dw_at_high_pc_addr))
 	{
-		high_pc = dw_at_high_pc->GetValue();
+		high_pc = dw_at_high_pc_addr->GetValue();
+		is_offset = false;
 		return true;
 	}
+	
+	const DWARF_Constant<MEMORY_ADDR> *dw_at_high_pc_offset;
+	if(GetAttributeValue(DW_AT_high_pc, dw_at_high_pc_offset))
+	{
+		high_pc = dw_at_high_pc_offset->to_uint();
+		is_offset = true;
+		return true;
+	}
+	
 	return false;
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetContigousAddressRange(MEMORY_ADDR& low_pc, MEMORY_ADDR& high_pc) const
 {
-	return GetLowPC(low_pc) && GetHighPC(high_pc);
+	if(!GetLowPC(low_pc)) return false;
+	
+	bool high_pc_is_offset = false;
+	if(!GetHighPC(high_pc, high_pc_is_offset)) return false;
+	
+	if(high_pc_is_offset) high_pc += low_pc;
+	return true;
 }
 
 template <class MEMORY_ADDR>

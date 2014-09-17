@@ -698,7 +698,7 @@ public:
 	
 	const char *GetName() const;
 	bool GetLowPC(MEMORY_ADDR& low_pc) const;
-	bool GetHighPC(MEMORY_ADDR& high_pc) const;
+	bool GetHighPC(MEMORY_ADDR& high_pc, bool& is_offset) const;
 	bool GetContigousAddressRange(MEMORY_ADDR& low_pc, MEMORY_ADDR& high_pc) const;
 	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
 	const DWARF_RangeListEntry<MEMORY_ADDR> *GetNonContigousAddressRange() const;
