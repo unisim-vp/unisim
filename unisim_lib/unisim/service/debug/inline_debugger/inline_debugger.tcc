@@ -288,7 +288,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		if(running_mode == INLINE_DEBUGGER_MODE_STEP)
 		{
 			const Statement<ADDRESS> *stmt = FindStatement(cia);
-			if(!stmt || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
+			if(!stmt || !stmt->IsBeginningOfSourceStatement() || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
 		}
 	}
 

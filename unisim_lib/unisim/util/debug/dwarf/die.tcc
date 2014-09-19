@@ -2268,40 +2268,47 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const
 {
-	const DWARF_Expression<MEMORY_ADDR> *dw_loc_expr = 0;
-	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
-	if(!GetLocationExpression(DW_AT_data_member_location, pc, dw_loc_expr, ranges))
+	const DWARF_Constant<MEMORY_ADDR> *dw_at_const_value = 0;
+	if(GetAttributeValue(DW_AT_data_member_location, dw_at_const_value))
 	{
-		// optimized out
-		loc.Clear();
-		if(debug)
-		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine data member location expression of DIE #" << id << " for PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
-		}
-		return true;
+		// constant offset from beginning of data object
+		MEMORY_ADDR offset = dw_at_const_value->to_uint();
+		loc.SetAddress(object_addr + offset);
 	}
-
-	if(dw_loc_expr->IsEmpty())
+	else
 	{
-		// optimized out
-		loc.Clear();
-		return true;
-	}
-	
-	MEMORY_ADDR addr;
-	DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
-	if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
-	dw_loc_expr_vm.SetObjectAddress(object_addr);
-	dw_loc_expr_vm.SetPC(pc);
-	dw_loc_expr_vm.Push(object_addr);
-	bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
-	if(!dw_loc_expr_vm_status)
-	{
-		if(debug)
+		// location expression
+		const DWARF_Expression<MEMORY_ADDR> *dw_loc_expr = 0;
+		std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
+		if(GetLocationExpression(DW_AT_data_member_location, pc, dw_loc_expr, ranges))
 		{
-			logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", evaluation of data member DIE #" << id << " location expression failed" << EndDebugError;
+			if(dw_loc_expr->IsEmpty())
+			{
+				// optimized out
+				loc.Clear();
+				return true;
+			}
+			
+			MEMORY_ADDR addr;
+			DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+			if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
+			dw_loc_expr_vm.SetObjectAddress(object_addr);
+			dw_loc_expr_vm.SetPC(pc);
+			dw_loc_expr_vm.Push(object_addr);
+			bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
+			if(!dw_loc_expr_vm_status)
+			{
+				if(debug)
+				{
+					logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", evaluation of data member DIE #" << id << " location expression failed" << EndDebugError;
+				}
+				return false;
+			}
 		}
-		return false;
+		else
+		{
+			loc.SetAddress(object_addr);
+		}
 	}
 	
 	uint64_t dw_byte_size = 0;

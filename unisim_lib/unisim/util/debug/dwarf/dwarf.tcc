@@ -3020,6 +3020,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					MEMORY_ADDR object_addr = dw_data_object_loc->GetAddress();
 					if(dw_data_object_loc) delete dw_data_object_loc;
 					dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
+					
 					if(!dw_die_data_member->GetDataMemberLocation(pc, has_frame_base, frame_base, object_addr, *dw_data_object_loc))
 					{
 						logger << DebugError << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugError;

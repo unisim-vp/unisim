@@ -300,6 +300,8 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 
 				MEMORY_ADDR dw_implicit_simple_value = dw_data_object_loc->GetImplicitSimpleValue();
 				bv.Append(dw_implicit_simple_value, dw_data_object_bit_offset, dw_data_object_bit_size);
+				
+				return true;
 			}
 			break;
 		case DW_LOC_IMPLICIT_BLOCK_VALUE:
@@ -314,6 +316,8 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 				if(dw_data_object_bit_size > dw_block_bit_size) dw_data_object_bit_size = dw_block_bit_size;
 				
 				bv.Append(dw_implicit_block_value->GetValue(), dw_data_object_bit_offset, dw_data_object_bit_size);
+				
+				return true;
 			}
 			break;
 		default:
