@@ -176,6 +176,7 @@ unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/os/linux_os/environment.cc \
 unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
+unisim/util/ieee754/ieee754.cc \
 unisim/util/xml/xml.cc \
 unisim/util/endian/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
