@@ -45,7 +45,6 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/data_object.tcc>
 #include <unisim/util/likely/likely.hh>
-#include <unisim/util/simfloat/floating.tcc>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -289,7 +288,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		if(running_mode == INLINE_DEBUGGER_MODE_STEP)
 		{
 			const Statement<ADDRESS> *stmt = FindStatement(cia);
-			if(!stmt || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
+			if(!stmt || !stmt->IsBeginningOfSourceStatement() || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
 		}
 	}
 
@@ -2732,6 +2731,13 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDR
 {
 	if(data_object_lookup_import)
 	{
+		bool requesting_address_of_data_object = false;
+		if(*data_object_name == '&')
+		{
+			data_object_name++; // skip '&'
+			requesting_address_of_data_object = true;
+		}
+		
 		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
 		
 		if(data_object)
@@ -2740,36 +2746,51 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDR
 			
 			if(!data_object->IsOptimizedOut())
 			{
-				if(data_object->Fetch())
+				if(requesting_address_of_data_object)
 				{
-					ADDRESS data_object_bit_size = data_object->GetBitSize();
-					ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
-					unisim::util::endian::endian_type data_object_endian = data_object->GetEndian();
-					uint8_t data_object_raw_value[data_object_byte_size];
-					memset(data_object_raw_value, 0, data_object_byte_size);
-					
-					ADDRESS buf_bit_offset = 0;
-					if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
+					ADDRESS data_object_addr = 0;
+					if(data_object->GetAddress(data_object_addr))
 					{
-						ADDRESS l_bit_size = data_object_bit_size % 8;
-						buf_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
-					}
-					if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
-					{
-						unisim::util::debug::DataObjectInitializer<ADDRESS> data_object_initializer = unisim::util::debug::DataObjectInitializer<ADDRESS>(data_object, cia, data_object_lookup_import);
-						(*std_output_stream) << *data_object_type; 
-						if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
-						(*std_output_stream) << data_object_name << ";" << std::endl;
-						(*std_output_stream) << data_object_name << " = " << data_object_initializer << std::endl;
+						(*std_output_stream) << "&" << data_object_name << " = @0x" << std::hex << data_object_addr << std::dec << endl;
 					}
 					else
 					{
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+						(*std_output_stream) << "Data object \"" << data_object_name << "\" has no address" << endl;
 					}
 				}
 				else
 				{
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					if(data_object->Fetch())
+					{
+						ADDRESS data_object_bit_size = data_object->GetBitSize();
+						ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
+						unisim::util::endian::endian_type data_object_endian = data_object->GetEndian();
+						uint8_t data_object_raw_value[data_object_byte_size];
+						memset(data_object_raw_value, 0, data_object_byte_size);
+						
+						ADDRESS buf_bit_offset = 0;
+						if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
+						{
+							ADDRESS l_bit_size = data_object_bit_size % 8;
+							buf_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
+						}
+						if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
+						{
+							unisim::util::debug::DataObjectInitializer<ADDRESS> data_object_initializer = unisim::util::debug::DataObjectInitializer<ADDRESS>(data_object, cia, data_object_lookup_import);
+							(*std_output_stream) << *data_object_type; 
+							if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
+							(*std_output_stream) << data_object_name << ";" << std::endl;
+							(*std_output_stream) << data_object_name << " = " << data_object_initializer << std::endl;
+						}
+						else
+						{
+							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+						}
+					}
+					else
+					{
+						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					}
 				}
 			}
 			else

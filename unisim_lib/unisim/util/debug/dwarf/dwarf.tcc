@@ -2167,6 +2167,16 @@ void DWARF_Handler<MEMORY_ADDR>::Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_lo
 }
 
 template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::UnRegister(DWARF_DIE<MEMORY_ADDR> *dw_die)
+{
+	typename std::map<uint64_t, DWARF_DIE<MEMORY_ADDR> *>::iterator dw_die_iter = dw_dies.find(dw_die->GetOffset());
+	if(dw_die_iter != dw_dies.end())
+	{
+		dw_dies.erase(dw_die_iter);
+	}
+}
+
+template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::DumpStatementMatrix()
 {
 	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
@@ -2252,59 +2262,62 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 		
 		if(stmt)
 		{
-			if(stmt->GetLineNo() == lineno && (!colno || (stmt->GetColNo() == colno)))
+			if(stmt->IsBeginningOfSourceStatement())
 			{
-				std::string source_path;
-				const char *source_filename = stmt->GetSourceFilename();
-				if(source_filename)
+				if(stmt->GetLineNo() == lineno && (!colno || (stmt->GetColNo() == colno)))
 				{
-					const char *source_dirname = stmt->GetSourceDirname();
-					if(source_dirname)
+					std::string source_path;
+					const char *source_filename = stmt->GetSourceFilename();
+					if(source_filename)
 					{
-						source_path += source_dirname;
-						source_path += '/';
-					}
-					source_path += source_filename;
-
-					std::vector<std::string> hierarchical_source_path;
-					
-					s.clear();
-					p = source_path.c_str();
-					do
-					{
-						if(*p == 0 || *p == '/' || *p == '\\')
+						const char *source_dirname = stmt->GetSourceDirname();
+						if(source_dirname)
 						{
-							hierarchical_source_path.push_back(s);
-							s.clear();
+							source_path += source_dirname;
+							source_path += '/';
 						}
-						else
-						{
-							s += *p;
-						}
-					} while(*(p++));
+						source_path += source_filename;
 
-					int hierarchical_source_path_depth = hierarchical_source_path.size();
-					
-					if((!requested_filename_is_absolute && hierarchical_source_path_depth >= hierarchical_requested_filename_depth) ||
-					   (requested_filename_is_absolute && hierarchical_source_path_depth == hierarchical_requested_filename_depth))
-					{
-						int i;
-						bool match = true;
+						std::vector<std::string> hierarchical_source_path;
 						
-						for(i = 0; i < hierarchical_requested_filename_depth; i++)
+						s.clear();
+						p = source_path.c_str();
+						do
 						{
-							if(hierarchical_source_path[hierarchical_source_path_depth - 1 - i] != hierarchical_requested_filename[hierarchical_requested_filename_depth - 1 - i])
+							if(*p == 0 || *p == '/' || *p == '\\')
 							{
-								match = false;
-								break;
+								hierarchical_source_path.push_back(s);
+								s.clear();
 							}
-						}
+							else
+							{
+								s += *p;
+							}
+						} while(*(p++));
+
+						int hierarchical_source_path_depth = hierarchical_source_path.size();
 						
-						if(match)
+						if((!requested_filename_is_absolute && hierarchical_source_path_depth >= hierarchical_requested_filename_depth) ||
+						(requested_filename_is_absolute && hierarchical_source_path_depth == hierarchical_requested_filename_depth))
 						{
-							if(!stmts) return stmt;
-							if(!ret) ret = stmt;
-							stmts->push_back(stmt);
+							int i;
+							bool match = true;
+							
+							for(i = 0; i < hierarchical_requested_filename_depth; i++)
+							{
+								if(hierarchical_source_path[hierarchical_source_path_depth - 1 - i] != hierarchical_requested_filename[hierarchical_requested_filename_depth - 1 - i])
+								{
+									match = false;
+									break;
+								}
+							}
+							
+							if(match)
+							{
+								if(!stmts) return stmt;
+								if(!ret) ret = stmt;
+								stmts->push_back(stmt);
+							}
 						}
 					}
 				}
@@ -3007,6 +3020,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					MEMORY_ADDR object_addr = dw_data_object_loc->GetAddress();
 					if(dw_data_object_loc) delete dw_data_object_loc;
 					dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
+					
 					if(!dw_die_data_member->GetDataMemberLocation(pc, has_frame_base, frame_base, object_addr, *dw_data_object_loc))
 					{
 						logger << DebugError << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugError;

@@ -130,7 +130,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 		stmt_matrix.erase(stmt_matrix_iter);
 	}
 	
-	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column, isa, discriminator);
+	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, is_stmt, basic_block, dirname, filename, line, column, isa, discriminator);
 	stmt_matrix.insert(std::pair<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>(address, stmt));
 }
 

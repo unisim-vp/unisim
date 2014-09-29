@@ -241,6 +241,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			}
 			if(left->GetToken()->GetValue() != C_LOC_EXPR)
 			{
+				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
 				logger << DebugError << token->GetLocation() << ", subscripted value is neither array nor pointer" << EndDebugError;
@@ -248,6 +249,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			}
 			if(right->GetToken()->GetValue() != C_LOC_ARITH)
 			{
+				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
 				logger << DebugError << token->GetLocation() << ", expected array subscript" ;
@@ -270,6 +272,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			}
 			if(left->GetToken()->GetValue() != C_LOC_EXPR)
 			{
+				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
 				logger << DebugError << token->GetLocation() << ", request for member \"" << right->GetToken()->GetText() << "\" in something not a structure" << EndDebugError;
@@ -290,6 +293,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			}
 			if(left->GetToken()->GetValue() != C_LOC_EXPR)
 			{
+				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
 				logger << DebugError << token->GetLocation() << ", request for member \"" << right->GetToken()->GetText() << "\" in something not a pointed structure" << EndDebugError;
@@ -314,6 +318,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			}
 			if(child->GetToken()->GetValue() != C_LOC_EXPR)
 			{
+				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
 				logger << DebugError << token->GetLocation() << ", dereferencing \"" << child->GetToken()->GetText() << "\" which is not a pointer" << EndDebugError;

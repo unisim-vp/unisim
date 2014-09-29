@@ -73,6 +73,7 @@ public:
 	uint64_t GetOffset() const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	void Register(DWARF_DIE<MEMORY_ADDR> *dw_die);
+	void UnRegister(DWARF_DIE<MEMORY_ADDR> *dw_die);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	unsigned int GetId() const;
 	std::string GetHREF() const;

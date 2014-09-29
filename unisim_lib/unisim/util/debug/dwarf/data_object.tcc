@@ -102,6 +102,17 @@ bool DWARF_DataObject<MEMORY_ADDR>::IsOptimizedOut() const
 }
 
 template <class MEMORY_ADDR>
+bool DWARF_DataObject<MEMORY_ADDR>::GetAddress(MEMORY_ADDR& addr) const
+{
+	if(!dw_data_object_loc) return false;
+	if(dw_data_object_loc->GetType() != DW_LOC_SIMPLE_MEMORY) return false;
+	
+	addr = dw_data_object_loc->GetAddress();
+	
+	return true;
+}
+
+template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 {
 	if(!dw_data_object_loc) return false;
@@ -278,6 +289,34 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 					}
 					
 				}
+				return true;
+			}
+			break;
+			
+		case DW_LOC_IMPLICIT_SIMPLE_VALUE:
+			{
+				int64_t dw_data_object_bit_offset = dw_data_object_loc->GetBitOffset();
+				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
+
+				MEMORY_ADDR dw_implicit_simple_value = dw_data_object_loc->GetImplicitSimpleValue();
+				bv.Append(dw_implicit_simple_value, dw_data_object_bit_offset, dw_data_object_bit_size);
+				
+				return true;
+			}
+			break;
+		case DW_LOC_IMPLICIT_BLOCK_VALUE:
+			{
+				const DWARF_Block<MEMORY_ADDR> *dw_implicit_block_value = dw_data_object_loc->GetImplicitBlockValue();
+				
+				int64_t dw_data_object_bit_offset = dw_data_object_loc->GetBitOffset();
+				
+				// compute min(die bit size, block bit length)
+				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
+				uint64_t dw_block_bit_size = 8 * dw_implicit_block_value->GetLength();
+				if(dw_data_object_bit_size > dw_block_bit_size) dw_data_object_bit_size = dw_block_bit_size;
+				
+				bv.Append(dw_implicit_block_value->GetValue(), dw_data_object_bit_offset, dw_data_object_bit_size);
+				
 				return true;
 			}
 			break;
@@ -489,6 +528,25 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 					
 				}
 				return true;
+			}
+			break;
+		case DW_LOC_IMPLICIT_SIMPLE_VALUE:
+			{
+				// implicit value cannot be modified: silently skip source bits
+				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
+				source_bit_offset += dw_data_object_bit_size;
+			}
+			break;
+		case DW_LOC_IMPLICIT_BLOCK_VALUE:
+			{
+				// implicit value cannot be modified: silently skip source bits
+				const DWARF_Block<MEMORY_ADDR> *dw_implicit_block_value = dw_data_object_loc->GetImplicitBlockValue();
+				
+				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
+				uint64_t dw_block_bit_size = 8 * dw_implicit_block_value->GetLength();
+				if(dw_data_object_bit_size > dw_block_bit_size) dw_data_object_bit_size = dw_block_bit_size;
+					
+				source_bit_offset += dw_data_object_bit_size;
 			}
 			break;
 		default:
