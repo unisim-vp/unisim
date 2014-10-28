@@ -725,15 +725,15 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat(int fd, struct powerpc_stat *targe
 #if defined(WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
-		Host2Target((int64_t)(endianness_, (host_stat.st_size + 511) / 512));
+		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (int64_t) host_stat.st_atim);
+		Host2Target(endianness_, (int64_t) host_stat.st_atime);
 	target_stat->st_atim.tv_nsec = 0;
 	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (int64_t) host_stat.st_mtim);
+		Host2Target(endianness_, (int64_t) host_stat.st_mtime);
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (int64_t) host_stat.st_ctim);
+		Host2Target(endianness_, (int64_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux x64
 	target_stat->st_blksize =
@@ -868,13 +868,13 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct powerpc_stat64 *
 	target_stat->st_blocks =
 		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (int64_t) host_stat.st_atim);
+		Host2Target(endianness_, (int64_t) host_stat.st_atime);
 	target_stat->st_atim.tv_nsec = 0;
 	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (int64_t) host_stat.st_mtim);
+		Host2Target(endianness_, (int64_t) host_stat.st_mtime);
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (int64_t) host_stat.st_ctim);
+		Host2Target(endianness_, (int64_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux x64
 	target_stat->st_blksize =
@@ -1009,13 +1009,13 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct pow
 	target_stat->st_blocks =
 		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (int64_t) host_stat.st_atim);
+		Host2Target(endianness_, (int64_t) host_stat.st_atime);
 	target_stat->st_atim.tv_nsec = 0;
 	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (int64_t) host_stat.st_mtim);
+		Host2Target(endianness_, (int64_t) host_stat.st_mtime);
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (int64_t) host_stat.st_ctim);
+		Host2Target(endianness_, (int64_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux x64
 	target_stat->st_blksize =
@@ -1150,13 +1150,13 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct arm_stat64 *targ
 	target_stat->st_blocks =
 		Host2Target(endianness_, (uint64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atim);
+		Host2Target(endianness_, (uint32_t) host_stat.st_atime);
 	target_stat->st_atim.tv_nsec = 0;
 	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtim);
+		Host2Target(endianness_, (uint32_t) host_stat.st_mtime);
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctim);
+		Host2Target(endianness_, (uint32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux x64
 	target_stat->st_blksize =
@@ -1292,13 +1292,13 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct arm
 	target_stat->st_blocks =
 		Host2Target(endianness_, (uint64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atim);
+		Host2Target(endianness_, (uint32_t) host_stat.st_atime);
 	target_stat->st_atim.tv_nsec = 0;
 	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtim);
+		Host2Target(endianness_, (uint32_t) host_stat.st_mtime);
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctim);
+		Host2Target(endianness_, (uint32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux x64
 	target_stat->st_blksize =

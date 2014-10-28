@@ -986,7 +986,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	{
 		int stdin_pipe_flags = O_RDONLY;
 #if defined(WIN32) || defined(WIN64)
-		int stdin_pipe_flags |= O_BINARY;
+		stdin_pipe_flags |= O_BINARY;
 #endif
 		stdin_pipe_fd = open(stdin_pipe_filename.c_str(), stdin_pipe_flags);
 		if(stdin_pipe_fd == -1)
