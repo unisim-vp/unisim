@@ -684,6 +684,11 @@ bool CPU<CONFIG>::EndSetup()
 
 				symbol = symbol_table_lookup_import->FindSymbolByName("printk_buf", Symbol<typename CONFIG::address_t>::SYM_OBJECT);
 				
+				if(!symbol)
+				{
+					symbol = symbol_table_lookup_import->FindSymbolByName("__log_buf", Symbol<typename CONFIG::address_t>::SYM_OBJECT);
+				}
+				
 				if(symbol)
 				{
 					linux_printk_buf_addr = symbol->GetAddress();
@@ -691,6 +696,13 @@ bool CPU<CONFIG>::EndSetup()
 					if(IsVerboseSetup())
 					{
 						logger << DebugInfo << "Found Linux printk buffer at 0x" << std::hex << linux_printk_buf_addr << std::dec << "(" << linux_printk_buf_size << " bytes)" << EndDebugInfo;
+					}
+				}
+				else
+				{
+					if(IsVerboseSetup())
+					{
+						logger << DebugInfo << "Linux printk buffer not found" << EndDebugInfo;
 					}
 				}
 			}
@@ -938,6 +950,12 @@ bool CPU<CONFIG>::GetSPR(unsigned int n, uint32_t& value)
 			return true;
 		case 256:
 			value = GetVRSAVE();
+			return true;
+		case 268:
+			value = GetTBL();
+			return true;
+		case 269:
+			value = GetTBU();
 			return true;
 		case 272:
 		case 273:
@@ -1375,6 +1393,22 @@ bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			return true;
 		case 256:
 			SetVRSAVE(value);
+			return true;
+		case 268:
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			SetTBL(value);
+			return true;
+		case 269:
+			if(GetMSR_PR())
+			{
+				SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+				return false;
+			}
+			SetTBU(value);
 			return true;
 		case 272:
 		case 273:
