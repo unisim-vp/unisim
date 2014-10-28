@@ -40,7 +40,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 #include <process.h>
 #include <windows.h>
 #else
@@ -63,7 +63,7 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 // see http://mathieuturcotte.ca/textes/windows-gettimeofday
 struct timezone {
   int tz_minuteswest;     /* minutes west of Greenwich */
@@ -439,7 +439,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_gettid()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid()
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -590,7 +590,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_brk()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid()
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -609,7 +609,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid()
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -628,7 +628,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getegid()
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -1404,7 +1404,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(struct powerpc_tms *target_tms)
 {
 	int ret;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;
@@ -1462,7 +1462,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(struct arm_tms *target_tms)
 {
 	int ret;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;
@@ -1905,7 +1905,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat64()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid32()
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -1925,7 +1925,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid32()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid32()
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -1945,7 +1945,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid32()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid32()
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -1965,7 +1965,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid32()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getegid32()
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;

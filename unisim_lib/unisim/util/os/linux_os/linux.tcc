@@ -1685,7 +1685,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_UID;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)getuid();
@@ -1693,7 +1693,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_EUID;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)geteuid();
@@ -1701,7 +1701,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_GID;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)getgid();
@@ -1709,7 +1709,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_EGID;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)getegid();
@@ -1814,7 +1814,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   }
 
   aux_table_symbol = AT_CLKTCK;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   aux_table_value = (ADDRESS_TYPE) 250;
 #else
   aux_table_value = (ADDRESS_TYPE)sysconf(_SC_CLK_TCK);

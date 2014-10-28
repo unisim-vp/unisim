@@ -38,7 +38,7 @@
 #include <signal.h>
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 #include <windows.h>
 #endif
 
@@ -62,7 +62,7 @@ InlineDebuggerBase::InlineDebuggerBase()
 {
 	if(alive_instances == 0)
 	{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		SetConsoleCtrlHandler(&InlineDebuggerBase::ConsoleCtrlHandler, TRUE);
 #else
 		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
@@ -75,7 +75,7 @@ InlineDebuggerBase::~InlineDebuggerBase()
 {
 	if(--alive_instances > 0)
 	{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		SetConsoleCtrlHandler(&InlineDebuggerBase::ConsoleCtrlHandler, FALSE);
 #else
 		signal(SIGINT, prev_sig_int_handler);
@@ -83,7 +83,7 @@ InlineDebuggerBase::~InlineDebuggerBase()
 	}
 }
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 BOOL WINAPI InlineDebuggerBase::ConsoleCtrlHandler(DWORD dwCtrlType)
 {
 	switch(dwCtrlType)

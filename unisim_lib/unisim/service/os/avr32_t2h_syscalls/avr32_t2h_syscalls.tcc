@@ -85,7 +85,7 @@ using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::SymbolTableLookup;
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 // see http://mathieuturcotte.ca/textes/windows-gettimeofday
 struct timezone {
   int tz_minuteswest;     /* minutes west of Greenwich */
