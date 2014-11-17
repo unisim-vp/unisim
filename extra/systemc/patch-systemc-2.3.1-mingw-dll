@@ -1,6 +1,6 @@
 diff -Naur systemc-2.3.1-orig/aclocal.m4 systemc-2.3.1-new/aclocal.m4
 --- systemc-2.3.1-orig/aclocal.m4	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/aclocal.m4	2014-10-28 10:09:09.668928094 +0100
++++ systemc-2.3.1-new/aclocal.m4	2014-10-28 11:43:36.625129907 +0100
 @@ -1,8 +1,7 @@
 -# generated automatically by aclocal 1.11.6 -*- Autoconf -*-
 +# generated automatically by aclocal 1.14 -*- Autoconf -*-
@@ -1138,7 +1138,7 @@ diff -Naur systemc-2.3.1-orig/aclocal.m4 systemc-2.3.1-new/aclocal.m4
  ]) # _AM_PROG_TAR
 diff -Naur systemc-2.3.1-orig/autom4te.cache/output.0 systemc-2.3.1-new/autom4te.cache/output.0
 --- systemc-2.3.1-orig/autom4te.cache/output.0	1970-01-01 01:00:00.000000000 +0100
-+++ systemc-2.3.1-new/autom4te.cache/output.0	2014-10-28 10:09:09.674928095 +0100
++++ systemc-2.3.1-new/autom4te.cache/output.0	2014-10-28 11:43:36.590129906 +0100
 @@ -0,0 +1,19145 @@
 +@%:@! /bin/sh
 +@%:@ Guess values for system-dependent variables and create Makefiles.
@@ -20287,7 +20287,7 @@ diff -Naur systemc-2.3.1-orig/autom4te.cache/output.0 systemc-2.3.1-new/autom4te
 +
 diff -Naur systemc-2.3.1-orig/autom4te.cache/output.1 systemc-2.3.1-new/autom4te.cache/output.1
 --- systemc-2.3.1-orig/autom4te.cache/output.1	1970-01-01 01:00:00.000000000 +0100
-+++ systemc-2.3.1-new/autom4te.cache/output.1	2014-10-28 10:09:09.680928095 +0100
++++ systemc-2.3.1-new/autom4te.cache/output.1	2014-10-28 11:43:37.419129935 +0100
 @@ -0,0 +1,19145 @@
 +@%:@! /bin/sh
 +@%:@ Guess values for system-dependent variables and create Makefiles.
@@ -39436,7 +39436,7 @@ diff -Naur systemc-2.3.1-orig/autom4te.cache/output.1 systemc-2.3.1-new/autom4te
 +
 diff -Naur systemc-2.3.1-orig/autom4te.cache/requests systemc-2.3.1-new/autom4te.cache/requests
 --- systemc-2.3.1-orig/autom4te.cache/requests	1970-01-01 01:00:00.000000000 +0100
-+++ systemc-2.3.1-new/autom4te.cache/requests	2014-10-28 10:09:09.681928095 +0100
++++ systemc-2.3.1-new/autom4te.cache/requests	2014-10-28 11:43:37.437129936 +0100
 @@ -0,0 +1,310 @@
 +# This file was generated.
 +# It contains the lists of macros which have been traced.
@@ -39484,193 +39484,193 @@ diff -Naur systemc-2.3.1-orig/autom4te.cache/requests systemc-2.3.1-new/autom4te
 +                        'configure.ac'
 +                      ],
 +                      {
-+                        'AC_LIBTOOL_PICMODE' => 1,
-+                        'AM_PROG_CC_C_O' => 1,
-+                        'ACX_PTHREAD' => 1,
-+                        'AC_LIBTOOL_SYS_LIB_STRIP' => 1,
-+                        'AM_SET_LEADING_DOT' => 1,
-+                        'AC_LIBTOOL_PROG_COMPILER_NO_RTTI' => 1,
-+                        'AX_CHECK_DEFINED' => 1,
-+                        'AC_LIBTOOL_COMPILER_OPTION' => 1,
-+                        'AC_LIBTOOL_LANG_GCJ_CONFIG' => 1,
-+                        'AC_LIBTOOL_PROG_LD_HARDCODE_LIBPATH' => 1,
-+                        'LT_PROG_RC' => 1,
-+                        'AC_PROG_NM' => 1,
-+                        'AC_ENABLE_FAST_INSTALL' => 1,
-+                        'LT_INIT' => 1,
-+                        'AC_CONFIG_MACRO_DIR' => 1,
-+                        'AX_CHECK_DEFINE' => 1,
-+                        'AC_PATH_MAGIC' => 1,
-+                        'AC_LIBTOOL_SETUP' => 1,
-+                        'LT_LIB_DLLOAD' => 1,
-+                        'm4_include' => 1,
-+                        'AC_LTDL_SHLIBPATH' => 1,
 +                        'gl_PREREQ_ARGZ' => 1,
-+                        'LT_SYS_DLOPEN_SELF' => 1,
-+                        'AC_LTDL_ENABLE_INSTALL' => 1,
-+                        'AC_LIBTOOL_CONFIG' => 1,
-+                        '_LT_AC_FILE_LTDLL_C' => 1,
-+                        '_m4_warn' => 1,
-+                        '_LT_AC_PROG_CXXCPP' => 1,
-+                        'AM_DISABLE_SHARED' => 1,
-+                        '_LT_REQUIRED_DARWIN_CHECKS' => 1,
-+                        'AC_LIBTOOL_SYS_HARD_LINK_LOCKS' => 1,
-+                        'LTOPTIONS_VERSION' => 1,
-+                        'AC_ENABLE_STATIC' => 1,
-+                        '_AC_AM_CONFIG_HEADER_HOOK' => 1,
-+                        'LT_PATH_LD' => 1,
-+                        '_AM_SET_OPTIONS' => 1,
-+                        'AC_LIBTOOL_OBJDIR' => 1,
-+                        'AC_LTDL_SYMBOL_USCORE' => 1,
-+                        'AC_LIBTOOL_LINKER_OPTION' => 1,
-+                        'AM_PROG_LD' => 1,
-+                        'AC_CHECK_DEFINE' => 1,
-+                        'AC_LTDL_SYS_DLOPEN_DEPLIBS' => 1,
-+                        'AC_LIBTOOL_DLOPEN' => 1,
-+                        '_LT_COMPILER_BOILERPLATE' => 1,
-+                        '_LT_AC_LANG_RC_CONFIG' => 1,
-+                        '_LT_LIBOBJ' => 1,
-+                        'AX_PTHREAD' => 1,
-+                        'AC_LIBTOOL_LANG_C_CONFIG' => 1,
-+                        '_LT_AC_LANG_F77' => 1,
-+                        'LT_LANG' => 1,
-+                        'm4_pattern_forbid' => 1,
-+                        'LT_CONFIG_LTDL_DIR' => 1,
-+                        '_LT_AC_SYS_LIBPATH_AIX' => 1,
-+                        '_AM_AUTOCONF_VERSION' => 1,
-+                        'AC_CHECK_DEFINED' => 1,
-+                        '_LT_AC_LANG_C_CONFIG' => 1,
 +                        'AM_MISSING_PROG' => 1,
-+                        'AC_LIBLTDL_INSTALLABLE' => 1,
-+                        'LT_SUPPORTED_TAG' => 1,
-+                        'AC_PROG_LIBTOOL' => 1,
-+                        'LT_OUTPUT' => 1,
-+                        '_AC_PROG_LIBTOOL' => 1,
-+                        'LT_PROG_GO' => 1,
-+                        'AC_LIBTOOL_LANG_RC_CONFIG' => 1,
-+                        'AM_CONDITIONAL' => 1,
-+                        'AM_PROG_LIBTOOL' => 1,
-+                        '_LT_AC_LOCK' => 1,
++                        'AC_ENABLE_FAST_INSTALL' => 1,
++                        'AC_LIBTOOL_SYS_DYNAMIC_LINKER' => 1,
++                        'AC_CHECK_DEFINED' => 1,
++                        'AM_OUTPUT_DEPENDENCY_COMMANDS' => 1,
++                        'LT_AC_PROG_SED' => 1,
++                        'AC_LIBTOOL_F77' => 1,
++                        'AM_AUTOMAKE_VERSION' => 1,
++                        'AC_LIBTOOL_PROG_LD_HARDCODE_LIBPATH' => 1,
++                        '_LT_AC_LANG_GCJ_CONFIG' => 1,
++                        'AC_PATH_TOOL_PREFIX' => 1,
++                        'AC_LIBTOOL_SYS_OLD_ARCHIVE' => 1,
++                        '_LT_AC_LANG_RC_CONFIG' => 1,
++                        'LT_FUNC_DLSYM_USCORE' => 1,
++                        'LT_SYS_DLSEARCH_PATH' => 1,
++                        'AM_ENABLE_STATIC' => 1,
++                        'AM_MISSING_HAS_RUN' => 1,
++                        '_LT_AC_CHECK_DLFCN' => 1,
++                        'LT_AC_PROG_EGREP' => 1,
++                        'AC_LIBTOOL_SYS_HARD_LINK_LOCKS' => 1,
++                        'AC_WITH_LTDL' => 1,
++                        '_AM_DEPENDENCIES' => 1,
++                        '_AM_SET_OPTION' => 1,
++                        'AM_PROG_LD' => 1,
++                        '_m4_warn' => 1,
++                        'LT_SYS_DLOPEN_DEPLIBS' => 1,
 +                        'AC_DISABLE_SHARED' => 1,
++                        'AM_PROG_INSTALL_STRIP' => 1,
++                        'LT_PROG_RC' => 1,
++                        'LT_OUTPUT' => 1,
++                        '_LT_COMPILER_BOILERPLATE' => 1,
++                        '_LT_PROG_ECHO_BACKSLASH' => 1,
++                        '_LT_LINKER_BOILERPLATE' => 1,
++                        'LT_PATH_NM' => 1,
++                        'LT_CMD_MAX_LEN' => 1,
++                        'LT_LANG' => 1,
++                        'LTOPTIONS_VERSION' => 1,
++                        'AM_DISABLE_SHARED' => 1,
++                        '_AC_AM_CONFIG_HEADER_HOOK' => 1,
++                        'AC_LIB_LTDL' => 1,
++                        'AU_DEFUN' => 1,
++                        'AC_LIBTOOL_PROG_LD_SHLIBS' => 1,
++                        'AC_PROG_LD_GNU' => 1,
++                        'AC_LIBTOOL_DLOPEN' => 1,
++                        '_LT_AC_TAGVAR' => 1,
++                        'AC_LIBTOOL_POSTDEP_PREDEP' => 1,
++                        'AC_LTDL_OBJDIR' => 1,
++                        'AX_CHECK_FUNC' => 1,
++                        'AC_LTDL_PREOPEN' => 1,
++                        'AC_LTDL_DLLIB' => 1,
++                        'AC_LTDL_SYSSEARCHPATH' => 1,
++                        'LTDL_INIT' => 1,
++                        'AC_LIBTOOL_LINKER_OPTION' => 1,
++                        '_AM_PROG_CC_C_O' => 1,
++                        'LT_PROG_GCJ' => 1,
++                        'AC_LIBTOOL_PROG_COMPILER_PIC' => 1,
++                        '_AM_SET_OPTIONS' => 1,
++                        '_LT_AC_SYS_LIBPATH_AIX' => 1,
++                        'LT_AC_PROG_RC' => 1,
++                        'AC_LIBTOOL_RC' => 1,
++                        'AC_LIBTOOL_LANG_GCJ_CONFIG' => 1,
++                        '_LT_WITH_SYSROOT' => 1,
++                        'AC_PATH_MAGIC' => 1,
++                        'AC_LIBTOOL_SYS_LIB_STRIP' => 1,
++                        '_LT_COMPILER_OPTION' => 1,
++                        'AM_PROG_LIBTOOL' => 1,
++                        '_LT_PROG_LTMAIN' => 1,
++                        'AC_LIBTOOL_LANG_CXX_CONFIG' => 1,
++                        'LT_SUPPORTED_TAG' => 1,
++                        'AM_PROG_NM' => 1,
++                        '_AM_SUBST_NOTMAKE' => 1,
++                        '_AM_AUTOCONF_VERSION' => 1,
++                        'include' => 1,
++                        '_AM_CONFIG_MACRO_DIRS' => 1,
++                        'LT_SYS_DLOPEN_SELF' => 1,
++                        'LT_SYS_MODULE_EXT' => 1,
++                        '_LTDL_SETUP' => 1,
++                        '_LT_AC_LANG_F77_CONFIG' => 1,
++                        'AC_LIBLTDL_CONVENIENCE' => 1,
++                        'm4_include' => 1,
++                        'AC_LIBTOOL_LANG_F77_CONFIG' => 1,
++                        'AC_LTDL_SYS_DLOPEN_DEPLIBS' => 1,
++                        '_LT_CC_BASENAME' => 1,
++                        '_LT_AC_PROG_CXXCPP' => 1,
++                        '_LT_AC_LOCK' => 1,
++                        '_LT_AC_LANG_GCJ' => 1,
++                        'AC_LIBTOOL_SYS_GLOBAL_SYMBOL_PIPE' => 1,
++                        '_LT_PROG_FC' => 1,
++                        'AM_SILENT_RULES' => 1,
++                        'AC_LTDL_SHLIBEXT' => 1,
++                        'AC_PROG_LIBTOOL' => 1,
++                        'AC_CONFIG_MACRO_DIR_TRACE' => 1,
++                        'gl_FUNC_ARGZ' => 1,
++                        'AC_CHECK_LIBM' => 1,
++                        'AC_LIBTOOL_GCJ' => 1,
++                        'AC_DEFUN_ONCE' => 1,
++                        'AM_AUX_DIR_EXPAND' => 1,
++                        'LT_WITH_LTDL' => 1,
++                        'AC_PROG_LD' => 1,
++                        '_LT_AC_LANG_C_CONFIG' => 1,
++                        'AX_CHECK_DEFINED' => 1,
++                        '_LT_AC_SYS_COMPILER' => 1,
++                        'AC_DISABLE_STATIC' => 1,
++                        '_LT_REQUIRED_DARWIN_CHECKS' => 1,
++                        'AM_ENABLE_SHARED' => 1,
++                        'AX_PTHREAD' => 1,
++                        'AC_LTDL_DLSYM_USCORE' => 1,
++                        'AM_MAKE_INCLUDE' => 1,
++                        'AM_SUBST_NOTMAKE' => 1,
++                        'LT_SYS_SYMBOL_USCORE' => 1,
++                        'AC_PROG_LD_RELOAD_FLAG' => 1,
++                        'AM_CONDITIONAL' => 1,
++                        '_LT_AC_PROG_ECHO_BACKSLASH' => 1,
++                        'AC_LTDL_SYMBOL_USCORE' => 1,
++                        'AM_PROG_INSTALL_SH' => 1,
++                        '_LT_AC_SHELL_INIT' => 1,
++                        'AM_DISABLE_STATIC' => 1,
++                        'LT_CONFIG_LTDL_DIR' => 1,
++                        '_LT_AC_LANG_CXX_CONFIG' => 1,
++                        'AC_LIBTOOL_PROG_COMPILER_NO_RTTI' => 1,
++                        '_LT_AC_LANG_F77' => 1,
++                        'AX_CHECK_DEFINE' => 1,
++                        '_LT_AC_TRY_DLOPEN_SELF' => 1,
++                        '_LT_PATH_TOOL_PREFIX' => 1,
++                        'AC_LIBTOOL_PROG_CC_C_O' => 1,
++                        'AC_LIBTOOL_OBJDIR' => 1,
++                        'LT_AC_PROG_GCJ' => 1,
++                        'ACX_PTHREAD' => 1,
++                        'AC_LIBLTDL_INSTALLABLE' => 1,
++                        '_AM_OUTPUT_DEPENDENCY_COMMANDS' => 1,
++                        'AC_LTDL_ENABLE_INSTALL' => 1,
++                        'm4_pattern_allow' => 1,
++                        'AC_ENABLE_STATIC' => 1,
++                        'AC_LIBTOOL_COMPILER_OPTION' => 1,
++                        'AC_ENABLE_SHARED' => 1,
++                        'LT_LIB_DLLOAD' => 1,
++                        'AM_PROG_AS' => 1,
++                        'AC_LIBTOOL_CXX' => 1,
++                        'LTDL_INSTALLABLE' => 1,
++                        'm4_pattern_forbid' => 1,
++                        'LT_SYS_MODULE_PATH' => 1,
++                        'LT_PROG_GO' => 1,
++                        'AC_LIBTOOL_FC' => 1,
++                        'AM_PROG_CC_C_O' => 1,
++                        '_LT_LINKER_OPTION' => 1,
 +                        'AM_SANITY_CHECK' => 1,
 +                        'AC_PROG_EGREP' => 1,
-+                        '_AM_SUBST_NOTMAKE' => 1,
-+                        'AM_PROG_INSTALL_STRIP' => 1,
-+                        'AM_SUBST_NOTMAKE' => 1,
-+                        'AC_PROG_LD' => 1,
-+                        'AM_SET_DEPDIR' => 1,
-+                        'AC_DISABLE_FAST_INSTALL' => 1,
-+                        'AC_LIBTOOL_SYS_DYNAMIC_LINKER' => 1,
-+                        'LT_FUNC_DLSYM_USCORE' => 1,
-+                        'AC_LIBTOOL_SYS_GLOBAL_SYMBOL_PIPE' => 1,
-+                        'AC_WITH_LTDL' => 1,
-+                        '_LT_AC_LANG_GCJ_CONFIG' => 1,
-+                        'AM_RUN_LOG' => 1,
-+                        '_LT_AC_TAGCONFIG' => 1,
-+                        '_AM_MANGLE_OPTION' => 1,
-+                        'AM_SILENT_RULES' => 1,
-+                        'AC_CONFIG_MACRO_DIR_TRACE' => 1,
-+                        'AM_AUX_DIR_EXPAND' => 1,
-+                        'gl_FUNC_ARGZ' => 1,
-+                        '_LTDL_SETUP' => 1,
-+                        '_LT_PROG_FC' => 1,
 +                        'AM_DEP_TRACK' => 1,
-+                        'AC_LIBTOOL_LANG_F77_CONFIG' => 1,
-+                        'LT_SYS_DLSEARCH_PATH' => 1,
-+                        'AM_ENABLE_SHARED' => 1,
-+                        'AM_SET_CURRENT_AUTOMAKE_VERSION' => 1,
-+                        'AC_LIBTOOL_SYS_MAX_CMD_LEN' => 1,
-+                        'AC_PROG_LD_GNU' => 1,
-+                        '_LT_AC_TRY_DLOPEN_SELF' => 1,
-+                        'LT_AC_PROG_GCJ' => 1,
-+                        'AU_DEFUN' => 1,
-+                        '_LT_AC_LANG_GCJ' => 1,
-+                        'LTDL_INIT' => 1,
-+                        'AC_CHECK_LIBM' => 1,
-+                        'LTSUGAR_VERSION' => 1,
-+                        '_LT_PROG_CXX' => 1,
-+                        '_LT_LINKER_OPTION' => 1,
-+                        'AC_LTDL_OBJDIR' => 1,
-+                        'AC_DISABLE_STATIC' => 1,
-+                        'AC_LTDL_PREOPEN' => 1,
-+                        'AM_PROG_NM' => 1,
-+                        '_AM_DEPENDENCIES' => 1,
-+                        '_LT_PROG_ECHO_BACKSLASH' => 1,
-+                        'LT_WITH_LTDL' => 1,
-+                        'AX_CHECK_FUNC' => 1,
-+                        '_LT_WITH_SYSROOT' => 1,
-+                        '_LT_AC_CHECK_DLFCN' => 1,
-+                        'AC_ENABLE_SHARED' => 1,
++                        'AC_LIBTOOL_CONFIG' => 1,
 +                        'AC_LIBTOOL_WIN32_DLL' => 1,
-+                        'AC_LIBTOOL_LANG_CXX_CONFIG' => 1,
-+                        'AC_LIBTOOL_PROG_LD_SHLIBS' => 1,
-+                        'AC_PROG_LD_RELOAD_FLAG' => 1,
-+                        '_LT_AC_TAGVAR' => 1,
-+                        'LT_CMD_MAX_LEN' => 1,
-+                        'AC_LIBTOOL_CXX' => 1,
-+                        'AC_LIBTOOL_PROG_COMPILER_PIC' => 1,
-+                        '_LT_AC_SHELL_INIT' => 1,
-+                        'AM_AUTOMAKE_VERSION' => 1,
-+                        '_LT_PREPARE_SED_QUOTE_VARS' => 1,
-+                        '_AM_IF_OPTION' => 1,
-+                        'AM_MISSING_HAS_RUN' => 1,
-+                        'AC_LIBTOOL_GCJ' => 1,
-+                        '_LT_AC_PROG_ECHO_BACKSLASH' => 1,
-+                        'm4_pattern_allow' => 1,
-+                        '_AM_PROG_TAR' => 1,
-+                        'AC_LIB_LTDL' => 1,
-+                        'LT_PATH_NM' => 1,
-+                        '_LT_AC_LANG_CXX_CONFIG' => 1,
-+                        'AM_DISABLE_STATIC' => 1,
-+                        'LTDL_CONVENIENCE' => 1,
-+                        '_LT_PATH_TOOL_PREFIX' => 1,
-+                        'AC_DEFUN' => 1,
-+                        '_LT_AC_SYS_COMPILER' => 1,
-+                        'LT_LIB_M' => 1,
-+                        '_AM_PROG_CC_C_O' => 1,
-+                        'AC_LIBTOOL_F77' => 1,
-+                        'AM_PROG_INSTALL_SH' => 1,
-+                        'LT_SYS_MODULE_EXT' => 1,
-+                        'LT_PROG_GCJ' => 1,
-+                        'LT_AC_PROG_SED' => 1,
++                        'AM_SET_LEADING_DOT' => 1,
++                        '_LT_AC_FILE_LTDLL_C' => 1,
 +                        'AM_INIT_AUTOMAKE' => 1,
-+                        'AC_LIBLTDL_CONVENIENCE' => 1,
-+                        'AM_OUTPUT_DEPENDENCY_COMMANDS' => 1,
-+                        'LTVERSION_VERSION' => 1,
-+                        'LTDL_INSTALLABLE' => 1,
-+                        'LT_SYS_MODULE_PATH' => 1,
-+                        '_LT_PROG_F77' => 1,
-+                        'LT_AC_PROG_RC' => 1,
-+                        'AC_LIBTOOL_SYS_OLD_ARCHIVE' => 1,
-+                        'LT_SYS_SYMBOL_USCORE' => 1,
-+                        'AC_LTDL_SYSSEARCHPATH' => 1,
-+                        '_LT_CC_BASENAME' => 1,
-+                        'AC_LIBTOOL_RC' => 1,
-+                        'AC_LIBTOOL_PROG_CC_C_O' => 1,
-+                        '_AM_OUTPUT_DEPENDENCY_COMMANDS' => 1,
-+                        '_LT_COMPILER_OPTION' => 1,
-+                        'LT_AC_PROG_EGREP' => 1,
-+                        'LTOBSOLETE_VERSION' => 1,
-+                        '_LT_LINKER_BOILERPLATE' => 1,
-+                        'AM_ENABLE_STATIC' => 1,
-+                        '_LT_AC_LANG_F77_CONFIG' => 1,
-+                        'AC_LTDL_DLSYM_USCORE' => 1,
-+                        '_LT_PROG_LTMAIN' => 1,
-+                        '_AM_CONFIG_MACRO_DIRS' => 1,
-+                        'AC_LIBTOOL_FC' => 1,
-+                        'AC_LTDL_SHLIBEXT' => 1,
++                        'AC_LIBTOOL_SETUP' => 1,
++                        '_AC_PROG_LIBTOOL' => 1,
++                        '_LT_PREPARE_SED_QUOTE_VARS' => 1,
++                        'AM_SET_DEPDIR' => 1,
 +                        '_LT_AC_LANG_CXX' => 1,
-+                        'AC_LIBTOOL_POSTDEP_PREDEP' => 1,
-+                        'AC_DEPLIBS_CHECK_METHOD' => 1,
-+                        'AC_LTDL_DLLIB' => 1,
-+                        'AC_DEFUN_ONCE' => 1,
-+                        'AC_PATH_TOOL_PREFIX' => 1,
-+                        '_AM_SET_OPTION' => 1,
-+                        'LT_SYS_DLOPEN_DEPLIBS' => 1,
-+                        'AM_PROG_AS' => 1,
-+                        'include' => 1,
++                        'AM_SET_CURRENT_AUTOMAKE_VERSION' => 1,
++                        'AC_CHECK_DEFINE' => 1,
++                        'LT_LIB_M' => 1,
++                        'AC_LIBTOOL_LANG_C_CONFIG' => 1,
++                        'AM_RUN_LOG' => 1,
++                        '_LT_PROG_CXX' => 1,
++                        '_LT_PROG_F77' => 1,
 +                        'AC_LIBTOOL_DLOPEN_SELF' => 1,
-+                        'AM_MAKE_INCLUDE' => 1
++                        '_LT_AC_TAGCONFIG' => 1,
++                        '_AM_PROG_TAR' => 1,
++                        'AC_DEFUN' => 1,
++                        'LTVERSION_VERSION' => 1,
++                        'LTOBSOLETE_VERSION' => 1,
++                        'LTDL_CONVENIENCE' => 1,
++                        'AC_PROG_NM' => 1,
++                        'LT_PATH_LD' => 1,
++                        'AC_DISABLE_FAST_INSTALL' => 1,
++                        'AC_LIBTOOL_PICMODE' => 1,
++                        '_LT_LIBOBJ' => 1,
++                        'AC_LTDL_SHLIBPATH' => 1,
++                        'AC_DEPLIBS_CHECK_METHOD' => 1,
++                        '_AM_MANGLE_OPTION' => 1,
++                        'AC_LIBTOOL_LANG_RC_CONFIG' => 1,
++                        'AC_LIBTOOL_SYS_MAX_CMD_LEN' => 1,
++                        'AC_CONFIG_MACRO_DIR' => 1,
++                        'LT_INIT' => 1,
++                        'LTSUGAR_VERSION' => 1,
++                        '_AM_IF_OPTION' => 1
 +                      }
 +                    ], 'Autom4te::Request' ),
 +             bless( [
@@ -39685,64 +39685,64 @@ diff -Naur systemc-2.3.1-orig/autom4te.cache/requests systemc-2.3.1-new/autom4te
 +                        'configure.ac'
 +                      ],
 +                      {
-+                        'AM_PROG_AR' => 1,
-+                        'AM_AUTOMAKE_VERSION' => 1,
-+                        'AC_FC_FREEFORM' => 1,
 +                        'AC_FC_PP_SRCEXT' => 1,
-+                        'sinclude' => 1,
-+                        'AC_FC_PP_DEFINE' => 1,
-+                        'AC_CANONICAL_TARGET' => 1,
-+                        '_AM_SUBST_NOTMAKE' => 1,
-+                        'AC_DEFINE_TRACE_LITERAL' => 1,
-+                        '_m4_warn' => 1,
-+                        'AC_CONFIG_HEADERS' => 1,
-+                        '_AM_COND_ELSE' => 1,
-+                        '_AM_MAKEFILE_INCLUDE' => 1,
-+                        'm4_pattern_allow' => 1,
-+                        'AM_PROG_CXX_C_O' => 1,
-+                        'include' => 1,
-+                        '_LT_AC_TAGCONFIG' => 1,
-+                        'AC_SUBST_TRACE' => 1,
-+                        'AM_SILENT_RULES' => 1,
-+                        'm4_sinclude' => 1,
-+                        'AM_NLS' => 1,
-+                        'AC_CONFIG_SUBDIRS' => 1,
-+                        'AM_EXTRA_RECURSIVE_TARGETS' => 1,
-+                        'AC_CANONICAL_SYSTEM' => 1,
-+                        'AM_PROG_CC_C_O' => 1,
-+                        'AC_CONFIG_FILES' => 1,
-+                        'AM_GNU_GETTEXT' => 1,
-+                        'AM_POT_TOOLS' => 1,
-+                        'm4_pattern_forbid' => 1,
-+                        'AM_PATH_GUILE' => 1,
-+                        'AC_CANONICAL_BUILD' => 1,
-+                        'LT_CONFIG_LTDL_DIR' => 1,
-+                        'AM_MAINTAINER_MODE' => 1,
-+                        'AC_SUBST' => 1,
-+                        '_AM_COND_ENDIF' => 1,
-+                        'AM_INIT_AUTOMAKE' => 1,
-+                        'AM_MAKEFILE_INCLUDE' => 1,
-+                        'AM_PROG_FC_C_O' => 1,
-+                        'AC_INIT' => 1,
-+                        'AC_FC_SRCEXT' => 1,
-+                        'AC_LIBSOURCE' => 1,
-+                        'LT_SUPPORTED_TAG' => 1,
-+                        'AC_PROG_LIBTOOL' => 1,
-+                        'LT_INIT' => 1,
-+                        'AM_ENABLE_MULTILIB' => 1,
-+                        'AM_PROG_MOC' => 1,
-+                        'AC_CONFIG_AUX_DIR' => 1,
 +                        'AM_PROG_MKDIR_P' => 1,
-+                        'AM_PROG_F77_C_O' => 1,
-+                        '_AM_COND_IF' => 1,
-+                        'AM_CONDITIONAL' => 1,
-+                        'AC_CONFIG_LIBOBJ_DIR' => 1,
-+                        'AH_OUTPUT' => 1,
-+                        'm4_include' => 1,
-+                        'AC_CONFIG_LINKS' => 1,
-+                        'AC_CANONICAL_HOST' => 1,
++                        'AC_CONFIG_FILES' => 1,
++                        'AC_CANONICAL_TARGET' => 1,
++                        'AM_AUTOMAKE_VERSION' => 1,
++                        'AC_CONFIG_AUX_DIR' => 1,
++                        'AC_FC_FREEFORM' => 1,
++                        'AM_EXTRA_RECURSIVE_TARGETS' => 1,
++                        'AC_PROG_LIBTOOL' => 1,
 +                        'AM_GNU_GETTEXT_INTL_SUBDIR' => 1,
++                        'AC_CONFIG_HEADERS' => 1,
++                        'AM_PROG_MOC' => 1,
++                        'AM_MAKEFILE_INCLUDE' => 1,
++                        'AC_CONFIG_SUBDIRS' => 1,
++                        'LT_CONFIG_LTDL_DIR' => 1,
++                        'AM_PATH_GUILE' => 1,
++                        'AM_PROG_FC_C_O' => 1,
++                        '_LT_AC_TAGCONFIG' => 1,
++                        'AC_LIBSOURCE' => 1,
++                        'AC_CANONICAL_SYSTEM' => 1,
++                        'AC_CONFIG_LIBOBJ_DIR' => 1,
++                        'AM_CONDITIONAL' => 1,
++                        'AC_FC_PP_DEFINE' => 1,
++                        'AM_GNU_GETTEXT' => 1,
++                        'm4_sinclude' => 1,
++                        'AC_SUBST_TRACE' => 1,
++                        'm4_pattern_allow' => 1,
++                        'AC_FC_SRCEXT' => 1,
++                        'include' => 1,
++                        '_AM_SUBST_NOTMAKE' => 1,
++                        'AM_PROG_CXX_C_O' => 1,
++                        'LT_SUPPORTED_TAG' => 1,
++                        'AM_MAINTAINER_MODE' => 1,
++                        'AC_INIT' => 1,
++                        'AH_OUTPUT' => 1,
++                        'AM_POT_TOOLS' => 1,
++                        'AC_SUBST' => 1,
++                        '_m4_warn' => 1,
++                        'AC_CANONICAL_HOST' => 1,
++                        'AC_CANONICAL_BUILD' => 1,
++                        'AC_DEFINE_TRACE_LITERAL' => 1,
++                        '_AM_COND_IF' => 1,
++                        'AM_INIT_AUTOMAKE' => 1,
++                        'AM_SILENT_RULES' => 1,
++                        'LT_INIT' => 1,
++                        'AM_PROG_F77_C_O' => 1,
++                        '_AM_COND_ELSE' => 1,
 +                        'AM_XGETTEXT_OPTION' => 1,
++                        'm4_pattern_forbid' => 1,
++                        'sinclude' => 1,
++                        '_AM_COND_ENDIF' => 1,
++                        'AM_PROG_CC_C_O' => 1,
++                        'AM_PROG_AR' => 1,
++                        'AM_NLS' => 1,
++                        'm4_include' => 1,
++                        '_AM_MAKEFILE_INCLUDE' => 1,
++                        'AC_CONFIG_LINKS' => 1,
++                        'AM_ENABLE_MULTILIB' => 1,
 +                        'AC_REQUIRE_AUX_FILE' => 1
 +                      }
 +                    ], 'Autom4te::Request' )
@@ -39750,7 +39750,7 @@ diff -Naur systemc-2.3.1-orig/autom4te.cache/requests systemc-2.3.1-new/autom4te
 +
 diff -Naur systemc-2.3.1-orig/autom4te.cache/traces.0 systemc-2.3.1-new/autom4te.cache/traces.0
 --- systemc-2.3.1-orig/autom4te.cache/traces.0	1970-01-01 01:00:00.000000000 +0100
-+++ systemc-2.3.1-new/autom4te.cache/traces.0	2014-10-28 10:09:09.682928095 +0100
++++ systemc-2.3.1-new/autom4te.cache/traces.0	2014-10-28 11:43:36.589129906 +0100
 @@ -0,0 +1,3051 @@
 +m4trace:/usr/share/aclocal/argz.m4:12: -1- AC_DEFUN([gl_FUNC_ARGZ], [gl_PREREQ_ARGZ
 +
@@ -42805,7 +42805,7 @@ diff -Naur systemc-2.3.1-orig/autom4te.cache/traces.0 systemc-2.3.1-new/autom4te
 +m4trace:configure.ac:562: -1- _LT_PROG_LTMAIN
 diff -Naur systemc-2.3.1-orig/autom4te.cache/traces.1 systemc-2.3.1-new/autom4te.cache/traces.1
 --- systemc-2.3.1-orig/autom4te.cache/traces.1	1970-01-01 01:00:00.000000000 +0100
-+++ systemc-2.3.1-new/autom4te.cache/traces.1	2014-10-28 10:09:09.683928095 +0100
++++ systemc-2.3.1-new/autom4te.cache/traces.1	2014-10-28 11:43:37.418129935 +0100
 @@ -0,0 +1,859 @@
 +m4trace:aclocal.m4:1170: -1- m4_include([config/ax_check_define.m4])
 +m4trace:aclocal.m4:1171: -1- m4_include([config/ax_pthread.m4])
@@ -43668,7 +43668,7 @@ diff -Naur systemc-2.3.1-orig/autom4te.cache/traces.1 systemc-2.3.1-new/autom4te
 +m4trace:configure.ac:562: -1- AC_REQUIRE_AUX_FILE([ltmain.sh])
 diff -Naur systemc-2.3.1-orig/config/compile systemc-2.3.1-new/config/compile
 --- systemc-2.3.1-orig/config/compile	1970-01-01 01:00:00.000000000 +0100
-+++ systemc-2.3.1-new/config/compile	2014-10-28 10:09:09.683928095 +0100
++++ systemc-2.3.1-new/config/compile	2013-10-21 16:43:45.000000000 +0200
 @@ -0,0 +1,347 @@
 +#! /bin/sh
 +# Wrapper for compilers which do not understand '-c -o'.
@@ -44019,7 +44019,7 @@ diff -Naur systemc-2.3.1-orig/config/compile systemc-2.3.1-new/config/compile
 +# End:
 diff -Naur systemc-2.3.1-orig/config/test-driver systemc-2.3.1-new/config/test-driver
 --- systemc-2.3.1-orig/config/test-driver	1970-01-01 01:00:00.000000000 +0100
-+++ systemc-2.3.1-new/config/test-driver	2014-10-28 10:09:09.683928095 +0100
++++ systemc-2.3.1-new/config/test-driver	2013-10-21 16:43:45.000000000 +0200
 @@ -0,0 +1,127 @@
 +#! /bin/sh
 +# test-driver - basic testsuite driver script.
@@ -44150,7 +44150,7 @@ diff -Naur systemc-2.3.1-orig/config/test-driver systemc-2.3.1-new/config/test-d
 +# End:
 diff -Naur systemc-2.3.1-orig/configure systemc-2.3.1-new/configure
 --- systemc-2.3.1-orig/configure	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/configure	2014-10-28 10:09:09.685928095 +0100
++++ systemc-2.3.1-new/configure	2014-10-28 11:43:37.019129921 +0100
 @@ -1472,10 +1472,12 @@
    --disable-option-checking  ignore unrecognized --enable/--with options
    --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
@@ -44891,7 +44891,7 @@ diff -Naur systemc-2.3.1-orig/configure systemc-2.3.1-new/configure
        fdir=`$as_dirname -- "$file" ||
 diff -Naur systemc-2.3.1-orig/docs/Makefile.in systemc-2.3.1-new/docs/Makefile.in
 --- systemc-2.3.1-orig/docs/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/docs/Makefile.in	2014-10-28 10:09:09.685928095 +0100
++++ systemc-2.3.1-new/docs/Makefile.in	2014-10-28 11:43:37.494129938 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -45052,7 +45052,7 @@ diff -Naur systemc-2.3.1-orig/docs/Makefile.in systemc-2.3.1-new/docs/Makefile.i
  doxygen: sysc/doxygen/Doxyfile tlm/doxygen/Doxyfile
 diff -Naur systemc-2.3.1-orig/examples/Makefile.in systemc-2.3.1-new/examples/Makefile.in
 --- systemc-2.3.1-orig/examples/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/examples/Makefile.in	2014-10-28 10:09:09.686928095 +0100
++++ systemc-2.3.1-new/examples/Makefile.in	2014-10-28 11:43:37.517129939 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -45412,7 +45412,7 @@ diff -Naur systemc-2.3.1-orig/examples/Makefile.in systemc-2.3.1-new/examples/Ma
  %.sh: %$(EXEEXT) $(TESTSCRIPT_IN) 
 diff -Naur systemc-2.3.1-orig/examples/sysc/Makefile.in systemc-2.3.1-new/examples/sysc/Makefile.in
 --- systemc-2.3.1-orig/examples/sysc/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/examples/sysc/Makefile.in	2014-10-28 10:09:09.687928095 +0100
++++ systemc-2.3.1-new/examples/sysc/Makefile.in	2014-10-28 11:43:37.680129945 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -46592,7 +46592,7 @@ diff -Naur systemc-2.3.1-orig/examples/sysc/Makefile.in systemc-2.3.1-new/exampl
  
 diff -Naur systemc-2.3.1-orig/examples/tlm/common/Makefile.in systemc-2.3.1-new/examples/tlm/common/Makefile.in
 --- systemc-2.3.1-orig/examples/tlm/common/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/examples/tlm/common/Makefile.in	2014-10-28 10:09:09.688928095 +0100
++++ systemc-2.3.1-new/examples/tlm/common/Makefile.in	2014-10-28 11:43:37.849129951 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -46936,7 +46936,7 @@ diff -Naur systemc-2.3.1-orig/examples/tlm/common/Makefile.in systemc-2.3.1-new/
  
 diff -Naur systemc-2.3.1-orig/examples/tlm/Makefile.in systemc-2.3.1-new/examples/tlm/Makefile.in
 --- systemc-2.3.1-orig/examples/tlm/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/examples/tlm/Makefile.in	2014-10-28 10:09:09.688928095 +0100
++++ systemc-2.3.1-new/examples/tlm/Makefile.in	2014-10-28 11:43:37.796129949 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -48028,7 +48028,7 @@ diff -Naur systemc-2.3.1-orig/examples/tlm/Makefile.in systemc-2.3.1-new/example
  
 diff -Naur systemc-2.3.1-orig/Makefile.in systemc-2.3.1-new/Makefile.in
 --- systemc-2.3.1-orig/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/Makefile.in	2014-10-28 10:09:09.689928095 +0100
++++ systemc-2.3.1-new/Makefile.in	2014-10-28 11:43:37.469129937 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -48514,7 +48514,7 @@ diff -Naur systemc-2.3.1-orig/Makefile.in systemc-2.3.1-new/Makefile.in
  doxygen:
 diff -Naur systemc-2.3.1-orig/src/Makefile.in systemc-2.3.1-new/src/Makefile.in
 --- systemc-2.3.1-orig/src/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/Makefile.in	2014-10-28 10:09:09.689928095 +0100
++++ systemc-2.3.1-new/src/Makefile.in	2014-10-28 11:43:37.880129952 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -48876,7 +48876,7 @@ diff -Naur systemc-2.3.1-orig/src/Makefile.in systemc-2.3.1-new/src/Makefile.in
  # Tell versions [3.59,3.63) of GNU make to not export all variables.
 diff -Naur systemc-2.3.1-orig/src/sysc/communication/Makefile.in systemc-2.3.1-new/src/sysc/communication/Makefile.in
 --- systemc-2.3.1-orig/src/sysc/communication/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/communication/Makefile.in	2014-10-28 10:09:09.689928095 +0100
++++ systemc-2.3.1-new/src/sysc/communication/Makefile.in	2014-10-28 11:43:37.944129954 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -49172,7 +49172,7 @@ diff -Naur systemc-2.3.1-orig/src/sysc/communication/Makefile.in systemc-2.3.1-n
  
 diff -Naur systemc-2.3.1-orig/src/sysc/datatypes/Makefile.in systemc-2.3.1-new/src/sysc/datatypes/Makefile.in
 --- systemc-2.3.1-orig/src/sysc/datatypes/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/datatypes/Makefile.in	2014-10-28 10:09:09.690928095 +0100
++++ systemc-2.3.1-new/src/sysc/datatypes/Makefile.in	2014-10-28 11:43:37.981129955 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -49563,7 +49563,7 @@ diff -Naur systemc-2.3.1-orig/src/sysc/datatypes/Makefile.in systemc-2.3.1-new/s
  
 diff -Naur systemc-2.3.1-orig/src/sysc/kernel/Makefile.in systemc-2.3.1-new/src/sysc/kernel/Makefile.in
 --- systemc-2.3.1-orig/src/sysc/kernel/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/kernel/Makefile.in	2014-10-28 10:09:09.690928095 +0100
++++ systemc-2.3.1-new/src/sysc/kernel/Makefile.in	2014-10-28 11:43:38.018129957 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -49878,7 +49878,7 @@ diff -Naur systemc-2.3.1-orig/src/sysc/kernel/Makefile.in systemc-2.3.1-new/src/
  
 diff -Naur systemc-2.3.1-orig/src/sysc/kernel/sc_cmnhdr.h systemc-2.3.1-new/src/sysc/kernel/sc_cmnhdr.h
 --- systemc-2.3.1-orig/src/sysc/kernel/sc_cmnhdr.h	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/kernel/sc_cmnhdr.h	2014-10-28 10:10:27.846930878 +0100
++++ systemc-2.3.1-new/src/sysc/kernel/sc_cmnhdr.h	2014-10-28 11:43:21.169129357 +0100
 @@ -101,7 +101,7 @@
  // (deliberately outside of include guards to enable later effect)
  #if defined(SC_HAS_WINDOWS_H_) && defined(SC_INCLUDE_WINDOWS_H)
@@ -49888,37 +49888,20 @@ diff -Naur systemc-2.3.1-orig/src/sysc/kernel/sc_cmnhdr.h systemc-2.3.1-new/src/
  #endif
  
  // $Log: sc_cmnhdr.h,v $
-diff -Naur systemc-2.3.1-orig/src/sysc/kernel/sc_main_main.cpp systemc-2.3.1-new/src/sysc/kernel/sc_main_main.cpp
---- systemc-2.3.1-orig/src/sysc/kernel/sc_main_main.cpp	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/kernel/sc_main_main.cpp	2014-10-28 10:09:09.690928095 +0100
-@@ -51,6 +51,13 @@
- 
- bool sc_in_action = false;
- 
-+#ifdef DLL_EXPORT
-+int sc_main( int, char *argv[])
-+{
-+	return 0;
-+}
-+#endif
-+
- int sc_argc() 
- {
-     return argc_copy;
 diff -Naur systemc-2.3.1-orig/src/sysc/Makefile.am systemc-2.3.1-new/src/sysc/Makefile.am
 --- systemc-2.3.1-orig/src/sysc/Makefile.am	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/Makefile.am	2014-10-28 10:09:09.690928095 +0100
++++ systemc-2.3.1-new/src/sysc/Makefile.am	2014-10-28 11:42:52.721128343 +0100
 @@ -81,6 +81,6 @@
  libsystemc_la_LIBADD+=$(EXPLICIT_LPTHREAD)
  endif
  
 -libsystemc_la_LDFLAGS = -release $(VERSION) -L$(libarchdir)
-+libsystemc_la_LDFLAGS = -no-undefined -release $(VERSION) -L$(libarchdir)
++libsystemc_la_LDFLAGS = -no-undefined -Wl,--ignore-unresolved-symbol,sc_main -release $(VERSION) -L$(libarchdir)
  
  ## Taf!
 diff -Naur systemc-2.3.1-orig/src/sysc/Makefile.in systemc-2.3.1-new/src/sysc/Makefile.in
 --- systemc-2.3.1-orig/src/sysc/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/Makefile.in	2014-10-28 10:09:09.691928095 +0100
++++ systemc-2.3.1-new/src/sysc/Makefile.in	2014-10-28 11:43:37.913129953 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -50117,7 +50100,7 @@ diff -Naur systemc-2.3.1-orig/src/sysc/Makefile.in systemc-2.3.1-new/src/sysc/Ma
  	communication/libcommunication.la tracing/libtracing.la \
  	utils/libutils.la datatypes/libdatatypes.la $(am__append_12)
 -libsystemc_la_LDFLAGS = -release $(VERSION) -L$(libarchdir)
-+libsystemc_la_LDFLAGS = -no-undefined -release $(VERSION) -L$(libarchdir)
++libsystemc_la_LDFLAGS = -no-undefined -Wl,--ignore-unresolved-symbol,sc_main -release $(VERSION) -L$(libarchdir)
  all: all-recursive
  
  .SUFFIXES:
@@ -50349,7 +50332,7 @@ diff -Naur systemc-2.3.1-orig/src/sysc/Makefile.in systemc-2.3.1-new/src/sysc/Ma
  
 diff -Naur systemc-2.3.1-orig/src/sysc/packages/boost/Makefile.in systemc-2.3.1-new/src/sysc/packages/boost/Makefile.in
 --- systemc-2.3.1-orig/src/sysc/packages/boost/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/packages/boost/Makefile.in	2014-10-28 10:09:09.691928095 +0100
++++ systemc-2.3.1-new/src/sysc/packages/boost/Makefile.in	2014-10-28 11:43:38.044129957 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -50597,7 +50580,7 @@ diff -Naur systemc-2.3.1-orig/src/sysc/packages/boost/Makefile.in systemc-2.3.1-
  # Tell versions [3.59,3.63) of GNU make to not export all variables.
 diff -Naur systemc-2.3.1-orig/src/sysc/qt/Makefile.in systemc-2.3.1-new/src/sysc/qt/Makefile.in
 --- systemc-2.3.1-orig/src/sysc/qt/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/qt/Makefile.in	2014-10-28 10:09:09.691928095 +0100
++++ systemc-2.3.1-new/src/sysc/qt/Makefile.in	2014-10-28 11:43:38.084129959 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -50905,7 +50888,7 @@ diff -Naur systemc-2.3.1-orig/src/sysc/qt/Makefile.in systemc-2.3.1-new/src/sysc
  # ensure to use a working link command in 'config'
 diff -Naur systemc-2.3.1-orig/src/sysc/tracing/Makefile.in systemc-2.3.1-new/src/sysc/tracing/Makefile.in
 --- systemc-2.3.1-orig/src/sysc/tracing/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/tracing/Makefile.in	2014-10-28 10:09:09.691928095 +0100
++++ systemc-2.3.1-new/src/sysc/tracing/Makefile.in	2014-10-28 11:43:38.115129960 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -51220,7 +51203,7 @@ diff -Naur systemc-2.3.1-orig/src/sysc/tracing/Makefile.in systemc-2.3.1-new/src
  
 diff -Naur systemc-2.3.1-orig/src/sysc/utils/Makefile.in systemc-2.3.1-new/src/sysc/utils/Makefile.in
 --- systemc-2.3.1-orig/src/sysc/utils/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/sysc/utils/Makefile.in	2014-10-28 10:09:09.692928095 +0100
++++ systemc-2.3.1-new/src/sysc/utils/Makefile.in	2014-10-28 11:43:38.151129961 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -51535,7 +51518,7 @@ diff -Naur systemc-2.3.1-orig/src/sysc/utils/Makefile.in systemc-2.3.1-new/src/s
  
 diff -Naur systemc-2.3.1-orig/src/tlm_core/Makefile.in systemc-2.3.1-new/src/tlm_core/Makefile.in
 --- systemc-2.3.1-orig/src/tlm_core/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/tlm_core/Makefile.in	2014-10-28 10:09:09.692928095 +0100
++++ systemc-2.3.1-new/src/tlm_core/Makefile.in	2014-10-28 11:43:38.180129962 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
@@ -51786,7 +51769,7 @@ diff -Naur systemc-2.3.1-orig/src/tlm_core/Makefile.in systemc-2.3.1-new/src/tlm
  # Tell versions [3.59,3.63) of GNU make to not export all variables.
 diff -Naur systemc-2.3.1-orig/src/tlm_utils/Makefile.in systemc-2.3.1-new/src/tlm_utils/Makefile.in
 --- systemc-2.3.1-orig/src/tlm_utils/Makefile.in	2014-04-17 18:32:26.000000000 +0200
-+++ systemc-2.3.1-new/src/tlm_utils/Makefile.in	2014-10-28 10:09:09.692928095 +0100
++++ systemc-2.3.1-new/src/tlm_utils/Makefile.in	2014-10-28 11:43:38.206129963 +0100
 @@ -1,9 +1,8 @@
 -# Makefile.in generated by automake 1.11.6 from Makefile.am.
 +# Makefile.in generated by automake 1.14 from Makefile.am.
