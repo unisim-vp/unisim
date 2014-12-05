@@ -20,6 +20,7 @@
 
 /*** Classes an method for handling error log, file locations...
  ***/
+#include <iosfwd>
 #include <inttypes.h>
 #include <conststr.hh>
 
@@ -38,6 +39,7 @@ struct FileLoc_t {
   { m_name = _name; m_line = _line; m_nxtcol = _nxtcol; m_column = _nxtcol; return *this; }
   
   void       err( char const* _fmt, ... ) const;
+  std::ostream& loc( std::ostream& _sink ) const;
   void       newline() { m_line+=1; m_nxtcol = 1; m_column = 1; };
   void       newtoken( intptr_t len ) { m_column = m_nxtcol; m_nxtcol += len; };
   

@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 /**********************************************
@@ -37,12 +37,12 @@
         THUMB2 BRANCH INSTRUCTIONS
 
 **********************************************/
-
-op bl_w(0b11110[5]:shl<12> sext<32> imm1[11] :> <: 0b11[2]:shl<23> j1[1]:1[1]:shl<22> j2[1]:shl<1> imm0[11] );
+ 
+op bl_w( 0b11110[5]: shl<12> sext<32> imm1[11]:> <: 0b11[2]: shl<23> j1[1]: 0b1[1]: shl<22> j2[1]: shl<1> imm0[11] );
 bl_w.var imm : {uint32_t} = {(imm1|imm0)^j1^j2^0xc00000};
 
 bl_w.disasm = {
-  buffer << "bl\t" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
+  buffer << "bl\t0x" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
 };
 
 bl_w.execute = {
@@ -52,11 +52,11 @@ bl_w.execute = {
   cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
 };
 
-op blx_w(0b11110[5]:shl<12> sext<32> imm1[11] :> <: 0b11[2]:shl<23> j1[1]:0[1]:shl<22> j2[1]:shl<2> imm0[10]:0[1] );
+op blx_w( 0b11110[5]: shl<12> sext<32> imm1[11]:> <: 0b11[2]: shl<23> j1[1]: 0b0[1]: shl<22> j2[1]: shl<2> imm0[10]: 0b0[1] );
 blx_w.var imm : {uint32_t} = {(imm1|imm0)^j1^j2^0xc00000};
 
 blx_w.disasm = {
-  buffer << "blx\t" << std::hex << ((this->GetAddr() + 4 + imm) & -4) << std::dec;
+  buffer << "blx\t" << std::hex << "0x" << ((this->GetAddr() + 4 + imm) & -4) << std::dec;
 };
 
 blx_w.execute = {
@@ -66,47 +66,35 @@ blx_w.execute = {
   cpu.BranchExchange( (cpu.GetGPR(cpu.PC_reg) + imm) & -4 );
 };
 
-op cbnz( 0xb[4] : nz[1] : 0[1] : shl<6> imm1[1] : 0b1[1] : shl<1> imm0[5] : rs[3] );
+op cbnz( 0b1011[4]: nz[1]: 0b0[1]: shl<6> imm1[1]: 0b1[1]: shl<1> imm0[5]: rs[3] );
 cbnz.var imm : {uint32_t} = {imm1 | imm0};
 
 cbnz.disasm = {
-  buffer << "cb" << (nz ? "nz" : "z") << "\t" << DisasmRegister(rs) << ", " << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
+  buffer << "cb" << (nz ? "nz" : "z") << "\t" << DisasmRegister(rs) << ", 0x" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
 };
 
 cbnz.execute = {
   if ((cpu.GetGPR_npc( rs ) == 0) xor nz) cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
 };
 
-op bcc_w( 0xf[4] : 0[1] : shl<20> sext<32> imm4[1] : cond[4] : shl<12> imm1[6] :> <: \
-          2[2] : shl<18> imm2[1] : 0[1] : shl<19> imm3[1] : shl<1> imm0[11] );
+op bcc_w( 0b11110[5]: shl<20> sext<32> imm4[1]: cond[4]: shl<12> imm1[6]:> <: 0b10[2]: shl<18> imm2[1]: 0b0[1]: shl<19> imm3[1]: shl<1> imm0[11] );
 bcc_w.var imm : {uint32_t} = {imm4|imm3|imm2|imm1|imm0};
 
 bcc_w.disasm = {
-  buffer << "b" << DisasmCondition(cond) << "\t" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
+  if ((cond & 0xe) == 0xe) { buffer << "<undefined>"; return; }
+  buffer << "b" << DisasmCondition(cond) << ".w\t0x" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
 };
 
 bcc_w.execute = {
+  assert((cond & 0xe) != 0xe);
   if (CheckCondition(cpu, cond)) cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
 };
 
-op bcc_w_illegal( 0xf[4] : 0[1] : shl<20> sext<32> imm4[1] : 7[3] : b0[1] : shl<12> imm1[6] :> <: \
-                  2[2] : shl<18> imm2[1] : 0[1] : shl<19> imm3[1] : shl<1> imm0[11] );
-
-bcc_w_illegal.disasm = {
-  buffer << "undefined (bcc, cond="
-         << std::showbase << std::uppercase << std::hex << (0xe|b0) << std::dec << std::nouppercase << std::noshowbase
-         << ")";
-};
-
-bcc_w_illegal.execute = {
-  assert( false );
-};
-
-op b_w( 0xf[4] : 0[1] : shl<22> sext<32> imm4[1] : shl<12> imm1[10] :> <: 2[2] : shl<23> imm3[1] : 1[1] : shl<22> imm2[1] : shl<1> imm0[11] );
+op b_w( 0b1111[4]: 0b0[1]: shl<22> sext<32> imm4[1]: shl<12> imm1[10]:> <: 0b10[2]: shl<23> imm3[1]: 0b1[1]: shl<22> imm2[1]: shl<1> imm0[11] );
 b_w.var imm : {uint32_t} = {imm4^(imm3|imm2|imm1|imm0)^0xc00000};
 
 b_w.disasm = {
-  buffer << "b.w\t" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
+  buffer << "b.w\t0x" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
 };
 
 b_w.execute = {
@@ -115,36 +103,36 @@ b_w.execute = {
   cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
 };
 
-op bxj( 0xf3c[12] : ra[4] :> <: 0x8f00[16] );
+op bxj( 0b111100111100[12]: ra[4]:> <: 0b1000111100000000[16] );
 bxj.disasm = { buffer << "bxj\t" << DisasmRegister(ra); };
 
-op it( 0xbf[8] : cond[4] : mask[4] );
+op it( 0b10111111[8]: cond[4]: mask[4] );
 
 it.disasm = {
-  buffer << 'i';
-  for (InsnCond insncond( mask, cond ); insncond.it_block();)
-    { buffer << ((insncond.pop() ^ cond) ? 'e' : 't'); }
-  buffer << "\t" << DisasmCondition(cond);
+  if (mask == 0) { buffer << "<undefined>"; return; }
+  buffer << 'i' << DisasmITSequence(mask) << '\t' << DisasmCondition(cond,DisasmCondition::explicit_always);
 };
 
 it.execute = {
-  cpu.CPSR().ITSetState( cond, mask );
+  cpu.ITSetState( cond, mask );
 };
 
-op nop( 0xbf[8] : idx[4] : 0[4] );
+op nop( 0b10111111[8]: idx[4]: 0b0000[4] );
 
 nop.disasm = {
-  buffer << "nop\t{" << idx << "}";
+  buffer << "nop";
+  if (idx != 0) buffer << "\t{" << idx << "}";
 };
 
 nop.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
-  
 };
 
-op tbb( 0xe8d[12] : rn[4] :> <:0xf00[12] : rm[4] );
+op tbb( 0b111010001101[12]: rn[4]:> <: 0b111100000000[12]: rm[4] );
 
-tbb.disasm = { buffer << "tbb\t[" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << "]"; };
+tbb.disasm = {
+  buffer << "tbb\t" << DisasmMemoryRR(rn,rm,true,true,false);
+};
 
 tbb.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -152,9 +140,11 @@ tbb.execute = {
   cpu.Branch( cpu.GetGPR(cpu.PC_reg) + (cpu.MemRead8( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) << 1) );
 }
 
-op tbh( 0xe8d[12] : rn[4] :> <:0xf01[12] : rm[4] );
+op tbh( 0b111010001101[12]: rn[4]:> <: 0b111100000001[12]: rm[4] );
 
-tbh.disasm = { buffer << "tbh\t[" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", lsl #1]"; };
+tbh.disasm = {
+  buffer << "tbh\t" << DisasmMemoryRRI(rn,rm,0,1,true,true,false);
+};
 
 tbh.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;

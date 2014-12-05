@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2014,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,33 +29,11 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-/**********************************************
+#include <unisim/util/ieee754/ieee754.hh>
+#include <unisim/util/simfloat/floating.tcc>
 
-        THUMB2 INSTRUCTION PRECEDENCE
-
-**********************************************/
-
-// fldmdbx_mod.specialize( ldc_3, ldcl_2 );
-// fldmiax.specialize( ldc, ldcl_1 );
-// fldmiax_mod.specialize( ldc_1, ldcl );
-// fstmdbx_mod.specialize( stc_3, stcl_2 );
-// fstmiax.specialize( stc, stcl_1 );
-// fstmiax_mod.specialize( stc_1, stcl );
-ldr_lit.specialize( ldr_imm12, ldr_imm, ldr_reg, ldrt );
-ldrh_lit.specialize ( ldrh_imm12, ldrh_imm, ldrh_reg, ldrht );
-ldrb_lit.specialize ( ldrb_imm12, ldrb_imm, ldrb_reg, ldrbt );
-ldrsb_lit.specialize ( ldrsb_imm12, ldrsb_imm, ldrsb_reg, ldrsbt );
-ldrsh_lit.specialize ( ldrsh_imm12, ldrsh_imm, ldrsh_reg, ldrsht );
-//ldrd_lit.specialize(  )
-pld_imm12.specialize( ldrh_imm12, ldrh_lit, ldrb_imm12, ldrb_lit );
-pld_nimm.specialize( ldrh_imm, ldrh_lit, ldrb_imm, ldrb_lit );
-pld_lit.specialize( ldrh_imm12, ldrh_imm, ldrh_lit, ldrh_reg, ldrht, ldrb_imm12, ldrb_imm, ldrb_lit, ldrb_reg, ldrbt );
-pld_lit.specialize( pld_imm12, pld_nimm, pld_reg );
-pld_reg.specialize( ldrh_lit, ldrh_reg, ldrb_lit, ldrb_reg );
-pli_imm12.specialize( ldrsb_lit );
-pli_nimm.specialize( ldrsb_lit );
-pli_lit.specialize( ldrsb_imm12, ldrsb_imm, ldrsb_reg, ldrsbt, pli_imm12, pli_nimm, pli_reg );
-pli_reg.specialize( ldrsb_lit );
+template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::util::ieee754::BuiltFloatTraits>;
+template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::util::ieee754::BuiltDoubleTraits>;

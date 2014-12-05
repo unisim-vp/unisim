@@ -64,6 +64,45 @@ Isa::operation( ConstStr_t _symbol )
   return 0;
 }
 
+static void
+oplist_insert_unique( Vect_t<Operation_t>& _oplist, Operation_t* _op )
+{
+  // Check for duplicates
+  for (Vect_t<Operation_t>::const_iterator node = _oplist.begin(); node < _oplist.end(); ++ node)
+    { if ((**node).m_symbol == _op->m_symbol) return; }
+  _oplist.append( _op );
+}
+
+/** Search for operation objects corresponding to a symbol (one if
+    symbol is actual operation name, more if symbol is a group name).
+    
+    @param _symbol a symbol representing the operation or group name
+    @param _opvec an operation vector that will receive the corresponding operations
+*/
+bool
+Isa::operations( ConstStr_t _symbol, Vect_t<Operation_t>& _oplist )
+{
+  /* Symbol points to either an operation or a group.
+   */
+  if (Operation_t* operation = this->operation( _symbol ))
+    {
+      /* Symbol points to an operation */
+      oplist_insert_unique( _oplist, operation );
+      return true;
+    }
+  
+  if (Group_t* group = Scanner::isa().group( _symbol ))
+    {
+      /* Symbol points to a group */
+      for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
+        oplist_insert_unique( _oplist, *gop );
+      return true;
+    }
+  
+  return false;
+}
+
+
 /** Remove an operation object from the global operation object list (operation_list)
     @param operation the operation object to remove
 */

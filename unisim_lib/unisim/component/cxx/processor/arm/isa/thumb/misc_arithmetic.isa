@@ -39,7 +39,7 @@
  */
 
 { ARCH::insns6 }:                               \
-op sxtb(0b1011001001[10]:rm[3]:rd[3]);
+op sxtb( 0b1011001001[10]: rm[3]: rd[3] );
 
 sxtb.disasm = {
   buffer << "sxtb\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -62,7 +62,7 @@ sxtb.execute = {
  */
 
 { ARCH::insns6 }:                               \
-op sxth(0b1011001000[10]:rm[3]:rd[3]);
+op sxth( 0b1011001000[10]: rm[3]: rd[3] );
 
 sxth.disasm = {
   buffer << "sxth\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -85,7 +85,7 @@ sxth.execute = {
  */
 
 { ARCH::insns6 }:                               \
-op uxtb(0b1011001011[10]:rm[3]:rd[3]);
+op uxtb( 0b1011001011[10]: rm[3]: rd[3] );
 
 uxtb.disasm = {
   buffer << "uxtb\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -108,7 +108,7 @@ uxtb.execute = {
  */
 
 { ARCH::insns6 }:                               \
-op uxth(0b1011001010[10]:rm[3]:rd[3]);
+op uxth( 0b1011001010[10]: rm[3]: rd[3] );
 
 uxth.disasm = {
   buffer << "uxth\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);

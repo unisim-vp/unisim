@@ -51,7 +51,7 @@ using unisim::util::arithmetic::SignedSatSub32;
  */
 
 { ARCH::insns5E }: \
-op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:0[4]:0b0101[4]:rm[4]);
+op qadd( cond[4]: 0b00010000[8]: rn[4]: rd[4]: 0b0000[4]: 0b0101[4]: rm[4] );
 
 qadd.disasm = {
   buffer << "qadd" << DisasmCondition(cond) << '\t'
@@ -83,7 +83,7 @@ qadd.execute = {
  */
 
 { ARCH::insns5E }: \
-op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
+op qsub( cond[4]: 0b00010010[8]: rn[4]: rd[4]: 0b0000[4]: 0b0101[4]: rm[4] );
 
 qsub.disasm = {
   buffer << "qsub" << DisasmCondition(cond) << '\t'
@@ -115,7 +115,7 @@ qsub.execute = {
  */
 
 { ARCH::insns5E }: \
-op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
+op qdadd( cond[4]: 0b00010100[8]: rn[4]: rd[4]: 0b0000[4]: 0b0101[4]: rm[4] );
 
 qdadd.disasm = {
   buffer << "qdadd" << DisasmCondition(cond) << '\t'
@@ -148,7 +148,7 @@ qdadd.execute = {
  */
 
 { ARCH::insns5E }: \
-op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
+op qdsub( cond[4]: 0b00010110[8]: rn[4]: rd[4]: 0b0000[4]: 0b0101[4]: rm[4] );
 
 qdsub.disasm = {
   buffer << "qdsub" << DisasmCondition(cond) << '\t'
@@ -178,96 +178,6 @@ qdsub.execute = {
 
 /**********************************************
 
-       HINTS INSTRUCTIONS
-
-**********************************************/
-
-/*******************************************************************
- * nop instruction
- */
-
-op nop( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:idx[8] );
-
-nop.disasm = {
-  buffer << "nop" << DisasmCondition(cond) << "\t{" << idx << "}";
-};
-
-/*
- * end of nop instruction
- *******************************************************************/
-
-/*******************************************************************
- * yield instruction
- */
-
-op yield( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:1[8] );
-
-yield.disasm = {
-  buffer << "yield" << DisasmCondition(cond);
-};
-
-/*
- * end of yield instruction
- *******************************************************************/
-
-/*******************************************************************
- * wfe instruction
- */
-
-op wfe( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:2[8] );
-
-wfe.disasm = {
-  buffer << "wfe" << DisasmCondition(cond);
-};
-
-/*
- * end of wfe instruction
- *******************************************************************/
-
-/*******************************************************************
- * wfi instruction
- */
-
-op wfi( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:3[8] );
-
-wfi.disasm = {
-  buffer << "wfi" << DisasmCondition(cond);
-};
-
-/*
- * end of wfi instruction
- *******************************************************************/
-
-/*******************************************************************
- * sev instruction
- */
-
-op sev( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:4[8] );
-
-sev.disasm = {
-  buffer << "sev" << DisasmCondition(cond);
-};
-
-/*
- * end of sev instruction
- *******************************************************************/
-
-/*******************************************************************
- * dbg instruction
- */
-
-op dbg( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:0b1111[4]:idx[4] );
-
-dbg.disasm = {
-  buffer << "dbg" << DisasmCondition(cond) << '\t' << DisasmI(idx);
-};
-
-/*
- * end of dbg instruction
- *******************************************************************/
-
-/**********************************************
-
        PACKING INSTRUCTIONS
 
 **********************************************/
@@ -279,7 +189,7 @@ dbg.disasm = {
  * halfword of its shifted second operand.
  */
 
-op pkh(cond[4]:0b01101000[8]:rn[4]:rd[4]:imm[5]:tb[1]:0b01[2]:rm[4]);
+op pkh( cond[4]: 0b01101000[8]: rn[4]: rd[4]: imm[5]: tb[1]: 0b01[2]: rm[4] );
 
 pkh.disasm = {
   buffer << "pkh" << (tb?"tb":"bt")<< DisasmCondition(cond) << '\t'
@@ -307,7 +217,7 @@ pkh.disasm = {
  * extracting the 8-bit values.
  */
 
-op sxtab16(cond[4]:0b01101000[8]:rn[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op sxtab16( cond[4]: 0b01101000[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 sxtab16.disasm = {
   buffer << "sxtab16" << DisasmCondition(cond) << '\t'
@@ -328,7 +238,7 @@ sxtab16.disasm = {
  * extracting the 8-bit values.
  */
 
-op sxtb16(cond[4]:0b01101000[8]:0b1111[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op sxtb16( cond[4]: 0b01101000[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 sxtb16.disasm = {
   buffer << "sxtb16" << DisasmCondition(cond) << '\t'
@@ -349,7 +259,7 @@ sxtb16.disasm = {
  * extracting the 8-bit values.
  */
 
-op uxtab16(cond[4]:0b01101100[8]:rn[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op uxtab16( cond[4]: 0b01101100[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 uxtab16.disasm = {
   buffer << "uxtab16" << DisasmCondition(cond) << '\t'
@@ -370,7 +280,7 @@ uxtab16.disasm = {
  * extracting the 8-bit values.
  */
 
-op uxtb16(cond[4]:0b01101100[8]:0b1111[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op uxtb16( cond[4]: 0b01101100[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 uxtb16.disasm = {
   buffer << "uxtb16" << DisasmCondition(cond) << '\t'
@@ -388,7 +298,7 @@ uxtb16.disasm = {
  * or its second operand, according to the values of the GE flags.
  */
 
-op sel(cond[4]:0b01101000[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1011[4]:rm[4]);
+op sel( cond[4]: 0b01101000[8]: rn[4]: rd[4]: 0b1111[4]: 0b1011[4]: rm[4] );
 
 sel.disasm = {
   buffer << "sel" << DisasmCondition(cond) << '\t'
@@ -407,7 +317,7 @@ sel.disasm = {
  * signed range.  The Q flag is set if the operation saturates.
  */
 
-op ssat(cond[4]:0b0110101[7]:sat_imm[5]:rd[4]:imm[5]:sh[1]:0b01[2]:rm[4]);
+op ssat( cond[4]: 0b0110101[7]: sat_imm[5]: rd[4]: imm[5]: sh[1]: 0b01[2]: rm[4] );
 
 ssat.disasm = {
   buffer << "ssat" << DisasmCondition(cond) << '\t'
@@ -426,7 +336,7 @@ ssat.disasm = {
  * range.  The Q flag is set if the operation saturates.
  */
 
-op ssat16(cond[4]:0b01101010[8]:sat_imm[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+op ssat16( cond[4]: 0b01101010[8]: sat_imm[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
 
 ssat16.disasm = {
   buffer << "ssat16" << DisasmCondition(cond) << '\t'
@@ -444,7 +354,7 @@ ssat16.disasm = {
  * unsigned range.  The Q flag is set if the operation saturates.
  */
 
-op usat(cond[4]:0b0110111[7]:sat_imm[5]:rd[4]:imm[5]:sh[1]:0b01[2]:rm[4]);
+op usat( cond[4]: 0b0110111[7]: sat_imm[5]: rd[4]: imm[5]: sh[1]: 0b01[2]: rm[4] );
 
 usat.disasm = {
   buffer << "usat" << DisasmCondition(cond) << '\t'
@@ -463,7 +373,7 @@ usat.disasm = {
  * range.  The Q flag is set if the operation saturates.
  */
 
-op usat16(cond[4]:0b01101110[8]:sat_imm[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+op usat16( cond[4]: 0b01101110[8]: sat_imm[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
 
 usat16.disasm = {
   buffer << "usat16" << DisasmCondition(cond) << '\t'
@@ -484,7 +394,7 @@ usat16.disasm = {
  * 8-bit value.
  */
 
-op sxtab(cond[4]:0b01101010[8]:rn[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op sxtab( cond[4]: 0b01101010[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 sxtab.disasm = {
   buffer << "sxtab" << DisasmCondition(cond) << '\t'
@@ -505,7 +415,7 @@ sxtab.disasm = {
  * extracting the 8-bit values.
  */
 
-op sxtb(cond[4]:0b01101010[8]:0b1111[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op sxtb( cond[4]: 0b01101010[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 sxtb.disasm = {
   buffer << "sxtb" << DisasmCondition(cond) << '\t'
@@ -526,7 +436,7 @@ sxtb.disasm = {
  * 16-bit value.
  */
 
-op sxtah(cond[4]:0b01101011[8]:rn[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op sxtah( cond[4]: 0b01101011[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 sxtah.disasm = {
   buffer << "sxtah" << DisasmCondition(cond) << '\t'
@@ -542,7 +452,7 @@ sxtah.disasm = {
  * sxth (Signed Extend Halfword) instruction
  */
 
-op sxth(cond[4]:0b01101011[8]:0b1111[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op sxth( cond[4]: 0b01101011[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 sxth.disasm = {
   buffer << "sxth" << DisasmCondition(cond) << '\t'
@@ -563,7 +473,7 @@ sxth.disasm = {
  * 8-bit value.
  */
 
-op uxtab(cond[4]:0b01101110[8]:rn[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op uxtab( cond[4]: 0b01101110[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 uxtab.disasm = {
   buffer << "uxtab" << DisasmCondition(cond) << '\t'
@@ -584,7 +494,7 @@ uxtab.disasm = {
  * extracting the 8-bit values.
  */
 
-op uxtb(cond[4]:0b01101110[8]:0b1111[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op uxtb( cond[4]: 0b01101110[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 uxtb.disasm = {
   buffer << "uxtb" << DisasmCondition(cond) << '\t'
@@ -605,7 +515,7 @@ uxtb.disasm = {
  * 16-bit value.
  */
 
-op uxtah(cond[4]:0b01101111[8]:rn[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op uxtah( cond[4]: 0b01101111[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 uxtah.disasm = {
   buffer << "uxtah" << DisasmCondition(cond) << '\t'
@@ -621,7 +531,7 @@ uxtah.disasm = {
  * uxth (Signed Extend Halfword) instruction
  */
 
-op uxth(cond[4]:0b01101111[8]:0b1111[4]:rd[4]:rotate[2]:/*sbz*/0b00[2]:0b0111[4]:rm[4]);
+op uxth( cond[4]: 0b01101111[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
 
 uxth.disasm = {
   buffer << "uxth" << DisasmCondition(cond) << '\t'
@@ -639,7 +549,7 @@ uxth.disasm = {
  * absolute values of the differences together.
  */
 
-op usad8(cond[4]:0b01111000[8]:rd[4]:0b1111[4]:rm[4]:0b0001[4]:rn[4]);
+op usad8( cond[4]: 0b01111000[8]: rd[4]: 0b1111[4]: rm[4]: 0b0001[4]: rn[4] );
 
 usad8.disasm = {
   buffer << "usad8" << DisasmCondition(cond) << '\t'
@@ -655,7 +565,7 @@ usad8.disasm = {
  *
  */
 
-op usada8(cond[4]:0b01111000[8]:rd[4]:ra[4]:rm[4]:0b0001[4]:rn[4]);
+op usada8( cond[4]: 0b01111000[8]: rd[4]: ra[4]: rm[4]: 0b0001[4]: rn[4] );
 
 usada8.disasm = {
   buffer << "usada8" << DisasmCondition(cond) << '\t'
@@ -675,7 +585,7 @@ usada8.disasm = {
  * the destination register.
  */
 
-op sbfx(cond[4]:0b01111[5]:0[1]:1[1]:widthm1[5]:rd[4]:lsb[5]:0b101[3]:rn[4]);
+op sbfx( cond[4]: 0b01111[5]: 0b0[1]: 0b1[1]: widthm1[5]: rd[4]: lsb[5]: 0b101[3]: rn[4] );
 
 sbfx.disasm = {
   buffer << "sbfx" << DisasmCondition(cond) << '\t'
@@ -695,7 +605,7 @@ sbfx.disasm = {
  * register.
  */
 
-op bfi(cond[4]:0b0111110[7]:msb[5]:rd[4]:lsb[5]:0b001[3]:rn[4]);
+op bfi( cond[4]: 0b0111110[7]: msb[5]: rd[4]: lsb[5]: 0b001[3]: rn[4] );
 
 bfi.disasm = {
   if (lsb <= msb) {
@@ -720,7 +630,7 @@ bfi.disasm = {
  * register, without affecting the other bits in the register.
  */
 
-op bfc(cond[4]:0b0111110[7]:msb[5]:rd[4]:lsb[5]:0b001[3]:0b1111[4]);
+op bfc( cond[4]: 0b0111110[7]: msb[5]: rd[4]: lsb[5]: 0b001[3]: 0b1111[4] );
 
 bfc.disasm = {
   if (lsb <= msb) {
@@ -744,7 +654,7 @@ bfc.disasm = {
  * the destination register.
  */
 
-op ubfx(cond[4]:0b01111[5]:1[1]:1[1]:widthm1[5]:rd[4]:lsb[5]:0b101[3]:rn[4]);
+op ubfx( cond[4]: 0b01111[5]: 0b1[1]: 0b1[1]: widthm1[5]: rd[4]: lsb[5]: 0b101[3]: rn[4] );
 
 ubfx.disasm = {
   buffer << "ubfx" << DisasmCondition(cond) << '\t'
@@ -761,7 +671,7 @@ ubfx.disasm = {
  */
 
 { ARCH::insns6 }:                                                  \
-op sadd16(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+op sadd16( cond[4]: 0b01100001[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
 
 sadd16.disasm = {
   buffer << "sadd16" << DisasmCondition(cond) << '\t'
@@ -777,7 +687,7 @@ sadd16.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op sadd8(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+op sadd8( cond[4]: 0b01100001[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
 
 sadd8.disasm = {
   buffer << "sadd8" << DisasmCondition(cond) << '\t'
@@ -793,7 +703,7 @@ sadd8.disasm = {
  */
 
 { ARCH::insns6 }:                                       \
-op ssub16(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+op ssub16( cond[4]: 0b01100001[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
 
 ssub16.disasm = {
   buffer << "ssub16" << DisasmCondition(cond) << '\t'
@@ -809,7 +719,7 @@ ssub16.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op ssub8(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+op ssub8( cond[4]: 0b01100001[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
 
 ssub8.disasm = {
   buffer << "ssub8" << DisasmCondition(cond) << '\t'
@@ -825,7 +735,7 @@ ssub8.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op sasx(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+op sasx( cond[4]: 0b01100001[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
 
 sasx.disasm = {
   buffer << "sasx" << DisasmCondition(cond) << '\t'
@@ -841,7 +751,7 @@ sasx.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op ssax(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+op ssax( cond[4]: 0b01100001[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
 
 ssax.disasm = {
   buffer << "ssax" << DisasmCondition(cond) << '\t'
@@ -857,7 +767,7 @@ ssax.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op shadd16(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+op shadd16( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
 
 shadd16.disasm = {
   buffer << "shadd16" << DisasmCondition(cond) << '\t'
@@ -873,7 +783,7 @@ shadd16.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op shasx(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+op shasx( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
 
 shasx.disasm = {
   buffer << "shasx" << DisasmCondition(cond) << '\t'
@@ -889,7 +799,7 @@ shasx.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op shsax(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+op shsax( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
 
 shsax.disasm = {
   buffer << "shsax" << DisasmCondition(cond) << '\t'
@@ -905,7 +815,7 @@ shsax.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op shsub16(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+op shsub16( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
 
 shsub16.disasm = {
   buffer << "shsub16" << DisasmCondition(cond) << '\t'
@@ -921,7 +831,7 @@ shsub16.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op shadd8(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+op shadd8( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
 
 shadd8.disasm = {
   buffer << "shadd8" << DisasmCondition(cond) << '\t'
@@ -937,7 +847,7 @@ shadd8.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op shsub8(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+op shsub8( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
 
 shsub8.disasm = {
   buffer << "shsub8" << DisasmCondition(cond) << '\t'
@@ -953,7 +863,7 @@ shsub8.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op uadd16(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+op uadd16( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
 
 uadd16.disasm = {
   buffer << "uadd16" << DisasmCondition(cond) << '\t'
@@ -969,7 +879,7 @@ uadd16.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op uasx(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+op uasx( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
 
 uasx.disasm = {
   buffer << "uasx" << DisasmCondition(cond) << '\t'
@@ -985,7 +895,7 @@ uasx.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op usax(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+op usax( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
 
 usax.disasm = {
   buffer << "usax" << DisasmCondition(cond) << '\t'
@@ -1001,7 +911,7 @@ usax.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op usub16(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+op usub16( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
 
 usub16.disasm = {
   buffer << "usub16" << DisasmCondition(cond) << '\t'
@@ -1017,7 +927,7 @@ usub16.disasm = {
  */
 
 { ARCH::insns6 }:                                              \
-op uadd8(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+op uadd8( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
 
 uadd8.disasm = {
   buffer << "uadd8" << DisasmCondition(cond) << '\t'
@@ -1033,7 +943,7 @@ uadd8.disasm = {
  */
 
 { ARCH::insns6 }:                                       \
-op usub8(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+op usub8( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
 
 usub8.disasm = {
   buffer << "usub8" << DisasmCondition(cond) << '\t'
@@ -1049,7 +959,7 @@ usub8.disasm = {
  */
 
 { ARCH::insns6 }:                                       \
-op qadd16(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+op qadd16( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
 
 qadd16.disasm = {
   buffer << "qadd16" << DisasmCondition(cond) << '\t'
@@ -1065,7 +975,7 @@ qadd16.disasm = {
  */
 
 { ARCH::insns6 }:                                       \
-op qasx(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+op qasx( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
 
 qasx.disasm = {
   buffer << "qasx" << DisasmCondition(cond) << '\t'
@@ -1081,7 +991,7 @@ qasx.disasm = {
  */
 
 { ARCH::insns6 }:                                       \
-op qsax(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+op qsax( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
 
 qsax.disasm = {
   buffer << "qsax" << DisasmCondition(cond) << '\t'
@@ -1097,7 +1007,7 @@ qsax.disasm = {
  */
 
 { ARCH::insns6 }:                                       \
-op qsub16(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+op qsub16( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
 
 qsub16.disasm = {
   buffer << "qsub16" << DisasmCondition(cond) << '\t'
@@ -1113,7 +1023,7 @@ qsub16.disasm = {
  */
 
 { ARCH::insns6 }:                                       \
-op qadd8(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+op qadd8( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
 
 qadd8.disasm = {
   buffer << "qadd8" << DisasmCondition(cond) << '\t'
@@ -1129,7 +1039,7 @@ qadd8.disasm = {
  */
 
 { ARCH::insns6 }:                                       \
-op qsub8(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+op qsub8( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
 
 qsub8.disasm = {
   buffer << "qsub8" << DisasmCondition(cond) << '\t'
@@ -1145,7 +1055,7 @@ qsub8.disasm = {
  */
 
 { ARCH::insns6 }:                                       \
-op uqadd16(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+op uqadd16( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
 
 uqadd16.disasm = {
   buffer << "uqadd16" << DisasmCondition(cond) << '\t'
@@ -1161,7 +1071,7 @@ uqadd16.disasm = {
  */
 
 { ARCH::insns6 }:                                       \
-op uqasx(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+op uqasx( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
 
 uqasx.disasm = {
   buffer << "uqasx" << DisasmCondition(cond) << '\t'
@@ -1177,7 +1087,7 @@ uqasx.disasm = {
  */
 
 { ARCH::insns6 }: \
-op uqsax(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+op uqsax( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
 
 uqsax.disasm = {
   buffer << "uqsax" << DisasmCondition(cond) << '\t'
@@ -1193,7 +1103,7 @@ uqsax.disasm = {
  */
 
 { ARCH::insns6 }: \
-op uqsub16(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+op uqsub16( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
 
 uqsub16.disasm = {
   buffer << "uqsub16" << DisasmCondition(cond) << '\t'
@@ -1209,7 +1119,7 @@ uqsub16.disasm = {
  */
 
 { ARCH::insns6 }: \
-op uqadd8(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+op uqadd8( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
 
 uqadd8.disasm = {
   buffer << "uqadd8" << DisasmCondition(cond) << '\t'
@@ -1225,7 +1135,7 @@ uqadd8.disasm = {
  */
 
 { ARCH::insns6 }: \
-op uqsub8(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+op uqsub8( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
 
 uqsub8.disasm = {
   buffer << "uqsub8" << DisasmCondition(cond) << '\t'
@@ -1241,7 +1151,7 @@ uqsub8.disasm = {
  */
 
 { ARCH::insns6 }: \
-op uhadd16(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+op uhadd16( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
 
 uhadd16.disasm = {
   buffer << "uhadd16" << DisasmCondition(cond) << '\t'
@@ -1257,7 +1167,7 @@ uhadd16.disasm = {
  */
 
 { ARCH::insns6 }: \
-op uhasx(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+op uhasx( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
 
 uhasx.disasm = {
   buffer << "uhasx" << DisasmCondition(cond) << '\t'
@@ -1273,7 +1183,7 @@ uhasx.disasm = {
  */
 
 { ARCH::insns6 }: \
-op uhsax(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+op uhsax( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
 
 uhsax.disasm = {
   buffer << "uhsax" << DisasmCondition(cond) << '\t'
@@ -1289,7 +1199,7 @@ uhsax.disasm = {
  */
 
 { ARCH::insns6 }: \
-op uhsub16(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+op uhsub16( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
 
 uhsub16.disasm = {
   buffer << "uhsub16" << DisasmCondition(cond) << '\t'
@@ -1305,7 +1215,7 @@ uhsub16.disasm = {
  */
 
 { ARCH::insns6 }: \
-op uhadd8(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+op uhadd8( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
 
 uhadd8.disasm = {
   buffer << "uhadd8" << DisasmCondition(cond) << '\t'
@@ -1321,7 +1231,7 @@ uhadd8.disasm = {
  */
 
 { ARCH::insns6 }: \
-op uhsub8(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+op uhsub8( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
 
 uhsub8.disasm = {
   buffer << "uhsub8" << DisasmCondition(cond) << '\t'

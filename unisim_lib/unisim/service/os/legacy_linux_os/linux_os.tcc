@@ -53,7 +53,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 #include <process.h>
 #else
 #include <sys/times.h>
@@ -1539,7 +1539,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getuid() 
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -1653,7 +1653,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getgid() 
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -1673,7 +1673,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_geteuid() 
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -1693,7 +1693,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getegid() 
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -2071,7 +2071,7 @@ int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Times(struct powerpc_tms_t *target_tms)
 {
 	int ret;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;
@@ -2100,7 +2100,7 @@ int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Times(struct arm_tms_t *target_tms)
 {
 	int ret;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;
@@ -2488,7 +2488,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getuid32() 
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -2507,7 +2507,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getgid32() 
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -2526,7 +2526,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_geteuid32() 
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -2545,7 +2545,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getegid32() 
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -3064,7 +3064,7 @@ PPCGetSyscallNumber(int id)
 //         res->st_rdev = Host2Target(endianess, (int64_t)s->st_rdev);
 //         res->__pad2 = 0;
 //         res->st_size = Host2Target(endianess, (int64_t)s->st_size);
-// #ifdef WIN32
+// #if defined(WIN32) || defined(WIN64)
 //         res->st_blksize = 512;
 //         res->st_blocks = s->st_size / 512;
 // #else

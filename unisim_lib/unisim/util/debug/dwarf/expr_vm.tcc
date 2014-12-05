@@ -1090,7 +1090,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							}
 							// Push CFA
 							dw_stack.push_back(cfa);
-							return true;
+							break;
 						}
 						break;
 					case DW_OP_abs:

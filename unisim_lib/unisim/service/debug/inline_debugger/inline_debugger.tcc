@@ -45,7 +45,6 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/data_object.tcc>
 #include <unisim/util/likely/likely.hh>
-#include <unisim/util/simfloat/floating.tcc>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -289,7 +288,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		if(running_mode == INLINE_DEBUGGER_MODE_STEP)
 		{
 			const Statement<ADDRESS> *stmt = FindStatement(cia);
-			if(!stmt || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
+			if(!stmt || !stmt->IsBeginningOfSourceStatement() || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
 		}
 	}
 
@@ -2246,15 +2245,29 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 		size_t pos = str.find_first_of('#');
 		
 		std::stringstream sstr_addr(str.substr(0, pos));
-		std::stringstream sstr_size(str.substr(pos + 1));
 		
-		if((sstr_addr >> std::hex >> addr) && (sstr_size >> std::dec >> size))
+		if(sstr_addr >> std::hex >> addr)
 		{
-			if(sstr_addr.eof() && !sstr_size.eof())
+			if(sstr_addr.eof())
 			{
 				addr *= memory_atom_size;
-				size *= memory_atom_size;
-				return true;
+			
+				if(pos == std::string::npos)
+				{
+					size = memory_atom_size;
+					return true;
+				}
+
+				std::stringstream sstr_size(str.substr(pos + 1));
+				
+				if(sstr_size >> std::dec >> size)
+				{
+					if(sstr_size.eof())
+					{
+						size *= memory_atom_size;
+						return true;
+					}
+				}
 			}
 		}
 	}

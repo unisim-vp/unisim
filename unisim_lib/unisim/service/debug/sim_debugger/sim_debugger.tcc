@@ -45,7 +45,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 #include <unistd.h>
 #endif
 

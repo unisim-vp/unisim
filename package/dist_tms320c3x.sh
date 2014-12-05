@@ -154,6 +154,7 @@ unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/loader/coff_loader/coff_loader64.cc \
 unisim/util/lexer/lexer.cc \
+unisim/util/ieee754/ieee754.cc \
 unisim/service/loader/coff_loader/coff_loader32.cc \
 unisim/service/loader/coff_loader/coff_loader64.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
@@ -283,6 +284,10 @@ unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \
+unisim/util/simfloat/floating.hh \
+unisim/util/simfloat/integer.hh \
+unisim/util/simfloat/host_floating.hh \
+unisim/util/ieee754/ieee754.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
@@ -367,6 +372,9 @@ unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
+unisim/util/simfloat/floating.tcc \
+unisim/util/simfloat/integer.tcc \
+unisim/util/simfloat/host_floating.tcc \
 unisim/service/loader/coff_loader/coff_loader.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/elf_loader/elf32_loader.tcc \

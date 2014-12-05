@@ -37,7 +37,6 @@
 
 #include <iostream>
 #include <unisim/util/ieee754/ieee754.hh>
-#include <unisim/util/simfloat/floating.tcc>
 
 namespace unisim {
 namespace util {

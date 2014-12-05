@@ -42,7 +42,7 @@
  * mul (multiply) instruction
  */
 
-op mul(0b010000[6]:0b1101[4]:rm[3]:rd[3]);
+op mul( 0b010000[6]: 0b1101[4]: rm[3]: rd[3] );
 
 mul.disasm = {
   buffer << "muls\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);

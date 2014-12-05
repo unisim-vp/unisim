@@ -110,6 +110,8 @@ public:
 	void Register(DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry);
 	void Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry);
 	
+	void UnRegister(DWARF_DIE<MEMORY_ADDR> *dw_die);
+
 	const DWARF_StatementProgram<MEMORY_ADDR> *FindStatementProgram(uint64_t debug_line_offset);
 	const DWARF_DIE<MEMORY_ADDR> *FindDIE(uint64_t debug_info_offset) const;
 	const DWARF_RangeListEntry<MEMORY_ADDR> *FindRangeListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_ranges_offset);

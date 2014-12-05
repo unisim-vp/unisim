@@ -39,14 +39,13 @@
 **********************************************/
 
 /*******************************************************************
- * Nop (wide) instruction
+ * nop instruction
  */
 
-op nopw( 0b1111001110101111[16]:> <: 0b10000000[8]: imm[8] );
+op nop( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: idx[8] );
 
-nopw.disasm = {
-  if (imm) buffer << "nop.w\t{" << imm << "}";
-  else     buffer << "nop.w";
+nop.disasm = {
+  buffer << "nop" << DisasmCondition(cond) << "\t{" << idx << "}";
 };
 
 /*
@@ -57,98 +56,105 @@ nopw.disasm = {
  * yield instruction
  */
 
-{ ARCH::insns7 }:                               \
-op yield( 0b1011111100010000[16] );
+op yield( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b00000001[8] );
 
 yield.disasm = {
-  buffer << "yield";
-};
-
-{ ARCH::insns7 }:                               \
-op yield_w( 0b1111001110101111[16]:> <: 0b1000000000000001[16] );
-
-yield_w.disasm = {
-  buffer << "yield.w";
+  buffer << "yield" << DisasmCondition(cond);
 };
 
 /*
  * end of yield instruction
  *******************************************************************/
 
-/* DBG instruction */
+/*******************************************************************
+ * wfe instruction
+ */
 
-op dbg_i( 0b1111001110101111[16]:> <: 0b100000001111[12]: imm[4] );
-dbg_i.disasm = { buffer << "dbg\t#" << imm; };
+op wfe( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b00000010[8] );
+
+wfe.disasm = {
+  buffer << "wfe" << DisasmCondition(cond);
+};
+
+/*
+ * end of wfe instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * wfi instruction
+ */
+
+op wfi( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b00000011[8] );
+
+wfi.disasm = {
+  buffer << "wfi" << DisasmCondition(cond);
+};
+
+/*
+ * end of wfi instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sev instruction
+ */
+
+op sev( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b00000100[8] );
+
+sev.disasm = {
+  buffer << "sev" << DisasmCondition(cond);
+};
+
+/*
+ * end of sev instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * dbg instruction
+ */
+
+op dbg( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b1111[4]: idx[4] );
+
+dbg.disasm = {
+  buffer << "dbg" << DisasmCondition(cond) << '\t' << DisasmI(idx);
+};
+
+/*
+ * end of dbg instruction
+ *******************************************************************/
 
 /* DMB instruction */
 
-op dmb( 0b1111001110111111[16]:> <: 0b100011110101[12]: opt[4] );
+op dmb( 0b1111[4]: 0b01010111[8]: 0b1111[4]: 0b1111[4]: 0b0000[4]: 0b0101[4]: opt[4] );
+
 dmb.disasm = {
   if (0x3333 >> opt) { buffer << "<undefined>"; return; }
   buffer << "dmb\t" << DisasmBarrierOption( opt );
 };
 
 dmb.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
 };
 
 /* DSB instruction */
 
-op dsb( 0b1111001110111111[16]:> <: 0b100011110100[12]: opt[4] );
+op dsb( 0b1111[4]: 0b01010111[8]: 0b1111[4]: 0b1111[4]: 0b0000[4]: 0b0100[4]: opt[4] );
+
 dsb.disasm = {
   if (0x3333 >> opt) { buffer << "<undefined>"; return; }
   buffer << "dsb\t" << DisasmBarrierOption( opt );
 };
 
 dsb.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
 };
 
 /* ISB instruction */
 
-op isb( 0b1111001110111111[16]:> <: 0b100011110110[12]: opt[4] );
+op isb( 0b1111[4]: 0b01010111[8]: 0b1111[4]: 0b1111[4]: 0b0000[4]: 0b0110[4]: opt[4] );
+
 isb.disasm = {
   if (opt != 15) { buffer << "<undefined>"; return; }
   buffer << "isb\t" << DisasmBarrierOption( opt );
 };
 
 isb.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
-  
 };
 
-{ ARCH::insns7 }:                               \
-op wfe( 0b1011111100100000[16] );
-wfe.disasm = {
-  buffer << "wfe";
-};
-
-{ ARCH::insns7 }:                               \
-op wfi( 0b1011111100110000[16] );
-wfi.disasm = {
-  buffer << "wfi";
-};
-
-{ ARCH::insns7 }:                               \
-op sev( 0b1011111101000000[16] );
-sev.disasm = {
-  buffer << "sev";
-};
-
-{ ARCH::insns7 }:                               \
-op wfe_w( 0b1111001110101111[16]:> <: 0b1000000000000010[16] );
-wfe_w.disasm = {
-  buffer << "wfe.w";
-};
-
-{ ARCH::insns7 }:                               \
-op wfi_w( 0b1111001110101111[16]:> <: 0b1000000000000011[16] );
-wfi_w.disasm = {
-  buffer << "wfi.w";
-};
-
-{ ARCH::insns7 }:                               \
-op sev_w( 0b1111001110101111[16]:> <: 0b1000000000000100[16] );
-sev_w.disasm = {
-  buffer << "sev.w";
-};

@@ -176,6 +176,7 @@ unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/os/linux_os/environment.cc \
 unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
+unisim/util/ieee754/ieee754.cc \
 unisim/util/xml/xml.cc \
 unisim/util/endian/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
@@ -216,6 +217,7 @@ unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
+unisim/component/cxx/processor/arm/isa/arm32/hints.isa \
 unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
 unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
 unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
@@ -351,6 +353,10 @@ unisim/util/arithmetic/arithmetic.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/queue/queue.hh \
+unisim/util/simfloat/floating.hh \
+unisim/util/simfloat/integer.hh \
+unisim/util/simfloat/host_floating.hh \
+unisim/util/ieee754/ieee754.hh \
 unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/cxx/processor/arm/psr.hh \
@@ -406,6 +412,9 @@ unisim/util/debug/stmt.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
+unisim/util/simfloat/floating.tcc \
+unisim/util/simfloat/integer.tcc \
+unisim/util/simfloat/host_floating.tcc \
 unisim/util/os/linux_os/calls.tcc \
 unisim/util/os/linux_os/linux.tcc \
 unisim/util/dictionary/dictionary.tcc \

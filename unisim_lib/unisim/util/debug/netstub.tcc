@@ -41,7 +41,7 @@
 #include <string.h>
 #include <sys/types.h>
 
-#ifdef WIN32 /* Windows 32 */
+#if defined(WIN32) || defined(WIN64) /* Windows 32 */
 
 #include <winsock2.h>
 
@@ -199,7 +199,7 @@ bool NetStub<ADDRESS>::Initialize()
 #ifdef DEBUG_NETSTUB
 			cerr << "NETSTUB: bind failed" << endl;
 #endif
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 			closesocket(server_sock);
 #else
 			close(server_sock);
@@ -212,7 +212,7 @@ bool NetStub<ADDRESS>::Initialize()
 #ifdef DEBUG_NETSTUB
 			cerr << "NETSTUB: listen failed" << endl;
 #endif
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 			closesocket(sock);
 #else
 			close(server_sock);
@@ -220,7 +220,7 @@ bool NetStub<ADDRESS>::Initialize()
 			return false;
 		}
 	
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		int addr_len;
 #else
 		socklen_t addr_len;
@@ -261,7 +261,7 @@ bool NetStub<ADDRESS>::Initialize()
 #ifdef DEBUG_NETSTUB
 			cerr << "NETSTUB: accept failed" << endl;
 #endif
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 			closesocket(server_sock);
 #else
 			close(server_sock);
@@ -269,7 +269,7 @@ bool NetStub<ADDRESS>::Initialize()
 			return false;
 		}
 		
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -354,7 +354,7 @@ bool NetStub<ADDRESS>::Initialize()
 		if(protocol == protocol_af_inet)
 		{
 #endif
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 			u_long addr_none = INADDR_NONE;
 #else
 			in_addr_t addr_none = INADDR_NONE;
@@ -397,7 +397,7 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 		if(!connected)
 		{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 			closesocket(sock);
 #else
 			close(sock);
@@ -433,7 +433,7 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 		}
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		u_long NonBlock = 1;
 		if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
 		{
@@ -485,7 +485,7 @@ NetStub<ADDRESS>::~NetStub()
 
 	if(sock >= 0)
 	{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		closesocket(sock);
 #else
 		close(sock);
@@ -523,7 +523,7 @@ bool NetStub<ADDRESS>::GetChar(char& c, bool blocking)
 	{
 		do
 		{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 			int r = recv(sock, input_buffer, sizeof(input_buffer), 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -531,7 +531,7 @@ bool NetStub<ADDRESS>::GetChar(char& c, bool blocking)
 			if(r <= 0)
 #endif
 			{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
 #else
 				if(r < 0 && errno == EAGAIN)
@@ -539,7 +539,7 @@ bool NetStub<ADDRESS>::GetChar(char& c, bool blocking)
 				{
 					if(blocking)
 					{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 						Sleep(1); // sleep for 10ms
 #else
 						usleep(1000); // sleep for 10ms
@@ -577,7 +577,7 @@ bool NetStub<ADDRESS>::FlushOutput()
 		unsigned int index = 0;
 		do
 		{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 			int r = send(sock, output_buffer + index, output_buffer_size, 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else

@@ -80,7 +80,7 @@ DWARF_StatementVM<MEMORY_ADDR>::~DWARF_StatementVM()
 template <class MEMORY_ADDR>
 bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	// filename starts with '/' or 'drive letter':\ or 'driver letter':/
 	return (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z')) && (filename[1] == ':') && ((filename[2] == '\\') || (filename[2] == '/'))) || (*filename == '/');
 #else
@@ -130,7 +130,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 		stmt_matrix.erase(stmt_matrix_iter);
 	}
 	
-	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column, isa, discriminator);
+	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, is_stmt, basic_block, dirname, filename, line, column, isa, discriminator);
 	stmt_matrix.insert(std::pair<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>(address, stmt));
 }
 

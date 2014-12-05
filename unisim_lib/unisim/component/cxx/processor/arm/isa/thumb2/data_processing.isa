@@ -38,10 +38,45 @@
 
 **********************************************/
 
+impl {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+namespace isa {
+namespace thumb2 {
+  /* decoding method for imm[1:3:8] */
+static
+uint32_t
+ThumbExpandImm( uint32_t code )
+{
+  if        (code >= 0x400)
+    return ((code & 0x7f) | 0x80) << ((32 - (code >> 7))  & 0x1f);
+  else if (code >= 0x300)
+    return 0x1010101 * (code & 0xff);
+  else if (code >= 0x200)
+    return 0x1000100 * (code & 0xff);
+  else if (code >= 0x100)
+    return 0x0010001 * (code & 0xff);
+  else /* if (code < 0x100) */
+    return code & 0xff;
+}
+
+} // end of namespace thumb2
+} // end of namespace isa
+} // end of namespace arm
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+}
+
 /* MOV instructions */
 
-op mov_wri( 0b11110[5] : shl <11> imm2[1] : 0[2] : 2[3] : s[1] : 0xf[4] :> <: 0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-mov_wri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op mov_wri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b010[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+mov_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 mov_wri.disasm = { buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", #" << imm; };
 
@@ -57,7 +92,7 @@ mov_wri.execute = {
     }
 };
 
-op mov_w( 0xea[8] : 2[3] : s[1] : 0xf[4] :> <: 0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op mov_w( 0b11101010[8]: 0b010[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 mov_w.var imm : {uint32_t} = {imm1|imm0}
 
 mov_w.disasm = {
@@ -73,7 +108,7 @@ mov_w.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op movt( 0b11110[5] : shl <11> imm2[1] : 0x2c[6] : shl<12> imm3[4] :> <: 0[1] : shl<8> imm1[3] : rsd[4] : imm0[8] );
+op movt( 0b11110[5]: shl <11> imm2[1]: 0b101100[6]: shl<12> imm3[4]:> <: 0b0[1]: shl<8> imm1[3]: rsd[4]: imm0[8] );
 movt.var imm : {uint32_t} = {imm3|imm2|imm1|imm0};
 
 movt.disasm = { buffer << "movt\t" << DisasmRegister(rsd) << ", #" << imm; };
@@ -84,7 +119,7 @@ movt.execute = {
   cpu.SetGPR( rsd, (cpu.GetGPR_npc( rsd ) & 0xffff) | (imm << 16) );
 };
 
-op movw( 0b11110[5] : shl <11> imm2[1] : 0x24[6] : shl<12> imm3[4] :> <: 0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
+op movw( 0b11110[5]: shl <11> imm2[1]: 0b100100[6]: shl<12> imm3[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 movw.var imm : {uint32_t} = {imm3|imm2|imm1|imm0};
 
 movw.disasm = { buffer << "movw\t" << DisasmRegister(rd) << ", #" << imm; };
@@ -97,7 +132,7 @@ movw.execute = {
 
 /* MVN instructions */
 
-op mvn_w( 0xea[8] : 3[3] : s[1] : 0xf[4] :> <: 0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op mvn_w( 0b11101010[8]: 0b011[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 mvn_w.var imm : {uint32_t} = {imm1|imm0}
 
 mvn_w.disasm = {
@@ -113,9 +148,8 @@ mvn_w.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op mvn_wri( 0b11110[5] : shl <11> imm2[1] : 0[2] : 3[3] : s[1] : 0xf[4] :> <: \
-            0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-mvn_wri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op mvn_wri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b011[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+mvn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 mvn_wri.disasm = { buffer << "mvn" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", #" << imm; };
 
@@ -133,10 +167,10 @@ mvn_wri.execute = {
 
 /* LSL, LSR, ASR, ROR shift instructions */
 
-op shift_w( 0xfa[8] : shift[3] : s[1] : rn[4] :> <: 0xf[4] : rd[4] : 0x0[4] : rm[4] );
+op shift_w( 0b11111010[8]: 0b0[1]: shift[2]: s[1]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
 
 shift_w.disasm = {
-  buffer << "" << (sornames[shift]) << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "" << DisasmShift(shift) << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 shift_w.execute = {
@@ -150,8 +184,7 @@ shift_w.execute = {
 
 /* SUB instructions */
 
-op sub_w( 0xeb[8] : 5[3] : s[1] : rn[4] :> <: \
-          0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op sub_w( 0b11101011[8]: 0b101[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 sub_w.var imm : {uint32_t} = {imm1|imm0}
 
 sub_w.disasm = {
@@ -170,8 +203,8 @@ sub_w.execute = {
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-op sub_wrri( 0xf[4] : 0[1] : shl <11> imm2[1] : 1[2] : 5[3] : s[1] : rn[4] :> <: 0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-sub_wrri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op sub_wrri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b101[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+sub_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 sub_wrri.disasm = { buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
 
@@ -183,7 +216,7 @@ sub_wrri.execute = {
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-op subs_pclri( 0xf3de[16] :> <: 0x8f[8] : imm[8] );
+op subs_pclri( 0b1111001111011110[16]:> <: 0b10001111[8]: imm[8] );
 subs_pclri.disasm = { buffer << "subs\tpc, lr, #" << imm; };
 
 subs_pclri.execute = {
@@ -195,7 +228,7 @@ subs_pclri.execute = {
   if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-op subw( 0b11110[5]:shl<11> imm2[1]:0b101010[6]:rn[4]:> <:0[1]:shl<8> imm1[3]:rd[4]:imm0[8] );
+op subw( 0b11110[5]: shl<11> imm2[1]: 0b101010[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 subw.var imm : {uint32_t} = {imm2|imm1|imm0};
 
 subw.disasm = {
@@ -208,7 +241,7 @@ subw.execute = {
   cpu.SetGPR( rd, cpu.GetGPR(rn) - imm );
 };
 
-op adr_subw( 0b11110[5]:shl<11> imm2[1]:0b101010[6]:0b1111[4]:> <:0[1]:shl<8> imm1[3]:rd[4]:imm0[8] );
+op adr_subw( 0b11110[5]: shl<11> imm2[1]: 0b101010[6]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 adr_subw.var imm : {uint32_t} = {imm2|imm1|imm0};
 
 adr_subw.disasm = {
@@ -223,8 +256,7 @@ adr_subw.execute = {
 
 /* SBC instructions */
 
-op sbc_w( 0xeb[8] : 3[3] : s[1] : rn[4] :> <: \
-          0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op sbc_w( 0b11101011[8]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 sbc_w.var imm : {uint32_t} = {imm1|imm0}
 
 sbc_w.disasm = {
@@ -243,9 +275,8 @@ sbc_w.execute = {
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-op sbc_wrri( 0b11110[5] : shl <11> imm2[1] : 1[2] : 3[3] : s[1] : rn[4] :> <: \
-             0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-sbc_wrri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op sbc_wrri( 0b11110[5]: shl <11> imm2[1]: 0b01[2]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+sbc_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 sbc_wrri.disasm = { buffer << "sbc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
 
@@ -259,7 +290,7 @@ sbc_wrri.execute = {
 
 /* RSB instructions */
 
-op rsb ( 0xeb[8] : 6[3] : s[1] : rn[4] :> <: 0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op rsb( 0b11101011[8]: 0b110[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 rsb.var imm : {uint32_t} = {imm1|imm0}
 
 rsb.disasm = {
@@ -277,8 +308,8 @@ rsb.execute = {
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-op rsb_rri ( 0xf[4] : 0[1] : shl <11> imm2[1] : 1[2] : 6[3] : s[1] : rn[4] :> <: 0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-rsb_rri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op rsb_rri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b110[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+rsb_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 rsb_rri.disasm = {
   buffer << "rsb" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
@@ -294,7 +325,7 @@ rsb_rri.execute = {
 
 /* ADD instructions */
 
-op add_w( 0xeb[8] : 0[3] : s[1] : rn[4] :> <: 0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op add_w( 0b11101011[8]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 add_w.var imm : {uint32_t} = {imm1|imm0}
 
 add_w.disasm = {
@@ -313,8 +344,8 @@ add_w.execute = {
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
-op add_wrri( 0xf[4] : 0[1] : shl <11> imm2[1] : 1[2]: 0[3] : s[1] : rn[4] :> <: 0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-add_wrri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op add_wrri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+add_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 add_wrri.disasm = { buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
 
@@ -326,7 +357,7 @@ add_wrri.execute = {
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
-op addw( 0b11110[5]:shl<11> imm2[1]:0b100000[6]:rn[4]:> <:0[1]:shl<8> imm1[3]:rd[4]:imm0[8] );
+op addw( 0b11110[5]: shl<11> imm2[1]: 0b100000[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 addw.var imm : {uint32_t} = {imm2|imm1|imm0};
 
 addw.disasm = {
@@ -339,7 +370,7 @@ addw.execute = {
   cpu.SetGPR( rd, cpu.GetGPR(rn) + imm );
 };
 
-op adr_addw( 0b11110[5]:shl<11> imm2[1]:0b100000[6]:0b1111[4]:> <:0[1]:shl<8> imm1[3]:rd[4]:imm0[8] );
+op adr_addw( 0b11110[5]: shl<11> imm2[1]: 0b100000[6]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 adr_addw.var imm : {uint32_t} = {imm2|imm1|imm0};
 
 adr_addw.disasm = {
@@ -354,7 +385,7 @@ adr_addw.execute = {
 
 /* ADC instructions */
 
-op adc_w( 0xeb[8] : 2[3] : s[1] : rn[4] :> <: 0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op adc_w( 0b11101011[8]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 adc_w.var imm : {uint32_t} = {imm1|imm0}
 
 adc_w.disasm = {
@@ -372,9 +403,8 @@ adc_w.execute = {
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
-op adc_wrri( 0b11110[5] : shl <11> imm2[1] : 1[2] : 2[3] : s[1] : rn[4] :> <: \
-             0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-adc_wrri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op adc_wrri( 0b11110[5]: shl <11> imm2[1]: 0b01[2]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+adc_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 adc_wrri.disasm = { buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
 
@@ -387,7 +417,7 @@ adc_wrri.execute = {
 };
 
 /* EOR instructions */
-op eor_w( 0xea[8] : 4[3] : s[1] : rn[4] :> <: 0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op eor_w( 0b11101010[8]: 0b100[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 eor_w.var imm : {uint32_t} = {imm1|imm0}
 
 eor_w.disasm = {
@@ -405,8 +435,8 @@ eor_w.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op eor_wrri( 0b11110[5] : shl <11> imm2[1] : 0[2] : 4[3] : s[1] : rn[4] :> <: 0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-eor_wrri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op eor_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b100[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+eor_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 eor_wrri.disasm = { buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
 
@@ -424,7 +454,7 @@ eor_wrri.execute = {
 
 /* ORN instructions */
 
-op orn( 0xea[8] : 3[3] : s[1] : rn[4] :> <: 0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op orn( 0b11101010[8]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 orn.var imm : {uint32_t} = {imm1|imm0}
 
 orn.disasm = {
@@ -442,9 +472,8 @@ orn.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op orn_rri( 0b11110[5] : shl <11> imm2[1] : 0[2] : 3[3] : s[1] : rn[4] :> <: \
-            0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-orn_rri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op orn_rri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+orn_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 orn_rri.disasm = { buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
 
@@ -463,7 +492,7 @@ orn_rri.execute = {
 
 /* ORR instructions */
 
-op orr_w( 0xea[8] : 2[3] : s[1] : rn[4] :> <: 0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op orr_w( 0b11101010[8]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 orr_w.var  imm : {uint32_t} = {imm1|imm0}
 
 orr_w.disasm = {
@@ -481,8 +510,8 @@ orr_w.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op orr_wrri(  0b11110[5] : shl <11> imm2[1] : 0[2] : 2[3] : s[1] : rn[4] :> <: 0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-orr_wrri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op orr_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+orr_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 orr_wrri.disasm = {
   buffer << "orr" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
@@ -504,8 +533,7 @@ orr_wrri.execute = {
 
 /* BIC instructions */
 
-op bic_w( 0xea[8] : 1[3] : s[1] : rn[4] :> <: \
-          0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op bic_w( 0b11101010[8]: 0b001[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 bic_w.var imm : {uint32_t} = {imm1|imm0}
 
 bic_w.disasm = {
@@ -523,12 +551,11 @@ bic_w.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op bic_wrri( 0b11110[5] : shl <11> imm2[1] : 0[2] : 1[3] : s[1] : rn[4] :> <: \
-             0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-bic_wrri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op bic_wrri( 0b11110[5]: shl <11> imm2[1]: 0b0[1]: 0b0001[4]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+bic_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 bic_wrri.disasm = {
-  buffer << "bic.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "bic" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
 };
 
 bic_wrri.execute = {
@@ -545,7 +572,7 @@ bic_wrri.execute = {
 
 /* AND instructions */
 
-op and_w( 0xea[8] : 0[3] : s[1] : rn[4] :> <: 0[1] : shl<2> imm1[3] : rd[4] : imm0[2] : shift[2] : rm[4] );
+op and_w( 0b11101010[8]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 and_w.var imm : {uint32_t} = {imm1|imm0}
 
 and_w.disasm = {
@@ -563,9 +590,8 @@ and_w.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op and_wrri( 0b11110[5] : shl <11> imm2[1] : 0[2] : 0[3] : s[1] : rn[4] :> <: \
-             0[1] : shl<8> imm1[3] : rd[4] : imm0[8] );
-and_wrri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op and_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
+and_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 and_wrri.disasm = {
   buffer << "and" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
@@ -585,7 +611,7 @@ and_wrri.execute = {
 
 /* CMP instructions */
 
-op cmp_w( 0xebb[12] : rn[4] :> <: 0[1] : shl<2> imm1[3] : 0xf[4] : imm0[2] : shift[2] : rm[4] );
+op cmp_w( 0b111010111011[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 cmp_w.var imm : {uint32_t} = {imm1|imm0}
 
 cmp_w.disasm = {
@@ -603,8 +629,8 @@ cmp_w.execute = {
   UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-op cmp_wri( 0b11110[5] : shl <11> imm2[1] : 0x1b[6] : rn[4] :> <: 0[1] : shl<8> imm1[3] : 0xf[4] : imm0[8] );
-cmp_wri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op cmp_wri( 0b11110[5]: shl <11> imm2[1]: 0b011011[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
+cmp_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 cmp_wri.disasm = {
   buffer << "cmp.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -619,7 +645,7 @@ cmp_wri.execute = {
 
 /* CMN instructions */
 
-op cmn_w( 0xeb1[12] : rn[4] :> <: 0[1] : shl<2> imm1[3] : 0xf[4] : imm0[2] : shift[2] : rm[4] );
+op cmn_w( 0b111010110001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 cmn_w.var imm : {uint32_t} = {imm1|imm0}
 
 cmn_w.disasm = {
@@ -637,8 +663,8 @@ cmn_w.execute = {
   UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
-op cmn_wri( 0b11110[5] : shl <11> imm2[1] : 0x11[6] : rn[4] :> <: 0[1] : shl<8> imm1[3] : 0xf[4] : imm0[8] );
-cmn_wri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op cmn_wri( 0b11110[5]: shl <11> imm2[1]: 0b010001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
+cmn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 cmn_wri.disasm = { buffer << "cmn.w\t" << DisasmRegister(rn) << ", #" << imm; };
 
@@ -651,7 +677,7 @@ cmn_wri.execute = {
 
 /* TEQ instruction */
 
-op teq( 0xea9[12] : rn[4] :> <: 0[1] : shl<2> imm1[3] : 0xf[4] : imm0[2] : shift[2] : rm[4] );
+op teq( 0b111010101001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 teq.var imm : {uint32_t} = {imm1|imm0}
 
 teq.disasm = {
@@ -668,8 +694,8 @@ teq.execute = {
   UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op teq_wri( 0b11110[5] : shl <11> imm2[1] : 0x09[6] : rn[4] :> <: 0[1] : shl<8> imm1[3] : 0xf[4] : imm0[8] );
-teq_wri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op teq_wri( 0b11110[5]: shl <11> imm2[1]: 0b001001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
+teq_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 teq_wri.disasm = { buffer << "teq\t" << DisasmRegister(rn) << ", #" << imm; };
 
@@ -683,7 +709,7 @@ teq_wri.execute = {
 
 /* TST instructions */
 
-op tst_w( 0xea1[12] : rn[4] :> <: 0[1] : shl<2> imm1[3] : 0xf[4] : imm0[2] : shift[2] : rm[4] );
+op tst_w( 0b111010100001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 tst_w.var imm : {uint32_t} = {imm1|imm0}
 
 tst_w.disasm = {
@@ -702,8 +728,8 @@ tst_w.execute = {
   cpu.CPSR().Z().Set( res == 0 );
 };
 
-op tst_wri( 0b11110[5] : shl <11> imm2[1] : 0x01[6] : rn[4] :> <: 0[1] : shl<8> imm1[3] : 0xf[4] : imm0[8] );
-tst_wri.var imm : {uint32_t} = {imm_w( imm2|imm1|imm0 )};
+op tst_wri( 0b11110[5]: shl <11> imm2[1]: 0b000001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
+tst_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 tst_wri.disasm = { buffer << "tst.w\t" << DisasmRegister(rn) << ", #" << imm; };
 
@@ -717,7 +743,7 @@ tst_wri.execute = {
 
 /* CLZ instructions */
 
-op clz( 0xfab[12] : rm[4] :> <: 0xf[4] : rd[4] : 0x8[4] : ?[4] );
+op clz( 0b111110101011[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: ?[4] );
 
 clz.disasm = { buffer << "clz\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
 
@@ -729,7 +755,7 @@ clz.execute = {
 
 /* UXTA instructions */
 
-op uxtab16( 0xfa3[12] : rn[4] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op uxtab16( 0b111110100011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxtab16.var ror : {uint32_t} = {8*ror0};
 
 uxtab16.disasm = {
@@ -748,7 +774,7 @@ uxtab16.execute = {
   cpu.SetGPR( rd, ((uint32_t)lo) | (((uint32_t)hi) << 16) );
 };
 
-op uxtab( 0xfa5[12] : rn[4] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op uxtab( 0b111110100101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxtab.var ror : {uint32_t} = {8*ror0};
 
 uxtab.disasm = {
@@ -764,7 +790,7 @@ uxtab.execute = {
   cpu.SetGPR( rd, rnval + ((uint32_t)((uint8_t)rmval)) );
 };
 
-op uxtah( 0xfa1[12] : rn[4] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op uxtah( 0b111110100001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxtah.var ror : {uint32_t} = {8*ror0};
 uxtah.disasm = {
   buffer << "uxtah\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -781,7 +807,7 @@ uxtah.execute = {
 
 /* UXT instructions */
 
-op uxtb16( 0xfa3f[16] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op uxtb16( 0b1111101000111111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxtb16.var ror : {uint32_t} = {8*ror0};
 uxtb16.disasm = {
   buffer << "uxtb16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -796,7 +822,7 @@ uxtb16.execute = {
   cpu.SetGPR( rd, rmval & 0x00ff00ff );
 };
 
-op uxtb_w( 0xfa5f[16] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op uxtb_w( 0b1111101001011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxtb_w.var ror : {uint32_t} = {8*ror0};
 uxtb_w.disasm = {
   buffer << "uxtb.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -811,7 +837,7 @@ uxtb_w.execute = {
   cpu.SetGPR( rd, ((uint32_t)((uint8_t)rmval)) );
 };
 
-op uxth_w( 0xfa1f[16] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op uxth_w( 0b1111101000011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxth_w.var ror : {uint32_t} = {8*ror0};
 uxth_w.disasm = {
   buffer << "uxth.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -828,7 +854,7 @@ uxth_w.execute = {
 
 /* STXA instructions */
 
-op sxtab16( 0xfa2[12] : rn[4] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op sxtab16( 0b111110100010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxtab16.var ror : {uint32_t} = {8*ror0};
 
 sxtab16.disasm = {
@@ -847,7 +873,7 @@ sxtab16.execute = {
   cpu.SetGPR( rd, ((uint32_t)lo) | (((uint32_t)hi) << 16) );
 };
 
-op sxtab( 0xfa4[12] : rn[4] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op sxtab( 0b111110100100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxtab.var ror : {uint32_t} = {8*ror0};
 
 sxtab.disasm = {
@@ -863,7 +889,7 @@ sxtab.execute = {
   cpu.SetGPR( rd, rnval + ((int32_t)((int8_t)rmval)) );
 };
 
-op sxtah( 0xfa0[12] : rn[4] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op sxtah( 0b111110100000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxtah.var ror : {uint32_t} = {8*ror0};
 
 sxtah.disasm = {
@@ -881,7 +907,7 @@ sxtah.execute = {
 
 /* STX instructions */
 
-op sxtb16( 0xfa2f[16] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op sxtb16( 0b1111101000101111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxtb16.var ror : {uint32_t} = {8*ror0};
 
 sxtb16.disasm = {
@@ -899,7 +925,7 @@ sxtb16.execute = {
   cpu.SetGPR( rd, (((uint32_t)hi) << 16) | ((uint32_t)hi) );
 };
 
-op sxtb_w( 0xfa4f[16] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op sxtb_w( 0b1111101001001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxtb_w.var ror : {uint32_t} = {8*ror0};
 sxtb_w.disasm = {
   buffer << "sxtb.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -914,7 +940,7 @@ sxtb_w.execute = {
   cpu.SetGPR( rd, ((int32_t)((int8_t)rmval)) );
 };
 
-op sxth_w( 0xfa0f[16] :> <: 0xf[4] : rd[4] : 2[2] : ror0[2] : rm[4] );
+op sxth_w( 0b1111101000001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxth_w.var ror : {uint32_t} = {8*ror0};
 sxth_w.disasm = {
   buffer << "sxth.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -931,7 +957,7 @@ sxth_w.execute = {
 
 /* UBFX instructions */
 
-op ubfx_rrii( 0xf3c[12] : rn[4] :> <: 0[1] : shl<2> lsb1[3] : rd[4] : lsb0[2] : 0[1] : width0[5] );
+op ubfx_rrii( 0b111100111100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: width0[5] );
 ubfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {width0+1};
 
 ubfx_rrii.disasm = {
@@ -946,7 +972,7 @@ ubfx_rrii.execute = {
 
 /* SBFX instructions */
 
-op sbfx_rrii( 0xf34[12] : rn[4] :> <: 0[1] : shl<2> lsb1[3] : rd[4] : lsb0[2] : 0[1] : width0[5] );
+op sbfx_rrii( 0b111100110100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: width0[5] );
 sbfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {width0+1};
 
 sbfx_rrii.disasm = {
@@ -961,8 +987,8 @@ sbfx_rrii.execute = {
 
 /* BF[IC] instructions (bit field insertion/clear) */
 
-op bfi( 0xf36[12] : rn[4] :> <: 0[1] : shl<2> lsb1[3] : rd[4] : lsb0[2] : 0[1] : msb[5] );
-op bfc( 0xf36[12] : 0xf[4] :> <: 0[1] : shl<2> lsb1[3] : rd[4] : lsb0[2] : 0[1] : msb[5] );
+op bfi( 0b111100110110[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
+op bfc( 0b111100110110[12]: 0b1111[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
 group bf( bfi, bfc );
 
 bf.var lsb : {uint32_t} = {lsb1|lsb0};
@@ -986,7 +1012,7 @@ bfi.execute = {
 
 /* RBIT instruction */
 
-op rbit( 0xfa9[12] : rm[4] :> <: 0xf[4] : rd[4] : 0xa[4] : ?[4] );
+op rbit( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1010[4]: ?[4] );
 
 rbit.disasm = { buffer << "rbit\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
 

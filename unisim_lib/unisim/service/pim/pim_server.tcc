@@ -52,7 +52,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 
 #include <winsock2.h>
 
@@ -995,7 +995,7 @@ bool PIMServer<ADDRESS>::ReportProgramExit()
 	DBGData* response = new DBGData(DBGData::DBG_PROCESS_EXIT);
 	gdbThread->sendData(response);
 
-//#ifdef WIN32
+//#if defined(WIN32) || defined(WIN64)
 //			Sleep(1);
 //#else
 //			usleep(1000);
