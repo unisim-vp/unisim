@@ -365,7 +365,6 @@ unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
-unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
