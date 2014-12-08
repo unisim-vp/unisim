@@ -481,7 +481,9 @@ m4/check_lib.m4 \
 m4/rtbcob.m4 \
 m4/get_exec_path.m4 \
 m4/real_path.m4 \
-m4/pthread.m4"
+m4/pthread.m4 \
+m4/artimon.m4 \
+"
 
 UNISIM_LIB_STAR12X_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_hcs12x.xml \
@@ -516,17 +518,21 @@ vector \
 "
 
 UNISIM_SIMULATORS_STAR12X_SOURCE_FILES="\
-main_pim.cc \
 simulator.cc \
 atd_pwm_stub.cc \
 xml_atd_pwm_stub.cc \
 rtb_unisim.cc \
+simulator_if.cc \
 "
 UNISIM_SIMULATORS_STAR12X_HEADER_FILES="\
 simulator.hh \
 atd_pwm_stub.hh \
 xml_atd_pwm_stub.hh \
 rtb_unisim.hh \
+simulator_if.h \
+"
+UNISIM_SIMULATORS_STAR12X_MAIN_SOURCE_FILES="\
+main_pim.cc \
 "
 
 UNISIM_SIMULATORS_STAR12X_TEMPLATE_FILES=
@@ -592,7 +598,7 @@ for file in ${UNISIM_LIB_STAR12X_FILES}; do
 	fi
 done
 
-UNISIM_SIMULATORS_STAR12X_FILES="${UNISIM_SIMULATORS_STAR12X_SOURCE_FILES} ${UNISIM_SIMULATORS_STAR12X_HEADER_FILES} ${UNISIM_SIMULATORS_STAR12X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_STAR12X_DATA_FILES} ${UNISIM_SIMULATORS_STAR12X_CONFIG_FILES}"
+UNISIM_SIMULATORS_STAR12X_FILES="${UNISIM_SIMULATORS_STAR12X_MAIN_SOURCE_FILES} ${UNISIM_SIMULATORS_STAR12X_SOURCE_FILES} ${UNISIM_SIMULATORS_STAR12X_HEADER_FILES} ${UNISIM_SIMULATORS_STAR12X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_STAR12X_DATA_FILES} ${UNISIM_SIMULATORS_STAR12X_CONFIG_FILES}"
 
 for file in ${UNISIM_SIMULATORS_STAR12X_FILES}; do
 	mkdir -p "${DEST_DIR}/star12x/`dirname ${file}`"
@@ -835,18 +841,29 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
+	echo "AC_CANONICAL_SYSTEM" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_TARGET" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_PROG_CXX" >> "${STAR12X_CONFIGURE_AC}"
-	echo "AC_PROG_RANLIB" >> "${STAR12X_CONFIGURE_AC}"
+#	echo "AC_PROG_RANLIB" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
+	echo "LT_INIT([win32-dll], [dlopen])" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
+	echo "AC_SUBST(LIBTOOL_DEPS)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "AC_LTDL_DLLIB" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${STAR12X_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${STAR12X_CONFIGURE_AC}"
@@ -855,12 +872,14 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_CXXABI(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_PTHREAD(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_RTBCOB(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ARTIMON(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_WITH_BOOST(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TLM20" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-star12x-${STAR12X_VERSION}\"], [path of shared data relative to bin directory])" >> "${STAR12X_CONFIGURE_AC}"
@@ -869,19 +888,47 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 
 	AM_STAR12X_VERSION=`printf ${STAR12X_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating star12x Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${STAR12X_MAKEFILE_AM}"
+#	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${STAR12X_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${STAR12X_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${STAR12X_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libstar12x-${STAR12X_VERSION}.a" >> "${STAR12X_MAKEFILE_AM}"
-	echo "nodist_libstar12x_${AM_STAR12X_VERSION}_a_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc unisim/component/cxx/processor/hcs12x/s12xgate.cc" >> "${STAR12X_MAKEFILE_AM}"
-	echo "libstar12x_${AM_STAR12X_VERSION}_a_SOURCES = ${UNISIM_LIB_STAR12X_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}" # unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+	echo "LIBTOOL_DEPS = @LIBTOOL_DEPS@" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libtool: \$(LIBTOOL_DEPS)" >> "${STAR12X_MAKEFILE_AM}"
+	echo -e "\t\$(SHELL) ./config.status libtool" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+# -------------------------
 	echo "bin_PROGRAMS = unisim-star12x-${STAR12X_VERSION}" >> "${STAR12X_MAKEFILE_AM}"
-	echo "unisim_star12x_${AM_STAR12X_VERSION}_SOURCES = ${UNISIM_SIMULATORS_STAR12X_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}"
-	echo "unisim_star12x_${AM_STAR12X_VERSION}_LDADD = libstar12x-${STAR12X_VERSION}.a" >> "${STAR12X_MAKEFILE_AM}"
+	echo "unisim_star12x_${AM_STAR12X_VERSION}_SOURCES = ${UNISIM_SIMULATORS_STAR12X_MAIN_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}"
+	echo "unisim_star12x_${AM_STAR12X_VERSION}_LDADD = libunisim-star12x-${STAR12X_VERSION}.la libunisim-star12x-simulator-${STAR12X_VERSION}.la" >> "${STAR12X_MAKEFILE_AM}"
+	echo "unisim_star12x_${AM_STAR12X_VERSION}_LDFLAGS = -static" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+# -------------------------
+	echo "lib_LTLIBRARIES = libunisim-star12x-simulator-${STAR12X_VERSION}.la" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_simulator_${AM_STAR12X_VERSION}_la_CXXFLAGS =" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_simulator_${AM_STAR12X_VERSION}_la_LDFLAGS = -no-undefined" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_simulator_${AM_STAR12X_VERSION}_la_SOURCES = ${UNISIM_SIMULATORS_STAR12X_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_simulator_${AM_STAR12X_VERSION}_la_LIBADD = libunisim-star12x-${STAR12X_VERSION}.la" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+# -------------------------
+	echo "noinst_LTLIBRARIES = libunisim-star12x-${STAR12X_VERSION}.la" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_${AM_STAR12X_VERSION}_la_CXXFLAGS =" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_${AM_STAR12X_VERSION}_la_LDFLAGS = -no-undefined" >> "${STAR12X_MAKEFILE_AM}"
+	echo "nodist_libunisim_star12x_${AM_STAR12X_VERSION}_la_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc unisim/component/cxx/processor/hcs12x/s12xgate.cc" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+# -------------------------
+	echo "libunisim_star12x_${AM_STAR12X_VERSION}_la_SOURCES = ${UNISIM_LIB_STAR12X_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}" #" unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+# -------------------------
 	echo "noinst_HEADERS = ${UNISIM_TOOLS_STAR12X_HEADER_FILES} ${UNISIM_LIB_STAR12X_HEADER_FILES} ${UNISIM_LIB_STAR12X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_STAR12X_HEADER_FILES} ${UNISIM_SIMULATORS_STAR12X_TEMPLATE_FILES}" >> "${STAR12X_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_LIB_STAR12X_M4_FILES}" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+	echo "includedir = \$(prefix)/include" >> "${STAR12X_MAKEFILE_AM}"
+	echo "include_HEADERS = simulator_if.h" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
 	echo "sharedir = \$(prefix)/share/unisim-star12x-${STAR12X_VERSION}" >> "${STAR12X_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_STAR12X_DATA_FILES} ${UNISIM_SIMULATORS_STAR12X_DATA_FILES} ${UNISIM_SIMULATORS_STAR12X_CONFIG_FILES}" >> "${STAR12X_MAKEFILE_AM}"
-
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_LIB_STAR12X_M4_FILES}" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
 	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${STAR12X_MAKEFILE_AM}"
 	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${STAR12X_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc: \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh" >> "${STAR12X_MAKEFILE_AM}"
@@ -897,7 +944,8 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh: \${UNISIM_LIB_S12XGATE_ISA_FILES}" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\t" >> "${STAR12X_MAKEFILE_AM}"
 	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/hcs12x; \$(GENISSLIB_PATH) -o s12xgate -w 32 -I . s12xgate.isa" >> "${STAR12X_MAKEFILE_AM}"
-
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+	echo "## The following script lines are only needed for debugging purpose" >> "${STAR12X_MAKEFILE_AM}"
 	echo "all-local: all-local-bin all-local-share" >> "${STAR12X_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${STAR12X_MAKEFILE_AM}"
 	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${STAR12X_MAKEFILE_AM}"
@@ -924,7 +972,7 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	printf "\tfi\n" >> "${STAR12X_MAKEFILE_AM}"
 
 	echo "Building star12x configure"
-	${SHELL} -c "cd ${DEST_DIR}/star12x && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR}/star12x && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"
