@@ -18,7 +18,6 @@ divs.execute={
 
 	return true;
 }
-\item [logic_operations:]
 
 divs.disasm={
 
@@ -78,7 +77,6 @@ mac.disasm={
 
 //multiply accumulate signed
 
-\item [logic_operations:]
 op macs_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b01010100[8]:rd[4])
 
 macs_d.execute={
@@ -106,7 +104,6 @@ macs_d.disasm={
 
 //multiply accumulate unsigned
 
-\item [logic_operations:]
 op macu_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b01110100[8]:rd[4])
 
 macu_d.execute={

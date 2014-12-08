@@ -60,7 +60,6 @@ public:
 	
 	static const unsigned int HSB_WIDTH = 4;
 	static const unsigned int HSB_BURST_SIZE = 4;
-	static const unsigned int NUM_IRQS = 64;
 	
 	static const bool DEBUG_ENABLE = false;
 	static const bool DEBUG_SETUP_ENABLE = false;
