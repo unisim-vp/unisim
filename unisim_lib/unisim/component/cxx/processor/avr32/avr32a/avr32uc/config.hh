@@ -76,6 +76,8 @@ public:
 	static const bool DEBUG_SETUP_ENABLE = true;
 	static const bool DEBUG_INTERRUPT_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
+	
+	static const bool DISAMBIGUATE_DISASM = true;
 };
 
 } // end of namespace avr32uc

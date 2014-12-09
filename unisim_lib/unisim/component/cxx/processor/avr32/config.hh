@@ -247,6 +247,9 @@ public:
 
 	// IRQ
 	static const unsigned int NUM_IRQS = 4;
+	
+	// Disambiguation of disassemble
+	static const bool DISAMBIGUATE_DISASM = false;
 
 };
 
