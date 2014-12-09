@@ -138,8 +138,10 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	virtual void Stop(Object *object, int _exit_status, bool asynchronous);
+	virtual Simulator::SetupStatus Setup();
 
 	void Run();
+	bool RunSample(double inVal);
 
 	virtual double GetSimTime()	{ if (sim_time) { return (sim_time->GetTime()); } else { return (0); }	}
 	virtual double GetHostTime()	{ if (host_time) { return (host_time->GetTime()); } else { return (0); }	}
@@ -262,14 +264,16 @@ private:
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
 
-	bool enable_pim_server;
-	Parameter<bool> param_enable_pim_server;
-	bool enable_gdb_server;
-	Parameter<bool> param_enable_gdb_server;
-	bool enable_inline_debugger;
-	Parameter<bool> param_enable_inline_debugger;
-
 	string filename;
+	string symbol_filename;
+
+	bool enable_pim_server;
+	bool enable_gdb_server;
+	bool enable_inline_debugger;
+
+	Parameter<bool> param_enable_pim_server;
+	Parameter<bool> param_enable_gdb_server;
+	Parameter<bool> param_enable_inline_debugger;
 
 	bool sci_enable_telnet;
 	Parameter<bool>  param_sci_enable_telnet;
@@ -298,6 +302,11 @@ private:
 	Statistic<double> stat_data_store_ratio;
 
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+
+	void (*prev_sig_int_handler)(int);
+	double spent_time;
+	bool isStop;
+
 };
 
 #endif /* SIMULATOR_HH_ */

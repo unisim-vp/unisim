@@ -6,6 +6,7 @@
  */
 
 #include <simulator.hh>
+#include <unisim/util/endian/endian.hh>
 
 bool debug_enabled = false;
 
@@ -63,14 +64,20 @@ Simulator::Simulator(int argc, char **argv)
 	, gdb_server(0)
 	, pim_server(0)
 	, inline_debugger(0)
+
 	, sim_time(0)
 	, host_time(0)
+
+	, filename("")
+	, symbol_filename("")
+
 	, enable_pim_server(false)
-	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, enable_gdb_server(false)
-	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, enable_inline_debugger(false)
+	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
+	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
+
     , sci_enable_telnet(false)
 	, param_sci_enable_telnet("sci-enable-telnet", 0, sci_enable_telnet, "Enable/Disable SCI telnet instantiation")
 	, spi_enable_telnet(false)
@@ -83,15 +90,19 @@ Simulator::Simulator(int argc, char **argv)
 	, isS19(false)
 
 	, dump_parameters(false)
-	, param_dump_parameters("dump-parameters", 0, dump_parameters, "")
 	, dump_formulas(false)
-	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
 	, dump_statistics(true)
+
+	, param_dump_parameters("dump-parameters", 0, dump_parameters, "")
+	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
 
 	, null_stat_var(0)
 	, stat_data_load_ratio("data-load-ratio %", 0, null_stat_var, "Data Load Ratio")
 	, stat_data_store_ratio("data-store-ratio %", 0, null_stat_var, "Data Store Ratio")
+
+	, spent_time(0)
+	, isStop(false)
 
 {
 
@@ -211,12 +222,14 @@ Simulator::Simulator(int argc, char **argv)
 	//===                       Service parameterization     ===
 	//=========================================================================
 
-	if(isS19) {
-		(*loaderS19)["filename"] = filename.c_str();
-	}
-	else
-	{
-		(*loaderELF)["filename"] = filename.c_str();
+	if (!filename.empty()) {
+		if(isS19) {
+			(*loaderS19)["filename"] = filename.c_str();
+		}
+		else
+		{
+			(*loaderELF)["filename"] = filename.c_str();
+		}
 	}
 
 	//=========================================================================
@@ -233,7 +246,9 @@ Simulator::Simulator(int argc, char **argv)
 	atd1->interrupt_request(s12xint->interrupt_request);
 	atd0->interrupt_request(s12xint->interrupt_request);
 	xgate->interrupt_request(s12xint->interrupt_request);
+
 	global_eeprom->interrupt_request(s12xint->interrupt_request);
+
 	sci0->interrupt_request(s12xint->interrupt_request);
 	sci1->interrupt_request(s12xint->interrupt_request);
 	sci2->interrupt_request(s12xint->interrupt_request);
@@ -281,7 +296,9 @@ Simulator::Simulator(int argc, char **argv)
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
 	crg->bus_clock_socket(pit->bus_clock_socket);
+
 	crg->bus_clock_socket(global_eeprom->bus_clock_socket);
+
 	crg->bus_clock_socket(pwm->bus_clock_socket);
 	crg->bus_clock_socket(atd1->bus_clock_socket);
 	crg->bus_clock_socket(atd0->bus_clock_socket);
@@ -336,7 +353,9 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[7]) >> ect->registers_export;
 	*(registersTee->registers_import[8]) >> pit->registers_export;
 	*(registersTee->registers_import[9]) >> xgate->registers_export;
+
 	*(registersTee->registers_import[10]) >> global_eeprom->registers_export;
+
 	*(registersTee->registers_import[11]) >> sci0->registers_export;
 	*(registersTee->registers_import[12]) >> sci1->registers_export;
 	*(registersTee->registers_import[13]) >> sci2->registers_export;
@@ -463,6 +482,69 @@ Simulator::Simulator(int argc, char **argv)
 Simulator::~Simulator()
 {
 
+// ************
+	if(!inline_debugger)
+	{
+		signal(SIGINT, prev_sig_int_handler);
+	}
+
+	if (dump_parameters) {
+		cerr << "Simulation run-time parameters:" << endl;
+		DumpParameters(cerr);
+		cerr << endl;
+	}
+
+	if (dump_formulas) {
+		cerr << "Simulation formulas:" << endl;
+		DumpFormulas(cerr);
+		cerr << endl;
+	}
+
+	if (dump_statistics) {
+
+		cerr << "Simulation statistics:" << endl;
+		DumpStatistics(cerr);
+		cerr << endl;
+
+		cerr << "CPU Clock   (MHz)      : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << endl;
+		cerr << "CPU CPI                : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+
+		uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
+		uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
+		total_access = ((total_access == 0)? 1: total_access);
+
+		cerr << "CPU data-load ratio    : " << (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100 << " %" << endl;
+		cerr << "CPU data-store ratio   : " << (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100 << " %" << endl;
+
+		cerr << endl;
+
+		cerr << "XGATE Clock (MHz)      : " << (double) (1 / (double) (*xgate)["core-clock"] * 1000000)  << endl;
+		cerr << "XGATE CPI              : " << (double) ((uint64_t) (*xgate)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+
+		total_load = (uint64_t) (*xgate)["instruction-counter"] + (uint64_t) (*xgate)["data-load-counter"];
+		total_access = total_load + (uint64_t) (*xgate)["store-counter"];
+		total_access = ((total_access == 0)? 1: total_access);
+
+		cerr << "XGATE data-load ratio    : " << (double) ((uint64_t) (*xgate)["data-load-counter"])/(total_access)*100 << " %" << endl;
+		cerr << "XGATE data-store ratio   : " << (double) ((uint64_t) (*xgate)["data-store-counter"])/(total_access)*100 << " %" << endl;
+
+		cerr << endl;
+
+		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+
+		cerr << "Host simulation time   : " << spent_time << " seconds" << endl;
+		cerr << "Host simulation speed  : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / spent_time) / 1000000.0) << " MIPS" << endl;
+
+		cerr << "Time dilation          : " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+		cerr << endl;
+
+	}
+
+// ****************************************************
+
+
 	if (pim_server) { delete pim_server; pim_server = NULL; }
 
 	if (registersTee) { delete registersTee; registersTee = NULL; }
@@ -512,6 +594,153 @@ Simulator::~Simulator()
 	if(cpu) { delete cpu; cpu = NULL; }
 }
 
+Simulator::SetupStatus Simulator::Setup()
+{
+	Simulator::SetupStatus result = unisim::kernel::service::Simulator::Setup();
+
+// **********
+	physical_address_t entry_point = 0;
+
+	address_t cpu_address;
+	uint8_t page = 0;
+
+	if (isS19) {
+		entry_point = loaderS19->GetEntryPoint();
+		if (entry_point == 0) {
+			address_t reset_addr;
+			const address_t reset_vect = 0xFFFE;
+			cpu->ReadMemory(reset_vect, &reset_addr, 2);
+
+			entry_point = unisim::util::endian::BigEndian2Host(reset_addr);
+		}
+		mmc->splitPagedAddress(entry_point, page, cpu_address);
+	} else {
+		const unisim::util::debug::blob::Blob<physical_address_t>* blob = loaderELF->GetBlob();
+		entry_point = blob->GetEntryPoint();
+
+		cpu_address = (address_t) entry_point;
+	}
+
+	cpu->setEntryPoint(cpu_address);
+
+	EnableDebug();
+	prev_sig_int_handler = 0;
+
+	if(!inline_debugger)
+	{
+		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+	}
+
+	isStop = false;
+
+	return result;
+}
+
+bool Simulator::RunSample(double inVal) {
+
+	if (!isStop) {
+		cerr << "Starting simulation RunSample ..." << endl;
+
+		double time_start = host_time->GetTime();
+
+		try
+		{
+			sc_start(inVal, SC_MS);
+		}
+		catch(std::runtime_error& e)
+		{
+			cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << endl;
+			cerr << e.what() << endl;
+		}
+
+		double time_stop = host_time->GetTime();
+
+		spent_time += time_stop - time_start;
+
+		cerr << "Finishing simulation RunSample " << endl;
+
+		return true;
+	}
+
+	return false;
+}
+
+void Simulator::Run() {
+
+	cerr << "Starting simulation ..." << endl;
+
+	double time_start = host_time->GetTime();
+
+	try
+	{
+		sc_start();
+	}
+	catch(std::runtime_error& e)
+	{
+		cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << endl;
+		cerr << e.what() << endl;
+	}
+
+	double time_stop = host_time->GetTime();
+
+	spent_time += time_stop - time_start;
+
+	cerr << "Simulation finished" << endl << endl;
+
+
+}
+
+void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
+{
+	isStop = true;
+
+	exit_status = _exit_status;
+	if(object)
+	{
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+	}
+
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	sc_stop();
+	if(!asynchronous)
+	{
+		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		{
+			case SC_THREAD_PROC_:
+			case SC_CTHREAD_PROC_:
+				wait();
+				break;
+			default:
+				break;
+		}
+	}
+
+}
+
+bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
+	uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
+
+	switch (offset) {
+		case DATA_LOAD_RATIO: {
+			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100;
+			return (true);
+		}
+		case DATA_STORE_RATIO: {
+			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100;
+			return (true);
+		}
+
+	}
+
+	return (false);
+}
+
+bool Simulator::write(unsigned int offset, const void *buffer, unsigned int data_length) {
+	return (false);
+}
+
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
 	// meta information
@@ -536,13 +765,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("endian", "big");
 	simulator->SetVariable("program-counter-name", "CPU.PC");
 
-	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "gdb_hcs12x.xml";
-	const char *filename = "";
-	const char *symbol_filename = "";
-
-	bool force_use_virtual_address = true;
-
 	//=========================================================================
 	//===                     Component run-time configuration              ===
 	//=========================================================================
@@ -558,21 +780,21 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("pim.tcp-port", 1234);
 	simulator->SetVariable("pim.filename", "pim.xml");
 
-	simulator->SetVariable("pim-server.tcp-port", gdb_server_tcp_port);
-	simulator->SetVariable("pim-server.architecture-description-filename", gdb_server_arch_filename);
+	simulator->SetVariable("pim-server.tcp-port", 0);
+	simulator->SetVariable("pim-server.architecture-description-filename", "gdb_hcs12x.xml");
 	simulator->SetVariable("pim-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
 
 	//  - GDB Server run-time configuration
-	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
-	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
+	simulator->SetVariable("gdb-server.tcp-port", 0);
+	simulator->SetVariable("gdb-server.architecture-description-filename", "gdb_hcs12x.xml");
 	simulator->SetVariable("gdb-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
 
 	simulator->SetVariable("debugger.parse-dwarf", true);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "68hc12_dwarf_register_number_mapping.xml");
 
-	simulator->SetVariable("S19_Loader.filename", filename);
-	simulator->SetVariable("elf32-loader.filename", symbol_filename);
-	simulator->SetVariable("elf32-loader.force-use-virtual-address", force_use_virtual_address);
+	simulator->SetVariable("S19_Loader.filename", "");
+	simulator->SetVariable("elf32-loader.filename", "");
+	simulator->SetVariable("elf32-loader.force-use-virtual-address", true);
 	simulator->SetVariable("elf32-loader.initialize-extra-segment-bytes", false);
 
 	simulator->SetVariable("atd-pwm-stub.anx-stimulus-period", 80000000); // 80 us
@@ -741,16 +963,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	simulator->SetVariable("RAM.org", 0x000800);
 	simulator->SetVariable("RAM.bytesize", 1024*1024); // 1MByte
-//	simulator->SetVariable("RAM.org", 0x0F8000);
-//	simulator->SetVariable("RAM.bytesize", 0x8000); // 32Ko
 	simulator->SetVariable("RAM.initial-byte-value", 0x00);
 	simulator->SetVariable("RAM.cycle-time", 250000);
 	simulator->SetVariable("RAM.verbose", false);
 
 	simulator->SetVariable("EEPROM.org", 0x100000);
 	simulator->SetVariable("EEPROM.bytesize", 256*1024); // 256KByte
-//	simulator->SetVariable("EEPROM.org", 0x13F000);
-//	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
 	simulator->SetVariable("EEPROM.initial-byte-value", 0xFF);
 	simulator->SetVariable("EEPROM.cycle-time", 250000);
 	simulator->SetVariable("EEPROM.oscillator-cycle-time", 125000);
@@ -761,8 +979,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	simulator->SetVariable("FLASH.org", 0x400000);
 	simulator->SetVariable("FLASH.bytesize", 4*1024*1024); // 4MByte
-//	simulator->SetVariable("FLASH.org", 0x780000);
-//	simulator->SetVariable("FLASH.bytesize", 0x80000); // 512Ko
 	simulator->SetVariable("FLASH.initial-byte-value", 0xFF);
 	simulator->SetVariable("FLASH.cycle-time", 250000);
 	simulator->SetVariable("FLASH.verbose", false);
@@ -802,163 +1018,4 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
 }
 
-void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
-{
-	exit_status = _exit_status;
-	if(object)
-	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-	}
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
-	if(!asynchronous)
-	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
-		{
-			case SC_THREAD_PROC_: 
-			case SC_CTHREAD_PROC_:
-				wait();
-				break;
-			default:
-				break;
-		}
-	}
-}
-
-bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_length) {
-
-	uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
-	uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
-
-	switch (offset) {
-		case DATA_LOAD_RATIO: {
-			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100;
-			return (true);
-		}
-		case DATA_STORE_RATIO: {
-			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100;
-			return (true);
-		}
-
-	}
-
-	return (false);
-}
-
-bool Simulator::write(unsigned int offset, const void *buffer, unsigned int data_length) {
-	return (false);
-}
-
-void Simulator::Run() {
-
-	// If no filename has been specified, abort simulation
-	if(filename.empty())
-	{
-		std::cerr << "ERROR! No file to load. You should provide a file to load as command line argument." << std::endl;
-		return;
-	}
-
-	physical_address_t entry_point;
-
-
-	const unisim::util::debug::blob::Blob<physical_address_t>* blob = loaderELF->GetBlob();
-	entry_point = blob->GetEntryPoint();
-
-	address_t cpu_address;
-	uint8_t page = 0;
-
-	if (isS19) {
-		mmc->splitPagedAddress(entry_point, page, cpu_address);
-	} else {
-		cpu_address = (address_t) entry_point;
-	}
-
-	cpu->setEntryPoint(cpu_address);
-
-	cerr << "Starting simulation ..." << endl;
-
-	double time_start = host_time->GetTime();
-
-	EnableDebug();
-	void (*prev_sig_int_handler)(int) = 0;
-
-	if(!inline_debugger)
-	{
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-	}
-
-	try
-	{
-		sc_start();
-	}
-	catch(std::runtime_error& e)
-	{
-		cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
-	}
-
-	if(!inline_debugger)
-	{
-		signal(SIGINT, prev_sig_int_handler);
-	}
-
-	cerr << "Simulation finished" << endl << endl;
-
-	if (dump_parameters) {
-		cerr << "Simulation run-time parameters:" << endl;
-		DumpParameters(cerr);
-		cerr << endl;
-	}
-
-	if (dump_formulas) {
-		cerr << "Simulation formulas:" << endl;
-		DumpFormulas(cerr);
-		cerr << endl;
-	}
-
-	if (dump_statistics) {
-		double time_stop = host_time->GetTime();
-		double spent_time = time_stop - time_start;
-
-		cerr << "Simulation statistics:" << endl;
-		DumpStatistics(cerr);
-		cerr << endl;
-
-		cerr << "CPU Clock   (MHz)      : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << endl;
-		cerr << "CPU CPI                : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
-
-		uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
-		uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
-		total_access = ((total_access == 0)? 1: total_access);
-
-		cerr << "CPU data-load ratio    : " << (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100 << " %" << endl;
-		cerr << "CPU data-store ratio   : " << (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100 << " %" << endl;
-
-		cerr << endl;
-
-		cerr << "XGATE Clock (MHz)      : " << (double) (1 / (double) (*xgate)["core-clock"] * 1000000)  << endl;
-		cerr << "XGATE CPI              : " << (double) ((uint64_t) (*xgate)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
-
-		total_load = (uint64_t) (*xgate)["instruction-counter"] + (uint64_t) (*xgate)["data-load-counter"];
-		total_access = total_load + (uint64_t) (*xgate)["store-counter"];
-		total_access = ((total_access == 0)? 1: total_access);
-
-		cerr << "XGATE data-load ratio    : " << (double) ((uint64_t) (*xgate)["data-load-counter"])/(total_access)*100 << " %" << endl;
-		cerr << "XGATE data-store ratio   : " << (double) ((uint64_t) (*xgate)["data-store-counter"])/(total_access)*100 << " %" << endl;
-
-		cerr << endl;
-
-		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
-		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
-
-		cerr << "Host simulation time   : " << spent_time << " seconds" << endl;
-		cerr << "Host simulation speed  : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / spent_time) / 1000000.0) << " MIPS" << endl;
-
-		cerr << "Time dilation          : " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
-		cerr << endl;
-
-	}
-
-}
 

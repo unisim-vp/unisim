@@ -104,7 +104,6 @@ Simulator::Simulator(int argc, char **argv)
 	, spent_time(0)
 	, isStop(false)
 
-
 {
 
 	param_endian = new Parameter<string>("endian", 0, endian, "Target endianness");
