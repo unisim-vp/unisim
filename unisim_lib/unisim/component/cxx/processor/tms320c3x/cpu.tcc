@@ -39,12 +39,6 @@
 #include "unisim/component/cxx/processor/tms320c3x/cpu.hh"
 #include "unisim/component/cxx/processor/tms320c3x/config.hh"
 
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-#define INLINE __attribute__((always_inline))
-#else
-#define INLINE
-#endif
-
 #include "unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.tcc"
 #include "unisim/util/arithmetic/arithmetic.hh"
 

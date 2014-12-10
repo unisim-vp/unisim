@@ -40,104 +40,102 @@
 #define __UNISIM_UTIL_ARITHMETIC_ARITHMETIC_HH__
 
 #include <inttypes.h>
+#include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
 namespace util {
 namespace arithmetic {
 
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-inline void SignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void SignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void SignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void SignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void SignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void SignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) ALWAYS_INLINE;
 
-inline void UnsignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void UnsignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void UnsignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void UnsignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void UnsignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void UnsignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) ALWAYS_INLINE;
 
-inline void SignedSub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void SignedSub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void SignedSub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void SignedSub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void SignedSub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void SignedSub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) ALWAYS_INLINE;
 
-inline void SignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatAdd16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
-inline void SignedSatAdd32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
+inline void SignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatAdd16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) ALWAYS_INLINE;
+inline void SignedSatAdd32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) ALWAYS_INLINE;
 
-inline void UnsignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void UnsignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void UnsignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
+inline void UnsignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void UnsignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void UnsignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) ALWAYS_INLINE;
 
-inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatSub32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
-inline void SignedSatSub16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
+inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatSub32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) ALWAYS_INLINE;
+inline void SignedSatSub16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) ALWAYS_INLINE;
 
-inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y) __attribute__((always_inline));
+inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y) ALWAYS_INLINE;
 
-inline uint8_t RotateLeft(uint8_t v, unsigned int n) __attribute__((always_inline));
-inline uint16_t RotateLeft(uint16_t v, unsigned int n) __attribute__((always_inline));
-inline uint32_t RotateLeft(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline uint64_t RotateLeft(uint64_t v, unsigned int n) __attribute__((always_inline));
-inline uint8_t RotateRight(uint8_t v, unsigned int n) __attribute__((always_inline));
-inline uint16_t RotateRight(uint16_t v, unsigned int n) __attribute__((always_inline));
-inline uint32_t RotateRight(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline uint64_t RotateRight(uint64_t v, unsigned int n) __attribute__((always_inline));
+inline uint8_t RotateLeft(uint8_t v, unsigned int n) ALWAYS_INLINE;
+inline uint16_t RotateLeft(uint16_t v, unsigned int n) ALWAYS_INLINE;
+inline uint32_t RotateLeft(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline uint64_t RotateLeft(uint64_t v, unsigned int n) ALWAYS_INLINE;
+inline uint8_t RotateRight(uint8_t v, unsigned int n) ALWAYS_INLINE;
+inline uint16_t RotateRight(uint16_t v, unsigned int n) ALWAYS_INLINE;
+inline uint32_t RotateRight(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline uint64_t RotateRight(uint64_t v, unsigned int n) ALWAYS_INLINE;
 
-inline int8_t RotateLeft(int8_t v, unsigned int n) __attribute__((always_inline));
-inline int16_t RotateLeft(int16_t v, unsigned int n) __attribute__((always_inline));
-inline int32_t RotateLeft(int32_t v, unsigned int n) __attribute__((always_inline));
-inline int64_t RotateLeft(int64_t v, unsigned int n) __attribute__((always_inline));
-inline int8_t RotateRight(int8_t v, unsigned int n) __attribute__((always_inline));
-inline int16_t RotateRight(int16_t v, unsigned int n) __attribute__((always_inline));
-inline int32_t RotateRight(int32_t v, unsigned int n) __attribute__((always_inline));
-inline int64_t RotateRight(int64_t v, unsigned int n) __attribute__((always_inline));
+inline int8_t RotateLeft(int8_t v, unsigned int n) ALWAYS_INLINE;
+inline int16_t RotateLeft(int16_t v, unsigned int n) ALWAYS_INLINE;
+inline int32_t RotateLeft(int32_t v, unsigned int n) ALWAYS_INLINE;
+inline int64_t RotateLeft(int64_t v, unsigned int n) ALWAYS_INLINE;
+inline int8_t RotateRight(int8_t v, unsigned int n) ALWAYS_INLINE;
+inline int16_t RotateRight(int16_t v, unsigned int n) ALWAYS_INLINE;
+inline int32_t RotateRight(int32_t v, unsigned int n) ALWAYS_INLINE;
+inline int64_t RotateRight(int64_t v, unsigned int n) ALWAYS_INLINE;
 
-inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
-inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out) __attribute__((always_inline));
-inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
-inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out) __attribute__((always_inline));
-inline uint32_t RotateLeft(uint32_t v, unsigned int n, bool bitin, bool& bitout) __attribute__((always_inline));
-inline uint32_t RotateRight(uint32_t v, unsigned int n, bool bitin, bool& bitout) __attribute__((always_inline));
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out) ALWAYS_INLINE;
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out) ALWAYS_INLINE;
+inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out) ALWAYS_INLINE;
+inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out) ALWAYS_INLINE;
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, bool bitin, bool& bitout) ALWAYS_INLINE;
+inline uint32_t RotateRight(uint32_t v, unsigned int n, bool bitin, bool& bitout) ALWAYS_INLINE;
 
-inline uint32_t ShiftLeft(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
-inline uint32_t ShiftRight(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
+inline uint32_t ShiftLeft(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out) ALWAYS_INLINE;
+inline uint32_t ShiftRight(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out) ALWAYS_INLINE;
 
-inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
+inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_out) ALWAYS_INLINE;
 
-inline bool BitScanForward(unsigned int& n, uint32_t v) __attribute__((always_inline));
-inline bool BitScanForward(unsigned int& n, uint64_t v) __attribute__((always_inline));
+inline bool BitScanForward(unsigned int& n, uint32_t v) ALWAYS_INLINE;
+inline bool BitScanForward(unsigned int& n, uint64_t v) ALWAYS_INLINE;
 
-inline bool BitScanReverse(unsigned int& n, uint32_t v) __attribute__((always_inline));
-inline bool BitScanReverse(unsigned int& n, uint64_t v) __attribute__((always_inline));
+inline bool BitScanReverse(unsigned int& n, uint32_t v) ALWAYS_INLINE;
+inline bool BitScanReverse(unsigned int& n, uint64_t v) ALWAYS_INLINE;
 
-inline unsigned int CountLeadingZeros(uint32_t v) __attribute__((always_inline));
-inline unsigned int CountLeadingZeros(uint64_t v) __attribute__((always_inline));
+inline unsigned int CountLeadingZeros(uint32_t v) ALWAYS_INLINE;
+inline unsigned int CountLeadingZeros(uint64_t v) ALWAYS_INLINE;
 
-inline unsigned int Log2(uint32_t v) __attribute__((always_inline));
-inline unsigned int Log2(uint64_t v) __attribute__((always_inline));
+inline unsigned int Log2(uint32_t v) ALWAYS_INLINE;
+inline unsigned int Log2(uint64_t v) ALWAYS_INLINE;
 
-inline unsigned int CeilLog2(uint32_t v) __attribute__((always_inline));
-inline unsigned int CeilLog2(uint64_t v) __attribute__((always_inline));
+inline unsigned int CeilLog2(uint32_t v) ALWAYS_INLINE;
+inline unsigned int CeilLog2(uint64_t v) ALWAYS_INLINE;
 
-inline int8_t SignExtend(uint8_t v, unsigned int n) __attribute__((always_inline));
-inline int16_t SignExtend(uint16_t v, unsigned int n) __attribute__((always_inline));
-inline int32_t SignExtend(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline int64_t SignExtend(uint64_t v, unsigned int n) __attribute__((always_inline));
+inline int8_t SignExtend(uint8_t v, unsigned int n) ALWAYS_INLINE;
+inline int16_t SignExtend(uint16_t v, unsigned int n) ALWAYS_INLINE;
+inline int32_t SignExtend(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline int64_t SignExtend(uint64_t v, unsigned int n) ALWAYS_INLINE;
 
-inline void EvenParity(uint8_t v, uint8_t& parity_out) __attribute__((always_inline));
-inline void EvenParity(uint16_t v, uint8_t& parity_out) __attribute__((always_inline));
-inline void EvenParity(uint32_t v, uint8_t& parity_out) __attribute__((always_inline));
+inline void EvenParity(uint8_t v, uint8_t& parity_out) ALWAYS_INLINE;
+inline void EvenParity(uint16_t v, uint8_t& parity_out) ALWAYS_INLINE;
+inline void EvenParity(uint32_t v, uint8_t& parity_out) ALWAYS_INLINE;
 
-inline void OddParity(uint8_t v, uint8_t& parity_out) __attribute__((always_inline));
-inline void OddParity(uint16_t v, uint8_t& parity_out) __attribute__((always_inline));
-inline void OddParity(uint32_t v, uint8_t& parity_out) __attribute__((always_inline));
-
-#endif
+inline void OddParity(uint8_t v, uint8_t& parity_out) ALWAYS_INLINE;
+inline void OddParity(uint16_t v, uint8_t& parity_out) ALWAYS_INLINE;
+inline void OddParity(uint32_t v, uint8_t& parity_out) ALWAYS_INLINE;
 
 //=============================================================================
 //=                              Full Adders                                  =

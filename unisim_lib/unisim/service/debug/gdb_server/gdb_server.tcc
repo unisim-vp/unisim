@@ -526,10 +526,10 @@ void GDBServer<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& value)
+bool GDBServer<ADDRESS>::ParseHex(const string& s, size_t& pos, ADDRESS& value)
 {
-	unsigned int len = s.length();
-	unsigned int n = 0;
+	size_t len = s.length();
+	size_t n = 0;
 
 	value = 0;
 	while(pos < len && n < 2 * sizeof(ADDRESS))
@@ -652,8 +652,8 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 			return DebugControl<ADDRESS>::DBG_KILL;
 		}
 
-		unsigned int pos = 0;
-		unsigned int len = packet.length();
+		size_t pos = 0;
+		size_t len = packet.length();
 
 		switch(packet[pos++])
 		{
@@ -1370,7 +1370,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 template <class ADDRESS>
 void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
-	unsigned int separator_index = command.find_first_of(':');
+	size_t separator_index = command.find_first_of(':');
 	string cmdPrefix;
 	if (separator_index == string::npos) {
 		cmdPrefix = command;

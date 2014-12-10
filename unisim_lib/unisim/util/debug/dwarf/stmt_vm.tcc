@@ -171,7 +171,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				{
 					unsigned int num_args = dw_stmt_prog->standard_opcode_lengths[opcode - 1];
 					unsigned int i = 0;
-					DWARF_LEB128 args[num_args];
+					std::vector<DWARF_LEB128> args(num_args);
 					uint16_t uhalf_arg = 0;
 					
 					if(opcode != DW_LNS_fixed_advance_pc)

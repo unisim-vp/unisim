@@ -40,20 +40,11 @@
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/endian/endian.hh"
+#include "unisim/util/inlining/inlining.hh"
 #include <string>
 #include <map>
 #include <assert.h>
 #include <inttypes.h>
-
-#ifdef GCC_INLINE
-#undef GCC_INLINE
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-#define GCC_INLINE __attribute__((always_inline))
-#else
-#define GCC_INLINE
-#endif
 
 namespace unisim {
 namespace component {

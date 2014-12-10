@@ -35,13 +35,37 @@
 #ifndef __UNISIM_UTIL_INLINING_INLINING_HH__
 #define __UNISIM_UTIL_INLINING_INLINING_HH__
 
-#if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ >= 4) && ((__GNUC_MINOR__ > 1) || ((__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 3)))))     // GNU C version >= 4.1.3
 #if defined(ALWAYS_INLINE)
 #undef ALWAYS_INLINE
 #endif
+
+#if defined(__GNUC__)
+#if (__GNUC__ > 4) || ((__GNUC__ >= 4) && ((__GNUC_MINOR__ > 1) || ((__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 3))))     // GNU C version >= 4.1.3
 #define ALWAYS_INLINE __attribute__((always_inline))
 #else
 #define ALWAYS_INLINE
 #endif
+
+#elif defined(__clang__)
+
+#if __has_attribute(always_inline)
+#define ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define ALWAYS_INLINE
+#endif
+
+#endif // __clang__
+
+
+
+
+// #if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ >= 4) && ((__GNUC_MINOR__ > 1) || ((__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 3)))))     // GNU C version >= 4.1.3
+// #if defined(ALWAYS_INLINE)
+// #undef ALWAYS_INLINE
+// #endif
+// #define ALWAYS_INLINE __attribute__((always_inline))
+// #else
+// #define ALWAYS_INLINE
+// #endif
 
 #endif // __UNISIM_UTIL_INLINING_INLINING_HH__
