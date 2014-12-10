@@ -1566,7 +1566,7 @@ StepInstruction()
 //===============================================================
 
 template<class CONFIG, bool DEBUG>
-inline INLINE
+inline
 bool
 CPU<CONFIG, DEBUG> ::
 EnableFloatOpsWithNonExtRegs()
@@ -1575,7 +1575,7 @@ EnableFloatOpsWithNonExtRegs()
 }
 
 template<class CONFIG, bool DEBUG>
-inline INLINE
+inline
 bool
 CPU<CONFIG, DEBUG> ::
 EnableParallelLoadBug()
@@ -1584,7 +1584,7 @@ EnableParallelLoadBug()
 }
 	
 template<class CONFIG, bool DEBUG>
-inline INLINE
+inline
 bool
 CPU<CONFIG, DEBUG> ::
 EnableRndBug()
@@ -1593,7 +1593,7 @@ EnableRndBug()
 }
 	
 template<class CONFIG, bool DEBUG>
-inline INLINE
+inline
 bool
 CPU<CONFIG, DEBUG> ::
 EnableParallelStoreBug()
@@ -1981,7 +1981,6 @@ GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t
 } // end of namespace component
 } // end of namespace unisim
 
-#undef INLINE
 #undef LOCATION
 
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CPU_TCC__
