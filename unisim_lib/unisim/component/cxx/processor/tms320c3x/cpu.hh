@@ -1182,8 +1182,8 @@ protected:
 	Parameter<bool> param_verbose_all;
 	Parameter<bool> param_verbose_setup;
 	
-	inline INLINE bool VerboseAll() { return DEBUG && verbose_all; }
-	inline INLINE bool VerboseSetup() { return DEBUG && verbose_setup; }
+	inline bool VerboseAll() ALWAYS_INLINE { return DEBUG && verbose_all; }
+	inline bool VerboseSetup() ALWAYS_INLINE { return DEBUG && verbose_setup; }
 }; // end of calss CPU<CONFIG>
 
 } // end of namespace tms320c3x
