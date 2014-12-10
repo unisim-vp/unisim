@@ -1170,10 +1170,10 @@ protected:
 	bool enable_float_ops_with_non_ext_regs;
 	Parameter<bool> param_enable_float_ops_with_non_ext_regs;
 public:
-	inline INLINE bool EnableParallelLoadBug();
-	inline INLINE bool EnableRndBug();
-	inline INLINE bool EnableParallelStoreBug();
-	inline INLINE bool EnableFloatOpsWithNonExtRegs();
+	inline bool EnableParallelLoadBug() ALWAYS_INLINE;
+	inline bool EnableRndBug() ALWAYS_INLINE;
+	inline bool EnableParallelStoreBug() ALWAYS_INLINE;
+	inline bool EnableFloatOpsWithNonExtRegs() ALWAYS_INLINE;
 	
 protected:
 	bool verbose_all;
