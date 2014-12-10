@@ -33,11 +33,6 @@
 #include <limits>
 #include <stdexcept>
 #include <cassert>
-// #include <streambuf>
-// #include <ostream>
-
-
-using namespace std;
 
 Generator::Generator()
   : m_isa( 0 ), m_minwordsize( 32 ), m_verblevel( 1 )
@@ -186,33 +181,74 @@ Generator::init( Isa& _isa, unsigned int verblevel )
   return *this;
 }
 
+namespace {
+  struct BelowScanner
+  {
+    typedef OpCode_t::BelowList BelowList;
+    BelowList seen;
+    OpCode_t* target;
+    BelowScanner( OpCode_t* _target ) : target( _target ) {}
+  
+    bool findfrom( OpCode_t* start )
+    {
+      for (BelowList::const_iterator itr = start->m_belowlist.begin(), end = start->m_belowlist.end(); itr != end; ++itr) {
+        if (not seen.insert( *itr ).second) continue; /* already seen */
+        if ((*itr == target) or findfrom( *itr )) return true;
+      }
+      return false;
+    }
+  };
+};
+
+bool
+OpCode_t::above( OpCode_t* below )
+{
+  return BelowScanner( below ).findfrom( this );
+}
+
+
 /*
  *  @brief update the topology; linking subject to argument opcode
- *  @param _upper the object being linked to
+ *  @param _below the object being linked to
  */
 void
-OpCode_t::setupper( OpCode_t* _upper )
+OpCode_t::setbelow( OpCode_t* _below )
 {
-  if (not m_upper) {
-    m_upper = _upper;
-    _upper->m_lowercount += 1;
+  for (std::set<OpCode_t*>::iterator itr = m_belowlist.begin(), end = m_belowlist.end(); itr != end; ++itr) {
+    if (*itr == _below) return;
+    OpCode_t::Location_t loc = _below->locate( **itr );
+    if (loc == OpCode_t::Inside) return;
+    if (loc != OpCode_t::Contains) continue;
+    // Redundant  edge ... removing
+    (**itr).m_abovecount -= 1;
+    m_belowlist.erase( itr );
+    // Normally no more than one redundant edge ... stopping here.
+    break;
   }
-  else if (m_upper->locate( *_upper ) == Inside) {
-    m_upper->m_lowercount -= 1;
-    m_upper = _upper;
-    _upper->m_lowercount += 1;
-  }
+  m_belowlist.insert( _below );
+  _below->m_abovecount += 1;
+}
+  
+/*
+ *  @brief update the topology; linking subject to argument opcode
+ *  @param _below the object being linked to
+ */
+void
+OpCode_t::forcebelow( OpCode_t* _below )
+{
+  m_belowlist.insert( _below );
+  _below->m_abovecount += 1;
 }
   
 /*
  *  @brief update the topology; unlink subject opcode
  */
 void
-OpCode_t::unsetupper()
+OpCode_t::unsetbelow()
 {
-  if (not m_upper) return;
-  m_upper->m_lowercount -= 1;
-  m_upper = 0;
+  for (std::set<OpCode_t*>::iterator itr = m_belowlist.begin(), end = m_belowlist.end(); itr != end; ++itr)
+    (**itr).m_abovecount -= 1;
+  m_belowlist.clear();
 }
 
 std::ostream& operator<<( std::ostream& _sink, OpCode_t const& _oc ) { return _oc.details( _sink ); }
@@ -224,46 +260,105 @@ Generator::toposort()
 {
   Vect_t<Operation_t>& operations = isa().m_operations;
   
-  for( Vect_t<Operation_t>::const_iterator op1 = operations.begin(); op1 < operations.end(); ++op1 ) {
-    OpCode_t& opcode1 = opcode( *op1 );
-    for( Vect_t<Operation_t>::const_iterator op2 = operations.begin(); op2 < op1; ++ op2 ) {
-      OpCode_t& opcode2 = opcode( *op2 );
-
-      switch( opcode1.locate( opcode2 ) ) {
-      case OpCode_t::Outside: break; // No problem
-      case OpCode_t::Overlaps:
-        if      (isa().m_user_orderings.count( std::make_pair( *op1, *op2 ) ) > 0)
-          {
-            opcode1.setupper( &opcode2 );
-            log(2) << "operation `" << (**op1).m_symbol << "' is a forced specialization of operation `" << (**op2).m_symbol << "'" << endl;
-            break;
-          }
-        else if (isa().m_user_orderings.count( std::make_pair( *op2, *op1 ) ) > 0)
-          {
-            opcode2.setupper( &opcode1 );
-            log(2) << "operation `" << (**op2).m_symbol << "' is a forced specialization of operation `" << (**op1).m_symbol << "'" << endl;
-            break;
-          }
-        //no break
+  // Finalizing ordering graph
+  
+  // Adding implicit edges.
+  for (OpCodeMap::iterator oitr1 = m_opcodes.begin(), oend1 = m_opcodes.end(); oitr1 != oend1; ++oitr1) {
+    OpCode_t& opcode1( *oitr1->second );
+    for (OpCodeMap::iterator oitr2 = m_opcodes.begin(); oitr2 != oitr1; ++oitr2) {
+      OpCode_t& opcode2( *oitr2->second );
+      switch (opcode1.locate( opcode2 )) {
+      default: break;
       case OpCode_t::Equal:
-        (**op1).m_fileloc.err( "error: operation `%s' conflicts with operation `%s'", (**op1).m_symbol.str(), (**op2).m_symbol.str() );
-        (**op2).m_fileloc.err( "operation `%s' was declared here", (**op2).m_symbol.str() );
-        std::cerr << (**op1).m_symbol << ": " << opcode1 << endl;
-        std::cerr << (**op2).m_symbol << ": " << opcode2 << endl;
+        oitr1->first->m_fileloc.err( "error: operation `%s' duplicates operation `%s'", oitr1->first->m_symbol.str(), oitr2->first->m_symbol.str() );
+        oitr2->first->m_fileloc.err( "operation `%s' was declared here", oitr2->first->m_symbol.str() );
+        std::cerr << oitr1->first->m_symbol.str() << ": " << opcode1 << std::endl;
+        std::cerr << oitr2->first->m_symbol.str() << ": " << opcode2 << std::endl;
         throw GenerationError;
         break;
-      case OpCode_t::Inside:
-        opcode2.setupper( &opcode1 );
-        log(2) << "operation `" << (**op2).m_symbol << "' is a specialization of operation `" << (**op1).m_symbol << "'" << endl;
-        break;
-      case OpCode_t::Contains:
-        opcode1.setupper( &opcode2 );
-        log(2) << "operation `" << (**op1).m_symbol << "' is a specialization of operation `" << (**op2).m_symbol << "'" << endl;
-        break;
+      case OpCode_t::Contains: opcode1.setbelow( &opcode2 ); break;
+      case OpCode_t::Inside:   opcode2.setbelow( &opcode1 ); break;
+      }
+    }
+  }
+  // Informing about implicit specialization 
+  if (m_verblevel >= 2) {
+    for (OpCodeMap::iterator oitr = m_opcodes.begin(), oend = m_opcodes.end(); oitr != oend; ++oitr) {
+      OpCode_t& opc( *oitr->second );
+      uintptr_t count = opc.m_belowlist.size();
+      if (count == 0) continue;
+      log(2) << "operation `" << opc.m_symbol.str() << "' is a specialization of operation" << (count>1?"s ":" ");
+      char const* sep = "";
+      for (OpCode_t::BelowList::iterator bitr = opc.m_belowlist.begin(), bend = opc.m_belowlist.end(); bitr != bend; ++bitr) {
+        log(2) << sep << "`" << (**bitr).m_symbol.str() << "'";
+        sep = ", ";
+      }
+      log(2) << std::endl;
+    }
+  }
+  // Adding explicit edges (user specified)
+  for (Isa::Orderings::iterator itr = isa().m_user_orderings.begin(), end = isa().m_user_orderings.end(); itr != end; ++itr) {
+    // Unrolling specialization relations
+    std::vector<ConstStr_t>::const_iterator symitr = itr->symbols.begin(), symend = itr->symbols.end();
+    typedef Vect_t<Operation_t> OpV;
+    OpV aboves;
+    if (not isa().operations( *symitr, aboves ))
+      {
+        itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
+        throw GenerationError;
+      }
+    OpV belows;
+    while ((++symitr) != symend) {
+      if (not isa().operations( *symitr, belows ))
+        {
+          itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
+          throw GenerationError;
+        }
+    }
+    
+    // Check each user specialization and insert when valid
+    for (OpV::iterator aoitr = aboves.begin(), aoend = aboves.end(); aoitr != aoend; ++aoitr) {
+      OpCode_t& opcode1( opcode( *aoitr ) );
+      for (OpV::iterator boitr = belows.begin(), boend = belows.end(); boitr != boend; ++boitr) {
+        OpCode_t& opcode2( opcode( *boitr ) );
+        switch (opcode1.locate( opcode2 )) {
+        default: break;
+        case OpCode_t::Outside:
+          itr->fileloc.loc( log(2) ) << "warning: specializing `" << (**boitr).m_symbol.str() << "'"
+                                     << " with `" << (**aoitr).m_symbol.str() << "' as no effect (no relationship).\n";
+          break;
+        case OpCode_t::Contains:
+          itr->fileloc.loc( log(2) ) << "warning: specializing `" << (**boitr).m_symbol.str() << "'"
+                                     << " with `" << (**aoitr).m_symbol.str() << "' as no effect (implicit specialization).\n";
+          break;
+        case OpCode_t::Inside:
+          itr->fileloc.loc( std::cerr ) << "error: cant specialize `" << (**boitr).m_symbol.str() << "'"
+                                        << " with `" << (**aoitr).m_symbol.str() << "' (would hide the former).\n";
+          throw GenerationError;
+          break;
+        case OpCode_t::Overlaps:
+          opcode1.forcebelow( &opcode2 );
+          log(2) << "operation `" << (**aoitr).m_symbol.str() << "' is a forced specialization of operation `" << (**boitr).m_symbol.str() << "'" << std::endl;
+          break;
+        }          
       }
     }
   }
   
+  // Finally check if overlaps are resolved
+  for (OpCodeMap::iterator oitr1 = m_opcodes.begin(), oend1 = m_opcodes.end(); oitr1 != oend1; ++oitr1) {
+    for (OpCodeMap::iterator oitr2 = m_opcodes.begin(); oitr2 != oitr1; ++oitr2) {
+      if (oitr1->second->locate( *oitr2->second ) != OpCode_t::Overlaps) continue;
+      if (oitr1->second->above( oitr2->second )) continue;
+      if (oitr2->second->above( oitr1->second )) continue;
+      oitr1->first->m_fileloc.err( "error: operation `%s' conflicts with operation `%s'", oitr1->first->m_symbol.str(), oitr2->first->m_symbol.str() );
+      oitr2->first->m_fileloc.err( "operation `%s' was declared here", oitr2->first->m_symbol.str() );
+      std::cerr << oitr1->first->m_symbol.str() << ": " << (*oitr1->second) << std::endl;
+      std::cerr << oitr2->first->m_symbol.str() << ": " << (*oitr2->second) << std::endl;
+      throw GenerationError;
+    }
+  }
+
   // Topological sort to fix potential precedence problems
   {
     intptr_t opcount = operations.size();
@@ -279,16 +374,17 @@ Generator::toposort()
       if (not op) continue;
       
       OpCode_t& oc = opcode( op );
-      if( oc.m_lowercount > 0 ) {
-        // There is some operations to be placed before this one 
-        --inf_loop_tracker;
-        assert( inf_loop_tracker >= 0 );
-        continue;
-      }
+      if (oc.m_abovecount > 0)
+        {
+          // There is some operations to be placed before this one 
+          --inf_loop_tracker;
+          assert( inf_loop_tracker >= 0 );
+          continue;
+        }
       inf_loop_tracker = opcount;
       noperations[--dopidx] = op;
       operations[sopidx] = 0;
-      oc.unsetupper();
+      oc.unsetbelow();
     }
     operations = noperations;
   }
@@ -352,7 +448,7 @@ Generator::iss( char const* prefix, bool sourcelines ) const
   {
     FProduct_t sink( prefix, ".hh", sourcelines );
     if (not sink.good()) {
-      cerr << GENISSLIB << ": can't open header file '" << sink.m_filename << "'.\n";
+      std::cerr << GENISSLIB << ": can't open header file '" << sink.m_filename.str() << "'.\n";
       throw GenerationError;
     }
     
@@ -363,7 +459,7 @@ Generator::iss( char const* prefix, bool sourcelines ) const
     {
       std::string ns_header_str;
       std::string sep = "";
-      for( vector<ConstStr_t>::const_iterator piece = isa().m_namespace.begin(); piece < isa().m_namespace.end(); ++ piece ) {
+      for( std::vector<ConstStr_t>::const_iterator piece = isa().m_namespace.begin(); piece < isa().m_namespace.end(); ++ piece ) {
         ns_header_str += sep + (*piece).str();
         sep = "__";
       }
@@ -415,7 +511,7 @@ Generator::iss( char const* prefix, bool sourcelines ) const
   {
     FProduct_t sink( prefix, isa().m_tparams.empty() ? ".cc" : ".tcc", sourcelines );
     if (not sink.good()) {
-      cerr << GENISSLIB << ": can't open header file '" << sink.m_filename << "'.\n";
+      std::cerr << GENISSLIB << ": can't open header file '" << sink.m_filename.str() << "'.\n";
       throw GenerationError;
     }
   
@@ -455,7 +551,7 @@ Generator::iss( char const* prefix, bool sourcelines ) const
   if (isa().m_is_subdecoder) {
     FProduct_t sink( prefix, "_sub.isa", sourcelines );
     if (not sink.good()) {
-      cerr << GENISSLIB << ": can't open header file '" << sink.m_filename << "'.\n";
+      std::cerr << GENISSLIB << ": can't open header file '" << sink.m_filename.str() << "'.\n";
       throw GenerationError;
     }
     
@@ -1327,5 +1423,21 @@ FieldIterator::next() {
   }
   
   return true;
+}
+
+OpCode_t const&
+Generator::opcode( Operation_t const* _op ) const
+{
+  OpCodeMap::const_iterator res = m_opcodes.find( _op );
+  assert( res != m_opcodes.end() );
+  return *res->second;
+}
+
+OpCode_t&
+Generator::opcode( Operation_t const* _op )
+{
+  OpCodeMap::iterator res = m_opcodes.find( _op );
+  assert( res != m_opcodes.end() );
+  return *res->second;
 }
 

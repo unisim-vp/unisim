@@ -33,6 +33,7 @@
 
 using namespace std;
 
+bool                     Scanner::aborted_scanning = false;
 FileLoc_t                Scanner::fileloc;
 FileLoc_t                Scanner::fileloc_mlt;
 int                      Scanner::bracecount = 0;
@@ -150,11 +151,13 @@ decimal_number [0-9]+
 <INITIAL><<EOF>> { if( not Scanner::pop() ) yyterminate(); }
 <string_context,char_context,c_like_comment_context,cpp_like_comment_context,source_code_context><<EOF>> {
   Scanner::fileloc.err( "error: unexpected end of file" );
+  Scanner::aborted_scanning = true;
   yyterminate();
   return 0;
 }
 <INITIAL,string_context,char_context,c_like_comment_context,cpp_like_comment_context,source_code_context>. {
   Scanner::fileloc.err( "error: unexpected %s", Scanner::charname( yytext[0] ).str() );
+  Scanner::aborted_scanning = true;
   yyterminate();
   return 0;
 }
@@ -231,6 +234,7 @@ Scanner::parse( char const* _filename, Isa& _isa ) {
   }
 #endif
   
+  aborted_scanning = false;
   int error = yyparse();
   
   if( yyin ) {
@@ -239,7 +243,7 @@ Scanner::parse( char const* _filename, Isa& _isa ) {
   }
   
   yylex_destroy();
-  return (error == 0);
+  return (error == 0) && !aborted_scanning;
 }
 
 bool

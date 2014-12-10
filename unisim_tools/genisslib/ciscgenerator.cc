@@ -43,19 +43,15 @@ CiscGenerator::CiscGenerator()
   : m_code_capacity( 0 )
 {};
 
-/** Set the size of the OpCode and allocates mask and bits buffers
+/** Base constructor, sets the size of the OpCode and allocates mask and bits buffers
 */
-void
-
-CiscOpCode_t::size_attrs( unsigned int prefixsize, unsigned int fullsize, bool vlen ) {
-  assert( m_prefixsize == 0 );
-  m_prefixsize = prefixsize;
-  unsigned int mbsz = maskbytesize();
-  m_fullsize = fullsize;
+CiscOpCode_t::CiscOpCode_t( ConstStr_t _symbol, unsigned int _prefixsize, unsigned int _fullsize, bool _vlen )
+  : OpCode_t( _symbol ), m_mask( 0 ), m_bits( 0 ), m_prefixsize( _prefixsize ), m_fullsize( _fullsize ), m_vlen( _vlen )
+{
+  uintptr_t mbsz = maskbytesize();
   m_mask = new uint8_t[mbsz*2];
   m_bits = &m_mask[mbsz];
   memset( m_mask, 0, mbsz*2 );
-  m_vlen = vlen;
 }
 
 /** Optimize the size of OpCode object: upper zero-mask bits are stripped. */
@@ -224,10 +220,11 @@ CiscGenerator::finalize()
       if (outprefix) continue;
       if (prefixsize < fi.insn_size()) prefixsize = fi.insn_size();
     }
-    m_opcodes[*op].size_attrs( prefixsize, insn_size, vlen );
+    
+    m_opcodes[*op] = new CiscOpCode_t( (**op).m_symbol, prefixsize, insn_size, vlen );
+    CiscOpCode_t& oc = ciscopcode( *op );
     
     // compute opcode
-    CiscOpCode_t& oc = opcode( *op );
     for (FieldIterator fi( isa().m_little_endian, (**op).m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
       if (fi.item().sizes() != 1) break;
       if (not fi.item().hasopcode()) continue;
@@ -377,8 +374,9 @@ CiscGenerator::codetype_impl( Product_t& _product ) const {
 }
 
 void
-CiscGenerator::insn_bits_code( Product_t& _product, Operation_t const& _op ) const {
-  CiscOpCode_t const& oc = opcode( &_op );
+CiscGenerator::insn_bits_code( Product_t& _product, Operation_t const& _op ) const
+{
+  CiscOpCode_t const& oc = ciscopcode( &_op );
   _product.code( "CodeType( (uint8_t*)( \"" );
   char const* hex = "0123456789abcdef";
   for( unsigned int idx = 0; idx < oc.maskbytesize(); ++idx )
@@ -387,8 +385,9 @@ CiscGenerator::insn_bits_code( Product_t& _product, Operation_t const& _op ) con
 }
 
 void
-CiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) const {
-  CiscOpCode_t const& oc = opcode( &_op );
+CiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) const
+{
+  CiscOpCode_t const& oc = ciscopcode( &_op );
   _product.code( "CodeType( (uint8_t*)( \"" );
   char const* hex = "0123456789abcdef";
   for( unsigned int idx = 0; idx < oc.maskbytesize(); ++idx )
@@ -397,14 +396,15 @@ CiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) con
 }
 
 void
-CiscGenerator::insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const {
+CiscGenerator::insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const
+{
   _product.code( "if( %s.match( %s, %s) )\n", _code, _bits, _mask );
 }
 
 void
 CiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const
 {
-  CiscOpCode_t const& oc = opcode( &_op );
+  CiscOpCode_t const& oc = ciscopcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "assert( \"Encode method does not work with variable length operations.\" and false );\n" );
@@ -459,7 +459,7 @@ CiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
 void
 CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
-  CiscOpCode_t const& oc = opcode( &_op );
+  CiscOpCode_t const& oc = ciscopcode( &_op );
   _product.code( "if (this->encoding.size < %u) throw CodeType::NotEnoughBytes;\n", oc.m_fullsize );
   _product.code( "this->encoding.size = %u;\n", oc.m_fullsize );
   if (oc.m_vlen) {
@@ -541,26 +541,14 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
 }
 
 void
-CiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _ref, char const* _bytes ) const {
+CiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _ref, char const* _bytes ) const
+{
   _product.code( "%s.match( %s )", _bytes, _ref );
 }
 
-CiscOpCode_t const&
-CiscGenerator::opcode( Operation_t const* _op ) const {
-  OpCodes_t::const_iterator res = m_opcodes.find( _op );
-  assert( res != m_opcodes.end() );
-  return res->second;
-}
-
-CiscOpCode_t&
-CiscGenerator::opcode( Operation_t const* _op ) {
-  OpCodes_t::iterator res = m_opcodes.find( _op );
-  assert( res != m_opcodes.end() );
-  return res->second;
-}
-
 void
-CiscGenerator::insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const {
+CiscGenerator::insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const
+{
   bool subops = false;
   Vect_t<BitField_t> const& bfs = _op.m_bitfields;
   
@@ -573,7 +561,8 @@ CiscGenerator::insn_destructor_decl( Product_t& _product, Operation_t const& _op
 }
 
 void
-CiscGenerator::insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const {
+CiscGenerator::insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const
+{
   std::vector<ConstStr_t> subops;
   Vect_t<BitField_t> const& bfs = _op.m_bitfields;
   

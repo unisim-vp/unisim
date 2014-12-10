@@ -21,12 +21,14 @@
 #include <fwd.hh>
 #include <vect.hh>
 #include <conststr.hh>
+#include <errtools.hh>
 #include <set>
 #include <memory>
 #include <iosfwd>
 #include <referencecounting.hh>
 
-struct Isa {
+struct Isa
+{
   enum DecoderType_t { RiscDecoder = 0, CiscDecoder, VliwDecoder };
   DecoderType_t                 m_decoder;         /**< Decoder Type */
   bool                          m_is_subdecoder;   /**< Subdecoder or full decoder */
@@ -50,8 +52,10 @@ struct Isa {
   std::vector<ConstStr_t>       m_includes;        /**< files included by the isa main file */
   Vect_t<Specialization_t>      m_specializations; /**< Requested specializations */
   Vect_t<Inheritance_t>         m_inheritances;    /**< Defined inheritances for operation class */
-  typedef std::set<std::pair<Operation_t const*,Operation_t const*> > user_orderings_t;
-  user_orderings_t              m_user_orderings;
+  
+  struct Ordering { FileLoc_t fileloc; std::vector<ConstStr_t> symbols; };
+  typedef std::vector<Ordering> Orderings;
+  Orderings                     m_user_orderings;
 
   Isa();
   ~Isa();
@@ -59,6 +63,7 @@ struct Isa {
   void                          remove( Operation_t* _op );
   void                          remove( ActionProto_t const* _ap );
   Operation_t*                  operation( ConstStr_t _symbol );
+  bool                          operations( ConstStr_t _symbol, Vect_t<Operation_t>& _opvec );
   Group_t*                      group( ConstStr_t _symbol );
   ActionProto_t const*          actionproto( ConstStr_t _symbol ) const;
   SDClass_t const*              sdclass( std::vector<ConstStr_t>& _namespace ) const;

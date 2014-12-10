@@ -31,15 +31,10 @@ struct CiscOpCode_t : public OpCode_t
   unsigned int                m_prefixsize;
   unsigned int                m_fullsize;
   bool                        m_vlen;
-  // Topology information
-  intptr_t                    m_lowercount;
     
-  CiscOpCode_t()
-    : m_mask( 0 ), m_bits( 0 ), m_prefixsize( 0 ), m_fullsize( 0 ), m_vlen( false ),
-      m_lowercount( 0 ) {}
-  virtual ~CiscOpCode_t() { delete [] m_mask; }
+  CiscOpCode_t( ConstStr_t _symbol, unsigned int _prefixsize, unsigned int _fullsize, bool _vlen );
+  ~CiscOpCode_t() { delete [] m_mask; }
     
-  void                        size_attrs( unsigned int prefixsize, unsigned int fullsize, bool vlen );
   bool                        match( CiscOpCode_t const& _oc ) const;
   void                        optimize( bool is_little_endian );
   unsigned int                maskbytesize() const { return (m_prefixsize+7)/8; };
@@ -51,19 +46,17 @@ struct CiscOpCode_t : public OpCode_t
   std::ostream&               details( std::ostream& _sink ) const;
 };
 
-struct CiscGenerator : public Generator {
-  typedef std::map<Operation_t const*,CiscOpCode_t> OpCodes_t;
-
-  OpCodes_t                     m_opcodes;
+struct CiscGenerator : public Generator
+{
   unsigned int                  m_code_capacity;
   
   CiscGenerator();
   ~CiscGenerator() {};
   
-  /* Cisc specific instructions */
-  CiscOpCode_t const&           opcode( Operation_t const* _op ) const;
-  CiscOpCode_t&                 opcode( Operation_t const* _op );
+  CiscOpCode_t const&           ciscopcode( Operation_t const* _op ) const { return dynamic_cast<CiscOpCode_t const&>( opcode( _op ) ); }
+  CiscOpCode_t&                 ciscopcode( Operation_t const* _op ) { return dynamic_cast<CiscOpCode_t&>( opcode( _op ) ); };
   
+  /* Cisc specific instructions */
   void                          finalize();
   void                          codetype_decl( Product_t& _product ) const;
   void                          codetype_impl( Product_t& _product ) const;

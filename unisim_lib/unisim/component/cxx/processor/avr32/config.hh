@@ -171,8 +171,7 @@ public:
 	static const uint32_t EXEC_MODE_SUPERVISOR  = 1;    // Supervisor
 	static const uint32_t EXEC_MODE_APPLICATION = 0;    // Application
 
-	//mask byte selector
-
+	// mask byte selector
 	static const uint32_t TOP_BYTE_MASK    = 0xFF000000;
 	static const uint32_t UPPER_BYTE_MASK  = 0x00FF0000;
 	static const uint32_t LOWER_BYTE_MASK  = 0x0000FF00;	
@@ -245,6 +244,13 @@ public:
 	static const uint32_t EXC_ENABLE_DTLB_PROTECTION_WRITE = 1 << EXC_DTLB_PROTECTION_WRITE;
 	static const uint32_t EXC_ENABLE_DTLB_MODIFIED = 1 << EXC_DTLB_MODIFIED;
 	static const uint32_t EXC_ENABLE_UNDEFINED_BEHAVIOR = 1 << EXC_UNDEFINED_BEHAVIOR;
+
+	// IRQ
+	static const unsigned int NUM_IRQS = 4;
+	
+	// Disambiguation of disassemble
+	static const bool DISAMBIGUATE_DISASM = false;
+
 };
 
 } // end of namespace avr32

@@ -1932,7 +1932,7 @@ void CPU<CONFIG>::StepOneInstruction()
 
 	typename CONFIG::address_t addr = GetCIA();
 	SetNIA(addr + 4);
-	uint32_t insn;
+	uint32_t insn = 0;
 	if(likely(EmuFetch(addr, insn)))
 	{
 		operation = unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::Decode(addr, insn);

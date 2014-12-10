@@ -60,7 +60,6 @@ public:
 	
 	static const unsigned int HSB_WIDTH = 4;
 	static const unsigned int HSB_BURST_SIZE = 4;
-	static const unsigned int NUM_IRQS = 64;
 	
 	static const bool DEBUG_ENABLE = false;
 	static const bool DEBUG_SETUP_ENABLE = false;
@@ -77,6 +76,8 @@ public:
 	static const bool DEBUG_SETUP_ENABLE = true;
 	static const bool DEBUG_INTERRUPT_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
+	
+	static const bool DISAMBIGUATE_DISASM = true;
 };
 
 } // end of namespace avr32uc

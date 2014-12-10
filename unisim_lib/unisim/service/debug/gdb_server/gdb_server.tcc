@@ -49,7 +49,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 
 #include <winsock2.h>
 
@@ -141,7 +141,7 @@ GDBServer<ADDRESS>::~GDBServer()
 	{
 		string packet("W00");
 		PutPacket(packet);
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		closesocket(sock);
 #else
 		close(sock);
@@ -422,7 +422,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
 	{
 		logger << DebugError << "Bind failed. TCP Port #" << tcp_port << " may be already in use. Please specify another port in " << param_tcp_port.GetName() << EndDebugError;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -433,7 +433,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(listen(server_sock, 1))
 	{
 		logger << DebugError << "Listen failed" << EndDebugError;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -441,7 +441,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 		return false;
 	}
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		int addr_len;
 #else
 		socklen_t addr_len;
@@ -454,7 +454,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(sock < 0)
 	{
 		logger << DebugError << "accept failed" << EndDebugError;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -478,7 +478,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	}
 
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	u_long NonBlock = 1;
 	if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
 	{
@@ -511,7 +511,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	}
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	closesocket(server_sock);
 #else
 	close(server_sock);
@@ -526,10 +526,10 @@ void GDBServer<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& value)
+bool GDBServer<ADDRESS>::ParseHex(const string& s, size_t& pos, ADDRESS& value)
 {
-	unsigned int len = s.length();
-	unsigned int n = 0;
+	size_t len = s.length();
+	size_t n = 0;
 
 	value = 0;
 	while(pos < len && n < 2 * sizeof(ADDRESS))
@@ -652,8 +652,8 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 			return DebugControl<ADDRESS>::DBG_KILL;
 		}
 
-		unsigned int pos = 0;
-		unsigned int len = packet.length();
+		size_t pos = 0;
+		size_t len = packet.length();
 
 		switch(packet[pos++])
 		{
@@ -856,7 +856,7 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 	{
 		do
 		{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 			int r = recv(sock, input_buffer, sizeof(input_buffer), 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -864,7 +864,7 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 			if(r <= 0)
 #endif
 			{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
 #else
 				if(r < 0 && errno == EAGAIN)
@@ -872,7 +872,7 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 				{
 					if(blocking)
 					{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 						Sleep(1); // sleep for 10ms
 #else
 						usleep(1000); // sleep for 10ms
@@ -908,7 +908,7 @@ bool GDBServer<ADDRESS>::FlushOutput()
 		unsigned int index = 0;
 		do
 		{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 			int r = send(sock, output_buffer + index, output_buffer_size, 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -1207,7 +1207,7 @@ void GDBServer<ADDRESS>::Kill()
 {
 	if(sock >= 0)
 	{
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 		closesocket(sock);
 #else
 		close(sock);
@@ -1370,7 +1370,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 template <class ADDRESS>
 void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
-	unsigned int separator_index = command.find_first_of(':');
+	size_t separator_index = command.find_first_of(':');
 	string cmdPrefix;
 	if (separator_index == string::npos) {
 		cmdPrefix = command;

@@ -51,6 +51,8 @@
 #include <endian.h>
 #endif
 
+#include <unisim/util/inlining/inlining.hh>
+
 namespace unisim {
 namespace util {
 namespace endian {
@@ -62,77 +64,74 @@ typedef enum
 	E_UNKNOWN_ENDIAN = 2
 } endian_type;
 
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-inline bool IsHostLittleEndian() __attribute__((always_inline));
-inline bool IsHostBigEndian() __attribute__((always_inline));
-inline endian_type GetHostEndian() __attribute__((always_inline));
+inline bool IsHostLittleEndian() ALWAYS_INLINE;
+inline bool IsHostBigEndian() ALWAYS_INLINE;
+inline endian_type GetHostEndian() ALWAYS_INLINE;
 
-inline void BSwap(uint8_t& value) __attribute__((always_inline));
-inline void BSwap(uint16_t& value) __attribute__((always_inline));
-inline void BSwap(uint8_t value[3]) __attribute__((always_inline));
-inline void BSwap(uint32_t& value) __attribute__((always_inline));
-inline void BSwap(uint64_t& value) __attribute__((always_inline));
+inline void BSwap(uint8_t& value) ALWAYS_INLINE;
+inline void BSwap(uint16_t& value) ALWAYS_INLINE;
+inline void BSwap(uint8_t value[3]) ALWAYS_INLINE;
+inline void BSwap(uint32_t& value) ALWAYS_INLINE;
+inline void BSwap(uint64_t& value) ALWAYS_INLINE;
 
-inline uint8_t ByteSwap(uint8_t value) __attribute__((always_inline));
-inline uint16_t ByteSwap(uint16_t value) __attribute__((always_inline));
-inline uint32_t ByteSwap(uint32_t value) __attribute__((always_inline));
-inline uint64_t ByteSwap(uint64_t value) __attribute__((always_inline));
+inline uint8_t ByteSwap(uint8_t value) ALWAYS_INLINE;
+inline uint16_t ByteSwap(uint16_t value) ALWAYS_INLINE;
+inline uint32_t ByteSwap(uint32_t value) ALWAYS_INLINE;
+inline uint64_t ByteSwap(uint64_t value) ALWAYS_INLINE;
 
-inline uint8_t Host2BigEndian(uint8_t value) __attribute__((always_inline));
-inline uint8_t BigEndian2Host(uint8_t value) __attribute__((always_inline));
-inline uint8_t Host2LittleEndian(uint8_t value) __attribute__((always_inline));
-inline uint8_t LittleEndian2Host(uint8_t value) __attribute__((always_inline));
-inline uint16_t Host2BigEndian(uint16_t value) __attribute__((always_inline));
-inline uint16_t BigEndian2Host(uint16_t value) __attribute__((always_inline));
-inline uint16_t Host2LittleEndian(uint16_t value) __attribute__((always_inline));
-inline uint16_t LittleEndian2Host(uint16_t value) __attribute__((always_inline));
-inline uint32_t Host2BigEndian(uint32_t value) __attribute__((always_inline));
-inline uint32_t BigEndian2Host(uint32_t value) __attribute__((always_inline));
-inline uint32_t Host2LittleEndian(uint32_t value) __attribute__((always_inline));
-inline uint32_t LittleEndian2Host(uint32_t value) __attribute__((always_inline));
-inline uint64_t Host2BigEndian(uint64_t value) __attribute__((always_inline));
-inline uint64_t BigEndian2Host(uint64_t value) __attribute__((always_inline));
-inline uint64_t Host2LittleEndian(uint64_t value) __attribute__((always_inline));
-inline uint64_t LittleEndian2Host(uint64_t value) __attribute__((always_inline));
+inline uint8_t Host2BigEndian(uint8_t value) ALWAYS_INLINE;
+inline uint8_t BigEndian2Host(uint8_t value) ALWAYS_INLINE;
+inline uint8_t Host2LittleEndian(uint8_t value) ALWAYS_INLINE;
+inline uint8_t LittleEndian2Host(uint8_t value) ALWAYS_INLINE;
+inline uint16_t Host2BigEndian(uint16_t value) ALWAYS_INLINE;
+inline uint16_t BigEndian2Host(uint16_t value) ALWAYS_INLINE;
+inline uint16_t Host2LittleEndian(uint16_t value) ALWAYS_INLINE;
+inline uint16_t LittleEndian2Host(uint16_t value) ALWAYS_INLINE;
+inline uint32_t Host2BigEndian(uint32_t value) ALWAYS_INLINE;
+inline uint32_t BigEndian2Host(uint32_t value) ALWAYS_INLINE;
+inline uint32_t Host2LittleEndian(uint32_t value) ALWAYS_INLINE;
+inline uint32_t LittleEndian2Host(uint32_t value) ALWAYS_INLINE;
+inline uint64_t Host2BigEndian(uint64_t value) ALWAYS_INLINE;
+inline uint64_t BigEndian2Host(uint64_t value) ALWAYS_INLINE;
+inline uint64_t Host2LittleEndian(uint64_t value) ALWAYS_INLINE;
+inline uint64_t LittleEndian2Host(uint64_t value) ALWAYS_INLINE;
 
-inline int8_t Host2BigEndian(int8_t value) __attribute__((always_inline));
-inline int8_t BigEndian2Host(int8_t value) __attribute__((always_inline));
-inline int8_t Host2LittleEndian(int8_t value) __attribute__((always_inline));
-inline int8_t LittleEndian2Host(int8_t value) __attribute__((always_inline));
-inline int16_t Host2BigEndian(int16_t value) __attribute__((always_inline));
-inline int16_t BigEndian2Host(int16_t value) __attribute__((always_inline));
-inline int16_t Host2LittleEndian(int16_t value) __attribute__((always_inline));
-inline int16_t LittleEndian2Host(int16_t value) __attribute__((always_inline));
-inline int32_t Host2BigEndian(int32_t value) __attribute__((always_inline));
-inline int32_t BigEndian2Host(int32_t value) __attribute__((always_inline));
-inline int32_t Host2LittleEndian(int32_t value) __attribute__((always_inline));
-inline int32_t LittleEndian2Host(int32_t value) __attribute__((always_inline));
-inline int64_t Host2BigEndian(int64_t value) __attribute__((always_inline));
-inline int64_t BigEndian2Host(int64_t value) __attribute__((always_inline));
-inline int64_t Host2LittleEndian(int64_t value) __attribute__((always_inline));
-inline int64_t LittleEndian2Host(int64_t value) __attribute__((always_inline));
+inline int8_t Host2BigEndian(int8_t value) ALWAYS_INLINE;
+inline int8_t BigEndian2Host(int8_t value) ALWAYS_INLINE;
+inline int8_t Host2LittleEndian(int8_t value) ALWAYS_INLINE;
+inline int8_t LittleEndian2Host(int8_t value) ALWAYS_INLINE;
+inline int16_t Host2BigEndian(int16_t value) ALWAYS_INLINE;
+inline int16_t BigEndian2Host(int16_t value) ALWAYS_INLINE;
+inline int16_t Host2LittleEndian(int16_t value) ALWAYS_INLINE;
+inline int16_t LittleEndian2Host(int16_t value) ALWAYS_INLINE;
+inline int32_t Host2BigEndian(int32_t value) ALWAYS_INLINE;
+inline int32_t BigEndian2Host(int32_t value) ALWAYS_INLINE;
+inline int32_t Host2LittleEndian(int32_t value) ALWAYS_INLINE;
+inline int32_t LittleEndian2Host(int32_t value) ALWAYS_INLINE;
+inline int64_t Host2BigEndian(int64_t value) ALWAYS_INLINE;
+inline int64_t BigEndian2Host(int64_t value) ALWAYS_INLINE;
+inline int64_t Host2LittleEndian(int64_t value) ALWAYS_INLINE;
+inline int64_t LittleEndian2Host(int64_t value) ALWAYS_INLINE;
 
-inline uint8_t Host2Target(endian_type target_endian, uint8_t value) __attribute__((always_inline));
-inline uint16_t Host2Target(endian_type target_endian, uint16_t value) __attribute__((always_inline));
-inline uint32_t Host2Target(endian_type target_endian, uint32_t value) __attribute__((always_inline));
-inline uint64_t Host2Target(endian_type target_endian, uint64_t value) __attribute__((always_inline));
+inline uint8_t Host2Target(endian_type target_endian, uint8_t value) ALWAYS_INLINE;
+inline uint16_t Host2Target(endian_type target_endian, uint16_t value) ALWAYS_INLINE;
+inline uint32_t Host2Target(endian_type target_endian, uint32_t value) ALWAYS_INLINE;
+inline uint64_t Host2Target(endian_type target_endian, uint64_t value) ALWAYS_INLINE;
 
-inline uint8_t Target2Host(endian_type target_endian, uint8_t value) __attribute__((always_inline));
-inline uint16_t Target2Host(endian_type target_endian, uint16_t value) __attribute__((always_inline));
-inline uint32_t Target2Host(endian_type target_endian, uint32_t value) __attribute__((always_inline));
-inline uint64_t Target2Host(endian_type target_endian, uint64_t value) __attribute__((always_inline));
+inline uint8_t Target2Host(endian_type target_endian, uint8_t value) ALWAYS_INLINE;
+inline uint16_t Target2Host(endian_type target_endian, uint16_t value) ALWAYS_INLINE;
+inline uint32_t Target2Host(endian_type target_endian, uint32_t value) ALWAYS_INLINE;
+inline uint64_t Target2Host(endian_type target_endian, uint64_t value) ALWAYS_INLINE;
 
-inline int8_t Host2Target(endian_type target_endian, int8_t value) __attribute__((always_inline));
-inline int16_t Host2Target(endian_type target_endian, int16_t value) __attribute__((always_inline));
-inline int32_t Host2Target(endian_type target_endian, int32_t value) __attribute__((always_inline));
-inline int64_t Host2Target(endian_type target_endian, int64_t value) __attribute__((always_inline));
+inline int8_t Host2Target(endian_type target_endian, int8_t value) ALWAYS_INLINE;
+inline int16_t Host2Target(endian_type target_endian, int16_t value) ALWAYS_INLINE;
+inline int32_t Host2Target(endian_type target_endian, int32_t value) ALWAYS_INLINE;
+inline int64_t Host2Target(endian_type target_endian, int64_t value) ALWAYS_INLINE;
 
-inline int8_t Target2Host(endian_type target_endian, int8_t value) __attribute__((always_inline));
-inline int16_t Target2Host(endian_type target_endian, int16_t value) __attribute__((always_inline));
-inline int32_t Target2Host(endian_type target_endian, int32_t value) __attribute__((always_inline));
-inline int64_t Target2Host(endian_type target_endian, int64_t value) __attribute__((always_inline));
-
-#endif
+inline int8_t Target2Host(endian_type target_endian, int8_t value) ALWAYS_INLINE;
+inline int16_t Target2Host(endian_type target_endian, int16_t value) ALWAYS_INLINE;
+inline int32_t Target2Host(endian_type target_endian, int32_t value) ALWAYS_INLINE;
+inline int64_t Target2Host(endian_type target_endian, int64_t value) ALWAYS_INLINE;
 
 inline bool IsHostLittleEndian()
 {

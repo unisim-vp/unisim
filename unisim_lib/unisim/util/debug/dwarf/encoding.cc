@@ -337,6 +337,9 @@ const char *DWARF_GetFORMName(uint16_t dw_form)
 		case DW_FORM_ref_udata: return "DW_FORM_ref_udata";
 		case DW_FORM_indirect: return "DW_FORM_indirect";
 		case DW_FORM_sec_offset: return "DW_FORM_sec_offset";
+		case DW_FORM_expr_loc: return "DW_FORM_expr_loc";
+		case DW_FORM_flag_present: return "DW_FORM_flag_present";
+		case DW_FORM_ref_sig8: return "DW_FORM_ref_sig8";
 	}
 	std::stringstream sstr;
 	sstr << "DW_FORM_unknown_0x" << std::hex << dw_form << std::dec;

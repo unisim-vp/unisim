@@ -2167,6 +2167,16 @@ void DWARF_Handler<MEMORY_ADDR>::Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_lo
 }
 
 template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::UnRegister(DWARF_DIE<MEMORY_ADDR> *dw_die)
+{
+	typename std::map<uint64_t, DWARF_DIE<MEMORY_ADDR> *>::iterator dw_die_iter = dw_dies.find(dw_die->GetOffset());
+	if(dw_die_iter != dw_dies.end())
+	{
+		dw_dies.erase(dw_die_iter);
+	}
+}
+
+template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::DumpStatementMatrix()
 {
 	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
@@ -3010,6 +3020,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					MEMORY_ADDR object_addr = dw_data_object_loc->GetAddress();
 					if(dw_data_object_loc) delete dw_data_object_loc;
 					dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
+					
 					if(!dw_die_data_member->GetDataMemberLocation(pc, has_frame_base, frame_base, object_addr, *dw_data_object_loc))
 					{
 						logger << DebugError << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugError;

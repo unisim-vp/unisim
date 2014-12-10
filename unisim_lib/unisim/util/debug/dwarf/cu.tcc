@@ -71,7 +71,11 @@ DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_A
 template <class MEMORY_ADDR>
 DWARF_CompilationUnit<MEMORY_ADDR>::~DWARF_CompilationUnit()
 {
-	if(dw_die) delete dw_die;
+	if(dw_die)
+	{
+		UnRegister(dw_die);
+		delete dw_die;
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -222,6 +226,7 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 	if((sz = dw_die->Load(rawdata, max_size, offset + size)) < 0)
 	{
 		delete dw_die;
+		dw_die = 0;
 		return -1;
 	}
 	rawdata += sz;
@@ -248,6 +253,12 @@ template <class MEMORY_ADDR>
 void DWARF_CompilationUnit<MEMORY_ADDR>::Register(DWARF_DIE<MEMORY_ADDR> *_dw_die)
 {
 	dw_handler->Register(_dw_die);
+}
+
+template <class MEMORY_ADDR>
+void DWARF_CompilationUnit<MEMORY_ADDR>::UnRegister(DWARF_DIE<MEMORY_ADDR> *_dw_die)
+{
+	dw_handler->UnRegister(_dw_die);
 }
 
 template <class MEMORY_ADDR>

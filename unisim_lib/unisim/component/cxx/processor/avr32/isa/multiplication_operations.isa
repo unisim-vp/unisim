@@ -211,7 +211,7 @@ muls_d.execute={
 
 muls_d.disasm={
 
-	os << "muls\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
+	os << "muls.d\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 
@@ -236,7 +236,7 @@ mulu_d.execute={
 
 mulu_d.disasm={
 
-	os << "mulu\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
+	os << "mulu.d\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 

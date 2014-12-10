@@ -20,6 +20,7 @@ mov_a.execute={
 mov_a.disasm={
 
 	os << "mov\t" <<  REG_NAME[rd] << "," << imm8;
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*imm8*/";
 }
 
 op mov_b(0b111[3]:imm_20_17[4]:0b0011[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
@@ -37,6 +38,7 @@ mov_b.execute={
 mov_b.disasm={
 
 	os << "mov\t" << REG_NAME[rd] << ",0x" << std::hex << imm;
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*imm21*/";
 }
 
 op mov_c(0b000[3]:rs[4]:0b01001[5]:rd[4])
@@ -192,6 +194,7 @@ ld_ub_c.disasm={
 		typename CONFIG::address_t addr= cpu->GetGPR(rp)+ (uint32_t)disp;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp3*/";
 }
 
 
@@ -212,6 +215,7 @@ ld_ub_d.disasm={
 		typename CONFIG::address_t addr= cpu->GetGPR(rp) + disp16;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os <<"\t\t/*disp16*/";
 }
 
 
@@ -546,6 +550,7 @@ ld_sh_c.disasm={
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+((uint32_t)disp3<<1);
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp3*/";
 }
 
 op ld_sh_d(0b111[3]:rp[4]:0b10000[5]:rd[4]:><:sext<32>disp16[16])
@@ -565,6 +570,7 @@ ld_sh_d.disasm={
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+ disp16;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp16*/";
 }
 
 op ld_sh_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0100[4]:0b00[2]:sa[2]:rd[4])
@@ -693,6 +699,7 @@ ld_w_c.disasm={
 		typename CONFIG::address_t addr=cpu->GetGPR(rp) +((uint32_t)disp5 << 2);
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp5*/";
 }
 
 
@@ -713,6 +720,7 @@ ld_w_d.disasm={
 		typename CONFIG::address_t addr=cpu->GetGPR(rp) + disp16;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp16*/";
 }
 
 op ld_w_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b0011[4]:0b00[2]:sa[2]:rd[4])
@@ -1136,6 +1144,7 @@ st_b_c.disasm={
 		typename CONFIG::address_t addr= cpu->GetGPR(rp)+(uint32_t)disp3;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp3*/";
 }
 
 
@@ -1156,6 +1165,7 @@ st_b_d.disasm={
 		typename CONFIG::address_t addr= cpu->GetGPR(rp)+disp16;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp16*/";
 }
 
 
@@ -1416,6 +1426,7 @@ st_h_c.disasm={
 		typename CONFIG::address_t addr= cpu->GetGPR(rp)+((uint32_t)disp3 << 1);
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp3*/";
 }
 
 op st_h_d(0b111[3]:rp[4]:0b10101[5]:rs[4]:><:sext<32>disp16[16])
@@ -1435,6 +1446,7 @@ st_h_d.disasm={
 		typename CONFIG::address_t addr= cpu->GetGPR(rp)+ disp16;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp16*/";
 }
 
 op st_h_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1010[4]:0b00[2]:sa[2]:rs[4])
@@ -1565,6 +1577,7 @@ st_w_c.disasm={
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+ ((uint32_t)disp4 << 2);
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp4*/";
 }
 
 op st_w_d(0b111[3]:rp[4]:0b10100[5]:rs[4]:><:sext<32> disp16[16])
@@ -1584,6 +1597,7 @@ st_w_d.disasm={
 		typename CONFIG::address_t addr = cpu->GetGPR(rp)+ disp16;
 		os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp16*/";
 }
 
 op st_w_e(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b1001[4]:0b00[2]:sa[2]:rs[4])

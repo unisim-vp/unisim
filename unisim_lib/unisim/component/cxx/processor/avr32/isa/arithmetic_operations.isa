@@ -298,7 +298,7 @@ cp_w_a.execute={
 
 cp_w_a.disasm={
 
-	os<< "cp.w\t" << REG_NAME[rd] << "," << REG_NAME[rs] ;
+	os<< "cp.w\t" << REG_NAME[rd] << "," << REG_NAME[rs];
 
 }
 
@@ -326,6 +326,7 @@ cp_w_b.execute={
 cp_w_b.disasm={
 
 	os<< "cp.w\t" << REG_NAME[rd] << ","<< imm6;
+	if(CONFIG::DISAMBIGUATE_DISASM) os<< "\t\t/*imm6*/";
 
 }
 
@@ -354,6 +355,7 @@ cp_w_c.execute={
 cp_w_c.disasm={
 
 	os<< "cp.w\t" << REG_NAME[rd] << "," << imm;
+	if(CONFIG::DISAMBIGUATE_DISASM) os<< "\t\t/*imm21*/";
 
 }
 
@@ -742,6 +744,7 @@ sub_c.execute = {
 sub_c.disasm={
 
 	os << "sub\t" << REG_NAME[rd] << "," << ((rd == REG_SP) ? imm8 << 2 : imm8);
+	if(CONFIG::DISAMBIGUATE_DISASM) os<< "\t\t/*imm8*/";
 }
 
 op sub_d(0b111[3]:imm_20_17[4]:0b0001[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
@@ -772,7 +775,8 @@ sub_d.execute = {
 
 sub_d.disasm={
 
-	os << "sub\t" << REG_NAME[rd] << ","  << imm ;
+	os << "sub\t" << REG_NAME[rd] << ","  << imm;
+	if(CONFIG::DISAMBIGUATE_DISASM) os<< "\t\t/*imm21*/";
 }
 
 op sub_e(0b111[3]:rs[4]:0b01100[5]:rd[4]:><:sext<32>imm16[16])
@@ -802,7 +806,7 @@ sub_e.execute = {
 
 sub_e.disasm={
 
-	os << "sub\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << imm16;
+	os << "sub\t" << REG_NAME[rd] << "," << REG_NAME[rs] << "," << imm16 ;
 }
 
 //SUB_COND4_F and SUB_COND4 - conditional subtract
