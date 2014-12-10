@@ -34,6 +34,7 @@
 
 #include <unisim/component/cxx/processor/hcs12x/s12xgate.hh>
 #include <unisim/component/cxx/processor/hcs12x/xgate.hh>
+#include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
 namespace component {
@@ -41,12 +42,6 @@ namespace cxx {
 namespace processor {
 namespace s12xgate {
 
-
-#if (defined(__GNUC__) && (__GNUC__ >= 3))
-#define INLINE __attribute__((always_inline))
-#else
-#define INLINE
-#endif
 
 using unisim::util::debug::SimpleRegister;
 
@@ -204,17 +199,17 @@ XGATE::~XGATE()
 /* Verbose methods (protected)                          START */
 /**************************************************************/
 
-inline INLINE
+inline ALWAYS_INLINE
 bool XGATE::VerboseSetup() {
 	return (debug_enabled && verbose_setup);
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 bool XGATE::VerboseStep() {
 	return (debug_enabled && verbose_step);
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void XGATE::VerboseDumpRegs() {
 
 	*logger << "\t- XGMCTL" << " = 0x" << std::hex << xgmctl_register << std::dec; //2-bytes
@@ -245,7 +240,7 @@ void XGATE::VerboseDumpRegs() {
 
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void XGATE::VerboseDumpRegsStart() {
 	if(debug_enabled && verbose_dump_regs_start) {
 		*logger << DebugInfo
@@ -255,7 +250,7 @@ void XGATE::VerboseDumpRegsStart() {
 	}
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void XGATE::VerboseDumpRegsEnd() {
 	if(debug_enabled && verbose_dump_regs_end) {
 		*logger << DebugInfo

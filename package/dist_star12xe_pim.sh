@@ -310,6 +310,7 @@ unisim/util/debug/blob/segment.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
+unisim/util/inlining/inlining.hh \
 unisim/util/likely/likely.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \

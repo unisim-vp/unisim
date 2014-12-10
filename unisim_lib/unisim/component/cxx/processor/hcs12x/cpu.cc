@@ -34,18 +34,13 @@
 
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>
+#include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace hcs12x {
-
-#if (defined(__GNUC__) && (__GNUC__ >= 3))
-#define INLINE __attribute__((always_inline))
-#else
-#define INLINE
-#endif
 
 using std::cout;
 
@@ -1120,17 +1115,17 @@ void CPU::RequiresFinishedInstructionReporting(bool report)
 /* Verbose methods (protected)                          START */
 /**************************************************************/
 
-inline INLINE
+inline ALWAYS_INLINE
 bool CPU::VerboseSetup() {
 	return (debug_enabled && verbose_setup);
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 bool CPU::VerboseStep() {
 	return (debug_enabled && verbose_step);
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void CPU::VerboseDumpRegs() {
 
 	*logger << "\t- A" << " = 0x" << std::hex << getRegA() << std::dec;
@@ -1146,7 +1141,7 @@ void CPU::VerboseDumpRegs() {
 
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void CPU::VerboseDumpRegsStart() {
 	if(debug_enabled && verbose_dump_regs_start) {
 		*logger << DebugInfo
@@ -1156,7 +1151,7 @@ void CPU::VerboseDumpRegsStart() {
 	}
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void CPU::VerboseDumpRegsEnd() {
 	if(debug_enabled && verbose_dump_regs_end) {
 		*logger << DebugInfo

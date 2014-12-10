@@ -307,6 +307,7 @@ unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
+unisim/util/inlining/inlining.hh \
 unisim/util/loader/elf_loader/elf_loader.hh \
 unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
