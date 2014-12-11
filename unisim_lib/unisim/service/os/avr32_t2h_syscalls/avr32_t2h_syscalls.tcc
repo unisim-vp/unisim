@@ -145,6 +145,8 @@ AVR32_T2H_Syscalls<MEMORY_ADDR>::AVR32_T2H_Syscalls(const char *name, Object *pa
 	, return_status_register_name("r12")
 	, errno_register_name("r11")
 	, param_register_names()
+	, argc(0)
+	, argv()
 	, stdin_pipe_filename()
 	, stdout_pipe_filename()
 	, stderr_pipe_filename()

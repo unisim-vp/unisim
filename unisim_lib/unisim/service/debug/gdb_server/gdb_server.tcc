@@ -163,6 +163,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 		return false;
 	}
 
+	if(!registers_import) return false;
+	
 	input_buffer_size = 0;
 	input_buffer_index = 0;
 	output_buffer_size = 0;
