@@ -291,4 +291,78 @@ inline bool ParseHex(const std::string& s, size_t& pos, T& value)
 	return (n > 0);
 }
 
+const char* getOsName() {
+
+	#ifndef __OSNAME__
+	#if defined(_WIN32) || defined(_WIN64)
+			const char* osName = "Windows";
+	#else
+	#ifdef __linux
+			const char* osName = "Linux";
+	#else
+			const char* osName = "Unknown";
+	#endif
+	#endif
+	#endif
+
+    return (osName);
+}
+
+/*
+ * Expand environment variables
+ * Windows:
+ *    - ExpandEnvironmentStrings(%PATH%): Expands environment-variable strings and replaces them with the values defined for the current user
+ *    - PathUnExpandEnvStrings: To replace folder names in a fully qualified path with their associated environment-variable strings
+ *    - Example Get system informations :
+ *      url: http://msdn.microsoft.com/en-us/library/ms724426%28v=vs.85%29.aspx
+ *
+ * Linux/Posix:
+ *   url: http://stackoverflow.com/questions/1902681/expand-file-names-that-have-environment-variables-in-their-path
+ *
+ */
+
+#include <cstdlib>
+#include <string>
+
+static std::string expand_environment_variables( std::string s ) {
+    if( s.find( "$(" ) == std::string::npos ) return s;
+
+    std::string pre  = s.substr( 0, s.find( "$(" ) );
+    std::string post = s.substr( s.find( "$(" ) + 2 );
+
+    if( post.find( ')' ) == std::string::npos ) return s;
+
+    std::string variable = post.substr( 0, post.find( ')' ) );
+    std::string value    = "";
+
+    post = post.substr( post.find( ')' ) + 1 );
+
+    if( getenv( variable.c_str() ) != NULL ) value = std::string( getenv( variable.c_str() ) );
+
+    return expand_environment_variables( pre + value + post );
+}
+
+static std::string expand_path_variables( std::string s , std::map<std::string, std::string> env_vars) {
+    if( s.find( "$(" ) == std::string::npos ) return s;
+
+    std::string pre  = s.substr( 0, s.find( "$(" ) );
+    std::string post = s.substr( s.find( "$(" ) + 2 );
+
+    if( post.find( ')' ) == std::string::npos ) return s;
+
+    std::string variable = post.substr( 0, post.find( ')' ) );
+    std::string value    = "";
+
+    post = post.substr( post.find( ')' ) + 1 );
+
+	std::map<std::string, std::string>::iterator it = env_vars.find(variable);
+	if (it == env_vars.end()) {
+		if( getenv( variable.c_str() ) != NULL ) value = std::string( getenv( variable.c_str() ) );
+	} else {
+		value = it->second;
+	}
+
+    return expand_environment_variables( pre + value + post );
+}
+
 #endif /* CONVERT_HH_ */

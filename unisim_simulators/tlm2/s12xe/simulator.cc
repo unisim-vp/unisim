@@ -593,11 +593,31 @@ Simulator::~Simulator()
 	if (spi2) { delete spi2; spi2 = NULL; }
 
 	if(cpu) { delete cpu; cpu = NULL; }
+
+#if defined(WIN32) || defined(WIN64)
+	// releases the winsock2 resources
+	WSACleanup();
+#endif
+
 }
 
 
 Simulator::SetupStatus Simulator::Setup()
 {
+// *********************************
+#if defined(WIN32) || defined(WIN64)
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		cerr << "WSAStartup failed" << endl;
+		return unisim::kernel::service::Simulator::ST_ERROR;
+	}
+#endif
+
+// **********************************
+
 	Simulator::SetupStatus result = unisim::kernel::service::Simulator::Setup();
 
 // **********
