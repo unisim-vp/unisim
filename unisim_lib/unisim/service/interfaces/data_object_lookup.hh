@@ -55,8 +55,10 @@ public:
 		SCOPE_BOTH_GLOBAL_AND_LOCAL = 3
 	} Scope;
 	
-	virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const = 0;
+	//virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const = 0;
 	virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, ADDRESS pc, Scope scope = SCOPE_BOTH_GLOBAL_AND_LOCAL) const = 0;
+	virtual unisim::util::debug::DataObject<ADDRESS> *GetDataObject(const char *data_object_name, const char *filename = 0) const = 0;
+	virtual unisim::util::debug::DataObject<ADDRESS> *GetDataObject(const char *data_object_name, ADDRESS pc) const = 0;
 };
 
 } // end of namespace interfaces

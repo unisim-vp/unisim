@@ -50,9 +50,48 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 
 template <class MEMORY_ADDR>
-DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const char *_data_object_name, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_type, bool _debug)
-	: data_object_name(_data_object_name)
-	, dw_data_object_loc(_dw_data_object_loc)
+DWARF_DataObjectInfo<MEMORY_ADDR>::DWARF_DataObjectInfo()
+	: dw_data_object_loc(0)
+	, dw_data_object_type(0)
+{
+}
+
+template <class MEMORY_ADDR>
+DWARF_DataObjectInfo<MEMORY_ADDR>::DWARF_DataObjectInfo(const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_dw_data_object_type)
+	: dw_data_object_loc(_dw_data_object_loc)
+	, dw_data_object_type(_dw_data_object_type)
+{
+}
+
+template <class MEMORY_ADDR>
+DWARF_DataObjectInfo<MEMORY_ADDR>::~DWARF_DataObjectInfo()
+{
+	if(dw_data_object_loc) delete dw_data_object_loc;
+	if(dw_data_object_type) delete dw_data_object_type;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_Location<MEMORY_ADDR> *DWARF_DataObjectInfo<MEMORY_ADDR>::GetLocation() const
+{
+	return dw_data_object_loc;
+}
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::Type *DWARF_DataObjectInfo<MEMORY_ADDR>::GetType() const
+{
+	return dw_data_object_type;
+}
+
+template <class MEMORY_ADDR>
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, const char *_data_object_name, const CLocOperationStream& _c_loc_operation_stream, bool _debug)
+	: dw_handler(_dw_handler)
+	, data_object_name(_data_object_name)
+	, c_loc_operation_stream(_c_loc_operation_stream)
+	, infos()
+	, exists(false)
+	, pc(0)
+	, dw_data_object_loc(0)
+	, dw_data_object_type(0)
 	, arch_endianness(dw_handler->GetArchEndianness())
 	, arch_address_size(dw_handler->GetArchAddressSize())
 	, dw_reg_num_mapping(dw_handler->GetRegisterNumberMapping())
@@ -60,15 +99,41 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, bv(arch_endianness)
 	, debug(_debug)
 	, logger(dw_handler->GetLogger())
-	, type(_type)
 {
+}
+
+template <class MEMORY_ADDR>
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, const char *_data_object_name, const CLocOperationStream& _c_loc_operation_stream, MEMORY_ADDR _pc, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_dw_data_object_type, bool _debug)
+	: dw_handler(_dw_handler)
+	, data_object_name(_data_object_name)
+	, c_loc_operation_stream(_c_loc_operation_stream)
+	, infos()
+	, exists(true)
+	, pc(_pc)
+	, dw_data_object_loc(_dw_data_object_loc)
+	, dw_data_object_type(_dw_data_object_type)
+	, arch_endianness(dw_handler->GetArchEndianness())
+	, arch_address_size(dw_handler->GetArchAddressSize())
+	, dw_reg_num_mapping(dw_handler->GetRegisterNumberMapping())
+	, mem_if(dw_handler->GetMemoryInterface())
+	, bv(arch_endianness)
+	, debug(_debug)
+	, logger(dw_handler->GetLogger())
+{
+	infos.insert(std::pair<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>(pc, new DWARF_DataObjectInfo<MEMORY_ADDR>(dw_data_object_loc, dw_data_object_type)));
 }
 	
 template <class MEMORY_ADDR>
 DWARF_DataObject<MEMORY_ADDR>::~DWARF_DataObject()
 {
-	if(dw_data_object_loc) delete dw_data_object_loc;
-	if(type) delete type;
+	typename std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>::iterator iter;
+	
+	for(iter = infos.begin(); iter != infos.end(); iter++)
+	{
+		const DWARF_DataObjectInfo<MEMORY_ADDR> *dw_data_object_info = (*iter).second;
+		delete dw_data_object_info;
+	}
+	infos.clear();
 }
 
 template <class MEMORY_ADDR>
@@ -86,13 +151,25 @@ MEMORY_ADDR DWARF_DataObject<MEMORY_ADDR>::GetBitSize() const
 template <class MEMORY_ADDR>
 const unisim::util::debug::Type *DWARF_DataObject<MEMORY_ADDR>::GetType() const
 {
-	return type;
+	return dw_data_object_type;
 }
 
 template <class MEMORY_ADDR>
 unisim::util::endian::endian_type DWARF_DataObject<MEMORY_ADDR>::GetEndian() const
 {
 	return arch_endianness;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DataObject<MEMORY_ADDR>::GetPC() const
+{
+	return pc;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DataObject<MEMORY_ADDR>::Exists() const
+{
+	return exists;
 }
 
 template <class MEMORY_ADDR>
@@ -110,6 +187,36 @@ bool DWARF_DataObject<MEMORY_ADDR>::GetAddress(MEMORY_ADDR& addr) const
 	addr = dw_data_object_loc->GetAddress();
 	
 	return true;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_DataObject<MEMORY_ADDR>::Seek(MEMORY_ADDR _pc)
+{
+	bv.Clear();
+	pc = _pc;
+	
+	typename std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>::const_iterator iter = infos.find(pc);
+	
+	if(iter != infos.end())
+	{
+		const DWARF_DataObjectInfo<MEMORY_ADDR> *dw_data_object_info = (*iter).second;
+		dw_data_object_loc = dw_data_object_info->GetLocation();
+		dw_data_object_type = dw_data_object_info->GetType();
+		exists = true;
+	}
+	else
+	{
+		std::string matched_data_object_name;
+		if(dw_handler->FindDataObject(c_loc_operation_stream, pc, matched_data_object_name, dw_data_object_loc, dw_data_object_type))
+		{
+			infos.insert(std::pair<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>(pc, new DWARF_DataObjectInfo<MEMORY_ADDR>(dw_data_object_loc, dw_data_object_type)));
+			exists = true;
+		}
+		else
+		{
+			exists = false;
+		}
+	}
 }
 
 template <class MEMORY_ADDR>

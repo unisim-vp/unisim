@@ -454,6 +454,7 @@ Typedef::Typedef(const Type *_type, const char *_name)
 
 Typedef::~Typedef()
 {
+	delete type;
 }
 
 const Type *Typedef::GetType() const

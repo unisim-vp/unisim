@@ -111,7 +111,8 @@ public:
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
 	
-	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(const char *data_object_name, const char *filename  = 0) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 private:
 	unisim::kernel::logger::Logger& logger;

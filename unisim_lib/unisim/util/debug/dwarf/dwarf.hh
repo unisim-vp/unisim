@@ -128,8 +128,11 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
-	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
-	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(CLocOperationStream& c_loc_operation_stream, MEMORY_ADDR pc) const;
+	bool FindDataObject(const CLocOperationStream& _c_loc_operation_stream, MEMORY_ADDR pc, std::string& matched_data_object_name, const DWARF_Location<MEMORY_ADDR> *& dw_data_object_loc, const unisim::util::debug::Type *& dw_data_object_type) const;	
+	
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(const char *data_object_name, const char *filename = 0) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
+	
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
 	endian_type GetFileEndianness() const;

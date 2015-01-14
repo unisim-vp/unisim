@@ -2667,7 +2667,7 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 {
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->GetDataObject(data_object_name, cia);
 		
 		if(data_object)
 		{
@@ -2714,24 +2714,24 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 					}
 					else
 					{
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << endl;
 					}
 				}
 				else
 				{
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << endl;
 				}
 			}
 			else
 			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << endl;
 			}
-			
+				
 			delete data_object;
 		}
 		else
 		{
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
 		}
 	}
 	else
@@ -2752,7 +2752,7 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDR
 			requesting_address_of_data_object = true;
 		}
 		
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->GetDataObject(data_object_name, cia);
 		
 		if(data_object)
 		{
@@ -2769,7 +2769,7 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDR
 					}
 					else
 					{
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" has no address" << endl;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" has no address" << endl;
 					}
 				}
 				else
@@ -2798,12 +2798,12 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDR
 						}
 						else
 						{
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << endl;
 						}
 					}
 					else
 					{
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << endl;
 					}
 				}
 			}
@@ -2818,7 +2818,7 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDR
 		}
 		else
 		{
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
 		}
 	}
 	else
@@ -2834,7 +2834,7 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->GetDataObject(data_object_name, cia);
 		
 		if(data_object)
 		{
@@ -2884,30 +2884,31 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 							if(!data_object->Commit())
 							{
 								status = false;
-								(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be committed" << endl;
 							}
 						}
 						else
 						{
 							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be written" << endl;
 						}
 					}
 					else
 					{
 						status = false;
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << endl;
 					}
 				}
 				else
 				{
 					status = false;
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << endl;
 				}
 			}
 			else
 			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+				status = false;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << endl;
 			}
 			
 			delete data_object;
@@ -2915,7 +2916,7 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 		else
 		{
 			status = false;
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
 		}
 	}
 	else
@@ -2933,7 +2934,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->GetDataObject(data_object_name, cia);
 		
 		if(data_object)
 		{
@@ -2965,7 +2966,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 							if(!ParseIntegerValue(literal, data_object_raw_value))
 							{
 								status = false;
-								(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts an integral value" << endl;
+								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" only accepts an integral value" << endl;
 							}
 							break;
 						case unisim::util::debug::T_FLOAT:
@@ -2975,7 +2976,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 								if(!ParseFloatValue(literal, float_value))
 								{
 									status = false;
-									(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts a floating-point value" << endl;
+									(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" only accepts a floating-point value" << endl;
 									break;
 								}
 								switch(data_object_bit_size)
@@ -2992,7 +2993,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 										data_object_raw_value = float_value.queryValue();
 										break;
 									default:
-										(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << endl;
+										(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << endl;
 										break;
 								}
 							}
@@ -3008,7 +3009,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 						case unisim::util::debug::T_VOID:
 						case unisim::util::debug::T_VOLATILE:
 							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" is not a base type" << endl;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is not a base type" << endl;
 							break;
 					}
 					
@@ -3019,25 +3020,26 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 							if(!data_object->Commit())
 							{
 								status = false;
-								(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be committed" << endl;
 							}
 						}
 						else
 						{
 							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be written" << endl;
 						}
 					}
 				}
 				else
 				{
 					status = false;
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << endl;
 				}
 			}
 			else
 			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+				status = false;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << endl;
 			}
 			
 			delete data_object;
@@ -3045,7 +3047,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 		else
 		{
 			status = false;
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
 		}
 	}
 	else

@@ -1189,7 +1189,7 @@ bool Debugger<ADDRESS>::SetupDebugInfo()
 }
 
 template <class ADDRESS>
-unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(const char *data_object_name, ADDRESS pc) const
+unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::GetDataObject(const char *data_object_name, const char *filename) const
 {
 	unsigned int i;
 	
@@ -1199,7 +1199,7 @@ unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(cons
 		if(enable_elf32_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->FindDataObject(data_object_name, pc);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->GetDataObject(data_object_name, filename);
 			if(data_object) return data_object;
 		}
 	}
@@ -1210,7 +1210,37 @@ unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(cons
 		if(enable_elf64_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->FindDataObject(data_object_name, pc);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->GetDataObject(data_object_name, filename);
+			if(data_object) return data_object;
+		}
+	}
+	
+	return 0;
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::GetDataObject(const char *data_object_name, ADDRESS pc) const
+{
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->GetDataObject(data_object_name, pc);
+			if(data_object) return data_object;
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->GetDataObject(data_object_name, pc);
 			if(data_object) return data_object;
 		}
 	}

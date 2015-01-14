@@ -67,7 +67,8 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_CHAR:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->GetDataObject(data_object_name, pc);
+				
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())
@@ -111,7 +112,8 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_INTEGER:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->GetDataObject(data_object_name, pc);
+				
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())
@@ -155,7 +157,8 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_FLOAT:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->GetDataObject(data_object_name, pc);
+				
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())
@@ -215,7 +218,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_BOOL:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->GetDataObject(data_object_name, pc);
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())
@@ -287,7 +290,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_POINTER:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->GetDataObject(data_object_name, pc);
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())
@@ -331,7 +334,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			break;
 		case T_ENUM:
 			{
-				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->GetDataObject(data_object_name, pc);
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())

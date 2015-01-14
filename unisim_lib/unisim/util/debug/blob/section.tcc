@@ -147,6 +147,15 @@ void Section<MEMORY_ADDR>::GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_
 }
 
 template <class MEMORY_ADDR>
+bool Section<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR _min_addr, MEMORY_ADDR _max_addr) const
+{
+	MEMORY_ADDR min_addr = addr;
+	MEMORY_ADDR max_addr = addr + size - 1;
+
+	return ((max_addr < _max_addr) ? max_addr : _max_addr) >= ((min_addr < _min_addr) ? _min_addr : min_addr);
+}
+
+template <class MEMORY_ADDR>
 void Section<MEMORY_ADDR>::Catch() const
 {
 	(*refcount)++;
