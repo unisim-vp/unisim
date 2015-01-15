@@ -2327,95 +2327,6 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 	return ret;
 }
 
-#if 0
-template <class MEMORY_ADDR>
-const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
-{
-	bool requested_filename_is_absolute = IsAbsolutePath(filename);
-	std::vector<std::string> hierarchical_requested_filename;
-	
-	std::string s;
-	const char *p = filename;
-	do
-	{
-		if(*p == 0 || *p == '/' || *p == '\\')
-		{
-			hierarchical_requested_filename.push_back(s);
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	int hierarchical_requested_filename_depth = hierarchical_requested_filename.size();
-
-	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
-	
-	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
-	{
-		const Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
-		
-		if(stmt)
-		{
-			if(stmt->GetLineNo() == lineno && (!colno || (stmt->GetColNo() == colno)))
-			{
-				std::string source_path;
-				const char *source_filename = stmt->GetSourceFilename();
-				if(source_filename)
-				{
-					const char *source_dirname = stmt->GetSourceDirname();
-					if(source_dirname)
-					{
-						source_path += source_dirname;
-						source_path += '/';
-					}
-					source_path += source_filename;
-
-					std::vector<std::string> hierarchical_source_path;
-					
-					s.clear();
-					p = source_path.c_str();
-					do
-					{
-						if(*p == 0 || *p == '/' || *p == '\\')
-						{
-							hierarchical_source_path.push_back(s);
-							s.clear();
-						}
-						else
-						{
-							s += *p;
-						}
-					} while(*(p++));
-
-					int hierarchical_source_path_depth = hierarchical_source_path.size();
-					
-					if((!requested_filename_is_absolute && hierarchical_source_path_depth >= hierarchical_requested_filename_depth) ||
-					   (requested_filename_is_absolute && hierarchical_source_path_depth == hierarchical_requested_filename_depth))
-					{
-						int i;
-						bool match = true;
-						
-						for(i = 0; i < hierarchical_requested_filename_depth; i++)
-						{
-							if(hierarchical_source_path[hierarchical_source_path_depth - 1 - i] != hierarchical_requested_filename[hierarchical_requested_filename_depth - 1 - i])
-							{
-								match = false;
-								break;
-							}
-						}
-						
-						if(match) return stmt;
-					}
-				}
-			}
-		}
-	}
-	return 0;
-}
-#endif
-
 template <class MEMORY_ADDR>
 const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
 {
@@ -2818,8 +2729,6 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetDat
 	
 	if(!c_loc_expr_parser.Parse(c_loc_operation_stream)) return 0;
 	
-	//std::cerr << c_loc_operation_stream << std::endl;
-	
 	return new DWARF_DataObject<MEMORY_ADDR>(this, data_object_name, c_loc_operation_stream, debug);
 }
 
@@ -2950,7 +2859,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 	bool is_dereferencing_a_structure = false; // Note: when it is "true", we have one operation speculatively fetched (OP_STRUCT_DEREF)
 	                                           // if it is set, we check that the following DIE is really a DW_TAG_structure_type
 	bool status = true;
-	bool match = false;
+	bool match_or_optimized_out = false;
 
 	// Explore the imbricated type definitions
 	do
@@ -3059,7 +2968,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 					if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
 					{
 						// match or optimized out
-						match = true;
+						match_or_optimized_out = true;
 						break;
 					}
 
@@ -3217,7 +3126,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 
 							if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
 							{
-								// match
+								// match or optimized out
 								if(array_element_count == 1)
 								{
 									uint8_t array_element_encoding = 0;
@@ -3228,7 +3137,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 									dw_data_object_loc->SetEncoding(array_element_encoding);
 								}
 								dw_data_object_type = dw_die_type->BuildType(false, dim + 1);
-								match = true;
+								match_or_optimized_out = true;
 								break;
 							}
 
@@ -3246,9 +3155,9 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 						}
 						break;
 					}
-					while(status && !match);
+					while(status && !match_or_optimized_out);
 					
-					if(status && !match)
+					if(status && !match_or_optimized_out)
 					{
 						MEMORY_ADDR object_addr = dw_data_object_loc->GetAddress();
 						int64_t dw_data_object_bit_offset = dw_data_object_loc->GetBitOffset();
@@ -3398,7 +3307,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 							}
 							
 							dw_data_object_type = dw_die_type->BuildType();
-							match = true;
+							match_or_optimized_out = true;
 							break;
 						}
 					}
@@ -3456,7 +3365,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 							}
 							
 							dw_data_object_type = dw_die_type->BuildTypeOf();
-							match = true;
+							match_or_optimized_out = true;
 							break;
 						}
 					}
@@ -3540,9 +3449,9 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 				break;
 		}
 	}
-	while(status && !match && dw_type_ref);
+	while(status && !match_or_optimized_out && dw_type_ref);
 	
-	if(match)
+	if(match_or_optimized_out)
 	{
 		dw_data_object_loc_const = dw_data_object_loc;
 	}
@@ -3556,7 +3465,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 
 	if(c_loc_op) delete c_loc_op;
 	
-	return match;
+	return match_or_optimized_out;
 }
 
 template <class MEMORY_ADDR>
