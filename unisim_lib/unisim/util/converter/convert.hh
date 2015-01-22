@@ -9,6 +9,7 @@
 #define CONVERT_HH_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <iostream>
 #include <sstream>
@@ -16,6 +17,7 @@
 #include <vector>
 #include <typeinfo>
 #include <stdexcept>
+#include <map>
 
 class BadConversion : public std::runtime_error {
 public:
@@ -256,6 +258,33 @@ inline void stringSplit(std::string str, const std::string delim, std::vector<st
 
 }
 
+inline void splitCharStr2Array(char* str, const char * delimiters, int *count, char** *res) {
+
+	char *  p    = strtok (str, delimiters);
+	int n_spaces = 0, i;
+
+	/* split string and append tokens to 'res' */
+
+	while (p) {
+	  (*res) = (char**) realloc ((*res), sizeof (char*) * ++n_spaces);
+
+	  if ((*res) == NULL)
+	    exit (-1); /* memory allocation failed */
+
+	  (*res)[n_spaces-1] = p;
+
+	  p = strtok (NULL, " ");
+	}
+
+//	/* print the result */
+//
+//	for (i = 0; i < (n_spaces); ++i)
+//	  printf ("res[%d] = %s\n", i, (*res)[i]);
+
+	*count = n_spaces;
+
+}
+
 /* Function to get parity of number n. It returns 1
    if n has odd parity, and returns 0 if n has even
    parity */
@@ -291,7 +320,7 @@ inline bool ParseHex(const std::string& s, size_t& pos, T& value)
 	return (n > 0);
 }
 
-const char* getOsName() {
+inline const char* getOsName() {
 
 	#ifndef __OSNAME__
 	#if defined(_WIN32) || defined(_WIN64)

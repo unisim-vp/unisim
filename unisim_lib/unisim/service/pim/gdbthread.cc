@@ -126,8 +126,8 @@ DBGData::DBGData(DBGCOMMANDS _command, double _simTime) : command(_command), sim
 	setSlave(DBGData::DEFAULT_SLAVE);
 }
 
-DBGData::DBGData(DBGCOMMANDS _name, double _simTime, string _masterSite, string _master, string _slaveSite, string _slave) :
-	command(_name), simTime(_simTime), masterSite(_masterSite), master(_master), slaveSite(_slaveSite), slave(_slave) {
+DBGData::DBGData(DBGCOMMANDS _command, double _simTime, string _masterSite, string _master, string _slaveSite, string _slave) :
+	command(_command), simTime(_simTime), masterSite(_masterSite), master(_master), slaveSite(_slaveSite), slave(_slave) {
 
 }
 
@@ -235,10 +235,10 @@ GDBThread::GDBThread(const char *_name, Object *_parent):
 
 GDBThread::~GDBThread() {
 
-	delete receiver; receiver = NULL;
-	delete sender; sender = NULL;
-	delete receiveDataQueue; receiveDataQueue = NULL;
-	delete sendDataQueue; sendDataQueue = NULL;
+	if (receiver) { delete receiver; receiver = NULL; }
+	if (sender) { delete sender; sender = NULL; }
+	if (receiveDataQueue) { delete receiveDataQueue; receiveDataQueue = NULL; }
+	if (sendDataQueue) { delete sendDataQueue; sendDataQueue = NULL; }
 }
 
 bool GDBThread::isData() {

@@ -51,7 +51,7 @@ public:
 
 	DBGData(DBGCOMMANDS _command);
 	DBGData(DBGCOMMANDS _command, double _simTime);
-	DBGData(DBGCOMMANDS _name, double _simTime, string _masterSite, string _master, string _slaveSite, string _slave);
+	DBGData(DBGCOMMANDS _command, double _simTime, string _masterSite, string _master, string _slaveSite, string _slave);
 	DBGData(DBGCOMMANDS _command, double _simTime, DBGData* refData);
 	~DBGData();
 
