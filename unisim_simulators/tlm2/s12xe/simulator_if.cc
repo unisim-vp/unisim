@@ -48,3 +48,14 @@ EXPORTED_FUNCTION void   deleteObject() {
 	if (simulator != 0) { simulator->Stop(NULL, 0, false); delete simulator; simulator = 0; }
 
 }
+
+EXPORTED_FUNCTION  void in_out(double anValue8[8], double anValue16[16], bool (*pwmValue)[PWM_SIZE]) {
+
+	simulator->Inject_ATD0(anValue8);
+
+	simulator->Inject_ATD1(anValue16);
+
+	simulator->Get_PWM(pwmValue);
+
+}
+

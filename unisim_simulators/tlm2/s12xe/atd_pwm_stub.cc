@@ -53,6 +53,9 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	, trace_enable(false)
 	, param_trace_enable("trace-enabled", this, trace_enable)
 
+	, cosim_enabled(false)
+	, param_cosim_enabled("cosim-enabled", this, cosim_enabled)
+
 	, atd0_stub_enabled(false)
 	, param_atd0_stub_enabled("atd0-stub-enabled", this, atd0_stub_enabled)
 
@@ -70,12 +73,6 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	atd1_master_sock(*this);
 	atd0_master_sock(*this);
 	slave_sock(*this);
-
-//	SC_HAS_PROCESS(ATD_PWM_STUB);
-//
-//	SC_THREAD(ProcessATD);
-//	SC_THREAD(ProcessPWM);
-//
 
 	atd1_payload = atd1_payload_fabric.allocate();
 	atd0_payload = atd0_payload_fabric.allocate();
@@ -183,7 +180,8 @@ void ATD_PWM_STUB::invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::
 }
 
 // Implementation
-void ATD_PWM_STUB::input(bool pwmValue[PWM_SIZE])
+//void ATD_PWM_STUB::input(bool* pwmValue[PWM_SIZE])
+void ATD_PWM_STUB::input(bool (*pwmValue)[PWM_SIZE])
 {
 	PWM_Payload<PWM_SIZE> *last_payload = NULL;
 	PWM_Payload<PWM_SIZE> *payload = NULL;
@@ -207,7 +205,7 @@ void ATD_PWM_STUB::input(bool pwmValue[PWM_SIZE])
 	}
 
 	for (int i=0; i<PWM_SIZE; i++) {
-		pwmValue[i] = payload->pwmChannel[i];
+		(*pwmValue)[i] = payload->pwmChannel[i];
 	}
 
 	payload->release();
@@ -310,57 +308,4 @@ void ATD_PWM_STUB::output_ATD0(double anValue[ATD0_SIZE])
 
 }
 
-//void ATD_PWM_STUB::ProcessATD() {
-//
-//	double atd1_anValue[ATD1_SIZE];
-//	double atd0_anValue[ATD0_SIZE];
-//
-//	srand(12345);
-//
-//	sc_time delay(anx_stimulus_period, SC_PS);
-//
-//	int atd0_data_index = 0;
-//	int atd1_data_index = 0;
-//
-//	/**
-//	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
-//	 */
-//	wait(sc_time(20, SC_MS));
-//
-//	while(1)
-//	{
-//		for (uint8_t i=0; i < ATD0_SIZE; i++) {
-//			atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-//		}
-//
-//		for (uint8_t i=0; i < ATD1_SIZE; i++) {
-//			atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-//		}
-//
-//		Output_ATD1(atd1_anValue);
-//		Output_ATD0(atd0_anValue);
-//
-//		wait(delay);
-//
-//		quantumkeeper.inc(delay);
-//		quantumkeeper.sync();
-//
-//	}
-//
-//}
-//
-//void ATD_PWM_STUB::ProcessPWM() {
-//
-//	bool pwmValue[PWM_SIZE];
-//
-//	while(1)
-//	{
-//		wait(input_payload_queue.get_event());
-//
-//		Input(pwmValue);
-//
-//		quantumkeeper.sync();
-//	}
-//
-//}
 

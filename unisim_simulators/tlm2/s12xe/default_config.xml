@@ -1626,6 +1626,16 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="cosim-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="atd0-stub-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>

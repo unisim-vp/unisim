@@ -66,6 +66,14 @@ XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 
 XML_ATD_PWM_STUB::~XML_ATD_PWM_STUB() {
 
+	for (int i=0; i < atd0_vect.size(); i++) {
+		delete atd0_vect.at(i);
+	}
+
+	for (int i=0; i < atd1_vect.size(); i++) {
+		delete atd1_vect.at(i);
+	}
+
 	atd0_vect.clear();
 	atd1_vect.clear();
 
@@ -127,7 +135,7 @@ template <int SIZE> void XML_ATD_PWM_STUB::parseRow (xmlDocPtr doc, xmlNodePtr c
 	return;
 }
 
-template <int SIZE> int XML_ATD_PWM_STUB::RandomizeData(std::vector<data_t<SIZE> > &vect) {
+template <int SIZE> int XML_ATD_PWM_STUB::RandomizeData(std::vector<data_t<SIZE>* > &vect) {
 
 
 	const int SET_SIZE = 1024;
@@ -136,12 +144,12 @@ template <int SIZE> int XML_ATD_PWM_STUB::RandomizeData(std::vector<data_t<SIZE>
 
 	srand(12345);
 
-	data_t<SIZE> data;
+	data_t<SIZE>* data;
 	for (int i=0; i < SET_SIZE; i++) {
-
+		data = new data_t<SIZE>();
 		for (uint8_t j=0; j < SIZE; j++) {
-			data.volte[j] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-			data.time = time;
+			data->volte[j] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+			data->time = time;
 		}
 
 		time = time + TIME_STEP;
@@ -152,7 +160,7 @@ template <int SIZE> int XML_ATD_PWM_STUB::RandomizeData(std::vector<data_t<SIZE>
 	return (SET_SIZE);
 }
 
-template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std::vector<data_t<SIZE> > &vect) {
+template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std::vector<data_t<SIZE>* > &vect) {
 
 	const char *path = "//Row";
 
@@ -182,10 +190,11 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 			result = xmlobject->nodesetval->nodeNr;
 
 			xmlNodePtr node;
-			data_t<SIZE> data;
+			data_t<SIZE> *data;
 			for (int i=0; i<xmlobject->nodesetval->nodeNr; i++) {
 				node = xmlobject->nodesetval->nodeTab[i];
-				parseRow<SIZE> (doc, node, data);
+				data = new data_t<SIZE>();
+				parseRow<SIZE> (doc, node, *data);
 				vect.push_back(data);
 			}
 		}
@@ -199,27 +208,71 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 
 bool XML_ATD_PWM_STUB::BeginSetup() {
 
-	if (atd0_stub_enabled) {
-		LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
-	} else {
-		RandomizeData<ATD0_SIZE>(atd0_vect);
-	}
+	if (cosim_enabled) {
+		data_t<ATD0_SIZE>* data0  = new data_t<ATD0_SIZE>();
+		for (uint8_t j=0; j < ATD0_SIZE; j++) {
+			data0->volte[j] = 0; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+			data0->time = 0;
+		}
+		atd0_vect.push_back(data0);
 
-	if (atd1_stub_enabled) {
-		LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
-	} else {
-		RandomizeData<ATD1_SIZE>(atd1_vect);
+		data_t<ATD1_SIZE>* data1  = new data_t<ATD1_SIZE>();
+		for (uint8_t j=0; j < ATD1_SIZE; j++) {
+			data1->volte[j] = 0; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+			data1->time = 0;
+		}
+		atd1_vect.push_back(data1);
+
+	}
+	else {
+		if (atd0_stub_enabled) {
+			LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
+		} else {
+			RandomizeData<ATD0_SIZE>(atd0_vect);
+		}
+
+		if (atd1_stub_enabled) {
+			LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
+		} else {
+			RandomizeData<ATD1_SIZE>(atd1_vect);
+		}
 	}
 
 	return (inherited::BeginSetup());
 }
 
+void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[8])
+{
+	data_t<ATD0_SIZE>* data  = atd0_vect.at(0);
+	for (uint8_t j=0; j < ATD0_SIZE; j++) {
+		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+		data->time = 0;
+	}
+
+}
+
+void XML_ATD_PWM_STUB::Inject_ATD1(double anValue[16])
+{
+	data_t<ATD1_SIZE>* data  = atd1_vect.at(0);
+	for (uint8_t j=0; j < ATD1_SIZE; j++) {
+		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+		data->time = 0;
+	}
+
+}
+
+void XML_ATD_PWM_STUB::Get_PWM(bool (*value)[PWM_SIZE])
+{
+
+	for (int i=0; i<PWM_SIZE; i++) {
+		(*value)[i] = pwmValue[i];
+	}
+}
+
 void XML_ATD_PWM_STUB::processATD0()
 {
 
-	int atd0_data_size, atd0_data_index = 0;
-
-	atd0_data_size = atd0_vect.size();
+	int atd0_data_index = 0;
 
 	/**
 	 * Note: The Software sample the ATDDRx every 1024us.
@@ -251,13 +304,13 @@ void XML_ATD_PWM_STUB::processATD0()
 			if ((i < atd0_start) || (i > atd0_wrap_around)) {
 				atd0_anValue[i] = 0;
 			} else {
-				atd0_anValue[i] = atd0_vect.at(atd0_data_index).volte[j++];
+				atd0_anValue[i] = atd0_vect.at(atd0_data_index)->volte[j++];
 			}
 		}
 
 		output_ATD0(atd0_anValue);
 
-		atd0_data_index = (atd0_data_index + 1) % atd0_data_size;
+		atd0_data_index = (atd0_data_index + 1) % atd0_vect.size();
 
 	}
 
@@ -268,9 +321,7 @@ void XML_ATD_PWM_STUB::processATD1()
 {
 	srand(12345);
 
-	int atd1_data_size, atd1_data_index = 0;
-
-	atd1_data_size = atd1_vect.size();
+	int atd1_data_index = 0;
 
 	/**
 	 * Note: The Software sample the ATDDRx every 1024us.
@@ -302,13 +353,13 @@ void XML_ATD_PWM_STUB::processATD1()
 			if ((i < atd1_start) || (i > atd1_wrap_around)) {
 				atd1_anValue[i] = 0;
 			} else {
-				atd1_anValue[i] = atd1_vect.at(atd1_data_index).volte[j++];
+				atd1_anValue[i] = atd1_vect.at(atd1_data_index)->volte[j++];
 			}
 		}
 
 		output_ATD1(atd1_anValue);
 
-		atd1_data_index = (atd1_data_index + 1) % atd1_data_size;
+		atd1_data_index = (atd1_data_index + 1) % atd1_vect.size();
 
 //		wait(*anx_stimulus_period_sc);
 	}
@@ -318,11 +369,9 @@ void XML_ATD_PWM_STUB::processATD1()
 void XML_ATD_PWM_STUB::processPWM()
 {
 
-	bool pwmValue[PWM_SIZE];
-
 	while (!isTerminated())
 	{
-		input(pwmValue);
+		input(&pwmValue);
 	}
 
 }

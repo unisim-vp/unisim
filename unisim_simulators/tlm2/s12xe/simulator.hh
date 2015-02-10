@@ -160,6 +160,36 @@ public:
 	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
 	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
+	void Inject_ATD0(double anValue[8]) {
+
+#ifdef HAVE_RTBCOB
+	rtbStub->output_ATD0(anValue);
+#else
+	xml_atd_pwm_stub->Inject_ATD0(anValue);
+#endif
+
+	};
+
+	void Inject_ATD1(double anValue[16]) {
+
+#ifdef HAVE_RTBCOB
+	rtbStub->output_ATD1(anValue);
+#else
+	xml_atd_pwm_stub->Inject_ATD1(anValue);
+#endif
+
+	};
+
+	void Get_PWM(bool (*pwmValue)[8]) {
+
+#ifdef HAVE_RTBCOB
+	rtbStub->input(&pwmValue);
+#else
+	xml_atd_pwm_stub->Get_PWM(pwmValue);
+#endif
+
+	};
+
 private:
 
 	//=========================================================================
