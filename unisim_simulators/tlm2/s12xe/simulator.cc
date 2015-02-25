@@ -638,7 +638,9 @@ Simulator::SetupStatus Simulator::Setup()
 		mmc->splitPagedAddress(entry_point, page, cpu_address);
 	} else {
 		const unisim::util::debug::blob::Blob<physical_address_t>* blob = loaderELF->GetBlob();
-		entry_point = blob->GetEntryPoint();
+		if (blob != NULL) {
+			entry_point = blob->GetEntryPoint();
+		}
 
 		cpu_address = (address_t) entry_point;
 	}
@@ -824,10 +826,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.pwm-fetch-period", 1e9); // 1 ms
 	simulator->SetVariable("atd-pwm-stub.atd0-anx-stimulus-file", "ATD.xml");
 	simulator->SetVariable("atd-pwm-stub.atd0-anx-start-channel", 0);
-	simulator->SetVariable("atd-pwm-stub.atd0-anx-wrap-around-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.atd0-anx-wrap-around-channel", 7);
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-stimulus-file", "ATD.xml");
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-start-channel", 0);
-	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 15);
 	simulator->SetVariable("atd-pwm-stub.trace-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.cosim-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd0-stub-enabled", false);
@@ -1096,5 +1098,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	// Inline debugger
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
+	simulator->SetVariable("inline-debugger.search-path", "");
 }
 

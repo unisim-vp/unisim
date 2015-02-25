@@ -38,21 +38,21 @@
 #include "xml_atd_pwm_stub.hh"
 
 XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
-	ATD_PWM_STUB(name, parent),
+ATD_PWM_STUB(name, parent),
 
-	atd0_anx_stimulus_file(""),
-	param_atd0_anx_stimulus_file("atd0-anx-stimulus-file", this, atd0_anx_stimulus_file),
-	atd0_anx_start_channel(0),
-	param_atd0_anx_start_channel("atd0-anx-start-channel", this, atd0_anx_start_channel),
-	atd0_anx_wrap_around_channel(ATD0_SIZE -1),
-	param_atd0_anx_wrap_around_channel("atd0-anx-wrap-around-channel", this, atd0_anx_wrap_around_channel),
+atd0_anx_stimulus_file(""),
+param_atd0_anx_stimulus_file("atd0-anx-stimulus-file", this, atd0_anx_stimulus_file),
+atd0_anx_start_channel(0),
+param_atd0_anx_start_channel("atd0-anx-start-channel", this, atd0_anx_start_channel),
+atd0_anx_wrap_around_channel(ATD0_SIZE -1),
+param_atd0_anx_wrap_around_channel("atd0-anx-wrap-around-channel", this, atd0_anx_wrap_around_channel),
 
-	atd1_anx_stimulus_file(""),
-	param_atd1_anx_stimulus_file("atd1-anx-stimulus-file", this, atd1_anx_stimulus_file),
-	atd1_anx_start_channel(0),
-	param_atd1_anx_start_channel("atd1-anx-start-channel", this, atd1_anx_start_channel),
-	atd1_anx_wrap_around_channel(ATD1_SIZE -1),
-	param_atd1_anx_wrap_around_channel("atd1-anx-wrap-around-channel", this, atd1_anx_wrap_around_channel)
+atd1_anx_stimulus_file(""),
+param_atd1_anx_stimulus_file("atd1-anx-stimulus-file", this, atd1_anx_stimulus_file),
+atd1_anx_start_channel(0),
+param_atd1_anx_start_channel("atd1-anx-start-channel", this, atd1_anx_start_channel),
+atd1_anx_wrap_around_channel(ATD1_SIZE -1),
+param_atd1_anx_wrap_around_channel("atd1-anx-wrap-around-channel", this, atd1_anx_wrap_around_channel)
 
 {
 
@@ -61,7 +61,7 @@ XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	SC_THREAD(processATD0);
 	SC_THREAD(processATD1);
 	SC_THREAD(processPWM);
-	
+
 }
 
 XML_ATD_PWM_STUB::~XML_ATD_PWM_STUB() {
@@ -139,7 +139,7 @@ template <int SIZE> int XML_ATD_PWM_STUB::RandomizeData(std::vector<data_t<SIZE>
 
 
 	const int SET_SIZE = 1024;
-	const double TIME_STEP = 0.1; // 0.1 Millisecond
+	const double TIME_STEP = 0.080; // 0.080 Millisecond
 	double time = 0;
 
 	srand(12345);
@@ -243,20 +243,20 @@ bool XML_ATD_PWM_STUB::BeginSetup() {
 
 void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[8])
 {
-	data_t<ATD0_SIZE>* data  = atd0_vect.at(0);
+	data_t<ATD0_SIZE>* data  = *(atd0_vect.begin());
 	for (uint8_t j=0; j < ATD0_SIZE; j++) {
 		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-		data->time = 0;
+		data->time =  0.080; // 0.080 Millisecond
 	}
 
 }
 
 void XML_ATD_PWM_STUB::Inject_ATD1(double anValue[16])
 {
-	data_t<ATD1_SIZE>* data  = atd1_vect.at(0);
+	data_t<ATD1_SIZE>* data  = *(atd1_vect.begin());
 	for (uint8_t j=0; j < ATD1_SIZE; j++) {
 		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-		data->time = 0;
+		data->time = 0.080; // 0.080 Millisecond
 	}
 
 }
@@ -271,8 +271,6 @@ void XML_ATD_PWM_STUB::Get_PWM(bool (*value)[PWM_SIZE])
 
 void XML_ATD_PWM_STUB::processATD0()
 {
-
-	int atd0_data_index = 0;
 
 	/**
 	 * Note: The Software sample the ATDDRx every 1024us.
@@ -299,19 +297,22 @@ void XML_ATD_PWM_STUB::processATD0()
 	}
 
 	while (!isTerminated()) {
-		uint8_t j = 0;
-		for (uint8_t i=0; i < ATD0_SIZE; i++) {
-			if ((i < atd0_start) || (i > atd0_wrap_around)) {
-				atd0_anValue[i] = 0;
-			} else {
-				atd0_anValue[i] = atd0_vect.at(atd0_data_index)->volte[j++];
+
+		for (std::vector<data_t<ATD0_SIZE>*>::iterator it = atd0_vect.begin() ; (it != atd0_vect.end()) && !isTerminated(); ++it) {
+
+			uint8_t j = 0;
+			for (uint8_t i=0; i < ATD0_SIZE; i++) {
+				if ((i < atd0_start) || (i > atd0_wrap_around)) {
+					atd0_anValue[i] = 0;
+				} else {
+					atd0_anValue[i] = (*it)->volte[j++];
+				}
 			}
+
+			output_ATD0(atd0_anValue);
+
+			wait(atd0_event);
 		}
-
-		output_ATD0(atd0_anValue);
-
-		atd0_data_index = (atd0_data_index + 1) % atd0_vect.size();
-
 	}
 
 }
@@ -320,8 +321,6 @@ void XML_ATD_PWM_STUB::processATD0()
 void XML_ATD_PWM_STUB::processATD1()
 {
 	srand(12345);
-
-	int atd1_data_index = 0;
 
 	/**
 	 * Note: The Software sample the ATDDRx every 1024us.
@@ -348,20 +347,22 @@ void XML_ATD_PWM_STUB::processATD1()
 
 	while (!isTerminated()) {
 
-		uint8_t j = 0;
-		for (uint8_t i=0; i < ATD1_SIZE; i++) {
-			if ((i < atd1_start) || (i > atd1_wrap_around)) {
-				atd1_anValue[i] = 0;
-			} else {
-				atd1_anValue[i] = atd1_vect.at(atd1_data_index)->volte[j++];
+		for (std::vector<data_t<ATD1_SIZE>*>::iterator it = atd1_vect.begin() ; (it != atd1_vect.end()) && !isTerminated(); ++it) {
+
+			uint8_t j = 0;
+			for (uint8_t i=0; i < ATD1_SIZE; i++) {
+				if ((i < atd1_start) || (i > atd1_wrap_around)) {
+					atd1_anValue[i] = 0;
+				} else {
+					atd1_anValue[i] = (*it)->volte[j++];
+				}
 			}
+
+			output_ATD1(atd1_anValue);
+
+			wait(atd1_event);
+
 		}
-
-		output_ATD1(atd1_anValue);
-
-		atd1_data_index = (atd1_data_index + 1) % atd1_vect.size();
-
-//		wait(*anx_stimulus_period_sc);
 	}
 
 }

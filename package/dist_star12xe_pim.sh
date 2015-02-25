@@ -222,7 +222,12 @@ unisim/service/pim/network/GenericThread.cpp \
 unisim/service/pim/network/SocketClientThread.cpp \
 unisim/service/pim/network/SocketServerThread.cpp \
 unisim/service/pim/network/SocketThread.cpp \
-unisim/service/pim/gdbthread.cc"
+unisim/service/pim/gdbthread.cc \
+unisim/service/monitor/monitor_server.cc \
+unisim/service/monitor/monitor.cc \
+unisim/service/monitor/default_monitor.cc \
+unisim/service/monitor/artimon_monitor.cc \
+"
 
 
 UNISIM_LIB_STAR12X_ISA_FILES="\
@@ -348,6 +353,11 @@ unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/profiling.hh \
+unisim/service/interfaces/monitor_if.hh \
+unisim/service/monitor/monitor_server.hh \
+unisim/service/monitor/monitor.hh \
+unisim/service/monitor/default_monitor.hh \
+unisim/service/monitor/artimon_monitor.hh \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64_loader.hh \

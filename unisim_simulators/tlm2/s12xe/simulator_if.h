@@ -44,7 +44,9 @@ EXPORTED_FUNCTION  void   createObject(int argc, char **argv) DLL_PUBLIC;
 EXPORTED_FUNCTION  int computeWrapper(int inVal) DLL_PUBLIC;
 EXPORTED_FUNCTION  void   deleteObject() DLL_PUBLIC;
 
-EXPORTED_FUNCTION  void in_out(double anValue8[8], double anValue16[16], bool (*pwmValue)[PWM_SIZE]) DLL_PUBLIC;
+EXPORTED_FUNCTION  double setATD0(double anValue8[8]) DLL_PUBLIC;
+EXPORTED_FUNCTION  double setATD1(double anValue16[16]) DLL_PUBLIC;
+EXPORTED_FUNCTION  double getPWM(bool (*pwmValue)[PWM_SIZE]) DLL_PUBLIC;
 
 #ifdef __cplusplus
 }

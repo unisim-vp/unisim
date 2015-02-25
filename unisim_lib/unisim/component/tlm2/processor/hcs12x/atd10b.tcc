@@ -237,7 +237,7 @@ void ATD10B<ATD_SIZE>::Process()
 
 		wait(input_anx_payload_queue.get_event());
 
-		InputANx(analog_signal);
+		InputANx(&analog_signal);
 
 		RunScanMode();
 
@@ -254,27 +254,29 @@ void ATD10B<ATD_SIZE>::Process()
  */
 
 template <unsigned int ATD_SIZE>
-void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
+void ATD10B<ATD_SIZE>::InputANx(double (*anValue)[ATD_SIZE])
 {
-	ATD_Payload<ATD_SIZE> *last_payload = NULL;
+//	ATD_Payload<ATD_SIZE> *last_payload = NULL;
 	ATD_Payload<ATD_SIZE> *payload = NULL;
 
 
-	do
-	{
-		if (last_payload) {
-			last_payload->release();
-		}
-		last_payload = payload;
-		payload = input_anx_payload_queue.get_next_transaction();
+//	do
+//	{
+//		if (last_payload) {
+//			last_payload->release();
+//		}
+//		last_payload = payload;
+//		payload = input_anx_payload_queue.get_next_transaction();
+//
+//		if (debug_enabled && payload) {
+//			cout << sc_object::name() << ":: Receive " << *payload << " - " << sc_time_stamp() << endl;
+//		}
+//
+//	} while(payload);
+//
+//	payload = last_payload;
 
-		if (debug_enabled && payload) {
-			cout << sc_object::name() << ":: Receive " << *payload << " - " << sc_time_stamp() << endl;
-		}
-
-	} while(payload);
-
-	payload = last_payload;
+	payload = input_anx_payload_queue.get_next_transaction();
 
 	if (debug_enabled && payload) {
 		cout << sc_object::name() << ":: Last Receive " << *payload << " - " << sc_time_stamp() << endl;
@@ -282,9 +284,12 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 
 	if (payload) {
 		for (unsigned int i=0; i<ATD_SIZE; i++) {
-			anValue[i] = payload->anPort[i];
+			(*anValue)[i] = payload->anPort[i];
 		}
-		payload->release();
+//		payload->release();
+		tlm_phase phase = BEGIN_RESP;
+		sc_time local_time = SC_ZERO_TIME;
+		anx_socket->nb_transport_bw( *payload, phase, local_time);
 	}
 
 }

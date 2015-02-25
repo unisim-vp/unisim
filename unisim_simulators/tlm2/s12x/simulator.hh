@@ -158,6 +158,51 @@ public:
 	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
 	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
+	/*
+	 * To control the progress of the simulation:
+	 * - sc_pending_activity_at_current_time()
+	 * - sc_get_curr_simcontext()->next_time()
+	 */
+
+	double Inject_ATD0(double anValue[8]) {
+
+#ifdef HAVE_RTBCOB
+		rtbStub->output_ATD0(anValue);
+#else
+		xml_atd_pwm_stub->Inject_ATD0(anValue);
+#endif
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	};
+
+	double Inject_ATD1(double anValue[16]) {
+
+#ifdef HAVE_RTBCOB
+		rtbStub->output_ATD1(anValue);
+#else
+		xml_atd_pwm_stub->Inject_ATD1(anValue);
+#endif
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	};
+
+	double Get_PWM(bool (*pwmValue)[8]) {
+
+#ifdef HAVE_RTBCOB
+		rtbStub->input(&pwmValue);
+#else
+		xml_atd_pwm_stub->Get_PWM(pwmValue);
+#endif
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	};
+
 private:
 
 	//=========================================================================

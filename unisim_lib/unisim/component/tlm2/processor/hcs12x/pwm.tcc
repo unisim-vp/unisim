@@ -95,6 +95,8 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 		output[i] = false;
 	}
 
+	channel_output_reg.SetMutable(true);
+
 	// Reserved Register for factory testing
 	pwmtst_register = pwmprsc_register = pwmscnta_register = pwmscntb_register = 0;
 
@@ -104,7 +106,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	bus_clock_socket.register_b_transport(this, &PWM::updateBusClock);
 
 	xint_payload = xint_payload_fabric.allocate();
-	pwm_payload = payload_fabric.allocate();
+//	pwm_payload = payload_fabric.allocate();
 
 	Reset();
 
@@ -131,7 +133,7 @@ PWM<PWM_SIZE>::~PWM() {
 	}
 
 	xint_payload->release();
-	pwm_payload->release();
+//	pwm_payload->release();
 
 }
 
@@ -308,7 +310,8 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 {
 	tlm_phase phase = BEGIN_REQ;
 
-	pwm_payload->acquire();
+	PWM_Payload<PWM_SIZE>* pwm_payload = payload_fabric.allocate();
+//	pwm_payload->acquire();
 
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwm_payload->pwmChannel[i] = pwmValue[i];
@@ -317,12 +320,12 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
 	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
-	sc_time local_time = quantumkeeper.get_local_time();
+//	sc_time local_time = quantumkeeper.get_local_time();
+	sc_time local_time = SC_ZERO_TIME;
 
 	if (debug_enabled) {
 		cout << sc_object::name() << ":: send " << *pwm_payload << " - " << sc_time_stamp() << endl;
 	}
-
 
 	tlm_sync_enum ret = master_sock->nb_transport_fw(*pwm_payload, phase, local_time);
 

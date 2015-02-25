@@ -53,6 +53,9 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	, trace_enable(false)
 	, param_trace_enable("trace-enabled", this, trace_enable)
 
+	, cosim_enabled(false)
+	, param_cosim_enabled("cosim-enabled", this, cosim_enabled)
+
 	, atd0_stub_enabled(false)
 	, param_atd0_stub_enabled("atd0-stub-enabled", this, atd0_stub_enabled)
 
@@ -71,20 +74,14 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	atd0_master_sock(*this);
 	slave_sock(*this);
 
-//	SC_HAS_PROCESS(ATD_PWM_STUB);
-//
-//	SC_THREAD(ProcessATD);
-//	SC_THREAD(ProcessPWM);
-//
-
-	atd1_payload = atd1_payload_fabric.allocate();
-	atd0_payload = atd0_payload_fabric.allocate();
+//	atd1_payload = atd1_payload_fabric.allocate();
+//	atd0_payload = atd0_payload_fabric.allocate();
 }
 
 ATD_PWM_STUB::~ATD_PWM_STUB() {
 
-	atd1_payload->release();
-	atd0_payload->release();
+//	atd1_payload->release();
+//	atd0_payload->release();
 
 	if (trace_enable) {
 		atd0_output_file.close();
@@ -143,6 +140,7 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_fw( PWM_Payload<PWM_SIZE>& payload, tlm
 	{
 		phase = END_REQ; // update the phase
 		payload.acquire();
+
 		input_payload_queue.notify(payload, t); // queue the payload and the associative time
 		return (TLM_UPDATED);
 	}
@@ -163,6 +161,7 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_bw( ATD_Payload<ATD1_SIZE>& payload, tl
 	if(phase == BEGIN_RESP)
 	{
 		payload.release();
+		atd1_event.notify();
 		return (TLM_COMPLETED);
 	}
 	return (TLM_ACCEPTED);
@@ -173,6 +172,7 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_bw( ATD_Payload<ATD0_SIZE>& payload, tl
 	if(phase == BEGIN_RESP)
 	{
 		payload.release();
+		atd0_event.notify();
 		return (TLM_COMPLETED);
 	}
 	return (TLM_ACCEPTED);
@@ -183,31 +183,22 @@ void ATD_PWM_STUB::invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::
 }
 
 // Implementation
-void ATD_PWM_STUB::input(bool pwmValue[PWM_SIZE])
+//void ATD_PWM_STUB::input(bool* pwmValue[PWM_SIZE])
+void ATD_PWM_STUB::input(bool (*pwmValue)[PWM_SIZE])
 {
-	PWM_Payload<PWM_SIZE> *last_payload = NULL;
+
 	PWM_Payload<PWM_SIZE> *payload = NULL;
 
 	wait(input_payload_queue.get_event());
 
-	do
-	{
-		if (last_payload) {
-			last_payload->release();
-		}
-		last_payload = payload;
-		payload = input_payload_queue.get_next_transaction();
-
-	} while (payload);
-
-	payload = last_payload;
+	payload = input_payload_queue.get_next_transaction();
 
 	if (trace_enable) {
 		pwm_output_file << (pwm_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *payload <<  std::endl;
 	}
 
 	for (int i=0; i<PWM_SIZE; i++) {
-		pwmValue[i] = payload->pwmChannel[i];
+		(*pwmValue)[i] = payload->pwmChannel[i];
 	}
 
 	payload->release();
@@ -222,23 +213,25 @@ void ATD_PWM_STUB::output_ATD1(double anValue[ATD1_SIZE])
 
 	tlm_phase phase = BEGIN_REQ;
 
-	atd1_payload->acquire();
+	atd1_payload = atd1_payload_fabric.allocate();
+
+//	atd1_payload->acquire();
 
 	for (int i=0; i<ATD1_SIZE; i++) {
 		atd1_payload->anPort[i] = anValue[i];
 	}
 
 
-	sc_time local_time = atd1_quantumkeeper.get_local_time();
+//	sc_time local_time = atd1_quantumkeeper.get_local_time();
+	sc_time local_time = SC_ZERO_TIME;
 
 	if (trace_enable) {
 		atd1_output_file << (atd1_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *atd1_payload << std::endl;
 	}
 
-//	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*atd1_payload, phase, local_time);
-	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*atd1_payload, phase, (sc_core::sc_time&) SC_ZERO_TIME);
+	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*atd1_payload, phase, local_time);
 
-	atd1_payload->release();
+//	atd1_payload->release();
 	
 	switch(ret)
 	{
@@ -268,23 +261,24 @@ void ATD_PWM_STUB::output_ATD0(double anValue[ATD0_SIZE])
 {
 	tlm_phase phase = BEGIN_REQ;
 
-	atd0_payload->acquire();
+	ATD_Payload<ATD0_SIZE> *atd0_payload = atd0_payload_fabric.allocate();
+//	atd0_payload->acquire();
 
 	for (int i=0; i<ATD0_SIZE; i++) {
 		atd0_payload->anPort[i] = anValue[i];
 	}
 
 
-	sc_time local_time = atd0_quantumkeeper.get_local_time();
+//	sc_time local_time = atd0_quantumkeeper.get_local_time();
+	sc_time local_time = SC_ZERO_TIME;
 
 	if (trace_enable) {
 		atd0_output_file << (atd0_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *atd0_payload << std::endl;
 	}
 
-//	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*atd0_payload, phase, local_time);
-	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*atd0_payload, phase, (sc_core::sc_time&) SC_ZERO_TIME);
+	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*atd0_payload, phase, local_time);
 
-	atd0_payload->release();
+//	atd0_payload->release();
 
 	switch(ret)
 	{
@@ -310,57 +304,4 @@ void ATD_PWM_STUB::output_ATD0(double anValue[ATD0_SIZE])
 
 }
 
-//void ATD_PWM_STUB::ProcessATD() {
-//
-//	double atd1_anValue[ATD1_SIZE];
-//	double atd0_anValue[ATD0_SIZE];
-//
-//	srand(12345);
-//
-//	sc_time delay(anx_stimulus_period, SC_PS);
-//
-//	int atd0_data_index = 0;
-//	int atd1_data_index = 0;
-//
-//	/**
-//	 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
-//	 */
-//	wait(sc_time(20, SC_MS));
-//
-//	while(1)
-//	{
-//		for (uint8_t i=0; i < ATD0_SIZE; i++) {
-//			atd0_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-//		}
-//
-//		for (uint8_t i=0; i < ATD1_SIZE; i++) {
-//			atd1_anValue[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-//		}
-//
-//		Output_ATD1(atd1_anValue);
-//		Output_ATD0(atd0_anValue);
-//
-//		wait(delay);
-//
-//		quantumkeeper.inc(delay);
-//		quantumkeeper.sync();
-//
-//	}
-//
-//}
-//
-//void ATD_PWM_STUB::ProcessPWM() {
-//
-//	bool pwmValue[PWM_SIZE];
-//
-//	while(1)
-//	{
-//		wait(input_payload_queue.get_event());
-//
-//		Input(pwmValue);
-//
-//		quantumkeeper.sync();
-//	}
-//
-//}
 

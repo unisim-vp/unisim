@@ -636,7 +636,9 @@ Simulator::SetupStatus Simulator::Setup()
 		mmc->splitPagedAddress(entry_point, page, cpu_address);
 	} else {
 		const unisim::util::debug::blob::Blob<physical_address_t>* blob = loaderELF->GetBlob();
-		entry_point = blob->GetEntryPoint();
+		if (blob != NULL) {
+			entry_point = blob->GetEntryPoint();
+		}
 
 		cpu_address = (address_t) entry_point;
 	}

@@ -120,14 +120,16 @@ public:
 	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
 	// Implementation
-	void input(bool pwmValue[PWM_SIZE]);
+//	void input(bool pwmValue[PWM_SIZE]);
+	void input(bool (*pwmValue)[PWM_SIZE]);
 	void output_ATD1(double anValue[ATD1_SIZE]);
 	void output_ATD0(double anValue[ATD0_SIZE]);
 
-	bool isTerminated() { return terminated; }
+	virtual void Inject_ATD0(double anValue[8]) {}
+	virtual void Inject_ATD1(double anValue[16]) {}
+	virtual void Get_PWM(bool (*pwmValue)[PWM_SIZE]) {}
 
-//	virtual void ProcessATD();
-//	virtual void ProcessPWM();
+	bool isTerminated() { return terminated; }
 
 protected:
 	double	anx_stimulus_period;
@@ -139,6 +141,9 @@ protected:
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
+	bool	cosim_enabled;
+	Parameter<bool>		param_cosim_enabled;
+
 	bool	atd0_stub_enabled;
 	Parameter<bool>		param_atd0_stub_enabled;
 
@@ -148,6 +153,7 @@ protected:
 	tlm_quantumkeeper atd0_quantumkeeper;
 	tlm_quantumkeeper atd1_quantumkeeper;
 
+	sc_event atd0_event, atd1_event;
 private:
 
 	tlm_quantumkeeper pwm_quantumkeeper;

@@ -123,11 +123,11 @@ using unisim::util::garbage_collector::GarbageCollector;
 using unisim::service::telnet::Telnet;
 
 class Simulator :
-	public unisim::kernel::service::Simulator
-	, public CallBackObject
+		public unisim::kernel::service::Simulator
+		, public CallBackObject
 
-{
-private:
+		{
+		private:
 	//=========================================================================
 	//===                       Constants definitions                       ===
 	//=========================================================================
@@ -136,7 +136,7 @@ private:
 	typedef uint64_t MEMORY_ADDRESS_TYPE;
 	typedef unisim::component::cxx::processor::hcs12x::service_address_t SERVICE_ADDRESS_TYPE;
 
-public:
+		public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	virtual void Stop(Object *object, int _exit_status, bool asynchronous);
@@ -160,46 +160,61 @@ public:
 	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
 	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
-	void Inject_ATD0(double anValue[8]) {
+	/*
+	 * To control the progress of the simulation:
+	 * - sc_pending_activity_at_current_time()
+	 * - sc_get_curr_simcontext()->next_time()
+	 */
+
+	double Inject_ATD0(double anValue[8]) {
 
 #ifdef HAVE_RTBCOB
-	rtbStub->output_ATD0(anValue);
+		rtbStub->output_ATD0(anValue);
 #else
-	xml_atd_pwm_stub->Inject_ATD0(anValue);
+		xml_atd_pwm_stub->Inject_ATD0(anValue);
 #endif
 
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
 	};
 
-	void Inject_ATD1(double anValue[16]) {
+	double Inject_ATD1(double anValue[16]) {
 
 #ifdef HAVE_RTBCOB
-	rtbStub->output_ATD1(anValue);
+		rtbStub->output_ATD1(anValue);
 #else
-	xml_atd_pwm_stub->Inject_ATD1(anValue);
+		xml_atd_pwm_stub->Inject_ATD1(anValue);
 #endif
 
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
 	};
 
-	void Get_PWM(bool (*pwmValue)[8]) {
+	double Get_PWM(bool (*pwmValue)[8]) {
 
 #ifdef HAVE_RTBCOB
-	rtbStub->input(&pwmValue);
+		rtbStub->input(&pwmValue);
 #else
-	xml_atd_pwm_stub->Get_PWM(pwmValue);
+		xml_atd_pwm_stub->Get_PWM(pwmValue);
 #endif
 
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
 	};
 
-private:
+		private:
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-//	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
+	//	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  RAM;
-//	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
-//	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  FLASH;
+	//	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
+	//	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  FLASH;
 	typedef unisim::component::tlm2::processor::hcs12x::S12XFTMX<32, physical_address_t, 8, 1024*1024, false>  FTM;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
@@ -213,7 +228,7 @@ private:
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
 	typedef unisim::component::tlm2::processor::hcs12x::S12PIT24B<8> PIT;
 
-// ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
+	// ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<CPU_ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
 	typedef unisim::service::tee::registers::RegistersTee<32> RegistersTee;
@@ -339,6 +354,6 @@ private:
 	double spent_time;
 	bool isStop;
 
-};
+		};
 
 #endif /* SIMULATOR_HH_ */

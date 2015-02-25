@@ -49,13 +49,18 @@ EXPORTED_FUNCTION void   deleteObject() {
 
 }
 
-EXPORTED_FUNCTION  void in_out(double anValue8[8], double anValue16[16], bool (*pwmValue)[PWM_SIZE]) {
+EXPORTED_FUNCTION  double setATD0(double anValue8[8])
+{
+	return (simulator->Inject_ATD0(anValue8));
+}
 
-	simulator->Inject_ATD0(anValue8);
+EXPORTED_FUNCTION  double setATD1(double anValue16[16])
+{
+	return (simulator->Inject_ATD1(anValue16));
+}
 
-	simulator->Inject_ATD1(anValue16);
-
-	simulator->Get_PWM(pwmValue);
-
+EXPORTED_FUNCTION  double getPWM(bool (*pwmValue)[PWM_SIZE])
+{
+	return (simulator->Get_PWM(pwmValue));
 }
 
