@@ -5,19 +5,36 @@
 
 #include <unisim/service/interfaces/monitor_if.hh>
 
+using unisim::kernel::service::Object;
+using unisim::kernel::service::ServiceExportBase;
+
 using unisim::service::interfaces::Monitor_if;
 
 namespace unisim {
 namespace service {
 namespace monitor {
 
-class DefaultMonitor : public unisim::service::interfaces::Monitor_if
+class DefaultMonitor
+	: public Object
+	, public Monitor_if
+
 {
 public:
-	DefaultMonitor();
+	DefaultMonitor(const char *name, Object *parent = 0, const char *description = 0);
 	virtual ~DefaultMonitor();
 
-	virtual void refresh();
+	virtual void OnDisconnect();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *service_export);
+	virtual bool EndSetup();
+
+	virtual void refresh_value(const char* name, bool value);
+	virtual void refresh_value(const char* name, double value);
+
+	virtual void refresh_value(const char* name, bool value, double time);
+	virtual void refresh_value(const char* name, double value, double time);
+
+	virtual void refresh_time(double time);
 
 protected:
 

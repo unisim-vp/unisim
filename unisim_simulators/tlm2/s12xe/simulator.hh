@@ -19,6 +19,9 @@
 #include "config.h"
 #endif
 
+#include <unisim/service/monitor/monitor.hh>
+using unisim::service::monitor::Monitor;
+
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/debug/debugger/debugger.hh>
@@ -283,6 +286,8 @@ class Simulator :
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
+
+	Monitor *monitor;
 
 	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
 	Elf32Loader *loaderELF;

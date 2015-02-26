@@ -7,7 +7,8 @@ namespace unisim {
 namespace service {
 namespace monitor {
 
-DefaultMonitor::DefaultMonitor()
+DefaultMonitor::DefaultMonitor(const char *name, Object *parent, const char *description)
+	: Object(name, parent)
 {
 
 }
@@ -17,9 +18,55 @@ DefaultMonitor::~DefaultMonitor()
 
 }
 
-void DefaultMonitor::refresh()
+void DefaultMonitor::OnDisconnect()
 {
-	std::cout << "I AM DEFAUT MONITOR" << std::endl;
+
+}
+
+bool DefaultMonitor::BeginSetup()
+{
+	return true;
+}
+
+bool DefaultMonitor::Setup(ServiceExportBase *service_export)
+{
+	return true;
+}
+
+bool DefaultMonitor::EndSetup()
+{
+	return true;
+}
+
+void DefaultMonitor::refresh_value(const char* name, bool value)
+{
+	//	extern void (* artimon_refresh_atom)(int pos, int at);
+	//	extern void (* artimon_refresh_signal)(int pos, unsigned * sig);
+}
+
+void DefaultMonitor::refresh_value(const char* name, double value)
+{
+	//	extern void (* artimon_refresh_atom)(int pos, int at);
+	//	extern void (* artimon_refresh_signal)(int pos, unsigned * sig);
+}
+
+void DefaultMonitor::refresh_value(const char* name, bool value, double time)
+{
+	//	extern void (* artimon_refresh_atom)(int pos, int at);
+	//	extern void (* artimon_refresh_signal)(int pos, unsigned * sig);
+	//	extern double (* artimon_refresh_time)(double t);
+}
+
+void DefaultMonitor::refresh_value(const char* name, double value, double time)
+{
+	//	extern void (* artimon_refresh_atom)(int pos, int at);
+	//	extern void (* artimon_refresh_signal)(int pos, unsigned * sig);
+	//	extern double (* artimon_refresh_time)(double t);
+}
+
+void DefaultMonitor::refresh_time(double time)
+{
+	//	extern double (* artimon_refresh_time)(double t);
 }
 
 } // end of namespace monitor

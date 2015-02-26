@@ -18,7 +18,7 @@ AC_DEFUN([UNISIM_CHECK_ARTIMON], [
 		AC_MSG_NOTICE([ARTIMON not found. Support for ARTIMON will be disabled.])
 	else
 		LIBS="-lARTIMON ${LIBS}"
-		AC_DEFINE([HAVE_ARTIMON], [], [Whether ARTIMON is available])
+		AC_DEFINE([HAVE_ARTIMON], [1], [Whether ARTIMON is available])
 	fi
 
 ])
