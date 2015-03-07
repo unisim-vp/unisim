@@ -228,7 +228,7 @@ private:
 
 	bool conversionStop;
 	bool abortSequence;
-	uint8_t resultIndex;
+	unsigned int resultIndex;
 	bool isATDStarted;
 
 	bool isTriggerModeRunning;
@@ -237,8 +237,8 @@ private:
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
-	uint8_t interruptOffset;
-	Parameter<uint8_t> param_interruptOffset;
+	unsigned int interruptOffset;
+	Parameter<unsigned int> param_interruptOffset;
 
 	// A/D reference potentials
 	double vrl, vrh;

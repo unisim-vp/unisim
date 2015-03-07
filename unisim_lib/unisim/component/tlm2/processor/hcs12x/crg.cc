@@ -690,7 +690,7 @@ void CRG::runRTI() {
 	}
 }
 
-void CRG::assertInterrupt(uint8_t interrupt_offset) {
+void CRG::assertInterrupt(unsigned int interrupt_offset) {
 
 	if ((interrupt_offset == interrupt_offset_pll_lock) && ((crgint_register & 0x10) == 0)) return;
 	if ((interrupt_offset == interrupt_offset_self_clock_mode) && ((crgint_register & 0x02) == 0)) return;
@@ -816,7 +816,7 @@ void CRG::updateBusClock() {
 
 	sc_time delay = SC_ZERO_TIME;
 
-	for (uint8_t i = 0; i < bus_clock_socket.size(); i++) {
+	for (unsigned int i = 0; i < bus_clock_socket.size(); i++) {
 		bus_clk_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
 		bus_clock_socket[i]->b_transport( *bus_clk_trans, delay);

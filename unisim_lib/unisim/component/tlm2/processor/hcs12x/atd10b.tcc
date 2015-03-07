@@ -110,7 +110,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	param_vih.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_vil.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
-	for (uint8_t i=0; i<ATD_SIZE; i++) {
+	for (unsigned int i=0; i<ATD_SIZE; i++) {
 		analog_signal[i] = vrl;
 		analog_signal_reg[i].SetMutable(true);
 	}
@@ -349,14 +349,14 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 {
 
 	// - check ATDCTL0::wrap bits to identify the channel to wrap around
-	uint8_t wrapArroundChannel = atdctl0_register & 0x0F;
+	unsigned int wrapArroundChannel = atdctl0_register & 0x0F;
 	if (wrapArroundChannel == 0) {
 		cerr << "Warning: " << sc_object::name() << " => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
 
 		wrapArroundChannel = ATD_SIZE-1;
 	}
 
-	uint8_t sequenceLength = 1;
+	unsigned int sequenceLength = 1;
 	// - check ATDCTL3 to determine the sequence length and storage mode of the result
 	sequenceLength = (atdctl3_register & 0x78) >> 3; // get S8C S4C S2C S1C
 	if (sequenceLength == 0) {
@@ -377,7 +377,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 	{
 
 		// Store the result of conversion
-		uint8_t sequenceIndex = 0;
+		unsigned int sequenceIndex = 0;
 		abortSequence = false;
 
 		while ((sequenceIndex < sequenceLength)  && !abortSequence ) {
@@ -1020,7 +1020,7 @@ bool ATD10B<ATD_SIZE>::BeginSetup() {
 	portad1_var->setCallBack(this, PORTAD1, &CallBackObject::write, NULL);
 
 	char shortName[20];
-	for (uint8_t i=0; i < ATD_SIZE; i++) {
+	for (unsigned int i=0; i < ATD_SIZE; i++) {
 
 		sprintf(shortName, "ATDDR%d", i);
 

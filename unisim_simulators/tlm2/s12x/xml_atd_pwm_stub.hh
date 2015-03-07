@@ -80,20 +80,20 @@ private:
 	string atd0_anx_stimulus_file;
 	Parameter<string>	param_atd0_anx_stimulus_file;
 
-	uint8_t atd0_anx_start_channel;
-	Parameter<uint8_t> param_atd0_anx_start_channel;
+	unsigned int atd0_anx_start_channel;
+	Parameter<unsigned int> param_atd0_anx_start_channel;
 
-	uint8_t atd0_anx_wrap_around_channel;
-	Parameter<uint8_t> param_atd0_anx_wrap_around_channel;
+	unsigned int atd0_anx_wrap_around_channel;
+	Parameter<unsigned int> param_atd0_anx_wrap_around_channel;
 
 	string atd1_anx_stimulus_file;
 	Parameter<string>	param_atd1_anx_stimulus_file;
 
-	uint8_t atd1_anx_start_channel;
-	Parameter<uint8_t> param_atd1_anx_start_channel;
+	unsigned int atd1_anx_start_channel;
+	Parameter<unsigned int> param_atd1_anx_start_channel;
 
-	uint8_t atd1_anx_wrap_around_channel;
-	Parameter<uint8_t> param_atd1_anx_wrap_around_channel;
+	unsigned int atd1_anx_wrap_around_channel;
+	Parameter<unsigned int> param_atd1_anx_wrap_around_channel;
 
 };
 

@@ -191,7 +191,7 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-	monitor = new Monitor("Monitor");
+//	monitor = new Monitor("Monitor");
 
 	isS19 = (filename.find(".s19") != std::string::npos) ||
 		 (filename.find(".S19") != std::string::npos);
@@ -485,7 +485,7 @@ Simulator::Simulator(int argc, char **argv)
 Simulator::~Simulator()
 {
 
-	if (monitor) { delete monitor; monitor = NULL; }
+//	if (monitor) { delete monitor; monitor = NULL; }
 
 // ************
 	if(!inline_debugger)

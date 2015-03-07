@@ -109,12 +109,12 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	char channelName[20];
 
-	for (uint8_t i=0; i<4; i++) {
+	for (unsigned int i=0; i<4; i++) {
 		sprintf (channelName, "pa%d", i);
 		pc8bit[i] = new PulseAccumulator8Bit(this, i, &pacn_register[i], &paxh_registers[i]);
 	}
 
-	for (uint8_t i=0; i<8; i++) {
+	for (unsigned int i=0; i<8; i++) {
 
 //		portt_pin[i] = false;
 		portt_pin_reg[i] = false;
@@ -194,9 +194,9 @@ void ECT::runBuildinSignalGenerator() {
 	if (builtin_signal_generator) {
 		while (true) {
 
-			for (uint8_t i=0; i<8; i++) {
+			for (unsigned int i=0; i<8; i++) {
 				/* generate signal code */
-				bool signalValue = (1 == (uint8_t) rand() % 2);
+				bool signalValue = (1 == rand() % 2);
 
 				if (portt_pin[i] != signalValue) {
 					portt_pin_reg[i] = signalValue;
@@ -354,14 +354,14 @@ void ECT::runDownCounter() {
 }
 
 void ECT::runOutputCompare() {
-	for (uint8_t i=0; i<8; i++) {
+	for (unsigned int i=0; i<8; i++) {
 		if (!isInputCapture(i)) {
 			ioc_channel[i]->runOutputCompare();
 		}
 	}
 }
 
-void ECT::assertInterrupt(uint8_t interrupt_offset) {
+void ECT::assertInterrupt(unsigned int interrupt_offset) {
 
 	if ((interrupt_offset >= (offset_channel0_interrupt - 0xE)) && (interrupt_offset <= offset_channel0_interrupt ) && !isInputOutputInterruptEnabled((offset_channel0_interrupt - interrupt_offset)/2)) return;
 	if ((interrupt_offset == offset_timer_overflow_interrupt) && !isTimerOverflowinterruptEnabled()) return;
@@ -1016,7 +1016,7 @@ bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 				 */
 				if ((mccnt_register == 0x0000) && (old_mccnt_register != 0)) {
 					if ((icsys_register & 0x03) == 0x03) {
-						for (uint8_t i=0; i < 3; i++) {
+						for (unsigned int i=0; i < 3; i++) {
 							ioc_channel[i]->latchToHoldingRegisters();
 						}
 
@@ -1310,7 +1310,7 @@ inline void ECT::latchToHoldingRegisters() {
 
 	// is latch mode enabled (ICSYS::LATQ=1 and ICSYS::BUFFEN=1)
 	if (isLatchMode() && isBufferEnabled()) {
-		for (uint8_t i=0; i<4; i++) {
+		for (unsigned int i=0; i<4; i++) {
 			ioc_channel[i]->latchToHoldingRegisters();
 		}
 	}
@@ -1896,10 +1896,10 @@ void ECT::Reset() {
 	tscr2_register = 0x00;
 	tflg1_register = 0x00;
 	tflg2_register = 0x00;
-	for (uint8_t i=0; i<8; i++) { tc_registers[i] = 0x0000; }
+	for (unsigned int i=0; i<8; i++) { tc_registers[i] = 0x0000; }
 	pactl_register = 0x00;
 	paflg_register = 0x00;
-	for (uint8_t i=0; i<4; i++) { pacn_register[i] = 0x00; }
+	for (unsigned int i=0; i<4; i++) { pacn_register[i] = 0x00; }
 	mcctl_register = 0x00;
 	mcflg_register = 0x00;
 	icpar_register = 0x00;
@@ -1911,9 +1911,9 @@ void ECT::Reset() {
 	ptmcpsr_register = 0x00;
 	pbctl_register = 0x00;
 	pbflg_register = 0x00;
-	for (uint8_t i=0; i<4; i++) { paxh_registers[i] = 0x00; }
+	for (unsigned int i=0; i<4; i++) { paxh_registers[i] = 0x00; }
 	mccnt_register = 0xFFFF;
-	for (uint8_t i=0; i<4; i++) { tcxh_registers[i] = 0x0000; }
+	for (unsigned int i=0; i<4; i++) { tcxh_registers[i] = 0x0000; }
 
 	prnt_write = false;
 	icsys_write = false;
@@ -1921,7 +1921,7 @@ void ECT::Reset() {
 	down_counter_enabled = false;
 	delay_counter_enabled = false;
 
-	for (uint8_t i=0; i<8; i++) {
+	for (unsigned int i=0; i<8; i++) {
 		portt_pin_reg[i] = false;
 	}
 

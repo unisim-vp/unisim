@@ -316,7 +316,7 @@ void XINT::run()
 
 				if (payload->isXGATE_shared_channel()) {
 
-					uint8_t id = payload->getInterruptOffset();
+					unsigned int id = payload->getInterruptOffset();
 
 					interrupt_flags[id].setState(true);
 					interrupt_flags[id].setPayload(payload);
@@ -325,7 +325,7 @@ void XINT::run()
 
 				} else {
 
-					uint8_t id = payload->getInterruptOffset()/2;
+					unsigned int id = payload->getInterruptOffset()/2;
 
 					interrupt_flags[id].setState(true);
 					interrupt_flags[id].setPayload(payload);
@@ -417,17 +417,17 @@ void XINT::Reset() {
 	int_xgprio = 0x01;
 	int_cfaddr = 0x10;
 
-	for (uint8_t i=0; i< XINT::INT_RAM_ACCESS_VIOLATION_OFFSET/2; i++) {
+	for (unsigned int i=0; i< XINT::INT_RAM_ACCESS_VIOLATION_OFFSET/2; i++) {
 		int_cfwdata[i] = 0x00;
 	}
-	for (uint8_t i=XINT::INT_RAM_ACCESS_VIOLATION_OFFSET/2; i<XINT::INT_XIRQ_OFFSET/2; i++) {
+	for (unsigned int i=XINT::INT_RAM_ACCESS_VIOLATION_OFFSET/2; i<XINT::INT_XIRQ_OFFSET/2; i++) {
 		int_cfwdata[i] = 0x01;
 	}
-	for (uint8_t i=XINT::INT_XIRQ_OFFSET/2; i<XINT_SIZE; i++) {
+	for (unsigned int i=XINT::INT_XIRQ_OFFSET/2; i<XINT_SIZE; i++) {
 		int_cfwdata[i] = 0x00;
 	}
 
-	for (int i=0; i<XINT_SIZE; i++) {
+	for (unsigned int i=0; i<XINT_SIZE; i++) {
 		interrupt_flags[i].setState(false);
 		interrupt_flags[i].releasePayload();
 	}
@@ -461,7 +461,7 @@ bool XINT::BeginSetup() {
 	extended_registers_registry.push_back(int_cfaddr_var);
 	int_cfaddr_var->setCallBack(this, INT_CFADDR, &CallBackObject::write, NULL);
 
-	for (uint8_t i=0; i<XINT_SIZE; i++) {
+	for (unsigned int i=0; i<XINT_SIZE; i++) {
 		sprintf(buf, "%s.INT_CFDATA%d", sc_object::name(), i);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfwdata[i]);
 

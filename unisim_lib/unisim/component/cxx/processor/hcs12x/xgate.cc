@@ -150,7 +150,7 @@ XGATE::XGATE(const char *name, Object *parent):
 	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
-	for (uint8_t i=0; i<XGATE_SIZE; i++) {
+	for (unsigned int i=0; i<XGATE_SIZE; i++) {
 		param_software_channel_id.SetFormat(unisim::kernel::service::VariableBase::FMT_HEX);
 		param_software_channel_id.SetMutable(true);
 	}
@@ -534,13 +534,13 @@ void XGATE::Sync()
 
 Decoder decoder;
 
-uint8_t XGATE::step()
+unsigned int XGATE::step()
 {
 
 	uint8_t 	buffer[MAX_INS_SIZE];
 
 	Operation 	*op;
-	uint8_t	opCycles = 0;
+	unsigned int	opCycles = 0;
 
 	try
 	{
@@ -725,7 +725,7 @@ uint8_t XGATE::step()
 
 }
 
-void XGATE::fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte)
+void XGATE::fetchInstruction(address_t addr, uint8_t* ins, unsigned int nByte)
 {
 
 	MMC_DATA mmc_data;
@@ -767,7 +767,7 @@ void XGATE::riseErrorCondition() {
 	state = STOP;
 }
 
-bool XGATE::lockSemaphore(TOWNER::OWNER owner, uint8_t index) {
+bool XGATE::lockSemaphore(TOWNER::OWNER owner, unsigned int index) {
 	if (semphore[index].lock(owner)) {
 		if (owner == TOWNER::CPU12X) {
 			xgsem_register = xgsem_register | (1 << index);
@@ -781,7 +781,7 @@ bool XGATE::lockSemaphore(TOWNER::OWNER owner, uint8_t index) {
 	return (false);
 }
 
-bool XGATE::unlockSemaphore(TOWNER::OWNER owner, uint8_t index) {
+bool XGATE::unlockSemaphore(TOWNER::OWNER owner, unsigned int index) {
 	if (semphore[index].unlock(owner)) {
 		xgsem_register = xgsem_register & ~(1 << index);
 		return (true);
@@ -1198,7 +1198,7 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 
 		default: {
 			if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
-				uint8_t index = (offset - XGIF_7F_70)/2;
+				unsigned int index = (offset - XGIF_7F_70)/2;
 				if (index < 2) {
 					*((uint16_t *) buffer) = Host2BigEndian(xgif_register[index] & 0x01FF);
 				}
@@ -1227,7 +1227,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			// control bits can only be set or cleared if a "1" is written to its mask bit in the same register access.
 			uint16_t mask = val >> 8;
 
-			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+			for (unsigned int i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
 						xgmctl_register = xgmctl_register | j;
@@ -1301,7 +1301,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 			uint16_t mask = val >> 8;
 
-			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+			for (unsigned int i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
 						xgswt_register = xgswt_register | j;
@@ -1323,7 +1323,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 			uint16_t mask = val >> 8;
 
-			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+			for (unsigned int i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
 						lockSemaphore(TOWNER::CPU12X, i);

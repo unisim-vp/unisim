@@ -47,12 +47,12 @@ using std::cout;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
 
-template void EBLB::setter<uint8_t>(uint8_t rr, uint8_t val);
-template void EBLB::setter<uint16_t>(uint8_t rr, uint16_t val);
-template uint8_t EBLB::getter<uint8_t>(uint8_t rr);
-template uint16_t EBLB::getter<uint16_t>(uint8_t rr);
-template void EBLB::exchange<uint8_t>(uint8_t rrSrc, uint8_t rrDst);
-template void EBLB::exchange<uint16_t>(uint8_t rrSrc, uint8_t rrDst);
+template void EBLB::setter<uint8_t>(unsigned int rr, uint8_t val);
+template void EBLB::setter<uint16_t>(unsigned int rr, uint16_t val);
+template uint8_t EBLB::getter<uint8_t>(unsigned int rr);
+template uint16_t EBLB::getter<uint16_t>(unsigned int rr);
+template void EBLB::exchange<uint8_t>(unsigned int rrSrc, unsigned int rrDst);
+template void EBLB::exchange<uint16_t>(unsigned int rrSrc, unsigned int rrDst);
 
 CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
@@ -306,13 +306,13 @@ void CPU::Sync()
 }
 
 
-uint8_t CPU::step()
+unsigned int CPU::step()
 {
 
 	uint8_t 	buffer[MAX_INS_SIZE];
 
 	Operation 	*op;
-	uint8_t	opCycles = 0;
+	unsigned int	opCycles = 0;
 
 	try
 	{
@@ -503,7 +503,7 @@ uint8_t CPU::step()
 //=              HCS12X (CPU12X) Queue Handling                       =
 //=====================================================================
 
-uint8_t* CPU::queueFetch(address_t addr, uint8_t* ins, uint8_t nByte)
+uint8_t* CPU::queueFetch(address_t addr, uint8_t* ins, unsigned int nByte)
 {
 
 	if (nByte > QUEUE_SIZE) return (NULL);
@@ -521,7 +521,7 @@ uint8_t* CPU::queueFetch(address_t addr, uint8_t* ins, uint8_t nByte)
 		queueNElement = QUEUE_SIZE;
 	}
 
-	for (uint8_t i=0; i < nByte; i++)
+	for (unsigned int i=0; i < nByte; i++)
 	{
 		ins[i] = queueBuffer[(queueFirst + i) % QUEUE_SIZE];
 	}
@@ -529,7 +529,7 @@ uint8_t* CPU::queueFetch(address_t addr, uint8_t* ins, uint8_t nByte)
 	return (ins);
 }
 
-void CPU::queueFill(address_t addr, int position, uint8_t nByte)
+void CPU::queueFill(address_t addr, int position, unsigned int nByte)
 {
 	uint8_t buff[QUEUE_SIZE];
 
@@ -543,7 +543,7 @@ void CPU::queueFill(address_t addr, int position, uint8_t nByte)
 
 	busRead(&mmc_data);
 
-	for (uint8_t i=0; i<nByte; i++)
+	for (unsigned int i=0; i<nByte; i++)
 	{
 		queueBuffer[position] = buff[i];
 		position = (position + 1) % QUEUE_SIZE;
@@ -551,7 +551,7 @@ void CPU::queueFill(address_t addr, int position, uint8_t nByte)
 
 }
 
-void CPU::queueFlush(uint8_t nByte)
+void CPU::queueFlush(unsigned int nByte)
 {
 	queueFirst = (queueFirst + nByte) % QUEUE_SIZE;
 	queueNElement = queueNElement - nByte;
@@ -921,7 +921,7 @@ inline void CPU::reqAccessErrorInterrupt()
 // ======================================================
 
 template <class T>
-void EBLB::setter(uint8_t rr, T val) // setter function
+void EBLB::setter(unsigned int rr, T val) // setter function
 	/* Legal "rr" value for setter and getter functions
 	 * 0x00:A; 0x01:B;
 	 * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRWord
@@ -974,7 +974,7 @@ void EBLB::setter(uint8_t rr, T val) // setter function
 }
 
 template <class T>
-T EBLB::getter(uint8_t rr) // getter function
+T EBLB::getter(unsigned int rr) // getter function
 	/* Legal "rr" value for setter and getter functions
 	 * 0x00:A; 0x01:B;
 	 * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRWord
@@ -1028,7 +1028,7 @@ T EBLB::getter(uint8_t rr) // getter function
 }
 
 template <class T>
-void EBLB::exchange(uint8_t rrSrc, uint8_t rrDst) {
+void EBLB::exchange(unsigned int rrSrc, unsigned int rrDst) {
 	T tmp = getter<T>(rrSrc);
 	setter<T>(rrSrc, getter<T>(rrDst));
 	setter<T>(rrDst, tmp);

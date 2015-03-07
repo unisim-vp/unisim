@@ -147,7 +147,7 @@ template <int SIZE> int XML_ATD_PWM_STUB::RandomizeData(std::vector<data_t<SIZE>
 	data_t<SIZE>* data;
 	for (int i=0; i < SET_SIZE; i++) {
 		data = new data_t<SIZE>();
-		for (uint8_t j=0; j < SIZE; j++) {
+		for (unsigned int j=0; j < SIZE; j++) {
 			data->volte[j] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 			data->time = time;
 		}
@@ -210,14 +210,14 @@ bool XML_ATD_PWM_STUB::BeginSetup() {
 
 	if (cosim_enabled) {
 		data_t<ATD0_SIZE>* data0  = new data_t<ATD0_SIZE>();
-		for (uint8_t j=0; j < ATD0_SIZE; j++) {
+		for (unsigned int j=0; j < ATD0_SIZE; j++) {
 			data0->volte[j] = 0; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 			data0->time = 0;
 		}
 		atd0_vect.push_back(data0);
 
 		data_t<ATD1_SIZE>* data1  = new data_t<ATD1_SIZE>();
-		for (uint8_t j=0; j < ATD1_SIZE; j++) {
+		for (unsigned int j=0; j < ATD1_SIZE; j++) {
 			data1->volte[j] = 0; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 			data1->time = 0;
 		}
@@ -244,7 +244,7 @@ bool XML_ATD_PWM_STUB::BeginSetup() {
 void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[8])
 {
 	data_t<ATD0_SIZE>* data  = *(atd0_vect.begin());
-	for (uint8_t j=0; j < ATD0_SIZE; j++) {
+	for (unsigned int j=0; j < ATD0_SIZE; j++) {
 		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		data->time =  0.080; // 0.080 Millisecond
 	}
@@ -254,7 +254,7 @@ void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[8])
 void XML_ATD_PWM_STUB::Inject_ATD1(double anValue[16])
 {
 	data_t<ATD1_SIZE>* data  = *(atd1_vect.begin());
-	for (uint8_t j=0; j < ATD1_SIZE; j++) {
+	for (unsigned int j=0; j < ATD1_SIZE; j++) {
 		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		data->time = 0.080; // 0.080 Millisecond
 	}
@@ -281,8 +281,8 @@ void XML_ATD_PWM_STUB::processATD0()
 
 	double atd0_anValue[ATD0_SIZE];
 
-	uint8_t atd0_wrap_around;
-	uint8_t atd0_start;
+	unsigned int atd0_wrap_around;
+	unsigned int atd0_start;
 
 	if (atd0_anx_wrap_around_channel < ATD0_SIZE) {
 		atd0_wrap_around = atd0_anx_wrap_around_channel;
@@ -300,8 +300,8 @@ void XML_ATD_PWM_STUB::processATD0()
 
 		for (std::vector<data_t<ATD0_SIZE>*>::iterator it = atd0_vect.begin() ; (it != atd0_vect.end()) && !isTerminated(); ++it) {
 
-			uint8_t j = 0;
-			for (uint8_t i=0; i < ATD0_SIZE; i++) {
+			unsigned int j = 0;
+			for (unsigned int i=0; i < ATD0_SIZE; i++) {
 				if ((i < atd0_start) || (i > atd0_wrap_around)) {
 					atd0_anValue[i] = 0;
 				} else {
@@ -330,8 +330,8 @@ void XML_ATD_PWM_STUB::processATD1()
 	if (atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
 
 	double atd1_anValue[ATD1_SIZE];
-	uint8_t atd1_wrap_around;
-	uint8_t atd1_start;
+	unsigned int atd1_wrap_around;
+	unsigned int atd1_start;
 
 	if (atd1_anx_wrap_around_channel < ATD1_SIZE) {
 		atd1_wrap_around = atd1_anx_wrap_around_channel;
@@ -349,8 +349,8 @@ void XML_ATD_PWM_STUB::processATD1()
 
 		for (std::vector<data_t<ATD1_SIZE>*>::iterator it = atd1_vect.begin() ; (it != atd1_vect.end()) && !isTerminated(); ++it) {
 
-			uint8_t j = 0;
-			for (uint8_t i=0; i < ATD1_SIZE; i++) {
+			unsigned int j = 0;
+			for (unsigned int i=0; i < ATD1_SIZE; i++) {
 				if ((i < atd1_start) || (i > atd1_wrap_around)) {
 					atd1_anValue[i] = 0;
 				} else {

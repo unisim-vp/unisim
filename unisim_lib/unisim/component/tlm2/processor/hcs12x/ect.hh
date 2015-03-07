@@ -186,7 +186,7 @@ public:
 	inline void enterFreezeMode();
 	inline void exitFreezeMode();
 
-	void assertInterrupt(uint8_t interrupt_offset);
+	void assertInterrupt(unsigned int interrupt_offset);
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 	inline void latchToHoldingRegisters();
@@ -374,23 +374,23 @@ private:
 	// Enhanced Capture Timer Channel 6 : IVBR + 0xE2
 	// Enhanced Capture Timer Channel 7 : IVBR + 0xE0
 
-	uint8_t offset_channel0_interrupt;
-	Parameter<uint8_t> param_offset_channel0_interrupt;
+	unsigned int offset_channel0_interrupt;
+	Parameter<unsigned int> param_offset_channel0_interrupt;
 
-	uint8_t offset_timer_overflow_interrupt;
-	Parameter<uint8_t> param_offset_timer_overflow_interrupt;
+	unsigned int offset_timer_overflow_interrupt;
+	Parameter<unsigned int> param_offset_timer_overflow_interrupt;
 
-	uint8_t pulse_accumulatorA_overflow_interrupt;
-	Parameter<uint8_t> param_pulse_accumulatorA_overflow_interrupt;
+	unsigned int pulse_accumulatorA_overflow_interrupt;
+	Parameter<unsigned int> param_pulse_accumulatorA_overflow_interrupt;
 
-	uint8_t pulse_accumulatorB_overflow_interrupt;
-	Parameter<uint8_t> param_pulse_accumulatorB_overflow_interrupt;
+	unsigned int pulse_accumulatorB_overflow_interrupt;
+	Parameter<unsigned int> param_pulse_accumulatorB_overflow_interrupt;
 
-	uint8_t pulse_accumulatorA_input_edge_interrupt;
-	Parameter<uint8_t> param_pulse_accumulatorA_input_edge_interrupt;
+	unsigned int pulse_accumulatorA_input_edge_interrupt;
+	Parameter<unsigned int> param_pulse_accumulatorA_input_edge_interrupt;
 
-	uint8_t modulus_counter_interrupt;
-	Parameter<uint8_t> param_modulus_counter_interrupt;
+	unsigned int modulus_counter_interrupt;
+	Parameter<unsigned int> param_modulus_counter_interrupt;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;

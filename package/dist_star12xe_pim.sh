@@ -208,6 +208,7 @@ unisim/component/tlm2/processor/hcs12x/s12pit24b.cc \
 unisim/component/tlm2/processor/hcs12x/s12sci.cc \
 unisim/component/tlm2/processor/hcs12x/s12mpu.cc \
 unisim/component/tlm2/processor/hcs12x/s12spi.cc \
+unisim/component/tlm2/processor/hcs12x/s12mscan.cc \
 unisim/component/tlm2/interconnect/generic_router/router.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
@@ -382,6 +383,7 @@ unisim/component/cxx/processor/hcs12x/types.hh \
 unisim/component/cxx/processor/hcs12x/concatenated_register.hh \
 unisim/component/cxx/processor/hcs12x/config.hh \
 unisim/component/cxx/processor/hcs12x/xgate.hh \
+unisim/component/cxx/processor/hcs12x/s12mpu_if.hh \
 unisim/component/tlm2/processor/hcs12x/s12xgate.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
@@ -399,9 +401,9 @@ unisim/component/tlm2/processor/hcs12x/s12xeetx.hh \
 unisim/component/tlm2/processor/hcs12x/s12xftmx.hh \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.hh \
 unisim/component/tlm2/processor/hcs12x/s12sci.hh \
-unisim/component/cxx/processor/hcs12x/s12mpu_if.hh \
 unisim/component/tlm2/processor/hcs12x/s12mpu.hh \
 unisim/component/tlm2/processor/hcs12x/s12spi.hh \
+unisim/component/tlm2/processor/hcs12x/s12mscan.hh \
 unisim/service/pim/pim.hh \
 unisim/service/pim/pim_server.hh \
 unisim/service/pim/pim_thread.hh \

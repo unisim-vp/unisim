@@ -229,7 +229,7 @@ Run() {
  *
  */
 
-	uint8_t opCycles = 0;
+	unsigned int opCycles = 0;
 
 	while(1) {
 
@@ -244,7 +244,7 @@ Run() {
 		}
 
 		address_t channelID = 0;
-		uint8_t priority = 0;
+		unsigned int priority = 0;
 
 		if (hasAsynchronousInterrupt()) {
 
@@ -258,7 +258,7 @@ Run() {
 
 			bool found = false;
 			// is there an S12X SW Trigger pending request ?
-			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+			for (unsigned int i=0,j=1; i<8; i++,j=j*2) {
 				// is a pending SW Trigger request on that channel ?
 				if ((getXGSWT() & j) != 0) {
 
@@ -366,7 +366,7 @@ void S12XGATE::handleAsynchronousInterrupt() {
 	 * The register content of an interrupted thread is maintained and restored by the XGATE hardware.
 	 */
 	if (getXGCHPL() < 4) {
-		uint8_t priority = 3;
+		unsigned int priority = 3;
 		uint8_t channelID = getIntVector(priority);
 		if (priority > 3) {
 			if (!currentThreadTerminated) {
@@ -417,7 +417,7 @@ tlm_sync_enum S12XGATE::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_p
 	return (TLM_ACCEPTED);
 }
 
-address_t S12XGATE ::getIntVector(uint8_t& priority)
+address_t S12XGATE ::getIntVector(unsigned int& priority)
 	/*
 	 * The CPU issues a signal that tells the interrupt module to drive
 	 * the vector address of the highest priority pending exception onto the system address bus
@@ -462,7 +462,7 @@ address_t S12XGATE ::getIntVector(uint8_t& priority)
 
 }
 
-void S12XGATE::assertInterrupt(uint8_t offset, bool isXGATE_flag) {
+void S12XGATE::assertInterrupt(unsigned int offset, bool isXGATE_flag) {
 
 
 	if (!inherited::isInterruptEnabled()) return;

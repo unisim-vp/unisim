@@ -1,4 +1,10 @@
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_ARTIMON
+
 #include <unisim/service/monitor/artimon_monitor.hh>
 
 #include <stdio.h>
@@ -36,15 +42,15 @@ void ArtimonMonitor::OnDisconnect()
 
 bool ArtimonMonitor::BeginSetup()
 {
-//	int result = generate_artimon_spec(xml_file_path.c_str());
-//
-//	if (! init_artimon_4_simulators((char*) "Dummy",&nb_atoms, &nb_sig, 1, &nb_main, &main_values))
-//	{
-//	    isInitialized = true;
-//		printf("\nInit ARTiMon Ok\n");
-//	}
-//	else
-//		return false;
+	int result = generate_artimon_spec(xml_file_path.c_str());
+
+	if (! init_artimon_4_simulators((char*) "Dummy",&nb_atoms, &nb_sig, 1, &nb_main, &main_values))
+	{
+	    isInitialized = true;
+		printf("\nInit ARTiMon Ok\n");
+	}
+	else
+		return false;
 
 
 //	int N = 15;
@@ -167,3 +173,4 @@ void ArtimonMonitor::refresh_time(double time)
 } // end of namespace service
 } // end of namespace unisim
 
+#endif // HAVE_ARTIMON

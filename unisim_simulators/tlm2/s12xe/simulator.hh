@@ -287,7 +287,7 @@ class Simulator :
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-	Monitor *monitor;
+//	Monitor *monitor;
 
 	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
 	Elf32Loader *loaderELF;
