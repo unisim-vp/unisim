@@ -449,9 +449,11 @@ unsigned int CPU::step()
 
 			}
 
-			op->execute(this);
+			opCycles = op->execute(this);
 
-			opCycles = op->getCycles();
+//			op->execute(this);
+//
+//			opCycles = op->getCycles();
 
 			cycles_counter += opCycles;
 

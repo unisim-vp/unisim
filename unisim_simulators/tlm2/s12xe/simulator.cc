@@ -44,6 +44,13 @@ Simulator::Simulator(int argc, char **argv)
 	, sci3(0)
 	, sci4(0)
 	, sci5(0)
+	, sci6(0)
+	, sci7(0)
+	, can0(0)
+	, can1(0)
+	, can2(0)
+	, can3(0)
+	, can4(0)
 	, spi0(0)
 	, spi1(0)
 	, spi2(0)
@@ -151,6 +158,14 @@ Simulator::Simulator(int argc, char **argv)
 	sci3 = new S12SCI("SCI3");
 	sci4 = new S12SCI("SCI4");
 	sci5 = new S12SCI("SCI5");
+	sci6 = new S12SCI("SCI6");
+	sci7 = new S12SCI("SCI7");
+
+	can0 = new MSCAN("CAN0");
+	can1 = new MSCAN("CAN1");
+	can2 = new MSCAN("CAN2");
+	can3 = new MSCAN("CAN3");
+	can4 = new MSCAN("CAN4");
 
 	spi0 = new S12SPI("SPI0");
 	spi1 = new S12SPI("SPI1");
@@ -258,6 +273,15 @@ Simulator::Simulator(int argc, char **argv)
 	sci3->interrupt_request(s12xint->interrupt_request);
 	sci4->interrupt_request(s12xint->interrupt_request);
 	sci5->interrupt_request(s12xint->interrupt_request);
+	sci6->interrupt_request(s12xint->interrupt_request);
+	sci7->interrupt_request(s12xint->interrupt_request);
+
+	can0->interrupt_request(s12xint->interrupt_request);
+	can1->interrupt_request(s12xint->interrupt_request);
+	can2->interrupt_request(s12xint->interrupt_request);
+	can3->interrupt_request(s12xint->interrupt_request);
+	can4->interrupt_request(s12xint->interrupt_request);
+
 	spi0->interrupt_request(s12xint->interrupt_request);
 	spi1->interrupt_request(s12xint->interrupt_request);
 	spi2->interrupt_request(s12xint->interrupt_request);
@@ -288,8 +312,15 @@ Simulator::Simulator(int argc, char **argv)
 	mmc->init_socket(s12xint->slave_socket);
 	mmc->init_socket(sci4->slave_socket);
 	mmc->init_socket(sci5->slave_socket);
+	mmc->init_socket(can0->slave_socket);
+	mmc->init_socket(can1->slave_socket);
+	mmc->init_socket(can2->slave_socket);
+	mmc->init_socket(can3->slave_socket);
+	mmc->init_socket(can4->slave_socket);
 	mmc->init_socket(atd0->slave_socket);
 	mmc->init_socket(pwm->slave_socket);
+	mmc->init_socket(sci6->slave_socket);
+	mmc->init_socket(sci7->slave_socket);
 	mmc->init_socket(pit->slave_socket);
 	mmc->init_socket(xgate->target_socket);
 	mmc->init_socket(global_ram->slave_sock);
@@ -311,6 +342,13 @@ Simulator::Simulator(int argc, char **argv)
 	crg->bus_clock_socket(sci3->bus_clock_socket);
 	crg->bus_clock_socket(sci4->bus_clock_socket);
 	crg->bus_clock_socket(sci5->bus_clock_socket);
+	crg->bus_clock_socket(sci6->bus_clock_socket);
+	crg->bus_clock_socket(sci7->bus_clock_socket);
+	crg->bus_clock_socket(can0->bus_clock_socket);
+	crg->bus_clock_socket(can1->bus_clock_socket);
+	crg->bus_clock_socket(can2->bus_clock_socket);
+	crg->bus_clock_socket(can3->bus_clock_socket);
+	crg->bus_clock_socket(can4->bus_clock_socket);
 	crg->bus_clock_socket(spi0->bus_clock_socket);
 	crg->bus_clock_socket(spi1->bus_clock_socket);
 	crg->bus_clock_socket(spi2->bus_clock_socket);
@@ -337,10 +375,17 @@ Simulator::Simulator(int argc, char **argv)
 	*(memoryImportExportTee->memory_import[13]) >> sci3->memory_export;
 	*(memoryImportExportTee->memory_import[14]) >> sci4->memory_export;
 	*(memoryImportExportTee->memory_import[15]) >> sci5->memory_export;
-	*(memoryImportExportTee->memory_import[16]) >> spi0->memory_export;
-	*(memoryImportExportTee->memory_import[17]) >> spi1->memory_export;
-	*(memoryImportExportTee->memory_import[18]) >> spi2->memory_export;
-	*(memoryImportExportTee->memory_import[19]) >> mpu->memory_export;
+	*(memoryImportExportTee->memory_import[16]) >> sci6->memory_export;
+	*(memoryImportExportTee->memory_import[17]) >> sci7->memory_export;
+	*(memoryImportExportTee->memory_import[18]) >> can0->memory_export;
+	*(memoryImportExportTee->memory_import[19]) >> can1->memory_export;
+	*(memoryImportExportTee->memory_import[20]) >> can2->memory_export;
+	*(memoryImportExportTee->memory_import[21]) >> can3->memory_export;
+	*(memoryImportExportTee->memory_import[22]) >> can4->memory_export;
+	*(memoryImportExportTee->memory_import[23]) >> spi0->memory_export;
+	*(memoryImportExportTee->memory_import[24]) >> spi1->memory_export;
+	*(memoryImportExportTee->memory_import[25]) >> spi2->memory_export;
+	*(memoryImportExportTee->memory_import[26]) >> mpu->memory_export;
 
 	mmc->memory_import >> memoryImportExportTee->memory_export;
 
@@ -364,10 +409,18 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[14]) >> sci3->registers_export;
 	*(registersTee->registers_import[15]) >> sci4->registers_export;
 	*(registersTee->registers_import[16]) >> sci5->registers_export;
-	*(registersTee->registers_import[17]) >> spi0->registers_export;
-	*(registersTee->registers_import[18]) >> spi1->registers_export;
-	*(registersTee->registers_import[19]) >> spi2->registers_export;
-	*(registersTee->registers_import[20]) >> mpu->registers_export;
+	*(registersTee->registers_import[17]) >> sci6->registers_export;
+	*(registersTee->registers_import[18]) >> sci7->registers_export;
+
+	*(registersTee->registers_import[19]) >> can0->registers_export;
+	*(registersTee->registers_import[20]) >> can1->registers_export;
+	*(registersTee->registers_import[21]) >> can2->registers_export;
+	*(registersTee->registers_import[22]) >> can3->registers_export;
+	*(registersTee->registers_import[23]) >> can4->registers_export;
+	*(registersTee->registers_import[24]) >> spi0->registers_export;
+	*(registersTee->registers_import[25]) >> spi1->registers_export;
+	*(registersTee->registers_import[26]) >> spi2->registers_export;
+	*(registersTee->registers_import[27]) >> mpu->registers_export;
 
 // ***********************************************************
 	if(enable_inline_debugger || enable_gdb_server || enable_pim_server)
@@ -466,10 +519,12 @@ Simulator::Simulator(int argc, char **argv)
 
 	if (isS19) {
 		loaderS19->memory_import >> mmc->memory_export;
+	} else if (loaderELF) {
+		loaderELF->memory_import >> mmc->memory_export;
 	}
 
 	if (loaderELF) {
-		loaderELF->memory_import >> mmc->memory_export;
+//		loaderELF->memory_import >> mmc->memory_export;
 
 		if(enable_inline_debugger || enable_gdb_server || enable_pim_server) {
 			debugger->loader_import >> loaderELF->loader_export;
@@ -592,6 +647,15 @@ Simulator::~Simulator()
 	if (sci3) { delete sci3; sci3 = NULL; }
 	if (sci4) { delete sci4; sci4 = NULL; }
 	if (sci5) { delete sci5; sci5 = NULL; }
+	if (sci6) { delete sci6; sci6 = NULL; }
+	if (sci7) { delete sci7; sci7 = NULL; }
+
+	if (can0) { delete can0; can0 = NULL; }
+	if (can1) { delete can1; can1 = NULL; }
+	if (can2) { delete can2; can2 = NULL; }
+	if (can3) { delete can3; can3 = NULL; }
+	if (can4) { delete can4; can4 = NULL; }
+
 	if (spi0) { delete spi0; spi0 = NULL; }
 	if (spi1) { delete spi1; spi1 = NULL; }
 	if (spi2) { delete spi2; spi2 = NULL; }
@@ -995,6 +1059,61 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI5.TXD", true);
 	simulator->SetVariable("SCI5.RXD", true);
 
+	simulator->SetVariable("CAN0.bus-cycle-time", 250000);
+	simulator->SetVariable("CAN0.base-address", 0x0140);
+	simulator->SetVariable("CAN0.transmit-interrupt-offset", 0xB0);
+	simulator->SetVariable("CAN0.receive-interrupt-offset", 0xB2);
+	simulator->SetVariable("CAN0.errors-interrupt-offset", 0xB4);
+	simulator->SetVariable("CAN0.wakeup-interrupt-offset", 0xB6);
+	simulator->SetVariable("CAN0.telnet-enabled", false);
+	simulator->SetVariable("CAN0.debug-enabled", false);
+	simulator->SetVariable("CAN0.TXD", true);
+	simulator->SetVariable("CAN0.RXD", true);
+
+	simulator->SetVariable("CAN1.bus-cycle-time", 250000);
+	simulator->SetVariable("CAN1.base-address", 0x0180);
+	simulator->SetVariable("CAN1.transmit-interrupt-offset", 0xA8);
+	simulator->SetVariable("CAN1.receive-interrupt-offset", 0xAA);
+	simulator->SetVariable("CAN1.errors-interrupt-offset", 0xAC);
+	simulator->SetVariable("CAN1.wakeup-interrupt-offset", 0xAE);
+	simulator->SetVariable("CAN1.telnet-enabled", false);
+	simulator->SetVariable("CAN1.debug-enabled", false);
+	simulator->SetVariable("CAN1.TXD", true);
+	simulator->SetVariable("CAN1.RXD", true);
+
+	simulator->SetVariable("CAN2.bus-cycle-time", 250000);
+	simulator->SetVariable("CAN2.base-address", 0x01C0);
+	simulator->SetVariable("CAN2.transmit-interrupt-offset", 0xA0);
+	simulator->SetVariable("CAN2.receive-interrupt-offset", 0xA2);
+	simulator->SetVariable("CAN2.errors-interrupt-offset", 0xA4);
+	simulator->SetVariable("CAN2.wakeup-interrupt-offset", 0xA6);
+	simulator->SetVariable("CAN2.telnet-enabled", false);
+	simulator->SetVariable("CAN2.debug-enabled", false);
+	simulator->SetVariable("CAN2.TXD", true);
+	simulator->SetVariable("CAN2.RXD", true);
+
+	simulator->SetVariable("CAN3.bus-cycle-time", 250000);
+	simulator->SetVariable("CAN3.base-address", 0x0200);
+	simulator->SetVariable("CAN3.transmit-interrupt-offset", 0x98);
+	simulator->SetVariable("CAN3.receive-interrupt-offset", 0x9A);
+	simulator->SetVariable("CAN3.errors-interrupt-offset", 0x9C);
+	simulator->SetVariable("CAN3.wakeup-interrupt-offset", 0x9E);
+	simulator->SetVariable("CAN3.telnet-enabled", false);
+	simulator->SetVariable("CAN3.debug-enabled", false);
+	simulator->SetVariable("CAN3.TXD", true);
+	simulator->SetVariable("CAN3.RXD", true);
+
+	simulator->SetVariable("CAN4.bus-cycle-time", 250000);
+	simulator->SetVariable("CAN4.base-address", 0x0280);
+	simulator->SetVariable("CAN4.transmit-interrupt-offset", 0x48);
+	simulator->SetVariable("CAN4.receive-interrupt-offset", 0x4A);
+	simulator->SetVariable("CAN4.errors-interrupt-offset", 0x4C);
+	simulator->SetVariable("CAN4.wakeup-interrupt-offset", 0x4E);
+	simulator->SetVariable("CAN4.telnet-enabled", false);
+	simulator->SetVariable("CAN4.debug-enabled", false);
+	simulator->SetVariable("CAN4.TXD", true);
+	simulator->SetVariable("CAN4.RXD", true);
+
 	simulator->SetVariable("spi-telnet.telnet-tcp-port", 1234);
 	simulator->SetVariable("spi-enable-telnet", false);
 
@@ -1019,12 +1138,48 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("MMC.mmcctl1", 0x5);
 	simulator->SetVariable("MMC.address-encoding", 0x0);
 	simulator->SetVariable("MMC.ppage-address", 0x15); // ppage address for S12XE is 0x15
+
+/*
 	simulator->SetVariable("MMC.memory-map",
 "0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;\
 6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0100,0113;11,0114,011F;\
-12,0120,012F;13,0130,0137;14,0138,013F;15,02C0,02EF;16,0300,0327;17,0340,0367;\
-18,0380,03BF;19,0007FF,0FFFFF;20,100000,13FFFF;20,400000,7FFFFF");
+12,0120,012F;13,0130,0137;14,0138,013F;15,0140,017F;16,0180,01BF;17,01C0,01FF;\
+18,0200,023F;19,0280,02BF;20,02C0,02EF;21,0300,0327;22,330,337;23,338,33F;\
+24,0340,0367;25,0380,03BF;26,0007FF,0FFFFF;27,100000,13FFFF;27,400000,7FFFFF");
+*/
 
+	// index 27 reference two memory regions (EEPROM, FLASH). For S12XE, the eeprom is emulated by flash
+	simulator->SetVariable("MMC.memory-map",
+"0,0034,003F;\
+1,0040,007F;\
+2,0080,00AF;\
+3,00B8,00BF;\
+4,00C0,00C7;\
+5,00C8,00CF;\
+6,00D0,00D7;\
+7,00D8,00DF;\
+8,00F0,00F7;\
+9,00F8,00FF;\
+10,0100,0113;\
+11,0114,011F;\
+12,0120,012F;\
+13,0130,0137;\
+14,0138,013F;\
+15,0140,017F;\
+16,0180,01BF;\
+17,01C0,01FF;\
+18,0200,023F;\
+19,0280,02BF;\
+20,02C0,02EF;\
+21,0300,0327;\
+22,0330,0337;\
+23,0338,033F;\
+24,0340,0367;\
+25,0380,03BF;\
+26,0007FF,0FFFFF;\
+27,100000,13FFFF;\
+27,400000,7FFFFF"
+	);
 
 	simulator->SetVariable("MPU.debug-enabled", false);
 	simulator->SetVariable("MPU.base-address", 0x0114);
@@ -1034,6 +1189,22 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("PWM.base-address", 0x300);
 	simulator->SetVariable("PWM.interrupt-offset", 0x8c);
 	simulator->SetVariable("PWM.debug-enabled", false);
+
+	simulator->SetVariable("SCI6.bus-cycle-time", 250000);
+	simulator->SetVariable("SCI6.base-address", 0x0330);
+	simulator->SetVariable("SCI6.interrupt-offset", 0xC2);
+	simulator->SetVariable("SCI6.telnet-enabled", false);
+	simulator->SetVariable("SCI6.debug-enabled", false);
+	simulator->SetVariable("SCI6.TXD", true);
+	simulator->SetVariable("SCI6.RXD", true);
+
+	simulator->SetVariable("SCI7.bus-cycle-time", 250000);
+	simulator->SetVariable("SCI7.base-address", 0x0338);
+	simulator->SetVariable("SCI7.interrupt-offset", 0x56);
+	simulator->SetVariable("SCI7.telnet-enabled", false);
+	simulator->SetVariable("SCI7.debug-enabled", false);
+	simulator->SetVariable("SCI7.TXD", true);
+	simulator->SetVariable("SCI7.RXD", true);
 
 	simulator->SetVariable("XINT.debug-enabled", false);
 

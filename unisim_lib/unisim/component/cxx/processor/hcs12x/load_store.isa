@@ -59,6 +59,8 @@ ldaab_imm.execute = {
 	cpu->ccr->clrV();
 	if (opr8i == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((opr8i & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 // LDAA or LDAB opr8a
@@ -90,6 +92,8 @@ ldaab_dir.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 // LDAA or LDAB opr16a
@@ -122,7 +126,8 @@ ldaab_ext.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
-	
+
+	return getCycles();
 }
 
 // LDAA or LDAB oprx0_xysp
@@ -175,6 +180,7 @@ ldaab_idx.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // LDD or LDY or LDX or LDS #opr16i
@@ -208,6 +214,7 @@ ld_dyxs_imm.execute = {
 	if (opr16i == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((opr16i & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // LDD or LDY or LDX or LDS opr8a
@@ -242,6 +249,7 @@ ld_dyxs_dir.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // LDD or LDY or LDX or LDS opr16a
@@ -279,6 +287,7 @@ ld_dyxs_ext.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // LDD or LDY or LDX or LDS oprx0_xysp
@@ -334,6 +343,7 @@ ld_dyxs_idx.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
   
@@ -357,7 +367,8 @@ leay.execute = {
     uint16_t	addr = xb->getEAddr(cpu);
    
 	cpu->setRegY(addr);
-	
+
+	return getCycles();
 }
 
 // LEAX oprx0_xysp
@@ -380,7 +391,8 @@ leax.execute = {
     uint16_t	addr = xb->getEAddr(cpu);
     
 	cpu->setRegX(addr);
-	
+
+	return getCycles();
 }
 
 // LEAS  oprx0_xysp
@@ -403,7 +415,8 @@ leas.execute = {
     uint16_t	addr = xb->getEAddr(cpu);
     
 	cpu->setRegSP(addr);
-	
+
+	return getCycles();
 }
 
 // STAA or STAB opr8a
@@ -437,6 +450,7 @@ staab_dir.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // STAA or STAB opr16a
@@ -470,6 +484,7 @@ staab_ext.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // STAA or STAB oprx0_xysp
@@ -521,6 +536,7 @@ staab_idx.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // STD or STY or STX or STS opr8a
@@ -560,6 +576,7 @@ st_dyxs_dir.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // STD or STY or STX or STS opr16a
@@ -601,6 +618,7 @@ st_dyxs_ext.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // STD or STY or STX or STS oprx0_xysp
@@ -660,6 +678,7 @@ st_dyxs_idx.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // **********  GLOBAL MEMORY MODE ***************
@@ -694,6 +713,8 @@ gldaab_dir.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+	return getCycles();
 }
 
 // GLDAA or GLDAB opr16a
@@ -726,7 +747,8 @@ gldaab_ext.execute = {
 	cpu->ccr->clrV();
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
-	
+
+	return getCycles();
 }
 
 // GLDAA or GLDAB oprx0_xysp
@@ -777,6 +799,7 @@ gldaab_idx.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // GLDD or GLDY or GLDX or GLDS opr8a
@@ -812,6 +835,7 @@ gld_dyxs_dir.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // GLDD or GLDY or GLDX or GLDS opr16a
@@ -848,6 +872,7 @@ gld_dyxs_ext.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // GLDD or GLDY or GLDX or GLDS oprx0_xysp
@@ -901,6 +926,7 @@ gld_dyxs_idx.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // GSTAA or GSTAB opr8a
@@ -934,6 +960,7 @@ gstaab_dir.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // GSTAA or GSTAB opr16a
@@ -967,6 +994,7 @@ gstaab_ext.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // GSTAA or GSTAB oprx0_xysp
@@ -1018,6 +1046,7 @@ gstaab_idx.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // GSTD or GSTY or GSTX or GSTS opr8a
@@ -1057,6 +1086,7 @@ gst_dyxs_dir.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // GSTD or GSTY or GSTX or GSTS opr16a
@@ -1097,6 +1127,7 @@ gst_dyxs_ext.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 
 // GSTD or GSTY or GSTX or GSTS oprx0_xysp
@@ -1154,5 +1185,6 @@ gst_dyxs_idx.execute = {
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
+	return getCycles();
 }
 

@@ -147,39 +147,17 @@ class S12MSCAN :
 {
 public:
 
-	enum SCIMSG {SCIDATA, SCIIDLE, SCIBREAK};
-
-	static const unsigned int MEMORY_MAP_SIZE = 8;
+	static const unsigned int MEMORY_MAP_SIZE = 64;
 
 	//=========================================================
 	//=                REGISTERS OFFSETS                      =
 	//=========================================================
 
-	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
-	static const uint8_t SCIBDH	= 0x00;	// 1 byte
-	static const uint8_t SCIBDL	= 0x01;	// 1 byte
-	static const uint8_t SCICR1	= 0x02;	// 1 byte
-	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
-	static const uint8_t SCIASR1	= 0x00;	// 1 byte
-	static const uint8_t SCIACR1	= 0x01;	// 1 byte
-	static const uint8_t SCIACR2	= 0x02; // 1 byte
-
-	static const uint8_t SCICR2	= 0x03; // 1 byte
-	static const uint8_t SCISR1	= 0x04; // 1 byte
-	static const uint8_t SCISR2	= 0x05; // 1 bytes
-	static const uint8_t SCIDRH	= 0x06; // 1 bytes
-	static const uint8_t SCIDRL	= 0x07; // 1 bytes
-
-	static const uint8_t MPU_REG_BANKS_OFFSET = 0x08;	// This offset is used to instruments all banked registers
-	static const uint8_t SCIBDH_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x00;	// 1 byte
-	static const uint8_t SCIBDL_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x01;	// 1 byte
-	static const uint8_t SCICR1_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x02;	// 1 byte
-	static const uint8_t SCIASR1_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x03;	// 1 byte
-	static const uint8_t SCIACR1_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x04;	// 1 byte
-	static const uint8_t SCIACR2_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x05; // 1 byte
-
-	static const uint16_t IDLE_11 = 0x07FF; // preamble of 11 logic 1s
-	static const uint16_t IDLE_10 = 0x03FF; // preamble of 10 logic 1s
+	enum REGS_OFFSET {CANCTL0, CANCTL1, CANBTR0, CANBTR1, CANRFLG, CANRIER, CANTFLG, CANTIER, CANTARQ, CANTAAK,
+						CANTBSEL, CANIDAC, RESERVED1, CANMISC, CANRXERR, CANTXERR,
+						CANIDAR0, CANIDAR1, CANIDAR2, CANIDAR3,	CANIDMR0, CANIDMR1, CANIDMR2, CANIDMR3,
+						CANIDAR4, CANIDAR5, CANIDAR6, CANIDAR7,	CANIDMR4, CANIDMR5, CANIDMR6, CANIDMR7,
+						CANRXFG_START=0x20, CANRXFG_END=0x2F, CANTXFG_START=0x30, CANTXFG_END=0x3F};
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 	ServiceImport<CharIO > char_io_import;
@@ -262,20 +240,23 @@ private:
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
 
-	sc_time		sci_baud_rate;
+	sc_time		can_baud_rate;
 	sc_time		telnet_process_input_period;
 
 	sc_event tx_run_event, tx_load_event, tx_break_event, rx_run_event;
 
-	// S12SCI baseAddress  SCI0=0x00C8:0x00CF  SCI1=0x00D0:0x00D7 SCI2=0x00B8:0x00BF SCI3=0x00C0:0x00C7 SCI4=0x0130:0x0137 SCI5=0x0138:0x013F
+	// S12MSCAN baseAddress  CAN0=0x0140:0x017F  CAN1=0x0180:0x01BF CAN2=0x01C0:0x01FF CAN3=0x0200:0x023F CAN4=0x0280:0x02BF
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
-	uint8_t interrupt_offset;  // vector offset SCI0=0xD6  SCI1=0xD4 SCI2=0x8A SCI3=0x88 SCI4=0x86 SCI5=0x84
-	Parameter<uint8_t> param_interrupt_offset;
-
-//	bool	debug_enabled;
-//	Parameter<bool>	param_debug_enabled;
+	uint8_t transmit_interrupt_offset;
+	Parameter<uint8_t> param_transmit_interrupt_offset;
+	uint8_t receive_interrupt_offset;
+	Parameter<uint8_t> param_receive_interrupt_offset;
+	uint8_t errors_interrupt_offset;
+	Parameter<uint8_t> param_errors_interrupt_offset;
+	uint8_t wakeup_interrupt_offset;
+	Parameter<uint8_t> param_wakeup_interrupt_offset;
 
 	bool	tx_debug_enabled;
 	Parameter<bool>	param_tx_debug_enabled;
@@ -288,7 +269,6 @@ private:
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
-	bool scisr1_read;
 	bool idle_to_send;
 
 	bool txd;
@@ -297,183 +277,121 @@ private:
 	bool rxd;
 	Signal<bool> rxd_input_pin;
 
-	inline bool getRXD();
-
 	// =============================================
 	// =            Registers                      =
 	// =============================================
 
-	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
-	uint8_t scibdh_register;	// 1 byte
-	uint8_t scibdl_register;	// 1 byte
-	uint8_t scicr1_register;	// 1 byte
-	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
-	uint8_t sciasr1_register;	// 1 byte
-	uint8_t sciacr1_register;	// 1 byte
-	uint8_t sciacr2_register; // 1 byte
+	uint8_t canctl0_register;
+	uint8_t canctl1_register;
+	uint8_t canbtr0_register;
+	uint8_t canbtr1_register;
+	uint8_t canrflg_register;
+	uint8_t canrier_register;
+	uint8_t cantflg_register;
+	uint8_t cantier_register;
+	uint8_t cantarq_register;
+	uint8_t cantaak_register;
+	uint8_t cantbsel_register;
+	uint8_t canidac_register;
+	uint8_t reserved1;
+	uint8_t canmisc_register;
+	uint8_t canrxerr_register;
+	uint8_t cantxerr_register;
+	uint8_t canidar0_register;
+	uint8_t canidar1_register;
+	uint8_t canidar2_register;
+	uint8_t canidar3_register;
+	uint8_t canidmr0_register;
+	uint8_t canidmr1_register;
+	uint8_t canidmr2_register;
+	uint8_t canidmr3_register;
+	uint8_t canidar4_register;
+	uint8_t canidar5_register;
+	uint8_t canidar6_register;
+	uint8_t canidar7_register;
+	uint8_t canidmr4_register;
+	uint8_t canidmr5_register;
+	uint8_t canidmr6_register;
+	uint8_t canidmr7_register;
 
-	uint8_t scicr2_register; // 1 byte
-	uint8_t scisr1_register; // 1 byte
-	uint8_t scisr2_register; // 1 bytes
-	uint8_t scidrh_register; // 1 bytes
-	uint8_t scidrl_register; // 1 bytes
+	uint8_t canrxfg_register[5][16];
+	uint8_t cantxfg_register[3][16];
 
-	uint16_t tx_shift_register, rx_shift_register;
+	int active_canrxfg_index, active_cantxfg_index;
 
-	void ComputeBaudRate();
-	inline bool isInfraredEnabled() { return ((scibdh_register & 0x80) != 0); }
-	inline bool isBaudRateGeneratorEnabled() {
-		uint16_t sbr = (!isInfraredEnabled())? (((scibdh_register & 0x1F) << 8) | scibdl_register) : (((scibdh_register & 0x1F) << 7) | (scibdl_register >> 1));
-		return (sbr != 0);
-	}
-	inline bool isLoopOperationEnabled() {
-		// receiver pin is disconnected and the transmitter output is connected to receiver input
-		return ((scicr1_register & 0x80) != 0);
-	}
+	uint8_t tx_shift_register[16], rx_shift_register[16];
 
-	inline bool isTx2RxInternal() { return ((scicr1_register & 0x20) == 0); }
-	inline bool isSCIStopWaitMode() { return ((scicr1_register & 0x40) != 0); }
-	inline bool isNineBitsMode() { /* SCICR1::M ?= 1 */ return ((scicr1_register & 0x10) != 0); }
-	inline bool isIdleLineWakeup() { return ((scicr1_register & 0x08) == 0); }
-	inline bool isIdleLineTypeStop() { return ((scicr1_register & 0x04) != 0); }
-	inline bool isParityEnabled() { return ((scicr1_register & 0x02) != 0); }
-	inline bool isOddParity() { return ((scicr1_register & 0x01) != 0); }
-	inline void setParityError() { scisr1_read = false; scisr1_register = scisr1_register | 0x01;	}
-	inline bool isReceiveInputActiveedgeInterruptEnabled() { return ((sciacr1_register & 0x80) != 0); }
-	inline bool isBitErrorInterruptEnabled() { return ((sciacr1_register & 0x20) != 0); }
-	inline bool isBreakDetectInterruptEnabled() { return ((sciacr1_register & 0x01) != 0); }
-	inline bool isBreakDetectFeatureEnabled() { return ((sciacr2_register & 0x01) != 0); }
-	inline bool isTransmitterEnabled() { return (((scicr2_register & 0x08) != 0)  && isBaudRateGeneratorEnabled()); }
-	inline bool isReceiverEnabled() { return (((scicr2_register & 0x04) != 0) && isBaudRateGeneratorEnabled()); }
-	inline bool isReceiverWakeupEnabled() { return ((scicr2_register & 0x02) != 0); }
-	inline void clearReceiverWakeup() { scicr2_register = scicr2_register & 0xFD; }
-	inline bool isTransmitBreakCharsEnabled() { return ((scicr2_register & 0x01) != 0); }
-	inline bool isSCISR1_Read() { return (scisr1_read); }
-	inline bool isBRK13Set() { return ((scisr2_register & 0x04) != 0);}
-	inline bool isTXD_Output() { return ((scisr2_register & 0x02) != 0); }
-	inline void setTDRE() {
-		 scisr1_read = false;
-		scisr1_register = scisr1_register | 0x80;
-		// is Transmission (TDRE) interrupt enabled ?
-		if ((scicr2_register & 0x80) != 0) {
-			if (tx_debug_enabled)	std::cout << sc_object::name() << "::setTDRE" << std::endl;
-			assertInterrupt(interrupt_offset);
-		}
-	}
-	inline bool isTDRECleared() { return ((scisr1_register & 0x80) == 0); }
-	inline void clearTDRE() {
-		if (isSCISR1_Read()) {
-			// clear SCISR1::TDRE bit
-			(scisr1_register = scisr1_register & 0x7F);
-		}
-	}
+	// the time stamp is clocked by the bit clock rate.
+	sc_event timer_start_event;
+	uint16_t time_stamp;
 
-	inline bool isSendBreak() { return ((scicr2_register & 0x01) != 0); }
-	inline void clearTC() { scisr1_register = scisr1_register & 0xBF; }
-	inline void setTC() {
-		// SCISR1::TC is set high when the SCISR1::TDRE flag is set and no data, preamble, or break character is being transmitted.
-		if (!(isTDRECleared() || isSendBreak())) {
-			scisr1_register = scisr1_register | 0x40;
-			// Is transmission complete interrupt enabled ?
-			if ((scicr2_register & 0x40) != 0) {
-				if (tx_debug_enabled)	std::cout << sc_object::name() << "::setTC" << std::endl;
-				assertInterrupt(interrupt_offset);
-			}
-		}
-	}
-	inline bool isTransmissionComplete() { return ((scisr1_register & 0x40) != 0); }
+	inline void ComputeBaudRate();
 
-	inline bool isIDLE() { return (scisr1_register & 0x10); }
+	inline bool isReceiverEnabled() { return false; }
+	inline bool isTransmitterEnabled() { return false; }
 
-	inline void setIDLE() {
+	inline bool isCANBusIdle() { /* TODO: check CAN Bus State */ return (true); };
 
-		if (isReceiverStandbay()) return;
+	inline bool isInitModeRequest() { return (canctl0_register & 0x01); }
+	inline void enterInitMode() {
 
-		scisr1_read = false;
-		scisr1_register = scisr1_register | 0x10;
-		//is Idle interrupt enabled ?
-		if ((scicr2_register & 0x10) != 0) {
-			if (rx_debug_enabled)	std::cout << sc_object::name() << "::setIDLE" << std::endl;
-			assertInterrupt(interrupt_offset);
-		}
+		canctl0_register = canctl0_register & 0x07;
+		canrflg_register = canrflg_register & 0x0C;
+		canrier_register = canrier_register & 0x30;
+		cantflg_register = 0x07;
+		cantier_register = 0x00;
+		cantarq_register = 0x00;
+		cantaak_register = 0x00;
+		cantbsel_register = 0x00;
+
+		canctl1_register = canctl1_register | 0x01; // Acknowledge Initialization mode
 	}
 
-	inline bool isReceiverActive() { return ((scisr2_register & 0x01) != 0); }
-	inline void setReceiverActive() { scisr2_register = scisr2_register | 0x01; }
-	inline void clearReceiverActive() { scisr2_register = scisr2_register & 0xFE; }
+	inline void exitInitMode() {
 
-	inline bool isIdleCountAfterStop() { return ((scicr1_register & 0x04) != 0); }
+		canctl1_register = canctl1_register & 0xFE; // clear Acknowledge Initialization mode
 
-	inline uint8_t getBreakLength() {
-		uint8_t length = getDataFrameLength();
+		// TODO: add some stuff to check CAN bus synchronization
+		/*
+		 * When this bit is cleared by the CPU, the MSCAN restarts and then tries to synchronize to the CAN bus.
+		 * If the MSCAN is not in bus-off state, it synchronizes after 11 consecutive recessive bits on the CAN bus;
+		 * if the MSCAN is in bus-off state, it continues to wait for 128 occurrences of 11 consecutive recessive bits.
+		 */
 
-		if (isBRK13Set()) {
-			length = length + 3;
-		}
-
-		return (length);
+		// set synchronized to CAN bus
+		setSynchronized();
 	}
 
-	inline uint8_t getDataFrameLength() {
-		if (isNineBitsMode()) {
-			return (11);
-		} else {
-			return (10);
-		}
+	inline bool isInitMode() { return ((canctl0_register & 0x01) && (canctl1_register & 0x01)); }
+	inline bool isStopInWait() { return (canctl0_register & 0x20); }
+
+	inline void setSynchronized() { canctl0_register = canctl0_register | 0x10; }
+	inline void setNotSynchronized() { canctl0_register = canctl0_register & 0xEF; }
+	inline bool isSynchronized() { return (canctl0_register & 0x10); }
+	inline bool isTimerActivated() { return (canctl0_register & 0x08); }
+
+	inline bool isWakeupEnabled() { return (canctl0_register & 0x04); }
+	inline bool isWakeupInterrupt() { return (canrflg_register & 0x80); }
+
+	inline bool isSleepModeRequest() { return (canctl0_register & 0x02); }
+	inline void enterSleepMode() { canctl1_register = canctl1_register | 0x02; }
+	inline bool isSleepMode() { return (((canctl0_register & 0x02)) && ((canctl1_register & 0x02))); }
+	inline void exitSleepMode() { canctl0_register = canctl0_register & 0xFD; canctl1_register = canctl1_register & 0xFD; }
+
+	inline void addRxTimeStamp() {
+		// TODO: check if is using big-Endian representation is correct !!!
+		canrxfg_register[active_canrxfg_index][0x000E] =  (time_stamp & 0xFF00) >> 8;
+		canrxfg_register[active_canrxfg_index][0x000F] =  (time_stamp & 0x00FF);
+	}
+	inline void addTxTimeStamp() {
+		// TODO: check if is using big-Endian representation is correct !!!
+		cantxfg_register[active_cantxfg_index][0x000E] =  (time_stamp & 0xFF00) >> 8;
+		cantxfg_register[active_cantxfg_index][0x000F] =  (time_stamp & 0x00FF);
 	}
 
-	inline bool isBreakDetectEnabled() { return ((sciacr2_register & 0x01) != 0); }
-	inline void setBreakDetectInterrupt() {
+	inline void reset_time_stamp() { time_stamp = 0; }
 
-		if (isReceiverStandbay()) return;
-
-		sciasr1_register = sciasr1_register | 0x01;
-		// is break detect interrupt enabled ?
-		if ((sciacr1_register & 0x01) != 0) {
-			if (rx_debug_enabled)	std::cout << sc_object::name() << "::setBreakDetect" << std::endl;
-			assertInterrupt(interrupt_offset);
-		}
-	}
-
-	inline void setNoiseFlag() { scisr1_read = false; scisr1_register = scisr1_register | 0x04; }
-	inline void setFramingError() { scisr1_read = false; scisr1_register = scisr1_register | 0x02; }
-	inline bool isReceiverStandbay() { return ((scicr2_register & 0x02) != 0); }
-
-	inline void setRDRF() {
-
-		if (rx_debug_enabled)	std::cout << sc_object::name() << "::setRDRF received char " << (unsigned int) scidrl_register << std::endl;
-
-		if (isReceiverStandbay()) return;
-
-		scisr1_read = false;
-		scisr1_register = scisr1_register | 0x20;
-		// is receiver full interrupt enabled ?
-		if ((scicr2_register & 0x20) != 0) {
-			assertInterrupt(interrupt_offset);
-		}
-	}
-	inline bool isRDRFCleared() { return ((scisr1_register & 0x20) == 0); }
-
-	inline bool isAddressWakeup() { return ((scicr1_register & 0x08) != 0); }
-
-	inline void setOverrunFlag() {
-
-		if (isReceiverStandbay()) return;
-
-		scisr1_read = false;
-		scisr1_register = scisr1_register | 0x08;
-		// is receiver full interrupt enabled ?
-		if ((scicr2_register & 0x20) != 0) {
-			if (rx_debug_enabled)	std::cout << sc_object::name() << "::setOverrunFlag" << std::endl;
-			assertInterrupt(interrupt_offset);
-		}
-	}
-
-	inline void txShiftOut(SCIMSG msgType);
-
-	inline uint16_t buildFrame(uint8_t high, uint8_t low, SCIMSG msgType);
-
-	// *** Telnet ***
+	// ************* Telnet **************
 	bool	telnet_enabled;
 	Parameter<bool>	param_telnet_enabled;
 
@@ -518,34 +436,47 @@ private:
 		TelnetProcessOutput(true);
 	}
 
-//	inline void TelnetProcessInput()
-//	{
-//		if(char_io_import)
-//		{
-//			char c;
-//			uint8_t v;
-//
-//			if(!char_io_import->GetChar(c)) return;
-//
-//			v = (uint8_t) c;
-//			if(rx_debug_enabled)
-//			{
-//				logger << DebugInfo << "Receiving ";
-//				if(v >= 32)
-//					logger << "character '" << c << "'";
-//				else
-//					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
-//				logger << " from telnet client" << EndDebugInfo;
-//			}
-//
-//			add(telnet_rx_fifo, v, telnet_rx_event);
-//
-//		} else {
-//			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
-//		}
-//	}
+	inline void TelnetProcessInput()
+	{
+		while (telnet_enabled) {
 
-	void TelnetProcessInput();
+			while (!isReceiverEnabled() && telnet_enabled) {
+
+				wait(rx_run_event);
+			}
+
+			if(char_io_import)
+			{
+				char c;
+				uint8_t v;
+
+				if(!char_io_import->GetChar(c)) {
+					wait(telnet_process_input_period);
+
+					continue;
+				} else {
+					v = (uint8_t) c;
+					if(rx_debug_enabled)
+					{
+						logger << DebugInfo << "Receiving ";
+						if(v >= 32)
+							logger << "character '" << c << "'";
+						else
+							logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+						logger << " from telnet client" << EndDebugInfo;
+					}
+
+					add(telnet_rx_fifo, v, telnet_rx_event);
+				}
+
+			} else {
+				logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
+			}
+
+		}
+
+	}
+
 	inline void TelnetProcessOutput(bool flush_telnet_output)
 	{
 		if(char_io_import)

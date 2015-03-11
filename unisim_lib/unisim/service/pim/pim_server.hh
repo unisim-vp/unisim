@@ -70,7 +70,7 @@
 
 #include <unisim/service/pim/gdbthread.hh>
 
-//#include <unisim/service/monitor/monitor.hh>
+#include <unisim/service/monitor/monitor.hh>
 
 namespace unisim {
 namespace service {
@@ -79,7 +79,7 @@ namespace pim {
 using std::string;
 using std::vector;
 
-//using unisim::service::monitor::Monitor;
+using unisim::service::monitor::Monitor;
 
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::DebugEventListener;
@@ -250,9 +250,9 @@ private:
 	Parameter<bool> param_verbose;
 	Parameter<string> param_host;
 
-	//Monitor *monitor;
+	Monitor *monitor;
 
-	//double local_time;
+	double local_time;
 };
 
 } // end of namespace pim

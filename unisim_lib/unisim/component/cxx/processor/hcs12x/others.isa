@@ -47,6 +47,8 @@ nop.disasm = {
 
 nop.execute = {
 	// This single-byte instruction increments the PC and does nothing else.
+
+	return getCycles();
 }
 
 // STOP:
@@ -98,10 +100,10 @@ stop.execute = {
 	 	  * a 2-cycle recovery sequence is used to adjust the instruction queue and the stack pointer, 
 	 	  * and execution continues with the next instruction after STOP.
 	 	  */
-	 	  
-	 	  
-	 	  
+ 	  
 	}
+
+	return getCycles();
 }
 
 // WAIT
@@ -146,6 +148,8 @@ wai.execute = {
 	  * a 2-cycle recovery sequence is used to adjust the instruction queue and the stack pointer, 
 	  * and execution continues with the next instruction after WAI.
 	  */
+
+	return getCycles();
 }
 
 // BGND: Enter Background debug mode
@@ -164,6 +168,8 @@ bgnd.disasm = {
 bgnd.execute = {
 	// TODO
 	cpu->reportTrap("CPU has encountered BGND instruction. S12X_DBG module (not emulated).");
+
+	return getCycles();
 }
 
 /* ********** Interrupt instructions ******** */
@@ -217,6 +223,8 @@ rti.execute = {
 
 	addr = addr + 2;
 	cpu->setRegSP(addr);
+
+	return getCycles();
 }
 
 // SWI: Software Interrupt
@@ -246,6 +254,8 @@ swi.execute = {
 	 */
 
 	throw NonMaskableSWIInterrupt();
+
+	return getCycles();
 }
 
 // TRAP: unimplemented opcode trap
@@ -310,6 +320,8 @@ trap.execute = {
 
 
 	}
+
+	return getCycles();
 }
 
 // SYS: System Call Interrupt
@@ -343,4 +355,5 @@ sys.execute = {
 		 
 	throw SysCallInterrupt();
 
+	return getCycles();
 }

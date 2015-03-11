@@ -57,6 +57,8 @@ cba.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 //  CMPab  IMM
@@ -94,6 +96,8 @@ cmp_ab_imm.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // CMPab  DIR
@@ -133,6 +137,8 @@ cmp_ab_dir.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // CMPab  EXT
@@ -173,6 +179,8 @@ cmp_ab_ext.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // CMPab  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] 
@@ -225,6 +233,8 @@ cmp_ab_idx.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // CPdyxs  IMM
@@ -265,6 +275,7 @@ cp_dyxs_imm.execute = {
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
+	return getCycles();
 }
 
 // CPdyxs DIR
@@ -307,7 +318,8 @@ cp_dyxs_dir.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // CPdyxs EXT
@@ -349,6 +361,7 @@ cp_dyxs_ext.execute = {
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
+	return getCycles();
 }
 
 // CPdyxs  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
@@ -404,6 +417,8 @@ cp_dyxs_idx.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 /* ****** Compare to memory with Borrow ********** */
@@ -446,6 +461,7 @@ cpe_dyxs_imm.execute = {
 	if (zeroBit && (result == 0)) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
+	return getCycles();
 }
 
 // CPE_dyxs DIR
@@ -488,7 +504,8 @@ cpe_dyxs_dir.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (zeroBit && (result == 0)) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // CPE_dyxs EXT
@@ -530,6 +547,7 @@ cpe_dyxs_ext.execute = {
 	if (zeroBit && (result == 0)) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
+	return getCycles();
 }
 
 // CPE_dyxs  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
@@ -584,6 +602,8 @@ cpe_dyxs_idx.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (zeroBit && (result == 0)) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 
@@ -615,6 +635,7 @@ tst_ext.execute = {
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 
+	return getCycles();
 }
 
 // TST IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
@@ -656,6 +677,8 @@ tst_idx.execute = {
 	cpu->ccr->clrV();
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // TSTA or TSTB
@@ -693,6 +716,8 @@ tst_ab.execute = {
 	cpu->ccr->clrV();
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // TSTW EXT
@@ -722,6 +747,7 @@ tstw_ext.execute = {
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
+	return getCycles();
 }
 
 // TSTW IDX or IDX1 or IDX2 or [D, IDX] or [IDX2]
@@ -763,6 +789,8 @@ tstw_idx.execute = {
 	cpu->ccr->clrV();
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // TSTX or TSTY
@@ -798,6 +826,8 @@ tst_xy.execute = {
 	cpu->ccr->clrV();
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 
@@ -848,6 +878,8 @@ emind.execute = {
 	 * accumulator; cleared otherwise
 	 */
 	if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+	return getCycles();
 }
 
 // EMINM: MIN ((D), (M : M + 1)) ⇒ M : M + 1
@@ -895,6 +927,8 @@ eminm.execute = {
 	 * accumulator; cleared otherwise
 	 */
 	if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+	return getCycles();
 }
 
 
@@ -944,6 +978,8 @@ mina.execute = {
 	 * accumulator; cleared otherwise
 	 */
 	if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+	return getCycles();
 }
 
 // MINM: MIN ((A), (M)) ⇒ M
@@ -992,6 +1028,8 @@ minm.execute = {
 	 * accumulator; cleared otherwise
 	 */
 	if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+	return getCycles();
 }
 
 
@@ -1043,6 +1081,8 @@ emaxd.execute = {
 	 * accumulator; cleared otherwise
 	 */
 	if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+	return getCycles();
 }
 
 // EMANM: MAX ((D), (M : M + 1)) ⇒ M : M + 1
@@ -1091,6 +1131,8 @@ emaxm.execute = {
 	 * accumulator; cleared otherwise
 	 */
 	if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+	return getCycles();
 }
 
 
@@ -1139,6 +1181,8 @@ maxa.execute = {
 	 * accumulator; cleared otherwise
 	 */
 	if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+	return getCycles();
 }
 
 // MAXM: MAx ((A), (M)) ⇒ M
@@ -1186,4 +1230,6 @@ maxm.execute = {
 	 * accumulator; cleared otherwise
 	 */
 	if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+	return getCycles();
 }
