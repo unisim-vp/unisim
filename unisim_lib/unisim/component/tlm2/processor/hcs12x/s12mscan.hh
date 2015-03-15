@@ -240,6 +240,10 @@ private:
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
 
+	uint32_t	oscillator_clock_value;	// The time unit is PS
+	Parameter<uint32_t>	param_oscillator_clock_int;
+	sc_time		oscillator_clock;
+
 	sc_time		can_baud_rate;
 	sc_time		telnet_process_input_period;
 
@@ -324,8 +328,7 @@ private:
 	// the time stamp is clocked by the bit clock rate.
 	sc_event timer_start_event;
 	uint16_t time_stamp;
-
-	inline void ComputeBaudRate();
+	sc_time time_quanta;
 
 	inline bool isReceiverEnabled() { return false; }
 	inline bool isTransmitterEnabled() { return false; }
@@ -377,6 +380,16 @@ private:
 	inline void enterSleepMode() { canctl1_register = canctl1_register | 0x02; }
 	inline bool isSleepMode() { return (((canctl0_register & 0x02)) && ((canctl1_register & 0x02))); }
 	inline void exitSleepMode() { canctl0_register = canctl0_register & 0xFD; canctl1_register = canctl1_register & 0xFD; }
+
+	inline bool isCANEnabled() { return ((canctl1_register & 0x80) == 0x80); }
+	inline bool isBusClk() { return ((canctl1_register & 0x40) == 0x40); }
+	inline bool isLoopBack() { return ((canctl1_register & 0x20) == 0x20); }
+	inline bool isListen() { return ((canctl1_register & 0x10) == 0x10); }
+	inline bool isAutomaticBusOffRecovery() { return ((canctl1_register & 0x08) != 0x08); }
+	inline bool isWakeupAny() { return ((canctl1_register & 0x04) != 0x04); }
+
+	inline sc_time getSyncJump() { return time_quanta * (((canbtr0_register & 0xC0) >> 6) + 1); }
+	inline int getPrescaler() {	return ((canbtr0_register & 0x3F) + 1);	}
 
 	inline void addRxTimeStamp() {
 		// TODO: check if is using big-Endian representation is correct !!!

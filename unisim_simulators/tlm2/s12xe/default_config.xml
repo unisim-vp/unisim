@@ -15,8 +15,8 @@
 		</variable>
 		<variable name="interrupt-offset">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xd2</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000d2</value>
 			<description></description>
 		</variable>
 		<variable name="vrl">
@@ -79,8 +79,8 @@
 		</variable>
 		<variable name="interrupt-offset">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xd0</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000d0</value>
 			<description></description>
 		</variable>
 		<variable name="vrl">
@@ -118,6 +118,346 @@
 			</enumeration>
 		</variable>
 		<variable name="Has-External-Trigger">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="CAN0">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0140</value>
+			<description></description>
+		</variable>
+		<variable name="transmit-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xb0</value>
+			<description></description>
+		</variable>
+		<variable name="receive-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xb2</value>
+			<description></description>
+		</variable>
+		<variable name="errors-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xb4</value>
+			<description></description>
+		</variable>
+		<variable name="wakeup-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xb6</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="CAN1">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0180</value>
+			<description></description>
+		</variable>
+		<variable name="transmit-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xa8</value>
+			<description></description>
+		</variable>
+		<variable name="receive-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xaa</value>
+			<description></description>
+		</variable>
+		<variable name="errors-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xac</value>
+			<description></description>
+		</variable>
+		<variable name="wakeup-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xae</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="CAN2">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x01c0</value>
+			<description></description>
+		</variable>
+		<variable name="transmit-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xa0</value>
+			<description></description>
+		</variable>
+		<variable name="receive-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xa2</value>
+			<description></description>
+		</variable>
+		<variable name="errors-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xa4</value>
+			<description></description>
+		</variable>
+		<variable name="wakeup-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xa6</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="CAN3">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0200</value>
+			<description></description>
+		</variable>
+		<variable name="transmit-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x98</value>
+			<description></description>
+		</variable>
+		<variable name="receive-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x9a</value>
+			<description></description>
+		</variable>
+		<variable name="errors-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x9c</value>
+			<description></description>
+		</variable>
+		<variable name="wakeup-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x9e</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="CAN4">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0280</value>
+			<description></description>
+		</variable>
+		<variable name="transmit-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x48</value>
+			<description></description>
+		</variable>
+		<variable name="receive-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x4a</value>
+			<description></description>
+		</variable>
+		<variable name="errors-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x4c</value>
+			<description></description>
+		</variable>
+		<variable name="wakeup-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x4e</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -344,20 +684,20 @@
 		</variable>
 		<variable name="interrupt-offset-rti">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xf0</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000f0</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-offset-pll-lock">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xc6</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000c6</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-offset-self-clock-mode">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xc4</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000c4</value>
 			<description></description>
 		</variable>
 		<variable name="debug-enabled">
@@ -386,38 +726,38 @@
 		</variable>
 		<variable name="interrupt-offset-channel0">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xee</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000ee</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-offset-timer-overflow">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xde</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000de</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-pulse-accumulatorA-overflow">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xdc</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000dc</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-pulse-accumulatorB-overflow">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xc8</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000c8</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-pulse-accumulator-input-edge">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xda</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000da</value>
 			<description></description>
 		</variable>
 		<variable name="modulus-counter-interrupt">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xca</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000ca</value>
 			<description></description>
 		</variable>
 		<variable name="debug-enabled">
@@ -761,7 +1101,7 @@
 		<variable name="memory-map">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0100,0113;11,0114,011F;12,0120,012F;13,0130,0137;14,0138,013F;15,02C0,02EF;16,0300,0327;17,0340,0367;18,0380,03BF;19,0007FF,0FFFFF;20,100000,13FFFF;20,400000,7FFFFF</value>
+			<value>0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0100,0113;11,0114,011F;12,0120,012F;13,0130,0137;14,0138,013F;15,0140,017F;16,0180,01BF;17,01C0,01FF;18,0200,023F;19,0280,02BF;20,02C0,02EF;21,0300,0327;22,0330,0337;23,0338,033F;24,0340,0367;25,0380,03BF;26,0007FF,0FFFFF;27,100000,13FFFF;27,400000,7FFFFF</value>
 			<description></description>
 		</variable>
 	</object>
@@ -1239,6 +1579,106 @@
 			</enumeration>
 		</variable>
 	</object>
+	<object name="SCI6">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0330</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xc2</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="SCI7">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0338</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x56</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<object name="SPI0">
 		<variable name="bus-cycle-time">
 			<type>parameter</type>
@@ -1480,56 +1920,56 @@
 		</variable>
 		<variable name="software_channel_id[0]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x39</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000039</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[1]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x38</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000038</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[2]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x37</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000037</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[3]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x36</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000036</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[4]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x35</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000035</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[5]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x34</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000034</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[6]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x33</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000033</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[7]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x32</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000032</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software-error-interrupt">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x62</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000062</value>
 			<description>XGATE Software error interrupt</description>
 		</variable>
 		<variable name="max-inst">
@@ -1683,7 +2123,7 @@
 		<variable name="atd0-anx-wrap-around-channel">
 			<type>parameter</type>
 			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x00</value>
+			<value>0x07</value>
 			<description></description>
 		</variable>
 		<variable name="atd1-anx-stimulus-file">
@@ -1701,7 +2141,7 @@
 		<variable name="atd1-anx-wrap-around-channel">
 			<type>parameter</type>
 			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x00</value>
+			<value>0x0f</value>
 			<description></description>
 		</variable>
 	</object>

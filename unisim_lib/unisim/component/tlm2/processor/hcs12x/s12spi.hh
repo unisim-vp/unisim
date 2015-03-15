@@ -257,6 +257,11 @@ private:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
+	bool	tx_debug_enabled;
+	Parameter<bool>	param_tx_debug_enabled;
+	bool	rx_debug_enabled;
+	Parameter<bool>	param_rx_debug_enabled;
+
 	// Registers map
 	map<string, Register *> registers_registry;
 

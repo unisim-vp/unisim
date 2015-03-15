@@ -47,6 +47,11 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
+	, tx_debug_enabled(false)
+	, param_tx_debug_enabled("tx-debug-enabled", this, tx_debug_enabled)
+	, rx_debug_enabled(false)
+	, param_rx_debug_enabled("rx-debug-enabled", this, rx_debug_enabled)
+
 	, state(IDLE)
 	, abortTransmission(false)
 	, spisr_read(false)
@@ -122,33 +127,33 @@ void S12SPI::TxRun() {
 
 	while (true) {
 		while (!isSPIEnabled()) {
-			if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (1) " << std::endl;
+			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (1) " << std::endl;
 
 			wait(tx_run_event);
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (2) " << std::endl;
+			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (2) " << std::endl;
 
 		}
 
 		while (isSPIEnabled() && !isAbortTransmission()) {
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (3) " << std::endl;
+			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (3) " << std::endl;
 
 			if (isSPTEF()) {
-				if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (4) " << std::endl;
+				if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (4) " << std::endl;
 
 				wait(tx_load_event);
 
-				if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (5) " << std::endl;
+				if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (5) " << std::endl;
 
 				continue;
 			}
 
 			if (checkModeFaultError()) { break; }
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (6) " << std::endl;
+			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (6) " << std::endl;
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::txShiftOut Start transmission -> " << std::hex << (unsigned int) spidr_register << std::dec << std::endl;
+			if (tx_debug_enabled)	std::cout << sc_object::name() << "::txShiftOut Start transmission -> " << std::hex << (unsigned int) spidr_register << std::dec << std::endl;
 
 			uint8_t tx_shift = spidr_register;
 
@@ -184,7 +189,7 @@ void S12SPI::TxRun() {
 
 			endTransmission();
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::Tx  (7) " << std::endl;
+			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (7) " << std::endl;
 
 		}
 	}
@@ -194,32 +199,32 @@ void S12SPI::RxRun() {
 
 	while (true) {
 		while (!isSPIEnabled()) {
-			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (1) " << std::endl;
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (1) " << std::endl;
 
 			wait(rx_run_event);
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (2) " << std::endl;
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (2) " << std::endl;
 		}
 
 		bool newFrameStart = false;
 		while (isSPIEnabled() && !newFrameStart) {
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (3) " << std::endl;
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (3) " << std::endl;
 
 			wait(spi_baud_rate);
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (4) " << std::endl;
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (4) " << std::endl;
 
 			if (telnet_enabled) {
 
-				if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (5) " << std::endl;
+				if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (5) " << std::endl;
 
 
 //				TelnetProcessInput();
 
 				newFrameStart = !isEmpty(telnet_rx_fifo);
 
-				if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (6) " << std::endl;
+				if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (6) " << std::endl;
 
 			} else {
 				// TODO I have to rewrite the following code using TLM and stub
@@ -228,21 +233,21 @@ void S12SPI::RxRun() {
 
 		}
 
-		if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (7) " << std::endl;
+		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (7) " << std::endl;
 
 		if (!newFrameStart) { continue; }
 
-		if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (8) " << std::endl;
+		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (8) " << std::endl;
 
 		if (isValideFrameWaiting()) {
-			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (9) " << std::endl;
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (9) " << std::endl;
 
 			setValideFrameWaiting(false);
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (10) " << std::endl;
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (10) " << std::endl;
 		}
 
-		if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (11) " << std::endl;
+		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (11) " << std::endl;
 
 		setActive();
 
@@ -250,16 +255,16 @@ void S12SPI::RxRun() {
 
 		if (telnet_enabled) {
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (12) " << std::endl;
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (12) " << std::endl;
 
 			next(telnet_rx_fifo, rx_shift, telnet_rx_event);
 
-			if (debug_enabled) std::cout << sc_object::name() << "::Telnet::get  HAVE DATA" << std::endl;
+			if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::get  HAVE DATA" << std::endl;
 
 			spidr_rx_buffer = rx_shift;
 			setSPIDR(spidr_rx_buffer);
 
-			if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (13) " << std::endl;
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (13) " << std::endl;
 
 		} else {
 			// TODO I have to rewrite the following code using TLM and stub
@@ -286,7 +291,7 @@ void S12SPI::RxRun() {
 
 		}
 
-		if (debug_enabled)	std::cout << sc_object::name() << "::Rx  (14) " << std::endl;
+		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (14) " << std::endl;
 
 		setIdle();
 	}
@@ -468,6 +473,7 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 		case RESERVED1:  break; // 1 byte
 
 		case SPIDR:  {
+
 			if (!isSPTEF() || isSPISR_Read()) {
 				// (SPTEF = 1) has to be read before a write to SPIDR can happen and taken into account
 				spidr_register = *((uint8_t *) buffer);

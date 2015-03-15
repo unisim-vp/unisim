@@ -39,6 +39,9 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
+	, oscillator_clock_value(250000)
+	, param_oscillator_clock_int("oscillator-clock", this, oscillator_clock_value)
+
 	, baseAddress(0x0140)
 	, param_baseAddress("base-address", this, baseAddress)
 
@@ -105,6 +108,8 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	, logger(*this)
 
 {
+
+	param_oscillator_clock_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
 	interrupt_request(*this);
 
@@ -352,11 +357,14 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 
 bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
+//	cout << "CAN write base 0x" << std::hex << baseAddress << "  off " << std::dec << offset << std::endl;
+
 	switch (offset) {
 		case CANCTL0: {
 			uint8_t value = *((uint8_t *) buffer);
+
 			if (isInitMode()) {
-				value = (value & 0x01) | (canctl0_register & 0x06);
+				value = (value & 0x07);
 				canctl0_register = value;
 
 				if (!isInitModeRequest()) { exitInitMode(); }
@@ -368,9 +376,11 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 
 				canctl0_register = value;
 
+				if (isInitModeRequest()) { enterInitMode(); }
+
+				// TODO: refine more the following two actions
 				if (isTimerActivated()) { timer_start_event.notify(); }
 				if (isCANBusIdle() && isSleepModeRequest()) { enterSleepMode(); }
-				if (isInitModeRequest()) { enterInitMode(); }
 
 			}
 
@@ -378,12 +388,17 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 		case CANCTL1: {
 			if (!isInitMode()) break;
 
-			canctl1_register = *((uint8_t *) buffer);
+			uint8_t value = (*((uint8_t *) buffer) & 0xFC) | (canctl1_register & 0x03);
+			canctl1_register = value;
+
+			ComputeInternalTime();
 		} break;
 		case CANBTR0: {
 			if (!isInitMode()) break;
 
 			canbtr0_register = *((uint8_t *) buffer);
+
+			ComputeInternalTime();
 		} break;
 		case CANBTR1: {
 			if (!isInitMode()) break;
@@ -581,9 +596,18 @@ tlm_sync_enum S12MSCAN::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase
 
 void S12MSCAN::ComputeInternalTime() {
 
+	oscillator_clock = sc_time((double) oscillator_clock_value, SC_PS);
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
-	ComputeBaudRate();
+	if (isBusClk()) {
+		// TODO: compute can baud rate
+	} else {
+	}
+
+	//TODO: compute; time_quanta = ;
+
+	telnet_process_input_period = can_baud_rate * 8 * 8;
+
 }
 
 
@@ -595,13 +619,6 @@ void S12MSCAN::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 	bus_cycle_time_int = *external_bus_clock;
 
 	ComputeInternalTime();
-}
-
-void S12MSCAN::ComputeBaudRate() {
-
-
-	telnet_process_input_period = can_baud_rate * 8 * 8;
-
 }
 
 //=====================================================================
@@ -623,7 +640,7 @@ bool S12MSCAN::BeginSetup() {
 	sprintf(buf, "%s.CANCTL1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canctl1_register);
 
-	unisim::kernel::service::Register<uint8_t> *canctl1_var = new unisim::kernel::service::Register<uint8_t>("CANCTL1", this, canctl0_register, "CAN Control Register 1");
+	unisim::kernel::service::Register<uint8_t> *canctl1_var = new unisim::kernel::service::Register<uint8_t>("CANCTL1", this, canctl1_register, "CAN Control Register 1");
 	extended_registers_registry.push_back(canctl1_var);
 	canctl1_var->setCallBack(this, CANCTL1, &CallBackObject::write, NULL);
 
