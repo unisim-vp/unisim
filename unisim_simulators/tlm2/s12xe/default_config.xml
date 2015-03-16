@@ -135,6 +135,12 @@
 			<value>250000</value>
 			<description></description>
 		</variable>
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
 		<variable name="base-address">
 			<type>parameter</type>
 			<data_type>unsigned 16-bit integer</data_type>
@@ -200,6 +206,12 @@
 		<variable name="bus-cycle-time">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
 			<value>250000</value>
 			<description></description>
 		</variable>
@@ -271,6 +283,12 @@
 			<value>250000</value>
 			<description></description>
 		</variable>
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
 		<variable name="base-address">
 			<type>parameter</type>
 			<data_type>unsigned 16-bit integer</data_type>
@@ -339,6 +357,12 @@
 			<value>250000</value>
 			<description></description>
 		</variable>
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
 		<variable name="base-address">
 			<type>parameter</type>
 			<data_type>unsigned 16-bit integer</data_type>
@@ -404,6 +428,12 @@
 		<variable name="bus-cycle-time">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
 			<value>250000</value>
 			<description></description>
 		</variable>
@@ -529,7 +559,17 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="trace-enabled">
+		<variable name="enable-trace">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-file-trace">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -1708,6 +1748,26 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -1748,6 +1808,26 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -1779,6 +1859,26 @@
 			<description></description>
 		</variable>
 		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -1880,7 +1980,17 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="trace-enabled">
+		<variable name="enable-trace">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-file-trace">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>

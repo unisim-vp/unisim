@@ -90,8 +90,11 @@ XGATE::XGATE(const char *name, Object *parent):
 	, requires_finished_instruction_reporting(true)
 	, param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting)
 
-	, trace_enable(false)
-	, param_trace_enable("trace-enabled", this, trace_enable)
+	, enable_trace(false)
+	, param_enable_trace("enable-trace", this, enable_trace)
+
+	, enable_file_trace(false)
+	, param_enable_file_trace("enable-file-trace", this, enable_file_trace)
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled, "")
@@ -192,6 +195,7 @@ XGATE::~XGATE()
 
 	if (logger) { delete logger; logger = NULL;}
 
+	if (trace.is_open()) { trace.close(); }
 
 }
 
@@ -472,6 +476,10 @@ bool XGATE::BeginSetup() {
 	extended_registers_registry.push_back(xgr7_var);
 	xgr7_var->setCallBack(this, XGR7, &CallBackObject::write, &CallBackObject::read);
 
+	if (enable_file_trace) {
+		trace.open("xgate_trace.txt");
+	}
+
 	Reset();
 
 	return (true);
@@ -659,38 +667,30 @@ unsigned int XGATE::step()
 
 		setXGPC(getXGPC() + (insn_length/8));
 
-		if (trace_enable) {
+		if (enable_trace) {
 			stringstream disasm_str;
 			stringstream ctstr;
 
-			op->disasm(disasm_str);
-
 			ctstr << op->GetEncoding();
 
-			*logger << DebugInfo << "Cycles = " << cycles_counter
-				<< " : Time = " << (Object::GetSimulator()->GetSimTime())
+			disasm_str << "Cycles = " << std::dec << cycles_counter
+				<< " : Time = " << std::dec << (Object::GetSimulator()->GetSimTime())
 				<< " : PC = 0x" << std::hex << lastPC << std::dec << " : "
-				<< getFunctionFriendlyName(lastPC) << " : "
-				<< disasm_str.str()
-				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
-				<< EndDebugInfo	<< std::endl;
+				<< getFunctionFriendlyName(lastPC) << " : ";
+
+			op->disasm(disasm_str);
+
+			disasm_str	<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
+				<< std::endl;
+
+			if (enable_file_trace) {
+				trace << disasm_str.str();
+			} else {
+				std::cout << disasm_str.str();
+			}
 		}
 
 		op->execute(this);
-
-		if (trace_enable && debug_enabled) {
-			std::cout << "CCR" << " = " << std::hex << currentRegisterBank->getCCR()->toString() << std::dec; // 1-bytes
-			std::cout << "\t- XGR0" << " = 0x" << std::hex << currentRegisterBank->getXGRx(0) << std::dec; // 2-bytes
-			std::cout << "\t- XGR1" << " = 0x" << std::hex << currentRegisterBank->getXGRx(1) << std::dec; // 2-bytes
-			std::cout << "\t- XGR2" << " = 0x" << std::hex << currentRegisterBank->getXGRx(2) << std::dec; // 2-bytes
-			std::cout << "\t- XGR3" << " = 0x" << std::hex << currentRegisterBank->getXGRx(3) << std::dec; // 2-bytes
-			std::cout << "\t- XGR4" << " = 0x" << std::hex << currentRegisterBank->getXGRx(4) << std::dec; // 2-bytes
-			std::cout << "\t- XGR5" << " = 0x" << std::hex << currentRegisterBank->getXGRx(5) << std::dec; // 2-bytes
-			std::cout << "\t- XGR6" << " = 0x" << std::hex << currentRegisterBank->getXGRx(6) << std::dec; // 2-bytes
-			std::cout << "\t- XGR7" << " = 0x" << std::hex << currentRegisterBank->getXGRx(7) << std::dec; // 2-bytes
-			std::cout << std::endl;
-
-		}
 
 		opCycles = op->getCycles();
 

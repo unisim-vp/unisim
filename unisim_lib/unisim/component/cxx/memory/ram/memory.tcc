@@ -76,7 +76,9 @@ template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	: Object(name, parent, "this module implements a memory")
 	, Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >(name, parent)
+
 	, memory_export("memory-export", this)
+
 	, org(0)
 	, bytesize(0)
 	, lo_addr(0)
@@ -215,7 +217,13 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 		copy_size = max_copy_size;
 		else
 		copy_size = size - copied;
-	
+
+//		if (HwFault_import) {
+//			HwFault_import->inject_fault("mchaa je ne sais pas !!!", 10);
+//
+//	//		HwFault_import->inject_fault("jsdhsqjd",  &page->storage[(addr + copied) & (PAGE_SIZE - 1)], copy_size);
+//		}
+
 		memcpy(&((uint8_t *)buffer)[copied], 
 		       &page->storage[(addr + copied) & (PAGE_SIZE - 1)],
 		       copy_size);

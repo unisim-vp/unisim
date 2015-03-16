@@ -19,9 +19,6 @@
 #include "config.h"
 #endif
 
-#include <unisim/service/monitor/monitor.hh>
-using unisim::service::monitor::Monitor;
-
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/debug/debugger/debugger.hh>
@@ -126,6 +123,7 @@ using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
 
 using unisim::service::telnet::Telnet;
+
 
 class Simulator :
 		public unisim::kernel::service::Simulator
@@ -293,8 +291,6 @@ class Simulator :
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-//	Monitor *monitor;
-
 	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
 	Elf32Loader *loaderELF;
 
@@ -321,6 +317,7 @@ class Simulator :
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
+
 
 	string filename;
 	string symbol_filename;

@@ -15,8 +15,8 @@
 		</variable>
 		<variable name="interrupt-offset">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xd2</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000d2</value>
 			<description></description>
 		</variable>
 		<variable name="vrl">
@@ -79,8 +79,8 @@
 		</variable>
 		<variable name="interrupt-offset">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xd0</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000d0</value>
 			<description></description>
 		</variable>
 		<variable name="vrl">
@@ -189,7 +189,17 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="trace-enabled">
+		<variable name="enable-trace">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-file-trace">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -344,20 +354,20 @@
 		</variable>
 		<variable name="interrupt-offset-rti">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xf0</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000f0</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-offset-pll-lock">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xc6</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000c6</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-offset-self-clock-mode">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xc4</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000c4</value>
 			<description></description>
 		</variable>
 		<variable name="debug-enabled">
@@ -386,38 +396,38 @@
 		</variable>
 		<variable name="interrupt-offset-channel0">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xee</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000ee</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-offset-timer-overflow">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xde</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000de</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-pulse-accumulatorA-overflow">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xdc</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000dc</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-pulse-accumulatorB-overflow">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xc8</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000c8</value>
 			<description></description>
 		</variable>
 		<variable name="interrupt-pulse-accumulator-input-edge">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xda</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000da</value>
 			<description></description>
 		</variable>
 		<variable name="modulus-counter-interrupt">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xca</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000000ca</value>
 			<description></description>
 		</variable>
 		<variable name="debug-enabled">
@@ -1076,6 +1086,26 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -1116,6 +1146,26 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -1147,6 +1197,26 @@
 			<description></description>
 		</variable>
 		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -1248,7 +1318,17 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="trace-enabled">
+		<variable name="enable-trace">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-file-trace">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -1288,56 +1368,56 @@
 		</variable>
 		<variable name="software_channel_id[0]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x39</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000039</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[1]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x38</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000038</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[2]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x37</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000037</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[3]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x36</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000036</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[4]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x35</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000035</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[5]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x34</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000034</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[6]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x33</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000033</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software_channel_id[7]">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x32</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000032</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
 		<variable name="software-error-interrupt">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x62</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000062</value>
 			<description>XGATE Software error interrupt</description>
 		</variable>
 		<variable name="max-inst">
@@ -1434,6 +1514,16 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="cosim-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="atd0-stub-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -1474,14 +1564,14 @@
 		</variable>
 		<variable name="atd0-anx-start-channel">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x00</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="atd0-anx-wrap-around-channel">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x00</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="atd1-anx-stimulus-file">
@@ -1492,14 +1582,14 @@
 		</variable>
 		<variable name="atd1-anx-start-channel">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x00</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="atd1-anx-wrap-around-channel">
 			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x00</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 	</object>

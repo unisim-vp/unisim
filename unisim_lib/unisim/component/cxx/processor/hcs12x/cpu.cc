@@ -92,11 +92,15 @@ CPU::CPU(const char *name, Object *parent):
 	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
 	verbose_exception(false),
 	param_verbose_exception("verbose-exception", this, verbose_exception),
-	trace_enable(false),
-	param_trace_enable("trace-enabled", this, trace_enable),
+
+	enable_trace(false),
+	param_enable_trace("enable-trace", this, enable_trace),
+
+	enable_file_trace(false),
+	param_enable_file_trace("enable-file-trace", this, enable_file_trace),
+
 	periodic_trap(-1),
 	param_periodic_trap("periodic-trap", this, periodic_trap),
-
 
 	requires_memory_access_reporting(false),
 	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
@@ -227,6 +231,8 @@ CPU::~CPU()
 	}
 
 	if (logger) { delete logger; logger = NULL;}
+
+	if (trace.is_open()) { trace.close(); }
 }
 
 void CPU::setEntryPoint(address_t cpu_address)
@@ -431,29 +437,30 @@ unsigned int CPU::step()
 
 			setRegPC(getRegPC() + (insn_length/8));
 
-			if (trace_enable) {
+			if (enable_trace) {
 				stringstream disasm_str;
 				stringstream ctstr;
 
-				op->disasm(disasm_str);
-
 				ctstr << op->GetEncoding();
 
-				*logger << DebugInfo << "Cycles = " << cycles_counter
-					<< " : Time = " << (Object::GetSimulator()->GetSimTime())
+				disasm_str << "Cycles = " << std::dec << cycles_counter
+					<< " : Time = " << std::dec << (Object::GetSimulator()->GetSimTime())
 					<< " : PC = 0x" << std::hex << lastPC << std::dec << " : "
-					<< getFunctionFriendlyName(lastPC) << " : "
-					<< disasm_str.str()
-					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
-					<< EndDebugInfo	<< std::endl;
+					<< getFunctionFriendlyName(lastPC) << " : ";
 
+				op->disasm(disasm_str);
+
+				disasm_str	<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
+					<< std::endl;
+
+				if (enable_file_trace) {
+					trace << disasm_str.str();
+				} else {
+					std::cout << disasm_str.str();
+				}
 			}
 
 			opCycles = op->execute(this);
-
-//			op->execute(this);
-//
-//			opCycles = op->getCycles();
 
 			cycles_counter += opCycles;
 
@@ -1077,6 +1084,10 @@ bool CPU::BeginSetup() {
 		*logger << DebugInfo
 			<< "Initializing debugging registers"
 			<< std::endl << EndDebugInfo;
+
+	if (enable_file_trace) {
+		trace.open("cpu_trace.txt");
+	}
 
 	return (true);
 }

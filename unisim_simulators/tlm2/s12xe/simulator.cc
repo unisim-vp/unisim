@@ -108,6 +108,8 @@ Simulator::Simulator(int argc, char **argv)
 	, stat_data_load_ratio("data-load-ratio %", 0, null_stat_var, "Data Load Ratio")
 	, stat_data_store_ratio("data-store-ratio %", 0, null_stat_var, "Data Store Ratio")
 
+	, prev_sig_int_handler(0)
+
 	, spent_time(0)
 	, isStop(false)
 
@@ -205,8 +207,6 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
-
-//	monitor = new Monitor("Monitor");
 
 	isS19 = (filename.find(".s19") != std::string::npos) ||
 		 (filename.find(".S19") != std::string::npos);
@@ -389,7 +389,6 @@ Simulator::Simulator(int argc, char **argv)
 
 	mmc->memory_import >> memoryImportExportTee->memory_export;
 
-
 	*(registersTee->registers_import[0]) >> cpu->registers_export;
 	*(registersTee->registers_import[1]) >> mmc->registers_export;
 	*(registersTee->registers_import[2]) >> s12xint->registers_export;
@@ -539,8 +538,6 @@ Simulator::Simulator(int argc, char **argv)
 
 Simulator::~Simulator()
 {
-
-//	if (monitor) { delete monitor; monitor = NULL; }
 
 // ************
 	if(!inline_debugger)
@@ -935,7 +932,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("XGATE.software_channel_id[7]", 0x32);
 	simulator->SetVariable("XGATE.software-error-interrupt", 0x62);
 
-	simulator->SetVariable("XGATE.trace-enabled", false);
+	simulator->SetVariable("XGATE.enable-trace", false);
+	simulator->SetVariable("XGATE.enable-file-trace", false),
 	simulator->SetVariable("XGATE.verbose-all", false);
 	simulator->SetVariable("XGATE.verbose-setup", false);
 	simulator->SetVariable("XGATE.verbose-step", false);
@@ -954,8 +952,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("XGATE.trap-on-instruction-counter", -1);
 	simulator->SetVariable("XGATE.enable-fine-timing", true);
 
-
-	simulator->SetVariable("CPU.trace-enabled", false);
+	simulator->SetVariable("CPU.enable-trace", false);
+	simulator->SetVariable("CPU.enable-file-trace", false),
 	simulator->SetVariable("CPU.verbose-all", false);
 	simulator->SetVariable("CPU.verbose-setup", false);
 	simulator->SetVariable("CPU.verbose-step", false);
@@ -1274,5 +1272,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	// Inline debugger
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
 	simulator->SetVariable("inline-debugger.search-path", "");
+
 }
 

@@ -37,6 +37,7 @@
 
 #include <map>
 #include <iostream>
+#include <fstream>
 #include <string>
 
 #include <inttypes.h>
@@ -447,8 +448,12 @@ protected:
 	bool requires_finished_instruction_reporting;
 	Parameter<bool> param_requires_finished_instruction_reporting;
 
-	bool trace_enable;
-	Parameter<bool> param_trace_enable;
+	bool enable_trace;
+	Parameter<bool> param_enable_trace;
+
+	std::ofstream trace;
+	bool enable_file_trace;
+	Parameter<bool> param_enable_file_trace;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;

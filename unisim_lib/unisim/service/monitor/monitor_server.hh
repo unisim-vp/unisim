@@ -19,8 +19,11 @@ class MonitorServer
 	: public Object
 	, public Monitor_if
 {
-public:
+private:
 	MonitorServer(const char *name, Object *parent = 0, const char *description = 0);
+
+public:
+
 	virtual ~MonitorServer();
 
 	virtual void OnDisconnect();

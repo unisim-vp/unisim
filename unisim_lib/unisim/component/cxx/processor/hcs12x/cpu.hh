@@ -49,6 +49,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <map>
 
@@ -565,8 +566,12 @@ protected:
 	bool verbose_exception;
 	Parameter<bool> param_verbose_exception;
 
-	bool trace_enable;
-	Parameter<bool> param_trace_enable;
+	bool enable_trace;
+	Parameter<bool> param_enable_trace;
+
+	std::ofstream trace;
+	bool enable_file_trace;
+	Parameter<bool> param_enable_file_trace;
 
 	uint64_t periodic_trap;
 	Parameter<uint64_t> param_periodic_trap;
