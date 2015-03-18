@@ -404,12 +404,27 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 			if (!isInitMode()) break;
 
 			canbtr1_register = *((uint8_t *) buffer);
+
+			if (isThreeSamplePerBit() && (getTimeSegment1() < 2))
+			{
+				std::cerr << "Warning::" << sc_object::name() << ":: PHASE_SEG1 must be at least 2 time quanta (Tq) when Sampling is set to Three samples per bit" << std::endl;
+			}
+
+			ComputeInternalTime();
 		} break;
 		case CANRFLG: {
-			canrflg_register = *((uint8_t *) buffer);
+			if (isInitMode()) break;
+
+			uint8_t value =  *((uint8_t *) buffer);
+
+			canrflg_register = (canrflg_register & 0x3C) | (canrflg_register & !(value | 0x3C));
+
 		} break;
 		case CANRIER: {
+			if (isInitMode()) break;
+
 			canrier_register = *((uint8_t *) buffer);
+
 		} break;
 		case CANTFLG: {
 			cantflg_register = *((uint8_t *) buffer);
@@ -598,15 +613,16 @@ void S12MSCAN::ComputeInternalTime() {
 
 	oscillator_clock = sc_time((double) oscillator_clock_value, SC_PS);
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
-
+	sc_time can_clk;
 	if (isBusClk()) {
-		// TODO: compute can baud rate
+		can_clk = bus_cycle_time;
 	} else {
+		can_clk = oscillator_clock;
 	}
 
-	//TODO: compute; time_quanta = ;
+	bit_time = can_clk * getPrescaler() * (1 + getTimeSegment1() + getTimeSegment2());
 
-	telnet_process_input_period = can_baud_rate * 8 * 8;
+	telnet_process_input_period = bit_time * 8 * 8;
 
 }
 

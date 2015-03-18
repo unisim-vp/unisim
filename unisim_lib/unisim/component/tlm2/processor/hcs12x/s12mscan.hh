@@ -244,7 +244,7 @@ private:
 	Parameter<uint32_t>	param_oscillator_clock_int;
 	sc_time		oscillator_clock;
 
-	sc_time		can_baud_rate;
+	sc_time		bit_time;
 	sc_time		telnet_process_input_period;
 
 	sc_event tx_run_event, tx_load_event, tx_break_event, rx_run_event;
@@ -339,8 +339,8 @@ private:
 	inline void enterInitMode() {
 
 		canctl0_register = canctl0_register & 0x07;
-		canrflg_register = canrflg_register & 0x0C;
-		canrier_register = canrier_register & 0x30;
+		canrflg_register = canrflg_register & 0x3C;
+		canrier_register = canrier_register & 0x3C;
 		cantflg_register = 0x07;
 		cantier_register = 0x00;
 		cantarq_register = 0x00;
@@ -390,6 +390,85 @@ private:
 
 	inline sc_time getSyncJump() { return time_quanta * (((canbtr0_register & 0xC0) >> 6) + 1); }
 	inline int getPrescaler() {	return ((canbtr0_register & 0x3F) + 1);	}
+	inline bool isThreeSamplePerBit() { return ((canbtr1_register & 0x80) != 0); }
+	inline int getTimeSegment2() { return (((canbtr1_register & 0x70) >> 4) + 1); }
+	inline int getTimeSegment1() { return ((canbtr1_register & 0x0F) + 1); }
+
+	inline void setWakeupInterrupt() {
+
+		if (isWakeupInterruptEnable()) {
+			assertInterrupt(wakeup_interrupt_offset);
+		}
+	}
+	inline void setCANStatusChangeInterrupt() {
+
+		if (isCANStatusChangeInterruptEnable()) {
+			assertInterrupt(errors_interrupt_offset);
+		}
+	}
+
+	enum RECEIVER_STATUS {RxOK=0b00, RxWRN=0b01, RxERR=0b10, RxBusOff=0b11};
+	inline void setReceiverStatus(RECEIVER_STATUS status) {
+
+		RECEIVER_STATUS old_status = static_cast<RECEIVER_STATUS>((canrflg_register & 0x30) >> 4);
+		canrflg_register = (canrflg_register & 0xCF) | (status << 4);
+
+		switch (getReceiverSensitivityLevel()) {
+			case 0b00: /* No Interrupt */break;
+			case 0b01: /* TODO: generate interrupt only if the receiver enters or leaves "bus-off" state */ {
+				setCANStatusChangeInterrupt();
+			} break;
+			case 0b10: /* TODO: generate interrupt only if the receiver enters or leaves "RxErr" or "bus-off" state */ {
+				setCANStatusChangeInterrupt();
+			} break;
+			case 0b11: /* generate interrupt on all state changes */ {
+				setCANStatusChangeInterrupt();
+			} break;
+		}
+	}
+
+	enum TRANSMITTER_STATUS {TxOK=0b00, TxWRN=0b01, TxERR=0b10, TxBusOff=0b11};
+	inline void setTransmitterStatus(TRANSMITTER_STATUS status) {
+
+		TRANSMITTER_STATUS old_status = static_cast<TRANSMITTER_STATUS>((canrflg_register & 0x0C) >> 2);
+		canrflg_register = (canrflg_register & 0xF3) | (status << 2);
+
+		switch (getTransmitterSensitivityLevel()) {
+			case 0b00: /* No Interrupt */ break;
+			case 0b01: /* TODO: generate interrupt only if the transmitter enters or leaves "bus-off" state */ {
+				setCANStatusChangeInterrupt();
+			} break;
+			case 0b10: /* TODO: generate interrupt only if the transmitter enters or leaves "TxErr* or "bus-off" state */ {
+				setCANStatusChangeInterrupt();
+			} break;
+			case 0b11: /* generate interrupt on all state changes */ {
+				setCANStatusChangeInterrupt();
+			} break;
+		}
+	}
+
+	inline void setOverrunInterrupt() {
+
+		if (isOverrunInterruptEnable()) {
+			canrflg_register = canrflg_register | 0x02;
+			assertInterrupt(errors_interrupt_offset);
+		}
+	}
+
+	inline void setReceiverBufferFull() {
+
+		if (isReceiverFullInterruptEnable()) {
+			canrflg_register = canrflg_register | 0x01;
+			assertInterrupt(errors_interrupt_offset);
+		}
+	}
+
+	inline bool isWakeupInterruptEnable() { return ((canrier_register & 0x80) != 0); }
+	inline bool isCANStatusChangeInterruptEnable() { return ((canrier_register & 0x80) != 0x40); /* A CAN Status Change event causes an error interrupt request.*/}
+	inline int getReceiverSensitivityLevel() { return ((canrier_register & 0x30) >> 4); }
+	inline int getTransmitterSensitivityLevel() { return ((canrier_register & 0x0C) >> 0x02); }
+	inline bool isOverrunInterruptEnable() { return ((canrier_register & 0x02) != 0x02); }
+	inline bool isReceiverFullInterruptEnable() { return ((canrier_register & 0x01) != 0x01); }
 
 	inline void addRxTimeStamp() {
 		// TODO: check if is using big-Endian representation is correct !!!
