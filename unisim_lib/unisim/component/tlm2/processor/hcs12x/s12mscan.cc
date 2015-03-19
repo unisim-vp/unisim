@@ -273,7 +273,18 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 			*((uint8_t *) buffer) = cantaak_register;
 		} break;
 		case CANTBSEL: {
-			*((uint8_t *) buffer) = cantbsel_register;
+			*((uint8_t *) buffer) = 0;
+			// Read: Find the lowest ordered bit set to 1, all other bits will be read as 0
+			uint8_t mask = 1;
+			for (int i=0; i<3; i++) {
+				if ((cantbsel_register & mask) != 0) {
+					*((uint8_t *) buffer) = cantbsel_register & mask;
+					break;
+				} else {
+					mask = mask << 1;
+				}
+			}
+
 		} break;
 		case CANIDAC: {
 			*((uint8_t *) buffer) = canidac_register;
@@ -417,7 +428,7 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 
 			uint8_t value =  *((uint8_t *) buffer);
 
-			canrflg_register = (canrflg_register & 0x3C) | (canrflg_register & !(value | 0x3C));
+			canrflg_register = (canrflg_register & 0x3C) | (canrflg_register & ~(value | 0x3C));
 
 		} break;
 		case CANRIER: {
@@ -427,30 +438,51 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 
 		} break;
 		case CANTFLG: {
-			cantflg_register = *((uint8_t *) buffer);
+			if (isInitMode() || isListen()) break;
+
+			uint8_t value =  *((uint8_t *) buffer) & 0x07;
+			/*
+			 * Clearing a TXEx flag also clears the corresponding ABTAKx (see Section 10.3.2.10, “MSCAN Transmitter
+			 * Message Abort Acknowledge Register (CANTAAK)”).
+			 * When listen-mode is active (see Section 10.3.2.2, “MSCAN Control Register 1 (CANCTL1)”) the TXEx flags
+			 * cannot be cleared and no transmission is started.
+			 */
+
+			cantflg_register = cantflg_register & ~value;
+			cantaak_register = cantaak_register & ~value;
+
 		} break;
 		case CANTIER: {
-			cantier_register = *((uint8_t *) buffer);
+			if (isInitMode()) break;
+
+			cantier_register = *((uint8_t *) buffer) & 0x07;
 		} break;
 		case CANTARQ: {
-			cantarq_register = *((uint8_t *) buffer);
+			if (isInitMode()) break;
+
+			// The CPU cannot reset CANTARQ::ABTRQx, it is reset automatically whenever the associated TXE flag is set.
+			cantarq_register =  (cantarq_register & 0x07) | (*((uint8_t *) buffer) & 0x07);
 		} break;
 		case CANTAAK: {
-			cantaak_register = *((uint8_t *) buffer);
+			// NOP
 		} break;
 		case CANTBSEL: {
-			cantbsel_register = *((uint8_t *) buffer);
+			if (isInitMode()) break;
+
+			cantbsel_register = *((uint8_t *) buffer) & 0x07;
 		} break;
 		case CANIDAC: {
 			if (!isInitMode()) break;
 
-			canidac_register = *((uint8_t *) buffer);
+			canidac_register = (canidac_register & 0x07) | (*((uint8_t *) buffer) & 0x30);
 		} break;
 		case RESERVED1: {
 			// NOP
 		} break;
 		case CANMISC: {
-			canmisc_register = *((uint8_t *) buffer);
+			uint8_t value = *((uint8_t *) buffer) & 0x01;
+
+			canmisc_register = canmisc_register & ~value;
 		} break;
 		case CANRXERR: {
 			canrxerr_register = *((uint8_t *) buffer);

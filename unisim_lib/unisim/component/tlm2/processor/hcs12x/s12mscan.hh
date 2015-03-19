@@ -385,7 +385,7 @@ private:
 	inline bool isBusClk() { return ((canctl1_register & 0x40) == 0x40); }
 	inline bool isLoopBack() { return ((canctl1_register & 0x20) == 0x20); }
 	inline bool isListen() { return ((canctl1_register & 0x10) == 0x10); }
-	inline bool isAutomaticBusOffRecovery() { return ((canctl1_register & 0x08) != 0x08); }
+	inline bool isBusOffRecoveryMode() { return ((canctl1_register & 0x08) != 0x08); }
 	inline bool isWakeupAny() { return ((canctl1_register & 0x04) != 0x04); }
 
 	inline sc_time getSyncJump() { return time_quanta * (((canbtr0_register & 0xC0) >> 6) + 1); }
@@ -396,13 +396,17 @@ private:
 
 	inline void setWakeupInterrupt() {
 
+		canrflg_register = (canrflg_register | 0x80);
+
 		if (isWakeupInterruptEnable()) {
 			assertInterrupt(wakeup_interrupt_offset);
 		}
 	}
-	inline void setCANStatusChangeInterrupt() {
+	inline void setCANStatusChangeInterrupt(bool statusEnableInterrupt) {
 
-		if (isCANStatusChangeInterruptEnable()) {
+		canrflg_register = (canrflg_register | 0x40);
+
+		if (isCANStatusChangeInterruptEnable() && statusEnableInterrupt) {
 			assertInterrupt(errors_interrupt_offset);
 		}
 	}
@@ -413,18 +417,28 @@ private:
 		RECEIVER_STATUS old_status = static_cast<RECEIVER_STATUS>((canrflg_register & 0x30) >> 4);
 		canrflg_register = (canrflg_register & 0xCF) | (status << 4);
 
+		bool isRxOK ((old_status == RxOK) ^ (status == RxOK)); /* 0 <= receive error counter <= 96 */
+		bool isRxWRN = ((old_status == RxWRN) ^ (status == RxWRN)); /* 96 < receive error counter <= 127 */
+		bool isRxERR = ((old_status == RxERR) ^ (status == RxERR)); /* 127 < receive error counter <= 255 */
+		bool isBusOff = ((old_status == RxBusOff) ^ (status == RxBusOff)); /* 255 < receive error counter */
+
+		bool statusEnableInterrupt = false;
 		switch (getReceiverSensitivityLevel()) {
-			case 0b00: /* No Interrupt */break;
-			case 0b01: /* TODO: generate interrupt only if the receiver enters or leaves "bus-off" state */ {
-				setCANStatusChangeInterrupt();
+			case 0b00: /* 00: No Interrupt */ {
+				statusEnableInterrupt = false;
 			} break;
-			case 0b10: /* TODO: generate interrupt only if the receiver enters or leaves "RxErr" or "bus-off" state */ {
-				setCANStatusChangeInterrupt();
+			case 0b01: /* 01: generate interrupt only if the receiver enters or leaves "bus-off" state */ {
+				statusEnableInterrupt = isBusOff;
 			} break;
-			case 0b11: /* generate interrupt on all state changes */ {
-				setCANStatusChangeInterrupt();
+			case 0b10: /* 10: generate interrupt only if the receiver enters or leaves "RxErr" or "bus-off" state */ {
+				statusEnableInterrupt = isRxERR || isBusOff;
+			} break;
+			case 0b11: /* 11: generate interrupt on all state changes (enters or leaves "RxWRN" or "RxErr" or "bus-off" state) */ {
+				statusEnableInterrupt = isRxWRN || isRxERR || isBusOff || isRxOK;
 			} break;
 		}
+
+		setCANStatusChangeInterrupt(statusEnableInterrupt);
 	}
 
 	enum TRANSMITTER_STATUS {TxOK=0b00, TxWRN=0b01, TxERR=0b10, TxBusOff=0b11};
@@ -433,33 +447,43 @@ private:
 		TRANSMITTER_STATUS old_status = static_cast<TRANSMITTER_STATUS>((canrflg_register & 0x0C) >> 2);
 		canrflg_register = (canrflg_register & 0xF3) | (status << 2);
 
+		bool isTxOK = ((old_status == TxOK) ^ (status == TxOK)); /* 0 <= transmit error counter <= 96 */
+		bool isTxWRN = ((old_status == TxWRN) ^ (status == TxWRN)); /* 96 < transmit error counter <= 127 */
+		bool isTxERR = ((old_status == TxERR) ^ (status == TxERR)); /* 127 < transmit error counter <= 255 */
+		bool isBusOff = ((old_status == TxBusOff) ^ (status == TxBusOff)); /* 255 < transmit error counter */
+
+		bool statusEnableInterrupt = false;
 		switch (getTransmitterSensitivityLevel()) {
-			case 0b00: /* No Interrupt */ break;
-			case 0b01: /* TODO: generate interrupt only if the transmitter enters or leaves "bus-off" state */ {
-				setCANStatusChangeInterrupt();
+			case 0b00: /* 00: No Interrupt */ {
+				statusEnableInterrupt = false;
 			} break;
-			case 0b10: /* TODO: generate interrupt only if the transmitter enters or leaves "TxErr* or "bus-off" state */ {
-				setCANStatusChangeInterrupt();
+			case 0b01: /* 01: generate interrupt only if the transmitter enters or leaves "bus-off" state */ {
+				statusEnableInterrupt = isBusOff;
 			} break;
-			case 0b11: /* generate interrupt on all state changes */ {
-				setCANStatusChangeInterrupt();
+			case 0b10: /* 10: generate interrupt only if the transmitter enters or leaves "TxErr" or "bus-off" state */ {
+				statusEnableInterrupt = isTxERR || isBusOff;
+			} break;
+			case 0b11: /* 11: generate interrupt on all state changes (enters or leaves "TxWRN" or "TxErr" or "bus-off" state) */ {
+				statusEnableInterrupt = isTxWRN || isTxERR || isBusOff || isTxOK;
 			} break;
 		}
+
+		setCANStatusChangeInterrupt(statusEnableInterrupt);
 	}
 
 	inline void setOverrunInterrupt() {
 
+		canrflg_register = canrflg_register | 0x02;
 		if (isOverrunInterruptEnable()) {
-			canrflg_register = canrflg_register | 0x02;
 			assertInterrupt(errors_interrupt_offset);
 		}
 	}
 
 	inline void setReceiverBufferFull() {
 
+		canrflg_register = canrflg_register | 0x01;
 		if (isReceiverFullInterruptEnable()) {
-			canrflg_register = canrflg_register | 0x01;
-			assertInterrupt(errors_interrupt_offset);
+			assertInterrupt(receive_interrupt_offset);
 		}
 	}
 
@@ -470,13 +494,49 @@ private:
 	inline bool isOverrunInterruptEnable() { return ((canrier_register & 0x02) != 0x02); }
 	inline bool isReceiverFullInterruptEnable() { return ((canrier_register & 0x01) != 0x01); }
 
+	inline bool isTransmitBufferEmpty(int index) { return ((cantflg_register & (1 << index)) != 0); }
+	inline void setTransmitBufferEmpty(int index) {
+		cantier_register = cantier_register | (1 << index);
+
+		// When a TXEx flag is set, the corresponding CANTARQ::ABTRQx bit is cleared
+		cantarq_register = cantarq_register & ~(1 << index);
+
+		if (isTransmitInterruptEnable(index)) {
+			assertInterrupt(transmit_interrupt_offset);
+		}
+	}
+
+	inline bool isTransmitInterruptEnable(int index) { return ((cantier_register & (1 << index)) != 0); }
+
+	inline bool isAbortRequest(int index) { return ((cantarq_register & (1 << index)) != 0); }
+
+	inline void setTransmitabortAbortAcknowledge(int index) { cantaak_register = cantaak_register | (1 << index); }
+
+	inline bool isTxSelected() { return ((cantbsel_register & 0x07) != 0); }
+	inline int getTxIndex() {
+
+		uint8_t mask = 1;
+		for (int i=0; i<3; i++) {
+			if ((cantbsel_register & mask) != 0) {
+				return i;
+			} else {
+				mask = mask << 1;
+			}
+		}
+
+		return -1;
+	}
+
+	inline int getIdentifierAcceptanceMode() { return ((canidac_register & 0x30) >> 4); }
+	inline void setIdentifierAcceptanceHitIndicator(uint8_t value) { canidac_register = (canidac_register & 0x30) | (value & 0x07); }
+
+	inline void setBusOffStateHold() { canmisc_register = canmisc_register | 0x01; }
+
 	inline void addRxTimeStamp() {
-		// TODO: check if is using big-Endian representation is correct !!!
 		canrxfg_register[active_canrxfg_index][0x000E] =  (time_stamp & 0xFF00) >> 8;
 		canrxfg_register[active_canrxfg_index][0x000F] =  (time_stamp & 0x00FF);
 	}
 	inline void addTxTimeStamp() {
-		// TODO: check if is using big-Endian representation is correct !!!
 		cantxfg_register[active_cantxfg_index][0x000E] =  (time_stamp & 0xFF00) >> 8;
 		cantxfg_register[active_cantxfg_index][0x000F] =  (time_stamp & 0x00FF);
 	}
