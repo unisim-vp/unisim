@@ -82,22 +82,6 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	, canmisc_register(0x00)
 	, canrxerr_register(0x00)
 	, cantxerr_register(0x00)
-	, canidar0_register(0x00)
-	, canidar1_register(0x00)
-	, canidar2_register(0x00)
-	, canidar3_register(0x00)
-	, canidmr0_register(0x00)
-	, canidmr1_register(0x00)
-	, canidmr2_register(0x00)
-	, canidmr3_register(0x00)
-	, canidar4_register(0x00)
-	, canidar5_register(0x00)
-	, canidar6_register(0x00)
-	, canidar7_register(0x00)
-	, canidmr4_register(0x00)
-	, canidmr5_register(0x00)
-	, canidmr6_register(0x00)
-	, canidmr7_register(0x00)
 
 	, active_canrxfg_index(0)
 	, active_cantxfg_index(0)
@@ -128,6 +112,11 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	SC_THREAD(TelnetProcessInput);
 
 	xint_payload = xint_payload_fabric.allocate();
+
+	for (int i=0; i<8; i++) {
+		canidar_register[i] = 0x00;
+		canidmr_register[i] = 0x00;
+	}
 
 	for (int i=0; i<5; i++) {
 		for (int j=0; j<16; j++) {
@@ -302,52 +291,52 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 			*((uint8_t *) buffer) = cantxerr_register;
 		} break;
 		case CANIDAR0: {
-			*((uint8_t *) buffer) = canidar0_register;
+			*((uint8_t *) buffer) = canidar_register[0];
 		} break;
 		case CANIDAR1: {
-			*((uint8_t *) buffer) = canidar1_register;
+			*((uint8_t *) buffer) = canidar_register[1];
 		} break;
 		case CANIDAR2: {
-			*((uint8_t *) buffer) = canidar2_register;
+			*((uint8_t *) buffer) = canidar_register[2];
 		} break;
 		case CANIDAR3: {
-			*((uint8_t *) buffer) = canidar3_register;
+			*((uint8_t *) buffer) = canidar_register[3];
 		} break;
 		case CANIDMR0: {
-			*((uint8_t *) buffer) = canidmr0_register;
+			*((uint8_t *) buffer) = canidmr_register[0];
 		} break;
 		case CANIDMR1: {
-			*((uint8_t *) buffer) = canidmr1_register;
+			*((uint8_t *) buffer) = canidmr_register[1];
 		} break;
 		case CANIDMR2: {
-			*((uint8_t *) buffer) = canidmr2_register;
+			*((uint8_t *) buffer) = canidmr_register[2];
 		} break;
 		case CANIDMR3: {
-			*((uint8_t *) buffer) = canidmr3_register;
+			*((uint8_t *) buffer) = canidmr_register[3];
 		} break;
 		case CANIDAR4: {
-			*((uint8_t *) buffer) = canidar4_register;
+			*((uint8_t *) buffer) = canidar_register[4];
 		} break;
 		case CANIDAR5: {
-			*((uint8_t *) buffer) = canidar5_register;
+			*((uint8_t *) buffer) = canidar_register[5];
 		} break;
 		case CANIDAR6: {
-			*((uint8_t *) buffer) = canidar6_register;
+			*((uint8_t *) buffer) = canidar_register[6];
 		} break;
 		case CANIDAR7: {
-			*((uint8_t *) buffer) = canidar7_register;
+			*((uint8_t *) buffer) = canidar_register[7];
 		} break;
 		case CANIDMR4: {
-			*((uint8_t *) buffer) = canidmr4_register;
+			*((uint8_t *) buffer) = canidmr_register[4];
 		} break;
 		case CANIDMR5: {
-			*((uint8_t *) buffer) = canidmr5_register;
+			*((uint8_t *) buffer) = canidmr_register[5];
 		} break;
 		case CANIDMR6: {
-			*((uint8_t *) buffer) = canidmr6_register;
+			*((uint8_t *) buffer) = canidmr_register[6];
 		} break;
 		case CANIDMR7: {
-			*((uint8_t *) buffer) = canidmr7_register;
+			*((uint8_t *) buffer) = canidmr_register[7];
 		} break;
 
 		default: {
@@ -485,95 +474,96 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 			canmisc_register = canmisc_register & ~value;
 		} break;
 		case CANRXERR: {
-			canrxerr_register = *((uint8_t *) buffer);
+			// NOP
 		} break;
 		case CANTXERR: {
-			cantxerr_register = *((uint8_t *) buffer);
+			// NOP
 		} break;
 		case CANIDAR0: {
 			if (!isInitMode()) break;
 
-			canidar0_register = *((uint8_t *) buffer);
+			canidar_register[0] = *((uint8_t *) buffer);
 		} break;
 		case CANIDAR1: {
 			if (!isInitMode()) break;
 
-			canidar1_register = *((uint8_t *) buffer);
+			canidar_register[1] = *((uint8_t *) buffer);
 		} break;
 		case CANIDAR2: {
 			if (!isInitMode()) break;
 
-			canidar2_register = *((uint8_t *) buffer);
+			canidar_register[2] = *((uint8_t *) buffer);
 		} break;
 		case CANIDAR3: {
 			if (!isInitMode()) break;
 
-			canidar3_register = *((uint8_t *) buffer);
+			canidar_register[3] = *((uint8_t *) buffer);
 		} break;
 		case CANIDMR0: {
 			if (!isInitMode()) break;
 
-			canidmr0_register = *((uint8_t *) buffer);
+			canidmr_register[0] = *((uint8_t *) buffer);
 		} break;
 		case CANIDMR1: {
 			if (!isInitMode()) break;
 
-			canidmr1_register = *((uint8_t *) buffer);
+			canidmr_register[1] = *((uint8_t *) buffer);
 		} break;
 		case CANIDMR2: {
 			if (!isInitMode()) break;
 
-			canidmr2_register = *((uint8_t *) buffer);
+			canidmr_register[2] = *((uint8_t *) buffer);
 		} break;
 		case CANIDMR3: {
 			if (!isInitMode()) break;
 
-			canidmr3_register = *((uint8_t *) buffer);
+			canidmr_register[3] = *((uint8_t *) buffer);
 		} break;
 		case CANIDAR4: {
 			if (!isInitMode()) break;
 
-			canidar4_register = *((uint8_t *) buffer);
+			canidar_register[4] = *((uint8_t *) buffer);
 		} break;
 		case CANIDAR5: {
 			if (!isInitMode()) break;
 
-			canidar5_register = *((uint8_t *) buffer);
+			canidar_register[5] = *((uint8_t *) buffer);
 		} break;
 		case CANIDAR6: {
 			if (!isInitMode()) break;
 
-			canidar6_register = *((uint8_t *) buffer);
+			canidar_register[6] = *((uint8_t *) buffer);
 		} break;
 		case CANIDAR7: {
 			if (!isInitMode()) break;
 
-			canidar7_register = *((uint8_t *) buffer);
+			canidar_register[7] = *((uint8_t *) buffer);
 		} break;
 		case CANIDMR4: {
 			if (!isInitMode()) break;
 
-			canidmr4_register = *((uint8_t *) buffer);
+			canidmr_register[4] = *((uint8_t *) buffer);
 		} break;
 		case CANIDMR5: {
 			if (!isInitMode()) break;
 
-			canidmr5_register = *((uint8_t *) buffer);
+			canidmr_register[5] = *((uint8_t *) buffer);
 		} break;
 		case CANIDMR6: {
 			if (!isInitMode()) break;
 
-			canidmr6_register = *((uint8_t *) buffer);
+			canidmr_register[6] = *((uint8_t *) buffer);
 		} break;
 		case CANIDMR7: {
 			if (!isInitMode()) break;
 
-			canidmr7_register = *((uint8_t *) buffer);
+			canidmr_register[7] = *((uint8_t *) buffer);
 		} break;
 
 		default: {
 			if ((offset >= CANRXFG_START) && (offset <= CANRXFG_END)) {
-				canrxfg_register[active_canrxfg_index][offset - CANRXFG_START] = *((uint8_t *) buffer);
+				// NOP it'is a receive register
+				// canrxfg_register[active_canrxfg_index][offset - CANRXFG_START] = *((uint8_t *) buffer);
 			}
 			else if ((offset >= CANTXFG_START) && (offset <= CANTXFG_END)) {
 				cantxfg_register[active_cantxfg_index][offset - CANTXFG_START] = *((uint8_t *) buffer);
@@ -784,114 +774,114 @@ bool S12MSCAN::BeginSetup() {
 	cantxerr_var->setCallBack(this, CANTXERR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidar0_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[0]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar0_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR0", this, canidar0_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidar0_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR0", this, canidar_register[0], "CAN  ");
 	extended_registers_registry.push_back(canidar0_var);
 	canidar0_var->setCallBack(this, CANIDAR0, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidar1_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[1]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar1_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR1", this, canidar1_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidar1_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR1", this, canidar_register[1], "CAN  ");
 	extended_registers_registry.push_back(canidar1_var);
 	canidar1_var->setCallBack(this, CANIDAR1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidar2_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[2]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar2_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR2", this, canidar2_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidar2_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR2", this, canidar_register[2], "CAN  ");
 	extended_registers_registry.push_back(canidar2_var);
 	canidar2_var->setCallBack(this, CANIDAR2, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR3",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidar3_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[3]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar3_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR3", this, canidar3_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidar3_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR3", this, canidar_register[3], "CAN  ");
 	extended_registers_registry.push_back(canidar3_var);
 	canidar3_var->setCallBack(this, CANIDAR3, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidmr0_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[0]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr0_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR0", this, canidmr0_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidmr0_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR0", this, canidmr_register[0], "CAN  ");
 	extended_registers_registry.push_back(canidmr0_var);
 	canidmr0_var->setCallBack(this, CANIDMR0, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidmr1_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[1]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr1_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR1", this, canidmr1_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidmr1_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR1", this, canidmr_register[1], "CAN  ");
 	extended_registers_registry.push_back(canidmr1_var);
 	canidmr1_var->setCallBack(this, CANIDMR1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidmr2_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[2]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr2_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR2", this, canidmr2_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidmr2_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR2", this, canidmr_register[2], "CAN  ");
 	extended_registers_registry.push_back(canidmr2_var);
 	canidmr2_var->setCallBack(this, CANIDMR2, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR3",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidmr3_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[3]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr3_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR3", this, canidmr3_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidmr3_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR3", this, canidmr_register[3], "CAN  ");
 	extended_registers_registry.push_back(canidmr3_var);
 	canidmr3_var->setCallBack(this, CANIDMR3, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR4",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidar4_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[4]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar4_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR4", this, canidar4_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidar4_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR4", this, canidar_register[4], "CAN  ");
 	extended_registers_registry.push_back(canidar4_var);
 	canidar4_var->setCallBack(this, CANIDAR4, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR5",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidar5_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[5]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar5_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR5", this, canidar5_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidar5_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR5", this, canidar_register[5], "CAN  ");
 	extended_registers_registry.push_back(canidar5_var);
 	canidar5_var->setCallBack(this, CANIDAR5, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR6",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidar6_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[6]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar6_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR6", this, canidar6_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidar6_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR6", this, canidar_register[6], "CAN  ");
 	extended_registers_registry.push_back(canidar6_var);
 	canidar6_var->setCallBack(this, CANIDAR6, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR7",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidar7_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[7]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar7_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR7", this, canidar7_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidar7_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR7", this, canidar_register[7], "CAN  ");
 	extended_registers_registry.push_back(canidar7_var);
 	canidar7_var->setCallBack(this, CANIDAR7, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR4",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidmr4_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[4]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr4_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR4", this, canidmr4_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidmr4_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR4", this, canidmr_register[4], "CAN  ");
 	extended_registers_registry.push_back(canidmr4_var);
 	canidmr4_var->setCallBack(this, CANIDMR4, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR5",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidmr5_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[5]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr5_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR5", this, canidmr5_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidmr5_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR5", this, canidmr_register[5], "CAN  ");
 	extended_registers_registry.push_back(canidmr5_var);
 	canidmr5_var->setCallBack(this, CANIDMR5, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR6",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidmr6_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[6]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr6_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR6", this, canidmr6_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidmr6_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR6", this, canidmr_register[6], "CAN  ");
 	extended_registers_registry.push_back(canidmr6_var);
 	canidmr6_var->setCallBack(this, CANIDMR6, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR7",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidmr7_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[7]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr7_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR7", this, canidmr7_register, "CAN  ");
+	unisim::kernel::service::Register<uint8_t> *canidmr7_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR7", this, canidmr_register[7], "CAN  ");
 	extended_registers_registry.push_back(canidmr7_var);
 	canidmr7_var->setCallBack(this, CANIDMR7, &CallBackObject::write, NULL);
 
@@ -949,22 +939,11 @@ void S12MSCAN::Reset() {
 	canmisc_register = 0x00;
 	canrxerr_register = 0x00;
 	cantxerr_register = 0x00;
-	canidar0_register = 0x00;
-	canidar1_register = 0x00;
-	canidar2_register = 0x00;
-	canidar3_register = 0x00;
-	canidmr0_register = 0x00;
-	canidmr1_register = 0x00;
-	canidmr2_register = 0x00;
-	canidmr3_register = 0x00;
-	canidar4_register = 0x00;
-	canidar5_register = 0x00;
-	canidar6_register = 0x00;
-	canidar7_register = 0x00;
-	canidmr4_register = 0x00;
-	canidmr5_register = 0x00;
-	canidmr6_register = 0x00;
-	canidmr7_register = 0x00;
+
+	for (int i=0; i<8; i++) {
+		canidar_register[i] = 0x00;
+		canidmr_register[i] = 0x00;
+	}
 
 	for (int i=0; i<5; i++) {
 		for (int j=0; j<16; j++) {
@@ -1052,52 +1031,52 @@ bool S12MSCAN::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) 
 				*((uint8_t *) buffer) = cantxerr_register;
 			} break;
 			case CANIDAR0: {
-				*((uint8_t *) buffer) = canidar0_register;
+				*((uint8_t *) buffer) = canidar_register[0];
 			} break;
 			case CANIDAR1: {
-				*((uint8_t *) buffer) = canidar1_register;
+				*((uint8_t *) buffer) = canidar_register[1];
 			} break;
 			case CANIDAR2: {
-				*((uint8_t *) buffer) = canidar2_register;
+				*((uint8_t *) buffer) = canidar_register[2];
 			} break;
 			case CANIDAR3: {
-				*((uint8_t *) buffer) = canidar3_register;
+				*((uint8_t *) buffer) = canidar_register[3];
 			} break;
 			case CANIDMR0: {
-				*((uint8_t *) buffer) = canidmr0_register;
+				*((uint8_t *) buffer) = canidmr_register[0];
 			} break;
 			case CANIDMR1: {
-				*((uint8_t *) buffer) = canidmr1_register;
+				*((uint8_t *) buffer) = canidmr_register[1];
 			} break;
 			case CANIDMR2: {
-				*((uint8_t *) buffer) = canidmr2_register;
+				*((uint8_t *) buffer) = canidmr_register[2];
 			} break;
 			case CANIDMR3: {
-				*((uint8_t *) buffer) = canidmr3_register;
+				*((uint8_t *) buffer) = canidmr_register[3];
 			} break;
 			case CANIDAR4: {
-				*((uint8_t *) buffer) = canidar4_register;
+				*((uint8_t *) buffer) = canidar_register[4];
 			} break;
 			case CANIDAR5: {
-				*((uint8_t *) buffer) = canidar5_register;
+				*((uint8_t *) buffer) = canidar_register[5];
 			} break;
 			case CANIDAR6: {
-				*((uint8_t *) buffer) = canidar6_register;
+				*((uint8_t *) buffer) = canidar_register[6];
 			} break;
 			case CANIDAR7: {
-				*((uint8_t *) buffer) = canidar7_register;
+				*((uint8_t *) buffer) = canidar_register[7];
 			} break;
 			case CANIDMR4: {
-				*((uint8_t *) buffer) = canidmr4_register;
+				*((uint8_t *) buffer) = canidmr_register[4];
 			} break;
 			case CANIDMR5: {
-				*((uint8_t *) buffer) = canidmr5_register;
+				*((uint8_t *) buffer) = canidmr_register[5];
 			} break;
 			case CANIDMR6: {
-				*((uint8_t *) buffer) = canidmr6_register;
+				*((uint8_t *) buffer) = canidmr_register[6];
 			} break;
 			case CANIDMR7: {
-				*((uint8_t *) buffer) = canidmr7_register;
+				*((uint8_t *) buffer) = canidmr_register[7];
 			} break;
 
 			default: {
@@ -1180,52 +1159,52 @@ bool S12MSCAN::WriteMemory(physical_address_t addr, const void *buffer, uint32_t
 				cantxerr_register = *((uint8_t *) buffer);
 			} break;
 			case CANIDAR0: {
-				canidar0_register = *((uint8_t *) buffer);
+				canidar_register[0] = *((uint8_t *) buffer);
 			} break;
 			case CANIDAR1: {
-				canidar1_register = *((uint8_t *) buffer);
+				canidar_register[1] = *((uint8_t *) buffer);
 			} break;
 			case CANIDAR2: {
-				canidar2_register = *((uint8_t *) buffer);
+				canidar_register[2] = *((uint8_t *) buffer);
 			} break;
 			case CANIDAR3: {
-				canidar3_register = *((uint8_t *) buffer);
+				canidar_register[3] = *((uint8_t *) buffer);
 			} break;
 			case CANIDMR0: {
-				canidmr0_register = *((uint8_t *) buffer);
+				canidmr_register[0] = *((uint8_t *) buffer);
 			} break;
 			case CANIDMR1: {
-				canidmr1_register = *((uint8_t *) buffer);
+				canidmr_register[1] = *((uint8_t *) buffer);
 			} break;
 			case CANIDMR2: {
-				canidmr2_register = *((uint8_t *) buffer);
+				canidmr_register[2] = *((uint8_t *) buffer);
 			} break;
 			case CANIDMR3: {
-				canidmr3_register = *((uint8_t *) buffer);
+				canidmr_register[3] = *((uint8_t *) buffer);
 			} break;
 			case CANIDAR4: {
-				canidar4_register = *((uint8_t *) buffer);
+				canidar_register[4] = *((uint8_t *) buffer);
 			} break;
 			case CANIDAR5: {
-				canidar5_register = *((uint8_t *) buffer);
+				canidar_register[5] = *((uint8_t *) buffer);
 			} break;
 			case CANIDAR6: {
-				canidar6_register = *((uint8_t *) buffer);
+				canidar_register[6] = *((uint8_t *) buffer);
 			} break;
 			case CANIDAR7: {
-				canidar7_register = *((uint8_t *) buffer);
+				canidar_register[7] = *((uint8_t *) buffer);
 			} break;
 			case CANIDMR4: {
-				canidmr4_register = *((uint8_t *) buffer);
+				canidmr_register[4] = *((uint8_t *) buffer);
 			} break;
 			case CANIDMR5: {
-				canidmr5_register = *((uint8_t *) buffer);
+				canidmr_register[5] = *((uint8_t *) buffer);
 			} break;
 			case CANIDMR6: {
-				canidmr6_register = *((uint8_t *) buffer);
+				canidmr_register[6] = *((uint8_t *) buffer);
 			} break;
 			case CANIDMR7: {
-				canidmr7_register = *((uint8_t *) buffer);
+				canidmr_register[7] = *((uint8_t *) buffer);
 			} break;
 
 			default: {

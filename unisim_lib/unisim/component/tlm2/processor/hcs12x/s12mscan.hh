@@ -301,22 +301,9 @@ private:
 	uint8_t canmisc_register;
 	uint8_t canrxerr_register;
 	uint8_t cantxerr_register;
-	uint8_t canidar0_register;
-	uint8_t canidar1_register;
-	uint8_t canidar2_register;
-	uint8_t canidar3_register;
-	uint8_t canidmr0_register;
-	uint8_t canidmr1_register;
-	uint8_t canidmr2_register;
-	uint8_t canidmr3_register;
-	uint8_t canidar4_register;
-	uint8_t canidar5_register;
-	uint8_t canidar6_register;
-	uint8_t canidar7_register;
-	uint8_t canidmr4_register;
-	uint8_t canidmr5_register;
-	uint8_t canidmr6_register;
-	uint8_t canidmr7_register;
+
+	uint8_t canidar_register[8];
+	uint8_t canidmr_register[8];
 
 	uint8_t canrxfg_register[5][16];
 	uint8_t cantxfg_register[3][16];
@@ -531,6 +518,71 @@ private:
 	inline void setIdentifierAcceptanceHitIndicator(uint8_t value) { canidac_register = (canidac_register & 0x30) | (value & 0x07); }
 
 	inline void setBusOffStateHold() { canmisc_register = canmisc_register | 0x01; }
+
+	inline void incReceiverErrorCounter() {
+
+		canrxerr_register = (canrxerr_register < 255)? canrxerr_register++ : canrxerr_register;
+
+		if ((canrxerr_register >= 0) && (canrxerr_register <= 96)) {
+			setReceiverStatus(RxOK); /* 0 <= receive error counter <= 96 */
+		}
+		else if ((96 < canrxerr_register) && (canrxerr_register <= 127)) {
+			setReceiverStatus(RxWRN); /* 96 < receive error counter <= 127 */
+		}
+		else if ((127 < canrxerr_register) && (canrxerr_register <= 255)) {
+			setReceiverStatus(RxERR); /* 127 < receive error counter <= 255 */
+		}
+		else {
+			setReceiverStatus(RxBusOff); /* 255 < receive error counter */
+		}
+
+	}
+
+	inline void incTransmitterErrorCounter() {
+
+		cantxerr_register = (cantxerr_register < 255)? cantxerr_register++ : cantxerr_register;
+
+		if ((cantxerr_register >= 0) && (cantxerr_register <= 96)) {
+			setTransmitterStatus(TxOK); /* 0 <= Transmitter error counter <= 96 */
+		}
+		else if ((96 < cantxerr_register) && (cantxerr_register <= 127)) {
+			setTransmitterStatus(TxWRN); /* 96 < Transmitter error counter <= 127 */
+		}
+		else if ((127 < cantxerr_register) && (cantxerr_register <= 255)) {
+			setTransmitterStatus(TxERR); /* 127 < Transmitter error counter <= 255 */
+		}
+		else {
+			setTransmitterStatus(TxBusOff); /* 255 < Transmitter error counter */
+		}
+
+	}
+
+	inline bool checkAcceptance() {
+
+		/*
+		 *  TODO: implement acceptance algorithm using caniadr and canidmr registers
+		 *    note: background receive buffer is modeled as rx_shift_register[16]
+		 *
+		 *  CANIADR register:
+		 *  On reception, each message is written into the background receive buffer. The CPU is only signalled to
+		 *  read the message if it passes the criteria in the identifier acceptance and identifier mask registers
+		 *  (accepted); otherwise, the message is overwritten by the next message (dropped).
+		 *  The acceptance registers of the MSCAN are applied on the IDR0–IDR3 registers (see Section 10.3.3.1,
+		 *  “Identifier Registers (IDR0–IDR3)”) of incoming messages in a bit by bit manner (see Section 10.4.3,
+		 *  “Identifier Acceptance Filter”).
+		 *  For extended identifiers, all four acceptance and mask registers are applied. For standard identifiers, only
+		 *  the first two (CANIDAR0/1, CANIDMR0/1) are applied.
+		 *
+		 *  CANIDMR register:
+		 *  The identifier mask register specifies which of the corresponding bits in the identifier acceptance register
+		 *  are relevant for acceptance filtering. To receive standard identifiers in 32 bit filter mode, it is required to
+		 *  program the last three bits (AM[2:0]) in the mask registers CANIDMR1 and CANIDMR5 to “don’t care.”
+		 *  To receive standard identifiers in 16 bit filter mode, it is required to program the last three bits (AM[2:0])
+		 *  in the mask registers CANIDMR1, CANIDMR3, CANIDMR5, and CANIDMR7 to “don’t care.”
+		 */
+
+		return false;
+	}
 
 	inline void addRxTimeStamp() {
 		canrxfg_register[active_canrxfg_index][0x000E] =  (time_stamp & 0xFF00) >> 8;
