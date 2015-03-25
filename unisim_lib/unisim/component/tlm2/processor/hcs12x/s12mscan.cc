@@ -86,6 +86,10 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	, active_canrxfg_index(0)
 	, active_cantxfg_index(0)
 
+	, canrxfg(NULL)
+	, cantxfg(NULL)
+	, time_stamp(0)
+
 	, telnet_enabled(false)
 	, param_telnet_enabled("telnet-enabled", this, telnet_enabled)
 
@@ -178,7 +182,6 @@ void S12MSCAN::RunRx() {
 
 		}
 
-
 	}
 
 }
@@ -250,16 +253,16 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 			*((uint8_t *) buffer) = canrier_register;
 		} break;
 		case CANTFLG: {
-			*((uint8_t *) buffer) = cantflg_register;
+			*((uint8_t *) buffer) = cantflg_register & 0x07;
 		} break;
 		case CANTIER: {
-			*((uint8_t *) buffer) = cantier_register;
+			*((uint8_t *) buffer) = cantier_register & 0x07;
 		} break;
 		case CANTARQ: {
-			*((uint8_t *) buffer) = cantarq_register;
+			*((uint8_t *) buffer) = cantarq_register & 0x07;
 		} break;
 		case CANTAAK: {
-			*((uint8_t *) buffer) = cantaak_register;
+			*((uint8_t *) buffer) = cantaak_register & 0x07;
 		} break;
 		case CANTBSEL: {
 			*((uint8_t *) buffer) = 0;
@@ -276,13 +279,13 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 
 		} break;
 		case CANIDAC: {
-			*((uint8_t *) buffer) = canidac_register;
+			*((uint8_t *) buffer) = canidac_register & 0x37;
 		} break;
 		case RESERVED1: {
 			*((uint8_t *) buffer) = 0x00;
 		} break;
 		case CANMISC: {
-			*((uint8_t *) buffer) = canmisc_register;
+			*((uint8_t *) buffer) = canmisc_register & 0x01;
 		} break;
 		case CANRXERR: {
 			*((uint8_t *) buffer) = canrxerr_register;

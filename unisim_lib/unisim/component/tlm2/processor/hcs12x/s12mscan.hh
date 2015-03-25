@@ -312,6 +312,17 @@ private:
 
 	uint8_t tx_shift_register[16], rx_shift_register[16];
 
+	struct CANFG {
+		uint8_t idr0, idr1, idr2, idr3; // IDR: identifier Register
+		uint8_t dsr0, dsr1, dsr2, dsr3, dsr4, dsr5, dsr6, dsr7; // DSR: Data Segment Register
+		uint8_t dlr; // DLR: Data Length Register
+		uint8_t tbpr; // tbpr: Transmit Buffer Priority register. Not applicable for receive buffers
+		uint8_t tsrh, tsrl;  // tsr: Time stamp register. Read-only for CPU
+	} *canrxfg, *cantxfg;
+
+//	CANFG canrxfg_register[5];
+//	CANFG cantxfg_register[3];
+
 	// the time stamp is clocked by the bit clock rate.
 	sc_event timer_start_event;
 	uint16_t time_stamp;
@@ -581,16 +592,32 @@ private:
 		 *  in the mask registers CANIDMR1, CANIDMR3, CANIDMR5, and CANIDMR7 to “don’t care.”
 		 */
 
-		return false;
+		return (false);
 	}
 
-	inline void addRxTimeStamp() {
-		canrxfg_register[active_canrxfg_index][0x000E] =  (time_stamp & 0xFF00) >> 8;
-		canrxfg_register[active_canrxfg_index][0x000F] =  (time_stamp & 0x00FF);
-	}
 	inline void addTxTimeStamp() {
-		cantxfg_register[active_cantxfg_index][0x000E] =  (time_stamp & 0xFF00) >> 8;
-		cantxfg_register[active_cantxfg_index][0x000F] =  (time_stamp & 0x00FF);
+
+//		cantxfg_register[active_cantxfg_index][0x000E] =  (time_stamp & 0xFF00) >> 8;
+//		cantxfg_register[active_cantxfg_index][0x000F] =  (time_stamp & 0x00FF);
+
+		cantxfg = reinterpret_cast<CANFG*>(cantxfg_register[active_cantxfg_index]);
+
+		cantxfg->tsrh = (time_stamp & 0xFF00) >> 8;
+		cantxfg->tsrl = (time_stamp &  0x00FF);
+	}
+
+	inline uint16_t getRxTimeStamp() {
+
+		uint8_t timest = 0;
+
+//		timest = timest | (((uint16_t) canrxfg_register[active_canrxfg_index][0x000E]) << 8);
+//		timest = timest | (((uint16_t) canrxfg_register[active_canrxfg_index][0x000F]) & 0x00FF);
+
+		canrxfg = reinterpret_cast<CANFG*>(canrxfg_register[active_canrxfg_index]);
+		timest = timest | (((uint16_t) canrxfg->tsrh) << 8);
+		timest = timest | (((uint16_t) canrxfg->tsrl) & 0x00FF);
+
+		return (timest);
 	}
 
 	inline void reset_time_stamp() { time_stamp = 0; }

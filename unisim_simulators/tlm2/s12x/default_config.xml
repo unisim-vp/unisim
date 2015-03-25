@@ -128,6 +128,376 @@
 			</enumeration>
 		</variable>
 	</object>
+	<object name="CAN0">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0140</value>
+			<description></description>
+		</variable>
+		<variable name="transmit-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xb0</value>
+			<description></description>
+		</variable>
+		<variable name="receive-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xb2</value>
+			<description></description>
+		</variable>
+		<variable name="errors-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xb4</value>
+			<description></description>
+		</variable>
+		<variable name="wakeup-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xb6</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="CAN1">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0180</value>
+			<description></description>
+		</variable>
+		<variable name="transmit-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xa8</value>
+			<description></description>
+		</variable>
+		<variable name="receive-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xaa</value>
+			<description></description>
+		</variable>
+		<variable name="errors-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xac</value>
+			<description></description>
+		</variable>
+		<variable name="wakeup-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xae</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="CAN2">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x01c0</value>
+			<description></description>
+		</variable>
+		<variable name="transmit-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xa0</value>
+			<description></description>
+		</variable>
+		<variable name="receive-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xa2</value>
+			<description></description>
+		</variable>
+		<variable name="errors-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xa4</value>
+			<description></description>
+		</variable>
+		<variable name="wakeup-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xa6</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="CAN3">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0200</value>
+			<description></description>
+		</variable>
+		<variable name="transmit-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x98</value>
+			<description></description>
+		</variable>
+		<variable name="receive-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x9a</value>
+			<description></description>
+		</variable>
+		<variable name="errors-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x9c</value>
+			<description></description>
+		</variable>
+		<variable name="wakeup-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x9e</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="CAN4">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0280</value>
+			<description></description>
+		</variable>
+		<variable name="transmit-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x48</value>
+			<description></description>
+		</variable>
+		<variable name="receive-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x4a</value>
+			<description></description>
+		</variable>
+		<variable name="errors-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x4c</value>
+			<description></description>
+		</variable>
+		<variable name="wakeup-interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x4e</value>
+			<description></description>
+		</variable>
+		<variable name="tx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rx-debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<object name="CPU">
 		<variable name="verbose-all">
 			<type>parameter</type>
@@ -627,9 +997,21 @@
 		<variable name="memory-map">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0110,011B;11,0120,012F;12,0130,0137;13,0138,013F;14,02C0,02DF;15,0300,0327;16,0340,0367;17,0380,03BF;18,0007FF,0FFFFF;19,100000,13FFFF;20,400000,7FFFFF</value>
+			<value>0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0110,011B;11,0120,012F;12,0130,0137;13,0138,013F;14,0140,017F;15,0180,01BF;16,01C0,01FF;17,0200,023F;18,0280,02BF;19,02C0,02DF;20,0300,0327;21,0340,0367;22,0380,03BF;23,0007FF,0FFFFF;24,100000,13FFFF;25,400000,7FFFFF</value>
 			<description></description>
 		</variable>
+	</object>
+	<object name="Monitor">
+		<object name="Monitor.MonitorServer">
+			<object name="Monitor.MonitorServer.ArtimonMonitor">
+				<variable name="xml-file-path">
+					<type>parameter</type>
+					<data_type>string</data_type>
+					<value></value>
+					<description></description>
+				</variable>
+			</object>
+		</object>
 	</object>
 	<object name="PIT">
 		<variable name="bus-cycle-time">
@@ -796,6 +1178,16 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="txd-pin-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>param txd pin enable</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -841,6 +1233,16 @@
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="txd-pin-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>param txd pin enable</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -896,6 +1298,16 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="txd-pin-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>param txd pin enable</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -941,6 +1353,16 @@
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="txd-pin-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>param txd pin enable</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -996,6 +1418,16 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="txd-pin-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>param txd pin enable</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -1041,6 +1473,16 @@
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="txd-pin-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>param txd pin enable</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -1106,6 +1548,16 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="txd-pin-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>param txd pin enable</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -1166,6 +1618,16 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="txd-pin-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>param txd pin enable</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -1221,6 +1683,16 @@
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="txd-pin-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>param txd pin enable</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -1593,6 +2065,50 @@
 			<description></description>
 		</variable>
 	</object>
+	<object name="debugger">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="dwarf-to-html-output-directory">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>DWARF v2/v3 to HTML output directory</description>
+		</variable>
+		<variable name="dwarf-register-number-mapping-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>68hc12_dwarf_register_number_mapping.xml</value>
+			<description>DWARF register number mapping filename</description>
+		</variable>
+		<variable name="parse-dwarf">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Enable/Disable parsing of DWARF debugging informations</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug-dwarf">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debugging of DWARF</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<object name="elf32-loader">
 		<variable name="filename">
 			<type>parameter</type>
@@ -1695,6 +2211,198 @@
 			</enumeration>
 		</variable>
 	</object>
+	<object name="gdb-server">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000001</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>0</value>
+			<description>TCP/IP port to listen waiting for a GDB client connection</description>
+		</variable>
+		<variable name="architecture-description-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>gdb_hcs12x.xml</value>
+			<description>filename of a XML description of the connected processor</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="inline-debugger">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000001</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="search-path">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Search path for source (separated by ';')</description>
+		</variable>
+		<variable name="init-macro">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>path to initial macro to run when debugger starts</description>
+		</variable>
+		<variable name="output">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>path to output file where to redirect the debugger outputs</description>
+		</variable>
+	</object>
+	<object name="pim-server">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000001</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0000</value>
+			<description>TCP/IP port to listen waiting for a GDB client connection</description>
+		</variable>
+		<variable name="architecture-description-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>gdb_hcs12x.xml</value>
+			<description>filename of a XML description of the connected processor</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="host">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>127.0.0.1</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="profiler">
+		<variable name="min-data-read-prof-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>Minimum address for data read profiling</description>
+		</variable>
+		<variable name="max-data-read-prof-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0xffffffff</value>
+			<description>Maximum address for data read profiling</description>
+		</variable>
+		<variable name="min-data-write-prof-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>Minimum address for data write profiling</description>
+		</variable>
+		<variable name="max-data-write-prof-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0xffffffff</value>
+			<description>Maximum address for data write profiling</description>
+		</variable>
+		<variable name="min-insn-fetch-prof-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>Minimum address for instruction fetch profiling</description>
+		</variable>
+		<variable name="max-insn-fetch-prof-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0xffffffff</value>
+			<description>Maximum address for instruction fetch profiling</description>
+		</variable>
+		<variable name="min-insn-exec-prof-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>Minimum address for instruction execution profiling</description>
+		</variable>
+		<variable name="max-insn-exec-prof-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0xffffffff</value>
+			<description>Maximum address for instruction execution profiling</description>
+		</variable>
+		<variable name="enable-data-read-prof">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable data read profiling</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-data-write-prof">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable data write profiling</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-insn-fetch-prof">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable instruction fetch profiling</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-insn-exec-prof">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable instruction execution profiling</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<variable name="dump-formulas">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -1728,7 +2436,7 @@
 	<variable name="enable-gdb-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>false</value>
+		<value>true</value>
 		<description>Enable/Disable GDB server instantiation</description>
 		<enumeration>
 			<item>true</item>
@@ -1738,7 +2446,7 @@
 	<variable name="enable-inline-debugger">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>false</value>
+		<value>true</value>
 		<description>Enable/Disable inline debugger instantiation</description>
 		<enumeration>
 			<item>true</item>
@@ -1748,7 +2456,7 @@
 	<variable name="enable-pim-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>false</value>
+		<value>true</value>
 		<description>Enable/Disable PIM server instantiation</description>
 		<enumeration>
 			<item>true</item>

@@ -57,6 +57,9 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	, spisr_read(false)
 	, validFrameWaiting(false)
 
+	, txd_pin_enable(true)
+	, param_txd_pin_enable("txd-pin-enable", this, txd_pin_enable, "param txd pin enable")
+
 	, mosi(false)
 	, mosi_pin("MOSI", this, mosi, "master output and slave input pin")
 
@@ -167,7 +170,10 @@ void S12SPI::TxRun() {
 				TelnetProcessOutput(true);
 
 				// TODO I have to emulate Mode Fault Error
-			} else {
+			}
+//			else
+			if (txd_pin_enable)
+			{
 
 				// TODO I have to rewrite the following code using TLM and stub
 				uint8_t index = 0;

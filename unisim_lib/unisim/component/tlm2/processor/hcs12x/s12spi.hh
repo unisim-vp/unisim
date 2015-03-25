@@ -272,6 +272,9 @@ private:
 	bool spisr_read;
 	bool validFrameWaiting;
 
+	bool txd_pin_enable;
+	Parameter<bool> param_txd_pin_enable;
+
 	bool mosi;
 	unisim::kernel::service::Signal<bool> mosi_pin;
 

@@ -57,6 +57,7 @@
 #include <unisim/component/tlm2/processor/hcs12x/s12pit24b.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12sci.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12spi.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12mscan.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
@@ -95,6 +96,7 @@ using unisim::component::tlm2::processor::hcs12x::S12XEETX;
 using unisim::component::tlm2::processor::hcs12x::S12PIT24B;
 using unisim::component::tlm2::processor::hcs12x::S12SCI;
 using unisim::component::tlm2::processor::hcs12x::S12SPI;
+using unisim::component::tlm2::processor::hcs12x::S12MSCAN;
 
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
@@ -221,6 +223,8 @@ private:
 
 	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
+	typedef unisim::component::tlm2::processor::hcs12x::S12MSCAN MSCAN;
+
 	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
@@ -256,6 +260,8 @@ private:
 	S12SCI *sci0, *sci1, *sci2, *sci3, *sci4, *sci5;
 
 	S12SPI *spi0, *spi1, *spi2;
+
+	MSCAN *can0, *can1, *can2, *can3, *can4;
 
 	//  - Memories
 	RAM *global_ram;

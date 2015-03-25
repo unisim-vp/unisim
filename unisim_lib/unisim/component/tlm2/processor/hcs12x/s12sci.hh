@@ -293,6 +293,8 @@ private:
 
 	bool txd;
 	Signal<bool> txd_output_pin;
+	bool txd_pin_enable;
+	Parameter<bool> param_txd_pin_enable;
 
 	bool rxd;
 	Signal<bool> rxd_input_pin;

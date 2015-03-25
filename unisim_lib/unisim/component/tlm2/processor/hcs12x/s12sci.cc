@@ -55,6 +55,8 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 
 	, txd(true)
 	, txd_output_pin("TXD", this, txd, "TXD output")
+	, txd_pin_enable(true)
+	, param_txd_pin_enable("txd-pin-enable", this, txd_pin_enable, "param txd pin enable")
 	, rxd(true)
 	, rxd_input_pin("RXD", this, rxd, "RXD input")
 
@@ -566,7 +568,10 @@ inline void S12SCI::txShiftOut(SCIMSG msgType)
 			default: break;
 		}
 
-	} else {
+	}
+//	else
+	if (txd_pin_enable)
+	{
 
 		uint8_t length = 0;
 		switch (msgType) {

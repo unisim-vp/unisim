@@ -1012,6 +1012,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI2.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI2.base-address", 0x00B8);
 	simulator->SetVariable("SCI2.interrupt-offset", 0x8A);
+	simulator->SetVariable("SCI2.txd-pin-enable", true);
 	simulator->SetVariable("SCI2.telnet-enabled", false);
 	simulator->SetVariable("SCI2.debug-enabled", false);
 	simulator->SetVariable("SCI2.TXD", true);
@@ -1020,6 +1021,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI3.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI3.base-address", 0x00C0);
 	simulator->SetVariable("SCI3.interrupt-offset", 0x88);
+	simulator->SetVariable("SCI3.txd-pin-enable", true);
 	simulator->SetVariable("SCI3.telnet-enabled", false);
 	simulator->SetVariable("SCI3.debug-enabled", false);
 	simulator->SetVariable("SCI3.TXD", true);
@@ -1028,6 +1030,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI0.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI0.base-address", 0x00C8);
 	simulator->SetVariable("SCI0.interrupt-offset", 0xD6);
+	simulator->SetVariable("SCI0.txd-pin-enable", true);
 	simulator->SetVariable("SCI0.telnet-enabled", false);
 	simulator->SetVariable("SCI0.debug-enabled", false);
 	simulator->SetVariable("SCI0.TXD", true);
@@ -1036,6 +1039,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI1.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI1.base-address", 0x00D0);
 	simulator->SetVariable("SCI1.interrupt-offset", 0xD4);
+	simulator->SetVariable("SCI1.txd-pin-enable", true);
 	simulator->SetVariable("SCI1.telnet-enabled", false);
 	simulator->SetVariable("SCI1.debug-enabled", false);
 	simulator->SetVariable("SCI1.TXD", true);
@@ -1044,6 +1048,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI4.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI4.base-address", 0x0130);
 	simulator->SetVariable("SCI4.interrupt-offset", 0x86);
+	simulator->SetVariable("SCI4.txd-pin-enable", true);
 	simulator->SetVariable("SCI4.telnet-enabled", false);
 	simulator->SetVariable("SCI4.debug-enabled", false);
 	simulator->SetVariable("SCI4.TXD", true);
@@ -1052,6 +1057,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI5.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI5.base-address", 0x0138);
 	simulator->SetVariable("SCI5.interrupt-offset", 0x84);
+	simulator->SetVariable("SCI5.txd-pin-enable", true);
 	simulator->SetVariable("SCI5.telnet-enabled", false);
 	simulator->SetVariable("SCI5.debug-enabled", false);
 	simulator->SetVariable("SCI5.TXD", true);
@@ -1119,16 +1125,22 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SPI0.base-address", 0x00D8);
 	simulator->SetVariable("SPI0.interrupt-offset", 0xD8);
 	simulator->SetVariable("SPI0.debug-enabled", false);
+	simulator->SetVariable("SPI0.txd-pin-enable", true);
+	simulator->SetVariable("SPI0.telnet-enabled", false);
 
 	simulator->SetVariable("SPI1.bus-cycle-time", 40000);
 	simulator->SetVariable("SPI1.base-address", 0x00F0);
 	simulator->SetVariable("SPI1.interrupt-offset", 0xBE);
 	simulator->SetVariable("SPI1.debug-enabled", false);
+	simulator->SetVariable("SPI1.txd-pin-enable", true);
+	simulator->SetVariable("SPI1.telnet-enabled", false);
 
 	simulator->SetVariable("SPI2.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI2.base-address", 0x00F8);
 	simulator->SetVariable("SPI2.interrupt-offset", 0xBC);
 	simulator->SetVariable("SPI2.debug-enabled", false);
+	simulator->SetVariable("SPI2.txd-pin-enable", true);
+	simulator->SetVariable("SPI2.telnet-enabled", false);
 
 	simulator->SetVariable("MMC.version", "V4");
 	simulator->SetVariable("MMC.debug-enabled", false);
@@ -1191,6 +1203,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI6.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI6.base-address", 0x0330);
 	simulator->SetVariable("SCI6.interrupt-offset", 0xC2);
+	simulator->SetVariable("SCI6.txd-pin-enable", true);
 	simulator->SetVariable("SCI6.telnet-enabled", false);
 	simulator->SetVariable("SCI6.debug-enabled", false);
 	simulator->SetVariable("SCI6.TXD", true);
@@ -1199,6 +1212,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI7.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI7.base-address", 0x0338);
 	simulator->SetVariable("SCI7.interrupt-offset", 0x56);
+	simulator->SetVariable("SCI7.txd-pin-enable", true);
 	simulator->SetVariable("SCI7.telnet-enabled", false);
 	simulator->SetVariable("SCI7.debug-enabled", false);
 	simulator->SetVariable("SCI7.TXD", true);
