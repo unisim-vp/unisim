@@ -115,11 +115,11 @@ namespace arm {
   
     bool InITBlock() { return Field<10,2>( m_value ).Get() || Field<25,2>( m_value ).Get(); }
   
-    bool ITGetCondition() { return this->InITBlock() ? Field<12,4>( m_value ).Get() : 14; }
+    uint32_t ITGetCondition() { return this->InITBlock() ? Field<12,4>( m_value ).Get() : 14; }
   
     void ITAdvance() {
       uint32_t state = (Field<10,6>( m_value ).Get() << 2) | Field<25,2>( m_value ).Get();
-      state = (state & -8) ? ((state & -32) | ((state << 1) & 31)) : 0;
+      state = (state & 7) ? ((state & -32) | ((state << 1) & 31)) : 0;
       Field<10,6>( m_value ).Set( state >> 2 );
       Field<25,2>( m_value ).Set( state & 3 );
     }

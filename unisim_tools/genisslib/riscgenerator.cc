@@ -134,7 +134,7 @@ RiscGenerator::finalize() {
       bits |= fi.item().bits() << fi.pos();
       mask |= fi.item().mask() << fi.pos();
     }
-    m_opcodes[*op] = RiscOpCode_t( mask, bits, insn_size, vlen );
+    m_opcodes[*op] = new RiscOpCode_t( (**op).m_symbol, mask, bits, insn_size, vlen );
   }
   
   this->toposort();
@@ -148,7 +148,7 @@ RiscGenerator::codetype_decl( Product_t& _product ) const {
 void
 RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const
 {
-  RiscOpCode_t const& oc = opcode( &_op );
+  RiscOpCode_t const& oc = riscopcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "assert( \"Encode method does not work with variable length operations.\" and false );\n" );
@@ -180,7 +180,7 @@ RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
 void
 RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
-  RiscOpCode_t const& oc = opcode( &_op );
+  RiscOpCode_t const& oc = riscopcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "this->gil_length = %u;\n", oc.m_size );
@@ -232,12 +232,12 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
 
 void
 RiscGenerator::insn_bits_code( Product_t& _product, Operation_t const& _op ) const {
-  _product.code( "0x%llx%s", opcode( &_op ).m_bits, m_insn_cpostfix.str() );
+  _product.code( "0x%llx%s", riscopcode( &_op ).m_bits, m_insn_cpostfix.str() );
 }
 
 void
 RiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) const {
-  _product.code( "0x%llx%s", opcode( &_op ).m_mask, m_insn_cpostfix.str() );
+  _product.code( "0x%llx%s", riscopcode( &_op ).m_mask, m_insn_cpostfix.str() );
 }
 
 ConstStr_t
@@ -257,20 +257,6 @@ RiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _old, char 
   _product.code( "%s == %s", _old, _new );
 }
 
-RiscOpCode_t const&
-RiscGenerator::opcode( Operation_t const* _op ) const {
-  OpCodes_t::const_iterator res = m_opcodes.find( _op );
-  assert( res != m_opcodes.end() );
-  return res->second;
-}
-
-RiscOpCode_t&
-RiscGenerator::opcode( Operation_t const* _op ) {
-  OpCodes_t::iterator res = m_opcodes.find( _op );
-  assert( res != m_opcodes.end() );
-  return res->second;
-}
-
 void
 RiscGenerator::op_getlen_decl( Product_t& _product ) const {
   if ((*m_insnsizes.begin()) == (*m_insnsizes.rbegin())) {
@@ -285,7 +271,7 @@ RiscGenerator::insn_getlen_decl( Product_t& _product, Operation_t const& _op ) c
   if ((*m_insnsizes.begin()) == (*m_insnsizes.rbegin()))
     return;
   
-  RiscOpCode_t const& oc = opcode( &_op );
+  RiscOpCode_t const& oc = riscopcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "unsigned int gil_length;\n" );

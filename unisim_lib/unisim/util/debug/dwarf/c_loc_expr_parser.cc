@@ -84,13 +84,20 @@ CLocOperationStream::CLocOperationStream(Notation _notation)
 {
 }
 
+CLocOperationStream::CLocOperationStream(const CLocOperationStream& c_loc_operation_stream)
+	: notation(c_loc_operation_stream.notation)
+	, storage()
+{
+	std::deque<const CLocOperation *>::const_iterator it;
+	for(it = c_loc_operation_stream.storage.begin(); it != c_loc_operation_stream.storage.end(); it++)
+	{
+		storage.push_back((*it)->Clone());
+	}
+}
+
 CLocOperationStream::~CLocOperationStream()
 {
-	std::deque<const CLocOperation *>::iterator it;
-	for(it = storage.begin(); it != storage.end(); it++)
-	{
-		delete *it;
-	}
+	Clear();
 }
 
 void CLocOperationStream::Push(const CLocOperation *op)
@@ -127,6 +134,16 @@ bool CLocOperationStream::Empty() const
 Notation CLocOperationStream::GetNotation() const
 {
 	return notation;
+}
+
+void CLocOperationStream::Clear()
+{
+	std::deque<const CLocOperation *>::iterator it;
+	for(it = storage.begin(); it != storage.end(); it++)
+	{
+		delete *it;
+	}
+	storage.clear();
 }
 
 std::ostream& operator << (std::ostream& os, const CLocOperationStream& c_loc_operation_stream)
@@ -241,6 +258,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			}
 			if(left->GetToken()->GetValue() != C_LOC_EXPR)
 			{
+				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
 				logger << DebugError << token->GetLocation() << ", subscripted value is neither array nor pointer" << EndDebugError;
@@ -248,6 +266,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			}
 			if(right->GetToken()->GetValue() != C_LOC_ARITH)
 			{
+				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
 				logger << DebugError << token->GetLocation() << ", expected array subscript" ;
@@ -270,6 +289,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			}
 			if(left->GetToken()->GetValue() != C_LOC_EXPR)
 			{
+				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
 				logger << DebugError << token->GetLocation() << ", request for member \"" << right->GetToken()->GetText() << "\" in something not a structure" << EndDebugError;
@@ -290,6 +310,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			}
 			if(left->GetToken()->GetValue() != C_LOC_EXPR)
 			{
+				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
 				logger << DebugError << token->GetLocation() << ", request for member \"" << right->GetToken()->GetText() << "\" in something not a pointed structure" << EndDebugError;
@@ -314,6 +335,7 @@ bool CLocExprParser::Check(unisim::util::parser::Token<CLocType> *token, unisim:
 			}
 			if(child->GetToken()->GetValue() != C_LOC_EXPR)
 			{
+				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::FinishScanningLine();
 				unisim::util::parser::Parser<CLocType>::parser_error = true;
 				unisim::util::lexer::Lexer<unisim::util::parser::Token<CLocType> >::PrintFriendlyLocation(token->GetLocation());
 				logger << DebugError << token->GetLocation() << ", dereferencing \"" << child->GetToken()->GetText() << "\" which is not a pointer" << EndDebugError;
@@ -389,6 +411,11 @@ CLocOperation::~CLocOperation()
 {
 }
 
+CLocOperation *CLocOperation::Clone() const
+{
+	return new CLocOperation(opcode);
+}
+
 CLocOpcode CLocOperation::GetOpcode() const
 {
 	return opcode;
@@ -431,6 +458,11 @@ int CLocOpLiteralInteger::GetValue() const
 	return value;
 }
 
+CLocOperation *CLocOpLiteralInteger::Clone() const
+{
+	return new CLocOpLiteralInteger(value);
+}
+
 CLocOpLiteralIdentifier::CLocOpLiteralIdentifier(const char *_identifier)
 	: CLocOperation(OP_LIT_IDENT)
 	, identifier(_identifier)
@@ -442,6 +474,10 @@ const char *CLocOpLiteralIdentifier::GetIdentifier() const
 	return identifier.c_str();
 }
 
+CLocOperation *CLocOpLiteralIdentifier::Clone() const
+{
+	return new CLocOpLiteralIdentifier(identifier.c_str());
+}
 
 } // end of namespace dwarf
 } // end of namespace debug

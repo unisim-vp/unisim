@@ -76,7 +76,7 @@
 #include "unisim/kernel/debug/debug.hh"
 #include "unisim/util/likely/likely.hh"
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 #include <fcntl.h>
 //Note: this is to force opening console and files in binary mode on Windows as on UNIX
 int _CRT_fmode = _O_BINARY;
@@ -3446,7 +3446,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	const char *start = executable_path.c_str();
 	const char *end = start + executable_path.length() - 1;
 	while(end != (start - 1) && 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	      (*end != '\\') &&
 #endif
 	      (*end != '/'))

@@ -40,6 +40,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/kernel/logger/logger.hh>
+#include <set>
 
 namespace unisim {
 namespace util {
@@ -92,10 +93,12 @@ private:
 	unsigned int dw_bit_offset;
 };
 
-const unsigned int DW_LOC_NULL = 0;
-const unsigned int DW_LOC_SIMPLE_REGISTER = 1;
-const unsigned int DW_LOC_SIMPLE_MEMORY = 2;
-const unsigned int DW_LOC_COMPOSITE = 3;
+const unsigned int DW_LOC_NULL                  = 0;
+const unsigned int DW_LOC_SIMPLE_REGISTER       = 1;
+const unsigned int DW_LOC_SIMPLE_MEMORY         = 2;
+const unsigned int DW_LOC_COMPOSITE             = 3;
+const unsigned int DW_LOC_IMPLICIT_SIMPLE_VALUE = 4;
+const unsigned int DW_LOC_IMPLICIT_BLOCK_VALUE  = 5;
 
 template <class MEMORY_ADDR>
 class DWARF_Location
@@ -104,30 +107,41 @@ public:
 	DWARF_Location();
 	~DWARF_Location();
 	void Clear();
+	void ClearRanges();
 	unsigned int GetType() const;
 	void Add(DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece);
 	const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& GetLocationPieces() const;
 	void SetRegisterNumber(unsigned int dw_reg_num);
 	void SetAddress(MEMORY_ADDR dw_addr);
+	void SetImplicitValue(MEMORY_ADDR dw_implicit_value);
+	void SetImplicitValue(DWARF_Block<MEMORY_ADDR> *dw_implicit_value);
 	unsigned int GetRegisterNumber() const;
 	MEMORY_ADDR GetAddress() const;
+	MEMORY_ADDR GetImplicitSimpleValue() const;
+	const DWARF_Block<MEMORY_ADDR> *GetImplicitBlockValue() const;
 	void SetByteSize(uint64_t byte_size);
 	void SetBitOffset(int64_t bit_offset);
 	void SetBitSize(uint64_t bit_size);
 	void SetEncoding(uint8_t encoding);
+	void SetRanges(const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges);
 	uint64_t GetByteSize() const;
 	int64_t GetBitOffset() const;
 	uint64_t GetBitSize() const;
 	uint8_t GetEncoding() const;
+	const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& GetRanges() const;
+	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& GetRanges();
 private:
 	unsigned int dw_loc_type;
 	unsigned int dw_reg_num;
 	MEMORY_ADDR dw_addr;
+	MEMORY_ADDR dw_implicit_simple_value;
+	DWARF_Block<MEMORY_ADDR> *dw_implicit_block_value;
 	uint64_t dw_byte_size;
 	int64_t dw_bit_offset;
 	uint64_t dw_bit_size;
 	uint8_t dw_encoding;
 	std::vector<DWARF_LocationPiece<MEMORY_ADDR> *> dw_location_pieces;
+	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
 };
 
 template <class MEMORY_ADDR>

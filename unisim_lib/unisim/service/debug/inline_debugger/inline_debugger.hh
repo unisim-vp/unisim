@@ -49,6 +49,7 @@
 #include <unisim/service/interfaces/profiling.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
+#include <unisim/service/interfaces/subprogram_lookup.hh>
 
 #include <unisim/util/debug/profile.hh>
 #include <unisim/util/debug/breakpoint.hh>
@@ -67,7 +68,7 @@
 #include <list>
 #include <stack>
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 #include <windef.h>
 #endif
 
@@ -92,6 +93,7 @@ using unisim::service::interfaces::DebugEventListener;
 using unisim::service::interfaces::Profiling;
 using unisim::service::interfaces::DebugInfoLoading;
 using unisim::service::interfaces::DataObjectLookup;
+using unisim::service::interfaces::SubProgramLookup;
 
 using unisim::util::debug::Event;
 using unisim::util::debug::Breakpoint;
@@ -131,7 +133,7 @@ private:
 	static void (*prev_sig_int_handler)(int);
 #endif
 	static int alive_instances;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
 #else
 	static void SigIntHandler(int signum);
@@ -153,6 +155,7 @@ class InlineDebugger
 	, public Client<Profiling<ADDRESS> >
 	, public Client<DebugInfoLoading>
 	, public Client<DataObjectLookup<ADDRESS> >
+	, public Client<SubProgramLookup<ADDRESS> >
 	, public InlineDebuggerBase
 {
 public:
@@ -169,6 +172,7 @@ public:
 	ServiceImport<Profiling<ADDRESS> > profiling_import;
 	ServiceImport<DebugInfoLoading> debug_info_loading_import;
 	ServiceImport<DataObjectLookup<ADDRESS> > data_object_lookup_import;
+	ServiceImport<SubProgramLookup<ADDRESS> > subprogram_lookup_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);
 	virtual ~InlineDebugger();
@@ -215,6 +219,8 @@ private:
 	std::ostream *output_stream;
 	std::ostream *std_output_stream;
 	std::ostream *std_error_stream;
+	
+	std::list<unisim::util::debug::DataObject<ADDRESS> *> tracked_data_objects;
 
 	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);
@@ -260,6 +266,10 @@ private:
 	bool IsEditDataObjectCommand(const char *cmd) const;
 	bool IsSetDataObjectCommand(const char *cmd) const;
 	bool IsListDataObjectsCommand(const char *cmd) const;
+	bool IsTrackDataObjectCommand(const char *cmd) const;
+	bool IsUntrackDataObjectCommand(const char *cmd) const;
+	bool IsWhatIsCommand(const char *cmd) const;
+	bool IsInfoSubProgramCommand(const char *cmd) const;
 
 	void Help();
 	void Disasm(ADDRESS addr, int count, ADDRESS& next_addr);
@@ -319,6 +329,13 @@ private:
 	bool EditDataObject(const char *data_object_name, ADDRESS cia);
 	bool SetDataObject(const char *data_object_name, ADDRESS cia, const char *literal);
 	void ListDataObjects(ADDRESS cia, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL);
+	void TrackDataObject(const char *data_object_name, ADDRESS cia);
+	void UntrackDataObject(const char *data_object_name);
+	void PrintDataObject(unisim::util::debug::DataObject<ADDRESS> *data_object, ADDRESS cia);
+	void PrintTrackedDataObjects(ADDRESS cia);
+	void PrintDataObjectType(unisim::util::debug::DataObject<ADDRESS> *data_object, ADDRESS cia);
+	void PrintDataObjectType(const char *data_object_name, ADDRESS cia);
+	void InfoSubProgram(const char *subprogram_name);
 };
 
 } // end of namespace inline_debugger

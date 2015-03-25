@@ -73,6 +73,7 @@ public:
 	uint64_t GetOffset() const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	void Register(DWARF_DIE<MEMORY_ADDR> *dw_die);
+	void UnRegister(DWARF_DIE<MEMORY_ADDR> *dw_die);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	unsigned int GetId() const;
 	std::string GetHREF() const;
@@ -85,6 +86,7 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
 	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
+	const char *GetName() const;
 	uint16_t GetLanguage() const;
 	const char *GetProducer() const;
 	uint8_t GetDefaultOrdering() const;
@@ -92,6 +94,8 @@ public:
 
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name, MEMORY_ADDR pc) const;
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, bool local_only) const;
+	
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(const char *name) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unisim::kernel::logger::Logger& logger;

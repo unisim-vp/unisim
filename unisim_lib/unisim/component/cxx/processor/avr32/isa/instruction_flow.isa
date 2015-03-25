@@ -4,37 +4,37 @@
 
 //------------------------------------------------------------------------------
 
+
 // BR_COND3 - branch if condition satisfied
 
 op br_cond3(0b110[3]:0b0[1]:sext<32>disp[8]:0b0[1]:cond3[3])
 
 br_cond3.execute={
 
-	typename CONFIG::address_t addr;
-	typename CONFIG::address_t npc = Operation<CONFIG>::GetAddr();
-
 	if(cpu->EvaluateCond(cond3))
 	{
-		addr= npc+ (disp << 1);
+		typename CONFIG::address_t pc = Operation<CONFIG>::GetAddr();
+		typename CONFIG::address_t addr= pc+ (disp << 1);
+		cpu->SetGPR(REG_PC,addr);
 	}
-	else
-		addr = npc+2;        // a priori effectué dans la methode StepOneInstruction
-        
-	cpu->SetGPR(REG_PC,addr);
 
 	return true;
 }
 br_cond3.disasm={
 
-	os << "br"<< COND[cond3]<<"\t0x" << std::hex << (int) disp ;
+	typename CONFIG::address_t pc = Operation<CONFIG>::GetAddr();
+	typename CONFIG::address_t addr= pc+ (disp << 1);
+	
+	os << "br"<< COND[cond3]<<"\t0x" << std::hex << addr ;
+	
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		if(cpu->EvaluateCond(cond3))
 		{
-			typename CONFIG::address_t addr=Operation<CONFIG>::GetAddr()+(disp <<1) ;
 			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 		}	
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*cond3*/";
 }
 
 
@@ -42,44 +42,43 @@ br_cond3.disasm={
 
 op br_cond4(0b111[3]:disp_20_17[4]:0b0100[4]:disp_16[1]:cond4[4]:><:disp_15_0[16])
 
-br_cond4.var disp : {uint32_t} = {(disp_20_17<<17)|(disp_16<<16)|disp_15_0}
+br_cond4.var disp : {int32_t} = {SignExtend(((uint32_t) disp_20_17<<17)|((uint32_t) disp_16<<16)|(uint32_t)disp_15_0,21)}
 
 br_cond4.execute={
 
-	typename CONFIG::address_t addr;
-	typename CONFIG::address_t npc=Operation<CONFIG>::GetAddr();
-
 	if(cpu->EvaluateCond(cond4))
 	{
-		addr = npc+ (SignExtend(disp, 21) << 1);
+		typename CONFIG::address_t pc=Operation<CONFIG>::GetAddr();
+		typename CONFIG::address_t addr = pc+ (disp << 1);
+		cpu->SetGPR(REG_PC,addr);
 	}
-	else
-		addr = npc+4;
-        
-	cpu->SetGPR(REG_PC,addr);
 
 	return true;
 }
 br_cond4.disasm={
 
-	os << "br"<< COND[cond4]<< "\t0x" << std::hex << (int)disp;
+	typename CONFIG::address_t pc=Operation<CONFIG>::GetAddr();
+	typename CONFIG::address_t addr = pc+ (disp << 1);
+	
+	os << "br"<< COND[cond4]<< "\t0x" << std::hex << addr;
+	
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		if(cpu->EvaluateCond(cond4))
 		{
-			typename CONFIG::address_t addr=Operation<CONFIG>::GetAddr()+(SignExtend(disp, 21) << 1) ;
 			os << " <" << cpu->GetObjectFriendlyName(addr) << ">";
 		}	
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*cond4*/";
 }
 
 // RJMP - relative jump
 
 op rjmp(0b110[3]:0b0[1]:disp_7_0[8]:0b1[1]:0b0[1]:disp_9_8[2])
 
-rjmp.var disp :{uint16_t}={(disp_9_8<<8)|disp_7_0}
+rjmp.var disp :{int32_t}={SignExtend(((uint32_t)disp_9_8<<8)|(uint32_t)disp_7_0,10)}
 
-rjmp.var rjmp_addr : {typename CONFIG::address_t}={Operation<CONFIG>::GetAddr()+(SignExtend((uint32_t)disp,10)<<1)}
+rjmp.var rjmp_addr : {typename CONFIG::address_t}={Operation<CONFIG>::GetAddr()+(disp<<1)}
 
 rjmp.execute={
 
@@ -91,9 +90,9 @@ rjmp.execute={
 
 rjmp.disasm={
 
-	os << "rjmp\t" << std::hex << "0x"<< rjmp_addr;
+	os << "rjmp\t"<< std::hex << disp << "\t\t0x"<< rjmp_addr;
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
-	{;
+	{
 		os << " <" << cpu->GetFunctionFriendlyName(rjmp_addr) << ">";
 	}
 }
@@ -136,7 +135,6 @@ op icall(0b010[3]:0b1110[4]:0b10001[5]:rd[4])
 
 icall.execute={
 	
-
 	cpu->SetLR(Operation<CONFIG>::GetAddr()+2);
 
 	cpu->SetGPR(REG_PC,cpu->GetGPR(rd));
@@ -197,19 +195,20 @@ rcall_a.execute={
 
 rcall_a.disasm={
 
-	os << "rcall\tPC[Ox"<< std::hex << (disp << 1) << "]" << std::dec;
+	os << "rcall\tpc[Ox"<< std::hex << (disp << 1) << "]" << std::dec;
 
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		os << " <" << cpu->GetFunctionFriendlyName(rcall_target_addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp10*/";
 }
 
 op rcall_b(0b111[3]:disp_20_17[4]:0b0101[4]:disp_16[1]:0b0000[4]:><:disp_15_0[16])
 
-rcall_b.var disp :{uint32_t} = {(disp_20_17 << 17)|(disp_16 << 16)|disp_15_0 }
+rcall_b.var disp :{int32_t} = {SignExtend(((uint32_t)disp_20_17 << 17)|((uint32_t)disp_16 << 16)|(uint32_t)disp_15_0,21) }
 
-rcall_b.var rcall_addr : {typename CONFIG::address_t} = { Operation<CONFIG>::GetAddr() + (SignExtend((uint32_t)disp,21) << 1) }
+rcall_b.var rcall_addr : {typename CONFIG::address_t} = { Operation<CONFIG>::GetAddr() + (disp << 1) }
 
 rcall_b.execute={
 
@@ -221,11 +220,12 @@ rcall_b.execute={
 
 rcall_b.disasm={
 
-	os << "rcall\tPC[0x" << std::hex << disp << std::dec << "]";
+	os << "rcall\tpc[0x" << std::hex << (disp << 1) << std::dec << "]";
 	if(cpu->GetGPR(REG_PC) == Operation<CONFIG>::GetAddr())
 	{
 		os << " <" << cpu->GetFunctionFriendlyName(rcall_addr) << ">";
 	}
+	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*disp21*/";
 }
 
 //SCALL - supervisor call                             ## declarer la variable microarchitecture dans cpu.hh 
@@ -237,7 +237,7 @@ scall.disasm={
 	os << "scall\t";
 }
 
-//SSCALL - secure state call                      ?? initialiser microarchitecture
+//SSCALL - secure state call         
 
 op sscall(0b1101011[7]:0b10101[5]:0b0011[4])
 
@@ -246,7 +246,7 @@ sscall.execute={
 
 	cpu->SetSS_RAR(Operation<CONFIG>::GetAddr());
 	cpu->SetSS_RSR(cpu->GetSR());
-	if(cpu->GetMicroArchitecture()=="AVR32A")
+	if(CONFIG::ARCH == ARCH_AVR32A)
 	{
 		cpu->SetGPR(REG_PC,0x80000004);
 	}
@@ -274,34 +274,58 @@ op rete(0b1101011[7]:0b00000[5]:0b0011[4])
 //Execution in Application or Supervisor modes will trigger a Privilege Violation exception.
 
 rete.execute={
-
-	if(cpu->GetMicroArchitecture()=="AVR32A")
+	switch(cpu->GetSR_M())
 	{
-		uint32_t sp=cpu->GetSP_sys();
-		if(!cpu->LoadSR(sp))return false;
-		sp+=4;
-		cpu->SetGPR(REG_PC,sp);
-		sp+=4;
+		case CONFIG::EXEC_MODE_APPLICATION:
+		case CONFIG::EXEC_MODE_SUPERVISOR:
+			// Privilege violation
+			cpu->SetException(CONFIG::EXC_PRIVILEGE_VIOLATION);
+			return false;
+		default:
+			if(CONFIG::ARCH == ARCH_AVR32A)
+			{
+				uint32_t sp=cpu->GetSP_sys();
+				if(!cpu->LoadSR(sp))return false;
+				sp+=4;
+				cpu->SetGPR(REG_PC,sp);
+				sp+=4;
 
-		if(cpu->GetSR_M()==(0b010 |0b011|0b100|0b101))
-		{
-			if(!cpu->IntLoadWord(REG_LR,sp))return false;    
-			sp+=4;
-			if(!cpu->IntLoadWord(REG_R12,sp))return false;
-			sp+=4;
-			if(!cpu->IntLoadWord(REG_R11,sp))return false;
-			sp+=4;
-			if(!cpu->IntLoadWord(REG_R10,sp))return false;
-			sp+=4;
-			if(!cpu->IntLoadWord(REG_R9,sp))return false;
-			sp+=4;
-			if(!cpu->IntLoadWord(REG_R8,sp))return false;
-			sp+=4;
-
-		}
-		cpu->SetSR_L(0);
-		cpu->SetSP_sys(sp);
-	}						// flags are not affected
+				switch(cpu->GetSR_M())
+				{
+					case CONFIG::EXEC_MODE_INT_LEVEL0:
+					case CONFIG::EXEC_MODE_INT_LEVEL1:
+					case CONFIG::EXEC_MODE_INT_LEVEL2:
+					case CONFIG::EXEC_MODE_INT_LEVEL3:
+						if(!cpu->IntLoadWord(REG_LR,sp)) return false;
+						sp+=4;
+						
+						if(!cpu->IntLoadWord(REG_R12,sp)) return false;
+						sp+=4;
+						
+						if(!cpu->IntLoadWord(REG_R11,sp)) return false;
+						sp+=4;
+						
+						if(!cpu->IntLoadWord(REG_R10,sp)) return false;
+						sp+=4;
+						
+						if(!cpu->IntLoadWord(REG_R9,sp)) return false;
+						sp+=4;
+						
+						if(!cpu->IntLoadWord(REG_R8,sp)) return false;
+						sp+=4;
+						
+						break;
+				}
+				cpu->SetSP_sys(sp);
+			}
+			
+			// flags are not affected
+			
+			cpu->SetSR_L(0);
+			
+			break;
+	}
+	
 	return true;
 }
 
@@ -316,7 +340,7 @@ op retd(0b1101011[7]:0b00010[5]:0b0011[4])
 
 retd.execute={
 
-	if(!cpu->LoadSR(cpu->GetRSR_DBG()))return false;
+	cpu->SetSRWithExceptionUpdate(cpu->GetRSR_DBG());
 	cpu->SetGPR(REG_PC,cpu->GetRAR_DBG());
 	
 	return true;
@@ -335,14 +359,14 @@ rets.execute={
 	if(cpu->GetSR_M()==0b000);  // Exception
 	else if (cpu->GetSR_M()==0b001)
 	{
-		if(cpu->GetMicroArchitecture()=="AVR32A")
+		if(CONFIG::ARCH == ARCH_AVR32A)
 		{
 			uint32_t sp = cpu->GetSP_sys();
 			if(!cpu->LoadSR(sp))return false;
 			sp+=4;
 			if(!cpu->IntLoadWord(REG_PC,sp))return false;
 			sp+=4;
-			cpu->SetSR(sp);
+			cpu->SetSP_sys(sp);
 		}
 		// others architectures
 	}
@@ -362,7 +386,7 @@ retss.execute={
 	if(cpu->GetSR_SS()==0); // Issue Privilege Violation Exception
 	else
 	{
-		if(!cpu->LoadSR(cpu->GetSS_RSR()))return false;
+		cpu->SetSRWithExceptionUpdate(cpu->GetSS_RSR());
 		cpu->SetGPR(REG_PC,cpu->GetSS_RAR());
 	}
 

@@ -986,7 +986,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	{
 		int stdin_pipe_flags = O_RDONLY;
 #if defined(WIN32) || defined(WIN64)
-		int stdin_pipe_flags |= O_BINARY;
+		stdin_pipe_flags |= O_BINARY;
 #endif
 		stdin_pipe_fd = open(stdin_pipe_filename.c_str(), stdin_pipe_flags);
 		if(stdin_pipe_fd == -1)
@@ -999,10 +999,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	if(!stdout_pipe_filename.empty())
 	{
 		int stdout_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+		mode_t stdout_pipe_mode = S_IRWXU;
 #if defined(WIN32) || defined(WIN64)
 		stdout_pipe_flags |= O_BINARY;
+#else
+		stdout_pipe_mode |= S_IRWXG | S_IRWXO;
 #endif
-		stdout_pipe_fd = open(stdout_pipe_filename.c_str(), stdout_pipe_flags);
+		stdout_pipe_fd = open(stdout_pipe_filename.c_str(), stdout_pipe_flags, stdout_pipe_mode);
 		if(stdout_pipe_fd == -1)
 		{
 			logger_ << DebugError << "Can't open \"" << stdout_pipe_filename << "\"" << EndDebugError;
@@ -1013,10 +1016,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	if(!stderr_pipe_filename.empty())
 	{
 		int stderr_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
+		mode_t stderr_pipe_mode = S_IRWXU;
 #if defined(WIN32) || defined(WIN64)
 		stderr_pipe_flags |= O_BINARY;
+#else
+		stderr_pipe_mode |= S_IRWXG | S_IRWXO;
 #endif
-		stderr_pipe_fd = open(stderr_pipe_filename.c_str(), stderr_pipe_flags);
+		stderr_pipe_fd = open(stderr_pipe_filename.c_str(), stderr_pipe_flags, stderr_pipe_mode);
 		if(stderr_pipe_fd == -1)
 		{
 			logger_ << DebugError << "Can't open \"" << stderr_pipe_filename << "\"" << EndDebugError;
@@ -1679,7 +1685,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_UID;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)getuid();
@@ -1687,7 +1693,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_EUID;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)geteuid();
@@ -1695,7 +1701,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_GID;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)getgid();
@@ -1703,7 +1709,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_EGID;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)getegid();
@@ -1808,7 +1814,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   }
 
   aux_table_symbol = AT_CLKTCK;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
   aux_table_value = (ADDRESS_TYPE) 250;
 #else
   aux_table_value = (ADDRESS_TYPE)sysconf(_SC_CLK_TCK);

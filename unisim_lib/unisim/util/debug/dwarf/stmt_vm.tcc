@@ -80,7 +80,7 @@ DWARF_StatementVM<MEMORY_ADDR>::~DWARF_StatementVM()
 template <class MEMORY_ADDR>
 bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
 {
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	// filename starts with '/' or 'drive letter':\ or 'driver letter':/
 	return (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z')) && (filename[1] == ':') && ((filename[2] == '\\') || (filename[2] == '/'))) || (*filename == '/');
 #else
@@ -130,7 +130,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 		stmt_matrix.erase(stmt_matrix_iter);
 	}
 	
-	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column, isa, discriminator);
+	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, is_stmt, basic_block, dirname, filename, line, column, isa, discriminator);
 	stmt_matrix.insert(std::pair<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>(address, stmt));
 }
 
@@ -171,7 +171,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				{
 					unsigned int num_args = dw_stmt_prog->standard_opcode_lengths[opcode - 1];
 					unsigned int i = 0;
-					DWARF_LEB128 args[num_args];
+					std::vector<DWARF_LEB128> args(num_args);
 					uint16_t uhalf_arg = 0;
 					
 					if(opcode != DW_LNS_fixed_advance_pc)

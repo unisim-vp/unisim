@@ -28,25 +28,33 @@ struct OpCode_t {
   // Topology methods
   enum Location_t { Outside, Overlaps, Inside, Contains, Equal };
   virtual Location_t          locate( OpCode_t const& _oc ) const = 0;
-  void                        setupper( OpCode_t* _upper );
-  void                        unsetupper();
+  void                        setbelow( OpCode_t* _below );
+  void                        forcebelow( OpCode_t* _below );
+  void                        unsetbelow();
+  bool                        above( OpCode_t* below );
   // Topology information
-  OpCode_t*                   m_upper;
-  intptr_t                    m_lowercount;
+  typedef std::set<OpCode_t*> BelowList;
+  BelowList                   m_belowlist;
+  intptr_t                    m_abovecount;
+  // Debugging information
+  ConstStr_t                  m_symbol;
   
-  OpCode_t() : m_upper( 0 ), m_lowercount( 0 ) {}
+  OpCode_t( ConstStr_t _symbol ) : m_abovecount( 0 ), m_symbol( _symbol ) {}
   
   virtual std::ostream&       details( std::ostream& _sink ) const = 0;
   friend std::ostream&        operator << ( std::ostream& _sink, OpCode_t const& _oc );
 };
 
-struct Generator {
+struct Generator
+{
   enum Exception_t { GenerationError };
   
   Isa*                                m_isa;
   unsigned int                        m_minwordsize;
   std::set<unsigned int>              m_insnsizes;
   unsigned int                        m_verblevel;
+  typedef std::map<Operation_t const*,OpCode_t*> OpCodeMap;
+  OpCodeMap                           m_opcodes;
   
   Generator();
   virtual ~Generator() {};
@@ -54,8 +62,8 @@ struct Generator {
   Generator&                          init( Isa& _isa, unsigned int verblevel );
   virtual void                        finalize() = 0;
   
-  virtual OpCode_t const&             opcode( Operation_t const* _op ) const = 0;
-  virtual OpCode_t&                   opcode( Operation_t const* _op ) = 0;
+  OpCode_t const&                     opcode( Operation_t const* _op ) const;
+  OpCode_t&                           opcode( Operation_t const* _op );
   
   void                                toposort();
   void                                isastats();

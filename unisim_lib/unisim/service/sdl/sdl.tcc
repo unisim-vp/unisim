@@ -1023,7 +1023,7 @@ void SDL<ADDRESS>::EventLoop()
 					if(alive)
 					{
 						SDL_mutexV(sdl_mutex);
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 						raise(SIGINT);
 #else
 						kill(getpid(), SIGINT);

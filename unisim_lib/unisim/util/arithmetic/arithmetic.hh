@@ -40,109 +40,118 @@
 #define __UNISIM_UTIL_ARITHMETIC_ARITHMETIC_HH__
 
 #include <inttypes.h>
+#include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
 namespace util {
 namespace arithmetic {
 
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-inline void SignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void SignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void SignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void SignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void SignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void SignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) ALWAYS_INLINE;
 
-inline void UnsignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void UnsignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void UnsignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void UnsignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void UnsignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void UnsignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) ALWAYS_INLINE;
 
-inline void SignedSub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void SignedSub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
-inline void SignedSub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void SignedSub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void SignedSub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void SignedSub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) ALWAYS_INLINE;
 
-inline void SignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatAdd16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
-inline void SignedSatAdd32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
+inline void SignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatAdd16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) ALWAYS_INLINE;
+inline void SignedSatAdd32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) ALWAYS_INLINE;
 
-inline void UnsignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void UnsignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void UnsignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
+inline void UnsignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void UnsignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void UnsignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) ALWAYS_INLINE;
 
-inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) __attribute__((always_inline));
-inline void SignedSatSub32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
-inline void SignedSatSub16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
+inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatSub32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) ALWAYS_INLINE;
+inline void SignedSatSub16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) ALWAYS_INLINE;
 
-inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y) __attribute__((always_inline));
+inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y) ALWAYS_INLINE;
 
-inline uint8_t RotateLeft(uint8_t v, unsigned int n) __attribute__((always_inline));
-inline uint16_t RotateLeft(uint16_t v, unsigned int n) __attribute__((always_inline));
-inline uint32_t RotateLeft(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline uint64_t RotateLeft(uint64_t v, unsigned int n) __attribute__((always_inline));
-inline uint8_t RotateRight(uint8_t v, unsigned int n) __attribute__((always_inline));
-inline uint16_t RotateRight(uint16_t v, unsigned int n) __attribute__((always_inline));
-inline uint32_t RotateRight(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline uint64_t RotateRight(uint64_t v, unsigned int n) __attribute__((always_inline));
+inline uint8_t RotateLeft(uint8_t v, unsigned int n) ALWAYS_INLINE;
+inline uint16_t RotateLeft(uint16_t v, unsigned int n) ALWAYS_INLINE;
+inline uint32_t RotateLeft(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline uint64_t RotateLeft(uint64_t v, unsigned int n) ALWAYS_INLINE;
+inline uint8_t RotateRight(uint8_t v, unsigned int n) ALWAYS_INLINE;
+inline uint16_t RotateRight(uint16_t v, unsigned int n) ALWAYS_INLINE;
+inline uint32_t RotateRight(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline uint64_t RotateRight(uint64_t v, unsigned int n) ALWAYS_INLINE;
 
-inline int8_t RotateLeft(int8_t v, unsigned int n) __attribute__((always_inline));
-inline int16_t RotateLeft(int16_t v, unsigned int n) __attribute__((always_inline));
-inline int32_t RotateLeft(int32_t v, unsigned int n) __attribute__((always_inline));
-inline int64_t RotateLeft(int64_t v, unsigned int n) __attribute__((always_inline));
-inline int8_t RotateRight(int8_t v, unsigned int n) __attribute__((always_inline));
-inline int16_t RotateRight(int16_t v, unsigned int n) __attribute__((always_inline));
-inline int32_t RotateRight(int32_t v, unsigned int n) __attribute__((always_inline));
-inline int64_t RotateRight(int64_t v, unsigned int n) __attribute__((always_inline));
+inline int8_t RotateLeft(int8_t v, unsigned int n) ALWAYS_INLINE;
+inline int16_t RotateLeft(int16_t v, unsigned int n) ALWAYS_INLINE;
+inline int32_t RotateLeft(int32_t v, unsigned int n) ALWAYS_INLINE;
+inline int64_t RotateLeft(int64_t v, unsigned int n) ALWAYS_INLINE;
+inline int8_t RotateRight(int8_t v, unsigned int n) ALWAYS_INLINE;
+inline int16_t RotateRight(int16_t v, unsigned int n) ALWAYS_INLINE;
+inline int32_t RotateRight(int32_t v, unsigned int n) ALWAYS_INLINE;
+inline int64_t RotateRight(int64_t v, unsigned int n) ALWAYS_INLINE;
 
-inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
-inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out) __attribute__((always_inline));
-inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
-inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out) __attribute__((always_inline));
-inline uint32_t RotateLeft(uint32_t v, unsigned int n, bool bitin, bool& bitout) __attribute__((always_inline));
-inline uint32_t RotateRight(uint32_t v, unsigned int n, bool bitin, bool& bitout) __attribute__((always_inline));
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out) ALWAYS_INLINE;
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out) ALWAYS_INLINE;
+inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out) ALWAYS_INLINE;
+inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out) ALWAYS_INLINE;
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, bool bitin, bool& bitout) ALWAYS_INLINE;
+inline uint32_t RotateRight(uint32_t v, unsigned int n, bool bitin, bool& bitout) ALWAYS_INLINE;
 
-inline uint32_t ShiftLeft(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
-inline uint32_t ShiftRight(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
+inline uint32_t ShiftLeft(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out) ALWAYS_INLINE;
+inline uint32_t ShiftRight(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out) ALWAYS_INLINE;
 
-inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
+inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_out) ALWAYS_INLINE;
 
-inline bool BitScanForward(unsigned int& n, uint32_t v) __attribute__((always_inline));
-inline bool BitScanForward(unsigned int& n, uint64_t v) __attribute__((always_inline));
+inline bool BitScanForward(unsigned int& n, uint32_t v) ALWAYS_INLINE;
+inline bool BitScanForward(unsigned int& n, uint64_t v) ALWAYS_INLINE;
 
-inline bool BitScanReverse(unsigned int& n, uint32_t v) __attribute__((always_inline));
-inline bool BitScanReverse(unsigned int& n, uint64_t v) __attribute__((always_inline));
+inline bool BitScanReverse(unsigned int& n, uint32_t v) ALWAYS_INLINE;
+inline bool BitScanReverse(unsigned int& n, uint64_t v) ALWAYS_INLINE;
 
-inline unsigned int CountLeadingZeros(uint32_t v) __attribute__((always_inline));
-inline unsigned int CountLeadingZeros(uint64_t v) __attribute__((always_inline));
+inline unsigned int CountLeadingZeros(uint32_t v) ALWAYS_INLINE;
+inline unsigned int CountLeadingZeros(uint64_t v) ALWAYS_INLINE;
 
-inline unsigned int Log2(uint32_t v) __attribute__((always_inline));
-inline unsigned int Log2(uint64_t v) __attribute__((always_inline));
+inline unsigned int Log2(uint32_t v) ALWAYS_INLINE;
+inline unsigned int Log2(uint64_t v) ALWAYS_INLINE;
 
-inline unsigned int CeilLog2(uint32_t v) __attribute__((always_inline));
-inline unsigned int CeilLog2(uint64_t v) __attribute__((always_inline));
+inline unsigned int CeilLog2(uint32_t v) ALWAYS_INLINE;
+inline unsigned int CeilLog2(uint64_t v) ALWAYS_INLINE;
 
-inline int8_t SignExtend(uint8_t v, unsigned int n) __attribute__((always_inline));
-inline int16_t SignExtend(uint16_t v, unsigned int n) __attribute__((always_inline));
-inline int32_t SignExtend(uint32_t v, unsigned int n) __attribute__((always_inline));
-inline int64_t SignExtend(uint64_t v, unsigned int n) __attribute__((always_inline));
+inline int8_t SignExtend(uint8_t v, unsigned int n) ALWAYS_INLINE;
+inline int16_t SignExtend(uint16_t v, unsigned int n) ALWAYS_INLINE;
+inline int32_t SignExtend(uint32_t v, unsigned int n) ALWAYS_INLINE;
+inline int64_t SignExtend(uint64_t v, unsigned int n) ALWAYS_INLINE;
 
-inline void EvenParity(uint8_t v, uint8_t& parity_out) __attribute__((always_inline));
-inline void EvenParity(uint16_t v, uint8_t& parity_out) __attribute__((always_inline));
-inline void EvenParity(uint32_t v, uint8_t& parity_out) __attribute__((always_inline));
+inline void EvenParity(uint8_t v, uint8_t& parity_out) ALWAYS_INLINE;
+inline void EvenParity(uint16_t v, uint8_t& parity_out) ALWAYS_INLINE;
+inline void EvenParity(uint32_t v, uint8_t& parity_out) ALWAYS_INLINE;
 
-inline void OddParity(uint8_t v, uint8_t& parity_out) __attribute__((always_inline));
-inline void OddParity(uint16_t v, uint8_t& parity_out) __attribute__((always_inline));
-inline void OddParity(uint32_t v, uint8_t& parity_out) __attribute__((always_inline));
-
-#endif
+inline void OddParity(uint8_t v, uint8_t& parity_out) ALWAYS_INLINE;
+inline void OddParity(uint16_t v, uint8_t& parity_out) ALWAYS_INLINE;
+inline void OddParity(uint32_t v, uint8_t& parity_out) ALWAYS_INLINE;
 
 //=============================================================================
 //=                              Full Adders                                  =
 //=============================================================================
 
+// WARNING: signed or unsigned addition affect how overflow flag is computed
+
+// 8-bit signed addition with carrying
+// inputs:
+//   - x        : 8-bit left operand of addition
+//   - y        : 8-bit right operand of addition
+//   - carry_in : input carry (0 or 1) for chaining full adders
+// outputs:
+//   - result   : 8-bit result of addition x + y
+//   - carry_out: output carry (0 or 1) of full adder
+//   - overflow : overflow flag (0 or 1)
 inline void SignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
@@ -168,6 +177,15 @@ inline void SignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, u
 #endif
 }
 
+// 16-bit signed addition with carrying
+// inputs:
+//   - x        : 16-bit left operand of addition
+//   - y        : 16-bit right operand of addition
+//   - carry_in : input carry (0 or 1) for chaining full adders
+// outputs:
+//   - result   : 16-bit result of addition x + y
+//   - carry_out: output carry (0 or 1) of full adder
+//   - overflow : overflow flag (0 or 1)
 inline void SignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
@@ -193,14 +211,23 @@ inline void SignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow,
 #endif
 }
 
-/* The 31th 1-bit full adder equations are:
-   (1) result(31) = x(31) ^ y(31) ^ carry(30)
-   (2) carry(31) = x(31).y(31) + carry(30).(x(31) + y(31))
-   (3) overflow = carry(31) ^ carry(30)
-   result is easily computed from x + y + carry_in
-   from (1) we obtain: carry(30) = result(31) ^ x(31) ^ y(31)
-   carry_out is computed from equation (2), overflow from equation (3)
-*/
+// 32-bit signed addition with carrying
+// inputs:
+//   - x        : 32-bit left operand of addition
+//   - y        : 32-bit right operand of addition
+//   - carry_in : input carry (0 or 1) for chaining full adders
+// outputs:
+//   - result   : 32-bit result of addition x + y
+//   - carry_out: output carry (0 or 1) of full adder
+//   - overflow : overflow flag (0 or 1)
+//
+// The 31th 1-bit full adder equations are:
+//    (1) result(31) = x(31) ^ y(31) ^ carry(30)
+//    (2) carry(31) = x(31).y(31) + carry(30).(x(31) + y(31))
+//    (3) overflow = carry(31) ^ carry(30)
+//    result is easily computed from x + y + carry_in
+//    from (1) we obtain: carry(30) = result(31) ^ x(31) ^ y(31)
+//    carry_out is computed from equation (2), overflow from equation (3)
 inline void SignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
@@ -226,6 +253,15 @@ inline void SignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow,
 #endif
 }
 
+// 8-bit unsigned addition with carrying
+// inputs:
+//   - x        : 8-bit left operand of addition
+//   - y        : 8-bit right operand of addition
+//   - carry_in : input carry (0 or 1) for chaining full adders
+// outputs:
+//   - result   : 8-bit result of addition x + y
+//   - carry_out: output carry (0 or 1) of full adder
+//   - overflow : overflow flag (0 or 1)
 void UnsignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
@@ -251,6 +287,15 @@ void UnsignedAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_
 #endif
 }
 
+// 16-bit unsigned addition with carrying
+// inputs:
+//   - x        : 16-bit left operand of addition
+//   - y        : 16-bit right operand of addition
+//   - carry_in : input carry (0 or 1) for chaining full adders
+// outputs:
+//   - result   : 16-bit result of addition x + y
+//   - carry_out: output carry (0 or 1) of full adder
+//   - overflow : overflow flag (0 or 1)
 void UnsignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
@@ -276,6 +321,15 @@ void UnsignedAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint
 #endif
 }
 
+// 32-bit unsigned addition with carrying
+// inputs:
+//   - x        : 32-bit left operand of addition
+//   - y        : 32-bit right operand of addition
+//   - carry_in : input carry (0 or 1) for chaining full adders
+// outputs:
+//   - result   : 32-bit result of addition x + y
+//   - carry_out: output carry (0 or 1) of full adder
+//   - overflow : overflow flag (0 or 1)
 void UnsignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
@@ -305,6 +359,17 @@ void UnsignedAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint
 //=                           Full Substractors                               =
 //=============================================================================
 
+// WARNING: signed or unsigned substraction affect how overflow flag is computed
+
+// 8-bit signed substraction with carrying
+// inputs:
+//   - x        : 8-bit left operand of substraction
+//   - y        : 8-bit right operand of substraction
+//   - carry_in : input carry (0 or 1) for chaining full substractor
+// outputs:
+//   - result   : 8-bit result of substraction x - y
+//   - carry_out: output carry (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
@@ -329,6 +394,15 @@ inline void SignedSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, 
 #endif
 }
 
+// 16-bit signed substraction with carrying
+// inputs:
+//   - x        : 16-bit left operand of substraction
+//   - y        : 16-bit right operand of substraction
+//   - carry_in : input carry (0 or 1) for chaining full substractor
+// outputs:
+//   - result   : 16-bit result of substraction x - y
+//   - carry_out: output carry (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
@@ -353,14 +427,23 @@ inline void SignedSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow
 #endif
 }
 
-/* The 31th 1-bit full substractor equations are:
-   (1) result(31) = x(31) ^ y(31) ^ borrow(30)
-   (2) borrow(31) = ~x(31).y(31) + borrow(30).(~x(31) + y(31))
-   (3) overflow = borrow(31) ^ borrow(30)
-   result is easily computed from x - y - borrow_in
-   from (1) we obtain: borrow(30) = result(31) ^ x(31) ^ y(31)
-   borrow_out is computed from equation (2), overflow from equation (3)
-*/
+// 32-bit signed substraction with carrying
+// inputs:
+//   - x        : 32-bit left operand of substraction
+//   - y        : 32-bit right operand of substraction
+//   - carry_in : input carry (0 or 1) for chaining full substractor
+// outputs:
+//   - result   : 32-bit result of substraction x - y
+//   - carry_out: output carry (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
+//
+// The 31th 1-bit full substractor equations are:
+//    (1) result(31) = x(31) ^ y(31) ^ borrow(30)
+//    (2) borrow(31) = ~x(31).y(31) + borrow(30).(~x(31) + y(31))
+//    (3) overflow = borrow(31) ^ borrow(30)
+//    result is easily computed from x - y - borrow_in
+//    from (1) we obtain: borrow(30) = result(31) ^ x(31) ^ y(31)
+//    borrow_out is computed from equation (2), overflow from equation (3)
 inline void SignedSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
@@ -389,6 +472,17 @@ inline void SignedSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow
 //=                    Full Adders with signed saturation                     =
 //=============================================================================
 
+// WARNING: signed or unsigned substraction affect how overflow flag is computed
+
+// 8-bit signed substraction with saturation and carrying
+// inputs:
+//   - x        : 8-bit left operand of substraction
+//   - y        : 8-bit right operand of substraction
+//   - carry_in : input carry (0 or 1) for chaining full substractor
+// outputs:
+//   - result   : 8-bit result of substraction x - y with saturation
+//   - carry_out: output carry (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSatAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in)
 {
 	SignedAdd8(result, carry_out, overflow, sign, x, y, carry_in);
@@ -399,6 +493,15 @@ inline void SignedSatAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow
 	}
 }
 
+// 16-bit signed substraction with saturation and carrying
+// inputs:
+//   - x        : 16-bit left operand of substraction
+//   - y        : 16-bit right operand of substraction
+//   - carry_in : input carry (0 or 1) for chaining full substractor
+// outputs:
+//   - result   : 16-bit result of substraction x - y with saturation
+//   - carry_out: output carry (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSatAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in)
 {
 	SignedAdd16(result, carry_out, overflow, sign, x, y, carry_in);
@@ -409,6 +512,15 @@ inline void SignedSatAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overfl
 	}
 }
 
+// 32-bit signed substraction with saturation and carrying
+// inputs:
+//   - x        : 32-bit left operand of substraction
+//   - y        : 32-bit right operand of substraction
+//   - carry_in : input carry (0 or 1) for chaining full substractor
+// outputs:
+//   - result   : 32-bit result of substraction x - y with saturation
+//   - carry_out: output carry (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSatAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in)
 {
 	SignedAdd32(result, carry_out, overflow, sign, x, y, carry_in);
@@ -419,6 +531,13 @@ inline void SignedSatAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overfl
 	}
 }
 
+// 16-bit signed substraction with saturation
+// inputs:
+//   - x        : 16-bit left operand of substraction
+//   - y        : 16-bit right operand of substraction
+// outputs:
+//   - result   : 16-bit result of substraction x - y with saturation
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSatAdd16(uint16_t& result, uint8_t& overflow, uint16_t x, uint16_t y) 
 {
 	uint8_t carry_out;
@@ -426,6 +545,13 @@ inline void SignedSatAdd16(uint16_t& result, uint8_t& overflow, uint16_t x, uint
 	SignedSatAdd16(result, carry_out, overflow, sign, x, y, 0);
 }
 
+// 32-bit signed substraction with saturation
+// inputs:
+//   - x        : 32-bit left operand of substraction
+//   - y        : 32-bit right operand of substraction
+// outputs:
+//   - result   : 32-bit result of substraction x - y with saturation
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSatAdd32(uint32_t& result, uint8_t& overflow, uint32_t x, uint32_t y) 
 {
 	uint8_t carry_out;
@@ -437,6 +563,15 @@ inline void SignedSatAdd32(uint32_t& result, uint8_t& overflow, uint32_t x, uint
 //=                   Full Adders with unsigned saturation                    =
 //=============================================================================
 
+// 8-bit unsigned addition with saturation and carrying
+// inputs:
+//   - x        : 8-bit left operand of addition
+//   - y        : 8-bit right operand of addition
+//   - carry_in : input carry (0 or 1) for chaining full adders
+// outputs:
+//   - result   : 8-bit result of addition x + y with saturation
+//   - carry_out: output carry (0 or 1) of full adder
+//   - overflow : overflow flag (0 or 1)
 inline void UnsignedSatAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in)
 {
 	UnsignedAdd8(result, carry_out, overflow, sign, x, y, carry_in);
@@ -447,6 +582,15 @@ inline void UnsignedSatAdd8(uint8_t& result, uint8_t& carry_out, uint8_t& overfl
 	}
 }
 
+// 16-bit unsigned addition with saturation and carrying
+// inputs:
+//   - x        : 16-bit left operand of addition
+//   - y        : 16-bit right operand of addition
+//   - carry_in : input carry (0 or 1) for chaining full adders
+// outputs:
+//   - result   : 16-bit result of addition x + y with saturation
+//   - carry_out: output carry (0 or 1) of full adder
+//   - overflow : overflow flag (0 or 1)
 inline void UnsignedSatAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in)
 {
 	UnsignedAdd16(result, carry_out, overflow, sign, x, y, carry_in);
@@ -457,6 +601,15 @@ inline void UnsignedSatAdd16(uint16_t& result, uint8_t& carry_out, uint8_t& over
 	}
 }
 
+// 32-bit unsigned addition with saturation and carrying
+// inputs:
+//   - x        : 32-bit left operand of addition
+//   - y        : 32-bit right operand of addition
+//   - carry_in : input carry (0 or 1) for chaining full adders
+// outputs:
+//   - result   : 32-bit result of addition x + y with saturation
+//   - carry_out: output carry (0 or 1) of full adder
+//   - overflow : overflow flag (0 or 1)
 inline void UnsignedSatAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in)
 {
 	UnsignedAdd32(result, carry_out, overflow, sign, x, y, carry_in);
@@ -471,6 +624,15 @@ inline void UnsignedSatAdd32(uint32_t& result, uint8_t& carry_out, uint8_t& over
 //=                 Full Substractors with signed saturation                  =
 //=============================================================================
 
+// 8-bit signed substraction with saturation and carrying
+// inputs:
+//   - x        : 8-bit left operand of substraction
+//   - y        : 8-bit right operand of substraction
+//   - borrow_in : input borrow (0 or 1) for chaining full substractors
+// outputs:
+//   - result   : 8-bit result of addition x - y with saturation
+//   - borrow_out: output borrow (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in)
 {
 	SignedSub8(result, borrow_out, overflow, sign, x, y, borrow_in);
@@ -481,6 +643,15 @@ inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflo
 	}
 }
 
+// 16-bit signed substraction with saturation and carrying
+// inputs:
+//   - x        : 16-bit left operand of substraction
+//   - y        : 16-bit right operand of substraction
+//   - borrow_in : input borrow (0 or 1) for chaining full substractors
+// outputs:
+//   - result   : 16-bit result of addition x - y with saturation
+//   - borrow_out: output borrow (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in)
 {
 	SignedSub16(result, borrow_out, overflow, sign, x, y, borrow_in);
@@ -491,6 +662,15 @@ inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overf
 	}
 }
 
+// 32-bit signed substraction with saturation and carrying
+// inputs:
+//   - x        : 32-bit left operand of substraction
+//   - y        : 32-bit right operand of substraction
+//   - borrow_in : input borrow (0 or 1) for chaining full substractors
+// outputs:
+//   - result   : 32-bit result of addition x - y with saturation
+//   - borrow_out: output borrow (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in)
 {
 	SignedSub32(result, borrow_out, overflow, sign, x, y, borrow_in);
@@ -501,6 +681,13 @@ inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overf
 	}
 }
 
+// 16-bit signed substraction with saturation
+// inputs:
+//   - x        : 16-bit left operand of substraction
+//   - y        : 16-bit right operand of substraction
+// outputs:
+//   - result   : 16-bit result of addition x - y with saturation
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSatSub16(uint16_t& result, uint8_t& overflow, uint16_t x, uint16_t y) 
 {
 	uint8_t borrow_out;
@@ -508,6 +695,13 @@ inline void SignedSatSub16(uint16_t& result, uint8_t& overflow, uint16_t x, uint
 	SignedSatSub16(result, borrow_out, overflow, sign, x, y, 0);
 }
 
+// 32-bit signed substraction with saturation and carrying
+// inputs:
+//   - x        : 32-bit left operand of substraction
+//   - y        : 32-bit right operand of substraction
+// outputs:
+//   - result   : 32-bit result of addition x - y with saturation
+//   - overflow : overflow flag (0 or 1)
 inline void SignedSatSub32(uint32_t& result, uint8_t& overflow, uint32_t x, uint32_t y) 
 {
 	uint8_t borrow_out;
@@ -518,6 +712,13 @@ inline void SignedSatSub32(uint32_t& result, uint8_t& overflow, uint32_t x, uint
 //=============================================================================
 //=                          Specific Adders                                  =
 //=============================================================================
+
+// 32-bit addition with reverse carry propagation
+// inputs:
+//   - x        : 32-bit left operand of addition
+//   - y        : 32-bit right operand of addition
+// outputs:
+//   - returns 32-bit result of addition x + y with reverse carry propagation
 inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y)
 {
 	// Compute the result as if there were no carry generation and propagation at all
@@ -553,19 +754,41 @@ inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y)
 //=                                Rotates                                    =
 //=============================================================================
 
-/* Rotate functions: WARNING! only least significative bits of n are used !!!! */
+// Rotate functions: WARNING! only least significative bits of n are used !!!!
+// WARNING! bit_out value is zero when rotating of 0 bits
+
+// 8-bit left rotation
+// inputs:
+//   - v: 8-bit value to rotate
+//   - n: lower 3 bits contains rotate amount
+// outputs:
+//   - returns result of left rotation of v
 inline uint8_t RotateLeft(uint8_t v, unsigned int n)
 {
+	// TODO: inline assembly
 	n &= 7;
-	return (v << n) | (v >> (8 - n));
+	return n ? (v << n) | (v >> (8 - n)) : v;
 }
 
+// 16-bit left rotation
+// inputs:
+//   - v: 16-bit value to rotate
+//   - n: lower 4 bits contains rotate amount
+// outputs:
+//   - returns result of left rotation of v
 inline uint16_t RotateLeft(uint16_t v, unsigned int n)
 {
+	// TODO: inline assembly
 	n &= 15;
-	return (v << n) | (v >> (16 - n));
+	return n ? (v << n) | (v >> (16 - n)) : v;
 }
 
+// 32-bit left rotation
+// inputs:
+//   - v: 32-bit value to rotate
+//   - n: lower 5 bits contains rotate amount
+// outputs:
+//   - returns result of left rotation of v
 inline uint32_t RotateLeft(uint32_t v, unsigned int n)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
@@ -573,28 +796,55 @@ inline uint32_t RotateLeft(uint32_t v, unsigned int n)
 	return v;
 #else
 	n &= 31;
-	return (v << n) | (v >> (32 - n));
+	return n ? (v << n) | (v >> (32 - n)) : v;
 #endif
 }
 
+// 64-bit left rotation
+// inputs:
+//   - v: 64-bit value to rotate
+//   - n: lower 6 bits contains rotate amount
+// outputs:
+//   - returns result of left rotation of v
 inline uint64_t RotateLeft(uint64_t v, unsigned int n)
 {
+	// TODO: inline assembly for x86_64
 	n &= 63;
-	return (v << n) | (v >> (64 - n));
+	return n ? (v << n) | (v >> (64 - n)) : v;
 }
 
+// 8-bit right rotation
+// inputs:
+//   - v: 8-bit value to rotate
+//   - n: lower 3 bits contains rotate amount
+// outputs:
+//   - returns result of right rotation of v
 inline uint8_t RotateRight(uint8_t v, unsigned int n)
 {
+	// TODO: inline assembly
 	n &= 7;
-	return (v >> n) | (v << (8 - n));
+	return n ? (v >> n) | (v << (8 - n)) : v;
 }
 
+// 16-bit right rotation
+// inputs:
+//   - v: 16-bit value to rotate
+//   - n: lower 4 bits contains rotate amount
+// outputs:
+//   - returns result of right rotation of v
 inline uint16_t RotateRight(uint16_t v, unsigned int n)
 {
+	// TODO: inline assembly
 	n &= 15;
-	return (v >> n) | (v << (16 - n));
+	return n ? (v >> n) | (v << (16 - n)) : v;
 }
 
+// 32-bit right rotation
+// inputs:
+//   - v: 32-bit value to rotate
+//   - n: lower 5 bits contains rotate amount
+// outputs:
+//   - returns result of right rotation of v
 inline uint32_t RotateRight(uint32_t v, unsigned int n)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
@@ -602,16 +852,23 @@ inline uint32_t RotateRight(uint32_t v, unsigned int n)
 	return v;
 #else
 	n &= 31;
-	return (v >> n) | (v << (32 - n));
+	return n ? (v >> n) | (v << (32 - n)) : v;
 #endif
 }
 
+// 64-bit right rotation
+// inputs:
+//   - v: 64-bit value to rotate
+//   - n: lower 6 bits contains rotate amount
+// outputs:
+//   - returns result of right rotation of v
 inline uint64_t RotateRight(uint64_t v, unsigned int n)
 {
 	n &= 63;
-	return (v >> n) | (v << (64 - n));
+	return n ? (v >> n) | (v << (64 - n)) : v;
 }
 
+// For convenience, may be removed in the future
 inline int8_t RotateLeft(int8_t v, unsigned int n) { return RotateLeft((uint8_t) v, n); }
 inline int16_t RotateLeft(int16_t v, unsigned int n) { return RotateLeft((uint16_t) v, n); }
 inline int32_t RotateLeft(int32_t v, unsigned int n) { return RotateLeft((uint32_t) v, n); }
@@ -621,66 +878,103 @@ inline int16_t RotateRight(int16_t v, unsigned int n) { return RotateRight((uint
 inline int32_t RotateRight(int32_t v, unsigned int n) { return RotateRight((uint32_t) v, n); }
 inline int64_t RotateRight(int64_t v, unsigned int n) { return RotateRight((uint64_t) v, n); }
 
-// WARNING! bit_out value is undefined when rotating of 0 bits
+// 32-bit left rotation
+// inputs:
+//   - v: 32-bit value to rotate
+//   - n: lower 5 bits contains rotate amount
+// outputs:
+//   - bit_out: shifted out bit, zero if rotate amount is zero
+//   - returns result of left rotation of v
 inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
-	__asm__ ("rol %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+	uint8_t b = 0;
+	__asm__ ("rol %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (b) : "0" (v), "c" (n) : "cc");
+	bit_out = b;
 	return v;
 #else
 	n &= 31;
-	bit_out = (v >> (32 - n)) & 1;
-	return (v << n) | (v >> (32 - n));
+	bit_out = n ? (v >> (32 - n)) & 1 : 0;
+	return n ? (v << n) | (v >> (32 - n)) : v;
 #endif
 }
 
+// 32-bit right rotation
+// inputs:
+//   - v: 32-bit value to rotate
+//   - n: lower 5 bits contains rotate amount
+// outputs:
+//   - bit_out: shifted out bit, zero if rotate amount is zero
+//   - returns result of right rotation of v
 inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
-	__asm__ ("ror %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+	uint8_t b = 0;
+	__asm__ ("ror %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (b) : "0" (v), "c" (n) : "cc");
+	bit_out = b;
 	return v;
 #else
 	n &= 31;
-	bit_out = (v >> (n - 1)) & 1;
-	return (v >> n) | (v << (32 - n));
+	bit_out = n ? (v >> (n - 1)) & 1 : 0;
+	return n ? (v >> n) | (v << (32 - n)): v;
 #endif
 }
 
+// 32-bit left rotation through an extra bit
+// inputs:
+//   - v: 32-bit value to rotate
+//   - n: lower 5 bits contains rotate amount
+//   - bit_in: shifted in bit
+// outputs:
+//   - bit_out: shifted out bit, zero if rotate amount is zero
+//   - returns result of left rotation of v
 inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	uint8_t b = 0;
 	if(bit_in)
 	{
-		__asm__ ("stc\nrcl %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+		__asm__ ("stc\nrcl %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (b) : "0" (v), "c" (n) : "cc");
 	}
 	else
 	{
-		__asm__ ("clc\nrcl %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+		__asm__ ("clc\nrcl %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (b) : "0" (v), "c" (n) : "cc");
 	}
+	bit_out = b;
 	return v;
 #else
 	n &= 31;
-	bit_out = (v >> (32 - n)) & 1;
-	return (uint32_t) (((uint64_t) v << n) | ((uint64_t) bit_in << (n - 1)) | ((uint64_t) v >> (33 - n)));
+	bit_out = n ? (v >> (32 - n)) & 1 : 0;
+	return n ? (uint32_t) (((uint64_t) v << n) | ((uint64_t) bit_in << (n - 1)) | ((uint64_t) v >> (33 - n))) : v;
 #endif
 }
 
+// 32-bit right rotation through an extra bit
+// inputs:
+//   - v: 32-bit value to rotate
+//   - n: lower 5 bits contains rotate amount
+//   - bit_in: shifted in bit
+// outputs:
+//   - bit_out: shifted out bit, zero if rotate amount is zero
+//   - returns result of right rotation of v
 inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	uint8_t b = 0;
 	if(bit_in)
 	{
-		__asm__ ("stc\nrcr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+		__asm__ ("stc\nrcr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (b) : "0" (v), "c" (n) : "cc");
 	}
 	else
 	{
-		__asm__ ("clc\nrcr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+		__asm__ ("clc\nrcr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (b) : "0" (v), "c" (n) : "cc");
 	}
+	bit_out = b;
 	return v;
 #else
 	n &= 31;
-	bit_out = (v >> (n - 1)) & 1;
-	return (uint32_t) (((uint64_t) v >> n) | ((uint64_t) bit_in << (32 - n)) | ((uint64_t) v << (33 - n)));
+	bit_out = n ? (v >> (n - 1)) & 1 : 0;
+	return n ? (uint32_t) (((uint64_t) v >> n) | ((uint64_t) bit_in << (32 - n)) | ((uint64_t) v << (33 - n))) : 0;
 #endif
 }
 
@@ -688,10 +982,18 @@ inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t&
 //=                            Logical Shifts                                 =
 //=============================================================================
 
+// WARNING! bit_out value is zero when shifting of 0 bits
+
+// 32-bit left shift
+// inputs:
+//   - v: 32-bit value to shift
+//   - n: lower 5 bits contains shift amount
+// outputs:
+//   - returns result of left shift of v
 inline uint32_t ShiftLeft(uint32_t v, unsigned int n)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
-	__asm__ ("shl %%cl, %0" : "=r" (v) : "0" (v), "c" (n) : "cc");	
+	__asm__ ("shl %%cl, %0" : "=r" (v) : "0" (v), "c" (n) : "cc");
 	return v;
 #else
 	n &= 31;
@@ -699,18 +1001,33 @@ inline uint32_t ShiftLeft(uint32_t v, unsigned int n)
 #endif
 }
 
+// 32-bit left shift
+// inputs:
+//   - v: 32-bit value to shift
+//   - n: lower 5 bits contains shift amount
+// outputs:
+//   - bit_out: shifted out bit, zero if shift amount is zero
+//   - returns result of left shift of v
 inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
-	__asm__ ("shl %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out): "0" (v), "c" (n) : "cc");	
+	uint8_t b = 0;
+	__asm__ ("shl %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (b): "0" (v), "c" (n) : "cc");
+	bit_out = b;
 	return v;
 #else
 	n &= 31;
-	bit_out = (v >> (32 - n)) & 1;
+	bit_out = n ? (v >> (32 - n)) & 1 : 0;
 	return v << n;
 #endif
 }
 
+// 32-bit right shift
+// inputs:
+//   - v: 32-bit value to shift
+//   - n: lower 5 bits contains shift amount
+// outputs:
+//   - returns result of right shift of v
 inline uint32_t ShiftRight(uint32_t v, unsigned int n)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
@@ -722,14 +1039,23 @@ inline uint32_t ShiftRight(uint32_t v, unsigned int n)
 #endif
 }
 
+// 32-bit right shift
+// inputs:
+//   - v: 32-bit value to shift
+//   - n: lower 5 bits contains shift amount
+// outputs:
+//   - bit_out: shifted out bit, zero if shift amount is zero
+//   - returns result of right shift of v
 inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
-	__asm__ ("shr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+	uint8_t b = 0;
+	__asm__ ("shr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (b) : "0" (v), "c" (n) : "cc");
+	bit_out = b;
 	return v;
 #else
 	n &= 31;
-	bit_out = (v >> (n - 1)) & 1;
+	bit_out = n ? (v >> (n - 1)) & 1 : 0;
 	return v >> n;
 #endif
 }
@@ -738,6 +1064,14 @@ inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 //=                         Arithmetic Shifts                                 =
 //=============================================================================
 
+// WARNING! bit_out value is zero when shifting of 0 bits
+
+// 32-bit arithmetic right shift
+// inputs:
+//   - v: 32-bit value to shift
+//   - n: lower 5 bits contains shift amount
+// outputs:
+//   - returns result of arithmetic right shift of v
 inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
@@ -749,14 +1083,23 @@ inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n)
 #endif
 }
 
+// 32-bit arithmetic right shift
+// inputs:
+//   - v: 32-bit value to shift
+//   - n: lower 5 bits contains shift amount
+// outputs:
+//   - bit_out: shifted out bit, zero if shift amount is zero
+//   - returns result of arithmetic right shift of v
 inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
-	__asm__ ("sar %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+	uint8_t b = 0;
+	__asm__ ("sar %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (b) : "0" (v), "c" (n) : "cc");
+	bit_out = b;
 	return v;
 #else
 	n &= 31;
-	bit_out = (v >> (n - 1)) & 1;
+	bit_out = n ? (v >> (n - 1)) & 1 : 0;
 	return (uint32_t)((signed) v >> n);
 #endif
 }
@@ -890,24 +1233,28 @@ inline unsigned int CeilLog2(uint64_t v)
 inline int8_t SignExtend(uint8_t v, unsigned int n)
 {
 	unsigned int m = (8 * sizeof(v)) - n;
+	// FIXME: this operation is undefined
 	return (int8_t) (v << m) >> m; 
 }
 
 inline int16_t SignExtend(uint16_t v, unsigned int n)
 {
 	unsigned int m = (8 * sizeof(v)) - n;
+	// FIXME: this operation is undefined
 	return (int16_t) (v << m) >> m; 
 }
 
 inline int32_t SignExtend(uint32_t v, unsigned int n)
 {
 	unsigned int m = (8 * sizeof(v)) - n;
+	// FIXME: this operation is undefined
 	return (int32_t) (v << m) >> m; 
 }
 
 inline int64_t SignExtend(uint64_t v, unsigned int n)
 {
 	unsigned int m = (8 * sizeof(v)) - n;
+	// FIXME: this operation is undefined
 	return (int64_t) (v << m) >> m; 
 }
 

@@ -27,8 +27,7 @@ op csrf(0b11010[5]:0b10[2]:bp5[5]:0b0011[4])
 
 csrf.execute={
 
-	uint32_t result =  cpu->GetSR() & ~ ( 1<< bp5 );
-	cpu->SetSR(result);
+	cpu->ClearSRBit(bp5);
 	return true;
 }
 
@@ -57,6 +56,11 @@ csrfcz.disasm={
 // FRS - flush return stack
 
 op frs(0b1101011[7]:0b10100[5]:0b0011[4])
+
+frs.execute={
+	// no architecturally visible state change
+	return true;
+}
 
 frs.disasm={
 
@@ -107,6 +111,17 @@ mtsr.disasm={
 
 op musfr(0b010[3]:0b1110[4]:0b10011[5]:rs[4])
 
+musfr.execute={
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t sr = cpu->GetSR();
+	
+	sr = (sr & ~0xf) | (s & 0xf);
+	
+	cpu->SetSR(sr);
+	
+	return  true;
+}
+
 musfr.disasm={
 
 	os << "musfr\t" << REG_NAME[rs];
@@ -115,6 +130,17 @@ musfr.disasm={
 //MUSTR - copy status register to register
 
 op mustr(0b010[3]:0b1110[4]:0b10010[5]:rd[4])
+
+mustr.execute={
+	uint32_t sr = cpu->GetSR();
+	uint32_t d = cpu->GetGPR(rd);
+	
+	d = (d & ~0xf) | (sr & 0xf);
+	
+	cpu->SetGPR(rd, d);
+	
+	return true;
+}
 
 mustr.disasm={
 
@@ -125,15 +151,25 @@ mustr.disasm={
 
 op nop(0b1101011[7]:0b10000[5]:0b0011[4])
 
+nop.execute={
+	// no operation
+	return true;
+}
+
 nop.disasm={
 
-	os << "none\t";
+	os << "nop\t";
 }
 
 
 // PREF - cache prefetch
 
 op pref(0b111[3]:0b100100001[9]:rp[4]:><:disp16[16])
+
+pref.execute={
+	// no architecturally visible state change
+	return true;
+}
 
 pref.disasm={
 
@@ -143,6 +179,13 @@ pref.disasm={
 // SLEEP - set CPU activity mode
 
 op sleep(0b111[3]: 0b0100[4]: 0b11011[5]:0b0000[4]:><:0b00000000[8]:op8[8])
+
+sleep.execute={
+	// FIXME: check implementation
+	if(op8 & 128) cpu->SetSR_GM(0);
+	cpu->Idle();
+	return true;
+}
 
 sleep.disasm={
 
@@ -172,6 +215,18 @@ sr_cond4.disasm={
 // SSRF - set status condition flag
 
 op ssrf(0b11010[5]:0b01[2]:bp5[5]:0b0011[4])
+
+ssrf.execute={
+	if(!cpu->IsPrivilegedMode() && (bp5 > 15))
+	{
+		cpu->SetException(CONFIG::EXC_PRIVILEGE_VIOLATION);
+		return false;
+	}
+	
+	cpu->SetSRBit(bp5);
+	
+	return true;
+}
 
 ssrf.disasm={
 

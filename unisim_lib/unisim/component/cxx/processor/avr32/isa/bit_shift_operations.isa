@@ -10,18 +10,19 @@ op bfexts(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1011[4]:0b00[2]:bp5[5]:w5[5])
 
 bfexts.execute={
 
-	if ((w5 == 0) || (bp5 + w5 > 32)) return false; // the result is undefined
+	if ((w5 == 0) || ((bp5 + w5) > 32)) return false; // the result is undefined
 	
 	uint32_t s= cpu->GetGPR(rs);
 
 	s= s >> bp5;           // shift
 	s= s & ((1UL<< w5)-1); // extract with mask            
-	uint32_t result=SignExtend(s,(unsigned int)w5);
+	uint32_t result=SignExtend(s,w5);
 	uint8_t neg=(int32_t)result<0;
 	uint8_t zero=result==0;
 	uint8_t carry=((result>>31) & 1);
 
 	cpu->SetGPR(rd,result);        // write back result
+	
 	cpu->SetSR_N(neg);             // set flags
 	cpu->SetSR_Z(zero);
 	cpu->SetSR_C(carry);
@@ -30,7 +31,7 @@ bfexts.execute={
 }
 
 bfexts.disasm={
-	os << "bfexts\t" << REG_NAME[rd] << "," <<  REG_NAME[rs] << ",0x" << std::hex <<(int) bp5 << ",0x" << ( int) w5;
+	os << "bfexts\t" << REG_NAME[rd] << "," <<  REG_NAME[rs] << ",0x" << std::hex <<(int) bp5 << ",0x" << ( int) w5 << std::dec;
 }
 
 //BFEXTU - bitfield extract and zero-extend
@@ -39,7 +40,7 @@ op bfextu(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1100[4]:0b00[2]:bp5[5]:w5[5])
 
 bfextu.execute={
 	
-	if ((w5 == 0) || (bp5 + w5 > 32)) return false; // the result is undefined
+	if ((w5 == 0) || ((bp5 + w5) > 32)) return false; // the result is undefined
 	
 	uint32_t s= cpu->GetGPR(rs);
 
@@ -51,6 +52,7 @@ bfextu.execute={
 	uint8_t carry=((result>>31) & 1);
 
 	cpu->SetGPR(rd,result);
+	
 	cpu->SetSR_N(neg);
 	cpu->SetSR_Z(zero);
 	cpu->SetSR_C(carry); 
@@ -60,7 +62,7 @@ bfextu.execute={
 
 
 bfextu.disasm={
-	os << "bfextu\t" << REG_NAME[rd] << "," << REG_NAME[rs] << ",0x" << std::hex <<(int) bp5 << ",0x" << ( int)w5;
+	os << "bfextu\t" << REG_NAME[rd] << "," << REG_NAME[rs] << ",0x" << std::hex <<(int) bp5 << ",0x" << ( int)w5 << std::dec;
 }
 
 //BFINS - bitfield insert
@@ -69,7 +71,7 @@ op bfins(0b111[3]:rd[4]:0b11101[5]:rs[4]:><:0b1101[4]:0b00[2]:bp5[5]:w5[5])
 
 bfins.execute={
 
-   	if ((w5 == 0) || (bp5 + w5 > 32)) return false; // the result is undefined
+   	if ((w5 == 0) || ((bp5 + w5) > 32)) return false; // the result is undefined
 
 	uint32_t s=cpu->GetGPR(rs);
 	uint32_t d=cpu->GetGPR(rd);
@@ -92,7 +94,7 @@ bfins.execute={
 }
 
 bfins.disasm={
-	os << "bfins\t" << REG_NAME[rd] << "," << REG_NAME[rs] << ",0x" << std::hex << ( int) bp5 << ",0x" << (unsigned int) w5;
+	os << "bfins\t" << REG_NAME[rd] << "," << REG_NAME[rs] << ",0x" << std::hex << ( int) bp5 << ",0x" << (unsigned int) w5 << std::dec;
 }
 
 
@@ -116,10 +118,10 @@ bld.execute={
 }
 
 bld.disasm={
-	os << "bld\t" << REG_NAME[rd] << ",0x" << std::hex << (int) bp5; 
+	os << "bld\t" << REG_NAME[rd] << ",0x" << std::hex << (int) bp5 << std::dec; 
 }
 
-//BREV - bit reverse  // verifier s'il existe une fonction en c
+//BREV - bit reverse
 
 op brev(0b010[3]:0b1110[4]:0b01001[5]:rd[4])
 
@@ -131,10 +133,10 @@ brev.execute={
 	uint8_t bit=0;
 	for(int i=0;i<32;i++)
 	{
-		bit=(d >> i) & 1;  // extract bit
-		result=result /*& ~(1<<(31-i)))*/ | (bit <<(31-i)) ;//insert in result
+		bit=(d >> i) & 1;  // extract bit i
+		result=result | (bit <<(31-i)) ;//insert in result
 	}	
-	uint32_t zero= result==0;
+	uint8_t zero= result==0;
 
 	cpu->SetGPR(rd,result);
 	cpu->SetSR_Z(zero);
@@ -164,7 +166,7 @@ bst.execute={
 }
 
 bst.disasm={
-	os << "bst\t" << REG_NAME[rd] << ",0x" << std::hex << (int) bp5;
+	os << "bst\t" << REG_NAME[rd] << ",0x" << std::hex << (int) bp5 << std::dec;
 }
 
 //CASTS - type cast to signed word
@@ -175,11 +177,10 @@ casts_h.execute={
 
 	uint32_t d= cpu->GetGPR(rd);
 	
-	d= d & 0x0000FFFF;                      // get low halfword
 	uint32_t result = SignExtend(d,16);
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result ==0;
-	uint32_t carry= (result >> 31) & 1;
+	uint8_t carry= (result >> 31) & 1;
 	
 	cpu->SetGPR(rd,result);
 
@@ -200,11 +201,10 @@ casts_b.execute={
 
 	uint32_t d= cpu->GetGPR(rd);
 	
-	d= d & 0x000000FF;                 // get bottom byte
 	uint32_t result = SignExtend(d,8);
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result ==0;
-	uint32_t carry = (result >> 31) &1;
+	uint8_t carry = (result >> 31) &1;
 	
 	cpu->SetGPR(rd,result);
 
@@ -231,7 +231,7 @@ castu_h.execute={
 	uint32_t result= d & 0x0000FFFF;
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result ==0;
-	uint32_t carry= (result >> 31) & 1;
+	uint8_t carry= (result >> 31) & 1;
 	
 	cpu->SetGPR(rd,result);
 
@@ -290,7 +290,7 @@ cbr.execute={
 }
 
 cbr.disasm={
-	os << "cbr\t" << REG_NAME[rd] << ",0x" <<std::hex << ( int) bp;
+	os << "cbr\t" << REG_NAME[rd] << ",0x" <<std::hex << ( int) bp << std::dec;
 }
 
 //CLZ - count leading zeros
@@ -337,7 +337,7 @@ sbr.execute={
 }
 
 sbr.disasm={
-	os << "sbr\t" << REG_NAME[rd] << ",0x"<< std::hex << (int) bp;
+	os << "sbr\t" << REG_NAME[rd] << ",0x"<< std::hex << (int) bp <<std::dec;
 }
 
 
@@ -348,8 +348,7 @@ op swap_b(0b010[3]:0b1110[4]:0b01011[5]:rd[4])
 swap_b.execute={
 
 	uint32_t temp=cpu->GetGPR(rd);
-	
-	//uint32_t result= ((temp & 0x000000FF) << 24) | ((temp & 0x0000FF00)<<8) | ((temp & 0x00FF0000)>>8) | ((temp & 0xFF000000)>>24); 
+	 
 	uint32_t result = ByteSwap(temp);	
 
 	cpu->SetGPR(rd,result);
@@ -372,6 +371,11 @@ swap_bh.execute={
 
 	uint32_t result= ((temp & 0x00FF0000)<<8) | ((temp & 0xFF000000)>>8) |((temp & 0x000000FF)<<8) | ((temp & 0x0000FF00)>>8);
 	
+// 	uint32_t d = cpu->GetGPR(rd);
+// 	uint16_t d_l = d;
+// 	uint16_t d_h = d >> 16;
+// 	uint32_t result= ((uint32_t) ByteSwap(d_h) << 16) | ByteSwap(d_l);
+	
 	cpu->SetGPR(rd,result);
 
 	return true;
@@ -391,7 +395,6 @@ swap_h.execute={
 
 	uint32_t temp = cpu->GetGPR(rd);
 
-	//uint32_t result= ((temp & 0x0000FFFF)<<16) | ((temp & 0xFFFF0000)>>16);
 	uint32_t result= RotateRight(temp,16);
 	
 	cpu->SetGPR(rd,result);
@@ -424,7 +427,7 @@ asr_a.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftArithmeticRight(x, (unsigned int)sa,bit_out);
+	result=ShiftArithmeticRight(x,sa,bit_out);
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
 	
@@ -451,7 +454,7 @@ asr_b.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftArithmeticRight(d, (unsigned int)sa,bit_out);
+	result=ShiftArithmeticRight(d,sa,bit_out);
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
 
@@ -466,7 +469,7 @@ asr_b.execute={
 
 
 asr_b.disasm={
-	os << "asr\t" << REG_NAME[rd] << ",0x" << std::hex<<(unsigned int) sa;
+	os << "asr\t" << REG_NAME[rd] << ",0x" << std::hex<<(unsigned int) sa << std::dec;
 }
 
 
@@ -478,7 +481,7 @@ asr_c.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftArithmeticRight(s,(unsigned int)sa5,bit_out);
+	result=ShiftArithmeticRight(s,sa5,bit_out);
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -492,7 +495,7 @@ asr_c.execute={
 }
 
 asr_c.disasm={
-	os << "asr\t" << REG_NAME[rd] << "," << REG_NAME[rs] << ",0x" <<std::hex << (int) sa5;
+	os << "asr\t" << REG_NAME[rd] << "," << REG_NAME[rs] << ",0x" <<std::hex << (int) sa5 << std::dec ;
 }
 
 
@@ -506,11 +509,10 @@ lsl_a.execute={
 	
 	uint32_t x= cpu->GetGPR(rx);
 	uint32_t y= cpu->GetGPR(ry);
-	uint32_t sa = y & 0x0000001F;
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftLeft(x, (unsigned int)sa,bit_out);
+	result=ShiftLeft(x,y,bit_out);
 	uint8_t neg= (int32_t)result <0;
 	uint8_t zero= result==0;
 
@@ -537,7 +539,7 @@ lsl_b.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftLeft(d, (unsigned int)sa,bit_out);
+	result=ShiftLeft(d,sa,bit_out);
 	uint8_t neg= (int32_t) result < 0;
 	uint8_t zero= result==0;
 
@@ -551,7 +553,7 @@ lsl_b.execute={
 }
 
 lsl_b.disasm={
-	os << "lsl\t" << REG_NAME[rd] << ",0x" << std::hex << (int) sa;
+	os << "lsl\t" << REG_NAME[rd] << ",0x" << std::hex << (int) sa<< std::dec;
 }
 
 
@@ -563,7 +565,7 @@ lsl_c.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftLeft(s,(unsigned int)sa5,bit_out);
+	result=ShiftLeft(s,sa5,bit_out);
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -588,11 +590,10 @@ lsr_a.execute={
 
 	uint32_t x= cpu->GetGPR(rx);
 	uint32_t y= cpu->GetGPR(ry);
-	uint32_t sa = y & 0x0000001F;
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftRight(x, (unsigned int)sa,bit_out);
+	result=ShiftRight(x,y,bit_out);
 	uint8_t neg= (int32_t)result < 0;
 	uint8_t zero= result==0;
 
@@ -645,7 +646,7 @@ lsr_c.execute={
 	uint32_t result;
 	uint8_t bit_out;
 
-	result=ShiftRight(s,(unsigned int)sa5,bit_out);
+	result=ShiftRight(s,sa5,bit_out);
 	uint8_t neg=(int32_t)result < 0;
 	uint8_t zero= result==0;
 

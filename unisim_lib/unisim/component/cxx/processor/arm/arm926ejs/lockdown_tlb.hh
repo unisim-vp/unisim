@@ -42,16 +42,6 @@
 #include "unisim/service/interfaces/power_mode.hh"
 #include "unisim/util/random/random.hh"
 
-#ifdef GCC_INLINE
-#undef GCC_INLINE
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-#define GCC_INLINE __attribute__((always_inline))
-#else
-#define GCC_INLINE
-#endif
-
 namespace unisim {
 namespace component {
 namespace cxx {

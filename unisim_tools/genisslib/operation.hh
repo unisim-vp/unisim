@@ -53,6 +53,7 @@ struct Group_t : virtual ReferenceCounter {
   FileLoc_t                     m_fileloc;        /**< The file location where the group was declared */
 
   Group_t( ConstStr_t _symbol, Vect_t<Operation_t>& _operations, FileLoc_t const& _fileloc );
+  Group_t( ConstStr_t _symbol, FileLoc_t const& _fileloc );
 };
 
 #endif // __OPERATION_HH__

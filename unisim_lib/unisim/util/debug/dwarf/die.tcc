@@ -78,6 +78,7 @@ DWARF_DIE<MEMORY_ADDR>::~DWARF_DIE()
 	unsigned int num_children = children.size();
 	for(i = 0; i < num_children; i++)
 	{
+		dw_cu->UnRegister(children[i]);
 		delete children[i];
 	}
 }
@@ -908,7 +909,45 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 						return -1;
 				}
 				break;
+				
+			case DW_FORM_expr_loc:
+				{
+					DWARF_LEB128 leb128_info_bytes_length;
+					int64_t sz;
+					if((sz = leb128_info_bytes_length.Load(rawdata, max_size)) < 0) return -1;
+					rawdata += sz;
+					size += sz;
+					max_size -= sz;
+
+					uint64_t info_bytes_length = (uint64_t) leb128_info_bytes_length;
+					if(max_size < info_bytes_length) return -1;
+
+					DWARF_AttributeValue<MEMORY_ADDR> *dw_value;
+					
+					dw_value = new DWARF_Expression<MEMORY_ADDR>(dw_cu, info_bytes_length, rawdata);
+					
+					rawdata += info_bytes_length;
+					size += info_bytes_length;
+					max_size -= info_bytes_length;
+					
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_value);
+				}
+				break;
+				
+			case DW_FORM_flag_present:
+				{
+					DWARF_Flag<MEMORY_ADDR> *dw_flag = new DWARF_Flag<MEMORY_ADDR>(true);
+					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_flag);
+				}
+				break;
+				
+			case DW_FORM_ref_sig8:
+				std::cerr << "unimplemented form DW_FORM_ref_sig8" << std::endl;
+				return -1;
+				break;
+				
 			default:
+				std::cerr << "Unknown form 0x" << std::hex << dw_form << std::dec << std::endl;
 				return -1;
 		}
 		
@@ -1162,9 +1201,10 @@ void DWARF_DIE<MEMORY_ADDR>::GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_AD
 	if(GetLowPC(low_pc))
 	{
 		MEMORY_ADDR high_pc = 0;
-		if(GetHighPC(high_pc))
+		bool high_pc_is_offset = false;
+		if(GetHighPC(high_pc, high_pc_is_offset))
 		{
-			ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(low_pc, high_pc));
+			ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(low_pc, high_pc_is_offset ? low_pc + high_pc : high_pc));
 		}
 		else
 		{
@@ -1224,9 +1264,10 @@ bool DWARF_DIE<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) co
 	if(GetLowPC(low_pc))
 	{
 		MEMORY_ADDR high_pc = 0;
-		if(GetHighPC(high_pc))
+		bool high_pc_is_offset = false;
+		if(GetHighPC(high_pc, high_pc_is_offset))
 		{
-			return unisim::util::debug::dwarf::HasOverlapEx(low_pc, high_pc, addr, addr + length);
+			return unisim::util::debug::dwarf::HasOverlapEx(low_pc, high_pc_is_offset ? low_pc + high_pc : high_pc, addr, addr + length);
 		}
 		else
 		{
@@ -1350,6 +1391,32 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMember(const char 
 }
 
 template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindSubProgram(const char *name) const
+{
+	unsigned int num_children = children.size();
+	unsigned int i;
+	for(i = 0; i < num_children; i++)
+	{
+		DWARF_DIE<MEMORY_ADDR> *dw_child = children[i];
+
+		switch(dw_child->GetTag())
+		{
+			case DW_TAG_subprogram:
+				{
+					const char *child_name = dw_child->GetName();
+					if(child_name)
+					{
+						if(strcmp(child_name, name) == 0) return dw_child;
+					}
+				}
+				break;
+		}
+	}
+	
+	return 0;
+}
+
+template <class MEMORY_ADDR>
 void DWARF_DIE<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& name_set) const
 {
 	if(GetTag() == DW_TAG_inlined_subroutine)
@@ -1421,21 +1488,37 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLowPC(MEMORY_ADDR& low_pc) const
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetHighPC(MEMORY_ADDR& high_pc) const
+bool DWARF_DIE<MEMORY_ADDR>::GetHighPC(MEMORY_ADDR& high_pc, bool& is_offset) const
 {
-	const DWARF_Address<MEMORY_ADDR> *dw_at_high_pc;
-	if(GetAttributeValue(DW_AT_high_pc, dw_at_high_pc))
+	const DWARF_Address<MEMORY_ADDR> *dw_at_high_pc_addr;
+	if(GetAttributeValue(DW_AT_high_pc, dw_at_high_pc_addr))
 	{
-		high_pc = dw_at_high_pc->GetValue();
+		high_pc = dw_at_high_pc_addr->GetValue();
+		is_offset = false;
 		return true;
 	}
+	
+	const DWARF_Constant<MEMORY_ADDR> *dw_at_high_pc_offset;
+	if(GetAttributeValue(DW_AT_high_pc, dw_at_high_pc_offset))
+	{
+		high_pc = dw_at_high_pc_offset->to_uint();
+		is_offset = true;
+		return true;
+	}
+	
 	return false;
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetContigousAddressRange(MEMORY_ADDR& low_pc, MEMORY_ADDR& high_pc) const
 {
-	return GetLowPC(low_pc) && GetHighPC(high_pc);
+	if(!GetLowPC(low_pc)) return false;
+	
+	bool high_pc_is_offset = false;
+	if(!GetHighPC(high_pc, high_pc_is_offset)) return false;
+	
+	if(high_pc_is_offset) high_pc += low_pc;
+	return true;
 }
 
 template <class MEMORY_ADDR>
@@ -2015,7 +2098,13 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataBitOffset(int64_t& data_bit_offset) const
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetLocationExpression(uint16_t dw_at, MEMORY_ADDR pc, const DWARF_Expression<MEMORY_ADDR> * & p_dw_loc_expr, std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const
 {
-	if(GetAttributeValue(dw_at, p_dw_loc_expr)) return true;
+	if(GetAttributeValue(dw_at, p_dw_loc_expr))
+	{
+		ranges.clear();
+		GetRanges(ranges);
+		//ranges.insert(std::pair<MEMORY_ADDR, MEMORY_ADDR>(pc, pc));
+		return true;
+	}
 
 	const DWARF_LocListPtr<MEMORY_ADDR> *dw_loc_list_ptr = 0;
 	if(!GetAttributeValue(dw_at, dw_loc_list_ptr))
@@ -2103,7 +2192,7 @@ template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const
 {
 	const DWARF_Expression<MEMORY_ADDR> *dw_loc_expr = 0;
-	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
+	//std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
 	
 	bool declaration_flag = false;
 	if(!GetDeclarationFlag(declaration_flag))
@@ -2138,7 +2227,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 		return dw_defining_die->GetLocation(pc, has_frame_base, frame_base, loc);
 	}
 
-	if(!GetLocationExpression(DW_AT_location, pc, dw_loc_expr, ranges))
+	if(!GetLocationExpression(DW_AT_location, pc, dw_loc_expr, loc.GetRanges()))
 	{
 		// optimized out
 		loc.Clear();
@@ -2211,40 +2300,47 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const
 {
-	const DWARF_Expression<MEMORY_ADDR> *dw_loc_expr = 0;
-	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
-	if(!GetLocationExpression(DW_AT_data_member_location, pc, dw_loc_expr, ranges))
+	const DWARF_Constant<MEMORY_ADDR> *dw_at_const_value = 0;
+	if(GetAttributeValue(DW_AT_data_member_location, dw_at_const_value))
 	{
-		// optimized out
-		loc.Clear();
-		if(debug)
-		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine data member location expression of DIE #" << id << " for PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
-		}
-		return true;
+		// constant offset from beginning of data object
+		MEMORY_ADDR offset = dw_at_const_value->to_uint();
+		loc.SetAddress(object_addr + offset);
 	}
-
-	if(dw_loc_expr->IsEmpty())
+	else
 	{
-		// optimized out
-		loc.Clear();
-		return true;
-	}
-	
-	MEMORY_ADDR addr;
-	DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
-	if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
-	dw_loc_expr_vm.SetObjectAddress(object_addr);
-	dw_loc_expr_vm.SetPC(pc);
-	dw_loc_expr_vm.Push(object_addr);
-	bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
-	if(!dw_loc_expr_vm_status)
-	{
-		if(debug)
+		// location expression
+		const DWARF_Expression<MEMORY_ADDR> *dw_loc_expr = 0;
+		//std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
+		if(GetLocationExpression(DW_AT_data_member_location, pc, dw_loc_expr, loc.GetRanges()))
 		{
-			logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", evaluation of data member DIE #" << id << " location expression failed" << EndDebugError;
+			if(dw_loc_expr->IsEmpty())
+			{
+				// optimized out
+				loc.Clear();
+				return true;
+			}
+			
+			MEMORY_ADDR addr;
+			DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+			if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
+			dw_loc_expr_vm.SetObjectAddress(object_addr);
+			dw_loc_expr_vm.SetPC(pc);
+			dw_loc_expr_vm.Push(object_addr);
+			bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
+			if(!dw_loc_expr_vm_status)
+			{
+				if(debug)
+				{
+					logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", evaluation of data member DIE #" << id << " location expression failed" << EndDebugError;
+				}
+				return false;
+			}
 		}
-		return false;
+		else
+		{
+			loc.SetAddress(object_addr);
+		}
 	}
 	
 	uint64_t dw_byte_size = 0;
@@ -2644,11 +2740,15 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 					if(child->GetTag() == DW_TAG_formal_parameter)
 					{
 						const char *formal_param_name = child->GetName();
+						const DWARF_Reference<MEMORY_ADDR> *dw_formal_param_type_ref = 0;
+						const DWARF_DIE<MEMORY_ADDR> *dw_die_formal_param_type = 0;
 						
-						if(formal_param_name)
+						if(child->GetAttributeValue(DW_AT_type, dw_formal_param_type_ref))
 						{
-							func_type->Add(new unisim::util::debug::FormalParameter(formal_param_name, child->BuildType()));
+							dw_die_formal_param_type = dw_formal_param_type_ref->GetValue();
 						}
+						
+						func_type->Add(new unisim::util::debug::FormalParameter(formal_param_name ? formal_param_name :  "", dw_die_formal_param_type ? dw_die_formal_param_type->BuildType() : new unisim::util::debug::UnspecifiedType()));
 					}
 				}
 				return func_type;
@@ -2732,6 +2832,45 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildTypeOf() const
 	const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
 	
 	return dw_die_type->BuildType();
+}
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::SubProgram<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::BuildSubProgram() const
+{
+	DWARF_SubProgram<MEMORY_ADDR> *dw_subprogram = new DWARF_SubProgram<MEMORY_ADDR>();
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_return_type = 0;
+	
+	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+	if(GetAttributeValue(DW_AT_type, dw_type_ref))
+	{
+		dw_die_return_type = dw_type_ref->GetValue();
+	}
+
+	dw_subprogram->SetReturnType(dw_die_return_type ? dw_die_return_type->BuildType() : new unisim::util::debug::UnspecifiedType());
+
+	unsigned int num_children = children.size();
+	unsigned int i;
+	for(i = 0; i < num_children; i++)
+	{
+		const DWARF_DIE<MEMORY_ADDR> *child = children[i];
+		
+		if(child->GetTag() == DW_TAG_formal_parameter)
+		{
+			const char *formal_param_name = child->GetName();
+			const DWARF_Reference<MEMORY_ADDR> *dw_formal_param_type_ref = 0;
+			const DWARF_DIE<MEMORY_ADDR> *dw_die_formal_param_type = 0;
+			
+			if(child->GetAttributeValue(DW_AT_type, dw_formal_param_type_ref))
+			{
+				dw_die_formal_param_type = dw_formal_param_type_ref->GetValue();
+			}
+			
+			dw_subprogram->AddFormalParameter(new unisim::util::debug::FormalParameter(formal_param_name ? formal_param_name :  "", dw_die_formal_param_type ? dw_die_formal_param_type->BuildType() : new unisim::util::debug::UnspecifiedType()));
+		}
+	}
+	
+	return dw_subprogram;
 }
 
 template <class MEMORY_ADDR>

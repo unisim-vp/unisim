@@ -36,6 +36,7 @@
 #include <iostream>
 
 #include "unisim/component/cxx/processor/arm/disasm.hh"
+#include "unisim/component/cxx/processor/arm/psr.hh"
 
 namespace unisim {
 namespace component {
@@ -56,16 +57,15 @@ namespace arm {
   /* Condition opcode bytes disassembling method */
   void DisasmCondition::operator() ( std::ostream& sink ) const
   {
-    /* Printing opcode postfix before condition, as in GNU toolchains (binutils and GCC). */
-    sink << m_postfix;
-    
     if         (m_cond >= 15) {
-      sink << "?";
-      std::cerr << "ERROR(" << __FUNCTION__ << "): "
-                << "unknown condition code (" << m_cond << ")" << std::endl;
-    } else if  (m_cond < 14) {
-      sink << conds_dis[m_cond];
+      sink << "<illegal condition code: " << m_cond << ">";
+      return;
     }
+    
+    if  ((m_cond == 14) and (m_explicit_always == implicit_always))
+      return;
+    
+    sink << conds_dis[m_cond];
   }
 
   /* Immediate disassembly */
@@ -94,6 +94,21 @@ namespace arm {
     }
   }
   
+  void DisasmMemoryRI::operator () ( std::ostream& _sink ) const
+  {
+    _sink << "[" << DisasmRegister(rn) << (p?"":"]") << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
+  }
+
+  void DisasmMemoryRR::operator () ( std::ostream& _sink ) const
+  {
+    _sink << "[" << DisasmRegister(rn) << (p?"":"]") << ", " << (u?"":"-") << DisasmRegister(rm) << (p?(w?"]!":"]"):"");
+  }
+  
+  void DisasmMemoryRRI::operator () ( std::ostream& _sink ) const
+  {
+    _sink << "[" << DisasmRegister(rn) << (p?"":"]") << ", " << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm) << (p?(w?"]!":"]"):"");
+  }
+  
   static char const* const register_dis[] =
     {"r0","r1","r2","r3","r4","r5","r6","r7", "r8","r9","sl","fp","ip","sp","lr","pc"};
 
@@ -114,7 +129,7 @@ namespace arm {
   {
     switch (m_reg)
       {
-      default: sink << "(UNDEF: " << (unsigned int)m_reg << ")"; break;
+      default: sink << "(<undefined> " << (unsigned int)m_reg << ")"; break;
       case 15: sink << "CPSR"; break;
       case 32: sink << "R8_usr"; break;
       case 33: sink << "R9_usr"; break;
@@ -177,6 +192,22 @@ namespace arm {
     sink << lsmmod[m_mode%4];
   }
   
+  /* Barrier option disassembling method */
+  void DisasmBarrierOption::operator() ( std::ostream& sink ) const
+  {
+    switch (m_option) {
+    default: sink << "<reserved>"; break;
+    case 0xf: sink << "sy"; break;
+    case 0xe: sink << "st"; break;
+    case 0xb: sink << "ish"; break;
+    case 0xa: sink << "ishst"; break;
+    case 0x7: sink << "nsh"; break;
+    case 0x6: sink << "nshst"; break;
+    case 0x3: sink << "osh"; break;
+    case 0x2: sink << "oshst"; break;
+    };
+  }
+
   /* PSR mask disassembling method */
   void DisasmPSRMask::operator() ( std::ostream& sink ) const
   {
@@ -185,6 +216,17 @@ namespace arm {
     if ((m_mask & 0x04) == 0x04) sink << "s";
     if ((m_mask & 0x02) == 0x02) sink << "x";
     if ((m_mask & 0x01) == 0x01) sink << "c";
+  }
+
+  /* IT sequence disassembly */
+  void DisasmITSequence::operator() ( std::ostream& sink ) const
+  {
+    PSR pseudo_psr;
+    pseudo_psr.ITSetState( 0, m_mask );
+    do {
+      sink << (pseudo_psr.ITGetCondition() ? 'e' : 't');
+      pseudo_psr.ITAdvance();
+    } while (pseudo_psr.InITBlock());
   }
 
 } // end of namespace arm

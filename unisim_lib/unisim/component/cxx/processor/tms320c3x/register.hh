@@ -40,20 +40,8 @@
 #include <iosfwd>
 #include <string>
 #include <unisim/util/debug/register.hh>
-
-#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
-#else
-#define likely(x) (x)
-#define unlikely(x) (x)
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-#define INLINE __attribute__((always_inline))
-#else
-#define INLINE
-#endif
+#include <unisim/util/inlining/inlining.hh>
+#include <unisim/util/likely/likely.hh>
 
 namespace unisim {
 namespace component {
@@ -66,12 +54,12 @@ namespace tms320c3x {
 	public:
 		Register();
 		
-		inline Register& operator=(const Register& reg) INLINE;
-		inline void SetLo(uint32_t value) INLINE;
-		inline uint32_t GetLo() const INLINE;
-		inline void SetHi(uint8_t value) INLINE;
-		inline uint8_t GetHi() const INLINE;
-		inline uint32_t IsNeg() const INLINE;
+		inline Register& operator=(const Register& reg) ALWAYS_INLINE;
+		inline void SetLo(uint32_t value) ALWAYS_INLINE;
+		inline uint32_t GetLo() const ALWAYS_INLINE;
+		inline void SetHi(uint8_t value) ALWAYS_INLINE;
+		inline uint8_t GetHi() const ALWAYS_INLINE;
+		inline uint32_t IsNeg() const ALWAYS_INLINE;
 		void SetFromSinglePrecisionFPFormat(uint32_t value);
 		void SetFromShortFPFormat(uint16_t value);
 		uint32_t GetSinglePrecisionFPFormat();

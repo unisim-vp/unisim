@@ -39,6 +39,7 @@
 #include <unisim/util/debug/stmt.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/debug/data_object.hh>
+#include <unisim/util/debug/subprogram.hh>
 #include <list>
 #include <vector>
 #include <set>
@@ -693,12 +694,13 @@ public:
 	
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDataMember(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(const char *name) const;
 	
 	void EnumerateDataObjectNames(std::set<std::string>& name_set) const;
 	
 	const char *GetName() const;
 	bool GetLowPC(MEMORY_ADDR& low_pc) const;
-	bool GetHighPC(MEMORY_ADDR& high_pc) const;
+	bool GetHighPC(MEMORY_ADDR& high_pc, bool& is_offset) const;
 	bool GetContigousAddressRange(MEMORY_ADDR& low_pc, MEMORY_ADDR& high_pc) const;
 	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
 	const DWARF_RangeListEntry<MEMORY_ADDR> *GetNonContigousAddressRange() const;
@@ -730,6 +732,8 @@ public:
 	
 	const unisim::util::debug::Type *BuildType(bool following_pointer = false, unsigned int array_dim = 0) const;
 	const unisim::util::debug::Type *BuildTypeOf() const;
+	
+	const unisim::util::debug::SubProgram<MEMORY_ADDR> *BuildSubProgram() const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;

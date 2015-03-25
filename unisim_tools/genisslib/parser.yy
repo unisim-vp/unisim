@@ -55,39 +55,6 @@ create_action( Operation_t* _operation, ActionProto_t const* _actionproto, Sourc
   _operation->add( new Action_t( _actionproto, _actioncode, Scanner::comments, Scanner::fileloc ) );
 }
 
-static void
-extend_oplist( Vect_t<Operation_t>* _oplist, Operation_t* _op ) {
-  // Suppress duplicated entries
-  for( Vect_t<Operation_t>::const_iterator node = _oplist->begin(); node < _oplist->end(); ++ node ) {
-    if( (*node)->m_symbol != _op->m_symbol ) continue;
-    Scanner::fileloc.err( "warning: duplicated operation `%s' in list", _op->m_symbol.str() );
-    return;
-  }
-  
-  _oplist->append( _op );
-}
-
-static bool
-extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
-  /* Symbol points to either an operation or a group */
-  Operation_t* operation = Scanner::isa().operation( _symbol );
-  if( operation ) {
-    /* Symbol points to an operation */
-    extend_oplist( _oplist, operation );
-  } else {
-    Group_t* group = Scanner::isa().group( _symbol );
-    if( group ) {
-      /* Symbol points to a group */
-      for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
-        extend_oplist( _oplist, *gop );
-    } else {
-      Scanner::fileloc.err( "error: undefined operation `%s'", _symbol.str() );
-      return false;
-    }
-  }
-  return true;
-}
-
 %}
 
 /*
@@ -169,7 +136,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<sourcecode> returns
 %type<variable_list> global_var_list_declaration
 %type<group> group_declaration
-%type<operation_list> operation_list
+%type<string_list> operation_list
 %type<sourcecode> var_init
 %type<param_list> template_declaration
 %type<sourcecode> template_scheme
@@ -786,19 +753,15 @@ specialization: TOK_SPECIALIZE TOK_IDENT '(' constraint_list ')'
 
 user_specialization: TOK_IDENT '.' TOK_SPECIALIZE '(' operation_list ')'
 {
-  typedef Vect_t<Operation_t> vecop;
-  
-  vecop* above_ops = new vecop;
-  if( not extend_oplist( above_ops, ConstStr_t( $1, Scanner::symbols ) ) ) { YYABORT; }
-  vecop* below_ops = $5;
-  
-  for( vecop::const_iterator abv = above_ops->begin(); abv < above_ops->end(); ++ abv ) {
-    for( vecop::const_iterator blw = below_ops->begin(); blw < below_ops->end(); ++ blw ) {
-      Scanner::isa().m_user_orderings.insert( std::make_pair( *abv, *blw ) );
-    }
-  }
-  delete above_ops;
-  delete below_ops;
+  StringVect_t const* oplist = $5;
+  Scanner::isa().m_user_orderings.push_back( Isa::Ordering() );
+  Isa::Ordering& order = Scanner::isa().m_user_orderings.back();
+  order.fileloc = Scanner::fileloc;
+  order.symbols.reserve( oplist->size() + 1 );
+  order.symbols.push_back( ConstStr_t( $1, Scanner::symbols ) );
+  for (StringVect_t::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr)
+    { order.symbols.push_back( ConstStr_t( *itr, Scanner::symbols ) ); }
+  delete oplist;
 }
 ;
 
@@ -829,43 +792,47 @@ include : TOK_INCLUDE TOK_STRING
 group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
 {
   ConstStr_t           group_symbol = ConstStr_t( $2, Scanner::symbols );
-  Vect_t<Operation_t>* operation_list = $4;
+  StringVect_t*        oplist = $4;
   
   { /* Operations and groups name should not conflict */
     Operation_t* prev_op = Scanner::isa().operation( group_symbol );
-    if( prev_op ) {
+    if (prev_op) {
       Scanner::fileloc.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
       prev_op->m_fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
     
     Group_t* prev_grp = Scanner::isa().group( group_symbol );
-    if( prev_grp ) {
+    if (prev_grp) {
       Scanner::fileloc.err( "error: group `%s' redefined", group_symbol.str() );
       prev_grp->m_fileloc.err( "group `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
   }
   
-  $$ = new Group_t( group_symbol, *operation_list, Scanner::fileloc );
-  delete operation_list;
+  Group_t* res = new Group_t( group_symbol, Scanner::fileloc );
+  for (StringVect_t::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr) {
+    ConstStr_t symbol( *itr, Scanner::symbols );
+    if (not Scanner::isa().operations( symbol, res->m_operations ))
+      {
+        Scanner::fileloc.err( "error: undefined operation or group `%s'", symbol.str() );
+        YYABORT;
+      }
+  }
+  delete oplist;
+  
+  $$ = res;
 }
 ;
 
 operation_list:
   TOK_IDENT
 {
-  ConstStr_t symbol = ConstStr_t( $1, Scanner::symbols );
-  Vect_t<Operation_t>* oplist = new Vect_t<Operation_t>;
-  if( not extend_oplist( oplist, symbol ) ) { YYABORT; }
-  $$ = oplist;
+  $$ = new StringVect_t( $1 );
 }
   | operation_list ',' TOK_IDENT
 {
-  Vect_t<Operation_t>* oplist = $1;
-  ConstStr_t symbol = ConstStr_t( $3, Scanner::symbols );
-  if( not extend_oplist( oplist, symbol ) ) { YYABORT; }
-  $$ = oplist;
+  $$ = $1->append( $3 );
 }
 ;
 

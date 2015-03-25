@@ -43,9 +43,9 @@
 #include <set>
 #include <stdexcept>
 #include <unisim/util/arithmetic/arithmetic.hh>
-#include <unisim/util/debug/data_object.tcc>
+#include <unisim/util/debug/data_object_initializer.hh>
+#include <unisim/util/debug/data_object_initializer.tcc>
 #include <unisim/util/likely/likely.hh>
-#include <unisim/util/simfloat/floating.tcc>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -99,6 +99,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, Client<Profiling<ADDRESS> >(_name, _parent)
 	, Client<DebugInfoLoading>(_name, _parent)
 	, Client<DataObjectLookup<ADDRESS> >(_name, _parent)
+	, Client<SubProgramLookup<ADDRESS> >(_name, _parent)
 	, InlineDebuggerBase()
 	, debug_control_export("debug-control-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
@@ -113,6 +114,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, profiling_import("profiling-import", this)
 	, debug_info_loading_import("debug-info-loading-import", this)
 	, data_object_lookup_import("data-object-lookup-import", this)
+	, subprogram_lookup_import("subprogram-lookup-import", this)
 	, logger(*this)
 	, memory_atom_size(1)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
@@ -128,6 +130,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, output_stream(0)
 	, std_output_stream(&std::cout)
 	, std_error_stream(&std::cerr)
+	, tracked_data_objects()
 {
 	trap = false;
 }
@@ -138,6 +141,13 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 	if(output_stream)
 	{
 		delete output_stream;
+	}
+	
+	typename std::list<unisim::util::debug::DataObject<ADDRESS> *>::iterator it;
+	
+	for(it = tracked_data_objects.begin(); it != tracked_data_objects.end(); it++)
+	{
+		delete (*it);
 	}
 }
 
@@ -289,12 +299,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		if(running_mode == INLINE_DEBUGGER_MODE_STEP)
 		{
 			const Statement<ADDRESS> *stmt = FindStatement(cia);
-			if(!stmt || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
+			if(!stmt || !stmt->IsBeginningOfSourceStatement() || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
 		}
 	}
 
 	int nparms = 0;
 
+	PrintTrackedDataObjects(cia);
 	
 	Disasm(cia, 1, next_addr);
 
@@ -573,6 +584,27 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
+				if(IsTrackDataObjectCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					TrackDataObject(parm[1].c_str(), cia);
+					break;
+				}
+
+				if(IsUntrackDataObjectCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					UntrackDataObject(parm[1].c_str());
+					break;
+				}
+
+				if(IsWhatIsCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					PrintDataObjectType(parm[1].c_str(), cia);
+					break;
+				}
+
 				if(IsLoadConfigCommand(parm[0].c_str()))
 				{
 					recognized = true;
@@ -741,6 +773,12 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					recognized = true;
 					LoadMacro(parm[1].c_str());
 					break;
+				}
+				
+				if(IsInfoSubProgramCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					InfoSubProgram(parm[1].c_str());
 				}
 				break;
 			case 3:
@@ -947,19 +985,18 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 		} // end of switch
 
-		if (nparms >= 3 && nparms <= 33)
+		if((nparms >= 3) && IsMonitorSetCommand(parm[0].c_str()))
 		{
-			if (IsMonitorSetCommand(parm[0].c_str()))
+			recognized = true;
+			std::stringstream sstr;
+			int i;
+			
+			for(i = 2; i < nparms; i++)
 			{
-				recognized = true;
-				std::stringstream str;
-				for (int i = 2; i < nparms; i++)
-				{
-					if (i > 2) str << " ";
-						str << parm[i];
-				}
-				SetVariable(parm[1].c_str(), str.str().c_str());
+				if(i > 2) sstr << " ";
+				sstr << parm[i];
 			}
+			SetVariable(parm[1].c_str(), sstr.str().c_str());
 		}
 
 		if(!recognized)
@@ -1457,56 +1494,6 @@ bool InlineDebugger<ADDRESS>::EditBuffer(ADDRESS addr, std::vector<uint8_t>& buf
 	(*std_output_stream) << "Leaving edit mode." << std::endl;
 	return true;
 }
-
-// template <class ADDRESS>
-// bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
-// {
-// 	unsigned int written = 0;
-// 	unsigned int failed = 0;
-// 	std::string line;
-// 
-// 	(*std_output_stream) << "Entering data memory edit mode." << std::endl;
-// 	do
-// 	{
-// 		std::stringstream sstr;
-// 		sstr << "0x" << std::hex;
-// 		sstr.fill('0');
-// 		sstr.width(2 * sizeof(addr));
-// 		sstr << addr;
-// 		sstr << ": ";
-// 		
-// 		bool interactive = false;
-// 		if(!GetLine(sstr.str().c_str(), line, interactive))
-// 		{
-// 			return false;
-// 		}
-// 	
-// 		if(IsBlankLine(line)) break;
-// 
-// 		const char *ptr = line.c_str();
-// 		char *endptr = 0;
-// 		
-// 		do
-// 		{
-// 			uint8_t value = strtoul(ptr, &endptr, 0);
-// 			
-// 			if(ptr == endptr) break;
-// 		
-// 			if(memory_import->WriteMemory(addr, &value, 1))
-// 				written++;
-// 			else
-// 				failed++;
-// 			
-// 			addr++;
-// 			ptr = endptr;
-// 		}
-// 		while(1);
-// 	}
-// 	while(1);
-// 	(*std_output_stream) << "Leaving data memory edit mode." << std::endl;
-// 	(*std_output_stream) << written << " of " << (failed + written) << " bytes written" << std::endl;
-// 	return true;
-// }
 
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
@@ -2246,15 +2233,29 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 		size_t pos = str.find_first_of('#');
 		
 		std::stringstream sstr_addr(str.substr(0, pos));
-		std::stringstream sstr_size(str.substr(pos + 1));
 		
-		if((sstr_addr >> std::hex >> addr) && (sstr_size >> std::dec >> size))
+		if(sstr_addr >> std::hex >> addr)
 		{
-			if(sstr_addr.eof() && !sstr_size.eof())
+			if(sstr_addr.eof())
 			{
 				addr *= memory_atom_size;
-				size *= memory_atom_size;
-				return true;
+			
+				if(pos == std::string::npos)
+				{
+					size = memory_atom_size;
+					return true;
+				}
+
+				std::stringstream sstr_size(str.substr(pos + 1));
+				
+				if(sstr_size >> std::dec >> size)
+				{
+					if(sstr_size.eof())
+					{
+						size *= memory_atom_size;
+						return true;
+					}
+				}
 			}
 		}
 	}
@@ -2678,10 +2679,6 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 					{
 						std::ios::fmtflags std_output_stream_saved_flags(std_output_stream->flags());
 						
-						const unisim::util::debug::Type *data_object_type = data_object->GetType();
-						
-						(*std_output_stream) << *data_object_type;
-						if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
 						(*std_output_stream) << data_object_name << " = [ ";
 						ADDRESS byte_offset;
 						(*std_output_stream).fill('0');
@@ -2701,24 +2698,24 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 					}
 					else
 					{
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << endl;
 					}
 				}
 				else
 				{
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << endl;
 				}
 			}
 			else
 			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << endl;
 			}
-			
+				
 			delete data_object;
 		}
 		else
 		{
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
 		}
 	}
 	else
@@ -2728,62 +2725,70 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 }
 
 template <class ADDRESS>
+void InlineDebugger<ADDRESS>::PrintDataObject(unisim::util::debug::DataObject<ADDRESS> *data_object, ADDRESS cia)
+{
+	const char *data_object_name = data_object->GetName();
+	
+	if(data_object->Exists())
+	{
+		if(!data_object->IsOptimizedOut())
+		{
+			unisim::util::debug::DataObjectInitializer<ADDRESS> data_object_initializer = unisim::util::debug::DataObjectInitializer<ADDRESS>(data_object, cia, data_object_lookup_import);
+			(*std_output_stream) << data_object_name << " = " << data_object_initializer << std::endl;
+		}
+		else
+		{
+			(*std_output_stream) << data_object_name << " = <optimized out>" << endl;
+		}
+	}
+	else
+	{
+		(*std_output_stream) << data_object_name << " = <unavailable>" << endl;
+	}
+}
+
+template <class ADDRESS>
 void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDRESS cia)
 {
 	if(data_object_lookup_import)
 	{
-		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
-		
-		if(data_object)
+		if(*data_object_name == '&')
 		{
-			const unisim::util::debug::Type *data_object_type = data_object->GetType();
+			// requesting address of data object
+			data_object_name++; // skip '&'
+			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
 			
-			if(!data_object->IsOptimizedOut())
+			if(data_object)
 			{
-				if(data_object->Fetch())
+				ADDRESS data_object_addr = 0;
+				if(data_object->GetAddress(data_object_addr))
 				{
-					ADDRESS data_object_bit_size = data_object->GetBitSize();
-					ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
-					unisim::util::endian::endian_type data_object_endian = data_object->GetEndian();
-					uint8_t data_object_raw_value[data_object_byte_size];
-					memset(data_object_raw_value, 0, data_object_byte_size);
-					
-					ADDRESS buf_bit_offset = 0;
-					if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
-					{
-						ADDRESS l_bit_size = data_object_bit_size % 8;
-						buf_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
-					}
-					if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
-					{
-						unisim::util::debug::DataObjectInitializer<ADDRESS> data_object_initializer = unisim::util::debug::DataObjectInitializer<ADDRESS>(data_object, cia, data_object_lookup_import);
-						(*std_output_stream) << *data_object_type; 
-						if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
-						(*std_output_stream) << data_object_name << ";" << std::endl;
-						(*std_output_stream) << data_object_name << " = " << data_object_initializer << std::endl;
-					}
-					else
-					{
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
-					}
+					(*std_output_stream) << "&" << data_object_name << " = @0x" << std::hex << data_object_addr << std::dec << endl;
 				}
 				else
 				{
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" has no address" << endl;
 				}
+				delete data_object;
 			}
 			else
 			{
-				(*std_output_stream) << *data_object_type;
-				if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
-				(*std_output_stream) << data_object_name << " = <optimized out>" << endl;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
 			}
-			
-			delete data_object;
 		}
 		else
 		{
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+			// requesting value of data object
+			if(data_object)
+			{
+				PrintDataObject(data_object, cia);
+				delete data_object;
+			}
+			else
+			{
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
+			}
 		}
 	}
 	else
@@ -2849,30 +2854,31 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 							if(!data_object->Commit())
 							{
 								status = false;
-								(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be committed" << endl;
 							}
 						}
 						else
 						{
 							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be written" << endl;
 						}
 					}
 					else
 					{
 						status = false;
-						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+						(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be read" << endl;
 					}
 				}
 				else
 				{
 					status = false;
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << endl;
 				}
 			}
 			else
 			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+				status = false;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << endl;
 			}
 			
 			delete data_object;
@@ -2880,7 +2886,7 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 		else
 		{
 			status = false;
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
 		}
 	}
 	else
@@ -2930,7 +2936,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 							if(!ParseIntegerValue(literal, data_object_raw_value))
 							{
 								status = false;
-								(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts an integral value" << endl;
+								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" only accepts an integral value" << endl;
 							}
 							break;
 						case unisim::util::debug::T_FLOAT:
@@ -2940,7 +2946,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 								if(!ParseFloatValue(literal, float_value))
 								{
 									status = false;
-									(*std_output_stream) << "Data object \"" << data_object_name << "\" only accepts a floating-point value" << endl;
+									(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" only accepts a floating-point value" << endl;
 									break;
 								}
 								switch(data_object_bit_size)
@@ -2957,7 +2963,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 										data_object_raw_value = float_value.queryValue();
 										break;
 									default:
-										(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << endl;
+										(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be set (only 32-bit or 64-bit floating-point values are supported)" << endl;
 										break;
 								}
 							}
@@ -2973,7 +2979,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 						case unisim::util::debug::T_VOID:
 						case unisim::util::debug::T_VOLATILE:
 							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" is not a base type" << endl;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is not a base type" << endl;
 							break;
 					}
 					
@@ -2984,25 +2990,26 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 							if(!data_object->Commit())
 							{
 								status = false;
-								(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+								(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be committed" << endl;
 							}
 						}
 						else
 						{
 							status = false;
-							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
+							(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be written" << endl;
 						}
 					}
 				}
 				else
 				{
 					status = false;
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+					(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" can't be fetched" << endl;
 				}
 			}
 			else
 			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+				status = false;
+				(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" is optimized out" << endl;
 			}
 			
 			delete data_object;
@@ -3010,7 +3017,7 @@ bool InlineDebugger<ADDRESS>::SetDataObject(const char *data_object_name, ADDRES
 		else
 		{
 			status = false;
-			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
 		}
 	}
 	else
@@ -3034,6 +3041,118 @@ void InlineDebugger<ADDRESS>::ListDataObjects(ADDRESS cia, typename unisim::serv
 		{
 			(*std_output_stream) << (*it) << std::endl;
 		}
+	}
+	else
+	{
+		(*std_output_stream) << "Can't lookup data objects" << endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::TrackDataObject(const char *data_object_name, ADDRESS cia)
+{
+	if(data_object_lookup_import)
+	{
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		
+		if(data_object)
+		{
+			tracked_data_objects.push_back(data_object);
+		}
+		else
+		{
+			(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
+		}
+	}
+	else
+	{
+		(*std_output_stream) << "Can't lookup data objects" << endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::UntrackDataObject(const char *data_object_name)
+{
+	typename std::list<unisim::util::debug::DataObject<ADDRESS> *>::iterator it;
+	
+	for(it = tracked_data_objects.begin(); it != tracked_data_objects.end(); it++)
+	{
+		if(strcmp((*it)->GetName(), data_object_name) == 0)
+		{
+			it = tracked_data_objects.erase(it);
+		}
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::PrintTrackedDataObjects(ADDRESS cia)
+{
+	typename std::list<unisim::util::debug::DataObject<ADDRESS> *>::iterator it;
+	
+	for(it = tracked_data_objects.begin(); it != tracked_data_objects.end(); it++)
+	{
+		unisim::util::debug::DataObject<ADDRESS> *data_object = *it;
+		
+		data_object->Seek(cia);
+		
+		PrintDataObject(data_object, cia);
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::PrintDataObjectType(unisim::util::debug::DataObject<ADDRESS> *data_object, ADDRESS cia)
+{
+	const char *data_object_name = data_object->GetName();
+	
+	if(data_object->Exists())
+	{
+		const unisim::util::debug::Type *data_object_type = data_object->GetType();
+		(*std_output_stream) << data_object_type->BuildCDecl(data_object_name) << ";" << std::endl;
+	}
+	else
+	{
+		(*std_output_stream) << "Type of Data object \"" << data_object_name << "\" is not available" << endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::PrintDataObjectType(const char *data_object_name, ADDRESS cia)
+{
+	unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+	
+	if(data_object)
+	{
+		PrintDataObjectType(data_object, cia);
+	}
+	else
+	{
+		(*std_output_stream) << "At PC=0x" << std::hex << cia << std::dec << ", Data object \"" << data_object_name << "\" not found" << endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::InfoSubProgram(const char *subprogram_name)
+{
+	const unisim::util::debug::SubProgram<ADDRESS> *subprogram = subprogram_lookup_import->FindSubProgram(subprogram_name);
+	
+	if(subprogram)
+	{
+		(*std_output_stream) << "Subprogram \"" << subprogram_name << "\" found" << endl;
+		(*std_output_stream) << "Arity: " << subprogram->GetArity() << endl;
+		for(unsigned i = 0; i < subprogram->GetArity(); i++)
+		{
+			const unisim::util::debug::FormalParameter *formal_param = subprogram->GetFormalParameter(i);
+			
+			const char *formal_param_name = formal_param->GetName();
+			const unisim::util::debug::Type *formal_param_type = formal_param->GetType();
+			(*std_output_stream) << "Type of parameter #" << i << ": " << formal_param_type->BuildCDecl(formal_param_name) << endl;
+		}
+		
+		delete subprogram;
+	}
+	else
+	{
+		(*std_output_stream) << "Subprogram \"" << subprogram_name << "\" not found" << endl;
 	}
 }
 
@@ -3348,6 +3467,30 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsListDataObjectsCommand(const char *cmd) const
 {
 	return strcmp(cmd, "lob") == 0 || strcmp(cmd, "lstobj") == 0 || strcmp(cmd, "listobjects") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsTrackDataObjectCommand(const char *cmd) const
+{
+	return strcmp(cmd, "tob") == 0 || strcmp(cmd, "trackobj") == 0 || strcmp(cmd, "trackobject") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsUntrackDataObjectCommand(const char *cmd) const
+{
+	return strcmp(cmd, "utob") == 0 || strcmp(cmd, "untrackobj") == 0 || strcmp(cmd, "untrackobject") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsWhatIsCommand(const char *cmd) const
+{
+	return strcmp(cmd, "whatis") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsInfoSubProgramCommand(const char *cmd) const
+{
+	return strcmp(cmd, "info") == 0;
 }
 
 } // end of namespace inline_debugger

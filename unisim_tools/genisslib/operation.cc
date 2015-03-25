@@ -58,6 +58,15 @@ Group_t::Group_t( ConstStr_t _symbol, Vect_t<Operation_t>& _oplist, FileLoc_t co
   : m_symbol( _symbol ), m_operations( _oplist ), m_fileloc( _fileloc )
 {}
 
+/** Create a group object
+    @param _symbol the symbol naming the group
+    @param _fileloc the source file location of the group declaration
+    @returns a group list object
+*/
+Group_t::Group_t( ConstStr_t _symbol, FileLoc_t const& _fileloc )
+  : m_symbol( _symbol ), m_fileloc( _fileloc )
+{}
+
 /** Search the operation for an action implementing an action prototype
     @param actionproto an action prototype object
     @return the matching action object, null if no action object matches

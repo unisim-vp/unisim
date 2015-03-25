@@ -99,11 +99,7 @@ public:
 	virtual ~CPU();
 	virtual void Synchronize();
 	virtual bool EndSetup();
-	inline void BusSynchronize()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-	__attribute__((always_inline))
-#endif
-	;
+	inline void BusSynchronize() ALWAYS_INLINE;
 
 	void Run();
 	virtual bool Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message);

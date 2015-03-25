@@ -71,7 +71,11 @@ DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_A
 template <class MEMORY_ADDR>
 DWARF_CompilationUnit<MEMORY_ADDR>::~DWARF_CompilationUnit()
 {
-	if(dw_die) delete dw_die;
+	if(dw_die)
+	{
+		UnRegister(dw_die);
+		delete dw_die;
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -222,6 +226,7 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 	if((sz = dw_die->Load(rawdata, max_size, offset + size)) < 0)
 	{
 		delete dw_die;
+		dw_die = 0;
 		return -1;
 	}
 	rawdata += sz;
@@ -248,6 +253,12 @@ template <class MEMORY_ADDR>
 void DWARF_CompilationUnit<MEMORY_ADDR>::Register(DWARF_DIE<MEMORY_ADDR> *_dw_die)
 {
 	dw_handler->Register(_dw_die);
+}
+
+template <class MEMORY_ADDR>
+void DWARF_CompilationUnit<MEMORY_ADDR>::UnRegister(DWARF_DIE<MEMORY_ADDR> *_dw_die)
+{
+	dw_handler->UnRegister(_dw_die);
 }
 
 template <class MEMORY_ADDR>
@@ -428,6 +439,22 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::
 		dw_die_code_portion = dw_die_code_portion_parent;
 	}
 	while(dw_die_code_portion);
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindSubProgram(const char *name) const
+{
+	if(!dw_die) return 0;
+	
+	return dw_die->FindSubProgram(name);
+}
+
+template <class MEMORY_ADDR>
+const char *DWARF_CompilationUnit<MEMORY_ADDR>::GetName() const
+{
+	const DWARF_String<MEMORY_ADDR> *dw_at_name = 0;
+	if(!dw_die || !dw_die->GetAttributeValue(DW_AT_name, dw_at_name)) return 0;
+	return dw_at_name->GetValue();
 }
 
 template <class MEMORY_ADDR>

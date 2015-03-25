@@ -4,6 +4,8 @@ op divs(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11000000[8]:rd[4])
 
 divs.execute={
 	
+	if(rd == 15) return false;
+
 	int32_t x = (int32_t)cpu->GetGPR(rx);
 	int32_t y = (int32_t)cpu->GetGPR(ry);
 	if(y==0) return false;
@@ -29,6 +31,8 @@ op divu(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b11010000[8]:rd[4])
 
 divu.execute={
 	
+	if(rd == 15) return false;
+
 	uint32_t x = cpu->GetGPR(rx);
 	uint32_t y = cpu->GetGPR(ry);
 	if(y==0) return false;
@@ -77,6 +81,8 @@ op macs_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b01010100[8]:rd[4])
 
 macs_d.execute={
 
+	if(rd == 15) return false;
+	
 	int32_t x= cpu->GetGPR(rx);
  	int32_t y= cpu->GetGPR(ry);
  	int32_t d= cpu->GetGPR(rd);
@@ -101,6 +107,8 @@ macs_d.disasm={
 op macu_d(0b111[3]:rx[4]:0b00000[5]:ry[4]:><:0b0000[4]:0b01110100[8]:rd[4])
 
 macu_d.execute={
+
+	if(rd == 15) return false;
 
 	uint32_t x= cpu->GetGPR(rx);
  	uint32_t y= cpu->GetGPR(ry);
@@ -203,7 +211,7 @@ muls_d.execute={
 
 muls_d.disasm={
 
-	os << "muls\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
+	os << "muls.d\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 
@@ -228,7 +236,7 @@ mulu_d.execute={
 
 mulu_d.disasm={
 
-	os << "mulu\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
+	os << "mulu.d\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
 
