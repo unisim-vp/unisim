@@ -43,6 +43,7 @@
 #include <unisim/util/debug/blob/blob.hh>
 #include <unisim/util/debug/stmt.hh>
 #include <unisim/util/debug/data_object.hh>
+#include <unisim/util/debug/subprogram.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/kernel/logger/logger.hh>
 
@@ -125,15 +126,20 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubName(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubType(const char *name) const;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc) const;
+	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByName(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(MEMORY_ADDR pc) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(const char *sub_program_name, const char *compilation_unit_name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
-	bool FindDataObject(const CLocOperationStream& _c_loc_operation_stream, MEMORY_ADDR pc, std::string& matched_data_object_name, const DWARF_Location<MEMORY_ADDR> *& dw_data_object_loc, const unisim::util::debug::Type *& dw_data_object_type) const;	
+	bool FindDataObject(const CLocOperationStream& _c_loc_operation_stream, MEMORY_ADDR pc, std::string& matched_data_object_name, const DWARF_Location<MEMORY_ADDR> *& dw_data_object_loc, const unisim::util::debug::Type *& dw_data_object_type) const;
+	unisim::util::debug::SubProgram<MEMORY_ADDR> *GetSubProgram(const char *sub_program_name) const;
 	
-	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(const char *data_object_name, const char *filename = 0) const;
-	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(const char *data_object_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
 	
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
+	
+	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(const char *data_object_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 	
 	endian_type GetFileEndianness() const;
 	endian_type GetArchEndianness() const;

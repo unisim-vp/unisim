@@ -40,6 +40,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/kernel/logger/logger.hh>
+#include <set>
 
 namespace unisim {
 namespace util {
@@ -106,6 +107,7 @@ public:
 	DWARF_Location();
 	~DWARF_Location();
 	void Clear();
+	void ClearRanges();
 	unsigned int GetType() const;
 	void Add(DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece);
 	const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& GetLocationPieces() const;
@@ -121,10 +123,13 @@ public:
 	void SetBitOffset(int64_t bit_offset);
 	void SetBitSize(uint64_t bit_size);
 	void SetEncoding(uint8_t encoding);
+	void SetRanges(const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges);
 	uint64_t GetByteSize() const;
 	int64_t GetBitOffset() const;
 	uint64_t GetBitSize() const;
 	uint8_t GetEncoding() const;
+	const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& GetRanges() const;
+	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& GetRanges();
 private:
 	unsigned int dw_loc_type;
 	unsigned int dw_reg_num;
@@ -136,6 +141,7 @@ private:
 	uint64_t dw_bit_size;
 	uint8_t dw_encoding;
 	std::vector<DWARF_LocationPiece<MEMORY_ADDR> *> dw_location_pieces;
+	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
 };
 
 template <class MEMORY_ADDR>

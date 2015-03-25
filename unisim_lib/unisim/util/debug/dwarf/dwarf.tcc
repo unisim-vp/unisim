@@ -2678,7 +2678,27 @@ const DWARF_CompilationUnit<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCompil
 }
 
 template <class MEMORY_ADDR>
-const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgramByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const
+const DWARF_CompilationUnit<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCompilationUnitByName(const char *name) const
+{
+	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
+	
+	for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++)
+	{
+		DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
+
+		const char *dw_cu_name = dw_cu->GetName();
+		
+		if(dw_cu_name)
+		{
+			if(strcmp(dw_cu_name, name) == 0) return dw_cu;
+		}
+	}
+
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgramDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const
 {
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = FindCompilationUnitByAddrRange(addr, length);
 	
@@ -2688,9 +2708,55 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgramByAddrRa
 }
 
 template <class MEMORY_ADDR>
-const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgram(MEMORY_ADDR pc) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgramDIE(MEMORY_ADDR pc) const
 {
-	return FindSubProgramByAddrRange(pc, 1);
+	return FindSubProgramDIEByAddrRange(pc, 1);
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgramDIE(const char *subprogram_name, const char *compilation_unit_name) const
+{
+	if(compilation_unit_name)
+	{
+		const DWARF_CompilationUnit<MEMORY_ADDR> *dw_found_cu = FindCompilationUnitByName(compilation_unit_name);
+		
+		return dw_found_cu ? dw_found_cu->FindSubProgram(subprogram_name) : 0;
+	}
+	else
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_subprogram = FindDIEByPubName(subprogram_name);
+		
+		if(dw_die_subprogram) return dw_die_subprogram;
+		
+		typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
+		
+		for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++)
+		{
+			DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
+
+			const DWARF_DIE<MEMORY_ADDR> *dw_die_subprogram = dw_cu->FindSubProgram(subprogram_name);
+			
+			if(dw_die_subprogram) return dw_die_subprogram;
+		}
+	}
+
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::SubProgram<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgram(const char *subprogram_name, const char *filename, const char *compilation_unit_name) const
+{
+	const char *blob_filename = blob->GetFilename();
+	
+	if(filename)
+	{
+		if(!blob_filename) return 0;
+		if(strcmp(blob_filename, filename) != 0) return 0;
+	}
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_subprogram = FindSubProgramDIE(subprogram_name, compilation_unit_name);
+	
+	return dw_die_subprogram ? dw_die_subprogram->BuildSubProgram() : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -2711,8 +2777,9 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDataObjectDIE(cons
 }
 
 template <class MEMORY_ADDR>
-unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetDataObject(const char *data_object_name, const char *filename) const
+unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetDataObject(const char *data_object_name, const char *filename, const char *compilation_unit_name) const
 {
+	// FIXME: take care of compilation_unit_name
 	const char *blob_filename = blob->GetFilename();
 	
 	if(filename)
@@ -2733,7 +2800,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetDat
 }
 
 template <class MEMORY_ADDR>
-unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetDataObject(const char *data_object_name, MEMORY_ADDR pc) const
+unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const
 {
 	CLocOperationStream c_loc_operation_stream = CLocOperationStream(INFIX_NOTATION);
 	
@@ -2798,6 +2865,21 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 		}
 	}
 
+	// check that we've really found a data object
+	switch(dw_die_data_object->GetTag())
+	{
+		case DW_TAG_variable:
+		case DW_TAG_formal_parameter:
+		case DW_TAG_constant:
+			break;
+		default:
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", DIE found for data Object \"" << data_object_base_name << "\" does not describe a data Object" << EndDebugInfo;
+			}
+			return false;
+	}
+	
 	bool has_frame_base = false;
 	MEMORY_ADDR frame_base = 0;
 	
@@ -2944,8 +3026,9 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 						break;
 					}
 					MEMORY_ADDR object_addr = dw_data_object_loc->GetAddress();
-					if(dw_data_object_loc) delete dw_data_object_loc;
-					dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
+// 					if(dw_data_object_loc) delete dw_data_object_loc;
+// 					dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
+					dw_data_object_loc->Clear();
 					
 					if(!dw_die_data_member->GetDataMemberLocation(pc, has_frame_base, frame_base, object_addr, *dw_data_object_loc))
 					{
@@ -2968,6 +3051,7 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 					if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
 					{
 						// match or optimized out
+						dw_data_object_type = dw_die_data_member->BuildTypeOf();
 						match_or_optimized_out = true;
 						break;
 					}
@@ -3234,10 +3318,12 @@ bool DWARF_Handler<MEMORY_ADDR>::FindDataObject(const CLocOperationStream& _c_lo
 						break;
 					}
 					
+					const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges = dw_data_object_loc->GetRanges();
 					delete dw_data_object;
 					// Note: dw_data_object_loc is also deleted with dw_data_object
 					
 					dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
+					dw_data_object_loc->SetRanges(ranges);
 					dw_data_object_loc->SetAddress(pointer_value);
 
 					if(is_indexing_a_pointer)
@@ -3499,7 +3585,7 @@ void DWARF_Handler<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>&
 template <class MEMORY_ADDR>
 bool DWARF_Handler<MEMORY_ADDR>::GetCallingConvention(MEMORY_ADDR pc, uint8_t& calling_convention) const
 {
-	const DWARF_DIE<MEMORY_ADDR> *dw_die = FindSubProgram(pc);
+	const DWARF_DIE<MEMORY_ADDR> *dw_die = FindSubProgramDIE(pc);
 	
 	return dw_die && dw_die->GetCallingConvention(calling_convention);
 }

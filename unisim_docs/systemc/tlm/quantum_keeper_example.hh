@@ -1,5 +1,5 @@
 struct Initiator1: 
-	sc_module, tlm::tlm_bw_nb_transport_if<> // Loosely-timed initiator
+	sc_module, tlm::tlm_bw_transport_if<> // Loosely-timed initiator
 {
 	tlm::tlm_nb_initiator_socket<32> init_socket;
 
@@ -13,18 +13,20 @@ struct Initiator1:
 	}
 
 	void T() {
-		tlm::tlm_generic_payload t;
+		tlm::tlm_generic_payload trans;
 		tlm::tlm_phase phase;
-		t.set_command(tlm::TLM_WRITE_COMMAND);
-		t.set_data_length(4);
+		trans.set_command(tlm::TLM_WRITE_COMMAND);
+		trans.set_data_length(4);
 
 		for (int i = 0; i < RUN_LENGTH; i += 4) {
 			int word = i;
-			t.set_address(i);
-			t.set_data_ptr( (unsigned char*)(&word) );
+			trans.set_address(i);
+			trans.set_data_ptr( (unsigned char*)(&word) );
 			phase = tlm::BEGIN_REQ;
+			sc_time t = m_qk.get_local_time();
 								// Annotate nb_transport with local time
-			tlm::tlm_sync_enum status = init_socket->nb_transport(t, phase, m_qk.get_local_time() );
+			tlm::tlm_sync_enum status = init_socket->nb_transport(trans, phase, t );
+			m_qk.set(t);
 			switch (status) {
 				...
 			}

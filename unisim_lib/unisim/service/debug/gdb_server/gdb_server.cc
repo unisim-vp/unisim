@@ -39,22 +39,31 @@ namespace service {
 namespace debug {
 namespace gdb_server {
 
-GDBRegister::GDBRegister(const string& reg_name, int reg_size, GDBEndian endian, unsigned int reg_num)
+GDBRegister::GDBRegister()
+	: name()
+	, bitsize(0)
+	, reg(0)
+	, endian(GDB_LITTLE_ENDIAN)
+	, reg_num(0)
 {
-	this->name = reg_name;
-	this->size = reg_size;
-	this->endian = endian;
-	this->reg = 0;
-	this->reg_num = reg_num;
 }
 
-GDBRegister::GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian, unsigned int reg_num)
+GDBRegister::GDBRegister(const string& reg_name, int reg_bitsize, GDBEndian reg_endian, unsigned int _reg_num)
+	: name(reg_name)
+	, bitsize(reg_bitsize)
+	, reg(0)
+	, endian(reg_endian)
+	, reg_num(_reg_num)
 {
-	this->name = reg->GetName();
-	this->size = reg->GetSize();
-	this->endian = endian;
-	this->reg = reg;
-	this->reg_num = reg_num;
+}
+
+GDBRegister::GDBRegister(unisim::util::debug::Register *_reg, GDBEndian reg_endian, unsigned int _reg_num)
+	: name(_reg->GetName())
+	, bitsize(8 * _reg->GetSize())
+	, reg(_reg)
+	, endian(reg_endian)
+	, reg_num(_reg_num)
+{
 }
 
 bool GDBRegister::SetValue(const string& hex)
@@ -62,6 +71,7 @@ bool GDBRegister::SetValue(const string& hex)
 	int i;
 	unsigned int len = hex.length();
 	unsigned int pos = 0;
+	int size = bitsize / 8;
 	uint8_t value[size];
 
 	if(endian == GDB_BIG_ENDIAN)
@@ -92,61 +102,80 @@ bool GDBRegister::SetValue(const string& hex)
 	}
 
 	if(reg)	reg->SetValue(&value);
-	return true;
+	return reg != 0;
 }
 
-void GDBRegister::SetValue(const void *buffer)
+bool GDBRegister::SetValue(const void *buffer)
 {
 	if(reg) reg->SetValue(buffer);
+	return reg != 0;
 }
 
-void GDBRegister::GetValue(string& hex) const
+bool GDBRegister::GetValue(string& hex) const
 {
 	int i;
-	char c[2];
-	c[1] = 0;
+	int size = bitsize / 8;
 	uint8_t value[size];
-	memset(value, 0, size);
-	if(reg)
-		reg->GetValue(&value);
-
+	
 	hex.erase();
-
-	if(endian == GDB_BIG_ENDIAN)
+	
+	memset(value, 0, size);
+	
+	if(reg)
 	{
-#if BYTE_ORDER == BIG_ENDIAN
-		for(i = 0; i < size; i++)
-#else
-		for(i = size - 1; i >= 0; i--)
-#endif
+		reg->GetValue(&value);
+		
+		char c[2];
+		c[1] = 0;
+
+		if(endian == GDB_BIG_ENDIAN)
 		{
-			c[0] = Nibble2HexChar(value[i] >> 4);
-			hex += c;
-			c[0] = Nibble2HexChar(value[i] & 0xf);
-			hex += c;
+#if BYTE_ORDER == BIG_ENDIAN
+			for(i = 0; i < size; i++)
+#else
+			for(i = size - 1; i >= 0; i--)
+#endif
+			{
+				c[0] = Nibble2HexChar(value[i] >> 4);
+				hex += c;
+				c[0] = Nibble2HexChar(value[i] & 0xf);
+				hex += c;
+			}
+		}
+		else
+		{
+#if BYTE_ORDER == LITTLE_ENDIAN
+			for(i = 0; i < size; i++)
+#else
+			for(i = size - 1; i >= 0; i--)
+#endif
+			{
+				c[0] = Nibble2HexChar(value[i] >> 4);
+				hex += c;
+				c[0] = Nibble2HexChar(value[i] & 0xf);
+				hex += c;
+			}
 		}
 	}
 	else
 	{
-#if BYTE_ORDER == LITTLE_ENDIAN
 		for(i = 0; i < size; i++)
-#else
-		for(i = size - 1; i >= 0; i--)
-#endif
 		{
-			c[0] = Nibble2HexChar(value[i] >> 4);
-			hex += c;
-			c[0] = Nibble2HexChar(value[i] & 0xf);
-			hex += c;
+			hex += 'x';
+			hex += 'x';
 		}
 	}
+	
+	return reg != 0;
 }
 
-void GDBRegister::GetValue(void *buffer) const
+bool GDBRegister::GetValue(void *buffer) const
 {
+	int size = bitsize / 8;
 	memset(buffer, 0, size);
 	if(reg)
 		reg->GetValue(buffer);
+	return reg != 0;
 }
 
 } // end of namespace gdb_server

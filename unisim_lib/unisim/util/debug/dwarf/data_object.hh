@@ -115,7 +115,8 @@ private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	std::string data_object_name;
 	const CLocOperationStream c_loc_operation_stream;
-	std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *> infos;
+	std::vector<const DWARF_DataObjectInfo<MEMORY_ADDR> *> infos;
+	std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *> cache;
 	bool exists;
 	MEMORY_ADDR pc;
 	const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc;
@@ -127,6 +128,10 @@ private:
 	DWARF_BitVector bv;
 	bool debug;
 	unisim::kernel::logger::Logger& logger;
+	
+	void UpdateCache(const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *dw_data_object_type);
+	void InvalidateCache();
+	const DWARF_DataObjectInfo<MEMORY_ADDR> *LookupCache(MEMORY_ADDR pc) const;
 };
 
 } // end of namespace dwarf

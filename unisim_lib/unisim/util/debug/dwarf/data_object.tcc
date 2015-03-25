@@ -88,6 +88,7 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, data_object_name(_data_object_name)
 	, c_loc_operation_stream(_c_loc_operation_stream)
 	, infos()
+	, cache()
 	, exists(false)
 	, pc(0)
 	, dw_data_object_loc(0)
@@ -108,6 +109,7 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, data_object_name(_data_object_name)
 	, c_loc_operation_stream(_c_loc_operation_stream)
 	, infos()
+	, cache()
 	, exists(true)
 	, pc(_pc)
 	, dw_data_object_loc(_dw_data_object_loc)
@@ -120,20 +122,13 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, debug(_debug)
 	, logger(dw_handler->GetLogger())
 {
-	infos.insert(std::pair<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>(pc, new DWARF_DataObjectInfo<MEMORY_ADDR>(dw_data_object_loc, dw_data_object_type)));
+	UpdateCache(dw_data_object_loc, dw_data_object_type);
 }
 	
 template <class MEMORY_ADDR>
 DWARF_DataObject<MEMORY_ADDR>::~DWARF_DataObject()
 {
-	typename std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>::iterator iter;
-	
-	for(iter = infos.begin(); iter != infos.end(); iter++)
-	{
-		const DWARF_DataObjectInfo<MEMORY_ADDR> *dw_data_object_info = (*iter).second;
-		delete dw_data_object_info;
-	}
-	infos.clear();
+	InvalidateCache();
 }
 
 template <class MEMORY_ADDR>
@@ -190,16 +185,65 @@ bool DWARF_DataObject<MEMORY_ADDR>::GetAddress(MEMORY_ADDR& addr) const
 }
 
 template <class MEMORY_ADDR>
+void DWARF_DataObject<MEMORY_ADDR>::UpdateCache(const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_dw_data_object_type)
+{
+	const DWARF_DataObjectInfo<MEMORY_ADDR> *dw_data_object_info = new DWARF_DataObjectInfo<MEMORY_ADDR>(_dw_data_object_loc, _dw_data_object_type);
+	
+	infos.push_back(dw_data_object_info);
+	
+	const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges = _dw_data_object_loc->GetRanges();
+	
+	typename std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >::const_iterator it;
+	
+	for(it = ranges.begin(); it != ranges.end(); it++)
+	{
+		MEMORY_ADDR _pc;
+		
+		for(_pc = it->first; _pc < it->second; _pc++)
+		{
+			cache.insert(std::pair<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>(_pc, dw_data_object_info));
+		}
+	}
+}
+
+template <class MEMORY_ADDR>
+void DWARF_DataObject<MEMORY_ADDR>::InvalidateCache()
+{
+	typename std::vector<const DWARF_DataObjectInfo<MEMORY_ADDR> *>::iterator it;
+	
+	for(it = infos.begin(); it != infos.end(); it++)
+	{
+		delete (*it);
+	}
+	
+	cache.clear();
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DataObjectInfo<MEMORY_ADDR> *DWARF_DataObject<MEMORY_ADDR>::LookupCache(MEMORY_ADDR _pc) const
+{
+	typename std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>::const_iterator iter = cache.find(_pc);
+	
+	if(iter != cache.end())
+	{
+		const DWARF_DataObjectInfo<MEMORY_ADDR> *dw_data_object_info = (*iter).second;
+		
+		return dw_data_object_info;
+	}
+	
+	return 0;
+}
+
+template <class MEMORY_ADDR>
 void DWARF_DataObject<MEMORY_ADDR>::Seek(MEMORY_ADDR _pc)
 {
 	bv.Clear();
 	pc = _pc;
 	
-	typename std::map<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>::const_iterator iter = infos.find(pc);
+	const DWARF_DataObjectInfo<MEMORY_ADDR> *dw_data_object_info = LookupCache(pc);
 	
-	if(iter != infos.end())
+	if(dw_data_object_info)
 	{
-		const DWARF_DataObjectInfo<MEMORY_ADDR> *dw_data_object_info = (*iter).second;
 		dw_data_object_loc = dw_data_object_info->GetLocation();
 		dw_data_object_type = dw_data_object_info->GetType();
 		exists = true;
@@ -209,7 +253,7 @@ void DWARF_DataObject<MEMORY_ADDR>::Seek(MEMORY_ADDR _pc)
 		std::string matched_data_object_name;
 		if(dw_handler->FindDataObject(c_loc_operation_stream, pc, matched_data_object_name, dw_data_object_loc, dw_data_object_type))
 		{
-			infos.insert(std::pair<MEMORY_ADDR, const DWARF_DataObjectInfo<MEMORY_ADDR> *>(pc, new DWARF_DataObjectInfo<MEMORY_ADDR>(dw_data_object_loc, dw_data_object_type)));
+			UpdateCache(dw_data_object_loc, dw_data_object_type);
 			exists = true;
 		}
 		else
@@ -223,6 +267,19 @@ template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 {
 	if(!dw_data_object_loc) return false;
+	
+	if(debug)
+	{
+		const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges = dw_data_object_loc->GetRanges();
+		
+		logger << DebugInfo << "PC ranges for which data object location is valid are ";
+		typename std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >::const_iterator it;
+		for(it = ranges.begin(); it != ranges.end(); it++)
+		{
+			logger << "[0x" << std::hex << it->first << std::dec << "-0x" << std::hex << it->second << std::dec << "[ ";
+		}
+		logger << EndDebugInfo;
+	}
 	
 	bv.Clear();
 	

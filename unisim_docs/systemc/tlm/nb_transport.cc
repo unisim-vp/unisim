@@ -8,7 +8,7 @@ enum tlm_sync_enum { TLM_ACCEPTED = 0,
 template <typename TRANS = tlm_generic_payload, typename PHASE = tlm_phase>
 class tlm_nonblocking_transport_if : public virtual sc_core::sc_interface {
 public:
-	virtual tlm_sync_enum nb_transport(TRANS& trans, PHASE& phase, sc_core::sc_time& t) = 0;
+	virtual tlm_sync_enum nb_transport_fw(TRANS& trans, PHASE& phase, sc_core::sc_time& t) = 0;
 };
 
 } // namespace tlm

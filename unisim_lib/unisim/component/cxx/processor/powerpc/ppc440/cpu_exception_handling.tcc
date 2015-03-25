@@ -493,6 +493,22 @@ void CPU<CONFIG>::EnterSystemCallISR(unisim::component::cxx::processor::powerpc:
 				case 174:
 					sstr << "rt_sigprocmask(how=" << (signed) GetGPR(3) << ",set=@0x" << std::hex << GetGPR(4) << ",oldset=@0x" << GetGPR(5) << std::dec << ",sigsetsize=" << GetGPR(6) << ");";
 					break;
+				
+				case 175:
+					sstr << "rt_sigpending(set=@0x" << std::hex << GetGPR(3) << std::dec << ");";
+					break;
+					
+				case 176:
+					sstr << "rt_sigtimedwait(set=@0x" << std::hex << GetGPR(3) << ",info=@0x" << GetGPR(4) << ",timeout=@0x" << GetGPR(5) << std::dec << ");";
+					break;
+					
+				case 177:
+					sstr << "rt_sigqueueinfo(tgid=" << GetGPR(3) << ",sig=" << (signed) GetGPR(4) << ",uinfo=@0x" << std::hex << GetGPR(5) << std::dec << ");";
+					break;
+					
+				case 178:
+					sstr << "rt_sigsuspend(mask=@0x" << std::hex << GetGPR(3) << std::dec << ");";
+					break;
 					
 				case 182:
 					sstr << "getcwd(buf=@0x" << std::hex << GetGPR(3) << std::dec << ",size=" << GetGPR(4) << ");";

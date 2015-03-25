@@ -5,11 +5,15 @@ public:
 
 class MyChannel : public sc_module, public MyInterface {
 public:
+	sc_export<MyInterface> exp;
+  
 	virtual int Read(int addr) { ... }
 };
 
 class MyModule : public sc_module {
 public:
+	sc_port<MyInterface> prt;
+  
 	void Process()
 	{
 		while(1) {

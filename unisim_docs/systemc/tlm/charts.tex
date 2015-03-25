@@ -42,7 +42,7 @@ In the following subsections you will find charts explaining the message exchang
 		\path (2,2.8) coordinate (rsp);
 		\path (5,4) coordinate (time);
 		\path (5,3) coordinate (0ns);
-		\path (5,2.8) coordinate (unknown_ns);
+		\path (5,2.8) coordinate (0nstext);
 		\path (7,0) coordinate (llb);
 		\path (7,5) coordinate (llt);
 		\path (13,0) coordinate (rlb);
@@ -65,14 +65,14 @@ In the following subsections you will find charts explaining the message exchang
 		\draw (0ns) node[above] {\small \textbf{\textsf{$+$0ns}}};
 		\draw[thick,-latex] (call_left) -- (call_right);
 		\draw (call_left) node[above right] {\small \emph{Call}};
-		\draw (call_right) node[above left] {\texttt{\textbf{TRANS}}};
+		\draw (call_right) node[above left] {\texttt{\textbf{TRANS, 0ns}}};
 		}
 		\onslide*<3-> {
 		\draw (rsp) node[below] {Response};
 		\draw[thick,latex-] (ret_left) -- (ret_right);
 		\draw (ret_left) node[below right] {\small \emph{Return}};
 		\draw (ret_right) node[below left] {\texttt{\textbf{TRANS}}(updated)};
-		\draw (unknown_ns) node[below] {\small \textbf{\textsf{(unknown time)}}};
+		\draw (0nstext) node[below] {\small \textbf{\textsf{$+$0ns}}};
 		}
 	\end{tikzpicture}
 \end{figure}
@@ -92,7 +92,7 @@ Figure~\ref{fig:chart_untimed} shows the message exchange that occur when using 
 		\path (2,2.8) coordinate (rsp);
 		\path (5,4) coordinate (time);
 		\path (5,3) coordinate (0ns);
-		\path (5,2.8) coordinate (unknown_ns);
+		\path (5,2.8) coordinate (0nstext);
 		\path (7,0) coordinate (llb);
 		\path (7,5) coordinate (llt);
 		\path (13,0) coordinate (rlb);
@@ -111,10 +111,10 @@ Figure~\ref{fig:chart_untimed} shows the message exchange that occur when using 
 		\draw (rsp) node[below] {Response};
 		\draw (time) node[above] {\small \textbf{\textsf{Local time}}};
 		\draw (0ns) node[above] {\small \textbf{\textsf{$+$0ns}}};
-		\draw (unknown_ns) node[below] {\small \textbf{\textsf{(unknown time)}}};
+		\draw (0nstext) node[below] {\small \textbf{\textsf{($+$0ns)}}};
 		\draw[thick,-latex] (call_left) -- (call_right);
 		\draw (call_left) node[above right] {\small \emph{Call}};
-		\draw (call_right) node[above left] {\texttt{\textbf{TRANS}}};
+		\draw (call_right) node[above left] {\texttt{\textbf{TRANS, 0ns}}};
 		\draw[thick,latex-] (ret_left) -- (ret_right);
 		\draw (ret_left) node[below right] {\small \emph{Return}};
 		\draw (ret_right) node[below left] {\texttt{\textbf{TRANS}}(updated)};
@@ -232,6 +232,7 @@ Figure~\ref{fig:chart_lt_with_timing_annotation} shows the message exchange that
 \end{figure}
 }
 
+\clearpage
 \subsection{Loosely-timed with sync}
 
 \mode<presentation>{
@@ -343,6 +344,7 @@ Figure~\ref{fig:chart_lt_with_sync} shows the message exchange that occur when u
 \end{figure}
 }
 
+\clearpage
 \subsection{Loosely-timed with temporal decoupling}
 
 \mode<presentation>{
@@ -489,12 +491,13 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling} shows the message exchange th
 \end{figure}
 }
 
+\clearpage
 \subsection{Loosely-timed with temporal decoupling and synchronization-on-demand}
 
 \mode<presentation>{
 
 \begin{frame}
-	\frametitle{Loosely-timed with temporal decoupling and synchronization-on-demand}
+	\frametitle{\scriptsize Loosely-timed with temporal decoupling and synchronization-on-demand}
 
 \begin{figure}[h]
 	\begin{center}
@@ -660,12 +663,13 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling_and_sync_on_demand} shows the 
 \end{figure}
 }
 
+\clearpage
 \subsection{Loosely-timed with temporal decoupling and quantum}
 
 \mode<presentation>{
 
 \begin{frame}
-	\frametitle{Loosely-timed with temporal decoupling and quantum}
+	\frametitle{\small Loosely-timed with temporal decoupling and quantum}
 
 \begin{figure}[h]
 	\begin{center}
@@ -810,6 +814,7 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling_and_quantum} shows the message
 \end{figure}
 }
 
+\clearpage
 \subsection{Approximately-timed using backward path}
 
 \mode<presentation>{
@@ -1006,6 +1011,7 @@ Figure~\ref{fig:chart_at_using_backward_path} shows the message exchange that oc
 \end{figure}
 }
 
+\clearpage
 \subsection{Approximately-timed with timing annotation}
 
 \mode<presentation>{
@@ -1182,189 +1188,6 @@ Figure~\ref{fig:chart_at_with_timing_annotation} shows the message exchange that
 	\end{center}
 	\caption{Approximately-timed coding style with timing annotation message chart.}
 	\label{fig:chart_at_with_timing_annotation}
-\end{figure}
-}
-
-\subsection{Approximately-timed with polling}
-
-\mode<presentation>{
-
-\begin{frame}
-	\frametitle{Approximately-timed with polling}
-
-\begin{figure}[h]
-	\begin{center}
-	\begin{tikzpicture}[transform shape,scale=0.7]
-		\clip (1.5,10.5) rectangle (15,20);
-%		\draw[help lines] (0,0) grid (15,20);
-		\path (3,19) coordinate (phase);
-		\path (7,0) coordinate (llb);
-		\path (7,19) coordinate (llt);
-		\path (14,0) coordinate (rlb);
-		\path (14,19) coordinate (rlt);
-		
-		\path (6,18.5) coordinate (100ns);
-		\path (7,17.5) coordinate (breq0_call_l);
-		\path (14,17.5) coordinate (breq0_call_r);
-		\path (7,17.3) coordinate (breq0_ret_l);
-		\path (14,17.3) coordinate (breq0_ret_r);
-
-		\path (6,16.5) coordinate (110ns);
-		\path (7,15.5) coordinate (breq1_call_l);
-		\path (14,15.5) coordinate (breq1_call_r);
-		\path (7, 15.3) coordinate (breq1_ret_l);
-		\path (14,15.3) coordinate (breq1_ret_r);
-
-		\path (6,14.5) coordinate (120ns);
-		\path (2,13.5) coordinate (breq_l);
-		\path (4,13.5) coordinate (breq_r);
-		\path (7,13.5) coordinate (breq_call_l);
-		\path (14,13.5) coordinate (breq_call_r);
-		\path (7,13.3) coordinate (breq_ret_l);
-		\path (14,13.3) coordinate (breq_ret_r);
-
-		\path (6,12.5) coordinate (130ns);
-		\path (2,11.5) coordinate (ereq_l);
-		\path (4,11.5) coordinate (ereq_r);
-		\path (7,11.5) coordinate (ereq_call_l);
-		\path (14,11.5) coordinate (ereq_call_r);
-		\path (7,11.3) coordinate (ereq_ret_l);
-		\path (14,11.3) coordinate (ereq_ret_r);
-
-		\draw (phase) node[above] {\textbf{Phase}};
-		\draw (llb) -- (llt)
-			node[above] {\textbf{Initiator}};
-		\draw (rlb) -- (rlt)
-			node[above] {\textbf{Target}};
-
-		\draw (100ns) node [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 100ns}}};
-		\draw[thick,-latex] (breq0_call_l) -- (breq0_call_r);
-		\draw (breq0_call_l) node[above right] {\footnotesize \emph{Call}};
-		\draw (breq0_call_r) node[above left] {\small \texttt{\textbf{-, BEGIN\_REQ, 0ns}}};
-		\draw[thick,latex-] (breq0_ret_l) -- (breq0_ret_r);
-		\draw (breq0_ret_l) node[below right] {\footnotesize \emph{Return}};
-		\draw (breq0_ret_r) node[below left] {\small \texttt{\textbf{TLM\_REJECTED, -, -}}};
-
-		\draw (110ns) node [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 110ns}}};
-		\draw[thick,-latex] (breq1_call_l) -- (breq1_call_r);
-		\draw (breq1_call_l) node[above right] {\footnotesize \emph{Call}};
-		\draw (breq1_call_r) node[above left] {\small \texttt{\textbf{-, BEGIN\_REQ, 0ns}}};
-		\draw[thick,latex-] (breq1_ret_l) -- (breq1_ret_r);
-		\draw (breq1_ret_l) node[below right] {\footnotesize \emph{Return}};
-		\draw (breq1_ret_r) node[below left] {\small \texttt{\textbf{TLM\_REJECTED, -, -}}};
-
-		\draw (120ns) node [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 120ns}}};
-		\draw (breq_l) node[below right] {\small \textsf{BEGIN\_REQ}} -- (breq_r);
-		\draw[thick,-latex] (breq_call_l) -- (breq_call_r);
-		\draw (breq_call_l) node[above right] {\footnotesize \emph{Call}};
-		\draw (breq_call_r) node[above left] {\small \texttt{\textbf{-, BEGIN\_REQ, 0ns}}};
-		\draw[thick,latex-] (breq_ret_l) -- (breq_ret_r);
-		\draw (breq_ret_l) node[below right] {\footnotesize \emph{Return}};
-		\draw (breq_ret_r) node[below left] {\small \texttt{\textbf{TLM\_ACCEPTED, -, -}}};
-
-		\draw (130ns) node [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 130ns}}};
-		\draw (ereq_l) node[below right] {\small \textsf{END\_REQ}} -- (ereq_r);
-		\draw[thick,latex-] (ereq_call_l) -- (ereq_call_r);
-		\draw (eresp_call_r) node[above left] {\footnotesize \emph{Call}};
-		\draw (eresp_call_l) node[above right] {\small \texttt{\textbf{-, END\_REQ, 0ns}}};
-		\draw[thick,-latex] (ereq_ret_l) -- (ereq_ret_r);
-		\draw (ereq_ret_r) node[below left] {\footnotesize \emph{Return}};
-		\draw (ereq_ret_l) node[below right] {\small \texttt{\textbf{TLM\_ACCEPTED, -, -}}};
-
-	\end{tikzpicture}
-	\end{center}
-\end{figure}
-
-\end{frame}
-
-}
-
-\mode<article>{
-Figure~\ref{fig:chart_at_with_polling} shows the message exchange that occur when using the approximately-timed coding style with polling.
-
-\begin{figure}[h]
-	\begin{center}
-	\begin{tikzpicture}
-		\clip (1.5,10.5) rectangle (15,20);
-%		\draw[help lines] (0,0) grid (15,20);
-		\path (3,19) coordinate (phase);
-		\path (7,0) coordinate (llb);
-		\path (7,19) coordinate (llt);
-		\path (14,0) coordinate (rlb);
-		\path (14,19) coordinate (rlt);
-		
-		\path (6,18.5) coordinate (100ns);
-		\path (7,17.5) coordinate (breq0_call_l);
-		\path (14,17.5) coordinate (breq0_call_r);
-		\path (7,17.3) coordinate (breq0_ret_l);
-		\path (14,17.3) coordinate (breq0_ret_r);
-
-		\path (6,16.5) coordinate (110ns);
-		\path (7,15.5) coordinate (breq1_call_l);
-		\path (14,15.5) coordinate (breq1_call_r);
-		\path (7, 15.3) coordinate (breq1_ret_l);
-		\path (14,15.3) coordinate (breq1_ret_r);
-
-		\path (6,14.5) coordinate (120ns);
-		\path (2,13.5) coordinate (breq_l);
-		\path (4,13.5) coordinate (breq_r);
-		\path (7,13.5) coordinate (breq_call_l);
-		\path (14,13.5) coordinate (breq_call_r);
-		\path (7,13.3) coordinate (breq_ret_l);
-		\path (14,13.3) coordinate (breq_ret_r);
-
-		\path (6,12.5) coordinate (130ns);
-		\path (2,11.5) coordinate (ereq_l);
-		\path (4,11.5) coordinate (ereq_r);
-		\path (7,11.5) coordinate (ereq_call_l);
-		\path (14,11.5) coordinate (ereq_call_r);
-		\path (7,11.3) coordinate (ereq_ret_l);
-		\path (14,11.3) coordinate (ereq_ret_r);
-
-		\draw (phase) node[above] {\textbf{Phase}};
-		\draw (llb) -- (llt)
-			node[above] {\textbf{Initiator}};
-		\draw (rlb) -- (rlt)
-			node[above] {\textbf{Target}};
-
-		\draw (100ns) node [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 100ns}}};
-		\draw[thick,-latex] (breq0_call_l) -- (breq0_call_r);
-		\draw (breq0_call_l) node[above right] {\footnotesize \emph{Call}};
-		\draw (breq0_call_r) node[above left] {\small \texttt{\textbf{-, BEGIN\_REQ, 0ns}}};
-		\draw[thick,latex-] (breq0_ret_l) -- (breq0_ret_r);
-		\draw (breq0_ret_l) node[below right] {\footnotesize \emph{Return}};
-		\draw (breq0_ret_r) node[below left] {\small \texttt{\textbf{TLM\_REJECTED, -, -}}};
-
-		\draw (110ns) node [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 110ns}}};
-		\draw[thick,-latex] (breq1_call_l) -- (breq1_call_r);
-		\draw (breq1_call_l) node[above right] {\footnotesize \emph{Call}};
-		\draw (breq1_call_r) node[above left] {\small \texttt{\textbf{-, BEGIN\_REQ, 0ns}}};
-		\draw[thick,latex-] (breq1_ret_l) -- (breq1_ret_r);
-		\draw (breq1_ret_l) node[below right] {\footnotesize \emph{Return}};
-		\draw (breq1_ret_r) node[below left] {\small \texttt{\textbf{TLM\_REJECTED, -, -}}};
-
-		\draw (120ns) node [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 120ns}}};
-		\draw (breq_l) node[below right] {\small \textsf{BEGIN\_REQ}} -- (breq_r);
-		\draw[thick,-latex] (breq_call_l) -- (breq_call_r);
-		\draw (breq_call_l) node[above right] {\footnotesize \emph{Call}};
-		\draw (breq_call_r) node[above left] {\small \texttt{\textbf{-, BEGIN\_REQ, 0ns}}};
-		\draw[thick,latex-] (breq_ret_l) -- (breq_ret_r);
-		\draw (breq_ret_l) node[below right] {\footnotesize \emph{Return}};
-		\draw (breq_ret_r) node[below left] {\small \texttt{\textbf{TLM\_ACCEPTED, -, -}}};
-
-		\draw (130ns) node [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 130ns}}};
-		\draw (ereq_l) node[below right] {\small \textsf{END\_REQ}} -- (ereq_r);
-		\draw[thick,latex-] (ereq_call_l) -- (ereq_call_r);
-		\draw (eresp_call_r) node[above left] {\footnotesize \emph{Call}};
-		\draw (eresp_call_l) node[above right] {\small \texttt{\textbf{-, END\_REQ, 0ns}}};
-		\draw[thick,-latex] (ereq_ret_l) -- (ereq_ret_r);
-		\draw (ereq_ret_r) node[below left] {\footnotesize \emph{Return}};
-		\draw (ereq_ret_l) node[below right] {\small \texttt{\textbf{TLM\_ACCEPTED, -, -}}};
-
-	\end{tikzpicture}
-	\end{center}
-	\caption{Approximately-timed coding style with polling message chart.}
-	\label{fig:chart_at_with_polling}
 \end{figure}
 }
 

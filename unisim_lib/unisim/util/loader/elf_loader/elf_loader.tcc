@@ -1441,21 +1441,27 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDataObject(const char *data_object_name, const char *filename) const
+unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDataObject(const char *data_object_name, const char *_filename, const char *compilation_unit_name) const
 {
-	return dw_handler ? dw_handler->GetDataObject(data_object_name, filename) : 0;
+	return dw_handler ? dw_handler->GetDataObject(data_object_name, _filename, compilation_unit_name) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDataObject(const char *data_object_name, MEMORY_ADDR pc) const
+unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const
 {
-	return dw_handler ? dw_handler->GetDataObject(data_object_name, pc) : 0;
+	return dw_handler ? dw_handler->FindDataObject(data_object_name, pc) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope) const
 {
 	if(dw_handler) dw_handler->EnumerateDataObjectNames(name_set, pc, scope);
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const unisim::util::debug::SubProgram<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSubProgram(const char *subprogram_name, const char *filename, const char *compilation_unit_name) const
+{
+	return dw_handler ? dw_handler->FindSubProgram(subprogram_name, filename, compilation_unit_name) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
