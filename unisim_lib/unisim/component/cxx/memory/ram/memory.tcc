@@ -49,7 +49,6 @@ namespace ram {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Service;
-using unisim::service::interfaces::Fault_Injector;
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>::MemoryPage(PHYSICAL_ADDR _key, uint8_t initial_byte_value) :
@@ -77,10 +76,7 @@ template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	: Object(name, parent, "this module implements a memory")
 	, Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >(name, parent)
- 	, unisim::kernel::service::Client<unisim::service::interfaces::Fault_Injector<PHYSICAL_ADDR> >(name, parent)
 	, memory_export("memory-export", this)
-	, memory_import("memory-import", this)
-	, fault_import("fault-import", this)
 	, org(0)
 	, bytesize(0)
 	, lo_addr(0)
@@ -92,14 +88,6 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	, stat_memory_usage("memory-usage", this, memory_usage, (std::string("target memory usage in bytes (page granularity of ") + u32toa(PAGE_SIZE) + " bytes)").c_str())
 	, initial_byte_value(0x00)
 	, param_initial_byte_value("initial-byte-value", this, initial_byte_value)
-
-
-	, read_fault_enable(false)
-	, param_read_fault_enable("read-fault-enable", this, read_fault_enable)
-	, write_fault_enable(false)
-	, param_write_fault_enable("write-fault-enable", this, write_fault_enable)
-
-
 
 {
 	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -137,10 +125,6 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::BeginSetup()
 	Reset();
 	return true;
 }
-
-
-
-
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 void Memory<PHYSICAL_ADDR, PAGE_SIZE>::Reset()
@@ -190,17 +174,6 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 		       &((uint8_t *)buffer)[copied],
 		       copy_size);
 	
-// ***********
-		// add 28/05/2014
-
-		uint8_t* mem_buff;
-		mem_buff = &page->storage[(addr + copied) & (PAGE_SIZE - 1)];
-
-		if (write_fault_enable && fault_import) {
-
-			fault_import->error_provoq(mem_buff, physical_addr + copied, copy_size);
-		}
-
 		copied += copy_size;
 	} while(copied != size);
 	
@@ -240,21 +213,12 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 	
 		if(size - copied > max_copy_size)
 		copy_size = max_copy_size;
-		else {
-			copy_size = size - copied;
-			// add 26/05/2014
-
-			uint8_t* mem_buff;
-			mem_buff = &page->storage[(addr + copied) & (PAGE_SIZE - 1)];
-
-			if (read_fault_enable && fault_import) {
-				fault_import->error_provoq(mem_buff, physical_addr + copied, copy_size);
-			}
-
-
-			// end modification 26/05/2014
-			memcpy(&((uint8_t *)buffer)[copied],mem_buff,copy_size);
-		}
+		else
+		copy_size = size - copied;
+	
+		memcpy(&((uint8_t *)buffer)[copied], 
+		       &page->storage[(addr + copied) & (PAGE_SIZE - 1)],
+		       copy_size);
 	
 		copied += copy_size;
 	} while(copied != size);
@@ -276,7 +240,6 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 
 	PHYSICAL_ADDR key;
 	MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *page;
-	//
 	byte_enable_offset = 0;
 	copied = 0;
 	offset = 0;

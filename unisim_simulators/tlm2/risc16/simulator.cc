@@ -1,303 +1,175 @@
 /*
- * simulator.cc
+ *  Copyright (c) 2007-2015,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
  *
- *  Created on: 15 mars 2011
- *      Author: rnouacer
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Réda Nouacer (reda.nouacer@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #include <simulator.hh>
 
-bool debug_enabled = false;
-
-void EnableDebug()
-{
-	debug_enabled = true;
-}
-
-void DisableDebug()
-{
-	debug_enabled = false;
-}
-
-void SigIntHandler(int signum)
-{
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-//	sc_stop();
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
-}
-
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
-//	, cpu(0)
-	, global_ram(0)
-//	, memoryImportExportTee(0)
-//	, mem_Fault_injector(0)
-
-	, device(0)
-	, bus_fault_injector(0)
-
-	//, bus(0)
-	, endian("")
-	, program_counter_name(std::string("PC"))
-	, filename(std::string("binary_file_name"))
-
+	, cpu(0)
+	, memory(0)
+	, debugger(0)
+	, inline_debugger(0)
+	, raw_loader(0)
+	, tee_memory_access_reporting(0)
+	, profiler(0)
 	, exit_status(0)
-
 {
-
-	param_endian = new Parameter<string>("endian", 0, endian, "Target endianness");
-	param_endian->SetMutable(false);
-	param_endian->SetVisible(true);
-
-	param_pc_reg_name = new Parameter<string>("program-counter-name", 0, program_counter_name, "Target CPU program counter name");
-	param_pc_reg_name->SetMutable(false);
-	param_pc_reg_name->SetVisible(true);
-
-	//=========================================================================
-	//===      Handling of file to load passed as command line argument     ===
-	//=========================================================================
-
-	VariableBase *cmd_args = FindVariable("cmd-args");
-	unsigned int cmd_args_length = cmd_args->GetLength();
-	if(cmd_args_length > 0)
-	{
-		filename = (string)(*cmd_args)[0];
-
-		std::cerr << "filename=\"" << filename << "\"" << std::endl;
-	}
-
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
-	//  - RISC16 processor
-		top = new Top("Top");
-//
-	//  - Memories
-	global_ram = new RAM("RAM");
+	// - RISC16 processor
+	cpu = new CPU("cpu");
 
-	//    CAN
-	device = new Device("Device");
-
-	// Router
-//	bus = new Bus("Bus");
-
-//
-//	// - Fault_Injector
-//	mem_Fault_injector = new MFI("Memory_Fault_injector");
-
-	// - bus fault injector
-
-	bus_fault_injector = new BFI("BFI");
-//
-//
-//	memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
-
-//	top = new Top("top");
-
-	tee_memory_access_reporting = new MemoryAccessReportingTee("tee-memory-access-reporting");
-
-	profiler = new Profiler<CPU_ADDRESS_TYPE>("profiler");
+	// - Memory
+	memory = new RAM("memory");
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-	debugger = new Debugger<CPU_ADDRESS_TYPE>("debugger");
-	inline_debugger = new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger");
-
+	// - Debugger
+	debugger = new Debugger<uint64_t>("debugger");
+	
+	// - Built-in console debugger (Inline-debugger)
+	inline_debugger = new InlineDebugger<uint64_t>("inline-debugger");
+	
+	// - Raw loader
 	raw_loader = new RawLoader("raw-loader");
+	
+	// - Tee Memory Access Reporting (broadcast memory access reports of CPU to debugger and profiler)
+	tee_memory_access_reporting = new MemoryAccessReportingTee("tee-memory-access-reporting");
 
-	//=========================================================================
-	//===                       Service parameterization     ===
-	//=========================================================================
-
+	// - Profiler
+	profiler = new Profiler<uint64_t>("profiler");
 
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
 
-//	cpu->initsocket(global_ram->slave_sock);
-
-	top->top_socket[0](global_ram->slave_sock);
-
-	top->top_socket[1](device->device_rout_socket);
-
-	device->IRQ_socket(top->top_target_socket);
-
-
-
-	// This order is mandatory (see the memoryMapping)
+	cpu->master_sock(memory->slave_sock);
 
 	//=========================================================================
-	//===                        Clients/Services connection                ===
+	//===                       Clients/Services connections                ===
 	//=========================================================================
 
-	top->router->router_import >> bus_fault_injector->bus_fault_export;
+	// CPU imports
+	cpu->memory_import >> memory->memory_export;                    // memory
+	cpu->debug_control_import >> debugger->debug_control_export;    // makes debugger control CPU execution
+	cpu->trap_reporting_import >> debugger->trap_reporting_export;  // report trap
+	cpu->memory_access_reporting_import >> tee_memory_access_reporting->in; // memory access reports of CPU
+	
+	// raw-loader imports
+	raw_loader->memory_import >> memory->memory_export;    // memory
 
-	top->initiator->memory_import >> global_ram->memory_export;
-
-
-// ********   added by Reda ***************************
-	raw_loader->memory_import >> global_ram->memory_export;
-	debugger->blob_import >> raw_loader->blob_export;
-
-	// Connect tee-memory-access-reporting to CPU, debugger and profiler
-	top->initiator->memory_access_reporting_import >> tee_memory_access_reporting->in;
+	// tee imports
 	*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
 	*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
+	tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
+
+	// profiler imports
 	profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-	debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-	tee_memory_access_reporting->out_control >> top->initiator->memory_access_reporting_control_export;
 
-	// Connect debugger to CPU
-	top->initiator->debug_control_import >> debugger->debug_control_export;
-	top->initiator->trap_reporting_import >> debugger->trap_reporting_export;
-	debugger->disasm_import >> top->initiator->disasm_export;
-	debugger->memory_import >> top->initiator->memory_export;
-
-	debugger->registers_import >> top->initiator->registers_export;
-
-	// Connect inline-debugger to debugger
-	debugger->debug_control_import >> inline_debugger->debug_control_export;
-	inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-	debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
-	debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
-	inline_debugger->disasm_import >> debugger->disasm_export;
-	inline_debugger->memory_import >> debugger->memory_export;
-	inline_debugger->registers_import >> debugger->registers_export;
-	inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
-	inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
-	inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-
-	inline_debugger->backtrace_import >> debugger->backtrace_export;
-	inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
-
-	inline_debugger->profiling_import >> profiler->profiling_export;
-
-
-// ********* end in progress ************************
-
-
-//	cpu->memory_import >> mmc->memory_export;
-
-//	*(memoryImportExportTee->memory_import[8]) >> global_ram->memory_export;
-
-//	mmc->memory_import >> memoryImportExportTee->memory_export;
-
-	// ce qui je dois avoir
-	// une classe géneral fault_injector qui dérive du serviceinterface
-	//une classe qui dérive de Fault injector qui sapel Memory_Fault_injector
-	//d'une tel façon quel contienne un service export
-
-
-
-	///
-
-
-// ***********************************************************
-
-	// Connect debugger to CPU
-
-
+	// central debugger imports
+	debugger->blob_import >> raw_loader->blob_export;                                     // blob (binary large object), i.e. executable binary files
+	debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1]; // turn on/off memory access reporting
+	debugger->disasm_import >> cpu->disasm_export;                                        // disassemble
+	debugger->memory_import >> cpu->memory_export;                                        // memory (programmer's view)
+	debugger->registers_import >> cpu->registers_export;                                  // CPU registers
+	debugger->debug_control_import >> inline_debugger->debug_control_export;              // passthrough debug control
+	debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export; // notify debug events to listeners
+	debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;             // report trap
+	
+	// built-in console debugger imports
+	inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;   // listen of debugging events
+	inline_debugger->disasm_import >> debugger->disasm_export;                             // disassemble
+	inline_debugger->memory_import >> debugger->memory_export;                             // memory
+	inline_debugger->registers_import >> debugger->registers_export;                       // access to registers
+	inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;     // lookup of data object (if debug info is available)
+	inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;                   // lookup instruction/source statements (if debug info is available)                  
+	inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;   // lookup symbol table
+	inline_debugger->backtrace_import >> debugger->backtrace_export;                       // backtrace (if debug info is available)
+	inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;     // on-demand loading of debug info
+	inline_debugger->profiling_import >> profiler->profiling_export;                       // profiling
 }
 
 Simulator::~Simulator()
 {
-
-//	if (mem_Fault_injector) { delete mem_Fault_injector; mem_Fault_injector = NULL; }
-
-	if (bus_fault_injector){ delete bus_fault_injector; bus_fault_injector = NULL; }
-//	if (memoryImportExportTee) { delete memoryImportExportTee; memoryImportExportTee = NULL; }
-
-
-	if(global_ram) { delete global_ram; global_ram = NULL; }
-
-//	if(cpu) { delete cpu; cpu = NULL; }
-
-	if(top) { delete top; top = NULL; }
-
-	if (device) { delete device; device = NULL; }
-
-//	if (bus) { delete bus; bus = NULL; }
-
-	if (inline_debugger) { delete inline_debugger; inline_debugger = NULL; }
-	if (raw_loader) { delete raw_loader; raw_loader = NULL; }
-
+	if(cpu) delete cpu;
+	if(memory) delete memory;
+	if(raw_loader) delete raw_loader;
+	if(tee_memory_access_reporting) delete tee_memory_access_reporting;
+	if(profiler) delete profiler;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM risc16");
-	simulator->SetVariable("copyright", "Copyright (C) 2008-2014, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("copyright", "Copyright (C) 2008-2015, Commissariat a l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
-	simulator->SetVariable("authors", "Reda Nouacer <reda.nouacer@cea.fr>");
+	simulator->SetVariable("authors", "Réda Nouacer <reda.nouacer@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>");
 
 #ifdef HAVE_CONFIG_H
 	simulator->SetVariable("version", VERSION);
 #endif
 
-	simulator->SetVariable("description", "UNISIM risc16, a simple risc16 simulator");
-
-	simulator->SetVariable("enable-pim-server", false);
-	simulator->SetVariable("enable-gdb-server", false);
-	simulator->SetVariable("enable-inline-debugger", false);
-	simulator->SetVariable("dump-parameters", false);
-	simulator->SetVariable("dump-formulas", false);
-	simulator->SetVariable("dump-statistics", true);
-
-	simulator->SetVariable("endian", "big");
-	simulator->SetVariable("program-counter-name", "CPU.PC");
+	simulator->SetVariable("description", "UNISIM risc16, a simple 16-bit RISC simulator for teaching");
 
 	//=========================================================================
 	//===                     Component run-time configuration              ===
 	//=========================================================================
 
-	simulator->SetVariable("Top.initiator.requires-memory-access-reporting", true);
-	simulator->SetVariable("Top.initiator.requires-finished-instruction-reporting", true);
-	simulator->SetVariable("Top.initiator.load-address", 0x800);
-	simulator->SetVariable("Top.initiator.entry-point", 0x804);
-
-//	simulator->SetVariable("RAM.org", 0x000800);
-	simulator->SetVariable("RAM.org", 0x000800);
-	simulator->SetVariable("RAM.bytesize", 0xFFFF + 1 - 0x800); // 64k - 0x800
-	simulator->SetVariable("RAM.initial-byte-value", 0x00);
-	simulator->SetVariable("RAM.cycle-time", 250000);
-	simulator->SetVariable("RAM.verbose", false);
-
-
-	simulator->SetVariable("Device.vect", 0xFF20); //Interupt Vecotr
-
-	simulator->SetVariable("Top.router.low-address[0]", 0x000800);  //RAM
-	simulator->SetVariable("Top.router.high-address[0]", 0xFFFF); //
-	simulator->SetVariable("Top.router.low-address[1]", 0x0400);  //Device
-	simulator->SetVariable("Top.router.high-address[1]", 0x040F); //
-
+	simulator->SetVariable("memory.org", 0x0);
+	simulator->SetVariable("memory.bytesize", 65536);
+	simulator->SetVariable("memory.cycle-time", 10000); // 10 000 ps
+	simulator->SetVariable("memory.verbose", false);
+	
 	//=========================================================================
 	//===                      Service run-time configuration               ===
 	//=========================================================================
 
-	simulator->SetVariable("raw-loader.filename", "tt.bin");
-	simulator->SetVariable("raw-loader.base-addr", 0x800);
-	simulator->SetVariable("raw-loader.size", 0);
-	/*
-	 * Size: Number of bytes to copy.
-		If 0 then all the file contents will be copied."
-		If smaller than the file, the contents of the file will be cropped.
-		If bigger than the file size, all the file will be copied.
-	 */
-	simulator->SetVariable("raw-loader.verbose", false);
-
+	simulator->SetVariable("inline-debugger.memory-atom-size", 2); // memory is not byte addressable
 	simulator->SetVariable("kernel_logger.std_err", true);
 	simulator->SetVariable("kernel_logger.std_out", false);
 	simulator->SetVariable("kernel_logger.std_err_color", false);
 	simulator->SetVariable("kernel_logger.std_out_color", false);
 	simulator->SetVariable("kernel_logger.file", false);
 	simulator->SetVariable("kernel_logger.filename", "logger_output.txt");
-	simulator->SetVariable("kernel_logger.xml_file", true);
+	simulator->SetVariable("kernel_logger.xml_file", false);
 	simulator->SetVariable("kernel_logger.xml_filename", "logger_output.xml");
 	simulator->SetVariable("kernel_logger.xml_file_gzipped", false);
-
 }
 
 void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
@@ -324,32 +196,9 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	}
 }
 
-bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_length) {
-
-	return (false);
-}
-
-bool Simulator::write(unsigned int offset, const void *buffer, unsigned int data_length) {
-	return (false);
-}
-
 void Simulator::Run() {
 
-	// If no filename has been specified, abort simulation
-	if(filename.empty())
-	{
-		std::cerr << "ERROR! No file to load. You should provide a file to load as command line argument." << std::endl;
-		return;
-	}
-
-	// TODO: use entry_point to initialize the program counter correctly
-//	physical_address_t entry_point = 0x00;
-
-//	cpu->setEntryPoint(cpu_address);
-
 	cerr << "Starting simulation ..." << endl;
-
-	EnableDebug();
 
 	try
 	{
@@ -362,6 +211,5 @@ void Simulator::Run() {
 	}
 
 	cerr << "Simulation finished" << endl << endl;
-
 }
 

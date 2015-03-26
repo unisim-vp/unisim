@@ -1185,7 +1185,7 @@ bool Debugger<ADDRESS>::SetupDebugInfo()
 	if(setup_debug_info_done) return true;
 	if(!blob_import) return false;
 	const unisim::util::debug::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
-	if(!blob) return false;
+	if(!blob) return true; // no blob
 	bool status = SetupDebugInfo(blob);
 	if(status) setup_debug_info_done = true;
 	return setup_debug_info_done;

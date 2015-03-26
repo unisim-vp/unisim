@@ -1,377 +1,223 @@
-// **************risc16 instructions***************
+/*
+ *  Copyright (c) 2007-2015,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Réda Nouacer (reda.nouacer@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
 
+
+// **************risc16 instruction set description***************
 
 set addressclass {uint16_t}
 set endianness big
+namespace unisim::component::cxx::processor::risc16
 
 decl {
 
-#include <inttypes.h>
-#include <stdio.h>
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <bitset>
-
-#include <unisim/component/cxx/processor/risc16/initCPU.hh>
-#include <unisim/util/endian/endian.hh>
-
-using unisim::util::endian::Host2BigEndian;
-
-//extern uint16_t cia;
-//extern uint16_t nia;
-//extern uint16_t gpr[16];
-
-//extern uint16_t mem_read16(uint16_t addr);
-//extern void mem_write16(uint16_t addr, uint16_t value);
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace risc16 {
+class CPU;
+} // end of namespace risc16
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 }
 
 impl {
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unisim/component/cxx/processor/risc16/cpu.hh>
+
 }
 
-/****** action implementation*********/
+/****** action prototypes & default implementations*********/
 
 /**** execute*****/
 action {void} execute({CPU*} {cpu}){
-printf("unknown instruction\n");
-exit (-1);
+	printf("unknown instruction\n");
+	exit (-1);
 }
 
 /****disasm*****/
 
 action{void} disasm({uint16_t} {pc}, {char*} {s}) {
-sprintf(s, "?");
+	sprintf(s, "?");
 }
 
-action{void} binary({std::ostream&} {os}) {
- os << "";
-}
-
-/*******Operations implematation*******/
-
+/*******Operations implementation*******/
 
 /*****add instruction******/
 
 op add (0b0000[4]:rd[4]:rs1[4]:rs2[4])
 
-
 add.execute = {
-			cpu->gpr[rd] = cpu->gpr[rs1] + cpu->gpr[rs2];
-			
-			}
+	cpu->gpr[rd] = cpu->gpr[rs1] + cpu->gpr[rs2];
+}
 
 add.disasm = {
 	sprintf(s, "add r%d, r%d, r%d", rd, rs1, rs2);
-
 }
 
-add.binary = {
-
-	uint16_t code = (0b0000) << 12;	
-	code = code | ((rd & 0xF) << 8);
-	code = code | ((rs1 & 0xF) << 4);
-	code = code | ((rs2 & 0xF));
-
-	code = Host2BigEndian(code);
-	
-	os.write((char*) &code, 2);
-	
-	}
-	
-
 /*****sub instruction******/
+
 op sub(0b0001[4]:rd[4]:rs1[4]:rs2[4])
 
 sub.execute = {
-				cpu->gpr[rd] = cpu->gpr[rs1] - cpu->gpr[rs2];
-			}
+	cpu->gpr[rd] = cpu->gpr[rs1] - cpu->gpr[rs2];
+}
 
 sub.disasm = {
-	
 	sprintf(s, "sub r%d, r%d, r%d", rd, rs1, rs2);
-			}
-			
-sub.binary = {
-	uint16_t code = (0b0001) << 12;	
-	code = code | ((rd & 0xF) << 8);
-	code = code | ((rs1 & 0xF) << 4);
-	code = code | ((rs2 & 0xF));
-	
-	code = Host2BigEndian(code);
-	
-	os.write((char*) &code, 2);
-	
-	}
-	
+}
 
 /*****or instruction******/
 
 op or(0b0010[4]:rd[4]:rs1[4]:rs2[4])
 
 or.execute = {
-				cpu->gpr[rd] = cpu->gpr[rs1] | cpu->gpr[rs2];
-			}
+	cpu->gpr[rd] = cpu->gpr[rs1] | cpu->gpr[rs2];
+}
 or.disasm = {
 	sprintf(s, "or r%d, r%d, r%d", rd, rs1, rs2);
-}				
+}
 
-or.binary = {
-	uint16_t code = (0b0010) << 12;	
-	code = code | ((rd & 0xF) << 8);
-	code = code | ((rs1 & 0xF) << 4);
-	code = code | ((rs2 & 0xF));
-	
-
-	code = Host2BigEndian(code);
-	
-	os.write((char*) &code, 2);
-	
-	}
-	
-				
 /*****and instruction******/
 
 op and(0b0011[4]:rd[4]:rs1[4]:rs2[4])
 
 and.execute = {
-				cpu->gpr[rd] = cpu->gpr[rs1] & cpu->gpr[rs2];
-			}
-			
+	cpu->gpr[rd] = cpu->gpr[rs1] & cpu->gpr[rs2];
+}
+
 and.disasm = {
 	sprintf(s, "and r%d, r%d, r%d", rd, rs1, rs2);
-}			
-
-and.binary = {
-	uint16_t code = (0b0011) << 12;	
-	code = code | ((rd & 0xF) << 8);
-	code = code | ((rs1 & 0xF) << 4);
-	code = code | ((rs2 & 0xF));
-	
-	code = Host2BigEndian(code);
-
-	os.write((char*) &code, 2);
-	
-	}
-
+}
 
 /*****not instruction******/
 
-op not(0b0100[4]:rd[4]:rs[4])
+op not(0b0100[4]:rd[4]:rs[4]:?[4])
 
-not.execute = {	
-		cpu->gpr[rd] = ~cpu->gpr[rs];
-			}
-			
+not.execute = {
+	cpu->gpr[rd] = ~cpu->gpr[rs];
+}
+
 not.disasm = {
 	sprintf(s, "not r%d, r%d", rd, rs);
-}				
+}
 
-not.binary = {
-	uint16_t code = (0b0100) << 12;	
-	code = code | ((rd & 0xF) << 8);
-	code = code | ((rs & 0xF) << 4);
-	
-	code = Host2BigEndian(code);
-	
-	os.write((char*) &code, 2);
-	
-	}
+/*****shl instruction******/
 
+op shlx(0b0101[4]:rd[4]:rs[4]:shamt[4]) // shl is a GenISSLib keyword !
 
-/* ****shl instruction***** */
+shlx.execute = {
+	cpu->gpr[rd] = cpu->gpr[rs] << shamt;
+}
 
-op shlx(0b0101[4]:rd[4]:rs[4]:val[4])
-
-shlx.execute = {	
-std::cout << "shift val " << std::dec << val << std::endl;
-
-		cpu->gpr[rd] = cpu->gpr[rs] << val;
-			}
-			
 shlx.disasm = {
-	sprintf(s, "shl r%d, r%d", rd, rs);
-}				
+	sprintf(s, "shl r%d, r%d, %d", rd, rs, shamt);
+}
 
-shlx.binary = {
-	uint16_t code = (0b0101) << 12;	
-	code = code | ((rd & 0xF) << 8);
-	code = code | ((rs & 0xF) << 4);
-	code = code | ((val & 0xF));
-	
-	code = Host2BigEndian(code);
-	
-	os.write((char*) &code, 2);
-	
-	}	
-		
-				
 /*****shr instruction******/
 
-op shrx(0b0110[4]:rd[4]:rs[4]:val[4])
+op shrx(0b0110[4]:rd[4]:rs[4]:shamt[4]) // shr is a GenISSLib keyword !
 
-shrx.execute = {	
-		cpu->gpr[rd] = cpu->gpr[rs] >> val;
-			}
+shrx.execute = {
+	cpu->gpr[rd] = cpu->gpr[rs] >> shamt;
+}
 shrx.disasm = {
-	sprintf(s, "shr r%d, r%d", rd, rs);
-	}
+	sprintf(s, "shr r%d, r%d, %d", rd, rs, shamt);
+}
 
-shrx.binary = {
-	uint16_t code = (0b0110) << 12;	
-	code = code | ((rd & 0xF) << 8);
-	code = code | ((rs & 0xF) << 4);
-	code = code | ((val & 0xF));
-	
-	code = Host2BigEndian(code);
-
-	os.write((char*) &code, 2);
-	
-	}
-	
 /*****load instruction******/
 
-op load(0b0111[4]:rd[4]:base[4]:sext<16> immed[4])
+op load(0b0111[4]:rd[4]:base[4]:sext<16> index[4])
 
+load.execute = {
+	cpu->gpr[rd] = cpu->mem_read(cpu->gpr[base] + index);
+}
 
-load.execute = {	
-
-				cpu->gpr[rd] = cpu->mem_read16(cpu->gpr[base] + immed);
-				
-				}
-			
 load.disasm = {
-	sprintf(s, "load  r%d, %d(r%d)", rd, immed, base);
-	}
-	
-load.binary = {
-	uint16_t code = (0b0111) << 12;	
-	code = code | ((rd & 0xF) << 8);
-	code = code | ((base & 0xF) << 4);
-	code = code | ((immed & 0xF));
-	
-	code = Host2BigEndian(code);
-
-	os.write((char*) &code, 2);
-	
-	}
-
+	sprintf(s, "load  r%d, r%d, %d", rd, base, index);
+}
 
 /*****store instruction******/
 
-op store(0b1000[4]:rd[4]:base[4]:sext<16> immed[4])
+op store(0b1000[4]:rd[4]:base[4]:sext<16> index[4])
 
-store.execute = {	
+store.execute = {
+	cpu->mem_write(cpu->gpr[base] + index, cpu->gpr[rd]);
+}
 
-			cpu->mem_write16(cpu->gpr[base] + immed, cpu->gpr[rd]);
-			std::cout << "store  addr " << std::hex << cpu->gpr[base] + immed <<  "val  " << std::hex << cpu->gpr[rd] << std::endl;
-		  
-				}
-			
 store.disasm = {
-	sprintf(s, "store  r%d, %d(r%d)", rd, immed, base);
-	}
-
-store.binary = {
-	uint16_t code = (0b1000) << 12;	
-	code = code | ((rd & 0xF) << 8);
-	code = code | ((base & 0xF) << 4);
-	code = code | (immed & 0xF);
-
-	code = Host2BigEndian(code);
-	
-	os.write((char*) &code, 2);
-	
-	}
+	sprintf(s, "store  r%d, r%d, %d", rd, base, index);
+}
 
 /*****branch instruction******/
 
-op branch(0b1001[4]:addr[12])
+op branch(0b1001[4]:_addr[12])
 
-branch.execute = {	
-				
-	cpu->nia = addr;
-					
+branch.execute = {
+	cpu->nia = _addr;
 }
-			
-branch.disasm = {
-	sprintf(s, "branch,  0x%12x", addr);
-	}
-	
-branch.binary = {
-	uint16_t code = (0b1000) << 12;	
-	code = code | (addr & 0xFFF);
-	
-	code = Host2BigEndian(code);
 
-	os.write((char*) &code, 2);
-	
-	}
+branch.disasm = {
+	sprintf(s, "branch 0x%04x", _addr);
+}
 
 /*****bne instruction******/
 
 op bne(0b1010[4]:rs[4]:sext<16> offset[8])
 
-bne.execute = {	
-				if (cpu->gpr[rs] != 0)
-				
-					cpu->nia = cpu->cia + offset;
-				}
-			
+bne.execute = {
+	if(cpu->gpr[rs] != 0)
+		cpu->nia = cpu->cia + offset;
+}
+
 bne.disasm = {
-	sprintf(s, "bne  r%d, 0x%04x", rs, pc + offset);
-	}
+	sprintf(s, "bne  r%d, %d", rs, offset);
+}
 
-bne.binary = {
-	uint16_t code = (0b1010) << 12;	
-	code = code | ((rs & 0xF) << 8);
-	code = code | (offset & 0xFF);
-	
-	code = Host2BigEndian(code);
-	
-	os.write((char*) &code, 2);
-	
-	}
-	
-/*****loadi instruction******/
+/*****li instruction******/
 
-op loadi(0b1011[4]:rd[4]:sext<16> val[8])
+op li(0b1011[4]:rd[4]:sext<16> immed[8])
 
-loadi.execute = {
-					cpu->gpr[rd]=val;
-				}	
-loadi.disasm = {
-	sprintf(s, "loadi  r%d, %d", rd, val);
-	}
-loadi.binary = {
-
-	uint16_t code = (0b1011) << 12;	
-	code = code | ((rd & 0xF) << 8);
-	code = code | ((val & 0xFF));
-	
-	code = Host2BigEndian(code);
-	
-	os.write((char*) &code, 2);
-	}
-
-
-op rti(0b1111[4]:?[12])
-		
-rti.execute = {		
-		 
-			cpu->rti();
-	
-		 	  }	
-		 	  
-		 	  
-rti.disasm = {
-               sprintf(s, "RTI");
-             }		 
-		 
-rti.binary = {
-		 		uint16_t code = (0b1111) << 12;
-		 				 
-		 				 code = Host2BigEndian(code);
-		 				 os.write((char*) &code, 2);	
-				}
-				
+li.execute = {
+	cpu->gpr[rd] = immed;
+}
+li.disasm = {
+	sprintf(s, "li  r%d, %d", rd, immed);
+}

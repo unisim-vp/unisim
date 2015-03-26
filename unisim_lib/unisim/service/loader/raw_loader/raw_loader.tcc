@@ -257,7 +257,7 @@ bool
 RawLoader<MEMORY_ADDR> ::
 Load()
 {
-	if(!blob) return false;
+	if(!blob) return true; // nothing to load
 	
 	bool success = true;
 
