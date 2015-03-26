@@ -32,9 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <kernel/module_name.h>
-#include <kernel/module.h>
-#include <kernel/kernel.h>
+#include <ieee1666/kernel/module_name.h>
+#include <ieee1666/kernel/module.h>
+#include <ieee1666/kernel/kernel.h>
 
 namespace sc_core {
 
