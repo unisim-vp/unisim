@@ -1,0 +1,175 @@
+/*
+ *  Copyright (c) 2014,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+
+#include <ieee1666/kernel/object.h>
+#include <ieee1666/kernel/kernel.h>
+
+namespace sc_core {
+
+const char* sc_object::name() const
+{
+	return object_name.c_str();
+}
+
+const char* sc_object::basename() const
+{
+	size_t pos = object_name.find_last_of(".", 0);
+	return (pos != std::string::npos) ? object_name.c_str() + pos + 1 : object_name.c_str();
+}
+
+const char* sc_object::kind() const
+{
+	return "sc_object";
+}
+
+void sc_object::print( std::ostream& ) const
+{
+}
+
+void sc_object::dump( std::ostream& ) const
+{
+}
+
+const std::vector<sc_object*>& sc_object::get_child_objects() const
+{
+	return child_objects;
+}
+
+const std::vector<sc_event*>& sc_object::get_child_events() const
+{
+	return child_events;
+}
+
+sc_object* sc_object::get_parent_object() const
+{
+	return parent_object;
+}
+
+bool sc_object::add_attribute( sc_attr_base& _attr)
+{
+	return attributes.insert(&_attr);
+}
+
+sc_attr_base* sc_object::get_attribute( const std::string& _attr_name)
+{
+	sc_attr_cltn::iterator it = attributes.find(_attr_name);
+	return it ? *it : 0;
+}
+
+const sc_attr_base* sc_object::get_attribute( const std::string& _attr_name) const
+{
+	sc_attr_cltn::const_iterator it = attributes.find(_attr_name);
+	return it ? *it : 0;
+}
+
+sc_attr_base* sc_object::remove_attribute( const std::string& _attr_name)
+{
+	sc_attr_cltn::iterator it = attributes.find(_attr_name);
+	
+	if(it)
+	{
+		attributes.erase(it);
+	}
+	
+	return *it;
+}
+
+void sc_object::remove_all_attributes()
+{
+	attributes.clear();
+}
+
+int sc_object::num_attributes() const
+{
+	return attributes.size();
+}
+
+sc_attr_cltn& sc_object::attr_cltn()
+{
+	return attributes;
+}
+
+const sc_attr_cltn& sc_object::attr_cltn() const
+{
+	return attributes;
+}
+
+sc_object::sc_object()
+{
+}
+
+sc_object::sc_object(const char*)
+	: object_name()
+	, child_objects()
+	, child_events()
+	, parent_object(0)
+{
+	sc_kernel *kernel = sc_kernel::get_kernel();
+	parent_object = kernel->get_current_object();
+	if(parent_object) parent_object->add_child_object(this);
+	kernel->begin_object(this);
+}
+
+sc_object::sc_object( const sc_object& )
+{
+}
+
+sc_object& sc_object::operator= ( const sc_object& )
+{
+	return *this;
+}
+
+sc_object::~sc_object()
+{
+}
+
+const std::vector<sc_object*>& sc_object::sc_get_top_level_objects()
+{
+}
+
+sc_object* sc_object::sc_find_object( const char* )
+{
+}
+
+void sc_object::add_child_object(sc_object *object)
+{
+	child_objects.push_back(object);
+}
+
+void sc_object::add_child_event(sc_event *event)
+{
+	child_events.push_back(event);
+}
+
+} // end of namespace sc_core

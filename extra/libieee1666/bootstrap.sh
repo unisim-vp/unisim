@@ -1,0 +1,5 @@
+#!/bin/bash
+aclocal -I m4
+autoheader
+autoconf
+automake -ac

@@ -1,0 +1,83 @@
+/*
+ *  Copyright (c) 2014,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+
+#ifndef __IEEE1666_KERNEL_FWD_H__
+#define __IEEE1666_KERNEL_FWD_H__
+
+#include <inttypes.h>
+
+namespace sc_dt {
+	typedef ::uint64_t uint64;
+	typedef ::int64_t int64;
+} // end of namespace sc_dt
+
+namespace sc_core {
+
+enum sc_port_policy
+{
+	SC_ONE_OR_MORE_BOUND,         // Default
+	SC_ZERO_OR_MORE_BOUND,
+	SC_ALL_BOUND
+};
+
+class sc_attr_base;
+template <class T> class sc_attribute;
+class sc_attr_cltn;
+class sc_clock;
+class sc_event;
+class sc_event_and_list;
+class sc_event_or_list;
+class sc_event_and_expr;
+class sc_event_or_expr;
+class sc_event_finder;
+class sc_interface;
+class sc_kernel;
+class sc_module;
+class sc_module_name;
+class sc_object;
+class sc_port_base;
+template <class IF> class sc_port_b;
+template <class IF, int N, sc_port_policy P> class sc_port;
+template <class IF> class sc_inout;
+template <class IF> class sc_in;
+template <class IF> class sc_out;
+class sc_prim_channel;
+class sc_process_handle;
+class sc_sensitive;
+class sc_time;
+class sc_trace_file;
+
+} // end of namespace sc_core
+
+#endif
