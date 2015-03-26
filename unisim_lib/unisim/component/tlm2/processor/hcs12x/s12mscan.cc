@@ -59,7 +59,7 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	, rx_debug_enabled(false)
 	, param_rx_debug_enabled("rx-debug-enabled", this, rx_debug_enabled)
 
-	, idle_to_send(false)
+	, abortTransmission(false)
 
 	, txd(true)
 	, txd_output_pin("TXD", this, txd, "TXD output")
@@ -83,12 +83,11 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	, canrxerr_register(0x00)
 	, cantxerr_register(0x00)
 
-	, active_canrxfg_index(0)
-	, active_cantxfg_index(0)
-
 	, canrxfg(NULL)
 	, cantxfg(NULL)
 	, time_stamp(0)
+
+	, msg_size(16)
 
 	, telnet_enabled(false)
 	, param_telnet_enabled("telnet-enabled", this, telnet_enabled)
@@ -135,8 +134,8 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	}
 
 	for (int i=0; i<16; i++) {
-		tx_shift_register[i] = 0x00;
-		rx_shift_register[i] = 0x00;
+		tx_buffer_register[i] = 0x00;
+		rx_buffer_register[i] = 0x00;
 	}
 
 }
@@ -167,20 +166,96 @@ S12MSCAN::~S12MSCAN() {
 
 void S12MSCAN::RunRx() {
 
-	uint8_t idleCounter = 0;
-	uint8_t breakCounter = 0;
-
-
 	while (true) {
 
-		while (!isReceiverEnabled()) {
+		while (!isCANEnabled()) {
 
-			wait(rx_run_event);
-
-			idleCounter = 0;
-			breakCounter = 0;
+			wait(can_enable_event);
 
 		}
+
+		bool newFrameStart = false;
+		while (isCANEnabled() && !newFrameStart) {
+
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (3) " << std::endl;
+
+			wait(bit_time);
+
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (4) " << std::endl;
+
+			if (telnet_enabled) {
+
+				if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (5) " << std::endl;
+
+
+//				TelnetProcessInput();
+
+				newFrameStart = !isEmpty(telnet_rx_fifo);
+
+				if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (6) " << std::endl;
+
+			} else {
+				// TODO I have to rewrite the following code using TLM and stub
+				newFrameStart = isRxLow();
+			}
+
+		}
+
+		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (7) " << std::endl;
+
+		if (!newFrameStart) { continue; }
+
+		// TODO: I have to complete receiver automata
+		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (8) " << std::endl;
+
+		setActive();
+
+		uint8_t rx_shift = 0;
+
+		if (telnet_enabled) {
+
+			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (9) " << std::endl;
+
+			for (int i=0; i < msg_size; i++) {
+
+				next(telnet_rx_fifo, rx_buffer_register[i], telnet_rx_event);
+			}
+
+
+			if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::get  HAVE DATA" << std::endl;
+
+		} else {
+			// TODO I have to rewrite the following code using TLM and stub
+			uint8_t rx_shift_mask = 1;
+			uint8_t index = 0;
+
+//			while (isSPIEnabled() && isSSLow() && (index < frameLength)) {
+//				bool val = pinRead();
+//				if (val) {
+//					rx_shift = rx_shift | rx_shift_mask;
+//				}
+//
+//				rx_shift_mask = rx_shift_mask << 1;
+//				index = index + 1;
+//
+//				wait(spi_baud_rate);
+//
+//			}
+//
+//			if (index == frameLength) {
+//				spidr_rx_buffer = rx_shift;
+//				setSPIDR(spidr_rx_buffer);
+//			}
+
+		}
+
+		if (checkAcceptance(rx_buffer_register)) {
+			setCanRxFG(rx_buffer_register);
+		}
+
+		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (10) " << std::endl;
+
+		setIdle();
 
 	}
 
@@ -190,9 +265,68 @@ void S12MSCAN::RunTx() {
 
 	while (true) {
 
-		while (!isTransmitterEnabled()) {
+		while (!isCANEnabled()) {
 
-			wait(tx_run_event);
+			wait(can_enable_event);
+
+		}
+
+		while (isCANEnabled()) {
+
+			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (3) " << std::endl;
+
+			if (isTXE()) {
+				if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (4) " << std::endl;
+
+				wait(tx_load_event);
+
+				if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (5) " << std::endl;
+
+				continue;
+			}
+
+			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (6) " << std::endl;
+
+			// TODO: handle Tx Abort request
+
+//			uint8_t tx_shift = spidr_register;
+//
+//			setSPTEF();
+//
+//			startTransmission();
+//
+//			// use Telnet as an echo
+//			if (telnet_enabled) {
+//				add(telnet_tx_fifo, spidr_register, telnet_tx_event);
+//				TelnetProcessOutput(true);
+//
+//				// TODO I have to emulate Mode Fault Error
+//			}
+////			else
+//			if (txd_pin_enable)
+//			{
+//
+//				// TODO I have to rewrite the following code using TLM and stub
+//				uint8_t index = 0;
+//				while (isSPIEnabled() && (index < frameLength) && !isAbortTransmission()) {
+//
+//					if (checkModeFaultError()) { break;}
+//
+//					pinWrite(tx_shift & 0x0001);
+//
+//					tx_shift = tx_shift >> 1;
+//
+//					index++;
+//
+//					wait(spi_baud_rate);
+//
+//				}
+//
+//			}
+//
+//			endTransmission();
+//
+//			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (7) " << std::endl;
 
 		}
 
@@ -344,10 +478,20 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 
 		default: {
 			if ((offset >= CANRXFG_START) && (offset <= CANRXFG_END)) {
-				*((uint8_t *) buffer) = canrxfg_register[active_canrxfg_index][offset - CANRXFG_START];
+				if (canrxfg_index.isEmpty()) {
+					*((uint8_t *) buffer) = 0x00;
+				} else {
+					*((uint8_t *) buffer) = canrxfg_register[canrxfg_index.getHead()][offset - CANRXFG_START];
+				}
 			}
 			else if ((offset >= CANTXFG_START) && (offset <= CANTXFG_END)) {
-				*((uint8_t *) buffer) = cantxfg_register[active_cantxfg_index][offset - CANTXFG_START];
+				if (isTxSelected()) {
+					*((uint8_t *) buffer) = cantxfg_register[getTxIndex()][offset - CANTXFG_START];
+				} else {
+					std::cerr << sc_object::name() << "::Warning: Try to read to CANTXFG but no TXi is selected !" << std::endl;
+					*((uint8_t *) buffer) = 0x00;
+				}
+
 			} else {
 				return false;
 			}
@@ -383,7 +527,7 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 
 				// TODO: refine more the following two actions
 				if (isTimerActivated()) { timer_start_event.notify(); }
-				if (isCANBusIdle() && isSleepModeRequest()) { enterSleepMode(); }
+				if (isIdle() && isSleepModeRequest()) { enterSleepMode(); }
 
 			}
 
@@ -391,10 +535,15 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 		case CANCTL1: {
 			if (!isInitMode()) break;
 
+			uint8_t old_ctl1 = canctl1_register;
+
 			uint8_t value = (*((uint8_t *) buffer) & 0xFC) | (canctl1_register & 0x03);
 			canctl1_register = value;
 
 			ComputeInternalTime();
+
+			if (((old_ctl1 & 0x80) != 0x80) && ((canctl1_register) == 0x80)) { enable_can(); }
+
 		} break;
 		case CANBTR0: {
 			if (!isInitMode()) break;
@@ -420,7 +569,15 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 
 			uint8_t value =  *((uint8_t *) buffer);
 
+			uint8_t oldrflg = canrflg_register;
 			canrflg_register = (canrflg_register & 0x3C) | (canrflg_register & ~(value | 0x3C));
+
+			if (((oldrflg & 0x01) == 0x01)  && ((canrflg_register & 0x01) != 0x01)) {
+				canrxfg_index.incHead();
+				if (!canrxfg_index.isEmpty()) {
+					setReceiverBufferFull();
+				}
+			}
 
 		} break;
 		case CANRIER: {
@@ -462,6 +619,7 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 			if (isInitMode()) break;
 
 			cantbsel_register = *((uint8_t *) buffer) & 0x07;
+
 		} break;
 		case CANIDAC: {
 			if (!isInitMode()) break;
@@ -565,11 +723,16 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 
 		default: {
 			if ((offset >= CANRXFG_START) && (offset <= CANRXFG_END)) {
-				// NOP it'is a receive register
-				// canrxfg_register[active_canrxfg_index][offset - CANRXFG_START] = *((uint8_t *) buffer);
+				// NOP:
+				std::cerr << sc_object::name() << "::Warning: Try to write to CANRXFG but write is unimplemented for this register !" << std::endl;
 			}
 			else if ((offset >= CANTXFG_START) && (offset <= CANTXFG_END)) {
-				cantxfg_register[active_cantxfg_index][offset - CANTXFG_START] = *((uint8_t *) buffer);
+				if (isTxSelected()) {
+					cantxfg_register[getTxIndex()][offset - CANTXFG_START] = *((uint8_t *) buffer);
+				} else {
+					std::cerr << sc_object::name() << "::Warning: Try to write to CANTXFG but no TXi is selected !" << std::endl;
+				}
+
 			} else {
 				return false;
 			}
@@ -961,8 +1124,8 @@ void S12MSCAN::Reset() {
 	}
 
 	for (int i=0; i<16; i++) {
-		tx_shift_register[i] = 0x00;
-		rx_shift_register[i] = 0x00;
+		tx_buffer_register[i] = 0x00;
+		rx_buffer_register[i] = 0x00;
 	}
 
 	if(char_io_import)
@@ -1084,10 +1247,21 @@ bool S12MSCAN::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) 
 
 			default: {
 				if ((offset >= CANRXFG_START) && (offset <= CANRXFG_END)) {
-					*((uint8_t *) buffer) = canrxfg_register[active_canrxfg_index][offset - CANRXFG_START];
+					if (canrxfg_index.isEmpty()) {
+						*((uint8_t *) buffer) = 0x00;
+					} else {
+						*((uint8_t *) buffer) = canrxfg_register[canrxfg_index.getHead()][offset - CANRXFG_START];
+					}
+
 				}
 				else if ((offset >= CANTXFG_START) && (offset <= CANTXFG_END)) {
-					*((uint8_t *) buffer) = cantxfg_register[active_cantxfg_index][offset - CANTXFG_START];
+					if (isTxSelected()) {
+						*((uint8_t *) buffer) = cantxfg_register[getTxIndex()][offset - CANTXFG_START];
+					} else {
+						std::cerr << sc_object::name() << "::Warning: Try to read to CANTXFG but no TXi is selected !" << std::endl;
+						*((uint8_t *) buffer) = 0x00;
+					}
+
 				} else {
 					return false;
 				}
@@ -1212,10 +1386,16 @@ bool S12MSCAN::WriteMemory(physical_address_t addr, const void *buffer, uint32_t
 
 			default: {
 				if ((offset >= CANRXFG_START) && (offset <= CANRXFG_END)) {
-					canrxfg_register[active_canrxfg_index][offset - CANRXFG_START] = *((uint8_t *) buffer);
+					// NOP:
+					std::cerr << sc_object::name() << "::Warning: Try to write to CANRXFG but write is unimplemented for this register !" << std::endl;
 				}
 				else if ((offset >= CANTXFG_START) && (offset <= CANTXFG_END)) {
-					cantxfg_register[active_cantxfg_index][offset - CANTXFG_START] = *((uint8_t *) buffer);
+					if (isTxSelected()) {
+						cantxfg_register[getTxIndex()][offset - CANTXFG_START] = *((uint8_t *) buffer);
+					} else {
+						std::cerr << sc_object::name() << "::Warning: Try to write to CANTXFG but no TXi is selected !" << std::endl;
+					}
+
 				} else {
 					return false;
 				}

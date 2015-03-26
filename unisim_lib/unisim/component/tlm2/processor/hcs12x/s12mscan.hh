@@ -133,6 +133,58 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
+template <unsigned int MAX_SIZE>
+class CircularIndex {
+public:
+
+	CircularIndex() {
+	    head = 0;
+		tail = 0;
+	}
+
+	~CircularIndex() {}
+
+	unsigned int getHead() { return (head); }
+	unsigned int getTail() { return (tail); }
+
+	bool incHead() {
+
+		if (isEmpty()) { return (false); }
+
+	    head = (head+1) % MAX_SIZE;
+
+	    return (true);
+	}
+
+	bool incTail() {
+
+		if (isFull()) {	return (false);	}
+
+	    tail = (tail+1) % MAX_SIZE;
+
+	    return (true);
+	}
+
+	bool isEmpty() {
+
+	    return (head == tail);
+	}
+
+	bool isFull() {
+
+	    return (head== ((tail+1) % MAX_SIZE));
+	}
+
+	int size() {
+
+	    return abs(tail - head);
+	}
+
+private:
+    unsigned int head;
+    unsigned int tail;
+
+};
 
 class S12MSCAN :
 	public sc_module
@@ -149,6 +201,7 @@ public:
 
 	static const unsigned int MEMORY_MAP_SIZE = 64;
 
+
 	//=========================================================
 	//=                REGISTERS OFFSETS                      =
 	//=========================================================
@@ -158,6 +211,7 @@ public:
 						CANIDAR0, CANIDAR1, CANIDAR2, CANIDAR3,	CANIDMR0, CANIDMR1, CANIDMR2, CANIDMR3,
 						CANIDAR4, CANIDAR5, CANIDAR6, CANIDAR7,	CANIDMR4, CANIDMR5, CANIDMR6, CANIDMR7,
 						CANRXFG_START=0x20, CANRXFG_END=0x2F, CANTXFG_START=0x30, CANTXFG_END=0x3F};
+
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 	ServiceImport<CharIO > char_io_import;
@@ -247,7 +301,7 @@ private:
 	sc_time		bit_time;
 	sc_time		telnet_process_input_period;
 
-	sc_event tx_run_event, tx_load_event, tx_break_event, rx_run_event;
+	sc_event can_enable_event, tx_run_event, tx_load_event, tx_break_event, rx_run_event;
 
 	// S12MSCAN baseAddress  CAN0=0x0140:0x017F  CAN1=0x0180:0x01BF CAN2=0x01C0:0x01FF CAN3=0x0200:0x023F CAN4=0x0280:0x02BF
 	address_t	baseAddress;
@@ -273,9 +327,9 @@ private:
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
-	bool idle_to_send;
+	bool abortTransmission;
 
-	bool txd;
+	bool txd;  // 0= Dominant state; 1= recessive state
 	Signal<bool> txd_output_pin;
 
 	bool rxd;
@@ -308,9 +362,9 @@ private:
 	uint8_t canrxfg_register[5][16];
 	uint8_t cantxfg_register[3][16];
 
-	int active_canrxfg_index, active_cantxfg_index;
+	CircularIndex<5> canrxfg_index;
 
-	uint8_t tx_shift_register[16], rx_shift_register[16];
+	uint8_t tx_buffer_register[16], rx_buffer_register[16];
 
 	struct CANFG {
 		uint8_t idr0, idr1, idr2, idr3; // IDR: identifier Register
@@ -328,10 +382,31 @@ private:
 	uint16_t time_stamp;
 	sc_time time_quanta;
 
-	inline bool isReceiverEnabled() { return false; }
-	inline bool isTransmitterEnabled() { return false; }
+	int msg_size;
 
-	inline bool isCANBusIdle() { /* TODO: check CAN Bus State */ return (true); };
+	inline bool isReceiverEnabled() { return (isCANEnabled() /* TODO: clarify if can receiver is enabled automatically ? */); }
+	inline bool isTransmitterEnabled() { return (isCANEnabled()  /* TODO: clarify if can transmitter is enabled automatically ? */); }
+
+	inline bool isRxLow() { return (!rxd); }
+
+	inline bool isAbortTransmission() {
+
+		return (abortTransmission);
+	}
+
+	inline void abortTX() {
+		// TODO finalize abort transmission
+
+		setIdle();
+		abortTransmission = true;
+	}
+
+	inline void enable_can() {
+		setIdle();
+
+		can_enable_event.notify();
+	}
+
 
 	inline bool isInitModeRequest() { return (canctl0_register & 0x01); }
 	inline void enterInitMode() {
@@ -364,6 +439,13 @@ private:
 	}
 
 	inline bool isInitMode() { return ((canctl0_register & 0x01) && (canctl1_register & 0x01)); }
+
+	inline void setIdle() { canctl0_register = canctl0_register & 0xBF; }
+	inline void setActive() { canctl0_register = canctl0_register | 0x40; }
+	inline bool isActive() { return ((canctl0_register & 0x40) == 0x40); }
+	inline bool isIdle() { return ((canctl0_register & 0x40) != 0x40); }
+
+
 	inline bool isStopInWait() { return (canctl0_register & 0x20); }
 
 	inline void setSynchronized() { canctl0_register = canctl0_register | 0x10; }
@@ -510,6 +592,21 @@ private:
 
 	inline void setTransmitabortAbortAcknowledge(int index) { cantaak_register = cantaak_register | (1 << index); }
 
+	inline bool isTXE() {
+
+		uint8_t mask = 1;
+		for (int i=0; (i<3); i++) {
+
+			if ((cantflg_register & mask) != 0) {
+				return (true);
+			} else {
+				mask = mask << 1;
+			}
+		}
+
+		return (false);
+	}
+
 	inline bool isTxSelected() { return ((cantbsel_register & 0x07) != 0); }
 	inline int getTxIndex() {
 
@@ -568,7 +665,7 @@ private:
 
 	}
 
-	inline bool checkAcceptance() {
+	inline bool checkAcceptance(uint8_t* rx_buffer) {
 
 		/*
 		 *  TODO: implement acceptance algorithm using caniadr and canidmr registers
@@ -592,32 +689,46 @@ private:
 		 *  in the mask registers CANIDMR1, CANIDMR3, CANIDMR5, and CANIDMR7 to “don’t care.”
 		 */
 
-		return (false);
+		return (true);
 	}
 
-	inline void addTxTimeStamp() {
+	inline bool addTxTimeStamp() {
 
-//		cantxfg_register[active_cantxfg_index][0x000E] =  (time_stamp & 0xFF00) >> 8;
-//		cantxfg_register[active_cantxfg_index][0x000F] =  (time_stamp & 0x00FF);
+		if (!isTxSelected()) { return (false); }
 
-		cantxfg = reinterpret_cast<CANFG*>(cantxfg_register[active_cantxfg_index]);
+		cantxfg = reinterpret_cast<CANFG*>(cantxfg_register[getTxIndex()]);
 
 		cantxfg->tsrh = (time_stamp & 0xFF00) >> 8;
 		cantxfg->tsrl = (time_stamp &  0x00FF);
+
+		return (true);
 	}
 
-	inline uint16_t getRxTimeStamp() {
+	inline bool setCanRxFG(uint8_t rx_buffer[16]) {
 
-		uint8_t timest = 0;
+		if (canrxfg_index.isFull()) return (false);
 
-//		timest = timest | (((uint16_t) canrxfg_register[active_canrxfg_index][0x000E]) << 8);
-//		timest = timest | (((uint16_t) canrxfg_register[active_canrxfg_index][0x000F]) & 0x00FF);
+		unsigned int tail = canrxfg_index.getTail();
+		for (int i=0; i<16; i++) {
+			canrxfg_register[tail][i] = rx_buffer[i];
+		}
 
-		canrxfg = reinterpret_cast<CANFG*>(canrxfg_register[active_canrxfg_index]);
+		setReceiverBufferFull();
+
+		canrxfg_index.incTail();
+
+		return (true);
+	}
+
+	inline bool getRxTimeStamp(uint16_t& timest) {
+
+		if (canrxfg_index.isEmpty()) return (false);
+
+		canrxfg = reinterpret_cast<CANFG*>(canrxfg_register[canrxfg_index.getHead()]);
 		timest = timest | (((uint16_t) canrxfg->tsrh) << 8);
 		timest = timest | (((uint16_t) canrxfg->tsrl) & 0x00FF);
 
-		return (timest);
+		return (true);
 	}
 
 	inline void reset_time_stamp() { time_stamp = 0; }
@@ -744,8 +855,6 @@ private:
 			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
 		}
 	}
-
-
 
 }; /* end class S12MSCAN */
 

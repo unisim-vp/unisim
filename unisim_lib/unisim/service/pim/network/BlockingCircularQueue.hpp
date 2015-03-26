@@ -11,6 +11,7 @@
 #include<pthread.h>
 #include<iostream>
 #include<cstdlib>
+#include <cmath>
 
 namespace unisim {
 namespace service {
@@ -113,7 +114,7 @@ public:
 
 	    pthread_mutex_lock( &queue_mutex );
 
-	    result = (abs(head == tail));
+	    result = (head == tail);
 
 	    pthread_mutex_unlock( &queue_mutex );
 
@@ -139,7 +140,7 @@ public:
 
 	    pthread_mutex_lock( &queue_mutex );
 
-	    size = (tail - head);
+	    size = std::abs(tail - head);
 
 	    pthread_mutex_unlock( &queue_mutex );
 
