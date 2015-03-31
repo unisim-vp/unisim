@@ -233,6 +233,7 @@ public:
 
 	void RunRx();
 	void RunTx();
+	void RunTimer();
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -301,7 +302,7 @@ private:
 	sc_time		bit_time;
 	sc_time		telnet_process_input_period;
 
-	sc_event can_enable_event, tx_run_event, tx_load_event, tx_break_event, rx_run_event;
+	sc_event can_enable_event, timer_enable_event, tx_run_event, tx_load_event, tx_break_event, rx_run_event;
 
 	// S12MSCAN baseAddress  CAN0=0x0140:0x017F  CAN1=0x0180:0x01BF CAN2=0x01C0:0x01FF CAN3=0x0200:0x023F CAN4=0x0280:0x02BF
 	address_t	baseAddress;
@@ -382,7 +383,8 @@ private:
 	uint16_t time_stamp;
 	sc_time time_quanta;
 
-	int msg_size;
+	bool hasArbitration;
+	bool txStatus;
 
 	inline bool isReceiverEnabled() { return (isCANEnabled() /* TODO: clarify if can receiver is enabled automatically ? */); }
 	inline bool isTransmitterEnabled() { return (isCANEnabled()  /* TODO: clarify if can transmitter is enabled automatically ? */); }
@@ -400,6 +402,12 @@ private:
 		setIdle();
 		abortTransmission = true;
 	}
+
+	inline void setTransmission(bool status) { txStatus = status; }
+	inline bool isTransmission() { return (txStatus); }
+
+	inline void setArbitrationStatus(bool status) { hasArbitration = status; }
+	inline bool isArbitrationStatus() { return (hasArbitration); }
 
 	inline void enable_can() {
 		setIdle();
@@ -440,10 +448,10 @@ private:
 
 	inline bool isInitMode() { return ((canctl0_register & 0x01) && (canctl1_register & 0x01)); }
 
+	inline void setReceiverActive() { canctl0_register = canctl0_register | 0x40; }
+	inline bool isReceiverActive() { return ((canctl0_register & 0x40) == 0x40); }
 	inline void setIdle() { canctl0_register = canctl0_register & 0xBF; }
-	inline void setActive() { canctl0_register = canctl0_register | 0x40; }
-	inline bool isActive() { return ((canctl0_register & 0x40) == 0x40); }
-	inline bool isIdle() { return ((canctl0_register & 0x40) != 0x40); }
+	inline bool isIdle() { return ((canctl0_register & 0x40) != 0x40) && (!isTransmission()); }
 
 
 	inline bool isStopInWait() { return (canctl0_register & 0x20); }
@@ -452,6 +460,7 @@ private:
 	inline void setNotSynchronized() { canctl0_register = canctl0_register & 0xEF; }
 	inline bool isSynchronized() { return (canctl0_register & 0x10); }
 	inline bool isTimerActivated() { return (canctl0_register & 0x08); }
+	inline void enableTimer() { if (isTimerActivated()) { timer_enable_event.notify(); } }
 
 	inline bool isWakeupEnabled() { return (canctl0_register & 0x04); }
 	inline bool isWakeupInterrupt() { return (canrflg_register & 0x80); }
@@ -590,21 +599,50 @@ private:
 
 	inline bool isAbortRequest(int index) { return ((cantarq_register & (1 << index)) != 0); }
 
-	inline void setTransmitabortAbortAcknowledge(int index) { cantaak_register = cantaak_register | (1 << index); }
+	inline void setTransmitAbortAcknowledge(int index) { cantaak_register = cantaak_register | (1 << index); }
 
-	inline bool isTXE() {
+	inline int selectLoadedTx(uint8_t (&tx_buffer)[16]) {
+
+		int index = -1;
 
 		uint8_t mask = 1;
+		uint8_t priority = 0xFF;
+
 		for (int i=0; (i<3); i++) {
 
-			if ((cantflg_register & mask) != 0) {
-				return (true);
-			} else {
-				mask = mask << 1;
+			if ((cantflg_register & mask) == 0) {
+				if (isAbortRequest(i)) {
+					setTXE(i);
+					setTransmitAbortAcknowledge(i);
+				} else {
+					cantxfg = reinterpret_cast<CANFG*>(cantxfg_register[i]);
+					if (cantxfg->tbpr < priority) {
+						index = i;
+						priority = cantxfg->tbpr;
+					}
+				}
+
 			}
+
+			mask = mask << 1;
 		}
 
-		return (false);
+		if (index != -1) {
+			for (int i=0; i<16; i++) {
+				tx_buffer[i] = cantxfg_register[index][i];
+			}
+
+			setTXE(index);
+		}
+
+		return (index);
+	}
+
+	inline void setTXE(int index) {
+
+		uint8_t mask = (1 << index);
+		cantflg_register = cantflg_register | mask;
+		cantarq_register = cantarq_register & ~mask;
 	}
 
 	inline bool isTxSelected() { return ((cantbsel_register & 0x07) != 0); }
@@ -665,15 +703,33 @@ private:
 
 	}
 
-	inline bool checkAcceptance(uint8_t* rx_buffer) {
+	inline bool setRxBG(uint8_t rx_buffer[16], bool isTransmitter=false) {
+
+		for (int i=0; i<16; i++) {
+			rx_buffer_register[i] = rx_buffer[i];
+		}
+
+		addTimeStamp(rx_buffer_register);
+
+		if (isLoopBack() || (!isTransmitter)) {
+			if (checkAcceptance(rx_buffer_register)) {
+				setCanRxFG(rx_buffer_register);
+				return (true);
+			}
+		}
+
+		return (false);
+	}
+
+	inline bool checkAcceptance(uint8_t rx_buffer[16]) {
 
 		/*
 		 *  TODO: implement acceptance algorithm using caniadr and canidmr registers
-		 *    note: background receive buffer is modeled as rx_shift_register[16]
+		 *    note: background receive buffer is modeled as rx_buffer_register[16]
 		 *
 		 *  CANIADR register:
-		 *  On reception, each message is written into the background receive buffer. The CPU is only signalled to
-		 *  read the message if it passes the criteria in the identifier acceptance and identifier mask registers
+		 *  On reception, each message is written into the background receive buffer. The CPU is notified to
+		 *  read the message only if it passes the criteria in the identifier acceptance and identifier mask registers
 		 *  (accepted); otherwise, the message is overwritten by the next message (dropped).
 		 *  The acceptance registers of the MSCAN are applied on the IDR0–IDR3 registers (see Section 10.3.3.1,
 		 *  “Identifier Registers (IDR0–IDR3)”) of incoming messages in a bit by bit manner (see Section 10.4.3,
@@ -692,21 +748,12 @@ private:
 		return (true);
 	}
 
-	inline bool addTxTimeStamp() {
-
-		if (!isTxSelected()) { return (false); }
-
-		cantxfg = reinterpret_cast<CANFG*>(cantxfg_register[getTxIndex()]);
-
-		cantxfg->tsrh = (time_stamp & 0xFF00) >> 8;
-		cantxfg->tsrl = (time_stamp &  0x00FF);
-
-		return (true);
-	}
-
 	inline bool setCanRxFG(uint8_t rx_buffer[16]) {
 
-		if (canrxfg_index.isFull()) return (false);
+		if (canrxfg_index.isFull()) {
+			setOverrunInterrupt();
+			return (false);
+		}
 
 		unsigned int tail = canrxfg_index.getTail();
 		for (int i=0; i<16; i++) {
@@ -720,15 +767,13 @@ private:
 		return (true);
 	}
 
-	inline bool getRxTimeStamp(uint16_t& timest) {
+	inline void addTimeStamp(uint8_t (&tx_buffer)[16]) {
 
-		if (canrxfg_index.isEmpty()) return (false);
+		cantxfg = reinterpret_cast<CANFG*>(tx_buffer);
 
-		canrxfg = reinterpret_cast<CANFG*>(canrxfg_register[canrxfg_index.getHead()]);
-		timest = timest | (((uint16_t) canrxfg->tsrh) << 8);
-		timest = timest | (((uint16_t) canrxfg->tsrl) & 0x00FF);
+		cantxfg->tsrh = (time_stamp & 0xFF00) >> 8;
+		cantxfg->tsrl = (time_stamp &  0x00FF);
 
-		return (true);
 	}
 
 	inline void reset_time_stamp() { time_stamp = 0; }
@@ -743,7 +788,7 @@ private:
 	std::queue<uint8_t> telnet_tx_fifo;
 	sc_event telnet_rx_event, telnet_tx_event;
 
-	inline void add(std::queue<uint8_t> &buffer_queue, uint8_t data, sc_event &event) {
+	inline void add(std::queue<uint8_t> &buffer_queue, const uint8_t& data, sc_event &event) {
 	    buffer_queue.push(data);
 	    event.notify();
 	}
@@ -770,7 +815,7 @@ private:
 	    return (buffer_queue.size());
 	}
 
-	inline void TelnetSendString(const char *msg) {
+	inline void TelnetSendString(const unsigned char *msg) {
 
 		while (*msg != 0)
 			add(telnet_tx_fifo, *msg++, telnet_tx_event) ;

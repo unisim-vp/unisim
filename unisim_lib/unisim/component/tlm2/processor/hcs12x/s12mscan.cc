@@ -87,7 +87,8 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	, cantxfg(NULL)
 	, time_stamp(0)
 
-	, msg_size(16)
+	, hasArbitration(false)
+	, txStatus(false)
 
 	, telnet_enabled(false)
 	, param_telnet_enabled("telnet-enabled", this, telnet_enabled)
@@ -164,6 +165,20 @@ S12MSCAN::~S12MSCAN() {
 
 }
 
+void S12MSCAN::RunTimer() {
+
+	while (true) {
+		while (!isCANEnabled() || !isTimerActivated()) {
+
+			wait(can_enable_event | timer_enable_event);
+			time_stamp = 0;
+		}
+
+		wait(bit_time);
+		time_stamp = (time_stamp == 0xFFFF)? 0: (time_stamp + 1);
+	}
+}
+
 void S12MSCAN::RunRx() {
 
 	while (true) {
@@ -208,19 +223,20 @@ void S12MSCAN::RunRx() {
 		// TODO: I have to complete receiver automata
 		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (8) " << std::endl;
 
-		setActive();
+		setReceiverActive();
 
-		uint8_t rx_shift = 0;
+		uint8_t rx_shift[16];
 
 		if (telnet_enabled) {
 
 			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (9) " << std::endl;
 
-			for (int i=0; i < msg_size; i++) {
+			// buffer 13xDataByte + 1xPriorityByte + 2xTimeStampByte = 16xByte
+			for (int i=0; i < 13; i++) {
 
-				next(telnet_rx_fifo, rx_buffer_register[i], telnet_rx_event);
+				next(telnet_rx_fifo, rx_shift[i], telnet_rx_event);
+
 			}
-
 
 			if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::get  HAVE DATA" << std::endl;
 
@@ -249,9 +265,7 @@ void S12MSCAN::RunRx() {
 
 		}
 
-		if (checkAcceptance(rx_buffer_register)) {
-			setCanRxFG(rx_buffer_register);
-		}
+		setRxBG(rx_shift);
 
 		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (10) " << std::endl;
 
@@ -275,7 +289,9 @@ void S12MSCAN::RunTx() {
 
 			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (3) " << std::endl;
 
-			if (isTXE()) {
+			int txIndex = selectLoadedTx(tx_buffer_register);
+
+			if (txIndex == -1) {
 				if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (4) " << std::endl;
 
 				wait(tx_load_event);
@@ -287,26 +303,30 @@ void S12MSCAN::RunTx() {
 
 			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (6) " << std::endl;
 
-			// TODO: handle Tx Abort request
+			// TODO: *** Get Arbitration (hasArbitration = true) ***
+			addTimeStamp(tx_buffer_register);
 
-//			uint8_t tx_shift = spidr_register;
-//
-//			setSPTEF();
-//
+			// TODO: handle arbitration lost
+			if (!isArbitrationStatus()) {
+				setRxBG(tx_buffer_register, true);
+			}
+
+
 //			startTransmission();
-//
-//			// use Telnet as an echo
-//			if (telnet_enabled) {
-//				add(telnet_tx_fifo, spidr_register, telnet_tx_event);
-//				TelnetProcessOutput(true);
-//
-//				// TODO I have to emulate Mode Fault Error
-//			}
-////			else
-//			if (txd_pin_enable)
-//			{
-//
-//				// TODO I have to rewrite the following code using TLM and stub
+
+			// use Telnet as an echo
+			if (telnet_enabled) {
+				for (int i=0; i < 13; i++) {
+					add(telnet_tx_fifo, tx_buffer_register[i], telnet_tx_event);
+				}
+				TelnetProcessOutput(true);
+
+				// TODO I have to emulate Mode Fault Error
+			}
+			else
+			{
+
+				// TODO I have to rewrite the following code using TLM and stub
 //				uint8_t index = 0;
 //				while (isSPIEnabled() && (index < frameLength) && !isAbortTransmission()) {
 //
@@ -321,12 +341,15 @@ void S12MSCAN::RunTx() {
 //					wait(spi_baud_rate);
 //
 //				}
-//
-//			}
-//
+
+			}
+
 //			endTransmission();
-//
-//			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (7) " << std::endl;
+
+			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (7) " << std::endl;
+
+			// After transmission
+			setRxBG(tx_buffer_register, true);
 
 		}
 
@@ -525,8 +548,10 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 
 				if (isInitModeRequest()) { enterInitMode(); }
 
+				enableTimer();
+
 				// TODO: refine more the following two actions
-				if (isTimerActivated()) { timer_start_event.notify(); }
+
 				if (isIdle() && isSleepModeRequest()) { enterSleepMode(); }
 
 			}
@@ -597,8 +622,19 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 			 * cannot be cleared and no transmission is started.
 			 */
 
+			uint8_t oldtflg = cantflg_register;
 			cantflg_register = cantflg_register & ~value;
 			cantaak_register = cantaak_register & ~value;
+
+			uint8_t mask = 1;
+			for (int i=0; i<3; i++) {
+				if (((oldtflg & mask) != 0) && ((cantflg_register & mask) == 0)) {
+					tx_load_event.notify();
+					break;
+				} else {
+					mask = mask << 1;
+				}
+			}
 
 		} break;
 		case CANTIER: {
