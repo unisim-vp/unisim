@@ -34,6 +34,7 @@
 
 #include <ieee1666/kernel/module.h>
 #include <ieee1666/kernel/kernel.h>
+#include <ieee1666/kernel/thread_process.h>
 
 namespace sc_core {
 
@@ -69,6 +70,7 @@ sc_module::sc_module( const sc_module_name& module_name )
 {
 	sc_module_name *non_const_module_name = sc_kernel::get_kernel()->get_top_of_module_name_stack();
 	non_const_module_name->set_module(this);
+	init();
 }
 
 sc_module::sc_module()
@@ -76,6 +78,7 @@ sc_module::sc_module()
 {
 	sc_module_name *non_const_module_name = sc_kernel::get_kernel()->get_top_of_module_name_stack();
 	non_const_module_name->set_module(this);
+	init();
 }
 
 void sc_module::reset_signal_is( const sc_in<bool>& , bool )
@@ -168,6 +171,7 @@ void sc_module::next_trigger( double , sc_time_unit , const sc_event_and_list & 
 
 void sc_module::wait()
 {
+	sc_kernel::get_kernel()->get_current_thread_process()->wait();
 }
 
 void sc_module::wait( int )
@@ -246,6 +250,11 @@ void sc_module::end_module()
 {
 	sc_kernel *kernel = sc_kernel::get_kernel();
 	kernel->end_object();
+}
+
+void sc_module::init()
+{
+	sc_kernel::get_kernel()->add_module(this);
 }
 
 //////////////////////////////////// global functions ///////////////////////////////////////

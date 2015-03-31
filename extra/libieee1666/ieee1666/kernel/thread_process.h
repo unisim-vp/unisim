@@ -32,64 +32,52 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __IEEE1666_KERNEL_KERNEL_H__
-#define __IEEE1666_KERNEL_KERNEL_H__
+#ifndef __IEEE1666_KERNEL_THREAD_PROCESS_H__
+#define __IEEE1666_KERNEL_THREAD_PROCESS_H__
 
 #include <ieee1666/kernel/fwd.h>
+#include <ieee1666/kernel/object.h>
 #include <ieee1666/kernel/process.h>
-//#include <ieee1666/kernel/module_name.h>
-//#include <ieee1666/kernel/object.h>
-#include <stack>
+#include <boost/bind.hpp>
+#include <boost/coroutine/coroutine.hpp>
 
 namespace sc_core {
 
-class sc_kernel
+typedef boost::coroutines::coroutine<void()> sc_coroutine;
+
+class sc_thread_process_helper
 {
 public:
-	sc_kernel();
-	
-	void push_module_name(sc_module_name *module_name);
-	void pop_module_name();
-	sc_module_name *get_top_of_module_name_stack() const;
-	
-	static sc_kernel *get_kernel();
-	
-	void begin_object(sc_object *object);
-	void end_object();
-	sc_object *get_current_object() const;
-	sc_thread_process *get_current_thread_process() const;
-
-	sc_thread_process *create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
-
-	void initialize();
-	void start();
-	
-	void add_module(sc_module *module);
-	void add_thread_process(sc_thread_process *thread_process);
-protected:
+	sc_thread_process_helper(sc_thread_process *thread_process, sc_coroutine::caller_type& yield);
+	~sc_thread_process_helper();
 private:
-	std::stack<sc_module_name *> module_name_stack;
-	std::stack<sc_object *> object_stack;
-	static sc_kernel *kernel;
-	sc_thread_process *current_thread_process;
+	friend class sc_thread_process;
 	
-	std::vector<sc_module *> module_table;
-	std::vector<sc_thread_process *> thread_process_table;
+	sc_thread_process *thread_process;
+	sc_coroutine::caller_type& yield;
 };
 
-int sc_elab_and_sim(int argc, char* argv[]);
-int sc_argc();
-const char* const* sc_argv();
-
-enum sc_starvation_policy
+class sc_thread_process : public sc_process
 {
-	SC_RUN_TO_TIME,
-	SC_EXIT_ON_STARVATION
+public:
+	
+	sc_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
+	virtual ~sc_thread_process();
+	
+	virtual void start();
+	
+	void wait();
+	
+	void resume();
+	
+private:
+	friend class sc_thread_process_helper;
+	
+	sc_coroutine *coro;
+	sc_thread_process_helper *thread_process_helper;
+	
+	void coroutine_work(sc_coroutine::caller_type& yield);
 };
-
-void sc_start();
-void sc_start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
-void sc_start(double duration, sc_time_unit tu, sc_starvation_policy p = SC_RUN_TO_TIME);
 
 } // end of namespace sc_core
 

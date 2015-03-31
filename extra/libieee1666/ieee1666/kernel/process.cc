@@ -32,65 +32,28 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __IEEE1666_KERNEL_KERNEL_H__
-#define __IEEE1666_KERNEL_KERNEL_H__
-
-#include <ieee1666/kernel/fwd.h>
 #include <ieee1666/kernel/process.h>
-//#include <ieee1666/kernel/module_name.h>
-//#include <ieee1666/kernel/object.h>
-#include <stack>
 
 namespace sc_core {
 
-class sc_kernel
+sc_process_owner::sc_process_owner()
 {
-public:
-	sc_kernel();
-	
-	void push_module_name(sc_module_name *module_name);
-	void pop_module_name();
-	sc_module_name *get_top_of_module_name_stack() const;
-	
-	static sc_kernel *get_kernel();
-	
-	void begin_object(sc_object *object);
-	void end_object();
-	sc_object *get_current_object() const;
-	sc_thread_process *get_current_thread_process() const;
+}
 
-	sc_thread_process *create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
-
-	void initialize();
-	void start();
-	
-	void add_module(sc_module *module);
-	void add_thread_process(sc_thread_process *thread_process);
-protected:
-private:
-	std::stack<sc_module_name *> module_name_stack;
-	std::stack<sc_object *> object_stack;
-	static sc_kernel *kernel;
-	sc_thread_process *current_thread_process;
-	
-	std::vector<sc_module *> module_table;
-	std::vector<sc_thread_process *> thread_process_table;
-};
-
-int sc_elab_and_sim(int argc, char* argv[]);
-int sc_argc();
-const char* const* sc_argv();
-
-enum sc_starvation_policy
+sc_process_owner::~sc_process_owner()
 {
-	SC_RUN_TO_TIME,
-	SC_EXIT_ON_STARVATION
-};
+}
 
-void sc_start();
-void sc_start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
-void sc_start(double duration, sc_time_unit tu, sc_starvation_policy p = SC_RUN_TO_TIME);
+sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr)
+	: sc_object(_name)
+	, process_owner(_process_owner)
+	, process_owner_method_ptr(_process_owner_method_ptr)
+{
+}
+	
+void sc_process::call_process_owner_method()
+{
+	(process_owner->*process_owner_method_ptr)();
+}
 
 } // end of namespace sc_core
-
-#endif

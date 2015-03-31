@@ -21,6 +21,8 @@ ieee1666/kernel/module.h \
 ieee1666/kernel/process_handle.h \
 ieee1666/kernel/time.h \
 ieee1666/kernel/object.h \
+ieee1666/kernel/process.h \
+ieee1666/kernel/thread_process.h \
 ieee1666/base/fifo_in.h \
 ieee1666/base/clock.h \
 ieee1666/base/fifo_if.h \
@@ -58,6 +60,8 @@ ieee1666/kernel/prim_channel.cc \
 ieee1666/kernel/process_handle.cc \
 ieee1666/kernel/sensitive.cc \
 ieee1666/kernel/time.cc \
+ieee1666/kernel/process.cc \
+ieee1666/kernel/thread_process.cc \
 ieee1666/base/buffer.cc \
 ieee1666/base/clock.cc \
 ieee1666/base/event_queue.cc \

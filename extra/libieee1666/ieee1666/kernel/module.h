@@ -41,6 +41,7 @@
 #include <ieee1666/kernel/time.h>
 #include <ieee1666/kernel/module_name.h>
 #include <ieee1666/kernel/sensitive.h>
+#include <ieee1666/kernel/process.h>
 #include <ieee1666/base/in.h>
 #include <ieee1666/base/out.h>
 #include <ieee1666/base/inout.h>
@@ -54,7 +55,9 @@ namespace sc_core {
 // };
 //const sc_bind_proxy SC_BIND_PROXY_NIL;
 
-class sc_module : public sc_object
+class sc_module
+	: public sc_object
+	, public sc_process_owner
 {
 public:
 	virtual ~sc_module();
@@ -120,6 +123,9 @@ protected:
 	friend class sc_module_name;
 	
 	void end_module();
+	
+private:
+	void init();
 };
 
 void next_trigger();
@@ -149,9 +155,9 @@ void wait( const sc_time& , const sc_event_and_list & );
 void wait( double , sc_time_unit , const sc_event_and_list & );
 #define SC_MODULE(name) struct name : public ::sc_core::sc_module
 #define SC_CTOR(name) typedef name SC_CURRENT_USER_MODULE; name(const ::sc_core::sc_module_name&)
-#define SC_HAS_PROCESS(name) // implementation-defined
+#define SC_HAS_PROCESS(name) typedef name SC_CURRENT_USER_MODULE // implementation-defined
 #define SC_METHOD(name) // implementation-defined
-#define SC_THREAD(name) // implementation-defined
+#define SC_THREAD(name) sc_kernel::get_kernel()->create_thread_process(#name, this, static_cast<sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name)) // implementation-defined
 #define SC_CTHREAD(name,clk) // implementation-defined
 const char* sc_gen_unique_name( const char* );
 typedef sc_module sc_behavior;

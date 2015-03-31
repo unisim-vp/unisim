@@ -34,6 +34,7 @@
 
 #include <ieee1666/kernel/kernel.h>
 #include <ieee1666/kernel/module_name.h>
+#include <ieee1666/kernel/thread_process.h>
 
 namespace sc_core {
 
@@ -81,6 +82,89 @@ void sc_kernel::end_object()
 sc_object *sc_kernel::get_current_object() const
 {
 	return object_stack.empty() ? 0 : object_stack.top();
+}
+
+sc_thread_process *sc_kernel::get_current_thread_process() const
+{
+	return current_thread_process;
+}
+
+sc_thread_process *sc_kernel::create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr)
+{
+	sc_thread_process *thread_process = new sc_thread_process(name, process_owner, process_owner_method_ptr);
+	
+	return thread_process;
+}
+
+void sc_kernel::initialize()
+{
+	unsigned int n = thread_process_table.size();
+	
+	unsigned int i;
+	for(i = 0; i < n; i++)
+	{
+		sc_thread_process *thread_process = thread_process_table[i];
+		
+		thread_process->start();
+		current_thread_process = thread_process;
+		thread_process->resume();
+	}
+
+	unsigned int j;
+	
+	for(j = 0; j < 10; j++)
+	{
+		for(i = 0; i < n; i++)
+		{
+			sc_thread_process *thread_process = thread_process_table[i];
+			
+			current_thread_process = thread_process;
+			thread_process->resume();
+		}
+	}
+}
+
+void sc_kernel::start()
+{
+	initialize();
+}
+
+void sc_kernel::add_module(sc_module *module)
+{
+	module_table.push_back(module);
+}
+
+void sc_kernel::add_thread_process(sc_thread_process *thread_process)
+{
+	thread_process_table.push_back(thread_process);
+}
+
+int sc_elab_and_sim(int argc, char* argv[])
+{
+	return 0;
+}
+
+int sc_argc()
+{
+	return 0;
+}
+
+const char* const* sc_argv()
+{
+	return 0;
+}
+
+void sc_start()
+{
+	sc_kernel::get_kernel()->start();
+}
+
+void sc_start(const sc_time& duration, sc_starvation_policy p)
+{
+}
+
+void sc_start(double duration,sc_time_unit tu, sc_starvation_policy p)
+{
 }
 
 } // end of namespace sc_core
