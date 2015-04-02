@@ -58,7 +58,7 @@ In the following subsections you will find charts explaining the message exchang
 			node[above] {\textbf{Initiator}};
 		\draw (rlb) -- (rlt)
 			node[above] {\textbf{Target}};
-		\draw (time) node[above] {\small \textbf{\textsf{Local time}}};
+		\draw (time) node[above] {\small \textbf{\textsf{Local time offset}}};
 		}
 		\onslide*<2-> {
 		\draw (req) node[above] {Request};
@@ -109,7 +109,7 @@ Figure~\ref{fig:chart_untimed} shows the message exchange that occur when using 
 			node[above] {\textbf{Target}};
 		\draw (req) node[above] {Request};
 		\draw (rsp) node[below] {Response};
-		\draw (time) node[above] {\small \textbf{\textsf{Local time}}};
+		\draw (time) node[above] {\small \textbf{\textsf{Local time offset}}};
 		\draw (0ns) node[above] {\small \textbf{\textsf{$+$0ns}}};
 		\draw (0nstext) node[below] {\small \textbf{\textsf{($+$0ns)}}};
 		\draw[thick,-latex] (call_left) -- (call_right);
@@ -161,7 +161,7 @@ Figure~\ref{fig:chart_untimed} shows the message exchange that occur when using 
 			node[above] {\textbf{Target}};
 		\draw (req0) node[below right] {\small \textsf{BEGIN\_REQ}} -- (req1);
 		\draw (rsp0) node[below right] {\small \textsf{BEGIN\_RESP}} -- (rsp1);
-		\draw (time) node[above] {\small \textbf{\textsf{Local time}}};
+		\draw (time) node[above] {\small \textbf{\textsf{Local time offset}}};
 		\draw (0ns) node {\small \textbf{\textsf{$+$0ns}}};
 		\draw (10ns) node(10nstext) {\small \textbf{\textsf{$+$10ns}}};
 		\draw[thick,-latex] (call_left) -- (call_right);
@@ -213,7 +213,7 @@ Figure~\ref{fig:chart_lt_with_timing_annotation} shows the message exchange that
 			node[above] {\textbf{Target}};
 		\draw (req0) node[below right] {\small \textsf{BEGIN\_REQ}} -- (req1);
 		\draw (rsp0) node[below right] {\small \textsf{BEGIN\_RESP}} -- (rsp1);
-		\draw (time) node[above] {\small \textbf{\textsf{Local time}}};
+		\draw (time) node[above] {\small \textbf{\textsf{Local time offset}}};
 		\draw (0ns) node {\small \textbf{\textsf{$+$0ns}}};
 		\draw (10ns) node(10nstext) {\small \textbf{\textsf{$+$10ns}}};
 		\draw[thick,-latex] (call_left) -- (call_right);
@@ -366,7 +366,7 @@ Figure~\ref{fig:chart_lt_with_sync} shows the message exchange that occur when u
 		\path (3,3) coordinate (req1_1);
 		\path (1,1) coordinate (rsp1_0);
 		\path (3,1) coordinate (rsp1_1);
-		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time}}};
+		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time offset}}};
 		\path (4,7.5) node(10ns) [right] {\footnotesize \textsf{\textbf{+10ns}}};
 		\path (4,5.5) node(20ns) [right] {\footnotesize \textsf{\textbf{+20ns}}};
 		\path (4,3) node(35ns) [right] {\footnotesize \textsf{\textbf{+35ns}}};
@@ -406,7 +406,7 @@ Figure~\ref{fig:chart_lt_with_sync} shows the message exchange that occur when u
 		\draw (ret2_left) +(0,-0.3) node[below right] {\footnotesize \emph{Return}};
 		\draw (ret2_right) node[below left] {\small \texttt{\textbf{TLM\_COMPLETED, BEGIN\_RESP, 45ns}}};
 		\path (6,8.5) node(100ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 100ns}}};
-		\path (6,0.5) node(110ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 110ns}}};
+		\path (6,0.5) node(100_ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 100ns}}};
 		\path (ret_left) +(-2,0) coordinate (control_ret_left);
 		\path (20ns) +(2,0) coordinate (control_20ns);
 		\draw[thick,-latex] (ret_left) +(-0.1,0) .. controls (control_ret_left) and (control_20ns) .. (20ns)[above];
@@ -437,7 +437,7 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling} shows the message exchange th
 		\path (3,3) coordinate (req1_1);
 		\path (1,1) coordinate (rsp1_0);
 		\path (3,1) coordinate (rsp1_1);
-		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time}}};
+		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time offset}}};
 		\path (4,7.5) node(10ns) [right] {\footnotesize \textsf{\textbf{+10ns}}};
 		\path (4,5.5) node(20ns) [right] {\footnotesize \textsf{\textbf{+20ns}}};
 		\path (4,3) node(35ns) [right] {\footnotesize \textsf{\textbf{+35ns}}};
@@ -477,7 +477,7 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling} shows the message exchange th
 		\draw (ret2_left) node[below right] {\footnotesize \emph{Return}};
 		\draw (ret2_right) node[below left] {\small \texttt{\textbf{TLM\_COMPLETED, BEGIN\_RESP, 45ns}}};
 		\path (6,8.5) node(100ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 100ns}}};
-		\path (6,0.5) node(110ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 110ns}}};
+		\path (6,0.5) node(100_ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 100ns}}};
 		\path (ret_left) +(-2,0) coordinate (control_ret_left);
 		\path (20ns) +(2,0) coordinate (control_20ns);
 		\draw[thick,-latex] (ret_left) +(-0.1,0) .. controls (control_ret_left) and (control_20ns) .. (20ns)[above];
@@ -513,7 +513,7 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling} shows the message exchange th
 		\path (3,2) coordinate (req1_1);
 		\path (1,1) coordinate (rsp1_0);
 		\path (3,1) coordinate (rsp1_1);
-		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time}}};
+		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time offset}}};
 		\path (4,7.5) node(10ns) [right] {\footnotesize \textsf{\textbf{+10ns}}};
 		\path (4,6.5) node(wait) [right] {\footnotesize \textsf{\textbf{wait(\ldots)}}};
 		\path (4,4) node(0s) [right] {\footnotesize \textsf{\textbf{+0ns}}};
@@ -597,7 +597,7 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling_and_sync_on_demand} shows the 
 		\path (3,2) coordinate (req1_1);
 		\path (1,1) coordinate (rsp1_0);
 		\path (3,1) coordinate (rsp1_1);
-		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time}}};
+		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time offset}}};
 		\path (4,7.5) node(10ns) [right] {\footnotesize \textsf{\textbf{+10ns}}};
 		\path (4,6.5) node(wait) [right] {\footnotesize \textsf{\textbf{wait(\ldots)}}};
 		\path (4,4) node(0s) [right] {\footnotesize \textsf{\textbf{+0ns}}};
@@ -685,12 +685,13 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling_and_sync_on_demand} shows the 
 		\path (3,4.5) coordinate (req1_1);
 		\path (1,2.5) coordinate (rsp1_0);
 		\path (3,2.5) coordinate (rsp1_1);
-		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time}}};
+		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time offset}}};
 		\path (4,7.5) node(10ns) [right] {\footnotesize \textsf{\textbf{+950ns}}};
 		\path (4,5.5) node(20ns) [right] {\footnotesize \textsf{\textbf{+960ns}}};
 		\path (4,4.5) node(35ns) [right] {\footnotesize \textsf{\textbf{+995ns}}};
 		\path (4,2.5) node(45ns) [right] {\footnotesize \textsf{\textbf{+1005ns}}};
-		\path (4,1) node(wait) [right] {\footnotesize \textsf{\textbf{wait(1us)}}};
+		\path (4,1.3) node(wait) [right] {\footnotesize \textsf{\textbf{wait(1us)}}};
+		\path (4,0.2) node(5ns) [right] {\footnotesize \textsf{\textbf{+5ns}}};
 		\path (7,0) coordinate (llb);
 		\path (7,9) coordinate (llt);
 		\path (14,0) coordinate (rlb);
@@ -726,7 +727,7 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling_and_sync_on_demand} shows the 
 		\draw (ret2_left) +(0,-0.3) node[below right] {\footnotesize \emph{Return}};
 		\draw (ret2_right) node[below left] {\small \texttt{\textbf{TLM\_COMPLETED, BEGIN\_RESP, 1005ns}}};
 		\path (6,8.5) node(100ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 5us}}};
-		\path (6,0.3) node(110ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 6us}}};
+		\path (6,0.7) node(110ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 6us}}};
 		\path (7.5,1.75) node(quantum) [rectangle,rounded corners,draw,fill=green!20] {\footnotesize \textsf{\textbf{Quantum=1us}}};
 		\path (ret_left) +(-2,0) coordinate (control_ret_left);
 		\path (20ns) +(2,0) coordinate (control_20ns);
@@ -758,12 +759,13 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling_and_quantum} shows the message
 		\path (3,4.5) coordinate (req1_1);
 		\path (1,2.5) coordinate (rsp1_0);
 		\path (3,2.5) coordinate (rsp1_1);
-		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time}}};
+		\path (4,8) node(local_time) [right] {\footnotesize \textsf{\textbf{Local time offset}}};
 		\path (4,7.5) node(10ns) [right] {\footnotesize \textsf{\textbf{+950ns}}};
 		\path (4,5.5) node(20ns) [right] {\footnotesize \textsf{\textbf{+960ns}}};
 		\path (4,4.5) node(35ns) [right] {\footnotesize \textsf{\textbf{+995ns}}};
 		\path (4,2.5) node(45ns) [right] {\footnotesize \textsf{\textbf{+1005ns}}};
-		\path (4,1) node(wait) [right] {\footnotesize \textsf{\textbf{wait(1us)}}};
+		\path (4,1.3) node(wait) [right] {\footnotesize \textsf{\textbf{wait(1us)}}};
+		\path (4,0.2) node(5ns) [right] {\footnotesize \textsf{\textbf{+5ns}}};
 		\path (7,0) coordinate (llb);
 		\path (7,9) coordinate (llt);
 		\path (14,0) coordinate (rlb);
@@ -790,16 +792,16 @@ Figure~\ref{fig:chart_lt_with_temporal_decoupling_and_quantum} shows the message
 		\draw (call_left) node[above right] {\footnotesize \emph{Call}};
 		\draw (call_right) node[above left] {\small \texttt{\textbf{-, BEGIN\_REQ, 950ns}}};
 		\draw[thick,latex-] (ret_left) -- (ret_right);
-		\draw (ret_left) node[below right] {\footnotesize \emph{Return}};
+		\draw (ret_left) +(0,-0.3) node[below right] {\footnotesize \emph{Return}};
 		\draw (ret_right) node[below left] {\small \texttt{\textbf{TLM\_COMPLETED, BEGIN\_RESP, 960ns}}};
 		\draw[thick,-latex] (call2_left) -- (call2_right);
 		\draw (call2_left) node[above right] {\footnotesize \emph{Call}};
 		\draw (call2_right) node[above left] {\small \texttt{\textbf{-, BEGIN\_REQ, 995ns}}};
 		\draw[thick,latex-] (ret2_left) -- (ret2_right);
-		\draw (ret2_left) node[below right] {\footnotesize \emph{Return}};
+		\draw (ret2_left) +(0,-0.3) node[below right] {\footnotesize \emph{Return}};
 		\draw (ret2_right) node[below left] {\small \texttt{\textbf{TLM\_COMPLETED, BEGIN\_RESP, 1005ns}}};
 		\path (6,8.5) node(100ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 5us}}};
-		\path (6,0.3) node(110ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 6us}}};
+		\path (6,0.7) node(110ns) [rectangle,draw,fill=blue!20] {\footnotesize \textsf{\textbf{Simulation time = 6us}}};
 		\path (7.5,1.75) node(quantum) [rectangle,rounded corners,draw,fill=green!20] {\footnotesize \textsf{\textbf{Quantum=1us}}};
 		\path (ret_left) +(-2,0) coordinate (control_ret_left);
 		\path (20ns) +(2,0) coordinate (control_20ns);
