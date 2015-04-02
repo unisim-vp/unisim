@@ -78,7 +78,7 @@ In the following subsections the TLM2 interfaces will be introduced in detail:
 	\frametitle{Blocking transport interface: Rules (II)}
 	\begin{enumerate}
 	\item The callee shall assume that the caller will invalidate the transaction object upon return from \texttt{\textbf{b\_transport}}.
-	\item The \texttt{\textbf{b\_transport}} method does not support temporal decoupling.
+	\item The \texttt{\textbf{b\_transport}} method supports temporal decoupling.
 	\item It is recommended that the transaction object should not contain timing information. 
 	\item \texttt{\textbf{b\_transport}} may make one or several calls to \texttt{\textbf{nb\_transport\_fw}}. 
 	It is straightforward to create an adapter between an untimed or loosely-timed initiator and an approximately-timed target.
@@ -116,33 +116,29 @@ When using the blocking transport interface the following rules must be followed
 	\item The callee may modify or update the transaction object, subject to any constraints imposed by the transaction class \texttt{\textbf{TRANS}}.
 	\item The caller is responsible for deleting or pooling the transaction object after the call.
 	\item The callee shall assume that the caller will invalidate the transaction object upon return from \texttt{\textbf{b\_transport}}.
-	\item The \texttt{\textbf{b\_transport}} method does not support temporal decoupling.
+	\item The \texttt{\textbf{b\_transport}} method supports temporal decoupling.
 	\item It is recommended that the transaction object should not contain timing information. 
 	\item \texttt{\textbf{b\_transport}} may make one or several calls to \texttt{\textbf{nb\_transport\_fw}}. 
 	It is straightforward to create an adapter between an untimed or a loosely-timed initiator and an approximately-timed target.
 \end{enumerate}
 }
 
-\subsection{Non-blocking transport interface}
+\subsection{Non-blocking transport interfaces}
 
 \mode<presentation>{
 \begin{frame}
-	\frametitle{Non-blocking transport interface}
+	\frametitle{Non-blocking transport interfaces}
 	\setbeamercolor{postit}{fg=black,bg=yellow}
 	\begin{beamercolorbox}[center,rounded=true,wd=\textwidth]{postit}
 		Designed for the approximately-timed coding style.
 	\end{beamercolorbox}
-	\begin{itemize}
-		\item<1->Definition:
 	\begin{figure}[h]
 		\lstinputlisting{tlm/nb_transport.cc}
 	\end{figure}
-		\item<2->The \texttt\textbf{TRANS} argument is by default set to \texttt{\textbf{tlm\_generic\_payload}} (recommended).
-	\end{itemize}
 \end{frame}
 
 \begin{frame}
-	\frametitle{Non-blocking transport interface (II)}
+	\frametitle{Non-blocking transport interfaces (II)}
 	\begin{itemize}
 		\item Must be defined by both initiator and target.
 		\begin{center}
@@ -159,23 +155,26 @@ When using the blocking transport interface the following rules must be followed
 \end{frame}
 
 \begin{frame}
-	\frametitle{Non-blocking transport interface: Rules}
+	\frametitle{Non-blocking transport interfaces: Rules (I)}
 	\begin{enumerate}
-		\onslide<1-4>
-		\item The \texttt{\textbf{nb\_transport\_fw}} method shall not call wait, directly or indirectly.
-		\item The \texttt{\textbf{nb\_transport\_fw}} method may be called from a thread process or from a method process.
-		\item With the approximately-timed coding style, \texttt{\textbf{nb\_transport\_fw}} is called along both the forward and backward paths between initiator and target. 
+		\item The \texttt{\textbf{nb\_transport\_fw}} and \texttt{\textbf{nb\_transport\_bw}} methods shall not call wait, directly or indirectly.
+		\item The \texttt{\textbf{nb\_transport\_fw}} and \texttt{\textbf{nb\_transport\_bw}} methods may be called from a thread process or from a method process.
+		\item With the approximately-timed coding style, \texttt{\textbf{nb\_transport\_fw}} and \texttt{\textbf{nb\_transport\_bw}} are called respectively along the forward and backward paths between initiator and target.
 		In the case of the generic payload, the two paths should pass through exactly the same sequence of components and sockets, obviously in reverse order.
-		\vspace{-7cm}
-		\onslide+<5->
-		\item The initiator is responsible for deleting or pooling the transaction object after the final timing point. 
-		\item If an interconnect component or a target needs to access the state of the transaction after the final call to \texttt{\textbf{nb\_transport\_fw}} for a particular transaction instance, it must make a copy of the transaction object.
-		\item A \texttt{\textbf{nb\_transport\_fw}} call on the forward path shall under no circumstances directly or indirectly make a call to \texttt{\textbf{nb\_transport\_fw}} on the associated backward path, and vice versa.
 	\end{enumerate}
 \end{frame}
 
 \begin{frame}
-	\frametitle{\small Non-blocking transport interface: The \texttt{phase} argument}
+	\frametitle{Non-blocking transport interfaces: Rules (II)}
+	\begin{enumerate}
+		\item The initiator is responsible for deleting or pooling the transaction object after the final timing point. 
+		\item If an interconnect component or a target needs to access the state of the transaction after the final call to \texttt{\textbf{nb\_transport\_fw}} or \texttt{\textbf{nb\_transport\_bw}} for a particular transaction instance, it must make a copy of the transaction object.
+		\item A \texttt{\textbf{nb\_transport\_fw}} call on the forward path shall under no circumstances directly or indirectly make a call to \texttt{\textbf{nb\_transport\_bw}} on the associated backward path, and vice versa.
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}
+	\frametitle{\small Non-blocking transport interfaces: The \texttt{phase} argument}
 	\vspace{0.4em}
 	\setbeamercolor{postit}{fg=black,bg=yellow}
 	\begin{beamercolorbox}[center,rounded=true,wd=\textwidth]{postit}
@@ -263,45 +262,44 @@ When using the blocking transport interface the following rules must be followed
 }
 
 \mode<article>{
-The non-blocking transport interface exists to support the approxitemately-timed coding style.
-Figure~\ref{fig:nb_transport_definition} shows the non-blocking transport interface definition.
+The non-blocking transport interfaces exist to support the loosely-timed and approxitemately-timed coding styles.
+Figure~\ref{fig:nb_transport_definition} shows the non-blocking transport interfaces definitions.
 
 \begin{figure}[h]
 	\lstinputlisting{tlm/nb_transport.cc}
-	\caption{The non-blocking transport interface class definition.}
+	\caption{The non-blocking transport interfaces class definitions.}
 	\label{fig:nb_transport_definition}
 \end{figure}
 
-The non-blocking transport interface defines the \texttt{\textbf{nb\_transport\_fw}} method which, as the blocking transport interface method \texttt{\textbf{b\_transport}}, passes a non-const reference to the transaction object.
-The \texttt{\textbf{nb\_transport\_fw}} method also passes two other parameters:
+The non-blocking transport interfaces defines the \texttt{\textbf{nb\_transport\_fw}} and \texttt{\textbf{nb\_transport\_bw}} methods which, as the blocking transport interface method \texttt{\textbf{b\_transport}}, passes a non-const reference to the transaction object.
+The \texttt{\textbf{nb\_transport\_fw}} and \texttt{\textbf{nb\_transport\_bw}} methods also passe two other parameters:
 \begin{itemize}
 	\item a non-const reference to a \texttt{\textbf{PHASE}} object to indicate the state of the transaction, and
 	\item a time to annotate the delay of the next phase transition.
 \end{itemize}
-Additionally the \texttt{\textbf{nb\_transport\_fw}} method can return a value (\texttt{\textbf{tlm\_sync\_enum}}) to indicate the status of the call, and signal synchronization points. 
+Additionally the \texttt{\textbf{nb\_transport\_fw}} and \texttt{\textbf{nb\_transport\_bw}} methods can return a value (\texttt{\textbf{tlm\_sync\_enum}}) to indicate the status of the call, and signal synchronization points. 
 
-Unlike the blocking transport interface, the non-blocking transport interface needs to be defined by both, the initiator and the target modules.
+Unlike the blocking transport interface, the non-blocking transport interfaces needs to be defined by both, the initiator and the target modules.
 That is, there is a forward non-blocking transport interface used by the initiator to send requests and a backward non-blocking transport interface used by the target to send the responses.
 
 \subsubsection{Rules}
 When using the non-blocking transport interface the following rules must be followed:
 \begin{enumerate}
-	\item The \texttt{\textbf{nb\_transport\_fw}} method shall not call wait, directly or indirectly.
-	\item The \texttt{\textbf{nb\_transport\_fw}} method may be called from a thread process or from a method process.
+	\item The \texttt{\textbf{nb\_transport\_fw}} and \texttt{\textbf{nb\_transport\_bw}} methods shall not call wait, directly or indirectly.
+	\item The \texttt{\textbf{nb\_transport\_fw}} and \texttt{\textbf{nb\_transport\_bw}} methods may be called from a thread process or from a method process.
 	\item Exceptionally, if both the blocking and non-blocking transport interfaces are being used together, \texttt{\textbf{nb\_transport\_fw}} may need to call \texttt{\textbf{b\_transport}}. 
-	This is only technically possible if it can be guaranteed that
-the \texttt{\textbf{b\_transport}} method does not call wait, directly or indirectly, but is in any case bad practice.
+	This is only technically possible if it can be guaranteed that the \texttt{\textbf{b\_transport}} method does not call wait, directly or indirectly, but is in any case bad practice.
 	Otherwise, the solution is to call to \texttt{\textbf{b\_transport}} from a separate thread process, spawned or notified by the original \texttt{\textbf{nb\_transport\_fw}} call.
-	\item With the approximately-timed coding style, \texttt{\textbf{nb\_transport\_fw}} is called along both the forward and backward paths between initiator and target. 
+	\item With the approximately-timed coding style, \texttt{\textbf{nb\_transport\_fw}} and \texttt{\textbf{nb\_transport\_bw}} mathod are called respectively along the forward and backward paths between initiator and target. 
 	In the case of the generic payload, the two paths should pass through exactly the same sequence of components and sockets, obviously in reverse order.
 	\item The initiator is responsible for deleting or pooling the transaction object after the final timing point. 
-	The final timing point may be marked by a call to or a return from either \texttt{\textbf{nb\_transport\_fw}} on the forward path or \texttt{\textbf{nb\_transport\_bw}} the backward path. 
-	If the final call to non-blocking transport interface is on the forward path (i.e. \texttt{\textbf{nb\_transport\_fw}}), the initiator may delete the transaction object on return from \texttt{\textbf{nb\_transport\_fw}}.
+	The final timing point may be marked by a call to or a return from either \texttt{\textbf{nb\_transport\_fw}} on the forward path or \texttt{\textbf{nb\_transport\_bw}} on the backward path. 
+	If the final call to non-blocking transport interfaces is on the forward path (i.e. \texttt{\textbf{nb\_transport\_fw}}), the initiator may delete the transaction object on return from \texttt{\textbf{nb\_transport\_fw}}.
 	If the final call to non-blocking transport interface is on the backward path (i.e. \texttt{\textbf{nb\_transport\_bw}} , the initiator may delete the transaction object the next time the initiator process resumes, in which case the transaction object shall remain valid and accessible by the target until the target yields to the SystemC scheduler. 
-	In other words, if the final call to non-blocking transport interface is from target to initiator, the target has a chance to inspect the state of the transaction object before it yields control. 
+	In other words, if the final call to non-blocking transport interfaces is from target to initiator, the target has a chance to inspect the state of the transaction object before it yields control. 
 	After that, any interconnect component or target must assume that the transaction object is invalid.
-	\item If an interconnect component or a target needs to access the state of the transaction after the final call to non-blocking transport interface for a particular transaction instance, it must make a copy of the transaction object.
-	\item A call to non-blocking transport interface on the forward path shall under no circumstances directly or indirectly make a call to non-blocking transport interface on the associated backward path, and vice versa.
+	\item If an interconnect component or a target needs to access the state of the transaction after the final call to non-blocking transport interfaces for a particular transaction instance, it must make a copy of the transaction object.
+	\item A call to non-blocking transport interfaces on the forward path shall under no circumstances directly or indirectly make a call to non-blocking transport interfaces on the associated backward path, and vice versa.
 \end{enumerate}
 
 \subsubsection{The \texttt{TRANS} template argument}
@@ -496,7 +494,7 @@ However you may add to its implementation an error message to check that your ta
 \mode<article>{
 The debug transaction interface is a specialized interface distinct from the transport interface, providing debug access to an area of memory owned by a target. 
 The debug transaction interface bypasses the usual path through the interconnect components used by the transport interface. 
-The debug transaction interface is for debug access free of the delays or side-effects associated with regular transactions.\footnote{For those of you who know UNISIM, this interface is very close (not to say identical) to the non-intrusive memory interface used by the UNISIM simulators.}
+The debug transaction interface is for debug access free of the delays or side-effects associated with regular transactions.\footnote{For those of you who know UNISIM-VP, this interface is very close (not to say identical) to the non-intrusive memory interface used by the UNISIM-VP simulators.}
 
 As for the DMI interface, we will not study this interface in detail, however we will briefly present it. 
 Figure~\ref{fig:tlm_transport_dbg_if_definition} shows the debug transport interface class definition.
