@@ -132,6 +132,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, std_error_stream(&std::cerr)
 	, tracked_data_objects()
 {
+	param_memory_atom_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	trap = false;
 }
 
