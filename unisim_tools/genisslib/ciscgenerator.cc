@@ -529,7 +529,7 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       
       if( opbf->m_sext ) {
         int sext_shift = opsize - opbf->m_size;
-        _product.code( "%s = (%s << %u) >> %u;\n", opbf->m_symbol.str(), opbf->m_symbol.str(), sext_shift, sext_shift );
+        _product.code( "%s = (int%u_t)(%s << %u) >> %u;\n", opbf->m_symbol.str(), opsize, opbf->m_symbol.str(), sext_shift, sext_shift );
       }
     
       if( opbf->m_shift > 0 )
