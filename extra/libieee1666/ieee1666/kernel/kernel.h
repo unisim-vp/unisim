@@ -36,10 +36,10 @@
 #define __IEEE1666_KERNEL_KERNEL_H__
 
 #include <ieee1666/kernel/fwd.h>
-#include <ieee1666/kernel/process.h>
-//#include <ieee1666/kernel/module_name.h>
-//#include <ieee1666/kernel/object.h>
+#include <ieee1666/kernel/time.h>
 #include <stack>
+#include <vector>
+#include <iosfwd>
 
 namespace sc_core {
 
@@ -66,6 +66,15 @@ public:
 	
 	void add_module(sc_module *module);
 	void add_thread_process(sc_thread_process *thread_process);
+	
+	// time resolution management
+	void set_time_resolution(double v, sc_time_unit tu, bool user);
+	sc_dt::uint64 get_time_discrete_value(double d, sc_time_unit tu) const;
+	sc_time get_time_resolution() const;
+	const sc_time& get_max_time() const;
+	void print_time(std::ostream& os, const sc_time& t) const;
+	double time_discrete_value_to_seconds(sc_dt::uint64 discrete_value) const;
+
 protected:
 private:
 	std::stack<sc_module_name *> module_name_stack;
@@ -75,6 +84,15 @@ private:
 	
 	std::vector<sc_module *> module_table;
 	std::vector<sc_thread_process *> thread_process_table;
+
+	// time resolution management
+	bool time_resolution_fixed_by_user;
+	bool time_resolution_fixed;
+	int time_resolution_scale_factors_table_base_index;
+	static const int TIME_RESOLUTION_SCALE_FACTORS_TABLE_SIZE = (3 * SC_SEC) + 1;
+	double time_resolution_scale_factors_table[TIME_RESOLUTION_SCALE_FACTORS_TABLE_SIZE];
+	
+	sc_time max_time;
 };
 
 int sc_elab_and_sim(int argc, char* argv[]);

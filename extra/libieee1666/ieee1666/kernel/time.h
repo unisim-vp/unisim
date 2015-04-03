@@ -41,41 +41,55 @@
 
 namespace sc_core {
 
-enum sc_time_unit {SC_FS = 0, SC_PS, SC_NS, SC_US, SC_MS, SC_SEC};
-
 class sc_time
 {
 public:
 	sc_time();
-	sc_time( double , sc_time_unit );
-	sc_time( const sc_time& );
-	sc_time& operator= ( const sc_time& );
+	sc_time(double, sc_time_unit);
+	sc_time(const sc_time&);
+	sc_time& operator = (const sc_time&);
 	sc_dt::uint64 value() const;
 	double to_double() const;
 	double to_seconds() const;
 	const std::string to_string() const;
-	bool operator== ( const sc_time& ) const;
-	bool operator!= ( const sc_time& ) const;
-	bool operator< ( const sc_time& ) const;
-	bool operator<= ( const sc_time& ) const;
-	bool operator> ( const sc_time& ) const;
-	bool operator>= ( const sc_time& ) const;
-	sc_time& operator+= ( const sc_time& );
-	sc_time& operator-= ( const sc_time& );
-	sc_time& operator*= ( double );
-	sc_time& operator/= ( double );
-	void print( std::ostream& = std::cout ) const;
+	bool operator == (const sc_time&) const;
+	bool operator != (const sc_time&) const;
+	bool operator < (const sc_time&) const;
+	bool operator <= (const sc_time&) const;
+	bool operator > (const sc_time&) const;
+	bool operator >= (const sc_time&) const;
+	sc_time& operator += (const sc_time&);
+	sc_time& operator -= (const sc_time&);
+	sc_time& operator *= (double);
+	sc_time& operator /= (double);
+	void print(std::ostream& = std::cout) const;
+	
+	/////////////////////////////
+private:
+	friend class sc_kernel;
+	friend const sc_time operator + (const sc_time&, const sc_time&);
+	friend const sc_time operator - (const sc_time&, const sc_time&);
+	friend const sc_time operator * (const sc_time&, double);
+	friend const sc_time operator * (double, const sc_time&);
+	friend const sc_time operator / (const sc_time&, double);
+	friend double operator / (const sc_time&, const sc_time&);
+	
+	sc_time(sc_dt::uint64);
+	
+	friend std::ostream& operator << (std::ostream&, const sc_time&);
+
+	sc_dt::uint64 discrete_value;
 };
 
-const sc_time operator+ ( const sc_time&, const sc_time& );
-const sc_time operator- ( const sc_time&, const sc_time& );
-const sc_time operator* ( const sc_time&, double );
-const sc_time operator* ( double, const sc_time& );
-const sc_time operator/ ( const sc_time&, double );
-double operator/ ( const sc_time&, const sc_time& );
-std::ostream& operator<< ( std::ostream&, const sc_time& );
-const sc_time SC_ZERO_TIME;
-void sc_set_time_resolution( double, sc_time_unit );
+const sc_time operator + (const sc_time&, const sc_time&);
+const sc_time operator - (const sc_time&, const sc_time&);
+const sc_time operator * (const sc_time&, double);
+const sc_time operator * (double, const sc_time&);
+const sc_time operator / (const sc_time&, double);
+double operator / ( const sc_time&, const sc_time& );
+std::ostream& operator << (std::ostream&, const sc_time&);
+extern const sc_time SC_ZERO_TIME;
+void sc_set_time_resolution(double, sc_time_unit);
 sc_time sc_get_time_resolution();
 const sc_time& sc_max_time();
 

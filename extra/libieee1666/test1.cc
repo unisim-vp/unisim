@@ -27,6 +27,13 @@ int sc_main(int argc, const char *argv[])
 {
  	Mod *mod = new Mod("toto");
  	
+	sc_set_time_resolution(1.0, SC_PS);
+	sc_time t = sc_time(1.23456789, SC_SEC);
+	
+	std::cout << "t=" << t << std::endl;
+	std::cout << "t=" << t.to_seconds() << " seconds" << std::endl;
+	std::cout << "time_resolution=" << sc_get_time_resolution() << std::endl;
+	std::cout << "max_time=" << sc_max_time() << std::endl;
 	sc_start();
 	
  	delete mod;

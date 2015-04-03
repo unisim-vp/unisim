@@ -84,6 +84,10 @@ class sc_process;
 class sc_thread_process;
 class sc_thread_process_helper;
 
+typedef void (sc_process_owner::*sc_process_owner_method_ptr)();
+
+enum sc_time_unit { SC_FS = 0, SC_PS, SC_NS, SC_US, SC_MS, SC_SEC };
+
 } // end of namespace sc_core
 
 #endif

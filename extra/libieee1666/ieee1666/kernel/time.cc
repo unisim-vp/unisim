@@ -33,127 +33,171 @@
  */
 
 #include <ieee1666/kernel/time.h>
+#include <ieee1666/kernel/kernel.h>
 
 namespace sc_core {
+
+const sc_time SC_ZERO_TIME;
 
 //////////////////////////////////// sc_time /////////////////////////////////////
 
 sc_time::sc_time()
+	: discrete_value(0)
 {
 }
 
-sc_time::sc_time( double , sc_time_unit )
+sc_time::sc_time(sc_dt::uint64 v)
+	: discrete_value(v)
 {
 }
 
-sc_time::sc_time( const sc_time& )
+sc_time::sc_time(double d, sc_time_unit tu)
+	: discrete_value(sc_kernel::get_kernel()->get_time_discrete_value(d, tu))
 {
 }
 
-sc_time& sc_time::operator= ( const sc_time& )
+sc_time::sc_time( const sc_time& t)
+	: discrete_value(t.discrete_value)
 {
+}
+
+sc_time& sc_time::operator = ( const sc_time& t)
+{
+	discrete_value = t.discrete_value;
+	return *this;
 }
 
 sc_dt::uint64 sc_time::value() const
 {
+	return discrete_value;
 }
 
 double sc_time::to_double() const
 {
+	return static_cast<double>(discrete_value);
 }
 
 double sc_time::to_seconds() const
 {
+	return sc_kernel::get_kernel()->time_discrete_value_to_seconds(discrete_value);
 }
 
 const std::string sc_time::to_string() const
 {
+// 	std::stringstream sstr;
+// 	sstr << discrete_value << " " << time_unit_strings
 }
 
-bool sc_time::operator== ( const sc_time& ) const
+bool sc_time::operator == (const sc_time& t) const
 {
+	return discrete_value == t.discrete_value;
 }
 
-bool sc_time::operator!= ( const sc_time& ) const
+bool sc_time::operator != (const sc_time& t) const
 {
+	return discrete_value != t.discrete_value;
 }
 
-bool sc_time::operator< ( const sc_time& ) const
+bool sc_time::operator < (const sc_time& t) const
 {
+	return discrete_value < t.discrete_value;
 }
 
-bool sc_time::operator<= ( const sc_time& ) const
+bool sc_time::operator <= (const sc_time& t) const
 {
+	return discrete_value <= t.discrete_value;
 }
 
-bool sc_time::operator> ( const sc_time& ) const
+bool sc_time::operator > (const sc_time& t) const
 {
+	return discrete_value > t.discrete_value;
 }
 
-bool sc_time::operator>= ( const sc_time& ) const
+bool sc_time::operator >= (const sc_time& t) const
 {
+	return discrete_value >= t.discrete_value;
 }
 
-sc_time& sc_time::operator+= ( const sc_time& )
+sc_time& sc_time::operator += (const sc_time& t)
 {
+	discrete_value += t.discrete_value;
+	return *this;
 }
 
-sc_time& sc_time::operator-= ( const sc_time& )
+sc_time& sc_time::operator -= (const sc_time& t)
 {
+	discrete_value -= t.discrete_value;
+	return *this;
 }
 
-sc_time& sc_time::operator*= ( double )
+sc_time& sc_time::operator *= (double d)
 {
+	discrete_value = static_cast<sc_dt::uint64>((discrete_value * d) + 0.5);
+	return *this;
 }
 
-sc_time& sc_time::operator/= ( double )
+sc_time& sc_time::operator /= (double d)
 {
+	discrete_value = static_cast<sc_dt::uint64>((discrete_value / d) + 0.5);
+	return *this;
 }
 
-void sc_time::print( std::ostream& ) const
+void sc_time::print(std::ostream& os) const
 {
+	sc_kernel::get_kernel()->print_time(os, *this);
 }
 
 //////////////////////////////// global functions /////////////////////////////////
 
-const sc_time operator+ ( const sc_time&, const sc_time& )
+const sc_time operator + (const sc_time& t1, const sc_time& t2)
 {
+	return sc_time(t1.discrete_value + t2.discrete_value);
 }
 
-const sc_time operator- ( const sc_time&, const sc_time& )
+const sc_time operator - (const sc_time& t1, const sc_time& t2)
 {
+	return sc_time(t1.discrete_value - t2.discrete_value);
 }
 
-const sc_time operator* ( const sc_time&, double )
+const sc_time operator * (const sc_time& t, double d)
 {
+	return sc_time(static_cast<sc_dt::uint64>((t.discrete_value * d) + 0.5));
 }
 
-const sc_time operator* ( double, const sc_time& )
+const sc_time operator * (double d, const sc_time& t)
 {
+	return sc_time(static_cast<sc_dt::uint64>((d * t.discrete_value) + 0.5));
 }
 
-const sc_time operator/ ( const sc_time&, double )
+const sc_time operator / (const sc_time& t, double d)
 {
+	return sc_time(static_cast<sc_dt::uint64>((t.discrete_value / d) + 0.5));
 }
 
-double operator/ ( const sc_time&, const sc_time& )
+double operator / (const sc_time& t1, const sc_time& t2)
 {
+	return (double) t1.discrete_value / t2.discrete_value;
 }
 
-std::ostream& operator<< ( std::ostream&, const sc_time& )
+std::ostream& operator << (std::ostream& os, const sc_time& t)
 {
+	t.print(os);
+	return os;
 }
 
-void sc_set_time_resolution( double, sc_time_unit )
+void sc_set_time_resolution(double d, sc_time_unit tu)
 {
+	sc_kernel::get_kernel()->set_time_resolution(d, tu, true);
 }
 
 sc_time sc_get_time_resolution()
 {
+	return sc_kernel::get_kernel()->get_time_resolution();
 }
 
 const sc_time& sc_max_time()
 {
+	return sc_kernel::get_kernel()->get_max_time();
 }
 
 } // end of namespace sc_core

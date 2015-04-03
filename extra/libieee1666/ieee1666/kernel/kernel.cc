@@ -35,13 +35,19 @@
 #include <ieee1666/kernel/kernel.h>
 #include <ieee1666/kernel/module_name.h>
 #include <ieee1666/kernel/thread_process.h>
+#include <ieee1666/kernel/time.h>
+#include <math.h>
+#include <limits>
 
 namespace sc_core {
 
 sc_kernel *sc_kernel::kernel = 0;
 
+static const char *time_unit_strings[SC_SEC + 1] = { "fs", "ps", "ns", "us", "ms", "s" };
+
 sc_kernel::sc_kernel()
 {
+	set_time_resolution(1.0, SC_PS, false);
 }
 
 sc_kernel *sc_kernel::get_kernel()
@@ -137,6 +143,111 @@ void sc_kernel::add_module(sc_module *module)
 void sc_kernel::add_thread_process(sc_thread_process *thread_process)
 {
 	thread_process_table.push_back(thread_process);
+}
+
+void sc_kernel::set_time_resolution(double v, sc_time_unit tu, bool user)
+{
+	if(user)
+	{
+		if(time_resolution_fixed_by_user)
+		{
+			std::runtime_error("time resolution already set");
+		}
+		time_resolution_fixed_by_user = true;
+	}
+	
+	double log10_v = log10(v);
+	double log10_v_int_part;
+    if(modf(log10_v, &log10_v_int_part) != 0.0 )
+	{
+		throw std::runtime_error("time resolution shall be a power of ten");
+	}
+
+	time_resolution_scale_factors_table_base_index = static_cast<int>(log10_v) + (3 * tu);
+
+	double time_resolution_sec = (v * pow10(-3 * (SC_SEC - tu)));
+	if(time_resolution_sec < 1e-15)
+	{
+		throw std::runtime_error("time resolution is less than 1 fs");
+	}
+
+	int i;
+	double scale_factor;
+	for(i = time_resolution_scale_factors_table_base_index - 1, scale_factor = 0.1; i >= 0; i--, scale_factor /= 10)
+	{
+		time_resolution_scale_factors_table[i] = scale_factor;
+	}
+	for(i = time_resolution_scale_factors_table_base_index, scale_factor = 1; i < TIME_RESOLUTION_SCALE_FACTORS_TABLE_SIZE; i++, scale_factor *= 10)
+	{
+		time_resolution_scale_factors_table[i] = scale_factor;
+	}
+	
+	time_resolution_fixed = true;
+	
+	max_time = sc_time(std::numeric_limits<sc_dt::uint64>::max());
+}
+
+sc_dt::uint64 sc_kernel::get_time_discrete_value(double d, sc_time_unit tu) const
+{
+	int time_resolution_scale_factors_table_index = 3 * tu;
+	return static_cast<sc_dt::uint64>((d * time_resolution_scale_factors_table[time_resolution_scale_factors_table_index]) + 0.5);
+}
+
+void sc_kernel::print_time(std::ostream& os, const sc_time& t) const
+{
+	sc_dt::uint64 discrete_value = t.value();
+
+	if(!discrete_value)
+	{
+		os << "0 s";
+		return;
+	}
+	
+	sc_time_unit tu = (sc_time_unit)(time_resolution_scale_factors_table_base_index / 3);
+	while(((discrete_value % 1000) == 0) && (tu != SC_SEC))
+	{
+		discrete_value /= 1000;
+		tu = (sc_time_unit)(tu + 1);
+	}
+
+	int num_zeros = 0;
+	while(((discrete_value % 10) == 0) && (tu != SC_SEC))
+	{
+		discrete_value /= 10;
+		num_zeros++;
+	}
+	
+	num_zeros += time_resolution_scale_factors_table_base_index % 3;
+	
+	if(num_zeros >= 3)
+	{
+		tu = (sc_time_unit)(tu + 1);
+		num_zeros -= 3;
+	}
+	
+	while(num_zeros)
+	{
+		discrete_value *= 10;
+		num_zeros--;
+	}
+	
+	os << discrete_value << " " << time_unit_strings[tu];
+}
+
+double sc_kernel::time_discrete_value_to_seconds(sc_dt::uint64 discrete_value) const
+{
+	double scale_factor = time_resolution_scale_factors_table[3 * SC_SEC];
+	return (double) discrete_value / scale_factor;
+}
+
+sc_time sc_kernel::get_time_resolution() const
+{
+	return sc_time(1);
+}
+
+const sc_time& sc_kernel::get_max_time() const
+{
+	return max_time;
 }
 
 int sc_elab_and_sim(int argc, char* argv[])

@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __IEEE1666_KERNEL_PROCESS_HANDLE_H__
-#define __IEEE1666_KERNEL_PROCESS_HANDLE_H__
+#ifndef __IEEE1666_KERNEL_PROCESS_H__
+#define __IEEE1666_KERNEL_PROCESS_H__
 
 #include <ieee1666/kernel/fwd.h>
 #include <ieee1666/kernel/object.h>
@@ -47,8 +47,6 @@ public:
 	virtual ~sc_process_owner();
 private:
 };
-
-typedef void (sc_process_owner::*sc_process_owner_method_ptr)();
 
 class sc_process : public sc_object
 {
