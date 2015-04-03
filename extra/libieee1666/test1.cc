@@ -27,8 +27,8 @@ int sc_main(int argc, const char *argv[])
 {
  	Mod *mod = new Mod("toto");
  	
-	sc_set_time_resolution(1.0, SC_PS);
-	sc_time t = sc_time(1.23456789, SC_SEC);
+	sc_set_time_resolution(10.0, SC_MS);
+	sc_time t = sc_time(1230000, SC_MS);
 	
 	std::cout << "t=" << t << std::endl;
 	std::cout << "t=" << t.to_seconds() << " seconds" << std::endl;

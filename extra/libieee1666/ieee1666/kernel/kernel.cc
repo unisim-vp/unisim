@@ -210,28 +210,36 @@ void sc_kernel::print_time(std::ostream& os, const sc_time& t) const
 		tu = (sc_time_unit)(tu + 1);
 	}
 
-	int num_zeros = 0;
-	while(((discrete_value % 10) == 0) && (tu != SC_SEC))
+	int num_zeros = time_resolution_scale_factors_table_base_index % 3;
+	
+	if(tu != SC_SEC)
 	{
-		discrete_value /= 10;
-		num_zeros++;
+		while((discrete_value % 10) == 0)
+		{
+			discrete_value /= 10;
+			num_zeros++;
+		}
+		
+		if(num_zeros >= 3)
+		{
+			tu = (sc_time_unit)(tu + 1);
+			num_zeros -= 3;
+		}
+
+		while(num_zeros)
+		{
+			discrete_value *= 10;
+			num_zeros--;
+		}
 	}
 	
-	num_zeros += time_resolution_scale_factors_table_base_index % 3;
-	
-	if(num_zeros >= 3)
-	{
-		tu = (sc_time_unit)(tu + 1);
-		num_zeros -= 3;
-	}
-	
+	os << discrete_value;
 	while(num_zeros)
 	{
-		discrete_value *= 10;
+		os << '0';
 		num_zeros--;
 	}
-	
-	os << discrete_value << " " << time_unit_strings[tu];
+	os << " " << time_unit_strings[tu];
 }
 
 double sc_kernel::time_discrete_value_to_seconds(sc_dt::uint64 discrete_value) const
