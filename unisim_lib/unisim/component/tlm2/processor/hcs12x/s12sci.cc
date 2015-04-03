@@ -557,12 +557,12 @@ inline void S12SCI::txShiftOut(SCIMSG msgType)
 			} break;
 			case SCIIDLE: {
 
-				TelnetSendString("\r\nIDLE\r\n");
+				TelnetSendString((const unsigned char*) "\r\nIDLE\r\n");
 
 			} break;
 			case SCIBREAK: {
 
-				TelnetSendString("\r\nBREAK\r\n");
+				TelnetSendString((const unsigned char*) "\r\nBREAK\r\n");
 
 			} break;
 			default: break;

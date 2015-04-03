@@ -470,7 +470,7 @@ private:
 	std::queue<uint8_t> telnet_tx_fifo;
 	sc_event telnet_rx_event, telnet_tx_event;
 
-	inline void add(std::queue<uint8_t> &buffer_queue, uint8_t data, sc_event &event) {
+	inline void add(std::queue<uint8_t> &buffer_queue, const uint8_t& data, sc_event &event) {
 	    buffer_queue.push(data);
 	    event.notify();
 	}
@@ -497,7 +497,7 @@ private:
 	    return (buffer_queue.size());
 	}
 
-	inline void TelnetSendString(const char *msg) {
+	inline void TelnetSendString(const unsigned char *msg) {
 
 		while (*msg != 0)
 			add(telnet_tx_fifo, *msg++, telnet_tx_event) ;
