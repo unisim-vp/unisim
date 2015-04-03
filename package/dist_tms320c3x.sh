@@ -126,6 +126,7 @@ unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/stmt_64.cc \
+unisim/util/debug/type.cc \
 unisim/util/debug/dwarf/abbrev.cc \
 unisim/util/debug/dwarf/attr.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -232,6 +233,9 @@ unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/data_object.hh \
+unisim/util/debug/type.hh \
+unisim/util/debug/data_object_initializer.hh \
+unisim/util/debug/subprogram.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/attr.hh \
@@ -264,6 +268,7 @@ unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/data_object.hh \
+unisim/util/debug/dwarf/subprogram.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
@@ -307,6 +312,7 @@ unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/data_object_lookup.hh \
+unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64_loader.hh \
@@ -343,7 +349,7 @@ unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/profile.tcc \
 unisim/util/debug/stmt.tcc \
-unisim/util/debug/data_object.tcc \
+unisim/util/debug/data_object_initializer.tcc \
 unisim/util/debug/dwarf/addr_range.tcc \
 unisim/util/debug/dwarf/call_frame_prog.tcc \
 unisim/util/debug/dwarf/cie.tcc \
@@ -362,6 +368,7 @@ unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/dwarf/data_object.tcc \
+unisim/util/debug/dwarf/subprogram.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/segment.tcc \
