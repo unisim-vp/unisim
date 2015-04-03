@@ -537,6 +537,8 @@ public:
 
 	inline address_t getLastPC() {return (lastPC); }
 
+	inline bool isDebuggerConnect() { return (debug_control_import); }
+
 	//protected:
 	class CCR_t *ccr;
 	class EBLB	*eblb;

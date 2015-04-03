@@ -166,8 +166,14 @@ bgnd.disasm = {
 }
 
 bgnd.execute = {
-	// TODO
-	cpu->reportTrap("CPU has encountered BGND instruction. S12X_DBG module (not emulated).");
+
+	if (cpu->isDebuggerConnect()) {
+		cpu->reportTrap("CPU has encountered BGND instruction. S12X_DBG module (not emulated).");
+	} else {
+		std::cerr << "Warning:: CPU has encountered BGND instruction. S12X_DBG module (not emulated). " << std::endl;
+		cpu->Stop(0);
+	}
+	
 
 	return getCycles();
 }
