@@ -34,6 +34,7 @@
 
 #include <ieee1666/kernel/time.h>
 #include <ieee1666/kernel/kernel.h>
+#include <sstream>
 
 namespace sc_core {
 
@@ -84,8 +85,9 @@ double sc_time::to_seconds() const
 
 const std::string sc_time::to_string() const
 {
-// 	std::stringstream sstr;
-// 	sstr << discrete_value << " " << time_unit_strings
+	std::stringstream sstr;
+	sc_kernel::get_kernel()->print_time(sstr, *this);
+	return sstr.str();
 }
 
 bool sc_time::operator == (const sc_time& t) const
