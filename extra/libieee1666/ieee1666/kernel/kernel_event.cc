@@ -32,80 +32,50 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/kernel/thread_process.h>
-#include <ieee1666/kernel/kernel.h>
+#include <ieee1666/kernel/kernel_event.h>
 
 namespace sc_core {
 
-sc_thread_process_helper::sc_thread_process_helper(sc_thread_process *_thread_process, sc_coroutine::caller_type& _yield)
-	: thread_process(_thread_process)
-	, yield(_yield)
+sc_kernel_event::sc_kernel_event()
+	: event(0)
 {
-	thread_process->thread_process_helper = this;
-	yield();
-	thread_process->call_process_owner_method();
 }
 
-sc_thread_process_helper::~sc_thread_process_helper()
+sc_kernel_event::sc_kernel_event(sc_event *_event)
+	: event(_event)
 {
-	thread_process->thread_process_helper = 0;
 }
 
-sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr)
-	: sc_process(_name, _process_owner, _process_owner_method_ptr)
-	, coro(0)
+void sc_kernel_event::initialize(sc_event *_event)
 {
-	sc_kernel::get_kernel()->add_thread_process(this);
+	event = _event;
 }
 
-sc_thread_process::~sc_thread_process()
+sc_event *sc_kernel_event::get_event() const
 {
-	if(coro)
-	{
-		delete coro;
-	}
-}
-	
-void sc_thread_process::start()
-{
-	coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1));
+	return event;
 }
 
-void sc_thread_process::suspend()
+sc_timed_kernel_event::sc_timed_kernel_event()
+	: sc_kernel_event()
+	, time()
 {
-	if(thread_process_helper)
-	{
-		thread_process_helper->yield(); // yield to kernel
-	}
-	else
-	{
-		std::cerr << "no thread process helper" << std::endl;
-	}
 }
 
-void sc_thread_process::wait()
+sc_timed_kernel_event::sc_timed_kernel_event(sc_event *_event, const sc_time& _time)
+	: sc_kernel_event(_event), time(_time)
 {
-	suspend();
 }
 
-void sc_thread_process::wait(const sc_event& e)
+void sc_timed_kernel_event::initialize(sc_event *_event, const sc_time& _time)
 {
-	e.add_dynamically_sensitive_thread_process(this);
-	suspend();
+	event = _event;
+	time = _time;
 }
 
-void sc_thread_process::resume()
+const sc_time& sc_timed_kernel_event::get_time() const
 {
-	if(*coro)
-	{
-		(*coro)(); // yield to thread
-	}
-}
-
-void sc_thread_process::coroutine_work(sc_coroutine::caller_type& yield)
-{
-	std::cerr << "coroutine_work" << std::endl;
-	sc_thread_process_helper(this, yield);
+	return time;
 }
 
 } // end of namespace sc_core

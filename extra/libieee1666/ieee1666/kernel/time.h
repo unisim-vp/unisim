@@ -74,7 +74,7 @@ private:
 	friend const sc_time operator / (const sc_time&, double);
 	friend double operator / (const sc_time&, const sc_time&);
 	
-	sc_time(sc_dt::uint64);
+	explicit sc_time(sc_dt::uint64);
 	
 	friend std::ostream& operator << (std::ostream&, const sc_time&);
 

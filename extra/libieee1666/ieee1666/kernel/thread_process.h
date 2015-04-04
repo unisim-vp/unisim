@@ -67,7 +67,9 @@ public:
 	virtual void start();
 	
 	void wait();
+	void wait(const sc_event& e);
 	
+	void suspend();
 	void resume();
 	
 private:

@@ -32,80 +32,64 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/kernel/thread_process.h>
-#include <ieee1666/kernel/kernel.h>
+#ifndef __IEEE1666_KERNEL_ALLOCATOR_H__
+#ifndef __IEEE1666_KERNEL_ALLOCATOR_H__
+
+#include <stack>
+#include <vector>
 
 namespace sc_core {
 
-sc_thread_process_helper::sc_thread_process_helper(sc_thread_process *_thread_process, sc_coroutine::caller_type& _yield)
-	: thread_process(_thread_process)
-	, yield(_yield)
+template <class T>
+class sc_allocator
 {
-	thread_process->thread_process_helper = this;
-	yield();
-	thread_process->call_process_owner_method();
+public:
+	sc_allocator();
+	~sc_allocator();
+
+	T *allocate();
+	void free(T *e);
+
+private:
+	std::stack<T *, std::vector<T *> > free_list;
+};
+
+template <class T>
+sc_allocator::sc_allocator()
+	: free_list()
+{
 }
 
-sc_thread_process_helper::~sc_thread_process_helper()
+template <class T>
+sc_allocator::~sc_allocator()
 {
-	thread_process->thread_process_helper = 0;
-}
-
-sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr)
-	: sc_process(_name, _process_owner, _process_owner_method_ptr)
-	, coro(0)
-{
-	sc_kernel::get_kernel()->add_thread_process(this);
-}
-
-sc_thread_process::~sc_thread_process()
-{
-	if(coro)
+	while(!free_list.empty())
 	{
-		delete coro;
+		T *e = free_list.top();
+		delete e;
+		free_list.pop();
 	}
 }
+
+template <class T>
+T *sc_allocator::allocate()
+{
+	if(!free_list.empty())
+	{
+		T *e = free_list.top();
+		free_list.pop();
+		return e;
+	}
 	
-void sc_thread_process::start()
-{
-	coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1));
+	return new T();
 }
 
-void sc_thread_process::suspend()
+template <class T>
+void sc_allocator::free(T *e)
 {
-	if(thread_process_helper)
-	{
-		thread_process_helper->yield(); // yield to kernel
-	}
-	else
-	{
-		std::cerr << "no thread process helper" << std::endl;
-	}
-}
-
-void sc_thread_process::wait()
-{
-	suspend();
-}
-
-void sc_thread_process::wait(const sc_event& e)
-{
-	e.add_dynamically_sensitive_thread_process(this);
-	suspend();
-}
-
-void sc_thread_process::resume()
-{
-	if(*coro)
-	{
-		(*coro)(); // yield to thread
-	}
-}
-
-void sc_thread_process::coroutine_work(sc_coroutine::caller_type& yield)
-{
-	std::cerr << "coroutine_work" << std::endl;
-	sc_thread_process_helper(this, yield);
+	free_list.push(e);
 }
 
 } // end of namespace sc_core
+
+#endif // __IEEE1666_KERNEL_ALLOCATOR_H__

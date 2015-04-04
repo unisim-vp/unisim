@@ -36,9 +36,9 @@
 #define __IEEE1666_KERNEL_EVENT_H__
 
 #include <ieee1666/kernel/fwd.h>
-#include <ieee1666/kernel/object.h>
-#include <ieee1666/kernel/time.h>
 #include <vector>
+#include <string>
+#include <deque>
 
 namespace sc_core {
 
@@ -66,8 +66,14 @@ private:
 	sc_event& operator= ( const sc_event& );
 	// Other members
 	// Implementation-defined
+	friend class sc_thread_process;
+	
 	std::string event_name;
 	sc_object *parent_object;
+	
+	mutable std::deque<sc_thread_process *> dynamically_sensitive_thread_processes;
+	
+	void add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
 };
 
 const std::vector<sc_event*>& sc_get_top_level_events();

@@ -34,6 +34,8 @@
 
 #include <ieee1666/kernel/event.h>
 #include <ieee1666/kernel/kernel.h>
+#include <ieee1666/kernel/object.h>
+#include <ieee1666/kernel/time.h>
 
 namespace sc_core {
 
@@ -122,6 +124,11 @@ const std::vector<sc_event*>& sc_get_top_level_events()
 
 sc_event* sc_find_event( const char* )
 {
+}
+
+void sc_event::add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
+{
+	dynamically_sensitive_thread_processes.push_back(thread_process);
 }
 
 //////////////////////////////// sc_event_and_list /////////////////////////////////////////

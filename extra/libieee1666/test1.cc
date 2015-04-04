@@ -11,13 +11,15 @@ public:
 		SC_THREAD(Process);
 	}
 private:
+	sc_event e;
+	
 	void Process()
 	{
 		std::cout << "Hello world !" << std::endl;
 		
 		while(1)
 		{
-			wait();
+			wait(e);
 			std::cout << "Awaken" << std::endl;
 		}
 	}

@@ -178,8 +178,9 @@ void sc_module::wait( int )
 {
 }
 
-void sc_module::wait( const sc_event& )
+void sc_module::wait( const sc_event& e)
 {
+	sc_kernel::get_kernel()->get_current_thread_process()->wait(e);
 }
 
 void sc_module::wait( const sc_event_or_list &)
