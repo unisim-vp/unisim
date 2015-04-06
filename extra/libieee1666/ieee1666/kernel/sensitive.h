@@ -36,20 +36,32 @@
 #define __IEEE1666_KERNEL_SENSITIVE_H__
 
 #include <ieee1666/kernel/fwd.h>
-#include <ieee1666/kernel/event.h>
-#include <ieee1666/kernel/interface.h>
-#include <ieee1666/kernel/port.h>
-#include <ieee1666/kernel/event_finder.h>
 
 namespace sc_core {
 
 class sc_sensitive
 {
 public:
+
 	sc_sensitive& operator<< (const sc_event& event);
 	sc_sensitive& operator<< (const sc_interface& itf);
 	sc_sensitive& operator<< (const sc_port_base& port);
 	sc_sensitive& operator<< (sc_event_finder& event_finder);
+
+	//////////////////////////
+	
+	void bind(sc_thread_process *thread_process);
+	void bind(sc_method_process *method_process);
+private:
+	friend class sc_module;
+	
+	sc_module *module;
+	sc_thread_process *thread_process;
+	sc_method_process *method_process;
+	
+	sc_sensitive(sc_module *module);
+    ~sc_sensitive();
+	
 };
 
 } // end of namespace sc_core

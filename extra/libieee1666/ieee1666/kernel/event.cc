@@ -118,10 +118,50 @@ void sc_event::cancel()
 
 void sc_event::trigger()
 {
+	sc_kernel *kernel = sc_kernel::get_kernel();
+
+	unsigned int num_statically_sensitive_method_processes = statically_sensitive_method_processes.size();
+	
+	if(num_statically_sensitive_method_processes)
+	{
+		unsigned int i;
+		
+		for(i = 0; i < num_statically_sensitive_method_processes; i++)
+		{
+			sc_method_process *method_process = statically_sensitive_method_processes[i];
+			
+			kernel->trigger(method_process);
+		}
+	}
+
+	unsigned int num_statically_sensitive_thread_processes = statically_sensitive_thread_processes.size();
+	
+	if(num_statically_sensitive_thread_processes)
+	{
+		unsigned int i;
+		
+		for(i = 0; i < num_statically_sensitive_thread_processes; i++)
+		{
+			sc_thread_process *thread_process = statically_sensitive_thread_processes[i];
+			
+			kernel->trigger(thread_process);
+		}
+	}
+
+	if(dynamically_sensitive_method_processes.size())
+	{
+		do
+		{
+			sc_method_process *method_process = dynamically_sensitive_method_processes.front();
+			dynamically_sensitive_method_processes.pop_front();
+			
+			kernel->trigger(method_process);
+		}
+		while(dynamically_sensitive_method_processes.size());
+	}
+
 	if(dynamically_sensitive_thread_processes.size())
 	{
-		sc_kernel *kernel = sc_kernel::get_kernel();
-		
 		do
 		{
 			sc_thread_process *thread_process = dynamically_sensitive_thread_processes.front();
@@ -131,6 +171,8 @@ void sc_event::trigger()
 		}
 		while(dynamically_sensitive_thread_processes.size());
 	}
+
+	state = NOT_NOTIFIED;
 }
 
 sc_event_and_expr sc_event::operator& ( const sc_event& ) const
@@ -168,6 +210,21 @@ sc_event* sc_find_event( const char* )
 void sc_event::add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
 {
 	dynamically_sensitive_thread_processes.push_back(thread_process);
+}
+
+void sc_event::add_dynamically_sensitive_method_process(sc_method_process *method_process) const
+{
+	dynamically_sensitive_method_processes.push_back(method_process);
+}
+
+void sc_event::add_statically_sensitive_thread_process(sc_thread_process *thread_process) const
+{
+	statically_sensitive_thread_processes.push_back(thread_process);
+}
+
+void sc_event::add_statically_sensitive_method_process(sc_method_process *method_process) const
+{
+	statically_sensitive_method_processes.push_back(method_process);
 }
 
 //////////////////////////////// sc_event_and_list /////////////////////////////////////////

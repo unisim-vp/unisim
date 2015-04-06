@@ -67,7 +67,9 @@ private:
 	// Other members
 	// Implementation-defined
 	friend class sc_thread_process;
+	friend class sc_method_process;
 	friend class sc_kernel;
+	friend class sc_sensitive;
 	
 	enum state_t
 	{
@@ -81,8 +83,14 @@ private:
 	sc_timed_kernel_event *timed_kernel_event;  // only used when state == TIMED_NOTIFIED, otherwise undefined
 
 	mutable std::deque<sc_thread_process *> dynamically_sensitive_thread_processes;
+	mutable std::deque<sc_method_process *> dynamically_sensitive_method_processes;
+	mutable std::vector<sc_thread_process *> statically_sensitive_thread_processes;
+	mutable std::vector<sc_method_process *> statically_sensitive_method_processes;
 
 	void add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
+	void add_dynamically_sensitive_method_process(sc_method_process *method_process) const;
+	void add_statically_sensitive_thread_process(sc_thread_process *thread_process) const;
+	void add_statically_sensitive_method_process(sc_method_process *method_process) const;
 	void trigger();
 };
 

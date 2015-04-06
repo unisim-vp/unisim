@@ -33,6 +33,11 @@
  */
 
 #include <ieee1666/kernel/sensitive.h>
+#include <ieee1666/kernel/event.h>
+#include <ieee1666/kernel/interface.h>
+#include <ieee1666/kernel/port.h>
+#include <ieee1666/kernel/event_finder.h>
+#include <ieee1666/kernel/module.h>
 
 namespace sc_core {
 
@@ -40,6 +45,8 @@ namespace sc_core {
 
 sc_sensitive& sc_sensitive::operator<< (const sc_event& event)
 {
+	if(thread_process) event.add_statically_sensitive_thread_process(thread_process);
+	if(method_process) event.add_statically_sensitive_method_process(method_process);
 }
 
 sc_sensitive& sc_sensitive::operator<< (const sc_interface& itf)
@@ -52,6 +59,31 @@ sc_sensitive& sc_sensitive::operator<< (const sc_port_base& port)
 
 sc_sensitive& sc_sensitive::operator<< (sc_event_finder& event_finder)
 {
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+sc_sensitive::sc_sensitive(sc_module *_module)
+	: module(_module)
+	, thread_process(0)
+	, method_process(0)
+{
+}
+
+sc_sensitive::~sc_sensitive()
+{
+}
+
+void sc_sensitive::bind(sc_thread_process *_thread_process)
+{
+	thread_process = _thread_process;
+	method_process = 0;
+}
+
+void sc_sensitive::bind(sc_method_process *_method_process)
+{
+	thread_process = 0;
+	method_process = _method_process;
 }
 
 } // end of namespace sc_core

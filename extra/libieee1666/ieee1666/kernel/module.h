@@ -156,8 +156,8 @@ void wait( double , sc_time_unit , const sc_event_and_list & );
 #define SC_MODULE(name) struct name : public ::sc_core::sc_module
 #define SC_CTOR(name) typedef name SC_CURRENT_USER_MODULE; name(const ::sc_core::sc_module_name&)
 #define SC_HAS_PROCESS(name) typedef name SC_CURRENT_USER_MODULE // implementation-defined
-#define SC_METHOD(name) // implementation-defined
-#define SC_THREAD(name) sc_kernel::get_kernel()->create_thread_process(#name, this, static_cast<sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name)) // implementation-defined
+#define SC_METHOD(name) sensitive.bind(sc_kernel::get_kernel()->create_method_process(#name, this, static_cast<sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name))) // implementation-defined
+#define SC_THREAD(name) sensitive.bind(sc_kernel::get_kernel()->create_thread_process(#name, this, static_cast<sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name))) // implementation-defined
 #define SC_CTHREAD(name,clk) // implementation-defined
 const char* sc_gen_unique_name( const char* );
 typedef sc_module sc_behavior;

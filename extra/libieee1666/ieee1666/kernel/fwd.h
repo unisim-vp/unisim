@@ -82,6 +82,7 @@ class sc_trace_file;
 class sc_process_owner;
 class sc_process;
 class sc_thread_process;
+class sc_method_process;
 class sc_thread_process_helper;
 class sc_kernel_event;
 class sc_timed_kernel_event;

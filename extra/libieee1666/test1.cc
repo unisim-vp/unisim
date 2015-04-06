@@ -11,6 +11,9 @@ public:
 		
 		SC_THREAD(Tic);
 		SC_THREAD(Tac);
+		
+		SC_METHOD(Toc);
+		sensitive << e2;
 	}
 private:
 	sc_event e1;
@@ -39,6 +42,14 @@ private:
 			wait(e2);
 			std::cout << sc_time_stamp() << ": Tac" << std::endl;
 		}
+	}
+	
+	void Toc()
+	{
+		std::cout << "Toc: Hello world !" << std::endl;
+		
+		std::cout << sc_time_stamp() << ": Toc" << std::endl;
+		//next_trigger(e2);
 	}
 };
 

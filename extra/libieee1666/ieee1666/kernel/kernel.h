@@ -69,6 +69,7 @@ public:
 	sc_thread_process *get_current_thread_process() const;
 
 	sc_thread_process *create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
+	sc_method_process *create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
 
 	void initialize();
 	void do_delta_steps(bool once);
@@ -78,6 +79,7 @@ public:
 	
 	void add_module(sc_module *module);
 	void add_thread_process(sc_thread_process *thread_process);
+	void add_method_process(sc_method_process *method_process);
 	
 	// time resolution management
 	void set_time_resolution(double v, sc_time_unit tu, bool user);
@@ -91,8 +93,17 @@ public:
 	sc_kernel_event *notify(sc_event *e);
 	sc_timed_kernel_event *notify(sc_event *e, const sc_time& t);
 	
+	// wait
+	void wait();
+	void wait(const sc_event& e);
+
+	// next_trigger
+	void next_trigger();
+	void next_trigger(const sc_event& e);
+	
 	// processes
 	void trigger(sc_thread_process *thread_process);
+	void trigger(sc_method_process *method_process);
 	
 	const sc_time& get_current_time_stamp() const;
 protected:
@@ -101,9 +112,11 @@ private:
 	std::stack<sc_object *> object_stack;
 	static sc_kernel *kernel;
 	sc_thread_process *current_thread_process;
+	sc_method_process *current_method_process;
 	
 	std::vector<sc_module *> module_table;
 	std::vector<sc_thread_process *> thread_process_table;
+	std::vector<sc_method_process *> method_process_table;
 
 	// time resolution management
 	bool time_resolution_fixed_by_user;
@@ -118,7 +131,8 @@ private:
 	sc_time current_time_stamp;                                        // current time stamp
 	sc_allocator<sc_kernel_event> kernel_events_allocator;             // kernel events (delta event) allocator
 	sc_allocator<sc_timed_kernel_event> timed_kernel_events_allocator; // timed kernel events (timed event) allocator	
-	std::deque<sc_thread_process *> runnable_thread_processes;         // thread processes to wake-up
+	std::deque<sc_thread_process *> runnable_thread_processes;         // SC_THREAD/SC_CTHREAD processes to wake-up
+	std::deque<sc_method_process *> runnable_method_processes;         // SC_METHOD processes to wake-up
 	std::deque<sc_prim_channel *> updatable_prim_channels;             // primitive channels to update
 	std::deque<sc_kernel_event *> delta_events;                        // notified delta events set 
 	std::multimap<sc_time, sc_timed_kernel_event *> schedule;          // notified timed events set

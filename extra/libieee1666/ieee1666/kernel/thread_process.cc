@@ -42,7 +42,9 @@ sc_thread_process_helper::sc_thread_process_helper(sc_thread_process *_thread_pr
 	, yield(_yield)
 {
 	thread_process->thread_process_helper = this;
+	std::cerr << "initial yield" << std::endl;
 	yield();
+	std::cerr << "initial wake-up" << std::endl;
 	thread_process->call_process_owner_method();
 }
 

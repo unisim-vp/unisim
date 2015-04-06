@@ -35,6 +35,7 @@
 #include <ieee1666/kernel/kernel.h>
 #include <ieee1666/kernel/module_name.h>
 #include <ieee1666/kernel/thread_process.h>
+#include <ieee1666/kernel/method_process.h>
 #include <ieee1666/kernel/time.h>
 #include <ieee1666/kernel/kernel_event.h>
 #include <ieee1666/kernel/prim_channel.h>
@@ -104,24 +105,41 @@ sc_thread_process *sc_kernel::create_thread_process(const char *name, sc_process
 	return thread_process;
 }
 
+sc_method_process *sc_kernel::create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr)
+{
+	sc_method_process *method_process = new sc_method_process(name, process_owner, process_owner_method_ptr);
+	
+	return method_process;
+}
+
 void sc_kernel::initialize()
 {
 	// time resolution can no longer change
 	time_resolution_fixed = true;
 
 	// start thread processes in suspend state
-	unsigned int n = thread_process_table.size();
+	unsigned int num_thread_processes = thread_process_table.size();
 	
 	unsigned int i;
-	for(i = 0; i < n; i++)
+	for(i = 0; i < num_thread_processes; i++)
 	{
 		sc_thread_process *thread_process = thread_process_table[i];
 		
 		thread_process->start(); // at this point, process is suspended before call to sc_process_owner method
 	}
 	
-	// initial wake-up of all thread processes
-	for(i = 0; i < n; i++)
+	// initial wake-up of all SC_METHOD processes
+	unsigned int num_method_processes = method_process_table.size();
+	for(i = 0; i < num_method_processes; i++)
+	{
+		sc_method_process *method_process = method_process_table[i];
+		
+		current_method_process = method_process;
+		method_process->call_process_owner_method();
+	}
+
+	// initial wake-up of all SC_THREAD/SC_CTHREAD processes
+	for(i = 0; i < num_thread_processes; i++)
 	{
 		sc_thread_process *thread_process = thread_process_table[i];
 		
@@ -132,12 +150,27 @@ void sc_kernel::initialize()
 
 void sc_kernel::do_delta_steps(bool once)
 {
-	if(runnable_thread_processes.size())
+	do
 	{
-		do
+		// evaluation phase
+		
+		// wake up SC_METHOD processes
+		if(runnable_method_processes.size())
 		{
-			// evaluation phase
-			
+			do
+			{
+				sc_method_process *method_process = runnable_method_processes.front();
+				runnable_method_processes.pop_front();
+				
+				current_method_process = method_process;
+				method_process->call_process_owner_method();
+			}
+			while(runnable_method_processes.size());
+		}
+
+		// wake up SC_THREAD/SC_CTHREAD processes
+		if(runnable_thread_processes.size())
+		{
 			do
 			{
 				sc_thread_process *thread_process = runnable_thread_processes.front();
@@ -147,44 +180,44 @@ void sc_kernel::do_delta_steps(bool once)
 				thread_process->resume();
 			}
 			while(runnable_thread_processes.size());
-			
-			// update phase
-			
-			if(updatable_prim_channels.size())
-			{
-				do
-				{
-					sc_prim_channel *prim_channel = updatable_prim_channels.front();
-					updatable_prim_channels.pop_front();
-					
-					prim_channel->update();
-				}
-				while(updatable_prim_channels.size());
-			}
-			
-			// delta notification phase
-			
-			if(delta_events.size())
-			{
-				do
-				{
-					sc_kernel_event *kernel_event = delta_events.front();
-					delta_events.pop_front();
-					
-					sc_event *e = kernel_event->get_event();
-					
-					if(e)
-					{
-						e->trigger();
-					}
-					
-					kernel_events_allocator.free(kernel_event);
-				}
-				while(delta_events.size());
-			}
 		}
-		while(!once && runnable_thread_processes.size());
+		
+		// update phase
+		
+		if(updatable_prim_channels.size())
+		{
+			do
+			{
+				sc_prim_channel *prim_channel = updatable_prim_channels.front();
+				updatable_prim_channels.pop_front();
+				
+				prim_channel->update();
+			}
+			while(updatable_prim_channels.size());
+		}
+		
+		// delta notification phase
+		
+		if(delta_events.size())
+		{
+			do
+			{
+				sc_kernel_event *kernel_event = delta_events.front();
+				delta_events.pop_front();
+				
+				sc_event *e = kernel_event->get_event();
+				
+				if(e)
+				{
+					e->trigger();
+				}
+				
+				kernel_events_allocator.free(kernel_event);
+			}
+			while(delta_events.size());
+		}
 	}
+	while(!once && (runnable_thread_processes.size() || runnable_method_processes.size()));
 }
 
 void sc_kernel::do_timed_step()
@@ -230,7 +263,7 @@ void sc_kernel::simulate(const sc_time& duration)
 			do_delta_steps(false);
 			do_timed_step();
 		}
-		while((current_time_stamp <= until_time) && runnable_thread_processes.size());
+		while((current_time_stamp <= until_time) && (runnable_thread_processes.size() || runnable_method_processes.size()));
 	}
 }
 
@@ -261,6 +294,11 @@ void sc_kernel::add_module(sc_module *module)
 void sc_kernel::add_thread_process(sc_thread_process *thread_process)
 {
 	thread_process_table.push_back(thread_process);
+}
+
+void sc_kernel::add_method_process(sc_method_process *method_process)
+{
+	method_process_table.push_back(method_process);
 }
 
 void sc_kernel::set_time_resolution(double v, sc_time_unit tu, bool user)
@@ -403,9 +441,34 @@ sc_timed_kernel_event *sc_kernel::notify(sc_event *e, const sc_time& t)
 	return timed_kernel_event;
 }
 
+void sc_kernel::wait()
+{
+	current_thread_process->wait();
+}
+
+void sc_kernel::wait(const sc_event& e)
+{
+	current_thread_process->wait(e);
+}
+
+void sc_kernel::next_trigger()
+{
+	current_method_process->next_trigger();
+}
+
+void sc_kernel::next_trigger(const sc_event& e)
+{
+	current_method_process->next_trigger(e);
+}
+
 void sc_kernel::trigger(sc_thread_process *thread_process)
 {
 	runnable_thread_processes.push_back(thread_process);
+}
+
+void sc_kernel::trigger(sc_method_process *method_process)
+{
+	runnable_method_processes.push_back(method_process);
 }
 
 const sc_time& sc_kernel::get_current_time_stamp() const

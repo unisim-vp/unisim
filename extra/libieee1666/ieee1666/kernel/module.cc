@@ -67,6 +67,7 @@ const std::vector<sc_event*>& sc_module::get_child_events() const
 
 sc_module::sc_module( const sc_module_name& module_name )
 	: sc_object((const char *) sc_kernel::get_kernel()->get_top_of_module_name_stack())
+	, sensitive(this)
 {
 	sc_module_name *non_const_module_name = sc_kernel::get_kernel()->get_top_of_module_name_stack();
 	non_const_module_name->set_module(this);
@@ -75,6 +76,7 @@ sc_module::sc_module( const sc_module_name& module_name )
 
 sc_module::sc_module()
 	: sc_object((const char *) sc_kernel::get_kernel()->get_top_of_module_name_stack())
+	, sensitive(this)
 {
 	sc_module_name *non_const_module_name = sc_kernel::get_kernel()->get_top_of_module_name_stack();
 	non_const_module_name->set_module(this);
@@ -123,10 +125,12 @@ void sc_module::set_stack_size( size_t )
 
 void sc_module::next_trigger()
 {
+	sc_kernel::get_kernel()->next_trigger();
 }
 
-void sc_module::next_trigger( const sc_event& )
+void sc_module::next_trigger( const sc_event& e)
 {
+	sc_kernel::get_kernel()->next_trigger(e);
 }
 
 void sc_module::next_trigger( const sc_event_or_list & )
@@ -171,7 +175,7 @@ void sc_module::next_trigger( double , sc_time_unit , const sc_event_and_list & 
 
 void sc_module::wait()
 {
-	sc_kernel::get_kernel()->get_current_thread_process()->wait();
+	sc_kernel::get_kernel()->wait();
 }
 
 void sc_module::wait( int )
@@ -180,7 +184,7 @@ void sc_module::wait( int )
 
 void sc_module::wait( const sc_event& e)
 {
-	sc_kernel::get_kernel()->get_current_thread_process()->wait(e);
+	sc_kernel::get_kernel()->wait(e);
 }
 
 void sc_module::wait( const sc_event_or_list &)
@@ -239,7 +243,8 @@ void sc_module::end_of_simulation()
 {
 }
 
-sc_module::sc_module( const sc_module& )
+sc_module::sc_module(const sc_module& )
+	: sensitive(this)
 {
 }
 
