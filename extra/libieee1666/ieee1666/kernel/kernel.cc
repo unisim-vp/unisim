@@ -106,6 +106,10 @@ sc_thread_process *sc_kernel::create_thread_process(const char *name, sc_process
 
 void sc_kernel::initialize()
 {
+	// time resolution can no longer change
+	time_resolution_fixed = true;
+
+	// start thread processes in suspend state
 	unsigned int n = thread_process_table.size();
 	
 	unsigned int i;
@@ -113,32 +117,27 @@ void sc_kernel::initialize()
 	{
 		sc_thread_process *thread_process = thread_process_table[i];
 		
-		thread_process->start();
+		thread_process->start(); // at this point, process is suspended before call to sc_process_owner method
+	}
+	
+	// initial wake-up of all thread processes
+	for(i = 0; i < n; i++)
+	{
+		sc_thread_process *thread_process = thread_process_table[i];
+		
 		current_thread_process = thread_process;
 		thread_process->resume();
 	}
-
-	do_delta_steps();
-// 	unsigned int j;
-// 	
-// 	for(j = 0; j < 10; j++)
-// 	{
-// 		for(i = 0; i < n; i++)
-// 		{
-// 			sc_thread_process *thread_process = thread_process_table[i];
-// 			
-// 			current_thread_process = thread_process;
-// 			thread_process->resume();
-// 		}
-// 	}
 }
 
-void sc_kernel::do_delta_steps()
+void sc_kernel::do_delta_steps(bool once)
 {
 	if(runnable_thread_processes.size())
 	{
 		do
 		{
+			// evaluation phase
+			
 			do
 			{
 				sc_thread_process *thread_process = runnable_thread_processes.front();
@@ -148,6 +147,8 @@ void sc_kernel::do_delta_steps()
 				thread_process->resume();
 			}
 			while(runnable_thread_processes.size());
+			
+			// update phase
 			
 			if(updatable_prim_channels.size())
 			{
@@ -160,6 +161,8 @@ void sc_kernel::do_delta_steps()
 				}
 				while(updatable_prim_channels.size());
 			}
+			
+			// delta notification phase
 			
 			if(delta_events.size())
 			{
@@ -180,7 +183,7 @@ void sc_kernel::do_delta_steps()
 				while(delta_events.size());
 			}
 		}
-		while(runnable_thread_processes.size());
+		while(!once && runnable_thread_processes.size());
 	}
 }
 
@@ -212,22 +215,42 @@ void sc_kernel::do_timed_step()
 	}
 }
 
-void sc_kernel::simulate()
+void sc_kernel::simulate(const sc_time& duration)
 {
-	time_resolution_fixed = true;
-	
-	do
+	if(duration == SC_ZERO_TIME)
 	{
-		do_delta_steps();
-		do_timed_step();
+		do_delta_steps(true);
 	}
-	while(runnable_thread_processes.size());
+	else
+	{
+		sc_time until_time = current_time_stamp + duration;
+
+		do
+		{
+			do_delta_steps(false);
+			do_timed_step();
+		}
+		while((current_time_stamp <= until_time) && runnable_thread_processes.size());
+	}
 }
 
-void sc_kernel::start()
+void sc_kernel::start(const sc_time& duration, sc_starvation_policy p)
 {
+	sc_time end_time;
+	
+	if(p == SC_RUN_TO_TIME)
+	{
+		end_time = current_time_stamp;
+		end_time += duration;
+	}
+	
 	initialize();
-	simulate();
+	simulate(duration);
+
+	if(p == SC_RUN_TO_TIME)
+	{
+		current_time_stamp = end_time;
+	}
 }
 
 void sc_kernel::add_module(sc_module *module)
@@ -407,15 +430,19 @@ const char* const* sc_argv()
 
 void sc_start()
 {
-	sc_kernel::get_kernel()->start();
+    sc_start(sc_max_time() - sc_time_stamp(), SC_EXIT_ON_STARVATION);
 }
 
 void sc_start(const sc_time& duration, sc_starvation_policy p)
 {
+	sc_kernel::get_kernel()->start(duration, p);
 }
 
-void sc_start(double duration,sc_time_unit tu, sc_starvation_policy p)
+void sc_start(double _duration,sc_time_unit _tu, sc_starvation_policy _p)
 {
+	sc_time duration(_duration, _tu);
+	
+	sc_start(duration, _p);
 }
 
 void sc_pause()

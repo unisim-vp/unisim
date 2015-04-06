@@ -46,6 +46,12 @@
 
 namespace sc_core {
 
+enum sc_starvation_policy
+{
+	SC_RUN_TO_TIME,
+	SC_EXIT_ON_STARVATION
+};
+
 class sc_kernel
 {
 public:
@@ -65,10 +71,10 @@ public:
 	sc_thread_process *create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
 
 	void initialize();
-	void do_delta_steps();
+	void do_delta_steps(bool once);
 	void do_timed_step();
-	void simulate();
-	void start();
+	void simulate(const sc_time& duration);
+	void start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
 	
 	void add_module(sc_module *module);
 	void add_thread_process(sc_thread_process *thread_process);
@@ -122,12 +128,6 @@ private:
 int sc_elab_and_sim(int argc, char* argv[]);
 int sc_argc();
 const char* const* sc_argv();
-
-enum sc_starvation_policy
-{
-	SC_RUN_TO_TIME,
-	SC_EXIT_ON_STARVATION
-};
 
 void sc_start();
 void sc_start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
