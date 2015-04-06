@@ -67,13 +67,23 @@ private:
 	// Other members
 	// Implementation-defined
 	friend class sc_thread_process;
+	friend class sc_kernel;
+	
+	enum state_t
+	{
+		NOT_NOTIFIED, DELTA_NOTIFIED, TIMED_NOTIFIED
+	};
 	
 	std::string event_name;
 	sc_object *parent_object;
-	
+	state_t state;
+	sc_kernel_event *kernel_event;              // only used when state == DELTA_NOTIFIED, otherwise undefined
+	sc_timed_kernel_event *timed_kernel_event;  // only used when state == TIMED_NOTIFIED, otherwise undefined
+
 	mutable std::deque<sc_thread_process *> dynamically_sensitive_thread_processes;
-	
+
 	void add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
+	void trigger();
 };
 
 const std::vector<sc_event*>& sc_get_top_level_events();

@@ -33,7 +33,7 @@
  */
 
 #ifndef __IEEE1666_KERNEL_ALLOCATOR_H__
-#ifndef __IEEE1666_KERNEL_ALLOCATOR_H__
+#define __IEEE1666_KERNEL_ALLOCATOR_H__
 
 #include <stack>
 #include <vector>
@@ -55,13 +55,13 @@ private:
 };
 
 template <class T>
-sc_allocator::sc_allocator()
+sc_allocator<T>::sc_allocator()
 	: free_list()
 {
 }
 
 template <class T>
-sc_allocator::~sc_allocator()
+sc_allocator<T>::~sc_allocator()
 {
 	while(!free_list.empty())
 	{
@@ -72,7 +72,7 @@ sc_allocator::~sc_allocator()
 }
 
 template <class T>
-T *sc_allocator::allocate()
+T *sc_allocator<T>::allocate()
 {
 	if(!free_list.empty())
 	{
@@ -85,7 +85,7 @@ T *sc_allocator::allocate()
 }
 
 template <class T>
-void sc_allocator::free(T *e)
+void sc_allocator<T>::free(T *e)
 {
 	free_list.push(e);
 }

@@ -37,9 +37,12 @@
 
 #include <ieee1666/kernel/fwd.h>
 #include <ieee1666/kernel/time.h>
+#include <ieee1666/kernel/allocator.h>
 #include <stack>
 #include <vector>
 #include <iosfwd>
+#include <map>
+#include <deque>
 
 namespace sc_core {
 
@@ -62,6 +65,9 @@ public:
 	sc_thread_process *create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
 
 	void initialize();
+	void do_delta_steps();
+	void do_timed_step();
+	void simulate();
 	void start();
 	
 	void add_module(sc_module *module);
@@ -75,6 +81,14 @@ public:
 	void print_time(std::ostream& os, const sc_time& t) const;
 	double time_discrete_value_to_seconds(sc_dt::uint64 discrete_value) const;
 
+	// events
+	sc_kernel_event *notify(sc_event *e);
+	sc_timed_kernel_event *notify(sc_event *e, const sc_time& t);
+	
+	// processes
+	void trigger(sc_thread_process *thread_process);
+	
+	const sc_time& get_current_time_stamp() const;
 protected:
 private:
 	std::stack<sc_module_name *> module_name_stack;
@@ -87,12 +101,22 @@ private:
 
 	// time resolution management
 	bool time_resolution_fixed_by_user;
-	bool time_resolution_fixed;
+	mutable bool time_resolution_fixed;
 	int time_resolution_scale_factors_table_base_index;
 	static const int TIME_RESOLUTION_SCALE_FACTORS_TABLE_SIZE = (3 * SC_SEC) + 1;
 	double time_resolution_scale_factors_table[TIME_RESOLUTION_SCALE_FACTORS_TABLE_SIZE];
 	
 	sc_time max_time;
+	
+	// discrete event simulation kernel
+	sc_time current_time_stamp;                                        // current time stamp
+	sc_allocator<sc_kernel_event> kernel_events_allocator;             // kernel events (delta event) allocator
+	sc_allocator<sc_timed_kernel_event> timed_kernel_events_allocator; // timed kernel events (timed event) allocator	
+	std::deque<sc_thread_process *> runnable_thread_processes;         // thread processes to wake-up
+	std::deque<sc_prim_channel *> updatable_prim_channels;             // primitive channels to update
+	std::deque<sc_kernel_event *> delta_events;                        // notified delta events set 
+	std::multimap<sc_time, sc_timed_kernel_event *> schedule;          // notified timed events set
+	
 };
 
 int sc_elab_and_sim(int argc, char* argv[]);
@@ -108,6 +132,38 @@ enum sc_starvation_policy
 void sc_start();
 void sc_start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
 void sc_start(double duration, sc_time_unit tu, sc_starvation_policy p = SC_RUN_TO_TIME);
+
+
+void sc_pause();
+enum sc_stop_mode
+{
+	SC_STOP_FINISH_DELTA,
+	SC_STOP_IMMEDIATE
+};
+
+extern void sc_set_stop_mode( sc_stop_mode mode );
+extern sc_stop_mode sc_get_stop_mode();
+
+void sc_stop();
+const sc_time& sc_time_stamp();
+const sc_dt::uint64 sc_delta_count();
+bool sc_is_running();
+bool sc_pending_activity_at_current_time();
+bool sc_pending_activity_at_future_time();
+bool sc_pending_activity();
+sc_time sc_time_to_pending_activity();
+enum sc_status
+{
+	SC_ELABORATION = 0x01,
+	SC_BEFORE_END_OF_ELABORATION = 0x02,
+	SC_END_OF_ELABORATION = 0x04,
+	SC_START_OF_SIMULATION = 0x08,
+	SC_RUNNING = 0x10,
+	SC_PAUSED = 0x20,
+	SC_STOPPED = 0x40,
+	SC_END_OF_SIMULATION = 0x80
+};
+sc_status sc_get_status();
 
 } // end of namespace sc_core
 

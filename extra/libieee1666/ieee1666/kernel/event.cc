@@ -36,6 +36,7 @@
 #include <ieee1666/kernel/kernel.h>
 #include <ieee1666/kernel/object.h>
 #include <ieee1666/kernel/time.h>
+#include <ieee1666/kernel/kernel_event.h>
 
 namespace sc_core {
 
@@ -56,6 +57,7 @@ sc_event::sc_event( const char* _name)
 
 sc_event::~sc_event()
 {
+	cancel();
 }
 
 const char* sc_event::name() const
@@ -80,18 +82,55 @@ sc_object* sc_event::get_parent_object() const
 
 void sc_event::notify()
 {
+	state = DELTA_NOTIFIED;
+	kernel_event = sc_kernel::get_kernel()->notify(this);
 }
 
-void sc_event::notify( const sc_time& )
+void sc_event::notify(const sc_time& t)
 {
+	state = TIMED_NOTIFIED;
+	timed_kernel_event = sc_kernel::get_kernel()->notify(this, t);
 }
 
-void sc_event::notify( double , sc_time_unit )
+void sc_event::notify(double d, sc_time_unit tu)
 {
+	sc_time t = sc_time(d, tu);
+	state = TIMED_NOTIFIED;
+	timed_kernel_event = sc_kernel::get_kernel()->notify(this, t);
 }
 
 void sc_event::cancel()
 {
+	switch(state)
+	{
+		case NOT_NOTIFIED:
+			break;
+		case DELTA_NOTIFIED:
+			kernel_event->cancel();
+			break;
+		case TIMED_NOTIFIED:
+			timed_kernel_event->cancel();
+			break;
+	}
+	
+	state = NOT_NOTIFIED;
+}
+
+void sc_event::trigger()
+{
+	if(dynamically_sensitive_thread_processes.size())
+	{
+		sc_kernel *kernel = sc_kernel::get_kernel();
+		
+		do
+		{
+			sc_thread_process *thread_process = dynamically_sensitive_thread_processes.front();
+			dynamically_sensitive_thread_processes.pop_front();
+			
+			kernel->trigger(thread_process);
+		}
+		while(dynamically_sensitive_thread_processes.size());
+	}
 }
 
 sc_event_and_expr sc_event::operator& ( const sc_event& ) const

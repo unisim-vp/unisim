@@ -104,7 +104,6 @@ void sc_thread_process::resume()
 
 void sc_thread_process::coroutine_work(sc_coroutine::caller_type& yield)
 {
-	std::cerr << "coroutine_work" << std::endl;
 	sc_thread_process_helper(this, yield);
 }
 

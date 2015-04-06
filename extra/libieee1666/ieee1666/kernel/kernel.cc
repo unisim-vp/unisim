@@ -36,6 +36,8 @@
 #include <ieee1666/kernel/module_name.h>
 #include <ieee1666/kernel/thread_process.h>
 #include <ieee1666/kernel/time.h>
+#include <ieee1666/kernel/kernel_event.h>
+#include <ieee1666/kernel/prim_channel.h>
 #include <math.h>
 #include <limits>
 
@@ -116,23 +118,116 @@ void sc_kernel::initialize()
 		thread_process->resume();
 	}
 
-	unsigned int j;
-	
-	for(j = 0; j < 10; j++)
+	do_delta_steps();
+// 	unsigned int j;
+// 	
+// 	for(j = 0; j < 10; j++)
+// 	{
+// 		for(i = 0; i < n; i++)
+// 		{
+// 			sc_thread_process *thread_process = thread_process_table[i];
+// 			
+// 			current_thread_process = thread_process;
+// 			thread_process->resume();
+// 		}
+// 	}
+}
+
+void sc_kernel::do_delta_steps()
+{
+	if(runnable_thread_processes.size())
 	{
-		for(i = 0; i < n; i++)
+		do
 		{
-			sc_thread_process *thread_process = thread_process_table[i];
+			do
+			{
+				sc_thread_process *thread_process = runnable_thread_processes.front();
+				runnable_thread_processes.pop_front();
+				
+				current_thread_process = thread_process;
+				thread_process->resume();
+			}
+			while(runnable_thread_processes.size());
 			
-			current_thread_process = thread_process;
-			thread_process->resume();
+			if(updatable_prim_channels.size())
+			{
+				do
+				{
+					sc_prim_channel *prim_channel = updatable_prim_channels.front();
+					updatable_prim_channels.pop_front();
+					
+					prim_channel->update();
+				}
+				while(updatable_prim_channels.size());
+			}
+			
+			if(delta_events.size())
+			{
+				do
+				{
+					sc_kernel_event *kernel_event = delta_events.front();
+					delta_events.pop_front();
+					
+					sc_event *e = kernel_event->get_event();
+					
+					if(e)
+					{
+						e->trigger();
+					}
+					
+					kernel_events_allocator.free(kernel_event);
+				}
+				while(delta_events.size());
+			}
 		}
+		while(runnable_thread_processes.size());
 	}
+}
+
+void sc_kernel::do_timed_step()
+{
+	std::multimap<sc_time, sc_timed_kernel_event *>::iterator it = schedule.begin();
+
+	if(it != schedule.end())
+	{
+		current_time_stamp = (*it).first;
+		
+		do
+		{
+			sc_timed_kernel_event *kernel_event = (*it).second;
+			
+			sc_event *e = kernel_event->get_event();
+			
+			if(e)
+			{
+				e->trigger();
+			}
+			
+			kernel_events_allocator.free(kernel_event);
+			
+			schedule.erase(it);
+			it = schedule.begin();
+		}
+		while((*it).first == current_time_stamp);
+	}
+}
+
+void sc_kernel::simulate()
+{
+	time_resolution_fixed = true;
+	
+	do
+	{
+		do_delta_steps();
+		do_timed_step();
+	}
+	while(runnable_thread_processes.size());
 }
 
 void sc_kernel::start()
 {
 	initialize();
+	simulate();
 }
 
 void sc_kernel::add_module(sc_module *module)
@@ -147,6 +242,11 @@ void sc_kernel::add_thread_process(sc_thread_process *thread_process)
 
 void sc_kernel::set_time_resolution(double v, sc_time_unit tu, bool user)
 {
+	if(time_resolution_fixed)
+	{
+		throw std::runtime_error("time resolution already fixed");
+	}
+	
 	if(user)
 	{
 		if(time_resolution_fixed_by_user)
@@ -182,13 +282,14 @@ void sc_kernel::set_time_resolution(double v, sc_time_unit tu, bool user)
 		time_resolution_scale_factors_table[i] = scale_factor;
 	}
 	
-	time_resolution_fixed = true;
+	if(user) time_resolution_fixed = true;
 	
 	max_time = sc_time(std::numeric_limits<sc_dt::uint64>::max());
 }
 
 sc_dt::uint64 sc_kernel::get_time_discrete_value(double d, sc_time_unit tu) const
 {
+	time_resolution_fixed = true;
 	int time_resolution_scale_factors_table_index = 3 * tu;
 	return static_cast<sc_dt::uint64>((d * time_resolution_scale_factors_table[time_resolution_scale_factors_table_index]) + 0.5);
 }
@@ -244,6 +345,9 @@ void sc_kernel::print_time(std::ostream& os, const sc_time& t) const
 
 double sc_kernel::time_discrete_value_to_seconds(sc_dt::uint64 discrete_value) const
 {
+	if(discrete_value == 0) return 0.0;
+	time_resolution_fixed = true;
+	
 	double scale_factor = time_resolution_scale_factors_table[3 * SC_SEC];
 	return (double) discrete_value / scale_factor;
 }
@@ -256,6 +360,34 @@ sc_time sc_kernel::get_time_resolution() const
 const sc_time& sc_kernel::get_max_time() const
 {
 	return max_time;
+}
+
+sc_kernel_event *sc_kernel::notify(sc_event *e)
+{
+	sc_kernel_event *kernel_event = kernel_events_allocator.allocate();
+	kernel_event->initialize(e);
+	delta_events.push_back(kernel_event);
+	return kernel_event;
+}
+
+sc_timed_kernel_event *sc_kernel::notify(sc_event *e, const sc_time& t)
+{
+	sc_time kernel_event_time = current_time_stamp;
+	kernel_event_time += t;
+	sc_timed_kernel_event *timed_kernel_event = timed_kernel_events_allocator.allocate();
+	timed_kernel_event->initialize(e, kernel_event_time);
+	schedule.insert(std::pair<sc_time, sc_timed_kernel_event *>(kernel_event_time, timed_kernel_event));
+	return timed_kernel_event;
+}
+
+void sc_kernel::trigger(sc_thread_process *thread_process)
+{
+	runnable_thread_processes.push_back(thread_process);
+}
+
+const sc_time& sc_kernel::get_current_time_stamp() const
+{
+	return current_time_stamp;
 }
 
 int sc_elab_and_sim(int argc, char* argv[])
@@ -283,6 +415,55 @@ void sc_start(const sc_time& duration, sc_starvation_policy p)
 }
 
 void sc_start(double duration,sc_time_unit tu, sc_starvation_policy p)
+{
+}
+
+void sc_pause()
+{
+}
+
+void sc_set_stop_mode( sc_stop_mode mode )
+{
+}
+
+sc_stop_mode sc_get_stop_mode()
+{
+}
+
+void sc_stop()
+{
+}
+
+const sc_time& sc_time_stamp()
+{
+	return sc_kernel::get_kernel()->get_current_time_stamp();
+}
+
+const sc_dt::uint64 sc_delta_count()
+{
+}
+
+bool sc_is_running()
+{
+}
+
+bool sc_pending_activity_at_current_time()
+{
+}
+
+bool sc_pending_activity_at_future_time()
+{
+}
+
+bool sc_pending_activity()
+{
+}
+
+sc_time sc_time_to_pending_activity()
+{
+}
+
+sc_status sc_get_status()
 {
 }
 

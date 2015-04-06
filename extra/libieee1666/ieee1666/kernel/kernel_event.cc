@@ -51,6 +51,16 @@ void sc_kernel_event::initialize(sc_event *_event)
 	event = _event;
 }
 
+void sc_kernel_event::cancel()
+{
+	event = 0;
+}
+
+bool sc_kernel_event::canceled() const
+{
+	return event != 0;
+}
+
 sc_event *sc_kernel_event::get_event() const
 {
 	return event;

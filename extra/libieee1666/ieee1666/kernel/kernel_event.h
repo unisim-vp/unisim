@@ -46,10 +46,14 @@ public:
 	sc_kernel_event();
 	sc_kernel_event(sc_event *event);
 	void initialize(sc_event *event);
+	void cancel();
+	bool canceled() const;
 	
 	sc_event *get_event() const;
+	
 protected:
 	sc_event *event;
+
 };
 
 class sc_timed_kernel_event : public sc_kernel_event

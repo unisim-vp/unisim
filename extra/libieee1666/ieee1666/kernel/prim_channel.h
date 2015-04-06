@@ -47,6 +47,8 @@ class sc_prim_channel : public sc_object
 public:
 	virtual const char* kind() const;
 protected:
+	friend class sc_kernel;
+	
 	sc_prim_channel();
 	explicit sc_prim_channel( const char* );
 	virtual ~sc_prim_channel();
