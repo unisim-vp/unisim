@@ -34,6 +34,10 @@
 
 #include <unisim/component/cxx/processor/powerpc/ppc440/config.hh>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -82,8 +86,10 @@ const uint32_t TLBELayout::TLBE2_DATA_MASK;
 
 const uint32_t TLBELayout::TLBE2_MASK;
 
-const unsigned int Config::IRQ_EXTERNAL_INPUT_INTERRUPT;
-const unsigned int Config::IRQ_CRITICAL_INPUT_INTERRUPT;
+const uint32_t Config::EXC_EXTERNAL_INPUT;
+const uint32_t Config::EXC_CRITICAL_INPUT;
+const unsigned int Config::EXC_DATA_STORAGE_READ_ACCESS_CONTROL;
+const unsigned int Config::EXC_DATA_STORAGE_WRITE_ACCESS_CONTROL;
 
 } // end of namespace ppc440
 } // end of namespace powerpc

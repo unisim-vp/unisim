@@ -58,6 +58,7 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
+using unisim::kernel::service::Formula;
 using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::InterruptPayload;
@@ -102,6 +103,7 @@ public:
 	void Run();
 	
 protected:
+	sc_time GetBurstLatency(uint32_t size, const sc_time& latency) const;
 	virtual bool PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
 	virtual bool PLBDataRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
 	virtual bool PLBDataWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
@@ -117,24 +119,36 @@ private:
 	} Interface;
 	
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
-	sc_time cpu_cycle_time;
-	sc_time bus_cycle_time;
-	sc_time ext_timer_cycle_time;
-	sc_time cpu_time;
-	sc_time timer_time;
-	sc_time nice_time;
-	sc_time max_idle_time;
-	sc_time global_time;
-	sc_time idle_time;
+	sc_time cpu_cycle_time;         //<! CPU core cycle time
+	sc_time bus_cycle_time;         //<! Bus (PLB) cycle time
+	sc_time ext_timer_cycle_time;   //<! external timer cycle time
+	sc_time cpu_time;               //<! local time (relative to sc_time_stamp)
+	sc_time timer_time;             //<! absolute time from the internal timers point of view
+	sc_time nice_time;              //<! period of synchronization with other threads
+	sc_time max_idle_time;          //<! Maximum idle time (temporary variable)
+	sc_time run_time;               //<! absolute timer (local time + sc_time_stamp)
+	sc_time idle_time;              //<! total idle time
+	sc_time timers_update_deadline; //<! deadline for updating internal timers in order to keep internal timer accuracy
+	bool enable_host_idle;
 	sc_event ev_max_idle;
 	sc_event ev_irq;
 	double ipc;
+	double one;
+	bool enable_dmi;
+	bool debug_dmi;
 
 	Parameter<sc_time> param_bus_cycle_time;
 	Parameter<sc_time> param_ext_timer_cycle_time;
 	Parameter<sc_time> param_nice_time;
 	Parameter<double> param_ipc;
+	Parameter<bool> param_enable_host_idle;
+	Parameter<bool> param_enable_dmi;
+	Parameter<bool> param_debug_dmi;
+	Statistic<double> stat_one;
+	Statistic<sc_time> stat_run_time;
 	Statistic<sc_time> stat_idle_time;
+	Formula<double> formula_idle_rate;
+	Formula<double> formula_load_rate;
 	
 	class Event
 	{
@@ -322,6 +336,11 @@ private:
 			kernel_event.notify(t);
 		}
 		
+		bool Empty() const
+		{
+			return schedule.empty();
+		}
+
 		Event *GetNextEvent(const sc_time& time_stamp)
 		{
 			if(schedule.empty()) return 0;
@@ -408,11 +427,18 @@ private:
 	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcuwr_plb_redirector;
 	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcurd_plb_redirector;
 	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcr_redirector;
-	inline void UpdateTime();
-	inline void AlignToBusClock();
+	unisim::kernel::tlm2::DMIRegionCache icurd_dmi_region_cache;
+	unisim::kernel::tlm2::DMIRegionCache dcuwr_dmi_region_cache;
+	unisim::kernel::tlm2::DMIRegionCache dcurd_dmi_region_cache;
+
+	inline void AlignToBusClock() ALWAYS_INLINE;
 	void AlignToBusClock(sc_time& t);
-	void ProcessExternalEvents();
+	inline void ProcessExternalEvents() ALWAYS_INLINE;
 	void ProcessIRQEvent(Event *event);
+protected:
+	virtual inline void RunInternalTimers() ALWAYS_INLINE;
+	inline void LazyRunInternalTimers() ALWAYS_INLINE;
+	virtual void end_of_simulation();
 };
 
 } // end of namespace ppc440

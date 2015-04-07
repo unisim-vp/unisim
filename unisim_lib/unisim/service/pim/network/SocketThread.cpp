@@ -27,7 +27,7 @@
 #endif
 
 #include "SocketThread.hpp"
-#include "../convert.hh"
+#include "unisim/util/converter/convert.hh"
 #include <unisim/kernel/debug/debug.hh>
 
 namespace unisim {
@@ -51,16 +51,14 @@ uint32_t SocketThread::name_resolve(const char *host_name)
 	return (addr.s_addr);
 }
 
-SocketThread::SocketThread(string host, uint16_t port, bool _blocking) :
-		GenericThread(),
-		hostname(0),
-		hostport(0),
-		sockfd(-1),
-		blocking(_blocking),
-		input_buffer_size(0),
-		input_buffer_index(0),
-		input_buffer(NULL)
-
+SocketThread::SocketThread(string host, uint16_t port) :
+		GenericThread()
+		, hostname(0)
+		, hostport(0)
+		, sockfd(-1)
+		, input_buffer_size(0)
+		, input_buffer_index(0)
+		, input_buffer(NULL)
 
 {
 	hostname = name_resolve(host.c_str());
@@ -75,7 +73,6 @@ SocketThread::SocketThread() :
 				hostname(0),
 				hostport(0),
 				sockfd(-1),
-				blocking(true),
 				input_buffer_size(0),
 				input_buffer_index(0),
 				input_buffer(NULL)
@@ -88,11 +85,19 @@ SocketThread::SocketThread() :
 
 void SocketThread::init() {
 
-	pthread_mutex_init (&sockfd_mutex, NULL);
+//	pthread_mutex_init (&sockfd_mutex, NULL);
+
+	pthread_mutexattr_init(&Attr);
+	pthread_mutexattr_settype(&Attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init (&sockfd_mutex, &Attr);
+
 	pthread_mutex_init (&sockfd_condition_mutex, NULL);
 	pthread_cond_init (&sockfd_condition_cond, NULL);
 
 	input_buffer = (char*) malloc(MAXDATASIZE+1);
+
+	output_buffer_strm.str(std::string());
+
 }
 
 SocketThread::~SocketThread() {
@@ -113,23 +118,36 @@ SocketThread::~SocketThread() {
 	pthread_mutex_destroy(&sockfd_condition_mutex);
     pthread_mutex_destroy( &sockfd_mutex );
 
+    free(input_buffer);
+    input_buffer = NULL;
+
+    output_buffer_strm.str(std::string());
 }
 
-void SocketThread::Start(int sockfd, bool _blocking) {
+void SocketThread::startSocketThread(int sockfd) {
 
-	this->blocking = _blocking;
-	SetSockfd(sockfd);
+	setSockfd(sockfd);
 
 	this->start();
 }
 
-void SocketThread::SetSockfd(int sockfd) {
+void SocketThread::closeSockfd() {
+
+#ifdef WIN32
+		closesocket(sockfd);
+#else
+		close(sockfd);
+#endif
+		sockfd = -1;
+
+}
+
+void SocketThread::setSockfd(int sockfd) {
 
     pthread_mutex_lock( &sockfd_mutex );
 
 	this->sockfd = sockfd;
 
-//    pthread_cond_signal( &sockfd_condition_cond );
     pthread_cond_broadcast( &sockfd_condition_cond );
 
     pthread_mutex_unlock( &sockfd_mutex );
@@ -155,14 +173,13 @@ bool SocketThread::PutChar(char c) {
 
 	output_buffer_strm << c;
 
-	return true;
+	return (true);
 }
 
-bool SocketThread::PutPacket(const string& data, bool blocking) {
+bool SocketThread::PutPacketWithAck(const string& data, bool Acknowledgment) {
+	char c;
 
 	int data_size = data.size();
-
-	output_buffer_strm << '$' << data << '#';
 
 	uint8_t checksum = 0;
 
@@ -171,14 +188,31 @@ bool SocketThread::PutPacket(const string& data, bool blocking) {
 		checksum += (uint8_t) data[pos];
 	}
 
-	output_buffer_strm << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf);
+	do
+	{
+		output_buffer_strm.str(std::string());
 
-	return true;
+		output_buffer_strm << '$' << data << '#';
+
+		output_buffer_strm << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf);
+
+		if (!FlushOutput()) {
+			cerr << "SocketThread unable to send !" << endl;
+
+			return (false);
+		}
+
+	} while(!isTerminated() && Acknowledgment && (GetChar(c, true) && (c != '+')));
+
+	return (true);
 
 }
 
-bool SocketThread::OutputText(const char *s, int count)
-{
+bool SocketThread::PutPacket(const string& data) {
+	return PutPacketWithAck(data, true);
+}
+
+bool SocketThread::OutputTextWithAck(const char *s, int count, bool Acknowledgment) {
 	int i;
 	uint8_t packet[1 + 2 * count + 1];
 	uint8_t *p = packet;
@@ -187,11 +221,16 @@ bool SocketThread::OutputText(const char *s, int count)
 	p++;
 	for(i = 0; i < count; i++, p += 2)
 	{
-		p[0] = Nibble2HexChar((uint8_t) s[i] >> 4);
-		p[1] = Nibble2HexChar((uint8_t) s[i] & 0xf);
+		p[0] = nibble2HexChar((uint8_t) s[i] >> 4);
+		p[1] = nibble2HexChar((uint8_t) s[i] & 0xf);
 	}
 	*p = 0;
-	return PutPacket((const char *) packet, blocking);
+	return (PutPacketWithAck((const char *) packet, Acknowledgment));
+}
+
+bool SocketThread::OutputText(const char *s, int count)
+{
+	return OutputTextWithAck(s, count, true);
 }
 
 bool SocketThread::FlushOutput() {
@@ -199,16 +238,15 @@ bool SocketThread::FlushOutput() {
 	fd_set read_flags, write_flags;
 	struct timeval waitd;
 
-	int err;
+	int err = 0;
 
 	waitConnection();
 
 	string output_buffer = output_buffer_strm.str();
-	output_buffer_strm.str(std::string());
 
 	int output_buffer_size = output_buffer.size();
 	int index = 0;
-	while (output_buffer_size > 0) {
+	while ((output_buffer_size > 0) && !isTerminated()) {
 
 		waitd.tv_sec = 0;
 		waitd.tv_usec = 1000;
@@ -246,9 +284,11 @@ bool SocketThread::FlushOutput() {
 #else
 			n = write(sockfd, &(output_buffer.at(index)), output_buffer_size);
 #endif
+
 			if (n <= 0) {
 				int array[] = {sockfd};
 				error(array, "ERROR writing to socket");
+				break;
 			} else {
 				index += n;
 				output_buffer_size -= n;
@@ -256,30 +296,27 @@ bool SocketThread::FlushOutput() {
 
 		} else {
 
-			if (blocking) {
 #ifdef WIN32
-				Sleep(1);
+			Sleep(1);
 #else
-				usleep(1000);
+			usleep(1000);
 #endif
-				continue;
-			} else {
-				break;
-			}
 
+			continue;
 		}
 
 	}
 
+	output_buffer_strm.str(std::string());
+
 	if (output_buffer_size > 0) {
-		return false;
+		return (false);
 	}
 
-	return true;
+	return (true);
 }
 
-bool SocketThread::GetPacket(string& str, bool blocking) {
-
+bool SocketThread::GetPacketWithAck(string& str, bool blocking, bool Acknowledgment) {
 	str.clear();
 
 	uint8_t checkSum = 0;
@@ -287,57 +324,113 @@ bool SocketThread::GetPacket(string& str, bool blocking) {
 	uint8_t pchk;
 	char c;
 
-	while (true) {
-		GetChar(c, blocking);
+	while ((true) && !isTerminated()) {
+
+		if (!GetChar(c, blocking)) { return false; }
 		if (c == 0) {
 			if (blocking) {
-				cerr << "receive EOF " << endl;
+				cerr << "receive EOF - 1" << endl;
 			}
-			break;
+			return false;
 		}
     	switch(c)
     	{
     		case '+':
+    			cerr << "SocketThread:: Warning receive + " << endl;
     			break;
     		case '-':
    				// error response => e.g. retransmission of the last packet
+    			cerr << "SocketThread:: Warning receive - " << endl;
     			break;
     		case 3: // '\003'
-    			break;
+    			//break;
+    			str = "DBG_SUSPEND";
+    			return (true);
     		case '$':
 
-    			GetChar(c, blocking);
-    			while (true) {
+    			if (!GetChar(c, blocking)) { return false; }
+    			if (c == 0) {
+    				if (blocking) {
+    					cerr << "receive EOF - 2" << endl;
+    				}
+    				return false;
+    			}
+//    			while (true) {
+    			while (!isTerminated()) {
     				str = str + c;
         			packet_size++;
     				checkSum = checkSum + c;
-    				GetChar(c, blocking);
+
+    				if (!GetChar(c, blocking)) { return false; }
+    				if (c == 0) {
+    					if (blocking) {
+    						cerr << "receive EOF - 3" << endl;
+    					}
+    					return false;
+    				}
 
     				if (c == '#') break;
     			}
 
-    			GetChar(c, blocking);
-    			pchk = HexChar2Nibble(c) << 4;
-    			GetChar(c, blocking);
-    			pchk = pchk + HexChar2Nibble(c);
-
-    			if (checkSum != pchk) {
-    				cerr << "receive_packet: wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
+    			if (!GetChar(c, blocking)) { return false; }
+    			if (c == 0) {
+    				if (blocking) {
+    					cerr << "receive EOF - 4" << endl;
+    				}
     				return false;
-    			} else {
+    			}
 
-    				return true;
+    			pchk = hexChar2Nibble(c) << 4;
+
+    			if (!GetChar(c, blocking)) { return false; }
+    			if (c == 0) {
+    				if (blocking) {
+    					cerr << "receive EOF - 5" << endl;
+    				}
+    				return false;
+    			}
+
+    			pchk = pchk + hexChar2Nibble(c);
+
+				if (checkSum != pchk) {
+					cerr << "SocketThread:: receive_packet: wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
+
+					if (Acknowledgment) {
+	    				if(!PutChar('-')) return (false);
+	    				if(!FlushOutput()) return (false);
+					}
+    			}
+    			else
+    			{
+					if (Acknowledgment) {
+						if(!PutChar('+')) return (false);
+	    				if(!FlushOutput()) return (false);
+					}
+
+    				if(str.length() >= 3 && str[2] == ':')
+    				{
+    					if(!PutChar(str[0])) return (false);
+    					if(!PutChar(str[1])) return (false);
+    					if(!FlushOutput()) return (false);
+    					str.erase(0, 3);
+    				}
+    				return (true);
     			}
 
     			break;
     		default:
-    			cerr << "receive_packet: protocol error (0x" << Nibble2HexChar(c) << ":" << c << ")";
+    			cerr << "SocketThread:: receive_packet: protocol error (0x" << nibble2HexChar(c) << ":" << c << ")";
+    			break;
     	}
 
 	}
 
-	return false;
+	return (false);
 
+}
+
+bool SocketThread::GetPacket(string& str, bool blocking) {
+	return GetPacketWithAck(str, blocking, true);
 }
 
 bool SocketThread::GetChar(char& c, bool blocking) {
@@ -345,13 +438,13 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 	fd_set read_flags, write_flags;
 	struct timeval waitd;
 
-	int err;
+	int err = 0;
 
-	int n;
+	int n = 0;
 
 	waitConnection();
 
-	while (input_buffer_size == 0) {
+	while ((input_buffer_size == 0) && !isTerminated()) {
 		waitd.tv_sec = 0;
 		waitd.tv_usec = 1000;
 
@@ -364,6 +457,7 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 
 		// Now call select
 		err = select(sockfd+1, &read_flags, &write_flags, (fd_set*)0,&waitd);
+
 		if (err < 0) {
 			// If select breaks then pause for 1 milliseconds and then continue
 #ifdef WIN32
@@ -380,15 +474,17 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 
 		// Check if data is available to read
 		if (FD_ISSET(sockfd, &read_flags)) {
+
 			FD_CLR(sockfd, &read_flags);
 
-			memset(input_buffer, 0, sizeof(input_buffer));
+			memset(input_buffer, 0, MAXDATASIZE);
 
 #ifdef WIN32
 			n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
 #else
 			n = read(sockfd, input_buffer, MAXDATASIZE);
 #endif
+
 			if (n <= 0)	{
 		    	int array[] = {sockfd};
 		    	error(array, "ERROR reading from socket");
@@ -414,16 +510,20 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 
 
 	if (input_buffer_size > 0) {
+
 		c = input_buffer[input_buffer_index];
 		input_buffer_size--;
 		input_buffer_index++;
-		return true;
+
+		return (true);
 	} else {
 		c = 0;
-		return false;
+
+		return (false);
 	}
 
 }
+
 
 } // network 
 } // end pim 

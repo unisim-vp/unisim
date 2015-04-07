@@ -141,8 +141,8 @@ bool SocketWriter::send(const char* data, bool blocking) {
 	}
 	dd[pos+1] = '#';
 
-	dd[pos+2] = Nibble2HexChar(checksum >> 4);
-	dd[pos+3] = Nibble2HexChar(checksum & 0xf);
+	dd[pos+2] = nibble2HexChar(checksum >> 4);
+	dd[pos+3] = nibble2HexChar(checksum & 0xf);
 
 	if (blocking) {
 		int dd_size = strlen(dd);

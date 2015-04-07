@@ -98,9 +98,6 @@ public:
 	// Output sensitivity
 	static const bool C_IRQ_IS_LEVEL = true;  // Indicates active or edge active IRQ: 0=Active Edge, 1=Active Level
 	static const bool C_IRQ_ACTIVE = true;    // Indicates the sense of the IRQ output: 0=Falling/Low 1=Rising/High
-	
-	// Mask
-	static const uint32_t MASK = (1ULL << C_NUM_INTR_INPUTS) - 1; // ISR, IPR, IER, IAR, SIE, CIE bit masks
 };
 
 } // end of namespace xps_intc

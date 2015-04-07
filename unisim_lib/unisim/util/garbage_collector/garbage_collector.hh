@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_GARBAGE_COLLECTOR_GARBAGE_COLLECTOR_HH__
 
 #include <cstddef>
+#include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
 namespace util {
@@ -96,65 +97,25 @@ template <class T>
 class Pointer : public PointerBase
 {
 public:
-	inline Pointer()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline Pointer() ALWAYS_INLINE;
 
-	inline Pointer(const Pointer<T>& ptr)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline Pointer(const Pointer<T>& ptr) ALWAYS_INLINE;
 
-	inline Pointer(T *_obj)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline Pointer(T *_obj) ALWAYS_INLINE;
 
-	inline ~Pointer()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline ~Pointer() ALWAYS_INLINE;
 
-	inline bool operator == (const Pointer<T>& p) const
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline bool operator == (const Pointer<T>& p) const ALWAYS_INLINE;
 
-	inline operator T * () const
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline operator T * () const ALWAYS_INLINE;
 
-	inline T *operator -> () const
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline T *operator -> () const ALWAYS_INLINE;
 
-	inline Pointer<T>& operator = (T *_obj)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline Pointer<T>& operator = (T *_obj) ALWAYS_INLINE;
 
-	inline Pointer<T>& operator = (const Pointer<T>& ptr)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline Pointer<T>& operator = (const Pointer<T>& ptr) ALWAYS_INLINE;
 	
-	inline T& operator [](unsigned int index)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline T& operator [](unsigned int index) ALWAYS_INLINE;
 
 private:
 	T *obj;

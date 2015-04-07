@@ -108,7 +108,7 @@ const uint32_t STYP_BSS = 0x0080;    // Section that contains uninitialized data
 const uint32_t STYP_ALIGN = 0x0700;  // Section that is aligned on a page boundary
 
 // TI's COFF v0 file header
-typedef struct PACKED
+typedef struct __UNISIM_PACKED__
 {
 	uint16_t f_magic;     // magic number
 	uint16_t f_nscns;     // number of sections
@@ -120,7 +120,7 @@ typedef struct PACKED
 } filehdr_v0;
 
 // TI's COFF V1/V2 file header
-typedef struct PACKED
+typedef struct __UNISIM_PACKED__
 {
 	uint16_t f_magic;     // magic number
 	uint16_t f_nscns;     // number of sections
@@ -132,14 +132,14 @@ typedef struct PACKED
 	uint16_t f_target_id; // COFF-TI specific: TI target magic number that can execute the file
 } filehdr_v12;
 
-typedef union PACKED
+typedef union __UNISIM_PACKED__
 {
 	filehdr_v0 v0;       // V0
 	filehdr_v12 v12;     // V1 or V2
 } filehdr;
 
 // TI's COFF Optional file header
-typedef struct PACKED
+typedef struct __UNISIM_PACKED__
 {
 	uint16_t o_magic;        // magic number
 	uint16_t o_vstamp;       // version stamp
@@ -152,7 +152,7 @@ typedef struct PACKED
 } aouthdr;
 
 // Section header for TI's COFF0 and COFF1 files
-typedef struct PACKED
+typedef struct __UNISIM_PACKED__
 {
 	char s_name[8];        // section name
 	uint32_t s_paddr;      // physical address
@@ -169,7 +169,7 @@ typedef struct PACKED
 } scnhdr_v01;
 
 // Section header for TI's COFF2 files
-typedef struct PACKED
+typedef struct __UNISIM_PACKED__
 {
 	char s_name[8];        // section name
 	uint32_t s_paddr;      // physical address

@@ -179,7 +179,7 @@ bool XPS_UARTLite<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, uint8_t& valu
 {
 	bool status = true;
 	typename CONFIG::MEMORY_ADDR offset = addr - c_baseaddr;
-	uint8_t reg_value;
+	uint8_t reg_value = 0;
 	switch(offset)
 	{
 		case CONFIG::RX_FIFO + 3:
@@ -195,7 +195,6 @@ bool XPS_UARTLite<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, uint8_t& valu
 		case CONFIG::STAT_REG + 3:
 			reg_value = debug ? GetSTAT_REG() : ReadSTAT_REG();
 			break;
-		default: reg_value = 0; break;
 	}
 	
 	if(IsVerbose())
@@ -344,6 +343,10 @@ bool XPS_UARTLite<CONFIG>::ReadRX_FIFO(uint8_t& value)
 	
 	value = rx_fifo.Front() & CONFIG::DATA_MASK;
 	rx_fifo.Pop();
+	if(rx_fifo.Empty() && IsVerbose())
+	{
+		logger << DebugInfo << "Rx FIFO becomes empty" << EndDebugInfo;
+	}
 	return true;
 }
 
@@ -383,8 +386,6 @@ uint8_t XPS_UARTLite<CONFIG>::ReadSTAT_REG()
 	// reading STAT_REG resets Parity error, Frame error, and overrun error bits
 	stat_reg = stat_reg & ~(CONFIG::STAT_REG_PARITY_ERROR_MASK | CONFIG::STAT_REG_FRAME_ERROR_MASK | CONFIG::STAT_REG_OVERRUN_ERROR_MASK);
 	
-	tx_fifo_becomes_empty = false;
-	
 	return v;
 }
 
@@ -401,9 +402,21 @@ uint8_t XPS_UARTLite<CONFIG>::GetSTAT_REG_INTR_ENABLED() const
 }
 
 template <class CONFIG>
-bool XPS_UARTLite<CONFIG>::TXT_FIFO_BecomesEmpty() const
+bool XPS_UARTLite<CONFIG>::TX_FIFO_BecomesEmpty() const
 {
 	return tx_fifo_becomes_empty;
+}
+
+template <class CONFIG>
+void XPS_UARTLite<CONFIG>::ResetTX_FIFO_BecomesEmpty()
+{
+	tx_fifo_becomes_empty = false;
+}
+
+template <class CONFIG>
+bool XPS_UARTLite<CONFIG>::HasInterrupt() const
+{
+	return GetSTAT_REG_INTR_ENABLED() && (GetSTAT_REG_RX_FIFO_VALID_DATA() || TX_FIFO_BecomesEmpty());
 }
 
 template <class CONFIG>
@@ -425,7 +438,6 @@ void XPS_UARTLite<CONFIG>::WriteTX_FIFO(uint8_t value)
 	
 	value = value & CONFIG::DATA_MASK;
 	tx_fifo.Push(value);
-	tx_fifo_becomes_empty = false;
 }
 
 template <class CONFIG>
@@ -460,7 +472,7 @@ void XPS_UARTLite<CONFIG>::WriteCTRL_REG(uint8_t value)
 }
 
 template <class CONFIG>
-void XPS_UARTLite<CONFIG>::TelnetProcess()
+void XPS_UARTLite<CONFIG>::TelnetProcessInput()
 {
 	if(char_io_import)
 	{
@@ -488,6 +500,16 @@ void XPS_UARTLite<CONFIG>::TelnetProcess()
 			}
 			while(!rx_fifo.Full());
 		}
+	}
+}
+
+template <class CONFIG>
+void XPS_UARTLite<CONFIG>::TelnetProcessOutput(bool flush_telnet_output)
+{
+	if(char_io_import)
+	{
+		char c;
+		uint8_t v;
 		
 		if(!tx_fifo.Empty())
 		{
@@ -511,7 +533,13 @@ void XPS_UARTLite<CONFIG>::TelnetProcess()
 			
 			tx_fifo_becomes_empty = true;
 		}
+		
+		if(flush_telnet_output)
+		{
+			char_io_import->FlushChars();
+		}
 	}
+	
 }
 
 } // end of namespace xps_uart_lite

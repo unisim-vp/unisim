@@ -53,7 +53,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
 DCRController<CONFIG>::DCRController(const sc_module_name& name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A Device Control Register bus controller")
 	, unisim::component::cxx::interconnect::xilinx::dcr_controller::DCRController<CONFIG>(name, parent)
 	, sc_module(name)
 	, cycle_time(SC_ZERO_TIME)
@@ -189,6 +189,9 @@ unsigned int DCRController<CONFIG>::transport_dbg(unsigned int num_slave, tlm::t
 template <class CONFIG>
 bool DCRController<CONFIG>::get_direct_mem_ptr(unsigned int num_slave, tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 
@@ -376,8 +379,8 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 	
 	switch(dcrn)
 	{
-		case CONFIG::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ADDRESS_REGISTER:
-		case CONFIG::DCR_CONTROLLER_BASEADDR + CONFIG::DCR_CONTROLLER_STATUS_AND_CONTROL_REGISTER:
+		case inherited::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ADDRESS_REGISTER:
+		case inherited::DCR_CONTROLLER_BASEADDR + CONFIG::DCR_CONTROLLER_STATUS_AND_CONTROL_REGISTER:
 			{
 				if(src_if < 0)
 				{
@@ -432,7 +435,7 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 			}
 			return;
 
-		case CONFIG::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ACCESS_REGISTER:
+		case inherited::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ACCESS_REGISTER:
 			{
 				uint32_t dcrn = inherited::GetIndirectModeAddressRegister();
 				tlm::tlm_generic_payload *indirect_payload = payload_fabric.allocate();
@@ -441,8 +444,8 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 				indirect_payload->set_data_ptr(payload->get_data_ptr());
 				indirect_payload->set_address(4 * dcrn);
 				
-				if((dcrn != (CONFIG::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ADDRESS_REGISTER)) &&
-				   (dcrn != (CONFIG::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ACCESS_REGISTER)))
+				if((dcrn != (inherited::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ADDRESS_REGISTER)) &&
+				   (dcrn != (inherited::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ACCESS_REGISTER)))
 				{
 					sc_time t(cycle_time);
 					sc_time notify_time_stamp(sc_time_stamp());

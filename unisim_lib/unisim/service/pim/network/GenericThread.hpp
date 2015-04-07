@@ -30,19 +30,18 @@ void* executer(void* param);
 class TObject
 {
 public:
+
+	virtual ~TObject() { }
+
 	/**
 	 *  This method has to be overloaded.
 	 *  It implement the behavior of the thread
 	 */
-	virtual void Run(){}
+	virtual void run(){}
 	virtual void error(const char* msg);
 	virtual void error(const int* fd, const char* msg);
 
 };
-
-#ifdef _WIN32
-  typedef ptw32_handle_t pthread_t;
-#endif
 
 class GenericThread : public TObject
 {
@@ -55,7 +54,7 @@ public:
 
 	GenericThread() : ret(0), terminated(false), started(false) {}
 
-	~GenericThread() {
+	virtual ~GenericThread() {
 		if (!isTerminated()) stop();
 		if (started && !isTerminated()) {
 
@@ -72,10 +71,10 @@ public:
 	virtual void start() { ret=pthread_create(&thid,NULL,executer,(void*)this); terminated = false; started = true; }
 	virtual void join() { pthread_join(thid,NULL); }
 	virtual void stop() { terminated = true; started = false; }
-	virtual bool isTerminated() { return terminated; }
-	virtual bool setTerminated(bool b) { terminated = b; }
-	virtual bool isStarted() { return started; }
-	virtual bool setStarted(bool b) { started = b; }
+	virtual bool isTerminated() { return (terminated); }
+	virtual void setTerminated(bool b) { terminated = b; }
+	virtual bool isStarted() { return (started); }
+	virtual void setStarted(bool b) { started = b; }
 
 protected:
 	typedef GenericThread super;

@@ -30,7 +30,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  *  SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
@@ -42,130 +42,38 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-MemoryOp::
-MemoryOp() 
-{}
+  std::vector<MemoryOp*> MemoryOp::freepool;
 
-MemoryOp::
-~MemoryOp() 
-{}
+  MemoryOp::MemoryOp() 
+  {}
 
-void 
-MemoryOp::
-SetReadToPCUpdateT(uint32_t address) 
-{
-	type = READ_TO_PC_UPDATE_T;
-	this->address = address;
-	this->size = 4;
-	target_reg = 15; // the pc register
-	this->read_signed = false;
-	this->aligned = true;
-}
+  MemoryOp::~MemoryOp() 
+  {}
 
-void 
-MemoryOp::
-SetReadToPC(uint32_t address) 
-{
-	type = READ_TO_PC;
-	this->address = address;
-	this->size = 4;
-	target_reg = 15; // the pc register
-	this->read_signed = false;
-	this->aligned = true;
-}
+  void 
+  MemoryOp::SetRead(uint32_t address, uint32_t size, bool read_signed) 
+  {
+    type = READ;
+    this->address = address;
+    this->size = size;
+    this->read_signed = read_signed;
+  }
 
-void 
-MemoryOp::
-SetRead(uint32_t address, uint32_t size, uint32_t dest, 
-		bool aligned, bool read_signed) 
-{
-	type = READ;
-	this->address = address;
-	this->size = size;
-	target_reg = dest;
-	this->read_signed = read_signed;
-	this->aligned = aligned;
-}
-
-void 
-MemoryOp::
-SetUserRead(uint32_t address, uint32_t size, uint32_t dest, 
-		bool aligned, bool read_signed) 
-{
-	type = USER_READ;
-	this->address = address;
-	this->size = size;
-	target_reg = dest;
-	this->read_signed = read_signed;
-	this->aligned = aligned;
-}
-
-void 
-MemoryOp::
-SetWrite(uint32_t address, uint32_t size, uint32_t value) 
-{
-	type = WRITE;
-	this->address = address;
-	this->size = size;
-	write_value = value;
-}
+  void
+  MemoryOp::SetWrite(uint32_t address, uint32_t size, uint32_t value) 
+  {
+    type = WRITE;
+    this->address = address;
+    this->size = size;
+    write_value = value;
+  }
 	
-void 
-MemoryOp::
-SetPrefetch(uint32_t address)
-{
-	type = PREFETCH;
-	this->address = address;
-}
-	
-MemoryOp::type_t
-MemoryOp::
-GetType() const 
-{
-	return type;
-}
-
-uint32_t 
-MemoryOp::
-GetAddress() const 
-{
-	return address;
-}
-
-uint32_t 
-MemoryOp::
-GetSize() const 
-{
-	return size;
-}
-
-uint32_t 
-MemoryOp::
-GetTargetReg() const 
-{
-	return target_reg;
-}
-
-uint32_t 
-MemoryOp::
-GetWriteValue() const 
-{
-	return write_value;
-}
-
-bool 
-MemoryOp::
-NeedAlignment() const 
-{
-	return !aligned;
-}
-
-bool 
-MemoryOp::
-IsSigned() const 
-{
-	return read_signed;
-}
+  void 
+  MemoryOp::SetPrefetch(uint32_t address)
+  {
+    type = PREFETCH;
+    this->address = address;
+  }
 	
 } // end of namespace arm
 } // end of namespace processor

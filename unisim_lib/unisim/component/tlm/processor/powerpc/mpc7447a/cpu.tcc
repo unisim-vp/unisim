@@ -36,7 +36,6 @@
 #define __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_MPC7447A_CPU_TCC__
 
 #include <unistd.h>
-#include <unisim/component/cxx/processor/powerpc/exception.tcc>
 
 namespace unisim {
 namespace component {
@@ -49,32 +48,43 @@ using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
 	
 template <class CONFIG>
-CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent) :
-	Object(name, parent, "PowerPC MPC7447A CPU"),
-	sc_module(name),
-	unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG>(name, parent),
-	bus_port("bus-port"),
-	snoop_port("snoop-port"),
-	cpu_cycle_sctime(),
-	bus_cycle_sctime(),
-	cpu_sctime(),
-	bus_sctime(),
-	last_sync_sctime(),
-	nice_sctime(100.0, SC_MS),
-	next_nice_sctime(),
-	//nice_time(100000000000ULL), // leave at least 10 times per simulated seconds the host processor to the SystemC simulation kernel 
-	ipc(1.0),
-	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_sctime, "bus cycle time"),
-	param_nice_time("nice-time", this, nice_sctime, "maximum time between synchonizations"),
-	param_ipc("ipc", this, ipc, "targeted average instructions per second"),
-	external_interrupt_listener("external_interrupt_listener", CONFIG::IRQ_EXTERNAL_INTERRUPT, this, &ev_interrupt),
-	hard_reset_listener("hard_reset_listener", CONFIG::IRQ_HARD_RESET, this, &ev_interrupt),
-	soft_reset_listener("soft_reset_listener", CONFIG::IRQ_SOFT_RESET, this, &ev_interrupt),
-	mcp_listener("mcp_listener", CONFIG::IRQ_MCP, this, &ev_interrupt),
-	tea_listener("tea_listener", CONFIG::IRQ_TEA, this, &ev_interrupt),
-	smi_listener("smi_listener", CONFIG::IRQ_SMI, this, &ev_interrupt)
+CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
+	: Object(name, parent, "PowerPC MPC7447A CPU")
+	, sc_module(name)
+	, unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG>(name, parent)
+	, bus_port("bus-port")
+	, snoop_port("snoop-port")
+	, cpu_cycle_time()
+	, bus_cycle_time()
+	, timer_cycle_time()
+	, cpu_time()
+	, run_time()
+	, timer_time()
+	, nice_time(1.0, SC_MS)
+	, idle_time()
+	, timers_update_deadline()
+	, enable_host_idle(false)
+	, ipc(2.0)
+	, one(1.0)
+	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "bus cycle time")
+	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
+	, param_ipc("ipc", this, ipc, "targeted average instructions per second")
+	, param_enable_host_idle("enable-host-idle", this, enable_host_idle, "Enable/Disable host idle periods when target is idle")
+	, stat_run_time("run-time", this, run_time, "run time")
+	, stat_idle_time("idle-time", this, idle_time, "idle time")
+	, stat_one("one", this, one, "one")
+	, formula_idle_rate("idle-rate", this, Formula<double>::OP_DIV, &stat_idle_time, &stat_run_time, "idle rate")
+	, formula_load_rate("load-rate", this, Formula<double>::OP_SUB, &stat_one, &formula_idle_rate, "load rate")
+	, external_interrupt_listener("external_interrupt_listener", CONFIG::EXC_EXTERNAL, this, &ev_interrupt)
+	, hard_reset_listener("hard_reset_listener", CONFIG::EXC_SYSTEM_RESET_HARD, this, &ev_interrupt)
+	, soft_reset_listener("soft_reset_listener", CONFIG::EXC_SYSTEM_RESET_SOFT, this, &ev_interrupt)
+	, mcp_listener("mcp_listener", CONFIG::EXC_MACHINE_CHECK_MCP, this, &ev_interrupt)
+	, tea_listener("tea_listener", CONFIG::EXC_MACHINE_CHECK_TEA, this, &ev_interrupt)
+	, smi_listener("smi_listener", CONFIG::EXC_SYSTEM_MANAGEMENT, this, &ev_interrupt)
 {
-	//param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_one.SetMutable(false);
+	stat_one.SetSerializable(false);
+	stat_one.SetVisible(false);
 	param_ipc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	SC_HAS_PROCESS(CPU);
@@ -88,225 +98,140 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent) :
 	smi_port(smi_listener);
 
 	SC_THREAD(Run);
-	
-	SC_THREAD(BusMaster);
 }
 
 template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
 }
-	
-template <class CONFIG>
-void CPU<CONFIG>::Stop(int ret)
-{
-	// Call BusSynchronize to account for the remaining time spent in the cpu core
-	if(unlikely(inherited::IsVerboseStep()))
-	{
-		inherited::logger << DebugInfo << "Program exited with status " << ret << EndDebugInfo;
-	}
-	BusSynchronize();
-	Object::Stop(ret);
-}
 
 template <class CONFIG>
 void CPU<CONFIG>::Synchronize()
 {
-	sc_dt::uint64 cpu_time_tu = cpu_sctime.value();
-	sc_dt::uint64 last_sync_time_tu = last_sync_sctime.value();
-	wait(cpu_time_tu - last_sync_time_tu, SC_PS);
-//	cpu_sctime = sc_time_stamp();
-	last_sync_sctime = cpu_sctime;
-	next_nice_sctime = last_sync_sctime;
-	next_nice_sctime += nice_sctime;
+	wait(cpu_time);
+	cpu_time = SC_ZERO_TIME;
+	run_time = sc_time_stamp();
+	if(!inherited::linux_os_import) RunInternalTimers();
 }
-
 	
 template <class CONFIG>
 bool CPU<CONFIG>::EndSetup()
 {
 	if(!inherited::EndSetup()) return false;
-	cpu_cycle_sctime = sc_time((double) inherited::cpu_cycle_time, SC_PS);
-	//bus_cycle_sctime = sc_time((double) inherited::bus_cycle_time, SC_PS);
-	//nice_sctime = sc_time((double) nice_time, SC_PS); // 10000 * cpu_cycle_sctime;//
+	cpu_cycle_time = sc_time((double) inherited::cpu_cycle_time, SC_PS);
+	timer_cycle_time = 4 * bus_cycle_time;
 	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::BusSynchronize()
+void CPU<CONFIG>::end_of_simulation()
 {
-	if(unlikely(cpu_sctime > bus_sctime))
-	{
-		//cout << "Time: " << ((cpu_sctime - bus_sctime + bus_cycle_sctime) / bus_cycle_sctime) << endl;
-		do
-		{
-			bus_sctime += bus_cycle_sctime;
-			inherited::OnBusCycle();
-		} while(unlikely(cpu_sctime > bus_sctime));
-	}
-	
-	Synchronize();
+	run_time = sc_time_stamp();
+	cpu_time = SC_ZERO_TIME;
+	if(!inherited::linux_os_import) RunInternalTimers(); // make run_time match timer_time
 }
 
-/*template <class CONFIG>
-void CPU<CONFIG>::BusSynchronize()
+template <class CONFIG>
+inline void CPU<CONFIG>::LazyRunInternalTimers()
 {
-	sc_time time_spent = cpu_sctime - bus_sctime;
-
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: Bus synchro ----------------------" << endl;
-#endif
-	sc_dt::uint64 current_time_tu = sc_time_stamp().value();
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: current_time_tu = " << current_time_tu << endl;
-#endif		
-	sc_dt::uint64 time_spent_tu = time_spent.value();
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: time_spent_tu = " << time_spent_tu << endl;
-#endif
-	sc_dt::uint64 next_time_tu = current_time_tu + time_spent_tu;
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: next_time_tu = " << next_time_tu << endl;
-#endif
-	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_sctime.value();
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: bus_cycle_time_tu = " << bus_cycle_time_tu << endl;
-#endif
-	sc_dt::uint64 bus_time_phase_tu = next_time_tu % bus_cycle_time_tu;
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: bus_time_phase_tu = " << bus_time_phase_tu << endl;
-#endif
-	if(time_spent_tu || bus_time_phase_tu)
+	if(unlikely(run_time >= timers_update_deadline))
 	{
-		sc_dt::uint64 delay_tu = next_time_tu - current_time_tu + (bus_cycle_time_tu - bus_time_phase_tu);
-#ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << "PPC: delay_tu = " << delay_tu << endl;
-#endif
-		UpdateTime(sc_time(delay_tu, false));
-		Synchronize();
-//		wait(sc_time(delay_tu, false));
-//		cpu_sctime = bus_sctime = sc_time_stamp();
+		RunInternalTimers();
 	}
-}*/
+}
+
+template <class CONFIG>
+inline void CPU<CONFIG>::AlignToBusClock()
+{
+	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
+	sc_dt::uint64 run_time_tu = run_time.value();
+	sc_dt::uint64 modulo = run_time_tu % bus_cycle_time_tu;
+	if(!modulo) return; // already aligned
 	
-// template <class CONFIG>
-// void CPU<CONFIG>::Run()
-// {
-// 	sc_time time_per_instruction = cpu_cycle_sctime * ipc;
-// 	
-// 	while(1)
-// 	{
-// 		if(cpu_sctime >= bus_sctime)
-// 		{
-// 			bus_sctime += bus_cycle_sctime;
-// 			CPU<CONFIG>::OnBusCycle();
-// 			if(cpu_sctime >= next_nice_sctime)
-// 			{
-// 				Synchronize();
-// 			}
-// 		}
-// 		CPU<CONFIG>::StepOneInstruction();
-// 		cpu_sctime += time_per_instruction;
-// 	}
-// }
+	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
+	sc_time time_alignment(time_alignment_tu, false);
+	cpu_time += time_alignment;
+	run_time += time_alignment;
+}
 
 template <class CONFIG>
 void CPU<CONFIG>::Idle()
 {
-	UpdateBusTime();
-	max_idle_time = bus_cycle_sctime;
-	max_idle_time *= inherited::GetDEC() * 4;
-#if 0
-	usleep(max_idle_time.to_seconds() * 1.0e6);
-#endif
+	// This is called within thread Run()
+	
+	// First synchronize with other threads
+	Synchronize();
+	
+	// Compute the time to consume before an internal timer event occurs
+	max_idle_time = timer_cycle_time;
+	max_idle_time *= inherited::GetMaxIdleTime();
+	max_idle_time += timer_time;
+	max_idle_time -= run_time;
+	
+	// Notify an event
 	ev_max_idle.notify(max_idle_time);
+	
+	// wait for either an internal timer event or an external event
+	sc_time old_time_stamp(sc_time_stamp());
 	wait(ev_max_idle | ev_interrupt);
+	sc_time new_time_stamp(sc_time_stamp());
+	
+	// cancel event because we can't know which wake up condition occured
 	ev_max_idle.cancel();
-	cpu_sctime = sc_time_stamp();
-	last_sync_sctime = cpu_sctime;
-	UpdateBusTime();
-	while(likely(!inherited::HasIRQ()))
+	
+	// compute the time spent by the SystemC wait
+	sc_time delta_time(new_time_stamp);
+	delta_time -= old_time_stamp;
+	
+	if(enable_host_idle)
 	{
-		cpu_sctime += cpu_cycle_sctime;
-		UpdateBusTime();
+		usleep(delta_time.to_seconds() * 1.0e6); // leave host CPU when target CPU is idle
 	}
+	
+	idle_time += delta_time;
+	
+	// update overall run time
+	run_time = new_time_stamp;
+	
+	// run internal timers
+	LazyRunInternalTimers();
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::UpdateBusTime()
+inline void CPU<CONFIG>::RunInternalTimers()
 {
-	if(unlikely(cpu_sctime > bus_sctime))
-	{
-		do
-		{
-			bus_sctime += bus_cycle_sctime;
-			inherited::OnBusCycle();
-		}
-		while(unlikely(cpu_sctime > bus_sctime));
-
-		if(unlikely(cpu_sctime > next_nice_sctime))
-		{
-			Synchronize();
-		}
-	}
+	sc_dt::uint64 delta_time_tu = run_time.value() - timer_time.value();
+	sc_dt::uint64 timer_cycle_time_tu = timer_cycle_time.value();
+	uint64_t delta = delta_time_tu / timer_cycle_time_tu;
+	inherited::RunTimers(delta);
+	sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
+	sc_time t(t_tu, false);
+	timer_time += t;
+	timers_update_deadline = timer_time + (inherited::GetTimersDeadline() * timer_cycle_time);
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Run()
 {
-#if 1
-	sc_time time_per_instruction = cpu_cycle_sctime * ipc;
+	sc_time time_per_instruction = cpu_cycle_time / ipc;
 	
 	while(1)
 	{
-		inherited::StepOneInstruction();
-		cpu_sctime += time_per_instruction;
-		UpdateBusTime();
-	}
-#else
-	while(1)
-	{
-		inherited::StepOneCycle();
-		UpdateTime(cpu_cycle_sctime);
-	}
-#endif
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::BusMaster()
-{
-	while(1)
-	{
-		unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG> *bus_access = 0;
-		bus_access_queue.read(bus_access); // blocking read
-		
-		inherited::logger << DebugInfo << "BusMaster" << EndDebugInfo;
-		switch(bus_access->type)
-		{
-			case unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG>::LOAD:
-			case unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG>::REFILL:
-			case unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG>::REFILLX:
-				BusRead(bus_access->addr, bus_access->storage, bus_access->size, bus_access->wimg, bus_access->rwitm);
-				inherited::logger << DebugInfo << "BusMaster: finished bus access" << EndDebugInfo;
-				OnFinishedBusAccess(bus_access);
-				break;
-			case unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG>::STORE:
-			case unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG>::EVICTION:
-				BusWrite(bus_access->addr, bus_access->storage, bus_access->size, bus_access->wimg);
-				OnFinishedBusAccess(bus_access);
-				break;
-		}
+			inherited::StepOneInstruction();
+			// update local time (relative to sc_time_stamp)
+			cpu_time += time_per_instruction;
+			// update absolute time (local time + sc_time_stamp)
+			run_time += time_per_instruction;
+			// Run internal timers
+			LazyRunInternalTimers();
+			// Periodically synchronize with other threads
+			if(unlikely(cpu_time >= nice_time))
+			{
+				Synchronize();
+			}
 	}
 }
 
-	
 template <class CONFIG>
 bool CPU<CONFIG>::Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message)
 {
@@ -319,14 +244,13 @@ void CPU<CONFIG>::Reset()
 }
 	
 template <class CONFIG>
-void CPU<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg, bool rwitm)
+bool CPU<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg, bool rwitm)
 {
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " " << name() << "::BusRead()" << endl;
+	cerr << sc_time_stamp() << " " << name() << "::BusRead()" << endl;
 #endif
-	// synchonize with bus cycle time
-	BusSynchronize();
+	AlignToBusClock();
+	Synchronize();
 		
 	Pointer<FSBReq> req = new(req) FSBReq(); // bus transaction request
 	Pointer<FSBRsp> rsp; // bus transaction response
@@ -341,82 +265,70 @@ void CPU<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32
 	
 	// loop until the request succeeds
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusRead: loop until the request succeeds" << endl;
+	cerr << sc_time_stamp() << " PPC::BusRead: loop until the request succeeds" << endl;
 #endif
 	// request succeeds when none of the processors is busy or have a modified copy of the request data in there caches
 	do
 	{
 		// loop until bus transaction request is accepted
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << sc_time_stamp() << " PPC::BusRead: loop until bus transaction request is accepted" << endl;
+		cerr << sc_time_stamp() << " PPC::BusRead: loop until bus transaction request is accepted" << endl;
 #endif
 		while(!bus_port->Send(msg))
 		{
 			// if bus transaction request is not accepted then retry later
-			wait(bus_cycle_sctime);
-			//cpu_sctime = sc_time_stamp();
-			cpu_sctime += bus_cycle_sctime;
-			last_sync_sctime = cpu_sctime;
-			UpdateBusTime();
+			wait(bus_cycle_time);
+			run_time = sc_time_stamp();
+			cpu_time = SC_ZERO_TIME;
+			if(!inherited::linux_os_import) LazyRunInternalTimers();
 #ifdef DEBUG_POWERPC
-			if(DebugEnabled())
-				cerr << sc_time_stamp() << " PPC::BusRead: retry transaction request" << endl;
+			cerr << sc_time_stamp() << " PPC::BusRead: retry transaction request" << endl;
 #endif
 		}
 		
 		// bus transaction request has been accepted at this point
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-		{
-			cerr << sc_time_stamp() << " PPC::BusRead: transaction request accepted" << endl;
-			cerr << sc_time_stamp() << " PPC::BusRead: waiting for response" << endl;
-		}
+		cerr << sc_time_stamp() << " PPC::BusRead: transaction request accepted" << endl;
+		cerr << sc_time_stamp() << " PPC::BusRead: waiting for response" << endl;
 #endif
 		// wait for the bus transaction response
 		wait(rsp_ev);
-		cpu_sctime = sc_time_stamp();
-		last_sync_sctime = cpu_sctime;
-		UpdateBusTime();
+		run_time = sc_time_stamp();
+		cpu_time = SC_ZERO_TIME;
+		if(!inherited::linux_os_import) LazyRunInternalTimers();
 		rsp = msg->GetResponse();
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-		{
-			cerr << sc_time_stamp() << " PPC::BusRead: received response" << endl;
-			if(!rsp->read_status & (FSBRsp::RS_BUSY | FSBRsp::RS_MODIFIED))
-				cerr << sc_time_stamp() << " PPC::BusRead: response read status is neither RS_BUSY nor RS_MODIFIED" << endl;
-		}
+		cerr << sc_time_stamp() << " PPC::BusRead: received response" << endl;
+		if(!rsp->read_status & (FSBRsp::RS_BUSY | FSBRsp::RS_MODIFIED))
+			cerr << sc_time_stamp() << " PPC::BusRead: response read status is neither RS_BUSY nor RS_MODIFIED" << endl;
 #endif
 	} while(rsp->read_status & (FSBRsp::RS_BUSY | FSBRsp::RS_MODIFIED));
 	
 	// bus transaction response has been received at this point
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusRead: copying response data" << endl;
+	cerr << sc_time_stamp() << " PPC::BusRead: copying response data" << endl;
 #endif
 	// copy the data from the response
 	memcpy(buffer, rsp->read_data, size);
 	
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		if(rsp->read_status & FSBRsp::RS_SHARED)
-			cerr << sc_time_stamp() << " PPC::BusRead: read status contains RS_SHARED" << endl;
+	if(rsp->read_status & FSBRsp::RS_SHARED)
+		cerr << sc_time_stamp() << " PPC::BusRead: read status contains RS_SHARED" << endl;
 #endif
 
 	// get the bus transaction response read status in order to update the block state
+	return true;
 }
 	
 	
 template <class CONFIG>
-void CPU<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg)
+bool CPU<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg)
 {
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " " << name() << "::BusWrite()" << endl;
+	cerr << sc_time_stamp() << " " << name() << "::BusWrite()" << endl;
 #endif
-	// synchonize with bus cycle time
-	BusSynchronize();
+	AlignToBusClock();
+	Synchronize();
 		
 	Pointer<FSBReq > req = new(req) FSBReq(); // bus transaction request
 	Pointer<TlmMessage<FSBReq, FSBRsp > > msg =
@@ -428,47 +340,42 @@ void CPU<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer,
 	req->size = size; // actual transaction size
 	// copy the data into the bus transaction request
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusWrite: copying data into transaction request" << endl;
+	cerr << sc_time_stamp() << " PPC::BusWrite: copying data into transaction request" << endl;
 #endif
 	memcpy(req->write_data, buffer, size);
 		
 	// loop until bus transaction request is accepted
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusWrite: loop until the request succeeds" << endl;
+	cerr << sc_time_stamp() << " PPC::BusWrite: loop until the request succeeds" << endl;
 #endif
 	while(!bus_port->Send(msg))
 	{
 		// if bus transaction request is not accepted then retry later
-		wait(bus_cycle_sctime);
-		//cpu_sctime = sc_time_stamp();
-		cpu_sctime += bus_cycle_sctime;
-		last_sync_sctime = cpu_sctime;
-		UpdateBusTime();
+		wait(bus_cycle_time);
+		run_time = sc_time_stamp();
+		cpu_time = SC_ZERO_TIME;
+		if(!inherited::linux_os_import) LazyRunInternalTimers();
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << sc_time_stamp() << " PPC::BusWrite: retry transaction request" << endl;
+		cerr << sc_time_stamp() << " PPC::BusWrite: retry transaction request" << endl;
 #endif
 	}
 	// bus transaction request has been accepted at this point
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusWrite: transaction request accepted" << endl;
+	cerr << sc_time_stamp() << " PPC::BusWrite: transaction request accepted" << endl;
 #endif
 	req = 0;
 	msg = 0;
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
+bool CPU<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 {
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " " << name() << "::BusZeroBlock()" << endl;
+	cerr << sc_time_stamp() << " " << name() << "::BusZeroBlock()" << endl;
 #endif
-	// synchonize with bus cycle time
-	BusSynchronize();
+	AlignToBusClock();
+	Synchronize();
 		
 	Pointer<FSBReq > req = new(req) FSBReq(); // bus transaction request
 	Pointer<TlmMessage<FSBReq, FSBRsp > > msg =
@@ -481,38 +388,34 @@ void CPU<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 		
 	// loop until bus transaction request is accepted
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusZeroBlock: loop until the request succeeds" << endl;
+	cerr << sc_time_stamp() << " PPC::BusZeroBlock: loop until the request succeeds" << endl;
 #endif
 	while(!bus_port->Send(msg))
 	{
 		// if bus transaction request is not accepted then retry later
-		wait(bus_cycle_sctime);
-		//cpu_sctime = sc_time_stamp();
-		cpu_sctime += bus_cycle_sctime;
-		last_sync_sctime = cpu_sctime;
-		UpdateBusTime();
+		wait(bus_cycle_time);
+		run_time = sc_time_stamp();
+		cpu_time = SC_ZERO_TIME;
+		if(!inherited::linux_os_import) LazyRunInternalTimers();
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << sc_time_stamp() << " PPC::BusZeroBlock: retry transaction request" << endl;
+		cerr << sc_time_stamp() << " PPC::BusZeroBlock: retry transaction request" << endl;
 #endif
 	}
 	// bus transaction request has been accepted at this point
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusZeroBlock: transaction request accepted" << endl;
+	cerr << sc_time_stamp() << " PPC::BusZeroBlock: transaction request accepted" << endl;
 #endif
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
+bool CPU<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 {
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " " << name() << "::BusFlushBlock()" << endl;
+	cerr << sc_time_stamp() << " " << name() << "::BusFlushBlock()" << endl;
 #endif
-	// synchonize with bus cycle time
-	BusSynchronize();
+	AlignToBusClock();
+	Synchronize();
 		
 	Pointer<FSBReq > req = new(req) FSBReq(); // bus transaction request
 	Pointer<TlmMessage<FSBReq, FSBRsp > > msg =
@@ -525,38 +428,24 @@ void CPU<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 		
 	// loop until bus transaction request is accepted
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusFlushBlock: loop until the request succeeds" << endl;
+	cerr << sc_time_stamp() << " PPC::BusFlushBlock: loop until the request succeeds" << endl;
 #endif
 	while(!bus_port->Send(msg))
 	{
 		// if bus transaction request is not accepted then retry later
-		wait(bus_cycle_sctime);
-		//cpu_sctime = sc_time_stamp();
-		cpu_sctime += bus_cycle_sctime;
-		last_sync_sctime = cpu_sctime;
-		UpdateBusTime();
+		wait(bus_cycle_time);
+		run_time = sc_time_stamp();
+		cpu_time = SC_ZERO_TIME;
+		if(!inherited::linux_os_import) LazyRunInternalTimers();
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << sc_time_stamp() << " PPC::BusFlushBlock: retry transaction request" << endl;
+		cerr << sc_time_stamp() << " PPC::BusFlushBlock: retry transaction request" << endl;
 #endif
 	}
 	// bus transaction request has been accepted at this point
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusFlushBlock: transaction request accepted" << endl;
+	cerr << sc_time_stamp() << " PPC::BusFlushBlock: transaction request accepted" << endl;
 #endif
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::DoBusAccess(unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG> *bus_access)
-{
-	inherited::logger << DebugInfo << "DoBusAccess" << EndDebugInfo;
-	if(!bus_access_queue.nb_write(bus_access))
-	{
-		inherited::logger << DebugInfo << "DoBusAccess failed" << EndDebugInfo;
-		Object::Stop(-1);
-	}
+	return true;
 }
 
 template <class CONFIG>
@@ -572,9 +461,9 @@ template <class CONFIG>
 bool CPU<CONFIG>::IRQListener::Send(const Pointer<TlmMessage<InterruptRequest> >& message)
 {
 	if(message->req->level)
-		cpu->SetIRQ(irq);
+		cpu->SetException(irq);
 	else
-		cpu->ResetIRQ(irq);
+		cpu->ResetException(irq);
 	
 	ev->notify(SC_ZERO_TIME);
 	return true;

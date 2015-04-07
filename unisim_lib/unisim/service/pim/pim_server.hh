@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007, 2010
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,12 +39,14 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/time.hh>
+#include <unisim/service/interfaces/stmt_lookup.hh>
 
 #include <unisim/service/pim/network/GenericThread.hpp>
 #include <unisim/service/pim/network/SocketThread.hpp>
@@ -60,10 +62,13 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include <inttypes.h>
 
-#include <unisim/service/pim/convert.hh>
+#include <unisim/util/converter/convert.hh>
+
+#include <unisim/service/pim/gdbthread.hh>
 
 namespace unisim {
 namespace service {
@@ -73,6 +78,8 @@ using std::string;
 using std::vector;
 
 using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugEventListener;
+using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
@@ -81,9 +88,11 @@ using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Time;
+using unisim::service::interfaces::StatementLookup;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
+using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
 
 using unisim::kernel::service::Parameter;
@@ -94,6 +103,9 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Simulator;
+using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Variable;
+using unisim::kernel::service::VariableBaseListener;
 
 using unisim::service::pim::network::SocketThread;
 using unisim::service::pim::network::GenericThread;
@@ -105,58 +117,40 @@ typedef enum { GDBSERVER_MODE_WAITING_GDB_CLIENT, GDBSERVER_MODE_STEP, GDBSERVER
 
 typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 
-class GDBRegister
-{
-public:
-	GDBRegister(const string& reg_name, int reg_size, GDBEndian endian, unsigned int reg_num);
-	GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian, unsigned int reg_num);
-	inline const char *GetName() const { return name.c_str(); }
-	inline int GetSize() const { return size; }
-	bool SetValue(const string& hex);
-	void SetValue(const void *buffer);
-	void GetValue(string& hex) const;
-	void GetValue(void *buffer) const;
-	inline int GetHexLength() const { return 2 * size; }
-	inline unisim::util::debug::Register *GetRegisterInterface() { return reg; }
-	inline void SetRegisterInterface(unisim::util::debug::Register *reg) { this->reg = reg; }
-	inline GDBEndian GetEndian() const { return endian; }
-	unsigned int GetRegNum() const { return reg_num; }
-private:
-	string name;
-	int size;
-	unisim::util::debug::Register *reg;
-	GDBEndian endian;
-	unsigned int reg_num;
-};
 
 template <class ADDRESS>
 class PIMServer :
-	public Service<DebugControl<ADDRESS> >,
-	public Service<MemoryAccessReporting<ADDRESS> >,
-	public Service<TrapReporting>,
-	public Client<MemoryAccessReportingControl>,
-	public Client<Memory<ADDRESS> >,
-	public Client<Disassembly<ADDRESS> >,
-	public Client<SymbolTableLookup<ADDRESS> >,
-	public Client<Registers>,
-	public SocketThread
+	public Service<DebugControl<ADDRESS> >
+	, public Service<TrapReporting>
+	, public Client<Memory<ADDRESS> >
+	, public Client<Disassembly<ADDRESS> >
+	, public Client<SymbolTableLookup<ADDRESS> >
+	, public Client<StatementLookup<ADDRESS> >
+	, public Client<Registers>
+	, public Service<DebugEventListener<ADDRESS> >
+	, public Client<DebugEventTrigger<ADDRESS> >
+
+	, public VariableBaseListener
+
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
 	ServiceExport<TrapReporting> trap_reporting_export;
 
+	ServiceExport<DebugEventListener<ADDRESS> > debug_event_listener_export;
+	ServiceImport<DebugEventTrigger<ADDRESS> > debug_event_trigger_import;
+
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Memory<ADDRESS> > memory_import;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<Disassembly<ADDRESS> > disasm_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
+	ServiceImport<StatementLookup<ADDRESS> > stmt_lookup_import;
 
 	PIMServer(const char *name, Object *parent = 0);
 	virtual ~PIMServer();
 
-	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS next_addr);
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
@@ -165,6 +159,9 @@ public:
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
 							const char *c_str);
 
+	// DebugEventListener
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
+
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
 	virtual bool Setup(ServiceExportBase *srv_export);
@@ -172,65 +169,63 @@ public:
 
 	virtual void Stop(int exit_status);
 
-	virtual void Run() { cerr << "PIM-Server:: start RUN " << std::endl; }
+	virtual void run() { cerr << "PIM-Server:: start RUN " << std::endl; }
 
-	uint16_t GetTCPPort() { return tcp_port;}
-	string GetHost() { return fHost; }
+	uint16_t GetTCPPort() { return (tcp_port);}
+	string GetHost() { return (fHost); }
 
 	double GetSimTime();
+	double GetHostTime();
+
+	inline GDBEndian GetEndian() const { return (endian); }
 
 protected:
-	vector<SocketThread*> protocolHandlers;
 
 	SocketServerThread *socketServer;
 
-	SocketThread *target;
-	SocketThread *pimServerThread;
+	GDBThread *gdbThread;
+
+	SocketThread *monitorThread;
 
 private:
 	static const unsigned int MAX_BUFFER_SIZE = 256;
-	bool ParseHex(const string& s, unsigned int& pos, ADDRESS& value);
-
-	bool PutChar(char c);
-	bool GetPacket(string& s, bool blocking);
-	bool PutPacket(const string& s);
-	bool FlushOutput();
-	bool OutputText(const char *s, int count);
 
 	bool InternalReadMemory(ADDRESS addr, uint32_t size, string& packet);
 
-	bool ReadRegisters();
 	bool WriteRegisters(const string& hex);
 	bool ReadRegister(unsigned int regnum);
 	bool WriteRegister(unsigned int regnum, const string& hex);
-	bool ReadMemory(ADDRESS addr, uint32_t size);
+
 	bool WriteMemory(ADDRESS addr, const string& hex, uint32_t size);
+
 	bool ReportProgramExit();
 	bool ReportSignal(unsigned int signum);
 	bool ReportTracePointTrap();
 	bool SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
 	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
 
-	void HandleQRcmd(string command);
+	bool HandleQRcmd(DBGData *request);
 	bool HandleSymbolLookup();
 	bool ReadSymbol(const string name);
 	bool WriteSymbol(const string name, const string& hex);
 
-	void Disasm(ADDRESS addr, unsigned int size);
+	virtual void VariableBaseNotify(const VariableBase *var);
 	
-	void Kill();
-
 	unisim::kernel::logger::Logger logger;
 
 	uint16_t tcp_port;
 	string architecture_description_filename;
 
-//	int sock;
-	vector<GDBRegister> gdb_registers;
-	GDBRegister *gdb_pc;
+	vector<VariableBase*> simulator_registers;
+	VariableBase* pc_reg;
+	uint32_t pc_reg_index;
+	GDBEndian endian;
+
 	bool killed;
 	bool trap;
 	bool synched;
+	const Watchpoint<ADDRESS> *watchpoint_hit;
+
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;
 	GDBServerRunningMode running_mode;
@@ -239,13 +234,6 @@ private:
 	int32_t period;
 
 	ADDRESS disasm_addr;
-
-	unsigned int input_buffer_size;
-	unsigned int input_buffer_index;
-	char input_buffer[MAX_BUFFER_SIZE];
-
-	unsigned int output_buffer_size;
-	char output_buffer[MAX_BUFFER_SIZE];
 
 	unsigned int memory_atom_size;
 	bool verbose;

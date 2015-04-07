@@ -52,7 +52,8 @@ public:
 		TY_NULL,
 		TY_PROGBITS, // there's data in data
 		TY_NOBITS,   // all zero's
-		TY_STAB,     // old stab symbol table (should have a link to a string table)
+		TY_ELF_SYMTAB,   // ELF symtab symbol table (should have a link to a string table)
+		TY_COFF_SYMTAB,  // COFF symbol table (should have a link to a string table)
 		TY_STRTAB    // string table
 	} Type;
 	
@@ -81,6 +82,7 @@ public:
 	unsigned int GetLink() const;
 	const void *GetData() const;
 	void GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const;
+	bool HasOverlap(MEMORY_ADDR min_addr, MEMORY_ADDR max_addr) const;
 	
 	void Catch() const;
 	void Release() const;

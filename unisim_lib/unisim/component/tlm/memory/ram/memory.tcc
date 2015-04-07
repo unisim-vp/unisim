@@ -109,7 +109,7 @@ Send(const Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>,
 						<< sc_time_stamp().to_string() 
 						<< " Send() received a READ request" << std::endl
 						<< EndDebugInfo; 	
-				ReadMemory(req->addr, rsp->read_data, req->size);
+				this->ReadMemory(req->addr, rsp->read_data, req->size);
 				sc_event *rsp_ev = message->GetResponseEvent();
 				if(rsp_ev) rsp_ev->notify(cycle_sctime);
 			}
@@ -121,7 +121,7 @@ Send(const Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>,
 					<< sc_time_stamp().to_string() 
 					<< " Send() received a WRITE request" << std::endl
 					<< EndDebugInfo; 	
-			WriteMemory(req->addr, req->write_data, req->size);
+			this->WriteMemory(req->addr, req->write_data, req->size);
 			break;
 	}
 	return true;

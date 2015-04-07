@@ -53,6 +53,7 @@
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/util/endian/endian.hh"
+#include "unisim/util/likely/likely.hh"
 
 namespace unisim {
 namespace service {
@@ -143,7 +144,7 @@ void TI_C_IO<MEMORY_ADDR>::OnDisconnect()
 template <class MEMORY_ADDR>
 bool TI_C_IO<MEMORY_ADDR>::EndSetup()
 {
-	return LoadMemoryAndRegisters();
+	return true;
 }
 
 template <class MEMORY_ADDR>
@@ -594,7 +595,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_open(const char *path, uint16_t c_io_flags, i
 	if(c_io_flags & C_IO_O_APPEND) flags |= O_APPEND;
 	if(c_io_flags & C_IO_O_CREAT) flags |= O_CREAT;
 	if(c_io_flags & C_IO_O_TRUNC) flags |= O_TRUNC;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	if(c_io_flags & C_IO_O_BINARY) flags |= O_BINARY;
 #endif
 
@@ -677,7 +678,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_read(int16_t fno, char *buf, uint16_t count)
 		logger << DebugInfo << "read:" << endl << "  - fno=" << fno << endl << "  - count=" << count << EndDebugInfo;
 	}
 
-	// Translate TI C I/O file descriptor file descriptor to an host file descriptor
+	// Translate TI C I/O file descriptor to an host file descriptor
 	fd = TranslateFileDescriptor(fno);
 
 	// Return an error if file descriptor does not exist
@@ -714,7 +715,7 @@ int16_t TI_C_IO<MEMORY_ADDR>::c_io_write(int16_t fno, const char *buf, uint16_t 
 		logger << DebugInfo << "write:" << endl << "  - fno=" << fno << endl << "  - count=" << count << EndDebugInfo;
 	}
 
-	// Translate TI C I/O file descriptor file descriptor to an host file descriptor
+	// Translate TI C I/O file descriptor to an host file descriptor
 	fd = TranslateFileDescriptor(fno);
 
 	// Return an error if file descriptor does not exist
@@ -740,7 +741,7 @@ int32_t TI_C_IO<MEMORY_ADDR>::c_io_lseek(int16_t fno, int32_t offset, int16_t or
 		logger << DebugInfo << "lseek:" << endl << "  - fno=" << fno << endl << "  - offset=" << offset << endl << "  - origin=" << origin << EndDebugInfo;
 	}
 
-	// Translate TI C I/O file descriptor file descriptor to an host file descriptor
+	// Translate TI C I/O file descriptor to an host file descriptor
 	fd = TranslateFileDescriptor(fno);
 
 	// Return an error if file descriptor does not exist

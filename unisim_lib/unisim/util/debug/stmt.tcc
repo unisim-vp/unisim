@@ -42,13 +42,16 @@ namespace util {
 namespace debug {
 
 template <class MEMORY_ADDR>
-Statement<MEMORY_ADDR>::Statement(MEMORY_ADDR _addr, bool _is_beginning_of_basic_block, const char *_source_dirname, const char *_source_filename, unsigned int _lineno, unsigned int _colno)
+Statement<MEMORY_ADDR>::Statement(MEMORY_ADDR _addr, bool _is_beginning_of_source_statement, bool _is_beginning_of_basic_block, const char *_source_dirname, const char *_source_filename, unsigned int _lineno, unsigned int _colno, unsigned int _isa, unsigned int _discriminator)
 	: addr(_addr)
+	, is_beginning_of_source_statement(_is_beginning_of_source_statement)
 	, is_beginning_of_basic_block(_is_beginning_of_basic_block)
 	, source_dirname(_source_dirname)
 	, source_filename(_source_filename)
 	, lineno(_lineno)
 	, colno(_colno)
+	, isa(_isa)
+	, discriminator(_discriminator)
 {
 }
 
@@ -56,6 +59,12 @@ template <class MEMORY_ADDR>
 MEMORY_ADDR Statement<MEMORY_ADDR>::GetAddress() const
 {
 	return addr;
+}
+
+template <class MEMORY_ADDR>
+bool Statement<MEMORY_ADDR>::IsBeginningOfSourceStatement() const
+{
+	return is_beginning_of_source_statement;
 }
 
 template <class MEMORY_ADDR>
@@ -89,14 +98,29 @@ unsigned int Statement<MEMORY_ADDR>::GetColNo() const
 }
 
 template <class MEMORY_ADDR>
+unsigned int Statement<MEMORY_ADDR>::GetISA() const
+{
+	return isa;
+}
+
+template <class MEMORY_ADDR>
+unsigned int Statement<MEMORY_ADDR>::GetDiscriminator() const
+{
+	return discriminator;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const Statement<MEMORY_ADDR>& stmt)
 {
 	os << "addr=0x" << std::hex << stmt.addr << std::dec
+	   << ", is_stmt=" << stmt.is_beginning_of_source_statement
 	   << ", basic_block=" << stmt.is_beginning_of_basic_block
 	   << ", dir=\"" << (stmt.source_dirname ? stmt.source_dirname : "") << "\""
 	   << ", file=\"" << (stmt.source_filename ? stmt.source_filename : "") << "\""
 	   << ", line=" << stmt.lineno
-	   << ", col=" << stmt.colno;
+	   << ", col=" << stmt.colno
+	   << ", isa=" << stmt.isa
+	   << ", discr=" << stmt.discriminator;
 	return os;
 }
 

@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_TCC__
 #define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_TCC__
 
+#include <unisim/util/likely/likely.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -1524,8 +1525,8 @@ template <class PHYSICAL_ADDR,
 bool
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 EdgeSensitive(uint32_t in_irq, uint32_t reg_val) {
+#if 0
 	bool edge_sensitive = true;
-	
 	switch(in_irq) {
 	case IRQ_T0: case IRQ_T1: case IRQ_T2: case IRQ_T3:
 		break;  
@@ -1538,6 +1539,7 @@ EdgeSensitive(uint32_t in_irq, uint32_t reg_val) {
 		edge_sensitive = EdgeSensitive(reg_val);
 		break; 
 	}
+#endif
 	if(reg_val & (uint32_t)0x00400000) return false;
 	return true;
 }

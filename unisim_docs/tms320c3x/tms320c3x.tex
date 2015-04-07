@@ -3,18 +3,17 @@
 \subsection{Simulator features}
 
 The TMS320C3X is a 32-bit floating-point DSP from Texas Instrument.
-The UNISIM TMS320C3X simulator features:
+The UNISIM TMS320C3X 2.0 simulator features:
 \begin{itemize}
+\item Written for SystemC TLM 2.0
 \item Simulation of the TMS320C3X instruction set
-\item A simulation speed average around 10 MIPS and up to 28 MIPS on a 2.4 Ghz Core2 Duo machine under Linux
+\item A simulation speed average around 11 MIPS and up to 14 MIPS on a 2.4 Ghz Core2 Duo machine under Linux
 \item Support for instruction cache
 \item Support for TI COFF v0, v1, and v2 (either with big-endian or little-endian headers)
 \item Built-in debugger (Inline Debugger)
 \item Support for GDB serial remote protocol (GDB server)
 \item Support for TI C I/O
 \end{itemize}
-
-\textit{Note: Support for the GDB serial remote protocol is experimental in the sense that although some GDB versions supported the TMS320C3X target (see~\url{http://www.elec.canterbury.ac.nz/c4x/doc/c4x-tools.html}), these versions are no longer available on the web. As a consequence this simulator functionality could not be tested and validated for the TMS320C3X target but only for ARM7/9, PowerPC and HCS12X targets.}
 
 \begin{figure}[!h]
 	\begin{center}
@@ -65,7 +64,7 @@ Up-to-date instructions for compiling the simulator are available in the \texttt
 The general command line format for invoking the simulator is the following:
 
 \begin{verbatim}
-tms320c3x [<options>] <binary to simulate>
+unisim-tms320c3x-2.0 [<options>] <binary to simulate>
 \end{verbatim}
 
 \noindent The binary to simulate must be a TI's COFF v0, v1 or v2 file. See~\ref{tms320c3x_cross_compiler} to generate such files.
@@ -73,15 +72,15 @@ tms320c3x [<options>] <binary to simulate>
 \noindent The command line options of the simulator are:
 
 \begin{itemize}
-\item \texttt{--help} or \texttt{-h}: Print integrated help message on the screen.
-\item \texttt{--get-variables <XML file>} or \texttt{-v <XML file>}: Get the simulation variables (parameters, statistics, \ldots) into a XML file.
-\item \texttt{--config <XML file>} or \texttt{-c <XML file>}: Configure the simulator with the given XML configuration file.
-\item \texttt{--get-config <XML file>} or \texttt{-g <XML file>}: Get the simulator default configuration XML file (you can use it to create your own configuration). This option can be combined with option \texttt{-c} to get a new configuration file with existing variables from another file.
-\item \texttt{--logger} or \texttt{-l}: Enable the logger.
-\item \texttt{--xml-gdb <file>} or \texttt{-x <file>}: Processor XML description file for GDB server.
-\item \texttt{--gdb-server <port\_number>} or \texttt{-d <port\_number>}: Enable the GDB server and use the given TCP/IP port for communicating with a GDB client.
-\item \texttt{--inline-debugger} or \texttt{-i}: Enable the inline debugger (only active if logger option used).
-\item \texttt{--rom} or \texttt{-r}: Specify ROM filename (i.e., the boot loader in the TMS320C3X).
+\item \texttt{--set $<$param=value$>$ or -s $<$param=value$>$}: set value of parameter 'param' to 'value'
+\item \texttt{--config $<$XML file$>$ or -c $<$XML file$>$}: configures the simulator with the given XML configuration file
+\item \texttt{--get-config $<$XML file$>$ or -g $<$XML file$>$}: get the simulator configuration XML file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file
+\item \texttt{--list or -l}: lists all available parameters, their type, and their current value
+\item \texttt{--warn or -w}: enable printing of kernel warnings
+\item \texttt{--doc $<$Latex file$>$ or -d $<$Latex file$>$}: enable printing a latex documentation
+\item \texttt{--version or -v}: displays the program version information
+\item \texttt{--share-path $<$path$>$ or -p $<$path$>$}: the path that should be used for the share directory (absolute path)
+\item \texttt{--help or -h}: displays this help
 \end{itemize}
 
 \subsection{The Texas Instrument cross-compiler for TMS320C3X}
@@ -128,6 +127,32 @@ For instance, the following command will dump file \texttt{test.out} into file \
 $ /opt/c4x-coff/bin/c4x-unknown-coff-objdump -D test.out > dump.txt
 \end{verbatim}
 
+\subsection{The GNU GDB debugger}
+
+Version 4.16 of GDB was patched to support C3x/C4x (see \url{http://www.elec.canterbury.ac.nz/c4x/doc/c4x-tools.html} and \url{ftp://ftp.rtems.com/pub/c4x-tools}).
+We've slightly patched again this port to make it work on a modern Linux distribution.
+It runs on 32-bit x86 Linux hosts.
+It is available at: \url{http://unisim-vp.org/site/downloads/other/crosstool/c4x-coff-gdb-4.16.tar.gz}.
+
+To build this special version of GDB, do the following commands:
+\begin{verbatim}
+$ tar x c4x-coff-gdb-4.16.tar.gz
+$ cd c4x-coff-gdb-4.16
+$ ./build.sh all
+\end{verbatim}
+
+That special GDB can connects to the UNISIM TMS320C3X simulator:
+
+\begin{verbatim}
+$ unisim-tms320c3x-2.0 -s enable-gdb-server=true -s gdb-server.tcp-port=1234
+\end{verbatim}
+
+\begin{verbatim}
+$ ./c4-coff-gdb/bin/c4-coff-gdb 
+(gdb) set machine 30
+(gdb) target remote localhost:1234
+\end{verbatim}
+
 \subsection{Simulator configuration}
 \label{tms320c3x_configuration}
 
@@ -136,13 +161,13 @@ $ /opt/c4x-coff/bin/c4x-unknown-coff-objdump -D test.out > dump.txt
 \noindent The simulator can provide the user with a default XML configuration file with option \texttt{-g}:
 
 \begin{verbatim}
-$ tms320c3x -g default_sim_config.xml
+$ unisim-tms320c3x-2.0 -g default_sim_config.xml
 \end{verbatim}
 
 \noindent The simulator can load a XML configuration file with option \texttt{-c}:
 
 \begin{verbatim}
-$ tms320c3x -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 \noindent \textit{Note: Although it's not strictly necessary, parameter \texttt{inline-debugger.memory-atom-size} should be set to value 4 as the TMS320C3X memory is not byte-addressable. If this parameter is not set to 4, presentation of the memory content and disassembly may seem unconventional in the inline debugger.}
@@ -150,206 +175,250 @@ $ tms320c3x -c sim_config.xml
 \noindent The available parameters are summarized in table below:
 
 \begin{center}
-	\tablehead{\hline}
-	\tabletail{\hline}
-	\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
+\tablehead{\hline}
+\tabletail{\hline}
+\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
+	\multicolumn{2}{|l|}{\textbf{\Large Global}}\\
 	\hline
-	\multicolumn{2}{|c|}{\textbf{\large CPU run-time parameters}}\\
-	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.max-inst}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit unsigned integer}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{$2^{64} - 1$}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-gdb-server}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Maximum number of instructions to execute before stopping simulation.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable GDB server instantiation.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.trap-on-instruction-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit unsigned integer}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{$2^{64} - 1$}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-inline-debugger}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Number of instructions to execute before leaving control to the debugger.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable inline debugger instantiation.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-press-enter-at-exit}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Globally enable/disable verbosity of CPU.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable pressing key enter at exit.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of CPU while setup.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Keep logger output in a file.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-parallel-load-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{logger\_output.txt}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline When using parallel loads (\texttt{LDF src2, dst2 || LDF src1, dst1}) the \texttt{src1} load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set this parameter to false to transform incorrect zero values.}\\
-	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-rnd-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled the \texttt{rnd} instruction sets the Z flag to 0 systematically, as it is done in the evaluation board. Otherwise, Z is unchanged as it is written in the documentation.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger output (the option file must be activated).}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-parallel-store-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{true}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_err}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, when using parallel stores (\texttt{STF src2, dst2 || STF src1, dst1} or \texttt{STI src2, dst2 || STI src1, dst1}) the first store is treated as a NOP.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Show logger output through the standard error output.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-float-ops-with-}\newline$\hookrightarrow$\texttt{non-ext-regs}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_err\_color}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, float instructions can operate over non-extended registers. If disabled, the use of non-extended registers on float instructions will stop the program execution.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Colorize logger output through the standard error output (only works if std\_err is active).}\\
 	\hline
-	\hline
-	\multicolumn{2}{|c|}{\textbf{\large Service GDB Server run-time parameters}}\\
-	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.tcp-port}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{integer}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{12345}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_out}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline TCP/IP port to listen waiting for a GDB client connection.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Show logger output through the standard output.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.architecture-}\newline$\hookrightarrow$\texttt{description-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_out\_color}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename of a XML description of the connected processor.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Colorize logger output through the standard output (only works if std\_out is active).}\\
 	\hline
-	\hline
-	\multicolumn{2}{|c|}{\textbf{\large Inline Debugger run-time parameters}}\\
-	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.memory-atom-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned integer}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{1}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Size of the smallest addressable element in memory.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Keep logger output in a file xml formatted.}\\
 	\hline
-	\hline
-	\multicolumn{2}{|c|}{\textbf{\large Kernel Service Logger run-time parameters}}\\
-	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_err}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file\_gzipped}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, show logger output through the standard error output.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If the xml\_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml\_filename option.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_out}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{logger\_output.xml}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, show logger output through the standard output.}\\
-	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_err\_color}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, colorize logger output through the standard error output (only works if \texttt{kernel\_logger.std\_err} is active).}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger xml output (the option xml\_file must be activated).}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_out\_color}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\hline
+	\multicolumn{2}{|l|}{\textbf{\Large cpu}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.max-inst}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0xffffffffffffffff}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, colorize logger output through the standard output (only works if \texttt{kernel\_logger.std\_out} is active).}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.trap-on-instruction-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0xffffffffffffffff}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, keep logger output in a file.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.mimic-dev-board}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-parallel-load-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger output (the option \texttt{kernel\_logger.file} must be activated).}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline When using parallel loads (LDF src2, dst2 || LDF src1, dst1) the src1 load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set to this parameter to false to transform incorrect zero values..}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-rnd-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, keep logger output in a file XML formatted.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled the `rnd` instruction sets the Z flag to 0 systematically, as it is done in the evaluation board. Otherwise, Z is unchanged as it is written in the documentation..}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-parallel-store-} \newline$\hookrightarrow$\texttt{bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger XML output (the option \texttt{kernel\_logger.xml\_file} must be activated).}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled, when using parallel stores (STF src2, dst2 || STF src1, dst1) the first store is treated as a NOP..}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file\_gzipped}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-float-ops-with-} \newline$\hookrightarrow$\texttt{non-ext-regs}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If the \texttt{kernel\_logger.xml\_file} option is active, the output file will be compressed (a .gz extension will be automatically added to the \texttt{kernel\_logger.xml\_filename} option.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If enabled non extended registers can be used on all the float instructions, however the behavior is not documented and can differ between chips revision. If disabled, it stops simulation when using non extended registers on float instructions..}\\
 	\hline
-	\multicolumn{2}{|c|}{\textbf{\large Service COFF Loader run-time parameters}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+	\hline
+	\hline
+	\multicolumn{2}{|l|}{\textbf{\Large loader}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The COFF file name to load into memory.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable verbosity.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.dump-headers}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.verbose-parser}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true this parameter makes the COFF loader print the file headers on the screen (file header, section headers, symbol table \ldots) while loading the program.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable verbosity of parser.}\\
 	\hline
-	\hline
-	\multicolumn{2}{|c|}{\textbf{\large Service ROM COFF Loader run-time parameters}}\\
-	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{c31boot.out}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The COFF file name to load into memory: typically the boot ROM file (\texttt{c31boot.out})}\\
-	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.dump-headers}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{empty string}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true this parameter makes the COFF loader print the file headers on the screen (file header, section headers, symbol table \ldots) while loading the program.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline List of files to load. Syntax: [[filename=]$<$filename1$>$[:[format=]$<$format1$>$]][,[filename=]$<$filename2$>$[:[format=]$<$format2$>$]]... (e.g. boot.bin:raw,app.elf).}\\
 	\hline
 	\hline
-	\multicolumn{2}{|c|}{\textbf{\large Memory run-time parameters}}\\
+	\multicolumn{2}{|l|}{\textbf{\Large loader.memory-mapper}}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.org}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit unsigned integer}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{0}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.memory-mapper.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Starting address of memory (typically 0).}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable verbosity.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.bytesize}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{64-bit unsigned integer}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{0}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.memory-mapper.verbose-} \newline$\hookrightarrow$\texttt{parser}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Size in bytes (8-bit) of memory.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable verbosity of parser.}\\
 	\hline
-	\hline
-	\multicolumn{2}{|c|}{\textbf{\large Service TI C I/O run-time parameters}}\\
-	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti\_c\_io.enable}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.memory-mapper.mapping}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{memory=memory:0x0-0xffffffff}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable TI C I/O support.}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Memory mapping. Syntax: [[(memory=]$<$memory1$>$[:[range=]$<$low1-high1$>$]][,[(memory=]$<$memory2$>$[:[range=]$<$low2-high2$>$]]... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff).}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.warning-as-error}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\hline
+	\multicolumn{2}{|l|}{\textbf{\Large memory}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.org}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0000000000000000}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline memory origin/base address.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.bytesize}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline memory size in bytes.}\\
+	\hline
+	\hline
+	\multicolumn{2}{|l|}{\textbf{\Large ti-c-io}}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.enable}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable TI C I/O support.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.warning-as-error}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Whether Warnings are considered as error or not.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.pc-register-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"PC"}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.pc-register-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{PC}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Name of the CPU program counter register.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-buffer-symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"\_\_CIOBUF\_"}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-buffer-symbol-} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{\_\_CIOBUF\_}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O buffer symbol name.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$IO\$\$"}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-io-breakpoint-symbol-} \newline$\hookrightarrow$\texttt{name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{C\$\$IO\$\$}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C I/O breakpoint symbol name.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-exit-breakpoint-}\newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{"C\$\$EXIT"}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.c-exit-breakpoint-} \newline$\hookrightarrow$\texttt{symbol-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{C\$\$EXIT}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|l|}{}\\
 	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline C EXIT breakpoint symbol name.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Globally enable/disable verbosity of TI C I/O service.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline globally enable/disable verbosity.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-io}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-io}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of TI C I/O service while I/Os.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity while I/Os.}\\
 	\hline
-	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 	\multicolumn{2}{|l|}{}\\
-	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/disable verbosity of TI C I/O service while setup.}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity while setup.}\\
+	\hline
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ti-c-io.enable-lseek-bug}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+	\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+	\multicolumn{2}{|l|}{}\\
+	\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable lseek bug (as code composer).}\\
+	\hline
 	\hline
 	\end{supertabular}
 \end{center}
@@ -357,7 +426,7 @@ $ tms320c3x -c sim_config.xml
 \subsection{Debugging the target program}
 \label{tms320c3x_inline_debug}
 
-The command line option \texttt{-i} enables the inline debugger. The inline debugger has support for controlling the program execution, inspecting the program and its data, and putting breakpoints and watchpoints. The user can interact with the debugger using the following commands:
+The command line option \texttt{-s enable-inline-debugger=true} enables the inline debugger. The inline debugger has support for controlling the program execution, inspecting the program and its data, and putting breakpoints and watchpoints. The user can interact with the debugger using the following commands:
 \begin{itemize}
 \item Execution commands:
 	\begin{itemize}
@@ -418,7 +487,7 @@ The TMS320C3X simulator is the combination of several software components:
 \item A TMS320C3X instruction set simulator in \texttt{unisim/component/cxx/processor/tms320} (see Section~\ref{tms320c3x_iss}).
 \item A memory in \texttt{unisim/component/cxx/memory/ram} (see Section~\ref{tms320c3x_memory}).
 \item Service interface definitions in \texttt{unisim/service/interfaces} (see Section~\ref{tms320c3x_interfaces}).
-\item A COFF loader service in \texttt{unisim/service/loader/coff\_loader} (see Section~\ref{tms320c3x_coff_loader}).
+\item A multi-format loader (COFF, ELF, S-Rec, Raw) service and especially a COFF loader in \texttt{unisim/service/loader/coff\_loader} (see Section~\ref{tms320c3x_coff_loader}).
 \item A TI C I/O service in \texttt{unisim/service/os/ti\_c\_io} (see Section~\ref{tms320c3x_ti_c_io}).
 \item An inline debugger service in \texttt{unisim/service/debug/inline\_debugger} (see Section~\ref{tms320c3x_inline_debugger}).
 \item A GDB server service in \texttt{unisim/service/debug/gdb\_server} (see Section~\ref{tms320c3x_gdb_server}).
@@ -765,7 +834,7 @@ A problem may occur if setup order is important.
 For instance, consider two services: service \texttt{A} and \texttt{B}. 
 \texttt{A::Setup()} uses service \texttt{B}.
 A correct setup order consist to first setup service \texttt{B} and then service \texttt{A}.
-To solve such setup dependency, programmer should call method \texttt{Object::SetupDependsOn} (e.g. in the class constructor) so that the service manager can ensure correct setup order.
+To solve such setup dependency, programmer should call method \texttt{ServiceExportBase::SetupDependsOn} (e.g. in the class constructor) so that the service manager can ensure correct setup order.
 If the service manager finds a cyclic dependency, \texttt{ServiceManager::Setup()} fails: it generally means that clients and services have been badly designed.
 
 \newpage
@@ -1204,11 +1273,12 @@ A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, wi
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{architecture-description\newline$\hookrightarrow$-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} empty string}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The path to the architecture description file that the GDB server service must use. The description file provides retargetability to the GDB server service. The following files brings support of the ARM, PowerPC and HCS12X processors to the GDB server service: 
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The path to the architecture description file that the GDB server service must use. The description file provides retargetability to the GDB server service. The following files brings support of the ARM, PowerPC, TMS320C3X and HCS12X processors to the GDB server service: 
 		\begin{itemize}
 			\item \texttt{unisim/service/debug/gdb\_server/gdb\_armv4l.xml}
 			\item \texttt{unisim/service/debug/gdb\_server/gdb\_armv5b.xml}
 			\item \texttt{unisim/service/debug/gdb\_server/gdb\_powerpc.xml}
+			\item \texttt{unisim/service/debug/gdb\_server/gdb\_tms320c3x.xml}
 			\item \texttt{unisim/service/debug/gdb\_server/gdb\_hcs12x.xml}
 		\end{itemize}
 		}\\
@@ -1391,8 +1461,10 @@ The cross-compiler has generated COFF v2 files for TMS320C3X/C4X with little-end
 \item Redhat Linux RHEL4 x86/gcc 3.4.6 (32-bit little-endian machine)
 \item Mandriva Linux 2009.1 x86/gcc 4.3.2 (32-bit little-endian machine)
 \item Mandriva Linux 2010.0 x86/gcc 4.4.1 (32-bit little-endian machine)
+\item Mageia Linux 3/gcc 4.7.2 (32-bit little-endian machine)
 \item Ubuntu Linux 7.04 powerpc/gcc 4.1.2 (32-bit big-endian machine)
 \item Ubuntu Linux 9.04 AMD64/x86\_64/gcc 4.3.3 (64-bit little-endian machine)
+\item Ubuntu Linux 10.04 AMD64/x86\_64/gcc 4.4.3 (64-bit little-endian machine)
 \item Mac OS X Leopard v10.5 x86/gcc 4.3.3 and gcc 4.4.2 (32-bit little-endian machine)
 \item Windows XP x86/gcc mingw32 4.4.0 (32 bit little-endian machine)
 \end{itemize}
@@ -1410,6 +1482,7 @@ The following developement board (see Figures~\ref{fig:tms320c3x_board}~and~\ref
 \end{itemize}
 
 The UNISIM TMS320C3X has been validated using integer benchmarks, floating point benchmarks, and unit tests of individual instructions.
+These tests and benchmarks are available for download at \url{http://unisim-vp.org/site/download.html}.
 The next sections provide details about the validation process.
 
 \subsection{Benchmarks}
@@ -1425,7 +1498,7 @@ The following document has been used for selecting these floating-point benchmar
 
 These benchmarks have been run into the UNISIM TMS320C3X simulator using the application profiling capability of the inline debugger:
 \begin{verbatim}
-$ tms320c3x -i -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml -s enable-inline-debugger=true
 Loading xml parameters from: sim_config.xml
 Parameters set using file "sim_config.xml"
 ....
@@ -1440,6 +1513,7 @@ ti-c-io: Installing emulator breakpoint (SWI) for EXIT at 0x20001cc (symbol C$$E
 Starting simulation at system privilege level
 0x00800048 <_c_int00>:
 0x00800048:0x08700080 LDP @0x800000
+inline-debugger> profile program on
 inline-debugger> break C$$EXIT
 inline-debugger> continue
 ...
@@ -2439,7 +2513,7 @@ A precompiled binary (\texttt{fibo.out}) is provided together with a GNU Make co
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that the simulator can run the benchmark using the following command:
 
 \begin{verbatim}
-$ tms320c3x -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 \noindent The expected output on the screen of the benchmarks is:
@@ -2493,7 +2567,7 @@ A precompiled binary (\texttt{quicksort.out}) is provided together with a GNU Ma
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that the simulator can run the benchmark using the following command:
 
 \begin{verbatim}
- $ tms320c3x -c sim_config.xml
+ $ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 \noindent The expected output data set is in file \texttt{sort.ref.txt}.
@@ -2511,7 +2585,7 @@ A precompiled binary is provided together with a GNU Make compatible \texttt{Mak
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that the simulator can run the benchmark using the following command:
 
 \begin{verbatim}
-$ tms320c3x -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 \noindent The expected output on the screen of the benchmarks is in file \texttt{ref.txt}:
@@ -2544,7 +2618,7 @@ A precompiled binary (\texttt{rijndael.out}) is provided together with a GNU Mak
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that the simulator can run the benchmark using the following command:
 
 \begin{verbatim}
-$ tms320c3x -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 It is expected that files \texttt{input\_small.asc} and \texttt{output\_small.sim.dec} be identical after the benchmark run.
@@ -2563,7 +2637,7 @@ A precompiled binary (\texttt{sha.out}) is provided together with a GNU Make com
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that the simulator can run the benchmark using the following command:
 
 \begin{verbatim}
-$ tms320c3x -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 The expected output on the screen of the benchmark is in file \texttt{ref.txt}:
@@ -2592,8 +2666,8 @@ Precompiled binaries (\texttt{coder.out} and \texttt{decoder.out}) are provided 
 Simulation configurations (\texttt{coder\_sim\_config.xml} and \texttt{decoder\_sim\_config.xml})) for this simulator are also provided, so that the simulator can run the benchmarks using the following command:
 
 \begin{verbatim}
-$ tms320c3x -c coder_sim_config.xml
-$ tms320c3x -c decoder_sim_config.xml
+$ unisim-tms320c3x-2.0 -c coder_sim_config.xml
+$ unisim-tms320c3x-2.0 -c decoder_sim_config.xml
 \end{verbatim}
 
 The expected output data set of the ADPCM coder benchmark is in file \texttt{output\_small.ref.adpcm}.
@@ -2623,7 +2697,7 @@ A precompiled binary (\texttt{dct\_quant.out}) is provided together with a GNU M
 A simulation configuration (\texttt{sim\_config.xml}) for this simulator is also provided, so that simulator can run the benchmark using the following command:
 
 \begin{verbatim}
-$ tms320c3x -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 The expected output image is in file \texttt{output\_image.ref.bmp}.
@@ -2651,7 +2725,7 @@ A precompiled binary (\texttt{bp45.out}) is provided together with a GNU Make co
 A simulation configuration file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
   
 \begin{verbatim}
-$ tms320c3x -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 The expected output data set is in the \texttt{output.ref.txt} file.
@@ -2685,7 +2759,7 @@ A precompiled binary (\texttt{bp45.out}) is provided together with a GNU Make co
 A simulation configuration file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
   
 \begin{verbatim}
-$ tms320c3x -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 The expected output data set is in the \texttt{output.ref.txt} file.
@@ -2729,7 +2803,7 @@ A precompiled binary (\texttt{biquad4.out}) is provided together with a GNU Make
 A simulation configuration file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
   
 \begin{verbatim}
-$ tms320c3x -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 The expected output data set is in the \texttt{b\_output.ref.txt} and \texttt{fb\_output.ref.txt} files.
@@ -2766,7 +2840,7 @@ A precompiled binary (\texttt{fft.out}) is provided together with a GNU Make com
 A simulation configuration file (\texttt{sim\_config.xml}) for this benchmark is also provided, so that the simulator can run the benchmark with the following command:
 
 \begin{verbatim}
-$ tms320c3x -c sim_config.xml
+$ unisim-tms320c3x-2.0 -c sim_config.xml
 \end{verbatim}
 
 The expected output data set is in the following files: \texttt{output0.ref.txt}, \texttt{output1.ref.txt}, \texttt{output2.ref.txt}, \texttt{output3.ref.txt}, \texttt{output4.ref.txt}, \texttt{output5.ref.txt}, \texttt{output6.ref.txt}, \texttt{output7.ref.txt}, \texttt{output8.ref.txt}, and \texttt{output9.ref.txt}.
@@ -4528,7 +4602,7 @@ Figure~\ref{fig:tms320c3x_cc} shows the testing environment running on Windows a
 
 To obtain the simulation outputs from the UNISIM TMS320C3X simulator, do the following at the command prompt:
 \begin{verbatim}
-$ make simulate SIMULATE=path-to-tms320c3x
+$ make simulate SIMULATE=path-to-unisim-tms320c3x-2.0
 \end{verbatim}
 
 \subsubsection{Regression tests}
@@ -4547,7 +4621,7 @@ Then to check that all unit tests successfully run on the UNISIM TMS320C3X simul
 \begin{verbatim}
 $ make cleangen
 $ make generator
-$ make regression-test SIMULATE=path-to-tms320c3x
+$ make regression-test SIMULATE=path-to-unisim-tms320c3x-2.0
 \end{verbatim}
 
 \noindent The result for each unit test program is either \texttt{PASSED} or \texttt{FAILED}.\\

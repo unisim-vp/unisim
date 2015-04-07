@@ -39,6 +39,7 @@
 #include <iosfwd>
 #include <vector>
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/dwarf/version.hh>
 
 namespace unisim {
 namespace util {
@@ -56,17 +57,21 @@ public:
 	~DWARF_StatementProgram();
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	DWARF_Version GetDWARFVersion() const;
 	unsigned int GetId() const;
 	std::string GetHREF() const;
+	const DWARF_Filename *GetFilename(unsigned int filename_idx) const;
+	const char *GetIncludeDirectory(unsigned int include_directory_idx) const;
 	std::ostream& to_XML(std::ostream& os) const;
 	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_StatementProgram<MEMORY_ADDR>& dw_stmt_prog);
 	uint64_t GetOffset() const;
-	endian_type GetEndianness() const;
+	DWARF_Handler<MEMORY_ADDR> *GetHandler() const;
 private:
 	friend class DWARF_StatementVM<MEMORY_ADDR>;
 	
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	DWARF_Version dw_ver;
 	
 	uint64_t offset;
 	unsigned int id;
@@ -81,6 +86,12 @@ private:
 
 	uint8_t minimum_instruction_length;   // The size in bytes of the smallest target machine instruction. Statement program opcodes
 	                                      // that alter the address register first multiply their operands by this value.
+
+	uint8_t maximum_operations_per_instruction;   // The maximum number of individual operations that may be encoded in an instruction. Line
+	                                              // number program opcodes that alter the address and op_index registers use this and
+	                                              // minimum_instruction_length in their calculations.
+	                                              // For non-VLIW architectures, this field is 1, the op_index register is always 0, and the
+	                                              // operation pointer is simply the address register.
 
 	uint8_t default_is_stmt;              // The initial value of the is_stmt register.
 	                                      // A simple code generator that emits machine instructions in the order implied by the source

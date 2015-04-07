@@ -23,32 +23,28 @@
 #include <conststr.hh>
 #include <map>
 
-struct RiscGenerator : public Generator {
-  struct OpCode_t {
-    uint64_t                    m_mask;
-    uint64_t                    m_bits;
-    unsigned int                m_size;
-    bool                        m_vlen;
-    // Topology information
-    OpCode_t*                   m_upper;
-    intptr_t                    m_lowercount;
+struct RiscOpCode_t : public OpCode_t
+{
+  uint64_t                    m_mask;
+  uint64_t                    m_bits;
+  unsigned int                m_size;
+  bool                        m_vlen;
     
-    OpCode_t()
-      : m_mask( 0 ), m_bits( 0 ), m_size( 0 ), m_vlen( false ),
-        m_upper( 0 ), m_lowercount( 0 ) {}
-    OpCode_t( uint64_t mask, uint64_t bits, unsigned int size, bool vlen )
-      : m_mask( mask ), m_bits( bits ), m_size( size ), m_vlen( vlen ),
-        m_upper( 0 ), m_lowercount( 0 ) {}
+  // RiscOpCode_t()
+  //   : OpCode_t( ConstStr_t() ), m_mask( 0 ), m_bits( 0 ), m_size( 0 ), m_vlen( false )
+  // {}
+  RiscOpCode_t( ConstStr_t _symbol, uint64_t mask, uint64_t bits, unsigned int size, bool vlen )
+    : OpCode_t( _symbol ), m_mask( mask ), m_bits( bits ), m_size( size ), m_vlen( vlen )
+  {}
     
-    // Topology methods
-    enum Location_t { Outside, Overlaps, Inside, Contains, Equal };
-    Location_t                  locate( OpCode_t const& _oc ) const;
-    void                        setupper( OpCode_t* _upper );
-    void                        unsetupper();
-  };
-  typedef std::map<Operation_t const*,OpCode_t> OpCodes_t;
+  // Topology methods
+  Location_t                  locate( OpCode_t const& _oc ) const;
   
-  OpCodes_t                     m_opcodes;
+  std::ostream&               details( std::ostream& _sink ) const;
+};
+
+struct RiscGenerator : public Generator
+{
   unsigned int                  m_insn_ctypesize;
   ConstStr_t                    m_insn_ctype;
   ConstStr_t                    m_insn_cpostfix;
@@ -56,10 +52,10 @@ struct RiscGenerator : public Generator {
   RiscGenerator();
   ~RiscGenerator() {};
   
-  /* Risc specific Utilities */
-  OpCode_t const&               opcode( Operation_t const* _op ) const;
-  OpCode_t&                     opcode( Operation_t const* _op );
+  RiscOpCode_t const&           riscopcode( Operation_t const* _op ) const { return dynamic_cast<RiscOpCode_t const&>( opcode( _op ) ); }
+  RiscOpCode_t&                 riscopcode( Operation_t const* _op ) { return dynamic_cast<RiscOpCode_t&>( opcode( _op ) ); };
   
+  /* Risc specific Utilities */
   void                          finalize();
   void                          codetype_decl( Product_t& _product ) const;
   void                          codetype_impl( Product_t& _product ) const {}
@@ -75,9 +71,10 @@ struct RiscGenerator : public Generator {
   void                          insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const;
   void                          additional_impl_includes( Product_t& _product ) const {}
   void                          additional_decl_includes( Product_t& _product ) const {}
-  void                          subdecoder_bounds( Product_t& _product ) const;
+  
   void                          insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const {};
   void                          insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const {};
+  
   void                          op_getlen_decl( Product_t& _product ) const;
   void                          insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const;
 };

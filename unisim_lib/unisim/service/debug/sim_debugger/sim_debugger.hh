@@ -136,7 +136,7 @@ public:
 
 	// MemoryAccessReportingInterface
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
@@ -193,6 +193,8 @@ private:
 
 	bool GetSymbolAddress(const char *str, uint64_t &addr);
 	bool GetFileSystemAddress(const char *str, uint64_t &addr);
+
+  uint8_t ReadMemory(uint64_t addr);
 
 	void DumpBreakpoints();
 	void DumpWatchpoints();

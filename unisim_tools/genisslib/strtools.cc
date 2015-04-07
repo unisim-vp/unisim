@@ -16,6 +16,7 @@
  ***************************************************************************/
 
 #include <strtools.hh>
+#include <string>
 #include <cstdarg>
 #include <cstring>
 #include <cassert>
@@ -24,101 +25,6 @@
 #include <cstdio>
 
 namespace Str {
-  Buf::Buf( Policy_t _policy )
-    : m_storage( 0 ), m_capacity( 0 ), m_index( 0 ), m_policy( _policy )
-  {
-    RecycleChunk* chunk = RecycleChunk::s_pool;
-    if( not chunk ) {
-      m_storage = new char[s_chunksize];
-      m_capacity = s_chunksize;
-    } else {
-      RecycleChunk::s_pool = chunk->m_next;
-      m_storage = (char*)( chunk ); // dirty cast
-      m_capacity = chunk->m_capacity;
-    }
-    m_storage[0] = '\0';
-  }
-  
-  Buf::~Buf() {
-    switch( m_policy ) {
-    case Delete: delete m_storage; break;
-    case Recycle: recycle(); break;
-    default: throw m_policy;
-    }
-  }
-
-  void
-  Buf::recycle() {
-    RecycleChunk::recycle( m_storage, m_capacity );
-    m_storage = 0;
-    m_capacity = 0;
-  }
-  
-  Buf::RecycleChunk* Buf::RecycleChunk::s_pool = 0;
-  
-  void
-  Buf::RecycleChunk::recycle( char* _storage, intptr_t _capacity ) {
-    RecycleChunk* chunk = (RecycleChunk*)( _storage ); // dirty cast
-    chunk->m_capacity = _capacity;
-    chunk->m_next = s_pool;
-    s_pool = chunk;
-  }
-  
-  Buf&
-  Buf::write( char const* _str ) {
-    intptr_t len = strlen( _str );
-    intptr_t needed_capacity = len + m_index + 1; //< Trailing '\0'
-    if( m_capacity < needed_capacity )
-      capacity( needed_capacity );
-    strcpy( &m_storage[m_index], _str );
-    m_index += len;
-    return *this;
-  }
-
-  Buf&
-  Buf::write( intptr_t _length, char const* _str ) {
-    intptr_t needed_capacity = _length + m_index + 1; //< Trailing '\0'
-    if( m_capacity < needed_capacity )
-      capacity( needed_capacity );
-    memcpy( &m_storage[m_index], _str, _length );
-    m_index += _length;
-    m_storage[m_index] = '\0';
-    return *this;
-  }
-
-  Buf&
-  Buf::write( char _ch ) {
-    intptr_t needed_capacity = m_index + 2; //< (char) + (trailing '\0')
-    if( m_capacity < needed_capacity )
-      capacity( needed_capacity );
-    m_storage[m_index] = _ch;
-    m_storage[++m_index] = '\0';
-    return *this;
-  }
-
-  Buf&
-  Buf::capacity( intptr_t _capacity ) {
-    intptr_t ncapacity = (_capacity + s_chunksize - 1) & ~(s_chunksize - 1);
-    if( ncapacity <= m_capacity ) return *this;
-    char* nstorage = new char[ncapacity];
-    strcpy( nstorage, m_storage );
-    delete [] m_storage;
-    m_storage = nstorage;
-    m_capacity = ncapacity;
-    return *this;
-  }
-  
-  Buf::Scope_t Buf::s_scope;
-  
-  Buf::Scope_t::~Scope_t() {
-    while( RecycleChunk::s_pool ) {
-      RecycleChunk* tmp = RecycleChunk::s_pool;
-      RecycleChunk::s_pool = tmp->m_next;
-      char* storage = (char*)tmp;
-      delete [] storage;
-    }
-  }
-  
   ConstStr_t
   fmt( char const* _fmt, ... ) {
     va_list ap;
@@ -138,74 +44,76 @@ namespace Str {
   }
 
   ConstStr_t
-  upper( char const* _str ) {
-    Buf buffer( Buf::Recycle );
-    buffer.write( _str );
-    for( char* ptr = buffer.m_storage; *ptr; ++ ptr ) {
-      char ch = *ptr;
-      if( ch >= 'a' and ch <= 'z' )
-        *ptr = (ch - 'a' + 'A');
-    }
+  upper( char const* _str )
+  {
+    std::string buffer( _str );
+    for (std::string::iterator itr = buffer.begin(); itr != buffer.end(); ++itr)
+      {
+        char ch = *itr;
+        if (ch >= 'a' and ch <= 'z')
+          *itr = (ch - 'a' + 'A');
+      }
     
-    return ConstStr_t( buffer.m_storage );
+    return ConstStr_t( buffer.c_str() );
   }
   
   ConstStr_t
-  capitalize( char const* _str ) {
-    Buf buffer( Buf::Recycle );
-    buffer.write( _str );
+  capitalize( char const* _str )
+  {
+    std::string buffer( _str );
     
-    char& ch = *buffer.m_storage;
-    if( ch >= 'a' and ch <= 'z')
-        ch = (ch - 'a' + 'A');
+    char& ch = buffer[0];
+    if (ch >= 'a' and ch <= 'z')
+      ch = (ch - 'a' + 'A');
     
-    return ConstStr_t( buffer.m_storage );
+    return ConstStr_t( buffer.c_str() );
   }
   
   ConstStr_t
-  tokenize( char const* _str ) {
-    Buf buffer( Buf::Recycle );
-    buffer.write( _str );
+  tokenize( char const* _str )
+  {
+    std::string buffer( _str );
     
-    for( char* ptr = buffer.m_storage; *ptr; ++ ptr ) {
-      char ch = *ptr;
-      *ptr = isalnum( ch ) ? ch : '_';
-    }
+    for (std::string::iterator itr = buffer.begin(); itr != buffer.end(); ++itr)
+      { 
+        char ch = *itr;
+        *itr = isalnum( ch ) ? ch : '_';
+      }
 
-    return ConstStr_t( buffer.m_storage );
+    return ConstStr_t( buffer.c_str() );
   }
 
   ConstStr_t
-  dqcstring( char const* _str ) {
-    Buf buffer( Buf::Recycle );
-    buffer.write( '"' );
+  dqcstring( char const* _str )
+  {
+    std::string buffer( "\"" );
     
     static char const* hextab = "0123456789abcdef";
     
     for( char const* ptr = _str; *ptr; ++ ptr ) {
       char ch = *ptr;
       switch( ch ) {
-      case '\t': buffer.write( "\\t" ); break;
-      case '\n': buffer.write( "\\n" ); break;
-      case '\r': buffer.write( "\\r" ); break;
-      case  '"': buffer.write( "\\\"" ); break;
-      case '\\': buffer.write( "\\\\" ); break;
+      case '\t': buffer += "\\t"; break;
+      case '\n': buffer += "\\n"; break;
+      case '\r': buffer += "\\r"; break;
+      case  '"': buffer += "\\\""; break;
+      case '\\': buffer += "\\\\"; break;
       default:
         {
           if( ch >= 127 or ch < 32 ) {
-            buffer.write( "\\x" );
-            buffer.write( hextab[unsigned( ch ) / 256] );
-            buffer.write( hextab[unsigned( ch ) % 256] );
+            buffer += "\\x";
+            buffer += hextab[unsigned( ch ) / 256];
+            buffer += hextab[unsigned( ch ) % 256];
           } else {
-            buffer.write( ch );
+            buffer += ch;
           }
         }
         break;
       }
     }
-    buffer.write( '"' );
+    buffer += "\"";
     
-    return ConstStr_t( buffer.m_storage );
+    return ConstStr_t( buffer.c_str() );
   }
 
 } // end of namespace Str

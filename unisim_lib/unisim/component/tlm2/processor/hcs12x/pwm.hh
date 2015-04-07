@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_PWM_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_PWM_HH__
 
-#include <systemc.h>
+#include <systemc>
 
 #include <inttypes.h>
 #include <iostream>
@@ -68,6 +68,8 @@ namespace processor {
 namespace hcs12x {
 
 using namespace std;
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
@@ -79,14 +81,15 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
-using unisim::kernel::service::RegisterArray;
+using unisim::kernel::service::CallBackObject;
+using unisim::kernel::service::SignalArray;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
 using unisim::util::debug::Register;
 
-using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::kernel::tlm2::PayloadFabric;
@@ -96,13 +99,14 @@ using unisim::component::tlm2::processor::hcs12x::PWM_Payload;
 
 template <uint8_t PWM_SIZE>
 class PWM :
-	public sc_module,
-	virtual public tlm_bw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >,
-	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
-	public Service<Memory<service_address_t> >,
-	public Service<Registers>,
-	public Client<Memory<service_address_t> >,
-	public Client<TrapReporting >
+	public sc_module
+	, public CallBackObject
+	, virtual public tlm_bw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >
+	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
+	, public Service<Memory<physical_address_t> >
+	, public Service<Registers>
+	, public Client<Memory<physical_address_t> >
+	, public Client<TrapReporting >
 
 {
 public:
@@ -121,6 +125,8 @@ public:
 						PWMPER0, PWMPER1, PWMPER2, PWMPER3, PWMPER4, PWMPER5, PWMPER6, PWMPER7,
 						PWMDTY0, PWMDTY1, PWMDTY2, PWMDTY3, PWMDTY4, PWMDTY5, PWMDTY6, PWMDTY7, PWMSDN};
 
+	static const unsigned int REGISTERS_BANK_SIZE = 40;
+
 	tlm_initiator_socket<CONFIG::UNISIM2EXTERNAL_BUS_WIDTH, UNISIM_PWM_ProtocolTypes<PWM_SIZE> > master_sock;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
@@ -129,15 +135,15 @@ public:
 	tlm_utils::simple_target_socket<PWM> slave_socket;
 	tlm_utils::simple_target_socket<PWM> bus_clock_socket;
 
-	ServiceExport<Memory<service_address_t> > memory_export;
-	ServiceImport<Memory<service_address_t> > memory_import;
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceExport<Registers> registers_export;
 	ServiceImport<TrapReporting > trap_reporting_import;
 
     PWM(const sc_module_name& name, Object *parent = 0);
     ~PWM();
 
-	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
     void refresh_channel(uint8_t channel_number);
 
@@ -177,8 +183,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             Registers Interface interface methods               =
@@ -195,17 +201,26 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-    bool read(uint8_t offset, uint8_t &value);
-    bool write(uint8_t offset, uint8_t val);
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
-	RegisterArray<bool> channel_output_reg;
+	SignalArray<bool> channel_output_reg;
 
 protected:
-	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };
-	bool getOutput(uint8_t channel_index) { assert(channel_index < PWM_SIZE); return output[channel_index]; }
+//	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };
+	void setOutput(uint8_t channel_index, bool value) {
+		assert(channel_index < PWM_SIZE);
+
+		if (value != output[channel_index]) {
+			channel_output_reg[channel_index] = value;
+		}
+
+	};
+
+	bool getOutput(uint8_t channel_index) { assert(channel_index < PWM_SIZE); return (output[channel_index]); }
 
 private:
 	void ComputeInternalTime();
@@ -215,6 +230,8 @@ private:
 
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
+	XINT_Payload *xint_payload;
+	PWM_Payload<PWM_SIZE> *pwm_payload;
 
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;
@@ -231,6 +248,8 @@ private:
 
 	// Registers map
 	map<string, Register *> registers_registry;
+
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
 	sc_time clockVector[8];
 	sc_time clockA, clockB, clockSA, clockSB;
@@ -284,15 +303,17 @@ private:
 	private:
 //		bool output;
 
-		uint8_t channelMask;
+		PWM	*pwmParent;
+		uint8_t channel_index;
+
 		uint8_t *pwmcnt_register_ptr;
 		uint8_t *pwmper_register_value_ptr;
 		uint8_t pwmper_register_buffer;
 		uint8_t *pwmdty_register_value_ptr;
 		uint8_t pwmdty_register_buffer;
 
-		uint8_t channel_index;
-		PWM	*pwmParent;
+		uint8_t channelMask;
+
 		sc_event wakeup_event;
 
 		template <class T> void checkChangeStateAndWait(const sc_time clk);

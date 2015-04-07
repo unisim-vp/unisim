@@ -93,6 +93,12 @@ Profile<ADDRESS, PAGE_SIZE>::~Profile()
 }
 
 template <class ADDRESS, uint32_t PAGE_SIZE>
+void Profile<ADDRESS, PAGE_SIZE>::Clear()
+{
+	hash_table.Reset();
+}
+
+template <class ADDRESS, uint32_t PAGE_SIZE>
 void Profile<ADDRESS, PAGE_SIZE>::Accumulate(ADDRESS addr, uint64_t weight)
 {
 	ProfilePage<ADDRESS, PAGE_SIZE> *page;

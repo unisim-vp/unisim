@@ -13,26 +13,70 @@ namespace pim {
 
 using namespace std;
 
-using unisim::kernel::service::Simulator;
-using unisim::kernel::service::VariableBase;
+double PIMThread::GetSimTime() {
+	return Object::GetSimulator()->GetSimTime();
+}
+
+double PIMThread::GetLastTimeRatio() { return (last_time_ratio); }
+
+bool PIMThread::UpdateTimeRatio() {
+/*
+	- add a time_ratio = HotsTime/SimulatedTime response
+	- the time_ratio is used by timed/periodic operations
+*/
+
+
+	double new_time_ratio = last_time_ratio;
+	double sim_time = Object::GetSimulator()->GetSimTime();
+	double host_time = Object::GetSimulator()->GetHostTime();
+
+	bool has_changed = false;
+
+	if (sim_time > 0) {
+		new_time_ratio = host_time / sim_time;
+	}
+	if ((sim_time == 0) || (fabs(last_time_ratio - new_time_ratio) > 0.1)) {
+		pim_trace_file << (sim_time * 1000) << " \t" << (new_time_ratio) << endl;
+		last_time_ratio = new_time_ratio;
+		has_changed = true;
+	}
+
+	return has_changed;
+}
 
 PIMThread::PIMThread(const char *_name, Object *_parent) :
-	SocketThread()
-	, Object(_name, _parent)
+	 Object(_name, _parent)
+	, SocketThread()
+	, VariableBaseListener()
+
 	, name(string(_name))
+	, last_time_ratio(-1)
+	, gdbThread(NULL)
+
 {
 
 }
 
 PIMThread::~PIMThread() {
 
+	if (gdbThread) {
+		if (!gdbThread->isTerminated()) {
+			gdbThread->stop();
+		}
+		delete gdbThread; gdbThread = NULL;
+	}
+
+	pim_trace_file.close();
+
 }
 
-double PIMThread::GetSimTime() {
-	return Object::GetSimulator()->GetSimTime();
-}
+void PIMThread::run(){
 
-void PIMThread::Run(){
+	gdbThread = new GDBThread("gdb-Thread");
+	gdbThread->startSocketThread(getSockfd());
+
+	pim_trace_file.open ("pim_trace.xls");
+
 
 	cerr << "PIM::TargetThread start RUN " << std::endl;
 
@@ -41,7 +85,7 @@ void PIMThread::Run(){
 
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetRegisters(lst);
+	Simulator::simulator->GetSignals(lst);
 
 	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
 
@@ -55,103 +99,124 @@ void PIMThread::Run(){
 
 	while (!super::isTerminated()) {
 
-		string buf_str;
+		DBGData* request = gdbThread->receiveData();
 
-		if (!GetPacket(buf_str, blocking)) {
-			if (blocking) {
-				cerr << "PIM-Target receive **NULL**" << endl;
-				break;
-			} else {
-#ifdef WIN32
-				Sleep(1);
-#else
-				usleep(1000);
-#endif
-				continue;
-			}
-		}
+		if (request->getCommand() == DBGData::TERMINATE) {
+			gdbThread->stop();
 
-//		cerr << "PIM-Target receive " << buffer << std::endl;
-
-		if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
 			super::stop();
 		} else {
 
-// qRcmd,cmd:var_name:value
-			int start_index = 0;
-			int end_index = buf_str.find(',');
-			string qRcmd = buf_str.substr(start_index, end_index-start_index);
+			// qRcmd,cmd;var_name[:value]{;var_name[:value]}
 
-			start_index = end_index+1;
+			if (request->getCommand() == DBGData::QUERY_VAR_LISTEN) {
 
-			end_index = buf_str.find(':', start_index);
-			string cmd = buf_str.substr(start_index, end_index-start_index);
-			start_index = end_index+1;
+				string targetVar = request->getSlave();
+				for (unsigned int i=0; i < simulator_variables.size(); i++) {
+					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
+						simulator_variables[i]->AddListener(this);
+						break;
+					}
+				}
 
-			if (cmd.compare("read") == 0) {
+			} else	if (request->getCommand() == DBGData::QUERY_VAR_UNLISTEN) {
 
-				end_index = buf_str.find(':', start_index);
-				string name = buf_str.substr(start_index, end_index-start_index);
-				start_index = end_index+1;
+				string targetVar = request->getSlave();
 
-				for (int i=0; i < simulator_variables.size(); i++) {
-					if (name.compare(simulator_variables[i]->GetName()) == 0) {
+				for (unsigned int i=0; i < simulator_variables.size(); i++) {
 
-						std::ostringstream os;
-						os << simulator_variables[i]->GetName() << ":";
+					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
 
-						double val = *(simulator_variables[i]);
-						os << stringify(val);
+						simulator_variables[i]->RemoveListener(this);
 
-						os << ":" << GetSimTime();
+						break;
+					}
 
-						std::string str = os.str();
+				}
 
-//						cerr << name << " send: " << str << endl;
+			} else	if (request->getCommand() == DBGData::QUERY_VAR_READ) {
 
-						while (true) {
-							PutPacket(str, blocking);
-							if (!FlushOutput()) {
-								if (blocking) {
-									cerr << "PIM-Target unable to send !" << endl;
-								} else {
-#ifdef WIN32
-									Sleep(1);
-#else
-									usleep(1000);
-#endif
-									continue;
-								}
+				string targetVar = request->getSlave();
 
-							}
-							break;
+				for (unsigned int i=0; i < simulator_variables.size(); i++) {
+
+					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
+
+						DBGData *response = new DBGData(DBGData::QUERY_VAR_READ);
+
+						response->setSimTime(GetSimTime());
+
+						response->setMaster(simulator_variables[i]->GetName());
+						response->setMasterSite(request->getMasterSite());
+
+						response->setSlave(simulator_variables[i]->GetName());
+						response->setSlaveSite(request->getSlaveSite());
+
+						if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
+							double val = *(simulator_variables[i]);
+
+							response->addAttribute("value", stringify(val));
+
+						}
+						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "single precision floating-point") == 0) {
+							float val = *(simulator_variables[i]);
+							response->addAttribute("value", stringify(val));
+						}
+						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "boolean") == 0) {
+							bool val = *(simulator_variables[i]);
+							response->addAttribute("value", stringify(val));
+						}
+						else {
+							uint64_t val = *(simulator_variables[i]);
+							response->addAttribute("value", stringify(val));
 						}
 
-						os.str(std::string());
+						gdbThread->sendData(response);
 
 						break;
 					}
 				}
 
-			} else if (cmd.compare("write") == 0) {
+			} else if (request->getCommand() == DBGData::QUERY_VAR_WRITE) {
 
-				end_index = buf_str.find(':');
-				string name = buf_str.substr(start_index, end_index-start_index);
-				start_index = end_index+1;
+				string targetVar = request->getSlave();
 
-				string value = buf_str.substr(start_index);
+				string value = request->getAttribute("value");
 
-				for (int i=0; i < simulator_variables.size(); i++) {
-					if (name.compare(simulator_variables[i]->GetName()) == 0) {
+				for (unsigned int i=0; i < simulator_variables.size(); i++) {
 
-						*(simulator_variables[i]) = convertTo<double>(value);
+					if (targetVar.compare(simulator_variables[i]->GetName()) == 0) {
+
+						if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
+
+							*(simulator_variables[i]) = convertTo<double>(value);
+
+						}
+						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "single precision floating-point") == 0) {
+
+							*(simulator_variables[i]) = convertTo<float>(value);
+
+						}
+						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "boolean") == 0) {
+
+							*(simulator_variables[i]) = value.compare("false");
+						}
+						else {
+
+							*(simulator_variables[i]) = convertTo<uint64_t>(value);
+
+						}
+
 						break;
 					}
 				}
+
 
 			} else {
-				cerr << "PIM-Target UNKNOWN command => " << buf_str << std::endl;
+				cerr << "PIM-Target UNKNOWN command => " << std::endl;
 			}
+
+			if (request) { delete request; request = NULL; }
 
 		}
 
@@ -161,6 +226,37 @@ void PIMThread::Run(){
 
 }
 
+void PIMThread::VariableBaseNotify(const VariableBase *var) {
+
+	DBGData *response = new DBGData(DBGData::QUERY_VAR_LISTEN);
+
+	response->setSimTime(GetSimTime());
+
+	response->setMaster(var->GetName());
+	response->setMasterSite("_who_initiate_the_listener_");
+	response->setSlave(var->GetName());
+	response->setSlaveSite(DBGData::DEFAULT_SLAVE_SITE);
+
+	if (strcmp(var->GetDataTypeName(), "double precision floating-point") == 0) {
+		double val = *(var);
+		response->addAttribute("value", stringify(val));
+	}
+	else if (strcmp(var->GetDataTypeName(), "single precision floating-point") == 0) {
+		float val = *(var);
+		response->addAttribute("value", stringify(val));
+	}
+	else if (strcmp(var->GetDataTypeName(), "boolean") == 0) {
+		bool val = *(var);
+		response->addAttribute("value", stringify(val));
+	}
+	else {
+		uint64_t val = *(var);
+		response->addAttribute("value", stringify(val));
+	}
+
+	gdbThread->sendData(response);
+
+}
 
 } // end pim
 } // end service

@@ -23,17 +23,18 @@
 #include <referencecounting.hh>
 #include <errtools.hh>
 #include <vect.hh>
+#include <string>
 
 struct Scanner {
-  static FileLoc_t                fileloc;        ///< file location in scanned file
-  static FileLoc_t                fileloc_mlt;    ///< Starting line number of multi-line tokens
-  static int                      bracecount;     ///< Global opened braces count
+  static bool                     aborted_scanning; ///< true if scanning was aborted, false otherwise
+  static FileLoc_t                fileloc;          ///< file location in scanned file
+  static FileLoc_t                fileloc_mlt;      ///< Starting line number of multi-line tokens
+  static int                      bracecount;       ///< Global opened braces count
   static std::vector<int>         scs;
-  static ConstStr_t::Set          symbols;        ///< The symbol database
-  static Vect_t<Comment_t>        comments;       ///< Comments accumulator;
-  static Str::Buf*                s_stringbuffer;
+  static ConstStr_t::Set          symbols;          ///< The symbol database
+  static Vect_t<Comment_t>        comments;         ///< Comments accumulator;
   static Isa*                     s_isa;
-  static std::vector<ConstStr_t>  s_lookupdirs;   ///< Directory searched when opening files
+  static std::vector<ConstStr_t>  s_lookupdirs;     ///< Directory searched when opening files
   
   struct Include_t {
     uint8_t*                      m_state_backup;
@@ -62,7 +63,7 @@ struct Scanner {
   static bool                     include( char const* _filename );
   static bool                     open( ConstStr_t _filename );
   static bool                     parse( char const* _filename, Isa& _isa );
-  static Str::Buf&                strbuf() { return *s_stringbuffer; }
+  static std::string&             strbuf();
   static Isa&                     isa() { return *s_isa; }
   static int                      token( char const* _text );
   static ConstStr_t               charname( char _ch );

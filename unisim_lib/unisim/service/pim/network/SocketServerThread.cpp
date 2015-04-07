@@ -35,8 +35,8 @@ namespace service {
 namespace pim {
 namespace network {
 
-SocketServerThread::SocketServerThread(string host, uint16_t port, bool _blocking, uint8_t connection_req_nb) :
-	SocketThread(host, port, _blocking)
+SocketServerThread::SocketServerThread(string host, uint16_t port, uint8_t connection_req_nb) :
+	SocketThread(host, port)
 {
 	request_nbre = connection_req_nb;
 
@@ -78,7 +78,7 @@ SocketServerThread::~SocketServerThread() {
 
 }
 
-void SocketServerThread::Run() {
+void SocketServerThread::run() {
 
 #ifdef WIN32
 		int cli_addr_len;
@@ -86,7 +86,6 @@ void SocketServerThread::Run() {
 		socklen_t cli_addr_len;
 #endif
 
-	int connected = 0;
 	struct sockaddr_in cli_addr;
 
     cli_addr_len = sizeof(cli_addr);
@@ -107,6 +106,7 @@ void SocketServerThread::Run() {
 
 #ifdef WIN32
 
+		/* Ask for non-blocking reads on socket */
 		u_long NonBlock = 1;
 		if(ioctlsocket(sockfdTmp, FIONBIO, &NonBlock) != 0) {
 			int array[] = {sockfdTmp};
@@ -121,6 +121,7 @@ void SocketServerThread::Run() {
 			error(array, "fcntl <F_GETFL> failed");
 		}
 
+		/* Ask for non-blocking reads on socket */
 		if (fcntl(sockfdTmp, F_SETFL, flags | O_NONBLOCK) < 0) {
 			int array[] = {sockfdTmp};
 			error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
@@ -128,7 +129,7 @@ void SocketServerThread::Run() {
 
 #endif
 
-		protocolHandler->Start(sockfdTmp, blocking);
+		protocolHandler->startSocketThread(sockfdTmp);
 	}
 
 }

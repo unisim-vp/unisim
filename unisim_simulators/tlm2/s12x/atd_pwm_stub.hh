@@ -38,7 +38,7 @@
 #define ATD_PWM_STUB_HH_
 
 
-#include <systemc.h>
+#include <systemc>
 #include <inttypes.h>
 
 #include <iostream>
@@ -60,6 +60,9 @@
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
 using namespace std;
+
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
@@ -96,17 +99,6 @@ public:
 
 	tlm_target_socket<UNISIM2RTB_BUS_WIDTH, UNISIM_PWM_ProtocolTypes<PWM_SIZE> > slave_sock;
 
-	tlm_quantumkeeper atd0_quantumkeeper;
-	tlm_quantumkeeper atd1_quantumkeeper;
-	tlm_quantumkeeper pwm_quantumkeeper;
-
-	peq_with_get<PWM_Payload<PWM_SIZE> > input_payload_queue;
-	PayloadFabric<ATD_Payload<ATD1_SIZE> > atd1_payload_fabric;
-	PayloadFabric<ATD_Payload<ATD0_SIZE> > atd0_payload_fabric;
-
-	double	bus_cycle_time;
-	sc_time		cycle_time;
-
 	ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
 	~ATD_PWM_STUB();
 
@@ -127,9 +119,9 @@ public:
 	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
 	// Implementation
-	void Input(bool pwmValue[PWM_SIZE]);
-	void Output_ATD1(double anValue[ATD1_SIZE]);
-	void Output_ATD0(double anValue[ATD0_SIZE]);
+	void input(bool pwmValue[PWM_SIZE]);
+	void output_ATD1(double anValue[ATD1_SIZE]);
+	void output_ATD0(double anValue[ATD0_SIZE]);
 
 //	virtual void ProcessATD();
 //	virtual void ProcessPWM();
@@ -144,10 +136,31 @@ protected:
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
-	bool	enabled;
-	Parameter<bool>		param_enabled;
+	bool	atd0_stub_enabled;
+	Parameter<bool>		param_atd0_stub_enabled;
+
+	bool	atd1_stub_enabled;
+	Parameter<bool>		param_atd1_stub_enabled;
+
+	tlm_quantumkeeper atd0_quantumkeeper;
+	tlm_quantumkeeper atd1_quantumkeeper;
 
 private:
+
+	tlm_quantumkeeper pwm_quantumkeeper;
+
+	peq_with_get<PWM_Payload<PWM_SIZE> > input_payload_queue;
+
+	PayloadFabric<ATD_Payload<ATD1_SIZE> > atd1_payload_fabric;
+	ATD_Payload<ATD1_SIZE> *atd1_payload;
+
+	PayloadFabric<ATD_Payload<ATD0_SIZE> > atd0_payload_fabric;
+	ATD_Payload<ATD0_SIZE> *atd0_payload;
+
+	double	bus_cycle_time;
+	sc_time		cycle_time;
+
+
 	Parameter<double>	param_anx_stimulus_period;
 	Parameter<double>	param_pwm_fetch_period;
 

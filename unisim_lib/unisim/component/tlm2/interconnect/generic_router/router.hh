@@ -70,6 +70,39 @@ public:
 		output_port = 0;
 		translation = 0;
 	}
+	
+	Mapping(const Mapping& mapping)
+		: used(mapping.used)
+		, range_start(mapping.range_start)
+		, range_end(mapping.range_end)
+		, output_port(mapping.output_port)
+		, translation(mapping.translation) {
+	}
+	
+	int operator != (const Mapping& mapping) const {
+		return (used != mapping.used) ||
+		       (range_start != mapping.range_start) ||
+		       (range_end != mapping.range_end) ||
+		       (output_port != mapping.output_port) ||
+		       (translation != mapping.translation);
+	}
+
+	int operator == (const Mapping& mapping) const {
+		return (used == mapping.used) &&
+		       (range_start == mapping.range_start) &&
+		       (range_end == mapping.range_end) &&
+		       (output_port == mapping.output_port) &&
+		       (translation == mapping.translation);
+	}
+
+	Mapping& operator = (const Mapping& mapping) {
+		used = mapping.used;
+		range_start = mapping.range_start;
+		range_end = mapping.range_end;
+		output_port = mapping.output_port;
+		translation = mapping.translation;
+		return *this;
+	}
 };
 
 class RouterPayloadExtension :
@@ -110,8 +143,8 @@ private:
 
 template<class CONFIG>
 class Router :
-	public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >,
-	public unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >,
+	public unisim::kernel::service::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >,
+	public unisim::kernel::service::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >,
 	public sc_module {
 private:
 	typedef unisim::kernel::service::Object Object;
@@ -137,9 +170,9 @@ public:
 
 	/** Incomming memory interface for incomming debugging/loading requests 
 	 * One single memory interface for incomming requests is enough, as there is no concurrency */
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> > memory_export;
 	/** Outgoing memory interfaces (one per output port) for outgoing debugging/loading requests */
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint64_t> > *memory_import[OUTPUT_SOCKETS];
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> > *memory_import[OUTPUT_SOCKETS];
 
 	/** Object setup method
 	 * This method is required by the inherited Object class.
@@ -325,7 +358,7 @@ private:
 	 * @param size		the amount of data to read
 	 * @return			true if succeded, false otherwise
 	 */
-	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
+	virtual bool ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size);
 
 	/**
 	 * Memory interface method to handle write requests.
@@ -335,7 +368,7 @@ private:
 	 * @param size		the amount of data to write
 	 * @return 			true if succeded, false otherwise
 	 */
-	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
+	virtual bool WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size);
 
 	/*************************************************************************
 	 * Memory interface methods                                          END *

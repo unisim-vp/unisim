@@ -39,9 +39,9 @@ struct Vect_t : std::vector<Ptr_t<Type_t> > {
   }
   Vect_t<Type_t>& append( Vect_t<Type_t>& _src ) {
     if( not &_src ) return *this;
-    reserve( this->size() + _src.size() );
+    this->reserve( this->size() + _src.size() );
     typedef typename Vect_t<Type_t>::const_iterator iter_t;
-    for( iter_t iter = _src.begin(); iter < _src.end(); ++ iter ) push_back( *iter );
+    for( iter_t iter = _src.begin(); iter < _src.end(); ++ iter ) this->push_back( *iter );
     return *this;
   }
   Vect_t<Type_t>* append( Type_t* _item ) { this->push_back( _item ); return this; }
@@ -63,13 +63,18 @@ struct StringVect_t : std::vector<char const*> {
   }
   StringVect_t& append( StringVect_t& _src ) {
     if( not &_src ) return *this;
-    reserve( this->size() + _src.size() );
+    this->reserve( this->size() + _src.size() );
     typedef StringVect_t::const_iterator iter_t;
     for( iter_t iter = _src.begin(); iter < _src.end(); ++ iter ) push_back( *iter );
     return *this;
   }
   StringVect_t* append( char const* _item ) { this->push_back( _item ); return this; }
 
+};
+
+struct UIntVect_t : std::vector<unsigned int>
+{
+  UIntVect_t( unsigned int value ) : std::vector<unsigned int>( 1, value ) {}
 };
 
 #endif // __VECT_HH__

@@ -29,14 +29,14 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #include <inttypes.h>
-#include <sstream>
+#include <iostream>
 
 #include "unisim/component/cxx/processor/arm/disasm.hh"
-#include "unisim/component/cxx/processor/arm/masks.hh"
+#include "unisim/component/cxx/processor/arm/psr.hh"
 
 namespace unisim {
 namespace component {
@@ -44,423 +44,190 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-using namespace std;
+  std::ostream&
+  operator << ( std::ostream& sink, DisasmObject const& dobj )
+  {
+    dobj( sink );
+    return sink;
+  }
 
-/* Condition opcode bytes disassembling method */
-void
-DisasmCondition(const uint32_t cond, stringstream &buffer)
-{
-	switch (cond)
-	{
-	case COND_EQ:
-		buffer << "eq";
-		break;
-	case COND_NE:
-		buffer << "ne";
-		break;
-	case COND_CS_HS:
-		buffer << "cs/hs";
-		break;
-	case COND_CC_LO:
-		buffer << "cc/lo";
-		break;
-	case COND_MI:
-		buffer << "mi";
-		break;
-	case COND_PL:
-		buffer << "pl";
-		break;
-	case COND_VS:
-		buffer << "vs";
-		break;
-	case COND_VC:
-		buffer << "vc";
-		break;
-	case COND_HI:
-		buffer << "hi";
-		break;
-	case COND_LS:
-		buffer << "ls";
-		break;
-	case COND_GE:
-		buffer << "ge";
-		break;
-	case COND_LT:
-		buffer << "lt";
-		break;
-	case COND_GT:
-		buffer << "gt";
-		break;
-	case COND_LE:
-		buffer << "le";
-		break;
-	case COND_AL:
-		// buffer << "al";
-		break;
-	default:
-		cerr << "ERROR(" << __FUNCTION__ << "): "
-			<< "unknown condition code (" << cond << ")" << endl;
-		break;
-	}
-}
+  static char const* const  conds_dis[] =
+    {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "<und>"};
+  
+  /* Condition opcode bytes disassembling method */
+  void DisasmCondition::operator() ( std::ostream& sink ) const
+  {
+    if         (m_cond >= 15) {
+      sink << "<illegal condition code: " << m_cond << ">";
+      return;
+    }
+    
+    if  ((m_cond == 14) and (m_explicit_always == implicit_always))
+      return;
+    
+    sink << conds_dis[m_cond];
+  }
 
-void
-DisasmConditionFieldsMask(const uint32_t mask,
-		stringstream &buffer)
-{
-	if ((mask & 0x01) == 0x01) buffer << "c";
-	if ((mask & 0x02) == 0x02) buffer << "x";
-	if ((mask & 0x04) == 0x04) buffer << "s";
-	if ((mask & 0x08) == 0x08) buffer << "f";
-}
+  /* Immediate disassembly */
+  void DisasmI::operator() ( std::ostream& sink ) const
+  {
+    sink << '#' << std::dec << static_cast<int32_t>( m_imm );
+  }
+  
+  void DisasmShImm::operator() ( std::ostream& sink ) const
+  {
+    if (m_offset) {
+      switch (m_shift) {
+      case 0: sink << ", lsl #"; break;
+      case 1: sink << ", lsr #"; break;
+      case 2: sink << ", asr #"; break;
+      case 3: sink << ", ror #"; break;
+      }
+      sink << m_offset;
+    } else {
+      switch (m_shift) {
+      case 0: break;
+      case 1: sink << ", lsr #32"; break;
+      case 2: sink << ", asr #32"; break;
+      case 3: sink << ", rrx"; break;
+      }
+    }
+  }
+  
+  void DisasmMemoryRI::operator () ( std::ostream& _sink ) const
+  {
+    _sink << "[" << DisasmRegister(rn) << (p?"":"]") << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
+  }
 
-/* Data processing operand disassembling methods */
-void
-DisasmShiftOperand32Imm(const uint32_t rotate_imm,
-		const uint32_t imm,
-		stringstream &buffer)
-{
-	uint32_t imm_r, imm_l; // immediate right and left rotated
-	uint32_t imm_f; // final immediate
+  void DisasmMemoryRR::operator () ( std::ostream& _sink ) const
+  {
+    _sink << "[" << DisasmRegister(rn) << (p?"":"]") << ", " << (u?"":"-") << DisasmRegister(rm) << (p?(w?"]!":"]"):"");
+  }
+  
+  void DisasmMemoryRRI::operator () ( std::ostream& _sink ) const
+  {
+    _sink << "[" << DisasmRegister(rn) << (p?"":"]") << ", " << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm) << (p?(w?"]!":"]"):"");
+  }
+  
+  static char const* const register_dis[] =
+    {"r0","r1","r2","r3","r4","r5","r6","r7", "r8","r9","sl","fp","ip","sp","lr","pc"};
 
-	imm_r = imm >> (rotate_imm * 2);
-	imm_l = imm << (32 - (rotate_imm * 2));
+  static char const* const sornames[] = { "lsl", "lsr", "asr", "ror" };
+  
+  void DisasmShReg::operator() ( std::ostream& sink ) const
+  {
+    sink << sornames[m_shift] << " " << register_dis[m_reg];
+  }
 
-	imm_f = imm_r | imm_l;
-	buffer << "#" << dec << imm_f;
-}
+  void DisasmShift::operator() ( std::ostream& sink ) const
+  {
+    sink << sornames[m_shift];
+  }
 
-void
-DisasmShiftOperandImmShift(const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		stringstream &buffer) {
-	buffer << "r" << rm;
-	if ((shift_imm == 0) && (shift == 0))
-	{
-		return;
-	}
+  /* Special Register disassembling method */
+  void DisasmSpecReg::operator() ( std::ostream& sink ) const
+  {
+    switch (m_reg)
+      {
+      default: sink << "(<undefined> " << (unsigned int)m_reg << ")"; break;
+      case 15: sink << "CPSR"; break;
+      case 32: sink << "R8_usr"; break;
+      case 33: sink << "R9_usr"; break;
+      case 34: sink << "R10_usr"; break;
+      case 35: sink << "R11_usr"; break;
+      case 36: sink << "R12_usr"; break;
+      case 37: sink << "SP_usr"; break;
+      case 38: sink << "LR_usr"; break;
+      case 40: sink << "R8_fiq"; break;
+      case 41: sink << "R9_fiq"; break;
+      case 42: sink << "R10_fiq"; break;
+      case 43: sink << "R11_fiq"; break;
+      case 44: sink << "R12_fiq"; break;
+      case 45: sink << "SP_fiq"; break;
+      case 46: sink << "LR_fiq"; break;
+      case 48: sink << "LR_irq"; break;
+      case 49: sink << "SP_irq"; break;
+      case 50: sink << "LR_svc"; break;
+      case 51: sink << "SP_svc"; break;
+      case 52: sink << "LR_abt"; break;
+      case 53: sink << "SP_abt"; break;
+      case 54: sink << "LR_und"; break;
+      case 55: sink << "SP_und"; break;
+      case 60: sink << "LR_mon"; break;
+      case 61: sink << "SP_mon"; break;
+      case 62: sink << "ELR_hyp"; break;
+      case 63: sink << "SP_hyp"; break;
+      case 79: sink << "SPSR"; break;
+      case 110: sink << "SPSR_fiq"; break;
+      case 112: sink << "SPSR_irq"; break;
+      case 114: sink << "SPSR_svc"; break;
+      case 116: sink << "SPSR_abt"; break;
+      case 118: sink << "SPSR_und"; break;
+      case 124: sink << "SPSR_mon"; break;
+      case 126: sink << "SPSR_hyp"; break;
+      }
+  }
+  
+  /* Register disassembling method */
+  void DisasmRegister::operator() ( std::ostream& sink ) const
+  {
+    sink << register_dis[m_reg];
+  }
+  
+  /* Register list disassembling method */
+  void DisasmRegList::operator() ( std::ostream& sink ) const
+  {
+    char const* sep = "";
+    for (int reg = 0; reg < 16; ++reg) {
+      if (((m_reglist >> reg) & 1) == 0) continue;
+      sink << sep << register_dis[reg];
+      sep = ", ";
+    }
+  }
+  
+  /* Multiple Load Store Mode disassembling method */
+  void DisasmLSMMode::operator() ( std::ostream& sink ) const
+  {
+    static char const* const lsmmod[] = {"da","ia","db","ib"};
+    sink << lsmmod[m_mode%4];
+  }
+  
+  /* Barrier option disassembling method */
+  void DisasmBarrierOption::operator() ( std::ostream& sink ) const
+  {
+    switch (m_option) {
+    default: sink << "<reserved>"; break;
+    case 0xf: sink << "sy"; break;
+    case 0xe: sink << "st"; break;
+    case 0xb: sink << "ish"; break;
+    case 0xa: sink << "ishst"; break;
+    case 0x7: sink << "nsh"; break;
+    case 0x6: sink << "nshst"; break;
+    case 0x3: sink << "osh"; break;
+    case 0x2: sink << "oshst"; break;
+    };
+  }
 
-	if ((shift_imm == 0) && (shift == 0x01))
-	{
-		buffer << ", rrx";
-		return;
-	}
+  /* PSR mask disassembling method */
+  void DisasmPSRMask::operator() ( std::ostream& sink ) const
+  {
+    sink << (m_r ? "SPSR_" : "CPSR_");
+    if ((m_mask & 0x08) == 0x08) sink << "f";
+    if ((m_mask & 0x04) == 0x04) sink << "s";
+    if ((m_mask & 0x02) == 0x02) sink << "x";
+    if ((m_mask & 0x01) == 0x01) sink << "c";
+  }
 
-	buffer << ", ";
-	switch (shift)
-	{
-	case 0x00:
-		buffer << "lsl";
-		break;
-	case 0x01:
-		buffer << "lsr";
-		break;
-	case 0x02:
-		buffer << "asr";
-		break;
-	case 0x03:
-		buffer << "ror";
-		break;
-	default:
-		buffer << "(?)";
-		cerr << "ERROR(" << __FUNCTION__ << "): ";
-		cerr << "unexpected case found disassembling (shift val = "
-			<< dec << shift << ")." << endl;
-		break;
-	}
-
-	buffer << " #" << dec << shift_imm;
-}
-
-void
-DisasmShiftOperandRegShift(const uint32_t rs,
-		const uint32_t shift,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "r" << rm;
-	buffer << ", ";
-	switch (shift)
-	{
-	case 0x00:
-		buffer << "lsl";
-		break;
-	case 0x01:
-		buffer << "lsr";
-		break;
-	case 0x02:
-		buffer << "asr";
-		break;
-	case 0x03:
-		buffer << "ror";
-		break;
-	default:
-		buffer << "(?)";
-		cerr << "ERROR(" << __FUNCTION__ << "): ";
-		cerr << "unexpected case found disassembling (shift val = "
-			<< hex << shift << dec << ")." << endl;
-		break;
-	}
-	buffer << " r" << rs;
-}
-
-/* Load/store operand disassembling methods */
-void
-DisasmLSWUBImmOffset_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], "
-			<< "#" << (u == 0 ? "-" : "") << dec << offset;
-}
-
-void
-DisasmLSWUBImmOffset_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< "#" << (u == 0 ? "-" : "") << dec << offset << "]";
-}
-
-void
-DisasmLSWUBImmOffset_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< "#" << (u == 0 ? "-" : "") << dec << offset << "]!";
-}
-
-void
-DisasmLSWUBReg_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], "
-			<< (u == 0 ? "-" : "") << "r" << rm;
-	if (!((shift_imm == 0) && (shift == 0)))
-	{
-		buffer << ", ";
-		switch (shift)
-		{
-		case 0:
-			buffer << "lsl";
-			break;
-		case 1:
-			buffer << "lsr";
-			break;
-		case 2:
-			buffer << "asr";
-			break;
-		case 3:
-			if (shift_imm == 0) buffer << "rrx";
-			else buffer << "ror";
-			break;
-		default:
-			buffer << "(?)";
-			cerr << "ERROR(" << __FUNCTION__ << "): "
-				<< "unknown shift value (" << dec << shift << ")" << endl;
-			break;
-		}
-		if ((shift != 3) && (shift_imm != 0))
-			buffer << " #" << shift_imm;
-	}
-}
-
-void
-DisasmLSWUBReg_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< (u == 0 ? "-" : "") << "r" << rm;
-	if (!((shift_imm == 0) && (shift == 0)))
-	{
-		buffer << ", ";
-		switch (shift)
-		{
-		case 0:
-			buffer << "lsl";
-			break;
-		case 1:
-			buffer << "lsr";
-			break;
-		case 2:
-			buffer << "asr";
-			break;
-		case 3:
-			if (shift_imm == 0) buffer << "rrx";
-			else buffer << "ror";
-			break;
-		default:
-			buffer << "(?)";
-			cerr << "ERROR(" << __FUNCTION__ << "): "
-				<< "unknown shift value (" << dec << shift << ")" << endl;
-			break;
-		}
-		if (shift != 3 && shift_imm != 0)
-			buffer << " #" << shift_imm;
-	}
-	buffer << "]";
-}
-
-void
-DisasmLSWUBReg_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< (u == 0 ? "-" : "") << "r" << rm;
-	if (!((shift_imm == 0) && (shift == 0)))
-	{
-		buffer << ", ";
-		switch (shift)
-		{
-		case 0:
-			buffer << "lsl";
-			break;
-		case 1:
-			buffer << "lsr";
-			break;
-		case 2:
-			buffer << "asr";
-			break;
-		case 3:
-			if (shift_imm == 0) buffer << "rrx";
-			else buffer << "ror";
-			break;
-		default:
-			buffer << "(?)";
-			cerr << "ERROR(" << __FUNCTION__ << "): "
-				<< "unknown shift value (" << dec << shift << ")" << endl;
-			break;
-		}
-		if ((shift != 3) && (shift_imm != 0))
-			buffer << " #" << shift_imm;
-	}
-	buffer << "]!";
-}
-
-/* Miscellaneous load/store operand disassembling methods */
-void
-DisasmMLSImmOffset_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t immedH,
-		const uint32_t immedL,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], "
-			<< "#" << ((u == 1) ? "" : "-")
-			<< (immedH << 4) + immedL;
-}
-
-void
-DisasmMLSImmOffset_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t immedH,
-		const uint32_t immedL,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< "#" << ((u == 1) ? "" : "-")
-			<< (immedH << 4) + immedL << "]";
-}
-
-void
-DisasmMLSImmOffset_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t immedH,
-		const uint32_t immedL,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< "#" << ((u == 1) ? "" : "-")
-			<< (immedH << 4) + immedL << "]!";
-}
-
-void
-DisasmMLSReg_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], "
-			<< ((u == 1) ? "" : "-") << "r" << rm;
-}
-
-void
-DisasmMLSReg_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< ((u == 1) ? "" : "-") << "r" << rm << "]";
-}
-
-void
-DisasmMLSReg_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< ((u == 1) ? "" : "-") << "r" << rm << "]!";
-}
-
-/* Coprocessor load/store operand disassembling methods */
-void
-DisasmCLSImm_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], #"
-			<< ((u == 1) ? "" : "-") << offset * 4;
-}
-
-void
-DisasmCLSImm_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", #"
-			<< ((u == 1) ? "" : "-") << offset * 4 << "]";
-}
-
-void
-DisasmCLSImm_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", #"
-			<< ((u == 1) ? "" : "-") << offset * 4 << "]!";
-}
-
-void
-DisasmCLSUnindexed(const uint32_t rn,
-		const uint32_t option,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], "
-			<< "{" << option << "}";
-}
+  /* IT sequence disassembly */
+  void DisasmITSequence::operator() ( std::ostream& sink ) const
+  {
+    PSR pseudo_psr;
+    pseudo_psr.ITSetState( 0, m_mask );
+    do {
+      sink << (pseudo_psr.ITGetCondition() ? 'e' : 't');
+      pseudo_psr.ITAdvance();
+    } while (pseudo_psr.InITBlock());
+  }
 
 } // end of namespace arm
 } // end of namespace processor

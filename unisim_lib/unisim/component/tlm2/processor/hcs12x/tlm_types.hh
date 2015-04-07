@@ -58,16 +58,43 @@ using unisim::kernel::tlm2::ManagedPayload;
 
 using unisim::component::cxx::processor::hcs12x::address_t;
 
-struct INT_TRANS_T {
-	uint8_t ipl;
+class INT_TRANS_T {
+public:
+	INT_TRANS_T() :
+		id(0), vectorAddress(0), priority(0) { }
+
+	INT_TRANS_T(uint8_t _id, address_t _vectorAddress, uint8_t _priority) :
+		id(_id), vectorAddress(_vectorAddress), priority(_priority) { }
+
+	~INT_TRANS_T() { }
+
+	void Reset() { id = 0; vectorAddress = 0; priority = 0; }
+	uint8_t getID() { return (id); }
+	void setID(uint8_t _id) { id = _id; }
+	address_t getVectorAddress() { return (vectorAddress); }
+	void setVectorAddress(address_t _vectorAddress) { vectorAddress =_vectorAddress; }
+	uint8_t getPriority() { return (priority); }
+	void setPriority(uint8_t _priority) { priority = _priority; }
+
+private:
+	uint8_t id;
 	address_t vectorAddress;
+	uint8_t priority;
 };
 
 class XINT_Payload : public ManagedPayload
 {
 public:
-	uint8_t	interrupt_offset;
+	XINT_Payload(): interrupt_offset(0), xgate_shared_channel(false) { }
 
+	void setInterruptOffset(uint8_t	offset) { interrupt_offset = offset; }
+	void setXGATE_shared_channel(bool isXGate = false) { xgate_shared_channel = isXGate; }
+	uint8_t	getInterruptOffset() { return (interrupt_offset); }
+	bool    isXGATE_shared_channel() { return (xgate_shared_channel); }
+
+private:
+	uint8_t	interrupt_offset;
+	bool    xgate_shared_channel;
 };
 
 class XINT_REQ_ProtocolTypes
@@ -90,7 +117,7 @@ public:
 			os << payload.pwmChannel[i] << " ";
 		}
 
-		return os;
+		return (os);
 	}
 
 };
@@ -119,7 +146,7 @@ public:
 
 		os << std::dec;
 
-		return os;
+		return (os);
 	}
 
 };

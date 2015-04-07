@@ -75,19 +75,19 @@ by one.
 	
 */
 
-// Grade of Membership (gm) ⇒ M(Y)
-	uint8_t gm;
+// Grade of Membership (gm(A)) ⇒ M(Y)
+
 	uint8_t p1, p2;
 
 	uint8_t aVal = cpu->getRegA();
-	address_t xVal = cpu->getRegX();
-	address_t yVal = cpu->getRegY();
+	uint16_t xVal = cpu->getRegX();
+	uint16_t yVal = cpu->getRegY();
 
 	p1 = cpu->memRead8(xVal);
 	p2 = cpu->memRead8(xVal+1);
 	
 	if ((aVal < p1) or (aVal > p2)) {
-		gm = 0;
+		cpu->memWrite8(yVal, 0);
 	} else {
 		uint8_t s1, s2, min1, min2;
 
@@ -133,7 +133,7 @@ rev.execute = {
 	 */
 	 
 	 uint8_t aVal = 0xFF, ccrV = 0, memX, memYX;
-	 address_t  xVal, yVal;
+	 uint16_t  xVal, yVal;
 	 
 	 xVal = cpu->getRegX();
 	 yVal = cpu->getRegY();
@@ -173,7 +173,7 @@ rev.execute = {
 	 	}
 	 	
 	 	// check asynchronous interruptions
-	 	if (cpu->HasAsynchronousInterrupt())
+	 	if (cpu->hasAsynchronousInterrupt())
 		{
 			throw AsynchronousException();
 		}
@@ -210,7 +210,7 @@ revw.execute = {
 	 */
 
 	 uint8_t aVal = 0xFF, ccrV = 0, ccrC, memOfMemX, memY;
-	 address_t memX, xVal, yVal;
+	 uint16_t memX, xVal, yVal;
 	 
 	 xVal = cpu->getRegX();
 	 yVal = cpu->getRegY(); cpu->setRegTMP(1, yVal);  // (Y) weight pointer kept in TMP2
@@ -257,7 +257,7 @@ revw.execute = {
 	 	}
 	 
 	  	// check asynchronous interruptions
-	 	if (cpu->HasAsynchronousInterrupt())
+	 	if (cpu->hasAsynchronousInterrupt())
 		{
 			throw AsynchronousException();
 		}
@@ -307,7 +307,7 @@ wav.execute = {
 	  **/
 	 
 	 uint8_t bVal, memX, memY;
-	 address_t xVal, yVal;
+	 uint16_t xVal, yVal;
 	 uint32_t sop;
 	 uint16_t pp, sow;
 	 
@@ -333,7 +333,7 @@ wav.execute = {
 		 **/
 
 	 	// check asynchronous interruptions
-	 	if (cpu->HasAsynchronousInterrupt())
+	 	if (cpu->hasAsynchronousInterrupt())
 		{
 			cpu->setRegSP(cpu->getRegSP()-2);
 			cpu->memWrite16(cpu->getRegSP(), cpu->getRegTMP(2));
@@ -393,7 +393,7 @@ wavr.execute = {
 	 * The final state for the others CCR flags is not defined.
 	 */
 
-	address_t sp = cpu->getRegSP();
+	uint16_t sp = cpu->getRegSP();
 	cpu->setRegTMP(0, cpu->memRead16(sp));
 	cpu->setRegTMP(1, cpu->memRead16(sp+2));
 	cpu->setRegTMP(2, cpu->memRead16(sp+4));

@@ -380,6 +380,17 @@ bool usDebugAPIDeleteReadWatchpointSymbol(UnisimDebugAPI dapi, const char *str, 
  */
 bool usDebugAPIDeleteWriteWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size);
 
+/**
+ * Read 8bits from the memory hierarchy.
+ *
+ * @param dapi The debug handler to use.
+ * @param addr The address to read.
+ * @param [out] value The read value.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPIReadMemory(UnisimDebugAPI dapi, uint64_t addr, uint8_t* value);
+
 }
 
 #endif

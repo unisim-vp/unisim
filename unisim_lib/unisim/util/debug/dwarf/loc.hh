@@ -51,11 +51,14 @@ class DWARF_LocListEntry
 public:
 	DWARF_LocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu);
 	~DWARF_LocListEntry();
-	MEMORY_ADDR GetBeginAddressOffset() const;
-	MEMORY_ADDR GetEndAddressOffset() const;
 	bool IsBaseAddressSelection() const;
 	bool IsEndOfList() const;
+	MEMORY_ADDR GetBegin() const;
+	MEMORY_ADDR GetEnd() const;
+	MEMORY_ADDR GetBaseAddress() const;
+	bool HasOverlap(MEMORY_ADDR base_addr, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	uint64_t GetOffset() const;
+	const DWARF_Expression<MEMORY_ADDR> *GetLocationExpression() const;
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	std::string GetHREF() const;
 	unsigned int GetId() const;
@@ -70,9 +73,9 @@ private:
 	unsigned int id;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_LocListEntry<MEMORY_ADDR> *next;
-	MEMORY_ADDR begin_addr_offset;
-	MEMORY_ADDR end_addr_offset;
-	DWARF_Expression<MEMORY_ADDR> *dw_expr;
+	MEMORY_ADDR begin;
+	MEMORY_ADDR end;
+	DWARF_Expression<MEMORY_ADDR> *dw_loc_expr;
 };
 
 } // end of namespace dwarf

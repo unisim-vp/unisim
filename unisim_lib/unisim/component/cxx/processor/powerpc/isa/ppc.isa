@@ -35,15 +35,16 @@
 decl {
 
 #include <iosfwd>
-#include <unisim/component/cxx/processor/powerpc/exception.hh>
+#include <unisim/util/likely/likely.hh>
 
 }
 
 set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
-action {void} execute({typename CONFIG::STATE *} {cpu}) {
-	throw IllegalInstructionException<CONFIG>();
+action {bool} execute({typename CONFIG::STATE *} {cpu}) {
+	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 
 action {void} disasm({typename CONFIG::STATE *} {cpu}, {std::ostream&} {os}) {

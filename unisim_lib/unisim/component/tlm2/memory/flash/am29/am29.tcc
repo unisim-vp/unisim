@@ -77,13 +77,16 @@ bool AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::BeginSetup()
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
 bool AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
 unsigned int AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::transport_dbg(tlm::tlm_generic_payload& payload)
 {
-	payload.set_dmi_allowed(false);
+	payload.set_dmi_allowed(true);
 
 	tlm::tlm_command cmd = payload.get_command();
 	uint64_t addr = payload.get_address();
@@ -168,7 +171,7 @@ tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(t
 		case tlm::BEGIN_REQ:
 			{
 				
-				payload.set_dmi_allowed(false);
+				payload.set_dmi_allowed(true);
 
 				tlm::tlm_command cmd = payload.get_command();
 				uint64_t addr = payload.get_address();

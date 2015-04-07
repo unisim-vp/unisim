@@ -21,27 +21,29 @@ namespace network {
 class SocketThread: public GenericThread {
 public:
 
-	// Protocol list "NONE", "GDB", "PIM"
-
-	SocketThread(string host, uint16_t port, bool _blocking);
+	SocketThread(string host, uint16_t port);
 	SocketThread();
 
-	~SocketThread();
+	virtual ~SocketThread();
 
-	void Start(int sockfd, bool _blocking);
+	void startSocketThread(int sockfd);
 
-	virtual void Run() { };
-	virtual string getProtocol() { return "NONE"; }
+	virtual void run() { };
+	void closeSockfd();
 
 	bool GetChar(char& c, bool blocking);
-	virtual bool GetPacket(string& s, bool blocking);
-
+	bool GetPacket(string& s, bool blocking);
 	bool PutChar(char c);
-	virtual bool PutPacket(const string& data, bool blocking);
+	bool PutPacket(const string& data);
 	bool OutputText(const char *s, int count);
 	bool FlushOutput();
 
-	void SetSockfd(int sockfd);
+	bool GetPacketWithAck(string& s, bool blocking, bool Acknowledgment);
+	bool PutPacketWithAck(const string& data, bool Acknowledgment);
+	bool OutputTextWithAck(const char *s, int count, bool Acknowledgment);
+
+	void setSockfd(int sockfd);
+	int getSockfd() { return (sockfd); }
 	void waitConnection();
 
 protected:
@@ -49,7 +51,6 @@ protected:
 	uint32_t hostname;
 	uint16_t hostport;
 	int sockfd;
-	bool blocking;
 
 	/*
 	 *  this routine converts the address into an internet ip
@@ -61,6 +62,8 @@ protected:
 	pthread_mutex_t sockfd_mutex;
 	pthread_mutex_t sockfd_condition_mutex;
 	pthread_cond_t  sockfd_condition_cond;
+
+	pthread_mutexattr_t Attr;
 
 private:
 	int input_buffer_size;

@@ -35,6 +35,10 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_CPU_MMU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_CPU_MMU_TCC__
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -76,7 +80,7 @@ void CPU<CONFIG>::ReconfigureFastBATLookup()
 
 template <class CONFIG>
 template <bool DEBUG>
-void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
+bool CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 {
 	typename CONFIG::address_t addr = mmu_access.addr;
 	typename CONFIG::PrivilegeLevel privilege_level = mmu_access.privilege_level;
@@ -143,7 +147,12 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 							// Check if access is guarded
 							if(unlikely(wimg & CONFIG::WIMG_GUARDED_MEMORY))
 							{
-								if(!DEBUG) throw ISIGuardedMemoryException<CONFIG>(addr);
+								if(!DEBUG)
+								{
+									SetException(CONFIG::EXC_INSTRUCTION_STORAGE_GUARDED_MEMORY);
+									SetExceptionAddress(addr);
+									return false;
+								}
 							}
 
 							// Check access rights
@@ -151,7 +160,12 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 							if(unlikely(!pp)) // PP=00: No access
 							{
 								// Raise a protection violation
-								if(!DEBUG) throw ISIProtectionViolationException<CONFIG>(addr);
+								if(!DEBUG)
+								{
+									SetException(CONFIG::EXC_INSTRUCTION_STORAGE_PROTECTION_VIOLATION);
+									SetExceptionAddress(addr);
+									return false;
+								}
 							}
 							// Access is allowed
 						
@@ -171,7 +185,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 								mru_ibat->prev = bat;
 								mru_ibat = bat;
 							}
-							return;
+							return true;
 						}
 					}
 				}
@@ -205,7 +219,12 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 						// Check if access is guarded
 						if(unlikely(wimg & CONFIG::WIMG_GUARDED_MEMORY))
 						{
-							if(!DEBUG) throw ISIGuardedMemoryException<CONFIG>(addr);
+							if(!DEBUG)
+							{
+								SetException(CONFIG::EXC_INSTRUCTION_STORAGE_GUARDED_MEMORY);
+								SetExceptionAddress(addr);
+								return false;
+							}
 						}
 
 						// Check access rights
@@ -213,7 +232,12 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 						if(unlikely(!pp)) // PP=00: No access
 						{
 							// Raise a protection violation
-							if(!DEBUG) throw ISIProtectionViolationException<CONFIG>(addr);
+							if(!DEBUG)
+							{
+								SetException(CONFIG::EXC_INSTRUCTION_STORAGE_PROTECTION_VIOLATION);
+								SetExceptionAddress(addr);
+								return false;
+							}
 						}
 						// Access is allowed
 					
@@ -221,7 +245,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 						mmu_access.physical_addr = ((((bepi & 0x7ff) & GetIBATU_BL(bat_num)) | (GetIBATL_BRPN(bat_num) & 0x7ff) | (GetIBATL_BRPN(bat_num) & 0x7800)) << 17) | (addr & 0x1ffff);
 						mmu_access.bat_hit = true;
 	//					cerr << "IBAT hit at 0x" << std::hex << addr << std::hex << endl;
-						return;
+						return true;
 					}
 				}
 			}
@@ -265,7 +289,10 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 							{
 								if(!DEBUG)
 								{
-									throw DSIProtectionViolationException<CONFIG>(addr, memory_access_type);
+									SetException(CONFIG::EXC_DATA_STORAGE_PROTECTION_VIOLATION);
+									SetExceptionAddress(addr);
+									SetExceptionMemoryAccessType(memory_access_type);
+									return false;
 								}
 							}
 							// Access is allowed
@@ -286,7 +313,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 								mru_dbat->prev = bat;
 								mru_dbat = bat;
 							}
-							return;
+							return true;
 						}
 					}
 				}
@@ -319,7 +346,10 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 						{
 							if(!DEBUG)
 							{
-								throw DSIProtectionViolationException<CONFIG>(addr, memory_access_type);
+								SetException(CONFIG::EXC_DATA_STORAGE_PROTECTION_VIOLATION);
+								SetExceptionAddress(addr);
+								SetExceptionMemoryAccessType(memory_access_type);
+								return false;
 							}
 						}
 						// Access is allowed
@@ -328,7 +358,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 						mmu_access.physical_addr = ((((bepi & 0x7ff) & GetDBATU_BL(bat_num)) | (GetDBATL_BRPN(bat_num) & 0x7ff) | (GetDBATL_BRPN(bat_num) & 0x7800)) << 17) | (addr & 0x1ffff);
 						mmu_access.bat_hit = true;
 	//					cerr << "DBAT hit at 0x" << std::hex << addr << std::hex << endl;
-						return;
+						return true;
 					}
 				}
 			}
@@ -339,6 +369,8 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 		
 	// Miss in BAT registers
 	mmu_access.bat_hit = false;
+	
+	return true;
 }
 
 
@@ -533,7 +565,7 @@ void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 				// DTLB Hit
 				if(unlikely(IsVerboseDTLB()))
 				{
-					logger << DebugInfo << "DTLB hit: tlb_way=" << tlb_way << ", base_physical_addr=0x" << std::hex << tlb_entry->pte.base_physical_addr << std::dec << endl << EndDebugInfo;
+					logger << DebugInfo << "DTLB hit: tlb_way=" << tlb_entry->status.way << ", base_physical_addr=0x" << std::hex << tlb_entry->pte.base_physical_addr << std::dec << endl << EndDebugInfo;
 				}
 				mmu_access.tlb_way = tlb_entry->status.way;
 				mmu_access.dtlb_entry = tlb_entry;
@@ -666,7 +698,7 @@ void CPU<CONFIG>::ChooseEntryToEvictDTLB(MMUAccess<CONFIG>& mmu_access)
 
 template <class CONFIG>
 template <bool DEBUG>
-void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
+bool CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 {
 	typename CONFIG::address_t addr = mmu_access.addr;
 	typename CONFIG::PrivilegeLevel privilege_level = mmu_access.privilege_level;
@@ -710,7 +742,12 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	if(unlikely((memory_type == CONFIG::MT_INSN) && sr_noexecute))
 	{
 		// Raise an exception because the program is trying to execute instructions within a No-execute segment
-		if(!DEBUG) throw ISINoExecuteException<CONFIG>(addr);
+		if(!DEBUG)
+		{
+			SetException(CONFIG::EXC_INSTRUCTION_STORAGE_NO_EXECUTE);
+			SetExceptionAddress(addr);
+			return false;
+		}
 	}
 	
 	if(unlikely(GetSR_T(sr_num) == 1))
@@ -718,11 +755,21 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 		// Raise an exception because the program is trying to access to a direct-store segment (not supported by PPC750)
 		if(memory_type == CONFIG::MT_INSN)
 		{
-			if(!DEBUG) throw ISIDirectStoreException<CONFIG>(addr);
+			if(!DEBUG)
+			{
+				SetException(CONFIG::EXC_INSTRUCTION_STORAGE_DIRECT_STORE);
+				SetExceptionAddress(addr);
+				return false;
+			}
 		}
 		else
 		{
-			if(!DEBUG) throw DSIDirectStoreException<CONFIG>(addr, memory_access_type);
+			if(!DEBUG)
+			{
+				SetException(CONFIG::EXC_DATA_STORAGE_DIRECT_STORE);
+				SetExceptionMemoryAccessType(memory_access_type);
+				return false;
+			}
 		}
 	}
 	
@@ -756,13 +803,23 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 						
 				if(unlikely(wimg & CONFIG::WIMG_GUARDED_MEMORY))
 				{
-					if(!DEBUG) throw ISIGuardedMemoryException<CONFIG>(addr);
+					if(!DEBUG)
+					{
+						SetException(CONFIG::EXC_INSTRUCTION_STORAGE_GUARDED_MEMORY);
+						SetExceptionAddress(addr);
+						return false;
+					}
 				}
 			
 				// Check access rights
 				if(unlikely(key && !mmu_access.itlb_entry->pte.pp))
 				{
-					if(!DEBUG) throw ISIProtectionViolationException<CONFIG>(addr);
+					if(!DEBUG)
+					{
+						SetException(CONFIG::EXC_INSTRUCTION_STORAGE_PROTECTION_VIOLATION);
+						SetExceptionAddress(addr);
+						return false;
+					}
 				}
 			
 				// Update the replacement policy
@@ -773,7 +830,7 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 			}
 		
 			// ITLB Miss
-			return;
+			return true;
 		}
 
 		mmu_access.itlb_set = 0;
@@ -801,7 +858,10 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 					// Raise a protection violation
 					if(!DEBUG)
 					{
-						throw DSIProtectionViolationException<CONFIG>(addr, memory_access_type);
+						SetException(CONFIG::EXC_DATA_STORAGE_PROTECTION_VIOLATION);
+						SetExceptionAddress(addr);
+						SetExceptionMemoryAccessType(memory_access_type);
+						return false;
 					}
 				}
 				
@@ -815,7 +875,7 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 				//cerr << "DTLB hit at 0x" << std::hex << addr << std::dec << endl;
 			}
 			// DTLB Miss
-			return;
+			return true;
 		}
 
 		mmu_access.dtlb_set = 0;
@@ -824,11 +884,13 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	// Miss in ITLB/DTLB
 	mmu_access.tlb_hit = false;
 	mmu_access.base_virtual_addr = base_virtual_addr = virtual_addr & ~((typename CONFIG::virtual_address_t) CONFIG::MEMORY_PAGE_SIZE - 1);
+	
+	return true;
 }
 
 template <class CONFIG>
 template <bool DEBUG>
-void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
+bool CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 {
 	typename CONFIG::address_t addr = mmu_access.addr;
 	typename CONFIG::PrivilegeLevel privilege_level = mmu_access.privilege_level;
@@ -862,24 +924,23 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 		/* primary PTEG address */
 		hash = (virtual_segment_id & 0x7ffff) ^ page_index;
 		pteg_select = (((GetSDR1_HTABORG() & 0x1ff) | (GetSDR1_HTABMASK() & ((hash >> 10) & 0x1ff))) << 10) | (hash & 0x3ff);
-		typename CONFIG::physical_address_t primary_pteg = (((GetSDR1_HTABORG() >> 9) & 0x7f) << 25) | (pteg_select << 6);
+		//typename CONFIG::physical_address_t primary_pteg = (((GetSDR1_HTABORG() >> 9) & 0x7f) << 25) | (pteg_select << 6);
 			
 		/* secondary PTEG address */
 		hash = (~hash) & 0x7ffff;
 		pteg_select = (((GetSDR1_HTABORG() & 0x1ff) | (GetSDR1_HTABMASK() & ((hash >> 10) & 0x1ff))) << 10) | (hash & 0x3ff);
-		typename CONFIG::physical_address_t secondary_pteg = (((GetSDR1_HTABORG() >> 9) & 0x7f) << 25) | (pteg_select << 6);
+		//typename CONFIG::physical_address_t secondary_pteg = (((GetSDR1_HTABORG() >> 9) & 0x7f) << 25) | (pteg_select << 6);
 		
 		// raise a TLB miss
-		throw TLBMissException<CONFIG>(
-			memory_access_type,
-			memory_type,
-			addr,
-			mmu_access.tlb_way,
-			(privilege_level == CONFIG::PR_USER) ? GetSR_KP(sr_num) : GetSR_KS(sr_num),
-			virtual_segment_id,
-			api,
-			primary_pteg,
-			secondary_pteg);
+		SetException(CONFIG::EXC_TLB_MISS);
+		SetExceptionMemoryAccessType(memory_access_type);
+		SetExceptionMemoryType(memory_type);
+		SetExceptionAddress(addr);
+		SetExceptionWay(mmu_access.tlb_way);
+		SetExceptionKey((privilege_level == CONFIG::PR_USER) ? GetSR_KP(sr_num) : GetSR_KS(sr_num));
+		SetExceptionVSID(virtual_segment_id);
+		SetExceptionAPI(api);
+		return false;
 	}
 	
 	//-------------------------------------
@@ -911,11 +972,12 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 			// Read the page table entry from memory
 			if(DEBUG)
 			{
-				ReadMemory(pte_addr, &pte_value, 8, CONFIG::MT_DATA, false);
+				return ReadMemory(pte_addr, &pte_value, 8, CONFIG::MT_DATA, false);
 			}
 			else
 			{
-				EmuLoad<false>(pte_addr, &pte_value, 8);
+				bool status = EmuLoad<false>(pte_addr, &pte_value, 8);
+				if(unlikely(!status)) return false;
 			}
 
 			pte_value = BigEndian2Host(pte_value);
@@ -944,7 +1006,12 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 				// Check if access is guarded
 				if(unlikely((memory_type == CONFIG::MT_INSN) && (wimg & CONFIG::WIMG_GUARDED_MEMORY)))
 				{
-					if(!DEBUG) throw ISIGuardedMemoryException<CONFIG>(addr);
+					if(!DEBUG)
+					{
+						SetException(CONFIG::EXC_INSTRUCTION_STORAGE_GUARDED_MEMORY);
+						SetExceptionAddress(addr);
+						return false;
+					}
 				}
 
 				pte_pp = (pte_value & 3);
@@ -955,11 +1022,22 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 					// Raise a protection violation
 					if(memory_type == CONFIG::MT_INSN)
 					{
-						if(!DEBUG) throw ISIProtectionViolationException<CONFIG>(addr);
+						if(!DEBUG)
+						{
+							SetException(CONFIG::EXC_INSTRUCTION_STORAGE_PROTECTION_VIOLATION);
+							SetExceptionAddress(addr);
+							return false;
+						}
 					}
 					else
 					{
-						if(!DEBUG) throw DSIProtectionViolationException<CONFIG>(addr, memory_access_type);
+						if(!DEBUG)
+						{
+							SetException(CONFIG::EXC_DATA_STORAGE_PROTECTION_VIOLATION);
+							SetExceptionAddress(addr);
+							SetExceptionMemoryAccessType(memory_access_type);
+							return false;
+						}
 					}
 				}
 				
@@ -978,7 +1056,8 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 
 				if(!DEBUG)
 				{
-					EmuStore<false>(pte_addr, &pte_value, 8);
+					bool status = EmuStore<false>(pte_addr, &pte_value, 8);
+					if(unlikely(!status)) return false;
 				}
 
 				if(memory_type == CONFIG::MT_INSN)
@@ -1022,7 +1101,7 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 			
 				// compute the physical address
 				mmu_access.physical_addr = base_physical_addr | (addr & 0x00000fffUL);
-				return;
+				return true;
 			}
 		}
 	}
@@ -1035,16 +1114,22 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 	{
 		if(!DEBUG)
 		{
-			throw ISIPageFaultException<CONFIG>(addr);
+			SetException(CONFIG::EXC_INSTRUCTION_STORAGE_PAGE_FAULT);
+			return false;
 		}
 	}
 	else
 	{
 		if(!DEBUG)
 		{
-			throw DSIPageFaultException<CONFIG>(addr, memory_access_type);
+			SetException(CONFIG::EXC_DATA_STORAGE_PAGE_FAULT);
+			SetExceptionAddress(addr);
+			SetExceptionMemoryAccessType(memory_access_type);
+			return false;
 		}
 	}
+	
+	return false;
 }
 
 template <class CONFIG>
@@ -1116,55 +1201,46 @@ void CPU<CONFIG>::DumpPageTable(ostream& os)
 
 template <class CONFIG>
 template <bool DEBUG>
-void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
+bool CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 {
-	LookupBAT<DEBUG>(mmu_access);
+	bool lookup_bat_status = LookupBAT<DEBUG>(mmu_access);
+	if(unlikely(!lookup_bat_status)) return false;
+	
 	if(unlikely(!mmu_access.bat_hit))
 	{
-		AccessTLB<DEBUG>(mmu_access);
+		bool access_tlb_status = AccessTLB<DEBUG>(mmu_access);
+		if(unlikely(!access_tlb_status)) return false;
 
 		if(unlikely(!mmu_access.tlb_hit || mmu_access.force_page_table_walk))
 		{
 			// BAT/TLB Miss
-			EmuHardwarePageTableSearch<DEBUG>(mmu_access);
+			return EmuHardwarePageTableSearch<DEBUG>(mmu_access);
 		}
 	}
+	
+	return true;
 }
 
 /* TLB management */
 template <class CONFIG>
-void CPU<CONFIG>::Tlbia()
+bool CPU<CONFIG>::Tlbia()
 {
-	throw IllegalInstructionException<CONFIG>();
+	SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	return false;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Tlbie(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Tlbie(typename CONFIG::address_t addr)
 {
 	if(GetMSR_PR())
 	{
-		throw PrivilegeViolationException<CONFIG>();
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
 	}
 	InvalidateDTLBSet((addr / CONFIG::MEMORY_PAGE_SIZE) & ((CONFIG::DTLB_CONFIG::TLB_NUM_ENTRIES / CONFIG::DTLB_CONFIG::TLB_ASSOCIATIVITY) - 1));
 	InvalidateITLBSet((addr / CONFIG::MEMORY_PAGE_SIZE) & ((CONFIG::ITLB_CONFIG::TLB_NUM_ENTRIES / CONFIG::ITLB_CONFIG::TLB_ASSOCIATIVITY) - 1));
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Tlbre(unsigned int rd, unsigned int ra, unsigned int ws)
-{
-	throw IllegalInstructionException<CONFIG>();
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Tlbsx(unsigned int rd, typename CONFIG::address_t addr)
-{
-	throw IllegalInstructionException<CONFIG>();
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Tlbwe(unsigned int rs, unsigned int ra, unsigned int ws)
-{
-	throw IllegalInstructionException<CONFIG>();
+	
+	return true;
 }
 
 template <class CONFIG>
@@ -1209,25 +1285,31 @@ void CPU<CONFIG>::LoadDTLBEntry(typename CONFIG::address_t addr, uint32_t way, u
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Tlbld(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Tlbld(typename CONFIG::address_t addr)
 {
 	if(GetMSR_PR())
 	{
-		throw PrivilegeViolationException<CONFIG>();
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
 	}
 
 	LoadDTLBEntry(addr, addr & 1, GetPTEHI(), GetPTEHI());
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Tlbli(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Tlbli(typename CONFIG::address_t addr)
 {
 	if(GetMSR_PR())
 	{
-		throw PrivilegeViolationException<CONFIG>();
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
 	}
 
 	LoadITLBEntry(addr, addr & 1, GetPTEHI(), GetPTEHI());
+	
+	return false;
 }
 
 } // end of namespace mpc7447a

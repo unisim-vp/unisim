@@ -187,6 +187,9 @@ bool XPS_Timer<CONFIG>::BeginSetup()
 template <class CONFIG>
 bool XPS_Timer<CONFIG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 
@@ -324,12 +327,6 @@ void XPS_Timer<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::
 }
 
 template <class CONFIG>
-void XPS_Timer<CONFIG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
-	// N/A
-}
-
-template <class CONFIG>
 void XPS_Timer<CONFIG>::capture_trigger_b_transport(unsigned int channel, CaptureTriggerPayload& payload, sc_core::sc_time& t)
 {
 	if((!CONFIG::C_ONE_TIMER_ONLY && (channel < 2)) || (channel == 0))
@@ -409,6 +406,9 @@ unsigned int XPS_Timer<CONFIG>::capture_trigger_transport_dbg(unsigned int chann
 template <class CONFIG>
 bool XPS_Timer<CONFIG>::capture_trigger_get_direct_mem_ptr(unsigned int channel, CaptureTriggerPayload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 
@@ -726,7 +726,7 @@ void XPS_Timer<CONFIG>::ProcessCPUEvent(Event *event)
 	{
 		sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
-		tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ slave_sock->nb_transport_bw(*payload, phase, t);
 	}
 	
 }
@@ -797,7 +797,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				
 				tlm::tlm_phase phase = tlm::BEGIN_REQ;
 				sc_time t(SC_ZERO_TIME);
-				tlm::tlm_sync_enum sync = (*generate_out_master_sock[0])->nb_transport_fw(*generate_out_payload, phase, t);
+				/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[0])->nb_transport_fw(*generate_out_payload, phase, t);
 				
 				generate_out_payload->release();
 				
@@ -830,7 +830,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 					
 					tlm::tlm_phase phase = tlm::BEGIN_REQ;
 					sc_time t(SC_ZERO_TIME);
-					tlm::tlm_sync_enum sync = (*generate_out_master_sock[0])->nb_transport_fw(*generate_out_payload, phase, t);
+					/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[0])->nb_transport_fw(*generate_out_payload, phase, t);
 					
 					generate_out_payload->release();
 
@@ -851,7 +851,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				
 				tlm::tlm_phase phase = tlm::BEGIN_REQ;
 				sc_time t(SC_ZERO_TIME);
-				tlm::tlm_sync_enum sync = (*generate_out_master_sock[1])->nb_transport_fw(*generate_out_payload, phase, t);
+				/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[1])->nb_transport_fw(*generate_out_payload, phase, t);
 				
 				generate_out_payload->release();
 				
@@ -877,7 +877,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 					
 					tlm::tlm_phase phase = tlm::BEGIN_REQ;
 					sc_time t(SC_ZERO_TIME);
-					tlm::tlm_sync_enum sync = (*generate_out_master_sock[1])->nb_transport_fw(*generate_out_payload, phase, t);
+					/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[1])->nb_transport_fw(*generate_out_payload, phase, t);
 					
 					generate_out_payload->release();
 
@@ -901,7 +901,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 		
 		sc_time t(SC_ZERO_TIME);
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		tlm::tlm_sync_enum sync = interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
 		
 		interrupt_payload->release();
 		

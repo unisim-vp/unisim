@@ -37,7 +37,8 @@
 #include <set>
 #include <sstream>
 #include <fstream>
-#include "unisim/util/endian/endian.hh"
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/likely/likely.hh>
 
 #ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_TCC__
 #define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_TCC__
@@ -213,11 +214,11 @@ void AM29<CONFIG, BYTESIZE, IO_WIDTH>::Combine(uint8_t *dest, const uint8_t *sou
 	if(size > 0)
 	{
 		uint8_t *dst = dest;
-		const uint8_t *src = source + size - 1;
+		const uint8_t *src = source;
 		do
 		{
 			*dst = (*dst) & (*src);
-		} while(++dst, --src, --size);
+		} while(++dst, ++src, --size);
 	}
 }
 
@@ -407,7 +408,10 @@ template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 void AM29<CONFIG, BYTESIZE, IO_WIDTH>::ReadWriteStatus(unsigned int chip_num, uint8_t *data, uint32_t size)
 {
 	memset(data, 0, size);
-	*data = write_status[chip_num];
+	if(endian == E_LITTLE_ENDIAN)
+		*data = write_status[chip_num];
+	else
+		data[size - 1] = write_status[chip_num];
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -649,7 +653,7 @@ void AM29<CONFIG, BYTESIZE, IO_WIDTH>::LoadWordCount(unsigned int chip_num, type
 		logger << EndDebugInfo;
 	}
 
-	uint32_t n = (size > CHIP_IO_WIDTH) ? CHIP_IO_WIDTH : n;
+	uint32_t n = (size > CHIP_IO_WIDTH) ? CHIP_IO_WIDTH : size;
 
 	switch(n)
 	{
@@ -860,7 +864,7 @@ void AM29<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, typena
 	}
 
 	// Erasing sector make sector bits become all 1's
-	memset(&storage[CONFIG::SECTOR_MAP[sector_num].addr * IO_WIDTH], 0xff, IO_WIDTH * CONFIG::SECTOR_MAP[sector_num].size);
+	memset(&storage[CONFIG::SECTOR_MAP[sector_num].addr], 0xff, CONFIG::SECTOR_MAP[sector_num].size);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -1056,6 +1060,9 @@ void AM29<CONFIG, BYTESIZE, IO_WIDTH>::PrintData(std::ostream& os, const uint8_t
 		case E_BIG_ENDIAN:
 			for(i = 0; i <= (int) size; i++) os << Nibble2HexChar(data[i] >> 4) << Nibble2HexChar(data[i] & 0xf);
 			break;
+		default:
+			logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
 	}
 }
 

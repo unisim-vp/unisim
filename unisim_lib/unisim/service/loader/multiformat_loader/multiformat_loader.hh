@@ -42,6 +42,8 @@
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/backtrace.hh>
+#include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/loader/elf_loader/elf32_loader.hh>
 #include <unisim/service/loader/elf_loader/elf64_loader.hh>
 #include <unisim/service/loader/raw_loader/raw_loader.hh>
@@ -51,6 +53,8 @@
 #include <unisim/service/tee/blob/tee.hh>
 #include <unisim/service/tee/symbol_table_lookup/tee.hh>
 #include <unisim/service/tee/stmt_lookup/tee.hh>
+#include <unisim/service/tee/backtrace/tee.hh>
+
 
 namespace unisim {
 namespace service {
@@ -69,6 +73,8 @@ using unisim::service::interfaces::Blob;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::StatementLookup;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::BackTrace;
+using unisim::service::interfaces::Registers;
 using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::loader::elf_loader::Elf64Loader;
 using unisim::service::loader::raw_loader::RawLoader;
@@ -86,8 +92,10 @@ public:
 	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 	ServiceExport<StatementLookup<MEMORY_ADDR> > stmt_lookup_export;
+	ServiceExport<BackTrace<MEMORY_ADDR> > backtrace_export;
 	
 	ServiceImport<Memory<MEMORY_ADDR> > *memory_import[MAX_MEMORIES];
+	ServiceImport<Registers> registers_import;
 	
 	MultiFormatLoader(const char *name, Object *parent = 0);
 	virtual ~MultiFormatLoader();
@@ -102,6 +110,7 @@ private:
 	unisim::service::tee::blob::Tee<MEMORY_ADDR> *tee_blob;
 	unisim::service::tee::symbol_table_lookup::Tee<MEMORY_ADDR> *tee_symbol_table_lookup;
 	unisim::service::tee::stmt_lookup::Tee<MEMORY_ADDR> *tee_stmt_lookup;
+	unisim::service::tee::backtrace::Tee<MEMORY_ADDR> *tee_backtrace;
 	MemoryMapper<MEMORY_ADDR, MAX_MEMORIES> *memory_mapper;
 	std::string filename;
 	
@@ -181,31 +190,17 @@ template <class MEMORY_ADDR>
 class AddressRange
 {
 public:
-	AddressRange();
-	
 	MEMORY_ADDR low;
 	MEMORY_ADDR high;
 	
-	bool IsEmpty() const
-	{
-		return high < low;
-	}
-	
-	MEMORY_ADDR GetAmplitude() const
-	{
-		return (high >= low) ? high - low + 1 : 0; // There's a problem is low = min, high = max
-	}
-
-	std::string ToString() const
-	{
-		if(high >= low)
-		{
-			std::stringstream sstr;
-			sstr << "0x" << std::hex << low << "-0x" << high << std::dec;
-			return std::string(sstr.str());
-		}
-		return std::string();
-	}
+	AddressRange();
+	AddressRange(const AddressRange<MEMORY_ADDR>& ar);
+	bool IsEmpty() const;
+	MEMORY_ADDR GetAmplitude() const;
+	std::string ToString() const;
+	AddressRange<MEMORY_ADDR>& operator = (const AddressRange<MEMORY_ADDR>& ar);
+	int operator == (const AddressRange<MEMORY_ADDR>& ar) const;
+	int operator != (const AddressRange<MEMORY_ADDR>& ar) const;
 };
 
 template <class MEMORY_ADDR>

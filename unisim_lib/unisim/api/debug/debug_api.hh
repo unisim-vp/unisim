@@ -79,6 +79,8 @@ public:
 	virtual bool SetBreakpointHandler(void (*function)(void *, uint64_t));
 	virtual bool SetWatchpointHandler(void (*function)(void *, uint64_t, bool));
 
+  virtual uint8_t ReadMemory(uint64_t addr);
+
 protected:
 	void CallBreakpointHandler(uint64_t addr);
 	void CallWatchpointHandler(uint64_t addr, bool read);

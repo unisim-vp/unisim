@@ -42,7 +42,7 @@ namespace cxx {
 namespace processor {
 namespace powerpc {
 
-using unisim::util::arithmetic::Add32;
+using unisim::util::arithmetic::SignedAdd32;
 using unisim::util::arithmetic::RotateLeft;
 using unisim::util::arithmetic::CountLeadingZeros;
 using unisim::util::arithmetic::SignExtend;
@@ -52,6 +52,11 @@ using unisim::util::arithmetic::UnsignedSatAdd32;
 inline uint32_t Mask(uint32_t mb, uint32_t me)
 {
 	return (mb > me) ? ~(((uint32_t) -1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1))) : (((uint32_t)-1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1)));
+}
+
+inline uint32_t Mask(uint32_t n)
+{
+	return (n < 32) ? (n ? (1 << (32 - n)) - 1 : 0xffffffffUL) : 0;
 }
 
 } // end of namespace powerpc
@@ -64,33 +69,35 @@ inline uint32_t Mask(uint32_t mb, uint32_t me)
 
 op add(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:266[9]:rc[1])
 add.execute = {
-	uint8_t ca; // carry out
-	uint8_t ov; // overflow
-	uint8_t sign; // sign
 	uint32_t result;
 
 	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
 
-	// Compute the result
-	Add32(result, ca, ov, sign, a, b, 0);
-	
-	// Write back the result
-	cpu->SetGPR(rd, result);
-	
-	if(unlikely(oe || rc))
+	if(likely(!oe && !rc))
 	{
+		result = a + b;
+	}
+	else
+	{
+		uint8_t ca; // carry out
+		uint8_t ov; // overflow
+		uint8_t sign; // sign
+
+		// Compute the result
+		SignedAdd32(result, ca, ov, sign, a, b, 0);
+		
 		// Read XER
 		uint32_t xer = cpu->GetXER();
-		if(unlikely(oe))
+		if(oe)
 		{
 			// Generate XER[OV] and XER[SO]
 			xer = ov ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
 			// Update XER
 			cpu->SetXER(xer);
 		}
-		if(unlikely(rc))
+		if(rc)
 		{
 			// Read CR
 			uint32_t cr = cpu->GetCR();
@@ -104,6 +111,11 @@ add.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	// Write back the result
+	cpu->SetGPR(rd, result);
+	
+	return true;
 }
 add.disasm = {
 	os << "add" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -122,7 +134,7 @@ addc.execute = {
 	uint32_t xer = cpu->GetXER();
 	
 	// Compute the result
-	Add32(result, carry, overflow, sign, a, b, 0);
+	SignedAdd32(result, carry, overflow, sign, a, b, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -152,6 +164,8 @@ addc.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 addc.disasm = {
 	os << "addc" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -171,7 +185,7 @@ adde.execute = {
 	uint32_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, sign, a, b, carry_in);
+	SignedAdd32(result, carry, overflow, sign, a, b, carry_in);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -201,6 +215,8 @@ adde.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 adde.disasm = {
 	os << "adde" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -216,6 +232,8 @@ addi.execute = {
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
+	
+	return true;
 }
 addi.disasm = {
 	if(ra == 0)
@@ -236,7 +254,7 @@ addic.execute = {
 	uint32_t xer = cpu->GetXER();
 
 	// Compute the result
-	Add32(result, carry, overflow, sign, a, simm, 0);
+	SignedAdd32(result, carry, overflow, sign, a, simm, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -246,6 +264,8 @@ addic.execute = {
 	
 	// Update XER
 	cpu->SetXER(xer);
+	
+	return true;
 }
 addic.disasm = {
 	os << "addic r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
@@ -263,7 +283,7 @@ addic_.execute = {
 	uint32_t xer = cpu->GetXER();
 	
 	// Compute the result
-	Add32(result, carry, overflow, sign, a, simm, 0) ;
+	SignedAdd32(result, carry, overflow, sign, a, simm, 0) ;
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -284,6 +304,8 @@ addic_.execute = {
 			
 	// Update CR
 	cpu->SetCR(cr);
+	
+	return true;
 }
 addic_.disasm = {
 	os << "addic. r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
@@ -299,6 +321,8 @@ addis.execute = {
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
+	
+	return true;
 }
 addis.disasm = {
 	if(ra == 0)
@@ -320,7 +344,7 @@ addme.execute = {
 	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, sign, 0xFFFFFFFF, a, carry_in);
+	SignedAdd32(result, carry, overflow, sign, 0xFFFFFFFF, a, carry_in);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -350,6 +374,8 @@ addme.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 addme.disasm = {
 	os << "addme" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
@@ -368,7 +394,7 @@ addze.execute = {
 	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, sign, a, carry_in, 0);
+	SignedAdd32(result, carry, overflow, sign, a, carry_in, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -398,6 +424,8 @@ addze.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 addze.disasm = {
 	os << "addze" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
@@ -481,6 +509,8 @@ divw.execute = {
 			}
 		}
 	}
+	
+	return true;
 }
 divw.disasm = {
 	os << "divw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -561,6 +591,8 @@ divwu.execute = {
 			}
 		}
 	}
+	
+	return true;
 }
 divwu.disasm = {
 	os << "divwu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -596,6 +628,8 @@ mulhw.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 mulhw.disasm = {
 	os << "mulhw" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -630,6 +664,8 @@ mulhwu.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 mulhwu.disasm = {
 	os << "mulhwu" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -646,6 +682,8 @@ mulli.execute = {
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
+	
+	return true;
 }
 mulli.disasm = {
 	os << "mulli r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
@@ -691,6 +729,8 @@ mullw.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	return true;
 }
 mullw.disasm = {
 	os << "mullw r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -768,6 +808,8 @@ neg.execute = {
 			}
 		}
 	}
+	
+	return true;
 }
 neg.disasm = {
 	os << "neg" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
@@ -775,23 +817,25 @@ neg.disasm = {
 
 op subf(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:40[9]:rc[1])
 subf.execute = {
-	uint8_t carry; // carry out
-	uint8_t sign; // sign
-	uint8_t overflow; // overflow
+	uint32_t result;
 	
 	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
 	
-	// Compute the result
-	uint32_t result;
-	Add32(result, carry, overflow, sign, ~a, b, 1);
-	
-	// Write back the result
-	cpu->SetGPR(rd, result);
-	
-	if(unlikely(oe || rc))
+	if(likely(!rc && !oe))
 	{
+		result = b - a;
+	}
+	else
+	{
+		uint8_t carry; // carry out
+		uint8_t sign; // sign
+		uint8_t overflow; // overflow
+
+		// Compute the result
+		SignedAdd32(result, carry, overflow, sign, ~a, b, 1);
+		
 		// Read XER
 		uint32_t xer = cpu->GetXER();
 		if(unlikely(oe))
@@ -815,6 +859,11 @@ subf.execute = {
 			cpu->SetCR(cr);
 		}
 	}
+	
+	// Write back the result
+	cpu->SetGPR(rd, result);
+	
+	return true;
 }
 subf.disasm = {
 	os << "subf" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -833,7 +882,7 @@ subfc.execute = {
 	uint32_t xer = cpu->GetXER();
 	
 	// Compute the result
-	Add32(result, carry, overflow, sign, ~a, b, 1);
+	SignedAdd32(result, carry, overflow, sign, ~a, b, 1);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -862,6 +911,8 @@ subfc.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 subfc.disasm = {
 	os << "subfc" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -881,7 +932,7 @@ subfe.execute = {
 	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, sign, ~a, b, carry_in);
+	SignedAdd32(result, carry, overflow, sign, ~a, b, carry_in);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -911,6 +962,8 @@ subfe.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 subfe.disasm = {
 	os << "subfe" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -929,7 +982,7 @@ subfic.execute = {
 	uint32_t xer = cpu->GetXER();
 	
 	// Compute the result
-	Add32(result, carry, overflow, sign, -a, b, 0);
+	SignedAdd32(result, carry, overflow, sign, -a, b, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -939,6 +992,8 @@ subfic.execute = {
 	
 	// Update XER
 	cpu->SetXER(xer);
+	
+	return true;
 }
 subfic.disasm = {
 	os << "subfic r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
@@ -957,7 +1012,7 @@ subfme.execute = {
 	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, sign, ~a, 0xFFFFFFFF, carry_in);
+	SignedAdd32(result, carry, overflow, sign, ~a, 0xFFFFFFFF, carry_in);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -987,6 +1042,8 @@ subfme.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 subfme.disasm = {
 	os << "subfme" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
@@ -1005,7 +1062,7 @@ subfze.execute = {
 	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
 	
 	// Compute the result
-	Add32(result, carry, overflow, sign, ~a, carry_in, 0);
+	SignedAdd32(result, carry, overflow, sign, ~a, carry_in, 0);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -1035,6 +1092,8 @@ subfze.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 subfze.disasm = {
 	os << "subfze" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
@@ -1060,6 +1119,8 @@ cmp.execute = {
 	
 	// Update CR
 	cpu->SetCR(cr);
+	
+	return true;
 }
 cmp.disasm = {
 	os << "cmp cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -1068,7 +1129,11 @@ cmp.disasm = {
 op cmpi(11[6]:crfD[3]:?[1]:l[1]:ra[5]:sext<32> simm[16])
 cmpi.execute = {
 	// Raise an illegal instruction exception if l=1
-	if(unlikely(l)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(l))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return false;
+	}
 	
 	// Read the input operands
 	int32_t a = cpu->GetGPR(ra);
@@ -1081,6 +1146,8 @@ cmpi.execute = {
 	
 	// Update CR
 	cpu->SetCR(cr);
+	
+	return true;
 }
 cmpi.disasm = {
 	os << "cmpi cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", " << simm;
@@ -1089,7 +1156,11 @@ cmpi.disasm = {
 op cmpl(31[6]:crfD[3]:?[1]:l[1]:ra[5]:rb[5]:32[10]:?[1])
 cmpl.execute = {
 	// Raise an illegal instruction exception if l=1
-	if(unlikely(l)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(l))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return false;
+	}
 	
 	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
@@ -1103,6 +1174,8 @@ cmpl.execute = {
 	
 	// Update CR
 	cpu->SetCR(cr);
+	
+	return true;
 }
 cmpl.disasm = {
 	os << "cmpl cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
@@ -1111,7 +1184,11 @@ cmpl.disasm = {
 op cmpli(10[6]:crfD[3]:?[1]:l[1]:ra[5]:uimm[16])
 cmpli.execute = {
 	// Raise an illegal instruction exception if l=1
-	if(unlikely(l)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(l))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return false;
+	}
 	
 	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
@@ -1124,6 +1201,8 @@ cmpli.execute = {
 	
 	// Update CR
 	cpu->SetCR(cr);
+	
+	return true;
 }
 cmpli.disasm = {
 	os << "cmpli cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", " << uimm;
@@ -1163,6 +1242,8 @@ and.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 and.disasm = {
 	os << "and" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
@@ -1196,6 +1277,8 @@ andc.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 andc.disasm = {
 	os << "andc" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
@@ -1223,6 +1306,8 @@ andi_.execute = {
 
 	// Update CR
 	cpu->SetCR(cr);
+	
+	return true;
 }
 andi_.disasm = {
 	os << "andi. r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << uimm;
@@ -1250,6 +1335,8 @@ andis_.execute = {
 			
 	// Update CR
 	cpu->SetCR(cr);
+	
+	return true;
 }
 andis_.disasm = {
 	os << "andis. r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (uimm >> 16);
@@ -1261,15 +1348,6 @@ cntlzw.execute = {
 	uint32_t s = cpu->GetGPR(rs);
 	
 	// Compute the result
-// 	uint32_t result = 0;
-// 	uint32_t m = 1 << 31;
-// 	while(result < 32)
-// 	{
-// 		if(s & m) break;
-// 		m >>= 1;
-// 		result++;
-// 	}
-
 	uint32_t result = CountLeadingZeros(s);
 	
 	// Write back the result
@@ -1290,6 +1368,8 @@ cntlzw.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 cntlzw.disasm = {
 	os << "cntlzw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
@@ -1323,6 +1403,8 @@ eqv.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 eqv.disasm = {
 	os << "eqv" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
@@ -1355,6 +1437,8 @@ extsb.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 extsb.disasm = {
 	os << "extsb" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
@@ -1387,6 +1471,8 @@ extsh.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 extsh.disasm = {
 	os << "extsh" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
@@ -1420,6 +1506,8 @@ nand.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 nand.disasm = {
 	os << "nand" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
@@ -1453,6 +1541,8 @@ nor.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 nor.disasm = {
 	if(rs == rb)
@@ -1489,6 +1579,8 @@ or.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 or.disasm = {
 	if(rs == rb)
@@ -1525,6 +1617,8 @@ orc.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 orc.disasm = {
 	os << "orc" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
@@ -1540,6 +1634,8 @@ ori.execute = {
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
+	
+	return true;
 }
 ori.disasm = {
 	if(rs == 0 && ra == 0 && uimm == 0)
@@ -1558,6 +1654,8 @@ oris.execute = {
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
+	
+	return true;
 }
 oris.disasm = {
 	os << "oris r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (uimm >> 16);
@@ -1591,6 +1689,8 @@ xor.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 xor.disasm = {
 	os << "xor" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
@@ -1606,6 +1706,8 @@ xori.execute = {
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
+	
+	return true;
 }
 xori.disasm = {
 	os << "xori r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << uimm;
@@ -1621,6 +1723,8 @@ xoris.execute = {
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
+	
+	return true;
 }
 xoris.disasm = {
 	os << "xoris r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (uimm >> 16);
@@ -1662,6 +1766,8 @@ rlwimi.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 rlwimi.disasm = {
 	os << "rlwimi" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
@@ -1696,6 +1802,8 @@ rlwinm.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 rlwinm.disasm = {
 	os << "rlwinm" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
@@ -1731,6 +1839,8 @@ rlwnm.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 rlwnm.disasm = {
 	os << "rlwnm" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb << ", " << (unsigned int) mb << ", " << (unsigned int) me;
@@ -1770,6 +1880,8 @@ slw.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 slw.disasm = {
 	os << "slw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
@@ -1785,34 +1897,33 @@ sraw.execute = {
 	// Compute the result
 	int32_t result;
 
-	if(b == 0)
+#if 0	
+	uint32_t n = b & 0x3f;
+	uint32_t r = RotateLeft(s, 32 - n);
+	uint32_t m = Mask(n);
+	result = (r & m) | (((int32_t) s >> 31) & ~m);
+	xer = (((int32_t) s < 0) && ((r & ~m) != 0)) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+#else
+	if(b & 0x20)
 	{
-		result = s;
-		// Generate XER[CA]: XER[CA]=1
-		xer = xer & ~CONFIG::XER_CA_MASK;
-	}
-	else if(b & 0x20)
-	{
-		if(s < 0)
-		{
-			result = 0xffffffff;
-			// Generate XER[CA]
-			xer = (s & 0x7fffffff) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
-		}
-		else
-		{
-			result = 0;
-			// Generate XER[CA]: XER[CA]=0
-			xer = xer & ~CONFIG::XER_CA_MASK;
-		}
+		result = ((int32_t) s < 0) ? 0xffffffffUL : 0;
+		xer = (((int32_t) s < 0) && ((s & 0x7fffffffUL) != 0)) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
 	}
 	else
 	{
-		b = b & 0x1f;
-		result = (int32_t) s >> b;
-		// Generate XER[CA]
-		xer = (s < 0 && (s << (32 - b)) != 0) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+		uint32_t n = b & 0x1f;
+		if(n)
+		{
+			result = (int32_t) s >> n;
+			xer = (((int32_t) s < 0) && ((s << (32 - n)) != 0)) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+		}
+		else
+		{
+			result = s;
+			xer = xer & ~CONFIG::XER_CA_MASK;
+		}
 	}
+#endif
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
@@ -1833,6 +1944,8 @@ sraw.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 sraw.disasm = {
 	os << "sraw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
@@ -1879,6 +1992,8 @@ srawi.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 srawi.disasm = {
 	os << "srawi" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (unsigned int) sh;
@@ -1913,6 +2028,8 @@ srw.execute = {
 		// Update CR
 		cpu->SetCR(cr);
 	}
+	
+	return true;
 }
 srw.disasm = {
 	os << "srw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;

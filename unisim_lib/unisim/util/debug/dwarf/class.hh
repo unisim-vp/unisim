@@ -40,20 +40,21 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-const unsigned int DW_CLASS_ADDRESS = 1;                  // DWARF_Address (machine address)
-const unsigned int DW_CLASS_BLOCK = 2;                    // DWARF_Block (raw data block)
-const unsigned int DW_CLASS_EXPRESSION = 3;               // DWARF_Expression (DWARF Expression)
-const unsigned int DW_CLASS_UNSIGNED_CONSTANT = 4;        // DWARF_UnsignedConstant (unsigned integer up to 64-bit)
-const unsigned int DW_CLASS_SIGNED_CONSTANT = 5;          // DWARF_SignedConstant (signed integer up to 64-bit)
-const unsigned int DW_CLASS_UNSIGNED_LEB128_CONSTANT = 6; // DWARF_UnsignedLEB128Constant (variable length unsigned integer)
-const unsigned int DW_CLASS_SIGNED_LEB128_CONSTANT = 7;   // DWARF_SignedLEB128Constant (variable length signed integer)
-const unsigned int DW_CLASS_FLAG = 8;                     // DWARF_Flag (boolean)
-const unsigned int DW_CLASS_LINEPTR = 9;                  // DWARF_LinePtr (reference to a statement program)
-const unsigned int DW_CLASS_LOCLISTPTR = 10;              // DWARF_LocListPtr
-const unsigned int DW_CLASS_MACPTR = 11;                  // DWARF_MacPtr
-const unsigned int DW_CLASS_RANGELISTPTR = 12;            // DWARF_RangeListPtr
-const unsigned int DW_CLASS_REFERENCE = 13;               // DWARF_Reference (reference to a DWARF_DIE)
-const unsigned int DW_CLASS_STRING = 14;                  // DWARF_String (C string)
+const unsigned int DW_CLASS_ADDRESS = 1;                   // DWARF_Address (machine address)
+const unsigned int DW_CLASS_BLOCK = 2;                     // DWARF_Block (raw data block)
+const unsigned int DW_CLASS_EXPRESSION = 3;                // DWARF_Expression (DWARF Expression)
+const unsigned int DW_CLASS_UNSIGNED_CONSTANT = 4;         // DWARF_UnsignedConstant (unsigned integer up to 64-bit)
+const unsigned int DW_CLASS_SIGNED_CONSTANT = 8;           // DWARF_SignedConstant (signed integer up to 64-bit)
+const unsigned int DW_CLASS_UNSIGNED_LEB128_CONSTANT = 16; // DWARF_UnsignedLEB128Constant (variable length unsigned integer)
+const unsigned int DW_CLASS_SIGNED_LEB128_CONSTANT = 32;   // DWARF_SignedLEB128Constant (variable length signed integer)
+const unsigned int DW_CLASS_CONSTANT = DW_CLASS_UNSIGNED_CONSTANT | DW_CLASS_SIGNED_CONSTANT | DW_CLASS_UNSIGNED_LEB128_CONSTANT | DW_CLASS_SIGNED_LEB128_CONSTANT;
+const unsigned int DW_CLASS_FLAG = 64;                     // DWARF_Flag (boolean)
+const unsigned int DW_CLASS_LINEPTR = 65;                  // DWARF_LinePtr (reference to a statement program)
+const unsigned int DW_CLASS_LOCLISTPTR = 66;               // DWARF_LocListPtr
+const unsigned int DW_CLASS_MACPTR = 67;                   // DWARF_MacPtr
+const unsigned int DW_CLASS_RANGELISTPTR = 128;            // DWARF_RangeListPtr
+const unsigned int DW_CLASS_REFERENCE = 129;               // DWARF_Reference (reference to a DWARF_DIE)
+const unsigned int DW_CLASS_STRING = 130;                  // DWARF_String (C string)
 
 const char *DWARF_GetCLASSName(unsigned int dw_class);
 

@@ -50,9 +50,9 @@ public:
 	XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
 	~XML_ATD_PWM_STUB();
 
-	void ProcessATD0();
-	void ProcessATD1();
-	void ProcessPWM();
+	void processATD0();
+	void processATD1();
+	void processPWM();
 
 	template <int ATD_SIZE>
 	struct data_t {
@@ -60,8 +60,11 @@ public:
 		double time;
 	};
 
+	template <int SIZE> int RandomizeData(std::vector<data_t<SIZE> > &vect);
 	template <int SIZE> int LoadXmlData(const char *filename, std::vector<data_t<SIZE> > &vect);
 	template <int SIZE> void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t<SIZE> &data);
+
+	virtual bool BeginSetup();
 
 private:
 
@@ -85,7 +88,6 @@ private:
 
 	uint8_t atd1_anx_wrap_around_channel;
 	Parameter<uint8_t> param_atd1_anx_wrap_around_channel;
-
 
 };
 

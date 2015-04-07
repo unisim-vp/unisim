@@ -37,6 +37,7 @@
 
 #include <string.h>
 #include <map>
+#include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
 namespace util {
@@ -63,29 +64,13 @@ public:
 	HashTable();
 	~HashTable();
 
-	static inline KEY Hash(KEY key)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	static inline KEY Hash(KEY key) ALWAYS_INLINE;
 
-	inline ELEMENT *Find(KEY key)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline ELEMENT *Find(KEY key) ALWAYS_INLINE;
 
-	inline void Insert(ELEMENT *element)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline void Insert(ELEMENT *element) ALWAYS_INLINE;
 
-	inline void Remove(ELEMENT *element)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline void Remove(ELEMENT *element) ALWAYS_INLINE;
 
 	void Reset();
 

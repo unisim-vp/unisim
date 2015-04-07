@@ -35,6 +35,10 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_DEBUGGING_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_DEBUGGING_TCC__
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -45,11 +49,13 @@ namespace ppc440 {
 template <class CONFIG>
 bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr)
 {
+	if(!size) return true;
+	if(addr + size <= addr) return false; // detect overflow
+
 	uint32_t read_offset = 0;
 
 	do
 	{
-		typename CONFIG::STORAGE_ATTR storage_attr;
 		typename CONFIG::physical_address_t physical_addr;
 		typename CONFIG::address_t protection_boundary;
 		if(translate_addr)
@@ -64,22 +70,13 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 			mmu_access.memory_access_type = CONFIG::MAT_READ;
 			mmu_access.memory_type = mt;
 	
-			try
-			{
-				EmuTranslateAddress<true>(mmu_access); // debug is enabled
-			}
-			catch(DSIException<CONFIG>& exc) { return false; }
-			catch(ISIException<CONFIG>& exc) { return false; }
-			catch(DataTLBErrorException<CONFIG>& exc) { return false; }
-			catch(InstructionTLBErrorException<CONFIG>& exc) { return false; }
+			if(unlikely(!EmuTranslateAddress<true>(mmu_access))) return false; // debug is enabled
 
-			storage_attr = mmu_access.storage_attr;
 			physical_addr = mmu_access.physical_addr;
 			protection_boundary = mmu_access.protection_boundary;
 		}
 		else
 		{
-			storage_attr = (typename CONFIG::STORAGE_ATTR)(CONFIG::SA_DEFAULT);
 			physical_addr = addr;
 			protection_boundary = addr + size;
 		}
@@ -163,6 +160,8 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 				logger << endl << EndDebugInfo;
 			}
 
+			if(!sz) throw std::runtime_error("Internal error");
+
 			size -= sz;
 			read_offset += sz;
 			addr += sz;
@@ -177,11 +176,13 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 template <class CONFIG>
 bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr)
 {
+	if(!size) return true;
+	if(addr + size <= addr) return false; // detect overflow
+
 	uint32_t write_offset = 0;
 
 	do
 	{
-		typename CONFIG::STORAGE_ATTR storage_attr;
 		typename CONFIG::physical_address_t physical_addr;
 		typename CONFIG::address_t protection_boundary;
 		if(translate_addr)
@@ -196,28 +197,19 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 			mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 			mmu_access.memory_type = mt;
 	
-			try
-			{
-				EmuTranslateAddress<true>(mmu_access); // debug is enabled
-			}
-			catch(DSIException<CONFIG>& exc) { return false; }
-			catch(ISIException<CONFIG>& exc) { return false; }
-			catch(DataTLBErrorException<CONFIG>& exc) { return false; }
-			catch(InstructionTLBErrorException<CONFIG>& exc) { return false; }
+			if(unlikely(!EmuTranslateAddress<true>(mmu_access))) return false; // debug is enabled
 	
-			storage_attr = mmu_access.storage_attr;
 			physical_addr = mmu_access.physical_addr;
 			protection_boundary = mmu_access.protection_boundary;
 		}
 		else
 		{
-			storage_attr = (typename CONFIG::STORAGE_ATTR)(CONFIG::SA_DEFAULT);
 			physical_addr = addr;
 			protection_boundary = addr + size;
 		}
 
 		uint32_t size_to_protection_boundary = protection_boundary - addr;
-
+		
 		do
 		{
 			uint32_t sz = 0;
@@ -295,6 +287,7 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 				logger << endl << EndDebugInfo;
 			}
 
+			if(!sz) throw std::runtime_error("Internal error");
 			size -= sz;
 			write_offset += sz;
 			addr += sz;
@@ -335,11 +328,7 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 	mmu_access.memory_access_type = CONFIG::MAT_READ;
 	mmu_access.memory_type = CONFIG::MT_INSN;
 
-	try
-	{
-		EmuTranslateAddress<true>(mmu_access); // debug is enabled
-	}
-	catch(InstructionTLBErrorException<CONFIG>& exc) { string("not mapped"); }
+	if(unlikely(!EmuTranslateAddress<true>(mmu_access))) return string("not mapped ?"); // debug is enabled
 
 	bool hit = false;
 

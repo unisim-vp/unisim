@@ -49,6 +49,8 @@ const char *XMLHelper::XML_ENCODING = "UTF-8";
 XMLHelper::
 XMLHelper(Simulator *_simulator) :
 	simulator(_simulator),
+	cur_var(0),
+	cur_status(NONE),
 	name_token(0),
 	variables_token(0),
 	object_token(0),
@@ -159,8 +161,8 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 			var_iter != Simulator::simulator->variables.end();
 			var_iter++ )
 	{
-		if ( type == VariableBase::VAR_VOID ||
-				type == (*var_iter).second->GetType())
+		if ( (*var_iter).second->IsVisible() && (type == VariableBase::VAR_VOID ||
+				type == (*var_iter).second->GetType()))
 		{
 			// check that the variable is a root variable by checking that it
 			//   has not object owner
@@ -326,6 +328,9 @@ XmlfyVariable(xmlTextWriterPtr writer,
 			break;
 		case VariableBase::VAR_REGISTER:
 			rc = xmlTextWriterWriteFormatString(writer, "register");
+			break;
+		case VariableBase::VAR_SIGNAL:
+			rc = xmlTextWriterWriteFormatString(writer, "signal");
 			break;
 		case VariableBase::VAR_VOID:
 		case VariableBase::VAR_ARRAY:
@@ -522,8 +527,10 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 //			cerr << "      name = " << cur_var->name.str() << endl;
 //			cerr << "      value = " << cur_var->value.str() << endl;
 			// cerr << "    description = " << cur_var->description.str() << endl;
+			
 			bool modify = 
 				(type == VariableBase::VAR_VOID) ||
+				(cur_var->type.str().empty()) ||
 				(type == VariableBase::VAR_PARAMETER && cur_var->type.str().compare("parameter") == 0) ||
 				(type == VariableBase::VAR_REGISTER && cur_var->type.str().compare("register") == 0) ||
 				(type == VariableBase::VAR_STATISTIC && cur_var->type.str().compare("statistic") == 0);

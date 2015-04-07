@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_CROSSBAR_CROSSBAR_TCC__
 
 #include <unisim/util/endian/endian.hh>
+#include <list>
 
 namespace unisim {
 namespace component {
@@ -53,7 +54,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
 Crossbar<CONFIG>::Crossbar(const sc_module_name& name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A crossbar")
 	, unisim::component::cxx::interconnect::xilinx::crossbar::Crossbar<CONFIG>(name, parent)
 	, sc_module(name)
 	, icurd_plb_slave_sock("icurd-plb-slave-sock")
@@ -69,6 +70,7 @@ Crossbar<CONFIG>::Crossbar(const sc_module_name& name, Object *parent)
 	, plbm_dcr_slave_sock("plbm-dcr-slave-sock")
 	, cycle_time(SC_ZERO_TIME)
 	, param_cycle_time("cycle-time", this, cycle_time, "Enable/Disable verbosity")
+	, burst_latency_lut()
 {
 	icurd_plb_redirector = 
 		new unisim::kernel::tlm2::FwRedirector<Crossbar<CONFIG> >(
@@ -234,6 +236,9 @@ bool Crossbar<CONFIG>::BeginSetup()
 		inherited::logger << DebugError << "Parameter " << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
 		return false;
 	}
+	
+	burst_latency_lut.SetBaseLatency(cycle_time);
+	
 	return true;
 }
 
@@ -313,12 +318,104 @@ void Crossbar<CONFIG>::b_transport(unsigned int intf, tlm::tlm_generic_payload& 
 template <class CONFIG>
 unsigned int Crossbar<CONFIG>::transport_dbg(unsigned int intf, tlm::tlm_generic_payload& payload)
 {
+	typename CONFIG::ADDRESS start_range = 0;
+	typename CONFIG::ADDRESS end_range = 0;
+	typename inherited::Interface src_if = (typename inherited::Interface) intf;
+	typename inherited::Interface dst_if = inherited::Route(src_if, payload.get_address(), start_range, end_range);
+	
+	switch(dst_if)
+	{
+		case inherited::IF_MPLB:
+			return mplb_master_sock->transport_dbg(payload);
+			break;
+		case inherited::IF_MCI:
+			return mci_master_sock->transport_dbg(payload);
+			break;
+		default:
+			inherited::logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
+	}
 	return 0;
 }
 
 template <class CONFIG>
 bool Crossbar<CONFIG>::get_direct_mem_ptr(unsigned int intf, tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	switch(intf)
+	{
+		case inherited::IF_ICURD_PLB:
+		case inherited::IF_DCUWR_PLB:
+		case inherited::IF_DCURD_PLB:
+		case inherited::IF_SPLB0:
+		case inherited::IF_SPLB1:
+			{
+				typename CONFIG::ADDRESS start_range = 0;
+				typename CONFIG::ADDRESS end_range = 0;
+
+				typename inherited::Interface src_if = (typename inherited::Interface) intf;
+				typename inherited::Interface dst_if = inherited::Route(src_if, payload.get_address(), start_range, end_range);
+				
+				bool dmi_status = false;
+				switch(dst_if)
+				{
+					case inherited::IF_MPLB:
+						dmi_status = mplb_master_sock->get_direct_mem_ptr(payload, dmi_data);
+						break;
+					case inherited::IF_MCI:
+						dmi_status = mci_master_sock->get_direct_mem_ptr(payload, dmi_data);
+						break;
+					default:
+						inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid destination interface for get_direct_mem_ptr" << EndDebugError;
+						// deny read/write
+						dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+						dmi_data.set_start_address(0);
+						dmi_data.set_end_address((sc_dt::uint64) -1);
+						Object::Stop(-1);
+						return false;
+				}
+			
+				// restrict address range of DMI
+				sc_dt::uint64 dmi_start_address = dmi_data.get_start_address();
+				sc_dt::uint64 dmi_end_address = dmi_data.get_end_address();
+				
+				if(dmi_start_address < start_range)
+				{
+					// cut lower region
+					dmi_data.set_dmi_ptr(dmi_data.get_dmi_ptr() + (start_range - dmi_start_address));
+					dmi_data.set_start_address(start_range);
+				}
+					
+				if(dmi_end_address > end_range)
+				{
+					// cut upper region
+					dmi_data.set_end_address(end_range);
+				}
+				
+				// add crossbar latency per byte
+				if(dmi_status)
+				{
+					dmi_data.set_read_latency(dmi_data.get_read_latency() + (cycle_time / CONFIG::PLB_WIDTH));
+					dmi_data.set_write_latency(dmi_data.get_write_latency() + (cycle_time / CONFIG::PLB_WIDTH));
+				}
+				return dmi_status;
+			}
+			break;
+
+		default:
+			inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid source interface for get_direct_mem_ptr" << EndDebugError;
+			// deny read/write
+			dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+			dmi_data.set_start_address(0);
+			dmi_data.set_end_address((sc_dt::uint64) -1);
+			Object::Stop(-1);
+			return false;
+			break;
+	}
+	
+	// deny read/write
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 
@@ -359,6 +456,33 @@ tlm::tlm_sync_enum Crossbar<CONFIG>::nb_transport_bw(unsigned int intf, tlm::tlm
 template <class CONFIG>
 void Crossbar<CONFIG>::invalidate_direct_mem_ptr(unsigned int intf, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
+	std::list<unisim::component::cxx::interconnect::xilinx::crossbar::AddressRange<CONFIG> > address_ranges;
+	inherited::GetAddressRanges(inherited::IF_ICURD_PLB, (typename inherited::Interface) intf, address_ranges);
+	typename std::list<unisim::component::cxx::interconnect::xilinx::crossbar::AddressRange<CONFIG> >::iterator address_range;
+	for(address_range = address_ranges.begin(); address_range != address_ranges.end(); address_range++)
+	{
+		typename CONFIG::ADDRESS start_addr = address_range->GetStartAddr();
+		typename CONFIG::ADDRESS end_addr = address_range->GetEndAddr();
+		
+		if((end_addr >= start_range) && (start_addr <= end_range))
+		{
+			// collision
+			if(start_addr < start_range) start_addr = start_range; // cut lower region
+			if(end_addr > end_range) end_addr = end_range; // cut upper region
+			switch(intf)
+			{
+				case inherited::IF_MPLB:
+				case inherited::IF_MCI:
+					icurd_plb_slave_sock->invalidate_direct_mem_ptr(start_addr, end_addr);
+					dcuwr_plb_slave_sock->invalidate_direct_mem_ptr(start_addr, end_addr);
+					dcurd_plb_slave_sock->invalidate_direct_mem_ptr(start_addr, end_addr);
+					break;
+				default:
+					inherited::logger << DebugError << "Internal error" << EndDebugError;
+					Object::Stop(-1);
+			}
+		}
+	}
 }
 
 template <class CONFIG>
@@ -435,10 +559,11 @@ void Crossbar<CONFIG>::ProcessForwardEvent(Event *event)
 {
 	sc_event *ev_completed = event->GetCompletionEvent();
 	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_time t(cycle_time);
 	
+	typename CONFIG::ADDRESS start_range = 0;
+	typename CONFIG::ADDRESS end_range = 0;
 	typename inherited::Interface src_if = event->GetInterface();
-	typename inherited::Interface dst_if = inherited::Route(src_if, payload->get_address());
+	typename inherited::Interface dst_if = inherited::Route(src_if, payload->get_address(), start_range, end_range);
 	
 	if(inherited::IsVerbose())
 	{
@@ -447,6 +572,8 @@ void Crossbar<CONFIG>::ProcessForwardEvent(Event *event)
 			<< inherited::GetInterfaceName(dst_if) << ", @0x" << std::hex << payload->get_address() << std::dec << ")" << EndDebugInfo;
 	}
 	
+	sc_time t(burst_latency_lut.Lookup((payload->get_data_length() + CONFIG::PLB_WIDTH - 1) / CONFIG::PLB_WIDTH));
+
 	tlm::tlm_phase phase = tlm::BEGIN_REQ;
 	tlm::tlm_sync_enum sync = tlm::TLM_ACCEPTED;
 	
@@ -521,12 +648,14 @@ void Crossbar<CONFIG>::ProcessBackwardEvent(Event *event)
 		return;
 	}
 	
-	//CheckResponseStatus(dst_if, event->GetInterface(), payload);
+	typename inherited::Interface dst_if = event->GetInterface();
 	
 	schedule.FreeEvent(event);
 	event = (*it).second;
 	pending_requests.erase(it);
 
+	CheckResponseStatus(event->GetInterface(), dst_if, payload);
+	
 	sc_time t(cycle_time);
 	
 	sc_event *ev_completed = event->GetCompletionEvent();
@@ -642,6 +771,11 @@ void Crossbar<CONFIG>::ProcessDCREvent(Event *event)
 					uint32_t value;
 					memcpy(&value, data_ptr, sizeof(value));
 					inherited::WriteDCR(dcrn, unisim::util::endian::BigEndian2Host(value));
+					icurd_plb_slave_sock->invalidate_direct_mem_ptr(0, (sc_dt::uint64) -1);
+					dcuwr_plb_slave_sock->invalidate_direct_mem_ptr(0, (sc_dt::uint64) -1);
+					dcurd_plb_slave_sock->invalidate_direct_mem_ptr(0, (sc_dt::uint64) -1);
+					splb0_slave_sock->invalidate_direct_mem_ptr(0, (sc_dt::uint64) -1);
+					splb1_slave_sock->invalidate_direct_mem_ptr(0, (sc_dt::uint64) -1);
 				}
 				break;
 			case tlm::TLM_IGNORE_COMMAND:

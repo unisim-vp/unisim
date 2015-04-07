@@ -34,13 +34,14 @@
  
 #include <unisim/service/time/host_time/time.hh>
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 
 #include <windows.h>
 
 #else
 
 #include <sys/times.h>
+#include <unistd.h>
 
 #endif
 
@@ -68,7 +69,7 @@ bool HostTime::BeginSetup()
 double HostTime::GetTime()
 {
 	double t = 0.0;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;

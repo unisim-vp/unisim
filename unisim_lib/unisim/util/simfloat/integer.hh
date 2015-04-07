@@ -59,12 +59,6 @@
 #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #endif
 
-#if defined(__GNUC__) && (GCC_VERSION >= 29600) && defined(EXTENSIVE_INLINING)
-#define GCC_INLINE __attribute__((always_inline))
-#else
-#define GCC_INLINE
-#endif
-
 namespace unisim {
 namespace util {
 namespace simfloat {
@@ -397,7 +391,12 @@ class TBigCellInt : public Details::Access, protected IntegerTraits {
 
    unsigned int operator[](int uIndex) const { return inherited::array(uIndex); }
    typename inherited::ArrayProperty operator[](int uIndex) { return inherited::array(uIndex); }
-   ComparisonResult compare(const thisType& biSource) const;
+#ifndef __BORLANDC__
+typename TBigCellInt<IntegerTraits>::ComparisonResult
+#else
+Integer::Details::Access::ComparisonResult
+#endif
+   compare(const thisType& biSource) const;
    bool operator<(const thisType& biSource) const
       {  return compare(biSource) == CRLess; }
    bool operator>(const thisType& biSource) const

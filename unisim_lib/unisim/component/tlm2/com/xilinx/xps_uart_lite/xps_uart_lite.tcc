@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
-#define __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
+#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
+#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
 
 #include <systemc.h>
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
@@ -102,6 +102,9 @@ bool XPS_UARTLite<CONFIG>::BeginSetup()
 template <class CONFIG>
 bool XPS_UARTLite<CONFIG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 
@@ -265,6 +268,8 @@ tlm::tlm_sync_enum XPS_UARTLite<CONFIG>::nb_transport_bw(InterruptPayload& paylo
 template <class CONFIG>
 void XPS_UARTLite<CONFIG>::ProcessEvents()
 {
+	bool flush_telnet_output = false;
+	
 	time_stamp = sc_time_stamp();
 	if(inherited::IsVerbose())
 	{
@@ -292,6 +297,7 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 			{
 				case Event::EV_TELNET_IO:
 					{
+						flush_telnet_output = true;
 						schedule.FreeEvent(event);
 						// schedule a wake for handling I/O with telnet client
 						sc_time notify_time_stamp(sc_time_stamp());
@@ -321,9 +327,14 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 		event->InitializeTelnetIOEvent(notify_time_stamp);
 		schedule.Notify(event);
 	}
-		
-	inherited::TelnetProcess();       // Handle I/O with telnet client
+	
+	// Handle I/O with telnet client
+	inherited::TelnetProcessInput();
+	inherited::TelnetProcessOutput(flush_telnet_output);
+	
 	GenerateOutput();                 // Generate interrupt signal
+		
+	inherited::ResetTX_FIFO_BecomesEmpty();
 }
 
 template <class CONFIG>
@@ -453,7 +464,7 @@ void XPS_UARTLite<CONFIG>::ProcessCPUEvent(Event *event)
 	{
 		sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
-		tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ slave_sock->nb_transport_bw(*payload, phase, t);
 	}
 	
 }
@@ -461,7 +472,7 @@ void XPS_UARTLite<CONFIG>::ProcessCPUEvent(Event *event)
 template <class CONFIG>
 void XPS_UARTLite<CONFIG>::GenerateOutput()
 {
-	bool level = inherited::GetSTAT_REG_INTR_ENABLED() && (inherited::GetSTAT_REG_RX_FIFO_VALID_DATA() || inherited::TXT_FIFO_BecomesEmpty());
+	bool level = inherited::HasInterrupt();
 	if(interrupt_output != level)
 	{
 		if(inherited::IsVerbose())
@@ -475,7 +486,7 @@ void XPS_UARTLite<CONFIG>::GenerateOutput()
 		
 		sc_time t(SC_ZERO_TIME);
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		tlm::tlm_sync_enum sync = interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
 		
 		interrupt_payload->release();
 		

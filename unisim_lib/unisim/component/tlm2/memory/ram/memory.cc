@@ -42,10 +42,14 @@ namespace tlm2 {
 namespace memory {
 namespace ram {
 
+template class Memory<32, uint32_t, 1, DEFAULT_PAGE_SIZE, false>;
+template class Memory<32, uint64_t, 1, DEFAULT_PAGE_SIZE, false>;
 template class Memory<32, uint32_t, 8, DEFAULT_PAGE_SIZE, false>;
 template class Memory<32, uint64_t, 8, DEFAULT_PAGE_SIZE, false>;
 template class Memory<64, uint32_t, 4, DEFAULT_PAGE_SIZE, false>;
 template class Memory<64, uint64_t, 4, DEFAULT_PAGE_SIZE, false>;
+template class Memory<128, uint32_t, 1, DEFAULT_PAGE_SIZE, false>;
+template class Memory<128, uint64_t, 1, DEFAULT_PAGE_SIZE, false>;
 template class Memory<128, uint32_t, 2, DEFAULT_PAGE_SIZE, false>;
 template class Memory<128, uint64_t, 2, DEFAULT_PAGE_SIZE, false>;
 

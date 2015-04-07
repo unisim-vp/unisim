@@ -35,10 +35,15 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_ATD10B_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_ATD10B_HH__
 
-#include <systemc.h>
+#include <map>
 
 #include <inttypes.h>
-#include <map>
+
+#include <libxml/xmlmemory.h>
+#include <libxml/xpath.h>
+#include <libxml/parser.h>
+
+#include "systemc"
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -65,6 +70,10 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+
+using namespace sc_core;
+using namespace sc_dt;
+
 using namespace std;
 using namespace tlm;
 using namespace tlm_utils;
@@ -77,9 +86,10 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
-using unisim::kernel::service::RegisterArray;
+using unisim::kernel::service::CallBackObject;
+using unisim::kernel::service::SignalArray;
 
-using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::service::interfaces::Memory;
@@ -93,14 +103,15 @@ using unisim::component::tlm2::processor::hcs12x::UNISIM_ATD_ProtocolTypes;
 using unisim::component::tlm2::processor::hcs12x::ATD_Payload;
 
 
-template <uint8_t ATD_SIZE>
+template <unsigned int ATD_SIZE>
 class ATD10B :
 	public sc_module,
+	public CallBackObject,
 	virtual public tlm_fw_transport_if<UNISIM_ATD_ProtocolTypes<ATD_SIZE> >,
 	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
-	public Service<Memory<service_address_t> >,
+	public Service<Memory<physical_address_t> >,
 	public Service<Registers>,
-	public Client<Memory<service_address_t> >,
+	public Client<Memory<physical_address_t> >,
 	public Client<TrapReporting >
 {
 public:
@@ -117,6 +128,8 @@ public:
 		ATDDR10H, ATDDR10L, ATDDR11H, ATDDR11L, ATDDR12H, ATDDR12L, ATDDR13H, ATDDR13L,
 		ATDDR14H, ATDDR14L,	ATDDR15H, ATDDR15L};
 
+	static const unsigned int REGISTERS_BANK_SIZE = 48;
+
 	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD_SIZE> > anx_socket;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
@@ -125,8 +138,8 @@ public:
 	tlm_utils::simple_target_socket<ATD10B> slave_socket;
 	tlm_utils::simple_target_socket<ATD10B> bus_clock_socket;
 
-	ServiceExport<Memory<service_address_t> > memory_export;
-	ServiceImport<Memory<service_address_t> > memory_import;
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceExport<Registers> registers_export;
 	ServiceImport<TrapReporting > trap_reporting_import;
 
@@ -136,7 +149,7 @@ public:
 	void Process();
 	void RunScanMode();
 	void RunTriggerMode();
-	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+
 
 	//================================================================
 	//=                    tlm2 Interface                            =
@@ -151,6 +164,7 @@ public:
 	virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
 	void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
+	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -167,11 +181,11 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
-	//=             XINT Registers Interface interface methods               =
+	//=             ATD Registers Interface interface methods               =
 	//=====================================================================
 
 	/**
@@ -185,8 +199,8 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-	bool read(uint8_t offset, void *buffer);
-	bool write(uint8_t offset, const void *buffer);
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 protected:
 
@@ -197,6 +211,7 @@ private:
 	peq_with_get<ATD_Payload<ATD_SIZE> > input_anx_payload_queue;
 
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
+	XINT_Payload *xint_payload;
 
 	PayloadFabric<ATD_Payload<ATD_SIZE> > payload_fabric;
 
@@ -214,6 +229,7 @@ private:
 	bool conversionStop;
 	bool abortSequence;
 	uint8_t resultIndex;
+	bool isATDStarted;
 
 	bool isTriggerModeRunning;
 	bool isATDON;
@@ -229,15 +245,6 @@ private:
 	Parameter <double> param_vrl;
 	Parameter <double> param_vrh;
 
-	bool	debug_enabled;
-	Parameter<bool>	param_debug_enabled;
-
-	bool	use_atd_stub;
-	Parameter<bool>		param_use_atd_stub;
-
-	RegisterArray<double> analog_signal_reg;
-
-
 	/**
 	 * Vih and Vil are logical levels
 	 *  - Vih minimum voltage to model logical "1" the default is 3.25 V (min)
@@ -247,12 +254,17 @@ private:
 	Parameter<double> param_vih;
 	Parameter<double> param_vil;
 
+	bool	debug_enabled;
+	Parameter<bool>	param_debug_enabled;
+
 	// External Trigger Parameter
 	bool			hasExternalTrigger;
 	Parameter<bool>	param_hasExternalTrigger;
 
 	// Registers map
 	map<string, Register *> registers_registry;
+
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
 	void InputANx(double anValue[ATD_SIZE]);
 	void abortConversion();
@@ -296,6 +308,12 @@ private:
 	 * Analog signals are modeled as sample potential within VSSA and VDDA given by external tool
 	 */
 	double analog_signal[ATD_SIZE];
+	SignalArray<double> analog_signal_reg;
+
+	struct data_t {
+		double volte[ATD_SIZE];
+		double time;
+	};
 
 	// Authorised Bus Clock
 	struct {

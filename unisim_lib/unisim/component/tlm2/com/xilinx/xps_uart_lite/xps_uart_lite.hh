@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
-#define __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
+#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
+#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
 
 #include <systemc.h>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -51,6 +51,7 @@ namespace xps_uart_lite {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceExportBase;

@@ -76,7 +76,6 @@ public:
 	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
-	
 private:
 	sc_time cycle_time;
 	Parameter<sc_time> param_cycle_time;

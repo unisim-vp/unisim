@@ -35,6 +35,10 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_CACHE_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_CACHE_TCC__
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -424,7 +428,7 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access)
+inline bool CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access)
 {
 	if(unlikely(IsVerboseDL1()))
 	{
@@ -440,9 +444,9 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 			
 			if(l1_block_to_evict.status.valid && l1_block_to_evict.status.dirty)
 			{
-				unsigned int dirty_dword_num; // dirty 64-bit word to evict
+				unsigned int dirty_dword_num = 0; // dirty 64-bit word to evict
 				if(GetCCR1_FFF() || // force full flush
-				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_evict.status.dirty) && ((l1_block_to_evict.status.dirty >> dirty_dword_num) != 1))) // more than one 64-bit word is dirty
+				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_evict.status.dirty) && (l1_block_to_evict.status.dirty != (1 << dirty_dword_num)))) // more than one 64-bit word is dirty
 				{
 					// dirty DL1 block eviction
 					if(unlikely(IsVerboseDL1()))
@@ -452,7 +456,8 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 					// dirty DL1 block eviction into memory
 					if(unlikely(!PLBDataWrite(l1_block_to_evict.GetBaseAddr(), &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
 					{
-						throw DataAsynchronousMachineCheckException<CONFIG>();
+						SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+						return false;
 					}
 				}
 				else
@@ -466,7 +471,8 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 					// dirty DL1 64-word eviction into memory
 					if(unlikely(!PLBDataWrite(l1_block_to_evict.GetBaseAddr() + dirty_dword_offset, &l1_block_to_evict[dirty_dword_offset], 8)))
 					{
-						throw DataAsynchronousMachineCheckException<CONFIG>();
+						SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+						return false;
 					}
 				}
 			}
@@ -478,6 +484,8 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 	}
 	l1_access.line = l1_access.line_to_evict;
 	l1_access.line_to_evict = 0;
+	
+	return true;
 }
 
 template <class CONFIG>
@@ -621,7 +629,7 @@ inline void CPU<CONFIG>::UpdateReplacementPolicyIL1(CacheAccess<typename CONFIG:
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access)
+inline bool CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
 	if(unlikely(IsVerboseDL1()))
@@ -631,7 +639,8 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 	// DL1 block fill from memory
 	if(unlikely(!PLBDataRead(l1_access.block_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, l1_access.storage_attr)))
 	{
-		throw DataAsynchronousMachineCheckException<CONFIG>();
+		SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+		return false;
 	}
 
 	l1_access.line->status.valid = true;
@@ -640,10 +649,12 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 	l1_access.block->status.valid = true;
 	l1_access.block->status.dirty = 0;
 	UpdateReplacementPolicyDL1(l1_access);
+	
+	return true;
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, MMUAccess<CONFIG>& mmu_access)
+inline bool CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, MMUAccess<CONFIG>& mmu_access)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
 	if(unlikely(IsVerboseIL1()))
@@ -657,24 +668,28 @@ inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1
 	// DL1 block fill from memory
 	if(unlikely(!PLBInsnRead(block_physical_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, l1_access.storage_attr)))
 	{
-		throw InstructionAsynchronousMachineCheckException<CONFIG>();
+		SetException(CONFIG::EXC_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS);
+		return false;
 	}
 
 	l1_access.line->status.valid = true;
 	l1_access.line->SetBaseAddr(l1_access.line_base_addr);
 	l1_access.block->status.valid = true;
 	UpdateReplacementPolicyIL1(l1_access);
+	
+	return true;
 }
 
 /* Data Cache management */
 template <class CONFIG>
-void CPU<CONFIG>::Dcba(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcba(typename CONFIG::address_t addr)
 {
 	// Dcba is treated as a no-op by PPC440x5
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 {
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;
@@ -686,9 +701,10 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 	mmu_access.memory_access_type = CONFIG::MAT_READ; // Dcbf is treated as a Load
 	mmu_access.memory_type = CONFIG::MT_DATA;
 
-	EmuTranslateAddress<false>(mmu_access);
+	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
 	// DL1 Access
+	if(!CONFIG::HAS_DCACHE) return true;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 	l1_access.storage_attr = mmu_access.storage_attr;
@@ -707,9 +723,9 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 			{
 				// DL1 block is dirty
 				// Copy back to memory
-				unsigned int dirty_dword_num; // dirty 64-bit word to flush
+				unsigned int dirty_dword_num = 0; // dirty 64-bit word to flush
 				if(GetCCR1_FFF() || // force full flush
-				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_flush.status.dirty) && ((l1_block_to_flush.status.dirty >> dirty_dword_num) != 1))) // more than one 64-bit word is dirty
+				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_flush.status.dirty) && (l1_block_to_flush.status.dirty != (1 << dirty_dword_num)))) // more than one 64-bit word is dirty
 				{
 					// dirty DL1 block eviction
 					if(unlikely(IsVerboseDL1()))
@@ -719,7 +735,8 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 					// dirty DL1 block eviction into memory
 					if(unlikely(!PLBDataWrite(l1_block_to_flush.GetBaseAddr(), &l1_block_to_flush[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
 					{
-						throw DataAsynchronousMachineCheckException<CONFIG>();
+						SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+						return false;
 					}
 				}
 				else
@@ -733,7 +750,8 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 					// dirty DL1 64-word eviction into memory
 					if(unlikely(!PLBDataWrite(l1_block_to_flush.GetBaseAddr() + dirty_dword_offset, &l1_block_to_flush[dirty_dword_offset], 8)))
 					{
-						throw DataAsynchronousMachineCheckException<CONFIG>();
+						SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+						return false;
 					}
 				}
 			}
@@ -742,12 +760,18 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 		}
 		l1_access.line->status.valid = false;
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 {
-	if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+	if(GetMSR_PR())
+	{
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
+	}
 
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;
@@ -759,9 +783,10 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 	mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 	mmu_access.memory_type = CONFIG::MT_DATA;
 
-	EmuTranslateAddress<false>(mmu_access);
+	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
 	// DL1 Access
+	if(!CONFIG::HAS_DCACHE) return true;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 
@@ -780,10 +805,12 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 		}
 		l1_access.line->status.valid = false;
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 {
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;
@@ -795,9 +822,10 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 	mmu_access.memory_access_type = CONFIG::MAT_READ; // 3.4.4.4 Data Cache Block Store (dcbst): This instruction is treated as a load with respect to address translation and memory protection
 	mmu_access.memory_type = CONFIG::MT_DATA;
 
-	EmuTranslateAddress<false>(mmu_access);
+	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
 	// DL1 Access
+	if(!CONFIG::HAS_DCACHE) return true;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 
@@ -815,9 +843,9 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 			{
 				// DL1 block is dirty
 				// Copy back to memory
-				unsigned int dirty_dword_num; // dirty 64-bit word to copy back
+				unsigned int dirty_dword_num = 0; // dirty 64-bit word to copy back
 				if(GetCCR1_FFF() || // force full flush
-				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_copy_back.status.dirty) && ((l1_block_to_copy_back.status.dirty >> dirty_dword_num) != 1))) // more than one 64-bit word is dirty
+				   (BitScanForward(dirty_dword_num, (uint32_t) l1_block_to_copy_back.status.dirty) && (l1_block_to_copy_back.status.dirty != (1 << dirty_dword_num)))) // more than one 64-bit word is dirty
 				{
 					// dirty DL1 block eviction
 					if(unlikely(IsVerboseDL1()))
@@ -827,7 +855,8 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 					// dirty DL1 block eviction into memory
 					if(unlikely(!PLBDataWrite(l1_block_to_copy_back.GetBaseAddr(), &l1_block_to_copy_back[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
 					{
-						throw DataAsynchronousMachineCheckException<CONFIG>();
+						SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+						return false;
 					}
 				}
 				else
@@ -841,17 +870,20 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 					// dirty DL1 64-word eviction into memory
 					if(unlikely(!PLBDataWrite(l1_block_to_copy_back.GetBaseAddr() + dirty_dword_offset, &l1_block_to_copy_back[dirty_dword_offset], 8)))
 					{
-						throw DataAsynchronousMachineCheckException<CONFIG>();
+						SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+						return false;
 					}
 				}
 			}
 			l1_block_to_copy_back.status.dirty = 0;
 		}
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 {
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;
@@ -863,9 +895,9 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 	mmu_access.memory_access_type = CONFIG::MAT_WRITE; // 3.4.4.3 Data Cache Block Zero (dcbz): The dcbz instruction is treated as a store to the addressed byte with respect to address translation, protection, and pipelining.
 	mmu_access.memory_type = CONFIG::MT_DATA;
 
-	EmuTranslateAddress<false>(mmu_access);
+	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
-	if(CONFIG::DL1_CONFIG::ENABLE)
+	if(CONFIG::HAS_DCACHE)
 	{
 		// DL1 Access
 		CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
@@ -874,7 +906,7 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 		l1_access.storage_attr = mmu_access.storage_attr;
 		LookupDL1<false>(l1_access);
 	
-		if(!l1_access.line)
+		if(unlikely(!l1_access.line))
 		{
 			ChooseLineToEvictDL1(l1_access);
 			if(unlikely(IsVerboseDL1()))
@@ -882,10 +914,10 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 				logger << DebugInfo << "DL1 line miss: choosen way=" << l1_access.way << endl << EndDebugInfo;
 			}
 			
-			EmuEvictDL1(l1_access);
+			if(unlikely(!EmuEvictDL1(l1_access))) return false;
 		}
 	
-		if(!l1_access.block)
+		if(unlikely(!l1_access.block))
 		{
 			l1_access.block = &(*l1_access.line)[l1_access.sector];
 		}
@@ -906,59 +938,78 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 		memset(zero, 0, sizeof(zero));
 		if(unlikely(!PLBDataWrite(mmu_access.physical_addr & (~31), zero, sizeof(zero))))
 		{
-			throw DataAsynchronousMachineCheckException<CONFIG>();
+			SetException(CONFIG::EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS);
+			return false;
 		}
 	}
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dccci(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Dccci(typename CONFIG::address_t addr)
 {
 	// Note: it's normal to ignore 'addr' as it's unused on PPC440
 	if(GetMSR_PR())
 	{
-		throw PrivilegeViolationException<CONFIG>();
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
 	}
 
+	if(!CONFIG::HAS_DCACHE) return true;
+	
 	InvalidateDL1();
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Dcread(typename CONFIG::address_t addr, unsigned int rd)
+bool CPU<CONFIG>::Dcread(typename CONFIG::address_t addr, unsigned int rd)
 {
-	uint32_t way = addr / CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE;
-	uint32_t offset = (addr % CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE) & 0xfffffffcUL;
-	uint32_t index = 0;
-	uint32_t sector = 0;
+	if(CONFIG::HAS_DCACHE)
+	{
+		uint32_t way = addr / CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE;
+		uint32_t offset = (addr % CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE) & 0xfffffffcUL;
+		uint32_t index = 0;
+		uint32_t sector = 0;
+		
+		CacheSet<typename CONFIG::DL1_CONFIG>& l1_set = dl1[index];
+		CacheLine<typename CONFIG::DL1_CONFIG>& l1_line = l1_set[way];
+		CacheBlock<typename CONFIG::DL1_CONFIG>& l1_block = l1_line[sector];
+		
+		uint32_t data;
+		memcpy(&data, &l1_block[offset], sizeof(data));
+		
+		SetGPR(rd, data);
+		
+		typename CONFIG::physical_address_t base_physical_addr = l1_block.GetBaseAddr();
+		
+		uint32_t tagh = (((base_physical_addr >> 8) << CONFIG::DCDBTRH_TRA_OFFSET) & CONFIG::DCDBTRH_TRA_MASK)
+					| ((((sizeof(typename CONFIG::physical_address_t) > 32) ? base_physical_addr >> 32 : 0) << CONFIG::DCDBTRH_TERA_OFFSET) & CONFIG::DCDBTRH_TERA_MASK)
+					| (l1_block.status.valid ? CONFIG::DCDBTRH_V_MASK : 0);
+		
+		uint32_t tagl = (((uint32_t) l1_block.status.dirty << CONFIG::DCDBTRL_D_OFFSET) & CONFIG::DCDBTRL_D_MASK)
+					| ((l1_line.status.storage_attr & CONFIG::SA_U0) ? CONFIG::DCDBTRL_U0_MASK : 0)
+					| ((l1_line.status.storage_attr & CONFIG::SA_U1) ? CONFIG::DCDBTRL_U1_MASK : 0)
+					| ((l1_line.status.storage_attr & CONFIG::SA_U2) ? CONFIG::DCDBTRL_U2_MASK : 0)
+					| ((l1_line.status.storage_attr & CONFIG::SA_U3) ? CONFIG::DCDBTRL_U3_MASK : 0);
+		
+		SetDCDBTRH(tagh);
+		SetDCDBTRL(tagl);
+	}
+	else
+	{
+		SetGPR(rd, 0);
+		SetDCDBTRH(0);
+		SetDCDBTRL(0);
+	}
 	
-	CacheSet<typename CONFIG::DL1_CONFIG>& l1_set = dl1[index];
-	CacheLine<typename CONFIG::DL1_CONFIG>& l1_line = l1_set[way];
-	CacheBlock<typename CONFIG::DL1_CONFIG>& l1_block = l1_line[sector];
-	
-	uint32_t data;
-	memcpy(&data, &l1_block[offset], sizeof(data));
-	
-	SetGPR(rd, data);
-	
-	typename CONFIG::physical_address_t base_physical_addr = l1_block.GetBaseAddr();
-	
-	uint32_t tagh = (((base_physical_addr >> 8) << CONFIG::DCDBTRH_TRA_OFFSET) & CONFIG::DCDBTRH_TRA_MASK)
-	              | ((((sizeof(typename CONFIG::physical_address_t) > 32) ? base_physical_addr >> 32 : 0) << CONFIG::DCDBTRH_TERA_OFFSET) & CONFIG::DCDBTRH_TERA_MASK)
-	              | (l1_block.status.valid ? CONFIG::DCDBTRH_V_MASK : 0);
-	
-	uint32_t tagl = (((uint32_t) l1_block.status.dirty << CONFIG::DCDBTRL_D_OFFSET) & CONFIG::DCDBTRL_D_MASK)
-	              | ((l1_line.status.storage_attr & CONFIG::SA_U0) ? CONFIG::DCDBTRL_U0_MASK : 0)
-	              | ((l1_line.status.storage_attr & CONFIG::SA_U1) ? CONFIG::DCDBTRL_U1_MASK : 0)
-	              | ((l1_line.status.storage_attr & CONFIG::SA_U2) ? CONFIG::DCDBTRL_U2_MASK : 0)
-	              | ((l1_line.status.storage_attr & CONFIG::SA_U3) ? CONFIG::DCDBTRL_U3_MASK : 0);
-	
-	SetDCDBTRH(tagh);
-	SetDCDBTRL(tagl);
+	return true;
 }
 
 /* Instruction Cache Management */
 template <class CONFIG>
-void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 {
 	// Address translation
 	MMUAccess<CONFIG> mmu_access;
@@ -970,69 +1021,91 @@ void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 	mmu_access.memory_access_type = CONFIG::MAT_READ;
 	mmu_access.memory_type = CONFIG::MT_DATA; // instruction is considered as a "load" with respect to data storage exceptions
 
-	EmuTranslateAddress<false>(mmu_access);
+	if(unlikely(!EmuTranslateAddress<false>(mmu_access))) return false;
 
-	// invalidation operation is performed whether or not the access is cacheable
-	CacheAccess<class CONFIG::IL1_CONFIG> l1_access;
+	if(CONFIG::HAS_ICACHE)
+	{
+		// invalidation operation is performed whether or not the access is cacheable
+		CacheAccess<class CONFIG::IL1_CONFIG> l1_access;
 
-	l1_access.addr = mmu_access.virtual_addr;
-	l1_access.storage_attr = mmu_access.storage_attr;
-	LookupIL1<false>(l1_access);
-	
-	InvalidateIL1Set(l1_access.index);
+		l1_access.addr = mmu_access.virtual_addr;
+		l1_access.storage_attr = mmu_access.storage_attr;
+		LookupIL1<false>(l1_access);
+		
+		InvalidateIL1Set(l1_access.index);
+	}
 
 	unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::InvalidateDecodingCacheEntry(addr);
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Icbt(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Icbt(typename CONFIG::address_t addr)
 {
 	// Nothing to do: no architecturally visible changed 
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Iccci(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Iccci(typename CONFIG::address_t addr)
 {
 	// Note: it's normal to ignore 'addr' as it's unused on PPC440
 	if(GetMSR_PR())
 	{
-		throw PrivilegeViolationException<CONFIG>();
+		SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		return false;
 	}
 
+	if(!CONFIG::HAS_ICACHE) return true;
+
 	InvalidateIL1();
+	
+	return true;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Icread(typename CONFIG::address_t addr)
+bool CPU<CONFIG>::Icread(typename CONFIG::address_t addr)
 {
-	uint32_t way = addr / CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE;
-	uint32_t offset = (addr % CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE) & 0xfffffffcUL;
-	uint32_t index = 0;
-	uint32_t sector = 0;
+	if(CONFIG::HAS_ICACHE)
+	{
+		uint32_t way = addr / CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE;
+		uint32_t offset = (addr % CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE) & 0xfffffffcUL;
+		uint32_t index = 0;
+		uint32_t sector = 0;
+		
+		CacheSet<typename CONFIG::IL1_CONFIG>& l1_set = il1[index];
+		CacheLine<typename CONFIG::IL1_CONFIG>& l1_line = l1_set[way];
+		CacheBlock<typename CONFIG::IL1_CONFIG>& l1_block = l1_line[sector];
+		
+		uint32_t data;
+		memcpy(&data, &l1_block[offset], sizeof(data));
+		
+		SetICDBDR(data);
+		
+		typename CONFIG::virtual_address_t base_virtual_addr = l1_block.GetBaseAddr();
+		typename CONFIG::address_t ea = (base_virtual_addr & CONFIG::VADDR_EA_MASK) >> CONFIG::VADDR_EA_OFFSET;
+		typename CONFIG::process_id_t pid = (base_virtual_addr & CONFIG::VADDR_PID_MASK) >> CONFIG::VADDR_PID_OFFSET;
+		typename CONFIG::address_space_t as = (typename CONFIG::address_space_t)((base_virtual_addr & CONFIG::VADDR_AS_MASK) >> CONFIG::VADDR_AS_OFFSET);
+		
+		uint32_t tagh = (((ea >> 8) << CONFIG::ICDBTRH_TEA_OFFSET) & CONFIG::ICDBTRH_TEA_MASK)
+					| (l1_block.status.valid ? CONFIG::ICDBTRH_V_MASK : 0);
+		
+		uint32_t tagl = (((uint32_t) as << CONFIG::ICDBTRL_TS_OFFSET) & CONFIG::ICDBTRL_TS_MASK)
+					| ((pid << CONFIG::ICDBTRL_TID_OFFSET) & CONFIG::ICDBTRL_TID_MASK)
+					| (pid ? 0 : CONFIG::ICDBTRL_TD_MASK);
+		
+		SetICDBTRH(tagh);
+		SetICDBTRL(tagl);
+	}
+	else
+	{
+		SetICDBDR(0);
+		SetICDBTRH(0);
+		SetICDBTRL(0);
+	}
 	
-	CacheSet<typename CONFIG::IL1_CONFIG>& l1_set = il1[index];
-	CacheLine<typename CONFIG::IL1_CONFIG>& l1_line = l1_set[way];
-	CacheBlock<typename CONFIG::IL1_CONFIG>& l1_block = l1_line[sector];
-	
-	uint32_t data;
-	memcpy(&data, &l1_block[offset], sizeof(data));
-	
-	SetICDBDR(data);
-	
-	typename CONFIG::virtual_address_t base_virtual_addr = l1_block.GetBaseAddr();
-	typename CONFIG::address_t ea = (base_virtual_addr & CONFIG::VADDR_EA_MASK) >> CONFIG::VADDR_EA_OFFSET;
-	typename CONFIG::process_id_t pid = (base_virtual_addr & CONFIG::VADDR_PID_MASK) >> CONFIG::VADDR_PID_OFFSET;
-	typename CONFIG::address_space_t as = (typename CONFIG::address_space_t)((base_virtual_addr & CONFIG::VADDR_AS_MASK) >> CONFIG::VADDR_AS_OFFSET);
-	
-	uint32_t tagh = (((ea >> 8) << CONFIG::ICDBTRH_TEA_OFFSET) & CONFIG::ICDBTRH_TEA_MASK)
-	              | (l1_block.status.valid ? CONFIG::ICDBTRH_V_MASK : 0);
-	
-	uint32_t tagl = (((uint32_t) as << CONFIG::ICDBTRL_TS_OFFSET) & CONFIG::ICDBTRL_TS_MASK)
-	              | ((pid << CONFIG::ICDBTRL_TID_OFFSET) & CONFIG::ICDBTRL_TID_MASK)
-	              | (pid ? 0 : CONFIG::ICDBTRL_TD_MASK);
-	
-	SetICDBTRH(tagh);
-	SetICDBTRL(tagl);
+	return true;
 }
 
 } // end of namespace ppc440

@@ -24,49 +24,39 @@
 #include <map>
 #include <iosfwd>
 
-struct CiscGenerator : public Generator {
-  /* The opcode structure used to work on operation structures*/
-  struct OpCode_t {
-    uint8_t*                    m_mask;
-    uint8_t*                    m_bits;
-    unsigned int                m_prefixsize;
-    unsigned int                m_fullsize;
-    bool                        m_vlen;
-    // Topology information
-    OpCode_t*                   m_upper;
-    intptr_t                    m_lowercount;
+struct CiscOpCode_t : public OpCode_t
+{
+  uint8_t*                    m_mask;
+  uint8_t*                    m_bits;
+  unsigned int                m_prefixsize;
+  unsigned int                m_fullsize;
+  bool                        m_vlen;
     
-    OpCode_t()
-      : m_mask( 0 ), m_bits( 0 ), m_prefixsize( 0 ), m_fullsize( 0 ), m_vlen( false ),
-        m_upper( 0 ), m_lowercount( 0 ) {}
-    ~OpCode_t() { delete [] m_mask; }
+  CiscOpCode_t( ConstStr_t _symbol, unsigned int _prefixsize, unsigned int _fullsize, bool _vlen );
+  ~CiscOpCode_t() { delete [] m_mask; }
     
-    void                        size_attrs( unsigned int prefixsize, unsigned int fullsize, bool vlen );
-    bool                        match( OpCode_t const& _oc ) const;
-    void                        optimize( bool is_little_endian );
-    unsigned int                maskbytesize() const { return (m_prefixsize+7)/8; };
-    unsigned int                fullbytesize() const { return (m_fullsize+7)/8; };
+  bool                        match( CiscOpCode_t const& _oc ) const;
+  void                        optimize( bool is_little_endian );
+  unsigned int                maskbytesize() const { return (m_prefixsize+7)/8; };
+  unsigned int                fullbytesize() const { return (m_fullsize+7)/8; };
     
-    // Topology methods
-    enum Location_t { Outside, Overlaps, Inside, Contains, Equal };
-    Location_t                  locate( OpCode_t const& _oc ) const;
-    void                        setupper( OpCode_t* _upper );
-    void                        unsetupper();
-    
-    friend std::ostream&        operator << ( std::ostream& _sink, OpCode_t const& _oc );
-  };
-  typedef std::map<Operation_t const*,OpCode_t> OpCodes_t;
+  // Topology methods
+  Location_t                  locate( OpCode_t const& _oc ) const;
+  
+  std::ostream&               details( std::ostream& _sink ) const;
+};
 
-  OpCodes_t                     m_opcodes;
+struct CiscGenerator : public Generator
+{
   unsigned int                  m_code_capacity;
   
   CiscGenerator();
   ~CiscGenerator() {};
   
-  /* Cisc specific instructions */
-  OpCode_t const&               opcode( Operation_t const* _op ) const;
-  OpCode_t&                     opcode( Operation_t const* _op );
+  CiscOpCode_t const&           ciscopcode( Operation_t const* _op ) const { return dynamic_cast<CiscOpCode_t const&>( opcode( _op ) ); }
+  CiscOpCode_t&                 ciscopcode( Operation_t const* _op ) { return dynamic_cast<CiscOpCode_t&>( opcode( _op ) ); };
   
+  /* Cisc specific instructions */
   void                          finalize();
   void                          codetype_decl( Product_t& _product ) const;
   void                          codetype_impl( Product_t& _product ) const;
@@ -82,7 +72,6 @@ struct CiscGenerator : public Generator {
   void                          insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const;
   void                          additional_decl_includes( Product_t& _product ) const;
   void                          additional_impl_includes( Product_t& _product ) const;
-  void                          subdecoder_bounds( Product_t& _product ) const;
 
   void                          insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const;
   void                          insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const;

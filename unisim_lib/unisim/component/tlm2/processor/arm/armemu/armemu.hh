@@ -124,7 +124,7 @@ private:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool ExternalReadMemory(uint64_t addr, 
+	virtual bool ExternalReadMemory(uint32_t addr, 
 			void *buffer, 
 			uint32_t size);
 	/** Non intrusive memory write method.
@@ -137,7 +137,7 @@ private:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool ExternalWriteMemory(uint64_t addr, 
+	virtual bool ExternalWriteMemory(uint32_t addr, 
 			const void *buffer, 
 			uint32_t size);
 	
@@ -165,11 +165,15 @@ private:
 	sc_time bus_cycle_time;
 	sc_time nice_time;
 	double ipc;
+	bool enable_dmi;
 	
 	unisim::kernel::service::Parameter<sc_time> param_cpu_cycle_time;
 	unisim::kernel::service::Parameter<sc_time> param_bus_cycle_time;
 	unisim::kernel::service::Parameter<sc_time> param_nice_time;
 	unisim::kernel::service::Parameter<double> param_ipc;
+	unisim::kernel::service::Parameter<bool> param_enable_dmi;
+
+  unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
 	
 	/*************************************************************************
 	 * Logger, verbose and trap parameters/methods/ports               START *
@@ -182,6 +186,8 @@ private:
 	/*************************************************************************
 	 * Logger, verbose and trap parameters/methods/ports                 END *
 	 *************************************************************************/
+	
+	unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
 };
 
 } // end of namespace armemu

@@ -35,6 +35,12 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_PPC440_CPU_TCC__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_PPC440_CPU_TCC__
 
+#include <unistd.h>
+
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -67,16 +73,28 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, cpu_time()
 	, nice_time()
 	, max_idle_time()
-	, global_time()
+	, run_time()
 	, idle_time()
+	, timers_update_deadline()
+	, enable_host_idle(false)
 	, ev_max_idle()
 	, ev_irq()
-	, ipc(1.0)
+	, ipc(2.0)
+	, one(1.0)
+	, enable_dmi(false)
+	, debug_dmi(false)
 	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "bus cycle time")
 	, param_ext_timer_cycle_time("ext-timer-cycle-time", this, ext_timer_cycle_time, "external timer cycle time")
 	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
-	, param_ipc("ipc", this, ipc, "targeted average instructions per second")
+	, param_ipc("ipc", this, ipc, "maximum instructions per cycle (should be <= 2.0)")
+	, param_enable_host_idle("enable-host-idle", this, enable_host_idle, "Enable/Disable host idle periods when target is idle")
+	, param_enable_dmi("enable-dmi", this, enable_dmi, "Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation")
+	, param_debug_dmi("debug-dmi", this, debug_dmi, "Enable/Disable debugging of DMI (Direct Memory Access)")
+	, stat_one("one", this, one, "one")
+	, stat_run_time("run-time", this, run_time, "run time")
 	, stat_idle_time("idle-time", this, idle_time, "idle time")
+	, formula_idle_rate("idle-rate", this, Formula<double>::OP_DIV, &stat_idle_time, &stat_run_time, "idle rate")
+	, formula_load_rate("load-rate", this, Formula<double>::OP_SUB, &stat_one, &formula_idle_rate, "load rate")
 	, external_event_schedule()
 	, critical_input_interrupt_redirector(0)
 	, external_input_interrupt_redirector(0)
@@ -84,7 +102,14 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, dcuwr_plb_redirector(0)
 	, dcurd_plb_redirector(0)
 	, dcr_redirector(0)
+	, icurd_dmi_region_cache()
+	, dcuwr_dmi_region_cache()
+	, dcurd_dmi_region_cache()
 {
+	stat_one.SetMutable(false);
+	stat_one.SetSerializable(false);
+	stat_one.SetVisible(false);
+	
 	icurd_plb_redirector = new unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> >(
 		IF_ICURD_PLB,
 		this,
@@ -174,7 +199,7 @@ CPU<CONFIG>::~CPU()
 		delete dcr_redirector;
 	}
 	
-	//std::cerr << "total time=" << total_time << std::endl;
+	////std::cerr << "total time=" << total_time << std::endl;
 }
 
 template <class CONFIG>
@@ -199,6 +224,30 @@ tlm::tlm_sync_enum CPU<CONFIG>::nb_transport_bw(unsigned int if_id, tlm::tlm_gen
 template <class CONFIG>
 void CPU<CONFIG>::invalidate_direct_mem_ptr(unsigned int if_id, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
+	switch(if_id)
+	{
+		case IF_ICURD_PLB:
+			icurd_dmi_region_cache.Invalidate(start_range, end_range);
+			if(CONFIG::DEBUG_ENABLE && debug_dmi)
+			{
+				inherited::logger << DebugInfo << "PLB Instruction Read: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << EndDebugInfo;
+			}
+			break;
+		case IF_DCUWR_PLB:
+			dcuwr_dmi_region_cache.Invalidate(start_range, end_range);
+			if(CONFIG::DEBUG_ENABLE && debug_dmi)
+			{
+				inherited::logger << DebugInfo << "PLB Data Write: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << EndDebugInfo;
+			}
+			break;
+		case IF_DCURD_PLB:
+			dcurd_dmi_region_cache.Invalidate(start_range, end_range);
+			if(CONFIG::DEBUG_ENABLE && debug_dmi)
+			{
+				inherited::logger << DebugInfo << "PLB Data Read: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << EndDebugInfo;
+			}
+			break;
+	}
 }
 
 template <class CONFIG>
@@ -206,29 +255,33 @@ void CPU<CONFIG>::Synchronize()
 {
 	wait(cpu_time);
 	cpu_time = SC_ZERO_TIME;
-	global_time = sc_time_stamp();
+	run_time = sc_time_stamp();
+	if(!inherited::linux_os_import) RunInternalTimers();
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ProcessExternalEvents()
+inline void CPU<CONFIG>::ProcessExternalEvents()
 {
-	sc_time time_stamp = sc_time_stamp();
-	time_stamp += cpu_time;
-	Event *event = external_event_schedule.GetNextEvent(time_stamp);
-	
-	if(event)
+	if(!external_event_schedule.Empty())
 	{
-		do
+		sc_time time_stamp = sc_time_stamp();
+		time_stamp += cpu_time;
+		Event *event = external_event_schedule.GetNextEvent(time_stamp);
+		
+		if(unlikely(event != 0))
 		{
-			switch(event->GetType())
+			do
 			{
-				case Event::EV_IRQ:
-					ProcessIRQEvent(event);
-					external_event_schedule.FreeEvent(event);
-					break;
+				switch(event->GetType())
+				{
+					case Event::EV_IRQ:
+						ProcessIRQEvent(event);
+						external_event_schedule.FreeEvent(event);
+						break;
+				}
 			}
+			while((event = external_event_schedule.GetNextEvent(time_stamp)) != 0);
 		}
-		while((event = external_event_schedule.GetNextEvent(time_stamp)) != 0);
 	}
 }
 
@@ -240,10 +293,10 @@ void CPU<CONFIG>::ProcessIRQEvent(Event *event)
 		inherited::logger << DebugInfo << (sc_time_stamp() + cpu_time) << ": processing an IRQ event that occured at " << event->GetTimeStamp() << " (";
 		switch(event->GetIRQ())
 		{
-			case CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT:
+			case CONFIG::EXC_EXTERNAL_INPUT:
 				inherited::logger << "external";
 				break;
-			case CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT:
+			case CONFIG::EXC_CRITICAL_INPUT:
 				inherited::logger << "critical";
 				break;
 			default:
@@ -253,9 +306,9 @@ void CPU<CONFIG>::ProcessIRQEvent(Event *event)
 		inherited::logger << " input goes " << (event->GetLevel() ? "high" : "low") << "). Event skew is " << (sc_time_stamp() + cpu_time - event->GetTimeStamp()) << "." << EndDebugInfo;
 	}
 	if(event->GetLevel())
-		inherited::SetIRQ(event->GetIRQ());
+		inherited::SetException(event->GetIRQ());
 	else
-		inherited::ResetIRQ(event->GetIRQ());
+		inherited::ResetException(event->GetIRQ());
 }
 
 template <class CONFIG>
@@ -272,7 +325,7 @@ void CPU<CONFIG>::interrupt_b_transport(unsigned int irq, InterruptPayload& payl
 		{
 			inherited::logger << DebugInfo << notify_time_stamp << ": " << (irq ? "External" : "Critical") << " input interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
 		}
-		external_event_schedule.NotifyIRQEvent(irq ? CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT : CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT, level, notify_time_stamp);
+		external_event_schedule.NotifyIRQEvent(irq ? CONFIG::EXC_EXTERNAL_INPUT : CONFIG::EXC_CRITICAL_INPUT, level, notify_time_stamp);
 	}
 	else
 	{
@@ -299,7 +352,7 @@ tlm::tlm_sync_enum CPU<CONFIG>::interrupt_nb_transport_fw(unsigned int irq, Inte
 					{
 						inherited::logger << DebugInfo << notify_time_stamp << ": " << (irq ? "External" : "Critical") << " input interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
 					}
-					external_event_schedule.NotifyIRQEvent(irq ? CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT : CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT, level, notify_time_stamp);
+					external_event_schedule.NotifyIRQEvent(irq ? CONFIG::EXC_EXTERNAL_INPUT : CONFIG::EXC_CRITICAL_INPUT, level, notify_time_stamp);
 				}
 				else
 				{
@@ -334,18 +387,49 @@ bool CPU<CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& p
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::UpdateTime()
+inline void CPU<CONFIG>::RunInternalTimers()
 {
-	if(unlikely(global_time > timer_time))
+	const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
+		
+#if 0
+	if(run_time >= (timer_time + timer_cycle_time))
 	{
-		const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
 		do
 		{
-			//std::cerr << "timer_time=" << timer_time << std::endl;
 			inherited::RunTimers(1);
 			timer_time += timer_cycle_time;
 		}
-		while(unlikely(global_time > timer_time));
+		while(run_time >= (timer_time + timer_cycle_time));
+	}
+#else
+	// Note: this code brings a slight speed improvement (6 %)
+#if 0
+	sc_time delta_time(run_time);
+	delta_time -= timer_time;
+	uint64_t delta = (uint64_t) floor(delta_time / timer_cycle_time);
+	inherited::RunTimers(delta);
+	sc_time t(timer_cycle_time);
+	t *= (double) delta;
+	timer_time += t;
+#else
+	sc_dt::uint64 delta_time_tu = run_time.value() - timer_time.value();
+	sc_dt::uint64 timer_cycle_time_tu = timer_cycle_time.value();
+	uint64_t delta = delta_time_tu / timer_cycle_time_tu;
+	inherited::RunTimers(delta);
+	sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
+	sc_time t(t_tu, false);
+	timer_time += t;
+#endif
+#endif
+	timers_update_deadline = timer_time + (inherited::GetTimersDeadline() * timer_cycle_time);
+}
+
+template <class CONFIG>
+inline void CPU<CONFIG>::LazyRunInternalTimers()
+{
+	if(unlikely(run_time >= timers_update_deadline))
+	{
+		RunInternalTimers();
 	}
 }
 
@@ -353,77 +437,127 @@ template <class CONFIG>
 inline void CPU<CONFIG>::AlignToBusClock()
 {
 	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
-	sc_dt::uint64 time_tu = sc_time_stamp().value();
-	sc_dt::uint64 cpu_time_tu = cpu_time.value() + time_tu;
-	sc_dt::uint64 modulo = cpu_time_tu % bus_cycle_time_tu;
+	sc_dt::uint64 run_time_tu = run_time.value();
+	sc_dt::uint64 modulo = run_time_tu % bus_cycle_time_tu;
 	if(!modulo) return; // already aligned
-
-	cpu_time_tu += bus_cycle_time_tu - modulo;
-	cpu_time = sc_time(cpu_time_tu - time_tu, false);
+	
+	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
+	sc_time time_alignment(time_alignment_tu, false);
+	cpu_time += time_alignment;
+	run_time += time_alignment;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::AlignToBusClock(sc_time& t)
 {
-	sc_dt::uint64 time_tu = t.value();
 	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
+	sc_dt::uint64 time_tu = t.value();
 	sc_dt::uint64 modulo = time_tu % bus_cycle_time_tu;
 	if(!modulo) return; // already aligned
-
-	time_tu += bus_cycle_time_tu - modulo;
-	t = sc_time(time_tu, false);
+	
+	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
+	sc_time time_alignment(time_alignment_tu, false);
+	t += time_alignment;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Idle()
 {
 	// This is called within thread Run()
+	
+	// First synchronize with other threads
+	Synchronize();
+	
+	// Compute the time to consume before an internal timer event occurs
 	const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
 	max_idle_time = timer_cycle_time;
-	max_idle_time *= inherited::GetMaxIdleTime();
-#if 0
-	usleep(max_idle_time.to_seconds() * 1.0e6);
-#endif
+	max_idle_time *= inherited::GetMaxIdleTime(); // max idle time (timer_time based)
+
+	max_idle_time += timer_time;
+	max_idle_time -= run_time;                    // max idle time (run_time based)
+	
+	if((run_time - timer_time) > timer_cycle_time)
+	{
+		std::cerr << "WARNING! (run_time - timer_time)= " << (run_time - timer_time) << ", timer_cycle_time=" << timer_cycle_time << std::endl;
+	}
+	//std::cerr << "run_time + max_idle_time = " << (run_time + max_idle_time) << ", timers_update_deadline=" << timers_update_deadline << std::endl;
+	if(timers_update_deadline > (run_time + max_idle_time))
+	{
+		std::cerr << "WARNING! timers_update_deadline= " << timers_update_deadline << "> (run_time + max_idle_time)=" << (run_time + max_idle_time) << std::endl;
+	}
+	// Notify an event
 	ev_max_idle.notify(max_idle_time);
-	//std::cerr << sc_time_stamp() << ": Idle wait for at most " << max_idle_time << std::endl;
+	
+	// wait for either an internal timer event or an external event
 	sc_time old_time_stamp(sc_time_stamp());
 	wait(ev_max_idle | ev_irq);
-	ev_max_idle.cancel();
 	sc_time new_time_stamp(sc_time_stamp());
 	
+	// cancel event because we can't know which wake up condition occured
+	ev_max_idle.cancel();
+	
+	// compute the time spent by the SystemC wait
 	sc_time delta_time(new_time_stamp);
 	delta_time -= old_time_stamp;
 	
-	if(delta_time > cpu_time)
+	if(enable_host_idle)
 	{
-		idle_time += delta_time;
-		idle_time -= cpu_time;
-		cpu_time = SC_ZERO_TIME;
+		usleep(delta_time.to_seconds() * 1.0e6); // leave host CPU when target CPU is idle
 	}
-	else
-	{
-		cpu_time -= delta_time;
-	}
-	global_time = new_time_stamp;
-	global_time += cpu_time;
-	UpdateTime();
+	
+	idle_time += delta_time;
+	
+	// update overall run time
+	run_time = new_time_stamp;
+	
+	// run internal timers
+	LazyRunInternalTimers();
+	
+	// check for external events
 	ProcessExternalEvents();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Run()
 {
-	sc_time time_per_instruction = cpu_cycle_time * ipc;
+	sc_time time_per_instruction = cpu_cycle_time / ipc;
 	
-	while(1)
+	if(inherited::linux_os_import)
 	{
-		inherited::StepOneInstruction();
-		cpu_time += time_per_instruction;
-		UpdateTime();
-		ProcessExternalEvents();
-		if(unlikely(cpu_time >= nice_time))
+		// User Mode
+		while(1)
 		{
-			Synchronize();
+			inherited::StepOneInstruction();
+			// update local time (relative to sc_time_stamp)
+			cpu_time += time_per_instruction;
+			// update absolute time (local time + sc_time_stamp)
+			run_time += time_per_instruction;
+			// Periodically synchronize with other threads
+			if(unlikely(cpu_time >= nice_time))
+			{
+				Synchronize();
+			}
+		}
+	}
+	else
+	{
+		// Full System
+		while(1)
+		{
+			inherited::StepOneInstruction();
+			// update local time (relative to sc_time_stamp)
+			cpu_time += time_per_instruction;
+			// update absolute time (local time + sc_time_stamp)
+			run_time += time_per_instruction;
+			// Run internal timers
+			LazyRunInternalTimers();
+			// check IRQs
+			ProcessExternalEvents();
+			// Periodically synchronize with other threads
+			if(unlikely(cpu_time >= nice_time))
+			{
+				Synchronize();
+			}
 		}
 	}
 }
@@ -432,7 +566,48 @@ template <class CONFIG>
 bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
+
+	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
 	
+	if(likely(enable_dmi))
+	{
+		dmi_region = icurd_dmi_region_cache.Lookup(physical_addr, size);
+		
+		if(likely(dmi_region != 0))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			
+			if(likely(dmi_region->IsAllowed()))
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
+					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
+					const sc_time& read_lat = dmi_region->GetReadLatency(size);
+					cpu_time += read_lat;
+					run_time += read_lat;
+					if(!inherited::linux_os_import) LazyRunInternalTimers();
+					return true;
+				}
+				else
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				}
+			}
+			else
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			}
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+		}
+	}
+	
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
 	payload->set_address(physical_addr);
@@ -442,13 +617,31 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 	
 	icurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
+	if(!inherited::linux_os_import) LazyRunInternalTimers();
 	
 	tlm::tlm_response_status status = payload->get_response_status();
 	
+	if(likely(enable_dmi))
+	{
+		if(likely(!dmi_region && payload->is_dmi_allowed()))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			
+			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			unisim::kernel::tlm2::DMIGrant dmi_grant = icurd_plb_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			
+			icurd_dmi_region_cache.Insert(dmi_grant, dmi_data);
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+		}
+	}
+	
 	payload->release();
-
+	
 	return status == tlm::TLM_OK_RESPONSE;
 }
 
@@ -456,6 +649,47 @@ template <class CONFIG>
 bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
+	
+	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
+	
+	if(likely(enable_dmi))
+	{
+		dmi_region = dcurd_dmi_region_cache.Lookup(physical_addr, size);
+		
+		if(likely(dmi_region != 0))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(likely(dmi_region->IsAllowed()))
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
+					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
+					const sc_time& read_lat = dmi_region->GetReadLatency(size);
+					cpu_time += read_lat;
+					run_time += read_lat;
+					if(!inherited::linux_os_import) LazyRunInternalTimers();
+					return true;
+				}
+				else
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				}
+			}
+			else
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			}
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+		}
+	}
+
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
@@ -466,11 +700,29 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 	
 	dcurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
+	if(!inherited::linux_os_import) LazyRunInternalTimers();
 
 	tlm::tlm_response_status status = payload->get_response_status();
 	
+	if(likely(enable_dmi))
+	{
+		if(likely(!dmi_region && payload->is_dmi_allowed()))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+
+			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			unisim::kernel::tlm2::DMIGrant dmi_grant = dcurd_plb_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			
+			dcurd_dmi_region_cache.Insert(dmi_grant, dmi_data);
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+		}
+	}
+
 	payload->release();
 
 	return status == tlm::TLM_OK_RESPONSE;
@@ -481,6 +733,47 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 {
 	AlignToBusClock();
 	
+	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
+
+	if(likely(enable_dmi))
+	{
+		dmi_region = dcuwr_dmi_region_cache.Lookup(physical_addr, size);
+		
+		if(likely(dmi_region != 0))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(likely(dmi_region->IsAllowed()))
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_WRITE) == tlm::tlm_dmi::DMI_ACCESS_WRITE))
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
+					memcpy(dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), buffer, size);
+					const sc_time& write_lat = dmi_region->GetWriteLatency(size);
+					cpu_time += write_lat;
+					run_time += write_lat;
+					if(!inherited::linux_os_import) LazyRunInternalTimers();
+					return true;
+				}
+				else
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: granted DMI access does not allow direct write access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				}
+			}
+			else
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			}
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+		}
+	}
+
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
 	payload->set_address(physical_addr);
@@ -490,10 +783,27 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 	
 	dcuwr_plb_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
+	if(!inherited::linux_os_import) LazyRunInternalTimers();
 
 	tlm::tlm_response_status status = payload->get_response_status();
+
+	if(likely(enable_dmi))
+	{
+		if(likely(!dmi_region && payload->is_dmi_allowed()))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			unisim::kernel::tlm2::DMIGrant dmi_grant = icurd_plb_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			
+			dcuwr_dmi_region_cache.Insert(dmi_grant, dmi_data);
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+		}
+	}
 
 	payload->release();
 
@@ -516,10 +826,11 @@ void CPU<CONFIG>::DCRRead(unsigned int dcrn, uint32_t& value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
+	LazyRunInternalTimers();
 
-	tlm::tlm_response_status status = payload->get_response_status();
+	/* tlm::tlm_response_status status = */ payload->get_response_status();
 	
 	payload->release();
 
@@ -542,13 +853,20 @@ void CPU<CONFIG>::DCRWrite(unsigned int dcrn, uint32_t value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
+	LazyRunInternalTimers();
 
-	tlm::tlm_response_status status = payload->get_response_status();
+	/* tlm::tlm_response_status status = */ payload->get_response_status();
 
 	payload->release();
 
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::end_of_simulation()
+{
+	if(!inherited::linux_os_import) RunInternalTimers(); // make run_time match timer_time
 }
 
 } // end of namespace ppc440

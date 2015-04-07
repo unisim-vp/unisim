@@ -41,10 +41,9 @@
 #include <unisim/service/interfaces/stmt_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/blob.hh>
+#include <unisim/service/interfaces/backtrace.hh>
 
-#include <unisim/service/loader/elf_loader/elf32.h>
-#include <unisim/service/loader/elf_loader/elf64.h>
-#include <unisim/util/debug/dwarf/dwarf.hh>
+#include <unisim/util/loader/elf_loader/elf_loader.hh>
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/symbol_table.hh>
@@ -76,21 +75,26 @@ using unisim::service::interfaces::StatementLookup;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Blob;
 using unisim::service::interfaces::Registers;
+using unisim::service::interfaces::BackTrace;
 
-template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl :
 	public Client<Memory<MEMORY_ADDR> >,
+	public Client<Registers>,
 	public Service<Loader>,
 	public Service<Blob<MEMORY_ADDR> >,
 	public Service<SymbolTableLookup<MEMORY_ADDR> >,
-	public Service<StatementLookup<MEMORY_ADDR> >
+	public Service<StatementLookup<MEMORY_ADDR> >,
+	public Service<BackTrace<MEMORY_ADDR> >
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
+	ServiceImport<Registers> registers_import;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 	ServiceExport<Loader> loader_export;
 	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
 	ServiceExport<StatementLookup<MEMORY_ADDR> > stmt_lookup_export;
+	ServiceExport<BackTrace<MEMORY_ADDR> > backtrace_export;
 
 	ElfLoaderImpl(const char *name, Object *parent = 0);
 	virtual ~ElfLoaderImpl();
@@ -107,7 +111,7 @@ public:
 	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	// unisim::service::interfaces::SymbolTableLookup
-	virtual const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *GetSymbols() const;
+	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
@@ -115,76 +119,43 @@ public:
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	
 	// unisim::service::interfaces::StatementLookup
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
+	virtual void GetStatements(std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
+
+	// unisim::service::interfaces::BackTrace
+	virtual std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
+	virtual bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
 private:
+	unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym> *elf_loader;
 	string filename;
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;
 	bool force_use_virtual_address;
+	bool initialize_extra_segment_bytes;
 	bool dump_headers;
-	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	SymbolTable<MEMORY_ADDR> *symbol_table;
-	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	string dwarf_to_html_output_directory;
+	string dwarf_to_xml_output_filename;
+	string dwarf_register_number_mapping_filename;
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
+	bool debug_dwarf;
 	
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_force_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
+	Parameter<bool> param_initialize_extra_segment_bytes;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_dwarf_to_html_output_directory;
+	Parameter<string> param_dwarf_to_xml_output_filename;
+	Parameter<string> param_dwarf_register_number_mapping_filename;
 	Parameter<bool> param_parse_dwarf;
-
-	void SwapElfHeader(Elf_Ehdr *hdr);
-	void SwapProgramHeader(Elf_Phdr *phdr);
-	void SwapSectionHeader(Elf_Shdr *shdr);
-	void SwapSymbolEntry(Elf_Sym *sym);
-	void AdjustElfHeader(Elf_Ehdr *hdr);
-	void AdjustProgramHeader(const Elf_Ehdr *hdr, Elf_Phdr *phdr);
-	void AdjustSectionHeader(const Elf_Ehdr *hdr, Elf_Shdr *shdr);
-	void AdjustSymbolEntry(const Elf_Ehdr *hdr, Elf_Sym *sym);
-	void AdjustSymbolTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, Elf_Sym *sym);
-	Elf_Ehdr *ReadElfHeader(istream& is);
-	Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, istream& is);
-	Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, istream& is);
-	const Elf_Shdr *GetNextSectionHeader(const Elf_Ehdr *hdr, const Elf_Shdr *shdr);
-	char *LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, istream& is);
-	void DumpElfHeader(const Elf_Ehdr *hdr, ostream& os);
-	void DumpProgramHeader(const Elf_Phdr *phdr, ostream& os);
-	void DumpSectionHeader(const Elf_Shdr *shdr, const char *string_table, ostream& os);
-	void DumpSymbol(const Elf_Sym *sym, const char *string_table, ostream& os);
-	void DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, ostream& os);
-	MEMORY_ADDR GetSectionSize(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionAddr(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionType(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionAlignment(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionLink(const Elf_Shdr *shdr);
-	bool LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, istream& is);
-	MEMORY_ADDR GetSegmentType(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentFlags(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentMemSize(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentFileSize(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentAddr(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentAlignment(const Elf_Phdr *phdr);
-	bool LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, istream& is);
-	MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
-	const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
-	void DumpRawData(const void *content, MEMORY_ADDR size);
-	const char *GetArchitecture(const Elf_Ehdr *hdr) const;
-	uint8_t GetAddressSize(const Elf_Ehdr *hdr) const;
-	bool SetupSymbolTableLookup();
-	bool SetupLoad();
-	bool SetupBlob();
-	bool SetupStatementLookup();
-	bool SetupDWARF();
-	
-	void Reset(); // To remove ?
+	Parameter<bool> param_debug_dwarf;
 };
 
 } // end of namespace elf_loader

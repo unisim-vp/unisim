@@ -360,7 +360,7 @@ debugger_set_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 	if ( !parm_ok )
 	{
 		PyErr_SetString(PyExc_TypeError,
-				"An address/symbol/filename:lien is expected");
+				"An address/symbol/filename:line is expected");
 		return NULL;
 	}
 
@@ -607,6 +607,112 @@ debugger_delete_write_watchpoint (debugger_DebuggerObject *self, PyObject *args)
 	return debugger_generic_delete_wathcpoint(self, args, WRITE);
 }
 
+static PyObject *
+debugger_get_symbol_address (debugger_DebuggerObject *self, PyObject *args)
+{
+	PyObject *result = NULL;
+	PyObject *parm = NULL;
+  uint64_t addr = 0;
+	// unsigned long long int addr = 0;
+	PyObject *str_bytes = NULL;
+	char *c_str = 0;
+	bool parm_ok = false;
+
+	if ( self->debugger == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Unisim debugger is no longer available");
+		return result;
+	}
+	if ( PyArg_ParseTuple(args, "O", &parm) )
+	{
+		if ( PyUnicode_Check(parm) )
+		{
+			// the parameter is a string
+			if ( PyUnicode_FSConverter( parm, &str_bytes) )
+			{
+				c_str = PyBytes_AsString(str_bytes);
+				parm_ok = true;
+			}
+			Py_DECREF(str_bytes);
+		}
+	}
+	if ( !parm_ok )
+	{
+		PyErr_SetString(PyExc_TypeError,
+				"An symbol/filename:line is expected");
+		Py_RETURN_NONE;
+	}
+
+	if ( usDebugAPIGetSymbolAddress(self->debugger, c_str, &addr) )
+    return PyLong_FromUnsignedLongLong(addr);
+	Py_RETURN_NONE;
+}
+
+static PyObject *
+debugger_get_fs_address (debugger_DebuggerObject *self, PyObject *args)
+{
+	PyObject *result = NULL;
+	PyObject *parm = NULL;
+  uint64_t addr = 0;
+	// unsigned long long int addr = 0;
+	PyObject *str_bytes = NULL;
+	char *c_str = 0;
+	bool parm_ok = false;
+
+	if ( self->debugger == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Unisim debugger is no longer available");
+		return result;
+	}
+	if ( PyArg_ParseTuple(args, "O", &parm) )
+	{
+		if ( PyUnicode_Check(parm) )
+		{
+			// the parameter is a string
+			if ( PyUnicode_FSConverter( parm, &str_bytes) )
+			{
+				c_str = PyBytes_AsString(str_bytes);
+				parm_ok = true;
+			}
+			Py_DECREF(str_bytes);
+		}
+	}
+	if ( !parm_ok )
+	{
+		PyErr_SetString(PyExc_TypeError,
+				"An symbol/filename:line is expected");
+		Py_RETURN_NONE;
+	}
+
+	if ( usDebugAPIGetFileSystemAddress(self->debugger, c_str, &addr) )
+    return PyLong_FromUnsignedLongLong(addr);
+	Py_RETURN_NONE;
+}
+
+static PyObject *
+debugger_read_memory (debugger_DebuggerObject *self, PyObject *args)
+{
+  PyObject *result = NULL;
+  unsigned long long int addr;
+  uint8_t value;
+
+  if ( self->debugger == 0 )
+  {
+    PyErr_Format(PyExc_RuntimeError,
+                 "Unisim debugger is no longer available");
+    return result;
+  }
+  if ( PyArg_ParseTuple(args, "K", &addr) )
+  {
+    if ( usDebugAPIReadMemory(self->debugger, addr, &value) )
+      return PyLong_FromUnsignedLong(value);
+    Py_RETURN_NONE;
+  }
+  Py_RETURN_NONE;
+}
+
 static PyMethodDef debugger_methods[] =
 {
 		{"get_name", (PyCFunction)debugger_get_name, METH_NOARGS,
@@ -670,10 +776,22 @@ static PyMethodDef debugger_methods[] =
 				(PyCFunction)debugger_delete_read_watchpoint,
 				METH_VARARGS,
 				"Remove a read watchpoint."},
-		{"delete_write_watchpoint.",
+		{"delete_write_watchpoint",
 				(PyCFunction)debugger_delete_write_watchpoint,
 				METH_VARARGS,
 				"Remove a write watchpoint."},
+    {"get_symbol_address",
+      (PyCFunction)debugger_get_symbol_address,
+      METH_VARARGS,
+      "Get the address of a given symbol."},
+    {"get_fs_address",
+      (PyCFunction)debugger_get_fs_address,
+      METH_VARARGS,
+      "Get the address of a source file in the binary. Format is <source_file_name>#<line>."},
+    {"read_memory",
+      (PyCFunction)debugger_read_memory,
+      METH_VARARGS,
+      "Get the data stored in the given memory location (from the cpu view)."},
 		{NULL}
 };
 

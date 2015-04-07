@@ -65,6 +65,10 @@ class TLBEntry;
 } // end of namespace component
 } // end of namespace unisim
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -673,6 +677,70 @@ public:
 	static const uint32_t TCR_MASK = TCR_WP_MASK | TCR_WRC_MASK | TCR_WIE_MASK | TCR_DIE_MASK | TCR_FP_MASK | TCR_FIE_MASK | TCR_ARE_MASK;
 };
 
+class DBCR0Layout
+{
+public:
+	static const unsigned int DBCR0_EDM_OFFSET = 31;
+	static const unsigned int DBCR0_IDM_OFFSET = 30;
+	static const unsigned int DBCR0_RST_OFFSET = 28;
+	static const unsigned int DBCR0_ICMP_OFFSET = 27;
+	static const unsigned int DBCR0_BRT_OFFSET = 26;
+	static const unsigned int DBCR0_IRPT_OFFSET = 25;
+	static const unsigned int DBCR0_TRAP_OFFSET = 24;
+	static const unsigned int DBCR0_IAC1_OFFSET = 23;
+	static const unsigned int DBCR0_IAC2_OFFSET = 22;
+	static const unsigned int DBCR0_IAC3_OFFSET = 21;
+	static const unsigned int DBCR0_IAC4_OFFSET = 20;
+	static const unsigned int DBCR0_DAC1R_OFFSET = 19;
+	static const unsigned int DBCR0_DAC1W_OFFSET = 18;
+	static const unsigned int DBCR0_DAC2R_OFFSET = 17;
+	static const unsigned int DBCR0_DAC2W_OFFSET = 16;
+	static const unsigned int DBCR0_RET_OFFSET = 15;
+	static const unsigned int DBCR0_FT_OFFSET = 0;
+
+	static const unsigned int DBCR0_EDM_BITSIZE = 1;
+	static const unsigned int DBCR0_IDM_BITSIZE = 1;
+	static const unsigned int DBCR0_RST_BITSIZE = 2;
+	static const unsigned int DBCR0_ICMP_BITSIZE = 1;
+	static const unsigned int DBCR0_BRT_BITSIZE = 1;
+	static const unsigned int DBCR0_IRPT_BITSIZE = 1;
+	static const unsigned int DBCR0_TRAP_BITSIZE = 1;
+	static const unsigned int DBCR0_IAC1_BITSIZE = 1;
+	static const unsigned int DBCR0_IAC2_BITSIZE = 1;
+	static const unsigned int DBCR0_IAC3_BITSIZE = 1;
+	static const unsigned int DBCR0_IAC4_BITSIZE = 1;
+	static const unsigned int DBCR0_DAC1R_BITSIZE = 1;
+	static const unsigned int DBCR0_DAC1W_BITSIZE = 1;
+	static const unsigned int DBCR0_DAC2R_BITSIZE = 1;
+	static const unsigned int DBCR0_DAC2W_BITSIZE = 1;
+	static const unsigned int DBCR0_RET_BITSIZE = 1;
+	static const unsigned int DBCR0_FT_BITSIZE = 1;
+
+	static const uint32_t DBCR0_EDM_MASK = ((1UL << DBCR0_EDM_BITSIZE) - 1) << DBCR0_EDM_OFFSET;
+	static const uint32_t DBCR0_IDM_MASK = ((1UL << DBCR0_IDM_BITSIZE) - 1) << DBCR0_IDM_OFFSET;
+	static const uint32_t DBCR0_RST_MASK = ((1UL << DBCR0_RST_BITSIZE) - 1) << DBCR0_RST_OFFSET;
+	static const uint32_t DBCR0_ICMP_MASK = ((1UL << DBCR0_ICMP_BITSIZE) - 1) << DBCR0_ICMP_OFFSET;
+	static const uint32_t DBCR0_BRT_MASK = ((1UL << DBCR0_BRT_BITSIZE) - 1) << DBCR0_BRT_OFFSET;
+	static const uint32_t DBCR0_IRPT_MASK = ((1UL << DBCR0_IRPT_BITSIZE) - 1) << DBCR0_IRPT_OFFSET;
+	static const uint32_t DBCR0_TRAP_MASK = ((1UL << DBCR0_TRAP_BITSIZE) - 1) << DBCR0_TRAP_OFFSET;
+	static const uint32_t DBCR0_IAC1_MASK = ((1UL << DBCR0_IAC1_BITSIZE) - 1) << DBCR0_IAC1_OFFSET;
+	static const uint32_t DBCR0_IAC2_MASK = ((1UL << DBCR0_IAC2_BITSIZE) - 1) << DBCR0_IAC2_OFFSET;
+	static const uint32_t DBCR0_IAC3_MASK = ((1UL << DBCR0_IAC3_BITSIZE) - 1) << DBCR0_IAC3_OFFSET;
+	static const uint32_t DBCR0_IAC4_MASK = ((1UL << DBCR0_IAC4_BITSIZE) - 1) << DBCR0_IAC4_OFFSET;
+	static const uint32_t DBCR0_DAC1R_MASK = ((1UL << DBCR0_DAC1R_BITSIZE) - 1) << DBCR0_DAC1R_OFFSET;
+	static const uint32_t DBCR0_DAC1W_MASK = ((1UL << DBCR0_DAC1W_BITSIZE) - 1) << DBCR0_DAC1W_OFFSET;
+	static const uint32_t DBCR0_DAC2R_MASK = ((1UL << DBCR0_DAC2R_BITSIZE) - 1) << DBCR0_DAC2R_OFFSET;
+	static const uint32_t DBCR0_DAC2W_MASK = ((1UL << DBCR0_DAC2W_BITSIZE) - 1) << DBCR0_DAC2W_OFFSET;
+	static const uint32_t DBCR0_RET_MASK = ((1UL << DBCR0_RET_BITSIZE) - 1) << DBCR0_RET_OFFSET;
+	static const uint32_t DBCR0_FT_MASK = ((1UL << DBCR0_FT_BITSIZE) - 1) << DBCR0_FT_OFFSET;
+
+	static const uint32_t DBCR0_MASK = DBCR0_EDM_MASK | DBCR0_IDM_MASK | DBCR0_RST_MASK | DBCR0_ICMP_MASK |
+	                                   DBCR0_BRT_MASK | DBCR0_IRPT_MASK | DBCR0_TRAP_MASK | DBCR0_IAC1_MASK |
+	                                   DBCR0_IAC2_MASK | DBCR0_IAC3_MASK | DBCR0_IAC4_MASK | DBCR0_DAC1R_MASK |
+	                                   DBCR0_DAC1W_MASK | DBCR0_DAC2R_MASK | DBCR0_DAC2W_MASK | DBCR0_RET_MASK |
+	                                   DBCR0_FT_MASK;
+};
+
 class Config :
 	public unisim::component::cxx::processor::powerpc::Config,
 	public MSRLayout,
@@ -692,7 +760,8 @@ class Config :
 	public PhysicalAddressLayout,
 	public PageSizeCap,
 	public TSRLayout,
-	public TCRLayout
+	public TCRLayout,
+	public DBCR0Layout
 {
 public:
 	typedef CPU<Config> STATE;
@@ -711,19 +780,81 @@ public:
 		AS_APPLICATION = 1     // application address space
 	} address_space_t;         // address space
 
-	// Hardware interrupt signals
-	static const unsigned int IRQ_DECREMENTER_INTERRUPT = 1;            // decrementer interrupt (internal) = TSR[DIS]
-	static const unsigned int IRQ_FIXED_INTERVAL_TIMER_INTERRUPT = 2;   // fixed interval timer interrupt (internal) = TSR[FIS]
-	static const unsigned int IRQ_WATCHDOG_TIMER_INTERRUPT = 4;         // watchdog timer interrupt (internal) = TSR[WIS]
-	static const unsigned int IRQ_EXTERNAL_INPUT_INTERRUPT = 8;         // external interrupt (external)
-	static const unsigned int IRQ_CRITICAL_INPUT_INTERRUPT = 16;        // critical interrupt (external)
+	// Exceptions
+	// - Non-maskable
+	static const unsigned int EXC_DATA_STORAGE_READ_ACCESS_CONTROL           = 0;
+	static const unsigned int EXC_DATA_STORAGE_WRITE_ACCESS_CONTROL          = 1;
+	static const unsigned int EXC_DATA_STORAGE_BYTE_ORDERING                 = 2;
+	static const unsigned int EXC_DATA_STORAGE_CACHE_LOCKING                 = 3;
+	static const unsigned int EXC_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL = 4;
+	static const unsigned int EXC_ALIGNMENT                                  = 5;
+	static const unsigned int EXC_PROGRAM_ILLEGAL_INSTRUCTION                = 6;
+	static const unsigned int EXC_PROGRAM_PRIVILEGE_VIOLATION                = 7;
+	static const unsigned int EXC_PROGRAM_TRAP                               = 8;
+	static const unsigned int EXC_PROGRAM_FLOATING_POINT                     = 9;
+	static const unsigned int EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION          = 10;
+	static const unsigned int EXC_FLOATING_POINT_UNAVAILABLE                 = 11;
+	static const unsigned int EXC_SYSTEM_CALL                                = 12;
+	static const unsigned int EXC_AUXILIARY_PROCESSOR_UNAVAILABLE            = 13;
+	static const unsigned int EXC_DATA_TLB_ERROR                             = 14;
+	static const unsigned int EXC_INSTRUCTION_TLB_ERROR                      = 15;
+	static const unsigned int EXC_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS      = 16;
+	static const unsigned int EXC_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS     = 17;
+	static const unsigned int EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS            = 18;
+	static const unsigned int EXC_MACHINE_CHECK_TLB_ASYNCHRONOUS             = 19;
+	// - Maskable
+	static const unsigned int EXC_DEBUG                                      = 20;
+	static const unsigned int EXC_CRITICAL_INPUT                             = 21;
+	static const unsigned int EXC_WATCHDOG_TIMER                             = 22;
+	static const unsigned int EXC_EXTERNAL_INPUT                             = 23;
+	static const unsigned int EXC_FIXED_INTERVAL_TIMER                       = 24;
+	static const unsigned int EXC_DECREMENTER                                = 25;
+	
+	static const unsigned int NUM_EXCEPTIONS = EXC_DECREMENTER + 1;
+	
+	// Exception masks
+	static const uint32_t EXC_MASK_DATA_STORAGE_READ_ACCESS_CONTROL           = 1 << EXC_DATA_STORAGE_READ_ACCESS_CONTROL;
+	static const uint32_t EXC_MASK_DATA_STORAGE_WRITE_ACCESS_CONTROL          = 1 << EXC_DATA_STORAGE_WRITE_ACCESS_CONTROL;
+	static const uint32_t EXC_MASK_DATA_STORAGE_BYTE_ORDERING                 = 1 << EXC_DATA_STORAGE_BYTE_ORDERING;
+	static const uint32_t EXC_MASK_DATA_STORAGE_CACHE_LOCKING                 = 1 << EXC_DATA_STORAGE_CACHE_LOCKING;
+	static const uint32_t EXC_MASK_DATA_STORAGE                               = EXC_MASK_DATA_STORAGE_READ_ACCESS_CONTROL | EXC_MASK_DATA_STORAGE_WRITE_ACCESS_CONTROL |
+	                                                                            EXC_MASK_DATA_STORAGE_BYTE_ORDERING | EXC_MASK_DATA_STORAGE_CACHE_LOCKING;
+	static const uint32_t EXC_MASK_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL = 1 << EXC_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL;
+	static const uint32_t EXC_MASK_INSTRUCTION_STORAGE                        = EXC_MASK_INSTRUCTION_STORAGE_EXECUTE_ACCESS_CONTROL;
+	static const uint32_t EXC_MASK_ALIGNMENT                                  = 1 << EXC_ALIGNMENT;
+	static const uint32_t EXC_MASK_PROGRAM_ILLEGAL_INSTRUCTION                = 1 << EXC_PROGRAM_ILLEGAL_INSTRUCTION;
+	static const uint32_t EXC_MASK_PROGRAM_PRIVILEGE_VIOLATION                = 1 << EXC_PROGRAM_PRIVILEGE_VIOLATION;
+	static const uint32_t EXC_MASK_PROGRAM_TRAP                               = 1 << EXC_PROGRAM_TRAP;
+	static const uint32_t EXC_MASK_PROGRAM_FLOATING_POINT                     = 1 << EXC_PROGRAM_FLOATING_POINT;
+	static const uint32_t EXC_MASK_PROGRAM_UNIMPLEMENTED_INSTRUCTION          = 1 << EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION;
+	static const uint32_t EXC_MASK_PROGRAM                                    = EXC_MASK_PROGRAM_ILLEGAL_INSTRUCTION | EXC_MASK_PROGRAM_PRIVILEGE_VIOLATION |
+	                                                                            EXC_MASK_PROGRAM_TRAP | EXC_MASK_PROGRAM_FLOATING_POINT | EXC_MASK_PROGRAM_UNIMPLEMENTED_INSTRUCTION;
+	static const uint32_t EXC_MASK_FLOATING_POINT_UNAVAILABLE                 = 1 << EXC_FLOATING_POINT_UNAVAILABLE;
+	static const uint32_t EXC_MASK_SYSTEM_CALL                                = 1 << EXC_SYSTEM_CALL;
+	static const uint32_t EXC_MASK_AUXILIARY_PROCESSOR_UNAVAILABLE            = 1 << EXC_AUXILIARY_PROCESSOR_UNAVAILABLE;
+	static const uint32_t EXC_MASK_DATA_TLB_ERROR                             = 1 << EXC_DATA_TLB_ERROR;
+	static const uint32_t EXC_MASK_INSTRUCTION_TLB_ERROR                      = 1 << EXC_INSTRUCTION_TLB_ERROR;
+	static const uint32_t EXC_MASK_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS      = 1 << EXC_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS;
+	static const uint32_t EXC_MASK_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS     = 1 << EXC_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS;
+	static const uint32_t EXC_MASK_MACHINE_CHECK_DATA_ASYNCHRONOUS            = 1 << EXC_MACHINE_CHECK_DATA_ASYNCHRONOUS;
+	static const uint32_t EXC_MASK_MACHINE_CHECK_TLB_ASYNCHRONOUS             = 1 << EXC_MACHINE_CHECK_TLB_ASYNCHRONOUS;
+	static const uint32_t EXC_MASK_MACHINE_CHECK                              = EXC_MASK_MACHINE_CHECK_INSTRUCTION_SYNCHRONOUS | EXC_MASK_MACHINE_CHECK_INSTRUCTION_ASYNCHRONOUS |
+	                                                                            EXC_MASK_MACHINE_CHECK_DATA_ASYNCHRONOUS | EXC_MASK_MACHINE_CHECK_TLB_ASYNCHRONOUS;
+	static const uint32_t EXC_MASK_DEBUG                                      = 1 << EXC_DEBUG;   // debug interrupt (internal)
+	static const uint32_t EXC_MASK_CRITICAL_INPUT                             = 1 << EXC_CRITICAL_INPUT;   // critical interrupt (external)
+	static const uint32_t EXC_MASK_WATCHDOG_TIMER                             = 1 << EXC_WATCHDOG_TIMER;   // watchdog timer interrupt (internal) = TSR[WIS]
+	static const uint32_t EXC_MASK_EXTERNAL_INPUT                             = 1 << EXC_EXTERNAL_INPUT;   // external interrupt (external)
+	static const uint32_t EXC_MASK_FIXED_INTERVAL_TIMER                       = 1 << EXC_FIXED_INTERVAL_TIMER;   // fixed interval timer interrupt (internal) = TSR[FIS]
+	static const uint32_t EXC_MASK_DECREMENTER                                = 1 << EXC_DECREMENTER;   // decrementer interrupt (internal) = TSR[DIS]
 
+	static const uint32_t EXC_MASK_NON_MASKABLE = EXC_MASK_DATA_STORAGE | EXC_MASK_INSTRUCTION_STORAGE | EXC_MASK_ALIGNMENT | EXC_MASK_PROGRAM |
+	                                              EXC_MASK_FLOATING_POINT_UNAVAILABLE | EXC_MASK_SYSTEM_CALL | EXC_MASK_AUXILIARY_PROCESSOR_UNAVAILABLE |
+	                                              EXC_MASK_DATA_TLB_ERROR | EXC_MASK_INSTRUCTION_TLB_ERROR | EXC_MASK_MACHINE_CHECK;
 	// start address
 	static const uint32_t START_ADDR = 0xfffffffcUL; // processor starts at the last word of memory space
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = false; // Debug is disabled by default
-	static const bool DEBUG_SETUP_ENABLE = false;
 	static const bool DEBUG_STEP_ENABLE = false;
 	static const bool DEBUG_DTLB_ENABLE = false;
 	static const bool DEBUG_ITLB_ENABLE = false;
@@ -799,7 +930,6 @@ public:
 		public:
 		};
 
-		static const bool ENABLE = true;
 		typedef Config::physical_address_t ADDRESS;
 		static const uint32_t CACHE_SIZE = 32 * 1024; //32 * 1024; // 32 KB
 		static const uint32_t CACHE_BLOCK_SIZE = 32;   // 32 bytes
@@ -841,7 +971,6 @@ public:
 		public:
 		};
 
-		static const bool ENABLE = true;
 		typedef Config::virtual_address_t ADDRESS;
 		static const uint32_t CACHE_SIZE = 32 * 1024; // 32 KB
 		static const uint32_t CACHE_BLOCK_SIZE = 32;   // 32 bytes
@@ -935,7 +1064,6 @@ public:
 			unisim::component::cxx::tlb::TLBEntry<ITLB_CONFIG> *lru_entry;
 		};
 
-		static const bool ENABLE = true;
 		typedef virtual_address_t VIRTUAL_ADDRESS;
 		static const uint32_t TLB_NUM_ENTRIES = 4;
 		static const uint32_t TLB_LOG_ASSOCIATIVITY = 2; // 4-way set associative (fully associative)
@@ -965,7 +1093,6 @@ public:
 			unisim::component::cxx::tlb::TLBEntry<DTLB_CONFIG> *lru_entry;
 		};
 
-		static const bool ENABLE = true;
 		typedef virtual_address_t VIRTUAL_ADDRESS;
 		static const uint32_t TLB_NUM_ENTRIES = 8;
 		static const uint32_t TLB_LOG_ASSOCIATIVITY = 3; // 8-way set associative (fully associative)
@@ -994,7 +1121,6 @@ public:
 			unisim::component::cxx::tlb::TLBEntry<UTLB_CONFIG> *lru_entry;
 		};
 
-		static const bool ENABLE = true;
 		typedef virtual_address_t VIRTUAL_ADDRESS;
 		static const uint32_t TLB_NUM_ENTRIES = 64;
 		static const uint32_t TLB_LOG_ASSOCIATIVITY = 6; // 64-way set associative (fully associative)
@@ -1049,6 +1175,15 @@ public:
 	static const unsigned int IVOR_INSTRUCTION_TLB_ERROR = 14;
 	static const unsigned int IVOR_DEBUG = 15;
 	
+	// L1 Instruction cache
+	static const bool HAS_ICACHE = true;
+
+	// L1 Data Cache
+	static const bool HAS_DCACHE = true;
+
+	// DL1
+	static const bool HAS_DL1 = true;
+	
 	// MMU
 	static const bool HAS_MMU = true;
 	
@@ -1095,6 +1230,48 @@ inline std::ostream& operator << (std::ostream& os, const Config::TLB_ENTRY& tlb
 	return os;
 }
 
+class Config_woCache : public Config
+{
+public:
+	typedef CPU<Config_woCache> STATE;
+
+	// Front side bus parameters
+	static const uint32_t FSB_BURST_SIZE = FSB_WIDTH;
+
+	// L1 Instruction Cache
+	static const bool HAS_ICACHE = false;
+	
+	// L1 Data Cache
+	static const bool HAS_DCACHE = false;
+};
+
+class Config_woMMU : public Config
+{
+public:
+	typedef CPU<Config_woMMU> STATE;
+
+	// MMU
+	static const bool HAS_MMU = false;
+};
+
+class Config_woMMU_woCache : public Config
+{
+public:
+	typedef CPU<Config_woMMU_woCache> STATE;
+
+	// MMU
+	static const bool HAS_MMU = false;
+
+	// Front side bus parameters
+	static const uint32_t FSB_BURST_SIZE = FSB_WIDTH;
+
+	// L1 Instruction Cache
+	static const bool HAS_ICACHE = false;
+
+	// L1 Data Cache
+	static const bool HAS_DCACHE = false;
+};
+
 class Config_wFPU : public Config
 {
 public:
@@ -1102,6 +1279,24 @@ public:
 
 	// Floating point
 	static const bool HAS_FPU = true;
+};
+
+class Config_wFPU_woCache : public Config
+{
+public:
+	typedef CPU<Config_wFPU_woCache> STATE;
+
+	// Floating point
+	static const bool HAS_FPU = true;
+
+	// Front side bus parameters
+	static const uint32_t FSB_BURST_SIZE = FSB_WIDTH;
+
+	// L1 Instruction Cache
+	static const bool HAS_ICACHE = false;
+
+	// L1 Data Cache
+	static const bool HAS_DCACHE = false;
 };
 
 class Config_woMMU_wFPU : public Config
@@ -1116,6 +1311,27 @@ public:
 	static const bool HAS_FPU = true;
 };
 
+class Config_woMMU_wFPU_woCache : public Config
+{
+public:
+	typedef CPU<Config_woMMU_wFPU_woCache> STATE;
+
+	// MMU
+	static const bool HAS_MMU = false;
+	
+	// Floating point
+	static const bool HAS_FPU = true;
+	
+	// Front side bus parameters
+	static const uint32_t FSB_BURST_SIZE = FSB_WIDTH;
+
+	// L1 Instruction Cache
+	static const bool HAS_ICACHE = false;
+
+	// L1 Data Cache
+	static const bool HAS_DCACHE = false;
+};
+
 class DebugConfig : public Config
 {
 public:
@@ -1123,7 +1339,75 @@ public:
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = true;
-	static const bool DEBUG_SETUP_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
+class DebugConfig_woCache : public Config_woCache
+{
+public:
+	typedef CPU<DebugConfig_woCache> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
+class DebugConfig_woMMU : public Config_woMMU
+{
+public:
+	typedef CPU<DebugConfig_woMMU> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
+class DebugConfig_woMMU_woCache : public Config_woMMU_woCache
+{
+public:
+	typedef CPU<DebugConfig_woMMU_woCache> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
 	static const bool DEBUG_DTLB_ENABLE = true;
 	static const bool DEBUG_ITLB_ENABLE = true;
@@ -1147,7 +1431,29 @@ public:
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = true;
-	static const bool DEBUG_SETUP_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
+class DebugConfig_wFPU_woCache : public Config_wFPU_woCache
+{
+public:
+	typedef CPU<DebugConfig_wFPU_woCache> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
 	static const bool DEBUG_DTLB_ENABLE = true;
 	static const bool DEBUG_ITLB_ENABLE = true;
@@ -1171,7 +1477,29 @@ public:
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = true;
-	static const bool DEBUG_SETUP_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
+class DebugConfig_woMMU_wFPU_woCache : public Config_woMMU_wFPU_woCache
+{
+public:
+	typedef CPU<DebugConfig_woMMU_wFPU_woCache> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
 	static const bool DEBUG_DTLB_ENABLE = true;
 	static const bool DEBUG_ITLB_ENABLE = true;

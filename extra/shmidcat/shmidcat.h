@@ -20,18 +20,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/* Gilles Mouchard <gilles.mouchard@cea.fr>: make shmidcat loadable as a dynamic library
+/* 
+   Gilles Mouchard <gilles.mouchard@cea.fr>: make shmidcat loadable as a dynamic library
+   Reda Nouacer <reda.nouacer@cea.fr>
  */
 
 #ifndef __SHMIDCAT_H__
 #define __SHMIDCAT_H__
 
-extern "C" {
-
-extern int shmidcat_init(char *gtk_wave_path);
-extern void shmidcat_emit_string(char *s);
-extern void shmidcat_exit();
-
-}
+int shmidcat_init(char *gtk_wave_path);
+void shmidcat_emit_string(char *s);
+void shmidcat_exit();
 
 #endif

@@ -41,7 +41,7 @@
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
-#include "unisim/component/cxx/memory/ram/memory.hh"
+#include <unisim/component/cxx/memory/ram/memory.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -54,6 +54,7 @@ using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::kernel::logger::Logger;
 
 typedef uint64_t DEFAULT_ADDRESS;
@@ -93,6 +94,8 @@ public:
 	virtual ~Memory();
 
 	/* Service methods */
+	virtual void Reset();
+
 	/** BeginSetup
 	 * Initializes the service interface. */
 	virtual bool BeginSetup();
@@ -104,17 +107,23 @@ public:
 	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
-	
-private:
+
+protected:
 	/**
 	 * Check the verbosity
 	 */
 	inline bool IsVerbose() { return (DEBUG && verbose); }
-	sc_time& GetBurstLatency(unsigned int num_burst_beats);
-	void UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t);
 
 	/** Logger */
 	Logger logger;
+
+	uint64_t read_counter;
+	uint64_t write_counter;
+
+
+private:
+	void UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t);
+
 	/** Verbosity */
 	bool verbose;
 	/** The cycle time */
@@ -122,12 +131,6 @@ private:
 	/** Latencies */
 	sc_time read_latency;
 	sc_time write_latency;
-	/** Moment when memory will be ready to serve another request */
-	sc_time ready_time;
-	/** Burst latency lookup tables */
-	static const unsigned int NUM_BURST_LATENCY_FAST_LOOKUP = 16; // 0 <= burst_length < 16 for fast lookup
-	sc_time burst_latency_fast_lookup[NUM_BURST_LATENCY_FAST_LOOKUP];
-	std::map<unsigned int, sc_time> burst_latency_slow_lookup;
 	/** The parameter to set frequency */
 	Parameter<sc_time> param_cycle_time;
 	/** The parameters to set the latencies */
@@ -135,6 +138,11 @@ private:
 	Parameter<sc_time> param_write_latency;
 	/** The parameter to set the verbosity */
 	Parameter<bool> param_verbose;
+
+	Statistic<uint64_t> stat_read_counter;
+	Statistic<uint64_t> stat_write_counter;
+
+	unisim::kernel::tlm2::LatencyLookupTable burst_latency_lut;
 };
 
 } // end of namespace ram

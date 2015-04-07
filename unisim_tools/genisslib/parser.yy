@@ -16,7 +16,7 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-#include <parser.hh>
+#include <parser_defs.hh>
 #include <vect.hh>
 #include <isa.hh>
 #include <sourcecode.hh>
@@ -53,39 +53,6 @@ create_action( Operation_t* _operation, ActionProto_t const* _actionproto, Sourc
   }
   
   _operation->add( new Action_t( _actionproto, _actioncode, Scanner::comments, Scanner::fileloc ) );
-}
-
-static void
-extend_oplist( Vect_t<Operation_t>* _oplist, Operation_t* _op ) {
-  // Suppress duplicated entries
-  for( Vect_t<Operation_t>::const_iterator node = _oplist->begin(); node < _oplist->end(); ++ node ) {
-    if( (*node)->m_symbol != _op->m_symbol ) continue;
-    Scanner::fileloc.err( "warning: duplicated operation `%s' in list", _op->m_symbol.str() );
-    return;
-  }
-  
-  _oplist->append( _op );
-}
-
-static bool
-extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
-  /* Symbol points to either an operation or a group */
-  Operation_t* operation = Scanner::isa().operation( _symbol );
-  if( operation ) {
-    /* Symbol points to an operation */
-    extend_oplist( _oplist, operation );
-  } else {
-    Group_t* group = Scanner::isa().group( _symbol );
-    if( group ) {
-      /* Symbol points to a group */
-      for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
-        extend_oplist( _oplist, *gop );
-    } else {
-      Scanner::fileloc.err( "error: undefined operation `%s'", _symbol.str() );
-      return false;
-    }
-  }
-  return true;
 }
 
 %}
@@ -169,7 +136,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<sourcecode> returns
 %type<variable_list> global_var_list_declaration
 %type<group> group_declaration
-%type<operation_list> operation_list
+%type<string_list> operation_list
 %type<sourcecode> var_init
 %type<param_list> template_declaration
 %type<sourcecode> template_scheme
@@ -177,6 +144,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<constraint_list> constraint_list
 %type<specialization> specialization
 %type<string_list> namespace_list
+%type<uint_list> uinteger_list
 %%
 
 input: declaration_list { };
@@ -234,16 +202,23 @@ template_scheme:
 }
 ;
 
+uinteger_list:
+  TOK_INTEGER
+{
+  $$ = new UIntVect_t( $1 );
+}
+  | uinteger_list ',' TOK_INTEGER
+{
+  $1->push_back( $3 );
+  $$ = $1;
+}
+;
+
 subdecoder_class:
-  TOK_SUBDECODER namespace_list '[' TOK_INTEGER ':' TOK_INTEGER ']'
+  TOK_SUBDECODER namespace_list '[' uinteger_list ']'
 {
   StringVect_t* nmspc_in = $2;
-  unsigned int minsize = $4, maxsize = $6;
-
-  if( minsize > maxsize ) {
-    Scanner::fileloc.err( "error: subdecoder operation range is reversed" );
-    YYABORT;
-  }
+  UIntVect_t* insnsizes = $4;
   
   std::vector<ConstStr_t> nmspc( nmspc_in->size(), ConstStr_t() );
   for( intptr_t idx = nmspc_in->size(); (--idx) >= 0; )
@@ -258,7 +233,8 @@ subdecoder_class:
     YYABORT;
   }
   
-  Scanner::isa().m_sdclasses.append( new SDClass_t( nmspc, minsize, maxsize, Scanner::fileloc ) );
+  Scanner::isa().m_sdclasses.append( new SDClass_t( nmspc, insnsizes->begin(), insnsizes->end(), Scanner::fileloc ) );
+  delete insnsizes;
 }
 ;
 
@@ -269,7 +245,7 @@ global_ident_parameter: TOK_SET TOK_IDENT TOK_IDENT
   
   try {
     Scanner::isa().setparam( key, val );
-  } catch( Isa::UnknownIdent ui ) {
+  } catch (Isa::UnknownIdent ui) {
     Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }
@@ -281,7 +257,7 @@ global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
   SourceCode_t* val = $3;
   try {
     Scanner::isa().setparam( key, val );
-  } catch( Isa::UnknownIdent ui ) {
+  } catch (Isa::UnknownIdent ui) {
     Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }
@@ -293,7 +269,7 @@ global_uinteger_parameter: TOK_SET TOK_IDENT TOK_INTEGER
   unsigned int val = $3;
   try {
     Scanner::isa().setparam( key, val );
-  } catch( Isa::UnknownIdent ui ) {
+  } catch (Isa::UnknownIdent ui) {
     Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }
@@ -366,6 +342,7 @@ declaration:
 {
   Scanner::isa().m_specializations.push_back( $1 );
 }
+  | user_specialization TOK_ENDL {}
 ;
 
 namespace_declaration: TOK_NAMESPACE namespace_list
@@ -774,6 +751,20 @@ specialization: TOK_SPECIALIZE TOK_IDENT '(' constraint_list ')'
 }
 ;
 
+user_specialization: TOK_IDENT '.' TOK_SPECIALIZE '(' operation_list ')'
+{
+  StringVect_t const* oplist = $5;
+  Scanner::isa().m_user_orderings.push_back( Isa::Ordering() );
+  Isa::Ordering& order = Scanner::isa().m_user_orderings.back();
+  order.fileloc = Scanner::fileloc;
+  order.symbols.reserve( oplist->size() + 1 );
+  order.symbols.push_back( ConstStr_t( $1, Scanner::symbols ) );
+  for (StringVect_t::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr)
+    { order.symbols.push_back( ConstStr_t( *itr, Scanner::symbols ) ); }
+  delete oplist;
+}
+;
+
 constraint_list:
   constraint
 {
@@ -801,43 +792,47 @@ include : TOK_INCLUDE TOK_STRING
 group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
 {
   ConstStr_t           group_symbol = ConstStr_t( $2, Scanner::symbols );
-  Vect_t<Operation_t>* operation_list = $4;
+  StringVect_t*        oplist = $4;
   
   { /* Operations and groups name should not conflict */
     Operation_t* prev_op = Scanner::isa().operation( group_symbol );
-    if( prev_op ) {
+    if (prev_op) {
       Scanner::fileloc.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
       prev_op->m_fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
     
     Group_t* prev_grp = Scanner::isa().group( group_symbol );
-    if( prev_grp ) {
+    if (prev_grp) {
       Scanner::fileloc.err( "error: group `%s' redefined", group_symbol.str() );
       prev_grp->m_fileloc.err( "group `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
   }
   
-  $$ = new Group_t( group_symbol, *operation_list, Scanner::fileloc );
-  delete operation_list;
+  Group_t* res = new Group_t( group_symbol, Scanner::fileloc );
+  for (StringVect_t::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr) {
+    ConstStr_t symbol( *itr, Scanner::symbols );
+    if (not Scanner::isa().operations( symbol, res->m_operations ))
+      {
+        Scanner::fileloc.err( "error: undefined operation or group `%s'", symbol.str() );
+        YYABORT;
+      }
+  }
+  delete oplist;
+  
+  $$ = res;
 }
 ;
 
 operation_list:
   TOK_IDENT
 {
-  ConstStr_t symbol = ConstStr_t( $1, Scanner::symbols );
-  Vect_t<Operation_t>* oplist = new Vect_t<Operation_t>;
-  if( not extend_oplist( oplist, symbol ) ) { YYABORT; }
-  $$ = oplist;
+  $$ = new StringVect_t( $1 );
 }
   | operation_list ',' TOK_IDENT
 {
-  Vect_t<Operation_t>* oplist = $1;
-  ConstStr_t symbol = ConstStr_t( $3, Scanner::symbols );
-  if( not extend_oplist( oplist, symbol ) ) { YYABORT; }
-  $$ = oplist;
+  $$ = $1->append( $3 );
 }
 ;
 

@@ -36,6 +36,7 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/s12xmmc.hh>
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+#include <unisim/util/converter/convert.hh>
 
 namespace unisim {
 namespace component {
@@ -43,112 +44,53 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
-	sc_module(name),
-	MMC(name, parent),
-	Client<TrapReporting>(name, parent),
-	trap_reporting_import("trap_reporting_import", this)
-{
 
-	cpu_socket.register_b_transport(this, &S12XMMC::b_transport);
+S12XMMC::S12XMMC(const sc_module_name& name, S12MPU_IF *_mpu, Object *parent) :
+	Object(name, parent)
+	, sc_module(name)
+	, MMC(name, _mpu, parent)
+	, unisim::kernel::service::Client<TrapReporting>(name, parent)
+
+	, trap_reporting_import("trap_reporting_import", this)
+	, init_socket("init-socket")
+
+	, busSemaphore()
+	, busSemaphore_event()
+
+	, memoryMapStr("")
+	, param_memoryMapStr("memory-map", this, memoryMapStr)
+
+{
 
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
 
+	mmc_trans = payloadFabric.allocate();
 
-	deviceMap[0].start_address = 0x0034; // CRG
-	deviceMap[0].end_address = 0x003F;
-
-	deviceMap[1].start_address = 0x0040;  // ECT
-	deviceMap[1].end_address = 0x007F;
-
-	deviceMap[2].start_address = 0x0080;  // ATD1
-	deviceMap[2].end_address = 0x00AF;
-
-	deviceMap[3].start_address = 0x0120;  // XINT
-	deviceMap[3].end_address = 0x012F;
-
-	deviceMap[4].start_address = 0x02C0;  // ATD0
-	deviceMap[4].end_address = 0x02DF;
-
-	deviceMap[5].start_address = 0x0300;  // PWM
-	deviceMap[5].end_address = 0x0327;
-
-/*
-	SC_HAS_PROCESS(S12XMMC);
-	sensitive << cpu_socket;
-
-	SC_THREAD(Run);
-*/
 }
+
 
 S12XMMC::~S12XMMC() {
 
-}
+	mmc_trans->release();
 
-void S12XMMC::Run() {
-	while (true) {
-		wait();
+	for (uint16_t i=0; i <memoryMap.size(); i++) {
+		if (memoryMap[i]) { delete memoryMap[i]; memoryMap[i] = NULL; }
 	}
+
 }
 
-void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
-	sc_dt::uint64 logicalAddress = trans.get_address();
-	MMC_DATA *buffer = (MMC_DATA *) trans.get_data_ptr();
-	tlm::tlm_command cmd = trans.get_command();
-
-
-	/**
-	 *  TODO:
-	 *   - remove internal router
-	 *   - use a Device Register Memory Map to identify the read/write target
-	 */
-
+bool S12XMMC::accessBus(physical_address_t addr, MMC_DATA *buffer, tlm::tlm_command cmd) {
 
 	bool find = false;
-	for (int i=0; (i<MMC_MEMMAP_SIZE) && !find; i++) {
-		find = (MMC_REGS_ADDRESSES[i] == logicalAddress);
-	}
 
-	if (find) {
-		if (cmd == tlm::TLM_READ_COMMAND) {
-			memset(buffer->buffer, 0, buffer->data_size);
-			*((uint8_t *) buffer->buffer) = inherited::read(logicalAddress);
-		} else {
-			inherited::write(logicalAddress, *((uint8_t *) buffer->buffer));
-		}
+	for (uint16_t i=0; i <memoryMap.size(); i++) {
+		if ((addr >= memoryMap[i]->start_address) && (addr <= memoryMap[i]->end_address)) {
+			find = true;
 
-	} else {
+//			tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
 
-// Start => Workaround code for unimplemented controller
-		find = true;
-		if (logicalAddress <= REG_HIGH_OFFSET) {
-
-			find = false;
-			for (int i=0; (i<DEVICE_MAP_SIZE) && !find; i++) {
-				find = ((deviceMap[i].start_address <= logicalAddress) && (logicalAddress <= deviceMap[i].end_address));
-			}
-
-			if (!find) {
-
-				if (debug_enabled) {
-/*
-					if (trap_reporting_import) {
-						trap_reporting_import->ReportTrap();
-					}
-*/
-					cout << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
-				}
-				memset(buffer->buffer, 0, buffer->data_size);
-			}
-
-		}
-
-		if (find) {
-// End => Workaround code for unimplemented controller
-
-			tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
+			mmc_trans->acquire();
 
 			mmc_trans->set_data_ptr( (unsigned char *)buffer->buffer );
 
@@ -161,42 +103,185 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
 			if (cmd == tlm::TLM_READ_COMMAND) {
 				mmc_trans->set_command( tlm::TLM_READ_COMMAND );
+
+//				memset(buffer->buffer, 0, buffer->data_size);
+
 			} else {
 				mmc_trans->set_command( tlm::TLM_WRITE_COMMAND );
 			}
 
-			physical_address_t addr = inherited::getPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
+			mmc_trans->set_address( addr & 0x7FFFFF);
 
-			if (isPaged(logicalAddress, 0x00, buffer->isGlobal, false)) {
-				mmc_trans->set_address( addr & 0x7FFFFF);
-				external_socket->b_transport( *mmc_trans, tlm2_btrans_time );
-			} else {
-				mmc_trans->set_address( addr & 0xFFFF);
-				local_socket->b_transport( *mmc_trans, tlm2_btrans_time );
-				unsigned int i;
-				for(i = 0; i < buffer->data_size; i++)
-					if(((uint8_t *) buffer->buffer)[i]) std::cerr << "";
-			}
+			init_socket[memoryMap[i]->module_index]->b_transport( *mmc_trans, tlm2_btrans_time );
 
-			if (mmc_trans->is_response_error() ) {
-				cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << std::dec << endl;
-				SC_REPORT_ERROR("S12XMMC : ", "Response error from b_transport.");
-			}
+//			tlm::tlm_response_status response = mmc_trans->get_response_status();
 
+			if (mmc_trans->is_response_error()) { return (false); }
 
 			mmc_trans->release();
 
+			break;
+		}
+	}
+
+
+	return (find);
+
+}
+
+
+void S12XMMC::xgate_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
+
+	address_t logicalAddress = buffer->logicalAddress;
+	tlm::tlm_command cmd = ((accessType == MMC::WRITE)? tlm::TLM_WRITE_COMMAND: tlm::TLM_READ_COMMAND);
+
+	bool find = false;
+	if (inherited::version.compare("V3") == 0) {
+		for (int i=0; (i<inherited::MMC_MEMMAP_SIZE) && !find; i++) {
+			find = (inherited::MMC_REGS_ADDRESSES[i] == logicalAddress);
+		}
+	} else if (inherited::version.compare("V4") == 0) {
+		for (int i=0; (i<=inherited::PPAGE) && !find; i++) {
+			find = (inherited::MMC_REGS_ADDRESSES[i] == logicalAddress);
+		}
+	}
+
+	if (find) {
+		if (inherited::mpu) {
+			inherited::mpu->assertInterrupt();
+		}
+	} else {
+		physical_address_t addr = inherited::getXGATEPhysicalAddress((address_t) logicalAddress);
+
+		bool result = true;
+		if (inherited::mpu) {
+			result = inherited::mpu->validate(TOWNER::XGATE, addr, buffer->data_size, (cmd == tlm::TLM_WRITE_COMMAND), buffer->isExecute);
+		}
+
+		if (result) {
+			while (!busSemaphore.lock(TOWNER::XGATE)) {
+				wait(busSemaphore_event);
+			}
+
+			find = accessBus(addr, buffer, cmd);
+
+			if (busSemaphore.unlock(TOWNER::XGATE)) {
+				busSemaphore_event.notify();
+			}
+
+			if (!find) {
+
+				if (debug_enabled) {
+					std::cerr << "WARNING: S12XMMC::XGATE => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
+				}
+				if (cmd == tlm::TLM_WRITE_COMMAND) {
+					if (debug_enabled) {
+						std::cerr << "Unable to WRITE size= " << buffer->data_size << "  value= 0x" << std::hex << *((sc_dt::uint64 *) buffer->buffer) << std::endl;
+					}
+				} else {
+					memset(buffer->buffer, 0, buffer->data_size);
+				}
+
+				if (trap_reporting_import && debug_enabled) {
+					trap_reporting_import->ReportTrap(*this);
+				}
+			}
 		}
 
 	}
 
-	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
+void S12XMMC::cpu_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
+
+	address_t logicalAddress = buffer->logicalAddress;
+	tlm::tlm_command cmd = ((accessType == MMC::WRITE)? tlm::TLM_WRITE_COMMAND: tlm::TLM_READ_COMMAND);
+
+	bool find = false;
+	if (inherited::version.compare("V3") == 0) {
+		for (int i=0; (i<inherited::MMC_MEMMAP_SIZE) && !find; i++) {
+			find = (inherited::MMC_REGS_ADDRESSES[i] == logicalAddress);
+		}
+	} else if (inherited::version.compare("V4") == 0) {
+		for (int i=0; (i<=inherited::PPAGE) && !find; i++) {
+			find = (inherited::MMC_REGS_ADDRESSES[i] == logicalAddress);
+		}
+	}
+
+	if (find) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			memset(buffer->buffer, 0, buffer->data_size);
+			inherited::read(logicalAddress, buffer->buffer, buffer->data_size);
+		} else {
+			inherited::write(logicalAddress, buffer->buffer, buffer->data_size);
+		}
+
+	} else {
+
+		physical_address_t addr = inherited::getCPU12XPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
+
+		bool result = true;
+		if (inherited::mpu) {
+			result = inherited::mpu->validate(TOWNER::CPU12X, addr, buffer->data_size, (cmd == tlm::TLM_WRITE_COMMAND), buffer->isExecute);
+		}
+
+		if (result) {
+			while (!busSemaphore.lock(TOWNER::CPU12X)) {
+				wait(busSemaphore_event);
+			}
+
+			find = accessBus(addr, buffer, cmd);
+
+			if (busSemaphore.unlock(TOWNER::CPU12X)) {
+				busSemaphore_event.notify();
+			}
+
+			if (!find) {
+
+//				std::cerr << "WARNING: S12XMMC::CPU12X => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
+				if (cmd == tlm::TLM_WRITE_COMMAND) {
+//					std::cerr << "Unable to WRITE size= " << buffer->data_size << "  value= 0x" << std::hex << *((sc_dt::uint64 *) buffer->buffer) << std::endl;
+				} else {
+					memset(buffer->buffer, 0, buffer->data_size);
+				}
+
+//				if (trap_reporting_import) {
+//					trap_reporting_import->ReportTrap(*this);
+//				}
+			}
+		}
+
+	}
+
+
+}
+
+bool S12XMMC::BeginSetup() {
+
+	vector<string> result;
+	stringSplit(memoryMapStr, ";", result);
+	vector<string> oneMemoryMapEntrySegments;
+	for (unsigned int i = 0; i < result.size(); i++) {
+		stringSplit(result[i], ",", oneMemoryMapEntrySegments);
+		MemoryMapEntry *oneMemoryMapEntry = new MemoryMapEntry();
+		std::stringstream ss;
+		ss << std::dec << oneMemoryMapEntrySegments[0] << " " << std::hex << oneMemoryMapEntrySegments[1] << " " << std::hex << oneMemoryMapEntrySegments[2] << std::dec;
+		ss >> std::dec >> oneMemoryMapEntry->module_index >> std::hex >> oneMemoryMapEntry->start_address >> std::hex >> oneMemoryMapEntry->end_address;
+
+		ss.str(std::string());
+
+		memoryMap.push_back(oneMemoryMapEntry);
+		oneMemoryMapEntrySegments.clear();
+	}
+	result.clear();
+
+	return (inherited::BeginSetup());
+}
 
 } // end of namespace hcs12x
 } // end of namespace processor
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
+
 

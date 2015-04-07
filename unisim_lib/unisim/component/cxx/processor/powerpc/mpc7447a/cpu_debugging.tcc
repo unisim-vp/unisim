@@ -35,6 +35,10 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_CPU_DEBUGGING_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_CPU_DEBUGGING_TCC__
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -48,7 +52,6 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 	unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation;
 	uint32_t insn;
 
-	typename CONFIG::WIMG wimg;
 	typename CONFIG::physical_address_t physical_addr;
 
 	if(GetMSR_IR())
@@ -61,18 +64,13 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 		mmu_access.memory_access_type = CONFIG::MAT_READ;
 		mmu_access.memory_type = CONFIG::MT_INSN;
 	
-		EmuTranslateAddress<true>(mmu_access);
+		bool status = EmuTranslateAddress<true>(mmu_access);
+		if(unlikely(!status)) return string("not mapped ?");
 	
-		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
 	}
 	else
 	{
-		// W=0: Write through disabled
-		// I=0: Cache not inhibited
-		// M=1: Memory coherency enforced
-		// G=1: Guarded memory access (speculative fetch forbidden)
-		wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 		physical_addr = addr;
 	}
 
@@ -137,7 +135,6 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 
 	do
 	{
-		typename CONFIG::WIMG wimg;
 		typename CONFIG::physical_address_t physical_addr;
 		typename CONFIG::address_t protection_boundary;
 		if(translate_addr && GetMSR_DR())
@@ -150,19 +147,14 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 			mmu_access.memory_access_type = CONFIG::MAT_READ;
 			mmu_access.memory_type = mt;
 	
-			EmuTranslateAddress<true>(mmu_access); // debug is enabled
+			bool status = EmuTranslateAddress<true>(mmu_access); // debug is enabled
+			if(unlikely(!status)) return false;
 	
-			wimg = mmu_access.wimg;
 			physical_addr = mmu_access.physical_addr;
 			protection_boundary = mmu_access.protection_boundary;
 		}
 		else
 		{
-			// W=0: Write through disabled
-			// I=0: Cache not inhibited
-			// M=1: Memory coherency enforced
-			// G=1: Guarded memory access (speculative fetch forbidden)
-			wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 			physical_addr = addr;
 			protection_boundary = addr + size;
 		}
@@ -284,7 +276,6 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 
 	do
 	{
-		typename CONFIG::WIMG wimg;
 		typename CONFIG::physical_address_t physical_addr;
 		typename CONFIG::address_t protection_boundary;
 		if(translate_addr && GetMSR_DR())
@@ -297,19 +288,14 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 			mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 			mmu_access.memory_type = mt;
 	
-			EmuTranslateAddress<true>(mmu_access); // debug is enabled
+			bool status = EmuTranslateAddress<true>(mmu_access); // debug is enabled
+			if(unlikely(!status)) return false;
 	
-			wimg = mmu_access.wimg;
 			physical_addr = mmu_access.physical_addr;
 			protection_boundary = mmu_access.protection_boundary;
 		}
 		else
 		{
-			// W=0: Write through disabled
-			// I=0: Cache not inhibited
-			// M=1: Memory coherency enforced
-			// G=1: Guarded memory access (speculative fetch forbidden)
-			wimg = (typename CONFIG::WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
 			physical_addr = addr;
 			protection_boundary = addr + size;
 		}

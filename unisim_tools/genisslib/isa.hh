@@ -21,19 +21,23 @@
 #include <fwd.hh>
 #include <vect.hh>
 #include <conststr.hh>
+#include <errtools.hh>
+#include <set>
 #include <memory>
 #include <iosfwd>
 #include <referencecounting.hh>
 
-struct Isa {
+struct Isa
+{
   enum DecoderType_t { RiscDecoder = 0, CiscDecoder, VliwDecoder };
   DecoderType_t                 m_decoder;         /**< Decoder Type */
   bool                          m_is_subdecoder;   /**< Subdecoder or full decoder */
   bool                          m_withsource;      /**< Action source code accessible or not */
+  bool                          m_withencode;      /**< Action source code accessible or not */
   bool                          m_little_endian;   /**< Endianness of isa (false: big endian, true: little endian) */
   bool                          m_asc_forder;      /**< bitfields ordering (false: descending)*/
   bool                          m_asc_worder;      /**< words ordering (false: descending)*/
-  unsigned int                  m_minwordsize;     /**< minimum C type size for operation fields */
+  unsigned int                  m_minwordsize;     /**< minimum C type size for operand fields */
   std::vector<ConstStr_t>       m_namespace;       /**< Encapsulating namespace of the iss */
   Vect_t<CodePair_t>            m_tparams;         /**< Template parameters of the iss */
   Vect_t<Variable_t>            m_vars;            /**< Global variables used by the iss */
@@ -48,6 +52,10 @@ struct Isa {
   std::vector<ConstStr_t>       m_includes;        /**< files included by the isa main file */
   Vect_t<Specialization_t>      m_specializations; /**< Requested specializations */
   Vect_t<Inheritance_t>         m_inheritances;    /**< Defined inheritances for operation class */
+  
+  struct Ordering { FileLoc_t fileloc; std::vector<ConstStr_t> symbols; };
+  typedef std::vector<Ordering> Orderings;
+  Orderings                     m_user_orderings;
 
   Isa();
   ~Isa();
@@ -55,6 +63,7 @@ struct Isa {
   void                          remove( Operation_t* _op );
   void                          remove( ActionProto_t const* _ap );
   Operation_t*                  operation( ConstStr_t _symbol );
+  bool                          operations( ConstStr_t _symbol, Vect_t<Operation_t>& _opvec );
   Group_t*                      group( ConstStr_t _symbol );
   ActionProto_t const*          actionproto( ConstStr_t _symbol ) const;
   SDClass_t const*              sdclass( std::vector<ConstStr_t>& _namespace ) const;

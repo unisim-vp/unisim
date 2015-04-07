@@ -62,7 +62,7 @@ template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE = 1024 * 1024>
 class MemoryPage
 {
 public:
-	MemoryPage(PHYSICAL_ADDR _key);
+	MemoryPage(PHYSICAL_ADDR _key, uint8_t initial_state = 0x00);
 	~MemoryPage();
 private:
 	friend class HashTable<PHYSICAL_ADDR, MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> >;
@@ -93,6 +93,10 @@ public:
 	bool WriteMemory(PHYSICAL_ADDR physical_addr, const void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);
 	bool ReadMemory(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);
 	void *GetDirectAccess(PHYSICAL_ADDR physical_addr, PHYSICAL_ADDR& physical_start_addr, PHYSICAL_ADDR& physical_end_addr);
+
+	PHYSICAL_ADDR GetLowAddress();
+	PHYSICAL_ADDR GetHighAddress();
+
 protected:
 	PHYSICAL_ADDR org;
 	PHYSICAL_ADDR bytesize;
@@ -106,6 +110,9 @@ private:
 	Parameter<PHYSICAL_ADDR> param_org;
 	Parameter<PHYSICAL_ADDR> param_bytesize;
 	Statistic<PHYSICAL_ADDR> stat_memory_usage;
+
+	uint8_t initial_byte_value;
+	Parameter<uint8_t> param_initial_byte_value;
 };
 
 } // end of namespace ram

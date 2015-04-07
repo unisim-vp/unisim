@@ -42,16 +42,6 @@
 #include "unisim/service/interfaces/power_mode.hh"
 #include "unisim/util/random/random.hh"
 
-#ifdef GCC_INLINE
-#undef GCC_INLINE
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-#define GCC_INLINE __attribute__((always_inline))
-#else
-#define GCC_INLINE
-#endif
-
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -128,12 +118,12 @@ public:
 	 * @return true on cache correctly initialized, false otherwise
 	 */
 	bool IsOK() const;
-	uint32_t GetTag(uint32_t addr) const;
+	inline uint32_t GetTag(uint32_t addr) const;
 	void SetTag(uint32_t index, uint32_t way, uint32_t tag);
-	uint32_t GetSet(uint32_t addr) const;
+	inline uint32_t GetSet(uint32_t addr) const;
 	uint32_t GetIndex(uint32_t addr) const;
 	bool HasTag(uint32_t tag, uint32_t set) const;
-	bool GetWay(uint32_t tag, uint32_t set, uint32_t *way) const;
+	inline bool GetWay(uint32_t tag, uint32_t set, uint32_t *way) const;
 	/** Get a way where to place a new line.
 	 * The current replacement policy will be selected.
 	 *
@@ -163,10 +153,12 @@ public:
 	uint32_t SetData(uint32_t set, uint32_t way, uint8_t *data);
 	uint32_t SetData(uint32_t set, uint32_t way, uint32_t index, uint32_t size,
 			uint8_t *data);
-	uint8_t GetValid(uint32_t set, uint32_t way) const;
+	inline uint8_t GetValid(uint32_t set, uint32_t way) const;
 	void SetValid(uint32_t set, uint32_t way, uint8_t valid);
 	uint8_t GetDirty(uint32_t set, uint32_t way) const;
 	void SetDirty(uint32_t set, uint32_t way, uint8_t dirty);
+	
+	inline uint32_t GetSizeToCacheLineBoundary(uint32_t addr) const;
 
 private:
 	/** Unisim logging services. */
@@ -230,6 +222,65 @@ private:
 public:
 	static const uint32_t LINE_SIZE = m_line_size_;
 };
+
+inline
+bool
+Cache::
+GetWay(uint32_t tag, uint32_t set, uint32_t *way)
+const
+{
+	bool found = false;
+	uint32_t current_way = 0;
+
+	while (current_way < m_associativity_)
+	{
+		found = (m_tag[set][current_way] == tag);
+		if (found)
+		{
+			*way = current_way;
+			return found;
+		}
+		current_way++;
+	}
+	*way = 0;
+	return found;
+}
+
+inline
+uint8_t
+Cache::
+GetValid(uint32_t set, uint32_t way)
+const
+{
+	return m_valid[set][way];
+}
+
+inline
+uint32_t
+Cache::
+GetTag(uint32_t addr)
+const
+{
+	return (addr & m_tag_mask) >> m_tag_shift;
+}
+
+inline
+uint32_t
+Cache::
+GetSet(uint32_t addr)
+const
+{
+	return (addr & m_set_mask) >> m_set_shift_;
+}
+
+inline
+uint32_t
+Cache::
+GetSizeToCacheLineBoundary(uint32_t addr)
+const
+{
+	return m_line_size_ - (addr % m_line_size_);
+}
 
 } // end of namespace armemu
 } // end of namespace arm

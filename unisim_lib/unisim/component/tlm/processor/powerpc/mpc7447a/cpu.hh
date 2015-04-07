@@ -42,6 +42,10 @@
 #include <unisim/kernel/tlm/tlm.hh>
 #include <unisim/component/tlm/message/interrupt.hh>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace tlm {
@@ -54,6 +58,8 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::util::garbage_collector::Pointer;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
+using unisim::kernel::service::Formula;
 using unisim::component::tlm::message::InterruptRequest;
 using unisim::component::tlm::message::SnoopingFSBRequest;
 using unisim::component::tlm::message::SnoopingFSBResponse;
@@ -91,51 +97,50 @@ public:
 	
 	CPU(const sc_module_name& name, Object *parent = 0);
 	virtual ~CPU();
-	virtual void Stop(int ret);
 	virtual void Synchronize();
 	virtual bool EndSetup();
-	inline void BusSynchronize()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-	__attribute__((always_inline))
-#endif
-	;
+	inline void BusSynchronize() ALWAYS_INLINE;
 
 	void Run();
-	void BusMaster();
 	virtual bool Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message);
 	virtual void Reset();
 	virtual void Idle();
+	virtual inline void RunInternalTimers() ALWAYS_INLINE;
+	inline void LazyRunInternalTimers() ALWAYS_INLINE;
+	inline void AlignToBusClock() ALWAYS_INLINE;
+	virtual void end_of_simulation();
 protected:
-	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
-	virtual void BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT);
-	virtual void BusZeroBlock(physical_address_t physical_addr);
-	virtual void BusFlushBlock(physical_address_t physical_addr);
-	virtual void DoBusAccess(unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG> *bus_access);
+	virtual bool BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
+	virtual bool BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT);
+	virtual bool BusZeroBlock(physical_address_t physical_addr);
+	virtual bool BusFlushBlock(physical_address_t physical_addr);
 private:
-	sc_time cpu_cycle_sctime;
-	sc_time bus_cycle_sctime;
-	sc_time cpu_sctime;
-	sc_time bus_sctime;
-	sc_time last_sync_sctime;
-	sc_time nice_sctime;
-	sc_time next_nice_sctime;
-	//uint64_t nice_time;
+	sc_time cpu_cycle_time;
+	sc_time bus_cycle_time;
+	sc_time timer_cycle_time;
+	sc_time cpu_time;             //<! local time (relative to sc_time_stamp)
+	sc_time run_time;             //<! absolute time (local time + sc_time_stamp)
+	sc_time timer_time;           //<! absolute time from the internal timers point of view
+	sc_time nice_time;            //<! period of synchronization with other threads
+	sc_time idle_time;
+	sc_time timers_update_deadline; //<! deadline for updating internal timers in order to keep internal timer accuracy
+	bool enable_host_idle;
 	double ipc;
 	sc_event ev_max_idle;
 	sc_event ev_interrupt;
 	sc_time max_idle_time;
-	sc_fifo<unisim::component::cxx::processor::powerpc::mpc7447a::BusAccess<CONFIG> *> bus_access_queue;
+	double one;
 	
 	Parameter<sc_time> param_bus_cycle_time;
 	Parameter<sc_time> param_nice_time;
 	Parameter<double> param_ipc;
+	Parameter<bool> param_enable_host_idle;
+	Statistic<sc_time> stat_run_time;
+	Statistic<sc_time> stat_idle_time;
+	Statistic<double> stat_one;
+	Formula<double> formula_idle_rate;
+	Formula<double> formula_load_rate;
 
-	inline void UpdateBusTime()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-	__attribute__((always_inline))
-#endif
-	;
-	
 	class IRQListener :
 		public sc_module,
 		public TlmSendIf<InterruptRequest>

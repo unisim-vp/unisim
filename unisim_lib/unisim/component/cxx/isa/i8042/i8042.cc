@@ -824,7 +824,7 @@ bool I8042::WriteIO(isa_address_t addr, const void *buffer, uint32_t size)
 				// fill-in input buffer
 				if(verbose)
 				{
-					logger << DebugInfo << "Write I/O. port 0x" << hex << addr << " (I8042_DATA_REG), value=" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
+					logger << DebugInfo << "Write I/O. port 0x" << hex << addr << " (I8042_DATA_REG), value=0x" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
 				}
 				WriteData(*(uint8_t *) buffer);
 				Unlock();
@@ -833,7 +833,7 @@ bool I8042::WriteIO(isa_address_t addr, const void *buffer, uint32_t size)
 				// fill-in input buffer
 				if(verbose)
 				{
-					logger << DebugInfo << "Write I/O. port 0x" << hex << addr << " (I8042_COMMAND_REG), value=" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
+					logger << DebugInfo << "Write I/O. port 0x" << hex << addr << " (I8042_COMMAND_REG), value=0x" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
 				}
 				WriteCommand(*(uint8_t *) buffer);
 				Unlock();
@@ -1254,7 +1254,7 @@ void I8042::WriteControl(uint8_t value)
 {
 	if(verbose)
 	{
-		logger << DebugInfo << "Writing control (0x" << hex << (unsigned int) value << dec << ")" << EndDebugInfo;
+		logger << DebugInfo << "Writing control (0x" << hex << (unsigned int) value << dec << "):" << EndDebugInfo;
 	}
 	control = value;
 	if(!enable_aux)
@@ -1264,13 +1264,13 @@ void I8042::WriteControl(uint8_t value)
 	}
 	if(verbose)
 	{
-		logger << DebugInfo << "Keyboard interrupt " << ((control & I8042_CTR_KBDINT) ? "enabled" : "disabled") << EndDebugInfo;
-		logger << DebugInfo << "Aux interrupt " << ((control & I8042_CTR_AUXINT) ? "enabled" : "disabled") << EndDebugInfo;
-		logger << DebugInfo << "Self test " << ((control & I8042_CTR_SYSFLAG) ? "passed" : "failed") << EndDebugInfo;
-		logger << DebugInfo << "PC/AT inhibit override/ignore keylock " << ((control & I8042_CTR_IGNKEYLOCK) ? "enabled" : "disabled") << EndDebugInfo;
-		logger << DebugInfo << "Keyboard " << ((control & I8042_CTR_KBDDIS) ? "disabled" : "enabled") << EndDebugInfo;
-		logger << DebugInfo << "Aux " << ((control & I8042_CTR_AUXDIS) ? "disabled" : "enabled") << EndDebugInfo;
-		logger << DebugInfo << "IBM PC Compatibility Mode " << ((control & I8042_CTR_XLATE) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Keyboard interrupt " << ((control & I8042_CTR_KBDINT) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Aux interrupt " << ((control & I8042_CTR_AUXINT) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Self test " << ((control & I8042_CTR_SYSFLAG) ? "passed" : "failed") << EndDebugInfo;
+		logger << DebugInfo << "  - PC/AT inhibit override/ignore keylock " << ((control & I8042_CTR_IGNKEYLOCK) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Keyboard " << ((control & I8042_CTR_KBDDIS) ? "disabled" : "enabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Aux " << ((control & I8042_CTR_AUXDIS) ? "disabled" : "enabled") << EndDebugInfo;
+		logger << DebugInfo << "  - IBM PC Compatibility Mode " << ((control & I8042_CTR_XLATE) ? "enabled" : "disabled") << EndDebugInfo;
 	}
 	UpdateStatus();
 	UpdateIRQ();
@@ -1287,7 +1287,7 @@ bool I8042::ReadIO(isa_address_t addr, void *buffer, uint32_t size)
 				ReadData(*(uint8_t *) buffer);
 				if(verbose)
 				{
-					logger << DebugInfo << "Read I/O. port 0x" << hex << addr << " (I8042_DATA_REG), value=" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
+					logger << DebugInfo << "Read I/O. port 0x" << hex << addr << " (I8042_DATA_REG), value=0x" << (unsigned int) *(uint8_t *) buffer << dec << EndDebugInfo;
 				}
 				UpdateIRQ();
 				Unlock();
@@ -1296,7 +1296,7 @@ bool I8042::ReadIO(isa_address_t addr, void *buffer, uint32_t size)
 				ReadStatus(*(uint8_t *) buffer);
 				if(verbose)
 				{
-					logger << DebugInfo << "Read I/O. port 0x" << hex << addr << " (I8042_STATUS_REG), value=" << (unsigned int) status << dec << "(OBF=" << ((status & I8042_STR_OBF) ? 1:0) << ",AUXOBF=" << ((status & I8042_STR_AUX_OBF) ? 1:0) << ",IBF=" << ((status & I8042_STR_IBF) ? 1:0) << ")" << EndDebugInfo;
+					logger << DebugInfo << "Read I/O. port 0x" << hex << addr << " (I8042_STATUS_REG), value=0x" << (unsigned int) status << dec << "(OBF=" << ((status & I8042_STR_OBF) ? 1:0) << ",AUXOBF=" << ((status & I8042_STR_AUX_OBF) ? 1:0) << ",IBF=" << ((status & I8042_STR_IBF) ? 1:0) << ")" << EndDebugInfo;
 				}
 				Unlock();
 				return true;

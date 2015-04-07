@@ -36,7 +36,14 @@ FileLoc_t::err( char const* _fmt, ... ) const {
     if( size < 0 or size >= capacity ) continue;
     
     /* Now storage is ok... */
-    std::cerr << m_name << ':' << m_line << ": " << storage << std::endl;
+    this->loc( std::cerr ) << storage << std::endl;
     break;
   }
+}
+
+std::ostream&
+FileLoc_t::loc( std::ostream& _sink ) const
+{
+  _sink << m_name << ':' << m_line << ':' << m_column << ": ";
+  return _sink;
 }

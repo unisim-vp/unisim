@@ -43,7 +43,9 @@
 #include <map>
 #include <vector>
 #include <sstream>
+#include <memory>
 #include <string.h>
+#include <assert.h>
 
 namespace unisim {
 namespace kernel {
@@ -63,22 +65,6 @@ class APIBase;
 }
 
 #include "unisim/kernel/api/api.hh"
-
-#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
-#if defined(likely)
-#undef likely
-#endif
-
-#if defined(unlikely)
-#undef unlikely
-#endif
-
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
-#else
-#define likely(x) (x)
-#define unlikely(x) (x)
-#endif
 
 #ifdef DEBUG_MEMORY_ALLOCATION
 void *operator new(std::size_t size);
@@ -153,7 +139,7 @@ public:
 class VariableBase
 {
 public:
-	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER, VAR_FORMULA } Type;
+	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER, VAR_FORMULA, VAR_SIGNAL } Type;
 	typedef enum { FMT_DEFAULT, FMT_HEX, FMT_DEC } Format;
 
 	VariableBase();
@@ -210,6 +196,7 @@ public:
 	virtual VariableBase& operator [] (unsigned int index);
 	virtual const VariableBase& operator [] (unsigned int index) const;
 	virtual unsigned int GetLength() const;
+	virtual unsigned int GetBitSize() const;
 	
 	virtual VariableBase& operator = (const VariableBase& variable);
 	virtual std::string GetSymbolicValue() const;
@@ -218,9 +205,11 @@ public:
 	bool IsMutable() const;
 	bool IsVisible() const;
 	bool IsSerializable() const;
+	bool IsModified() const;
 	virtual void SetMutable(bool is_mutable);
 	virtual void SetVisible(bool is_visible);
 	virtual void SetSerializable(bool is_serializable);
+	virtual void SetModified(bool is_modified);
 
 	void AddListener(VariableBaseListener *listener);
 	void RemoveListener(VariableBaseListener *listener);
@@ -238,6 +227,7 @@ private:
 	bool is_mutable;
 	bool is_visible;
 	bool is_serializable;
+	bool is_modified;
 	list<VariableBaseListener *> listener_list;
 };
 
@@ -263,7 +253,7 @@ public:
 			void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
 	virtual ~Simulator();
 	virtual SetupStatus Setup();
-	virtual void Stop(Object *object, int exit_status);
+	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 
 	const VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID) const;
 	VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
@@ -282,6 +272,7 @@ public:
 	void GetArrays(list<VariableBase *>& lst);
 	void GetParameters(list<VariableBase *>& lst);
 	void GetRegisters(list<VariableBase *>& lst);
+	void GetSignals(list<VariableBase *>& lst);
 	void GetStatistics(list<VariableBase *>& lst);
 	void GetFormulas(list<VariableBase *>& lst);
 
@@ -299,7 +290,13 @@ public:
 
 	void GenerateLatexDocumentation(ostream& os) const;
 	
-	virtual double GetSimTime()	{ return 0;	}
+	virtual double GetSimTime()	{ return (0);	}
+	virtual double GetHostTime()	{ return (0);	}
+
+	// ********** The following methods are added by Reda and used by PIMServer *****
+	virtual unsigned long long   GetStructuredAddress(unsigned long long logicalAddress) { return (logicalAddress); }
+	virtual unsigned long long   GetPhysicalAddress(unsigned long long logicalAddress) { return (logicalAddress); }
+	// *******************************************************************************
 
 	bool IsWarningEnabled() const;
 
@@ -368,7 +365,9 @@ private:
 	bool XmlfyRegisters(const char *filename);
 	bool XmlfyFormulas(const char *filename);
 
+public:
 	bool LoadXmlParameters(const char *filename);
+private:
 	bool LoadXmlStatistics(const char *filename);
 	bool LoadXmlRegisters(const char *filename);
 	bool LoadXmlFormulas(const char *filename);
@@ -408,7 +407,7 @@ private:
 	{
 		bool operator() (const char *s1, const char *s2) const
 		{
-			return strcmp(s1, s2) < 0;
+			return (strcmp(s1, s2) < 0);
 		}
 	};
 
@@ -441,6 +440,49 @@ public:
 };
 
 //=============================================================================
+//=                  CallBackObject and  TCallBack<TYPE>                      =
+//=============================================================================
+
+class CallBackObject {
+public:
+	virtual ~CallBackObject() {}
+
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length) {
+		return (false);
+	}
+
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length) {
+		return (false);
+	}
+
+	typedef bool (CallBackObject::*cbwrite)(unsigned int offset, const void*, unsigned int size);
+	typedef bool (CallBackObject::*cbread)(unsigned int offset, const void*, unsigned int size);
+
+};
+
+template <typename DataType> class TCallBack : public CallBackObject {
+private:
+	CallBackObject *m_owner;
+	unsigned int m_offset;
+
+	cbwrite write;
+	cbwrite read;
+
+public:
+	TCallBack(CallBackObject *owner, unsigned int offset, cbwrite _write, cbwrite _read) :
+		m_owner(owner), m_offset(offset), write(_write), read(_read) {}
+
+	bool Write(DataType storage) {
+		return ((write != NULL)? (m_owner->*write)(m_offset, &storage, sizeof(DataType)) : false);
+	}
+
+	bool Read(DataType& storage) {
+		return ((read != NULL)? (m_owner->*read)(m_offset, &storage, sizeof(DataType)) : false);
+	}
+
+};
+
+//=============================================================================
 //=                            Variable<TYPE>                                =
 //=============================================================================
 
@@ -451,7 +493,12 @@ public:
 	typedef VariableBase::Type Type;
 	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
 
+	void setCallBack(CallBackObject *owner, unsigned int offset, bool (CallBackObject::*_write)(unsigned int, const void*, unsigned int), bool (CallBackObject::*_read)(unsigned int, const void*, unsigned int)) {
+		m_callback.reset(new TCallBack<TYPE>(owner, offset, _write, _read));
+	}
+
 	virtual const char *GetDataTypeName() const;
+	virtual unsigned int GetBitSize() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
 	virtual operator unsigned long long () const;
@@ -462,8 +509,35 @@ public:
 	virtual VariableBase& operator = (unsigned long long value);
 	virtual VariableBase& operator = (double value);
 	virtual VariableBase& operator = (const char * value);
+
+protected:
+
+	bool WriteBack(TYPE storage) {
+
+		CallBackObject *cb = m_callback.get();
+		if (cb != NULL) {
+			return (((TCallBack<TYPE>&) *m_callback).Write(storage));
+		}
+
+		return (false);
+	}
+
+	bool ReadBack(TYPE& storage) const {
+
+		CallBackObject *cb = m_callback.get();
+		if (cb != NULL) {
+			return (((TCallBack<TYPE>&) *m_callback).Read(storage));
+		}
+
+		return (false);
+	}
+
+	const CallBackObject& callback() const { return (*m_callback); }
+	CallBackObject& scallback() { return (*m_callback); }
+
 private:
 	TYPE *storage;
+	std::auto_ptr<CallBackObject> m_callback;
 };
 
 template <class TYPE>
@@ -484,7 +558,34 @@ template <class TYPE>
 class Register : public Variable<TYPE>
 {
 public:
+
 	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
+
+//	using Variable<TYPE>::operator=;
+
+	VariableBase& operator = (bool value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (long long value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (unsigned long long value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (double value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (const char * value) { return (Variable<TYPE>::operator = (value)); }
+
+};
+
+template <class TYPE>
+class Signal : public Variable<TYPE>
+{
+public:
+
+	Signal(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_SIGNAL, description) {}
+
+//	using Variable<TYPE>::operator=;
+
+	VariableBase& operator = (bool value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (long long value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (unsigned long long value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (double value) { return (Variable<TYPE>::operator = (value)); }
+	VariableBase& operator = (const char * value) { return (Variable<TYPE>::operator = (value)); }
+
 };
 
 template <class TYPE>
@@ -524,10 +625,6 @@ public:
 	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2, const char *description = 0);
 	Formula(const char *name, Object *owner, Operator op, VariableBase *child, const char *description = 0);
 	
-#if 0
-	Formula(const char *name, Object *owner, const char *math_formula, const char *description = 0);
-#endif
-
 	virtual const char *GetDataTypeName() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
@@ -547,30 +644,6 @@ private:
 
 	Operator op;
 	VariableBase *childs[3];
-
-#if 0
-	static const unsigned int TOK_EOF   = 256;
-	static const unsigned int TOK_ERROR = 257;
-	static const unsigned int TOK_LTE   = 258;
-	static const unsigned int TOK_GTE   = 259;
-	static const unsigned int TOK_ABS   = 260;
-	static const unsigned int TOK_MIN   = 261;
-	static const unsigned int TOK_MAX   = 262;
-	static const unsigned int TOK_IDENT = 263;
-	static const unsigned int TOK_EXPR  = 264;
-
-	static const unsigned int PEEK_TOK  = 0;
-	static const unsigned int GET_TOK   = 1;
-	
-	unsigned int look_ahead_token;
-	VariableBase *look_ahead_lval;
-
-	const char *GetTokenName(unsigned int token) const;
-	unsigned int ReadToken(const char *math_formula, unsigned int& pos, unsigned int mode, VariableBase **lval = 0);
-	unsigned int Parse(const char *math_formula, unsigned int& pos, VariableBase **lval);
-	void Initialize(Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0);
-	Formula(Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0);
-#endif
 };
 
 //=============================================================================
@@ -594,6 +667,7 @@ public:
 	virtual void SetMutable(bool is_mutable);
 	virtual void SetVisible(bool is_visible);
 	virtual void SetSerializable(bool is_serializable);
+	virtual void SetModified(bool is_modified);
 
 private:
 	vector<VariableBase *> variables;
@@ -632,9 +706,9 @@ VariableBase& VariableArray<TYPE>::operator [] (unsigned int index)
 	if(index >= variables.size())
 	{
 		cerr << "Subscript out of range" << endl;
-		return *Simulator::simulator->void_variable;
+		return (*Simulator::simulator->void_variable);
 	}
-	return *variables[index];
+	return (*variables[index]);
 }
 
 template <class TYPE>
@@ -643,15 +717,15 @@ const VariableBase& VariableArray<TYPE>::operator [] (unsigned int index) const
 	if(index >= variables.size())
 	{
 		cerr << "Subscript out of range" << endl;
-		return *Simulator::simulator->void_variable;
+		return (*Simulator::simulator->void_variable);
 	}
-	return *variables[index];
+	return (*variables[index]);
 }
 
 template <class TYPE>
 unsigned int VariableArray<TYPE>::GetLength() const
 {
-	return variables.size();
+	return (variables.size());
 }
 
 template <class TYPE>
@@ -663,7 +737,7 @@ VariableBase& VariableArray<TYPE>::operator = (const VariableBase& variable)
 	{
 		*variables[index] = variable[index];
 	}
-	return *this;
+	return (*this);
 }
 
 template <class TYPE>
@@ -680,7 +754,7 @@ void VariableArray<TYPE>::SetFormat(Format fmt)
 template <class TYPE>
 const char *VariableArray<TYPE>::GetDataTypeName() const
 {
-	return "array";
+	return ("array");
 }
 
 template <class TYPE>
@@ -720,6 +794,12 @@ void VariableArray<TYPE>::SetSerializable(bool _is_serializable)
 }
 
 template <class TYPE>
+void VariableArray<TYPE>::SetModified(bool _is_modified)
+{
+	// Arrays can't be modified, only there elements
+}
+
+template <class TYPE>
 class ParameterArray : public VariableArray<TYPE>
 {
 public:
@@ -740,6 +820,13 @@ public:
 	RegisterArray(const char *name, Object *owner, TYPE *parameters, unsigned int dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_REGISTER, description) {}
 };
 
+template <class TYPE>
+class SignalArray : public VariableArray<TYPE>
+{
+public:
+	SignalArray(const char *name, Object *owner, TYPE *parameters, unsigned int dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_SIGNAL, description) {}
+};
+
 //=============================================================================
 //=                                 Object                                    =
 //=============================================================================
@@ -758,6 +845,7 @@ public:
 	                         // By contract, it is called after Setup(ServiceExportBase&)
 
 	const char *GetName() const;
+	const char *GetObjectName() const;
 
 	void Add(ServiceImportBase& srv_import);
 	void Remove(ServiceImportBase& srv_import);
@@ -780,6 +868,7 @@ public:
 	virtual void Stop(int exit_status);
 	void SetDescription(const char *description);
 private:
+	string name;
 	string object_name;
 	string description;
 	Object *parent;
@@ -854,7 +943,7 @@ public:
 	virtual void Dump(ostream& os) const = 0;
 	virtual Object *GetService() const = 0;
 	virtual ServiceExportBase *GetServiceExport() = 0;
-private:
+protected:
 	string name;
 	Object *owner;
 };
@@ -879,7 +968,7 @@ public:
 
 	friend void operator >> (ServiceExportBase& lhs, ServiceImportBase& rhs);
 	friend void operator << (ServiceImportBase& lhs, ServiceExportBase& rhs);
-private:
+protected:
 	string name;
 	Object *owner;
 	list<ServiceImportBase *> setup_dependencies;
@@ -991,13 +1080,20 @@ ServiceImport<SERVICE_IF>::~ServiceImport()
 template <class SERVICE_IF>
 inline ServiceImport<SERVICE_IF>::operator SERVICE_IF * () const
 {
-	return service;
+	return (service);
 }
 
 template <class SERVICE_IF>
 inline SERVICE_IF *ServiceImport<SERVICE_IF>::operator -> () const
 {
-	return service;
+#ifdef DEBUG_SERVICE
+	if(!service)
+	{
+		cerr << "ERROR! " << GetName() << " interface can't be used because it is not bound to a service." << endl;
+		owner->Object::Stop(-1);
+	}
+#endif
+	return (service);
 }
 
 template <class SERVICE_IF>
@@ -1065,31 +1161,31 @@ template <class SERVICE_IF>
 Service<SERVICE_IF> *ServiceImport<SERVICE_IF>::ResolveService(Client<SERVICE_IF> *_client)
 {
 	if(alias_import)
-		return alias_import->ResolveService(_client);
+		return (alias_import->ResolveService(_client));
 	else
-		if(srv_export) return srv_export->ResolveService(_client);
+		if(srv_export) return (srv_export->ResolveService(_client));
 
 #ifdef DEBUG_SERVICE
 	cerr << GetName() << ".ResolveService(" << _client->GetName() << ") failed" << endl;
 #endif
-	return 0;
+	return (0);
 }
 
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF> *ServiceImport<SERVICE_IF>::ResolveServiceExport()
 {
 	if(alias_import)
-		return alias_import->ResolveServiceExport();
+		return (alias_import->ResolveServiceExport());
 	else
-		if(srv_export) return srv_export->ResolveServiceExport();
+		if(srv_export) return (srv_export->ResolveServiceExport());
 
-	return 0;
+	return (0);
 }
 
 template <class SERVICE_IF>
 ServiceExportBase *ServiceImport<SERVICE_IF>::GetServiceExport()
 {
-	return ResolveServiceExport();
+	return (ResolveServiceExport());
 }
 
 template <class SERVICE_IF>
@@ -1231,7 +1327,7 @@ void ServiceImport<SERVICE_IF>::Dump(ostream& os) const
 template <class SERVICE_IF>
 Object *ServiceImport<SERVICE_IF>::GetService() const
 {
-	return service;
+	return (service);
 }
 
 //=============================================================================
@@ -1325,7 +1421,7 @@ ServiceExport<SERVICE_IF>::~ServiceExport()
 template <class SERVICE_IF>
 inline bool ServiceExport<SERVICE_IF>::IsConnected() const
 {
-	return client != 0;
+	return (client != 0);
 }
 
 template <class SERVICE_IF>
@@ -1477,15 +1573,15 @@ Service<SERVICE_IF> *ServiceExport<SERVICE_IF>::ResolveService(Client<SERVICE_IF
 {
 	if(actual_export)
 	{
-		return actual_export->ResolveService(_client);
+		return (actual_export->ResolveService(_client));
 	}
 
 	if(service)
 	{
 		client = _client;
-		return service;
+		return (service);
 	}
-	return 0;
+	return (0);
 }
 
 template <class SERVICE_IF>
@@ -1493,10 +1589,10 @@ ServiceExport<SERVICE_IF> *ServiceExport<SERVICE_IF>::ResolveServiceExport()
 {
 	if(actual_export)
 	{
-		return actual_export->ResolveServiceExport();
+		return (actual_export->ResolveServiceExport());
 	}
 
-	return this;
+	return (this);
 }
 
 template <class SERVICE_IF>
@@ -1509,7 +1605,7 @@ void ServiceExport<SERVICE_IF>::UnresolveClient()
 	if(actual_export)
 	{
 		client = 0;
-		return actual_export->UnresolveClient();
+		return (actual_export->UnresolveClient());
 	}
 
 	if(client)
@@ -1541,13 +1637,13 @@ void ServiceExport<SERVICE_IF>::Dump(ostream& os) const
 template <class SERVICE_IF>
 Object *ServiceExport<SERVICE_IF>::GetClient() const
 {
-	return client;
+	return (client);
 }
 
 template <class SERVICE_IF>
 Object *ServiceExport<SERVICE_IF>::GetService() const
 {
-	return service;
+	return (service);
 }
 
 //=============================================================================
@@ -1561,7 +1657,7 @@ ServiceExport<SERVICE_IF>& operator >> (ServiceImport<SERVICE_IF>& lhs, ServiceE
 	lhs.Bind(rhs);
 	rhs.Bind(lhs);
 	lhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 // (export <- import) ==> import
@@ -1571,7 +1667,7 @@ ServiceImport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceI
 	rhs.Bind(lhs);
 	lhs.Bind(rhs);
 	rhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 // (import1 -> import2) ==> import2
@@ -1580,7 +1676,7 @@ ServiceImport<SERVICE_IF>& operator >> (ServiceImport<SERVICE_IF>& lhs, ServiceI
 {
 	lhs.Bind(rhs);
 	lhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 // (import1 <- import2) ==> import2
@@ -1589,7 +1685,7 @@ ServiceImport<SERVICE_IF>& operator << (ServiceImport<SERVICE_IF>& lhs, ServiceI
 {
 	rhs.Bind(lhs);
 	rhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 // (export1 -> export2) ==> export2
@@ -1598,7 +1694,7 @@ ServiceExport<SERVICE_IF>& operator >> (ServiceExport<SERVICE_IF>& lhs, ServiceE
 {
 	rhs.Bind(lhs);
 	lhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 // (export1 <- export2) ==> export2
@@ -1607,11 +1703,11 @@ ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceE
 {
 	lhs.Bind(rhs);
 	rhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 } // end of namespace service
 } // end of namespace kernel
 } // end of namespace unisim
 
-#endif
+#endif // __UNISIM_KERNEL_SERVICE_SERVICE_HH__

@@ -58,7 +58,8 @@ class Exception : public std::exception {};
 class AsynchronousException : public Exception
 {
 public:
-	AsynchronousException();
+	AsynchronousException() {};
+	virtual ~AsynchronousException() throw (){}
 	virtual const char * what () const throw ();
 };
 
@@ -67,6 +68,7 @@ class TrapException : public Exception
 {
 public:
 	TrapException(uint8_t trapnum);
+	virtual ~TrapException() throw (){}
 	virtual const char * what () const throw ();
 private:
 	uint8_t _trapnum;
@@ -77,6 +79,7 @@ class NonMaskableSWIInterrupt : public Exception
 {
 public:
 	NonMaskableSWIInterrupt();
+	virtual ~NonMaskableSWIInterrupt() throw (){}
 	virtual const char * what () const throw ();
 };
 
@@ -85,6 +88,7 @@ class SysCallInterrupt : public Exception
 {
 public:
 	SysCallInterrupt();
+	virtual ~SysCallInterrupt() throw (){}
 	virtual const char * what () const throw ();
 };
 
@@ -95,8 +99,9 @@ public:
 	enum ERROR_TYPE {INVALIDE_RPAGE, INVALIDE_EPAGE, INVALIDE_PPAGE};
 
 	NonMaskableAccessErrorInterrupt(ERROR_TYPE error);
+	virtual ~NonMaskableAccessErrorInterrupt() throw (){}
 	virtual const char * what () const throw ();
-	ERROR_TYPE getErrorType() { return errorType; }
+	ERROR_TYPE getErrorType() { return (errorType); }
 
 private:
 	ERROR_TYPE errorType;
@@ -107,6 +112,7 @@ class SpuriousInterrupt : public Exception
 {
 public:
 	SpuriousInterrupt();
+	virtual ~SpuriousInterrupt() throw (){}
 	virtual const char * what () const throw ();
 };
 

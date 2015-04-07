@@ -40,17 +40,21 @@ INTEGER LOAD STORE MULTIPLE INSTRUCTIONS
 
 op lmw(46[6]:rd[5]:ra[5]:sext<32>d[16])
 lmw.execute = {
-	if(unlikely(ra >= rd)) throw IllegalInstructionException<CONFIG>();
+	if(unlikely(ra >= rd))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return false;
+	}
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
-
-	if(unlikely(ea & 3)) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 
 	unsigned int r;
 	for(r = rd; r < 32; r++)
 	{
-		cpu->Int32Load(r, ea);
+		if(unlikely(!cpu->Int32Load(r, ea))) return false;
 		ea = ea + 4;
 	}
+	
+	return true;
 }
 lmw.disasm = {
 	os << "lmw r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
@@ -65,15 +69,15 @@ op stmw(47[6]:rs[5]:ra[5]:sext<32>d[16])
 stmw.execute = {
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 
-	if(unlikely(ea & 3)) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-
 	unsigned int r;
 
 	for(r = rs; r < 32; r++)
 	{
-		cpu->Int32Store(r, ea);
+		if(unlikely(!cpu->Int32Store(r, ea))) return false;
 		ea = ea + 4;
 	}
+	
+	return true;
 }
 stmw.disasm = {
 	os << "stmw r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";

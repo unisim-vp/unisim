@@ -20,7 +20,7 @@
 #include <strtools.hh>
 #include <subdecoder.hh>
 #include <scanner.hh>
-#include <parser.hh>
+#include <parser_defs.hh>
 #include <cassert>
 
 using namespace std;
@@ -30,14 +30,14 @@ using namespace std;
     @param _value value of the opcode
 */
 OpcodeBitField_t::OpcodeBitField_t( unsigned int _size, unsigned int _value )
-  : BitField_t( _size ), m_value( _value )
+  : FixedSizeBitField_t( _size ), m_value( _value )
 {}
 
 /** Create an opcode bitfield object (copy constructor)
     @param _src the bitfield object to copy
 */
 OpcodeBitField_t::OpcodeBitField_t( OpcodeBitField_t const& _src )
-  : BitField_t( _src.m_size ), m_value( _src.m_value )
+  : FixedSizeBitField_t( _src.m_size ), m_value( _src.m_value )
 {}
 
 /** Dump an opcode bitfield object into a stream
@@ -56,14 +56,14 @@ OpcodeBitField_t::fills( ostream& _sink ) const {
     @param _sext true if a sign extension is required
 */
 OperandBitField_t::OperandBitField_t( unsigned int _size, ConstStr_t _symbol, int _shift, unsigned int _size_modifier, bool _sext )
-  : BitField_t( _size ), m_symbol( _symbol ), m_shift( _shift ), m_size_modifier( _size_modifier ), m_sext( _sext )
+  : FixedSizeBitField_t( _size ), m_symbol( _symbol ), m_shift( _shift ), m_size_modifier( _size_modifier ), m_sext( _sext )
 {}
 
 /** Create an operand bitfield object (copy constructor)
     @param _src the source bitfield object to copy
 */
 OperandBitField_t::OperandBitField_t( OperandBitField_t const& _src )
-  : BitField_t( _src.m_size ),
+  : FixedSizeBitField_t( _src.m_size ),
     m_symbol( _src.m_symbol ), m_shift( _src.m_shift ), m_size_modifier( _src.m_size_modifier ), m_sext( _src.m_sext )
 {}
 
@@ -95,14 +95,14 @@ OperandBitField_t::dstsize() const {
     @param _size size in bits
 */
 UnusedBitField_t::UnusedBitField_t( unsigned int _size )
-  : BitField_t( _size )
+  : FixedSizeBitField_t( _size )
 {}
 
 /** Create an unused bitfield object (copy constructor)
     @param _src the source bitfield object to copy
 */
 UnusedBitField_t::UnusedBitField_t( UnusedBitField_t const& _src )
-  : BitField_t( _src.m_size )
+  : FixedSizeBitField_t( _src.m_size )
 {}
 
 /** Dump an unused bitfield object into a stream
@@ -114,11 +114,11 @@ UnusedBitField_t::fills( ostream& _sink ) const {
 }
 
 SeparatorBitField_t::SeparatorBitField_t( bool _rewind )
-  : BitField_t( 0 ), m_rewind( _rewind )
+  : m_rewind( _rewind )
 {}
 
 SeparatorBitField_t::SeparatorBitField_t( SeparatorBitField_t const& _src )
-  : BitField_t( 0 )
+  : BitField_t()
 {}
 
 void
@@ -137,11 +137,11 @@ operator<<( std::ostream& _sink, BitField_t const& _bf ) {
 }
 
 SubOpBitField_t::SubOpBitField_t( ConstStr_t _symbol, SDInstance_t const* _sdinstance )
-  : BitField_t( _sdinstance->m_sdclass->m_maxsize ), m_symbol( _symbol ), m_sdinstance( _sdinstance )
+  : m_symbol( _symbol ), m_sdinstance( _sdinstance )
 {}
 
 SubOpBitField_t::SubOpBitField_t( SubOpBitField_t const& _src )
-  : BitField_t( _src.m_size ), m_symbol( _src.m_symbol ), m_sdinstance( _src.m_sdinstance )
+  : m_symbol( _src.m_symbol ), m_sdinstance( _src.m_sdinstance )
 {}
 
 /** Dump an subop bitfield object into a stream
@@ -152,8 +152,18 @@ SubOpBitField_t::fills( std::ostream& _sink ) const {
   _sink << m_symbol << '[' << m_sdinstance->m_symbol << ']';
 }
 
-unsigned int SubOpBitField_t::minsize() const { return m_sdinstance->m_sdclass->m_minsize; }
-unsigned int SubOpBitField_t::maxsize() const { return m_sdinstance->m_sdclass->m_maxsize; }
+uintptr_t
+SubOpBitField_t::sizes() const { return m_sdinstance->m_sdclass->m_insnsizes.size(); }
+
+void
+SubOpBitField_t::sizes( unsigned int* _sizes ) const
+{
+  std::copy( m_sdinstance->m_sdclass->m_insnsizes.begin(), m_sdinstance->m_sdclass->m_insnsizes.end(), _sizes );
+}
+
+unsigned int SubOpBitField_t::minsize() const { return m_sdinstance->m_sdclass->minsize(); }
+unsigned int SubOpBitField_t::maxsize() const { return m_sdinstance->m_sdclass->maxsize(); }
+
 
 /**
  *  Create a specialized operand bitfield object
@@ -164,7 +174,7 @@ unsigned int SubOpBitField_t::maxsize() const { return m_sdinstance->m_sdclass->
  *  @param _sext true if a sign extension is required
  */
 SpOperandBitField_t::SpOperandBitField_t( OperandBitField_t const& _src, unsigned int _value )
-  : BitField_t( _src.m_size ), m_symbol( _src.m_symbol ), m_shift( _src.m_shift ),
+  : FixedSizeBitField_t( _src.m_size ), m_symbol( _src.m_symbol ), m_shift( _src.m_shift ),
     m_size_modifier( _src.m_size_modifier ), m_sext( _src.m_sext ), m_value( _value )
 {}
 
@@ -172,7 +182,7 @@ SpOperandBitField_t::SpOperandBitField_t( OperandBitField_t const& _src, unsigne
  *  @param _src the source bitfield object to copy
  */
 SpOperandBitField_t::SpOperandBitField_t( SpOperandBitField_t const& _src )
-  : BitField_t( _src.m_size ), m_symbol( _src.m_symbol ), m_shift( _src.m_shift ),
+  : FixedSizeBitField_t( _src.m_size ), m_symbol( _src.m_symbol ), m_shift( _src.m_shift ),
     m_size_modifier( _src.m_size_modifier ), m_sext( _src.m_sext ), m_value( _src.m_value )
 {}
 
@@ -195,7 +205,7 @@ SpOperandBitField_t::constval() const {
   assert( m_size <= 32 );
   int32_t val = (int32_t( m_value ) << (32-m_size)) >> (32-m_size);
   if( val < 0 )
-    return Str::fmt( "-%#x", uint32_t( -m_value ) );
+    return Str::fmt( "-%#x", uint32_t( -val ) );
   
   return Str::fmt( "%#x", uint32_t( m_value ) );
 }

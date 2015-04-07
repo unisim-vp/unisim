@@ -32,11 +32,14 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
+#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
+
 #include <systemc.h>
 #include <tlm.h>
+
 #include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/util/likely/likely.hh"
 
 #define LOCATION \
 	" - location = " \
@@ -137,6 +140,7 @@ ARMEMU(const sc_module_name& name, Object *parent)
 	, bus_cycle_time(62500.0, SC_PS)
 	, nice_time(1.0, SC_MS)
 	, ipc(1.0)
+	, enable_dmi(false)
 	, param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time,
 			"The processor cycle time.")
 	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time,
@@ -145,9 +149,13 @@ ARMEMU(const sc_module_name& name, Object *parent)
 			"Maximum time between SystemC waits.")
 	, param_ipc("ipc", this, ipc,
 			"Instructions per cycle performance.")
+	, param_enable_dmi("enable-dmi", this, enable_dmi, "Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation")
+  , stat_cpu_time("cpu-time", this, cpu_time,
+                  "The processor time")
 	, verbose_tlm(false)
 	, param_verbose_tlm("verbose-tlm", this, verbose_tlm, 
 			"Display TLM information")
+	, dmi_region_cache()
 {
 	inherited::param_cpu_cycle_time_ps.SetVisible(false);
 	param_cpu_cycle_time.AddListener(this);
@@ -449,7 +457,7 @@ void
 ARMEMU ::
 invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
 {
-	// nothing to do, we are not using dmi
+	dmi_region_cache.Invalidate(start_range, end_range);
 }
 	
 /**
@@ -464,7 +472,7 @@ invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 
 bool 
 ARMEMU ::
-ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size)
+ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 {
 	transaction_type *trans;
 	unsigned int read_size;
@@ -498,7 +506,7 @@ ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size)
  */
 bool 
 ARMEMU ::
-ExternalWriteMemory(uint64_t addr, const void *buffer, uint32_t size)
+ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 {
 	transaction_type *trans;
 	unsigned int write_size;
@@ -557,6 +565,30 @@ PrRead(uint32_t addr,
 	// 1 - synchronize with the bus
 	BusSynchronize();
 
+	// pre2 - DMI access (if possible)
+	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
+	
+	if(likely(enable_dmi))
+	{
+		dmi_region = dmi_region_cache.Lookup(addr, size);
+		
+		if(likely(dmi_region != 0))
+		{
+			if(likely(dmi_region->IsAllowed()))
+			{
+				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
+				{
+					memcpy(buffer, dmi_data->get_dmi_ptr() + (addr - dmi_data->get_start_address()), size);
+					quantum_time += dmi_region->GetReadLatency(size);
+					if (quantum_time > nice_time)
+						Sync();
+					return;
+				}
+			}
+		}
+	}
+
 	// 2 - create the transaction
 	transaction_type *trans;
 	trans = payload_fabric.allocate();
@@ -570,6 +602,18 @@ PrRead(uint32_t addr,
 	// cpu_time = sc_time_stamp() + quantum_time;
 	if (quantum_time > nice_time)
 		Sync();
+
+	// post3 - update DMI region cache
+	if(likely(enable_dmi))
+	{
+		if(likely(!dmi_region && trans->is_dmi_allowed()))
+		{
+			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			
+			dmi_region_cache.Insert(dmi_grant, dmi_data);
+		}
+	}
 
 	// 4 - release the transaction
 	trans->release();
@@ -606,6 +650,30 @@ PrWrite(uint32_t addr,
 	// 1 - synchronize with the bus
 	BusSynchronize();
 
+	// pre2 - DMI access (if possible)
+	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
+	
+	if(likely(enable_dmi))
+	{
+		dmi_region = dmi_region_cache.Lookup(addr, size);
+		
+		if(likely(dmi_region != 0))
+		{
+			if(likely(dmi_region->IsAllowed()))
+			{
+				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_WRITE) == tlm::tlm_dmi::DMI_ACCESS_WRITE))
+				{
+					memcpy(dmi_data->get_dmi_ptr() + (addr - dmi_data->get_start_address()), buffer, size);
+					quantum_time += dmi_region->GetWriteLatency(size);
+					if (quantum_time > nice_time)
+						Sync();
+					return;
+				}
+			}
+		}
+	}
+	
 	// 2 - create the transaction
 	transaction_type *trans;
 	trans = payload_fabric.allocate();
@@ -618,6 +686,18 @@ PrWrite(uint32_t addr,
 	master_socket->b_transport(*trans, quantum_time);
 	if (quantum_time > nice_time)
 		Sync();
+
+	// post3 - update DMI region cache
+	if(likely(enable_dmi))
+	{
+		if(likely(!dmi_region && trans->is_dmi_allowed()))
+		{
+			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			
+			dmi_region_cache.Insert(dmi_grant, dmi_data);
+		}
+	}
 
 	// 4 - release the transaction
 	trans->release();
