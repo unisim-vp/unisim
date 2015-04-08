@@ -36,16 +36,9 @@
 #define __IEEE1666_KERNEL_MODULE_H__
 
 #include <ieee1666/kernel/fwd.h>
-#include <ieee1666/kernel/object.h>
-#include <ieee1666/kernel/event.h>
-#include <ieee1666/kernel/time.h>
-#include <ieee1666/kernel/module_name.h>
+#include <ieee1666/base/fwd.h>
 #include <ieee1666/kernel/sensitive.h>
 #include <ieee1666/kernel/process.h>
-#include <ieee1666/base/in.h>
-#include <ieee1666/base/out.h>
-#include <ieee1666/base/inout.h>
-#include <ieee1666/base/signal_if.h>
 #include <vector>
 
 namespace sc_core {

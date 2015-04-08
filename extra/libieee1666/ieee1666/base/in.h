@@ -40,6 +40,7 @@
 #include <ieee1666/kernel/event_finder.h>
 #include <ieee1666/base/fwd.h>
 #include <ieee1666/base/signal_if.h>
+#include <ieee1666/util/fwd.h>
 
 namespace sc_core {
 

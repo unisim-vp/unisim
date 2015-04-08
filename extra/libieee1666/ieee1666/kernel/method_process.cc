@@ -32,43 +32,52 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __SYSTEMC_H__
-#define __SYSTEMC_H__
-
-#include <ieee1666/kernel/attribute.h>
-#include <ieee1666/kernel/event_finder.h>
-#include <ieee1666/kernel/event.h>
-#include <ieee1666/kernel/export.h>
-#include <ieee1666/kernel/interface.h>
+#include <ieee1666/kernel/method_process.h>
 #include <ieee1666/kernel/kernel.h>
-#include <ieee1666/kernel/module.h>
-#include <ieee1666/kernel/module_name.h>
-#include <ieee1666/kernel/object.h>
-#include <ieee1666/kernel/port.h>
-#include <ieee1666/kernel/prim_channel.h>
-#include <ieee1666/kernel/process_handle.h>
-#include <ieee1666/kernel/sensitive.h>
-#include <ieee1666/kernel/time.h>
-#include <ieee1666/kernel/spawn.h>
-#include <ieee1666/base/buffer.h>
-#include <ieee1666/base/clock.h>
-#include <ieee1666/base/event_queue.h>
-#include <ieee1666/base/event_queue_if.h>
-#include <ieee1666/base/fifo.h>
-#include <ieee1666/base/fifo_if.h>
-#include <ieee1666/base/fifo_in.h>
-#include <ieee1666/base/fifo_out.h>
-#include <ieee1666/base/in.h>
-#include <ieee1666/base/inout.h>
-#include <ieee1666/base/mutex.h>
-#include <ieee1666/base/mutex_if.h>
-#include <ieee1666/base/out.h>
-#include <ieee1666/base/semaphore.h>
-#include <ieee1666/base/semaphore_if.h>
-#include <ieee1666/base/signal.h>
-#include <ieee1666/base/signal_if.h>
-#include <ieee1666/util/trace_file.h>
 
-using namespace ::sc_core;
+namespace sc_core {
 
-#endif
+sc_method_process::sc_method_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, const sc_spawn_options *spawn_options)
+	: sc_process(_name, _process_owner, _process_owner_method_ptr, SC_METHOD_PROC_)
+{
+	sc_kernel::get_kernel()->add_method_process(this);
+}
+
+sc_method_process::~sc_method_process()
+{
+}
+
+void sc_method_process::next_trigger()
+{
+}
+
+void sc_method_process::next_trigger(const sc_event& e)
+{
+	e.add_dynamically_sensitive_method_process(this);
+}
+
+void sc_method_process::suspend(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+void sc_method_process::resume(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+void sc_method_process::disable(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+void sc_method_process::enable(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+void sc_method_process::kill(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+void sc_method_process::reset(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+} // end of namespace sc_core

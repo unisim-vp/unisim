@@ -43,24 +43,41 @@ namespace sc_core {
 class sc_process_owner 
 {
 public:
-	sc_process_owner();
+	sc_process_owner(bool automatic = false);
 	virtual ~sc_process_owner();
+	
+	bool is_automatic() const;
 private:
+	bool automatic;
 };
 
 class sc_process : public sc_object
 {
 public:
-	sc_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
+	sc_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, sc_curr_proc_kind process_kind);
 	
 	void call_process_owner_method();
+	
+	sc_curr_proc_kind proc_kind() const;
+	
+	virtual void suspend(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
+	virtual void resume(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
+	virtual void disable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
+	virtual void enable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
+	virtual void kill(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
+	virtual void reset(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
+	void acquire();
+	void release();
+	
+	const char *get_name() const;
 private:
 	std::string name;
 	
 	sc_process_owner *process_owner;
 	sc_process_owner_method_ptr process_owner_method_ptr;
-	
-	
+	sc_curr_proc_kind process_kind;
+
+	unsigned int ref_count;
 };
 
 } // end of namespace sc_core

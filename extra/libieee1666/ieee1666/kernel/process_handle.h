@@ -42,20 +42,6 @@
 
 namespace sc_core {
 
-enum sc_curr_proc_kind
-{
-	SC_NO_PROC_ ,
-	SC_METHOD_PROC_ ,
-	SC_THREAD_PROC_ ,
-	SC_CTHREAD_PROC_
-};
-
-enum sc_descendant_inclusion_info
-{
-	SC_NO_DESCENDANTS,
-	SC_INCLUDE_DESCENDANTS
-};
-
 class sc_unwind_exception: public std::exception
 {
 public:
@@ -107,6 +93,10 @@ public:
 
 	template <typename T>
 	void throw_it( const T& user_defined_exception, sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS );
+private:
+	sc_process *process;
+	
+	sc_process_handle(sc_process *process);
 };
 
 sc_process_handle sc_get_current_process_handle();

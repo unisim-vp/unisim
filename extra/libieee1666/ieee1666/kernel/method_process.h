@@ -32,43 +32,34 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __SYSTEMC_H__
-#define __SYSTEMC_H__
+#ifndef __IEEE1666_KERNEL_METHOD_PROCESS_H__
+#define __IEEE1666_KERNEL_METHOD_PROCESS_H__
 
-#include <ieee1666/kernel/attribute.h>
-#include <ieee1666/kernel/event_finder.h>
-#include <ieee1666/kernel/event.h>
-#include <ieee1666/kernel/export.h>
-#include <ieee1666/kernel/interface.h>
-#include <ieee1666/kernel/kernel.h>
-#include <ieee1666/kernel/module.h>
-#include <ieee1666/kernel/module_name.h>
+#include <ieee1666/kernel/fwd.h>
 #include <ieee1666/kernel/object.h>
-#include <ieee1666/kernel/port.h>
-#include <ieee1666/kernel/prim_channel.h>
-#include <ieee1666/kernel/process_handle.h>
-#include <ieee1666/kernel/sensitive.h>
-#include <ieee1666/kernel/time.h>
-#include <ieee1666/kernel/spawn.h>
-#include <ieee1666/base/buffer.h>
-#include <ieee1666/base/clock.h>
-#include <ieee1666/base/event_queue.h>
-#include <ieee1666/base/event_queue_if.h>
-#include <ieee1666/base/fifo.h>
-#include <ieee1666/base/fifo_if.h>
-#include <ieee1666/base/fifo_in.h>
-#include <ieee1666/base/fifo_out.h>
-#include <ieee1666/base/in.h>
-#include <ieee1666/base/inout.h>
-#include <ieee1666/base/mutex.h>
-#include <ieee1666/base/mutex_if.h>
-#include <ieee1666/base/out.h>
-#include <ieee1666/base/semaphore.h>
-#include <ieee1666/base/semaphore_if.h>
-#include <ieee1666/base/signal.h>
-#include <ieee1666/base/signal_if.h>
-#include <ieee1666/util/trace_file.h>
+#include <ieee1666/kernel/process.h>
 
-using namespace ::sc_core;
+namespace sc_core {
+
+class sc_method_process : public sc_process
+{
+public:
+	
+	sc_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options = 0);
+	virtual ~sc_method_process();
+
+	void next_trigger();
+	void next_trigger(const sc_event& e);
+
+	virtual void suspend(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void resume(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void disable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void enable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void kill(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void reset(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+private:
+};
+
+} // end of namespace sc_core
 
 #endif

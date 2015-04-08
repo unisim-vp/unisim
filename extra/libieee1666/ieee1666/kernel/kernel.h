@@ -68,8 +68,8 @@ public:
 	sc_object *get_current_object() const;
 	sc_thread_process *get_current_thread_process() const;
 
-	sc_thread_process *create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
-	sc_method_process *create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
+	sc_thread_process *create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options * = 0);
+	sc_method_process *create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options * = 0);
 
 	void initialize();
 	void do_delta_steps(bool once);

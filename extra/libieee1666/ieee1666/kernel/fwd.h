@@ -51,6 +51,20 @@ enum sc_port_policy
 	SC_ALL_BOUND
 };
 
+enum sc_curr_proc_kind
+{
+	SC_NO_PROC_ ,
+	SC_METHOD_PROC_ ,
+	SC_THREAD_PROC_ ,
+	SC_CTHREAD_PROC_
+};
+
+enum sc_descendant_inclusion_info
+{
+	SC_NO_DESCENDANTS,
+	SC_INCLUDE_DESCENDANTS
+};
+
 class sc_attr_base;
 template <class T> class sc_attribute;
 class sc_attr_cltn;
@@ -67,16 +81,15 @@ class sc_module;
 class sc_module_name;
 class sc_object;
 class sc_port_base;
+class sc_export_base;
 template <class IF> class sc_port_b;
+template <class IF> class sc_export;
 template <class IF, int N, sc_port_policy P> class sc_port;
-template <class IF> class sc_inout;
-template <class IF> class sc_in;
-template <class IF> class sc_out;
 class sc_prim_channel;
 class sc_process_handle;
 class sc_sensitive;
 class sc_time;
-class sc_trace_file;
+class sc_spawn_options;
 
 /////////////// implementation defined ////////////////
 class sc_process_owner;

@@ -36,7 +36,8 @@
 
 namespace sc_core {
 
-sc_process_owner::sc_process_owner()
+sc_process_owner::sc_process_owner(bool _automatic)
+	: automatic(_automatic)
 {
 }
 
@@ -44,16 +45,46 @@ sc_process_owner::~sc_process_owner()
 {
 }
 
-sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr)
+bool sc_process_owner::is_automatic() const
+{
+	return automatic;
+}
+
+sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, sc_curr_proc_kind _process_kind)
 	: sc_object(_name)
 	, process_owner(_process_owner)
 	, process_owner_method_ptr(_process_owner_method_ptr)
+	, process_kind(_process_kind)
+	, ref_count(1)
 {
 }
-	
+
+sc_curr_proc_kind sc_process::proc_kind() const
+{
+	return process_kind;
+}
+
 void sc_process::call_process_owner_method()
 {
 	(process_owner->*process_owner_method_ptr)();
+}
+
+void sc_process::acquire()
+{
+	ref_count++;
+}
+
+void sc_process::release()
+{
+	if(--ref_count == 0)
+	{
+		delete this;
+	}
+}
+
+const char *sc_process::get_name() const
+{
+	return name.c_str();
 }
 
 } // end of namespace sc_core

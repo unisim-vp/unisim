@@ -35,6 +35,14 @@
 #include <ieee1666/kernel/module.h>
 #include <ieee1666/kernel/kernel.h>
 #include <ieee1666/kernel/thread_process.h>
+#include <ieee1666/kernel/object.h>
+#include <ieee1666/kernel/event.h>
+#include <ieee1666/kernel/time.h>
+#include <ieee1666/kernel/module_name.h>
+#include <ieee1666/base/in.h>
+#include <ieee1666/base/out.h>
+#include <ieee1666/base/inout.h>
+#include <ieee1666/base/signal_if.h>
 
 namespace sc_core {
 

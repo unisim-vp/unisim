@@ -33,6 +33,7 @@
  */
 
 #include <ieee1666/kernel/process_handle.h>
+#include <ieee1666/kernel/process.h>
 
 namespace sc_core {
 
@@ -64,24 +65,37 @@ sc_process_handle::sc_process_handle()
 {
 }
 
-sc_process_handle::sc_process_handle( const sc_process_handle& )
+sc_process_handle::sc_process_handle(const sc_process_handle& ph)
+	: process(ph.process)
 {
+	if(process) process->acquire();
 }
 
 sc_process_handle::sc_process_handle( sc_object* )
 {
 }
 
+sc_process_handle::sc_process_handle(sc_process *_process)
+	: process(_process)
+{
+	if(process) process->acquire();
+}
+
 sc_process_handle::~sc_process_handle()
 {
+	if(process) process->release();
 }
 
 bool sc_process_handle::valid() const
 {
 }
 
-sc_process_handle& sc_process_handle::operator= ( const sc_process_handle& )
+sc_process_handle& sc_process_handle::operator = (const sc_process_handle& ph)
 {
+	if(process) process->release();
+	process = ph.process;
+	process->acquire();
+	return *this;
 }
 
 bool sc_process_handle::operator== ( const sc_process_handle& ) const
@@ -102,10 +116,12 @@ void sc_process_handle::swap( sc_process_handle& )
 
 const char* sc_process_handle::name() const
 {
+	return process ? process->get_name() : "";
 }
 
 sc_curr_proc_kind sc_process_handle::proc_kind() const
 {
+	return process ? process->proc_kind() : SC_NO_PROC_;
 }
 
 const std::vector<sc_object*>& sc_process_handle::get_child_objects() const

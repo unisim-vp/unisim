@@ -34,6 +34,7 @@
 
 #include <ieee1666/kernel/thread_process.h>
 #include <ieee1666/kernel/kernel.h>
+#include <ieee1666/kernel/spawn.h>
 
 namespace sc_core {
 
@@ -53,9 +54,11 @@ sc_thread_process_helper::~sc_thread_process_helper()
 	thread_process->thread_process_helper = 0;
 }
 
-sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr)
-	: sc_process(_name, _process_owner, _process_owner_method_ptr)
+sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, const sc_spawn_options *spawn_options)
+	: sc_process(_name, _process_owner, _process_owner_method_ptr, SC_THREAD_PROC_)
 	, coro(0)
+	, thread_process_helper(0)
+	, stack_size(spawn_options ? spawn_options->get_stack_size() : 0)
 {
 	sc_kernel::get_kernel()->add_thread_process(this);
 }
@@ -67,13 +70,26 @@ sc_thread_process::~sc_thread_process()
 		delete coro;
 	}
 }
-	
-void sc_thread_process::start()
+
+void sc_thread_process::set_stack_size(int _stack_size)
 {
-	coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1));
+	stack_size = _stack_size;
 }
 
-void sc_thread_process::suspend()
+void sc_thread_process::start()
+{
+	if(stack_size)
+	{
+		sc_coroutine_attributes coro_attributes = sc_coroutine_attributes(stack_size);
+		coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1), coro_attributes);
+	}
+	else
+	{
+			coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1));
+	}
+}
+
+void sc_thread_process::yield()
 {
 	if(thread_process_helper)
 	{
@@ -87,16 +103,16 @@ void sc_thread_process::suspend()
 
 void sc_thread_process::wait()
 {
-	suspend();
+	yield();
 }
 
 void sc_thread_process::wait(const sc_event& e)
 {
 	e.add_dynamically_sensitive_thread_process(this);
-	suspend();
+	yield();
 }
 
-void sc_thread_process::resume()
+void sc_thread_process::switch_to()
 {
 	if(*coro)
 	{
@@ -107,6 +123,30 @@ void sc_thread_process::resume()
 void sc_thread_process::coroutine_work(sc_coroutine::caller_type& yield)
 {
 	sc_thread_process_helper(this, yield);
+}
+
+void sc_thread_process::suspend(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+void sc_thread_process::resume(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+void sc_thread_process::disable(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+void sc_thread_process::enable(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+void sc_thread_process::kill(sc_descendant_inclusion_info include_descendants)
+{
+}
+
+void sc_thread_process::reset(sc_descendant_inclusion_info include_descendants)
+{
 }
 
 } // end of namespace sc_core

@@ -98,16 +98,16 @@ sc_thread_process *sc_kernel::get_current_thread_process() const
 	return current_thread_process;
 }
 
-sc_thread_process *sc_kernel::create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr)
+sc_thread_process *sc_kernel::create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options)
 {
-	sc_thread_process *thread_process = new sc_thread_process(name, process_owner, process_owner_method_ptr);
+	sc_thread_process *thread_process = new sc_thread_process(name, process_owner, process_owner_method_ptr, spawn_options);
 	
 	return thread_process;
 }
 
-sc_method_process *sc_kernel::create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr)
+sc_method_process *sc_kernel::create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options)
 {
-	sc_method_process *method_process = new sc_method_process(name, process_owner, process_owner_method_ptr);
+	sc_method_process *method_process = new sc_method_process(name, process_owner, process_owner_method_ptr, spawn_options);
 	
 	return method_process;
 }
@@ -144,7 +144,7 @@ void sc_kernel::initialize()
 		sc_thread_process *thread_process = thread_process_table[i];
 		
 		current_thread_process = thread_process;
-		thread_process->resume();
+		thread_process->switch_to();
 	}
 }
 
@@ -177,7 +177,7 @@ void sc_kernel::do_delta_steps(bool once)
 				runnable_thread_processes.pop_front();
 				
 				current_thread_process = thread_process;
-				thread_process->resume();
+				thread_process->switch_to();
 			}
 			while(runnable_thread_processes.size());
 		}

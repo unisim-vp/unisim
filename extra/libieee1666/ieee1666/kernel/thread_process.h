@@ -44,6 +44,7 @@
 namespace sc_core {
 
 typedef boost::coroutines::coroutine<void()> sc_coroutine;
+typedef boost::coroutines::attributes sc_coroutine_attributes;
 
 class sc_thread_process_helper
 {
@@ -61,24 +62,34 @@ class sc_thread_process : public sc_process
 {
 public:
 	
-	sc_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr);
+	sc_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options = 0);
 	virtual ~sc_thread_process();
+	
+	void set_stack_size(int stack_size);
 	
 	virtual void start();
 	
 	void wait();
 	void wait(const sc_event& e);
 	
-	void suspend();
-	void resume();
+	virtual void suspend(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void resume(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void disable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void enable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void kill(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void reset(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 	
 private:
 	friend class sc_thread_process_helper;
+	friend class sc_kernel;
 	
 	sc_coroutine *coro;
 	sc_thread_process_helper *thread_process_helper;
+	int stack_size;
 	
 	void coroutine_work(sc_coroutine::caller_type& yield);
+	void yield();
+	void switch_to();
 };
 
 } // end of namespace sc_core
