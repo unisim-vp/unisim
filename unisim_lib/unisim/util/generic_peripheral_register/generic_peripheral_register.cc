@@ -185,6 +185,12 @@ operator = (const char *value)
 	return *this;
 }
 
+template <>
+unsigned int Variable<GenericPeripheralByteRegister>::GetBitSize() const
+{
+	return 8;
+}
+
 template class Variable<GenericPeripheralByteRegister>;
 
 // Variable specialization for GenericPeripheralHalfWordRegister
@@ -308,6 +314,12 @@ operator = (const char *value)
 	if ( IsMutable() )
 		storage->SetValue((uint16_t)strtoull(value, 0, 0));
 	return *this;
+}
+
+template <>
+unsigned int Variable<GenericPeripheralHalfWordRegister>::GetBitSize() const
+{
+	return 16;
 }
 
 template class Variable<GenericPeripheralHalfWordRegister>;
@@ -435,6 +447,12 @@ operator = (const char *value)
 	return *this;
 }
 
+template <>
+unsigned int Variable<GenericPeripheralWordRegister>::GetBitSize() const
+{
+	return 32;
+}
+
 template class Variable<GenericPeripheralWordRegister>;
 
 // Variable specialization for GenericPeripheralDoubleWordRegister
@@ -558,6 +576,12 @@ operator = (const char *value)
 	if ( IsMutable() )
 		storage->SetValue((uint64_t)strtoull(value, 0, 0));
 	return *this;
+}
+
+template <>
+unsigned int Variable<GenericPeripheralDoubleWordRegister>::GetBitSize() const
+{
+	return 64;
 }
 
 template class Variable<GenericPeripheralDoubleWordRegister>;

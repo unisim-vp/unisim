@@ -45,6 +45,7 @@
 
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/util/debug/simple_register.hh"
+#include "unisim/util/likely/likely.hh"
 #include "unisim/kernel/logger/logger.hh"
 
 #ifndef __STDC_CONSTANT_MACROS
@@ -164,7 +165,7 @@ CPU(const char *name, Object *parent)
 			"The stack pointer (SP) register (alias of GPR[13]).")
 	, reg_lr("LR", this, gpr[14],
 			"The link register (LR) (alias of GPR[14]).")
-	, reg_pc("PC", this, pc,
+	, reg_pc("PC", this, gpr[15],
 			"The program counter (PC) register (alias of debug logical GPR[15]).")
 	, reg_cpsr("CPSR", this, cpsr.m_value,
 			"The CPSR register.")
@@ -204,7 +205,7 @@ CPU(const char *name, Object *parent)
 			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
 					this, gpr[i], ss_desc.str().c_str());
 	}
-	reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, pc, "Logical register 15 (PC debug register)");
+	reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
 	for (unsigned int i = 0; i < num_phys_spsrs; i++)
 	{
 		stringstream ss;
@@ -283,7 +284,7 @@ BeginSetup()
 	if ( verbose )
 		logger << DebugInfo
 			<< "Setting initial pc to 0x"
-			<< hex << init_pc << dec
+			<< std::hex << init_pc << std::dec
 			<< EndDebugInfo;
 	BranchExchange( init_pc );
 
@@ -315,7 +316,7 @@ BeginSetup()
 	}
 	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
 	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &pc);
+	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &this->next_pc);
 	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
 	/* End TODO */
 
@@ -361,9 +362,9 @@ EndSetup()
 			logger << DebugWarning;
 			logger << "A cycle time of " << cpu_cycle_time_ps
 				<< " ps is too low for the simulated"
-				<< " hardware !" << endl;
+				<< " hardware !" << std::endl;
 			logger << "cpu cycle time should be >= "
-				<< min_cycle_time << " ps." << endl;
+				<< min_cycle_time << " ps." << std::endl;
 			logger << EndDebugWarning;
 		}
 	}
@@ -378,7 +379,7 @@ EndSetup()
 			<< " Using the maximum voltage found from the caches as "
 			<< " current voltage. Voltage used is "
 			<< voltage
-			<< " mV." << endl;
+			<< " mV." << std::endl;
 		if ( icache.power_mode_import )
 			logger << "  - instruction cache voltage = "
 				<< il1_def_voltage
@@ -386,7 +387,7 @@ EndSetup()
 		if ( dcache.power_mode_import )
 		{
 			if ( icache.power_mode_import )
-				logger << endl;
+				logger << std::endl;
 			logger << "  - data cache voltage = "
 				<< dl1_def_voltage
 				<< " mV";
@@ -441,7 +442,7 @@ void
 CPU::
 StepInstruction()
 {
-	uint32_t current_pc = GetNPC();
+	uint32_t current_pc = this->current_pc = GetNPC();
 
 	cur_instruction_address = current_pc;
 
@@ -479,34 +480,41 @@ StepInstruction()
 	if (cpsr.T().Get())
 	{
 		/* Thumb state */
-		
-		/* This implementation should never enter into thumb mode */
-		logger << DebugError << "Thumb mode not supported in" << endl
-		       << unisim::kernel::debug::BackTrace() << EndDebugError;
-		Stop(-1);
+	
+		/* fetch instruction word from memory */
+		isa::thumb::CodeType insn;
+		ReadInsn(current_pc, insn);
+			
+		/* Decode current PC */
+		isa::thumb::Operation<unisim::component::cxx::processor::arm::arm926ejs::CPU>* op;
+		op = thumb_decoder.Decode(current_pc, insn);
+			
+		/* update PC registers value before execution */
+		this->gpr[15] = this->next_pc + 4;
+		this->next_pc += 2;
+			
+		/* Execute instruction */
+		op->execute(*this);
+		//op->profile(profile);
+			
+		/* perform the memory load/store operations */
+		PerformLoadStoreAccesses();
 	}
 	
 	else {
 		/* Arm32 state */
-		if(requires_memory_access_reporting and memory_access_reporting_import) {
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, 
-			                                                   MemoryAccessReporting<uint64_t>::MT_INSN, 
-			                                                   current_pc, 4 /*insn_size*/);
-		}
 		
-                /* fetch instruction word from memory */
-		uint32_t memword;
-		ReadInsn(current_pc, memword);
-		/* convert the instruction to host endianness */
-		isa::arm32::CodeType insn = Target2Host(GetEndianness(), memword);
+		/* fetch instruction word from memory */
+		isa::arm32::CodeType insn;
+		ReadInsn(current_pc, insn);
 			
 		/* Decode current PC */
 		isa::arm32::Operation<unisim::component::cxx::processor::arm::arm926ejs::CPU>* op;
 		op = arm32_decoder.Decode(current_pc, insn);
 		
 		/* update PC registers value before execution */
-		this->gpr[15] = this->pc + 8;
-		this->pc += 4;
+		this->gpr[15] = this->next_pc + 8;
+		this->next_pc += 4;
 		
 		/* Execute instruction */
 		op->execute(*this);
@@ -532,8 +540,7 @@ StepInstruction()
 	
 	if(requires_finished_instruction_reporting)
 		if(memory_access_reporting_import)
-			memory_access_reporting_import->ReportFinishedInstruction(
-					GetNPC());
+			memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
 }
 
 /** Inject an intrusive read memory operation.
@@ -969,9 +976,10 @@ Disasm(uint64_t addr, uint64_t &next_addr)
  * @param val the buffer to fill with the read data
  */
 void 
-CPU::ReadInsn(uint32_t address, uint32_t &val)
+CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
 	uint32_t size = 4;
+	uint32_t word;
 	uint8_t *data;
 	uint32_t va = address;
 	uint32_t mva = va;
@@ -1062,7 +1070,7 @@ CPU::ReadInsn(uint32_t address, uint32_t &val)
 		(void)icache.GetData(cache_set, cache_way, cache_index,
 				size, &data);
 		icache.GetDataCopy(cache_set, cache_way, cache_index, size,
-				(uint8_t *)&val);
+				(uint8_t *)&word);
 
 		if ( unlikely(icache.power_estimator_import != 0) )
 			icache.power_estimator_import->ReportReadAccess();
@@ -1080,8 +1088,152 @@ CPU::ReadInsn(uint32_t address, uint32_t &val)
 		// no instruction cache present, just request the insn to the
 		//   memory system
 		// another possibility is that the access is not cacheable
-		PrRead(pa, (uint8_t *)&val, size);
+		PrRead(pa, (uint8_t *)&word, size);
 	}
+	
+	insn = Target2Host(GetEndianness(), word);
+
+    if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->
+      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, address, size);
+}
+
+/** Reads THUMB instructions from the memory system
+ * This method allows the user to read instructions from the memory system,
+ *   that is, it tries to read from the pertinent caches and if failed from
+ *   the external memory system.
+ * 
+ * @param address the address to read data from
+ * @param insn the resulting instruction word (output reference)
+ */
+void
+CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
+{
+	uint32_t size = 2;
+	uint8_t buffer[2];
+	uint8_t *data;
+	uint32_t va = address;
+	uint32_t mva = va;
+	uint32_t pa = mva;
+	uint32_t cacheable = 1;
+	uint32_t bufferable = 1; // instruction cache ignores the bufferable status
+
+	num_insn_reads++;
+
+	if ( verbose & 0x04 )
+		logger << DebugInfo
+			<< "Fetching instruction at address 0x" << std::hex << va
+			<< std::dec
+			<< EndDebugInfo;
+
+	if ( likely(cp15.IsMMUEnabled()) )
+		if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
+		{
+			logger << DebugError
+				<< "Could not translate address when performing instruction read"
+				<< std::endl
+				<< " - va = 0x" << std::hex << va << std::dec << std::endl
+				<< " - instruction counter = " << instruction_counter
+				<< EndDebugError;
+			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+		}
+
+
+	if ( likely(cp15.IsICacheEnabled() && icache.GetSize() && cacheable) )
+	{
+		icache.read_accesses++;
+		// check the instruction cache
+		uint32_t cache_tag = icache.GetTag(mva);
+		uint32_t cache_set = icache.GetSet(mva);
+		uint32_t cache_way;
+		bool cache_hit = false;
+		if ( icache.GetWay(cache_tag, cache_set, &cache_way) )
+		{
+			if ( icache.GetValid(cache_set, cache_way) )
+			{
+				// the access is a hit, nothing needs to be done
+				cache_hit = true;
+				if ( verbose & 0x04 )
+					logger << DebugInfo
+						<< "Cache hit when fetching instruction with:" << std::endl
+						<< " - va = 0x" << std::hex << va << std::endl
+						<< " - mva = 0x" << mva << std::endl
+						<< " - pa = 0x" << pa << std::dec
+						<< EndDebugInfo;
+			}
+		}
+		if ( unlikely(!cache_hit) )
+		{
+			// get a way to replace
+			cache_way = icache.GetNewWay(cache_set);
+			// no need to check valiad and dirty bits
+			// the new data can be requested
+			uint8_t *cache_data = 0;
+			uint32_t cache_address =
+				icache.GetBaseAddressFromAddress(pa);
+			// when getting the data we get the pointer to the cache line
+			//   containing the data, so no need to write the cache
+			//   afterwards
+			if ( verbose & 0x04 )
+				logger << DebugInfo
+					<< "Cache miss when fetching instruction at address with:" << std::endl
+					<< " - va = 0x" << std::hex << va << std::endl
+					<< " - mva = 0x" << mva << std::endl
+					<< " - pa = 0x" << pa << std::dec << std::endl
+					<< "Accessing the memory system."
+					<< EndDebugInfo;
+			uint32_t cache_line_size = icache.GetData(cache_set,
+					cache_way, &cache_data);
+			PrRead(cache_address, cache_data,
+					cache_line_size);
+			icache.SetTag(cache_set, cache_way, cache_tag);
+			icache.SetValid(cache_set, cache_way, 1);
+		}
+		else
+		{
+			// cache hit
+			icache.read_hits++;
+		}
+
+		// at this point the data is in the cache, we can read it from the
+		//   cache
+		uint32_t cache_index = icache.GetIndex(mva);
+		(void)icache.GetData(cache_set, cache_way, cache_index,
+				size, &data);
+		icache.GetDataCopy(cache_set, cache_way, cache_index, size,
+				buffer);
+
+		if ( unlikely(icache.power_estimator_import != 0) )
+			icache.power_estimator_import->ReportReadAccess();
+	}
+	else
+	{
+		if ( verbose & 0x04 )
+			logger << DebugInfo
+				<< "Fetching instruction from memory (no cache or entry not cacheable):" << std::endl
+				<< " - va = 0x" << std::hex << va << std::endl
+				<< " - mva = 0x" << mva << std::endl
+				<< " - pa = 0x" << pa << std::dec
+				<< EndDebugInfo;
+
+		// no instruction cache present, just request the insn to the
+		//   memory system
+		// another possibility is that the access is not cacheable
+		PrRead(pa, buffer, size);
+	}
+  
+  if (GetEndianness() == E_LITTLE_ENDIAN) {
+    insn.str[0] = buffer[0];
+    insn.str[1] = buffer[1];
+  } else {
+    /* Endianness is not the standard ARM instruction endianness */ 
+    insn.str[0] = buffer[1];
+    insn.str[1] = buffer[0];
+  }
+  insn.size = 16;
+    if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->
+      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, address, size);
 }
 
 /** Memory prefetch instruction.
@@ -2544,7 +2696,7 @@ HandleException()
 			<< "Received IRQ interrupt, handling it."
 			<< EndDebugInfo;
 		handled = true;
-		spsr[3] = cpsr.bits();
+		spsr[3].bits() = cpsr.bits();
 		SetGPRMapping(cpsr.M().Get(), IRQ_MODE);
 		SetGPR(14, GetNPC());
 		cpsr.M().Set(IRQ_MODE);
@@ -3029,8 +3181,8 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					unisim::util::debug::MAT_WRITE,
+					unisim::util::debug::MT_DATA,
 					memop->GetAddress(), size);
 }
 
@@ -3247,10 +3399,11 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 			<< " - value = 0x" << std::hex << value << std::dec
 			<< EndDebugInfo;
 
-	if ( likely(memop->GetType() == MemoryOp::READ) )
+	//if ( likely(memop->GetType() == MemoryOp::READ) )
+	if( cpsr.M().Get() != USER_MODE )
 		SetGPR(memop->GetTargetReg(), value);
 	else
-		SetGPR_usr(memop->GetTargetReg(), value, cpsr.M().Get());
+		SetGPR_usr(memop->GetTargetReg(), value);
 
 	if ( likely(dcache.GetSize()) )
 		if ( unlikely(dcache.power_estimator_import != 0) )
@@ -3260,8 +3413,8 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					unisim::util::debug::MAT_READ,
+					unisim::util::debug::MT_DATA,
 					memop->GetAddress(), size);
 }
 

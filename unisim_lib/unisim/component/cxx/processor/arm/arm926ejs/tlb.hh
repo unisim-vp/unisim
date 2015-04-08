@@ -151,7 +151,7 @@ private:
 	static const uint32_t m_associativity_ = 2;
 	static const uint32_t m_set_shift_ = 2;
 	static const uint32_t m_set_mask_ = 0x1fUL << m_set_shift_;
-	static const uint32_t m_tag_mask_ = ~(m_set_mask_ | 0x03UL);
+	static const uint32_t m_tag_mask_ = ~(m_set_mask_ | 0x03);
 	static const uint32_t m_tag_shift_ = 7;
 
 	unisim::util::random::Random rand;
