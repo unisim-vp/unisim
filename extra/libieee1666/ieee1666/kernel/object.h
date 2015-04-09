@@ -70,8 +70,6 @@ protected:
 	sc_object( const sc_object& );
 	sc_object& operator= ( const sc_object& );
 	virtual ~sc_object();
-	const std::vector<sc_object*>& sc_get_top_level_objects();
-	sc_object* sc_find_object( const char* );
 	
 	///////////////////// EVERYTHING BELOW IS NOT PART OF IEEE1666 STANDARD /////////////////////////
 private:

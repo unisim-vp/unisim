@@ -65,6 +65,24 @@ enum sc_descendant_inclusion_info
 	SC_INCLUDE_DESCENDANTS
 };
 
+enum sc_status
+{
+	SC_ELABORATION = 0x01,
+	SC_BEFORE_END_OF_ELABORATION = 0x02,
+	SC_END_OF_ELABORATION = 0x04,
+	SC_START_OF_SIMULATION = 0x08,
+	SC_RUNNING = 0x10,
+	SC_PAUSED = 0x20,
+	SC_STOPPED = 0x40,
+	SC_END_OF_SIMULATION = 0x80
+};
+
+enum sc_stop_mode
+{
+	SC_STOP_FINISH_DELTA,
+	SC_STOP_IMMEDIATE
+};
+
 class sc_attr_base;
 template <class T> class sc_attribute;
 class sc_attr_cltn;

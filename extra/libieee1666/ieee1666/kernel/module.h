@@ -114,6 +114,7 @@ private:
 	///////////////////////////////////
 protected:
 	friend class sc_module_name;
+	friend class sc_kernel;
 	
 	void end_module();
 	

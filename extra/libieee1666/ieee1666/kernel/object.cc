@@ -154,14 +154,6 @@ sc_object::~sc_object()
 {
 }
 
-const std::vector<sc_object*>& sc_object::sc_get_top_level_objects()
-{
-}
-
-sc_object* sc_object::sc_find_object( const char* )
-{
-}
-
 void sc_object::add_child_object(sc_object *object)
 {
 	child_objects.push_back(object);

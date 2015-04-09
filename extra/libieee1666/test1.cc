@@ -53,7 +53,7 @@ private:
 	}
 };
 
-int sc_main(int argc, const char *argv[])
+int sc_main(int argc, char *argv[])
 {
 	sc_set_time_resolution(10.0, SC_MS);
 

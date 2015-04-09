@@ -43,6 +43,13 @@ namespace sc_core {
 
 class sc_port_base : public sc_object
 {
+protected:
+	friend class sc_kernel;
+
+	virtual void before_end_of_elaboration();
+	virtual void end_of_elaboration();
+	virtual void start_of_simulation();
+	virtual void end_of_simulation();
 };
 
 template <class IF>
@@ -61,10 +68,6 @@ public:
 	virtual sc_interface* get_interface();
 	virtual const sc_interface* get_interface() const;
 protected:
-	virtual void before_end_of_elaboration();
-	virtual void end_of_elaboration();
-	virtual void start_of_simulation();
-	virtual void end_of_simulation();
 	explicit sc_port_b( int , sc_port_policy );
 	sc_port_b( const char* , int , sc_port_policy );
 	virtual ~sc_port_b();
@@ -143,26 +146,6 @@ sc_interface* sc_port_b<IF>::get_interface()
 
 template <class IF>
 const sc_interface* sc_port_b<IF>::get_interface() const
-{
-}
-
-template <class IF>
-void sc_port_b<IF>::before_end_of_elaboration()
-{
-}
-
-template <class IF>
-void sc_port_b<IF>::end_of_elaboration()
-{
-}
-
-template <class IF>
-void sc_port_b<IF>::start_of_simulation()
-{
-}
-
-template <class IF>
-void sc_port_b<IF>::end_of_simulation()
 {
 }
 

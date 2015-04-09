@@ -33,23 +33,32 @@
  */
 
 #include <ieee1666/kernel/kernel.h>
+#include <ieee1666/kernel/module.h>
+#include <ieee1666/kernel/port.h>
+#include <ieee1666/kernel/export.h>
+#include <ieee1666/kernel/prim_channel.h>
 #include <ieee1666/kernel/module_name.h>
 #include <ieee1666/kernel/thread_process.h>
 #include <ieee1666/kernel/method_process.h>
 #include <ieee1666/kernel/time.h>
 #include <ieee1666/kernel/kernel_event.h>
-#include <ieee1666/kernel/prim_channel.h>
 #include <math.h>
 #include <limits>
+
+extern int sc_main(int argc, char *argv[]);
 
 namespace sc_core {
 
 sc_kernel *sc_kernel::kernel = 0;
+static int argc;
+static char **argv;
 
 static const char *time_unit_strings[SC_SEC + 1] = { "fs", "ps", "ns", "us", "ms", "s" };
 
 sc_kernel::sc_kernel()
 {
+	status = SC_ELABORATION;
+	
 	set_time_resolution(1.0, SC_PS, false);
 }
 
@@ -112,15 +121,91 @@ sc_method_process *sc_kernel::create_method_process(const char *name, sc_process
 	return method_process;
 }
 
+void sc_kernel::report_before_end_of_elaboration()
+{
+	unsigned int i;
+	unsigned int num_modules = module_table.size();
+	for(i = 0; i < num_modules; i++) module_table[i]->before_end_of_elaboration();
+	unsigned int num_ports = port_table.size();
+	for(i = 0; i < num_ports; i++) port_table[i]->before_end_of_elaboration();
+	unsigned int num_exports = port_table.size();
+	for(i = 0; i < num_exports; i++) port_table[i]->before_end_of_elaboration();
+	unsigned int num_prim_channels = prim_channel_table.size();
+	for(i = 0; i < num_prim_channels; i++) prim_channel_table[i]->before_end_of_elaboration();
+}
+
+void sc_kernel::report_end_of_elaboration()
+{
+	unsigned int i;
+	unsigned int num_modules = module_table.size();
+	for(i = 0; i < num_modules; i++) module_table[i]->end_of_elaboration();
+	unsigned int num_ports = port_table.size();
+	for(i = 0; i < num_ports; i++) port_table[i]->end_of_elaboration();
+	unsigned int num_exports = port_table.size();
+	for(i = 0; i < num_exports; i++) port_table[i]->end_of_elaboration();
+	unsigned int num_prim_channels = prim_channel_table.size();
+	for(i = 0; i < num_prim_channels; i++) prim_channel_table[i]->end_of_elaboration();
+}
+
+void sc_kernel::report_start_of_simulation()
+{
+	unsigned int i;
+	unsigned int num_modules = module_table.size();
+	for(i = 0; i < num_modules; i++) module_table[i]->start_of_simulation();
+	unsigned int num_ports = port_table.size();
+	for(i = 0; i < num_ports; i++) port_table[i]->start_of_simulation();
+	unsigned int num_exports = port_table.size();
+	for(i = 0; i < num_exports; i++) port_table[i]->start_of_simulation();
+	unsigned int num_prim_channels = prim_channel_table.size();
+	for(i = 0; i < num_prim_channels; i++) prim_channel_table[i]->start_of_simulation();
+	start_of_simulation_invoked = true;
+}
+
+void sc_kernel::report_end_of_simulation()
+{
+	unsigned int i;
+	unsigned int num_modules = module_table.size();
+	for(i = 0; i < num_modules; i++) module_table[i]->end_of_simulation();
+	unsigned int num_ports = port_table.size();
+	for(i = 0; i < num_ports; i++) port_table[i]->end_of_simulation();
+	unsigned int num_exports = port_table.size();
+	for(i = 0; i < num_exports; i++) port_table[i]->end_of_simulation();
+	unsigned int num_prim_channels = prim_channel_table.size();
+	for(i = 0; i < num_prim_channels; i++) prim_channel_table[i]->end_of_simulation();
+	end_of_simulation_invoked = true;
+}
+
 void sc_kernel::initialize()
 {
+	unsigned int i;
+	
+	status = SC_BEFORE_END_OF_ELABORATION;
+	report_before_end_of_elaboration();
+	
+	unsigned int num_modules = module_table.size();
+	for(i = 0; i < num_modules; i++)
+	{
+		sc_module *module =	module_table[i];
+		
+		module->before_end_of_elaboration();
+	}
+	
+	status = SC_END_OF_ELABORATION;
+	report_end_of_elaboration();
+	
+	for(i = 0; i < num_modules; i++)
+	{
+		sc_module *module =	module_table[i];
+		
+		module->end_of_elaboration();
+	}
+
 	// time resolution can no longer change
 	time_resolution_fixed = true;
 
 	// start thread processes in suspend state
 	unsigned int num_thread_processes = thread_process_table.size();
 	
-	unsigned int i;
 	for(i = 0; i < num_thread_processes; i++)
 	{
 		sc_thread_process *thread_process = thread_process_table[i];
@@ -146,6 +231,8 @@ void sc_kernel::initialize()
 		current_thread_process = thread_process;
 		thread_process->switch_to();
 	}
+	
+	initialized = true;
 }
 
 void sc_kernel::do_delta_steps(bool once)
@@ -164,6 +251,8 @@ void sc_kernel::do_delta_steps(bool once)
 				
 				current_method_process = method_process;
 				method_process->call_process_owner_method();
+				if(user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE)) return;
+				
 			}
 			while(runnable_method_processes.size());
 		}
@@ -178,6 +267,7 @@ void sc_kernel::do_delta_steps(bool once)
 				
 				current_thread_process = thread_process;
 				thread_process->switch_to();
+				if(user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE)) return;
 			}
 			while(runnable_thread_processes.size());
 		}
@@ -195,6 +285,8 @@ void sc_kernel::do_delta_steps(bool once)
 			}
 			while(updatable_prim_channels.size());
 		}
+		
+		if(user_requested_stop) return;
 		
 		// delta notification phase
 		
@@ -216,6 +308,8 @@ void sc_kernel::do_delta_steps(bool once)
 			}
 			while(delta_events.size());
 		}
+		
+		if(user_requested_pause) break;
 	}
 	while(!once && (runnable_thread_processes.size() || runnable_method_processes.size()));
 }
@@ -242,7 +336,7 @@ void sc_kernel::do_timed_step()
 			kernel_events_allocator.free(kernel_event);
 			
 			schedule.erase(it);
-			it = schedule.begin();
+			it = schedule.begin();			
 		}
 		while((*it).first == current_time_stamp);
 	}
@@ -250,25 +344,42 @@ void sc_kernel::do_timed_step()
 
 void sc_kernel::simulate(const sc_time& duration)
 {
+	status = SC_START_OF_SIMULATION;
+	report_start_of_simulation();
+	
 	if(duration == SC_ZERO_TIME)
 	{
 		do_delta_steps(true);
 	}
 	else
 	{
-		sc_time until_time = current_time_stamp + duration;
+		sc_time until_time(current_time_stamp);
+		until_time += duration;
 
 		do
 		{
 			do_delta_steps(false);
+			if(user_requested_stop || user_requested_pause) break;
 			do_timed_step();
+			if(user_requested_stop) break;
 		}
 		while((current_time_stamp <= until_time) && (runnable_thread_processes.size() || runnable_method_processes.size()));
+	}
+	
+	if(user_requested_stop)
+	{
+		status = SC_STOPPED;
+	}
+	else
+	{
+		status = SC_PAUSED;
 	}
 }
 
 void sc_kernel::start(const sc_time& duration, sc_starvation_policy p)
 {
+	if(status == SC_END_OF_SIMULATION) return;
+	
 	sc_time end_time;
 	
 	if(p == SC_RUN_TO_TIME)
@@ -276,8 +387,8 @@ void sc_kernel::start(const sc_time& duration, sc_starvation_policy p)
 		end_time = current_time_stamp;
 		end_time += duration;
 	}
-	
-	initialize();
+
+	if(!initialized) initialize();
 	simulate(duration);
 
 	if(p == SC_RUN_TO_TIME)
@@ -289,6 +400,21 @@ void sc_kernel::start(const sc_time& duration, sc_starvation_policy p)
 void sc_kernel::add_module(sc_module *module)
 {
 	module_table.push_back(module);
+}
+
+void sc_kernel::add_port(sc_port_base *port)
+{
+	port_table.push_back(port);
+}
+
+void sc_kernel::add_export(sc_export_base *exp)
+{
+	export_table.push_back(exp);
+}
+
+void sc_kernel::add_prim_channel(sc_prim_channel *prim_channel)
+{
+	prim_channel_table.push_back(prim_channel);
 }
 
 void sc_kernel::add_thread_process(sc_thread_process *thread_process)
@@ -476,19 +602,74 @@ const sc_time& sc_kernel::get_current_time_stamp() const
 	return current_time_stamp;
 }
 
-int sc_elab_and_sim(int argc, char* argv[])
+void sc_kernel::set_stop_mode(sc_stop_mode mode)
 {
-	return 0;
+	stop_mode = mode;
+}
+
+sc_stop_mode sc_kernel::get_stop_mode() const
+{
+	return stop_mode;
+}
+
+void sc_kernel::stop()
+{
+	user_requested_stop = true;
+	
+	if(status == SC_PAUSED)
+	{
+		status = SC_END_OF_SIMULATION;
+		report_end_of_simulation();
+	}
+}
+
+void sc_kernel::pause()
+{
+	if(user_requested_stop) return;
+	
+	user_requested_pause = true;
+}
+
+sc_status sc_kernel::get_status() const
+{
+	return status;
+}
+
+bool sc_kernel::is_end_of_simulation_invoked() const
+{
+	return end_of_simulation_invoked;
+}
+
+bool sc_kernel::is_start_of_simulation_invoked() const
+{
+	return start_of_simulation_invoked;
+}
+
+const std::vector<sc_object*>& sc_kernel::get_top_level_objects() const
+{
+	return top_level_objects;
+}
+
+sc_object *sc_kernel::find_object(const char* name)
+{
+}
+
+int sc_elab_and_sim(int _argc, char* _argv[])
+{
+	argc = _argc;
+	argv = _argv;
+	
+	return sc_main(argc, argv);
 }
 
 int sc_argc()
 {
-	return 0;
+	return argc;
 }
 
 const char* const* sc_argv()
 {
-	return 0;
+	return argv;
 }
 
 void sc_start()
@@ -510,18 +691,22 @@ void sc_start(double _duration,sc_time_unit _tu, sc_starvation_policy _p)
 
 void sc_pause()
 {
+	sc_kernel::get_kernel()->pause();
 }
 
 void sc_set_stop_mode( sc_stop_mode mode )
 {
+	sc_kernel::get_kernel()->set_stop_mode(mode);
 }
 
 sc_stop_mode sc_get_stop_mode()
 {
+	return sc_kernel::get_kernel()->get_stop_mode();
 }
 
 void sc_stop()
 {
+	sc_kernel::get_kernel()->stop();
 }
 
 const sc_time& sc_time_stamp()
@@ -555,13 +740,32 @@ sc_time sc_time_to_pending_activity()
 
 sc_status sc_get_status()
 {
+	return sc_kernel::get_kernel()->get_status();
+}
+
+bool sc_start_of_simulation_invoked()
+{
+	return sc_kernel::get_kernel()->is_start_of_simulation_invoked();
+}
+
+bool sc_end_of_simulation_invoked()
+{
+	return sc_kernel::get_kernel()->is_end_of_simulation_invoked();
+}
+
+const std::vector<sc_object*>& sc_get_top_level_objects()
+{
+	return sc_kernel::get_kernel()->get_top_level_objects();
+}
+
+sc_object* sc_find_object( const char* name)
+{
+	return sc_kernel::get_kernel()->find_object(name);
 }
 
 } // end of namespace sc_core
 
-extern int sc_main(int argc, const char *argv[]);
-
-int main(int argc, const char *argv[], const char *envp[])
+int main(int argc, char *argv[], char *envp[])
 {
-	return sc_main(argc, argv);
+	return sc_core::sc_elab_and_sim(argc, argv);
 }

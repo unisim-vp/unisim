@@ -78,6 +78,9 @@ public:
 	void start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
 	
 	void add_module(sc_module *module);
+	void add_port(sc_port_base *port);
+	void add_export(sc_export_base *exp);
+	void add_prim_channel(sc_prim_channel *prim_channel);
 	void add_thread_process(sc_thread_process *thread_process);
 	void add_method_process(sc_method_process *method_process);
 	
@@ -106,6 +109,18 @@ public:
 	void trigger(sc_method_process *method_process);
 	
 	const sc_time& get_current_time_stamp() const;
+	
+	void set_stop_mode(sc_stop_mode mode);
+	sc_stop_mode get_stop_mode() const;
+	void stop();
+	void pause();
+	
+	sc_status get_status() const;
+	bool is_start_of_simulation_invoked() const;
+	bool is_end_of_simulation_invoked() const;
+	
+	const std::vector<sc_object*>& get_top_level_objects() const;
+	sc_object *find_object(const char* name);	
 protected:
 private:
 	std::stack<sc_module_name *> module_name_stack;
@@ -114,7 +129,11 @@ private:
 	sc_thread_process *current_thread_process;
 	sc_method_process *current_method_process;
 	
+	std::vector<sc_object *> top_level_objects;
 	std::vector<sc_module *> module_table;
+	std::vector<sc_port_base *> port_table;
+	std::vector<sc_export_base *> export_table;
+	std::vector<sc_prim_channel *> prim_channel_table;
 	std::vector<sc_thread_process *> thread_process_table;
 	std::vector<sc_method_process *> method_process_table;
 
@@ -136,7 +155,19 @@ private:
 	std::deque<sc_prim_channel *> updatable_prim_channels;             // primitive channels to update
 	std::deque<sc_kernel_event *> delta_events;                        // notified delta events set 
 	std::multimap<sc_time, sc_timed_kernel_event *> schedule;          // notified timed events set
+
+	bool user_requested_stop;
+	bool user_requested_pause;
+	sc_stop_mode stop_mode;
+	sc_status status;
 	
+	bool initialized;
+	bool end_of_simulation_invoked;
+	bool start_of_simulation_invoked;
+	void report_before_end_of_elaboration();
+	void report_end_of_elaboration();
+	void report_start_of_simulation();
+	void report_end_of_simulation();
 };
 
 int sc_elab_and_sim(int argc, char* argv[]);
@@ -149,11 +180,6 @@ void sc_start(double duration, sc_time_unit tu, sc_starvation_policy p = SC_RUN_
 
 
 void sc_pause();
-enum sc_stop_mode
-{
-	SC_STOP_FINISH_DELTA,
-	SC_STOP_IMMEDIATE
-};
 
 extern void sc_set_stop_mode( sc_stop_mode mode );
 extern sc_stop_mode sc_get_stop_mode();
@@ -166,18 +192,11 @@ bool sc_pending_activity_at_current_time();
 bool sc_pending_activity_at_future_time();
 bool sc_pending_activity();
 sc_time sc_time_to_pending_activity();
-enum sc_status
-{
-	SC_ELABORATION = 0x01,
-	SC_BEFORE_END_OF_ELABORATION = 0x02,
-	SC_END_OF_ELABORATION = 0x04,
-	SC_START_OF_SIMULATION = 0x08,
-	SC_RUNNING = 0x10,
-	SC_PAUSED = 0x20,
-	SC_STOPPED = 0x40,
-	SC_END_OF_SIMULATION = 0x80
-};
 sc_status sc_get_status();
+bool sc_start_of_simulation_invoked();
+bool sc_end_of_simulation_invoked();
+const std::vector<sc_object*>& sc_get_top_level_objects();
+sc_object* sc_find_object( const char* );
 
 } // end of namespace sc_core
 

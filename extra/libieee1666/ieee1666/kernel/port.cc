@@ -38,4 +38,22 @@ namespace sc_core {
 
 //////////////////////////////////// sc_port_base /////////////////////////////////////////////
 
+// Note: in IEEE1666-2011 callbacks are misplaced (in sc_port_b<IF>) because kernel don't known user interface passed as template arguments !
+	
+void sc_port_base::before_end_of_elaboration()
+{
+}
+
+void sc_port_base::end_of_elaboration()
+{
+}
+
+void sc_port_base::start_of_simulation()
+{
+}
+
+void sc_port_base::end_of_simulation()
+{
+}
+
 } // end of namespace sc_core
