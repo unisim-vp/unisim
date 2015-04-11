@@ -73,17 +73,22 @@ protected:
 	
 	///////////////////// EVERYTHING BELOW IS NOT PART OF IEEE1666 STANDARD /////////////////////////
 private:
+	friend class sc_kernel;
+	
 	std::string object_name;
 	std::vector<sc_object *> child_objects;
 	std::vector<sc_event *> child_events;
 	sc_attr_cltn attributes;
-	
+
+	sc_object *find_child_object(const char *name) const;
+	std::string create_hierarchical_name(const char *_name) const;
 protected:
 	sc_object *parent_object;
 	void add_child_object(sc_object *object);
 	void add_child_event(sc_event *event);
 	
 	friend class sc_event;
+	
 };
 
 } // end of namespace sc_core

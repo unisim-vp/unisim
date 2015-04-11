@@ -59,7 +59,12 @@ int sc_main(int argc, char *argv[])
 
 	Mod *mod = new Mod("toto");
 
-	sc_start();
+	std::cout << "module name is \"" << mod->name() << "\"" << std::endl;
+	const char *s1 = sc_gen_unique_name("titi");
+	std::cout << "unique name = \"" << s1 << "\"" << std::endl;
+	const char *s2 = sc_gen_unique_name("titi");
+	std::cout << "unique name = \"" << s2 << "\"" << std::endl;
+	sc_start(100.0, SC_MS);
 	
  	delete mod;
 	return 0;

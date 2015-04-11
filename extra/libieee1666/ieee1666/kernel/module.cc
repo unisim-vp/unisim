@@ -54,6 +54,7 @@ sc_module::~sc_module()
 
 const char* sc_module::kind() const
 {
+	return "sc_module";
 }
 
 //void operator() ( const sc_bind_proxy& p001,
@@ -65,29 +66,25 @@ const char* sc_module::kind() const
 //{
 //}
 
-const std::vector<sc_object*>& sc_module::get_child_objects() const
-{
-}
-
-const std::vector<sc_event*>& sc_module::get_child_events() const
-{
-}
+// const std::vector<sc_object*>& sc_module::get_child_objects() const
+// {
+// }
+// 
+// const std::vector<sc_event*>& sc_module::get_child_events() const
+// {
+// }
 
 sc_module::sc_module( const sc_module_name& module_name )
-	: sc_object((const char *) sc_kernel::get_kernel()->get_top_of_module_name_stack())
+	: sc_object((const char *)(*sc_kernel::get_kernel()->get_top_of_module_name_stack()))
 	, sensitive(this)
 {
-	sc_module_name *non_const_module_name = sc_kernel::get_kernel()->get_top_of_module_name_stack();
-	non_const_module_name->set_module(this);
 	init();
 }
 
 sc_module::sc_module()
-	: sc_object((const char *) sc_kernel::get_kernel()->get_top_of_module_name_stack())
+	: sc_object((const char *)(*sc_kernel::get_kernel()->get_top_of_module_name_stack()))
 	, sensitive(this)
 {
-	sc_module_name *non_const_module_name = sc_kernel::get_kernel()->get_top_of_module_name_stack();
-	non_const_module_name->set_module(this);
 	init();
 }
 
@@ -125,10 +122,12 @@ void sc_module::async_reset_signal_is( const sc_signal_in_if<bool>& , bool )
 
 void sc_module::dont_initialize()
 {
+	spawn_options.dont_initialize();
 }
 
-void sc_module::set_stack_size( size_t )
+void sc_module::set_stack_size(size_t stack_size)
 {
+	spawn_options.set_stack_size(stack_size);
 }
 
 void sc_module::next_trigger()
@@ -268,6 +267,8 @@ void sc_module::end_module()
 
 void sc_module::init()
 {
+	sc_module_name *non_const_module_name = sc_kernel::get_kernel()->get_top_of_module_name_stack();
+	non_const_module_name->set_module(this);
 	sc_kernel::get_kernel()->add_module(this);
 }
 
@@ -370,10 +371,6 @@ void wait( const sc_time& , const sc_event_and_list & )
 }
 
 void wait( double , sc_time_unit , const sc_event_and_list & )
-{
-}
-
-const char* sc_gen_unique_name( const char* )
 {
 }
 

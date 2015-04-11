@@ -40,6 +40,7 @@ namespace sc_core {
 	
 const char* sc_prim_channel::kind() const
 {
+	return "sc_prim_channel";
 }
 
 sc_prim_channel::sc_prim_channel()

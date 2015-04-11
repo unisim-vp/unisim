@@ -77,6 +77,9 @@ public:
 	void simulate(const sc_time& duration);
 	void start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
 	
+	void add_top_level_object(sc_object *object);
+	void register_event(sc_event *event);
+	void unregister_event(sc_event *event);
 	void add_module(sc_module *module);
 	void add_port(sc_port_base *port);
 	void add_export(sc_export_base *exp);
@@ -118,18 +121,32 @@ public:
 	sc_status get_status() const;
 	bool is_start_of_simulation_invoked() const;
 	bool is_end_of_simulation_invoked() const;
+	bool is_running() const;
+	sc_dt::uint64 get_delta_count() const;
+	bool pending_activity_at_current_time() const;
+	bool pending_activity_at_future_time() const;
+	bool pending_activity() const;
+	sc_time time_to_pending_activity() const;
 	
 	const std::vector<sc_object*>& get_top_level_objects() const;
-	sc_object *find_object(const char* name);	
+	sc_object *find_object(const char* name) const;
+	sc_event *find_event(const char *name) const;
+	bool hierarchical_name_exists(const char *name) const;
+	const char* gen_unique_name( const char* seed ) const;
 protected:
 private:
+	friend int sc_elab_and_sim(int _argc, char* _argv[]);
+	
+	// elaboration
 	std::stack<sc_module_name *> module_name_stack;
 	std::stack<sc_object *> object_stack;
-	static sc_kernel *kernel;
-	sc_thread_process *current_thread_process;
-	sc_method_process *current_method_process;
-	
+
+	// unique name map: name_#
+	mutable std::map<std::string, unsigned int> unique_name_map;
+
+	// all simulation objects
 	std::vector<sc_object *> top_level_objects;
+	std::map<std::string, sc_event *> event_registry;
 	std::vector<sc_module *> module_table;
 	std::vector<sc_port_base *> port_table;
 	std::vector<sc_export_base *> export_table;
@@ -143,10 +160,11 @@ private:
 	int time_resolution_scale_factors_table_base_index;
 	static const int TIME_RESOLUTION_SCALE_FACTORS_TABLE_SIZE = (3 * SC_SEC) + 1;
 	double time_resolution_scale_factors_table[TIME_RESOLUTION_SCALE_FACTORS_TABLE_SIZE];
-	
 	sc_time max_time;
 	
 	// discrete event simulation kernel
+	sc_thread_process *current_thread_process;
+	sc_method_process *current_method_process;
 	sc_time current_time_stamp;                                        // current time stamp
 	sc_allocator<sc_kernel_event> kernel_events_allocator;             // kernel events (delta event) allocator
 	sc_allocator<sc_timed_kernel_event> timed_kernel_events_allocator; // timed kernel events (timed event) allocator	
@@ -155,19 +173,23 @@ private:
 	std::deque<sc_prim_channel *> updatable_prim_channels;             // primitive channels to update
 	std::deque<sc_kernel_event *> delta_events;                        // notified delta events set 
 	std::multimap<sc_time, sc_timed_kernel_event *> schedule;          // notified timed events set
-
 	bool user_requested_stop;
 	bool user_requested_pause;
 	sc_stop_mode stop_mode;
 	sc_status status;
-	
 	bool initialized;
 	bool end_of_simulation_invoked;
 	bool start_of_simulation_invoked;
+	sc_dt::uint64 delta_count;
+	
 	void report_before_end_of_elaboration();
 	void report_end_of_elaboration();
 	void report_start_of_simulation();
 	void report_end_of_simulation();
+	
+	static sc_kernel *kernel;
+
+	sc_object *find_object(sc_object *parent_object, const char* name);	
 };
 
 int sc_elab_and_sim(int argc, char* argv[]);
@@ -197,6 +219,8 @@ bool sc_start_of_simulation_invoked();
 bool sc_end_of_simulation_invoked();
 const std::vector<sc_object*>& sc_get_top_level_objects();
 sc_object* sc_find_object( const char* );
+bool sc_hierarchical_name_exists(const char *name);
+const char* sc_gen_unique_name( const char* seed );
 
 } // end of namespace sc_core
 

@@ -32,44 +32,33 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __IEEE1666_UTIL_FWD_H__
-#define __IEEE1666_UTIL_FWD_H__
+#include <ieee1666/util/version.h>
 
 namespace sc_core {
 
-enum sc_severity {
-	SC_INFO = 0 ,
-	SC_WARNING ,
-	SC_ERROR ,
-	SC_FATAL ,
-	SC_MAX_SEVERITY
-};
+const unsigned int sc_version_major = SC_VERSION_MAJOR;
+const unsigned int sc_version_minor = SC_VERSION_MINOR;
+const unsigned int sc_version_patch = SC_VERSION_PATCH;
+const std::string sc_version_originator = std::string(SC_VERSION_ORIGINATOR);
+const std::string sc_version_release_date = std::string(SC_VERSION_RELEASE_DATE);
+const std::string sc_version_prerelease = std::string(SC_VERSION_PRERELEASE);
+const bool sc_is_prerelease = SC_IS_PRERELEASE;
+const std::string sc_version_string = std::string(SC_VERSION);
+const std::string sc_copyright_string = std::string(SC_COPYRIGHT);
 
-enum sc_verbosity {
-	SC_NONE = 0,
-	SC_LOW = 100,
-	SC_MEDIUM = 200,
-	SC_HIGH = 300,
-	SC_FULL = 400,
-	SC_DEBUG = 500
-};
+const char* sc_copyright()
+{
+	return sc_copyright_string.c_str();
+}
 
-enum {
-	SC_UNSPECIFIED   = 0x0000 ,
-	SC_DO_NOTHING    = 0x0001 ,
-	SC_THROW         = 0x0002 ,
-	SC_LOG           = 0x0004 ,
-	SC_DISPLAY       = 0x0008 ,
-	SC_CACHE_REPORT  = 0x0010 ,
-	SC_INTERRUPT     = 0x0020 ,
-	SC_STOP          = 0x0040 ,
-	SC_ABORT         = 0x0080
-};
+const char* sc_version()
+{
+	return "2.3.0"; // assume it is to check compatibility against proof of concept releases from Accelera
+}
 
-class sc_trace_file;
-class sc_report;
-class sc_report_handler;
+const char* sc_release()
+{
+	return sc_version_string.c_str();
+}
 
 } // end of namespace sc_core
-
-#endif

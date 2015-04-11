@@ -39,6 +39,7 @@
 #include <ieee1666/base/fwd.h>
 #include <ieee1666/kernel/sensitive.h>
 #include <ieee1666/kernel/process.h>
+#include <ieee1666/kernel/spawn.h>
 #include <vector>
 
 namespace sc_core {
@@ -61,8 +62,8 @@ public:
 // 	...
 // 	const sc_bind_proxy& p063 = SC_BIND_PROXY_NIL,
 // 	const sc_bind_proxy& p064 = SC_BIND_PROXY_NIL );
-	virtual const std::vector<sc_object*>& get_child_objects() const;
-	virtual const std::vector<sc_event*>& get_child_events() const;
+//	virtual const std::vector<sc_object*>& get_child_objects() const;
+//	virtual const std::vector<sc_event*>& get_child_events() const;
 protected:
 	sc_module( const sc_module_name& );
 	sc_module();
@@ -115,10 +116,13 @@ private:
 protected:
 	friend class sc_module_name;
 	friend class sc_kernel;
+
+	sc_spawn_options spawn_options;
 	
 	void end_module();
 	
 private:
+	
 	void init();
 };
 
@@ -150,10 +154,9 @@ void wait( double , sc_time_unit , const sc_event_and_list & );
 #define SC_MODULE(name) struct name : public ::sc_core::sc_module
 #define SC_CTOR(name) typedef name SC_CURRENT_USER_MODULE; name(const ::sc_core::sc_module_name&)
 #define SC_HAS_PROCESS(name) typedef name SC_CURRENT_USER_MODULE // implementation-defined
-#define SC_METHOD(name) sensitive.bind(sc_kernel::get_kernel()->create_method_process(#name, this, static_cast<sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name))) // implementation-defined
-#define SC_THREAD(name) sensitive.bind(sc_kernel::get_kernel()->create_thread_process(#name, this, static_cast<sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name))) // implementation-defined
+#define SC_METHOD(name) sensitive.bind(sc_kernel::get_kernel()->create_method_process(#name, this, static_cast<sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name),&this->spawn_options)) // implementation-defined
+#define SC_THREAD(name) sensitive.bind(sc_kernel::get_kernel()->create_thread_process(#name, this, static_cast<sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name),&this->spawn_options)) // implementation-defined
 #define SC_CTHREAD(name,clk) // implementation-defined
-const char* sc_gen_unique_name( const char* );
 typedef sc_module sc_behavior;
 typedef sc_module sc_channel;
 

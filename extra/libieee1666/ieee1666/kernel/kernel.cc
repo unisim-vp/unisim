@@ -43,6 +43,7 @@
 #include <ieee1666/kernel/time.h>
 #include <ieee1666/kernel/kernel_event.h>
 #include <math.h>
+#include <string.h>
 #include <limits>
 
 extern int sc_main(int argc, char *argv[]);
@@ -56,9 +57,41 @@ static char **argv;
 static const char *time_unit_strings[SC_SEC + 1] = { "fs", "ps", "ns", "us", "ms", "s" };
 
 sc_kernel::sc_kernel()
+	: module_name_stack()
+	, object_stack()
+	, unique_name_map()
+	, top_level_objects()
+	, event_registry()
+	, module_table()
+	, port_table()
+	, export_table()
+	, prim_channel_table()
+	, thread_process_table()
+	, method_process_table()
+	, time_resolution_fixed_by_user(false)
+	, time_resolution_fixed(false)
+	, time_resolution_scale_factors_table_base_index(0)
+	, time_resolution_scale_factors_table()
+	, max_time()
+	, current_thread_process(0)
+	, current_method_process(0)
+	, current_time_stamp()
+	, kernel_events_allocator()
+	, timed_kernel_events_allocator()	
+	, runnable_thread_processes()
+	, runnable_method_processes()
+	, updatable_prim_channels()
+	, delta_events() 
+	, schedule()
+	, user_requested_stop(false)
+	, user_requested_pause(false)
+	, stop_mode(SC_STOP_IMMEDIATE)
+	, status(SC_ELABORATION)
+	, initialized(false)
+	, end_of_simulation_invoked(false)
+	, start_of_simulation_invoked(false)
+	, delta_count(0)
 {
-	status = SC_ELABORATION;
-	
 	set_time_resolution(1.0, SC_PS, false);
 }
 
@@ -84,7 +117,11 @@ void sc_kernel::pop_module_name()
 
 sc_module_name *sc_kernel::get_top_of_module_name_stack() const
 {
-	return module_name_stack.empty() ? 0 : module_name_stack.top();
+	sc_module_name *module_name = module_name_stack.empty() ? 0 : module_name_stack.top();
+	
+	if(!module_name) throw std::runtime_error("module name stack is empty");
+	
+	return module_name;
 }
 
 void sc_kernel::begin_object(sc_object *object)
@@ -272,6 +309,8 @@ void sc_kernel::do_delta_steps(bool once)
 			while(runnable_thread_processes.size());
 		}
 		
+		delta_count++;
+
 		// update phase
 		
 		if(updatable_prim_channels.size())
@@ -394,6 +433,30 @@ void sc_kernel::start(const sc_time& duration, sc_starvation_policy p)
 	if(p == SC_RUN_TO_TIME)
 	{
 		current_time_stamp = end_time;
+	}
+}
+
+void sc_kernel::add_top_level_object(sc_object *object)
+{
+	top_level_objects.push_back(object);
+}
+
+void sc_kernel::register_event(sc_event *event)
+{
+	event_registry.insert(std::pair<std::string, sc_event *>(event->name(), event));
+}
+
+void sc_kernel::unregister_event(sc_event *event)
+{
+	std::map<std::string, sc_event *>::iterator it = event_registry.find(event->name());
+	
+	if(it != event_registry.end())
+	{
+		event_registry.erase(it);
+	}
+	else
+	{
+		throw std::runtime_error("Internal error! can't unregister event because it is not registered");
 	}
 }
 
@@ -645,13 +708,124 @@ bool sc_kernel::is_start_of_simulation_invoked() const
 	return start_of_simulation_invoked;
 }
 
+bool sc_kernel::is_running() const
+{
+	return status == SC_RUNNING;
+}
+
+sc_dt::uint64 sc_kernel::get_delta_count() const
+{
+	return delta_count;
+}
+
+bool sc_kernel::pending_activity_at_current_time() const
+{
+	std::multimap<sc_time, sc_timed_kernel_event *>::const_iterator it = schedule.begin();
+
+	if(it != schedule.end())
+	{
+		const sc_time& time_of_pending_activity = (*it).first;
+		return time_of_pending_activity == current_time_stamp;
+	}
+	
+	return false;
+}
+
+bool sc_kernel::pending_activity_at_future_time() const
+{
+	std::multimap<sc_time, sc_timed_kernel_event *>::const_iterator it = schedule.begin();
+
+	if(it != schedule.end())
+	{
+		const sc_time& time_of_pending_activity = (*it).first;
+		return time_of_pending_activity > current_time_stamp;
+	}
+	
+	return false;
+}
+
+bool sc_kernel::pending_activity() const
+{
+	return schedule.size() != 0;
+}
+
+sc_time sc_kernel::time_to_pending_activity() const
+{
+	std::multimap<sc_time, sc_timed_kernel_event *>::const_iterator it = schedule.begin();
+
+	if(it != schedule.end())
+	{
+		const sc_time& time_of_pending_activity = (*it).first;
+		return time_of_pending_activity - current_time_stamp;
+	}
+	
+	return max_time - current_time_stamp;
+}
+
 const std::vector<sc_object*>& sc_kernel::get_top_level_objects() const
 {
 	return top_level_objects;
 }
 
-sc_object *sc_kernel::find_object(const char* name)
+sc_object *sc_kernel::find_object(const char* name) const
 {
+	unsigned int n_top_level_objects = top_level_objects.size();
+	unsigned int i;
+	for(i = 0; i < n_top_level_objects; i++)
+	{
+		sc_object *object = top_level_objects[i];
+		if(strcmp(object->name(), name) == 0) return object;
+		
+		sc_object *found_child_object = object->find_child_object(name);
+		if(found_child_object) return found_child_object;
+	}
+	return 0;
+}
+
+sc_event *sc_kernel::find_event(const char *name) const
+{
+	std::map<std::string, sc_event *>::const_iterator it = event_registry.find(name);
+	
+	return (it != event_registry.end()) ? (*it).second : 0;
+}
+
+bool sc_kernel::hierarchical_name_exists(const char *name) const
+{
+	sc_object *found_object = find_object(name);
+	
+	if(found_object) return true;
+	
+	sc_event *found_event = find_event(name);
+	
+	if(found_event) return true;
+	
+	return false;
+}
+
+const char* sc_kernel::gen_unique_name( const char* seed ) const
+{
+	static std::string unique_name;
+	
+	std::string s;
+	
+	std::map<std::string, unsigned int>::iterator it = unique_name_map.find(seed);
+	
+	unsigned int id;
+	
+	if(it != unique_name_map.end())
+	{
+		id = ++(*it).second;
+	}
+	else
+	{
+		id = 0;
+		unique_name_map.insert(std::pair<std::string, unsigned int>(seed, id));
+	}
+	
+	std::stringstream sstr;
+	sstr << seed << '_' << id;
+	unique_name = sstr.str();
+	return unique_name.c_str();
 }
 
 int sc_elab_and_sim(int _argc, char* _argv[])
@@ -659,7 +833,10 @@ int sc_elab_and_sim(int _argc, char* _argv[])
 	argc = _argc;
 	argv = _argv;
 	
-	return sc_main(argc, argv);
+	int status = sc_main(argc, argv);
+	
+	if(sc_kernel::kernel) delete sc_kernel::kernel;
+	return status;
 }
 
 int sc_argc()
@@ -716,26 +893,32 @@ const sc_time& sc_time_stamp()
 
 const sc_dt::uint64 sc_delta_count()
 {
+	return sc_kernel::get_kernel()->get_delta_count();
 }
 
 bool sc_is_running()
 {
+	return sc_kernel::get_kernel()->is_running();
 }
 
 bool sc_pending_activity_at_current_time()
 {
+	return sc_kernel::get_kernel()->pending_activity_at_current_time();
 }
 
 bool sc_pending_activity_at_future_time()
 {
+	return sc_kernel::get_kernel()->pending_activity_at_future_time();
 }
 
 bool sc_pending_activity()
 {
+	return sc_kernel::get_kernel()->pending_activity();
 }
 
 sc_time sc_time_to_pending_activity()
 {
+	return sc_kernel::get_kernel()->time_to_pending_activity();
 }
 
 sc_status sc_get_status()
@@ -761,6 +944,16 @@ const std::vector<sc_object*>& sc_get_top_level_objects()
 sc_object* sc_find_object( const char* name)
 {
 	return sc_kernel::get_kernel()->find_object(name);
+}
+
+bool sc_hierarchical_name_exists(const char *name)
+{
+	return sc_kernel::get_kernel()->hierarchical_name_exists(name);
+}
+
+const char* sc_gen_unique_name( const char* seed )
+{
+	return sc_kernel::get_kernel()->gen_unique_name(seed);
 }
 
 } // end of namespace sc_core

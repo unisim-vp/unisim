@@ -41,6 +41,7 @@
 #include <ieee1666/kernel/time.h>
 #include <ieee1666/kernel/event.h>
 #include <ieee1666/base/event_queue_if.h>
+#include <ieee1666/kernel/kernel.h>
 
 namespace sc_core {
 

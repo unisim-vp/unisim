@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UTIL_TRACE_FILE_H__
-#define __UTIL_TRACE_FILE_H__
+#ifndef __IEEE1666_UTIL_TRACE_FILE_H__
+#define __IEEE1666_UTIL_TRACE_FILE_H__
 
 #include <ieee1666/kernel/time.h>
 #include <ieee1666/base/signal_if.h>

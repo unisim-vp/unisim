@@ -48,6 +48,7 @@ sc_event_queue::~sc_event_queue()
 
 const char* sc_event_queue::kind() const
 {
+	return "sc_event_queue";
 }
 
 void sc_event_queue::notify( double , sc_time_unit )

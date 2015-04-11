@@ -32,43 +32,37 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __IEEE1666_UTIL_FWD_H__
-#define __IEEE1666_UTIL_FWD_H__
+#ifndef __IEEE1666_UTIL_VERSION_H__
+#define __IEEE1666_UTIL_VERSION_H__
+
+#include <string>
 
 namespace sc_core {
 
-enum sc_severity {
-	SC_INFO = 0 ,
-	SC_WARNING ,
-	SC_ERROR ,
-	SC_FATAL ,
-	SC_MAX_SEVERITY
-};
+#define IEEE_1666_SYSTEMC 201101L
+#define SC_VERSION_MAJOR 0                  // implementation-defined_number
+#define SC_VERSION_MINOR 0                  // implementation-defined_number
+#define SC_VERSION_PATCH 0                  // implementation-defined_number
+#define SC_VERSION_ORIGINATOR "CEA"         // implementation-defined_string
+#define SC_VERSION_RELEASE_DATE "20150410"  // implementation-defined_date
+#define SC_VERSION_PRERELEASE "alpha"       // implementation-defined_string
+#define SC_IS_PRERELEASE 1                  // implementation-defined_bool
+#define SC_VERSION "0.0.0_alpha-CEA"        // implementation-defined_string
+#define SC_COPYRIGHT "Copyright (c) 2014,\nCommissariat a l'Energie Atomique (CEA)\nAll rights reserved\n"   // implementation-defined_string
+	
+extern const unsigned int sc_version_major;
+extern const unsigned int sc_version_minor;
+extern const unsigned int sc_version_patch;
+extern const std::string sc_version_originator;
+extern const std::string sc_version_release_date;
+extern const std::string sc_version_prerelease;
+extern const bool sc_is_prerelease;
+extern const std::string sc_version_string;
+extern const std::string sc_copyright_string;
 
-enum sc_verbosity {
-	SC_NONE = 0,
-	SC_LOW = 100,
-	SC_MEDIUM = 200,
-	SC_HIGH = 300,
-	SC_FULL = 400,
-	SC_DEBUG = 500
-};
-
-enum {
-	SC_UNSPECIFIED   = 0x0000 ,
-	SC_DO_NOTHING    = 0x0001 ,
-	SC_THROW         = 0x0002 ,
-	SC_LOG           = 0x0004 ,
-	SC_DISPLAY       = 0x0008 ,
-	SC_CACHE_REPORT  = 0x0010 ,
-	SC_INTERRUPT     = 0x0020 ,
-	SC_STOP          = 0x0040 ,
-	SC_ABORT         = 0x0080
-};
-
-class sc_trace_file;
-class sc_report;
-class sc_report_handler;
+const char* sc_copyright();
+const char* sc_version();
+const char* sc_release();
 
 } // end of namespace sc_core
 

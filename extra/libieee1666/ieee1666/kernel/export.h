@@ -91,6 +91,7 @@ sc_export<IF>::~sc_export()
 template<class IF>
 const char* sc_export<IF>::kind() const
 {
+	return "sc_export";
 }
 
 template<class IF>

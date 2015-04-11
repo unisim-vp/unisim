@@ -200,6 +200,7 @@ sc_port<IF, N, P>::~sc_port()
 template <class IF, int N, sc_port_policy P>
 const char* sc_port<IF, N, P>::kind() const
 {
+	return "sc_port";
 }
 
 template <class IF, int N, sc_port_policy P>

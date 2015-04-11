@@ -39,7 +39,7 @@ namespace sc_core {
 //////////////////////////////////// sc_export_base /////////////////////////////////////////////
 
 // Note: in IEEE1666-2011 callbacks are misplaced (in sc_export<IF>) because kernel don't known user interface passed as template arguments !
-	
+
 void sc_export_base::before_end_of_elaboration()
 {
 }

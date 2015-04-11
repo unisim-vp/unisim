@@ -32,44 +32,56 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __IEEE1666_UTIL_FWD_H__
-#define __IEEE1666_UTIL_FWD_H__
+#include <ieee1666/util/report.h>
 
 namespace sc_core {
 
-enum sc_severity {
-	SC_INFO = 0 ,
-	SC_WARNING ,
-	SC_ERROR ,
-	SC_FATAL ,
-	SC_MAX_SEVERITY
-};
+sc_report::sc_report( const sc_report& )
+{
+}
 
-enum sc_verbosity {
-	SC_NONE = 0,
-	SC_LOW = 100,
-	SC_MEDIUM = 200,
-	SC_HIGH = 300,
-	SC_FULL = 400,
-	SC_DEBUG = 500
-};
+sc_report& sc_report::operator= ( const sc_report& )
+{
+}
 
-enum {
-	SC_UNSPECIFIED   = 0x0000 ,
-	SC_DO_NOTHING    = 0x0001 ,
-	SC_THROW         = 0x0002 ,
-	SC_LOG           = 0x0004 ,
-	SC_DISPLAY       = 0x0008 ,
-	SC_CACHE_REPORT  = 0x0010 ,
-	SC_INTERRUPT     = 0x0020 ,
-	SC_STOP          = 0x0040 ,
-	SC_ABORT         = 0x0080
-};
+sc_report::~sc_report() throw()
+{
+}
 
-class sc_trace_file;
-class sc_report;
-class sc_report_handler;
+sc_severity sc_report::get_severity() const
+{
+}
+
+const char* sc_report::get_msg_type() const
+{
+}
+
+const char* sc_report::get_msg() const
+{
+}
+
+int sc_report::get_verbosity() const
+{
+}
+
+const char* sc_report::get_file_name() const
+{
+}
+
+int sc_report::get_line_number() const
+{
+}
+
+const sc_time& sc_report::get_time() const
+{
+}
+
+const char* sc_report::get_process_name() const
+{
+}
+
+const char* sc_report::what() const throw()
+{
+}
 
 } // end of namespace sc_core
-
-#endif

@@ -34,6 +34,7 @@
 
 #include <ieee1666/kernel/object.h>
 #include <ieee1666/kernel/kernel.h>
+#include <string.h>
 
 namespace sc_core {
 
@@ -53,12 +54,14 @@ const char* sc_object::kind() const
 	return "sc_object";
 }
 
-void sc_object::print( std::ostream& ) const
+void sc_object::print(std::ostream& os) const
 {
+	os << object_name;
 }
 
-void sc_object::dump( std::ostream& ) const
+void sc_object::dump( std::ostream& os) const
 {
+	os << kind() << "::\"" << object_name << "\"";
 }
 
 const std::vector<sc_object*>& sc_object::get_child_objects() const
@@ -129,15 +132,45 @@ sc_object::sc_object()
 {
 }
 
-sc_object::sc_object(const char*)
-	: object_name()
+std::string sc_object::create_hierarchical_name(const char *_name) const
+{
+	std::string hierarchical_name;
+	
+	sc_kernel *kernel = sc_kernel::get_kernel();
+	sc_object *_parent_object = kernel->get_current_object();
+	if(_parent_object)
+	{
+		hierarchical_name += _parent_object->name();
+		hierarchical_name += '.';
+	}
+
+	hierarchical_name += _name;
+
+	if(kernel->find_object(hierarchical_name.c_str()))
+	{
+		// hierarchical name already exists
+		std::string new_hierarchical_name = sc_kernel::get_kernel()->gen_unique_name(hierarchical_name.c_str());
+		std::cerr << "WARNING! object \"" << hierarchical_name << "\" has been renamed \"" << new_hierarchical_name << "\"" << std::endl;	
+		hierarchical_name = new_hierarchical_name;
+	}
+	
+	return hierarchical_name;
+}
+
+sc_object::sc_object(const char *_name)
+	: object_name((_name && *_name) ? create_hierarchical_name(_name) : create_hierarchical_name("object"))
 	, child_objects()
 	, child_events()
 	, parent_object(0)
 {
 	sc_kernel *kernel = sc_kernel::get_kernel();
 	parent_object = kernel->get_current_object();
-	if(parent_object) parent_object->add_child_object(this);
+
+	if(parent_object)
+		parent_object->add_child_object(this);
+	else
+		kernel->add_top_level_object(this);
+
 	kernel->begin_object(this);
 }
 
@@ -162,6 +195,18 @@ void sc_object::add_child_object(sc_object *object)
 void sc_object::add_child_event(sc_event *event)
 {
 	child_events.push_back(event);
+}
+
+sc_object *sc_object::find_child_object(const char *name) const
+{
+	unsigned int n_child_objects = child_objects.size();
+	unsigned int i;
+	for(i = 0; i < n_child_objects; i++)
+	{
+		sc_object *child_object = child_objects[i];
+		if(strcmp(child_object->name(), name) == 0) return child_object;
+	}
+	return 0;
 }
 
 } // end of namespace sc_core

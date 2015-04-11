@@ -38,11 +38,19 @@
 
 namespace sc_core {
 
+// Notes for the developper. The rationale of Class sc_module_name is:
+//  (1) to avoid, for the user, explicit calls to sc_module constructor with a name passed as argument.
+//      implicit calls to default sc_module constructor are sufficient.
+//  (2) to keep track of current object being constructed, from the construction of sc_object,
+//      base class of sc_module, to the destruction of the sc_module_name instance passed as argument
+//      to the user's module constructor.
+
 sc_module_name::sc_module_name(const char *module_name_c_str)
 	: module_name_str(module_name_c_str)
 	, pushed(false)
 	, module(0)
 {
+	std::cerr << "sc_module_name(\"" << module_name_c_str << "\")" << std::endl;
 	sc_kernel::get_kernel()->push_module_name(this);
 	pushed = true;
 }

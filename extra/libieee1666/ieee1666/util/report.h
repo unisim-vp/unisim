@@ -32,43 +32,34 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __IEEE1666_UTIL_FWD_H__
-#define __IEEE1666_UTIL_FWD_H__
+#ifndef __IEEE1666_UTIL_REPORT_H__
+#define __IEEE1666_UTIL_REPORT_H__
+
+#include <ieee1666/kernel/fwd.h>
+#include <ieee1666/util/fwd.h>
+#include <stdexcept>
 
 namespace sc_core {
 
-enum sc_severity {
-	SC_INFO = 0 ,
-	SC_WARNING ,
-	SC_ERROR ,
-	SC_FATAL ,
-	SC_MAX_SEVERITY
-};
+class sc_report : public std::exception
+{
+public:
+	sc_report( const sc_report& );
+	sc_report& operator= ( const sc_report& );
+	virtual ~sc_report() throw();
 
-enum sc_verbosity {
-	SC_NONE = 0,
-	SC_LOW = 100,
-	SC_MEDIUM = 200,
-	SC_HIGH = 300,
-	SC_FULL = 400,
-	SC_DEBUG = 500
-};
+	sc_severity get_severity() const;
+	const char* get_msg_type() const;
+	const char* get_msg() const;
+	int get_verbosity() const;
+	const char* get_file_name() const;
+	int get_line_number() const;
 
-enum {
-	SC_UNSPECIFIED   = 0x0000 ,
-	SC_DO_NOTHING    = 0x0001 ,
-	SC_THROW         = 0x0002 ,
-	SC_LOG           = 0x0004 ,
-	SC_DISPLAY       = 0x0008 ,
-	SC_CACHE_REPORT  = 0x0010 ,
-	SC_INTERRUPT     = 0x0020 ,
-	SC_STOP          = 0x0040 ,
-	SC_ABORT         = 0x0080
-};
+	const sc_time& get_time() const;
+	const char* get_process_name() const;
 
-class sc_trace_file;
-class sc_report;
-class sc_report_handler;
+	virtual const char* what() const throw();
+};
 
 } // end of namespace sc_core
 
