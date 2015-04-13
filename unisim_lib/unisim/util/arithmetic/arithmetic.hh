@@ -129,6 +129,11 @@ inline int16_t SignExtend(uint16_t v, unsigned int n) ALWAYS_INLINE;
 inline int32_t SignExtend(uint32_t v, unsigned int n) ALWAYS_INLINE;
 inline int64_t SignExtend(uint64_t v, unsigned int n) ALWAYS_INLINE;
 
+inline int8_t SignExtend(int8_t v, unsigned int n) ALWAYS_INLINE;
+inline int16_t SignExtend(int16_t v, unsigned int n) ALWAYS_INLINE;
+inline int32_t SignExtend(int32_t v, unsigned int n) ALWAYS_INLINE;
+inline int64_t SignExtend(int64_t v, unsigned int n) ALWAYS_INLINE;
+
 inline void EvenParity(uint8_t v, uint8_t& parity_out) ALWAYS_INLINE;
 inline void EvenParity(uint16_t v, uint8_t& parity_out) ALWAYS_INLINE;
 inline void EvenParity(uint32_t v, uint8_t& parity_out) ALWAYS_INLINE;
@@ -1256,6 +1261,26 @@ inline int64_t SignExtend(uint64_t v, unsigned int n)
 	unsigned int m = (8 * sizeof(v)) - n;
 	// FIXME: this operation is undefined
 	return (int64_t) (v << m) >> m; 
+}
+
+inline int8_t SignExtend(int8_t v, unsigned int n)
+{
+	return SignExtend((uint8_t) v, n);
+}
+
+inline int16_t SignExtend(int16_t v, unsigned int n)
+{
+	return SignExtend((uint16_t) v, n);
+}
+
+inline int32_t SignExtend(int32_t v, unsigned int n)
+{
+	return SignExtend((uint32_t) v, n);
+}
+
+inline int64_t SignExtend(int64_t v, unsigned int n)
+{
+	return SignExtend((uint64_t) v, n);
 }
 
 //=============================================================================
