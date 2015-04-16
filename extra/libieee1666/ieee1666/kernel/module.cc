@@ -140,44 +140,58 @@ void sc_module::next_trigger( const sc_event& e)
 	sc_kernel::get_kernel()->next_trigger(e);
 }
 
-void sc_module::next_trigger( const sc_event_or_list & )
+void sc_module::next_trigger(const sc_event_or_list& el)
 {
+	sc_kernel::get_kernel()->next_trigger(el);
 }
 
-void sc_module::next_trigger( const sc_event_and_list & )
+void sc_module::next_trigger(const sc_event_and_list& el)
 {
+	sc_kernel::get_kernel()->next_trigger(el);
 }
 
-void sc_module::next_trigger( const sc_time& )
+void sc_module::next_trigger(const sc_time& t)
 {
+	sc_kernel::get_kernel()->next_trigger(t);
 }
 
-void sc_module::next_trigger( double , sc_time_unit )
+void sc_module::next_trigger(double d, sc_time_unit tu)
 {
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->next_trigger(t);
 }
 
-void sc_module::next_trigger( const sc_time& , const sc_event& )
+void sc_module::next_trigger(const sc_time& t, const sc_event& e)
 {
+	sc_kernel::get_kernel()->next_trigger(t, e);
 }
 
-void sc_module::next_trigger( double , sc_time_unit , const sc_event& )
+void sc_module::next_trigger(double d, sc_time_unit tu, const sc_event& e)
 {
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->next_trigger(t, e);
 }
 
-void sc_module::next_trigger( const sc_time& , const sc_event_or_list &)
+void sc_module::next_trigger(const sc_time& t, const sc_event_or_list& el)
 {
+	sc_kernel::get_kernel()->next_trigger(t, el);
 }
 
-void sc_module::next_trigger( double , sc_time_unit , const sc_event_or_list & )
+void sc_module::next_trigger(double d, sc_time_unit tu, const sc_event_or_list& el)
 {
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->next_trigger(t, el);
 }
 
-void sc_module::next_trigger( const sc_time& , const sc_event_and_list & )
+void sc_module::next_trigger(const sc_time& t, const sc_event_and_list& el)
 {
+	sc_kernel::get_kernel()->next_trigger(t, el);
 }
 
-void sc_module::next_trigger( double , sc_time_unit , const sc_event_and_list & )
+void sc_module::next_trigger(double d, sc_time_unit tu, const sc_event_and_list& el)
 {
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->next_trigger(t, el);
 }
 
 void sc_module::wait()
@@ -189,49 +203,63 @@ void sc_module::wait( int )
 {
 }
 
-void sc_module::wait( const sc_event& e)
+void sc_module::wait(const sc_event& e)
 {
 	sc_kernel::get_kernel()->wait(e);
 }
 
-void sc_module::wait( const sc_event_or_list &)
+void sc_module::wait(const sc_event_or_list& el)
 {
+	sc_kernel::get_kernel()->wait(el);
 }
 
-void sc_module::wait( const sc_event_and_list & )
+void sc_module::wait(const sc_event_and_list& el)
 {
+	sc_kernel::get_kernel()->wait(el);
 }
 
-void sc_module::wait( const sc_time& )
+void sc_module::wait(const sc_time& t)
 {
+	sc_kernel::get_kernel()->wait(t);
 }
 
-void sc_module::wait( double , sc_time_unit )
+void sc_module::wait(double d, sc_time_unit tu)
 {
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->wait(t);
 }
 
-void sc_module::wait( const sc_time& , const sc_event& )
+void sc_module::wait(const sc_time& t, const sc_event& e)
 {
+	sc_kernel::get_kernel()->wait(t, e);
 }
 
-void sc_module::wait( double , sc_time_unit , const sc_event& )
+void sc_module::wait(double d, sc_time_unit tu, const sc_event& e)
 {
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->wait(t, e);
 }
 
-void sc_module::wait( const sc_time& , const sc_event_or_list & )
+void sc_module::wait(const sc_time& t, const sc_event_or_list& el)
 {
+	sc_kernel::get_kernel()->wait(t, el);
 }
 
-void sc_module::wait( double , sc_time_unit , const sc_event_or_list & )
+void sc_module::wait(double d, sc_time_unit tu, const sc_event_or_list& el)
 {
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->wait(t, el);
 }
 
-void sc_module::wait( const sc_time& , const sc_event_and_list & )
+void sc_module::wait(const sc_time& t, const sc_event_and_list& el)
 {
+	sc_kernel::get_kernel()->wait(t, el);
 }
 
-void sc_module::wait( double , sc_time_unit , const sc_event_and_list & )
+void sc_module::wait(double d, sc_time_unit tu, const sc_event_and_list& el)
 {
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->wait(t, el);
 }
 
 void sc_module::before_end_of_elaboration()
@@ -250,13 +278,14 @@ void sc_module::end_of_simulation()
 {
 }
 
-sc_module::sc_module(const sc_module& )
-	: sensitive(this)
+sc_module::sc_module(const sc_module& module)
 {
+	// DISABLED
 }
 
-sc_module& sc_module::operator= ( const sc_module& )
+sc_module& sc_module::operator = ( const sc_module& )
 {
+	// DISABLED
 }
 
 void sc_module::end_module()
@@ -270,108 +299,6 @@ void sc_module::init()
 	sc_module_name *non_const_module_name = sc_kernel::get_kernel()->get_top_of_module_name_stack();
 	non_const_module_name->set_module(this);
 	sc_kernel::get_kernel()->add_module(this);
-}
-
-//////////////////////////////////// global functions ///////////////////////////////////////
-
-void next_trigger()
-{
-}
-
-void next_trigger( const sc_event& )
-{
-}
-
-void next_trigger( const sc_event_or_list & )
-{
-}
-
-void next_trigger( const sc_event_and_list & )
-{
-}
-
-void next_trigger( const sc_time& )
-{
-}
-
-void next_trigger( double , sc_time_unit )
-{
-}
-
-void next_trigger( const sc_time& , const sc_event& )
-{
-}
-
-void next_trigger( double , sc_time_unit , const sc_event& )
-{
-}
-
-void next_trigger( const sc_time& , const sc_event_or_list & )
-{
-}
-
-void next_trigger( double , sc_time_unit , const sc_event_or_list & )
-{
-}
-
-void next_trigger( const sc_time& , const sc_event_and_list & )
-{
-}
-
-void next_trigger( double , sc_time_unit , const sc_event_and_list & )
-{
-}
-
-void wait()
-{
-}
-
-void wait( int )
-{
-}
-
-void wait( const sc_event& )
-{
-}
-
-void wait( const sc_event_or_list & )
-{
-}
-
-void wait( const sc_event_and_list & )
-{
-}
-
-void wait( const sc_time& )
-{
-}
-
-void wait( double , sc_time_unit )
-{
-}
-
-void wait( const sc_time& , const sc_event& )
-{
-}
-
-void wait( double , sc_time_unit , const sc_event& )
-{
-}
-
-void wait( const sc_time& , const sc_event_or_list & )
-{
-}
-
-void wait( double , sc_time_unit , const sc_event_or_list & )
-{
-}
-
-void wait( const sc_time& , const sc_event_and_list & )
-{
-}
-
-void wait( double , sc_time_unit , const sc_event_and_list & )
-{
 }
 
 } // end of namespace sc_core

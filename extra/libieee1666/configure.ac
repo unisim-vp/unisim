@@ -17,6 +17,8 @@ AC_PROG_LN_S
 
 AC_LANG([C++])
 
+AX_CXX_COMPILE_STDCXX_11
+
 ###### CHECK FOR STANDARD C HEADERS ###########################################
 
 AC_CHECK_HEADERS([iostream stdio.h math.h stdlib.h string.h],,\

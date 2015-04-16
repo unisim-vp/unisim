@@ -58,7 +58,8 @@ private:
 	sc_module *module;
 	sc_thread_process *thread_process;
 	sc_method_process *method_process;
-	
+
+	sc_sensitive();
 	sc_sensitive(sc_module *module);
     ~sc_sensitive();
 	

@@ -65,8 +65,9 @@ sc_process_handle::sc_process_handle()
 {
 }
 
-sc_process_handle::sc_process_handle(const sc_process_handle& ph)
-	: process(ph.process)
+sc_process_handle::sc_process_handle(const sc_process_handle& process_handle)
+	: process(process_handle.process)
+	, null_event()
 {
 	if(process) process->acquire();
 }
@@ -88,30 +89,37 @@ sc_process_handle::~sc_process_handle()
 
 bool sc_process_handle::valid() const
 {
+	return process && !process->terminated();
 }
 
-sc_process_handle& sc_process_handle::operator = (const sc_process_handle& ph)
+sc_process_handle& sc_process_handle::operator = (const sc_process_handle& process_handle)
 {
 	if(process) process->release();
-	process = ph.process;
+	process = process_handle.process;
 	process->acquire();
 	return *this;
 }
 
-bool sc_process_handle::operator== ( const sc_process_handle& ) const
+bool sc_process_handle::operator == (const sc_process_handle& process_handle) const
 {
+	return process == process_handle.process;
 }
 
-bool sc_process_handle::operator!= ( const sc_process_handle& ) const
+bool sc_process_handle::operator != (const sc_process_handle& process_handle) const
 {
+	return process != process_handle.process;
 }
 
-bool sc_process_handle::operator< ( const sc_process_handle& ) const
+bool sc_process_handle::operator < (const sc_process_handle& process_handle) const
 {
+	return process < process_handle.process;
 }
 
-void sc_process_handle::swap( sc_process_handle& )
+void sc_process_handle::swap(sc_process_handle& process_handle)
 {
+	sc_process *p = process;
+	process = process_handle.process;
+	process_handle.process = p;
 }
 
 const char* sc_process_handle::name() const
@@ -138,6 +146,7 @@ sc_object* sc_process_handle::get_parent_object() const
 
 sc_object* sc_process_handle::get_process_object() const
 {
+	return (process && !process->terminated()) ? process : 0;
 }
 
 bool sc_process_handle::dynamic() const
@@ -150,30 +159,37 @@ bool sc_process_handle::terminated() const
 
 const sc_event& sc_process_handle::terminated_event() const
 {
+	return process ? process->terminated_event() : null_event;
 }
 
-void sc_process_handle::suspend ( sc_descendant_inclusion_info include_descendants)
+void sc_process_handle::suspend(sc_descendant_inclusion_info include_descendants)
 {
+	if(process) process->suspend(include_descendants);
 }
 
-void sc_process_handle::resume ( sc_descendant_inclusion_info include_descendants)
+void sc_process_handle::resume(sc_descendant_inclusion_info include_descendants)
 {
+	if(process) process->resume(include_descendants);
 }
 
-void sc_process_handle::disable ( sc_descendant_inclusion_info include_descendants)
+void sc_process_handle::disable(sc_descendant_inclusion_info include_descendants)
 {
+	if(process) process->disable(include_descendants);
 }
 
-void sc_process_handle::enable ( sc_descendant_inclusion_info include_descendants)
+void sc_process_handle::enable(sc_descendant_inclusion_info include_descendants)
 {
+	if(process) process->enable(include_descendants);
 }
 
-void sc_process_handle::kill( sc_descendant_inclusion_info include_descendants)
+void sc_process_handle::kill(sc_descendant_inclusion_info include_descendants)
 {
+	if(process) process->kill(include_descendants);
 }
 
-void sc_process_handle::reset( sc_descendant_inclusion_info include_descendants)
+void sc_process_handle::reset(sc_descendant_inclusion_info include_descendants)
 {
+	if(process) process->reset(include_descendants);
 }
 
 bool sc_process_handle::is_unwinding() const

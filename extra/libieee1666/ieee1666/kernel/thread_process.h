@@ -38,6 +38,7 @@
 #include <ieee1666/kernel/fwd.h>
 #include <ieee1666/kernel/object.h>
 #include <ieee1666/kernel/process.h>
+#include <ieee1666/kernel/time.h>
 #include <boost/bind.hpp>
 #include <boost/coroutine/coroutine.hpp>
 
@@ -69,9 +70,20 @@ public:
 	
 	virtual void start();
 	
+	void trigger_dynamically(const sc_event *triggered_event);
+	void trigger_statically();
+	
 	void wait();
 	void wait(const sc_event& e);
+	void wait(const sc_event_and_list& el);
+	void wait(const sc_event_or_list& el);
+	void wait(const sc_time& t);
+	void wait(const sc_time& t, const sc_event& e);
+	void wait(const sc_time& t, const sc_event_and_list& el);
+	void wait(const sc_time& t, const sc_event_or_list& el);
 	
+	virtual bool terminated() const;
+	virtual const sc_event& terminated_event() const;
 	virtual void suspend(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 	virtual void resume(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 	virtual void disable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
@@ -86,7 +98,28 @@ private:
 	sc_coroutine *coro;
 	sc_thread_process_helper *thread_process_helper;
 	int stack_size;
+	bool thread_process_terminated;
+	sc_event thread_process_terminated_event;
 	
+	enum wait_type_t
+	{
+		WAIT_DEFAULT,
+		WAIT_EVENT,
+		WAIT_EVENT_AND_LIST,
+		WAIT_EVENT_OR_LIST,
+		WAIT_TIME_OUT,
+		WAIT_TIME_OUT_OR_EVENT,
+		WAIT_TIME_OUT_OR_EVENT_AND_LIST,
+		WAIT_TIME_OUT_OR_EVENT_OR_LIST
+	};
+	
+	wait_type_t wait_type;
+	const sc_event *wait_event;
+	const sc_event_list *wait_event_list;
+	unsigned int wait_and_event_list_remaining_count;
+	sc_time wait_time_out;
+	sc_event wait_time_out_event;
+
 	void coroutine_work(sc_coroutine::caller_type& yield);
 	void yield();
 	void switch_to();

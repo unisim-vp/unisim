@@ -38,6 +38,7 @@
 #include <ieee1666/kernel/fwd.h>
 #include <ieee1666/kernel/object.h>
 #include <ieee1666/kernel/process.h>
+#include <ieee1666/kernel/time.h>
 
 namespace sc_core {
 
@@ -48,9 +49,21 @@ public:
 	sc_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options = 0);
 	virtual ~sc_method_process();
 
+	void trigger_dynamically(const sc_event *e);
+	void trigger_statically();
+
 	void next_trigger();
 	void next_trigger(const sc_event& e);
+	void next_trigger(const sc_event_and_list& el);
+	void next_trigger(const sc_event_or_list& el);
+	void next_trigger(const sc_time& t);
+	void next_trigger(const sc_time& t, const sc_event& e);
+	void next_trigger(const sc_time& t, const sc_event_and_list& el);
+	void next_trigger(const sc_time& t, const sc_event_or_list& el);
+	
 
+	virtual bool terminated() const;
+	virtual const sc_event& terminated_event() const;
 	virtual void suspend(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 	virtual void resume(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 	virtual void disable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
@@ -58,6 +71,33 @@ public:
 	virtual void kill(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 	virtual void reset(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 private:
+	friend class sc_kernel;
+	
+	enum next_trigger_type_t
+	{
+		NEXT_TRIGGER_DEFAULT,
+		NEXT_TRIGGER_EVENT,
+		NEXT_TRIGGER_EVENT_AND_LIST,
+		NEXT_TRIGGER_EVENT_OR_LIST,
+		NEXT_TRIGGER_TIME_OUT,
+		NEXT_TRIGGER_TIME_OUT_OR_EVENT,
+		NEXT_TRIGGER_TIME_OUT_OR_EVENT_AND_LIST,
+		NEXT_TRIGGER_TIME_OUT_OR_EVENT_OR_LIST
+	};
+	
+	bool method_process_terminated;
+	sc_event method_process_terminated_event;
+	
+	// next trigger
+	next_trigger_type_t next_trigger_type;
+	const sc_event *next_trigger_event;
+	const sc_event_list *next_trigger_event_list;
+	unsigned int next_trigger_and_event_list_remaining_count;
+	sc_time next_trigger_time_out;
+	sc_event next_trigger_time_out_event;
+	
+	void cancel_next_trigger();
+	void commit_next_trigger();
 };
 
 } // end of namespace sc_core

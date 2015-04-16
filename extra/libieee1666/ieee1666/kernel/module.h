@@ -126,31 +126,6 @@ private:
 	void init();
 };
 
-void next_trigger();
-void next_trigger( const sc_event& );
-void next_trigger( const sc_event_or_list & );
-void next_trigger( const sc_event_and_list & );
-void next_trigger( const sc_time& );
-void next_trigger( double , sc_time_unit );
-void next_trigger( const sc_time& , const sc_event& );
-void next_trigger( double , sc_time_unit , const sc_event& );
-void next_trigger( const sc_time& , const sc_event_or_list & );
-void next_trigger( double , sc_time_unit , const sc_event_or_list & );
-void next_trigger( const sc_time& , const sc_event_and_list & );
-void next_trigger( double , sc_time_unit , const sc_event_and_list & );
-void wait();
-void wait( int );
-void wait( const sc_event& );
-void wait( const sc_event_or_list & );
-void wait( const sc_event_and_list & );
-void wait( const sc_time& );
-void wait( double , sc_time_unit );
-void wait( const sc_time& , const sc_event& );
-void wait( double , sc_time_unit , const sc_event& );
-void wait( const sc_time& , const sc_event_or_list & );
-void wait( double , sc_time_unit , const sc_event_or_list & );
-void wait( const sc_time& , const sc_event_and_list & );
-void wait( double , sc_time_unit , const sc_event_and_list & );
 #define SC_MODULE(name) struct name : public ::sc_core::sc_module
 #define SC_CTOR(name) typedef name SC_CURRENT_USER_MODULE; name(const ::sc_core::sc_module_name&)
 #define SC_HAS_PROCESS(name) typedef name SC_CURRENT_USER_MODULE // implementation-defined

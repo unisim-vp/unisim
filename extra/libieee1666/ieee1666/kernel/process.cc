@@ -56,6 +56,9 @@ sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_p
 	, process_owner_method_ptr(_process_owner_method_ptr)
 	, process_kind(_process_kind)
 	, ref_count(1)
+	, enabled(true)
+	, suspended(false)
+	, runnable_on_resuming(false)
 {
 }
 

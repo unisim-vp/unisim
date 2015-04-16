@@ -60,6 +60,8 @@ public:
 	
 	sc_curr_proc_kind proc_kind() const;
 	
+	virtual bool terminated() const = 0;
+	virtual const sc_event& terminated_event() const = 0;
 	virtual void suspend(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
 	virtual void resume(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
 	virtual void disable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
@@ -70,6 +72,7 @@ public:
 	void release();
 	
 	const char *get_name() const;
+	
 private:
 	std::string name;
 	
@@ -78,6 +81,11 @@ private:
 	sc_curr_proc_kind process_kind;
 
 	unsigned int ref_count;
+
+protected:
+	bool enabled;
+	bool suspended;
+	bool runnable_on_resuming;
 };
 
 } // end of namespace sc_core

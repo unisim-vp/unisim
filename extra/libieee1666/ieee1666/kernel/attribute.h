@@ -100,6 +100,9 @@ private:
 	sc_attr_cltn& operator= ( const sc_attr_cltn& );
 	// Other members
 	// Implementation-defined
+	
+	friend class sc_object;
+	
 	elem_type *storage;
 	unsigned int max_num_elems;
 	unsigned int num_elems;

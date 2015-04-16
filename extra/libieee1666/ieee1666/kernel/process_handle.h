@@ -95,6 +95,7 @@ public:
 	void throw_it( const T& user_defined_exception, sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS );
 private:
 	sc_process *process;
+	sc_event null_event;
 	
 	sc_process_handle(sc_process *process);
 };

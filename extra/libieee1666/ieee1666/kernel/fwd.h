@@ -117,6 +117,7 @@ class sc_method_process;
 class sc_thread_process_helper;
 class sc_kernel_event;
 class sc_timed_kernel_event;
+class sc_event_list;
 
 typedef void (sc_process_owner::*sc_process_owner_method_ptr)();
 

@@ -39,6 +39,7 @@
 #include <vector>
 #include <string>
 #include <deque>
+#include <unordered_set>
 
 namespace sc_core {
 
@@ -70,6 +71,7 @@ private:
 	friend class sc_method_process;
 	friend class sc_kernel;
 	friend class sc_sensitive;
+	friend class sc_event_list;
 	
 	enum state_t
 	{
@@ -82,72 +84,139 @@ private:
 	sc_kernel_event *kernel_event;              // only used when state == DELTA_NOTIFIED, otherwise undefined
 	sc_timed_kernel_event *timed_kernel_event;  // only used when state == TIMED_NOTIFIED, otherwise undefined
 
-	mutable std::deque<sc_thread_process *> dynamically_sensitive_thread_processes;
-	mutable std::deque<sc_method_process *> dynamically_sensitive_method_processes;
+	mutable std::unordered_set<sc_thread_process *> dynamically_sensitive_thread_processes;
+	mutable std::unordered_set<sc_method_process *> dynamically_sensitive_method_processes;
 	mutable std::vector<sc_thread_process *> statically_sensitive_thread_processes;
 	mutable std::vector<sc_method_process *> statically_sensitive_method_processes;
 
 	std::string create_hierarchical_name(const char *_name) const;
 	void add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
 	void add_dynamically_sensitive_method_process(sc_method_process *method_process) const;
+	void remove_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
+	void remove_dynamically_sensitive_method_process(sc_method_process *method_process) const;
 	void add_statically_sensitive_thread_process(sc_thread_process *thread_process) const;
 	void add_statically_sensitive_method_process(sc_method_process *method_process) const;
 	void trigger();
+	void clear_dynamically_sensitive_processes();
 };
 
 const std::vector<sc_event*>& sc_get_top_level_events();
 sc_event* sc_find_event( const char* );
 
-class sc_event_and_list
+enum sc_event_list_type_t
 {
-	public:
+	EVENT_AND_LIST,
+	EVENT_OR_LIST
+};
+
+class sc_event_list
+{
+public:
+	sc_event_list(sc_event_list_type_t type, bool auto_mm);
+	sc_event_list( const sc_event_list& );
+	sc_event_list(sc_event_list_type_t type, bool auto_mm, const sc_event& );
+	sc_event_list& operator= ( const sc_event_list& );
+	~sc_event_list();
+	int size() const;
+	void swap( sc_event_list& );
+
+	void add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
+	void add_dynamically_sensitive_method_process(sc_method_process *method_process) const;
+	void remove_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
+	void remove_dynamically_sensitive_method_process(sc_method_process *method_process) const;
+protected:
+	friend class sc_event_and_expr;
+	friend class sc_event_or_expr;
+	
+	void insert(const sc_event &);
+	void insert(const sc_event_list& );
+private:
+	friend class sc_thread_process;
+	friend class sc_method_process;
+	
+	sc_event_list_type_t type;
+	mutable bool auto_mm;
+	std::unordered_set<const sc_event *> events;
+	
+	void acquire() const;
+	void release() const;
+	
+	mutable unsigned int ref_count;
+};
+
+class sc_event_and_list : public sc_event_list
+{
+public:
 	sc_event_and_list();
 	sc_event_and_list( const sc_event_and_list& );
 	sc_event_and_list( const sc_event& );
-	sc_event_and_list& operator= ( const sc_event_and_list& );
+	//sc_event_and_list& operator= ( const sc_event_and_list& ); /* provided by sc_event_list */ 
 	~sc_event_and_list();
-	int size() const;
-	void swap( sc_event_and_list& );
-	sc_event_and_list& operator&= ( const sc_event& );
-	sc_event_and_list& operator&= ( const sc_event_and_list& );
-	sc_event_and_expr operator& ( const sc_event& ) const;
-	sc_event_and_expr operator& ( const sc_event_and_list& ) const;
+	sc_event_and_list& operator &= (const sc_event& e);
+	sc_event_and_list& operator &= (const sc_event_and_list& el);
+	sc_event_and_expr operator & (const sc_event& e) const;
+	sc_event_and_expr operator & (const sc_event_and_list& el) const;
+private:
+	friend class sc_event_and_expr;
+	
+	sc_event_and_list(bool auto_mm);
 };
 
-class sc_event_or_list
+class sc_event_or_list : public sc_event_list
 {
 public:
 	sc_event_or_list();
 	sc_event_or_list( const sc_event_or_list& );
 	sc_event_or_list( const sc_event& );
-	sc_event_or_list& operator= ( const sc_event_or_list& );
+	//sc_event_or_list& operator= ( const sc_event_or_list& ); /* provided by sc_event_list */ 
 	~sc_event_or_list();
-	int size() const;
-	void swap( sc_event_or_list& );
-	sc_event_or_list& operator|= ( const sc_event& );
-	sc_event_or_list& operator|= ( const sc_event_or_list& );
-	sc_event_or_expr operator| ( const sc_event& ) const;
-	sc_event_or_expr operator| ( const sc_event_or_list& ) const;
+	sc_event_or_list& operator |= (const sc_event& e);
+	sc_event_or_list& operator |= (const sc_event_or_list& el);
+	sc_event_or_expr operator | (const sc_event& e) const;
+	sc_event_or_expr operator | (const sc_event_or_list& el) const;
+private:
+	friend class sc_event_or_expr;
+	
+	sc_event_or_list(bool auto_mm);
 };
 
 class sc_event_and_expr
 {
 public:
-	operator const sc_event_and_list &() const;
+	sc_event_and_expr();
+	~sc_event_and_expr();
+	
+	operator const sc_event_and_list& () const;
+	sc_event_and_expr operator & (const sc_event& e);
+	sc_event_and_expr operator & (const sc_event_and_list& el);
+	
+	sc_event_and_expr& operator &= (const sc_event& e);
+	sc_event_and_expr& operator &= (const sc_event_and_list& el);
+private:
 	// Other members
+	sc_event_and_list *event_and_list;
 };
-sc_event_and_expr operator& ( sc_event_and_expr , sc_event const& );
-sc_event_and_expr operator& ( sc_event_and_expr , sc_event_and_list const& );
+
+sc_event_and_expr operator & (sc_event_and_expr event_and_expr, const sc_event& e);
+sc_event_and_expr operator & (sc_event_and_expr event_and_expr, const sc_event_and_list& el);
 
 class sc_event_or_expr
 {
 public:
-	operator const sc_event_or_list &() const;
+	sc_event_or_expr();
+	~sc_event_or_expr();
+
+	operator const sc_event_or_list& () const;
+
+	sc_event_or_expr& operator |= (const sc_event& e);
+	sc_event_or_expr& operator |= (const sc_event_or_list& el);
+private:
 	// Other members
+	sc_event_or_list *event_or_list;
 };
 
-sc_event_or_expr operator| ( sc_event_or_expr , sc_event const& );
-sc_event_or_expr operator| ( sc_event_or_expr , sc_event_or_list const& );
+sc_event_or_expr operator | (sc_event_or_expr event_or_expr, const sc_event& e);
+sc_event_or_expr operator | (sc_event_or_expr event_or_expr, const sc_event_or_list& el);
 
 } // end of namespace sc_core
 

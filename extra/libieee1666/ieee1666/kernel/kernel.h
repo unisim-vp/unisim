@@ -102,10 +102,22 @@ public:
 	// wait
 	void wait();
 	void wait(const sc_event& e);
+	void wait(const sc_event_and_list& el);
+	void wait(const sc_event_or_list& el);
+	void wait(const sc_time& t);
+	void wait(const sc_time& t, const sc_event& e);
+	void wait(const sc_time& t, const sc_event_and_list& el);
+	void wait(const sc_time& t, const sc_event_or_list& el);
 
 	// next_trigger
 	void next_trigger();
 	void next_trigger(const sc_event& e);
+	void next_trigger(const sc_event_and_list& el);
+	void next_trigger(const sc_event_or_list& el);
+	void next_trigger(const sc_time& t);
+	void next_trigger(const sc_time& t, const sc_event& e);
+	void next_trigger(const sc_time& t, const sc_event_and_list& el);
+	void next_trigger(const sc_time& t, const sc_event_or_list& el);
 	
 	// processes
 	void trigger(sc_thread_process *thread_process);
@@ -221,6 +233,33 @@ const std::vector<sc_object*>& sc_get_top_level_objects();
 sc_object* sc_find_object( const char* );
 bool sc_hierarchical_name_exists(const char *name);
 const char* sc_gen_unique_name( const char* seed );
+
+void next_trigger();
+void next_trigger( const sc_event& );
+void next_trigger( const sc_event_or_list & );
+void next_trigger( const sc_event_and_list & );
+void next_trigger( const sc_time& );
+void next_trigger( double , sc_time_unit );
+void next_trigger( const sc_time& , const sc_event& );
+void next_trigger( double , sc_time_unit , const sc_event& );
+void next_trigger( const sc_time& , const sc_event_or_list & );
+void next_trigger( double , sc_time_unit , const sc_event_or_list & );
+void next_trigger( const sc_time& , const sc_event_and_list & );
+void next_trigger( double , sc_time_unit , const sc_event_and_list & );
+
+void wait();
+void wait( int );
+void wait( const sc_event& );
+void wait( const sc_event_or_list & );
+void wait( const sc_event_and_list & );
+void wait( const sc_time& );
+void wait( double , sc_time_unit );
+void wait( const sc_time& , const sc_event& );
+void wait( double , sc_time_unit , const sc_event& );
+void wait( const sc_time& , const sc_event_or_list & );
+void wait( double , sc_time_unit , const sc_event_or_list & );
+void wait( const sc_time& , const sc_event_and_list & );
+void wait( double , sc_time_unit , const sc_event_and_list & );
 
 } // end of namespace sc_core
 

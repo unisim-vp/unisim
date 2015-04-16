@@ -82,6 +82,7 @@ private:
 
 	sc_object *find_child_object(const char *name) const;
 	std::string create_hierarchical_name(const char *_name) const;
+	void init();
 protected:
 	sc_object *parent_object;
 	void add_child_object(sc_object *object);

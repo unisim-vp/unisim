@@ -63,6 +63,13 @@ sc_sensitive& sc_sensitive::operator<< (sc_event_finder& event_finder)
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
+sc_sensitive::sc_sensitive()
+	: module(0)
+	, thread_process(0)
+	, method_process(0)
+{
+}
+
 sc_sensitive::sc_sensitive(sc_module *_module)
 	: module(_module)
 	, thread_process(0)

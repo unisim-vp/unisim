@@ -37,6 +37,8 @@
 #include <ieee1666/kernel/object.h>
 #include <ieee1666/kernel/time.h>
 #include <ieee1666/kernel/kernel_event.h>
+#include <ieee1666/kernel/thread_process.h>
+#include <ieee1666/kernel/method_process.h>
 
 namespace sc_core {
 
@@ -165,7 +167,7 @@ void sc_event::trigger()
 		{
 			sc_method_process *method_process = statically_sensitive_method_processes[i];
 			
-			kernel->trigger(method_process);
+			method_process->trigger_statically();
 		}
 	}
 
@@ -179,51 +181,75 @@ void sc_event::trigger()
 		{
 			sc_thread_process *thread_process = statically_sensitive_thread_processes[i];
 			
-			kernel->trigger(thread_process);
+			thread_process->trigger_statically();
 		}
 	}
 
 	if(dynamically_sensitive_method_processes.size())
 	{
+		std::unordered_set<sc_method_process *>::iterator it = dynamically_sensitive_method_processes.begin();
+		
 		do
 		{
-			sc_method_process *method_process = dynamically_sensitive_method_processes.front();
-			dynamically_sensitive_method_processes.pop_front();
-			
-			kernel->trigger(method_process);
+			sc_method_process *method_process = *it;
+			method_process->trigger_dynamically(this);
 		}
-		while(dynamically_sensitive_method_processes.size());
+		while(++it, it != dynamically_sensitive_method_processes.end());
+		dynamically_sensitive_method_processes.clear();
 	}
 
 	if(dynamically_sensitive_thread_processes.size())
 	{
+		std::unordered_set<sc_thread_process *>::iterator it = dynamically_sensitive_thread_processes.begin();
+		
 		do
 		{
-			sc_thread_process *thread_process = dynamically_sensitive_thread_processes.front();
-			dynamically_sensitive_thread_processes.pop_front();
-			
-			kernel->trigger(thread_process);
+			sc_thread_process *thread_process = *it;
+			thread_process->trigger_dynamically(this);
 		}
-		while(dynamically_sensitive_thread_processes.size());
+		while(++it, it != dynamically_sensitive_thread_processes.end());
+		dynamically_sensitive_thread_processes.clear();
 	}
 
 	state = NOT_NOTIFIED;
 }
 
-sc_event_and_expr sc_event::operator& ( const sc_event& ) const
+void sc_event::clear_dynamically_sensitive_processes()
 {
+	dynamically_sensitive_thread_processes.clear();
+	dynamically_sensitive_method_processes.clear();
 }
 
-sc_event_and_expr sc_event::operator& ( const sc_event_and_list& ) const
+sc_event_and_expr sc_event::operator & (const sc_event& e) const
 {
+	sc_event_and_expr event_and_expr;
+	event_and_expr &= *this;
+	event_and_expr &= e;
+	return event_and_expr;
 }
 
-sc_event_or_expr sc_event::operator| ( const sc_event& ) const
+sc_event_and_expr sc_event::operator & (const sc_event_and_list& el) const
 {
+	sc_event_and_expr event_and_expr;
+	event_and_expr &= *this;
+	event_and_expr &= el;
+	return event_and_expr;
 }
 
-sc_event_or_expr sc_event::operator| ( const sc_event_or_list& ) const
+sc_event_or_expr sc_event::operator | (const sc_event& e) const
 {
+	sc_event_or_expr event_or_expr;
+	event_or_expr |= *this;
+	event_or_expr |= e;
+	return event_or_expr;
+}
+
+sc_event_or_expr sc_event::operator | (const sc_event_or_list& el) const
+{
+	sc_event_or_expr event_or_expr;
+	event_or_expr |= *this;
+	event_or_expr |= el;
+	return event_or_expr;
 }
 
 sc_event::sc_event( const sc_event& )
@@ -244,12 +270,22 @@ sc_event* sc_find_event( const char* )
 
 void sc_event::add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
 {
-	dynamically_sensitive_thread_processes.push_back(thread_process);
+	dynamically_sensitive_thread_processes.insert(thread_process);
 }
 
 void sc_event::add_dynamically_sensitive_method_process(sc_method_process *method_process) const
 {
-	dynamically_sensitive_method_processes.push_back(method_process);
+	dynamically_sensitive_method_processes.insert(method_process);
+}
+
+void sc_event::remove_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
+{
+	dynamically_sensitive_thread_processes.erase(thread_process);
+}
+
+void sc_event::remove_dynamically_sensitive_method_process(sc_method_process *method_process) const
+{
+	dynamically_sensitive_method_processes.erase(method_process);
 }
 
 void sc_event::add_statically_sensitive_thread_process(sc_thread_process *thread_process) const
@@ -262,21 +298,143 @@ void sc_event::add_statically_sensitive_method_process(sc_method_process *method
 	statically_sensitive_method_processes.push_back(method_process);
 }
 
-//////////////////////////////// sc_event_and_list /////////////////////////////////////////
+////////////////////////////// sc_event_list ///////////////////////////////
+
+sc_event_list::sc_event_list(sc_event_list_type_t _type, bool _auto_mm)
+	: type(_type)
+	, auto_mm(_auto_mm)
+	, events()
+	, ref_count(0)
+{
+}
+
+sc_event_list::sc_event_list(const sc_event_list& el)
+	: type(el.type)
+	, auto_mm(false)
+	, events(el.events)
+	, ref_count(0)
+{
+	el.release();
+}
+
+sc_event_list::sc_event_list(sc_event_list_type_t _type, bool _auto_mm, const sc_event& e)
+	: type(_type)
+	, auto_mm(_auto_mm)
+	, events()
+	, ref_count(0)
+{
+	events.insert(&e);
+}
+
+sc_event_list& sc_event_list::operator= (const sc_event_list& el)
+{
+	events = el.events;
+}
+
+sc_event_list::~sc_event_list()
+{
+}
+
+int sc_event_list::size() const
+{
+	return events.size();
+}
+
+void sc_event_list::swap( sc_event_list& el)
+{
+	events.swap(el.events);
+}
+
+void sc_event_list::add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
+{
+	std::unordered_set<const sc_event *>::const_iterator it;
+	for(it = events.begin(); it != events.end(); it++)
+	{
+		const sc_event *e = *it;
+		e->add_dynamically_sensitive_thread_process(thread_process);
+	}
+}
+
+void sc_event_list::add_dynamically_sensitive_method_process(sc_method_process *method_process) const
+{
+	std::unordered_set<const sc_event *>::const_iterator it;
+	for(it = events.begin(); it != events.end(); it++)
+	{
+		const sc_event *e = *it;
+		e->add_dynamically_sensitive_method_process(method_process);
+	}
+}
+
+void sc_event_list::remove_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
+{
+	std::unordered_set<const sc_event *>::const_iterator it;
+	for(it = events.begin(); it != events.end(); it++)
+	{
+		const sc_event *e = *it;
+		e->remove_dynamically_sensitive_thread_process(thread_process);
+	}
+}
+
+void sc_event_list::remove_dynamically_sensitive_method_process(sc_method_process *method_process) const
+{
+	std::unordered_set<const sc_event *>::const_iterator it;
+	for(it = events.begin(); it != events.end(); it++)
+	{
+		const sc_event *e = *it;
+		e->remove_dynamically_sensitive_method_process(method_process);
+	}
+}
+
+void sc_event_list::insert(const sc_event & e)
+{
+	events.insert(&e);
+}
+
+void sc_event_list::insert(const sc_event_list& el)
+{
+	std::unordered_set<const sc_event *>::iterator it;
+	for(it = events.begin(); it != events.end(); it++)
+	{
+		const sc_event *e = *it;
+		events.insert(e);
+	}
+}
+
+void sc_event_list::acquire() const
+{
+	if(auto_mm)
+	{
+		ref_count++;
+	}
+}
+
+void sc_event_list::release() const
+{
+	if(auto_mm)
+	{
+		if(--ref_count) delete this;
+	}
+}
+
+//////////////////////////// sc_event_and_list /////////////////////////////
 
 sc_event_and_list::sc_event_and_list()
+	: sc_event_list(EVENT_AND_LIST, false)
 {
 }
 
-sc_event_and_list::sc_event_and_list( const sc_event_and_list& )
+sc_event_and_list::sc_event_and_list(bool _auto_mm)
+	: sc_event_list(EVENT_AND_LIST, _auto_mm)
 {
 }
 
-sc_event_and_list::sc_event_and_list( const sc_event& )
+sc_event_and_list::sc_event_and_list(const sc_event_and_list& el)
+	: sc_event_list(el)
 {
 }
 
-sc_event_and_list& sc_event_and_list::operator= ( const sc_event_and_list& )
+sc_event_and_list::sc_event_and_list(const sc_event& e)
+	: sc_event_list(EVENT_AND_LIST, false, e)
 {
 }
 
@@ -284,45 +442,50 @@ sc_event_and_list::~sc_event_and_list()
 {
 }
 
-int sc_event_and_list::size() const
+sc_event_and_list& sc_event_and_list::operator &= (const sc_event& e)
+{
+	insert(e);
+	return *this;
+}
+
+sc_event_and_list& sc_event_and_list::operator &= (const sc_event_and_list& el)
+{
+	insert(el);
+	return *this;	
+}
+
+sc_event_and_expr sc_event_and_list::operator & (const sc_event& e) const
+{
+	sc_event_and_expr event_and_expr;
+	event_and_expr &= *this;
+	event_and_expr &= e;
+	return event_and_expr;
+}
+
+sc_event_and_expr sc_event_and_list::operator & (const sc_event_and_list& el) const
 {
 }
 
-void sc_event_and_list::swap( sc_event_and_list& )
-{
-}
+//////////////////////////// sc_event_or_list /////////////////////////////
 
-sc_event_and_list& sc_event_and_list::operator&= ( const sc_event& )
-{
-}
-
-sc_event_and_list& sc_event_and_list::operator&= ( const sc_event_and_list& )
-{
-}
-
-sc_event_and_expr sc_event_and_list::operator& ( const sc_event& ) const
-{
-}
-
-sc_event_and_expr sc_event_and_list::operator& ( const sc_event_and_list& ) const
-{
-}
-
-//////////////////////////////// sc_event_or_list /////////////////////////////////////////
 
 sc_event_or_list::sc_event_or_list()
+	: sc_event_list(EVENT_OR_LIST, false)
 {
 }
 
-sc_event_or_list::sc_event_or_list( const sc_event_or_list& )
+sc_event_or_list::sc_event_or_list(bool _auto_mm)
+	: sc_event_list(EVENT_OR_LIST, _auto_mm)
 {
 }
 
-sc_event_or_list::sc_event_or_list( const sc_event& )
+sc_event_or_list::sc_event_or_list(const sc_event_or_list& el)
+	: sc_event_list(el)
 {
 }
 
-sc_event_or_list& sc_event_or_list::operator= ( const sc_event_or_list& )
+sc_event_or_list::sc_event_or_list(const sc_event& e)
+	: sc_event_list(EVENT_OR_LIST, false, e)
 {
 }
 
@@ -330,56 +493,112 @@ sc_event_or_list::~sc_event_or_list()
 {
 }
 
-int sc_event_or_list::size() const
+sc_event_or_list& sc_event_or_list::operator |= (const sc_event& e)
+{
+	insert(e);
+	return *this;
+}
+
+sc_event_or_list& sc_event_or_list::operator |= (const sc_event_or_list& el)
+{
+	insert(el);
+	return *this;
+}
+
+sc_event_or_expr sc_event_or_list::operator | (const sc_event& e) const
+{
+	sc_event_or_expr event_or_expr;
+	event_or_expr |= *this;
+	event_or_expr |= e;
+	return event_or_expr;
+}
+
+sc_event_or_expr sc_event_or_list::operator | (const sc_event_or_list& el) const
 {
 }
 
-void sc_event_or_list::swap( sc_event_or_list& )
+//////////////////////////// sc_event_and_expr /////////////////////////////
+
+sc_event_and_expr::sc_event_and_expr()
+	: event_and_list(new sc_event_and_list(true /* automatic memory management */))
 {
+	event_and_list->acquire();
 }
 
-sc_event_or_list& sc_event_or_list::operator|= ( const sc_event& )
+sc_event_and_expr::~sc_event_and_expr()
 {
+	event_and_list->release();
 }
 
-sc_event_or_list& sc_event_or_list::operator|= ( const sc_event_or_list& )
+sc_event_and_expr::operator const sc_event_and_list& () const
 {
+	return *event_and_list;
 }
 
-sc_event_or_expr sc_event_or_list::operator| ( const sc_event& ) const
+sc_event_and_expr operator & (sc_event_and_expr event_and_expr, const sc_event& e)
 {
+	event_and_expr &= e;
+	return event_and_expr;
 }
 
-sc_event_or_expr sc_event_or_list::operator| ( const sc_event_or_list& ) const
+sc_event_and_expr operator & (sc_event_and_expr event_and_expr, const sc_event_and_list& el)
 {
+	event_and_expr &= el;
+	return event_and_expr;
 }
 
-//////////////////////////////// sc_event_and_expr /////////////////////////////////////////
-
-sc_event_and_expr::operator const sc_event_and_list &() const
+sc_event_and_expr& sc_event_and_expr::operator &= (const sc_event& e)
 {
+	*event_and_list &= e;
+	return *this;
 }
 
-sc_event_and_expr operator& ( sc_event_and_expr , sc_event const& )
+sc_event_and_expr& sc_event_and_expr::operator &= (const sc_event_and_list& el)
 {
+	*event_and_list &= el;
+	return *this;
 }
 
-sc_event_and_expr operator& ( sc_event_and_expr , sc_event_and_list const& )
+//////////////////////////// sc_event_or_expr /////////////////////////////
+
+sc_event_or_expr::sc_event_or_expr()
+	: event_or_list(new sc_event_or_list(true /* automatic memory management */))
 {
+	event_or_list->acquire();
 }
 
-//////////////////////////////// sc_event_or_expr /////////////////////////////////////////
-
-sc_event_or_expr::operator const sc_event_or_list &() const
+sc_event_or_expr::~sc_event_or_expr()
 {
+	event_or_list->release();
 }
 
-sc_event_or_expr operator| ( sc_event_or_expr , sc_event const& )
+sc_event_or_expr::operator const sc_event_or_list& () const
 {
+	return *event_or_list;
 }
 
-sc_event_or_expr operator| ( sc_event_or_expr , sc_event_or_list const& )
+sc_event_or_expr operator | (sc_event_or_expr event_or_expr, const sc_event& e)
 {
+	event_or_expr |= e;
+	return event_or_expr;
+}
+
+sc_event_or_expr operator | (sc_event_or_expr event_or_expr, const sc_event_or_list& el)
+{
+	event_or_expr |= el;
+	return event_or_expr;
+}
+
+sc_event_or_expr& sc_event_or_expr::operator |= (const sc_event& e)
+{
+	*event_or_list |= e;
+	return *this;
+}
+
+sc_event_or_expr& sc_event_or_expr::operator |= (const sc_event_or_list& el)
+{
+	*event_or_list |= el;
+	return *this;
 }
 
 } // end of namespace sc_core

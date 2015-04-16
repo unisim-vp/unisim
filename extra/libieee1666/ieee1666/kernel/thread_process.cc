@@ -35,6 +35,7 @@
 #include <ieee1666/kernel/thread_process.h>
 #include <ieee1666/kernel/kernel.h>
 #include <ieee1666/kernel/spawn.h>
+#include <ieee1666/kernel/event.h>
 
 namespace sc_core {
 
@@ -43,9 +44,7 @@ sc_thread_process_helper::sc_thread_process_helper(sc_thread_process *_thread_pr
 	, yield(_yield)
 {
 	thread_process->thread_process_helper = this;
-	std::cerr << "initial yield" << std::endl;
 	yield();
-	std::cerr << "initial wake-up" << std::endl;
 	thread_process->call_process_owner_method();
 }
 
@@ -59,6 +58,12 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, coro(0)
 	, thread_process_helper(0)
 	, stack_size(spawn_options ? spawn_options->get_stack_size() : 0)
+	, thread_process_terminated(false)
+	, thread_process_terminated_event()
+	, wait_type(WAIT_DEFAULT)
+	, wait_event(0)
+	, wait_event_list(0)
+	, wait_and_event_list_remaining_count(0)
 {
 	sc_kernel::get_kernel()->add_thread_process(this);
 }
@@ -85,7 +90,7 @@ void sc_thread_process::start()
 	}
 	else
 	{
-			coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1));
+		coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1));
 	}
 }
 
@@ -101,14 +106,200 @@ void sc_thread_process::yield()
 	}
 }
 
+void sc_thread_process::trigger_statically()
+{
+	if(wait_type != WAIT_DEFAULT) return;
+	
+	if(suspended)
+	{
+		runnable_on_resuming = true;
+	}
+	else
+	{
+		sc_kernel::get_kernel()->trigger(this);
+	}
+}
+
+void sc_thread_process::trigger_dynamically(const sc_event *triggered_event)
+{
+	bool trigger_cond = false;
+	
+	if(enabled)
+	{
+		switch(wait_type)
+		{
+			case WAIT_DEFAULT: // wait() => static sensitivity
+				// should not reach that point
+				break;
+			case WAIT_EVENT: // wait(e)
+				wait_type = WAIT_DEFAULT;
+				trigger_cond = true;
+				break;
+			case WAIT_EVENT_AND_LIST: // wait(e1 & ... & en)
+				if(--wait_and_event_list_remaining_count == 0)
+				{
+					// got all events in the event AND list
+					wait_event_list->release();
+					wait_type = WAIT_DEFAULT;
+					trigger_cond = true;
+				}
+				break;
+			case WAIT_EVENT_OR_LIST: // wait(e1 | ... | en)
+				// got one event from the event OR list
+				// avoid all events in the event OR list to trigger again the thread process
+				wait_event_list->remove_dynamically_sensitive_thread_process(this);
+				wait_event_list->release();
+				wait_type = WAIT_DEFAULT;
+				trigger_cond = true;
+				break;
+			case WAIT_TIME_OUT: // wait(t)
+				wait_type = WAIT_DEFAULT;
+				trigger_cond = true;
+				break;
+			case WAIT_TIME_OUT_OR_EVENT: // wait(t, e)
+				if(triggered_event == &wait_time_out_event)
+				{
+					// got time out event first
+					wait_event->remove_dynamically_sensitive_thread_process(this);
+				}
+				else // triggered_event == wait_event
+				{
+					// got event first: canceling time out event
+					wait_time_out_event.cancel();
+					wait_time_out_event.clear_dynamically_sensitive_processes();
+				}
+				wait_type = WAIT_DEFAULT;
+				trigger_cond = true;
+				break;
+
+			case WAIT_TIME_OUT_OR_EVENT_AND_LIST: // wait(t, e1 & ... & en)
+				if(triggered_event == &wait_time_out_event)
+				{
+					// got time out event first
+					wait_event_list->remove_dynamically_sensitive_thread_process(this);
+					wait_type = WAIT_DEFAULT;
+					trigger_cond = true;
+				}
+				else if(--wait_and_event_list_remaining_count == 0)
+				{
+					// got all events in the event AND list first: canceling time out event
+					wait_time_out_event.cancel();
+					wait_time_out_event.clear_dynamically_sensitive_processes();
+					
+					wait_event_list->release();
+					wait_type = WAIT_DEFAULT;
+					trigger_cond = true;
+				}
+				break;
+
+			case WAIT_TIME_OUT_OR_EVENT_OR_LIST: // wait(t, e1 | ... \ en)
+				if(triggered_event == &wait_time_out_event)
+				{
+					// got time out event first
+					wait_event_list->remove_dynamically_sensitive_thread_process(this);
+				}
+				else
+				{
+					// got an event from event OR list first: canceling time out event
+					wait_time_out_event.cancel();
+					wait_time_out_event.clear_dynamically_sensitive_processes();
+
+					wait_event_list->remove_dynamically_sensitive_thread_process(this);
+					wait_event_list->release();
+				}
+				wait_type = WAIT_DEFAULT;
+				trigger_cond = true;
+				break;
+		}
+	}
+	
+	if(trigger_cond)
+	{
+		if(suspended)
+		{
+			runnable_on_resuming = true;
+		}
+		else
+		{
+			sc_kernel::get_kernel()->trigger(this);
+		}	
+	}
+}
+
 void sc_thread_process::wait()
 {
+	wait_type = WAIT_DEFAULT;
 	yield();
 }
 
 void sc_thread_process::wait(const sc_event& e)
 {
-	e.add_dynamically_sensitive_thread_process(this);
+	wait_type = WAIT_EVENT;
+	wait_event = &e;
+	wait_event->add_dynamically_sensitive_thread_process(this);
+	yield();
+}
+
+void sc_thread_process::wait(const sc_event_and_list& el)
+{
+	wait_type = WAIT_EVENT_AND_LIST;
+	wait_event_list = &el;
+	wait_event_list->acquire();
+	wait_event_list->add_dynamically_sensitive_thread_process(this);
+	wait_and_event_list_remaining_count = wait_event_list->size();
+	yield();
+}
+
+void sc_thread_process::wait(const sc_event_or_list& el)
+{
+	wait_type = WAIT_EVENT_OR_LIST;
+	wait_event_list = &el;
+	wait_event_list->acquire();
+	wait_event_list->add_dynamically_sensitive_thread_process(this);
+	yield();
+}
+
+void sc_thread_process::wait(const sc_time& t)
+{
+	wait_type = WAIT_TIME_OUT;
+	wait_time_out = t;
+	wait_time_out_event.add_dynamically_sensitive_thread_process(this);
+	wait_time_out_event.notify(wait_time_out);
+	yield();
+}
+
+void sc_thread_process::wait(const sc_time& t, const sc_event& e)
+{
+	wait_type = WAIT_TIME_OUT_OR_EVENT;
+	wait_time_out = t;
+	wait_time_out_event.add_dynamically_sensitive_thread_process(this);
+	wait_time_out_event.notify(wait_time_out);
+	wait_event = &e;
+	wait_event->add_dynamically_sensitive_thread_process(this);
+	yield();
+}
+
+void sc_thread_process::wait(const sc_time& t, const sc_event_and_list& el)
+{
+	wait_type = WAIT_TIME_OUT_OR_EVENT_AND_LIST;
+	wait_time_out = t;
+	wait_time_out_event.add_dynamically_sensitive_thread_process(this);
+	wait_time_out_event.notify(wait_time_out);
+	wait_event_list = &el;
+	wait_event_list->acquire();
+	wait_event_list->add_dynamically_sensitive_thread_process(this);
+	yield();
+}
+
+void sc_thread_process::wait(const sc_time& t, const sc_event_or_list& el)
+{
+	wait_type = WAIT_TIME_OUT_OR_EVENT_OR_LIST;
+	wait_time_out = t;
+	wait_time_out_event.add_dynamically_sensitive_thread_process(this);
+	wait_time_out_event.notify(wait_time_out);
+	wait_event_list = &el;
+	wait_event_list->acquire();
+	wait_event_list->add_dynamically_sensitive_thread_process(this);
 	yield();
 }
 
@@ -123,26 +314,58 @@ void sc_thread_process::switch_to()
 void sc_thread_process::coroutine_work(sc_coroutine::caller_type& yield)
 {
 	sc_thread_process_helper(this, yield);
+	thread_process_terminated = true;
+	thread_process_terminated_event.notify();
+}
+
+bool sc_thread_process::terminated() const
+{
+	return thread_process_terminated;
+}
+
+const sc_event& sc_thread_process::terminated_event() const
+{
+	return thread_process_terminated_event;
 }
 
 void sc_thread_process::suspend(sc_descendant_inclusion_info include_descendants)
 {
+	suspended = true;
 }
 
 void sc_thread_process::resume(sc_descendant_inclusion_info include_descendants)
 {
+	suspended = false;
+
+	if(runnable_on_resuming)
+	{
+		runnable_on_resuming = false;
+		
+		sc_kernel::get_kernel()->trigger(this);
+	}
 }
 
 void sc_thread_process::disable(sc_descendant_inclusion_info include_descendants)
 {
+	enabled = false;
 }
 
 void sc_thread_process::enable(sc_descendant_inclusion_info include_descendants)
 {
+	enabled = true;
 }
 
 void sc_thread_process::kill(sc_descendant_inclusion_info include_descendants)
 {
+	enabled = false;
+	
+	if(coro)
+	{
+		delete coro;
+		coro = 0;
+	}
+	thread_process_terminated = true;
+	thread_process_terminated_event.notify();
 }
 
 void sc_thread_process::reset(sc_descendant_inclusion_info include_descendants)

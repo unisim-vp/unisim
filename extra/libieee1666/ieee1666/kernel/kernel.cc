@@ -258,6 +258,7 @@ void sc_kernel::initialize()
 		
 		current_method_process = method_process;
 		method_process->call_process_owner_method();
+		method_process->commit_next_trigger();
 	}
 
 	// initial wake-up of all SC_THREAD/SC_CTHREAD processes
@@ -640,6 +641,36 @@ void sc_kernel::wait(const sc_event& e)
 	current_thread_process->wait(e);
 }
 
+void sc_kernel::wait(const sc_event_and_list& el)
+{
+	current_thread_process->wait(el);
+}
+
+void sc_kernel::wait(const sc_event_or_list& el)
+{
+	current_thread_process->wait(el);
+}
+
+void sc_kernel::wait(const sc_time& t)
+{
+	current_thread_process->wait(t);
+}
+
+void sc_kernel::wait(const sc_time& t, const sc_event& e)
+{
+	current_thread_process->wait(t, e);
+}
+
+void sc_kernel::wait(const sc_time& t, const sc_event_and_list& el)
+{
+	current_thread_process->wait(t, el);
+}
+
+void sc_kernel::wait(const sc_time& t, const sc_event_or_list& el)
+{
+	current_thread_process->wait(t, el);
+}
+
 void sc_kernel::next_trigger()
 {
 	current_method_process->next_trigger();
@@ -648,6 +679,36 @@ void sc_kernel::next_trigger()
 void sc_kernel::next_trigger(const sc_event& e)
 {
 	current_method_process->next_trigger(e);
+}
+
+void sc_kernel::next_trigger(const sc_event_and_list& el)
+{
+	current_method_process->next_trigger(el);
+}
+
+void sc_kernel::next_trigger(const sc_event_or_list& el)
+{
+	current_method_process->next_trigger(el);
+}
+
+void sc_kernel::next_trigger(const sc_time& t)
+{
+	current_method_process->next_trigger(t);
+}
+
+void sc_kernel::next_trigger(const sc_time& t, const sc_event& e)
+{
+	current_method_process->next_trigger(t, e);
+}
+
+void sc_kernel::next_trigger(const sc_time& t, const sc_event_and_list& el)
+{
+	current_method_process->next_trigger(t, el);
+}
+
+void sc_kernel::next_trigger(const sc_time& t, const sc_event_or_list& el)
+{
+	current_method_process->next_trigger(t, el);
 }
 
 void sc_kernel::trigger(sc_thread_process *thread_process)
@@ -954,6 +1015,138 @@ bool sc_hierarchical_name_exists(const char *name)
 const char* sc_gen_unique_name( const char* seed )
 {
 	return sc_kernel::get_kernel()->gen_unique_name(seed);
+}
+
+void next_trigger()
+{
+	sc_kernel::get_kernel()->next_trigger();
+}
+
+void next_trigger(const sc_event& e)
+{
+	sc_kernel::get_kernel()->next_trigger(e);
+}
+
+void next_trigger(const sc_event_or_list& el)
+{
+	sc_kernel::get_kernel()->next_trigger(el);
+}
+
+void next_trigger(const sc_event_and_list& el)
+{
+	sc_kernel::get_kernel()->next_trigger(el);
+}
+
+void next_trigger(const sc_time& t)
+{
+	sc_kernel::get_kernel()->next_trigger(t);
+}
+
+void next_trigger(double d, sc_time_unit tu)
+{
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->next_trigger(t);
+}
+
+void next_trigger(const sc_time& t, const sc_event& e)
+{
+	sc_kernel::get_kernel()->next_trigger(t, e);
+}
+
+void next_trigger(double d, sc_time_unit tu, const sc_event& e)
+{
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->next_trigger(t, e);
+}
+
+void next_trigger(const sc_time& t, const sc_event_or_list& el)
+{
+	sc_kernel::get_kernel()->next_trigger(t, el);
+}
+
+void next_trigger(double d, sc_time_unit tu, const sc_event_or_list& el)
+{
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->next_trigger(t, el);
+}
+
+void next_trigger(const sc_time& t, const sc_event_and_list& el)
+{
+	sc_kernel::get_kernel()->next_trigger(t, el);
+}
+
+void next_trigger(double d, sc_time_unit tu, const sc_event_and_list& el)
+{
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->next_trigger(t, el);
+}
+
+void wait()
+{
+	sc_kernel::get_kernel()->wait();
+}
+
+void wait( int )
+{
+}
+
+void wait(const sc_event& e)
+{
+	sc_kernel::get_kernel()->wait(e);
+}
+
+void wait(const sc_event_or_list & el)
+{
+	sc_kernel::get_kernel()->wait(el);
+}
+
+void wait(const sc_event_and_list& el)
+{
+	sc_kernel::get_kernel()->wait(el);
+}
+
+void wait(const sc_time& t)
+{
+	sc_kernel::get_kernel()->wait(t);
+}
+
+void wait(double d, sc_time_unit tu)
+{
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->wait(t);
+}
+
+void wait(const sc_time& t, const sc_event& e)
+{
+	sc_kernel::get_kernel()->wait(t, e);
+}
+
+void wait(double d, sc_time_unit tu, const sc_event& e)
+{
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->wait(t, e);
+}
+
+void wait(const sc_time& t, const sc_event_or_list& el)
+{
+	sc_kernel::get_kernel()->wait(t, el);
+}
+
+void wait(double d, sc_time_unit tu, const sc_event_or_list& el)
+{
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->wait(t, el);
+}
+
+void wait(const sc_time& t, const sc_event_and_list& el)
+{
+	sc_kernel::get_kernel()->wait(t, el);
+}
+
+void wait(double d, sc_time_unit tu, const sc_event_and_list& el)
+{
+	sc_time t = sc_time(d, tu);
+	sc_kernel::get_kernel()->wait(t, el);
 }
 
 } // end of namespace sc_core

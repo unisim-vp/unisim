@@ -100,12 +100,14 @@ sc_attr_base* sc_object::remove_attribute( const std::string& _attr_name)
 {
 	sc_attr_cltn::iterator it = attributes.find(_attr_name);
 	
+	sc_attr_base *attr = 0;
 	if(it)
 	{
+		attr = *it;
 		attributes.erase(it);
 	}
 	
-	return *it;
+	return attr;
 }
 
 void sc_object::remove_all_attributes()
@@ -126,10 +128,6 @@ sc_attr_cltn& sc_object::attr_cltn()
 const sc_attr_cltn& sc_object::attr_cltn() const
 {
 	return attributes;
-}
-
-sc_object::sc_object()
-{
 }
 
 std::string sc_object::create_hierarchical_name(const char *_name) const
@@ -157,11 +155,37 @@ std::string sc_object::create_hierarchical_name(const char *_name) const
 	return hierarchical_name;
 }
 
+sc_object::sc_object()
+	: object_name(create_hierarchical_name("object"))
+	, child_objects()
+	, child_events()
+	, attributes()
+	, parent_object(0)
+{
+	init();
+}
+
 sc_object::sc_object(const char *_name)
 	: object_name((_name && *_name) ? create_hierarchical_name(_name) : create_hierarchical_name("object"))
 	, child_objects()
 	, child_events()
+	, attributes()
 	, parent_object(0)
+{
+	init();
+}
+
+sc_object::sc_object(const sc_object& object)
+	: object_name(create_hierarchical_name(object.basename()))
+	, child_objects()
+	, child_events()
+	, attributes()
+	, parent_object(0)
+{
+	init();
+}
+
+void sc_object::init()
 {
 	sc_kernel *kernel = sc_kernel::get_kernel();
 	parent_object = kernel->get_current_object();
@@ -174,12 +198,13 @@ sc_object::sc_object(const char *_name)
 	kernel->begin_object(this);
 }
 
-sc_object::sc_object( const sc_object& )
+sc_object& sc_object::operator = (const sc_object& object)
 {
-}
-
-sc_object& sc_object::operator= ( const sc_object& )
-{
+	object_name = create_hierarchical_name(object.object_name.c_str());
+	child_objects = object.child_objects;
+	child_events = object.child_events;
+	attributes = object.attributes;
+	parent_object = object.parent_object;
 	return *this;
 }
 
