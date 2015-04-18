@@ -49,7 +49,8 @@ ieee1666/util/fwd.h \
 ieee1666/util/trace_file.h \
 ieee1666/util/report.h \
 ieee1666/util/report_handler.h \
-ieee1666/util/version.h
+ieee1666/util/version.h \
+ieee1666/util/backtrace.h
 
 lib_LIBRARIES = libieee1666.a
 libieee1666_a_SOURCES = \
@@ -92,13 +93,21 @@ ieee1666/base/signal_if.cc \
 ieee1666/util/trace_file.cc \
 ieee1666/util/report.cc \
 ieee1666/util/report_handler.cc \
-ieee1666/util/version.cc
+ieee1666/util/version.cc \
+ieee1666/util/backtrace.cc
 
 bin_PROGRAMS = test1
 test1_SOURCES = test1.cc
 test1_LDADD = libieee1666.a
 
-nobase_dist_share_DATA = COPYING
+nobase_dist_share_DATA = \
+COPYING
+
+EXTRA_DIST = \
+m4/with_boost.m4 \
+m4/cxxabi.m4 \
+m4/check_lib.m4 \
+m4/boost_coroutine.m4
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

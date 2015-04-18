@@ -55,10 +55,12 @@ class sc_process : public sc_object
 {
 public:
 	sc_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, sc_curr_proc_kind process_kind);
+	virtual ~sc_process();
 	
 	void call_process_owner_method();
 	
 	sc_curr_proc_kind proc_kind() const;
+	bool dynamic() const;
 	
 	virtual bool terminated() const = 0;
 	virtual const sc_event& terminated_event() const = 0;
@@ -71,14 +73,12 @@ public:
 	void acquire();
 	void release();
 	
-	const char *get_name() const;
-	
 private:
-	std::string name;
-	
 	sc_process_owner *process_owner;
 	sc_process_owner_method_ptr process_owner_method_ptr;
 	sc_curr_proc_kind process_kind;
+	bool flag_dynamic;
+	bool automatic_process_owner;
 
 	unsigned int ref_count;
 

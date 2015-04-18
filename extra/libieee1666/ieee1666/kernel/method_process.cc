@@ -45,8 +45,11 @@ sc_method_process::sc_method_process(const char *_name, sc_process_owner *_proce
 	, next_trigger_event(0)
 	, next_trigger_event_list(0)
 	, next_trigger_and_event_list_remaining_count(0)
+	, next_trigger_time_out_event("__kernel_next_trigger_time_out_event__")
 {
-	sc_kernel::get_kernel()->add_method_process(this);
+	sc_kernel *kernel = sc_kernel::get_kernel();
+	kernel->add_method_process(this);
+	kernel->end_object();
 }
 
 sc_method_process::~sc_method_process()

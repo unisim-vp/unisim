@@ -36,6 +36,7 @@
 #include <ieee1666/kernel/kernel.h>
 #include <ieee1666/kernel/spawn.h>
 #include <ieee1666/kernel/event.h>
+#include <stdexcept>
 
 namespace sc_core {
 
@@ -64,8 +65,11 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, wait_event(0)
 	, wait_event_list(0)
 	, wait_and_event_list_remaining_count(0)
+	, wait_time_out_event("__kernel_wait_time_out_event__")
 {
-	sc_kernel::get_kernel()->add_thread_process(this);
+	sc_kernel *kernel = sc_kernel::get_kernel();
+	kernel->add_thread_process(this);
+	kernel->end_object();
 }
 
 sc_thread_process::~sc_thread_process()
@@ -102,7 +106,7 @@ void sc_thread_process::yield()
 	}
 	else
 	{
-		std::cerr << "no thread process helper" << std::endl;
+		throw std::runtime_error("Internal error! No thread process helper");
 	}
 }
 

@@ -65,6 +65,8 @@ enum sc_descendant_inclusion_info
 	SC_INCLUDE_DESCENDANTS
 };
 
+enum sc_time_unit { SC_FS = 0, SC_PS, SC_NS, SC_US, SC_MS, SC_SEC };
+
 enum sc_status
 {
 	SC_ELABORATION = 0x01,
@@ -81,6 +83,12 @@ enum sc_stop_mode
 {
 	SC_STOP_FINISH_DELTA,
 	SC_STOP_IMMEDIATE
+};
+
+enum sc_starvation_policy
+{
+	SC_RUN_TO_TIME,
+	SC_EXIT_ON_STARVATION
 };
 
 class sc_attr_base;
@@ -120,8 +128,6 @@ class sc_timed_kernel_event;
 class sc_event_list;
 
 typedef void (sc_process_owner::*sc_process_owner_method_ptr)();
-
-enum sc_time_unit { SC_FS = 0, SC_PS, SC_NS, SC_US, SC_MS, SC_SEC };
 
 } // end of namespace sc_core
 

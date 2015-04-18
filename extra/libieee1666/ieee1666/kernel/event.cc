@@ -39,12 +39,13 @@
 #include <ieee1666/kernel/kernel_event.h>
 #include <ieee1666/kernel/thread_process.h>
 #include <ieee1666/kernel/method_process.h>
+#include <ieee1666/util/backtrace.h>
 
 namespace sc_core {
 
 //////////////////////////////////// sc_event /////////////////////////////////////////////
 
-std::string sc_event::create_hierarchical_name(const char *_name) const
+std::string sc_event::create_hierarchical_name(const char *_name, bool named_by_user) const
 {
 	std::string hierarchical_name;
 	
@@ -62,7 +63,10 @@ std::string sc_event::create_hierarchical_name(const char *_name) const
 	{
 		// hierarchical name already exists
 		std::string new_hierarchical_name = sc_kernel::get_kernel()->gen_unique_name(hierarchical_name.c_str());
-		std::cerr << "WARNING! event \"" << hierarchical_name << "\" has been renamed \"" << new_hierarchical_name << "\"" << std::endl;	
+		if(named_by_user)
+		{
+			std::cerr << "WARNING! event \"" << hierarchical_name << "\" has been renamed \"" << new_hierarchical_name << "\"" << std::endl;
+		}
 		hierarchical_name = new_hierarchical_name;
 	}
 	
@@ -70,7 +74,15 @@ std::string sc_event::create_hierarchical_name(const char *_name) const
 }
 
 sc_event::sc_event()
-	: event_name(create_hierarchical_name("event"))
+	: event_name(create_hierarchical_name("event", false))
+	, parent_object(0)
+	, state(NOT_NOTIFIED)
+	, kernel_event(0)
+	, timed_kernel_event(0)
+	, dynamically_sensitive_thread_processes()
+	, dynamically_sensitive_method_processes()
+	, statically_sensitive_thread_processes()
+	, statically_sensitive_method_processes()
 {
 	sc_kernel *kernel = sc_kernel::get_kernel();
 	parent_object = kernel->get_current_object();
@@ -80,7 +92,15 @@ sc_event::sc_event()
 }
 
 sc_event::sc_event( const char* _name)
-	: event_name((_name && *_name) ? create_hierarchical_name(_name) : create_hierarchical_name("event"))
+	: event_name((_name && *_name) ? create_hierarchical_name(_name, true) : create_hierarchical_name("event", false))
+	, parent_object(0)
+	, state(NOT_NOTIFIED)
+	, kernel_event(0)
+	, timed_kernel_event(0)
+	, dynamically_sensitive_thread_processes()
+	, dynamically_sensitive_method_processes()
+	, statically_sensitive_thread_processes()
+	, statically_sensitive_method_processes()
 {
 	sc_kernel *kernel = sc_kernel::get_kernel();
 	parent_object = kernel->get_current_object();

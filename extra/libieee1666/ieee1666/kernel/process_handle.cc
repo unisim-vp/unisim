@@ -62,12 +62,18 @@ sc_unwind_exception::~sc_unwind_exception() throw()
 ///////////////////////////////// sc_process_handle ///////////////////////////////////////////
 
 sc_process_handle::sc_process_handle()
+	: process(0)
+	, null_event()
+	, no_child_objects()
+	, no_child_events()
 {
 }
 
 sc_process_handle::sc_process_handle(const sc_process_handle& process_handle)
 	: process(process_handle.process)
 	, null_event()
+	, no_child_objects()
+	, no_child_events()
 {
 	if(process) process->acquire();
 }
@@ -124,7 +130,7 @@ void sc_process_handle::swap(sc_process_handle& process_handle)
 
 const char* sc_process_handle::name() const
 {
-	return process ? process->get_name() : "";
+	return process ? process->name() : "";
 }
 
 sc_curr_proc_kind sc_process_handle::proc_kind() const
@@ -134,14 +140,17 @@ sc_curr_proc_kind sc_process_handle::proc_kind() const
 
 const std::vector<sc_object*>& sc_process_handle::get_child_objects() const
 {
+	return process ? process->get_child_objects() : no_child_objects;
 }
 
 const std::vector<sc_event*>& sc_process_handle::get_child_events() const
 {
+	return process ? process->get_child_events() : no_child_events;
 }
 
 sc_object* sc_process_handle::get_parent_object() const
 {
+	return process ? process->get_parent_object() : 0;
 }
 
 sc_object* sc_process_handle::get_process_object() const
@@ -151,10 +160,12 @@ sc_object* sc_process_handle::get_process_object() const
 
 bool sc_process_handle::dynamic() const
 {
+	return process ? process->dynamic() : false;
 }
 
 bool sc_process_handle::terminated() const
 {
+	return process ? process->terminated() : false;
 }
 
 const sc_event& sc_process_handle::terminated_event() const
@@ -205,16 +216,6 @@ void sc_process_handle::sync_reset_on( sc_descendant_inclusion_info include_desc
 }
 
 void sc_process_handle::sync_reset_off( sc_descendant_inclusion_info include_descendants)
-{
-}
-
-///////////////////////////////// global functions  ///////////////////////////////////////////
-
-sc_process_handle sc_get_current_process_handle()
-{
-}
-
-bool sc_is_unwinding()
 {
 }
 

@@ -50,7 +50,6 @@ sc_module_name::sc_module_name(const char *module_name_c_str)
 	, pushed(false)
 	, module(0)
 {
-	std::cerr << "sc_module_name(\"" << module_name_c_str << "\")" << std::endl;
 	sc_kernel::get_kernel()->push_module_name(this);
 	pushed = true;
 }

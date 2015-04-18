@@ -36,6 +36,7 @@
 #define __IEEE1666_KERNEL_SENSITIVE_H__
 
 #include <ieee1666/kernel/fwd.h>
+#include <ieee1666/kernel/process_handle.h>
 
 namespace sc_core {
 
@@ -50,14 +51,12 @@ public:
 
 	//////////////////////////
 	
-	void bind(sc_thread_process *thread_process);
-	void bind(sc_method_process *method_process);
+	void bind(sc_process_handle process_handle);
 private:
 	friend class sc_module;
 	
 	sc_module *module;
-	sc_thread_process *thread_process;
-	sc_method_process *method_process;
+	sc_process_handle process_handle;
 
 	sc_sensitive();
 	sc_sensitive(sc_module *module);

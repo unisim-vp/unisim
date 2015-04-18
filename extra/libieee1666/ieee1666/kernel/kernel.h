@@ -46,16 +46,11 @@
 
 namespace sc_core {
 
-enum sc_starvation_policy
-{
-	SC_RUN_TO_TIME,
-	SC_EXIT_ON_STARVATION
-};
-
 class sc_kernel
 {
 public:
 	sc_kernel();
+	~sc_kernel();
 	
 	void push_module_name(sc_module_name *module_name);
 	void pop_module_name();
@@ -68,9 +63,9 @@ public:
 	sc_object *get_current_object() const;
 	sc_thread_process *get_current_thread_process() const;
 
-	sc_thread_process *create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options * = 0);
-	sc_method_process *create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options * = 0);
-
+	sc_process_handle create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options * = 0);
+	sc_process_handle create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options * = 0);
+	
 	void initialize();
 	void do_delta_steps(bool once);
 	void do_timed_step();
@@ -124,6 +119,7 @@ public:
 	void trigger(sc_method_process *method_process);
 	
 	const sc_time& get_current_time_stamp() const;
+	sc_process_handle get_current_process_handle() const;
 	
 	void set_stop_mode(sc_stop_mode mode);
 	sc_stop_mode get_stop_mode() const;
@@ -175,6 +171,7 @@ private:
 	sc_time max_time;
 	
 	// discrete event simulation kernel
+	sc_object *current_object;
 	sc_thread_process *current_thread_process;
 	sc_method_process *current_method_process;
 	sc_time current_time_stamp;                                        // current time stamp
@@ -220,6 +217,8 @@ extern sc_stop_mode sc_get_stop_mode();
 
 void sc_stop();
 const sc_time& sc_time_stamp();
+sc_process_handle sc_get_current_process_handle();
+bool sc_is_unwinding();
 const sc_dt::uint64 sc_delta_count();
 bool sc_is_running();
 bool sc_pending_activity_at_current_time();

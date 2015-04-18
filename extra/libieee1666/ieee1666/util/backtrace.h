@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2014,
+ *  Copyright (c) 2008,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,69 +31,30 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __IEEE1666_UTTIL_BACKTRACE_H__
+#define __IEEE1666_UTTIL_BACKTRACE_H__
 
-#include <ieee1666/kernel/sensitive.h>
-#include <ieee1666/kernel/event.h>
-#include <ieee1666/kernel/interface.h>
-#include <ieee1666/kernel/port.h>
-#include <ieee1666/kernel/event_finder.h>
-#include <ieee1666/kernel/module.h>
+#include <iosfwd>
 
 namespace sc_core {
 
-////////////////////////////////// sc_sensitive ///////////////////////////////////////////
+class sc_backtrace;
 
-sc_sensitive& sc_sensitive::operator<< (const sc_event& event)
+std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace);
+
+class sc_backtrace
 {
-	sc_object *object = process_handle.get_process_object();
-	
-	switch(process_handle.proc_kind())
-	{
-		case SC_NO_PROC_:
-			break;
-		case SC_METHOD_PROC_:
-			event.add_statically_sensitive_method_process((sc_method_process *) object);
-			break;
-		case SC_THREAD_PROC_:
-		case SC_CTHREAD_PROC_:
-			event.add_statically_sensitive_thread_process((sc_thread_process *) object);
-			break;
-	}
-}
+public:
+	sc_backtrace(unsigned int max_depth = 32);
+	~sc_backtrace();
 
-sc_sensitive& sc_sensitive::operator<< (const sc_interface& itf)
-{
-}
-
-sc_sensitive& sc_sensitive::operator<< (const sc_port_base& port)
-{
-}
-
-sc_sensitive& sc_sensitive::operator<< (sc_event_finder& event_finder)
-{
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////
-
-sc_sensitive::sc_sensitive()
-	: module(0)
-	, process_handle()
-{
-}
-
-sc_sensitive::sc_sensitive(sc_module *_module)
-	: module(_module)
-	, process_handle()
-{
-}
-
-sc_sensitive::~sc_sensitive()
-{
-}
-
-void sc_sensitive::bind(sc_process_handle _process_handle)
-{
-	process_handle = _process_handle;
-}
+	friend std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace);
+private:
+	int stack_depth;
+	void **stack_addrs;
+};
 
 } // end of namespace sc_core
+
+#endif

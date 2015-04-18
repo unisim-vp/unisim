@@ -39,7 +39,7 @@
 #include <ieee1666/kernel/object.h>
 #include <ieee1666/kernel/process.h>
 #include <ieee1666/kernel/time.h>
-#include <boost/bind.hpp>
+//#include <boost/bind.hpp>
 #include <boost/coroutine/coroutine.hpp>
 
 namespace sc_core {

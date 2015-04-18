@@ -89,7 +89,7 @@ private:
 	mutable std::vector<sc_thread_process *> statically_sensitive_thread_processes;
 	mutable std::vector<sc_method_process *> statically_sensitive_method_processes;
 
-	std::string create_hierarchical_name(const char *_name) const;
+	std::string create_hierarchical_name(const char *_name, bool named_by_user) const;
 	void add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
 	void add_dynamically_sensitive_method_process(sc_method_process *method_process) const;
 	void remove_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;

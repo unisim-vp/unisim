@@ -33,6 +33,7 @@
  */
 
 #include <ieee1666/kernel/process.h>
+#include <ieee1666/kernel/kernel.h>
 
 namespace sc_core {
 
@@ -55,6 +56,8 @@ sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_p
 	, process_owner(_process_owner)
 	, process_owner_method_ptr(_process_owner_method_ptr)
 	, process_kind(_process_kind)
+	, flag_dynamic(sc_kernel::get_kernel()->get_status() > SC_END_OF_ELABORATION)
+	, automatic_process_owner(process_owner->is_automatic())
 	, ref_count(1)
 	, enabled(true)
 	, suspended(false)
@@ -62,9 +65,22 @@ sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_p
 {
 }
 
+sc_process::~sc_process()
+{
+	if(process_owner)
+	{
+		if(automatic_process_owner) delete process_owner;
+	}
+}
+
 sc_curr_proc_kind sc_process::proc_kind() const
 {
 	return process_kind;
+}
+
+bool sc_process::dynamic() const
+{
+	return flag_dynamic;
 }
 
 void sc_process::call_process_owner_method()
@@ -83,11 +99,6 @@ void sc_process::release()
 	{
 		delete this;
 	}
-}
-
-const char *sc_process::get_name() const
-{
-	return name.c_str();
 }
 
 } // end of namespace sc_core

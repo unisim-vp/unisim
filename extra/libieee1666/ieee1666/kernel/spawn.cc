@@ -38,8 +38,6 @@
 #include <ieee1666/kernel/interface.h>
 #include <ieee1666/kernel/port.h>
 #include <ieee1666/kernel/export.h>
-#include <ieee1666/kernel/process_handle.h>
-#include <ieee1666/kernel/process.h>
 #include <ieee1666/base/in.h>
 #include <ieee1666/base/out.h>
 #include <ieee1666/base/inout.h>
@@ -186,114 +184,6 @@ const std::vector<const sc_event_finder *>& sc_spawn_options::get_sensitive_even
 {
 	return sensitive_event_finders;
 }
-
-template <typename T>
-class sc_spawn_process_owner_trampoline : sc_process_owner
-{
-public:
-	sc_spawn_process_owner_trampoline(T object);
-	virtual ~sc_spawn_process_owner_trampoline();
-	
-	void trampoline();
-	
-private:
-	T object;
-};
-
-template <typename T>
-sc_spawn_process_owner_trampoline<T>::sc_spawn_process_owner_trampoline(T _object)
-	: sc_process_owner(true /* automatically allocated/freed */)
-	, object(_object)
-{
-}
-
-template <typename T>
-sc_spawn_process_owner_trampoline<T>::~sc_spawn_process_owner_trampoline()
-{
-}
-
-template <typename T>
-void sc_spawn_process_owner_trampoline<T>::trampoline()
-{
-	object();
-}
-
-template <typename T>
-class sc_spawn_process_owner_trampoline_with_return : sc_process_owner
-{
-public:
-	sc_spawn_process_owner_trampoline_with_return(T object, typename T::result_type *_result);
-	virtual ~sc_spawn_process_owner_trampoline_with_return();
-	
-	void trampoline();
-	
-private:
-	T object;
-	typename T::result_type *result;
-};
-
-template <typename T>
-sc_spawn_process_owner_trampoline_with_return<T>::sc_spawn_process_owner_trampoline_with_return(T _object, typename T::result_type *_result)
-	: sc_process_owner(true /* automatically allocated/freed */)
-	, object(_object)
-	, result(_result)
-{
-}
-
-template <typename T>
-sc_spawn_process_owner_trampoline_with_return<T>::~sc_spawn_process_owner_trampoline_with_return()
-{
-}
-
-template <typename T>
-void sc_spawn_process_owner_trampoline_with_return<T>::trampoline()
-{
-	*result = object();
-}
-
-template <typename T>
-sc_process_handle sc_spawn(
-	T object,
-	const char* name_p,
-	const sc_spawn_options* opt_p)
-{
-	if(opt_p->get_flag_spawn_method())
-	{
-		sc_method_process *method_process = sc_kernel::get_kernel()->create_method_process(name_p, new sc_spawn_process_owner_trampoline<T>(object), &sc_spawn_process_owner_trampoline<T>::trampoline, opt_p);
-		return sc_process_handle(method_process);
-	}
-	else
-	{
-		sc_thread_process *thread_process = sc_kernel::get_kernel()->create_thread_process(name_p, new sc_spawn_process_owner_trampoline<T>(object), &sc_spawn_process_owner_trampoline<T>::trampoline, opt_p);
-		return sc_process_handle(thread_process);
-	}
-}
-
-template <typename T>
-sc_process_handle sc_spawn(
-	typename T::result_type* r_p,
-	T object,
-	const char* name_p,
-	const sc_spawn_options* opt_p)
-{
-	if(opt_p->get_flag_spawn_method())
-	{
-		sc_method_process *method_process = sc_kernel::get_kernel()->create_method_process(name_p, new sc_spawn_process_owner_trampoline_with_return<T>(object, r_p), &sc_spawn_process_owner_trampoline_with_return<T>::trampoline, opt_p);
-		return sc_process_handle(method_process);
-	}
-	else
-	{
-		sc_thread_process *thread_process = sc_kernel::get_kernel()->create_thread_process(name_p, new sc_spawn_process_owner_trampoline_with_return<T>(object, r_p), &sc_spawn_process_owner_trampoline_with_return<T>::trampoline, opt_p);
-		return sc_process_handle(thread_process);
-	}
-}
-
-#define sc_bind boost::bind
-#define sc_ref(r) boost::ref(r)
-#define sc_cref(r) boost::cref(r)
-
-#define SC_FORK // implementation-defined
-#define SC_JOIN // implementation-defined
 
 // namespace sc_unnamed {
 // /* implementation-defined */ _1;

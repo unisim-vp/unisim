@@ -1,5 +1,6 @@
 #include <systemc.h>
 #include <iostream>
+#include <ieee1666/util/backtrace.h>
 
 class Mod : public sc_module
 {
@@ -24,11 +25,17 @@ private:
 	{
 		std::cout << "Tic: Hello world !" << std::endl;
 		
+		bool sp = false;
 		while(1)
 		{
 			wait(e1);
 			std::cout << sc_time_stamp() << ": Tic" << std::endl;
 			e2.notify(t);
+			if(!sp)
+			{
+				sc_spawn(sc_bind(&Mod::Hop, this));
+				sp=true;
+			}
 		}
 	}
 
@@ -51,6 +58,14 @@ private:
 		std::cout << sc_time_stamp() << ": Toc" << std::endl;
 		//next_trigger(e2);
 	}
+	
+	void Hop()
+	{
+		std::cout << "Hop: Hello world !" << std::endl;
+		
+		std::cout << sc_time_stamp() << ": Hop" << std::endl;
+		next_trigger(e2);
+	}
 };
 
 int sc_main(int argc, char *argv[])
@@ -59,11 +74,6 @@ int sc_main(int argc, char *argv[])
 
 	Mod *mod = new Mod("toto");
 
-	std::cout << "module name is \"" << mod->name() << "\"" << std::endl;
-	const char *s1 = sc_gen_unique_name("titi");
-	std::cout << "unique name = \"" << s1 << "\"" << std::endl;
-	const char *s2 = sc_gen_unique_name("titi");
-	std::cout << "unique name = \"" << s2 << "\"" << std::endl;
 	sc_start(100.0, SC_MS);
 	
  	delete mod;

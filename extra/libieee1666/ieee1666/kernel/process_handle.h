@@ -94,14 +94,15 @@ public:
 	template <typename T>
 	void throw_it( const T& user_defined_exception, sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS );
 private:
+	friend class sc_kernel;
+	
 	sc_process *process;
 	sc_event null_event;
+	std::vector<sc_object*> no_child_objects;
+	std::vector<sc_event*> no_child_events;
 	
 	sc_process_handle(sc_process *process);
 };
-
-sc_process_handle sc_get_current_process_handle();
-bool sc_is_unwinding();
 
 ///////////////////////////////// sc_process_handle ///////////////////////////////////////////
 

@@ -88,6 +88,7 @@ esac
 AC_SUBST(IEEE1666_TARGET_ARCH)
 
 LIBIEEE1666_CHECK_BOOST_COROUTINE
+LIBIEEE1666_CHECK_CXXABI(main)
 
 # files to generate
 #   this should include all the makefiles to generate
