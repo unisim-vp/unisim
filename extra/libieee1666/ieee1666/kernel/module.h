@@ -112,7 +112,7 @@ private:
 	sc_module( const sc_module& );
 	sc_module& operator= ( const sc_module& );
 	
-	///////////////////////////////////
+	///////////////////// EVERYTHING BELOW IS NOT PART OF IEEE1666 STANDARD /////////////////////////
 protected:
 	friend class sc_module_name;
 	friend class sc_kernel;
@@ -122,7 +122,6 @@ protected:
 	void end_module();
 	
 private:
-	
 	void init();
 };
 

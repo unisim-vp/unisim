@@ -72,8 +72,9 @@ public:
 	void simulate(const sc_time& duration);
 	void start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
 	
-	void add_top_level_object(sc_object *object);
+	void register_object(sc_object *object);
 	void register_event(sc_event *event);
+	void unregister_object(sc_object *object);
 	void unregister_event(sc_event *event);
 	void add_module(sc_module *module);
 	void add_port(sc_port_base *port);
@@ -137,10 +138,14 @@ public:
 	sc_time time_to_pending_activity() const;
 	
 	const std::vector<sc_object*>& get_top_level_objects() const;
+	const std::vector<sc_event*>& get_top_level_events() const;
 	sc_object *find_object(const char* name) const;
 	sc_event *find_event(const char *name) const;
 	bool hierarchical_name_exists(const char *name) const;
 	const char* gen_unique_name( const char* seed ) const;
+	
+	// debug stuff
+	void dump_hierarchy(std::ostream& os) const;
 protected:
 private:
 	friend int sc_elab_and_sim(int _argc, char* _argv[]);
@@ -154,6 +159,8 @@ private:
 
 	// all simulation objects
 	std::vector<sc_object *> top_level_objects;
+	std::vector<sc_event *> top_level_events;
+	std::map<std::string, sc_object *> object_registry;
 	std::map<std::string, sc_event *> event_registry;
 	std::vector<sc_module *> module_table;
 	std::vector<sc_port_base *> port_table;
@@ -232,6 +239,8 @@ const std::vector<sc_object*>& sc_get_top_level_objects();
 sc_object* sc_find_object( const char* );
 bool sc_hierarchical_name_exists(const char *name);
 const char* sc_gen_unique_name( const char* seed );
+const std::vector<sc_event*>& sc_get_top_level_events();
+sc_event* sc_find_event( const char* );
 
 void next_trigger();
 void next_trigger( const sc_event& );

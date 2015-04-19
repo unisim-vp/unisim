@@ -45,7 +45,52 @@ namespace sc_core {
 
 //////////////////////////////////// sc_event /////////////////////////////////////////////
 
-std::string sc_event::create_hierarchical_name(const char *_name, bool named_by_user) const
+sc_event::sc_event()
+	: kernel(sc_kernel::get_kernel())
+	, event_name(create_hierarchical_name(IEEE1666_KERNEL_PREFIX "_event"))
+	, parent_object(0)
+	, state(NOT_NOTIFIED)
+	, kernel_event(0)
+	, timed_kernel_event(0)
+	, dynamically_sensitive_thread_processes()
+	, dynamically_sensitive_method_processes()
+	, statically_sensitive_thread_processes()
+	, statically_sensitive_method_processes()
+{
+	init();
+}
+
+sc_event::sc_event( const char* _name)
+	: kernel(sc_kernel::get_kernel())
+	, event_name((_name && *_name) ? create_hierarchical_name(_name) : create_hierarchical_name(IEEE1666_KERNEL_PREFIX "_event"))
+	, parent_object(0)
+	, state(NOT_NOTIFIED)
+	, kernel_event(0)
+	, timed_kernel_event(0)
+	, dynamically_sensitive_thread_processes()
+	, dynamically_sensitive_method_processes()
+	, statically_sensitive_thread_processes()
+	, statically_sensitive_method_processes()
+{
+	init();
+}
+
+sc_event::~sc_event()
+{
+	cancel();
+	
+	if(parent_object) parent_object->remove_child_event(this);
+	if(kernel) kernel->unregister_event(this);
+}
+
+void sc_event::init()
+{
+	parent_object = kernel->get_current_object();
+	if(parent_object) parent_object->add_child_event(this);
+	kernel->register_event(this);
+}
+
+std::string sc_event::create_hierarchical_name(const char *_name) const
 {
 	std::string hierarchical_name;
 	
@@ -62,8 +107,8 @@ std::string sc_event::create_hierarchical_name(const char *_name, bool named_by_
 	if(kernel->find_event(hierarchical_name.c_str()))
 	{
 		// hierarchical name already exists
-		std::string new_hierarchical_name = sc_kernel::get_kernel()->gen_unique_name(hierarchical_name.c_str());
-		if(named_by_user)
+		std::string new_hierarchical_name = kernel->gen_unique_name(hierarchical_name.c_str());
+		if(strncmp(_name, IEEE1666_KERNEL_PREFIX, strlen(IEEE1666_KERNEL_PREFIX)) != 0)
 		{
 			std::cerr << "WARNING! event \"" << hierarchical_name << "\" has been renamed \"" << new_hierarchical_name << "\"" << std::endl;
 		}
@@ -71,50 +116,6 @@ std::string sc_event::create_hierarchical_name(const char *_name, bool named_by_
 	}
 	
 	return hierarchical_name;
-}
-
-sc_event::sc_event()
-	: event_name(create_hierarchical_name("event", false))
-	, parent_object(0)
-	, state(NOT_NOTIFIED)
-	, kernel_event(0)
-	, timed_kernel_event(0)
-	, dynamically_sensitive_thread_processes()
-	, dynamically_sensitive_method_processes()
-	, statically_sensitive_thread_processes()
-	, statically_sensitive_method_processes()
-{
-	sc_kernel *kernel = sc_kernel::get_kernel();
-	parent_object = kernel->get_current_object();
-	if(parent_object) parent_object->add_child_event(this);
-	
-	kernel->register_event(this);
-}
-
-sc_event::sc_event( const char* _name)
-	: event_name((_name && *_name) ? create_hierarchical_name(_name, true) : create_hierarchical_name("event", false))
-	, parent_object(0)
-	, state(NOT_NOTIFIED)
-	, kernel_event(0)
-	, timed_kernel_event(0)
-	, dynamically_sensitive_thread_processes()
-	, dynamically_sensitive_method_processes()
-	, statically_sensitive_thread_processes()
-	, statically_sensitive_method_processes()
-{
-	sc_kernel *kernel = sc_kernel::get_kernel();
-	parent_object = kernel->get_current_object();
-	if(parent_object) parent_object->add_child_event(this);
-	
-	kernel->register_event(this);
-}
-
-sc_event::~sc_event()
-{
-	cancel();
-	
-	sc_kernel *kernel = sc_kernel::get_kernel();
-	kernel->unregister_event(this);
 }
 
 const char* sc_event::name() const
@@ -140,20 +141,20 @@ sc_object* sc_event::get_parent_object() const
 void sc_event::notify()
 {
 	state = DELTA_NOTIFIED;
-	kernel_event = sc_kernel::get_kernel()->notify(this);
+	kernel_event = kernel->notify(this);
 }
 
 void sc_event::notify(const sc_time& t)
 {
 	state = TIMED_NOTIFIED;
-	timed_kernel_event = sc_kernel::get_kernel()->notify(this, t);
+	timed_kernel_event = kernel->notify(this, t);
 }
 
 void sc_event::notify(double d, sc_time_unit tu)
 {
 	sc_time t = sc_time(d, tu);
 	state = TIMED_NOTIFIED;
-	timed_kernel_event = sc_kernel::get_kernel()->notify(this, t);
+	timed_kernel_event = kernel->notify(this, t);
 }
 
 void sc_event::cancel()
@@ -175,8 +176,6 @@ void sc_event::cancel()
 
 void sc_event::trigger()
 {
-	sc_kernel *kernel = sc_kernel::get_kernel();
-
 	unsigned int num_statically_sensitive_method_processes = statically_sensitive_method_processes.size();
 	
 	if(num_statically_sensitive_method_processes)
@@ -277,14 +276,6 @@ sc_event::sc_event( const sc_event& )
 }
 
 sc_event& sc_event::operator= ( const sc_event& )
-{
-}
-
-const std::vector<sc_event*>& sc_get_top_level_events()
-{
-}
-
-sc_event* sc_find_event( const char* )
 {
 }
 

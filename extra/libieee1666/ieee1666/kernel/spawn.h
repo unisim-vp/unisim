@@ -174,13 +174,13 @@ sc_process_handle sc_spawn(
 	const char* name_p,
 	const sc_spawn_options* opt_p)
 {
-	if(!opt_p || opt_p->get_flag_spawn_method())
+	if(opt_p && opt_p->get_flag_spawn_method())
 	{
-		return sc_kernel::get_kernel()->create_method_process(name_p, new sc_spawn_process_owner_trampoline<T>(object), static_cast<sc_core::sc_process_owner_method_ptr>(&sc_spawn_process_owner_trampoline<T>::trampoline), opt_p);
+		return sc_kernel::get_kernel()->create_method_process((!name_p || (*name_p == 0)) ? IEEE1666_KERNEL_PREFIX "_sc_method_process" : name_p, new sc_spawn_process_owner_trampoline<T>(object), static_cast<sc_core::sc_process_owner_method_ptr>(&sc_spawn_process_owner_trampoline<T>::trampoline), opt_p);
 	}
 	else
 	{
-		return sc_kernel::get_kernel()->create_thread_process(name_p, new sc_spawn_process_owner_trampoline<T>(object), static_cast<sc_core::sc_process_owner_method_ptr>(&sc_spawn_process_owner_trampoline<T>::trampoline), opt_p);
+		return sc_kernel::get_kernel()->create_thread_process((!name_p || (*name_p == 0)) ? IEEE1666_KERNEL_PREFIX "_sc_thread_process" : name_p, new sc_spawn_process_owner_trampoline<T>(object), static_cast<sc_core::sc_process_owner_method_ptr>(&sc_spawn_process_owner_trampoline<T>::trampoline), opt_p);
 	}
 }
 
@@ -205,8 +205,20 @@ sc_process_handle sc_spawn(
 #define sc_ref(r) boost::ref(r)
 #define sc_cref(r) boost::cref(r)
 
-#define SC_FORK // implementation-defined
-#define SC_JOIN // implementation-defined
+#define SC_FORK \
+{\
+	sc_core::sc_process_handle spawned_process_handles[] = {
+	
+#define SC_JOIN \
+	};\
+	sc_core::sc_event_and_list terminated_event_and_list;\
+	unsigned int i;\
+	for(i = 0; i < sizeof(spawned_process_handles) / sizeof(sc_core::sc_process_handle); i++)\
+	{\
+		terminated_event_and_list &= spawned_process_handles[i].terminated_event();\
+	}\
+	sc_core::wait(terminated_event_and_list);\
+}
 
 // namespace sc_unnamed {
 // /* implementation-defined */ _1;

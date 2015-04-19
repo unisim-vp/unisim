@@ -72,24 +72,27 @@ protected:
 	virtual ~sc_object();
 	
 	///////////////////// EVERYTHING BELOW IS NOT PART OF IEEE1666 STANDARD /////////////////////////
+	sc_kernel *kernel;
 private:
 	friend class sc_kernel;
+	friend class sc_event;
 	
 	std::string object_name;
 	std::vector<sc_object *> child_objects;
 	std::vector<sc_event *> child_events;
 	sc_attr_cltn attributes;
-
+	sc_object *parent_object;
+	
+	void add_child_object(sc_object *object);
+	void add_child_event(sc_event *event);
+	void remove_child_object(sc_object *object);
+	void remove_child_event(sc_event *event);
 	sc_object *find_child_object(const char *name) const;
 	std::string create_hierarchical_name(const char *_name) const;
 	void init();
-protected:
-	sc_object *parent_object;
-	void add_child_object(sc_object *object);
-	void add_child_event(sc_event *event);
-	
-	friend class sc_event;
-	
+public:
+	// debug stuff
+	void dump_hierarchy(std::ostream& os, unsigned int indent = 0) const;
 };
 
 } // end of namespace sc_core

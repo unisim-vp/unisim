@@ -72,12 +72,14 @@ private:
 	friend class sc_kernel;
 	friend class sc_sensitive;
 	friend class sc_event_list;
+	friend class sc_object;
 	
 	enum state_t
 	{
 		NOT_NOTIFIED, DELTA_NOTIFIED, TIMED_NOTIFIED
 	};
 	
+	sc_kernel *kernel;
 	std::string event_name;
 	sc_object *parent_object;
 	state_t state;
@@ -89,7 +91,8 @@ private:
 	mutable std::vector<sc_thread_process *> statically_sensitive_thread_processes;
 	mutable std::vector<sc_method_process *> statically_sensitive_method_processes;
 
-	std::string create_hierarchical_name(const char *_name, bool named_by_user) const;
+	void init();
+	std::string create_hierarchical_name(const char *_name) const;
 	void add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
 	void add_dynamically_sensitive_method_process(sc_method_process *method_process) const;
 	void remove_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
@@ -99,9 +102,6 @@ private:
 	void trigger();
 	void clear_dynamically_sensitive_processes();
 };
-
-const std::vector<sc_event*>& sc_get_top_level_events();
-sc_event* sc_find_event( const char* );
 
 enum sc_event_list_type_t
 {

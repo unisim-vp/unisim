@@ -60,14 +60,13 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, thread_process_helper(0)
 	, stack_size(spawn_options ? spawn_options->get_stack_size() : 0)
 	, thread_process_terminated(false)
-	, thread_process_terminated_event()
+	, thread_process_terminated_event("terminated_event")
 	, wait_type(WAIT_DEFAULT)
 	, wait_event(0)
 	, wait_event_list(0)
 	, wait_and_event_list_remaining_count(0)
-	, wait_time_out_event("__kernel_wait_time_out_event__")
+	, wait_time_out_event(IEEE1666_KERNEL_PREFIX "_wait_time_out_event")
 {
-	sc_kernel *kernel = sc_kernel::get_kernel();
 	kernel->add_thread_process(this);
 	kernel->end_object();
 }
@@ -120,7 +119,7 @@ void sc_thread_process::trigger_statically()
 	}
 	else
 	{
-		sc_kernel::get_kernel()->trigger(this);
+		kernel->trigger(this);
 	}
 }
 
@@ -225,7 +224,7 @@ void sc_thread_process::trigger_dynamically(const sc_event *triggered_event)
 		}
 		else
 		{
-			sc_kernel::get_kernel()->trigger(this);
+			kernel->trigger(this);
 		}	
 	}
 }
@@ -345,7 +344,7 @@ void sc_thread_process::resume(sc_descendant_inclusion_info include_descendants)
 	{
 		runnable_on_resuming = false;
 		
-		sc_kernel::get_kernel()->trigger(this);
+		kernel->trigger(this);
 	}
 }
 

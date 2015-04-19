@@ -5,6 +5,7 @@ includedir = $(prefix)/include
 sharedir = $(prefix)/share
 libdir= $(prefix)/lib
 nobase_include_HEADERS = \
+systemc \
 systemc.h \
 ieee1666/kernel/sensitive.h \
 ieee1666/kernel/port.h \

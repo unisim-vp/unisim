@@ -61,25 +61,25 @@ sc_unwind_exception::~sc_unwind_exception() throw()
 
 ///////////////////////////////// sc_process_handle ///////////////////////////////////////////
 
+sc_event sc_process_handle::null_event(IEEE1666_KERNEL_PREFIX "_null_event");
+std::vector<sc_object*> sc_process_handle::no_child_objects;
+std::vector<sc_event*> sc_process_handle::no_child_events;
+
 sc_process_handle::sc_process_handle()
 	: process(0)
-	, null_event()
-	, no_child_objects()
-	, no_child_events()
 {
 }
 
 sc_process_handle::sc_process_handle(const sc_process_handle& process_handle)
 	: process(process_handle.process)
-	, null_event()
-	, no_child_objects()
-	, no_child_events()
 {
 	if(process) process->acquire();
 }
 
-sc_process_handle::sc_process_handle( sc_object* )
+sc_process_handle::sc_process_handle(sc_object* object)
+	: process((sc_process *) object)
 {
+	if(process) process->acquire();
 }
 
 sc_process_handle::sc_process_handle(sc_process *_process)

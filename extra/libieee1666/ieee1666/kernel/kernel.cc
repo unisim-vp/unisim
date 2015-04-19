@@ -62,6 +62,8 @@ sc_kernel::sc_kernel()
 	, object_stack()
 	, unique_name_map()
 	, top_level_objects()
+	, top_level_events()
+	, object_registry()
 	, event_registry()
 	, module_table()
 	, port_table()
@@ -100,6 +102,15 @@ sc_kernel::sc_kernel()
 sc_kernel::~sc_kernel()
 {
 	unsigned int i;
+	
+	unsigned int num_top_level_events = top_level_events.size();
+	for(i = 0; i < num_top_level_events; i++)
+	{
+		sc_event *top_level_event = top_level_events[i];
+		unregister_event(top_level_event);
+		top_level_event->kernel = 0;
+	}
+	
 	unsigned int num_method_processes = method_process_table.size();
 	for(i = 0; i < num_method_processes; i++)
 	{
@@ -201,15 +212,20 @@ sc_process_handle sc_kernel::create_method_process(const char *name, sc_process_
 
 void sc_kernel::report_before_end_of_elaboration()
 {
+	std::vector<sc_module *> module_table_before_end_of_elaboration = module_table;
+	std::vector<sc_port_base *> port_table_before_end_of_elaboration = port_table;
+	std::vector<sc_export_base *> export_table_before_end_of_elaboration = export_table;
+	std::vector<sc_prim_channel *> prim_channel_table_before_end_of_elaboration = prim_channel_table;
+
 	unsigned int i;
-	unsigned int num_modules = module_table.size();
-	for(i = 0; i < num_modules; i++) module_table[i]->before_end_of_elaboration();
-	unsigned int num_ports = port_table.size();
-	for(i = 0; i < num_ports; i++) port_table[i]->before_end_of_elaboration();
-	unsigned int num_exports = port_table.size();
-	for(i = 0; i < num_exports; i++) port_table[i]->before_end_of_elaboration();
-	unsigned int num_prim_channels = prim_channel_table.size();
-	for(i = 0; i < num_prim_channels; i++) prim_channel_table[i]->before_end_of_elaboration();
+	unsigned int num_modules = module_table_before_end_of_elaboration.size();
+	for(i = 0; i < num_modules; i++) module_table_before_end_of_elaboration[i]->before_end_of_elaboration();
+	unsigned int num_ports = port_table_before_end_of_elaboration.size();
+	for(i = 0; i < num_ports; i++) port_table_before_end_of_elaboration[i]->before_end_of_elaboration();
+	unsigned int num_exports = port_table_before_end_of_elaboration.size();
+	for(i = 0; i < num_exports; i++) port_table_before_end_of_elaboration[i]->before_end_of_elaboration();
+	unsigned int num_prim_channels = prim_channel_table_before_end_of_elaboration.size();
+	for(i = 0; i < num_prim_channels; i++) prim_channel_table_before_end_of_elaboration[i]->before_end_of_elaboration();
 }
 
 void sc_kernel::report_end_of_elaboration()
@@ -494,19 +510,72 @@ void sc_kernel::start(const sc_time& duration, sc_starvation_policy p)
 	}
 }
 
-void sc_kernel::add_top_level_object(sc_object *object)
+void sc_kernel::register_object(sc_object *object)
 {
-	top_level_objects.push_back(object);
+	if(object_registry.find(object->name()) != object_registry.end())
+	{
+		throw std::runtime_error("object or an object with same name is already registered");
+	}
+	
+	object_registry.insert(std::pair<std::string, sc_object *>(object->name(), object));
+
+	if(!object->get_parent_object())
+	{
+		top_level_objects.push_back(object);
+	}
 }
 
 void sc_kernel::register_event(sc_event *event)
 {
-	event_registry.insert(std::pair<std::string, sc_event *>(event->name(), event));
+	std::string event_name(event->name());
+	if(event_registry.find(event_name) != event_registry.end())
+	{
+		throw std::runtime_error("event or an event with same name is already registered");
+	}
+
+	event_registry.insert(std::pair<std::string, sc_event *>(event_name, event));
+
+	if(!event->get_parent_object())
+	{
+		top_level_events.push_back(event);
+	}
+}
+
+void sc_kernel::unregister_object(sc_object *object)
+{
+	std::map<std::string, sc_object *>::iterator it = object_registry.find(object->name());
+	
+	if(it != object_registry.end())
+	{
+		object_registry.erase(it);
+	}
+	else
+	{
+		throw std::runtime_error("Internal error! can't unregister object because it is not registered");
+	}
+	
+	if(!object->get_parent_object())
+	{
+		unsigned int num_top_level_objects = top_level_objects.size();
+		unsigned int i;
+		for(i = 0; i < num_top_level_objects; i++)
+		{
+			if(top_level_objects[i] == object)
+			{
+				top_level_objects[i] = top_level_objects[num_top_level_objects - 1];
+				top_level_objects.pop_back();
+				break;
+			}
+		}
+	}
+	
+	object->kernel = 0;
 }
 
 void sc_kernel::unregister_event(sc_event *event)
 {
-	std::map<std::string, sc_event *>::iterator it = event_registry.find(event->name());
+	std::string event_name(event->name());
+	std::map<std::string, sc_event *>::iterator it = event_registry.find(event_name);
 	
 	if(it != event_registry.end())
 	{
@@ -516,25 +585,44 @@ void sc_kernel::unregister_event(sc_event *event)
 	{
 		throw std::runtime_error("Internal error! can't unregister event because it is not registered");
 	}
+	
+	if(!event->get_parent_object())
+	{
+		unsigned int num_top_level_events = top_level_events.size();
+		unsigned int i;
+		for(i = 0; i < num_top_level_events; i++)
+		{
+			if(top_level_events[i] == event)
+			{
+				top_level_events[i] = top_level_events[num_top_level_events - 1];
+				top_level_events.pop_back();
+				break;
+			}
+		}
+	}
 }
 
 void sc_kernel::add_module(sc_module *module)
 {
+	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_module instantiation is not allowed after the end of elaboration");
 	module_table.push_back(module);
 }
 
 void sc_kernel::add_port(sc_port_base *port)
 {
+	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_port instantiation is not allowed after the end of elaboration");
 	port_table.push_back(port);
 }
 
 void sc_kernel::add_export(sc_export_base *exp)
 {
+	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_export instantiation is not allowed after the end of elaboration");
 	export_table.push_back(exp);
 }
 
 void sc_kernel::add_prim_channel(sc_prim_channel *prim_channel)
 {
+	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_prim_channel instantiation is not allowed after the end of elaboration");
 	prim_channel_table.push_back(prim_channel);
 }
 
@@ -908,19 +996,27 @@ const std::vector<sc_object*>& sc_kernel::get_top_level_objects() const
 	return top_level_objects;
 }
 
+const std::vector<sc_event*>& sc_kernel::get_top_level_events() const
+{
+	return top_level_events;
+}
+
 sc_object *sc_kernel::find_object(const char* name) const
 {
-	unsigned int n_top_level_objects = top_level_objects.size();
-	unsigned int i;
-	for(i = 0; i < n_top_level_objects; i++)
-	{
-		sc_object *object = top_level_objects[i];
-		if(strcmp(object->name(), name) == 0) return object;
-		
-		sc_object *found_child_object = object->find_child_object(name);
-		if(found_child_object) return found_child_object;
-	}
-	return 0;
+	std::map<std::string, sc_object *>::const_iterator it = object_registry.find(name);
+	
+	return (it != object_registry.end()) ? (*it).second : 0;
+// 	unsigned int n_top_level_objects = top_level_objects.size();
+// 	unsigned int i;
+// 	for(i = 0; i < n_top_level_objects; i++)
+// 	{
+// 		sc_object *object = top_level_objects[i];
+// 		if(strcmp(object->name(), name) == 0) return object;
+// 		
+// 		sc_object *found_child_object = object->find_child_object(name);
+// 		if(found_child_object) return found_child_object;
+// 	}
+// 	return 0;
 }
 
 sc_event *sc_kernel::find_event(const char *name) const
@@ -968,6 +1064,24 @@ const char* sc_kernel::gen_unique_name( const char* seed ) const
 	unique_name = sstr.str();
 	return unique_name.c_str();
 }
+
+void sc_kernel::dump_hierarchy(std::ostream& os) const
+{
+	unsigned int i;
+	unsigned int num_top_level_events = top_level_events.size();
+	for(i = 0; i < num_top_level_events; i++)
+	{
+		sc_event *top_level_event = top_level_events[i];
+		os << "- event " << top_level_event->name() << std::endl;
+	}
+	unsigned int num_top_level_objects = top_level_objects.size();
+	for(i = 0; i < num_top_level_objects; i++)
+	{
+		sc_object *object = top_level_objects[i];
+		object->dump_hierarchy(os);
+	}
+}
+
 
 int sc_elab_and_sim(int _argc, char* _argv[])
 {
@@ -1104,6 +1218,16 @@ bool sc_hierarchical_name_exists(const char *name)
 const char* sc_gen_unique_name( const char* seed )
 {
 	return sc_kernel::get_kernel()->gen_unique_name(seed);
+}
+
+const std::vector<sc_event*>& sc_get_top_level_events()
+{
+	return sc_kernel::get_kernel()->get_top_level_events();
+}
+
+sc_event *sc_find_event(const char* name)
+{
+	return sc_kernel::get_kernel()->find_event(name);
 }
 
 void next_trigger()

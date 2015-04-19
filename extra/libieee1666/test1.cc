@@ -62,9 +62,12 @@ private:
 	void Hop()
 	{
 		std::cout << "Hop: Hello world !" << std::endl;
+		while(1)
+		{
+			wait(e2);
 		
-		std::cout << sc_time_stamp() << ": Hop" << std::endl;
-		next_trigger(e2);
+			std::cout << sc_time_stamp() << ": Hop" << std::endl;
+		}
 	}
 };
 

@@ -129,6 +129,8 @@ class sc_event_list;
 
 typedef void (sc_process_owner::*sc_process_owner_method_ptr)();
 
+#define IEEE1666_KERNEL_PREFIX "ieee1666_kernel"
+
 } // end of namespace sc_core
 
 #endif

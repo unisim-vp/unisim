@@ -148,7 +148,10 @@ std::string sc_object::create_hierarchical_name(const char *_name) const
 	{
 		// hierarchical name already exists
 		std::string new_hierarchical_name = sc_kernel::get_kernel()->gen_unique_name(hierarchical_name.c_str());
-		std::cerr << "WARNING! object \"" << hierarchical_name << "\" has been renamed \"" << new_hierarchical_name << "\"" << std::endl;	
+		if(strncmp(_name, IEEE1666_KERNEL_PREFIX, strlen(IEEE1666_KERNEL_PREFIX)) != 0)
+		{
+			std::cerr << "WARNING! object \"" << hierarchical_name << "\" has been renamed \"" << new_hierarchical_name << "\"" << std::endl;
+		}
 		hierarchical_name = new_hierarchical_name;
 	}
 	
@@ -156,7 +159,8 @@ std::string sc_object::create_hierarchical_name(const char *_name) const
 }
 
 sc_object::sc_object()
-	: object_name(create_hierarchical_name("object"))
+	: kernel(sc_kernel::get_kernel())
+	, object_name(create_hierarchical_name("object"))
 	, child_objects()
 	, child_events()
 	, attributes()
@@ -166,7 +170,8 @@ sc_object::sc_object()
 }
 
 sc_object::sc_object(const char *_name)
-	: object_name((_name && *_name) ? create_hierarchical_name(_name) : create_hierarchical_name("object"))
+	: kernel(sc_kernel::get_kernel())
+	, object_name((_name && *_name) ? create_hierarchical_name(_name) : create_hierarchical_name("object"))
 	, child_objects()
 	, child_events()
 	, attributes()
@@ -176,7 +181,8 @@ sc_object::sc_object(const char *_name)
 }
 
 sc_object::sc_object(const sc_object& object)
-	: object_name(create_hierarchical_name(object.basename()))
+	: kernel(sc_kernel::get_kernel())
+	, object_name(create_hierarchical_name(object.basename()))
 	, child_objects()
 	, child_events()
 	, attributes()
@@ -187,29 +193,40 @@ sc_object::sc_object(const sc_object& object)
 
 void sc_object::init()
 {
-	sc_kernel *kernel = sc_kernel::get_kernel();
 	parent_object = kernel->get_current_object();
+	kernel->begin_object(this);
 
 	if(parent_object)
 		parent_object->add_child_object(this);
-	else
-		kernel->add_top_level_object(this);
 
-	kernel->begin_object(this);
+	kernel->register_object(this);
 }
 
 sc_object& sc_object::operator = (const sc_object& object)
 {
-	object_name = create_hierarchical_name(object.object_name.c_str());
-	child_objects = object.child_objects;
-	child_events = object.child_events;
-	attributes = object.attributes;
-	parent_object = object.parent_object;
 	return *this;
 }
 
 sc_object::~sc_object()
 {
+	unsigned int i;
+
+	unsigned int num_child_events = child_events.size();
+	for(i = 0; i < num_child_events; i++)
+	{
+		sc_event *child_event = child_events[i];
+		child_event->parent_object = 0;
+	}
+
+	unsigned int num_child_objects = child_objects.size();
+	for(i = 0; i < num_child_objects; i++)
+	{
+		sc_object *child_object = child_objects[i];
+		child_object->parent_object = 0;
+	}
+	
+	if(parent_object) parent_object->remove_child_object(this);
+	if(kernel) kernel->unregister_object(this);
 }
 
 void sc_object::add_child_object(sc_object *object)
@@ -222,6 +239,40 @@ void sc_object::add_child_event(sc_event *event)
 	child_events.push_back(event);
 }
 
+void sc_object::remove_child_object(sc_object *object)
+{
+	unsigned int num_child_objects = child_objects.size();
+	unsigned int i;
+	for(i = 0; i < num_child_objects; i++)
+	{
+		sc_object *child_object = child_objects[i];
+		
+		if(child_object == object)
+		{
+			child_objects[i] = child_objects[num_child_objects - 1];
+			std::cerr << "size before = " << child_objects.size() << std::endl;
+			child_objects.pop_back();
+			std::cerr << "size after = " << child_objects.size() << std::endl;
+			break;
+		}
+	}
+}
+
+void sc_object::remove_child_event(sc_event *event)
+{
+	unsigned int num_child_events = child_events.size();
+	unsigned int i;
+	for(i = 0; i < num_child_events; i++)
+	{
+		if(child_events[i] == event)
+		{
+			child_events[i] = child_events[num_child_events - 1];
+			child_events.pop_back();
+			break;
+		}
+	}
+}
+
 sc_object *sc_object::find_child_object(const char *name) const
 {
 	unsigned int n_child_objects = child_objects.size();
@@ -232,6 +283,27 @@ sc_object *sc_object::find_child_object(const char *name) const
 		if(strcmp(child_object->name(), name) == 0) return child_object;
 	}
 	return 0;
+}
+
+void sc_object::dump_hierarchy(std::ostream& os, unsigned int indent) const
+{
+	unsigned int i;
+	for(i = 0; i < indent; i++) os << "\t";
+	indent++;
+	os << "- object " << name() << std::endl;
+	unsigned int num_child_events = child_events.size();
+	for(i = 0; i < num_child_events; i++)
+	{
+		sc_event *child_event = child_events[i];
+		for(unsigned int j = 0; j < indent; j++) os << "\t";
+		os << "- event " << child_event->name() << std::endl;
+	}
+	unsigned int n_child_objects = child_objects.size();
+	for(i = 0; i < n_child_objects; i++)
+	{
+		sc_object *child_object = child_objects[i];
+		child_object->dump_hierarchy(os, indent);
+	}
 }
 
 } // end of namespace sc_core
