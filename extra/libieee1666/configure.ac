@@ -12,12 +12,18 @@ AC_PATH_PROGS(SH, sh)
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
-AC_PROG_RANLIB
+AC_LIBTOOL_WIN32_DLL # must be *before* AC_PROG_LIBTOOL
+AC_PROG_LIBTOOL
+AC_ENABLE_SHARED
+#AC_PROG_RANLIB
 AC_PROG_LN_S
 
 AC_LANG([C++])
 
 AX_CXX_COMPILE_STDCXX_11
+
+PKG_PROG_PKG_CONFIG
+PKG_INSTALLDIR
 
 ###### CHECK FOR STANDARD C HEADERS ###########################################
 
@@ -86,13 +92,14 @@ case "${host}" in
 esac
 
 AC_SUBST(IEEE1666_TARGET_ARCH)
+AC_SUBST(VERSION)
 
 LIBIEEE1666_CHECK_BOOST_COROUTINE
 LIBIEEE1666_CHECK_CXXABI(main)
 
 # files to generate
 #   this should include all the makefiles to generate
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile systemc.pc])
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

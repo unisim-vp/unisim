@@ -60,7 +60,7 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, thread_process_helper(0)
 	, stack_size(spawn_options ? spawn_options->get_stack_size() : 0)
 	, thread_process_terminated(false)
-	, thread_process_terminated_event("terminated_event")
+	, thread_process_terminated_event(IEEE1666_KERNEL_PREFIX "_terminated_event")
 	, wait_type(WAIT_DEFAULT)
 	, wait_event(0)
 	, wait_event_list(0)

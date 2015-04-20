@@ -1,4 +1,5 @@
-#ACLOCAL_AMFLAGS=-I $(top_srcdir)/m4
+pkgconfig_DATA = systemc.pc
+ACLOCAL_AMFLAGS=-I $(top_srcdir)/m4
 AM_CPPFLAGS=-I$(top_srcdir) -I$(top_builddir)
 AM_CXXFLAGS = -fPIC
 includedir = $(prefix)/include
@@ -53,8 +54,8 @@ ieee1666/util/report_handler.h \
 ieee1666/util/version.h \
 ieee1666/util/backtrace.h
 
-lib_LIBRARIES = libieee1666.a
-libieee1666_a_SOURCES = \
+lib_LTLIBRARIES = libsystemc.la
+libsystemc_la_SOURCES = \
 ieee1666/kernel/attribute.cc \
 ieee1666/kernel/event.cc \
 ieee1666/kernel/event_finder.cc \
@@ -97,10 +98,6 @@ ieee1666/util/report_handler.cc \
 ieee1666/util/version.cc \
 ieee1666/util/backtrace.cc
 
-bin_PROGRAMS = test1
-test1_SOURCES = test1.cc
-test1_LDADD = libieee1666.a
-
 nobase_dist_share_DATA = \
 COPYING
 
@@ -116,5 +113,4 @@ uninstall-hook:
 	(rmdir $(libdir) || true)
 	
 install-exec-hook:
-	(cd $(libdir) && ( [ -f libsystemc.a ] || $(LN_S) libieee1666.a libsystemc.a ) )
 	(cd $(prefix) && ( [ -d lib-$(IEEE1666_TARGET_ARCH) ] || $(LN_S) lib lib-$(IEEE1666_TARGET_ARCH) ) )

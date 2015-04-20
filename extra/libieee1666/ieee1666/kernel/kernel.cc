@@ -476,7 +476,7 @@ void sc_kernel::simulate(const sc_time& duration)
 			do_timed_step();
 			if(user_requested_stop) break;
 		}
-		while((current_time_stamp <= until_time) && (runnable_thread_processes.size() || runnable_method_processes.size()));
+		while((current_time_stamp < until_time) && (runnable_thread_processes.size() || runnable_method_processes.size()));
 	}
 	
 	if(user_requested_stop)
