@@ -37,53 +37,59 @@
 #include <ieee1666/kernel/interface.h>
 #include <ieee1666/kernel/port.h>
 #include <ieee1666/kernel/event_finder.h>
-#include <ieee1666/kernel/module.h>
+#include <ieee1666/kernel/process.h>
 
 namespace sc_core {
 
 ////////////////////////////////// sc_sensitive ///////////////////////////////////////////
 
-sc_sensitive& sc_sensitive::operator<< (const sc_event& event)
+sc_sensitive& sc_sensitive::operator << (const sc_event& event)
 {
-	sc_object *object = process_handle.get_process_object();
+	sc_object *process_object = process_handle.get_process_object();
 	
-	switch(process_handle.proc_kind())
+	if(process_object)
 	{
-		case SC_NO_PROC_:
-			break;
-		case SC_METHOD_PROC_:
-			event.add_statically_sensitive_method_process((sc_method_process *) object);
-			break;
-		case SC_THREAD_PROC_:
-		case SC_CTHREAD_PROC_:
-			event.add_statically_sensitive_thread_process((sc_thread_process *) object);
-			break;
+		sc_process *process = (sc_process *) process_object;
+		process->add_static_sensitivity(event);
 	}
+	return *this;
 }
 
-sc_sensitive& sc_sensitive::operator<< (const sc_interface& itf)
+sc_sensitive& sc_sensitive::operator << (const sc_interface& itf)
 {
+	sc_object *process_object = process_handle.get_process_object();
+	
+	if(process_object)
+	{
+		sc_process *process = (sc_process *) process_object;
+		const sc_event& event = itf.default_event();
+		process->add_static_sensitivity(event);
+	}
+	return *this;
 }
 
-sc_sensitive& sc_sensitive::operator<< (const sc_port_base& port)
+sc_sensitive& sc_sensitive::operator << (const sc_port_base& port)
 {
+	sc_object *process_object = process_handle.get_process_object();
+
+	if(process_object) port.add_process_statically_sensitive_to_port((sc_process *) process_object);
+
+	return *this;
 }
 
-sc_sensitive& sc_sensitive::operator<< (sc_event_finder& event_finder)
+sc_sensitive& sc_sensitive::operator << (sc_event_finder& event_finder)
 {
+	sc_object *process_object = process_handle.get_process_object();
+	
+	if(process_object) event_finder.get_port().add_process_statically_sensitive_to_event_finder((sc_process *) process_object, event_finder);
+
+	return *this;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 sc_sensitive::sc_sensitive()
-	: module(0)
-	, process_handle()
-{
-}
-
-sc_sensitive::sc_sensitive(sc_module *_module)
-	: module(_module)
-	, process_handle()
+	: process_handle()
 {
 }
 

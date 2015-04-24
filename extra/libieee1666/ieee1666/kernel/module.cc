@@ -66,17 +66,9 @@ const char* sc_module::kind() const
 //{
 //}
 
-// const std::vector<sc_object*>& sc_module::get_child_objects() const
-// {
-// }
-// 
-// const std::vector<sc_event*>& sc_module::get_child_events() const
-// {
-// }
-
 sc_module::sc_module( const sc_module_name& module_name )
 	: sc_object((const char *)(*sc_kernel::get_kernel()->get_top_of_module_name_stack()))
-	, sensitive(this)
+	, sensitive()
 	, spawn_options()
 {
 	init();
@@ -84,7 +76,7 @@ sc_module::sc_module( const sc_module_name& module_name )
 
 sc_module::sc_module()
 	: sc_object((const char *)(*sc_kernel::get_kernel()->get_top_of_module_name_stack()))
-	, sensitive(this)
+	, sensitive()
 	, spawn_options()
 {
 	init();

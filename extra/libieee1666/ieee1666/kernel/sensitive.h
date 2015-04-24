@@ -55,11 +55,9 @@ public:
 private:
 	friend class sc_module;
 	
-	sc_module *module;
 	sc_process_handle process_handle;
 
 	sc_sensitive();
-	sc_sensitive(sc_module *module);
     ~sc_sensitive();
 	
 };

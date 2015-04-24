@@ -273,6 +273,12 @@ void sc_kernel::initialize()
 {
 	unsigned int i;
 	
+	unsigned int num_ports = port_table.size();
+	for(i = 0; i < num_ports; i++)
+	{
+		port_table[i]->finalize_elaboration();
+	}
+	
 	status = SC_BEFORE_END_OF_ELABORATION;
 	report_before_end_of_elaboration();
 	
@@ -396,6 +402,7 @@ void sc_kernel::do_delta_steps(bool once)
 				updatable_prim_channels.pop_front();
 				
 				prim_channel->update();
+				prim_channel->update_requested = false;
 			}
 			while(updatable_prim_channels.size());
 		}
@@ -880,6 +887,15 @@ void sc_kernel::trigger(sc_thread_process *thread_process)
 void sc_kernel::trigger(sc_method_process *method_process)
 {
 	runnable_method_processes.push_back(method_process);
+}
+
+void sc_kernel::request_update(sc_prim_channel *prim_channel)
+{
+	if(!prim_channel->update_requested)
+	{
+		updatable_prim_channels.push_back(prim_channel);
+		prim_channel->update_requested = true;
+	}
 }
 
 const sc_time& sc_kernel::get_current_time_stamp() const

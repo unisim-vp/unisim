@@ -250,9 +250,7 @@ void sc_object::remove_child_object(sc_object *object)
 		if(child_object == object)
 		{
 			child_objects[i] = child_objects[num_child_objects - 1];
-			std::cerr << "size before = " << child_objects.size() << std::endl;
 			child_objects.pop_back();
-			std::cerr << "size after = " << child_objects.size() << std::endl;
 			break;
 		}
 	}

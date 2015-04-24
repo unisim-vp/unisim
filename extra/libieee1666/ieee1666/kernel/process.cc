@@ -67,6 +67,7 @@ sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_p
 
 sc_process::~sc_process()
 {
+	clear_static_sensitivity();
 	if(process_owner)
 	{
 		if(automatic_process_owner) delete process_owner;
@@ -99,6 +100,50 @@ void sc_process::release()
 	{
 		delete this;
 	}
+}
+
+void sc_process::add_static_sensitivity(const sc_event& event)
+{
+	static_sensitivity.push_back(&event);
+	
+	switch(process_kind)
+	{
+		case SC_NO_PROC_:
+			break;
+		case SC_METHOD_PROC_:
+			event.add_statically_sensitive_method_process((sc_method_process *) this);
+			break;
+		case SC_THREAD_PROC_:
+		case SC_CTHREAD_PROC_:
+			event.add_statically_sensitive_thread_process((sc_thread_process *) this);
+			break;
+	}
+}
+
+void sc_process::clear_static_sensitivity()
+{
+	unsigned int i;
+	unsigned int num_events = static_sensitivity.size();
+	
+	for(i = 0; i < num_events; i++)
+	{
+		const sc_event *event = static_sensitivity[i];
+		
+		switch(process_kind)
+		{
+			case SC_NO_PROC_:
+				break;
+			case SC_METHOD_PROC_:
+				event->remove_statically_sensitive_method_process((sc_method_process *) this);
+				break;
+			case SC_THREAD_PROC_:
+			case SC_CTHREAD_PROC_:
+				event->remove_statically_sensitive_thread_process((sc_thread_process *) this);
+				break;
+		}
+	}
+	
+	static_sensitivity.clear();
 }
 
 } // end of namespace sc_core

@@ -119,6 +119,9 @@ public:
 	void trigger(sc_thread_process *thread_process);
 	void trigger(sc_method_process *method_process);
 	
+	// primitive channels
+	void request_update(sc_prim_channel *prim_channel);
+	
 	const sc_time& get_current_time_stamp() const;
 	sc_process_handle get_current_process_handle() const;
 	

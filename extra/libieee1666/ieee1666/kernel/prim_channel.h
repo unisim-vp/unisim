@@ -47,8 +47,6 @@ class sc_prim_channel : public sc_object
 public:
 	virtual const char* kind() const;
 protected:
-	friend class sc_kernel;
-	
 	sc_prim_channel();
 	explicit sc_prim_channel( const char* );
 	virtual ~sc_prim_channel();
@@ -89,6 +87,12 @@ private:
 	// Disabled
 	sc_prim_channel( const sc_prim_channel& );
 	sc_prim_channel& operator= ( const sc_prim_channel& );
+	
+	friend class sc_kernel;
+	
+protected:
+	sc_kernel *kernel;
+	bool update_requested;
 };
 
 } // end of namespace sc_core

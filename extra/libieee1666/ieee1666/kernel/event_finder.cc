@@ -32,6 +32,18 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#include <ieee1666/kernel/event_finder.h>
+
 namespace sc_core {
+
+sc_event_finder::sc_event_finder(const sc_port_base& _port)
+	: port(_port)
+{
+}
+
+const sc_port_base& sc_event_finder::get_port() const
+{
+	return port;
+}
 
 } // end of namespace sc_core

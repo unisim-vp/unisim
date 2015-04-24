@@ -176,32 +176,28 @@ void sc_event::cancel()
 
 void sc_event::trigger()
 {
-	unsigned int num_statically_sensitive_method_processes = statically_sensitive_method_processes.size();
-	
-	if(num_statically_sensitive_method_processes)
+	if(statically_sensitive_method_processes.size())
 	{
-		unsigned int i;
+		std::unordered_set<sc_method_process *>::iterator it = statically_sensitive_method_processes.begin();
 		
-		for(i = 0; i < num_statically_sensitive_method_processes; i++)
+		do
 		{
-			sc_method_process *method_process = statically_sensitive_method_processes[i];
-			
+			sc_method_process *method_process = *it;
 			method_process->trigger_statically();
 		}
+		while(++it, it != statically_sensitive_method_processes.end());
 	}
 
-	unsigned int num_statically_sensitive_thread_processes = statically_sensitive_thread_processes.size();
-	
-	if(num_statically_sensitive_thread_processes)
+	if(statically_sensitive_thread_processes.size())
 	{
-		unsigned int i;
+		std::unordered_set<sc_thread_process *>::iterator it = statically_sensitive_thread_processes.begin();
 		
-		for(i = 0; i < num_statically_sensitive_thread_processes; i++)
+		do
 		{
-			sc_thread_process *thread_process = statically_sensitive_thread_processes[i];
-			
+			sc_thread_process *thread_process = *it;
 			thread_process->trigger_statically();
 		}
+		while(++it, it != statically_sensitive_thread_processes.end());
 	}
 
 	if(dynamically_sensitive_method_processes.size())
@@ -301,12 +297,22 @@ void sc_event::remove_dynamically_sensitive_method_process(sc_method_process *me
 
 void sc_event::add_statically_sensitive_thread_process(sc_thread_process *thread_process) const
 {
-	statically_sensitive_thread_processes.push_back(thread_process);
+	statically_sensitive_thread_processes.insert(thread_process);
 }
 
 void sc_event::add_statically_sensitive_method_process(sc_method_process *method_process) const
 {
-	statically_sensitive_method_processes.push_back(method_process);
+	statically_sensitive_method_processes.insert(method_process);
+}
+
+void sc_event::remove_statically_sensitive_thread_process(sc_thread_process *thread_process) const
+{
+	statically_sensitive_thread_processes.erase(thread_process);
+}
+
+void sc_event::remove_statically_sensitive_method_process(sc_method_process *method_process) const
+{
+	statically_sensitive_method_processes.erase(method_process);
 }
 
 ////////////////////////////// sc_event_list ///////////////////////////////

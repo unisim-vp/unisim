@@ -70,6 +70,10 @@ protected:
 private:
 	// Disabled
 	sc_signal( const sc_signal<T,WRITER_POLICY>& );
+	
+	sc_event signal_value_changed_event;
+	unsigned int read_idx;
+	T value[2];
 };
 
 template <class T, sc_writer_policy WRITER_POLICY>
@@ -180,11 +184,19 @@ private:
 
 template <class T, sc_writer_policy WRITER_POLICY>
 sc_signal<T, WRITER_POLICY>::sc_signal()
+	: sc_prim_channel(IEEE1666_KERNEL_PREFIX "_signal")
+	, signal_value_changed_event(IEEE1666_KERNEL_PREFIX "_value_changed_event")
+	, read_idx(0)
+	, value()
 {
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-sc_signal<T, WRITER_POLICY>::sc_signal( const char* )
+sc_signal<T, WRITER_POLICY>::sc_signal(const char* _name)
+	: sc_prim_channel(_name)
+	, signal_value_changed_event(IEEE1666_KERNEL_PREFIX "_value_changed_event")
+	, read_idx(0)
+	, value()
 {
 }
 
@@ -201,11 +213,13 @@ void sc_signal<T, WRITER_POLICY>::register_port( sc_port_base&, const char* )
 template <class T, sc_writer_policy WRITER_POLICY>
 const T& sc_signal<T, WRITER_POLICY>::read() const
 {
+	return value[read_idx];
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
 sc_signal<T, WRITER_POLICY>::operator const T& () const
 {
+	return read();
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
@@ -214,13 +228,24 @@ sc_writer_policy sc_signal<T, WRITER_POLICY>::get_writer_policy() const
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-void sc_signal<T, WRITER_POLICY>::write( const T& )
+void sc_signal<T, WRITER_POLICY>::write(const T& v)
 {
+	unsigned int write_idx = read_idx ^ 1;
+	T& current_value = value[read_idx];
+	T& new_value = value[write_idx];
+	bool value_changed = !(v == current_value);
+	
+	if(value_changed)
+	{
+		new_value = v;
+		request_update();
+	}
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-sc_signal<T,WRITER_POLICY>& sc_signal<T, WRITER_POLICY>::operator= ( const T& )
+sc_signal<T,WRITER_POLICY>& sc_signal<T, WRITER_POLICY>::operator= (const T& v)
 {
+	write(v);
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
@@ -231,11 +256,13 @@ sc_signal<T,WRITER_POLICY>& sc_signal<T, WRITER_POLICY>::operator= ( const sc_si
 template <class T, sc_writer_policy WRITER_POLICY>
 const sc_event& sc_signal<T, WRITER_POLICY>::default_event() const
 {
+	return signal_value_changed_event;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
 const sc_event& sc_signal<T, WRITER_POLICY>::value_changed_event() const
 {
+	return signal_value_changed_event;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
@@ -261,6 +288,7 @@ const char* sc_signal<T, WRITER_POLICY>::kind() const
 template <class T, sc_writer_policy WRITER_POLICY>
 void sc_signal<T, WRITER_POLICY>::update()
 {
+	read_idx ^= 1;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>

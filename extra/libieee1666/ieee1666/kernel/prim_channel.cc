@@ -33,6 +33,7 @@
  */
 
 #include <ieee1666/kernel/prim_channel.h>
+#include <ieee1666/kernel/kernel.h>
 
 namespace sc_core {
 
@@ -44,10 +45,12 @@ const char* sc_prim_channel::kind() const
 }
 
 sc_prim_channel::sc_prim_channel()
+	: kernel(sc_kernel::get_kernel())
 {
 }
 
 sc_prim_channel::sc_prim_channel( const char* )
+	: kernel(sc_kernel::get_kernel())
 {
 }
 
@@ -57,6 +60,7 @@ sc_prim_channel::~sc_prim_channel()
 
 void sc_prim_channel::request_update()
 {
+	kernel->request_update(this);
 }
 
 void sc_prim_channel::async_request_update()

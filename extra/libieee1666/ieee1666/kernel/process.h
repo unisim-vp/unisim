@@ -73,6 +73,8 @@ public:
 	void acquire();
 	void release();
 	
+	void add_static_sensitivity(const sc_event& e);
+	void clear_static_sensitivity();
 private:
 	sc_process_owner *process_owner;
 	sc_process_owner_method_ptr process_owner_method_ptr;
@@ -82,6 +84,7 @@ private:
 
 	unsigned int ref_count;
 
+	std::vector<const sc_event *> static_sensitivity;
 protected:
 	bool enabled;
 	bool suspended;

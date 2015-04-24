@@ -62,8 +62,6 @@ public:
 // 	...
 // 	const sc_bind_proxy& p063 = SC_BIND_PROXY_NIL,
 // 	const sc_bind_proxy& p064 = SC_BIND_PROXY_NIL );
-//	virtual const std::vector<sc_object*>& get_child_objects() const;
-//	virtual const std::vector<sc_event*>& get_child_events() const;
 protected:
 	sc_module( const sc_module_name& );
 	sc_module();
