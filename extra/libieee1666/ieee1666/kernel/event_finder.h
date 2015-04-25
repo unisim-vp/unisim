@@ -53,9 +53,10 @@ protected:
 	sc_event_finder(const sc_port_base& _port);
 
 	const sc_port_base& get_port() const;
+	const sc_port_base& port() const;
 	virtual const sc_event& find_event(sc_interface *_if) const = 0;
 private:
-	const sc_port_base& port;	
+	const sc_port_base& base_port;	
 };
 
 template <class IF>

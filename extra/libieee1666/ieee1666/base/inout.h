@@ -71,6 +71,9 @@ public:
 private:
 	// Disabled
 	sc_inout( const sc_inout<T>& );
+	
+	/////////////////////////////////////
+	sc_event_finder_t<sc_in<T> > value_changed_event_finder;
 };
 
 template <class T>
@@ -191,11 +194,14 @@ inline void sc_trace<bool>( sc_trace_file*, const sc_inout<bool>&, const std::st
 
 template <class T>
 sc_inout<T>::sc_inout()
+	: sc_port<sc_signal_inout_if<T>,1>()
+	, value_changed_event_finder(this, value_changed_event)
 {
 }
 
 template <class T>
-sc_inout<T>::sc_inout( const char* )
+sc_inout<T>::sc_inout(const char *_name)
+	: sc_port<sc_signal_inout_if<T>,1>(_name)
 {
 }
 
@@ -222,68 +228,87 @@ void sc_inout<T>::end_of_elaboration()
 template <class T>
 const T& sc_inout<T>::read() const
 {
+	return (*this)->read();
 }
 
 template <class T>
 sc_inout<T>::operator const T& () const
 {
+	return (*this)->read();
 }
 
 template <class T>
-void sc_inout<T>::write( const T& )
+void sc_inout<T>::write(const T& v)
 {
+	(*this)->write(v);
 }
 
 template <class T>
-sc_inout<T>& sc_inout<T>::operator= ( const T& )
+sc_inout<T>& sc_inout<T>::operator = (const T& v)
 {
+	(*this)->write(v);
+	return *this;
 }
 
 template <class T>
-sc_inout<T>& sc_inout<T>::operator= ( const sc_signal_in_if<T>& )
+sc_inout<T>& sc_inout<T>::operator = (const sc_signal_in_if<T>& _if)
 {
+	(*this)->write(_if->read());
+	return *this;
 }
 
 template <class T>
-sc_inout<T>& sc_inout<T>::operator= ( const sc_port< sc_signal_in_if<T>, 1>& )
+sc_inout<T>& sc_inout<T>::operator = (const sc_port< sc_signal_in_if<T>, 1>& port)
 {
+	(*this)->write(port->read());
+	return *this;
 }
 
 template <class T>
-sc_inout<T>& sc_inout<T>::operator= ( const sc_port< sc_signal_inout_if<T>, 1>& )
+sc_inout<T>& sc_inout<T>::operator = (const sc_port< sc_signal_inout_if<T>, 1>& port)
 {
+	(*this)->write(port->read());
+	return *this;
 }
 
 template <class T>
-sc_inout<T>& sc_inout<T>::operator= ( const sc_inout<T>& )
+sc_inout<T>& sc_inout<T>::operator = (const sc_inout<T>& port)
 {
+	(*this)->write(port->read());
+	return *this;
 }
 
 template <class T>
 const sc_event& sc_inout<T>::default_event() const
 {
+	return (*this)->default_event();
 }
 
 template <class T>
 const sc_event& sc_inout<T>::value_changed_event() const
 {
+	return (*this)->value_changed_event();
 }
 
 template <class T>
 bool sc_inout<T>::event() const
 {
+	return (*this)->event();
 }
 
 template <class T>
 sc_event_finder& sc_inout<T>::value_changed() const
 {
+	return value_changed_event_finder;
 }
 
 template <class T>
 const char* sc_inout<T>::kind() const
 {
+	return "sc_inout";
 }
 
+// Disabled
 template <class T>
 sc_inout<T>::sc_inout( const sc_inout<T>& )
 {

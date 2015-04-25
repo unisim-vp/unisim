@@ -68,5 +68,9 @@
 #include <ieee1666/base/signal.h>
 #include <ieee1666/base/signal_if.h>
 #include <ieee1666/util/trace_file.h>
+#include <ieee1666/util/report.h>
+#include <ieee1666/util/report_handler.h>
+//#include <ieee1666/util/vector.h>
+#include <ieee1666/util/version.h>
 
 #endif

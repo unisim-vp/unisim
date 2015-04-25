@@ -90,6 +90,8 @@ protected:
 	sc_port_base(const char *name, int N, sc_port_policy P);
 	sc_port_base(int N, sc_port_policy P);
 	
+	void bind(sc_interface *_if);
+	void bind(sc_port_base *port);
 	virtual const char *get_interface_typename() = 0;
 private:
 	friend class sc_kernel;
@@ -104,8 +106,6 @@ private:
 	mutable std::vector<sc_process_static_sensitivity *> processes_static_sensitivity; // process sensitivity as of elaboration time
 	bool elaboration_finalized;
 	
-	void bind(sc_interface *_if);
-	void bind(sc_port_base *port);
 	void add_process_statically_sensitive_to_port(sc_process *process) const;
 	void add_process_statically_sensitive_to_event_finder(sc_process *process, sc_event_finder& event_finder) const;
 	
@@ -158,24 +158,27 @@ private:
 //////////////////////////////////// sc_port_b<> /////////////////////////////////////////////
 
 template <class IF>
-void sc_port_b<IF>::operator() ( IF& )
+void sc_port_b<IF>::operator () (IF& _if)
 {
+	bind(_if);
 }
 
 template <class IF>
-void sc_port_b<IF>::operator() (sc_port_b<IF>& itf)
+void sc_port_b<IF>::operator () (sc_port_b<IF>& port)
 {
-	bind(itf);
+	bind(port);
 }
 
 template <class IF>
 void sc_port_b<IF>::bind(IF& itf)
 {
+	sc_port_base::bind((sc_interface *) &itf);
 }
 
 template <class IF>
-void sc_port_b<IF>::bind( sc_port_b<IF>& )
+void sc_port_b<IF>::bind(sc_port_b<IF>& port)
 {
+	sc_port_base::bind((sc_port_base *) &port);
 }
 
 template <class IF>

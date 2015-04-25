@@ -42,10 +42,12 @@ sc_signal_in_if<bool>::sc_signal_in_if()
 {
 }
 
+// Disabled
 sc_signal_in_if<bool>::sc_signal_in_if( const sc_signal_in_if<bool>& )
 {
 }
 
+// Disabled
 sc_signal_in_if<bool>& sc_signal_in_if<bool>::operator= ( const sc_signal_in_if<bool>& )
 {
 }

@@ -99,11 +99,13 @@ private:
 
 template <class T>
 sc_out<T>::sc_out()
+	: sc_inout<T>()
 {
 }
 
 template <class T>
-sc_out<T>::sc_out( const char* )
+sc_out<T>::sc_out(const char *_name)
+	: sc_inout<T>(_name)
 {
 }
 
@@ -113,35 +115,47 @@ sc_out<T>::~sc_out()
 }
 
 template <class T>
-sc_out<T>& sc_out<T>::operator= ( const T& )
+sc_out<T>& sc_out<T>::operator = (const T& v)
 {
+	(*this)->write(v);
+	return *this;
 }
 
 template <class T>
-sc_out<T>& sc_out<T>::operator= ( const sc_signal_in_if<T>& )
+sc_out<T>& sc_out<T>::operator = (const sc_signal_in_if<T>& _if)
 {
+	(*this)->write(_if->read());
+	return *this;
 }
 
 template <class T>
-sc_out<T>& sc_out<T>::operator= ( const sc_port< sc_signal_in_if<T>, 1>& )
+sc_out<T>& sc_out<T>::operator = (const sc_port< sc_signal_in_if<T>, 1>& port)
 {
+	(*this)->write(port->read());
+	return *this;
 }
 
 template <class T>
-sc_out<T>& sc_out<T>::operator= ( const sc_port< sc_signal_inout_if<T>, 1>& )
+sc_out<T>& sc_out<T>::operator = (const sc_port< sc_signal_inout_if<T>, 1>& port)
 {
+	(*this)->write(port->read());
+	return *this;
 }
 
 template <class T>
-sc_out<T>& sc_out<T>::operator= ( const sc_out<T>& )
+sc_out<T>& sc_out<T>::operator = (const sc_out<T>& port)
 {
+	(*this)->write(port->read());
+	return *this;
 }
 
 template <class T>
 const char* sc_out<T>::kind() const
 {
+	return "sc_out";
 }
 
+// Disabled
 template <class T>
 sc_out<T>::sc_out( const sc_out<T>& )
 {

@@ -50,6 +50,17 @@ protected:
 	virtual void end_of_elaboration();
 	virtual void start_of_simulation();
 	virtual void end_of_simulation();
+	
+	////////////////////////////////////////////
+	virtual sc_interface* get_interface();
+	virtual const sc_interface* get_interface() const;
+protected:
+	sc_export_base(const char *name);
+	sc_export_base();
+	
+	void bind(sc_interface *_if);
+	
+	sc_interface *interf;
 };
 
 template<class IF>
@@ -66,8 +77,6 @@ public:
 	operator const IF& () const;
 	IF* operator-> ();
 	const IF* operator-> () const;
-	virtual sc_interface* get_interface();
-	virtual const sc_interface* get_interface() const;
 protected:
 };
 
@@ -75,11 +84,13 @@ protected:
 
 template<class IF>
 sc_export<IF>::sc_export()
+	: sc_export_base()
 {
 }
 
 template<class IF>
-sc_export<IF>::sc_export( const char* )
+sc_export<IF>::sc_export(const char *_name)
+	: sc_export_base(_name)
 {
 }
 
@@ -95,43 +106,39 @@ const char* sc_export<IF>::kind() const
 }
 
 template<class IF>
-void sc_export<IF>::operator() ( IF& )
+void sc_export<IF>::operator () (IF& _if)
 {
+	bind(_if);
 }
 
 template<class IF>
-void sc_export<IF>::bind( IF& )
+void sc_export<IF>::bind(IF& _if)
 {
+	sc_export_base::bind((sc_interface *) &_if);
 }
 
 template<class IF>
 sc_export<IF>::operator IF& ()
 {
+	return *(IF *) interf;
 }
 
 template<class IF>
 sc_export<IF>::operator const IF& () const
 {
+	return *(const IF *) interf; 
 }
 
 template<class IF>
 IF* sc_export<IF>::operator-> ()
 {
+	return interf;
 }
 
 template<class IF>
 const IF* sc_export<IF>::operator-> () const
 {
-}
-
-template<class IF>
-sc_interface* sc_export<IF>::get_interface()
-{
-}
-
-template<class IF>
-const sc_interface* sc_export<IF>::get_interface() const
-{
+	return interf;
 }
 
 } // end of namespace sc_core

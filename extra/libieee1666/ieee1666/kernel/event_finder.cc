@@ -37,13 +37,18 @@
 namespace sc_core {
 
 sc_event_finder::sc_event_finder(const sc_port_base& _port)
-	: port(_port)
+	: base_port(_port)
 {
 }
 
 const sc_port_base& sc_event_finder::get_port() const
 {
-	return port;
+	return base_port;
+}
+
+const sc_port_base& sc_event_finder::port() const
+{
+	return base_port;
 }
 
 } // end of namespace sc_core

@@ -69,6 +69,9 @@ private:
 	// Disabled
 	sc_in( const sc_in<T>& );
 	sc_in<T>& operator= ( const sc_in<T>& );
+	
+	////////////////////////////////////////////
+	sc_event_finder_t<sc_in<T> > value_changed_event_finder;
 };
 
 template <class T>
@@ -179,11 +182,14 @@ inline void sc_trace<bool>( sc_trace_file*, const sc_in<bool>&, const std::strin
 
 template <class T>
 sc_in<T>::sc_in()
+	: sc_port<sc_signal_in_if<T>,1>()
+	, value_changed_event_finder(this, value_changed_event)
 {
 }
 
 template <class T>
-sc_in<T>::sc_in( const char* )
+sc_in<T>::sc_in(const char* _name)
+	: sc_port<sc_signal_in_if<T>,1>(_name)
 {
 }
 
@@ -193,33 +199,39 @@ sc_in<T>::~sc_in()
 }
 
 template <class T>
-void sc_in<T>::bind ( const sc_signal_in_if<T>& )
+void sc_in<T>::bind(const sc_signal_in_if<T>& _if)
 {
+	sc_port_base::bind(_if);
 }
 
 template <class T>
-void sc_in<T>::operator() ( const sc_signal_in_if<T>& )
+void sc_in<T>::operator() (const sc_signal_in_if<T>& _if)
 {
+	sc_in<T>::bind(_if);
 }
 
 template <class T>
-void sc_in<T>::bind ( sc_port<sc_signal_in_if<T>, 1>& )
+void sc_in<T>::bind(sc_port<sc_signal_in_if<T>, 1>& port)
 {
+	sc_port_base::bind(port);
 }
 
 template <class T>
-void sc_in<T>::operator() ( sc_port<sc_signal_in_if<T>, 1>& )
+void sc_in<T>::operator() (sc_port<sc_signal_in_if<T>, 1>& port)
 {
+	sc_in<T>::bind(port);
 }
 
 template <class T>
-void sc_in<T>::bind ( sc_port<sc_signal_inout_if<T>, 1>& )
+void sc_in<T>::bind(sc_port<sc_signal_inout_if<T>, 1>& port)
 {
+	sc_port_base::bind(port);
 }
 
 template <class T>
-void sc_in<T>::operator() ( sc_port<sc_signal_inout_if<T>, 1>& )
+void sc_in<T>::operator() (sc_port<sc_signal_inout_if<T>, 1>& port)
 {
+	sc_in<T>::bind(port);
 }
 
 template <class T>
@@ -230,43 +242,52 @@ void sc_in<T>::end_of_elaboration()
 template <class T>
 const T& sc_in<T>::read() const
 {
+	return (*this)->read();
 }
 
 template <class T>
 sc_in<T>::operator const T& () const
 {
+	return (*this)->read();
 }
 
 template <class T>
 const sc_event& sc_in<T>::default_event() const
 {
+	return (*this)->default_event();
 }
 
 template <class T>
 const sc_event& sc_in<T>::value_changed_event() const
 {
+	return (*this)->value_changed_event();
 }
 
 template <class T>
 bool sc_in<T>::event() const
 {
+	return (*this)->event();
 }
 
 template <class T>
 sc_event_finder& sc_in<T>::value_changed() const
 {
+	return value_changed_event_finder;
 }
 
 template <class T>
 const char* sc_in<T>::kind() const
 {
+	return "sc_in";
 }
 
+// Disabled
 template <class T>
 sc_in<T>::sc_in( const sc_in<T>& )
 {
 }
 
+// Disabled
 template <class T>
 sc_in<T>& sc_in<T>::operator= ( const sc_in<T>& )
 {

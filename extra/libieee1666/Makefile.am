@@ -52,7 +52,8 @@ ieee1666/util/trace_file.h \
 ieee1666/util/report.h \
 ieee1666/util/report_handler.h \
 ieee1666/util/version.h \
-ieee1666/util/backtrace.h
+ieee1666/util/backtrace.h \
+ieee1666/util/vector.h
 
 lib_LTLIBRARIES = libsystemc.la
 libsystemc_la_SOURCES = \
