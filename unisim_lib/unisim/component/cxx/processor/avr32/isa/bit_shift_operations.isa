@@ -272,9 +272,9 @@ castu_b.disasm={
 
 // CBR - clear bit in register
 
-op cbr(0b101[3]:bp_4_1[4]:0b1110[4]:bp_0[1]:rd[4])
+op cbr(0b101[3]:shl<1>bp_4_1[4]:0b1110[4]:bp_0[1]:rd[4])
 
-cbr.var bp : {uint8_t} = {(bp_4_1 << 1)| bp_0 }
+cbr.var bp : {uint8_t} = { bp_4_1 | bp_0 }
 
 cbr.execute={
 
@@ -319,9 +319,9 @@ clz.disasm={
 
 //SBR - set bit in register
 
-op sbr(0b101[3]:bp_4_1[4]:0b1101[4]:bp_0[1]:rd[4])
+op sbr(0b101[3]:shl<1>bp_4_1[4]:0b1101[4]:bp_0[1]:rd[4])
 
-sbr.var bp : {uint8_t} = {(bp_4_1 << 1)| bp_0 } 
+sbr.var bp : {uint8_t} = { bp_4_1 | bp_0 } 
 
 sbr.execute={
 
@@ -444,9 +444,9 @@ asr_a.disasm={
 	os << "asr\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
-op asr_b(0b101[3]:sa_4_1[4]:0b1010[4]:sa_0[1]:rd[4])
+op asr_b(0b101[3]:shl<1>sa_4_1[4]:0b1010[4]:sa_0[1]:rd[4])
 
-asr_b.var sa : {uint8_t} = {(sa_4_1 << 1)| sa_0 }
+asr_b.var sa : {uint8_t} = { sa_4_1 | sa_0 }
 
 asr_b.execute={
 
@@ -529,9 +529,9 @@ lsl_a.disasm={
 	os << "lsl\t" << REG_NAME[rd] << "," << REG_NAME[rx] << "," << REG_NAME[ry];
 }
 
-op lsl_b(0b101[3]:sa_4_1[4]:0b1011[4]:sa_0[1]:rd[4])
+op lsl_b(0b101[3]:shl<1>sa_4_1[4]:0b1011[4]:sa_0[1]:rd[4])
 
-lsl_b.var sa : {uint8_t} = {(sa_4_1 << 1)| sa_0 }
+lsl_b.var sa : {uint8_t} = { sa_4_1 | sa_0 }
 
 lsl_b.execute={
 	
@@ -611,9 +611,9 @@ lsr_a.disasm={
 }
 
 
-op lsr_b(0b101[3]:sa_4_1[4]:0b1100[4]:sa_0[1]:rd[4])
+op lsr_b(0b101[3]:shl<1>sa_4_1[4]:0b1100[4]:sa_0[1]:rd[4])
 
-lsr_b.var sa : {uint8_t} = {(sa_4_1 << 1)| sa_0 }
+lsr_b.var sa : {uint8_t} = { sa_4_1 | sa_0 }
 
 lsr_b.execute={
 	

@@ -88,7 +88,7 @@ OperandBitField_t::fills( ostream& _sink ) const {
 */
 unsigned int
 OperandBitField_t::dstsize() const {
-  return std::max( m_size, m_size_modifier );
+  return std::max( (unsigned int)(m_size + ((m_shift < 0) ? -m_shift : 0)), m_size_modifier );
 }
 
 /** Create an unused bitfield object
@@ -191,7 +191,7 @@ SpOperandBitField_t::SpOperandBitField_t( SpOperandBitField_t const& _src )
 */
 unsigned int
 SpOperandBitField_t::dstsize() const {
-  return std::max( m_size, m_size_modifier );
+  return std::max( (unsigned int)(m_size + ((m_shift < 0) ? -m_shift : 0)), m_size_modifier );
 }
 
 /**
