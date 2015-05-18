@@ -41,7 +41,7 @@
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
-#include "unisim/component/cxx/memory/ram/memory.hh"
+#include <unisim/component/cxx/memory/ram/memory.hh>
 #include <inttypes.h>
 
 namespace unisim {

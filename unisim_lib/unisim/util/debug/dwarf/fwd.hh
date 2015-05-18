@@ -95,6 +95,7 @@ template <class MEMORY_ADDR> class DWARF_Pubs;
 template <class MEMORY_ADDR> class DWARF_LocListEntry;
 template <class MEMORY_ADDR> class DWARF_Handler;
 template <class MEMORY_ADDR> class DWARF_DataObject;
+template <class MEMORY_ADDR> class DWARF_SubProgram;
 
 } // end of namespace dwarf
 } // end of namespace debug

@@ -163,6 +163,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 		return false;
 	}
 
+	if(!registers_import) return false;
+	
 	input_buffer_size = 0;
 	input_buffer_index = 0;
 	output_buffer_size = 0;
@@ -242,14 +244,15 @@ bool GDBServer<ADDRESS>::EndSetup()
 			bool has_program_counter = false;
 			string program_counter_name;
 
+			int reg_num = 0;
 			for(xml_node = xml_nodes->begin(); xml_node != xml_nodes->end(); xml_node++)
 			{
 				if((*xml_node)->Name() == string("register"))
 				{
 					string reg_name;
 					bool has_reg_name = false;
-					int reg_size = 0;
-					bool has_reg_size = false;
+					int reg_bitsize = 0;
+					bool has_reg_bitsize = false;
 
 					const list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
 
@@ -263,22 +266,29 @@ bool GDBServer<ADDRESS>::EndSetup()
 						}
 						else
 						{
-							if((*xml_node_property)->Name() == string("size"))
+							if((*xml_node_property)->Name() == string("bitsize"))
 							{
-								reg_size = atoi((*xml_node_property)->Value().c_str());
-								has_reg_size = true;
+								reg_bitsize = atoi((*xml_node_property)->Value().c_str());
+								has_reg_bitsize = true;
 							}
 							else
 							{
-								logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
+								if((*xml_node_property)->Name() == string("regnum"))
+								{
+									reg_num = atoi((*xml_node_property)->Value().c_str());
+								}
+								else
+								{
+									logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
+								}
 							}
 						}
 					}
 
-					if(has_reg_name && has_reg_size)
+					if(has_reg_name && has_reg_bitsize)
 					{
 						bool cpu_has_reg = true;
-						bool cpu_has_right_reg_size = true;
+						bool cpu_has_right_reg_bitsize = true;
 
 						unisim::util::debug::Register *reg = 0;
 						
@@ -296,30 +306,37 @@ bool GDBServer<ADDRESS>::EndSetup()
 							}
 							else
 							{
-								if(reg->GetSize() != reg_size)
+								if((8 * reg->GetSize()) != reg_bitsize)
 								{
-									cpu_has_right_reg_size = false;
+									cpu_has_right_reg_bitsize = false;
 									if(verbose)
 									{
-										logger << DebugWarning << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
+										logger << DebugWarning << ": register size (" << reg_bitsize << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
 									}
 								}
 							}
 						}
 
-						if(cpu_has_reg && cpu_has_right_reg_size)
+						if(reg_num >= gdb_registers.size())
 						{
-							gdb_registers.push_back(GDBRegister(reg, endian, gdb_registers.size()));
+							gdb_registers.resize(reg_num + 1);
+						}
+						
+						if(cpu_has_reg && cpu_has_right_reg_bitsize)
+						{
+							gdb_registers[reg_num] = GDBRegister(reg, endian, reg_num);
 						}
 						else
 						{
-							gdb_registers.push_back(GDBRegister(reg_name, reg_size, endian, gdb_registers.size()));
+							gdb_registers[reg_num] = GDBRegister(reg_name, reg_bitsize, endian, reg_num);
 						}
 					}
 					else
 					{
 						logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name() << "' has no 'name' or 'size' property" << EndDebugWarning;
 					}
+					
+					reg_num++;
 				}
 				else
 				{
@@ -1075,6 +1092,7 @@ bool GDBServer<ADDRESS>::ReadRegisters()
 	{
 		string hex;
 		gdb_reg->GetValue(hex);
+		//std::cerr << gdb_reg->GetName() << "=" << hex << std::endl;
 		packet += hex;
 	}
 	return PutPacket(packet);
@@ -1105,7 +1123,7 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 	if(regnum >= gdb_registers.size())
 	{
 		logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
-		return false;
+		return PutPacket("E00");
 	}
 	const GDBRegister& gdb_reg = gdb_registers[regnum];
 	string packet;
@@ -1119,7 +1137,7 @@ bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 	if(regnum >= gdb_registers.size())
 	{
 		logger << DebugError << "Register #" << regnum << " can't be written because it is unknown" << EndDebugError;
-		return false;
+		return PutPacket("E00");
 	}
 	GDBRegister& gdb_reg = gdb_registers[regnum];
 	return gdb_reg.SetValue(hex) ? PutPacket("OK") : PutPacket("E00");
@@ -1163,7 +1181,7 @@ bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 		}
 	}
 
-	return read_error ? PutPacket("E00") : PutPacket(packet); //PutPacket(packet);
+	return /*read_error ? PutPacket("E00") : PutPacket(packet); */PutPacket(packet);
 }
 
 template <class ADDRESS>

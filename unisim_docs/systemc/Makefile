@@ -1,6 +1,6 @@
 INTRODUCTION= \
 	introduction/intro_main.tex  introduction/really.tex \
-	introduction/technically.tex \
+	introduction/technically.tex introduction/install.txt \
 	introduction/conclusion.tex introduction/fibonacci_annotated.cc \
 	introduction/fibonacci.cc \
 	introduction/fibonacci_annotated.cc \
@@ -46,7 +46,8 @@ TLM= \
 	tlm/payload.tex \
 	tlm/quantum.tex \
 	tlm/charts.tex \
-	tlm/others.tex
+	tlm/others.tex \
+	tlm/exercise.tex
 
 all: presentation article
 	

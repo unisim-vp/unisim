@@ -421,6 +421,39 @@ void Blob<MEMORY_ADDR>::GetAddrRange(MEMORY_ADDR& _min_addr, MEMORY_ADDR& _max_a
 }
 
 template <class MEMORY_ADDR>
+bool Blob<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR min_addr, MEMORY_ADDR max_addr) const
+{
+	typename std::vector<const Blob<MEMORY_ADDR> *>::const_iterator blob_iter;
+	for(blob_iter = blobs.begin(); blob_iter != blobs.end(); blob_iter++)
+	{
+		const Blob<MEMORY_ADDR> *blob = *blob_iter;
+		if(blob->HasOverlap(min_addr, max_addr)) return true;
+	}
+
+	typename std::vector<const Section<MEMORY_ADDR> *>::const_iterator section_iter;
+	for(section_iter = sections.begin(); section_iter != sections.end(); section_iter++)
+	{
+		const Section<MEMORY_ADDR> *section = *section_iter;
+		if(section->GetAttr() & Section<MEMORY_ADDR>::SA_A)
+		{
+			if(section->HasOverlap(min_addr, max_addr)) return true;
+		}
+	}
+	
+	typename std::vector<const Segment<MEMORY_ADDR> *>::const_iterator segment_iter;
+	for(segment_iter = segments.begin(); segment_iter != segments.end(); segment_iter++)
+	{
+		const Segment<MEMORY_ADDR> *segment = *segment_iter;
+		if(segment->GetType() == Segment<MEMORY_ADDR>::TY_LOADABLE)
+		{
+			if(segment->HasOverlap(min_addr, max_addr)) return true;
+		}
+	}
+
+	return false;
+}
+
+template <class MEMORY_ADDR>
 const std::vector<const Blob<MEMORY_ADDR> *>& Blob<MEMORY_ADDR>::GetBlobs() const
 {
 	return blobs;

@@ -65,6 +65,11 @@ void Type::DFS(const std::string& path, const TypeVisitor *visitor, bool follow_
 	visitor->Visit(path.c_str(), this, TINIT_TOK_LITERAL);
 }
 
+std::string Type::BuildCDecl(const char *data_object_name) const
+{
+	return std::string("unknown_type ") + (data_object_name ? data_object_name : "");
+}
+
 std::ostream& operator << (std::ostream& os, const Type& type)
 {
 	switch(type.type_class)
@@ -137,6 +142,16 @@ bool IntegerType::IsSigned() const
 	return is_signed;
 }
 
+std::string IntegerType::BuildCDecl(const char *data_object_name) const
+{
+	std::stringstream sstr;
+	sstr << (is_signed ? "s" : "u") << "int";
+	uint64_t bit_size = GetBitSize();
+	if(bit_size) sstr << bit_size;
+	if(data_object_name) sstr << " " << data_object_name;
+	return sstr.str();
+}
+
 std::ostream& operator << (std::ostream& os, const IntegerType& integer_type)
 {
 	os << (integer_type.is_signed ? "s" : "u") << "int";
@@ -160,6 +175,17 @@ bool CharType::IsSigned() const
 	return is_signed;
 }
 
+std::string CharType::BuildCDecl(const char *data_object_name) const
+{
+	std::stringstream sstr;
+	sstr << (is_signed ? "s" : "u") << "char";
+	uint64_t bit_size = GetBitSize();
+	
+	if(bit_size) sstr << bit_size;
+	if(data_object_name) sstr << " " << data_object_name;
+	return sstr.str();
+}
+
 std::ostream& operator << (std::ostream& os, const CharType& char_type)
 {
 	os << (char_type.is_signed ? "s" : "u") << "char";
@@ -177,6 +203,17 @@ FloatingPointType::~FloatingPointType()
 {
 }
 
+std::string FloatingPointType::BuildCDecl(const char *data_object_name) const
+{
+	std::stringstream sstr;
+	sstr << "float";
+	uint64_t bit_size = GetBitSize();
+	if(bit_size) sstr << bit_size;
+	if(data_object_name) sstr << " " << data_object_name;
+	
+	return sstr.str();
+}
+
 std::ostream& operator << (std::ostream& os, const FloatingPointType& floating_point_type)
 {
 	os << "float";
@@ -192,6 +229,16 @@ BooleanType::BooleanType(unsigned int _bit_size)
 
 BooleanType::~BooleanType()
 {
+}
+
+std::string BooleanType::BuildCDecl(const char *data_object_name) const
+{
+	std::stringstream sstr;
+	sstr << "bool";
+	uint64_t bit_size = GetBitSize();
+	if(bit_size) sstr << bit_size;
+	if(data_object_name) sstr << " " << data_object_name;
+	return sstr.str();
 }
 
 std::ostream& operator << (std::ostream& os, const BooleanType& boolean_type)
@@ -298,6 +345,32 @@ void StructureType::DFS(const std::string& path, const TypeVisitor *visitor, boo
 	visitor->Visit(path.c_str(), this, TINIT_TOK_END_OF_STRUCT);
 }
 
+std::string StructureType::BuildCDecl(const char *data_object_name) const
+{
+	std::stringstream sstr;
+	
+	switch(GetClass())
+	{
+		case T_STRUCT:
+			sstr << "struct";
+			break;
+		case T_UNION:
+			sstr << "union";
+			break;
+		case T_CLASS:
+			sstr << "class";
+			break;
+		case T_INTERFACE:
+			sstr << "interface";
+			break;
+		default:
+			return std::string();
+	}
+	sstr << " " << name;
+	if(data_object_name) sstr << " " << data_object_name;
+	return sstr.str();
+}
+
 std::ostream& operator << (std::ostream& os, const StructureType& structure_type)
 {
 	switch(structure_type.GetClass())
@@ -377,6 +450,45 @@ void ArrayType::DFS(const std::string& path, const TypeVisitor *visitor, bool fo
 	visitor->Visit(path.c_str(), this, TINIT_TOK_END_OF_ARRAY);
 }
 
+std::string ArrayType::BuildCDecl(const char *data_object_name) const
+{
+	std::stringstream sstr;
+	
+	std::queue<const ArrayType *> fifo;
+	
+	const ArrayType *a = 0;
+	const Type *t = this; 
+	do
+	{
+		a = (const ArrayType *) t;
+		fifo.push(a);
+	}
+	while((t = a->type_of_element)->GetClass() == T_ARRAY);
+	
+	sstr << t->BuildCDecl();
+	if(data_object_name) sstr << " " << data_object_name;
+
+	while(!fifo.empty())
+	{
+		a = fifo.front();
+		fifo.pop();
+		
+		if(a->lower_bound <= a->upper_bound)
+		{
+			if(a->lower_bound)
+				sstr << '[' << a->lower_bound << ".." << a->upper_bound << ']';
+			else
+				sstr << '[' << a->upper_bound + 1 << ']';
+		}
+		else
+		{
+			sstr << "[]";
+		}
+	}
+	
+	return sstr.str();
+}
+
 std::ostream& operator << (std::ostream& os, const ArrayType& array_type)
 {
 	std::queue<const ArrayType *> fifo;
@@ -399,7 +511,10 @@ std::ostream& operator << (std::ostream& os, const ArrayType& array_type)
 		
 		if(a->lower_bound <= a->upper_bound)
 		{
-			os << '[' << a->lower_bound << ".." << a->upper_bound << ']';
+			if(a->lower_bound)
+				os << '[' << a->lower_bound << ".." << a->upper_bound << ']';
+			else
+				os << '[' << (a->upper_bound + 1) << ']';
 		}
 		else
 		{
@@ -440,6 +555,24 @@ void PointerType::DFS(const std::string& path, const TypeVisitor *visitor, bool 
 	}
 }
 
+std::string PointerType::BuildCDecl(const char *data_object_name) const
+{
+	std::stringstream sstr;
+	if((type_of_dereferenced_object->GetClass() == T_FUNCTION) || (type_of_dereferenced_object->GetClass() == T_ARRAY))
+	{
+		std::string s("(*");
+		if(data_object_name) s += data_object_name;
+		s += ')';
+		sstr << type_of_dereferenced_object->BuildCDecl(s.c_str());
+	}
+	else
+	{
+		sstr << type_of_dereferenced_object->BuildCDecl() << " *";
+		if(data_object_name) sstr << data_object_name;
+	}
+	return sstr.str();
+}
+
 std::ostream& operator << (std::ostream& os, const PointerType& pointer_type)
 {
 	return os << *pointer_type.type_of_dereferenced_object << " *";
@@ -454,6 +587,7 @@ Typedef::Typedef(const Type *_type, const char *_name)
 
 Typedef::~Typedef()
 {
+	delete type;
 }
 
 const Type *Typedef::GetType() const
@@ -464,6 +598,14 @@ const Type *Typedef::GetType() const
 const char *Typedef::GetName() const
 {
 	return name.c_str();
+}
+
+std::string Typedef::BuildCDecl(const char *data_object_name) const
+{
+	std::stringstream sstr;
+	sstr << name;
+	if(data_object_name) sstr << " " << data_object_name;
+	return sstr.str();
 }
 
 void Typedef::DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const
@@ -484,6 +626,7 @@ FormalParameter::FormalParameter(const char *_name, const Type *_type)
 
 FormalParameter::~FormalParameter()
 {
+	delete type;
 }
 
 const char *FormalParameter::GetName() const
@@ -518,11 +661,41 @@ FunctionType::~FunctionType()
 	{
 		delete formal_params[i];
 	}
+	if(return_type) delete return_type;
 }
 
 void FunctionType::Add(const FormalParameter *formal_param)
 {
 	formal_params.push_back(formal_param);
+}
+
+std::string FunctionType::BuildCDecl(const char *data_object_name) const
+{
+	std::stringstream sstr;
+	
+	if(return_type)
+	{
+		sstr << return_type->BuildCDecl();
+	}
+	else
+	{
+		sstr << "void";
+	}
+	sstr << " ";
+	if(data_object_name) sstr << data_object_name;
+	sstr << "(";
+	unsigned int formal_param_count = formal_params.size();
+	if(formal_param_count)
+	{
+		unsigned int i;
+		for(i = 0; i < formal_param_count; i++)
+		{
+			sstr << formal_params[i]->GetType()->BuildCDecl();
+			if(i != (formal_param_count - 1)) sstr << ", ";
+		}
+	}
+	sstr << ")";
+	return sstr.str();
 }
 
 std::ostream& operator << (std::ostream& os, const FunctionType& func_type)
@@ -558,11 +731,21 @@ ConstType::ConstType(const Type *_type)
 
 ConstType::~ConstType()
 {
+	delete type;
 }
 
 void ConstType::DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const
 {
 	type->DFS(path, visitor, follow_pointer);
+}
+
+std::string ConstType::BuildCDecl(const char *data_object_name) const
+{
+	std::stringstream sstr;
+	
+	sstr << type->BuildCDecl() << " const";
+	if(data_object_name) sstr << " " << data_object_name;
+	return sstr.str();
 }
 
 std::ostream& operator << (std::ostream& os, const ConstType& const_type)
@@ -633,6 +816,7 @@ VolatileType::VolatileType(const Type *_type)
 
 VolatileType::~VolatileType()
 {
+	delete type;
 }
 
 void VolatileType::DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const

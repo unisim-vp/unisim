@@ -32,6 +32,8 @@ public:
 	// DMI hint
 	void set_dmi_allowed( bool );
 	bool get_dmi_allowed() const;
+	
+	// response status
 	inline tlm_response_status get_response_status() const;
 	inline void set_response_status( const tlm_response_status );
 	inline std::string get_response_string();

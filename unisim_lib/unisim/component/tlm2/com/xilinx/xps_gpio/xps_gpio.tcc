@@ -722,10 +722,10 @@ void XPS_GPIO<CONFIG>::GenerateOutput()
 		uint32_t data = channel ? inherited::GetGPIO2_DATA() : inherited::GetGPIO_DATA();
 		uint32_t tri = channel ? inherited::GetGPIO2_TRI() : inherited::GetGPIO_TRI();
 		unsigned int i;
-		for(i = 0; i < (i ? CONFIG::C_GPIO2_WIDTH : CONFIG::C_GPIO_WIDTH); i++)
+		for(i = 0; i < (channel ? CONFIG::C_GPIO2_WIDTH : CONFIG::C_GPIO_WIDTH); i++)
 		{
-			uint32_t bit_mask = 0x80000000 >> i;
-			if(tri & bit_mask)
+			uint32_t bit_mask = 1 << ((channel ? CONFIG::C_GPIO2_WIDTH : CONFIG::C_GPIO_WIDTH) - 1 - i);
+			if(~tri & bit_mask) // tri=0->output, tri=1->input
 			{
 				if((data ^ gpio_output_data[channel]) & bit_mask)
 				{
@@ -758,7 +758,7 @@ void XPS_GPIO<CONFIG>::GenerateOutput()
 				}
 			}
 		}
-		gpio_output_data[channel] = (gpio_output_data[channel] & ~tri) | (data & tri);
+		gpio_output_data[channel] = (gpio_output_data[channel] & tri) | (data & ~tri);
 	}
 	
 	if(CONFIG::C_INTERRUPT_IS_PRESENT)

@@ -30,7 +30,6 @@ else
 	exit -1
 fi
 
-
 DEST_DIR=$1
 UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
 UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
@@ -263,6 +262,7 @@ unisim/kernel/logger/logger_server.hh \
 unisim/kernel/debug/debug.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/util/arithmetic/arithmetic.hh \
+unisim/util/converter/convert.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/register.hh \
@@ -276,6 +276,8 @@ unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/data_object.hh \
+unisim/util/debug/event.hh \
+unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/attr.hh \
 unisim/util/debug/dwarf/call_frame_vm.hh \
@@ -306,14 +308,12 @@ unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/dwarf/option.hh \
 unisim/util/debug/dwarf/cfa.hh \
-unisim/util/debug/event.hh \
-unisim/util/endian/endian.hh \
 unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
-unisim/util/debug/memory_access_type.hh \
+unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/inlining/inlining.hh \
@@ -335,6 +335,9 @@ unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
+unisim/service/debug/gdb_server/gdb_server.hh \
+unisim/service/debug/inline_debugger/inline_debugger.hh \
+unisim/service/debug/debugger/debugger.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
@@ -355,22 +358,29 @@ unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/profiling.hh \
 unisim/service/interfaces/monitor_if.hh \
+unisim/service/loader/elf_loader/elf_loader.hh \
+unisim/service/loader/elf_loader/elf32_loader.hh \
+unisim/service/loader/elf_loader/elf64_loader.hh \
+unisim/service/loader/s19_loader/s19_loader.hh \
 unisim/service/monitor/monitor_server.hh \
 unisim/service/monitor/monitor.hh \
 unisim/service/monitor/default_monitor.hh \
 unisim/service/monitor/artimon_monitor.hh \
-unisim/service/loader/elf_loader/elf_loader.hh \
-unisim/service/loader/elf_loader/elf32_loader.hh \
-unisim/service/loader/elf_loader/elf64_loader.hh \
+unisim/service/pim/gdbthread.hh \
+unisim/service/pim/pim.hh \
+unisim/service/pim/pim_server.hh \
+unisim/service/pim/pim_thread.hh \
+unisim/service/pim/network/BlockingQueue.hpp \
+unisim/service/pim/network/BlockingCircularQueue.hpp \
+unisim/service/pim/network/GenericThread.hpp \
+unisim/service/pim/network/SocketClientThread.hpp \
+unisim/service/pim/network/SocketServerThread.hpp \
+unisim/service/pim/network/SocketThread.hpp \
+unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
-unisim/service/debug/gdb_server/gdb_server.hh \
-unisim/service/debug/inline_debugger/inline_debugger.hh \
-unisim/service/debug/debugger/debugger.hh \
-unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/loader/s19_loader/s19_loader.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
@@ -404,17 +414,7 @@ unisim/component/tlm2/processor/hcs12x/s12sci.hh \
 unisim/component/tlm2/processor/hcs12x/s12mpu.hh \
 unisim/component/tlm2/processor/hcs12x/s12spi.hh \
 unisim/component/tlm2/processor/hcs12x/s12mscan.hh \
-unisim/service/pim/pim.hh \
-unisim/service/pim/pim_server.hh \
-unisim/service/pim/pim_thread.hh \
-unisim/util/converter/convert.hh \
-unisim/service/pim/network/BlockingQueue.hpp \
-unisim/service/pim/network/BlockingCircularQueue.hpp \
-unisim/service/pim/network/GenericThread.hpp \
-unisim/service/pim/network/SocketClientThread.hpp \
-unisim/service/pim/network/SocketServerThread.hpp \
-unisim/service/pim/network/SocketThread.hpp \
-unisim/service/pim/gdbthread.hh"
+"
 
 
 UNISIM_LIB_STAR12X_TEMPLATE_FILES="\
@@ -475,7 +475,8 @@ unisim/component/tlm2/processor/hcs12x/atd10b.tcc \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.tcc \
 unisim/component/tlm2/processor/hcs12x/s12xftmx.tcc \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.tcc \
-unisim/service/pim/pim_server.tcc "
+unisim/service/pim/pim_server.tcc \
+"
 
 UNISIM_LIB_STAR12X_M4_FILES="\
 m4/cxxabi.m4 \

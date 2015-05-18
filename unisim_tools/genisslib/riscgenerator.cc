@@ -212,7 +212,7 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       if( opbf->m_sext ) {
         int opsize = std::max( least_ctype_size( opbf->dstsize() ), m_minwordsize );
         int sext_shift = opsize - opbf->m_size;
-        _product.code( "(((((int%d_t)(%s >> %u)) & 0x%llx) << %u) >> %u)",
+        _product.code( "((int%d_t)((((%s >> %u)) & 0x%llx) << %u) >> %u)",
                        opsize, _codename, fi.pos(),
                        opbf->mask(), sext_shift, sext_shift );
       } else {

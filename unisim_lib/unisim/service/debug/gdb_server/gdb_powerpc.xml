@@ -1,6 +1,6 @@
 <architecture name="powerpc" endian="big">
 	<program_counter name="cia"/>
-	<register name="r0" size="4"/>
+	<register name="r0" size="4" regnum="0"/>
 	<register name="r1" size="4"/>
 	<register name="r2" size="4"/>
 	<register name="r3" size="4"/>
@@ -32,7 +32,7 @@
 	<register name="r29" size="4"/>
 	<register name="r30" size="4"/>
 	<register name="r31" size="4"/>
-	<register name="f0" size="8"/>
+	<register name="f0" size="8"  regnum="32"/>
 	<register name="f1" size="8"/>
 	<register name="f2" size="8"/>
 	<register name="f3" size="8"/>
@@ -64,13 +64,13 @@
 	<register name="f29" size="8"/>
 	<register name="f30" size="8"/>
 	<register name="f31" size="8"/>
-	<register name="cia" size="4"/>
+	<register name="cia" size="4"  regnum="64"/>
 	<register name="msr" size="4"/>
 	<register name="cr" size="4"/>
 	<register name="lr" size="4"/>
 	<register name="ctr" size="4"/>
 	<register name="xer" size="4"/>
-	<register name="fpscr" size="4"/>
+	<register name="fpscr" size="4"  regnum="71"/>
 	<register name="vr0" size="16"/>
 	<register name="vr1" size="16"/>
 	<register name="vr2" size="16"/>
