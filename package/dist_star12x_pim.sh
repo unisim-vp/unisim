@@ -272,6 +272,7 @@ unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/stmt.hh \
+unisim/util/debug/type.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/data_object.hh \
 unisim/util/debug/event.hh \
