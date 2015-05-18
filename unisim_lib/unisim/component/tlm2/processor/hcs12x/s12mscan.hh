@@ -724,10 +724,18 @@ private:
 	inline bool checkAcceptance(uint8_t rx_buffer[16]) {
 
 		/*
-		 *  TODO: implement acceptance algorithm using caniadr and canidmr registers
+		 *  TODO: implement acceptance algorithm using canidac, caniadr and canidmr registers
 		 *    note: background receive buffer is modeled as rx_buffer_register[16]
 		 *
-		 *  CANIADR register:
+		 *  CANIDAC register: Is used for identifier acceptance control.
+		 *    - CANIDAC::IDAM[1:0] (Identifier Acceptance Mode): The CPU sets these flags to define the identifier acceptance filter organization.
+		 *      In filter closed mode, no message is accepted such that the foreground buffer is never reloaded.
+		 *    - CANIDAC::IDHIT[2:0] (Identifier acceptance Hit Indicator): The MSCAN sets these flags to indicate an identifier acceptance hit.
+		 *      The IDHITx indicators are related to the message in the foreground buffer (RxFG). When a message gets shifted into
+		 *      the foreground buffer of the receiver FIFO the indicators are update.
+		 */
+
+		 /*  CANIADR register:
 		 *  On reception, each message is written into the background receive buffer. The CPU is notified to
 		 *  read the message only if it passes the criteria in the identifier acceptance and identifier mask registers
 		 *  (accepted); otherwise, the message is overwritten by the next message (dropped).
@@ -736,14 +744,17 @@ private:
 		 *  “Identifier Acceptance Filter”).
 		 *  For extended identifiers, all four acceptance and mask registers are applied. For standard identifiers, only
 		 *  the first two (CANIDAR0/1, CANIDMR0/1) are applied.
-		 *
-		 *  CANIDMR register:
+		 */
+
+		 /*  CANIDMR register:
 		 *  The identifier mask register specifies which of the corresponding bits in the identifier acceptance register
 		 *  are relevant for acceptance filtering. To receive standard identifiers in 32 bit filter mode, it is required to
 		 *  program the last three bits (AM[2:0]) in the mask registers CANIDMR1 and CANIDMR5 to “don’t care.”
 		 *  To receive standard identifiers in 16 bit filter mode, it is required to program the last three bits (AM[2:0])
 		 *  in the mask registers CANIDMR1, CANIDMR3, CANIDMR5, and CANIDMR7 to “don’t care.”
 		 */
+
+		canrxfg = reinterpret_cast<CANFG*>(rx_buffer);
 
 		return (true);
 	}
