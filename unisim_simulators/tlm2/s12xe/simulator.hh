@@ -31,6 +31,7 @@
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.tcc>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
+#include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 
 #include <unisim/service/tee/memory_access_reporting/tee.hh>
 
@@ -106,6 +107,8 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 
 using unisim::service::interfaces::Loader;
 using unisim::service::loader::s19_loader::S19_Loader;
+using unisim::service::loader::multiformat_loader::MultiFormatLoader;
+
 using unisim::service::pim::PIM;
 using unisim::service::pim::PIMServer;
 
@@ -291,8 +294,11 @@ class Simulator :
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
-	Elf32Loader *loaderELF;
+//	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
+//	Elf32Loader *loaderELF;
+
+	//  - Multiformat loader
+	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
 
 	//  - profiler
 	Profiler<CPU_ADDRESS_TYPE> *profiler;
@@ -319,8 +325,8 @@ class Simulator :
 	unisim::service::time::host_time::HostTime *host_time;
 
 
-	string filename;
-	string symbol_filename;
+//	string filename;
+//	string symbol_filename;
 
 	bool enable_pim_server;
 	bool enable_gdb_server;
@@ -341,7 +347,7 @@ class Simulator :
 	Parameter<string> *param_pc_reg_name;
 
 	int exit_status;
-	bool isS19;
+//	bool isS19;
 
 	bool dump_parameters;
 	bool dump_formulas;

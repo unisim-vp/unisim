@@ -2365,7 +2365,35 @@
 			<description></description>
 		</variable>
 	</object>
-	<object name="debugger">
+	<object name="loader">
+		<object name="loader.memory-mapper">
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-parser">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity of parser</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="mapping">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>MMC:0x000000-0xFFFFFF</value>
+				<description>Memory mapping. Syntax: [[(memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;]][,[(memory=]&lt;memory2&gt;[:[range=]&lt;low2-high2&gt;]]... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff)</description>
+			</variable>
+		</object>
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -2376,331 +2404,21 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="dwarf-to-html-output-directory">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>DWARF v2/v3 to HTML output directory</description>
-		</variable>
-		<variable name="dwarf-register-number-mapping-filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>68hc12_dwarf_register_number_mapping.xml</value>
-			<description>DWARF register number mapping filename</description>
-		</variable>
-		<variable name="parse-dwarf">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable/Disable parsing of DWARF debugging informations</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="debug-dwarf">
+		<variable name="verbose-parser">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
-			<description>Enable/Disable debugging of DWARF</description>
+			<description>Enable/Disable verbosity of parser</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
 		</variable>
-	</object>
-	<object name="elf32-loader">
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
-			<description>the ELF filename to load into memory</description>
-		</variable>
-		<variable name="base-addr">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
-			<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
-		</variable>
-		<variable name="force-base-addr">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>if true force base address for a unique program segment</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="force-use-virtual-address">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>force use of virtual addresses instead of physical addresses (default false)</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="initialize-extra-segment-bytes">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="dump-headers">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>dump headers while loading ELF file</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>enable/disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="dwarf-to-html-output-directory">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>DWARF v2/v3 to HTML output directory</description>
-		</variable>
-		<variable name="dwarf-to-xml-output-filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>DWARF v2/v3 to XML output filename</description>
-		</variable>
-		<variable name="dwarf-register-number-mapping-filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>DWARF register number mapping filename</description>
-		</variable>
-		<variable name="parse-dwarf">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable parsing of DWARF debugging informations</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="debug-dwarf">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable debugging of DWARF</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="gdb-server">
-		<variable name="memory-atom-size">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000001</value>
-			<description>size of the smallest addressable element in memory</description>
-		</variable>
-		<variable name="tcp-port">
-			<type>parameter</type>
-			<data_type>signed 32-bit integer</data_type>
-			<value>0</value>
-			<description>TCP/IP port to listen waiting for a GDB client connection</description>
-		</variable>
-		<variable name="architecture-description-filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>gdb_hcs12x.xml</value>
-			<description>filename of a XML description of the connected processor</description>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="inline-debugger">
-		<variable name="memory-atom-size">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000001</value>
-			<description>size of the smallest addressable element in memory</description>
-		</variable>
-		<variable name="search-path">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Search path for source (separated by ';')</description>
-		</variable>
-		<variable name="init-macro">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>path to initial macro to run when debugger starts</description>
-		</variable>
-		<variable name="output">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>path to output file where to redirect the debugger outputs</description>
-		</variable>
-	</object>
-	<object name="pim-server">
-		<variable name="memory-atom-size">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000001</value>
-			<description>size of the smallest addressable element in memory</description>
-		</variable>
-		<variable name="tcp-port">
-			<type>parameter</type>
-			<data_type>unsigned 16-bit integer</data_type>
-			<value>0x0000</value>
-			<description>TCP/IP port to listen waiting for a GDB client connection</description>
-		</variable>
-		<variable name="architecture-description-filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>gdb_hcs12x.xml</value>
-			<description>filename of a XML description of the connected processor</description>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="host">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>127.0.0.1</value>
-			<description></description>
-		</variable>
-	</object>
-	<object name="profiler">
-		<variable name="min-data-read-prof-addr">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
-			<description>Minimum address for data read profiling</description>
-		</variable>
-		<variable name="max-data-read-prof-addr">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0xffffffff</value>
-			<description>Maximum address for data read profiling</description>
-		</variable>
-		<variable name="min-data-write-prof-addr">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
-			<description>Minimum address for data write profiling</description>
-		</variable>
-		<variable name="max-data-write-prof-addr">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0xffffffff</value>
-			<description>Maximum address for data write profiling</description>
-		</variable>
-		<variable name="min-insn-fetch-prof-addr">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
-			<description>Minimum address for instruction fetch profiling</description>
-		</variable>
-		<variable name="max-insn-fetch-prof-addr">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0xffffffff</value>
-			<description>Maximum address for instruction fetch profiling</description>
-		</variable>
-		<variable name="min-insn-exec-prof-addr">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
-			<description>Minimum address for instruction execution profiling</description>
-		</variable>
-		<variable name="max-insn-exec-prof-addr">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0xffffffff</value>
-			<description>Maximum address for instruction execution profiling</description>
-		</variable>
-		<variable name="enable-data-read-prof">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable data read profiling</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="enable-data-write-prof">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable data write profiling</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="enable-insn-fetch-prof">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable instruction fetch profiling</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="enable-insn-exec-prof">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable instruction execution profiling</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
+			<value>filename=/localhome/rnouacer/SharedVirBox/TraReda/Projects/EQUITAS/Realisation/SP3/Continental/Binaire_Essuie_glace/binaire_20150326/1b2601.abs:format=ELF32,filename=/localhome/rnouacer/SharedVirBox/TraReda/Projects/EQUITAS/Realisation/SP3/Continental/Binaire_Essuie_glace/binaire_20150326/1b2622.abs:format=ELF32</value>
+			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[:[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[:[format=]&lt;format2&gt;]]... (e.g. boot.bin:raw,app.elf)</description>
 		</variable>
 	</object>
 	<variable name="dump-formulas">
@@ -2736,7 +2454,7 @@
 	<variable name="enable-gdb-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>true</value>
+		<value>false</value>
 		<description>Enable/Disable GDB server instantiation</description>
 		<enumeration>
 			<item>true</item>
@@ -2756,7 +2474,7 @@
 	<variable name="enable-pim-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>true</value>
+		<value>false</value>
 		<description>Enable/Disable PIM server instantiation</description>
 		<enumeration>
 			<item>true</item>

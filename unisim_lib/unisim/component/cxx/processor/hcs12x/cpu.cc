@@ -56,6 +56,7 @@ template void EBLB::exchange<uint16_t>(unsigned int rrSrc, unsigned int rrDst);
 
 CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
+	Client<Loader>(name,  parent),
 	unisim::kernel::service::Client<DebugControl<physical_address_t> >(name, parent),
 	unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent),
 	unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent),
@@ -68,6 +69,8 @@ CPU::CPU(const char *name, Object *parent):
 	queueCurrentAddress(0xFFFE),
 	queueFirst(-1),
 	queueNElement(0),
+
+	loader_import("loader-import",  this),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_export("memory_export", this),
@@ -365,6 +368,11 @@ unsigned int CPU::step()
 					Stop(0);
 				}
 				if(dbg_cmd == DebugControl<physical_address_t>::DBG_RESET) {
+					if(loader_import)
+					{
+						loader_import->Load();
+					}
+
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_RESET command (PC = 0x"

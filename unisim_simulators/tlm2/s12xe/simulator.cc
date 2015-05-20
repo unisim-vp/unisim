@@ -64,8 +64,10 @@ Simulator::Simulator(int argc, char **argv)
 #else
 	, xml_atd_pwm_stub(0)
 #endif
-	, loaderS19(0)
-	, loaderELF(0)
+//	, loaderS19(0)
+//	, loaderELF(0)
+	, loader(0)
+
 	, profiler(0)
 	, debugger(0)
 	, gdb_server(0)
@@ -75,8 +77,8 @@ Simulator::Simulator(int argc, char **argv)
 	, sim_time(0)
 	, host_time(0)
 
-	, filename("")
-	, symbol_filename("")
+//	, filename("")
+//	, symbol_filename("")
 
 	, enable_pim_server(false)
 	, enable_gdb_server(false)
@@ -94,7 +96,7 @@ Simulator::Simulator(int argc, char **argv)
 	, program_counter_name("")
 
 	, exit_status(-1)
-	, isS19(false)
+//	, isS19(false)
 
 	, dump_parameters(false)
 	, dump_formulas(false)
@@ -130,14 +132,14 @@ Simulator::Simulator(int argc, char **argv)
 	//===      Handling of file to load passed as command line argument     ===
 	//=========================================================================
 
-	VariableBase *cmd_args = FindVariable("cmd-args");
-	unsigned int cmd_args_length = cmd_args->GetLength();
-	if(cmd_args_length > 0)
-	{
-		filename = (string)(*cmd_args)[0];
-
-		std::cerr << "filename=\"" << filename << "\"" << std::endl;
-	}
+//	VariableBase *cmd_args = FindVariable("cmd-args");
+//	unsigned int cmd_args_length = cmd_args->GetLength();
+//	if(cmd_args_length > 0)
+//	{
+//		filename = (string)(*cmd_args)[0];
+//
+//		std::cerr << "filename=\"" << filename << "\"" << std::endl;
+//	}
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -208,15 +210,18 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-	isS19 = (filename.find(".s19") != std::string::npos) ||
-		 (filename.find(".S19") != std::string::npos);
+//	isS19 = (filename.find(".s19") != std::string::npos) ||
+//		 (filename.find(".S19") != std::string::npos);
+//
+//	if (isS19) {
+//		loaderS19 = new S19_Loader<CPU_ADDRESS_TYPE>("S19_Loader");
+//		loaderELF = new Elf32Loader("elf32-loader");
+//	} else {
+//		loaderELF = new Elf32Loader("elf32-loader");
+//	}
 
-	if (isS19) {
-		loaderS19 = new S19_Loader<CPU_ADDRESS_TYPE>("S19_Loader");
-		loaderELF = new Elf32Loader("elf32-loader");
-	} else {
-		loaderELF = new Elf32Loader("elf32-loader");
-	}
+	//  - Multiformat loader
+	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
 
 	//  - PIM server
 	pim_server = enable_pim_server ? new PIMServer<CPU_ADDRESS_TYPE>("pim-server") : 0;
@@ -239,15 +244,15 @@ Simulator::Simulator(int argc, char **argv)
 	//===                       Service parameterization     ===
 	//=========================================================================
 
-	if (!filename.empty()) {
-		if(isS19) {
-			(*loaderS19)["filename"] = filename.c_str();
-		}
-		else
-		{
-			(*loaderELF)["filename"] = filename.c_str();
-		}
-	}
+//	if (!filename.empty()) {
+//		if(isS19) {
+//			(*loaderS19)["filename"] = filename.c_str();
+//		}
+//		else
+//		{
+//			(*loaderELF)["filename"] = filename.c_str();
+//		}
+//	}
 
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -422,6 +427,8 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[27]) >> mpu->registers_export;
 
 // ***********************************************************
+	cpu->loader_import >> loader->loader_export;
+
 	if(enable_inline_debugger || enable_gdb_server || enable_pim_server)
 	{
 		if(enable_inline_debugger)
@@ -450,6 +457,8 @@ Simulator::Simulator(int argc, char **argv)
 		debugger->memory_import >> cpu->memory_export;
 
 		debugger->registers_import >> registersTee->registers_export;
+		debugger->loader_import >> loader->loader_export;
+		debugger->blob_import >> loader->blob_export;
 
 		pwm->trap_reporting_import >> debugger->trap_reporting_export;
 		atd0->trap_reporting_import >> debugger->trap_reporting_export;
@@ -516,23 +525,26 @@ Simulator::Simulator(int argc, char **argv)
 		spi0->char_io_import >> spi_telnet->char_io_export;
 	}
 
-	if (isS19) {
-		loaderS19->memory_import >> mmc->memory_export;
-	} else if (loaderELF) {
-		loaderELF->memory_import >> mmc->memory_export;
-	}
-
-	if (loaderELF) {
+//	if (isS19) {
+//		loaderS19->memory_import >> mmc->memory_export;
+//	} else if (loaderELF) {
 //		loaderELF->memory_import >> mmc->memory_export;
+//	}
+//
+//	if (loaderELF) {
+//
+//		if(enable_inline_debugger || enable_gdb_server || enable_pim_server) {
+//			debugger->loader_import >> loaderELF->loader_export;
+//			debugger->blob_import >> loaderELF->blob_export;
+//		}
+//
+//		cpu->symbol_table_lookup_import >> loaderELF->symbol_table_lookup_export;
+//
+//	}
 
-		if(enable_inline_debugger || enable_gdb_server || enable_pim_server) {
-			debugger->loader_import >> loaderELF->loader_export;
-			debugger->blob_import >> loaderELF->blob_export;
-		}
-
-		cpu->symbol_table_lookup_import >> loaderELF->symbol_table_lookup_export;
-
-	}
+	*loader->memory_import[0] >>  mmc->memory_export;
+	loader->registers_import >> cpu->registers_export; // je ne comprend pas cette ligne !!!
+	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
 }
 
@@ -616,8 +628,9 @@ Simulator::~Simulator()
 	if (host_time) { delete host_time; host_time = NULL; }
 	if(sim_time) { delete sim_time; sim_time = NULL; }
 
-	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
-	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
+	if(loader) delete loader;
+//	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
+//	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
 #ifdef HAVE_RTBCOB
 	if (rtbStub) { delete rtbStub; rtbStub = NULL; }
@@ -691,24 +704,44 @@ Simulator::SetupStatus Simulator::Setup()
 	address_t cpu_address;
 	uint8_t page = 0;
 
-	if (isS19) {
-		entry_point = loaderS19->GetEntryPoint();
-		if (entry_point == 0) {
-			address_t reset_addr;
-			const address_t reset_vect = 0xFFFE;
-			cpu->ReadMemory(reset_vect, &reset_addr, 2);
+//	if (isS19) {
+//		entry_point = loaderS19->GetEntryPoint();
+//		if (entry_point == 0) {
+//			address_t reset_addr;
+//			const address_t reset_vect = 0xFFFE;
+//			cpu->ReadMemory(reset_vect, &reset_addr, 2);
+//
+//			entry_point = unisim::util::endian::BigEndian2Host(reset_addr);
+//		}
+//		mmc->splitPagedAddress(entry_point, page, cpu_address);
+//	} else {
+//		const unisim::util::debug::blob::Blob<physical_address_t>* blob = loaderELF->GetBlob();
+//		if (blob != NULL) {
+//			entry_point = blob->GetEntryPoint();
+//		}
+//
+//		cpu_address = (address_t) entry_point;
+//	}
+// *****************
 
-			entry_point = unisim::util::endian::BigEndian2Host(reset_addr);
-		}
+/* TODO: Discuss with Gilles about this
+	const unisim::util::debug::blob::Blob<physical_address_t>* blob = loader->GetBlob();
+	if (blob != NULL) {
+		entry_point = blob->GetEntryPoint();
+	}
+*/
+	if (entry_point == 0) {
+		address_t reset_addr;
+		const address_t reset_vect = 0xFFFE;
+		cpu->ReadMemory(reset_vect, &reset_addr, 2);
+
+		entry_point = unisim::util::endian::BigEndian2Host(reset_addr);
 		mmc->splitPagedAddress(entry_point, page, cpu_address);
-	} else {
-		const unisim::util::debug::blob::Blob<physical_address_t>* blob = loaderELF->GetBlob();
-		if (blob != NULL) {
-			entry_point = blob->GetEntryPoint();
-		}
-
+	}
+	else {
 		cpu_address = (address_t) entry_point;
 	}
+// *****************
 
 	cpu->setEntryPoint(cpu_address);
 
@@ -881,6 +914,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	simulator->SetVariable("debugger.parse-dwarf", true);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "68hc12_dwarf_register_number_mapping.xml");
+
+	// - Loader memory router
+	std::stringstream sstr_loader_mapping;
+	sstr_loader_mapping << "MMC:0x000000-0xFFFFFF" << std::dec;
+	simulator->SetVariable("loader.memory-mapper.mapping", sstr_loader_mapping.str().c_str()); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
 
 	simulator->SetVariable("S19_Loader.filename", "");
 	simulator->SetVariable("elf32-loader.filename", "");

@@ -117,12 +117,12 @@ unistd.h \
 vector"
 
 UNISIM_LIB_STAR12X_SOURCE_FILES="\
+unisim/kernel/api/api.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
-unisim/kernel/api/api.cc \
 unisim/kernel/debug/debug.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
@@ -135,9 +135,9 @@ unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
-unisim/util/debug/data_object.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/stmt_64.cc \
+unisim/util/debug/type.cc \
 unisim/util/debug/dwarf/abbrev.cc \
 unisim/util/debug/dwarf/attr.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -147,8 +147,8 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
-unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
+unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/c_loc_expr_parser.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
@@ -177,16 +177,26 @@ unisim/service/debug/debugger/debugger32.cc \
 unisim/service/debug/debugger/debugger64.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/raw_loader/raw_loader32.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
+unisim/service/loader/coff_loader/coff_loader32.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader32.cc \
+unisim/service/translator/memory_address/memory/translator.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/profiling/addr_profiler/profiler64.cc \
 unisim/service/telnet/telnet.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
-unisim/service/tee/registers/registers_tee.cc \
-unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
+unisim/service/tee/loader/tee.cc \
+unisim/service/tee/symbol_table_lookup/tee_32.cc \
+unisim/service/tee/blob/tee_32.cc \
+unisim/service/tee/stmt_lookup/tee_32.cc \
+unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
+unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
+unisim/service/tee/registers/registers_tee.cc \
 unisim/component/cxx/processor/hcs12x/xgate.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \
@@ -262,6 +272,9 @@ unisim/kernel/tlm2/tlm.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/converter/convert.hh \
 unisim/util/debug/breakpoint.hh \
+unisim/util/debug/data_object.hh \
+unisim/util/debug/type.hh \
+unisim/util/debug/data_object_initializer.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
@@ -272,9 +285,8 @@ unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/stmt.hh \
-unisim/util/debug/type.hh \
+unisim/util/debug/subprogram.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
-unisim/util/debug/data_object.hh \
 unisim/util/debug/event.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/dwarf/abbrev.hh \
@@ -309,6 +321,7 @@ unisim/util/debug/dwarf/option.hh \
 unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
+unisim/util/debug/dwarf/subprogram.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
@@ -324,8 +337,6 @@ unisim/util/loader/elf_loader/elf_loader.hh \
 unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/elf_loader/elf_common.h \
-unisim/util/loader/elf_loader/elf32.h \
-unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
@@ -354,6 +365,7 @@ unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
+unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
@@ -362,7 +374,10 @@ unisim/service/interfaces/monitor_if.hh \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64_loader.hh \
+unisim/service/loader/raw_loader/raw_loader.hh \
 unisim/service/loader/s19_loader/s19_loader.hh \
+unisim/service/loader/coff_loader/coff_loader.hh \
+unisim/service/loader/multiformat_loader/multiformat_loader.hh \
 unisim/service/monitor/monitor_server.hh \
 unisim/service/monitor/monitor.hh \
 unisim/service/monitor/default_monitor.hh \
@@ -378,9 +393,12 @@ unisim/service/pim/network/SocketClientThread.hpp \
 unisim/service/pim/network/SocketServerThread.hpp \
 unisim/service/pim/network/SocketThread.hpp \
 unisim/service/profiling/addr_profiler/profiler.hh \
+unisim/service/translator/memory_address/memory/translator.hh \
+unisim/service/tee/loader/tee.hh \
+unisim/service/tee/symbol_table_lookup/tee.hh \
+unisim/service/tee/blob/tee.hh \
+unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
-unisim/service/tee/registers/registers_tee.hh \
-unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/time/host_time/time.hh \
@@ -422,8 +440,7 @@ unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/stmt.tcc \
-unisim/util/debug/data_object.tcc \
-unisim/util/debug/dwarf/data_object.tcc \
+unisim/util/debug/data_object_initializer.tcc \
 unisim/util/debug/dwarf/addr_range.tcc \
 unisim/util/debug/dwarf/call_frame_prog.tcc \
 unisim/util/debug/dwarf/cie.tcc \
@@ -441,12 +458,13 @@ unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/dwarf/frame.tcc \
+unisim/util/debug/dwarf/data_object.tcc \
+unisim/util/debug/dwarf/subprogram.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
-unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
@@ -463,7 +481,16 @@ unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/elf_loader/elf32_loader.tcc \
 unisim/service/loader/elf_loader/elf64_loader.tcc \
+unisim/service/loader/raw_loader/raw_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
+unisim/service/loader/coff_loader/coff_loader.tcc \
+unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
+unisim/service/translator/memory_address/memory/translator.tcc \
+unisim/service/tee/loader/tee.tcc \
+unisim/service/tee/symbol_table_lookup/tee.tcc \
+unisim/service/tee/blob/tee.tcc \
+unisim/service/tee/stmt_lookup/tee.tcc \
+unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \

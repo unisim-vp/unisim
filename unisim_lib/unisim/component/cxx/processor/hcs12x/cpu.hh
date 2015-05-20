@@ -55,6 +55,7 @@
 
 #include <stdlib.h>
 
+#include <unisim/service/interfaces/loader.hh>
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
@@ -93,6 +94,7 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::CallBackObject;
 
+using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
@@ -210,6 +212,7 @@ private:
 
 class CPU :
 		public Decoder,
+		public Client<Loader>,
 		public Client<DebugControl<physical_address_t> >,
 		public Client<MemoryAccessReporting<physical_address_t> >,
 		public Service<MemoryAccessReportingControl>,
@@ -247,6 +250,7 @@ public:
 	//=                  public service imports/exports                   =
 	//=====================================================================
 
+	ServiceImport<Loader> loader_import;
 	ServiceExport<Disassembly<physical_address_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
 	ServiceExport<Memory<physical_address_t> > memory_export;
