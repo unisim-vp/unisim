@@ -368,6 +368,9 @@ class Simulator :
 	double spent_time;
 	bool isStop;
 
-		};
+	physical_address_t entry_point;
+	Parameter<physical_address_t> param_entry_point;
+
+};
 
 #endif /* SIMULATOR_HH_ */

@@ -115,6 +115,9 @@ Simulator::Simulator(int argc, char **argv)
 	, spent_time(0)
 	, isStop(false)
 
+	, entry_point(0)
+	, param_entry_point("entry-point", 0, entry_point)
+
 {
 
 	param_endian = new Parameter<string>("endian", 0, endian, "Target endianness");
@@ -699,7 +702,8 @@ Simulator::SetupStatus Simulator::Setup()
 	Simulator::SetupStatus result = unisim::kernel::service::Simulator::Setup();
 
 // **********
-	physical_address_t entry_point = 0;
+//	physical_address_t entry_point = 0;
+	std::cout << "entry-point 0x" << std::hex << entry_point << std::dec << std::endl;
 
 	address_t cpu_address;
 	uint8_t page = 0;
@@ -888,6 +892,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("endian", "big");
 	simulator->SetVariable("program-counter-name", "CPU.PC");
 
+	simulator->SetVariable("entry-point", 0x0000);
+
 	//=========================================================================
 	//===                     Component run-time configuration              ===
 	//=========================================================================
@@ -920,10 +926,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	sstr_loader_mapping << "MMC:0x000000-0xFFFFFF" << std::dec;
 	simulator->SetVariable("loader.memory-mapper.mapping", sstr_loader_mapping.str().c_str()); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
 
-	simulator->SetVariable("S19_Loader.filename", "");
-	simulator->SetVariable("elf32-loader.filename", "");
-	simulator->SetVariable("elf32-loader.force-use-virtual-address", true);
-	simulator->SetVariable("elf32-loader.initialize-extra-segment-bytes", false);
+//	simulator->SetVariable("S19_Loader.filename", "");
+//	simulator->SetVariable("elf32-loader.filename", "");
+//	simulator->SetVariable("elf32-loader.force-use-virtual-address", true);
+//	simulator->SetVariable("elf32-loader.initialize-extra-segment-bytes", false);
 
 	simulator->SetVariable("atd-pwm-stub.anx-stimulus-period", 80000000); // 80 us
 	simulator->SetVariable("atd-pwm-stub.pwm-fetch-period", 1e9); // 1 ms
