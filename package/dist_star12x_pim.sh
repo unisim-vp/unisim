@@ -400,6 +400,8 @@ unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
+unisim/service/tee/registers/registers_tee.hh \
+unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
