@@ -916,13 +916,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.pwm-fetch-period", 1e9); // 1 ms
 	simulator->SetVariable("atd-pwm-stub.atd0-anx-stimulus-file", "ATD.xml");
 	simulator->SetVariable("atd-pwm-stub.atd0-anx-start-channel", 0);
-	simulator->SetVariable("atd-pwm-stub.atd0-anx-wrap-around-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.atd0-anx-wrap-around-channel", 7);
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-stimulus-file", "ATD.xml");
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-start-channel", 0);
-	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 15);
 	simulator->SetVariable("atd-pwm-stub.trace-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd0-stub-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd1-stub-enabled", false);
+	simulator->SetVariable("atd-pwm-stub.cosim-enabled", false);
 
 	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);
@@ -1158,6 +1159,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SPI2.debug-enabled", false);
 	simulator->SetVariable("SPI2.txd-pin-enable", true);
 	simulator->SetVariable("SPI2.telnet-enabled", false);
+
+ 	simulator->SetVariable("sci-telnet.telnet-tcp-port", 1234);
+ 	simulator->SetVariable("sci-enable-telnet", false);
+
+ 	simulator->SetVariable("spi-telnet.telnet-tcp-port", 1234);
+ 	simulator->SetVariable("spi-enable-telnet", false);
 
 	simulator->SetVariable("RAM.org", 0x000800);
 	simulator->SetVariable("RAM.bytesize", 1024*1024); // 1MByte
