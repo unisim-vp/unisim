@@ -116,7 +116,7 @@ Simulator::Simulator(int argc, char **argv)
 	, isStop(false)
 
 	, entry_point(0)
-	, param_entry_point("entry-point", 0, entry_point)
+	, param_entry_point("entry-point", 0, entry_point, "Entry point, to use if there is no reset address")
 
 {
 
