@@ -343,7 +343,7 @@ private:
 	Parameter<string> *param_pc_reg_name;
 
 	int exit_status;
-	bool isS19;
+//	bool isS19;
 
 	bool dump_parameters;
 	Parameter<bool> param_dump_parameters;

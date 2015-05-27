@@ -2024,14 +2024,14 @@
 		</variable>
 		<variable name="atd0-anx-start-channel">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
 			<description></description>
 		</variable>
 		<variable name="atd0-anx-wrap-around-channel">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x07</value>
 			<description></description>
 		</variable>
 		<variable name="atd1-anx-stimulus-file">
@@ -2042,14 +2042,14 @@
 		</variable>
 		<variable name="atd1-anx-start-channel">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
 			<description></description>
 		</variable>
 		<variable name="atd1-anx-wrap-around-channel">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x0f</value>
 			<description></description>
 		</variable>
 	</object>

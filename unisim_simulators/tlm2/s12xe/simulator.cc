@@ -1172,7 +1172,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SPI0.txd-pin-enable", true);
 	simulator->SetVariable("SPI0.telnet-enabled", false);
 
-	simulator->SetVariable("SPI1.bus-cycle-time", 40000);
+	simulator->SetVariable("SPI1.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI1.base-address", 0x00F0);
 	simulator->SetVariable("SPI1.interrupt-offset", 0xBE);
 	simulator->SetVariable("SPI1.debug-enabled", false);

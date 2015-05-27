@@ -33,6 +33,36 @@
         <pin isMutable="true" dataType="double precision floating-point">ANx[8]</pin>
         <pin isMutable="true" dataType="double precision floating-point">ANx[9]</pin>
     </component>
+    <component name="CAN0">
+        <!--CAN0 exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">RXD</pin>
+        <pin isMutable="true" dataType="boolean">TXD</pin>
+    </component>
+    <component name="CAN1">
+        <!--CAN1 exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">RXD</pin>
+        <pin isMutable="true" dataType="boolean">TXD</pin>
+    </component>
+    <component name="CAN2">
+        <!--CAN2 exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">RXD</pin>
+        <pin isMutable="true" dataType="boolean">TXD</pin>
+    </component>
+    <component name="CAN3">
+        <!--CAN3 exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">RXD</pin>
+        <pin isMutable="true" dataType="boolean">TXD</pin>
+    </component>
+    <component name="CAN4">
+        <!--CAN4 exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">RXD</pin>
+        <pin isMutable="true" dataType="boolean">TXD</pin>
+    </component>
     <component name="ECT">
         <!--ECT exported interface-->
         <description>bla bla</description>

@@ -1873,7 +1873,7 @@
 		<variable name="bus-cycle-time">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
-			<value>40000</value>
+			<value>250000</value>
 			<description></description>
 		</variable>
 		<variable name="base-address">
