@@ -161,7 +161,6 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_bw( ATD_Payload<ATD1_SIZE>& payload, tl
 	if(phase == BEGIN_RESP)
 	{
 		payload.release();
-		atd1_event.notify();
 		return (TLM_COMPLETED);
 	}
 	return (TLM_ACCEPTED);
@@ -172,7 +171,6 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_bw( ATD_Payload<ATD0_SIZE>& payload, tl
 	if(phase == BEGIN_RESP)
 	{
 		payload.release();
-		atd0_event.notify();
 		return (TLM_COMPLETED);
 	}
 	return (TLM_ACCEPTED);
@@ -231,7 +229,7 @@ void ATD_PWM_STUB::output_ATD1(double anValue[ATD1_SIZE])
 
 	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*atd1_payload, phase, local_time);
 
-//	atd1_payload->release();
+	atd1_payload->release();
 	
 	switch(ret)
 	{
@@ -278,7 +276,7 @@ void ATD_PWM_STUB::output_ATD0(double anValue[ATD0_SIZE])
 
 	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*atd0_payload, phase, local_time);
 
-//	atd0_payload->release();
+	atd0_payload->release();
 
 	switch(ret)
 	{

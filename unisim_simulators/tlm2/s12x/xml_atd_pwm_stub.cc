@@ -311,7 +311,6 @@ void XML_ATD_PWM_STUB::processATD0()
 
 			output_ATD0(atd0_anValue);
 
-			wait(atd0_event);
 		}
 	}
 
@@ -359,8 +358,6 @@ void XML_ATD_PWM_STUB::processATD1()
 			}
 
 			output_ATD1(atd1_anValue);
-
-			wait(atd1_event);
 
 		}
 	}

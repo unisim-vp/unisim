@@ -153,7 +153,6 @@ protected:
 	tlm_quantumkeeper atd0_quantumkeeper;
 	tlm_quantumkeeper atd1_quantumkeeper;
 
-	sc_event atd0_event, atd1_event;
 private:
 
 	tlm_quantumkeeper pwm_quantumkeeper;

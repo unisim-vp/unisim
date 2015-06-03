@@ -286,10 +286,10 @@ void ATD10B<ATD_SIZE>::InputANx(double (*anValue)[ATD_SIZE])
 		for (unsigned int i=0; i<ATD_SIZE; i++) {
 			(*anValue)[i] = payload->anPort[i];
 		}
-//		payload->release();
-		tlm_phase phase = BEGIN_RESP;
-		sc_time local_time = SC_ZERO_TIME;
-		anx_socket->nb_transport_bw( *payload, phase, local_time);
+		payload->release();
+//		tlm_phase phase = BEGIN_RESP;
+//		sc_time local_time = SC_ZERO_TIME;
+//		anx_socket->nb_transport_bw( *payload, phase, local_time);
 	}
 
 }
