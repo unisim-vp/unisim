@@ -123,6 +123,11 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::kernel::service::Object;
+
+using unisim::component::tlm2::processor::hcs12x::CAN_Payload;
+using unisim::component::tlm2::processor::hcs12x::CAN_DATATYPE;
+using unisim::component::tlm2::processor::hcs12x::UNISIM_CAN_ProtocolTypes;
+
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -189,12 +194,14 @@ private:
 class S12MSCAN :
 	public sc_module
 	, public CallBackObject
-	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
 	, public Client<TrapReporting >
 	, public Client<CharIO>
 	, public Service<Memory<physical_address_t> >
 	, public Client<Memory<physical_address_t> >
 	, public Service<Registers>
+	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
+	, virtual public tlm_fw_transport_if<UNISIM_CAN_ProtocolTypes >
+	, virtual public tlm_bw_transport_if<UNISIM_CAN_ProtocolTypes >
 
 {
 public:
@@ -225,6 +232,10 @@ public:
 	tlm_utils::simple_target_socket<S12MSCAN> slave_socket;
 	tlm_utils::simple_target_socket<S12MSCAN> bus_clock_socket;
 
+	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_rx_sock;
+	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_tx_sock;
+
+
 	S12MSCAN(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12MSCAN();
 
@@ -234,6 +245,8 @@ public:
 	void RunRx();
 	void RunTx();
 	void RunTimer();
+	void InputRX(uint8_t (*anValue)[CAN_MSG_SIZE]);
+	void refreshOutput(uint8_t tx_buffer_register[CAN_MSG_SIZE]);
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -244,6 +257,15 @@ public:
     virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
     void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+
+	// Slave methods
+	virtual bool get_direct_mem_ptr( CAN_Payload& payload, tlm_dmi&  dmi_data);
+	virtual unsigned int transport_dbg( CAN_Payload& payload);
+
+	virtual tlm_sync_enum nb_transport_fw( CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void b_transport( CAN_Payload& payload, sc_core::sc_time& t);
+	// Master methods
+	virtual tlm_sync_enum nb_transport_bw( CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -287,6 +309,10 @@ protected:
 
 private:
 	tlm_quantumkeeper quantumkeeper;
+	peq_with_get<CAN_Payload > rx_payload_queue;
+
+	PayloadFabric<CAN_Payload > payload_fabric;
+
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
 	XINT_Payload *xint_payload;
@@ -330,11 +356,13 @@ private:
 
 	bool abortTransmission;
 
-	bool txd;  // 0= Dominant state; 1= recessive state
-	Signal<bool> txd_output_pin;
+//	bool txd;  // 0= Dominant state; 1= recessive state
+//	Signal<bool> txd_output_pin;
+//
+//	bool rxd;
+//	Signal<bool> rxd_input_pin;
+//	inline bool isRxLow() { return (!rxd); }
 
-	bool rxd;
-	Signal<bool> rxd_input_pin;
 
 	// =============================================
 	// =            Registers                      =
@@ -360,12 +388,12 @@ private:
 	uint8_t canidar_register[8];
 	uint8_t canidmr_register[8];
 
-	uint8_t canrxfg_register[5][16];
-	uint8_t cantxfg_register[3][16];
+	uint8_t canrxfg_register[5][CAN_MSG_SIZE];
+	uint8_t cantxfg_register[3][CAN_MSG_SIZE];
 
 	CircularIndex<5> canrxfg_index;
 
-	uint8_t tx_buffer_register[16], rx_buffer_register[16];
+	uint8_t tx_buffer_register[CAN_MSG_SIZE], rx_buffer_register[CAN_MSG_SIZE];
 
 	struct CANFG {
 		uint8_t idr0, idr1, idr2, idr3; // IDR: identifier Register
@@ -373,7 +401,7 @@ private:
 		uint8_t dlr; // DLR: Data Length Register
 		uint8_t tbpr; // tbpr: Transmit Buffer Priority register. Not applicable for receive buffers
 		uint8_t tsrh, tsrl;  // tsr: Time stamp register. Read-only for CPU
-	} *canrxfg, *cantxfg;
+	} /* *canrxfg, *cantxfg */;
 
 //	CANFG canrxfg_register[5];
 //	CANFG cantxfg_register[3];
@@ -388,8 +416,6 @@ private:
 
 	inline bool isReceiverEnabled() { return (isCANEnabled() /* TODO: clarify if can receiver is enabled automatically ? */); }
 	inline bool isTransmitterEnabled() { return (isCANEnabled()  /* TODO: clarify if can transmitter is enabled automatically ? */); }
-
-	inline bool isRxLow() { return (!rxd); }
 
 	inline bool isAbortTransmission() {
 
@@ -607,7 +633,7 @@ private:
 
 		uint8_t mask = 1;
 		uint8_t priority = 0xFF;
-
+		struct CANFG *cantxfg;
 		for (int i=0; (i<3); i++) {
 
 			if ((cantflg_register & mask) == 0) {
@@ -723,6 +749,7 @@ private:
 
 	inline bool checkAcceptance(uint8_t rx_buffer[16]) {
 
+		struct CANFG *canrxfg;
 		/*
 		 *  TODO: implement acceptance algorithm using canidac, caniadr and canidmr registers
 		 *    note: background receive buffer is modeled as rx_buffer_register[16]
@@ -780,6 +807,7 @@ private:
 
 	inline void addTimeStamp(uint8_t (&tx_buffer)[16]) {
 
+		struct CANFG *cantxfg;
 		cantxfg = reinterpret_cast<CANFG*>(tx_buffer);
 
 		cantxfg->tsrh = (time_stamp & 0xFF00) >> 8;
@@ -789,128 +817,8 @@ private:
 
 	inline void reset_time_stamp() { time_stamp = 0; }
 
-	// ************* Telnet **************
-	bool	telnet_enabled;
-	Parameter<bool>	param_telnet_enabled;
-
 	unisim::kernel::logger::Logger logger;
 
-	std::queue<uint8_t> telnet_rx_fifo;
-	std::queue<uint8_t> telnet_tx_fifo;
-	sc_event telnet_rx_event, telnet_tx_event;
-
-	inline void add(std::queue<uint8_t> &buffer_queue, const uint8_t& data, sc_event &event) {
-	    buffer_queue.push(data);
-	    event.notify();
-	}
-
-	inline void next(std::queue<uint8_t> &buffer_queue, uint8_t& data, sc_event &event) {
-
-		while( isEmpty(buffer_queue))
-		{
-			wait(event);
-		}
-
-		data = buffer_queue.front();
-		buffer_queue.pop();
-
-	}
-
-	inline bool isEmpty(std::queue<uint8_t> &buffer_queue) {
-
-	    return (buffer_queue.empty());
-	}
-
-	inline size_t size(std::queue<uint8_t> &buffer_queue) {
-
-	    return (buffer_queue.size());
-	}
-
-	inline void TelnetSendString(const unsigned char *msg) {
-
-		while (*msg != 0)
-			add(telnet_tx_fifo, *msg++, telnet_tx_event) ;
-
-		TelnetProcessOutput(true);
-	}
-
-	inline void TelnetProcessInput()
-	{
-		while (telnet_enabled) {
-
-			while (!isReceiverEnabled() && telnet_enabled) {
-
-				wait(rx_run_event);
-			}
-
-			if(char_io_import)
-			{
-				char c;
-				uint8_t v;
-
-				if(!char_io_import->GetChar(c)) {
-					wait(telnet_process_input_period);
-
-					continue;
-				} else {
-					v = (uint8_t) c;
-					if(rx_debug_enabled)
-					{
-						logger << DebugInfo << "Receiving ";
-						if(v >= 32)
-							logger << "character '" << c << "'";
-						else
-							logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
-						logger << " from telnet client" << EndDebugInfo;
-					}
-
-					add(telnet_rx_fifo, v, telnet_rx_event);
-				}
-
-			} else {
-				logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
-			}
-
-		}
-
-	}
-
-	inline void TelnetProcessOutput(bool flush_telnet_output)
-	{
-		if(char_io_import)
-		{
-			char c;
-			uint8_t v;
-
-			if(!isEmpty(telnet_tx_fifo))
-			{
-				do
-				{
-					next(telnet_tx_fifo, v, telnet_tx_event);
-					c = (char) v;
-					if(tx_debug_enabled)
-					{
-						logger << DebugInfo << "Sending ";
-						if(v >= 32)
-							logger << "character '" << c << "'";
-						else
-							logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
-						logger << " to telnet client" << EndDebugInfo;
-					}
-					char_io_import->PutChar(c);
-				}
-				while(!isEmpty(telnet_tx_fifo));
-
-			}
-
-			if(flush_telnet_output)
-			{
-				char_io_import->FlushChars();
-			}
-		} else {
-			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
-		}
-	}
 
 }; /* end class S12MSCAN */
 

@@ -64,6 +64,13 @@ Simulator::Simulator(int argc, char **argv)
 #else
 	, xml_atd_pwm_stub(0)
 #endif
+
+	, can0_stub(0)
+	, can1_stub(0)
+	, can2_stub(0)
+	, can3_stub(0)
+	, can4_stub(0)
+
 //	, loaderS19(0)
 //	, loaderELF(0)
 	, loader(0)
@@ -209,6 +216,12 @@ Simulator::Simulator(int argc, char **argv)
 	xml_atd_pwm_stub = new XML_ATD_PWM_STUB("atd-pwm-stub"/*, fsb_cycle_time*/);
 #endif
 
+	can0_stub = new CAN_STUB("CAN0-STUB");
+	can1_stub = new CAN_STUB("CAN1-STUB");
+	can2_stub = new CAN_STUB("CAN2-STUB");
+	can3_stub = new CAN_STUB("CAN3-STUB");
+	can4_stub = new CAN_STUB("CAN4-STUB");
+
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
@@ -303,6 +316,17 @@ Simulator::Simulator(int argc, char **argv)
 	xml_atd_pwm_stub->atd0_master_sock(atd0->anx_socket);
 	xml_atd_pwm_stub->slave_sock(pwm->master_sock);
 #endif
+
+	can0_stub->can_rx_sock(can0->can_rx_sock);
+	can0->can_tx_sock(can0_stub->can_tx_sock);
+	can1_stub->can_rx_sock(can1->can_rx_sock);
+	can1->can_tx_sock(can1_stub->can_tx_sock);
+	can2_stub->can_rx_sock(can2->can_rx_sock);
+	can2->can_tx_sock(can2_stub->can_tx_sock);
+	can3_stub->can_rx_sock(can3->can_rx_sock);
+	can3->can_tx_sock(can3_stub->can_tx_sock);
+	can4_stub->can_rx_sock(can4->can_rx_sock);
+	can4->can_tx_sock(can4_stub->can_tx_sock);
 
 	// This order is mandatory (see the memoryMapping)
 	mmc->init_socket(crg->slave_socket);
@@ -641,6 +665,12 @@ Simulator::~Simulator()
 	if (xml_atd_pwm_stub) { delete xml_atd_pwm_stub; xml_atd_pwm_stub = NULL; }
 #endif
 
+	if (can0_stub) { delete can0_stub; can0_stub = NULL; }
+	if (can1_stub) { delete can1_stub; can1_stub = NULL; }
+	if (can2_stub) { delete can2_stub; can2_stub = NULL; }
+	if (can3_stub) { delete can3_stub; can3_stub = NULL; }
+	if (can4_stub) { delete can4_stub; can4_stub = NULL; }
+
 	if(global_ram) { delete global_ram; global_ram = NULL; }
 	if(global_flash) { delete global_flash; global_flash = NULL; }
 
@@ -943,6 +973,41 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.cosim-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd0-stub-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd1-stub-enabled", false);
+
+	simulator->SetVariable("CAN0-STUB.trace-enabled", false);
+	simulator->SetVariable("CAN0-STUB.cosim-enabled", false);
+	simulator->SetVariable("CAN0-STUB.can-rx-stub-enabled", false);
+	simulator->SetVariable("CAN0-STUB.can-rx-stimulus-period", 80000000);
+	simulator->SetVariable("CAN0-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN0-STUB.can-rx-stimulus-file", "");
+
+	simulator->SetVariable("CAN1-STUB.trace-enabled", false);
+	simulator->SetVariable("CAN1-STUB.cosim-enabled", false);
+	simulator->SetVariable("CAN1-STUB.can-rx-stub-enabled", false);
+	simulator->SetVariable("CAN1-STUB.can-rx-stimulus-period", 80000000);
+	simulator->SetVariable("CAN1-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN1-STUB.can-rx-stimulus-file", "");
+
+	simulator->SetVariable("CAN2-STUB.trace-enabled", false);
+	simulator->SetVariable("CAN2-STUB.cosim-enabled", false);
+	simulator->SetVariable("CAN2-STUB.can-rx-stub-enabled", false);
+	simulator->SetVariable("CAN2-STUB.can-rx-stimulus-period", 80000000);
+	simulator->SetVariable("CAN2-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN2-STUB.can-rx-stimulus-file", "");
+
+	simulator->SetVariable("CAN3-STUB.trace-enabled", false);
+	simulator->SetVariable("CAN3-STUB.cosim-enabled", false);
+	simulator->SetVariable("CAN3-STUB.can-rx-stub-enabled", false);
+	simulator->SetVariable("CAN3-STUB.can-rx-stimulus-period", 80000000);
+	simulator->SetVariable("CAN3-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN3-STUB.can-rx-stimulus-file", "");
+
+	simulator->SetVariable("CAN4-STUB.trace-enabled", false);
+	simulator->SetVariable("CAN4-STUB.cosim-enabled", false);
+	simulator->SetVariable("CAN4-STUB.can-rx-stub-enabled", false);
+	simulator->SetVariable("CAN4-STUB.can-rx-stimulus-period", 80000000);
+	simulator->SetVariable("CAN4-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN4-STUB.can-rx-stimulus-file", "");
 
 	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);

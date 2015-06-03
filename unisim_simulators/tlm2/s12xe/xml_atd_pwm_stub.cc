@@ -79,6 +79,30 @@ XML_ATD_PWM_STUB::~XML_ATD_PWM_STUB() {
 
 }
 
+template <int SIZE> int XML_ATD_PWM_STUB::RandomizeData(std::vector<data_t<SIZE>* > &vect) {
+
+
+	const int SET_SIZE = 1024;
+	const double TIME_STEP = 0.080; // 0.080 Millisecond
+	double time = 0;
+
+	srand(12345);
+
+	data_t<SIZE>* data;
+	for (int i=0; i < SET_SIZE; i++) {
+		data = new data_t<SIZE>();
+		for (uint8_t j=0; j < SIZE; j++) {
+			data->volte[j] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+			data->time = time;
+		}
+
+		time = time + TIME_STEP;
+
+		vect.push_back(data);
+	}
+
+	return (SET_SIZE);
+}
 
 template <int SIZE> void XML_ATD_PWM_STUB::parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t<SIZE> &data) {
 
@@ -133,31 +157,6 @@ template <int SIZE> void XML_ATD_PWM_STUB::parseRow (xmlDocPtr doc, xmlNodePtr c
 
 
 	return;
-}
-
-template <int SIZE> int XML_ATD_PWM_STUB::RandomizeData(std::vector<data_t<SIZE>* > &vect) {
-
-
-	const int SET_SIZE = 1024;
-	const double TIME_STEP = 0.080; // 0.080 Millisecond
-	double time = 0;
-
-	srand(12345);
-
-	data_t<SIZE>* data;
-	for (int i=0; i < SET_SIZE; i++) {
-		data = new data_t<SIZE>();
-		for (uint8_t j=0; j < SIZE; j++) {
-			data->volte[j] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-			data->time = time;
-		}
-
-		time = time + TIME_STEP;
-
-		vect.push_back(data);
-	}
-
-	return (SET_SIZE);
 }
 
 template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std::vector<data_t<SIZE>* > &vect) {

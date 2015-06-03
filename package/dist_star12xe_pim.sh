@@ -569,6 +569,7 @@ simulator.cc \
 atd_pwm_stub.cc \
 xml_atd_pwm_stub.cc \
 rtb_unisim.cc \
+can_stub.cc \
 simulator_if.cc \
 "
 UNISIM_SIMULATORS_STAR12X_HEADER_FILES="\
@@ -576,6 +577,7 @@ simulator.hh \
 atd_pwm_stub.hh \
 xml_atd_pwm_stub.hh \
 rtb_unisim.hh \
+can_stub.hh \
 simulator_if.h \
 "
 

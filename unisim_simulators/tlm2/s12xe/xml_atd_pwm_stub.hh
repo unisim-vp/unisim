@@ -47,18 +47,18 @@ class XML_ATD_PWM_STUB :
 public:
 	typedef ATD_PWM_STUB inherited;
 
+	template <int ATD_SIZE>
+	struct data_t {
+		double volte[ATD_SIZE];
+		double time;
+	};
+
 	XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
 	~XML_ATD_PWM_STUB();
 
 	void processATD0();
 	void processATD1();
 	void processPWM();
-
-	template <int ATD_SIZE>
-	struct data_t {
-		double volte[ATD_SIZE];
-		double time;
-	};
 
 	template <int SIZE> int RandomizeData(std::vector<data_t<SIZE>* > &vect);
 	template <int SIZE> int LoadXmlData(const char *filename, std::vector<data_t<SIZE>* > &vect);

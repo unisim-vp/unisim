@@ -71,6 +71,7 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
 #include <xml_atd_pwm_stub.hh>
+#include <can_stub.hh>
 
 #ifdef HAVE_RTBCOB
 #include "rtb_unisim.hh"
@@ -289,6 +290,8 @@ class Simulator :
 #else
 	XML_ATD_PWM_STUB *xml_atd_pwm_stub;
 #endif
+
+	CAN_STUB *can0_stub, *can1_stub, *can2_stub, *can3_stub, *can4_stub;
 
 	//=========================================================================
 	//===                         Service instantiations                    ===

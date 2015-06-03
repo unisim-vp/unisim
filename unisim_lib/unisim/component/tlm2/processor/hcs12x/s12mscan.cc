@@ -36,6 +36,11 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	, slave_socket("slave_socket")
 	, bus_clock_socket("bus_clock_socket")
 
+	, can_rx_sock("can-rx-socket")
+	, can_tx_sock("can-tx-socket")
+
+	, rx_payload_queue("input_anx_payload_queue")
+
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
@@ -61,10 +66,10 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 
 	, abortTransmission(false)
 
-	, txd(true)
-	, txd_output_pin("TXD", this, txd, "TXD output")
-	, rxd(true)
-	, rxd_input_pin("RXD", this, rxd, "RXD input")
+//	, txd(true)
+//	, txd_output_pin("TXD", this, txd, "TXD output")
+//	, rxd(true)
+//	, rxd_input_pin("RXD", this, rxd, "RXD input")
 
 	, canctl0_register(0x01)
 	, canctl1_register(0x11)
@@ -83,15 +88,10 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	, canrxerr_register(0x00)
 	, cantxerr_register(0x00)
 
-	, canrxfg(NULL)
-	, cantxfg(NULL)
 	, time_stamp(0)
 
-	, hasArbitration(false)
+	, hasArbitration(true)
 	, txStatus(false)
-
-	, telnet_enabled(false)
-	, param_telnet_enabled("telnet-enabled", this, telnet_enabled)
 
 	, logger(*this)
 
@@ -99,21 +99,22 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 
 	param_oscillator_clock_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
+	can_rx_sock(*this);
+	can_tx_sock(*this);
+
 	interrupt_request(*this);
 
 	slave_socket.register_b_transport(this, &S12MSCAN::read_write);
 	bus_clock_socket.register_b_transport(this, &S12MSCAN::updateBusClock);
 
-	txd_output_pin.SetMutable(true);
-	rxd_input_pin.SetMutable(true);
+//	txd_output_pin.SetMutable(true);
+//	rxd_input_pin.SetMutable(true);
 
 	SC_HAS_PROCESS(S12MSCAN);
 
 	SC_THREAD(RunRx);
 
 	SC_THREAD(RunTx);
-
-	SC_THREAD(TelnetProcessInput);
 
 	xint_payload = xint_payload_fabric.allocate();
 
@@ -165,6 +166,95 @@ S12MSCAN::~S12MSCAN() {
 
 }
 
+
+// Master methods
+void S12MSCAN::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	// Leave this empty as it is designed for memory mapped buses
+}
+
+unsigned int S12MSCAN::transport_dbg(CAN_Payload& payload)
+{
+	// Leave this empty as it is designed for memory mapped buses
+	return (0);
+}
+
+void S12MSCAN::b_transport(CAN_Payload& payload, sc_core::sc_time& t) {
+	payload.acquire();
+	rx_payload_queue.notify(payload, t);
+}
+
+bool S12MSCAN::get_direct_mem_ptr(CAN_Payload& payload, tlm_dmi&  dmi_data) {
+	return (false);
+}
+
+/**
+ * Name : nb_transport_fw()
+ *
+ * Role :
+ * 1/ Sample and Hold machine accepts analog signals from external world and stores them as capacitor charge on a storage node.
+ */
+tlm_sync_enum S12MSCAN::nb_transport_fw(CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch(phase)
+	{
+		case BEGIN_REQ:
+			// accepts analog signals modeled by payload
+			phase = END_REQ; // update the phase
+			payload.acquire();
+			rx_payload_queue.notify(payload, t); // queue the payload and the associative time
+
+			return (TLM_UPDATED);
+		case END_REQ:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << endl;
+			Object::Stop(-1);
+			break;
+		case BEGIN_RESP:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_RESP" << endl;
+			Object::Stop(-1);
+			break;
+		case END_RESP:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
+			Object::Stop(-1);
+			break;
+		default:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << endl;
+			Object::Stop(-1);
+			break;
+	}
+
+	return (TLM_ACCEPTED);
+}
+
+tlm_sync_enum S12MSCAN::nb_transport_bw(CAN_Payload& can_rx_payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch(phase)
+	{
+		case BEGIN_REQ:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_REQ" << endl;
+
+			Object::Stop(-1);
+			break;
+		case END_REQ:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << endl;
+			Object::Stop(-1);
+			break;
+		case BEGIN_RESP:
+			can_rx_payload.release();
+			return (TLM_COMPLETED);
+		case END_RESP:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
+			Object::Stop(-1);
+			break;
+		default:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << endl;
+			Object::Stop(-1);
+			break;
+	}
+
+	return (TLM_ACCEPTED);
+}
+
 void S12MSCAN::RunTimer() {
 
 	while (true) {
@@ -184,93 +274,49 @@ void S12MSCAN::RunRx() {
 	while (true) {
 
 		while (!isCANEnabled()) {
-
 			wait(can_enable_event);
-
 		}
-
-		bool newFrameStart = false;
-		while (isCANEnabled() && !newFrameStart) {
-
-			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (3) " << std::endl;
-
-			wait(bit_time);
-
-			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (4) " << std::endl;
-
-			if (telnet_enabled) {
-
-				if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (5) " << std::endl;
-
-
-//				TelnetProcessInput();
-
-				newFrameStart = !isEmpty(telnet_rx_fifo);
-
-				if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (6) " << std::endl;
-
-			} else {
-				// TODO I have to rewrite the following code using TLM and stub
-				newFrameStart = isRxLow();
-			}
-
-		}
-
-		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (7) " << std::endl;
-
-		if (!newFrameStart) { continue; }
 
 		// TODO: I have to complete receiver automata
-		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (8) " << std::endl;
+		wait(rx_payload_queue.get_event());
 
 		setReceiverActive();
 
-		uint8_t rx_shift[16];
+		uint8_t rx_shift[CAN_MSG_SIZE];
 
-		if (telnet_enabled) {
+		// Todo: buffer 4xIDByte + 8xDataByte + 1xLengthByte+ 1xPriorityByte + 2xTimeStampByte = 16xByte
 
-			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (9) " << std::endl;
-
-			// buffer 13xDataByte + 1xPriorityByte + 2xTimeStampByte = 16xByte
-			for (int i=0; i < 13; i++) {
-
-				next(telnet_rx_fifo, rx_shift[i], telnet_rx_event);
-
-			}
-
-			if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::get  HAVE DATA" << std::endl;
-
-		} else {
-			// TODO I have to rewrite the following code using TLM and stub
-			uint8_t rx_shift_mask = 1;
-			uint8_t index = 0;
-
-//			while (isSPIEnabled() && isSSLow() && (index < frameLength)) {
-//				bool val = pinRead();
-//				if (val) {
-//					rx_shift = rx_shift | rx_shift_mask;
-//				}
-//
-//				rx_shift_mask = rx_shift_mask << 1;
-//				index = index + 1;
-//
-//				wait(spi_baud_rate);
-//
-//			}
-//
-//			if (index == frameLength) {
-//				spidr_rx_buffer = rx_shift;
-//				setSPIDR(spidr_rx_buffer);
-//			}
-
-		}
+		InputRX(&rx_shift);
 
 		setRxBG(rx_shift);
 
-		if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (10) " << std::endl;
-
 		setIdle();
 
+		quantumkeeper.inc(bit_time*CAN_EXG_SIZE + bus_cycle_time); // Processing the input takes one cycle
+		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+	}
+
+}
+
+void S12MSCAN::InputRX(uint8_t (*rx_shift)[CAN_MSG_SIZE])
+{
+	CAN_Payload *payload = NULL;
+
+	payload = rx_payload_queue.get_next_transaction();
+
+	if (rx_debug_enabled && payload) {
+		cout << sc_object::name() << ":: Last Receive " << *payload << " - " << sc_time_stamp() << endl;
+	}
+
+	if (payload) {
+		for (unsigned int i=0; i<CAN_MSG_SIZE; i++) {
+			(*rx_shift)[i] = payload->msgVect[i];
+		}
+
+		tlm_phase phase = BEGIN_RESP;
+		sc_time local_time = SC_ZERO_TIME;
+		can_rx_sock->nb_transport_bw( *payload, phase, local_time);
 	}
 
 }
@@ -287,21 +333,14 @@ void S12MSCAN::RunTx() {
 
 		while (isCANEnabled()) {
 
-			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (3) " << std::endl;
-
 			int txIndex = selectLoadedTx(tx_buffer_register);
 
 			if (txIndex == -1) {
-				if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (4) " << std::endl;
 
 				wait(tx_load_event);
 
-				if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (5) " << std::endl;
-
 				continue;
 			}
-
-			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (6) " << std::endl;
 
 			// TODO: *** Get Arbitration (hasArbitration = true) ***
 			addTimeStamp(tx_buffer_register);
@@ -314,39 +353,9 @@ void S12MSCAN::RunTx() {
 
 //			startTransmission();
 
-			// use Telnet as an echo
-			if (telnet_enabled) {
-				for (int i=0; i < 13; i++) {
-					add(telnet_tx_fifo, tx_buffer_register[i], telnet_tx_event);
-				}
-				TelnetProcessOutput(true);
-
-				// TODO I have to emulate Mode Fault Error
-			}
-			else
-			{
-
-				// TODO I have to rewrite the following code using TLM and stub
-//				uint8_t index = 0;
-//				while (isSPIEnabled() && (index < frameLength) && !isAbortTransmission()) {
-//
-//					if (checkModeFaultError()) { break;}
-//
-//					pinWrite(tx_shift & 0x0001);
-//
-//					tx_shift = tx_shift >> 1;
-//
-//					index++;
-//
-//					wait(spi_baud_rate);
-//
-//				}
-
-			}
+			refreshOutput(tx_buffer_register);
 
 //			endTransmission();
-
-			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (7) " << std::endl;
 
 			// After transmission
 			setRxBG(tx_buffer_register, true);
@@ -357,6 +366,47 @@ void S12MSCAN::RunTx() {
 
 }
 
+void S12MSCAN::refreshOutput(uint8_t tx_buffer_register[CAN_MSG_SIZE])
+{
+	tlm_phase phase = BEGIN_REQ;
+
+	CAN_Payload* can_tx_payload = payload_fabric.allocate();
+
+	for (int i=0; i<CAN_MSG_SIZE; i++) {
+		can_tx_payload->msgVect[i] = tx_buffer_register[i];
+	}
+
+	quantumkeeper.inc(bit_time*CAN_EXG_SIZE + bus_cycle_time);
+	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+	sc_time local_time = SC_ZERO_TIME;
+
+	if (tx_debug_enabled) {
+		cout << sc_object::name() << ":: send " << *can_tx_payload << " - " << sc_time_stamp() << endl;
+	}
+
+	tlm_sync_enum ret = can_tx_sock->nb_transport_fw(*can_tx_payload, phase, local_time);
+
+	switch(ret)
+	{
+		case TLM_ACCEPTED:
+			// neither payload, nor phase and local_time have been modified by the callee
+			quantumkeeper.sync(); // synchronize to leave control to the callee
+			break;
+		case TLM_UPDATED:
+			// the callee may have modified 'payload', 'phase' and 'local_time'
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+			break;
+		case TLM_COMPLETED:
+			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			break;
+	}
+
+}
 
 void S12MSCAN::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
@@ -811,13 +861,6 @@ void S12MSCAN::assertInterrupt(uint8_t interrupt_offset) {
 			break;
 	}
 
-}
-
-// Master methods
-
-void S12MSCAN::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
-	// Leave this empty as it is designed for memory mapped buses
 }
 
 // Master methods
