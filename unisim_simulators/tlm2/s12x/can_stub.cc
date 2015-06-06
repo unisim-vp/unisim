@@ -465,7 +465,7 @@ void CAN_STUB::Get_CAN(CAN_DATATYPE *msg)
 void CAN_STUB::processCANRX()
 {
 
-	can_rx_quantumkeeper.set(sc_time(20, SC_US));
+	can_rx_quantumkeeper.set(sc_time(20, SC_MS));
 	if (can_rx_quantumkeeper.need_sync()) can_rx_quantumkeeper.sync();
 
 	CAN_DATATYPE can_rx_buffer;

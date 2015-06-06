@@ -438,6 +438,8 @@ private:
 	inline void enable_can() {
 		setIdle();
 
+		std::cout << sc_object::name() << "::enable_can" << std::endl;
+
 		can_enable_event.notify();
 	}
 

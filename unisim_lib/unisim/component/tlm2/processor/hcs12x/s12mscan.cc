@@ -275,6 +275,8 @@ void S12MSCAN::RunRx() {
 
 		while (!isCANEnabled()) {
 			wait(can_enable_event);
+
+			std::cout << sc_object::name() << ":: RX enabled " << std::endl;
 		}
 
 		// TODO: I have to complete receiver automata
@@ -313,10 +315,10 @@ void S12MSCAN::InputRX(uint8_t (*rx_shift)[CAN_MSG_SIZE])
 		for (unsigned int i=0; i<CAN_MSG_SIZE; i++) {
 			(*rx_shift)[i] = payload->msgVect[i];
 		}
-
-		tlm_phase phase = BEGIN_RESP;
-		sc_time local_time = SC_ZERO_TIME;
-		can_rx_sock->nb_transport_bw( *payload, phase, local_time);
+		payload->release();
+//		tlm_phase phase = BEGIN_RESP;
+//		sc_time local_time = SC_ZERO_TIME;
+//		can_rx_sock->nb_transport_bw( *payload, phase, local_time);
 	}
 
 }
@@ -328,6 +330,8 @@ void S12MSCAN::RunTx() {
 		while (!isCANEnabled()) {
 
 			wait(can_enable_event);
+
+			std::cout << sc_object::name() << ":: TX enabled " << std::endl;
 
 		}
 
@@ -439,6 +443,8 @@ void S12MSCAN::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 //=====================================================================
 
 bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	std::cout << sc_object::name() << "::Read Offset -> " << std::dec << offset << std::endl;
 
 	switch (offset) {
 		case CANCTL0: {
@@ -577,7 +583,7 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 
 bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
-//	cout << "CAN write base 0x" << std::hex << baseAddress << "  off " << std::dec << offset << std::endl;
+	std::cout << sc_object::name() << "::Write Offset -> " << std::dec << offset << "  value -> 0x" << std::hex << (unsigned int) *((uint8_t *) buffer) << std::dec << std::endl;
 
 	switch (offset) {
 		case CANCTL0: {
@@ -617,7 +623,7 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 
 			ComputeInternalTime();
 
-			if (((old_ctl1 & 0x80) != 0x80) && ((canctl1_register) == 0x80)) { enable_can(); }
+			if (((old_ctl1 & 0x80) != 0x80) && ((canctl1_register & 0x80) == 0x80)) { enable_can(); }
 
 		} break;
 		case CANBTR0: {
