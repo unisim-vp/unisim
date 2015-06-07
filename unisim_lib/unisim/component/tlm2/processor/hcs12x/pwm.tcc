@@ -275,7 +275,8 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& pwm_payload,
 			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
-			pwm_payload.release();
+			//pwm_payload.release();
+			pwm_bw_event.notify();
 			return (TLM_COMPLETED);
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
@@ -311,14 +312,13 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 	tlm_phase phase = BEGIN_REQ;
 
 	PWM_Payload<PWM_SIZE>* pwm_payload = payload_fabric.allocate();
-//	pwm_payload->acquire();
 
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwm_payload->pwmChannel[i] = pwmValue[i];
 	}
 
-	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
-	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+//	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
+//	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 //	sc_time local_time = quantumkeeper.get_local_time();
 	sc_time local_time = SC_ZERO_TIME;
@@ -331,6 +331,8 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 
 	pwm_payload->release();
 	
+	wait(pwm_bw_event);
+
 	switch(ret)
 	{
 		case TLM_ACCEPTED:
@@ -349,6 +351,9 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
+
+	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
+	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 }
 

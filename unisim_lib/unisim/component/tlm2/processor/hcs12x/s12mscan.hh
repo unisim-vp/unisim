@@ -330,6 +330,8 @@ private:
 
 	sc_event can_enable_event, timer_enable_event, tx_run_event, tx_load_event, tx_break_event, rx_run_event;
 
+	sc_event can_bw_event;
+
 	// S12MSCAN baseAddress  CAN0=0x0140:0x017F  CAN1=0x0180:0x01BF CAN2=0x01C0:0x01FF CAN3=0x0200:0x023F CAN4=0x0280:0x02BF
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
@@ -605,11 +607,11 @@ private:
 	}
 
 	inline bool isWakeupInterruptEnable() { return ((canrier_register & 0x80) != 0); }
-	inline bool isCANStatusChangeInterruptEnable() { return ((canrier_register & 0x80) != 0x40); /* A CAN Status Change event causes an error interrupt request.*/}
+	inline bool isCANStatusChangeInterruptEnable() { return ((canrier_register & 0x40) != 0x00); /* A CAN Status Change event causes an error interrupt request.*/}
 	inline int getReceiverSensitivityLevel() { return ((canrier_register & 0x30) >> 4); }
 	inline int getTransmitterSensitivityLevel() { return ((canrier_register & 0x0C) >> 0x02); }
-	inline bool isOverrunInterruptEnable() { return ((canrier_register & 0x02) != 0x02); }
-	inline bool isReceiverFullInterruptEnable() { return ((canrier_register & 0x01) != 0x01); }
+	inline bool isOverrunInterruptEnable() { return ((canrier_register & 0x02) != 0x00); }
+	inline bool isReceiverFullInterruptEnable() { return ((canrier_register & 0x01) != 0x00); }
 
 	inline bool isTransmitBufferEmpty(int index) { return ((cantflg_register & (1 << index)) != 0); }
 	inline void setTransmitBufferEmpty(int index) {

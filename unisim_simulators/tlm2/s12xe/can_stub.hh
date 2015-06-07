@@ -132,6 +132,8 @@ protected:
 	double	can_tx_fetch_period;
 	sc_time *can_tx_fetch_period_sc;
 
+	sc_event can_bw_event;
+
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 

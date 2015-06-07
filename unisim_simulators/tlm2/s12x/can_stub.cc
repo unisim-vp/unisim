@@ -193,7 +193,8 @@ tlm_sync_enum CAN_STUB::nb_transport_bw( CAN_Payload& payload, tlm_phase& phase,
 {
 	if(phase == BEGIN_RESP)
 	{
-		payload.release();
+		//payload.release();
+		can_bw_event.notify();
 		return (TLM_COMPLETED);
 	}
 	return (TLM_ACCEPTED);
@@ -221,8 +222,9 @@ void CAN_STUB::observe(CAN_DATATYPE &msg)
 
 	payload->release();
 
-	can_tx_quantumkeeper.inc(*can_tx_fetch_period_sc);
-	if (can_tx_quantumkeeper.need_sync()) can_tx_quantumkeeper.sync();
+	tlm_phase phase = BEGIN_RESP;
+	sc_time local_time = SC_ZERO_TIME;
+	can_tx_sock->nb_transport_bw( *payload, phase, local_time);
 
 }
 
@@ -249,6 +251,8 @@ void CAN_STUB::inject(CAN_DATATYPE msg)
 
 	can_rx_payload->release();
 	
+	wait(can_bw_event);
+
 	switch(ret)
 	{
 		case TLM_ACCEPTED:

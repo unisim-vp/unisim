@@ -237,6 +237,8 @@ private:
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
 
+	sc_event pwm_bw_event;
+
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 

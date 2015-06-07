@@ -160,7 +160,9 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_bw( ATD_Payload<ATD1_SIZE>& payload, tl
 {
 	if(phase == BEGIN_RESP)
 	{
-		payload.release();
+		// payload.release();
+		atd1_bw_event.notify();
+
 		return (TLM_COMPLETED);
 	}
 	return (TLM_ACCEPTED);
@@ -170,7 +172,8 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_bw( ATD_Payload<ATD0_SIZE>& payload, tl
 {
 	if(phase == BEGIN_RESP)
 	{
-		payload.release();
+		//payload.release();
+		atd0_bw_event.notify();
 		return (TLM_COMPLETED);
 	}
 	return (TLM_ACCEPTED);
@@ -201,8 +204,12 @@ void ATD_PWM_STUB::input(bool (*pwmValue)[PWM_SIZE])
 
 	payload->release();
 
-	pwm_quantumkeeper.inc(*pwm_fetch_period_sc);
-	if (pwm_quantumkeeper.need_sync()) pwm_quantumkeeper.sync();
+	tlm_phase phase = BEGIN_RESP;
+	sc_time local_time = SC_ZERO_TIME;
+	slave_sock->nb_transport_bw( *payload, phase, local_time);
+
+//	pwm_quantumkeeper.inc(*pwm_fetch_period_sc);
+//	if (pwm_quantumkeeper.need_sync()) pwm_quantumkeeper.sync();
 
 }
 
@@ -212,8 +219,6 @@ void ATD_PWM_STUB::output_ATD1(double anValue[ATD1_SIZE])
 	tlm_phase phase = BEGIN_REQ;
 
 	atd1_payload = atd1_payload_fabric.allocate();
-
-//	atd1_payload->acquire();
 
 	for (int i=0; i<ATD1_SIZE; i++) {
 		atd1_payload->anPort[i] = anValue[i];
@@ -231,6 +236,8 @@ void ATD_PWM_STUB::output_ATD1(double anValue[ATD1_SIZE])
 
 	atd1_payload->release();
 	
+	wait(atd1_bw_event);
+
 	switch(ret)
 	{
 		case TLM_ACCEPTED:
@@ -260,7 +267,6 @@ void ATD_PWM_STUB::output_ATD0(double anValue[ATD0_SIZE])
 	tlm_phase phase = BEGIN_REQ;
 
 	ATD_Payload<ATD0_SIZE> *atd0_payload = atd0_payload_fabric.allocate();
-//	atd0_payload->acquire();
 
 	for (int i=0; i<ATD0_SIZE; i++) {
 		atd0_payload->anPort[i] = anValue[i];
@@ -277,6 +283,8 @@ void ATD_PWM_STUB::output_ATD0(double anValue[ATD0_SIZE])
 	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*atd0_payload, phase, local_time);
 
 	atd0_payload->release();
+
+	wait(atd0_bw_event);
 
 	switch(ret)
 	{

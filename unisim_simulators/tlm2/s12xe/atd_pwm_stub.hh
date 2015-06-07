@@ -138,6 +138,8 @@ protected:
 	double	pwm_fetch_period;
 	sc_time *pwm_fetch_period_sc;
 
+	sc_event atd0_bw_event, atd1_bw_event;
+
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 

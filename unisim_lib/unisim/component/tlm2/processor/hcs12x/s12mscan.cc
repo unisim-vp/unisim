@@ -240,7 +240,8 @@ tlm_sync_enum S12MSCAN::nb_transport_bw(CAN_Payload& can_rx_payload, tlm_phase& 
 			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
-			can_rx_payload.release();
+			//can_rx_payload.release();
+			can_bw_event.notify();
 			return (TLM_COMPLETED);
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
@@ -316,9 +317,9 @@ void S12MSCAN::InputRX(uint8_t (*rx_shift)[CAN_MSG_SIZE])
 			(*rx_shift)[i] = payload->msgVect[i];
 		}
 		payload->release();
-//		tlm_phase phase = BEGIN_RESP;
-//		sc_time local_time = SC_ZERO_TIME;
-//		can_rx_sock->nb_transport_bw( *payload, phase, local_time);
+		tlm_phase phase = BEGIN_RESP;
+		sc_time local_time = SC_ZERO_TIME;
+		can_rx_sock->nb_transport_bw( *payload, phase, local_time);
 	}
 
 }
@@ -380,8 +381,8 @@ void S12MSCAN::refreshOutput(uint8_t tx_buffer_register[CAN_MSG_SIZE])
 		can_tx_payload->msgVect[i] = tx_buffer_register[i];
 	}
 
-	quantumkeeper.inc(bit_time*CAN_EXG_SIZE + bus_cycle_time);
-	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+//	quantumkeeper.inc(bit_time*CAN_EXG_SIZE + bus_cycle_time);
+//	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 	sc_time local_time = SC_ZERO_TIME;
 
@@ -390,6 +391,10 @@ void S12MSCAN::refreshOutput(uint8_t tx_buffer_register[CAN_MSG_SIZE])
 	}
 
 	tlm_sync_enum ret = can_tx_sock->nb_transport_fw(*can_tx_payload, phase, local_time);
+
+	can_tx_payload->release();
+
+	wait(can_bw_event);
 
 	switch(ret)
 	{
@@ -409,6 +414,9 @@ void S12MSCAN::refreshOutput(uint8_t tx_buffer_register[CAN_MSG_SIZE])
 			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
+
+	quantumkeeper.inc(bit_time*CAN_EXG_SIZE + bus_cycle_time);
+	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 }
 
