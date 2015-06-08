@@ -145,7 +145,7 @@ public:
 
 	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
-    void refresh_channel(uint8_t channel_number);
+//    void refresh_channel(uint8_t channel_number);
 
     void	start();
     void	pwm7in_ChangeStatus(bool pwm7in_status);
@@ -216,6 +216,9 @@ protected:
 
 		if (value != output[channel_index]) {
 			channel_output_reg[channel_index] = value;
+
+			refreshOutput(output);
+
 		}
 
 	};

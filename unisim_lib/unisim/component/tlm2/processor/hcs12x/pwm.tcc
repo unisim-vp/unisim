@@ -291,7 +291,7 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& pwm_payload,
 	return (TLM_ACCEPTED);
 }
 
-
+/*
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::refresh_channel(uint8_t channel_number) {
 
@@ -304,7 +304,7 @@ void PWM<PWM_SIZE>::refresh_channel(uint8_t channel_number) {
 	refreshOutput(pwmChannelOutput);
 
 }
-
+*/
 
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
@@ -1012,7 +1012,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 				setOutput(false);
 		}
 
-		pwmParent->refresh_channel(channel_index);
+//		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -1024,7 +1024,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 		setOutput(true);
 
-		pwmParent->refresh_channel(channel_index);
+//		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -1035,7 +1035,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 		setOutput(false);
 
-		pwmParent->refresh_channel(channel_index);
+//		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -1054,7 +1054,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 	setOutput(!getOutput());
 
-	pwmParent->refresh_channel(channel_index);
+//	pwmParent->refresh_channel(channel_index);
 
 	if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
 	{
@@ -1074,7 +1074,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 			setOutput(!getOutput());
 
-			pwmParent->refresh_channel(channel_index);
+//			pwmParent->refresh_channel(channel_index);
 
 			if (isCenterAligned) {
 
