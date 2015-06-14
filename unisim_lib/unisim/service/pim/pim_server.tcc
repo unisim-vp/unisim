@@ -106,6 +106,9 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, unisim::kernel::service::Client<Registers>(_name, _parent)
 	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
+
+	, unisim::kernel::service::Client<Monitor_if<ADDRESS> > (_name, _parent)
+
 	, VariableBaseListener()
 
 	, debug_control_export("debug-control-export", this)
@@ -120,6 +123,8 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, stmt_lookup_import("stmt-lookup-import", this)
 
+	, monitor_import("monitor-import", this)
+
 	, socketServer(NULL)
 	, gdbThread(NULL)
 	, monitorThread(NULL)
@@ -127,6 +132,7 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, logger(*this)
 	, tcp_port(12345)
 	, architecture_description_filename()
+	, pc_reg_index(0)
 	, pc_reg(0)
 	, endian (GDB_BIG_ENDIAN)
 	, killed(false)
@@ -160,15 +166,11 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 
 	counter = period;
 
-	monitor = new Monitor("Monitor");
-
 }
 
 template <class ADDRESS>
 PIMServer<ADDRESS>::~PIMServer()
 {
-
-	if (monitor) { delete monitor; monitor = NULL; }
 
 	if (gdbThread) { delete gdbThread; gdbThread = NULL; }
 
@@ -1024,6 +1026,8 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 	if (watchpoint_hit != NULL) {
 
 // *******************************
+
+	if (monitor_import) {
 		string name;
 
 		list<const Symbol<ADDRESS> *> symbol_registries;
@@ -1060,12 +1064,13 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 
 //				std::cout << "res = " << d << "   at " << local_time << std::endl;
 
-				monitor->refresh_value(name.c_str(), (double) d, local_time++);
+				monitor_import->refresh_value(name.c_str(), (double) d, local_time++);
 
 				break;
 			}
 
 		}
+	} // end if(monitor)
 
 // *******************************
 

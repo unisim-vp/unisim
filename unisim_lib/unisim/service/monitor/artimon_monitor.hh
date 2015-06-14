@@ -2,6 +2,8 @@
 #ifndef __UNISIM_SERVICE_ARTIMON_MONITOR_HH__
 #define __UNISIM_SERVICE_ARTIMON_MONITOR_HH__
 
+#include <inttypes.h>
+
 #include <string>
 
 #include <unisim/kernel/service/service.hh>
@@ -31,9 +33,10 @@ namespace unisim {
 namespace service {
 namespace monitor {
 
+template <class ADDRESS>
 class ArtimonMonitor
 		: public Object
-		, public Monitor_if
+		, public Monitor_if<ADDRESS>
 
 {
 public:
@@ -45,7 +48,8 @@ public:
 	virtual bool Setup(ServiceExportBase *service_export);
 	virtual bool EndSetup();
 
-	int generate_artimon_spec(const char* file_path);
+	virtual int generate_monitor_spec(const char* file_path);
+
 	int getPropertyIndex(const char* name);
 
 	virtual void refresh_value(const char* name, bool value);
@@ -67,8 +71,6 @@ private:
 
 	bool isInitialized;
 
-	std::string xml_file_path;
-	Parameter<std::string> param_xml_file_path;
 };
 
 } // end of namespace monitor

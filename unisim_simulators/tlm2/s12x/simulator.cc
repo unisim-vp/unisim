@@ -69,6 +69,8 @@ Simulator::Simulator(int argc, char **argv)
 	, can3_stub(0)
 	, can4_stub(0)
 
+	, monitor(0)
+
 //	, loaderS19(0)
 //	, loaderELF(0)
 	, loader(0)
@@ -229,6 +231,9 @@ Simulator::Simulator(int argc, char **argv)
 //	} else {
 //		loaderELF = new Elf32Loader("elf32-loader");
 //	}
+
+	// Monitoring tool: ARTiMon or EACSEL
+	monitor = new MONITOR("Monitor");
 
 	//  - Multiformat loader
 	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
@@ -525,6 +530,7 @@ Simulator::Simulator(int argc, char **argv)
 		pim_server->stmt_lookup_import >> debugger->stmt_lookup_export;
 		pim_server->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 
+		pim_server->monitor_import >> monitor->monitor_export;
 	}
 
 	if(sci_enable_telnet)
@@ -638,6 +644,8 @@ Simulator::~Simulator()
 
 	if (host_time) { delete host_time; host_time = NULL; }
 	if(sim_time) { delete sim_time; sim_time = NULL; }
+
+	if (monitor) { delete monitor; monitor = NULL; }
 
 	if(loader) delete loader;
 //	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
@@ -931,6 +939,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	simulator->SetVariable("debugger.parse-dwarf", true);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "68hc12_dwarf_register_number_mapping.xml");
+
+	simulator->SetVariable("Monitor.xml-spec-file-path", "xml_spec_file_path.xml");
 
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;

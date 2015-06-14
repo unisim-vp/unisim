@@ -43,7 +43,7 @@
 #include <libxml/xpath.h>
 #include <libxml/parser.h>
 
-#include "systemc"
+#include <systemc>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>

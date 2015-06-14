@@ -2,6 +2,8 @@
 #ifndef __UNISIM_SERVICE_MONITOR_SERVER_HH__
 #define __UNISIM_SERVICE_MONITOR_SERVER_HH__
 
+#include <inttypes.h>
+
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/interfaces/monitor_if.hh>
@@ -14,10 +16,10 @@ namespace unisim {
 namespace service {
 namespace monitor {
 
-
+template <class ADDRESS>
 class MonitorServer
 	: public Object
-	, public Monitor_if
+	, public Monitor_if<ADDRESS>
 {
 private:
 	MonitorServer(const char *name, Object *parent = 0, const char *description = 0);
@@ -34,6 +36,8 @@ public:
 	static MonitorServer* getInstance(Object *parent);
 	static void releaseInstance();
 
+	virtual int generate_monitor_spec(const char* file_path);
+
 	virtual void refresh_value(const char* name, bool value);
 	virtual void refresh_value(const char* name, double value);
 
@@ -47,7 +51,7 @@ protected:
 private:
 	static MonitorServer* singleton;
 	static int singletonRef;
-	Monitor_if *monitor;
+	Monitor_if<ADDRESS> *monitor;
 
 };
 

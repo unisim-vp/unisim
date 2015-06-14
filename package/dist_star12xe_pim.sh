@@ -509,6 +509,10 @@ unisim/component/tlm2/processor/hcs12x/s12xeetx.tcc \
 unisim/component/tlm2/processor/hcs12x/s12xftmx.tcc \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.tcc \
 unisim/service/pim/pim_server.tcc \
+unisim/service/monitor/monitor_server.tcc \
+unisim/service/monitor/monitor.tcc \
+unisim/service/monitor/default_monitor.tcc \
+unisim/service/monitor/artimon_monitor.tcc \
 "
 
 UNISIM_LIB_STAR12X_M4_FILES="\

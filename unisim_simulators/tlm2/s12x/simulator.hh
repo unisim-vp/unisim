@@ -67,6 +67,8 @@
 #include <unisim/service/pim/pim.hh>
 #include <unisim/service/pim/pim_server.hh>
 
+#include <unisim/service/monitor/monitor.hh>
+
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
 #include <xml_atd_pwm_stub.hh>
@@ -84,6 +86,8 @@
 #endif
 
 using namespace std;
+using namespace sc_core;
+using namespace sc_dt;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::service_address_t;
@@ -110,6 +114,8 @@ using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 
 using unisim::service::pim::PIM;
 using unisim::service::pim::PIMServer;
+
+using unisim::service::monitor::Monitor;
 
 using unisim::service::profiling::addr_profiler::Profiler;
 
@@ -241,6 +247,7 @@ private:
 	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 32> MemoryImportExportTee;
 	typedef unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> MemoryAccessReportingTee;
 
+	typedef unisim::service::monitor::Monitor<CPU_ADDRESS_TYPE> MONITOR;
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -296,6 +303,9 @@ private:
 
 //	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
 //	Elf32Loader *loaderELF;
+
+	// Monitoring tool: ARTiMon or EACSEL
+	MONITOR *monitor;
 
 	//  - Multiformat loader
 	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
