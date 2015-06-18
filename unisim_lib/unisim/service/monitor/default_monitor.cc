@@ -7,8 +7,6 @@ namespace service {
 namespace monitor {
 
 template
-class DefaultMonitor<uint16_t>;
-template
 class DefaultMonitor<uint32_t>;
 template
 class DefaultMonitor<uint64_t>;

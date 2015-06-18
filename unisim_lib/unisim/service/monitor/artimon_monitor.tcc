@@ -61,10 +61,13 @@ int ArtimonMonitor<ADDRESS>::generate_monitor_spec(const char* file_path)
 	if (! init_artimon_4_simulators((char*) "Dummy",&nb_atoms, &nb_sig, 1, &nb_main, &main_values))
 	{
 	    isInitialized = true;
-		printf("\nInit ARTiMon Ok\n");
+		printf("\nInit ARTiMon Success.\n");
 	}
-	else
+	else{
+		printf("\nInit ARTiMon Failed !\n");
 		return (-1);
+	}
+
 
 //	int N = 15;
 //
@@ -124,14 +127,16 @@ int ArtimonMonitor<ADDRESS>::getPropertyIndex(const char* name)
 template <class ADDRESS>
 void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, bool value)
 {
-	//	extern void (* artimon_refresh_atom)(int pos, int at);
+	std::cout << "ARTiMON::refresh_value bool is running" << std::endl;
+
 	artimon_refresh_atom(getPropertyIndex(name), value);
 }
 
 template <class ADDRESS>
 void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, double value)
 {
-	//	extern void (* artimon_refresh_signal)(int pos, unsigned * sig);
+
+	std::cout << "ARTiMON::refresh_value double is running" << std::endl;
 
 	unsigned sigtab[2];
 
@@ -144,8 +149,7 @@ void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, double value)
 template <class ADDRESS>
 void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, bool value, double time)
 {
-	//	extern void (* artimon_refresh_atom)(int pos, int at);
-	//	extern double (* artimon_refresh_time)(double t);
+	std::cout << "ARTiMON::refresh_value bool/time is running" << std::endl;
 
 	artimon_refresh_atom(getPropertyIndex(name), value);
 
@@ -155,8 +159,7 @@ void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, bool value, double
 template <class ADDRESS>
 void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, double value, double time)
 {
-	//	extern void (* artimon_refresh_signal)(int pos, unsigned * sig);
-	//	extern double (* artimon_refresh_time)(double t);
+	std::cout << "ARTiMON::refresh_value double/time is running" << std::endl;
 
 	unsigned sigtab[2];
 
@@ -170,7 +173,8 @@ void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, double value, doub
 template <class ADDRESS>
 void ArtimonMonitor<ADDRESS>::refresh_time(double time)
 {
-	//	extern double (* artimon_refresh_time)(double t);
+	std::cout << "ARTiMON::refresh_time is running" << std::endl;
+
 	artimon_refresh_time(time);
 }
 

@@ -12,8 +12,6 @@ namespace service {
 namespace monitor {
 
 template
-class ArtimonMonitor<uint16_t>;
-template
 class ArtimonMonitor<uint32_t>;
 template
 class ArtimonMonitor<uint64_t>;

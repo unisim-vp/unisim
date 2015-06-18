@@ -197,6 +197,7 @@ unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
 unisim/service/tee/registers/registers_tee.cc \
+unisim/service/tee/debug_event/debug_event_tee.cc \
 unisim/component/cxx/processor/hcs12x/xgate.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \
@@ -402,6 +403,7 @@ unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
+unisim/service/tee/debug_event/debug_event_tee.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
@@ -494,6 +496,7 @@ unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
+unisim/service/tee/debug_event/debug_event_tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \

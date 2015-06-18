@@ -54,46 +54,31 @@ int DefaultMonitor<ADDRESS>::generate_monitor_spec(const char* file_path) {
 template <class ADDRESS>
 void DefaultMonitor<ADDRESS>::refresh_value(const char* name, bool value)
 {
-	//	extern void (* artimon_refresh_atom)(int pos, int at);
-	//	extern void (* artimon_refresh_signal)(int pos, unsigned * sig);
-	std::cout << "refresh_value bool" << std::endl;
+	std::cout << "Default_monitor::refresh_value bool is running" << std::endl;
 }
 
 template <class ADDRESS>
 void DefaultMonitor<ADDRESS>::refresh_value(const char* name, double value)
 {
-	//	extern void (* artimon_refresh_atom)(int pos, int at);
-	//	extern void (* artimon_refresh_signal)(int pos, unsigned * sig);
-	std::cout << "refresh_value double" << std::endl;
-
+	std::cout << "Default_monitor::refresh_value double is running" << std::endl;
 }
 
 template <class ADDRESS>
 void DefaultMonitor<ADDRESS>::refresh_value(const char* name, bool value, double time)
 {
-	//	extern void (* artimon_refresh_atom)(int pos, int at);
-	//	extern void (* artimon_refresh_signal)(int pos, unsigned * sig);
-	//	extern double (* artimon_refresh_time)(double t);
-	std::cout << "refresh_value bool/time" << std::endl;
-
+	std::cout << "Default_monitor::refresh_value bool/time is running" << std::endl;
 }
 
 template <class ADDRESS>
 void DefaultMonitor<ADDRESS>::refresh_value(const char* name, double value, double time)
 {
-	//	extern void (* artimon_refresh_atom)(int pos, int at);
-	//	extern void (* artimon_refresh_signal)(int pos, unsigned * sig);
-	//	extern double (* artimon_refresh_time)(double t);
-	std::cout << "refresh_value double/time" << std::endl;
-
+	std::cout << "Default_monitor::refresh_value double/time is running" << std::endl;
 }
 
 template <class ADDRESS>
 void DefaultMonitor<ADDRESS>::refresh_time(double time)
 {
-	//	extern double (* artimon_refresh_time)(double t);
-	std::cout << "refresh_time" << std::endl;
-
+	std::cout << "Default_monitor::refresh_time is running" << std::endl;
 }
 
 } // end of namespace monitor

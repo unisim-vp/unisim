@@ -69,6 +69,7 @@
 #include <unisim/service/pim/pim_server.hh>
 
 #include <unisim/service/monitor/monitor.hh>
+#include <unisim/service/tee/debug_event/debug_event_tee.hh>
 
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
@@ -114,6 +115,8 @@ using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 
 using unisim::service::pim::PIM;
 using unisim::service::pim::PIMServer;
+
+using unisim::service::tee::debug_event::DebugEventTee;
 
 using unisim::service::monitor::Monitor;
 
@@ -248,6 +251,7 @@ class Simulator :
 	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 32> MemoryImportExportTee;
 	typedef unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> MemoryAccessReportingTee;
 
+	typedef unisim::service::tee::debug_event::DebugEventTee<CPU_ADDRESS_TYPE> EVENT_TEE;
 	typedef unisim::service::monitor::Monitor<CPU_ADDRESS_TYPE> MONITOR;
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -304,6 +308,8 @@ class Simulator :
 
 //	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
 //	Elf32Loader *loaderELF;
+
+	EVENT_TEE *evTee;
 
 	// Monitoring tool: ARTiMon or EACSEL
 	MONITOR *monitor;

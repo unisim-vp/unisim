@@ -2,15 +2,37 @@
 #ifndef __UNISIM_SERVICE_MONITOR_HH__
 #define __UNISIM_SERVICE_MONITOR_HH__
 
+#include <string>
+#include <list>
+
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/interfaces/debug_event.hh>
-
+#include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/monitor_if.hh>
+#include <unisim/service/interfaces/registers.hh>
+
 #include <unisim/service/monitor/monitor_server.hh>
 
+#include <unisim/util/converter/convert.hh>
+#include <unisim/util/debug/breakpoint_registry.hh>
+#include <unisim/util/debug/watchpoint_registry.hh>
+#include <unisim/util/debug/symbol.hh>
+
+#include <unisim/kernel/logger/logger.hh>
+
+using namespace std;
+
+using unisim::util::debug::BreakpointRegistry;
+using unisim::util::debug::WatchpointRegistry;
+using unisim::util::debug::Watchpoint;
+using unisim::util::debug::Symbol;
+
+using unisim::kernel::service::Client;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Service;
+using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceExport;
@@ -18,13 +40,18 @@ using unisim::kernel::service::ServiceImport;
 
 using unisim::service::interfaces::DebugEventListener;
 using unisim::service::interfaces::DebugEventTrigger;
-
+using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Monitor_if;
+using unisim::service::interfaces::SymbolTableLookup;
+using unisim::service::interfaces::Registers;
+
 using unisim::service::monitor::MonitorServer;
 
 namespace unisim {
 namespace service {
 namespace monitor {
+
+typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 
 template <class ADDRESS>
 class Monitor
@@ -32,6 +59,9 @@ class Monitor
 
 	, public Service<DebugEventListener<ADDRESS> >
 	, public unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >
+	, public Client<SymbolTableLookup<ADDRESS> >
+	, public Client<Memory<ADDRESS> >
+	, public Client<Registers>
 
 {
 public:
@@ -39,6 +69,11 @@ public:
 
 	ServiceExport<DebugEventListener<ADDRESS> > debug_event_listener_export;
 	ServiceImport<DebugEventTrigger<ADDRESS> > debug_event_trigger_import;
+
+	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
+
+	ServiceImport<Memory<ADDRESS> > memory_import;
+	ServiceImport<Registers> registers_import;
 
 	Monitor(const char *name, Object *parent = 0, const char *description = 0);
 	virtual ~Monitor();
@@ -69,6 +104,16 @@ private:
 	std::string xml_spec_file_path;
 	Parameter<std::string> param_spec_xml_file_path;
 
+	unisim::kernel::logger::Logger logger;
+
+	double local_time;
+
+	GDBEndian endian;
+
+	bool verbose;
+	Parameter<bool> param_verbose;
+
+	bool InternalReadMemory(ADDRESS addr, uint32_t size, string& packet);
 };
 
 } // end of namespace monitor

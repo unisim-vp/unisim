@@ -6,12 +6,8 @@ namespace unisim {
 namespace service {
 namespace monitor {
 
-template
-class Monitor<uint16_t>;
-template
-class Monitor<uint32_t>;
-template
-class Monitor<uint64_t>;
+template class Monitor<uint32_t>;
+template class Monitor<uint64_t>;
 
 } // end of namespace monitor
 } // end of namespace service

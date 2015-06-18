@@ -7,8 +7,6 @@ namespace service {
 namespace monitor {
 
 template
-class MonitorServer<uint16_t>;
-template
 class MonitorServer<uint32_t>;
 template
 class MonitorServer<uint64_t>;

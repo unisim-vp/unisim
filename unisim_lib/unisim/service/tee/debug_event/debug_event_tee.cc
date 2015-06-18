@@ -1,3 +1,4 @@
+
 /*
  *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
@@ -32,82 +33,22 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
-#ifndef __UNISIM_SERVICE_TEE_REGISTERS_HH__
-#define __UNISIM_SERVICE_TEE_REGISTERS_HH__
-
-#include "unisim/service/interfaces/registers.hh"
-#include "unisim/util/debug/register.hh"
-#include <unisim/kernel/service/service.hh>
-#include <stdint.h>
+#include "unisim/service/tee/debug_event/debug_event_tee.hh"
+#include "unisim/service/tee/debug_event/debug_event_tee.tcc"
 
 namespace unisim {
 namespace service {
 namespace tee {
-namespace registers {
+namespace debug_event {
 
+template class DebugEventTee<uint16_t>;
+template class DebugEventTee<uint32_t>;
+template class DebugEventTee<uint64_t>;
 
-using unisim::service::interfaces::Registers;
-using unisim::util::debug::Register;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-
-template <uint8_t size = 16 >
-class RegistersTee :
-	public Service<Registers>,
-	public Client<Registers>
-{
-public:
-	ServiceExport<Registers> registers_export;
-	ServiceImport<Registers> *registers_import[size];
-
-	RegistersTee(const char* name, Object *parent = 0) :
-		Object(name, parent),
-		Service<Registers>(name, parent),
-		Client<Registers>(name, parent),
-
-		registers_export("registers_export", this)
-	{
-
-		for (uint8_t i=0; i<size; i++) {
-			std::ostringstream out;
-			out << "registers-import-" << i;
-			registers_import[i] = new ServiceImport<Registers>(out.str().c_str(), this);
-		}
-
-	}
-
-	~RegistersTee() {
-		for (uint8_t i=0; i<size; i++) {
-			if (registers_import[i]) {
-				delete registers_import[i];
-				registers_import[i] = NULL;
-			}
-		}
-
-	}
-
-	Register *GetRegister(const char *name) {
-		Register* reg = NULL;
-
-		for (uint8_t i=0; ((reg == NULL) && (i < size)); i++) {
-			if (*registers_import[i]) {
-				reg = (*registers_import[i])->GetRegister(name);
-			}
-		}
-
-		return reg;
-	}
-};
-
-} // end registers
+} // end debug_event
 } // end tee 
 } // end service
 } // end unisim 
-
-#endif
 
 
 

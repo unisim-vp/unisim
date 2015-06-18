@@ -32,82 +32,69 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
-#ifndef __UNISIM_SERVICE_TEE_REGISTERS_HH__
-#define __UNISIM_SERVICE_TEE_REGISTERS_HH__
+#ifndef __UNISIM_SERVICE_TEE_DEBUG_EVENT_HH__
+#define __UNISIM_SERVICE_TEE_DEBUG_EVENT_HH__
 
-#include "unisim/service/interfaces/registers.hh"
-#include "unisim/util/debug/register.hh"
-#include <unisim/kernel/service/service.hh>
 #include <stdint.h>
+
+#include <unisim/kernel/service/service.hh>
+
+#include <unisim/service/interfaces/debug_event.hh>
 
 namespace unisim {
 namespace service {
 namespace tee {
-namespace registers {
+namespace debug_event {
 
 
-using unisim::service::interfaces::Registers;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::DebugEventListener;
+using unisim::service::interfaces::DebugEventTrigger;
+
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 
-template <uint8_t size = 16 >
-class RegistersTee :
-	public Service<Registers>,
-	public Client<Registers>
+template <class ADDRESS, uint8_t size = 16 >
+class DebugEventTee :
+	  public Service<DebugEventListener<ADDRESS> >
+	, public Client<DebugEventListener<ADDRESS> >
+	, public Service<DebugEventTrigger<ADDRESS> >
+	, public Client<DebugEventTrigger<ADDRESS> >
+
 {
 public:
-	ServiceExport<Registers> registers_export;
-	ServiceImport<Registers> *registers_import[size];
 
-	RegistersTee(const char* name, Object *parent = 0) :
-		Object(name, parent),
-		Service<Registers>(name, parent),
-		Client<Registers>(name, parent),
+	ServiceExport<DebugEventListener<ADDRESS> > debug_event_listener_export;        // Debuger->debug_event_listener_import >> Tee->debug_event_listener_export
+	ServiceImport<DebugEventListener<ADDRESS> > *debug_event_listener_import[size]; // Tee->debug_event_listener_import >> Client->debug_event_listener_export
 
-		registers_export("registers_export", this)
-	{
+	ServiceExport<DebugEventTrigger<ADDRESS> > debug_event_trigger_export; // Client->debug_event_trigger_import >> Tee->debug_event_trigger_export
+	ServiceImport<DebugEventTrigger<ADDRESS> > debug_event_trigger_import; // Tee->debug_event_trigger_import >> Debuger->debug_event_trigger_export
 
-		for (uint8_t i=0; i<size; i++) {
-			std::ostringstream out;
-			out << "registers-import-" << i;
-			registers_import[i] = new ServiceImport<Registers>(out.str().c_str(), this);
-		}
+	DebugEventTee(const char* name, Object *parent = 0);
+	~DebugEventTee();
 
-	}
+	// interface of Event_Listener
+	void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
 
-	~RegistersTee() {
-		for (uint8_t i=0; i<size; i++) {
-			if (registers_import[i]) {
-				delete registers_import[i];
-				registers_import[i] = NULL;
-			}
-		}
+	// interface of Event_Trigger
+	bool Listen(const unisim::util::debug::Event<ADDRESS>& event);
 
-	}
+	bool Unlisten(const unisim::util::debug::Event<ADDRESS>& event);
 
-	Register *GetRegister(const char *name) {
-		Register* reg = NULL;
+	bool IsEventListened(const unisim::util::debug::Event<ADDRESS>& event) const;
 
-		for (uint8_t i=0; ((reg == NULL) && (i < size)); i++) {
-			if (*registers_import[i]) {
-				reg = (*registers_import[i])->GetRegister(name);
-			}
-		}
+	void EnumerateListenedEvents(std::list<const unisim::util::debug::Event<ADDRESS> *>& lst, typename unisim::util::debug::Event<ADDRESS>::Type ev_type = unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) const;
 
-		return reg;
-	}
 };
 
-} // end registers
+} // end debug_event
 } // end tee 
 } // end service
 } // end unisim 
 
-#endif
 
+#endif
 
 
