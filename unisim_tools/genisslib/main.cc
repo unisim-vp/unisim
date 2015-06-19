@@ -46,7 +46,7 @@ using namespace std;
 Opts::Opts()
   : outputprefix( DEFAULT_OUTPUT ), verbosity( 1 ),
     expandname( 0 ), inputname( 0 ), depfilename( 0 ),
-    minwordsize( 32 ), sourcelines( true ), specialization( true )
+    minwordsize( 32 ), sourcelines( true ), privatemembers( true ), specialization( true )
     
 { s_shared = this; }
 
@@ -128,7 +128,15 @@ struct GIL : public CLI, public Opts {
 
     if (_args.match( "--source-lines", "on/off", "Toggles the output of "
                      "source line references in generated files (default: on)." )) {
-      if( this->on_off( &GIL::sourcelines, _args.pop_front() ) ) return;
+      if (this->on_off( &GIL::sourcelines, _args.pop_front() )) return;
+      cerr << GENISSLIB ": '--source-lines' must be followed by 'on' or 'off'.\n";
+      help();
+      throw CLI::Exit_t( 1 );
+    }
+
+    if (_args.match( "--private-members", "on/off", "Toggles the output of "
+                     "private class specifier to protect generated class members (default: on)." )) {
+      if (this->on_off( &GIL::privatemembers, _args.pop_front() )) return;
       cerr << GENISSLIB ": '--source-lines' must be followed by 'on' or 'off'.\n";
       help();
       throw CLI::Exit_t( 1 );
