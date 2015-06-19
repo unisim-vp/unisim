@@ -580,6 +580,8 @@ m4/pthread.m4"
 UNISIM_LIB_VIRTEX5FXT_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_powerpc.xml \
 unisim/service/debug/gdb_server/gdb_powerpc_403.xml \
+unisim/service/debug/gdb_server/gdb_powerpc_750.xml \
+unisim/service/debug/gdb_server/gdb_powerpc_7450.xml \
 unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
 
