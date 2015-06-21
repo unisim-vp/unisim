@@ -55,8 +55,13 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 	, cosim_enabled(false)
 	, param_cosim_enabled("cosim-enabled", this, cosim_enabled)
 
-	, can_rx_stub_enabled(false)
-	, param_can_rx_stub_enabled("can-rx-stub-enabled", this, can_rx_stub_enabled)
+	, xml_enabled(false)
+	, param_xml_enabled("xml-enabled", this, xml_enabled)
+
+	, rand_enabled(false)
+	, param_rand_enabled("rand-enabled", this, rand_enabled)
+
+	, stub_enabled(false)
 
 	, input_payload_queue("input_payload_queue")
 
@@ -109,16 +114,14 @@ bool CAN_STUB::BeginSetup() {
 		data0->Timestamp[0] = 0;
 		data0->Timestamp[1] = 0;
 		can_rx_vect.push_back(data0);
-
 	}
-	else {
-		if (can_rx_stub_enabled) {
-			LoadXmlData(can_rx_stimulus_file.c_str(), can_rx_vect);
-		} else {
-			RandomizeData(can_rx_vect);
-		}
-
+	else if (xml_enabled) {
+		LoadXmlData(can_rx_stimulus_file.c_str(), can_rx_vect);
+	} else if (rand_enabled) {
+		RandomizeData(can_rx_vect);
 	}
+
+	stub_enabled = cosim_enabled || xml_enabled || rand_enabled;
 
 	if (trace_enable) {
 //		can_rx_output_file.open ("can_rx_output.txt");
@@ -474,7 +477,7 @@ void CAN_STUB::processCANRX()
 
 	CAN_DATATYPE can_rx_buffer;
 
-	while (!isTerminated()) {
+	while (!isTerminated() && stub_enabled) {
 
 		for (std::vector<CAN_DATATYPE*>::iterator it = can_rx_vect.begin() ; (it != can_rx_vect.end()) && !isTerminated(); ++it) {
 
@@ -503,7 +506,7 @@ void CAN_STUB::processCANRX()
 void CAN_STUB::processCANTX()
 {
 
-	while (!isTerminated())
+	while (!isTerminated() && stub_enabled)
 	{
 		observe(can_tx_buffer);
 	}

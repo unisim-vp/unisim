@@ -999,9 +999,51 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-start-channel", 0);
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 15);
 	simulator->SetVariable("atd-pwm-stub.trace-enabled", false);
-	simulator->SetVariable("atd-pwm-stub.atd0-stub-enabled", false);
-	simulator->SetVariable("atd-pwm-stub.atd1-stub-enabled", false);
+	simulator->SetVariable("atd-pwm-stub.atd0-xml-enabled", false);
+	simulator->SetVariable("atd-pwm-stub.atd1-xml-enabled", false);
+	simulator->SetVariable("atd-pwm-stub.atd0-rand-enabled", false);
+	simulator->SetVariable("atd-pwm-stub.atd1-rand-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.cosim-enabled", false);
+
+	simulator->SetVariable("CAN0-STUB.trace-enabled", false);
+	simulator->SetVariable("CAN0-STUB.cosim-enabled", false);
+	simulator->SetVariable("CAN0-STUB.xml-enabled", false);
+	simulator->SetVariable("CAN0-STUB.rand-enabled", false);
+	simulator->SetVariable("CAN0-STUB.can-rx-stimulus-period", 80000000);
+	simulator->SetVariable("CAN0-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN0-STUB.can-rx-stimulus-file", "");
+
+	simulator->SetVariable("CAN1-STUB.trace-enabled", false);
+	simulator->SetVariable("CAN1-STUB.cosim-enabled", false);
+	simulator->SetVariable("CAN1-STUB.xml-enabled", false);
+	simulator->SetVariable("CAN1-STUB.rand-enabled", false);
+	simulator->SetVariable("CAN1-STUB.can-rx-stimulus-period", 80000000);
+	simulator->SetVariable("CAN1-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN1-STUB.can-rx-stimulus-file", "");
+
+	simulator->SetVariable("CAN2-STUB.trace-enabled", false);
+	simulator->SetVariable("CAN2-STUB.cosim-enabled", false);
+	simulator->SetVariable("CAN2-STUB.xml-enabled", false);
+	simulator->SetVariable("CAN2-STUB.rand-enabled", false);
+	simulator->SetVariable("CAN2-STUB.can-rx-stimulus-period", 80000000);
+	simulator->SetVariable("CAN2-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN2-STUB.can-rx-stimulus-file", "");
+
+	simulator->SetVariable("CAN3-STUB.trace-enabled", false);
+	simulator->SetVariable("CAN3-STUB.cosim-enabled", false);
+	simulator->SetVariable("CAN3-STUB.xml-enabled", false);
+	simulator->SetVariable("CAN3-STUB.rand-enabled", false);
+	simulator->SetVariable("CAN3-STUB.can-rx-stimulus-period", 80000000);
+	simulator->SetVariable("CAN3-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN3-STUB.can-rx-stimulus-file", "");
+
+	simulator->SetVariable("CAN4-STUB.trace-enabled", false);
+	simulator->SetVariable("CAN4-STUB.cosim-enabled", false);
+	simulator->SetVariable("CAN4-STUB.xml-enabled", false);
+	simulator->SetVariable("CAN4-STUB.rand-enabled", false);
+	simulator->SetVariable("CAN4-STUB.can-rx-stimulus-period", 80000000);
+	simulator->SetVariable("CAN4-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN4-STUB.can-rx-stimulus-file", "");
 
 	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);

@@ -143,15 +143,6 @@ protected:
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
-	bool	cosim_enabled;
-	Parameter<bool>		param_cosim_enabled;
-
-	bool	atd0_stub_enabled;
-	Parameter<bool>		param_atd0_stub_enabled;
-
-	bool	atd1_stub_enabled;
-	Parameter<bool>		param_atd1_stub_enabled;
-
 	tlm_quantumkeeper atd0_quantumkeeper;
 	tlm_quantumkeeper atd1_quantumkeeper;
 

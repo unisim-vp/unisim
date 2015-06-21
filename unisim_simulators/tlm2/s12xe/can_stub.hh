@@ -140,8 +140,13 @@ protected:
 	bool	cosim_enabled;
 	Parameter<bool>		param_cosim_enabled;
 
-	bool	can_rx_stub_enabled;
-	Parameter<bool>		param_can_rx_stub_enabled;
+	bool	xml_enabled;
+	Parameter<bool>		param_xml_enabled;
+
+	bool	rand_enabled;
+	Parameter<bool>		param_rand_enabled;
+
+	bool stub_enabled;
 
 	tlm_quantumkeeper can_rx_quantumkeeper;
 

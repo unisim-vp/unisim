@@ -392,14 +392,15 @@ private:
 
 	uint8_t canrxfg_register[5][CAN_MSG_SIZE];
 	uint8_t cantxfg_register[3][CAN_MSG_SIZE];
+	uint8_t can_hit_indicator[5];
 
 	CircularIndex<5> canrxfg_index;
 
 	uint8_t tx_buffer_register[CAN_MSG_SIZE], rx_buffer_register[CAN_MSG_SIZE];
 
 	struct CANFG {
-		uint8_t idr0, idr1, idr2, idr3; // IDR: identifier Register
-		uint8_t dsr0, dsr1, dsr2, dsr3, dsr4, dsr5, dsr6, dsr7; // DSR: Data Segment Register
+		uint8_t idrx[4]; // IDR: identifier Register
+		uint8_t dsrx[8]; // DSR: Data Segment Register
 		uint8_t dlr; // DLR: Data Length Register
 		uint8_t tbpr; // tbpr: Transmit Buffer Priority register. Not applicable for receive buffers
 		uint8_t tsrh, tsrl;  // tsr: Time stamp register. Read-only for CPU
@@ -742,8 +743,9 @@ private:
 		addTimeStamp(rx_buffer_register);
 
 		if (isLoopBack() || (!isTransmitter)) {
-			if (checkAcceptance(rx_buffer_register)) {
-				setCanRxFG(rx_buffer_register);
+			uint8_t hit_index = 0;
+			if (checkAcceptance(rx_buffer_register, hit_index)) {
+				setCanRxFG(rx_buffer_register, hit_index);
 				return (true);
 			}
 		}
@@ -751,9 +753,11 @@ private:
 		return (false);
 	}
 
-	inline bool checkAcceptance(uint8_t rx_buffer[16]) {
+	inline bool checkAcceptance(uint8_t rx_buffer[16], uint8_t &hit_index) {
 
-		struct CANFG *canrxfg;
+		struct CANFG *canrxfg = reinterpret_cast<CANFG*>(rx_buffer);
+		uint8_t mode = (canidac_register & 0x30) >> 4;
+
 		/*
 		 *  TODO: implement acceptance algorithm using canidac, caniadr and canidmr registers
 		 *    note: background receive buffer is modeled as rx_buffer_register[16]
@@ -766,7 +770,7 @@ private:
 		 *      the foreground buffer of the receiver FIFO the indicators are update.
 		 */
 
-		 /*  CANIADR register:
+		/*  CANIADR register:
 		 *  On reception, each message is written into the background receive buffer. The CPU is notified to
 		 *  read the message only if it passes the criteria in the identifier acceptance and identifier mask registers
 		 *  (accepted); otherwise, the message is overwritten by the next message (dropped).
@@ -785,12 +789,56 @@ private:
 		 *  in the mask registers CANIDMR1, CANIDMR3, CANIDMR5, and CANIDMR7 to “don’t care.”
 		 */
 
-		canrxfg = reinterpret_cast<CANFG*>(rx_buffer);
+		switch (mode) {
+			case 0: // 32-bits acceptance filters
+			{
+				bool hit0 = true;
+				bool hit1 = true;
+				for (int i=0; i<4; i++) {
+					hit0 = hit0 && (((canrxfg->idrx[i] | canidmr_register[i]) & canidar_register[i]) == canidar_register[i]);
+					hit1 = hit1 && (((canrxfg->idrx[i] | canidmr_register[i+4]) & canidar_register[i+4]) == canidar_register[i+4]);
+				}
+				if (hit0) {
+					hit_index = 0;
+				} else if (hit1) {
+					hit_index = 1;
+				}
+			} break;
+			case 1: // 16-bits acceptance filters
+			{
+				bool hit[4] = {true, true, true, true};
+				for (int i=0; i<2; i++) {
+					hit[0] = hit[0] && (((canrxfg->idrx[i] | canidmr_register[i]) & canidar_register[i]) == canidar_register[i]);
+					hit[1] = hit[1] && (((canrxfg->idrx[i] | canidmr_register[i+2]) & canidar_register[i+2]) == canidar_register[i+2]);
+					hit[2] = hit[2] && (((canrxfg->idrx[i] | canidmr_register[i+4]) & canidar_register[i+4]) == canidar_register[i+4]);
+					hit[3] = hit[3] && (((canrxfg->idrx[i] | canidmr_register[i+6]) & canidar_register[i+6]) == canidar_register[i+6]);
+				}
+				for (int i=0; i<4; i++) {
+					if (hit[i]) {
+						hit_index = i;
+						break;
+					}
+				}
+			} break;
+			case 2: // 8-bits acceptance filters
+			{
+				for (int i=0; i<8; i++) {
+					if (((canrxfg->idrx[0] | canidmr_register[i]) & canidar_register[i]) == canidar_register[i]) {
+						hit_index = i;
+						break;
+					}
+				}
+			} break;
+			case 3: // Filter closed
+			{
+				return (false);
+			} break;
+		}
 
 		return (true);
 	}
 
-	inline bool setCanRxFG(uint8_t rx_buffer[16]) {
+	inline bool setCanRxFG(uint8_t rx_buffer[16], uint8_t hit_index) {
 
 		if (canrxfg_index.isFull()) {
 			setOverrunInterrupt();
@@ -798,6 +846,7 @@ private:
 		}
 
 		unsigned int tail = canrxfg_index.getTail();
+		can_hit_indicator[tail] = hit_index;
 		for (int i=0; i<16; i++) {
 			canrxfg_register[tail][i] = rx_buffer[i];
 		}

@@ -54,6 +54,25 @@ param_atd1_anx_start_channel("atd1-anx-start-channel", this, atd1_anx_start_chan
 atd1_anx_wrap_around_channel(ATD1_SIZE -1),
 param_atd1_anx_wrap_around_channel("atd1-anx-wrap-around-channel", this, atd1_anx_wrap_around_channel)
 
+, cosim_enabled(false)
+, param_cosim_enabled("cosim-enabled", this, cosim_enabled)
+
+, atd0_xml_enabled(false)
+, param_atd0_xml_enabled("atd0-xml-enabled", this, atd0_xml_enabled)
+
+, atd1_xml_enabled(false)
+, param_atd1_xml_enabled("atd1-xml-enabled", this, atd1_xml_enabled)
+
+, atd0_rand_enabled(false)
+, param_atd0_rand_enabled("atd0-rand-enabled", this, atd0_rand_enabled)
+
+, atd1_rand_enabled(false)
+, param_atd1_rand_enabled("atd1-rand-enabled", this, atd1_rand_enabled)
+
+, atd0_enabled(false)
+, atd1_enabled(false)
+
+
 {
 
 	SC_HAS_PROCESS(XML_ATD_PWM_STUB);
@@ -225,18 +244,21 @@ bool XML_ATD_PWM_STUB::BeginSetup() {
 
 	}
 	else {
-		if (atd0_stub_enabled) {
+		if (atd0_xml_enabled) {
 			LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
-		} else {
+		} else if (atd0_rand_enabled) {
 			RandomizeData<ATD0_SIZE>(atd0_vect);
 		}
 
-		if (atd1_stub_enabled) {
+		if (atd1_xml_enabled) {
 			LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
-		} else {
+		} else if (atd1_rand_enabled){
 			RandomizeData<ATD1_SIZE>(atd1_vect);
 		}
 	}
+
+	atd0_enabled = cosim_enabled || atd0_xml_enabled || atd0_rand_enabled;
+	atd1_enabled = cosim_enabled || atd1_xml_enabled || atd1_rand_enabled;
 
 	return (inherited::BeginSetup());
 }
@@ -296,7 +318,7 @@ void XML_ATD_PWM_STUB::processATD0()
 		atd0_start = 0;
 	}
 
-	while (!isTerminated()) {
+	while (!isTerminated() && atd0_enabled) {
 
 		for (std::vector<data_t<ATD0_SIZE>*>::iterator it = atd0_vect.begin() ; (it != atd0_vect.end()) && !isTerminated(); ++it) {
 
@@ -344,7 +366,7 @@ void XML_ATD_PWM_STUB::processATD1()
 		atd1_start = 0;
 	}
 
-	while (!isTerminated()) {
+	while (!isTerminated() && atd1_enabled) {
 
 		for (std::vector<data_t<ATD1_SIZE>*>::iterator it = atd1_vect.begin() ; (it != atd1_vect.end()) && !isTerminated(); ++it) {
 

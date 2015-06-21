@@ -500,7 +500,7 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 
 		} break;
 		case CANIDAC: {
-			*((uint8_t *) buffer) = canidac_register & 0x37;
+			*((uint8_t *) buffer) = ((canidac_register & 0xF8) | can_hit_indicator[canrxfg_index.getHead()]) & 0x37;
 		} break;
 		case RESERVED1: {
 			*((uint8_t *) buffer) = 0x00;
@@ -1275,7 +1275,7 @@ bool S12MSCAN::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) 
 				*((uint8_t *) buffer) = cantbsel_register;
 			} break;
 			case CANIDAC: {
-				*((uint8_t *) buffer) = canidac_register;
+				*((uint8_t *) buffer) = (canidac_register & 0xF8) | can_hit_indicator[canrxfg_index.getHead()];
 			} break;
 			case RESERVED1: {
 				*((uint8_t *) buffer) = 0x00;

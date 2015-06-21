@@ -95,6 +95,23 @@ private:
 	uint8_t atd1_anx_wrap_around_channel;
 	Parameter<uint8_t> param_atd1_anx_wrap_around_channel;
 
+	bool	cosim_enabled;
+	Parameter<bool>		param_cosim_enabled;
+
+	bool	atd0_xml_enabled;
+	Parameter<bool>		param_atd0_xml_enabled;
+
+	bool	atd1_xml_enabled;
+	Parameter<bool>		param_atd1_xml_enabled;
+
+	bool	atd0_rand_enabled;
+	Parameter<bool>		param_atd0_rand_enabled;
+
+	bool	atd1_rand_enabled;
+	Parameter<bool>		param_atd1_rand_enabled;
+
+	bool atd0_enabled, atd1_enabled;
+
 };
 
 
