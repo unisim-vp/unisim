@@ -396,7 +396,8 @@ private:
 
 	CircularIndex<5> canrxfg_index;
 
-	uint8_t tx_buffer_register[CAN_MSG_SIZE], rx_buffer_register[CAN_MSG_SIZE];
+//	uint8_t tx_buffer_register[CAN_MSG_SIZE];
+//	uint8_t rx_buffer_register[CAN_MSG_SIZE];
 
 	struct CANFG {
 		uint8_t idrx[4]; // IDR: identifier Register
@@ -734,18 +735,18 @@ private:
 
 	}
 
-	inline bool setRxBG(uint8_t rx_buffer[16], bool isTransmitter=false) {
+	inline bool setRxBG(uint8_t (&rx_buffer)[16], bool isTransmitter=false) {
 
-		for (int i=0; i<16; i++) {
-			rx_buffer_register[i] = rx_buffer[i];
-		}
+//		for (int i=0; i<16; i++) {
+//			rx_buffer_register[i] = rx_buffer[i];
+//		}
 
-		addTimeStamp(rx_buffer_register);
+		addTimeStamp(rx_buffer);
 
 		if (isLoopBack() || (!isTransmitter)) {
 			uint8_t hit_index = 0;
-			if (checkAcceptance(rx_buffer_register, hit_index)) {
-				setCanRxFG(rx_buffer_register, hit_index);
+			if (checkAcceptance(rx_buffer, hit_index)) {
+				setCanRxFG(rx_buffer, hit_index);
 				return (true);
 			}
 		}

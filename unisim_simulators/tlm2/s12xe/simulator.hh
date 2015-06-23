@@ -300,7 +300,8 @@ class Simulator :
 	XML_ATD_PWM_STUB *xml_atd_pwm_stub;
 #endif
 
-	CAN_STUB *can0_stub, *can1_stub, *can2_stub, *can3_stub, *can4_stub;
+//	CAN_STUB *can0_stub, *can1_stub, *can2_stub, *can3_stub, *can4_stub;
+	CAN_STUB *can_stub;
 
 	//=========================================================================
 	//===                         Service instantiations                    ===

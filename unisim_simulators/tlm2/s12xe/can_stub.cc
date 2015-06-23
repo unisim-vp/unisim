@@ -61,8 +61,6 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 	, rand_enabled(false)
 	, param_rand_enabled("rand-enabled", this, rand_enabled)
 
-	, stub_enabled(false)
-
 	, input_payload_queue("input_payload_queue")
 
 	, param_can_rx_stimulus_period("can-rx-stimulus-period", this, can_rx_stimulus_period)
@@ -120,8 +118,6 @@ bool CAN_STUB::BeginSetup() {
 	} else if (rand_enabled) {
 		RandomizeData(can_rx_vect);
 	}
-
-	stub_enabled = cosim_enabled || xml_enabled || rand_enabled;
 
 	if (trace_enable) {
 //		can_rx_output_file.open ("can_rx_output.txt");
@@ -238,42 +234,41 @@ void CAN_STUB::inject(CAN_DATATYPE msg)
 
 	can_rx_payload = can_rx_payload_fabric.allocate();
 
-//	atd1_payload->acquire();
-
 	can_rx_payload->pack(msg);
 
+	for (int i=0; i<can_rx_sock.size(); i++) {
+	//	sc_time local_time = can_rx_quantumkeeper.get_local_time();
+		sc_time local_time = SC_ZERO_TIME;
 
-//	sc_time local_time = atd1_quantumkeeper.get_local_time();
-	sc_time local_time = SC_ZERO_TIME;
+		if (trace_enable) {
+			can_rx_output_file << (can_rx_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *can_rx_payload << std::endl;
+		}
 
-	if (trace_enable) {
-		can_rx_output_file << (can_rx_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *can_rx_payload << std::endl;
+		tlm_sync_enum ret = can_rx_sock[i]->nb_transport_fw(*can_rx_payload, phase, local_time);
+
+		wait(can_bw_event);
+
+		switch(ret)
+		{
+			case TLM_ACCEPTED:
+				// neither payload, nor phase and local_time have been modified by the callee
+				can_rx_quantumkeeper.sync(); // synchronize to leave control to the callee
+				break;
+			case TLM_UPDATED:
+				// the callee may have modified 'payload', 'phase' and 'local_time'
+				can_rx_quantumkeeper.set(local_time); // increase the time
+				if(can_rx_quantumkeeper.need_sync()) can_rx_quantumkeeper.sync(); // synchronize if needed
+
+				break;
+			case TLM_COMPLETED:
+				// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+				can_rx_quantumkeeper.set(local_time); // increase the time
+				if(can_rx_quantumkeeper.need_sync()) can_rx_quantumkeeper.sync(); // synchronize if needed
+				break;
+		}
 	}
-
-	tlm_sync_enum ret = can_rx_sock->nb_transport_fw(*can_rx_payload, phase, local_time);
 
 	can_rx_payload->release();
-	
-	wait(can_bw_event);
-
-	switch(ret)
-	{
-		case TLM_ACCEPTED:
-			// neither payload, nor phase and local_time have been modified by the callee
-			can_rx_quantumkeeper.sync(); // synchronize to leave control to the callee
-			break;
-		case TLM_UPDATED:
-			// the callee may have modified 'payload', 'phase' and 'local_time'
-			can_rx_quantumkeeper.set(local_time); // increase the time
-			if(can_rx_quantumkeeper.need_sync()) can_rx_quantumkeeper.sync(); // synchronize if needed
-
-			break;
-		case TLM_COMPLETED:
-			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			can_rx_quantumkeeper.set(local_time); // increase the time
-			if(can_rx_quantumkeeper.need_sync()) can_rx_quantumkeeper.sync(); // synchronize if needed
-			break;
-	}
 
 	can_rx_quantumkeeper.inc(*can_rx_stimulus_period_sc);
 	if(can_rx_quantumkeeper.need_sync()) can_rx_quantumkeeper.sync();
@@ -432,7 +427,13 @@ int CAN_STUB::LoadXmlData(const char *filename, std::vector<CAN_DATATYPE* > &vec
 
 void CAN_STUB::Inject_CAN(CAN_DATATYPE msg)
 {
-	CAN_DATATYPE* data  = *(can_rx_vect.begin());
+	CAN_DATATYPE* data;
+	if (can_rx_vect.empty()) {
+		data = new CAN_DATATYPE();
+		can_rx_vect.push_back(data);
+	} else {
+		data = *(can_rx_vect.begin());
+	}
 
 	for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
 		data->ID[j] = msg.ID[j];
@@ -448,6 +449,7 @@ void CAN_STUB::Inject_CAN(CAN_DATATYPE msg)
 	data->Timestamp[0] = msg.Timestamp[0];
 	data->Timestamp[1] = msg.Timestamp[1];
 
+	inject_data_event.notify();
 }
 
 void CAN_STUB::Get_CAN(CAN_DATATYPE *msg)
@@ -477,8 +479,11 @@ void CAN_STUB::processCANRX()
 
 	CAN_DATATYPE can_rx_buffer;
 
-	while (!isTerminated() && stub_enabled) {
+	while (!isTerminated()) {
 
+		if (can_rx_vect.empty()) {
+			wait(inject_data_event);
+		}
 		for (std::vector<CAN_DATATYPE*>::iterator it = can_rx_vect.begin() ; (it != can_rx_vect.end()) && !isTerminated(); ++it) {
 
 			for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
@@ -506,9 +511,12 @@ void CAN_STUB::processCANRX()
 void CAN_STUB::processCANTX()
 {
 
-	while (!isTerminated() && stub_enabled)
+	while (!isTerminated())
 	{
 		observe(can_tx_buffer);
+
+		inject(can_tx_buffer);
+
 	}
 
 }

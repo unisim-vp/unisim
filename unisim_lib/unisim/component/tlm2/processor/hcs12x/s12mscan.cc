@@ -135,10 +135,10 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 		}
 	}
 
-	for (int i=0; i<16; i++) {
-		tx_buffer_register[i] = 0x00;
-		rx_buffer_register[i] = 0x00;
-	}
+//	for (int i=0; i<16; i++) {
+//		tx_buffer_register[i] = 0x00;
+//		rx_buffer_register[i] = 0x00;
+//	}
 
 }
 
@@ -337,8 +337,9 @@ void S12MSCAN::RunTx() {
 		}
 
 		while (isCANEnabled()) {
+			uint8_t tx_shift[CAN_MSG_SIZE];
 
-			int txIndex = selectLoadedTx(tx_buffer_register);
+			int txIndex = selectLoadedTx(tx_shift);
 
 			if (txIndex == -1) {
 
@@ -348,22 +349,22 @@ void S12MSCAN::RunTx() {
 			}
 
 			// TODO: *** Get Arbitration (hasArbitration = true) ***
-			addTimeStamp(tx_buffer_register);
+			addTimeStamp(tx_shift);
 
 			// TODO: handle arbitration lost
 			if (!isArbitrationStatus()) {
-				setRxBG(tx_buffer_register, true);
+				setRxBG(tx_shift, true);
 			}
 
 
 //			startTransmission();
 
-			refreshOutput(tx_buffer_register);
+			refreshOutput(tx_shift);
 
 //			endTransmission();
 
 			// After transmission
-			setRxBG(tx_buffer_register, true);
+			setRxBG(tx_shift, true);
 
 		}
 
@@ -1216,10 +1217,10 @@ void S12MSCAN::Reset() {
 		}
 	}
 
-	for (int i=0; i<16; i++) {
-		tx_buffer_register[i] = 0x00;
-		rx_buffer_register[i] = 0x00;
-	}
+//	for (int i=0; i<16; i++) {
+//		tx_buffer_register[i] = 0x00;
+//		rx_buffer_register[i] = 0x00;
+//	}
 
 	if(char_io_import)
 	{

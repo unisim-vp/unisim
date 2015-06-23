@@ -69,10 +69,6 @@ param_atd1_anx_wrap_around_channel("atd1-anx-wrap-around-channel", this, atd1_an
 , atd1_rand_enabled(false)
 , param_atd1_rand_enabled("atd1-rand-enabled", this, atd1_rand_enabled)
 
-, atd0_enabled(false)
-, atd1_enabled(false)
-
-
 {
 
 	SC_HAS_PROCESS(XML_ATD_PWM_STUB);
@@ -257,30 +253,43 @@ bool XML_ATD_PWM_STUB::BeginSetup() {
 		}
 	}
 
-	atd0_enabled = cosim_enabled || atd0_xml_enabled || atd0_rand_enabled;
-	atd1_enabled = cosim_enabled || atd1_xml_enabled || atd1_rand_enabled;
-
 	return (inherited::BeginSetup());
 }
 
 void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[8])
 {
-	data_t<ATD0_SIZE>* data  = *(atd0_vect.begin());
+	data_t<ATD0_SIZE>* data;
+	if (atd0_vect.empty()) {
+		data = new data_t<ATD0_SIZE>();
+		atd0_vect.push_back(data);
+	} else {
+		data = *(atd0_vect.begin());
+	}
+
 	for (uint8_t j=0; j < ATD0_SIZE; j++) {
 		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		data->time =  0.080; // 0.080 Millisecond
 	}
 
+	atd0_inject_data_event.notify();
 }
 
 void XML_ATD_PWM_STUB::Inject_ATD1(double anValue[16])
 {
-	data_t<ATD1_SIZE>* data  = *(atd1_vect.begin());
+	data_t<ATD1_SIZE>* data;
+	if (atd1_vect.empty()) {
+		data = new data_t<ATD1_SIZE>();
+		atd1_vect.push_back(data);
+	} else {
+		data = *(atd1_vect.begin());
+	}
+
 	for (uint8_t j=0; j < ATD1_SIZE; j++) {
 		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		data->time = 0.080; // 0.080 Millisecond
 	}
 
+	atd1_inject_data_event.notify();
 }
 
 void XML_ATD_PWM_STUB::Get_PWM(bool (*value)[PWM_SIZE])
@@ -318,7 +327,11 @@ void XML_ATD_PWM_STUB::processATD0()
 		atd0_start = 0;
 	}
 
-	while (!isTerminated() && atd0_enabled) {
+	while (!isTerminated()) {
+
+		if (atd0_vect.empty()) {
+			wait(atd0_inject_data_event);
+		}
 
 		for (std::vector<data_t<ATD0_SIZE>*>::iterator it = atd0_vect.begin() ; (it != atd0_vect.end()) && !isTerminated(); ++it) {
 
@@ -366,7 +379,11 @@ void XML_ATD_PWM_STUB::processATD1()
 		atd1_start = 0;
 	}
 
-	while (!isTerminated() && atd1_enabled) {
+	while (!isTerminated()) {
+
+		if (atd1_vect.empty()) {
+			wait(atd1_inject_data_event);
+		}
 
 		for (std::vector<data_t<ATD1_SIZE>*>::iterator it = atd1_vect.begin() ; (it != atd1_vect.end()) && !isTerminated(); ++it) {
 

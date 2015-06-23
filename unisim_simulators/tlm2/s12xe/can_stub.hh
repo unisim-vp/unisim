@@ -57,6 +57,7 @@
 
 #include <unisim/kernel/service/service.hh>
 
+#include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
 using namespace std;
@@ -69,6 +70,8 @@ using namespace tlm_utils;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ServiceExportBase;
+
+using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::component::tlm2::processor::hcs12x::CAN_Payload;
 using unisim::component::tlm2::processor::hcs12x::CAN_DATATYPE;
@@ -85,9 +88,11 @@ class CAN_STUB :
 
 {
 public:
-	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_rx_sock;  // binded to RX pin of the CAN (master)
+//	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_rx_sock;  // binded to RX pin of the CAN (master)
+	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_rx_sock;  // binded to RX pin of the CAN (master)
 
-	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_tx_sock;  // binded to TX pin of the CAN (slave)
+//	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_tx_sock;  // binded to TX pin of the CAN (slave)
+	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_tx_sock;  // binded to TX pin of the CAN (slave)
 
 	CAN_STUB(const sc_module_name& name, Object *parent = 0);
 	~CAN_STUB();
@@ -133,6 +138,7 @@ protected:
 	sc_time *can_tx_fetch_period_sc;
 
 	sc_event can_bw_event;
+	sc_event inject_data_event;
 
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
@@ -145,8 +151,6 @@ protected:
 
 	bool	rand_enabled;
 	Parameter<bool>		param_rand_enabled;
-
-	bool stub_enabled;
 
 	tlm_quantumkeeper can_rx_quantumkeeper;
 

@@ -76,6 +76,7 @@ private:
 	std::vector<data_t<ATD1_SIZE>* > atd1_vect;
 	bool pwmValue[PWM_SIZE];
 
+	sc_event atd0_inject_data_event, atd1_inject_data_event;
 
 	string atd0_anx_stimulus_file;
 	Parameter<string>	param_atd0_anx_stimulus_file;
@@ -109,8 +110,6 @@ private:
 
 	bool	atd1_rand_enabled;
 	Parameter<bool>		param_atd1_rand_enabled;
-
-	bool atd0_enabled, atd1_enabled;
 
 };
 
