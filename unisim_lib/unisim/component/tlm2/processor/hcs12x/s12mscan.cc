@@ -21,13 +21,11 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	, sc_module(name)
 
 	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Client<CharIO>(name, parent)
 	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Service<Registers>(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
-	, char_io_import("char_io_import", this)
 
 	, memory_export("memory_export", this)
 	, memory_import("memory_import", this)
@@ -66,11 +64,6 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 
 	, abortTransmission(false)
 
-//	, txd(true)
-//	, txd_output_pin("TXD", this, txd, "TXD output")
-//	, rxd(true)
-//	, rxd_input_pin("RXD", this, rxd, "RXD input")
-
 	, canctl0_register(0x01)
 	, canctl1_register(0x11)
 	, canbtr0_register(0x00)
@@ -107,9 +100,6 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	slave_socket.register_b_transport(this, &S12MSCAN::read_write);
 	bus_clock_socket.register_b_transport(this, &S12MSCAN::updateBusClock);
 
-//	txd_output_pin.SetMutable(true);
-//	rxd_input_pin.SetMutable(true);
-
 	SC_HAS_PROCESS(S12MSCAN);
 
 	SC_THREAD(RunRx);
@@ -134,11 +124,6 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 			cantxfg_register[i][j] = 0x00;
 		}
 	}
-
-//	for (int i=0; i<16; i++) {
-//		tx_buffer_register[i] = 0x00;
-//		rx_buffer_register[i] = 0x00;
-//	}
 
 }
 
@@ -180,8 +165,10 @@ unsigned int S12MSCAN::transport_dbg(CAN_Payload& payload)
 }
 
 void S12MSCAN::b_transport(CAN_Payload& payload, sc_core::sc_time& t) {
-	payload.acquire();
-	rx_payload_queue.notify(payload, t);
+	if (isCANEnabled()) {
+		payload.acquire();
+		rx_payload_queue.notify(payload, t);
+	}
 }
 
 bool S12MSCAN::get_direct_mem_ptr(CAN_Payload& payload, tlm_dmi&  dmi_data) {
@@ -201,8 +188,10 @@ tlm_sync_enum S12MSCAN::nb_transport_fw(CAN_Payload& payload, tlm_phase& phase, 
 		case BEGIN_REQ:
 			// accepts analog signals modeled by payload
 			phase = END_REQ; // update the phase
-			payload.acquire();
-			rx_payload_queue.notify(payload, t); // queue the payload and the associative time
+			if (isCANEnabled()) {
+				payload.acquire();
+				rx_payload_queue.notify(payload, t); // queue the payload and the associative time
+			}
 
 			return (TLM_UPDATED);
 		case END_REQ:
@@ -295,9 +284,6 @@ void S12MSCAN::RunRx() {
 
 		setIdle();
 
-		quantumkeeper.inc(bit_time*CAN_EXG_SIZE + bus_cycle_time); // Processing the input takes one cycle
-		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-
 	}
 
 }
@@ -320,6 +306,8 @@ void S12MSCAN::InputRX(uint8_t (*rx_shift)[CAN_MSG_SIZE])
 		tlm_phase phase = BEGIN_RESP;
 		sc_time local_time = SC_ZERO_TIME;
 		can_rx_sock->nb_transport_bw( *payload, phase, local_time);
+
+		std::cout << sc_object::name() << "::InputRx " << *payload << "  at " << sc_time_stamp() << std::endl;
 	}
 
 }
@@ -356,12 +344,7 @@ void S12MSCAN::RunTx() {
 				setRxBG(tx_shift, true);
 			}
 
-
-//			startTransmission();
-
 			refreshOutput(tx_shift);
-
-//			endTransmission();
 
 			// After transmission
 			setRxBG(tx_shift, true);
@@ -382,9 +365,6 @@ void S12MSCAN::refreshOutput(uint8_t tx_buffer_register[CAN_MSG_SIZE])
 		can_tx_payload->msgVect[i] = tx_buffer_register[i];
 	}
 
-//	quantumkeeper.inc(bit_time*CAN_EXG_SIZE + bus_cycle_time);
-//	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-
 	sc_time local_time = SC_ZERO_TIME;
 
 	if (tx_debug_enabled) {
@@ -401,23 +381,14 @@ void S12MSCAN::refreshOutput(uint8_t tx_buffer_register[CAN_MSG_SIZE])
 	{
 		case TLM_ACCEPTED:
 			// neither payload, nor phase and local_time have been modified by the callee
-			quantumkeeper.sync(); // synchronize to leave control to the callee
 			break;
 		case TLM_UPDATED:
 			// the callee may have modified 'payload', 'phase' and 'local_time'
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-
 			break;
 		case TLM_COMPLETED:
 			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
-
-	quantumkeeper.inc(bit_time*CAN_EXG_SIZE + bus_cycle_time);
-	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 }
 
@@ -453,7 +424,7 @@ void S12MSCAN::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
-	std::cout << sc_object::name() << "::Read Offset -> " << std::dec << offset << std::endl;
+//	std::cout << sc_object::name() << "::Read Offset -> " << std::dec << offset << "  at  " << sc_time_stamp() << std::endl;
 
 	switch (offset) {
 		case CANCTL0: {
@@ -576,7 +547,7 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 				if (isTxSelected()) {
 					*((uint8_t *) buffer) = cantxfg_register[getTxIndex()][offset - CANTXFG_START];
 				} else {
-					std::cerr << sc_object::name() << "::Warning: Try to read to CANTXFG but no TXi is selected !" << std::endl;
+//					std::cerr << sc_object::name() << "::Warning: Try to read to CANTXFG but no TXi is selected !" << std::endl;
 					*((uint8_t *) buffer) = 0x00;
 				}
 
@@ -592,11 +563,13 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 
 bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
-	std::cout << sc_object::name() << "::Write Offset -> " << std::dec << offset << "  value -> 0x" << std::hex << (unsigned int) *((uint8_t *) buffer) << std::dec << std::endl;
+//	std::cout << sc_object::name() << "::Write Offset -> " << std::dec << offset << "  value -> 0x" << std::hex << (unsigned int) *((uint8_t *) buffer) << std::dec << "  at  " << sc_time_stamp() << std::endl;
 
 	switch (offset) {
 		case CANCTL0: {
 			uint8_t value = *((uint8_t *) buffer);
+
+			bool isSleeping = isSleepMode();
 
 			if (isInitMode()) {
 				value = (value & 0x07);
@@ -615,11 +588,10 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 
 				enableTimer();
 
-				// TODO: refine more the following two actions
-
-				if (isIdle() && isSleepModeRequest()) { enterSleepMode(); }
-
 			}
+
+			if (isIdle() && isSleepModeRequest() && !isSleeping) { enterSleepMode(); }
+			if (!isSleepModeRequest() && isSleeping) { exitSleepMode(); }
 
 		} break;
 		case CANCTL1: {
@@ -851,7 +823,7 @@ void S12MSCAN::assertInterrupt(uint8_t interrupt_offset) {
 
 	xint_payload->setInterruptOffset(interrupt_offset);
 
-	sc_time local_time = quantumkeeper.get_local_time();
+	sc_time local_time = SC_ZERO_TIME;
 
 	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
 
@@ -861,18 +833,12 @@ void S12MSCAN::assertInterrupt(uint8_t interrupt_offset) {
 	{
 		case TLM_ACCEPTED:
 			// neither payload, nor phase and local_time have been modified by the callee
-			quantumkeeper.sync(); // synchronize to leave control to the callee
 			break;
 		case TLM_UPDATED:
 			// the callee may have modified 'payload', 'phase' and 'local_time'
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-
 			break;
 		case TLM_COMPLETED:
 			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
 
@@ -903,8 +869,6 @@ void S12MSCAN::ComputeInternalTime() {
 	}
 
 	bit_time = can_clk * getPrescaler() * (1 + getTimeSegment1() + getTimeSegment2());
-
-	telnet_process_input_period = bit_time * 8 * 8;
 
 }
 
@@ -1217,16 +1181,6 @@ void S12MSCAN::Reset() {
 		}
 	}
 
-//	for (int i=0; i<16; i++) {
-//		tx_buffer_register[i] = 0x00;
-//		rx_buffer_register[i] = 0x00;
-//	}
-
-	if(char_io_import)
-	{
-		char_io_import->Reset();
-	}
-
 }
 
 
@@ -1352,7 +1306,7 @@ bool S12MSCAN::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) 
 					if (isTxSelected()) {
 						*((uint8_t *) buffer) = cantxfg_register[getTxIndex()][offset - CANTXFG_START];
 					} else {
-						std::cerr << sc_object::name() << "::Warning: Try to read to CANTXFG but no TXi is selected !" << std::endl;
+//						std::cerr << sc_object::name() << "::Warning: Try to read to CANTXFG but no TXi is selected !" << std::endl;
 						*((uint8_t *) buffer) = 0x00;
 					}
 

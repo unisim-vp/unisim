@@ -49,6 +49,9 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 	, can_tx_fetch_period(1e9) // 1 ms
 	, can_tx_fetch_period_sc(0)
 
+	, bw_inject_count(0)
+	, dont_care_bw_event(false)
+
 	, trace_enable(false)
 	, param_trace_enable("trace-enabled", this, trace_enable)
 
@@ -80,6 +83,7 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(processCANRX);
 	SC_THREAD(processCANTX);
+	SC_THREAD(watchdog);
 
 }
 
@@ -120,9 +124,6 @@ bool CAN_STUB::BeginSetup() {
 	}
 
 	if (trace_enable) {
-//		can_rx_output_file.open ("can_rx_output.txt");
-//		can_tx_output_file.open ("can_tx_output.txt");
-
 		stringstream strm;
 		strm << sc_object::name() << "_rx_output.txt";
 		can_rx_output_file.open (strm.str().c_str());
@@ -130,13 +131,12 @@ bool CAN_STUB::BeginSetup() {
 		strm << sc_object::name() << "_tx_output.txt";
 		can_tx_output_file.open (strm.str().c_str());
 		strm.str(string());
-
 	}
-
-	tlm_quantumkeeper::set_global_quantum(sc_time(0.0, SC_MS));
 
 	can_rx_stimulus_period_sc = new sc_time(can_rx_stimulus_period, SC_PS);
 	can_tx_fetch_period_sc = new sc_time(can_tx_fetch_period, SC_PS);
+
+	watchdog_delay = sc_time(1, SC_US);
 
 	return (true);
 }
@@ -193,7 +193,11 @@ tlm_sync_enum CAN_STUB::nb_transport_bw( CAN_Payload& payload, tlm_phase& phase,
 	if(phase == BEGIN_RESP)
 	{
 		//payload.release();
-		can_bw_event.notify();
+		bw_inject_count++;
+		if (bw_inject_count == can_rx_sock.size()) {
+			can_bw_event.notify();
+		}
+
 		return (TLM_COMPLETED);
 	}
 	return (TLM_ACCEPTED);
@@ -214,7 +218,7 @@ void CAN_STUB::observe(CAN_DATATYPE &msg)
 	payload = input_payload_queue.get_next_transaction();
 
 	if (trace_enable) {
-		can_tx_output_file << (can_tx_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *payload <<  std::endl;
+		can_tx_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *payload <<  std::endl;
 	}
 
 	payload->unpack(msg);
@@ -234,45 +238,39 @@ void CAN_STUB::inject(CAN_DATATYPE msg)
 
 	can_rx_payload->pack(msg);
 
-//	for (int i=0; i<can_rx_sock.size(); i++) {
-	for (int i=0; i<2; i++) {
-	//	sc_time local_time = can_rx_quantumkeeper.get_local_time();
+	for (int i=0; i<can_rx_sock.size(); i++) {
 		sc_time local_time = SC_ZERO_TIME;
 
 		if (trace_enable) {
-			can_rx_output_file << "CAN" << i << ": " << (can_rx_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *can_rx_payload << std::endl;
+			can_rx_output_file << "CAN" << i << ": " << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *can_rx_payload << std::endl;
 		}
 
 		tlm_phase phase = BEGIN_REQ;
 
 		tlm_sync_enum ret = can_rx_sock[i]->nb_transport_fw(*can_rx_payload, phase, local_time);
 
-		wait(can_bw_event);
-
 		switch(ret)
 		{
 			case TLM_ACCEPTED:
 				// neither payload, nor phase and local_time have been modified by the callee
-				can_rx_quantumkeeper.sync(); // synchronize to leave control to the callee
 				break;
 			case TLM_UPDATED:
 				// the callee may have modified 'payload', 'phase' and 'local_time'
-				can_rx_quantumkeeper.set(local_time); // increase the time
-				if(can_rx_quantumkeeper.need_sync()) can_rx_quantumkeeper.sync(); // synchronize if needed
-
 				break;
 			case TLM_COMPLETED:
 				// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-				can_rx_quantumkeeper.set(local_time); // increase the time
-				if(can_rx_quantumkeeper.need_sync()) can_rx_quantumkeeper.sync(); // synchronize if needed
 				break;
 		}
 	}
 
-	can_rx_payload->release();
+	std::cout << sc_object::name() << "  injection of " << *can_rx_payload << std::endl;
 
-	can_rx_quantumkeeper.inc(*can_rx_stimulus_period_sc);
-	if(can_rx_quantumkeeper.need_sync()) can_rx_quantumkeeper.sync();
+	dont_care_bw_event = false;
+	watchdog_enable_event.notify();
+	wait(can_bw_event | time_out_event);
+	dont_care_bw_event = true;
+
+	can_rx_payload->release();
 
 }
 
@@ -287,9 +285,21 @@ int CAN_STUB::RandomizeData(std::vector<CAN_DATATYPE* > &vect) {
 	for (int i=0; i < SET_SIZE; i++) {
 		data = new CAN_DATATYPE();
 
-		for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
-			data->ID[j] = rand();
+//		for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
+//			data->ID[j] = rand();
+//		}
+		if ((rand() % 2) == 0) {
+			data->ID[0] = 0x04;
+			data->ID[1] = 0x00;
+			data->ID[2] = 0x20;
+			data->ID[3] = 0x00;
+		} else {
+			data->ID[0] = 0x04;
+			data->ID[1] = 0x00;
+			data->ID[2] = 0x60;
+			data->ID[3] = 0x00;
 		}
+
 		for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
 			data->Data[j] = rand();
 		}
@@ -472,11 +482,20 @@ void CAN_STUB::Get_CAN(CAN_DATATYPE *msg)
 
 }
 
+void CAN_STUB::watchdog() {
+
+	while (true) {
+		wait(watchdog_enable_event);
+
+		wait(watchdog_delay);
+		if (!dont_care_bw_event) {
+			time_out_event.notify();
+		}
+	}
+}
+
 void CAN_STUB::processCANRX()
 {
-
-	can_rx_quantumkeeper.set(sc_time(20, SC_MS));
-	if (can_rx_quantumkeeper.need_sync()) can_rx_quantumkeeper.sync();
 
 	CAN_DATATYPE can_rx_buffer;
 
@@ -501,7 +520,16 @@ void CAN_STUB::processCANRX()
 			can_rx_buffer.Timestamp[0] = (*it)->Timestamp[0];
 			can_rx_buffer.Timestamp[1] = (*it)->Timestamp[1];
 
+			std::cout << sc_object::name() << "  Random " << std::endl;
+
 			inject(can_rx_buffer);
+
+// ********** This is a hack code: rewrite a better solution
+//			dont_care_bw_event = false;
+//			watchdog_enable_event.notify();
+//			wait(time_out_event);
+//			dont_care_bw_event = true;
+// *********** end hack code ****************************
 
 		}
 	}

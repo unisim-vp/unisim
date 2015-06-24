@@ -224,11 +224,8 @@ private:
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-//	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  RAM;
-//	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  FLASH;
-//	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<> EEPROM;
 	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<2, 32, physical_address_t, 8, 1024*1024, false>  EEPROM;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
@@ -299,7 +296,6 @@ private:
 	XML_ATD_PWM_STUB *xml_atd_pwm_stub;
 #endif
 
-//	CAN_STUB *can0_stub, *can1_stub, *can2_stub, *can3_stub, *can4_stub;
 	CAN_STUB *can_stub;
 
 	//=========================================================================

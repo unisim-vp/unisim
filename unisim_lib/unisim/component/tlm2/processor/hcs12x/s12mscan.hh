@@ -60,14 +60,12 @@
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
-//#include "tlm_utils/multi_passthrough_target_socket.h"
 
 #include <unisim/kernel/service/service.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include <unisim/kernel/logger/logger.hh>
 
-#include "unisim/service/interfaces/char_io.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
@@ -105,7 +103,6 @@ using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Signal;
 using unisim::kernel::service::Variable;
 
-using unisim::service::interfaces::CharIO;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::TrapReporting;
@@ -195,7 +192,6 @@ class S12MSCAN :
 	public sc_module
 	, public CallBackObject
 	, public Client<TrapReporting >
-	, public Client<CharIO>
 	, public Service<Memory<physical_address_t> >
 	, public Client<Memory<physical_address_t> >
 	, public Service<Registers>
@@ -221,7 +217,6 @@ public:
 
 
 	ServiceImport<TrapReporting > trap_reporting_import;
-	ServiceImport<CharIO > char_io_import;
 
 	ServiceExport<Memory<physical_address_t> > memory_export;
 	ServiceImport<Memory<physical_address_t> > memory_import;
@@ -308,7 +303,7 @@ public:
 protected:
 
 private:
-	tlm_quantumkeeper quantumkeeper;
+
 	peq_with_get<CAN_Payload > rx_payload_queue;
 
 	PayloadFabric<CAN_Payload > payload_fabric;
@@ -326,7 +321,6 @@ private:
 	sc_time		oscillator_clock;
 
 	sc_time		bit_time;
-	sc_time		telnet_process_input_period;
 
 	sc_event can_enable_event, timer_enable_event, tx_run_event, tx_load_event, tx_break_event, rx_run_event;
 
@@ -358,14 +352,6 @@ private:
 
 	bool abortTransmission;
 
-//	bool txd;  // 0= Dominant state; 1= recessive state
-//	Signal<bool> txd_output_pin;
-//
-//	bool rxd;
-//	Signal<bool> rxd_input_pin;
-//	inline bool isRxLow() { return (!rxd); }
-
-
 	// =============================================
 	// =            Registers                      =
 	// =============================================
@@ -396,9 +382,6 @@ private:
 
 	CircularIndex<5> canrxfg_index;
 
-//	uint8_t tx_buffer_register[CAN_MSG_SIZE];
-//	uint8_t rx_buffer_register[CAN_MSG_SIZE];
-
 	struct CANFG {
 		uint8_t idrx[4]; // IDR: identifier Register
 		uint8_t dsrx[8]; // DSR: Data Segment Register
@@ -406,9 +389,6 @@ private:
 		uint8_t tbpr; // tbpr: Transmit Buffer Priority register. Not applicable for receive buffers
 		uint8_t tsrh, tsrl;  // tsr: Time stamp register. Read-only for CPU
 	} /* *canrxfg, *cantxfg */;
-
-//	CANFG canrxfg_register[5];
-//	CANFG cantxfg_register[3];
 
 	// the time stamp is clocked by the bit clock rate.
 	sc_event timer_start_event;
@@ -603,6 +583,9 @@ private:
 	inline void setReceiverBufferFull() {
 
 		canrflg_register = canrflg_register | 0x01;
+
+		std::cout << sc_object::name() << "  RXF is SET " << sc_time_stamp() << std::endl;
+
 		if (isReceiverFullInterruptEnable()) {
 			assertInterrupt(receive_interrupt_offset);
 		}
@@ -737,19 +720,18 @@ private:
 
 	inline bool setRxBG(uint8_t (&rx_buffer)[16], bool isTransmitter=false) {
 
-//		for (int i=0; i<16; i++) {
-//			rx_buffer_register[i] = rx_buffer[i];
-//		}
-
 		addTimeStamp(rx_buffer);
 
 		if (isLoopBack() || (!isTransmitter)) {
 			uint8_t hit_index = 0;
 			if (checkAcceptance(rx_buffer, hit_index)) {
+				std::cout << sc_object::name() << "  Accepted *** " << sc_time_stamp() << std::endl;
 				setCanRxFG(rx_buffer, hit_index);
 				return (true);
 			}
 		}
+
+		std::cout << sc_object::name() << "  Not Accepted *** " << sc_time_stamp() << std::endl;
 
 		return (false);
 	}
@@ -842,6 +824,7 @@ private:
 	inline bool setCanRxFG(uint8_t rx_buffer[16], uint8_t hit_index) {
 
 		if (canrxfg_index.isFull()) {
+			std::cout << sc_object::name() << "  FIFO FULL " << sc_time_stamp() << std::endl;
 			setOverrunInterrupt();
 			return (false);
 		}

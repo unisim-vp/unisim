@@ -88,10 +88,8 @@ class CAN_STUB :
 
 {
 public:
-//	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_rx_sock;  // binded to RX pin of the CAN (master)
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_rx_sock;  // binded to RX pin of the CAN (master)
 
-//	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_tx_sock;  // binded to TX pin of the CAN (slave)
 	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_tx_sock;  // binded to TX pin of the CAN (slave)
 
 	CAN_STUB(const sc_module_name& name, Object *parent = 0);
@@ -124,6 +122,7 @@ public:
 
 	void processCANRX();
 	void processCANTX();
+	void watchdog();
 
 	int RandomizeData(std::vector<CAN_DATATYPE* > &vect);
 	int LoadXmlData(const char *filename, std::vector<CAN_DATATYPE* > &vect);
@@ -137,7 +136,13 @@ protected:
 	double	can_tx_fetch_period;
 	sc_time *can_tx_fetch_period_sc;
 
+	int bw_inject_count;
 	sc_event can_bw_event;
+	bool dont_care_bw_event;
+	sc_event time_out_event;
+	sc_event watchdog_enable_event;
+	sc_time watchdog_delay;
+
 	sc_event inject_data_event;
 
 	bool trace_enable;
@@ -152,11 +157,7 @@ protected:
 	bool	rand_enabled;
 	Parameter<bool>		param_rand_enabled;
 
-	tlm_quantumkeeper can_rx_quantumkeeper;
-
 private:
-
-	tlm_quantumkeeper can_tx_quantumkeeper;
 
 	peq_with_get<CAN_Payload > input_payload_queue;
 
