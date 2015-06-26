@@ -137,6 +137,7 @@ bool CAN_STUB::BeginSetup() {
 	can_tx_fetch_period_sc = new sc_time(can_tx_fetch_period, SC_PS);
 
 	watchdog_delay = sc_time(1, SC_US);
+	injection_delay = sc_time(1, SC_US);
 
 	return (true);
 }
@@ -234,7 +235,7 @@ void CAN_STUB::observe(CAN_DATATYPE &msg)
 void CAN_STUB::inject(CAN_DATATYPE msg)
 {
 
-	can_rx_payload = can_rx_payload_fabric.allocate();
+	CAN_Payload *can_rx_payload = can_rx_payload_fabric.allocate();
 
 	can_rx_payload->pack(msg);
 
@@ -263,7 +264,8 @@ void CAN_STUB::inject(CAN_DATATYPE msg)
 		}
 	}
 
-	std::cout << sc_object::name() << "  injection of " << *can_rx_payload << std::endl;
+//	std::cout << sc_object::name() << "  injection of " << *can_rx_payload << std::endl;
+
 
 	dont_care_bw_event = false;
 	watchdog_enable_event.notify();
@@ -438,13 +440,8 @@ int CAN_STUB::LoadXmlData(const char *filename, std::vector<CAN_DATATYPE* > &vec
 
 void CAN_STUB::Inject_CAN(CAN_DATATYPE msg)
 {
-	CAN_DATATYPE* data;
-	if (can_rx_vect.empty()) {
-		data = new CAN_DATATYPE();
-		can_rx_vect.push_back(data);
-	} else {
-		data = *(can_rx_vect.begin());
-	}
+	CAN_DATATYPE* data = new CAN_DATATYPE();
+	can_rx_vect.push_back(data);
 
 	for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
 		data->ID[j] = msg.ID[j];
@@ -460,7 +457,6 @@ void CAN_STUB::Inject_CAN(CAN_DATATYPE msg)
 	data->Timestamp[0] = msg.Timestamp[0];
 	data->Timestamp[1] = msg.Timestamp[1];
 
-	inject_data_event.notify();
 }
 
 void CAN_STUB::Get_CAN(CAN_DATATYPE *msg)
@@ -499,10 +495,12 @@ void CAN_STUB::processCANRX()
 
 	CAN_DATATYPE can_rx_buffer;
 
-	while (!isTerminated()) {
+	while (!isTerminated() && (rand_enabled || xml_enabled || cosim_enabled)) {
 
 		if (can_rx_vect.empty()) {
-			wait(inject_data_event);
+			if (rand_enabled) {
+				RandomizeData(can_rx_vect);
+			}
 		}
 		for (std::vector<CAN_DATATYPE*>::iterator it = can_rx_vect.begin() ; (it != can_rx_vect.end()) && !isTerminated(); ++it) {
 
@@ -520,9 +518,15 @@ void CAN_STUB::processCANRX()
 			can_rx_buffer.Timestamp[0] = (*it)->Timestamp[0];
 			can_rx_buffer.Timestamp[1] = (*it)->Timestamp[1];
 
-			std::cout << sc_object::name() << "  Random " << std::endl;
+//			std::cout << sc_object::name() << "  Random " << std::endl;
 
 			inject(can_rx_buffer);
+
+			if (!xml_enabled) {
+				can_rx_vect.erase(it);
+			}
+
+			wait(injection_delay);
 
 // ********** This is a hack code: rewrite a better solution
 //			dont_care_bw_event = false;

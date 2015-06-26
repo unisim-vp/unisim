@@ -253,43 +253,33 @@ bool XML_ATD_PWM_STUB::BeginSetup() {
 		}
 	}
 
+	injection_delay = sc_time(1, SC_US);
+
 	return (inherited::BeginSetup());
 }
 
 void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[8])
 {
-	data_t<ATD0_SIZE>* data;
-	if (atd0_vect.empty()) {
-		data = new data_t<ATD0_SIZE>();
-		atd0_vect.push_back(data);
-	} else {
-		data = *(atd0_vect.begin());
-	}
+	data_t<ATD0_SIZE>* data = new data_t<ATD0_SIZE>();
+	atd0_vect.push_back(data);
 
 	for (uint8_t j=0; j < ATD0_SIZE; j++) {
 		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		data->time =  0.080; // 0.080 Millisecond
 	}
 
-	atd0_inject_data_event.notify();
 }
 
 void XML_ATD_PWM_STUB::Inject_ATD1(double anValue[16])
 {
-	data_t<ATD1_SIZE>* data;
-	if (atd1_vect.empty()) {
-		data = new data_t<ATD1_SIZE>();
-		atd1_vect.push_back(data);
-	} else {
-		data = *(atd1_vect.begin());
-	}
+	data_t<ATD1_SIZE>* data = new data_t<ATD1_SIZE>();
+	atd1_vect.push_back(data);
 
 	for (uint8_t j=0; j < ATD1_SIZE; j++) {
 		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 		data->time = 0.080; // 0.080 Millisecond
 	}
 
-	atd1_inject_data_event.notify();
 }
 
 void XML_ATD_PWM_STUB::Get_PWM(bool (*value)[PWM_SIZE])
@@ -327,10 +317,12 @@ void XML_ATD_PWM_STUB::processATD0()
 		atd0_start = 0;
 	}
 
-	while (!isTerminated()) {
+	while (!isTerminated() && (atd0_rand_enabled || atd0_xml_enabled || cosim_enabled)) {
 
 		if (atd0_vect.empty()) {
-			wait(atd0_inject_data_event);
+			if (atd0_rand_enabled) {
+				RandomizeData(atd0_vect);
+			}
 		}
 
 		for (std::vector<data_t<ATD0_SIZE>*>::iterator it = atd0_vect.begin() ; (it != atd0_vect.end()) && !isTerminated(); ++it) {
@@ -345,6 +337,12 @@ void XML_ATD_PWM_STUB::processATD0()
 			}
 
 			output_ATD0(atd0_anValue);
+
+			if (!atd0_xml_enabled) {
+				atd0_vect.erase(it);
+			}
+
+			wait(injection_delay);
 
 		}
 	}
@@ -379,10 +377,12 @@ void XML_ATD_PWM_STUB::processATD1()
 		atd1_start = 0;
 	}
 
-	while (!isTerminated()) {
+	while (!isTerminated() && (atd1_rand_enabled || atd1_xml_enabled || cosim_enabled)) {
 
 		if (atd1_vect.empty()) {
-			wait(atd1_inject_data_event);
+			if (atd1_rand_enabled) {
+				RandomizeData(atd1_vect);
+			}
 		}
 
 		for (std::vector<data_t<ATD1_SIZE>*>::iterator it = atd1_vect.begin() ; (it != atd1_vect.end()) && !isTerminated(); ++it) {
@@ -397,6 +397,12 @@ void XML_ATD_PWM_STUB::processATD1()
 			}
 
 			output_ATD1(atd1_anValue);
+
+			if (!atd1_xml_enabled) {
+				atd1_vect.erase(it);
+			}
+
+			wait(injection_delay);
 
 		}
 	}

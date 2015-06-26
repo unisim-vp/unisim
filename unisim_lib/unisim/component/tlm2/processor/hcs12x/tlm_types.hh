@@ -286,7 +286,7 @@ public:
 
 		os << "-" ;
 		for (int i=0; i<CAN_ID_SIZE; i++) {
-			os << std::hex << (unsigned int) msg.ID[i];
+			(msg.ID[i] == 0)? os << "xx": os << std::hex << (unsigned int) msg.ID[i];
 		}
 
 		os << "-" ;

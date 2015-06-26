@@ -422,7 +422,7 @@ private:
 	inline void enable_can() {
 		setIdle();
 
-		std::cout << sc_object::name() << "::enable_can" << std::endl;
+//		std::cout << sc_object::name() << "::enable_can" << std::endl;
 
 		can_enable_event.notify();
 	}
@@ -584,7 +584,9 @@ private:
 
 		canrflg_register = canrflg_register | 0x01;
 
-		std::cout << sc_object::name() << "  RXF is SET " << sc_time_stamp() << std::endl;
+		if (rx_debug_enabled) {
+			std::cout << sc_object::name() << "  RXF is SET " << sc_time_stamp() << std::endl;
+		}
 
 		if (isReceiverFullInterruptEnable()) {
 			assertInterrupt(receive_interrupt_offset);
@@ -725,13 +727,13 @@ private:
 		if (isLoopBack() || (!isTransmitter)) {
 			uint8_t hit_index = 0;
 			if (checkAcceptance(rx_buffer, hit_index)) {
-				std::cout << sc_object::name() << "  Accepted *** " << sc_time_stamp() << std::endl;
+//				std::cout << sc_object::name() << "  Accepted *** " << sc_time_stamp() << std::endl;
 				setCanRxFG(rx_buffer, hit_index);
 				return (true);
+			} else {
+//				std::cout << sc_object::name() << "  Not Accepted *** " << sc_time_stamp() << std::endl;
 			}
 		}
-
-		std::cout << sc_object::name() << "  Not Accepted *** " << sc_time_stamp() << std::endl;
 
 		return (false);
 	}

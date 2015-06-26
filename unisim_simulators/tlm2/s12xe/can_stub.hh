@@ -143,7 +143,7 @@ protected:
 	sc_event watchdog_enable_event;
 	sc_time watchdog_delay;
 
-	sc_event inject_data_event;
+	sc_time injection_delay;
 
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
@@ -162,11 +162,6 @@ private:
 	peq_with_get<CAN_Payload > input_payload_queue;
 
 	PayloadFabric<CAN_Payload > can_rx_payload_fabric;
-	CAN_Payload *can_rx_payload;
-
-	double	bus_cycle_time;
-	sc_time		cycle_time;
-
 
 	Parameter<double>	param_can_rx_stimulus_period;
 	Parameter<double>	param_can_tx_fetch_period;

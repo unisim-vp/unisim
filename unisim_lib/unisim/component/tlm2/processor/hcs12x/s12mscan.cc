@@ -266,7 +266,7 @@ void S12MSCAN::RunRx() {
 		while (!isCANEnabled()) {
 			wait(can_enable_event);
 
-			std::cout << sc_object::name() << ":: RX enabled " << std::endl;
+//			std::cout << sc_object::name() << ":: RX enabled " << std::endl;
 		}
 
 		// TODO: I have to complete receiver automata
@@ -307,7 +307,9 @@ void S12MSCAN::InputRX(uint8_t (*rx_shift)[CAN_MSG_SIZE])
 		sc_time local_time = SC_ZERO_TIME;
 		can_rx_sock->nb_transport_bw( *payload, phase, local_time);
 
-		std::cout << sc_object::name() << "::InputRx " << *payload << "  at " << sc_time_stamp() << std::endl;
+		if (rx_debug_enabled) {
+			std::cout << sc_object::name() << "::InputRx " << *payload << "  at " << sc_time_stamp() << std::endl;
+		}
 	}
 
 }
@@ -320,7 +322,7 @@ void S12MSCAN::RunTx() {
 
 			wait(can_enable_event);
 
-			std::cout << sc_object::name() << ":: TX enabled " << std::endl;
+//			std::cout << sc_object::name() << ":: TX enabled " << std::endl;
 
 		}
 

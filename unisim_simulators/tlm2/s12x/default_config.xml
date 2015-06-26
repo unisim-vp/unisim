@@ -128,6 +128,66 @@
 			</enumeration>
 		</variable>
 	</object>
+	<object name="CAN-STUB">
+		<variable name="trace-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="cosim-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="xml-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="rand-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="can-rx-stimulus-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>8e+07</value>
+			<description></description>
+		</variable>
+		<variable name="can-tx-fetch-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1e+09</value>
+			<description></description>
+		</variable>
+		<variable name="can-rx-stimulus-file">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description></description>
+		</variable>
+	</object>
 	<object name="CAN0">
 		<variable name="bus-cycle-time">
 			<type>parameter</type>
@@ -182,16 +242,6 @@
 			</enumeration>
 		</variable>
 		<variable name="rx-debug-enabled">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -265,16 +315,6 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="telnet-enabled">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
 	</object>
 	<object name="CAN2">
 		<variable name="bus-cycle-time">
@@ -330,16 +370,6 @@
 			</enumeration>
 		</variable>
 		<variable name="rx-debug-enabled">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -413,16 +443,6 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="telnet-enabled">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
 	</object>
 	<object name="CAN4">
 		<variable name="bus-cycle-time">
@@ -478,16 +498,6 @@
 			</enumeration>
 		</variable>
 		<variable name="rx-debug-enabled">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="telnet-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -999,6 +1009,24 @@
 			<data_type>string</data_type>
 			<value>0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0110,011B;11,0120,012F;12,0130,0137;13,0138,013F;14,0140,017F;15,0180,01BF;16,01C0,01FF;17,0200,023F;18,0280,02BF;19,02C0,02DF;20,0300,0327;21,0340,0367;22,0380,03BF;23,0007FF,0FFFFF;24,100000,13FFFF;25,400000,7FFFFF</value>
 			<description></description>
+		</variable>
+	</object>
+	<object name="Monitor">
+		<variable name="xml-spec-file-path">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>xml_spec_file_path.xml</value>
+			<description></description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 	</object>
 	<object name="PIT">
@@ -1974,36 +2002,6 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="cosim-enabled">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="atd0-stub-enabled">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="atd1-stub-enabled">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
 		<variable name="anx-stimulus-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
@@ -2051,6 +2049,56 @@
 			<data_type>unsigned 8-bit integer</data_type>
 			<value>0x0f</value>
 			<description></description>
+		</variable>
+		<variable name="cosim-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="atd0-xml-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="atd1-xml-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="atd0-rand-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="atd1-rand-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 	</object>
 	<object name="debugger">
@@ -2182,6 +2230,108 @@
 				<description>Memory mapping. Syntax: [[(memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;]][,[(memory=]&lt;memory2&gt;[:[range=]&lt;low2-high2&gt;]]... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff)</description>
 			</variable>
 		</object>
+		<object name="loader.file0">
+			<variable name="filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>the ELF filename to load into memory</description>
+			</variable>
+			<variable name="base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
+			</variable>
+			<variable name="force-base-addr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>if true force base address for a unique program segment</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="force-use-virtual-address">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>force use of virtual addresses instead of physical addresses (default false)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initialize-extra-segment-bytes">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dump-headers">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>dump headers while loading ELF file</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dwarf-to-html-output-directory">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to HTML output directory</description>
+			</variable>
+			<variable name="dwarf-to-xml-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to XML output filename</description>
+			</variable>
+			<variable name="dwarf-register-number-mapping-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF register number mapping filename</description>
+			</variable>
+			<variable name="parse-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable parsing of DWARF debugging informations</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DWARF</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -2205,7 +2355,7 @@
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>filename=/localhome/rnouacer/workspace/s12x_tests/XDP512_CAN0-5_CW45/bin/SofTec_HCS12.abs:format=ELF32</value>
 			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[:[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[:[format=]&lt;format2&gt;]]... (e.g. boot.bin:raw,app.elf)</description>
 		</variable>
 	</object>
@@ -2378,7 +2528,7 @@
 	<variable name="enable-gdb-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>true</value>
+		<value>false</value>
 		<description>Enable/Disable GDB server instantiation</description>
 		<enumeration>
 			<item>true</item>
@@ -2398,7 +2548,7 @@
 	<variable name="enable-pim-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>true</value>
+		<value>false</value>
 		<description>Enable/Disable PIM server instantiation</description>
 		<enumeration>
 			<item>true</item>
