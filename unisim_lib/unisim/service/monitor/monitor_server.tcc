@@ -98,6 +98,11 @@ int MonitorServer<ADDRESS>::generate_monitor_spec(const char* file_path) {
 }
 
 template <class ADDRESS>
+void MonitorServer<ADDRESS>::getProperties(std::vector<std::string>& vect) {
+	monitor->getProperties(vect);
+}
+
+template <class ADDRESS>
 void MonitorServer<ADDRESS>::refresh_value(const char* name, bool value)
 {
 	monitor->refresh_value(name, value);

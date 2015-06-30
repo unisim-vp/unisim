@@ -118,6 +118,11 @@ int ArtimonMonitor<ADDRESS>::generate_monitor_spec(const char* file_path)
 }
 
 template <class ADDRESS>
+void getProperties(std::vector<std::string>& vect) {
+
+}
+
+template <class ADDRESS>
 int ArtimonMonitor<ADDRESS>::getPropertyIndex(const char* name)
 {
 	return 0;

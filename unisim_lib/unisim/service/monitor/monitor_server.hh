@@ -37,7 +37,7 @@ public:
 	static void releaseInstance();
 
 	virtual int generate_monitor_spec(const char* file_path);
-
+	virtual void getProperties(std::vector<std::string>&);
 	virtual void refresh_value(const char* name, bool value);
 	virtual void refresh_value(const char* name, double value);
 

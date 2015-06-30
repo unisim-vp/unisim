@@ -4,6 +4,7 @@
 
 #include <inttypes.h>
 
+#include <vector>
 #include <string>
 
 #include <unisim/kernel/service/service.hh>
@@ -49,7 +50,7 @@ public:
 	virtual bool EndSetup();
 
 	virtual int generate_monitor_spec(const char* file_path);
-
+	virtual void getProperties(std::vector<std::string>&);
 	int getPropertyIndex(const char* name);
 
 	virtual void refresh_value(const char* name, bool value);

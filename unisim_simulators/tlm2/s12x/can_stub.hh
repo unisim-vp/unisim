@@ -133,17 +133,12 @@ protected:
 	double	can_rx_stimulus_period;
 	sc_time *can_rx_stimulus_period_sc;
 
-	double	can_tx_fetch_period;
-	sc_time *can_tx_fetch_period_sc;
-
 	int bw_inject_count;
 	sc_event can_bw_event;
 	bool dont_care_bw_event;
 	sc_event time_out_event;
 	sc_event watchdog_enable_event;
 	sc_time watchdog_delay;
-
-	sc_time injection_delay;
 
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
@@ -164,7 +159,6 @@ private:
 	PayloadFabric<CAN_Payload > can_rx_payload_fabric;
 
 	Parameter<double>	param_can_rx_stimulus_period;
-	Parameter<double>	param_can_tx_fetch_period;
 
 	string can_rx_stimulus_file;
 	Parameter<string>	param_can_rx_stimulus_file;

@@ -967,6 +967,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "68hc12_dwarf_register_number_mapping.xml");
 
 	simulator->SetVariable("Monitor.xml-spec-file-path", "xml_spec_file_path.xml");
+	simulator->SetVariable("Monitor.property-list", "");
 
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;
@@ -997,8 +998,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CAN-STUB.cosim-enabled", false);
 	simulator->SetVariable("CAN-STUB.xml-enabled", false);
 	simulator->SetVariable("CAN-STUB.rand-enabled", false);
-	simulator->SetVariable("CAN-STUB.can-rx-stimulus-period", 80000000);
-	simulator->SetVariable("CAN-STUB.can-tx-fetch-period", 1e9);
+	simulator->SetVariable("CAN-STUB.can-rx-stimulus-period", 20000);
 	simulator->SetVariable("CAN-STUB.can-rx-stimulus-file", "");
 
 	simulator->SetVariable("ATD0.bus-cycle-time", 250000);

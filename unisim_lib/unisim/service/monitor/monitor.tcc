@@ -1,6 +1,8 @@
 
 #include <unisim/service/monitor/monitor.hh>
 
+#include <unisim/util/converter/convert.hh>
+
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;
@@ -42,6 +44,10 @@ Monitor<ADDRESS>::Monitor(const char *name, Object *parent, const char *descript
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 
+	, propertyList("")
+	, param_propertyList("property-list", this, propertyList)
+
+
 {
 	server = MonitorServer<ADDRESS>::getInstance(this);
 }
@@ -62,6 +68,10 @@ template <class ADDRESS>
 bool Monitor<ADDRESS>::BeginSetup()
 {
 	int result = generate_monitor_spec(xml_spec_file_path.c_str());
+
+	std::cout << "Monitor   " << propertyList << std::endl;
+
+	stringSplit(propertyList, " ", properties);
 
 	return true;
 }
@@ -94,26 +104,33 @@ bool Monitor<ADDRESS>::EndSetup()
 
 	//*** Hack code to test if monitor is working well */
 
-//	if (symbol_table_lookup_import) {
-//
-//		const unisim::util::debug::Symbol<ADDRESS> *symb = symbol_table_lookup_import->FindSymbolByName("res", Symbol<ADDRESS>::SYM_OBJECT);
-//		if (symb != NULL) {
-//
-//			ADDRESS addr = symb->GetAddress();
-//			uint32_t size = symb->GetSize();
-//
-//			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
-//			{
-////				std::cout << "EndSetup (4)" << std::endl;
-//
-//			} else {
-//
-////				std::cout << "EndSetup (5)" << std::endl;
-//
-//			}
-//
-//		}
-//	}
+	if (symbol_table_lookup_import) {
+
+		vector<string> vect;
+		getProperties(vect);
+		for (unsigned i=0; i<vect.size(); i++) {
+			string property = vect[i];
+
+			const unisim::util::debug::Symbol<ADDRESS> *symb = symbol_table_lookup_import->FindSymbolByName(property.c_str(), Symbol<ADDRESS>::SYM_OBJECT);
+			if (symb != NULL) {
+
+				ADDRESS addr = symb->GetAddress();
+				uint32_t size = symb->GetSize();
+
+				if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+				{
+	//				std::cout << "EndSetup (4)" << std::endl;
+
+				} else {
+
+	//				std::cout << "EndSetup (5)" << std::endl;
+
+				}
+
+			}
+
+		}
+	}
 
 	//**  Hack code end */
 
@@ -123,6 +140,15 @@ bool Monitor<ADDRESS>::EndSetup()
 template <class ADDRESS>
 int Monitor<ADDRESS>::generate_monitor_spec(const char* file_path) {
 	return (server->generate_monitor_spec(file_path));
+}
+
+template <class ADDRESS>
+void Monitor<ADDRESS>::getProperties(std::vector<std::string>& vect) {
+
+	vect.clear();
+	vect = properties;
+
+	// TODO: Final version has to get properties from monitor implementation (default_monitor and artimon_monitor)
 }
 
 template <class ADDRESS>
@@ -168,7 +194,8 @@ void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& e
 					unsigned long d = 0;
 					hexString2Number(value, &d, (*symbol_iter)->GetSize(), (endian == GDB_BIG_ENDIAN)? "big":"little");
 
-					refresh_value(name.c_str(), (double) d, local_time++);
+//					refresh_value(name.c_str(), (double) d, local_time++);
+					refresh_value(name.c_str(), (double) d, Object::GetSimulator()->GetSimTime()*1000);
 
 					break;
 				}

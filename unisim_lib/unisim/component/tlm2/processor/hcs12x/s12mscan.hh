@@ -174,12 +174,12 @@ public:
 
 	bool isFull() {
 
-	    return (head== ((tail+1) % MAX_SIZE));
+	    return ((abs(tail-head)+1) == MAX_SIZE);
 	}
 
 	int size() {
 
-	    return abs(tail - head);
+	    return abs(tail - head) + 1;
 	}
 
 private:
@@ -388,7 +388,7 @@ private:
 		uint8_t dlr; // DLR: Data Length Register
 		uint8_t tbpr; // tbpr: Transmit Buffer Priority register. Not applicable for receive buffers
 		uint8_t tsrh, tsrl;  // tsr: Time stamp register. Read-only for CPU
-	} /* *canrxfg, *cantxfg */;
+	} ;
 
 	// the time stamp is clocked by the bit clock rate.
 	sc_event timer_start_event;
@@ -584,11 +584,10 @@ private:
 
 		canrflg_register = canrflg_register | 0x01;
 
-		if (rx_debug_enabled) {
-			std::cout << sc_object::name() << "  RXF is SET " << sc_time_stamp() << std::endl;
-		}
+//		std::cout << sc_object::name() << "  RXF is SET " << sc_time_stamp() << std::endl;
 
 		if (isReceiverFullInterruptEnable()) {
+//			std::cout << sc_object::name() << "  FullInterrupt " << sc_time_stamp() << std::endl;
 			assertInterrupt(receive_interrupt_offset);
 		}
 	}
@@ -744,7 +743,6 @@ private:
 		uint8_t mode = (canidac_register & 0x30) >> 4;
 
 		/*
-		 *  TODO: implement acceptance algorithm using canidac, caniadr and canidmr registers
 		 *    note: background receive buffer is modeled as rx_buffer_register[16]
 		 *
 		 *  CANIDAC register: Is used for identifier acceptance control.
@@ -774,14 +772,60 @@ private:
 		 *  in the mask registers CANIDMR1, CANIDMR3, CANIDMR5, and CANIDMR7 to “don’t care.”
 		 */
 
+//		switch (mode) {
+//			case 0: // 32-bits acceptance filters
+//			{
+//				bool hit0 = true;
+//				bool hit1 = true;
+//				for (int i=0; i<4; i++) {
+//					hit0 = hit0 && (((canrxfg->idrx[i] | canidmr_register[i]) & canidar_register[i]) == canidar_register[i]);
+//					hit1 = hit1 && (((canrxfg->idrx[i] | canidmr_register[i+4]) & canidar_register[i+4]) == canidar_register[i+4]);
+//				}
+//				if (hit0) {
+//					hit_index = 0;
+//				} else if (hit1) {
+//					hit_index = 1;
+//				}
+//			} break;
+//			case 1: // 16-bits acceptance filters
+//			{
+//				bool hit[4] = {true, true, true, true};
+//				for (int i=0; i<2; i++) {
+//					hit[0] = hit[0] && (((canrxfg->idrx[i] | canidmr_register[i]) & canidar_register[i]) == canidar_register[i]);
+//					hit[1] = hit[1] && (((canrxfg->idrx[i] | canidmr_register[i+2]) & canidar_register[i+2]) == canidar_register[i+2]);
+//					hit[2] = hit[2] && (((canrxfg->idrx[i] | canidmr_register[i+4]) & canidar_register[i+4]) == canidar_register[i+4]);
+//					hit[3] = hit[3] && (((canrxfg->idrx[i] | canidmr_register[i+6]) & canidar_register[i+6]) == canidar_register[i+6]);
+//				}
+//				for (int i=0; i<4; i++) {
+//					if (hit[i]) {
+//						hit_index = i;
+//						break;
+//					}
+//				}
+//			} break;
+//			case 2: // 8-bits acceptance filters
+//			{
+//				for (int i=0; i<8; i++) {
+//					if (((canrxfg->idrx[0] | canidmr_register[i]) & canidar_register[i]) == canidar_register[i]) {
+//						hit_index = i;
+//						break;
+//					}
+//				}
+//			} break;
+//			case 3: // Filter closed
+//			{
+//				return (false);
+//			} break;
+//		}
+
 		switch (mode) {
 			case 0: // 32-bits acceptance filters
 			{
 				bool hit0 = true;
 				bool hit1 = true;
 				for (int i=0; i<4; i++) {
-					hit0 = hit0 && (((canrxfg->idrx[i] | canidmr_register[i]) & canidar_register[i]) == canidar_register[i]);
-					hit1 = hit1 && (((canrxfg->idrx[i] | canidmr_register[i+4]) & canidar_register[i+4]) == canidar_register[i+4]);
+					hit0 = hit0 && ((canrxfg->idrx[i] & canidmr_register[i]) == canidar_register[i]);
+					hit1 = hit1 && ((canrxfg->idrx[i] & canidmr_register[i+4]) == canidar_register[i+4]);
 				}
 				if (hit0) {
 					hit_index = 0;
@@ -793,10 +837,10 @@ private:
 			{
 				bool hit[4] = {true, true, true, true};
 				for (int i=0; i<2; i++) {
-					hit[0] = hit[0] && (((canrxfg->idrx[i] | canidmr_register[i]) & canidar_register[i]) == canidar_register[i]);
-					hit[1] = hit[1] && (((canrxfg->idrx[i] | canidmr_register[i+2]) & canidar_register[i+2]) == canidar_register[i+2]);
-					hit[2] = hit[2] && (((canrxfg->idrx[i] | canidmr_register[i+4]) & canidar_register[i+4]) == canidar_register[i+4]);
-					hit[3] = hit[3] && (((canrxfg->idrx[i] | canidmr_register[i+6]) & canidar_register[i+6]) == canidar_register[i+6]);
+					hit[0] = hit[0] && ((canrxfg->idrx[i] & canidmr_register[i]) == canidar_register[i]);
+					hit[1] = hit[1] && ((canrxfg->idrx[i] & canidmr_register[i+2]) == canidar_register[i+2]);
+					hit[2] = hit[2] && ((canrxfg->idrx[i] & canidmr_register[i+4]) == canidar_register[i+4]);
+					hit[3] = hit[3] && ((canrxfg->idrx[i] & canidmr_register[i+6]) == canidar_register[i+6]);
 				}
 				for (int i=0; i<4; i++) {
 					if (hit[i]) {
@@ -808,7 +852,7 @@ private:
 			case 2: // 8-bits acceptance filters
 			{
 				for (int i=0; i<8; i++) {
-					if (((canrxfg->idrx[0] | canidmr_register[i]) & canidar_register[i]) == canidar_register[i]) {
+					if ((canrxfg->idrx[0] & canidmr_register[i]) == canidar_register[i]) {
 						hit_index = i;
 						break;
 					}

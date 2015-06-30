@@ -87,7 +87,7 @@ public:
 	virtual bool EndSetup();
 
 	virtual int generate_monitor_spec(const char* file_path);
-
+	virtual void getProperties(std::vector<std::string>&);
 	virtual void refresh_value(const char* name, bool value);
 	virtual void refresh_value(const char* name, double value);
 
@@ -95,6 +95,8 @@ public:
 	virtual void refresh_value(const char* name, double value, double time);
 
 	virtual void refresh_time(double time);
+
+	bool isProperty(const char* name);
 
 protected:
 
@@ -112,6 +114,10 @@ private:
 
 	bool verbose;
 	Parameter<bool> param_verbose;
+
+	vector<string> properties;
+	string propertyList;
+	Parameter<string> param_propertyList;
 
 	bool InternalReadMemory(ADDRESS addr, uint32_t size, string& packet);
 };

@@ -182,7 +182,7 @@ typedef enum {CAN_MSG_STD, CAN_MSG_EXT} CanMsgType;
 /*
 The CAN_DATATYPE structure
 */
-typedef struct {
+typedef struct CAN_MESSAGE {
 
     /* Is Extended frame: extended ID = 29-bits and standard ID = 11-bits */
     uint8_t Extended;
@@ -215,6 +215,26 @@ typedef struct {
     /* MSG Time Stamp */
     uint8_t Timestamp[CAN_TIMESTAMP_SIZE];
 
+	friend std::ostream& operator << (std::ostream& os, const CAN_MESSAGE& msg) {
+
+		os << std::hex << (unsigned int) msg.Extended << "-" << (unsigned int) msg.Length;
+
+		os << "-" ;
+		for (int i=0; i<CAN_ID_SIZE; i++) {
+			os << std::hex << (unsigned int) msg.ID[i];
+		}
+
+		os << "-" ;
+		for (int i=0; i < CAN_DATA_SIZE; i++) {
+			os << std::hex << (unsigned int) msg.Data[i];
+		}
+
+		os << "-" << std::hex << (unsigned int) msg.Remote << "-" << (unsigned int) msg.Error;
+
+		os << "-" << std::hex << (unsigned int) msg.Timestamp[0] << (unsigned int) msg.Timestamp[1];
+
+		return (os);
+	}
 
 }  CAN_MESSAGE;
 
@@ -265,7 +285,7 @@ public:
 			msg.Timestamp[i] = msgVect[CAN_TIMESTAMP_INDEX+i];
 		}
 
-		msg.Extended = (msg.ID[1] & IDE_MASK);
+		msg.Extended = (msg.ID[1] & IDE_MASK) >> 3;
 		if (msg.Extended == 1) // extended ID = 29-bits and RTR is at bit-32
 		{
 			msg.Remote = msg.ID[3] & EXT_RTR_MASK;
@@ -275,30 +295,6 @@ public:
 			msg.Remote = msg.ID[1] & STD_RTR_MASK;
 		}
 
-	}
-
-	friend std::ostream& operator << (std::ostream& os, const CAN_Payload& payload) {
-
-		CAN_DATATYPE msg;
-		((CAN_Payload) payload).unpack(msg);
-
-		os << std::dec << (unsigned int) msg.Extended << "-" << (unsigned int) msg.Length;
-
-		os << "-" ;
-		for (int i=0; i<CAN_ID_SIZE; i++) {
-			(msg.ID[i] == 0)? os << "xx": os << std::hex << (unsigned int) msg.ID[i];
-		}
-
-		os << "-" ;
-		for (int i=0; i < CAN_DATA_SIZE; i++) {
-			os << std::hex << (unsigned int) msg.Data[i];
-		}
-
-		os << "-" << std::dec << (unsigned int) msg.Remote << "-" << (unsigned int) msg.Error;
-
-		os << "-" << std::dec << (unsigned int) msg.Timestamp[0] << (unsigned int) msg.Timestamp[1];
-
-		return (os);
 	}
 
 };

@@ -43,11 +43,8 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 	, can_rx_sock("can_rx_sock")
 	, can_tx_sock("can_tx_sock")
 
-	, can_rx_stimulus_period(80000000)
+	, can_rx_stimulus_period(20000)
 	, can_rx_stimulus_period_sc(NULL)
-
-	, can_tx_fetch_period(1e9) // 1 ms
-	, can_tx_fetch_period_sc(0)
 
 	, bw_inject_count(0)
 	, dont_care_bw_event(false)
@@ -67,7 +64,6 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 	, input_payload_queue("input_payload_queue")
 
 	, param_can_rx_stimulus_period("can-rx-stimulus-period", this, can_rx_stimulus_period)
-	, param_can_tx_fetch_period("can-tx-fetch-period", this, can_tx_fetch_period)
 
 	, can_rx_stimulus_file("")
 	, param_can_rx_stimulus_file("can-rx-stimulus-file", this, can_rx_stimulus_file)
@@ -95,7 +91,6 @@ CAN_STUB::~CAN_STUB() {
 	}
 
 	if (can_rx_stimulus_period_sc) { delete can_rx_stimulus_period_sc; can_rx_stimulus_period_sc = NULL; }
-	if (can_tx_fetch_period_sc) { delete can_tx_fetch_period_sc; can_tx_fetch_period_sc = NULL; }
 }
 
 bool CAN_STUB::BeginSetup() {
@@ -133,11 +128,9 @@ bool CAN_STUB::BeginSetup() {
 		strm.str(string());
 	}
 
-	can_rx_stimulus_period_sc = new sc_time(can_rx_stimulus_period, SC_PS);
-	can_tx_fetch_period_sc = new sc_time(can_tx_fetch_period, SC_PS);
+	can_rx_stimulus_period_sc = new sc_time(can_rx_stimulus_period, SC_US);
 
 	watchdog_delay = sc_time(1, SC_US);
-	injection_delay = sc_time(1, SC_US);
 
 	return (true);
 }
@@ -218,13 +211,13 @@ void CAN_STUB::observe(CAN_DATATYPE &msg)
 
 	payload = input_payload_queue.get_next_transaction();
 
-	if (trace_enable) {
-		can_tx_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *payload <<  std::endl;
-	}
-
 	payload->unpack(msg);
 
 	payload->release();
+
+	if (trace_enable) {
+		can_tx_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << msg <<  std::endl;
+	}
 
 	tlm_phase phase = BEGIN_RESP;
 	sc_time local_time = SC_ZERO_TIME;
@@ -241,10 +234,6 @@ void CAN_STUB::inject(CAN_DATATYPE msg)
 
 	for (int i=0; i<can_rx_sock.size(); i++) {
 		sc_time local_time = SC_ZERO_TIME;
-
-		if (trace_enable) {
-			can_rx_output_file << "CAN" << i << ": " << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *can_rx_payload << std::endl;
-		}
 
 		tlm_phase phase = BEGIN_REQ;
 
@@ -264,8 +253,9 @@ void CAN_STUB::inject(CAN_DATATYPE msg)
 		}
 	}
 
-//	std::cout << sc_object::name() << "  injection of " << *can_rx_payload << std::endl;
-
+	if (trace_enable) {
+		can_rx_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << msg << std::endl;
+	}
 
 	dont_care_bw_event = false;
 	watchdog_enable_event.notify();
@@ -287,19 +277,8 @@ int CAN_STUB::RandomizeData(std::vector<CAN_DATATYPE* > &vect) {
 	for (int i=0; i < SET_SIZE; i++) {
 		data = new CAN_DATATYPE();
 
-//		for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
-//			data->ID[j] = rand();
-//		}
-		if ((rand() % 2) == 0) {
-			data->ID[0] = 0x04;
-			data->ID[1] = 0x00;
-			data->ID[2] = 0x20;
-			data->ID[3] = 0x00;
-		} else {
-			data->ID[0] = 0x04;
-			data->ID[1] = 0x00;
-			data->ID[2] = 0x60;
-			data->ID[3] = 0x00;
+		for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
+			data->ID[j] = rand();
 		}
 
 		for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
@@ -495,14 +474,13 @@ void CAN_STUB::processCANRX()
 
 	CAN_DATATYPE can_rx_buffer;
 
+	wait(sc_time(100, SC_MS));
+
 	while (!isTerminated() && (rand_enabled || xml_enabled || cosim_enabled)) {
 
-		if (can_rx_vect.empty()) {
-			if (rand_enabled) {
-				RandomizeData(can_rx_vect);
-			}
-		}
 		for (std::vector<CAN_DATATYPE*>::iterator it = can_rx_vect.begin() ; (it != can_rx_vect.end()) && !isTerminated(); ++it) {
+
+			wait(*can_rx_stimulus_period_sc);
 
 			for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
 				can_rx_buffer.ID[j] = (*it)->ID[j];
@@ -521,19 +499,6 @@ void CAN_STUB::processCANRX()
 //			std::cout << sc_object::name() << "  Random " << std::endl;
 
 			inject(can_rx_buffer);
-
-			if (!xml_enabled) {
-				can_rx_vect.erase(it);
-			}
-
-			wait(injection_delay);
-
-// ********** This is a hack code: rewrite a better solution
-//			dont_care_bw_event = false;
-//			watchdog_enable_event.notify();
-//			wait(time_out_event);
-//			dont_care_bw_event = true;
-// *********** end hack code ****************************
 
 		}
 	}

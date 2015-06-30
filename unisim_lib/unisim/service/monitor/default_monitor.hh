@@ -3,6 +3,8 @@
 
 #include <inttypes.h>
 
+#include <fstream>
+
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/interfaces/monitor_if.hh>
@@ -32,6 +34,7 @@ public:
 	virtual bool EndSetup();
 
 	virtual int generate_monitor_spec(const char* file_path);
+	virtual void getProperties(std::vector<std::string>&);
 
 	virtual void refresh_value(const char* name, bool value);
 	virtual void refresh_value(const char* name, double value);
@@ -44,7 +47,8 @@ public:
 protected:
 
 private:
-
+	std::ofstream output_file;
+	double last_time;
 
 };
 

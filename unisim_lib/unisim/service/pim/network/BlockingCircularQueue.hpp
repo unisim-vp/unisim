@@ -127,7 +127,8 @@ public:
 
 	    pthread_mutex_lock( &queue_mutex );
 
-	    result = (head== ((tail+1) % MAX_SIZE));
+//	    result = (head== ((tail+1) % MAX_SIZE));
+	    result = ((abs(tail-head)+1) == MAX_SIZE);
 
 	    pthread_mutex_unlock( &queue_mutex );
 
@@ -140,7 +141,7 @@ public:
 
 	    pthread_mutex_lock( &queue_mutex );
 
-	    size = std::abs(tail - head);
+	    size = std::abs(tail - head) + 1;
 
 	    pthread_mutex_unlock( &queue_mutex );
 
