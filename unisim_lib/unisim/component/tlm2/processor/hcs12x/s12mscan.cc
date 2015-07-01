@@ -64,7 +64,7 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 
 	, abortTransmission(false)
 
-	, canctl0_register(0x01)
+	, canctl0_register(0x11)
 	, canctl1_register(0x11)
 	, canbtr0_register(0x00)
 	, canbtr1_register(0x00)
@@ -1160,7 +1160,7 @@ void S12MSCAN::OnDisconnect() {
 
 void S12MSCAN::Reset() {
 
-	canctl0_register = 0x01;
+	canctl0_register = 0x11;
 	canctl1_register = 0x11;
 	canbtr0_register = 0x00;
 	canbtr1_register = 0x00;

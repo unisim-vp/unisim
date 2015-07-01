@@ -726,7 +726,7 @@ private:
 		if (isLoopBack() || (!isTransmitter)) {
 			uint8_t hit_index = 0;
 			if (checkAcceptance(rx_buffer, hit_index)) {
-//				std::cout << sc_object::name() << "  Accepted *** " << sc_time_stamp() << std::endl;
+				std::cout << sc_object::name() << "  Accepted *** " << sc_time_stamp() << std::endl;
 				setCanRxFG(rx_buffer, hit_index);
 				return (true);
 			} else {
