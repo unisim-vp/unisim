@@ -45,7 +45,7 @@ Monitor<ADDRESS>::Monitor(const char *name, Object *parent, const char *descript
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 
 	, propertyList("")
-	, param_propertyList("property-list", this, propertyList)
+	, param_propertyList("property-list", this, propertyList, "List of properties to monitor. The list use white spaces as a separator e.g. p1 p2")
 
 
 {
@@ -68,8 +68,6 @@ template <class ADDRESS>
 bool Monitor<ADDRESS>::BeginSetup()
 {
 	int result = generate_monitor_spec(xml_spec_file_path.c_str());
-
-	std::cout << "Monitor   " << propertyList << std::endl;
 
 	stringSplit(propertyList, " ", properties);
 

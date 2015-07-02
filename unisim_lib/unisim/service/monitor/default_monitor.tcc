@@ -32,7 +32,15 @@ void DefaultMonitor<ADDRESS>::OnDisconnect()
 template <class ADDRESS>
 bool DefaultMonitor<ADDRESS>::BeginSetup()
 {
-	output_file.open ("monitor_output.txt");
+	output_file.open ("monitor_output.txt", std::ofstream::out);
+
+	if (output_file.is_open())
+	{
+		output_file <<"Time , Property-name , value" << std::endl;
+		output_file <<"-------------------------------" << std::endl;
+	} else {
+		std::cerr << "Error opening file -> monitor_output.txt";
+	}
 
 	return true;
 }
@@ -51,7 +59,6 @@ bool DefaultMonitor<ADDRESS>::EndSetup()
 
 template <class ADDRESS>
 int DefaultMonitor<ADDRESS>::generate_monitor_spec(const char* file_path) {
-	std::cout << "DefaultMonitor:: generate_monitor_spec() " << file_path << std::endl;
 	return (0);
 }
 
@@ -63,46 +70,41 @@ void DefaultMonitor<ADDRESS>::getProperties(std::vector<std::string>& vect) {
 template <class ADDRESS>
 void DefaultMonitor<ADDRESS>::refresh_value(const char* name, bool value)
 {
-	std::cout << "Default_monitor::refresh_value bool is running" << std::endl;
 
-	output_file << last_time << " : \t\t" << name << " : " << value << std::endl;
+	output_file << last_time << " , " << name << " , " << value << std::endl;
 }
 
 template <class ADDRESS>
 void DefaultMonitor<ADDRESS>::refresh_value(const char* name, double value)
 {
-	std::cout << "Default_monitor::refresh_value double is running" << std::endl;
 
-	output_file << last_time << " : \t\t" << name << " : " << value << std::endl;
+	output_file << last_time << " , " << name << " , " << value << std::endl;
 
 }
 
 template <class ADDRESS>
 void DefaultMonitor<ADDRESS>::refresh_value(const char* name, bool value, double time)
 {
-	std::cout << "Default_monitor::refresh_value bool/time is running" << std::endl;
 
 	last_time = time;
 
-	output_file << last_time << " : \t\t" << name << " : " << value << std::endl;
+	output_file << last_time << " , " << name << " , " << value << std::endl;
 
 }
 
 template <class ADDRESS>
 void DefaultMonitor<ADDRESS>::refresh_value(const char* name, double value, double time)
 {
-	std::cout << "Default_monitor::refresh_value double/time is running" << std::endl;
 
 	last_time = time;
 
-	output_file << last_time << " : \t\t" << name << " : " << value << std::endl;
+	output_file << last_time << " , " << name << " , " << value << std::endl;
 
 }
 
 template <class ADDRESS>
 void DefaultMonitor<ADDRESS>::refresh_time(double time)
 {
-	std::cout << "Default_monitor::refresh_time is running" << std::endl;
 
 	last_time = time;
 }

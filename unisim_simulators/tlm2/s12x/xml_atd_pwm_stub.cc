@@ -253,7 +253,7 @@ bool XML_ATD_PWM_STUB::BeginSetup() {
 		}
 	}
 
-	injection_delay = sc_time(1, SC_US);
+//	injection_delay = sc_time(1, SC_US);
 
 	return (inherited::BeginSetup());
 }
@@ -319,12 +319,6 @@ void XML_ATD_PWM_STUB::processATD0()
 
 	while (!isTerminated() && (atd0_rand_enabled || atd0_xml_enabled || cosim_enabled)) {
 
-		if (atd0_vect.empty()) {
-			if (atd0_rand_enabled) {
-				RandomizeData(atd0_vect);
-			}
-		}
-
 		for (std::vector<data_t<ATD0_SIZE>*>::iterator it = atd0_vect.begin() ; (it != atd0_vect.end()) && !isTerminated(); ++it) {
 
 			uint8_t j = 0;
@@ -338,11 +332,7 @@ void XML_ATD_PWM_STUB::processATD0()
 
 			output_ATD0(atd0_anValue);
 
-			if (!atd0_xml_enabled) {
-				atd0_vect.erase(it);
-			}
-
-			wait(injection_delay);
+//			wait(injection_delay);
 
 		}
 	}
@@ -352,8 +342,6 @@ void XML_ATD_PWM_STUB::processATD0()
 
 void XML_ATD_PWM_STUB::processATD1()
 {
-	srand(12345);
-
 	/**
 	 * Note: The Software sample the ATDDRx every 1024us.
 	 * The injected trace file start at 20ms. The interval between two sample is 80us
@@ -379,12 +367,6 @@ void XML_ATD_PWM_STUB::processATD1()
 
 	while (!isTerminated() && (atd1_rand_enabled || atd1_xml_enabled || cosim_enabled)) {
 
-		if (atd1_vect.empty()) {
-			if (atd1_rand_enabled) {
-				RandomizeData(atd1_vect);
-			}
-		}
-
 		for (std::vector<data_t<ATD1_SIZE>*>::iterator it = atd1_vect.begin() ; (it != atd1_vect.end()) && !isTerminated(); ++it) {
 
 			uint8_t j = 0;
@@ -398,11 +380,7 @@ void XML_ATD_PWM_STUB::processATD1()
 
 			output_ATD1(atd1_anValue);
 
-			if (!atd1_xml_enabled) {
-				atd1_vect.erase(it);
-			}
-
-			wait(injection_delay);
+//			wait(injection_delay);
 
 		}
 	}

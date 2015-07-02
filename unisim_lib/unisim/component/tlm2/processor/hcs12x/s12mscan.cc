@@ -1382,7 +1382,7 @@ bool S12MSCAN::WriteMemory(physical_address_t addr, const void *buffer, uint32_t
 				cantbsel_register = *((uint8_t *) buffer);
 			} break;
 			case CANIDAC: {
-				canidac_register = *((uint8_t *) buffer);
+				canidac_register = (*((uint8_t *) buffer) & 0x3) | (canidac_register & 0xC7);
 			} break;
 			case RESERVED1: {
 				// NOP

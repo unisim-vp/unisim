@@ -48,6 +48,9 @@ EXPORTED_FUNCTION  double setATD0(double anValue8[8]) DLL_PUBLIC;
 EXPORTED_FUNCTION  double setATD1(double anValue16[16]) DLL_PUBLIC;
 EXPORTED_FUNCTION  double getPWM(bool (*pwmValue)[PWM_SIZE]) DLL_PUBLIC;
 
+EXPORTED_FUNCTION  double setCAN(CAN_DATATYPE msg) DLL_PUBLIC;
+EXPORTED_FUNCTION  double getCAN(CAN_DATATYPE *msg) DLL_PUBLIC;
+
 #ifdef __cplusplus
 }
 #endif

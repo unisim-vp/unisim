@@ -218,6 +218,27 @@ public:
 		return (t.to_seconds());
 	};
 
+	double Inject_CAN(CAN_DATATYPE msg)
+	{
+		can_stub->Inject_CAN(msg);
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	}
+
+	double Get_CAN(CAN_DATATYPE *msg)
+	{
+
+		can_stub->Get_CAN(msg);
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	}
+
+private:
+
 private:
 
 	//=========================================================================
@@ -343,10 +364,12 @@ private:
 	bool enable_pim_server;
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
+	bool enable_monitor;
 
 	Parameter<bool> param_enable_pim_server;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
+	Parameter<bool> param_enable_monitor;
 
 	bool sci_enable_telnet;
 	Parameter<bool>  param_sci_enable_telnet;

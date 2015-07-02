@@ -64,3 +64,12 @@ EXPORTED_FUNCTION  double getPWM(bool (*pwmValue)[PWM_SIZE])
 	return (simulator->Get_PWM(pwmValue));
 }
 
+EXPORTED_FUNCTION  double setCAN(CAN_DATATYPE msg)
+{
+	return (simulator->Inject_CAN(msg));
+}
+
+EXPORTED_FUNCTION  double getCAN(CAN_DATATYPE *msg)
+{
+	return (simulator->Get_CAN(msg));
+}

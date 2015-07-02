@@ -86,9 +86,11 @@ Simulator::Simulator(int argc, char **argv)
 	, enable_pim_server(false)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
+	, enable_monitor(false)
 	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
+	, param_enable_monitor("enable-monitor", 0, enable_monitor, "Enable/Disable monitoring tool")
 
     , sci_enable_telnet(false)
 	, param_sci_enable_telnet("sci-enable-telnet", 0, sci_enable_telnet, "Enable/Disable SCI telnet instantiation")
@@ -200,7 +202,7 @@ Simulator::Simulator(int argc, char **argv)
 	profiler = enable_inline_debugger ? new Profiler<CPU_ADDRESS_TYPE>("profiler") : 0;
 
 	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server || enable_pim_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
+	debugger = (enable_inline_debugger || enable_gdb_server || enable_pim_server || enable_monitor) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
 
 #ifdef HAVE_RTBCOB
 	rtbStub = new RTBStub("atd-pwm-stub"/*, fsb_cycle_time*/);
@@ -227,7 +229,7 @@ Simulator::Simulator(int argc, char **argv)
 	evTee = new EVENT_TEE("debugEventTee");
 
 	// Monitoring tool: ARTiMon or EACSEL
-	monitor = new MONITOR("Monitor");
+	monitor = (enable_monitor)? new MONITOR("Monitor"): 0;
 
 	//  - Multiformat loader
 	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
@@ -440,7 +442,7 @@ Simulator::Simulator(int argc, char **argv)
 // ***********************************************************
 	cpu->loader_import >> loader->loader_export;
 
-	if(enable_inline_debugger || enable_gdb_server || enable_pim_server)
+	if(enable_inline_debugger || enable_gdb_server || enable_pim_server || enable_monitor)
 	{
 		if(enable_inline_debugger)
 		{
@@ -478,29 +480,26 @@ Simulator::Simulator(int argc, char **argv)
 
 		mmc->trap_reporting_import >> debugger->trap_reporting_export;
 
+		debugger->debug_event_listener_import >> evTee->debug_event_listener_export;
+		evTee->debug_event_trigger_import >> debugger->debug_event_trigger_export;
 
+	}
+
+	if (enable_monitor) {
+		// Connect monitor to debugger
+		*(evTee->debug_event_listener_import[0]) >> monitor->debug_event_listener_export;
+		monitor->debug_event_trigger_import >> evTee->debug_event_trigger_export;
+
+		monitor->symbol_table_lookup_import  >> debugger->symbol_table_lookup_export;
+		monitor->memory_import >> debugger->memory_export;
+		monitor->registers_import >> debugger->registers_export;
 	}
 
 	if(enable_inline_debugger)
 	{
 		// Connect inline-debugger to debugger
-// *************************
-//		debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
-//		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-
-		debugger->debug_event_listener_import >> evTee->debug_event_listener_export;
-		*(evTee->debug_event_listener_import[0]) >> inline_debugger->debug_event_listener_export;
-		*(evTee->debug_event_listener_import[1]) >> monitor->debug_event_listener_export;
-
+		*(evTee->debug_event_listener_import[1]) >> inline_debugger->debug_event_listener_export;
 		inline_debugger->debug_event_trigger_import >> evTee->debug_event_trigger_export;
-		monitor->debug_event_trigger_import >> evTee->debug_event_trigger_export;
-		evTee->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-
-		monitor->symbol_table_lookup_import  >> debugger->symbol_table_lookup_export;
-		monitor->memory_import >> debugger->memory_export;
-		monitor->registers_import >> debugger->registers_export;
-
-// *************************
 
 		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
 		debugger->debug_control_import >> inline_debugger->debug_control_export;
@@ -520,10 +519,11 @@ Simulator::Simulator(int argc, char **argv)
 	else if(enable_gdb_server)
 	{
 		// Connect gdb-server to debugger
+		*(evTee->debug_event_listener_import[1]) >> gdb_server->debug_event_listener_export;
+		gdb_server->debug_event_trigger_import >> evTee->debug_event_trigger_export;
+
 		debugger->debug_control_import >> gdb_server->debug_control_export;
-		debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
 		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
-		gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
 		gdb_server->memory_import >> debugger->memory_export;
 		gdb_server->registers_import >> debugger->registers_export;
 		gdb_server->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
@@ -531,23 +531,8 @@ Simulator::Simulator(int argc, char **argv)
 	else if (enable_pim_server)
 	{
 		// Connect pim-server to debugger
-// ****************
-//		debugger->debug_event_listener_import >> pim_server->debug_event_listener_export;
-//		pim_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-
-		debugger->debug_event_listener_import >> evTee->debug_event_listener_export;
-		*(evTee->debug_event_listener_import[0]) >> pim_server->debug_event_listener_export;
-		*(evTee->debug_event_listener_import[1]) >> monitor->debug_event_listener_export;
-
+		*(evTee->debug_event_listener_import[1]) >> pim_server->debug_event_listener_export;
 		pim_server->debug_event_trigger_import >> evTee->debug_event_trigger_export;
-		monitor->debug_event_trigger_import >> evTee->debug_event_trigger_export;
-		evTee->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-
-		monitor->symbol_table_lookup_import  >> debugger->symbol_table_lookup_export;
-		monitor->memory_import >> debugger->memory_export;
-		monitor->registers_import >> debugger->registers_export;
-
-// ****************
 
 		debugger->trap_reporting_import >> pim_server->trap_reporting_export;
 		debugger->debug_control_import >> pim_server->debug_control_export;
@@ -557,8 +542,6 @@ Simulator::Simulator(int argc, char **argv)
 		pim_server->registers_import >> debugger->registers_export;
 		pim_server->stmt_lookup_import >> debugger->stmt_lookup_export;
 		pim_server->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-
-//		pim_server->monitor_import >> monitor->monitor_export;
 
 	}
 
@@ -645,12 +628,13 @@ Simulator::~Simulator()
 
 		cerr << endl;
 
-		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
-		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+//		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+//		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+//		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
 
 		cerr << "Host simulation time   : " << spent_time << " seconds" << endl;
-		cerr << "Host simulation speed  : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / spent_time) / 1000000.0) << " MIPS" << endl;
+//		cerr << "Host simulation speed  : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / spent_time) / 1000000.0) << " MIPS" << endl;
+		cerr << "Host simulation speed  : " << (((double) (*cpu)["instruction-counter"] / spent_time) / 1000000.0) << " MIPS" << endl;
 
 		cerr << "Time dilation          : " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 		cerr << endl;
@@ -930,6 +914,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("enable-pim-server", false);
 	simulator->SetVariable("enable-gdb-server", false);
 	simulator->SetVariable("enable-inline-debugger", false);
+	simulator->SetVariable("enable-monitor", false);
 	simulator->SetVariable("dump-parameters", false);
 	simulator->SetVariable("dump-formulas", false);
 	simulator->SetVariable("dump-statistics", true);
