@@ -17,10 +17,10 @@ DEST_DIR=$(cd $DEST_DIR; pwd)
 UNISIM_DIR=$(cd ${MY_DIR}/..; pwd)
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
-UNISIM_SIMULATORS_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/armemu
+UNISIM_SIMULATORS_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/arm926ejs
 
-ARMEMU_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
-GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-armemu-${ARMEMU_VERSION}
+ARM926EJS_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
+GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-arm926ejs-${ARM926EJS_VERSION}
 
 if test -z "${DISTCOPY}"; then
     DISTCOPY=cp
@@ -104,7 +104,7 @@ ostream \
 unistd.h \
 vector"
 
-UNISIM_LIB_ARMEMU_SOURCE_FILES="\
+UNISIM_LIB_ARM926EJS_SOURCE_FILES="\
 unisim/kernel/debug/debug.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
@@ -114,7 +114,17 @@ unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/api/debug/debug_api.cc \
+unisim/service/tee/loader/tee.cc \
+unisim/service/tee/symbol_table_lookup/tee_32.cc \
+unisim/service/tee/symbol_table_lookup/tee_64.cc \
+unisim/service/tee/blob/tee_32.cc \
+unisim/service/tee/blob/tee_64.cc \
+unisim/service/tee/stmt_lookup/tee_32.cc \
+unisim/service/tee/stmt_lookup/tee_64.cc \
+unisim/service/tee/backtrace/tee_32.cc \
+unisim/service/tee/backtrace/tee_64.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
+unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
@@ -125,13 +135,24 @@ unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/debugger/debugger32.cc \
+unisim/service/debug/debugger/debugger64.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
+unisim/service/profiling/addr_profiler/profiler64.cc \
 unisim/service/power/cache_profile.cc \
 unisim/service/power/cache_dynamic_power.cc \
 unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_dynamic_energy.cc \
 unisim/service/os/linux_os/linux.cc \
+unisim/service/loader/raw_loader/raw_loader32.cc \
+unisim/service/loader/raw_loader/raw_loader64.cc \
+unisim/service/loader/elf_loader/elf32_loader.cc \
+unisim/service/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/coff_loader/coff_loader32.cc \
+unisim/service/loader/coff_loader/coff_loader64.cc \
+unisim/service/loader/s19_loader/s19_loader.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader32.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader64.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/time/host_time/time.cc \
@@ -151,28 +172,31 @@ unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/c_loc_expr_parser.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
-unisim/util/debug/blob/section32.cc \
 unisim/util/debug/blob/blob32.cc \
+unisim/util/debug/blob/blob64.cc \
+unisim/util/debug/blob/section32.cc \
 unisim/util/debug/blob/section64.cc \
 unisim/util/debug/blob/segment32.cc \
 unisim/util/debug/blob/segment64.cc \
-unisim/util/debug/blob/blob64.cc \
-unisim/util/debug/profile_64.cc \
 unisim/util/debug/watchpoint_registry_32.cc \
+unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/stmt_32.cc \
+unisim/util/debug/stmt_64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
+unisim/util/debug/coff_symtab/coff_symtab64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
+unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/profile_32.cc \
-unisim/util/debug/stmt_64.cc \
-unisim/util/debug/symbol_64.cc \
-unisim/util/debug/watchpoint_registry_64.cc \
+unisim/util/debug/profile_64.cc \
 unisim/util/debug/symbol_32.cc \
+unisim/util/debug/symbol_64.cc \
 unisim/util/debug/type.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
+unisim/util/loader/coff_loader/coff_loader64.cc \
 unisim/util/os/linux_os/environment.cc \
 unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
@@ -182,20 +206,35 @@ unisim/util/endian/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
 unisim/util/queue/queue.cc \
-unisim/component/tlm2/processor/arm/armemu/armemu.cc \
+unisim/util/generic_peripheral_register/generic_peripheral_register.cc \
+unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/pxp.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_stubs.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/dma/pl080/pl080.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/uart/pl011/pl011.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.cc \
+unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
-unisim/component/cxx/processor/arm/armemu/cache.cc \
-unisim/component/cxx/processor/arm/armemu/cpu.cc \
-unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
-unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
+unisim/component/cxx/processor/arm/arm926ejs/cpu.cc \
+unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.cc \
+unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.cc \
+unisim/component/cxx/processor/arm/arm926ejs/cache.cc \
+unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.cc \
+unisim/component/cxx/processor/arm/arm926ejs/tlb.cc \
+unisim/component/cxx/processor/arm/arm926ejs/cp15.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
 unisim/component/cxx/processor/arm/cpu.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
 
-UNISIM_LIB_ARMEMU_ISA_THUMB_FILES="\
+UNISIM_LIB_ARM926EJS_ISA_THUMB_FILES="\
 unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
 unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
 unisim/component/cxx/processor/arm/isa/thumb/load_store.isa \
@@ -208,7 +247,7 @@ unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
 unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
 "
 
-UNISIM_LIB_ARMEMU_ISA_ARM32_FILES="\
+UNISIM_LIB_ARM926EJS_ISA_ARM32_FILES="\
 unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
 unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
 unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
@@ -225,9 +264,9 @@ unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
 unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
 unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
-UNISIM_LIB_ARMEMU_ISA_FILES="${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES} ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}"
+UNISIM_LIB_ARM926EJS_ISA_FILES="${UNISIM_LIB_ARM926EJS_ISA_THUMB_FILES} ${UNISIM_LIB_ARM926EJS_ISA_ARM32_FILES}"
 
-UNISIM_LIB_ARMEMU_HEADER_FILES="${UNISIM_LIB_ARMEMU_ISA_FILES} \
+UNISIM_LIB_ARM926EJS_HEADER_FILES="${UNISIM_LIB_ARM926EJS_ISA_FILES} \
 unisim/kernel/debug/debug.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
@@ -237,6 +276,11 @@ unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/api/debug/debug_api.hh \
+unisim/service/tee/loader/tee.hh \
+unisim/service/tee/symbol_table_lookup/tee.hh \
+unisim/service/tee/blob/tee.hh \
+unisim/service/tee/stmt_lookup/tee.hh \
+unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/sim_debugger/sim_debugger.hh \
@@ -249,6 +293,13 @@ unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/os/linux_os/linux.hh \
+unisim/service/loader/raw_loader/raw_loader.hh \
+unisim/service/loader/elf_loader/elf32_loader.hh \
+unisim/service/loader/elf_loader/elf64_loader.hh \
+unisim/service/loader/elf_loader/elf_loader.hh \
+unisim/service/loader/coff_loader/coff_loader.hh \
+unisim/service/loader/s19_loader/s19_loader.hh \
+unisim/service/loader/multiformat_loader/multiformat_loader.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
@@ -363,13 +414,30 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
-unisim/component/tlm2/processor/arm/armemu/armemu.hh \
+unisim/util/generic_peripheral_register/generic_peripheral_register.hh \
+unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_stubs.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_int_source_identifier.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/pxp.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/dma/pl080/pl080.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/uart/pl011/pl011.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.hh \
+unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
 unisim/component/cxx/processor/arm/coprocessor_interface.hh \
-unisim/component/cxx/processor/arm/armemu/cpu.hh \
-unisim/component/cxx/processor/arm/armemu/cache.hh \
+unisim/component/cxx/processor/arm/arm926ejs/cpu.hh \
+unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh \
+unisim/component/cxx/processor/arm/arm926ejs/cp15.hh \
+unisim/component/cxx/processor/arm/arm926ejs/cp15interface.hh \
+unisim/component/cxx/processor/arm/arm926ejs/cache.hh \
+unisim/component/cxx/processor/arm/arm926ejs/tlb.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
@@ -377,7 +445,12 @@ unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
-UNISIM_LIB_ARMEMU_TEMPLATE_FILES="\
+UNISIM_LIB_ARM926EJS_TEMPLATE_FILES="\
+unisim/service/tee/loader/tee.tcc \
+unisim/service/tee/symbol_table_lookup/tee.tcc \
+unisim/service/tee/blob/tee.tcc \
+unisim/service/tee/stmt_lookup/tee.tcc \
+unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/sim_debugger/sim_debugger.tcc \
@@ -385,6 +458,13 @@ unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/os/linux_os/linux.tcc \
+unisim/service/loader/raw_loader/raw_loader.tcc \
+unisim/service/loader/elf_loader/elf64_loader.tcc \
+unisim/service/loader/elf_loader/elf32_loader.tcc \
+unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/coff_loader/coff_loader.tcc \
+unisim/service/loader/s19_loader/s19_loader.tcc \
+unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
 unisim/util/debug/profile.tcc \
 unisim/util/debug/data_object_initializer.tcc \
 unisim/util/debug/dwarf/die.tcc \
@@ -431,7 +511,7 @@ unisim/util/queue/queue.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 
-UNISIM_LIB_ARMEMU_M4_FILES="\
+UNISIM_LIB_ARM926EJS_M4_FILES="\
 m4/times.m4 \
 m4/endian.m4 \
 m4/cxxabi.m4 \
@@ -450,14 +530,14 @@ m4/get_exec_path.m4 \
 m4/real_path.m4 \
 m4/pthread.m4"
 
-UNISIM_LIB_ARMEMU_DATA_FILES="\
+UNISIM_LIB_ARM926EJS_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_armv5l.xml \
 unisim/service/debug/gdb_server/gdb_armv4l.xml \
 unisim/service/debug/gdb_server/gdb_armv5b.xml \
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
 
-ARMEMU_EXTERNAL_HEADERS="\
+ARM926EJS_EXTERNAL_HEADERS="\
 assert.h \
 ctype.h \
 cxxabi.h \
@@ -496,33 +576,34 @@ queue \
 vector \
 string"
 
-UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES="\
+UNISIM_SIMULATORS_ARM926EJS_SOURCE_FILES="\
 main.cc \
 simulator.cc \
 "
-UNISIM_SIMULATORS_ARMEMU_HEADER_FILES="\
+UNISIM_SIMULATORS_ARM926EJS_HEADER_FILES="\
 simulator.hh \
 "
 
-UNISIM_SIMULATORS_ARMEMU_EXTRA_FILES="\
+UNISIM_SIMULATORS_ARM926EJS_EXTRA_FILES="\
 config.h.in \
 "
 
-UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES=
-UNISIM_SIMULATORS_ARMEMU_DATA_FILES="\
+UNISIM_SIMULATORS_ARM926EJS_TEMPLATE_FILES=
+UNISIM_SIMULATORS_ARM926EJS_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
+boot-loader.bin \
 "
 
-UNISIM_SIMULATORS_ARMEMU_TESTBENCH_FILES=""
+UNISIM_SIMULATORS_ARM926EJS_TESTBENCH_FILES=""
 
 has_to_build_configure=no
 has_to_build_genisslib_configure=no
-has_to_build_armemu_configure=no
+has_to_build_arm926ejs_configure=no
 
 mkdir -p ${DEST_DIR}/genisslib
-mkdir -p ${DEST_DIR}/armemu
+mkdir -p ${DEST_DIR}/arm926ejs
 
 UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
@@ -542,42 +623,42 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	fi
 done
 
-UNISIM_LIB_ARMEMU_FILES="${UNISIM_LIB_ARMEMU_SOURCE_FILES} ${UNISIM_LIB_ARMEMU_HEADER_FILES} ${UNISIM_LIB_ARMEMU_TEMPLATE_FILES} ${UNISIM_LIB_ARMEMU_DATA_FILES}"
+UNISIM_LIB_ARM926EJS_FILES="${UNISIM_LIB_ARM926EJS_SOURCE_FILES} ${UNISIM_LIB_ARM926EJS_HEADER_FILES} ${UNISIM_LIB_ARM926EJS_TEMPLATE_FILES} ${UNISIM_LIB_ARM926EJS_DATA_FILES}"
 
-for file in ${UNISIM_LIB_ARMEMU_FILES}; do
-	mkdir -p "${DEST_DIR}/armemu/$(dirname ${file})"
+for file in ${UNISIM_LIB_ARM926EJS_FILES}; do
+	mkdir -p "${DEST_DIR}/arm926ejs/$(dirname ${file})"
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/armemu/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/armemu/${file}" ]; then
+	if [ -e "${DEST_DIR}/arm926ejs/${file}" ]; then
+		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/arm926ejs/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/armemu/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
+		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/arm926ejs/${file}"
+		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/arm926ejs/${file}" || exit
 	fi
 done
 
-UNISIM_SIMULATORS_ARMEMU_FILES="${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_EXTRA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TESTBENCH_FILES}"
+UNISIM_SIMULATORS_ARM926EJS_FILES="${UNISIM_SIMULATORS_ARM926EJS_SOURCE_FILES} ${UNISIM_SIMULATORS_ARM926EJS_HEADER_FILES} ${UNISIM_SIMULATORS_ARM926EJS_EXTRA_FILES} ${UNISIM_SIMULATORS_ARM926EJS_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARM926EJS_DATA_FILES} ${UNISIM_SIMULATORS_ARM926EJS_TESTBENCH_FILES}"
 
-for file in ${UNISIM_SIMULATORS_ARMEMU_FILES}; do
+for file in ${UNISIM_SIMULATORS_ARM926EJS_FILES}; do
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/armemu/${file}" ]; then
-		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/armemu/${file}" ]; then
+	if [ -e "${DEST_DIR}/arm926ejs/${file}" ]; then
+		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/arm926ejs/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/armemu/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
+		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/arm926ejs/${file}"
+		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/arm926ejs/${file}" || exit
 	fi
 done
 
-for file in ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES}; do
+for file in ${UNISIM_SIMULATORS_ARM926EJS_DATA_FILES}; do
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/${file}" ]; then
 		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
@@ -594,8 +675,8 @@ done
 
 
 mkdir -p ${DEST_DIR}/config
-mkdir -p ${DEST_DIR}/armemu/config
-mkdir -p ${DEST_DIR}/armemu/m4
+mkdir -p ${DEST_DIR}/arm926ejs/config
+mkdir -p ${DEST_DIR}/arm926ejs/m4
 mkdir -p ${DEST_DIR}/genisslib/config
 mkdir -p ${DEST_DIR}/genisslib/m4
 
@@ -615,19 +696,19 @@ for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	fi
 done
 
-for file in ${UNISIM_LIB_ARMEMU_M4_FILES}; do
+for file in ${UNISIM_LIB_ARM926EJS_M4_FILES}; do
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/armemu/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/armemu/${file}" ]; then
+	if [ -e "${DEST_DIR}/arm926ejs/${file}" ]; then
+		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/arm926ejs/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/armemu/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
-		has_to_build_armemu_configure=yes
+		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/arm926ejs/${file}"
+		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/arm926ejs/${file}" || exit
+		has_to_build_arm926ejs_configure=yes
 	fi
 done
 
@@ -641,7 +722,7 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - armemu: an ARM V5 user level simulator
+  - arm926ejs: an ARM V5 user level simulator
   - GenISSLib (will not be installed): an instruction set simulator generator
 See INSTALL for installation instructions.
 EOF
@@ -704,7 +785,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM ARMemu Standalone simulator], [${ARMEMU_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-armemu])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM ARMemu Standalone simulator], [${ARM926EJS_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-arm926ejs])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -714,12 +795,12 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
 	echo "AC_CONFIG_SUBDIRS([genisslib])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_SUBDIRS([armemu])"  >> "${CONFIGURE_AC}" 
+	echo "AC_CONFIG_SUBDIRS([arm926ejs])"  >> "${CONFIGURE_AC}" 
 	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
 
 	echo "Generating Makefile.am"
-	echo "SUBDIRS=genisslib armemu" > "${MAKEFILE_AM}"
+	echo "SUBDIRS=genisslib arm926ejs" > "${MAKEFILE_AM}"
 	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
 
 	echo "Building configure"
@@ -784,17 +865,17 @@ if test \${STATUS} -ne 0; then
 fi
 
 if test "\${help}" = "yes"; then
-	echo "=== configure help for armemu"
+	echo "=== configure help for arm926ejs"
 else
-	echo "=== configuring in armemu (\${HERE}/armemu) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/armemu/configure \$@"
+	echo "=== configuring in arm926ejs (\${HERE}/arm926ejs) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/arm926ejs/configure \$@"
 fi
 
-if test ! -d \${HERE}/armemu; then
-	mkdir \${HERE}/armemu
+if test ! -d \${HERE}/arm926ejs; then
+	mkdir \${HERE}/arm926ejs
 fi
-cd \${HERE}/armemu
-\${MY_DIR}/armemu/configure "\$@"
+cd \${HERE}/arm926ejs
+\${MY_DIR}/arm926ejs/configure "\$@"
 STATUS="\$?"
 cd "\${HERE}"
 if test \${STATUS} -ne 0; then
@@ -808,26 +889,26 @@ fi
 echo "\$(basename \$0): creating Makefile.cross"
 cat << EOF_MAKEFILE_CROSS > Makefile.cross
 #!/usr/bin/make -f
-all: armemu-all
-clean: genisslib-clean armemu-clean
-distclean: genisslib-distclean armemu-distclean
+all: arm926ejs-all
+clean: genisslib-clean arm926ejs-clean
+distclean: genisslib-distclean arm926ejs-distclean
 	rm -f \${HERE}/Makefile.cross
-install: armemu-install
+install: arm926ejs-install
 
 genisslib-all:
 	@\\\$(MAKE) -C \${HERE}/genisslib all
-armemu-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/armemu all
+arm926ejs-all: genisslib-all
+	@\\\$(MAKE) -C \${HERE}/arm926ejs all
 genisslib-clean:
 	@\\\$(MAKE) -C \${HERE}/genisslib clean
-armemu-clean:
-	@\\\$(MAKE) -C \${HERE}/armemu clean
+arm926ejs-clean:
+	@\\\$(MAKE) -C \${HERE}/arm926ejs clean
 genisslib-distclean:
 	@\\\$(MAKE) -C \${HERE}/genisslib distclean
-armemu-distclean:
-	@\\\$(MAKE) -C \${HERE}/armemu distclean
-armemu-install:
-	@\\\$(MAKE) -C \${HERE}/armemu install
+arm926ejs-distclean:
+	@\\\$(MAKE) -C \${HERE}/arm926ejs distclean
+arm926ejs-install:
+	@\\\$(MAKE) -C \${HERE}/arm926ejs install
 EOF_MAKEFILE_CROSS
 
 chmod +x Makefile.cross
@@ -908,161 +989,161 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 fi
 
 
-# armemu
+# arm926ejs
 
-ARMEMU_CONFIGURE_AC="${DEST_DIR}/armemu/configure.ac"
-ARMEMU_MAKEFILE_AM="${DEST_DIR}/armemu/Makefile.am"
+ARM926EJS_CONFIGURE_AC="${DEST_DIR}/arm926ejs/configure.ac"
+ARM926EJS_MAKEFILE_AM="${DEST_DIR}/arm926ejs/Makefile.am"
 
 
-if [ ! -e "${ARMEMU_CONFIGURE_AC}" ]; then
-	has_to_build_armemu_configure=yes
+if [ ! -e "${ARM926EJS_CONFIGURE_AC}" ]; then
+	has_to_build_arm926ejs_configure=yes
 else
-	if [ "$0" -nt "${ARMEMU_CONFIGURE_AC}" ]; then
-		has_to_build_armemu_configure=yes
+	if [ "$0" -nt "${ARM926EJS_CONFIGURE_AC}" ]; then
+		has_to_build_arm926ejs_configure=yes
 	fi
 fi
 
-if [ ! -e "${ARMEMU_MAKEFILE_AM}" ]; then
-	has_to_build_armemu_configure=yes
+if [ ! -e "${ARM926EJS_MAKEFILE_AM}" ]; then
+	has_to_build_arm926ejs_configure=yes
 else
-	if [ "$0" -nt "${ARMEMU_MAKEFILE_AM}" ]; then
-		has_to_build_armemu_configure=yes
+	if [ "$0" -nt "${ARM926EJS_MAKEFILE_AM}" ]; then
+		has_to_build_arm926ejs_configure=yes
 	fi
 fi
 
-if [ "${has_to_build_armemu_configure}" = "yes" ]; then
-	echo "Generating armemu configure.ac"
-	echo "AC_INIT([UNISIM ARMemu C++ simulator], [${ARMEMU_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-armemu-core])" > "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PROG_RANLIB" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AM_PROG_CC_C_O" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${ARMEMU_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_PTHREAD(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TIMES(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ENDIAN(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CACTI(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_SYSTEMC" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-armemu-${ARMEMU_VERSION}\"], [path of shared data relative to bin directory])" >> "${ARMEMU_CONFIGURE_AC}"
-	SIM_VERSION_MAJOR=$(printf "${ARMEMU_VERSION}" | cut -f 1 -d .)
-	SIM_VERSION_MINOR=$(printf "${ARMEMU_VERSION}" | cut -f 2 -d .)
-	SIM_VERSION_PATCH=$(printf "${ARMEMU_VERSION}" | cut -f 3 -d .)
-	SIM_VERSION="${ARMEMU_VERSION}"
+if [ "${has_to_build_arm926ejs_configure}" = "yes" ]; then
+	echo "Generating arm926ejs configure.ac"
+	echo "AC_INIT([UNISIM ARMemu C++ simulator], [${ARM926EJS_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-arm926ejs-core])" > "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_CONFIG_AUX_DIR(config)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_CONFIG_HEADERS([config.h])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_CANONICAL_BUILD" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_CANONICAL_HOST" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_CANONICAL_TARGET" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_PATH_PROGS(SH, sh)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_PROG_CXX" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_PROG_RANLIB" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_PROG_INSTALL" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_PROG_LN_S" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_LANG([C++])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AM_PROG_CC_C_O" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_CHECK_HEADERS([${ARM926EJS_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_PTHREAD(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TIMES(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ENDIAN(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CURSES(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ZLIB(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBXML2(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CXXABI(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_WITH_BOOST(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CACTI(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_SYSTEMC" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TLM20" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-arm926ejs-${ARM926EJS_VERSION}\"], [path of shared data relative to bin directory])" >> "${ARM926EJS_CONFIGURE_AC}"
+	SIM_VERSION_MAJOR=$(printf "${ARM926EJS_VERSION}" | cut -f 1 -d .)
+	SIM_VERSION_MINOR=$(printf "${ARM926EJS_VERSION}" | cut -f 2 -d .)
+	SIM_VERSION_PATCH=$(printf "${ARM926EJS_VERSION}" | cut -f 3 -d .)
+	SIM_VERSION="${ARM926EJS_VERSION}"
 	SIM_VERSION_CODENAME="Triumphalis Tarraco"
 	SIM_AUTHOR="Daniel Gracia Perez (daniel.gracia-perez@cea.fr)"
 	SIM_PROGRAM_NAME="UNISIM ARMEmu"
 	SIM_LICENSE="BSD (See file COPYING)"
 	SIM_COPYRIGHT="Copyright (C) 2007-2010, Commissariat a l'Energie Atomique"
 	SIM_DESCRIPTION="UNISIM ARMv5 User Level Simulator"
-	SIM_SCHEMATIC="armemu/fig_schematic.pdf"
-	echo "AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_PATCH], [${SIM_VERSION_PATCH}], [Version patch number])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION], [\"${SIM_VERSION}\"], [Version])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_CODENAME], [\"${SIM_VERSION_CODENAME}\"], [Version code name])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_AUTHOR], [\"${SIM_AUTHOR}\"], [Author])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_PROGRAM_NAME], [\"${SIM_PROGRAM_NAME}\"], [Program name])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_COPYRIGHT], [\"${SIM_COPYRIGHT}\"], [Copyright])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_LICENSE], [\"${SIM_LICENSE}\"], [License])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_DESCRIPTION], [\"${SIM_DESCRIPTION}\"], [Description])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_SCHEMATIC], [\"${SIM_SCHEMATIC}\"], [Schematic])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${ARMEMU_CONFIGURE_AC}"
+	SIM_SCHEMATIC="arm926ejs/fig_schematic.pdf"
+	echo "AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_VERSION_PATCH], [${SIM_VERSION_PATCH}], [Version patch number])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_VERSION], [\"${SIM_VERSION}\"], [Version])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_VERSION_CODENAME], [\"${SIM_VERSION_CODENAME}\"], [Version code name])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_AUTHOR], [\"${SIM_AUTHOR}\"], [Author])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_PROGRAM_NAME], [\"${SIM_PROGRAM_NAME}\"], [Program name])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_COPYRIGHT], [\"${SIM_COPYRIGHT}\"], [Copyright])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_LICENSE], [\"${SIM_LICENSE}\"], [License])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_DESCRIPTION], [\"${SIM_DESCRIPTION}\"], [Description])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_SCHEMATIC], [\"${SIM_SCHEMATIC}\"], [Schematic])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_CONFIG_FILES([Makefile])" >> "${ARM926EJS_CONFIGURE_AC}"
+	echo "AC_OUTPUT" >> "${ARM926EJS_CONFIGURE_AC}"
 
-	AM_ARMEMU_VERSION=$(printf ${ARMEMU_VERSION} | sed -e 's/\./_/g')
-	echo "Generating armemu Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${ARMEMU_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libarmemu-${ARMEMU_VERSION}.a" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "libarmemu_${AM_ARMEMU_VERSION}_a_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "unisim_armemu_${AM_ARMEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "unisim_armemu_${AM_ARMEMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDADD = libarmemu-${ARMEMU_VERSION}.a" >> "${ARMEMU_MAKEFILE_AM}"
+	AM_ARM926EJS_VERSION=$(printf ${ARM926EJS_VERSION} | sed -e 's/\./_/g')
+	echo "Generating arm926ejs Makefile.am"
+	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${ARM926EJS_MAKEFILE_AM}"
+	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "noinst_LIBRARIES = libarm926ejs-${ARM926EJS_VERSION}.a" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "libarm926ejs_${AM_ARM926EJS_VERSION}_a_SOURCES = ${UNISIM_LIB_ARM926EJS_SOURCE_FILES}" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "bin_PROGRAMS = unisim-arm926ejs-${ARM926EJS_VERSION}" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "unisim_arm926ejs_${AM_ARM926EJS_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARM926EJS_SOURCE_FILES}" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "unisim_arm926ejs_${AM_ARM926EJS_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE -DSIM_GDB_SERVER_SUPPORT -DSIM_INLINE_DEBUGGER_SUPPORT" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "unisim_arm926ejs_${AM_ARM926EJS_VERSION}_LDADD = libarm926ejs-${ARM926EJS_VERSION}.a" >> "${ARM926EJS_MAKEFILE_AM}"
 
-	echo "noinst_HEADERS = ${UNISIM_LIB_ARMEMU_HEADER_FILES} ${UNISIM_LIB_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_LIB_ARMEMU_M4_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "dist_share_DATA = ${UNISIM_LIB_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "noinst_HEADERS = ${UNISIM_LIB_ARM926EJS_HEADER_FILES} ${UNISIM_LIB_ARM926EJS_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARM926EJS_HEADER_FILES} ${UNISIM_SIMULATORS_ARM926EJS_TEMPLATE_FILES}" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_LIB_ARM926EJS_M4_FILES}" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "sharedir = \$(prefix)/share/unisim-arm926ejs-${ARM926EJS_VERSION}" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "dist_share_DATA = ${UNISIM_LIB_ARM926EJS_DATA_FILES} ${UNISIM_SIMULATORS_ARM926EJS_DATA_FILES}" >> "${ARM926EJS_MAKEFILE_AM}"
 
-	echo -n "BUILT_SOURCES=" >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc " >> "${ARMEMU_MAKEFILE_AM}"
-	echo >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "BUILT_SOURCES=" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh " >> "${ARM926EJS_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.tcc " >> "${ARM926EJS_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh " >> "${ARM926EJS_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.tcc " >> "${ARM926EJS_MAKEFILE_AM}"
+	echo >> "${ARM926EJS_MAKEFILE_AM}"
 	
-	echo -n "CLEANFILES=" >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc " >> "${ARMEMU_MAKEFILE_AM}"
-	echo >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "CLEANFILES=" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh " >> "${ARM926EJS_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.tcc " >> "${ARM926EJS_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh " >> "${ARM926EJS_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.tcc " >> "${ARM926EJS_MAKEFILE_AM}"
+	echo >> "${ARM926EJS_MAKEFILE_AM}"
 	
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh: ${UNISIM_LIB_ARM926EJS_ISA_ARM32_FILES}" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\t" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa" >> "${ARM926EJS_MAKEFILE_AM}"
 
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb/thumb.isa" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh: ${UNISIM_LIB_ARM926EJS_ISA_THUMB_FILES}" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\t" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/arm926ejs/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb/thumb.isa" >> "${ARM926EJS_MAKEFILE_AM}"
 
-	echo "all-local: all-local-bin all-local-share" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "clean-local-bin:" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "all-local-share: \$(dist_share_DATA)" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/unisim-armemu-${ARMEMU_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/unisim-armemu-${ARMEMU_VERSION}'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-armemu-${ARMEMU_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "clean-local-share:" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "all-local: all-local-bin all-local-share" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "clean-local: clean-local-bin clean-local-share" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\tdone\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "clean-local-bin:" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\tfi\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "all-local-share: \$(dist_share_DATA)" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/share/unisim-arm926ejs-${ARM926EJS_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/share/unisim-arm926ejs-${ARM926EJS_VERSION}'; \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-arm926ejs-${ARM926EJS_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\tdone\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	echo "clean-local-share:" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${ARM926EJS_MAKEFILE_AM}"
+	printf "\tfi\n" >> "${ARM926EJS_MAKEFILE_AM}"
 
-	${DISTCOPY} ${DEST_DIR}/INSTALL ${DEST_DIR}/armemu
-	${DISTCOPY} ${DEST_DIR}/README ${DEST_DIR}/armemu
-	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/armemu
+	${DISTCOPY} ${DEST_DIR}/INSTALL ${DEST_DIR}/arm926ejs
+	${DISTCOPY} ${DEST_DIR}/README ${DEST_DIR}/arm926ejs
+	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/arm926ejs
 	
-	echo "Building armemu configure"
-	${SHELL} -c "cd ${DEST_DIR}/armemu && aclocal -I m4 && autoconf --force && automake -ac"
+	echo "Building arm926ejs configure"
+	${SHELL} -c "cd ${DEST_DIR}/arm926ejs && aclocal -I m4 && autoconf --force && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

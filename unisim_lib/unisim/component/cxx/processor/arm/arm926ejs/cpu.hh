@@ -365,7 +365,17 @@ public:
    * @param address the address to read data from
    * @param val the buffer to fill with the read data
    */
-  void ReadInsn(uint32_t address, uint32_t &val);
+  void ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn);
+
+  /** Reads THUMB instructions from the memory system
+   * This method allows the user to read instructions from the memory system,
+   *   that is, it tries to read from the pertinent caches and if failed from
+   *   the external memory system.
+   * 
+   * @param address the address to read data from
+   * @param insn the resulting instruction word (output reference)
+   */
+  void ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn);
   /** Memory prefetch instruction.
    * This method is used to make memory prefetches into the caches (if 
    *   available), that is it sends a memory read that doesn't keep the 
@@ -424,14 +434,14 @@ public:
    * @return a pointer to the pending memory operation
    */
   MemoryOp* MemReadS8(uint32_t address);
-  /* Prevent hiding base SetGPR */
-  using unisim::component::cxx::processor::arm::CPU::SetGPR;
+  /* Prevent hiding base SetGPR_mem */
+  using unisim::component::cxx::processor::arm::CPU::SetGPR_mem;
   /** Mark a GPR to be updated by a MemoryOp pending memory operation.
    *
    * @param id the register index
    * @param memop the pending memory operation
    */
-  void SetGPR(uint32_t id, MemoryOp* memop)
+  void SetGPR_mem(uint32_t id, MemoryOp* memop)
   {
     memop->SetDestReg( id );
     ls_queue.push(memop);		
@@ -475,6 +485,16 @@ public:
   /**************************************************************/
   /* Memory access methods       END                            */
   /**************************************************************/
+
+  /** Determine wether the processor instruction stream is inside an
+   * IT block.  Always false before ARMv6T2 architectures.
+   */
+  bool itblock() const { return false; }
+  
+  /** Return the current condition associated to the IT state of the
+   * processor. Always "AL" before ARMv6T2 architectures.
+   */
+  uint32_t itcond() const { return this->COND_AL; }
 
   /**************************************************************/
   /* Coprocessor methods required be the isa          START     */
