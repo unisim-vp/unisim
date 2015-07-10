@@ -182,7 +182,7 @@ typedef enum {CAN_MSG_STD, CAN_MSG_EXT} CanMsgType;
 /*
 The CAN_DATATYPE structure
 */
-typedef struct CAN_MESSAGE {
+struct CAN_MESSAGE {
 
     /* Is Extended frame: extended ID = 29-bits and standard ID = 11-bits */
     uint8_t Extended;
@@ -215,30 +215,9 @@ typedef struct CAN_MESSAGE {
     /* MSG Time Stamp */
     uint8_t Timestamp[CAN_TIMESTAMP_SIZE];
 
-	friend std::ostream& operator << (std::ostream& os, const CAN_MESSAGE& msg) {
+} ;
 
-		os << std::hex << (unsigned int) msg.Extended << "-" << (unsigned int) msg.Length;
-
-		os << "-" ;
-		for (int i=0; i<CAN_ID_SIZE; i++) {
-			os << std::hex << (unsigned int) msg.ID[i];
-		}
-
-		os << "-" ;
-		for (int i=0; i < CAN_DATA_SIZE; i++) {
-			os << std::hex << (unsigned int) msg.Data[i];
-		}
-
-		os << "-" << std::hex << (unsigned int) msg.Remote << "-" << (unsigned int) msg.Error;
-
-		os << "-" << std::hex << (unsigned int) msg.Timestamp[0] << (unsigned int) msg.Timestamp[1];
-
-		return (os);
-	}
-
-}  CAN_MESSAGE;
-
-typedef CAN_MESSAGE CAN_DATATYPE;
+typedef struct CAN_MESSAGE CAN_DATATYPE;
 
 class CAN_Payload : public ManagedPayload
 {
@@ -297,6 +276,29 @@ public:
 
 	}
 
+	friend std::ostream& operator << (std::ostream& os, const CAN_Payload& payload) {
+		CAN_DATATYPE msg;
+		((CAN_Payload) payload).unpack(msg);
+
+		os << std::hex << (unsigned int) msg.Extended << "-" << (unsigned int) msg.Length;
+
+		os << "-" ;
+		for (int i=0; i<CAN_ID_SIZE; i++) {
+			os << std::hex << (unsigned int) msg.ID[i];
+		}
+
+		os << "-" ;
+		for (int i=0; i < CAN_DATA_SIZE; i++) {
+			os << std::hex << (unsigned int) msg.Data[i];
+		}
+
+		os << "-" << std::hex << (unsigned int) msg.Remote << "-" << (unsigned int) msg.Error;
+
+		os << "-" << std::hex << (unsigned int) msg.Timestamp[0] << (unsigned int) msg.Timestamp[1];
+
+		return (os);
+	}
+
 };
 
 class UNISIM_CAN_ProtocolTypes
@@ -312,10 +314,12 @@ public:
  * @param nmsgs: Indicates how many messages are in the array.
  * @param canMsg: The array of messages.
  */
-typedef struct {
+struct CAN_MESSAGE_ARRAY {
     int nmsgs;
     CAN_DATATYPE* canMsg;
-} CAN_DATATYPE_ARRAY;
+} ;
+
+typedef struct CAN_MESSAGE_ARRAY CAN_DATATYPE_ARRAY;
 
 /**
  * Hold CAN ID information.
@@ -323,11 +327,12 @@ typedef struct {
  * @param nIDs: Indicates how many messages IDs are in the array.
  * @param IDs: The array of messages IDs.
  */
-typedef struct {
+struct CAN_ID_MSG_ARRAY {
     size_t nIDs;
     uint32_t* IDs;
-} CAN_ID_ARRAY;
+} ;
 
+typedef struct CAN_ID_MSG_ARRAY CAN_ID_ARRAY;
 
 } // end of namespace hcs12x
 } // end of namespace processor

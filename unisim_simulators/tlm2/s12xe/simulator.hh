@@ -238,6 +238,24 @@ class Simulator :
 		return (t.to_seconds());
 	}
 
+	double Inject_CANArray(CAN_DATATYPE_ARRAY msg)
+	{
+		can_stub->Inject_CANArray(msg);
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	}
+
+    double getCANArray(CAN_DATATYPE_ARRAY *msg)
+    {
+    	can_stub->getCANArray(msg);
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
 private:
 
 	//=========================================================================

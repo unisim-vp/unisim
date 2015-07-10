@@ -295,10 +295,7 @@ void S12MSCAN::InputRX(uint8_t (*rx_shift)[CAN_MSG_SIZE])
 	payload = rx_payload_queue.get_next_transaction();
 
 	if (rx_debug_enabled && payload) {
-		CAN_DATATYPE msg;
-		((CAN_Payload) *payload).unpack(msg);
-
-		cout << sc_object::name() << ":: Last Receive " << msg << " - " << sc_time_stamp() << endl;
+		cout << sc_object::name() << ":: Last Receive " << *payload << " - " << sc_time_stamp() << endl;
 	}
 
 	if (payload) {
@@ -311,10 +308,7 @@ void S12MSCAN::InputRX(uint8_t (*rx_shift)[CAN_MSG_SIZE])
 		can_rx_sock->nb_transport_bw( *payload, phase, local_time);
 
 		if (rx_debug_enabled) {
-			CAN_DATATYPE msg;
-			((CAN_Payload) *payload).unpack(msg);
-
-			std::cout << sc_object::name() << "::InputRx " << msg << "  at " << sc_time_stamp() << std::endl;
+			std::cout << sc_object::name() << "::InputRx " << *payload << "  at " << sc_time_stamp() << std::endl;
 		}
 	}
 
@@ -376,10 +370,7 @@ void S12MSCAN::refreshOutput(uint8_t tx_buffer_register[CAN_MSG_SIZE])
 	sc_time local_time = SC_ZERO_TIME;
 
 	if (tx_debug_enabled) {
-		CAN_DATATYPE msg;
-		((CAN_Payload) *can_tx_payload).unpack(msg);
-
-		cout << sc_object::name() << ":: send " << msg << " - " << sc_time_stamp() << endl;
+		cout << sc_object::name() << ":: send " << *can_tx_payload << " - " << sc_time_stamp() << endl;
 	}
 
 	tlm_sync_enum ret = can_tx_sock->nb_transport_fw(*can_tx_payload, phase, local_time);

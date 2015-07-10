@@ -73,3 +73,13 @@ EXPORTED_FUNCTION  double getCAN(CAN_DATATYPE *msg)
 {
 	return (simulator->Get_CAN(msg));
 }
+
+EXPORTED_FUNCTION  double setCANArray(CAN_DATATYPE_ARRAY msg)
+{
+	return (simulator->Inject_CANArray(msg));
+}
+
+EXPORTED_FUNCTION  double getCANArray(CAN_DATATYPE_ARRAY *msg)
+{
+	return (simulator->getCANArray(msg));
+}

@@ -213,11 +213,11 @@ void CAN_STUB::observe(CAN_DATATYPE &msg)
 
 	payload->unpack(msg);
 
-	payload->release();
-
 	if (trace_enable) {
-		can_tx_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << msg <<  std::endl;
+		can_tx_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *payload <<  std::endl;
 	}
+
+	payload->release();
 
 	tlm_phase phase = BEGIN_RESP;
 	sc_time local_time = SC_ZERO_TIME;
@@ -254,7 +254,7 @@ void CAN_STUB::inject(CAN_DATATYPE msg)
 	}
 
 	if (trace_enable) {
-		can_rx_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << msg << std::endl;
+		can_rx_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *can_rx_payload << std::endl;
 	}
 
 	dont_care_bw_event = false;
@@ -303,6 +303,15 @@ void CAN_STUB::Get_CAN(CAN_DATATYPE *msg)
 	msg->Remote = can_tx_buffer.Remote;
 	msg->Timestamp[0] = can_tx_buffer.Timestamp[0];
 	msg->Timestamp[1] = can_tx_buffer.Timestamp[1];
+
+}
+
+void CAN_STUB::Inject_CANArray(CAN_DATATYPE_ARRAY msg)
+{
+
+}
+
+void CAN_STUB::getCANArray(CAN_DATATYPE_ARRAY *msg){
 
 }
 
