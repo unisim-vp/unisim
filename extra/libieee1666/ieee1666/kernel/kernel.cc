@@ -724,7 +724,7 @@ void sc_kernel::print_time(std::ostream& os, const sc_time& t) const
 			num_zeros++;
 		}
 		
-		if(num_zeros >= 3)
+		while((num_zeros >= 3) && (tu != SC_SEC))
 		{
 			tu = (sc_time_unit)(tu + 1);
 			num_zeros -= 3;
