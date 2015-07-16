@@ -435,6 +435,7 @@ unisim/component/tlm2/processor/hcs12x/s12sci.hh \
 unisim/component/cxx/processor/hcs12x/s12mpu_if.hh \
 unisim/component/tlm2/processor/hcs12x/s12spi.hh \
 unisim/component/tlm2/processor/hcs12x/s12mscan.hh \
+unisim/component/tlm2/processor/hcs12x/can_struct.h \
 "
 
 UNISIM_LIB_STAR12X_TEMPLATE_FILES="\

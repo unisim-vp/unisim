@@ -74,8 +74,8 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::component::tlm2::processor::hcs12x::CAN_Payload;
-using unisim::component::tlm2::processor::hcs12x::CAN_DATATYPE;
-using unisim::component::tlm2::processor::hcs12x::CAN_DATATYPE_ARRAY;
+//using unisim::component::tlm2::processor::hcs12x::CAN_DATATYPE;
+//using unisim::component::tlm2::processor::hcs12x::CAN_DATATYPE_ARRAY;
 using unisim::component::tlm2::processor::hcs12x::UNISIM_CAN_ProtocolTypes;
 
 using unisim::kernel::tlm2::PayloadFabric;

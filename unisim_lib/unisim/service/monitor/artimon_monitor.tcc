@@ -118,7 +118,7 @@ int ArtimonMonitor<ADDRESS>::generate_monitor_spec(const char* file_path)
 }
 
 template <class ADDRESS>
-void getProperties(std::vector<std::string>& vect) {
+void ArtimonMonitor<ADDRESS>::getProperties(std::vector<std::string>& vect) {
 
 }
 

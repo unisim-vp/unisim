@@ -44,6 +44,7 @@
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
+#include <unisim/component/tlm2/processor/hcs12x/can_struct.h>
 
 namespace unisim {
 namespace component {
@@ -159,65 +160,91 @@ public:
   typedef tlm_phase tlm_phase_type;
 };
 
-// ******* CAN Data structures **************
+//// ******* CAN Data structures **************
+//
+//#define CAN_MSG_SIZE			16
+//#define CAN_EXG_SIZE			13
+//#define CAN_ID_INDEX			0
+//#define CAN_ID_SIZE				4
+//#define CAN_DATA_INDEX			4
+//#define CAN_DATA_SIZE			8
+//#define CAN_LENGTH_INDEX		12
+//#define CAN_DATA_LENGTH_SIZE	1
+//#define CAN_PRIORITY_INDEX		13
+//#define CAN_PRIORITY_SIZE		1
+//#define CAN_TIMESTAMP_INDEX		14
+//#define CAN_TIMESTAMP_SIZE		2
+//
+//typedef enum {CAN_MSG_STD, CAN_MSG_EXT} CanMsgType;
+//#define INVALID_CAN_ID 0xFFFFFFFF // identify an invalid message
+//
+//#define CAN_BUS_WIDTH 32
+//
+///*
+//The CAN_DATATYPE structure
+//*/
+//struct CAN_MESSAGE {
+//
+//    /* Is Extended frame: extended ID = 29-bits and standard ID = 11-bits */
+//    uint8_t Extended;
+//
+//    /* RTR: Remote Transmission Request (Request for transmission)
+//     *   0: Data frame
+//     *   1: Remote frame (forces 0 bytes of data)
+//     *
+//     *   This flag reflects the status of the Remote Transmission Request bit in the CAN frame.
+//     *   In the case of a receive buffer, it indicates the status of the received frame and supports the transmission of an answering frame in software.
+//     *   In the case of a transmit buffer, this flag defines the setting of the RTR bit to be sent.
+//     */
+//    uint8_t Remote;
+//
+//    /* Error ? */
+//    uint8_t Error;
+//
+//    /* CAN ID */
+//    uint8_t ID[CAN_ID_SIZE];
+//
+//    /* Data field */
+//    uint8_t Data[CAN_DATA_SIZE];
+//
+//    /* Length */
+//    uint8_t Length; // 4 bits of DLC (Data Length Code), which may only take on the values 0 - 8
+//
+//    /* Priority */
+//    uint8_t Priority;
+//
+//    /* MSG Time Stamp */
+//    uint8_t Timestamp[CAN_TIMESTAMP_SIZE];
+//
+//} ;
+//
+//typedef struct CAN_MESSAGE CAN_DATATYPE;
 
-#define CAN_MSG_SIZE			16
-#define CAN_EXG_SIZE			13
-#define CAN_ID_INDEX			0
-#define CAN_ID_SIZE				4
-#define CAN_DATA_INDEX			4
-#define CAN_DATA_SIZE			8
-#define CAN_LENGTH_INDEX		12
-#define CAN_DATA_LENGTH_SIZE	1
-#define CAN_PRIORITY_INDEX		13
-#define CAN_PRIORITY_SIZE		1
-#define CAN_TIMESTAMP_INDEX		14
-#define CAN_TIMESTAMP_SIZE		2
-
-typedef enum {CAN_MSG_STD, CAN_MSG_EXT} CanMsgType;
-#define INVALID_CAN_ID 0xFFFFFFFF // identify an invalid message
-
-#define CAN_BUS_WIDTH 32
-
-/*
-The CAN_DATATYPE structure
-*/
-struct CAN_MESSAGE {
-
-    /* Is Extended frame: extended ID = 29-bits and standard ID = 11-bits */
-    uint8_t Extended;
-
-    /* RTR: Remote Transmission Request (Request for transmission)
-     *   0: Data frame
-     *   1: Remote frame (forces 0 bytes of data)
-     *
-     *   This flag reflects the status of the Remote Transmission Request bit in the CAN frame.
-     *   In the case of a receive buffer, it indicates the status of the received frame and supports the transmission of an answering frame in software.
-     *   In the case of a transmit buffer, this flag defines the setting of the RTR bit to be sent.
-     */
-    uint8_t Remote;
-
-    /* Error ? */
-    uint8_t Error;
-
-    /* CAN ID */
-    uint8_t ID[CAN_ID_SIZE];
-
-    /* Data field */
-    uint8_t Data[CAN_DATA_SIZE];
-
-    /* Length */
-    uint8_t Length; // 4 bits of DLC (Data Length Code), which may only take on the values 0 - 8
-
-    /* Priority */
-    uint8_t Priority;
-
-    /* MSG Time Stamp */
-    uint8_t Timestamp[CAN_TIMESTAMP_SIZE];
-
-} ;
-
-typedef struct CAN_MESSAGE CAN_DATATYPE;
+///**
+// * Hold 1xN array of CAN_DATATYPE
+// *
+// * @param nmsgs: Indicates how many messages are in the array.
+// * @param canMsg: The array of messages.
+// */
+//struct CAN_MESSAGE_ARRAY {
+//    int nmsgs;
+//    CAN_DATATYPE* canMsg;
+//} ;
+//
+//typedef struct CAN_MESSAGE_ARRAY CAN_DATATYPE_ARRAY;
+//
+///**
+// * Hold CAN ID information.
+// *
+// * @param nIDs: Indicates how many messages IDs are in the array.
+// * @param IDs: The array of messages IDs.
+// */
+//struct CAN_ID_MSG_ARRAY {
+//    size_t nIDs;
+//    uint32_t* IDs;
+//} ;
+//
+//typedef struct CAN_ID_MSG_ARRAY CAN_ID_ARRAY;
 
 class CAN_Payload : public ManagedPayload
 {
@@ -307,32 +334,6 @@ public:
   typedef CAN_Payload tlm_payload_type;
   typedef tlm_phase tlm_phase_type;
 };
-
-/**
- * Hold 1xN array of CAN_DATATYPE
- *
- * @param nmsgs: Indicates how many messages are in the array.
- * @param canMsg: The array of messages.
- */
-struct CAN_MESSAGE_ARRAY {
-    int nmsgs;
-    CAN_DATATYPE* canMsg;
-} ;
-
-typedef struct CAN_MESSAGE_ARRAY CAN_DATATYPE_ARRAY;
-
-/**
- * Hold CAN ID information.
- *
- * @param nIDs: Indicates how many messages IDs are in the array.
- * @param IDs: The array of messages IDs.
- */
-struct CAN_ID_MSG_ARRAY {
-    size_t nIDs;
-    uint32_t* IDs;
-} ;
-
-typedef struct CAN_ID_MSG_ARRAY CAN_ID_ARRAY;
 
 } // end of namespace hcs12x
 } // end of namespace processor
