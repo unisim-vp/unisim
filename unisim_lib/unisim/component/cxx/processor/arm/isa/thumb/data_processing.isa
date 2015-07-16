@@ -52,7 +52,7 @@ adc.disasm = {
 adc.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 + op2 + cpu.CPSR().C().Get();
+  uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 + op2 + cpu.CPSR().Get( C );
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusAdd( cpu, res, op1, op2 );
 };
@@ -238,8 +238,8 @@ and.execute = {
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock())
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -287,8 +287,8 @@ bic.execute = {
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock())
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -379,8 +379,8 @@ eor.execute = {
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock())
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -451,8 +451,8 @@ mov_1.execute = {
   cpu.SetGPR( rd, res );
   if (not cpu.itblock())
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -533,8 +533,8 @@ mvn.execute = {
   cpu.SetGPR( rd, res );
   if (not cpu.itblock())
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -581,8 +581,8 @@ orr.execute = {
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock())
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -626,7 +626,7 @@ sbc.disasm = {
 sbc.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
+  uint32_t op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 - op2 - (cpu.CPSR().Get( C ) ^ 1);
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -735,8 +735,8 @@ tst.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res = op1 & op2;
-  cpu.CPSR().N().Set( (res >> 31) & 1 );
-  cpu.CPSR().Z().Set( res == 0 );
+  cpu.CPSR().Set( N, (res >> 31) & 1 );
+  cpu.CPSR().Set( Z, res == 0 );
 };
 
 /*
@@ -749,7 +749,7 @@ tst.execute = {
  * REV reverses the byte order in a 32-bit register.
  */
 
-{ ARCH::insns6 }:                               \
+{ CONFIG::insns6 }:                               \
 op rev( 0b1011101000[10]: r1[3]: r0[3] );
 
 rev.disasm = {
@@ -766,7 +766,7 @@ rev.disasm = {
  * REV16 reverses the byte order in each16-bit halfword of a 32-bit register.
  */
 
-{ ARCH::insns6 }:                               \
+{ CONFIG::insns6 }:                               \
 op rev16( 0b1011101001[10]: r1[3]: r0[3] );
 
 rev16.disasm = {
@@ -783,7 +783,7 @@ rev16.disasm = {
  * REVSH 16-bit halfword of a 32-bit register, and sign-extends the result to 32 bits.
  */
 
-{ ARCH::insns6 }:                               \
+{ CONFIG::insns6 }:                               \
 op revsh( 0b1011101011[10]: r1[3]: r0[3] );
 
 revsh.disasm = {
@@ -800,7 +800,7 @@ revsh.disasm = {
  * SETEND writes a new value to ENDIANSTATE.
  */
 
-{ ARCH::insns6 }:                               \
+{ CONFIG::insns6 }:                               \
 op setend( 0b101101100101[12]: end[1]: 0b000[3] );
 
 setend.disasm = {

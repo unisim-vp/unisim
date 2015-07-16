@@ -103,7 +103,7 @@ bx.execute = {
  * specified by a register.
  */
 
-{ ARCH::insns5T }:                              \
+{ CONFIG::insns5T }:                              \
 op blx( 0b010001111[9]: rm[4]: 0b000[3] );
 
 blx.disasm = {

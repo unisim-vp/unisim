@@ -64,8 +64,8 @@ mla.execute = {
   
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -113,8 +113,8 @@ mul.execute = {
   
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -126,7 +126,7 @@ mul.execute = {
  * smlal instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smlal( cond[4]: 0b0000111[7]: s[1]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
 
 smlal.disasm = {
@@ -155,8 +155,8 @@ smlal.execute = {
 
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 63) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 63) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -171,7 +171,7 @@ smlal.execute = {
  * products to a 64-bit accumulate operand.
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smlald( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b00[2]: m[1]: 0b1[1]: rn[4] );
 
 smlald.disasm = {
@@ -191,7 +191,7 @@ smlald.disasm = {
  * products to a 64-bit accumulate operand.
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smlsld( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b01[2]: m[1]: 0b1[1]: rn[4] );
 
 smlsld.disasm = {
@@ -233,8 +233,8 @@ smull.execute = {
   
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 63) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 63) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -273,8 +273,8 @@ umlal.execute = {
 
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 63) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 63) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -286,7 +286,7 @@ umlal.execute = {
  * umaal instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op umaal( cond[4]: 0b00000100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
 
 umaal.disasm = {
@@ -330,8 +330,8 @@ umull.execute = {
 
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 63) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 63) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -343,7 +343,7 @@ umull.execute = {
  * smlaxy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smlaxy( cond[4]: 0b00010000[8]: rd[4]: ra[4]: rm[4]: 0b1[1]: y[1]: x[1]: 0b0[1]: rn[4] );
 
 smlaxy.disasm = {
@@ -398,7 +398,7 @@ smlaxy.execute = {
   unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, mul_res, val_ra, 0);
   //if(op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
   if (overflow_out) {
-    cpu.CPSR().Q().Set( 1 );
+    cpu.CPSR().Set( Q, 1 );
   }
   cpu.SetGPR(rd, val_rd);
 };
@@ -411,7 +411,7 @@ smlaxy.execute = {
  * smlad instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smlad( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: m[1]: 0b1[1]: rn[4] );
 
 smlad.disasm = {
@@ -428,7 +428,7 @@ smlad.disasm = {
  * smuad instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smuad( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: m[1]: 0b1[1]: rn[4] );
 
 smuad.disasm = {
@@ -445,7 +445,7 @@ smuad.disasm = {
  * smlsd instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smlsd( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b01[2]: m[1]: 0b1[1]: rn[4] );
 
 smlsd.disasm = {
@@ -462,7 +462,7 @@ smlsd.disasm = {
  * smusd instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smusd( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b01[2]: m[1]: 0b1[1]: rn[4] );
 
 smusd.disasm = {
@@ -479,7 +479,7 @@ smusd.disasm = {
  * smmla instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smmla( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: r[1]: 0b1[1]: rn[4] );
 
 smmla.disasm = {
@@ -496,7 +496,7 @@ smmla.disasm = {
  * smmul instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smmul( cond[4]: 0b01110101[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: r[1]: 0b1[1]: rn[4] );
 
 smmul.disasm = {
@@ -513,7 +513,7 @@ smmul.disasm = {
  * smmls instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smmls( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b11[2]: r[1]: 0b1[1]: rn[4] );
 
 smmls.disasm = {
@@ -530,7 +530,7 @@ smmls.disasm = {
  * smlalxy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smlalxy( cond[4]: 0b00010100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b1[1]: m[1]: n[1]: 0b0[1]: rn[4] );
 
 smlalxy.disasm = {
@@ -561,7 +561,7 @@ smlalxy.execute = {
  * smlawy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smlawy( cond[4]: 0b00010010[8]: rd[4]: rn[4]: rs[4]: 0b1[1]: y[1]: 0b00[2]: rm[4] );
 
 smlawy.disasm = {
@@ -612,7 +612,7 @@ smlawy.execute = {
   if(overflow_out)
     {
       //    cpu.SetCPSR_Q(false);
-      cpu.CPSR().Q().Set( 1 );
+      cpu.CPSR().Set( Q, 1 );
     }
   //   else
   //   {
@@ -636,7 +636,7 @@ smlawy.execute = {
  * smulxy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smulxy( cond[4]: 0b00010110[8]: rd[4]: 0b0000[4]: rs[4]: 0b1[1]: y[1]: x[1]: 0b0[1]: rm[4] );
 
 smulxy.disasm = {
@@ -695,7 +695,7 @@ smulxy.execute = {
  * smulwy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smulwy( cond[4]: 0b00010010[8]: rd[4]: 0b0000[4]: rs[4]: 0b1[1]: y[1]: 0b10[2]: rm[4] );
 
 smulwy.disasm = {
@@ -750,7 +750,7 @@ smulwy.execute = {
  * destination register. The condition code flags are not affected
  */
 
-{ ARCH::insnsRM }:                                                     \
+{ CONFIG::insnsRM }:                                                     \
 op sdiv( cond[4]: 0b01110001[8]: rd[4]: 0b1111[4]: rm[4]: 0b0001[4]: rn[4] );
 
 sdiv.disasm = {
@@ -770,7 +770,7 @@ sdiv.disasm = {
  * destination register. The condition code flags are not affected.
  */
 
-{ ARCH::insnsRM }:                                                     \
+{ CONFIG::insnsRM }:                                                     \
 op udiv( cond[4]: 0b01110011[8]: rd[4]: 0b1111[4]: rm[4]: 0b0001[4]: rn[4] );
 
 udiv.disasm = {

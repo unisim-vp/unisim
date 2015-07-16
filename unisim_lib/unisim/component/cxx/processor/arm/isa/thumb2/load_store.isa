@@ -905,7 +905,7 @@ ldmia_w.execute = {
   }
   
   bool overwritten = (reglist >> rn) & 1;
-  if (w and not overwritten) cpu.SetGPR( rn, addr );
+  if (w and not overwritten) cpu.SetGPR( rn, itr.addr() );
 };
 
 /*

@@ -81,7 +81,7 @@ bkpt.execute = {
  * end of bkpt (breakpoint) instruction
  *******************************************************************/
 
-{ ARCH::insns6 }:                               \
+{ CONFIG::insns6 }:                               \
 op cpsid( 0b1011011001110[13]: bf[3] );
 
 cpsid.disasm = {
@@ -90,7 +90,7 @@ cpsid.disasm = {
     if ((bf >> bit) & 1) buffer << ("fia"[bit]);
 }
 
-{ ARCH::insns6 }:                               \
+{ CONFIG::insns6 }:                               \
 op cpsie( 0b1011011001100[13]: bf[3] );
 
 cpsie.disasm = {

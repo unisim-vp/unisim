@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,36 +31,62 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
+
 /**********************************************
 
-         THUMB MULTIPLY INSTRUCTIONS
+           THUMB ARM EMULATOR ISA
 
 **********************************************/
 
-/*******************************************************************
- * mul (multiply) instruction
- */
+namespace unisim::component::cxx::processor::arm::isa::thumb2
 
-op mul( 0b010000[6]: 0b1101[4]: rm[3]: rd[3] );
+set codetype buffer;
+set addressclass {uint32_t}
+set endianness little;
+//set fields_order descending;
+set words_order ascending;
+//set withencode_p true;
 
-mul.disasm = {
-  buffer << "muls\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-};
+template <{typename} {CONFIG}>
 
-mul.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
-  
-  uint32_t res = cpu.GetGPR(rd) * cpu.GetGPR(rm);
-  cpu.SetGPR(rd, res);
-  if (not cpu.itblock())
-    {
-      cpu.CPSR().Set( N, (res >> 31) & 1 );
-      cpu.CPSR().Set( Z, res == 0 );
-    }
-};
+decl {
+#include <iosfwd>
+#include <stdint.h>
+} // end of decl
 
-/*
- * end of mul (multiply) instruction
- *******************************************************************/
+impl {
+#include "unisim/component/cxx/processor/arm/models.hh"
+#include "unisim/component/cxx/processor/arm/execute.hh"
+#include "unisim/component/cxx/processor/arm/disasm.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/util/arithmetic/arithmetic.hh"
+#include <iostream>
+#include <iomanip>
+} // end of impl
+
+action {void} execute({typename CONFIG::Arch &} {cpu}) {
+  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
+}
+
+action {void} disasm({typename CONFIG::Arch &} {cpu}, {std::ostream &} {buffer}) {
+  buffer << "Unknown instruction";
+}
+
+include "unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"
+include "unisim/component/cxx/processor/arm/isa/thumb/load_store.isa"
+include "unisim/component/cxx/processor/arm/isa/thumb/multiply.isa"
+include "unisim/component/cxx/processor/arm/isa/thumb/misc_arithmetic.isa"
+include "unisim/component/cxx/processor/arm/isa/thumb/branch.isa"
+include "unisim/component/cxx/processor/arm/isa/thumb/exception.isa"
+
+include "data_processing.isa"
+include "load_store.isa"
+include "branch.isa"
+include "multiply.isa"
+include "coprocessor.isa"
+include "hints.isa"
+//include "neon.isa"
+include "vfp.isa"
+//include "unisim/component/cxx/processor/arm/isa/thumb2/xscale.isa"
+include "ordering.isa"
 

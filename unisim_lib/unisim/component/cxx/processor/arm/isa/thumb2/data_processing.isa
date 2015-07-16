@@ -87,8 +87,8 @@ mov_wri.execute = {
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -160,8 +160,8 @@ mvn_wri.execute = {
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -270,7 +270,7 @@ sbc_w.execute = {
   uint32_t
     op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-    res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
+    res = op1 - op2 - (cpu.CPSR().Get( C ) ^ 1);
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -283,7 +283,7 @@ sbc_wrri.disasm = { buffer << "sbc" << (s?"s":"") << ".w\t" << DisasmRegister(rd
 sbc_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
+  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 - op2 - (cpu.CPSR().Get( C ) ^ 1);
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -398,7 +398,7 @@ adc_w.execute = {
   
   uint32_t rmval = cpu.GetGPR_npc( rm ),
            op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 + op2 + cpu.CPSR().C().Get();
+           res = op1 + op2 + cpu.CPSR().Get( C );
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
@@ -411,7 +411,7 @@ adc_wrri.disasm = { buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd
 adc_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 + op2 + cpu.CPSR().C().Get();
+  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 + op2 + cpu.CPSR().Get( C );
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
@@ -447,8 +447,8 @@ eor_wrri.execute = {
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -484,8 +484,8 @@ orn_rri.execute = {
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -524,8 +524,8 @@ orr_wrri.execute = {
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -565,8 +565,8 @@ bic_wrri.execute = {
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -604,8 +604,8 @@ and_wrri.execute = {
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & 1 );
+      cpu.CPSR().Set( Z, res == 0 );
     }
 };
 
@@ -703,8 +703,8 @@ teq_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 ^ op2;
-  cpu.CPSR().N().Set( (res >> 31) & 1 );
-  cpu.CPSR().Z().Set( res == 0 );
+  cpu.CPSR().Set( N, (res >> 31) & 1 );
+  cpu.CPSR().Set( Z, res == 0 );
 };
 
 /* TST instructions */
@@ -724,8 +724,8 @@ tst_w.execute = {
     op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 & op2;
-  cpu.CPSR().N().Set( (res >> 31) & 1 );
-  cpu.CPSR().Z().Set( res == 0 );
+  cpu.CPSR().Set( N, (res >> 31) & 1 );
+  cpu.CPSR().Set( Z, res == 0 );
 };
 
 op tst_wri( 0b11110[5]: shl <11> imm2[1]: 0b000001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
@@ -737,8 +737,8 @@ tst_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 & op2;
-  cpu.CPSR().N().Set( (res >> 31) & 1 );
-  cpu.CPSR().Z().Set( res == 0 );
+  cpu.CPSR().Set( N, (res >> 31) & 1 );
+  cpu.CPSR().Set( Z, res == 0 );
 };
 
 /* CLZ instructions */
@@ -750,7 +750,8 @@ clz.disasm = { buffer << "clz\t" << DisasmRegister(rd) << ", " << DisasmRegister
 clz.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, __builtin_clzl( cpu.GetGPR_npc( rm ) ) );
+  // TODO: Use a portable function...
+  cpu.SetGPR( rd, __builtin_clz( cpu.GetGPR_npc( rm ) ) );
 };
 
 /* UXTA instructions */

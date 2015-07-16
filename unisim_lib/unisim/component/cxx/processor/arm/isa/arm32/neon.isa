@@ -1575,6 +1575,22 @@ vcvt_f32f16d.disasm = {
   buffer << "vcvt.f32.f16\tq" << vd << ", d" << vm;
 };
 
+/* VCVTB, VCVTT (Convert between halfword precision (Bottom or Top) and single precision) */
+
+op vcvtb_f16f32( cond[4]: 0b1110[4]: 0b1[1]: vd0[1]: 0b11[2]: 0b0011[4]: shl<1> vd1[4]: 0b1010[4]: t[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
+vcvtb_f16f32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
+
+vcvtb_f16f32.disasm = {
+  buffer << "vcvt" << (t?"t":"b") << DisasmCondition(cond) << ".f16.f32\ts" << vd << ", s" << vm;
+};
+
+op vcvtb_f32f16( cond[4]: 0b1110[4]: 0b1[1]: vd0[1]: 0b11[2]: 0b0010[4]: shl<1> vd1[4]: 0b1010[4]: t[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
+vcvtb_f32f16.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
+
+vcvtb_f32f16.disasm = {
+  buffer << "vcvt" << (t?"t":"b") << DisasmCondition(cond) << ".f32.f16\ts" << vd << ", s" << vm;
+};
+
 op vcvt_f32s32di( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b1[1]: imm_[5]: vd0[4]: 0b1110[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
 vcvt_f32s32di.var imm : {int32_t} = {32-imm_}, vd : {uint32_t} = {vd1|vd0}, vm : {uint32_t} = {vm1|vm0};
 
@@ -3398,6 +3414,72 @@ vmovn_i64.var vm : {uint32_t} = {(vm1|vm0)>>1}, vd : {uint32_t} = {vd1|vd0};
 vmovn_i64.disasm = {
   if (vm0 & 1) { buffer << "<undefined>"; return; }
   buffer << "vmovn.i64\td" << vd << ", q" << vm;
+};
+
+/* VMOV; move arm core to scalar register */
+
+op vmov32_dr( cond[4]: 0b1110[4]: 0b00[2]: index[1]: 0b0[1]: vd0[4]: rt[4]: 0b1011[4]: shl<4> vd1[1]: 0b001[3]: ?[4] );
+vmov32_dr.var vd : {uint32_t} = {vd1|vd0};
+
+vmov32_dr.disasm = {
+  buffer << "vmov" << DisasmCondition(cond) << ".32\td" << vd << "[" << index << "], " << DisasmRegister(rt);
+};
+
+// { CONFIG::neon }:                                                         
+op vmov16_dr( cond[4]: 0b1110[4]: 0b00[2]: shl<1> index1[1]: 0b0[1]: vd0[4]: rt[4]: 0b1011[4]: shl<4> vd1[1]: index0[1]: 0b11[2]: ?[4] );
+vmov16_dr.var vd : {uint32_t} = {vd1|vd0}, index : {uint32_t} = {index1|index0};
+
+vmov16_dr.disasm = {
+  buffer << "vmov" << DisasmCondition(cond) << ".16\td" << vd << "[" << index << "], " << DisasmRegister(rt);
+};
+
+// { CONFIG::neon }:                                                         
+op vmov8_dr( cond[4]: 0b1110[4]: 0b01[2]: shl<2> index1[1]: 0b0[1]: vd0[4]: rt[4]: 0b1011[4]: shl<4> vd1[1]: index0[2]: 0b1[1]: ?[4] );
+vmov8_dr.var vd : {uint32_t} = {vd1|vd0}, index : {uint32_t} = {index1|index0};
+
+vmov8_dr.disasm = {
+  buffer << "vmov" << DisasmCondition(cond) << ".8\td" << vd << "[" << index << "], " << DisasmRegister(rt);
+};
+
+/* VMOV; move scalar to arm core register */
+
+op vmov_32rd( cond[4]: 0b1110[4]: ?[1]: 0b0[1]: index[1]: 0b1[1]: vn0[4]: rt[4]: 0b1011[4]: shl<4> vn1[1]: 0b001[3]: ?[4] );
+vmov_32rd.var vn : {uint32_t} = {vn1|vn0};
+
+vmov_32rd.disasm = {
+  buffer << "vmov" << DisasmCondition(cond) << ".32\t" << DisasmRegister(rt) << ", d" << vn << "[" << index << "]";
+};
+
+// { CONFIG::neon }:                                                         
+op vmov_s16rd( cond[4]: 0b1110[4]: 0b00[2]: shl<1> index1[1]: 0b1[1]: vn0[4]: rt[4]: 0b1011[4]: shl<4> vn1[1]: index0[1]: 0b11[2]: ?[4] );
+vmov_s16rd.var vn : {uint32_t} = {vn1|vn0}, index : {uint32_t} = {index1|index0};
+
+vmov_s16rd.disasm = {
+  buffer << "vmov" << DisasmCondition(cond) << ".s16\t" << DisasmRegister(rt) << ", d" << vn << "[" << index << "]";
+};
+
+// { CONFIG::neon }:                                                         
+op vmov_u16rd( cond[4]: 0b1110[4]: 0b10[2]: shl<1> index1[1]: 0b1[1]: vn0[4]: rt[4]: 0b1011[4]: shl<4> vn1[1]: index0[1]: 0b11[2]: ?[4] );
+vmov_u16rd.var vn : {uint32_t} = {vn1|vn0}, index : {uint32_t} = {index1|index0};
+
+vmov_u16rd.disasm = {
+  buffer << "vmov" << DisasmCondition(cond) << ".u16\t" << DisasmRegister(rt) << ", d" << vn << "[" << index << "]";
+};
+
+// { CONFIG::neon }:                                                         
+op vmov_s8rd( cond[4]: 0b1110[4]: 0b01[2]: shl<2> index1[1]: 0b1[1]: vn0[4]: rt[4]: 0b1011[4]: shl<4> vn1[1]: index0[2]: 0b1[1]: ?[4] );
+vmov_s8rd.var vn : {uint32_t} = {vn1|vn0}, index : {uint32_t} = {index1|index0};
+
+vmov_s8rd.disasm = {
+  buffer << "vmov" << DisasmCondition(cond) << ".s8\t" << DisasmRegister(rt) << ", d" << vn << "[" << index << "]";
+};
+
+// { CONFIG::neon }:                                                         
+op vmov_u8rd( cond[4]: 0b1110[4]: 0b11[2]: shl<2> index1[1]: 0b1[1]: vn0[4]: rt[4]: 0b1011[4]: shl<4> vn1[1]: index0[2]: 0b1[1]: ?[4] );
+vmov_u8rd.var vn : {uint32_t} = {vn1|vn0}, index : {uint32_t} = {index1|index0};
+
+vmov_u8rd.disasm = {
+  buffer << "vmov" << DisasmCondition(cond) << ".u8\t" << DisasmRegister(rt) << ", d" << vn << "[" << index << "]";
 };
 
 op vmul_f32d( 0b11110011[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b1101[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b1[1]: vm0[4] );

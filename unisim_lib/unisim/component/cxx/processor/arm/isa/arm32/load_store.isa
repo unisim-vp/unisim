@@ -240,7 +240,7 @@ ldrsb_reg.execute = {
  * ldrd instruction
  */
 
-{ ARCH::insns5E }: \
+{ CONFIG::insns5E }: \
 op ldrd_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1101[4]: im0[4] );
 ldrd_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
 
@@ -258,7 +258,7 @@ ldrd_imm.execute = {
   cpu.SetGPR_mem( (rt+1) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 4 ) );
 };
 
-{ ARCH::insns5E }: \
+{ CONFIG::insns5E }: \
 op ldrd_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: 0b0000[4]: 0b1101[4]: rm[4] );
 
 ldrd_reg.disasm = {
@@ -399,7 +399,7 @@ strb_reg.execute = {
  * strd instruction
  */
 
-{ ARCH::insns5E }: \
+{ CONFIG::insns5E }: \
 op strd_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1111[4]: im0[4] );
 strd_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
 
@@ -416,7 +416,7 @@ strd_imm.execute = {
   cpu.MemWrite32( (p?oaddr:addr) + 4, cpu.GetGPR( (rt+1) & 0xf ) );
 };
 
-{ ARCH::insns5E }: \
+{ CONFIG::insns5E }: \
 op strd_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: 0b0000[4]: 0b1111[4]: rm[4] );
 
 strd_reg.disasm = {

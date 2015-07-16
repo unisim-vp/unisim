@@ -36,14 +36,9 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
 #include "unisim/component/cxx/processor/arm/psr.hh"
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/util/debug/register.hh"
+#include "unisim/component/cxx/processor/arm/extregbank.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/inlining/inlining.hh"
-#include <string>
-#include <map>
-#include <assert.h>
 #include <inttypes.h>
 
 namespace unisim {
@@ -53,136 +48,21 @@ namespace processor {
 namespace arm {
 
 /** Base class for the ARM family.
- * This class is the base for all the cpu's of the ARM processor family, for
- *   that purpose it defiens the basic registers and different methods to handle
- *   them.
- * It describes some pseudo virtual methods that specialized classes should 
- *   implement.
- * IMPORTANT: addresses are 32 bits (uint32_t), registers are 32 bits signed or
- *   unsigned (int32_t and uint32_t).
- * IMPORTANT: The arm instruction set requires a set of methods to access the
- *   memory subsystem, that this class doesn't define as pure virtual methods
- *   (as should have been done). Instead, the derived class should implement
- *   them directly, those functions are a kind of interface of the arm isa.
- *   This choice has been done to enhance runtime execution.
- *   The following is the list of methods that should be implemented:
  *
- * * reads 16bits instructions from the memory system
- * This method allows the user to read instructions from the memory system,
- *   that is, it tries to read from the pertinent caches and if failed from
- *   the external memory system.
- * This method is not really needed by the isa, but required to fetch the thumb
- *   instructions.
- *
- * @param address the address to read data from
- * @param val the buffer to fill with the read data
- *
- * void ReadInsn(uint32_t address, uint16_t &val);
- *
- * * reads 32bits instructions from the memory system
- * This method allows the user to read instructions from the memory system,
- *   that is, it tries to read from the pertinent caches and if failed from
- *   the external memory system.
- * This method is not really needed by the isa, but required to fetch the arm32
- *   instructions.
- *
- * @param address the address to read data from
- * @param val the buffer to fill with the read data
- *
- * void ReadInsn(uint32_t address, uint32_t &val);
- *
- * * Memory prefetch instruction.
- * This method is used to make memory prefetches into the caches (if available),
- *   that is it sends a memory read that doesn't keep the request result.
- *
- * @param address the address of the prefetch
- *
- * void ReadPrefetch(uint32_t address);
- *
- * * 32bits memory read that stores result into one of the general purpose 
- *  registers
- * This method reads 32bits from memory and return a pending memory
- *   operation
- *
- * @param address the base address of the 32bits read
- *
- * void MemRead32(uint32_t address);
- *
- * * 16bits aligned memory read that stores result into one of the general 
- *  purpose registers
- * This method reads 16bits from memory and return a pending memory
- *   operation. Note that this
- *   read methods supposes that the address is 16bits aligned.
- *
- * @param address the base address of the 16bits read
- *
- * void MemRead16(uint32_t address);
- *
- * * signed 16bits aligned memory read that stores result into one of the 
- *  general purpose registers
- * This method reads 16bits from memory and return a pending memory
- *   operation. Note that this
- *   read methods supposes that the address is 16bits aligned. The 16bits value
- *   is considered signed and sign extended to the register size 
- *
- * @param address the base address of the 16bits read
- *
- * void MemReadS16(uint32_t address);
- *
- * * 8bits memory read that stores result into one of the general purpose 
- *  registers
- * This method reads 8bits from memory and return a pending memory
- *   operation
- *
- * @param address the base address of the 8bits read
- *
- * void MemReadS8(uint32_t address);
- *
- * * signed 8bits memory read that stores result into one of the general purpose
- *  registers
- * This method reads 8bits from memory and return a pending memory
- *   operation. The 8bits value
- *   is considered signed and sign extended to the register size
- *
- * @param address the base address of the 8bits read
- *
- * void MemRead8(uint32_t address);
- *
- * * 32bits memory write.
- * This method write the giving 32bits value into the memory system.
- *
- * @param address the base address of the 32bits write
- * @param value the value to write into memory
- *
- * void MemWrite32(uint32_t address, uint32_t value);
- *
- * * 16bits memory write.
- * This method write the giving 16bits value into the memory system.
- *
- * @param address the base address of the 16bits write
- * @param value the value to write into memory
- *
- * void MemWrite16(uint32_t address, uint16_t value);
- *
- * * 8bits memory write.
- * This method write the giving 8bits value into the memory system.
- *
- * @param address the base address of the 8bits write
- * @param value the value to write into memory
- *
- * void MemWrite8(uint32_t address, uint8_t value);
- *
- * * Unpredictable Instruction Behaviour.
- * This method is just called when an unpredictable behaviour is detected to
- *   notifiy the processor.
- *
- * void UnpredictableInsnBehaviour();
+ * This class is the base for all the cpu's of the ARM processor
+ * family, for that purpose it defines the basic registers and
+ * different methods to handle them.
  */
 
-class CPU
-  : public virtual unisim::kernel::service::Object
+template <typename CONFIG>
+struct CPU
 {
-public:
+  typedef typename CONFIG::FPSCR fpscr_type;
+  typedef typename CONFIG::F64   F64;
+  typedef typename CONFIG::F32   F32;
+  typedef typename CONFIG::U64   U64;
+  typedef typename CONFIG::U32   U32;
+  
   //=====================================================================
   //=                    Constructor/Destructor                         =
   //=====================================================================
@@ -194,20 +74,27 @@ public:
    *
    * @param endianness the endianness to use
    */
-  CPU( char const* name, Object* parent = 0,
-       unisim::util::endian::endian_type endianness =
-       unisim::util::endian::E_BIG_ENDIAN
-       );
+  CPU( unisim::util::endian::endian_type endianness = unisim::util::endian::E_LITTLE_ENDIAN )
+    : munged_address_mask8(0)
+    , munged_address_mask16(0)
+    , exception(0)
+  {
+    // Initialize general purpose registers
+    for(unsigned int i = 0; i < num_log_gprs; i++)
+      gpr[i] = 0;
+    this->current_pc = 0;
+    this->next_pc = 0;
+	
+    for(unsigned int i = 0; i < num_phys_gprs; i++)
+      phys_gpr[i] = 0;
+
+    // Initialize address mungling
+    this->SetEndianness( endianness );
+  }
+
   /** Destructor.
    */
-  ~CPU();
-  
-  //=====================================================================
-  //=                       Logger                                      =
-  //=====================================================================
-  
-  /** Unisim logging services. */
-  unisim::kernel::logger::Logger logger;
+  ~CPU() {}
   
   /**************************************************************/
   /* Endian variables and methods                         START */
@@ -220,7 +107,21 @@ public:
    * @param endianness the endianness to use
    */
   void
-  SetEndianness(unisim::util::endian::endian_type endianness);
+  SetEndianness(unisim::util::endian::endian_type endianness)
+  {
+    // Setting the PSR according to endianness and init address masks
+    // needed to compute the final address of memory accesses
+    if(endianness == unisim::util::endian::E_BIG_ENDIAN) {
+      this->cpsr.Set( E, 1 );
+      munged_address_mask8 = (uint32_t)0x03;;
+      munged_address_mask16 = (uint32_t)0x02;
+    } else {
+      this->cpsr.Set( E, 0 );
+      munged_address_mask8 = 0;
+      munged_address_mask16 = 0;
+    }
+  }
+  
   /** Get the endian configuration of the processor.
    *
    * @return the endian being used
@@ -228,7 +129,7 @@ public:
   unisim::util::endian::endian_type
   GetEndianness()
   {
-    return (this->cpsr.E().Get() == 0) ? unisim::util::endian::E_LITTLE_ENDIAN : unisim::util::endian::E_BIG_ENDIAN;
+    return (this->cpsr.Get( E ) == 0) ? unisim::util::endian::E_LITTLE_ENDIAN : unisim::util::endian::E_BIG_ENDIAN;
   }
 
   /**************************************************************/
@@ -240,12 +141,6 @@ public:
   /**************************************************************/
 		
   /* GPR access functions */
-  /** Arrange the GPR mapping depending on initial and target running mode.
-   *
-   * @param src_mode the running mode the processor is currently in
-   * @param tar_mode the target running mode the registers should be mapped to
-   */
-  void SetGPRMapping(uint32_t src_mode, uint32_t tar_mode);
   /** Get the value contained by a GPR.
    *
    * @param id the register index
@@ -263,13 +158,13 @@ public:
    */
   uint32_t GetGPR_npc(uint32_t id) const
   {
-    assert(id != 15); /* Should be unpredictable*/
+    if (id == 15) throw 0; /* TODO: ARM specifies "unpredictable" */
     return gpr[id];
   }
 
-  /** Assign a GPR with a value coming from the Execute stage.  In
-   * architectures up to ARMv6, this is not interworking (simple
-   * branch when destination register is PC).
+  /** Assign a GPR with a value coming from the Execute stage (See
+   * ARM's ALUWritePC).  In ARMv7 architectures this is interworking
+   * except in thumb state.
    *
    * @param id the register index
    * @param val the value to set
@@ -277,11 +172,12 @@ public:
   void SetGPR(uint32_t id, uint32_t val)
   {
     if (id != 15) gpr[id] = val;
-    else this->Branch( val );
+    else if (cpsr.Get( T )) this->Branch( val );
+    else this->BranchExchange( val );
   }
 	
-  /** Assign a GPR with a value coming from the Memory stage.  In
-   * architectures from to ARMv5T, this is interworking (exchanging
+  /** Assign a GPR with a value coming from the Memory stage.  From
+   * ARMv5T architectures, this is always interworking (exchanging
    * branch when destination register is PC).
    *
    * @param id the register index
@@ -292,7 +188,7 @@ public:
     if (id != 15) gpr[id] = val;
     else this->BranchExchange( val );
   }
-	
+  
   /** Set the value contained by a GPR, excluding PC.
    *
    * @param id the register index
@@ -300,7 +196,7 @@ public:
    */
   void SetGPR_npc(uint32_t id, uint32_t val)
   {
-    assert(id != 15);
+    if (id != 15) throw 0; /* TODO: ARM specifies "unpredictable" */
     gpr[id] = val;
   }
   
@@ -310,7 +206,7 @@ public:
    */
   void BranchExchange(uint32_t target)
   {
-    this->cpsr.T().Set( target & 1 );
+    this->cpsr.Set( T, target & 1 );
     this->Branch( target );
   }
 	
@@ -320,7 +216,7 @@ public:
    */
   void Branch(uint32_t target)
   {
-    this->next_pc = target & (this->CPSR().T().Get() ? -2 : -4);
+    this->next_pc = target & (this->cpsr.Get( T ) ? -2 : -4);
   }
 	
   /** Gets the updated PC value (next PC as currently computed)
@@ -329,23 +225,6 @@ public:
   uint32_t GetNPC()
   { return this->next_pc; }
 	
-  /** Get the value contained by a user GPR.
-   * Returns the value contained by a user GPR. It is the same than GetGPR but
-   *   restricting the index from 0 to 15 (only the first 16 registers).
-   *
-   * @param id the register index
-   * @return the value contained by the register
-   */
-  uint32_t GetGPR_usr(uint32_t id);
-  /** Set the value contained by a user GPR.
-   * Sets the value contained by a user GPR. It is the same than SetGPR byt
-   *   restricting the index from 0 to 15 (only the first 16 registers).
-   *
-   * @param id the register index
-   * @param val the value to set
-   */
-  void SetGPR_usr(uint32_t id, uint32_t val);
-  
   /* PSR access functions */
   
   /** Get the CPSR register.
@@ -353,32 +232,39 @@ public:
    * @return the CPSR structured register.
    */
   PSR&  CPSR() { return cpsr; };
-  /** Get the SPSR register according to current mode.
-   *
-   * @return the SPSR structured register according to current mode.
-   */
-  PSR&  SPSR() { return spsr[GetSPSRIndex()]; };
   
-  /** Get SPSR index from current running mode
-   *
-   * @return the SPSR index from current running mode
+  /*************************************/
+  /* IT Conditional State manipulation */
+  /*************************************/
+  
+  /** Determine wether the processor instruction stream is inside an
+   * IT block.
    */
-  uint32_t GetSPSRIndex();
-
-  /** Copy the value of current SPSR register into CPSR.
+  bool itblock() const { return cpsr.InITBlock(); }
+  
+  /** Return the current condition associated to the IT state of the
+   * processor.
    */
-  void MoveSPSRtoCPSR();
+  uint32_t itcond() const { return cpsr.ITGetCondition(); }
+  
+  bool m_isit; /* determines wether current instruction is an IT one. */
+  void ITSetState( uint32_t cond, uint32_t mask )
+  {
+    this->cpsr.ITSetState( cond, mask );
+    m_isit = true;
+  }
+  void ITAdvance()
+  {
+    if (m_isit)
+      this->m_isit = false;
+    else if (this->itblock())
+      this->cpsr.ITAdvance();
+  }
 
   /**************************************************************/
   /* Registers access methods    END                            */
   /**************************************************************/
 
-  /* TODO: this method needs to be implemented. Should it be removed? */
-  /** Check that an address is aligned
-   */
-  void CheckAlignmentExcep(uint32_t addr);
-  /* END TODO */
-	
   /** Mark an exception in the virtual exception vector.
    * This marks an new exception in the virtual exception vector for 
    *   later treatment.
@@ -386,20 +272,29 @@ public:
    *
    * @param except the exception to mark
    */
-  void MarkVirtualExceptionVector(uint32_t except);
-
+  void MarkVirtualExceptionVector(uint32_t except)
+  {
+    exception |= except;
+  }
+  
   /** Get the virtual exception vector.
    * This returns the value of the virtual exception vector.
    *
    * @return the value of the exception vector
    */
-  uint32_t GetVirtualExceptionVector();
-
+  uint32_t GetVirtualExceptionVector()
+  {
+    return exception;
+  }
+  
   /** Reset the value of the virtual exception vector.
    *
    * @param mask the value to set at reset
    */
-  void ResetVirtualExceptionVector(uint32_t mask = 0);
+  void ResetVirtualExceptionVector(uint32_t mask = 0)
+  {
+    exception = mask;
+  }
   
   /*
    * ARM architecture constants
@@ -457,9 +352,6 @@ protected:
    */
   uint32_t munged_address_mask16;
 		
-  /** The registers interface for debugging purpose */
-  std::map<std::string, unisim::util::debug::Register *> registers_registry;
-		
   /** The total number of physical registers.
    * The arm has only 31 registers, but we are using an 
    *   additional one to store the NextPC, which does not really
@@ -484,33 +376,44 @@ protected:
   uint32_t current_pc, next_pc;
   /** PSR registers. */
   PSR      cpsr;
-  /** Number of SPSR registers.
-   * Privileged modes have private SPSR registers, the following is
-   *   the organization per running mode:
-   * - user:           --
-   * - system:         --
-   * - supervisor:     0
-   * - abort:          1
-   * - undefined:      2
-   * - interrupt:      3
-   * - fast interrupt: 4
-   */
-  const static uint32_t num_phys_spsrs = 5;
-  /** The SPSR registers storage.
-   */
-  PSR      spsr[5];
-		
-  /* TODO: check if the fake floating point registers could be removed. */
-  uint64_t fake_fpr[8];
-  uint32_t fake_fps;
-  /* END TODO */
-
   /** Exception vector.
    * This is a virtual exception vector (it doesn't exists as such in the arm
    *   architecture) to rapidly set and check exceptions.
    *   NOTE: exceptions are defined at cxx/arm/exception.hh
    */
   uint32_t exception;
+
+public:
+  // VFP/NEON registers
+  fpscr_type fpscr;
+  fpscr_type& FPSCR() { return fpscr; }
+
+  struct ExtRegBank
+  {
+    ExtRegCache<U32,64> eu32;
+    ExtRegCache<U64,32> eu64;
+    ExtRegCache<F32,32> ef32;
+    ExtRegCache<F64,32> ef64;
+
+    template <typename CMD>
+    void DoAll( CMD& cmd )
+    {
+      eu32.Do( cmd );
+      eu64.Do( cmd );
+      ef32.Do( cmd );
+      ef64.Do( cmd );
+    }
+  } erb;
+
+  U32  GetVU32( unsigned idx ) { return erb.eu32.GetReg( erb, idx ); }
+  void SetVU32( unsigned idx, U32 val ) { erb.eu32.SetReg( erb, idx, val ); }
+  U64  GetVU64( unsigned idx ) { return erb.eu64.GetReg( erb, idx ); }
+  void SetVU64( unsigned idx, U64 val ) { erb.eu64.SetReg( erb, idx, val ); }
+  F32  GetVSR( unsigned idx ) { return erb.ef32.GetReg( erb, idx ); }
+  void SetVSR( unsigned idx, F32 val )    { erb.ef32.SetReg( erb, idx, val ); }
+  F64  GetVDR( unsigned idx ) { return erb.ef64.GetReg( erb, idx ); }
+  void SetVDR( unsigned idx, F64 val )   { erb.ef64.SetReg( erb, idx, val ); }
+
 };
 	
 } // end of namespace arm

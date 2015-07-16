@@ -39,6 +39,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
 
+#include "unisim/component/cxx/processor/arm/psr.hh"
 #include <inttypes.h>
 #include <cassert>
 
@@ -72,7 +73,7 @@ namespace arm {
   CheckCondition( coreT& core, uint32_t cond )
   {
     using CondTruthTable::N; using CondTruthTable::Z; using CondTruthTable::C; using CondTruthTable::V;
-    uint32_t nzcv = core.CPSR().NZCV().Get();
+    uint32_t nzcv = core.CPSR().Get( NZCV );
     uint16_t const condition_truth_tables[] = {
       uint16_t(                      Z::tt ), // eq; equal
       uint16_t(                     ~Z::tt ), // ne; not equal
@@ -111,7 +112,7 @@ namespace arm {
       case 0: return shift_lhs;
       case 1: return 0;
       case 2: return ((int32_t)shift_lhs) >> 31;
-      case 3: return ((core.CPSR().C().Get() << 31) | (shift_lhs >> 1));
+      case 3: return ((core.CPSR().Get( C ) << 31) | (shift_lhs >> 1));
       }
     }
 
@@ -126,7 +127,7 @@ namespace arm {
     uint32_t carry = 0;
 
     if      ((shift_rhs == 0) and (shift == 0)) /* MOVS */
-      carry = core.CPSR().C().Get();
+      carry = core.CPSR().Get( C );
     else if ((shift_rhs == 0) and (shift == 3)) /* RRX */
       carry = (shift_lhs & 1);
     else if (shift == 0)                        /* LSL */
@@ -134,9 +135,9 @@ namespace arm {
     else                                        /* LSR, ASR, ROR */
       carry = (shift_lhs >> ((shift_rhs - 1) & 0x1f)) & 1;
 
-    core.CPSR().N().Set( (res >> 31) & 1 );
-    core.CPSR().Z().Set( res == 0 );
-    core.CPSR().C().Set( carry );
+    core.CPSR().Set( N, (res >> 31) & 1 );
+    core.CPSR().Set( Z, res == 0 );
+    core.CPSR().Set( C, carry );
     /* CPSR.V unaltered */
   }
 
@@ -163,7 +164,7 @@ namespace arm {
     shift_val &= 0xff;
     uint32_t carry = 0;
 
-    if (shift_val == 0) carry = core.CPSR().C().Get();
+    if (shift_val == 0) carry = core.CPSR().Get( C );
     else {
       switch (shift) {
       case 0: carry =  (shift_val <= 32) ? (value >> (32 - shift_val)) & 1 : 0; break;
@@ -174,9 +175,9 @@ namespace arm {
       }
     }
 
-    core.CPSR().N().Set( (res >> 31) & 1 );
-    core.CPSR().Z().Set( res == 0 );
-    core.CPSR().C().Set( carry );
+    core.CPSR().Set( N, (res >> 31) & 1 );
+    core.CPSR().Set( Z, res == 0 );
+    core.CPSR().Set( C, carry );
     /* CPSR.V unaltered */
   }
   
@@ -184,10 +185,10 @@ namespace arm {
   void
   UpdateStatusAdd( coreT& core, uint32_t res, uint32_t lhs, uint32_t rhs )
   {
-    core.CPSR().N().Set( (res >> 31) & 1 );
-    core.CPSR().Z().Set( res == 0 );
-    core.CPSR().C().Set( ((lhs & rhs) | ((~res) & (lhs | rhs))) >> 31 );
-    core.CPSR().V().Set( ((lhs & rhs & (~res)) | ((~lhs) & (~rhs) & res)) >> 31 );
+    core.CPSR().Set( N, (res >> 31) & 1 );
+    core.CPSR().Set( Z, res == 0 );
+    core.CPSR().Set( C, ((lhs & rhs) | ((~res) & (lhs | rhs))) >> 31 );
+    core.CPSR().Set( V, ((lhs & rhs & (~res)) | ((~lhs) & (~rhs) & res)) >> 31 );
   }
 
   /* In ARM isa, the substraction carry correspond to the complementary                                                                          
@@ -197,10 +198,10 @@ namespace arm {
   void
   UpdateStatusSub( coreT& core, uint32_t res, uint32_t lhs, uint32_t rhs )
   {
-    core.CPSR().N().Set( (res >> 31) & 1 );
-    core.CPSR().Z().Set( res == 0 );
-    core.CPSR().C().Set( ((lhs & (~rhs)) | ((~res) & (lhs | (~rhs)))) >> 31 );
-    core.CPSR().V().Set( ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
+    core.CPSR().Set( N, (res >> 31) & 1 );
+    core.CPSR().Set( Z, res == 0 );
+    core.CPSR().Set( C, ((lhs & (~rhs)) | ((~res) & (lhs | (~rhs)))) >> 31 );
+    core.CPSR().Set( V, ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
   }
 
   template <typename coreT>
@@ -222,7 +223,7 @@ namespace arm {
     if ((mask & 0x04) == 0x04) byte_mask |= 0x00ff0000;
     if ((mask & 0x08) == 0x08) byte_mask |= 0xff000000;
   
-    uint32_t run_mode = core.CPSR().M().Get(); /* get running mode */
+    uint32_t run_mode = core.CPSR().Get( M ); /* get running mode */
     if (isSPSR == 0)
       {
         uint32_t reg_mask = 0;
@@ -259,7 +260,8 @@ namespace arm {
       }
   }
 
-  struct LSMIter {
+  struct LSMIter
+  {
     enum mode_t { DA=0, IA=1, DB=2, IB=3 };
     LSMIter( uint32_t mode, uint32_t reglist, uint32_t addr )
       : m_reglist( reglist ), m_addr( addr )
@@ -287,7 +289,205 @@ namespace arm {
     uint32_t m_reglist, m_addr, m_inca, m_incb;
     int32_t  m_dir, m_reg;
   };
+  
+  /******************/
+  /* Floating Point */
+  /******************/
+  
+  struct VFPExpandImm
+  {
+    uint8_t m : 4;
+    uint8_t e : 3;
+    uint8_t s : 1;
+    
+    VFPExpandImm( uint8_t n, uint8_t exp, uint8_t man )
+      : m( man ), e( exp ^ 4 ), s( n ) {}
+    
+    template <typename T>
+    T toFP() { return (s?-1:1) * (T( ((1 << 4) | m) << e ) / 128); }
+    operator float () { return this->toFP<float>(); }
+    operator double () { return this->toFP<double>(); }
+    
+    template <unsigned bcT>
+    void toBytes( uint8_t (&bytes)[bcT] )
+    {
+      int32_t exponent = (int8_t((e^4) << 4)) >> 4;
+      if (bcT == 4) {
+        uint32_t bits = 0;
+        bits |= uint32_t( m ) << 19;                   /* inserting mantissa */
+        bits |= (uint32_t((e & 0xff) ^ 0x80) << 23);   /* inserting exponent */
+        bits |= uint32_t( s ) << 31;                   /* inserting sign */
+        for (unsigned byte = 0, bit = 0; byte < bcT; byte += 1, bit += 8) bytes[byte] = bits >> bit;
+      } else if (bcT == 8) {
+        uint64_t bits = 0;
+        bits |= uint64_t( m ) << 48;                   /* inserting mantissa */
+        bits |= (uint64_t((e & 0x7ff) ^ 0x400) << 52); /* inserting exponent */
+        bits |= uint64_t( s ) << 63;                   /* inserting sign */
+        for (unsigned byte = 0, bit = 0; byte < bcT; byte += 1, bit += 8) bytes[byte] = bits >> bit;
+      } else throw 0;
+    }
+  };
+  
+  enum FPExc { InvalidOp=0, DivideByZero=1, Overflow=2, Underflow=3,
+               Inexact=4, InputDenorm=7 };
 
+  template <typename fpscrT>
+  void FPProcessException( FPExc exception, fpscrT& fpscr )
+  {
+    switch (exception) {
+    case InvalidOp:    if (fpscr.Get( IOE )) throw exception; else fpscr.Set( IOC, 1 ); break;
+    case DivideByZero: if (fpscr.Get( DZE )) throw exception; else fpscr.Set( DZC, 1 ); break;
+    case Overflow:     if (fpscr.Get( OFE )) throw exception; else fpscr.Set( OFC, 1 ); break;
+    case Underflow:    if (fpscr.Get( UFE )) throw exception; else fpscr.Set( UFC, 1 ); break;
+    case Inexact:      if (fpscr.Get( IXE )) throw exception; else fpscr.Set( IXC, 1 ); break;
+    case InputDenorm:  if (fpscr.Get( IDE )) throw exception; else fpscr.Set( IDC, 1 ); break;
+    }
+  }
+
+  template <typename operT, typename fpscrT>
+  struct __FPProcessNaN__
+  {
+    operT& result;
+    fpscrT& fpscr;
+    operT const* firstSNaN;
+    operT const* firstQNaN;
+  
+    __FPProcessNaN__( operT& res, fpscrT& _fpscr )
+      : result( res ), fpscr( _fpscr ), firstSNaN(), firstQNaN()
+    {}
+  
+    __FPProcessNaN__&
+    operator << ( operT const& op )
+    {
+      if (not firstSNaN)
+        {
+          if (FloatIsSNaN( op, fpscr ))                         firstSNaN = &op;
+          else if (not firstQNaN and FloatIsQNaN( op, fpscr ))  firstQNaN = &op;
+        }
+      return *this;
+    }
+  
+    operator bool () const
+    {
+      if (not firstSNaN) {
+        if (not firstQNaN) return false;
+        result = *firstQNaN;
+      }
+      else /* hasSNaN*/ {
+        result = *firstSNaN;
+        FloatSetQuietBit( result, fpscr );
+        FPProcessException( InvalidOp, fpscr );
+      }
+      if (fpscr.Get( DN )) {
+        FloatSetDefaultNan( result, fpscr );
+      } 
+      return true;
+    }
+  };
+
+  template <typename operT, typename fpscrT>
+  __FPProcessNaN__<operT, fpscrT>
+  FPProcessNaN( operT& res, fpscrT& fpscr )
+  { return __FPProcessNaN__<operT, fpscrT>( res, fpscr ); }
+
+  template <typename operT, typename fpscrT>
+  void FPAdd( operT& result, operT const& op1, operT const& op2, fpscrT& fpscr )
+  {
+    if (fpscr.Get( FZ )) {
+      FloatFlushToZero( op1, fpscr );
+      FloatFlushToZero( op2, fpscr );
+    }
+    if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
+    
+    FloatAdd( result, op1, op2, fpscr );
+  }
+  
+  template <typename operT, typename fpscrT>
+  void FPSub( operT& result, operT const& op1, operT const& op2, fpscrT& fpscr )
+  {
+    if (fpscr.Get( FZ )) {
+      FloatFlushToZero( op1, fpscr );
+      FloatFlushToZero( op2, fpscr );
+    }
+    if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
+    
+    FloatSub( result, op1, op2, fpscr );
+  }
+
+  template <typename operT, typename fpscrT>
+  void FPDiv( operT& result, operT const& op1, operT const& op2, fpscrT& fpscr )
+  {
+    if (fpscr.Get( FZ )) {
+      FloatFlushToZero( op1, fpscr );
+      FloatFlushToZero( op2, fpscr );
+    }
+    if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
+    
+    FloatDiv( result, op1, op2, fpscr );
+  }
+  
+  template <typename operT, typename fpscrT>
+  void FPMul( operT& result, operT const& op1, operT const& op2, fpscrT& fpscr )
+  {
+    if (fpscr.Get( FZ )) {
+      FloatFlushToZero( op1, fpscr );
+      FloatFlushToZero( op2, fpscr );
+    }
+    if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
+    
+    FloatMul( result, op1, op2, fpscr );
+  }
+  
+  template <typename operT, typename fpscrT>
+  void FPMulAdd( operT& acc, operT const& op1, operT const& op2, fpscrT& fpscr )
+  {
+    if (fpscr.Get( FZ )) {
+      FloatFlushToZero( op1, fpscr );
+      FloatFlushToZero( op2, fpscr );
+      FloatFlushToZero( acc, fpscr );
+    }
+    if (FPProcessNaN( acc, fpscr ) << acc << op1 << op2) return;
+    
+    // TODO: Process the (QNaN + 0*inf) case
+    FloatMulAdd( acc, op1, op2, fpscr );
+  }
+  
+  template <typename operT, typename fpscrT>
+  void FPSqrt( operT& result, operT const& op, fpscrT& fpscr )
+  {
+    if (fpscr.Get( FZ )) {
+      FloatFlushToZero( op, fpscr );
+    }
+    if (FPProcessNaN( result, fpscr ) << op) return;
+    
+    FloatSqrt( result, op, fpscr );
+  }
+  
+  template <typename operT, typename fpscrT>
+  void FPCompare( operT const& op1, operT const& op2, bool quiet_nan_exc, fpscrT& fpscr )
+  {
+    if (fpscr.Get( FZ )) {
+      FloatFlushToZero( op1, fpscr );
+      FloatFlushToZero( op2, fpscr );
+    }
+    bool hasSNaN = FloatIsSNaN( op1, fpscr ) or FloatIsSNaN( op2, fpscr );
+    bool hasQNaN = FloatIsQNaN( op1, fpscr ) or FloatIsQNaN( op2, fpscr );
+    if (hasSNaN or hasQNaN) {
+      fpscr.Set( NZCV, 3 ); /* N=0,Z=0,C=1,V=1 */
+      if (hasSNaN or quiet_nan_exc)
+        FPProcessException( InvalidOp, fpscr );
+    }
+    else {
+      int fc = FloatCompare( op1, op2, fpscr );
+      if      (fc == 0)
+        fpscr.Set( NZCV, 6 ); /* N=0,Z=1,C=1,V=0 */
+      else if (fc < 0)
+        fpscr.Set( NZCV, 8 ); /* N=1,Z=0,C=0,V=0 */
+      else  /* fc > 0 */
+        fpscr.Set( NZCV, 2 ); /* N=0,Z=0,C=1,V=0 */
+    }
+  }
+  
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

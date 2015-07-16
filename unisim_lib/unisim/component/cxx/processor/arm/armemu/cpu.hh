@@ -35,10 +35,14 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
 
-#include "unisim/component/cxx/processor/arm/models.hh"
-#include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/memory_op.hh"
 #include "unisim/component/cxx/processor/arm/armemu/cache.hh"
+#include "unisim/component/cxx/processor/arm/isa_arm32.hh"
+#include "unisim/component/cxx/processor/arm/isa_thumb.hh"
+#include "unisim/component/cxx/processor/arm/cpu.hh"
+#include "unisim/component/cxx/processor/arm/hostfloat.hh"
+#include "unisim/component/cxx/processor/arm/models.hh"
+#include "unisim/component/cxx/processor/arm/memory_op.hh"
+#include "unisim/component/cxx/processor/arm/models.hh"
 #include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
@@ -50,8 +54,7 @@
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
 // #include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/component/cxx/processor/arm/isa_arm32.hh"
-#include "unisim/component/cxx/processor/arm/isa_thumb.hh"
+#include <unisim/kernel/logger/logger.hh>
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
 #include <string>
@@ -66,32 +69,29 @@ namespace processor {
 namespace arm {
 namespace armemu {
 
-class CPU
-	: public unisim::component::cxx::processor::arm::CPU
-	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::LinuxOS>
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::MemoryInjection<uint32_t> >
-	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::DebugControl<uint32_t> >
-	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
-	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::TrapReporting>
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::MemoryAccessReportingControl>
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::Disassembly<uint32_t> >
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::Registers >
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::Memory<uint32_t> >
+struct CPU;
+
+struct Config
 {
-public:
+  typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR FPSCR;
+  typedef double   F64;
+  typedef float    F32;
+  typedef uint8_t U8;
+  typedef uint16_t U16;
+  typedef uint32_t U32;
+  typedef uint64_t U64;
+  typedef int8_t   S8;
+  typedef int16_t  S16;
+  typedef int32_t  S32;
+  typedef int64_t  S64;
+  
+  typedef CPU      Arch;
+
   //=====================================================================
   //=                  ARM architecture model description               =
   //=====================================================================
   
+  // Following a standard armv7 configuration
   static uint32_t const MODEL = unisim::component::cxx::processor::arm::ARMEMU;
   static bool const     insns4T = true;
   static bool const     insns5E = true;
@@ -99,8 +99,32 @@ public:
   static bool const     insns5T = true;
   static bool const     insns6  = true;
   static bool const     insnsRM = false;
-  static bool const     insnsT2 = false;
-  
+  static bool const     insnsT2 = true;
+  static bool const     insns7  = true;
+};
+
+struct CPU
+  : public virtual unisim::kernel::service::Object
+  , public unisim::component::cxx::processor::arm::CPU<Config>
+  , public unisim::kernel::service::Client<
+  unisim::service::interfaces::LinuxOS>
+  , public unisim::kernel::service::Service<
+  unisim::service::interfaces::MemoryInjection<uint32_t> >
+  , public unisim::kernel::service::Client<
+  unisim::service::interfaces::DebugControl<uint32_t> >
+  , public unisim::kernel::service::Client<
+  unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
+  , public unisim::kernel::service::Client<
+  unisim::service::interfaces::TrapReporting>
+  , public unisim::kernel::service::Service<
+  unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::service::Service<
+  unisim::service::interfaces::Disassembly<uint32_t> >
+  , public unisim::kernel::service::Service<
+  unisim::service::interfaces::Registers >
+  , public unisim::kernel::service::Service<
+  unisim::service::interfaces::Memory<uint32_t> >
+{
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
@@ -163,6 +187,13 @@ public:
   ~CPU();
 
   //=====================================================================
+  //=                       Logger                                      =
+  //=====================================================================
+  
+  /** Unisim logging services. */
+  unisim::kernel::logger::Logger logger;
+  
+  //=====================================================================
   //=                  Client/Service setup methods                     =
   //=====================================================================
 
@@ -199,9 +230,7 @@ public:
    * @param buffer byte buffer with the data to write
    * @param size the size of the access
    */
-  virtual void PrWrite(uint32_t addr, 
-                       const uint8_t *buffer, 
-                       uint32_t size) = 0;
+  virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
   /** Processor external memory read.
    * Perform an external read memory access, that is an access that is not
    *   in cache (or cache absent).
@@ -210,9 +239,7 @@ public:
    * @param buffer byte buffer that will be filled with the read data
    * @param size the size of the access
    */
-  virtual void PrRead(uint32_t addr,
-                      uint8_t *buffer,
-                      uint32_t size) = 0;
+  virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
 
   //=====================================================================
   //=             memory injection interface methods                    =
@@ -227,9 +254,7 @@ public:
    *
    * @return true on success, false otherwise
    */
-  virtual bool InjectReadMemory(uint32_t addr, 
-                                void *buffer,
-                                uint32_t size);
+  virtual bool InjectReadMemory( uint32_t addr, void* buffer, uint32_t size );
   /** Inject an intrusive write memory operation
    *
    * @param addr the target address to write to
@@ -238,9 +263,7 @@ public:
    *
    * @return true on success, false otherwise
    */
-  virtual bool InjectWriteMemory(uint32_t addr, 
-                                 const void *buffer, 
-                                 uint32_t size);
+  virtual bool InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size );
 
   //=====================================================================
   //=             memory access reporting control interface methods     =
@@ -251,13 +274,13 @@ public:
    * @param report if true set the reporting of memory acesses, unset 
    *   otherwise
    */
-  virtual void RequiresMemoryAccessReporting(bool report);
+  virtual void RequiresMemoryAccessReporting( bool report );
   /** Set/unset the reporting of finishing instructions.
    * 
    * @param report if true set the reporting of finishing instructions, 
    *   unset otherwise
    */
-  virtual void RequiresFinishedInstructionReporting(bool report);
+  virtual void RequiresFinishedInstructionReporting( bool report );
 
   //=====================================================================
   //=             non intrusive memory interface methods                =
@@ -274,9 +297,7 @@ public:
    *
    * @return true on success, false otherwise
    */
-  virtual bool ReadMemory(uint32_t addr, 
-                          void *buffer, 
-                          uint32_t size);
+  virtual bool ReadMemory( uint32_t addr, void* buffer, uint32_t size );
   /** Perform a non intrusive write access.
    * This method perform a normal write, but it does not change the state
    *   of the caches. It calls ExternalWriteMemory in order to modify external
@@ -288,9 +309,7 @@ public:
    *
    * @return true on success, false otherwise
    */
-  virtual bool WriteMemory(uint32_t addr, 
-                           const void *buffer, 
-                           uint32_t size);
+  virtual bool WriteMemory( uint32_t addr, void const* buffer, uint32_t size );
   /** Perform a non intrusive external read access.
    * This method is called when a ReadAccess does not find the data in the
    *   cache.
@@ -302,9 +321,7 @@ public:
    *
    * @return true on success, false otherwise
    */
-  virtual bool ExternalReadMemory(uint32_t addr, 
-                                  void *buffer, 
-                                  uint32_t size) = 0;
+  virtual bool ExternalReadMemory( uint32_t addr, void* buffer, uint32_t size ) = 0;
   /** Perform a non intrusive external write access.
    * This method is called to write non intrusively external memory locations.
    *
@@ -314,9 +331,7 @@ public:
    *
    * @return true on success, false otherwise
    */
-  virtual bool ExternalWriteMemory(uint32_t addr, 
-                                   const void *buffer, 
-                                   uint32_t size) = 0;
+  virtual bool ExternalWriteMemory( uint32_t addr, void const* buffer, uint32_t size ) = 0;
 
   //=====================================================================
   //=             CPURegistersInterface interface methods               =
@@ -329,7 +344,7 @@ public:
    *
    * @return a pointer to the RegisterInterface corresponding to name
    */
-  virtual unisim::util::debug::Register *GetRegister(const char *name);
+  virtual unisim::util::debug::Register* GetRegister( const char* name );
 		
   //=====================================================================
   //=                   DebugDisasmInterface methods                    =
@@ -382,7 +397,7 @@ public:
    * @param address the address to read data from
    * @param insn the resulting instruction word (output reference)
    */
-  void ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn);
+  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn);
   
   /** Reads THUMB instructions from the memory system
    * This method allows the user to read instructions from the memory system,
@@ -392,7 +407,7 @@ public:
    * @param address the address to read data from
    * @param insn the resulting instruction word (output reference)
    */
-  void ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn);
+  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn);
   
   /** Memory prefetch instruction.
    * This method is used to make memory prefetches into the caches (if 
@@ -401,7 +416,7 @@ public:
    * 
    * @param address the address of the prefetch
    */
-  void ReadPrefetch(uint32_t address);
+  void ReadPrefetch( uint32_t address ) { PerformPrefetchAccess( address ); }
   /** 32bits memory read.
    *
    * This method reads 32bits from memory and returns a
@@ -411,7 +426,8 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  inline MemoryOp* MemRead32(uint32_t address);
+  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4, false ); }
+  
   /** 16bits memory read.
    * 
    * This method reads 16bits from memory and returns a
@@ -421,7 +437,7 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  inline MemoryOp* MemRead16(uint32_t address);
+  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2, false ); }
   /** Signed 16bits memory read.
    *
    * This method reads 16bits from memory and return a
@@ -431,7 +447,7 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  inline MemoryOp* MemReadS16(uint32_t address);
+  uint32_t MemReadS16( uint32_t address ) { return PerformReadAccess( address, 2, true ); }
   /** 8bits memory read.
    *
    * This method reads 8bits from memory and returns a
@@ -441,7 +457,7 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  inline MemoryOp* MemRead8(uint32_t address);
+  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1, false ); }
   /** Signed 8bits memory read.
    *
    * This method reads 8bits from memory and returns a
@@ -451,72 +467,74 @@ public:
    * 
    * @return a pointer to the pending memory operation
    */
-  inline MemoryOp* MemReadS8(uint32_t address);
-  /* Prevent hiding base SetGPR_mem */
-  using unisim::component::cxx::processor::arm::CPU::SetGPR_mem;
-  /** Mark a GPR to be updated by a MemoryOp pending memory operation.
+  uint32_t MemReadS8( uint32_t address ) { return PerformReadAccess( address, 1, true ); }
+  
+  /** Arrange the GPR mapping depending on initial and target running mode.
+   *
+   * @param src_mode the running mode the processor is currently in
+   * @param tar_mode the target running mode the registers should be mapped to
+   */
+  void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode );
+  
+  /** Get the value contained by a user GPR.
+   * Returns the value contained by a user GPR. It is the same than GetGPR but
+   *   restricting the index from 0 to 15 (only the first 16 registers).
    *
    * @param id the register index
-   * @param memop the pending memory operation
-   * 
-   * @return a pointer to the pending memory operation
+   * @return the value contained by the register
    */
-  void SetGPR_mem(uint32_t id, MemoryOp* memop)
-  {
-    memop->SetDestReg( id );
-    ls_queue.Push(memop);		
-  }
-  /* Prevent hiding base SetGPR_usr */
-  using unisim::component::cxx::processor::arm::CPU::SetGPR_usr;
-  /** Mark a user GPR to be updated by a MemoryOp pending memory operation.
+  uint32_t GetGPR_usr( uint32_t id );
+  /** Set the value contained by a user GPR.
+   * Sets the value contained by a user GPR. It is the same than SetGPR byt
+   *   restricting the index from 0 to 15 (only the first 16 registers).
    *
    * @param id the register index
-   * @param memop the pending memory operation
-   * 
-   * @return a pointer to the pending memory operation
+   * @param val the value to set
    */
-  void SetGPR_usr(uint32_t id, MemoryOp* memop)
-  {
-    memop->SetDestUserReg( id );
-    ls_queue.Push(memop);		
-  }
-    
+  void SetGPR_usr( uint32_t id, uint32_t val );
+  
+  /** Get the SPSR register according to current mode.
+   *
+   * @return the SPSR structured register according to current mode.
+   */
+  PSR& SPSR() { return spsr[GetSPSRIndex()]; };
+  
+  /** Get SPSR index from current running mode
+   *
+   * @return the SPSR index from current running mode
+   */
+  uint32_t GetSPSRIndex();
+
+  /** Copy the value of current SPSR register into CPSR.
+   */
+  void MoveSPSRtoCPSR();
+  
   /** 32bits memory write.
    * This method write the giving 32bits value into the memory system.
    * 
    * @param address the base address of the 32bits write
    * @param value the value to write into memory
    */
-  inline void MemWrite32(uint32_t address, uint32_t value);
+  void MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
   /** 16bits memory write.
    * This method write the giving 16bits value into the memory system.
    * 
    * @param address the base address of the 16bits write
    * @param value the value to write into memory
    */
-  inline void MemWrite16(uint32_t address, uint16_t value);
+  void MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
   /** 8bits memory write.
    * This method write the giving 8bits value into the memory system.
    * 
    * @param address the base address of the 8bits write
    * @param value the value to write into memory
    */
-  inline void MemWrite8(uint32_t address, uint8_t value);
+  void MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
 
   /**************************************************************/
   /* Memory access methods       END                            */
   /**************************************************************/
 
-  /** Determine wether the processor instruction stream is inside an
-   * IT block.  Always false before ARMv6T2 architectures.
-   */
-  bool itblock() const { return false; }
-  
-  /** Return the current condition associated to the IT state of the
-   * processor. Always "AL" before ARMv6T2 architectures.
-   */
-  uint32_t itcond() const { return this->COND_AL; }
-  
   /**************************************************************/
   /* Coprocessor methods          START                         */
   /* NOTE: These methods are only declared because the isa      */
@@ -533,7 +551,7 @@ public:
    * @return the target coprocessor decides if the loads have finished by 
    *   returning true, false if it has not finished
    */ 
-  bool CoprocessorLoad(uint32_t cp_num, uint32_t address);
+  bool CoprocessorLoad( uint32_t cp_num, uint32_t address);
   /** Coprocessor Load with options
    * This method is called each time a coprocessor load (for whatever 
    *   coprocessor) is found in the instruction set. This method has an extra 
@@ -546,7 +564,7 @@ public:
    * @return the target coprocessor decides if the loads have finished by 
    *   returning true, false if it has not finished
    */ 
-  bool CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option);
+  bool CoprocessorLoad( uint32_t cp_num, uint32_t address, uint32_t option);
   /** Coprocessor Store
    * This method is called each time a coprocessor store (for whatever 
    *   coprocessor) is found in the instruction set.
@@ -557,7 +575,7 @@ public:
    * @return the target coprocessor decides if the stores have finished by 
    *   returning true, false if it has not finished
    */ 
-  bool CoprocessorStore(uint32_t cp_num, uint32_t address);
+  bool CoprocessorStore( uint32_t cp_num, uint32_t address);
   /** Coprocessor Store with options
    * This method is called each time a coprocessor store (for whatever 
    *   coprocessor) is found in the instruction set. This method has an extra 
@@ -570,7 +588,7 @@ public:
    * @return the target coprocessor decides if the stores have finished by 
    *   returning true, false if it has not finished
    */ 
-  bool CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option);
+  bool CoprocessorStore( uint32_t cp_num, uint32_t address, uint32_t option);
   /** Coprocessor Data Processing method
    * 
    * @param cp_num the coprocessor for which the data processing is requested
@@ -580,7 +598,7 @@ public:
    * @param crn coprocessor first operand register
    * @param crm coprocessor second operand register
    */
-  void CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
+  void CoprocessorDataProcess( uint32_t cp_num, uint32_t op1, uint32_t op2,
                               uint32_t crd, uint32_t crn, uint32_t crm);
   /** Move to Coprocessor from ARM register
    * Copies the value from the rd ARM register to the coprocessor cp_num 
@@ -593,7 +611,7 @@ public:
    * @param crn the destination coprocessor register
    * @param crm the additional destination or source coprocessor register
    */
-  void MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
+  void MoveToCoprocessor( uint32_t cp_num, uint32_t op1, uint32_t op2, 
                          uint32_t rd, uint32_t crn, uint32_t crm);
   /** Move to ARM register from Coprocessor.
    * Transfers a value from the coprocessor cp_num to an ARM register or to 
@@ -608,9 +626,13 @@ public:
    *   operand for the instruction
    * @param crm additional coprocessor source or destination register 
    */
-  void MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
+  void MoveFromCoprocessor( uint32_t cp_num, uint32_t op1, uint32_t op2, 
                            uint32_t rd, uint32_t crn, uint32_t crm);
-
+  
+  uint32_t m_tls_reg;
+  
+  uint32_t Coproc_GetOneWord( unsigned code, unsigned cp_num, unsigned op1, unsigned op2, unsigned crn, unsigned crm );
+  
   /**************************************************************/
   /* Coprocessor methods          END                           */
   /**************************************************************/
@@ -637,14 +659,30 @@ public:
 		
 protected:
   /** Decoder for the arm32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
+  unisim::component::cxx::processor::arm::isa::arm32::Decoder<Config> arm32_decoder;
   /** Decoder for the thumb instruction set. */
-  unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU> thumb_decoder;
+  unisim::component::cxx::processor::arm::isa::thumb2::Decoder<Config> thumb_decoder;
 
-  /* The thumb instruction set decoder is not needed for armemu 
-   * typename isa::thumb::Decoder<CONFIG> thumb_decoder;
+  /** The registers interface for debugging purpose */
+  typedef std::map<std::string, unisim::util::debug::Register *> RegistersRegistry;
+  RegistersRegistry registers_registry;
+		
+  /** Number of SPSR registers.
+   * Privileged modes have private SPSR registers, the following is
+   *   the organization per running mode:
+   * - user:           --
+   * - system:         --
+   * - supervisor:     0
+   * - abort:          1
+   * - undefined:      2
+   * - interrupt:      3
+   * - fast interrupt: 4
    */
-
+  const static uint32_t num_phys_spsrs = 5;
+  /** The SPSR registers storage.
+   */
+  PSR spsr[5];
+  
   /** Instruction counter */
   uint64_t instruction_counter;
 	
@@ -728,49 +766,26 @@ protected:
   /************************************************************************/
 
   /************************************************************************/
-  /* Memory queue and handling                                      START */
+  /* Memory access handling                                         START */
   /************************************************************************/
 	
-  /** Queue of memory operations.
-   * Load and store instructions do not directly access the memory system. 
-   *   This is called memory decoupling. Load/stores are kept in the 
-   *   load/store queue and performed once the instruction has been executed 
-   *   (you can think of it as a writeback face). To perform the memory 
-   *   accesses at the end of the execution the method 
-   *   PerformLoadStoreAccesses must be called 
-   */
-  class LSQueueConfig
-  {
-  public:
-    static const bool DEBUG = false;
-    typedef unisim::component::cxx::processor::arm::MemoryOp *ELEMENT;
-    static const unsigned int SIZE = 32;
-  };
-
-  unisim::util::queue::Queue<LSQueueConfig> ls_queue;
-  /** Current memory operation.
-   * First load/store operation pending to be sent to the memory system
-   */
-  unisim::component::cxx::processor::arm::MemoryOp *first_ls;
-  /** Indicates if the firstLS item has been sent or not.
-   */
-  bool has_sent_first_ls;
-  /** Performs the load/stores present in the queue of memory operations.
-   */
-  void PerformLoadStoreAccesses();
   /** Performs a prefetch access.
    *
-   * @param memop the memory operation containing the prefetch access
+   * @param addr the address of the memory prefetch access
    */
-  void PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp* memop);
+  void PerformPrefetchAccess( uint32_t addr );
   /** Performs a write access.
-   * @param memop the memory operation containing the write access
+   * @param addr the address of the memory write access
+   * @param size the size of the memory write access
+   * @param value the value of the memory write access
    */
-  void PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp* memop);
+  void PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
   /** Performs a read access.
-   * @param memop the memory operation containing the read access
+   * @param addr the address of the memory read access
+   * @param size the size of the memory read access
+   * @param _signed the nature of the memory read access (signed or unsigned)
    */
-  void PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp* memop);
+  uint32_t PerformReadAccess( uint32_t addr, uint32_t size, bool _signed );
 
   //=====================================================================
   //=               Instruction prefetch buffer                         =
@@ -779,167 +794,6 @@ protected:
   uint8_t ipb_bytes[Cache::LINE_SIZE];                       //!< The instruction prefetch buffer
   uint32_t ipb_base_address;                                 //!< base address of IPB content (cache line size aligned if valid)
 };
-
-/** 32bits memory read.
- *
- * This method reads 32bits from memory and returns a
- * corresponding pending memory operation.
- * 
- * @param address the base address of the 32bits read
- * 
- * @return a pointer to the pending memory operation
- */
-inline
-MemoryOp*
-CPU::MemRead32(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 4, false);
-	
-	return memop;
-}
-
-/** 16bits memory read.
- * 
- * This method reads 16bits from memory and returns a
- * corresponding pending memory operation.
- * 
- * @param address the base address of the 16bits read
- * 
- * @return a pointer to the pending memory operation
- */
-inline
-MemoryOp*
-CPU::MemRead16(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 2, false);
-	
-	return memop;
-}
-
-/** Signed 16bits memory read.
- *
- * This method reads 16bits from memory and return a
- * corresponding signed pending memory operation.
- * 
- * @param address the base address of the 16bits read
- * 
- * @return a pointer to the pending memory operation
- */
-inline
-MemoryOp*
-CPU::MemReadS16(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 2, true);
-	
-	return memop;
-}
-
-/** 8bits memory read.
- *
- * This method reads 8bits from memory and returns a
- * corresponding pending memory operation.
- * 
- * @param address the base address of the 8bits read
- * 
- * @return a pointer to the pending memory operation
- */
-inline
-MemoryOp*
-CPU::MemRead8(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 1, false);
-	
-	return memop;
-}
-
-/** Signed 8bits memory read.
- *
- * This method reads 8bits from memory and returns a
- * corresponding signed pending memory operation.
- * 
- * @param address the base address of the 8bits read
- * 
- * @return a pointer to the pending memory operation
- */
-inline
-MemoryOp*
-CPU::MemReadS8(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetRead(address, 1, true);
-	
-	return memop;
-}
-
-/** 32bits memory write.
- * This method write the giving 32bits value into the memory system.
- * 
- * @param address the base address of the 32bits write
- * @param value the value to write into memory
- */
-inline
-void 
-CPU::
-MemWrite32(uint32_t address, uint32_t value)
-{
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x3);
-	memop = MemoryOp::alloc();
-	memop->SetWrite(address, 4, value);
-	ls_queue.Push(memop);
-}
-
-/** 16bits memory write.
- * This method write the giving 16bits value into the memory system.
- * 
- * @param address the base address of the 16bits write
- * @param value the value to write into memory
- */
-inline
-void 
-CPU::
-MemWrite16(uint32_t address, uint16_t value)
-{
-	address = address & ~((uint32_t)0x1);
-	MemoryOp *memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetWrite(address, 2, value);
-	ls_queue.Push(memop);
-}
-
-/** 8bits memory write.
- * This method write the giving 8bits value into the memory system.
- * 
- * @param address the base address of the 8bits write
- * @param value the value to write into memory
- */
-inline
-void 
-CPU::
-MemWrite8(uint32_t address, uint8_t value)
-{
-	MemoryOp *memop;
-	
-	memop = MemoryOp::alloc();
-	memop->SetWrite(address, 1, value);
-	ls_queue.Push(memop);
-}
 
 } // end of namespace armemu
 } // end of namespace arm

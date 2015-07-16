@@ -75,7 +75,7 @@ group conditional (ldr_imm,ldr_reg,ldrh_imm,ldrh_reg,ldrsh_imm,ldrsh_reg,ldrb_im
 op unconditional( 0b1111[4]: ?[28] );
 
 unconditional.disasm = {
-  buffer << "?\t(" << std::hex << this->GetEncoding() << std::dec << ")";
+  buffer << "unconditional group\t(" << std::hex << this->GetEncoding() << std::dec << ")";
 }
 
 unconditional.specialize( conditional );

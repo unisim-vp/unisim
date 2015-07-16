@@ -47,7 +47,7 @@ set endianness little;
 set words_order ascending;
 //set withencode_p true;
 
-template <{class} {ARCH}>
+template <{typename} {CONFIG}>
 
 decl {
 #include <iosfwd>
@@ -64,11 +64,11 @@ impl {
 #include <iomanip>
 } // end of impl
 
-action {void} execute({ARCH &} {cpu}) {
+action {void} execute({typename CONFIG::Arch &} {cpu}) {
   cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
 }
 
-action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {
+action {void} disasm({typename CONFIG::Arch &} {cpu}, {std::ostream &} {buffer}) {
   buffer << "Unknown instruction";
 }
 
@@ -81,5 +81,3 @@ include "branch_T1.isa"
 include "exception.isa"
 
 include "ordering.isa"
-
-include "profiling.isa"

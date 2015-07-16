@@ -49,18 +49,26 @@ class SimpleRegister : public Register
 {
 public:
 	SimpleRegister(const char *name, REGISTER_TYPE *value);
+	SimpleRegister(std::string name, REGISTER_TYPE *value);
 	virtual ~SimpleRegister();
 	virtual const char *GetName() const;
 	virtual void GetValue(void *buffer) const;
 	virtual void SetValue(const void *buffer);
 	virtual int GetSize() const;
 private:
-	string name;
+	std::string name;
 	REGISTER_TYPE *value;
 };
 
 template <class REGISTER_TYPE>
 SimpleRegister<REGISTER_TYPE>::SimpleRegister(const char *_name, REGISTER_TYPE *_value) :
+	name(_name),
+	value(_value)
+{
+}
+
+template <class REGISTER_TYPE>
+SimpleRegister<REGISTER_TYPE>::SimpleRegister(std::string _name, REGISTER_TYPE *_value) :
 	name(_name),
 	value(_value)
 {

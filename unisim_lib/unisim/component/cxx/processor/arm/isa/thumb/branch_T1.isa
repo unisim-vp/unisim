@@ -45,7 +45,7 @@
  *
  */
 
-{ not ARCH::insnsT2 }:                         \
+{ not CONFIG::insnsT2 }:                         \
 op bl_h1( 0b11110[5]: shl<12> sext<32> imm1[11] );
 
 bl_h1.disasm = {
@@ -70,7 +70,7 @@ bl_h1.execute = {
  * BL calls a subroutine at a PC-relative address.
  */
 
-{ not ARCH::insnsT2 }:                         \
+{ not CONFIG::insnsT2 }:                         \
 op bl_h2( 0b11111[5]: shl<1> imm0[11] );
 
 bl_h2.disasm = {
@@ -98,7 +98,7 @@ bl_h2.execute = {
  * instruction set from Thumb to ARM.
  */
 
-{ ARCH::insns5T and not ARCH::insnsT2 }:       \
+{ CONFIG::insns5T and not CONFIG::insnsT2 }:       \
 op blx_h3( 0b11101[5]: shl<2> imm0[10]: 0b0[1] );
 
 blx_h3.disasm = {

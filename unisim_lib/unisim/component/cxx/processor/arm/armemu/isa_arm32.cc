@@ -37,7 +37,6 @@
 #include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
 #include "unisim/component/cxx/processor/arm/armemu/cpu.hh"
 
-template 
-class
-unisim::component::cxx::processor::arm::isa::arm32::Decoder<
-	unisim::component::cxx::processor::arm::armemu::CPU>;
+using namespace unisim::component::cxx::processor;
+
+template struct arm::isa::arm32::Decoder<arm::armemu::Config>;

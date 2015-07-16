@@ -141,7 +141,7 @@ smull.execute = {
  * destination register. The condition code flags are not affected
  */
 
-{ ARCH::insnsRM }:                                                      \
+{ CONFIG::insnsRM }:                                                      \
 op sdiv( 0b111110111001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1111[4]: rm[4] );
 
 sdiv.disasm = {
@@ -160,7 +160,7 @@ sdiv.disasm = {
  * destination register. The condition code flags are not affected.
  */
 
-{ ARCH::insnsRM }:                                                      \
+{ CONFIG::insnsRM }:                                                      \
 op udiv( 0b111110111011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1111[4]: rm[4] );
 
 udiv.disasm = {
@@ -175,7 +175,7 @@ udiv.disasm = {
  * smlalxy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smlalxy( 0b11111[5]: 0b0111[4]: 0b100[3]: rn[4]:> <: rdlo[4]: rdhi[4]: 0b10[2]: n[1]: m[1]: rm[4] );
 
 smlalxy.disasm = {
@@ -206,7 +206,7 @@ smlalxy.execute = {
  * smlal instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smlal( 0b11111[5]: 0b0111[4]: 0b100[3]: rn[4]:> <: rdlo[4]: rdhi[4]: 0b0000[4]: rm[4] );
 
 smlal.disasm = {
@@ -234,7 +234,7 @@ smlal.execute = {
  * smlaxy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smlaxy( 0b11111[5]: 0b0110[4]: 0b001[3]: rn[4]:> <: ra[4]: rd[4]: 0b00[2]: n[1]: m[1]: rm[4] );
 
 smlaxy.disasm = {
@@ -289,7 +289,7 @@ smlaxy.execute = {
   unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, mul_res, val_ra, 0);
   //if(op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
   if (overflow_out) {
-    cpu.CPSR().Q().Set( 1 );
+    cpu.CPSR().Set( Q, 1 );
   }
   cpu.SetGPR(rd, val_rd);
 };
@@ -305,7 +305,7 @@ smlaxy.execute = {
  * products to a 64-bit accumulate operand.
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smlald( 0b11111[5]: 0b0111[4]: 0b100[3]: rd[4]:> <: rc[4]: rb[4]: 0b110[3]: m[1]: ra[4] );
 
 smlald.disasm = {
@@ -324,7 +324,7 @@ smlald.disasm = {
  * products to a 64-bit accumulate operand.
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smlsld( 0b11111[5]: 0b0111[4]: 0b101[3]: rd[4]:> <: rc[4]: rb[4]: 0b110[3]: m[1]: ra[4] );
 
 smlsld.disasm = {
@@ -341,7 +341,7 @@ smlsld.disasm = {
  * smlad instruction
  */
 
-{ ARCH::insns6 }:                                                       \
+{ CONFIG::insns6 }:                                                       \
 op smlad( 0b11111[5]: 0b0110[4]: 0b010[3]: rd[4]:> <: rc[4]: rb[4]: 0b000[3]: m[1]: ra[4] );
 
 smlad.disasm = {
@@ -358,7 +358,7 @@ smlad.disasm = {
  * smuad instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smuad( 0b111110110010[12]: rd[4]:> <: 0b1111[4]: rb[4]: 0b000[3]: m[1]: ra[4] );
 
 smuad.disasm = {
@@ -373,7 +373,7 @@ smuad.disasm = {
  * smlsd instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smlsd( 0b111110110100[12]: rd[4]:> <: rc[4]: rb[4]: 0b000[3]: m[1]: ra[4] );
 
 smlsd.disasm = {
@@ -388,7 +388,7 @@ smlsd.disasm = {
  * smusd instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smusd( 0b111110110100[12]: rd[4]:> <: 0b1111[4]: rb[4]: 0b000[3]: m[1]: ra[4] );
 
 smusd.disasm = {
@@ -403,7 +403,7 @@ smusd.disasm = {
  * smmla instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smmla( 0b111110110101[12]: rd[4]:> <: rc[4]: rb[4]: 0b000[3]: r[1]: ra[4] );
 
 smmla.disasm = {
@@ -418,7 +418,7 @@ smmla.disasm = {
  * smmul instruction
  */
 
-{ ARCH::insns6 }:                                                       \
+{ CONFIG::insns6 }:                                                       \
 op smmul( 0b111110110101[12]: rd[4]:> <: 0b1111[4]: rb[4]: 0b000[3]: r[1]: ra[4] );
 
 smmul.disasm = {
@@ -433,7 +433,7 @@ smmul.disasm = {
  * smmls instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ CONFIG::insns6 }:                                                      \
 op smmls( 0b111110110110[12]: rd[4]:> <: rc[4]: rb[4]: 0b000[3]: r[1]: ra[4] );
 
 smmls.disasm = {
@@ -448,7 +448,7 @@ smmls.disasm = {
  * smulxy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smulxy( 0b111110110001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b00[2]: n[1]: m[1]: rm[4] );
 
 smulxy.disasm = {
@@ -507,7 +507,7 @@ smulxy.execute = {
  * smlawy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smlawy( 0b111110110011[12]: rn[4]:> <: ra[4]: rd[4]: 0b000[3]: m[1]: rm[4] );
 
 smlawy.disasm = {
@@ -558,7 +558,7 @@ smlawy.execute = {
   if(overflow_out)
     {
       //    cpu.SetCPSR_Q(false);
-      cpu.CPSR().Q().Set( 1 );
+      cpu.CPSR().Set( Q, 1 );
     }
   //   else
   //   {
@@ -582,7 +582,7 @@ smlawy.execute = {
  * smulwy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ CONFIG::insns5E }:                                                     \
 op smulwy( 0b111110110011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b000[3]: m[1]: rm[4] );
 
 smulwy.disasm = {
