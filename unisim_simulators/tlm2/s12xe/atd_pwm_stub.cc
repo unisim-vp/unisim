@@ -204,55 +204,6 @@ void ATD_PWM_STUB::input(bool (*pwmValue)[PWM_SIZE])
 
 }
 
-void ATD_PWM_STUB::output_ATD1(double anValue[ATD1_SIZE])
-{
-
-	tlm_phase phase = BEGIN_REQ;
-
-	atd1_payload = atd1_payload_fabric.allocate();
-
-	for (int i=0; i<ATD1_SIZE; i++) {
-		atd1_payload->anPort[i] = anValue[i];
-	}
-
-
-//	sc_time local_time = atd1_quantumkeeper.get_local_time();
-	sc_time local_time = SC_ZERO_TIME;
-
-	if (trace_enable) {
-		atd1_output_file << (atd1_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *atd1_payload << std::endl;
-	}
-
-	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*atd1_payload, phase, local_time);
-
-	atd1_payload->release();
-	
-	wait(atd1_bw_event);
-
-	switch(ret)
-	{
-		case TLM_ACCEPTED:
-			// neither payload, nor phase and local_time have been modified by the callee
-			atd1_quantumkeeper.sync(); // synchronize to leave control to the callee
-			break;
-		case TLM_UPDATED:
-			// the callee may have modified 'payload', 'phase' and 'local_time'
-			atd1_quantumkeeper.set(local_time); // increase the time
-			if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync(); // synchronize if needed
-
-			break;
-		case TLM_COMPLETED:
-			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			atd1_quantumkeeper.set(local_time); // increase the time
-			if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync(); // synchronize if needed
-			break;
-	}
-
-	atd1_quantumkeeper.inc(*anx_stimulus_period_sc);
-	if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
-
-}
-
 void ATD_PWM_STUB::output_ATD0(double anValue[ATD0_SIZE])
 {
 	tlm_phase phase = BEGIN_REQ;
@@ -301,4 +252,50 @@ void ATD_PWM_STUB::output_ATD0(double anValue[ATD0_SIZE])
 
 }
 
+void ATD_PWM_STUB::output_ATD1(double anValue[ATD1_SIZE])
+{
+	tlm_phase phase = BEGIN_REQ;
 
+	ATD_Payload<ATD1_SIZE> *atd1_payload = atd1_payload_fabric.allocate();
+
+	for (int i=0; i<ATD1_SIZE; i++) {
+		atd1_payload->anPort[i] = anValue[i];
+	}
+
+
+//	sc_time local_time = atd1_quantumkeeper.get_local_time();
+	sc_time local_time = SC_ZERO_TIME;
+
+	if (trace_enable) {
+		atd1_output_file << (atd1_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *atd1_payload << std::endl;
+	}
+
+	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*atd1_payload, phase, local_time);
+
+	atd1_payload->release();
+
+	wait(atd1_bw_event);
+
+	switch(ret)
+	{
+		case TLM_ACCEPTED:
+			// neither payload, nor phase and local_time have been modified by the callee
+			atd1_quantumkeeper.sync(); // synchronize to leave control to the callee
+			break;
+		case TLM_UPDATED:
+			// the callee may have modified 'payload', 'phase' and 'local_time'
+			atd1_quantumkeeper.set(local_time); // increase the time
+			if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync(); // synchronize if needed
+
+			break;
+		case TLM_COMPLETED:
+			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+			atd1_quantumkeeper.set(local_time); // increase the time
+			if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync(); // synchronize if needed
+			break;
+	}
+
+	atd1_quantumkeeper.inc(*anx_stimulus_period_sc);
+	if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
+
+}

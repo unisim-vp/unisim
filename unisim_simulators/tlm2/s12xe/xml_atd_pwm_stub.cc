@@ -260,8 +260,10 @@ bool XML_ATD_PWM_STUB::BeginSetup() {
 
 void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[8])
 {
-	data_t<ATD0_SIZE>* data = new data_t<ATD0_SIZE>();
-	atd0_vect.push_back(data);
+//	data_t<ATD0_SIZE>* data = new data_t<ATD0_SIZE>();
+//	atd0_vect.push_back(data);
+
+	data_t<ATD0_SIZE>* data  = *(atd0_vect.begin());
 
 	for (uint8_t j=0; j < ATD0_SIZE; j++) {
 		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
@@ -272,14 +274,14 @@ void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[8])
 
 void XML_ATD_PWM_STUB::Inject_ATD1(double anValue[16])
 {
-	data_t<ATD1_SIZE>* data = new data_t<ATD1_SIZE>();
-	atd1_vect.push_back(data);
+//	data_t<ATD1_SIZE>* data = new data_t<ATD1_SIZE>();
+//	atd1_vect.push_back(data);
 
+	data_t<ATD1_SIZE>* data  = *(atd1_vect.begin());
 	for (uint8_t j=0; j < ATD1_SIZE; j++) {
 		data->volte[j] = anValue[j]; // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-		data->time = 0.080; // 0.080 Millisecond
+		data->time =  0.080; // 0.080 Millisecond
 	}
-
 }
 
 void XML_ATD_PWM_STUB::Get_PWM(bool (*value)[PWM_SIZE])
@@ -350,6 +352,7 @@ void XML_ATD_PWM_STUB::processATD1()
 	if (atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
 
 	double atd1_anValue[ATD1_SIZE];
+
 	uint8_t atd1_wrap_around;
 	uint8_t atd1_start;
 

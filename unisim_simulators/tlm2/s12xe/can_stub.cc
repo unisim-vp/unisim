@@ -271,6 +271,8 @@ void CAN_STUB::Inject_CAN(CAN_DATATYPE msg)
 	CAN_DATATYPE* data = new CAN_DATATYPE();
 	can_rx_vect.push_back(data);
 
+//	CAN_DATATYPE* data  = *(can_rx_vect.begin());
+
 	for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
 		data->ID[j] = msg.ID[j];
 	}
