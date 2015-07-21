@@ -174,7 +174,7 @@ private:
 
 
 	std::vector<CAN_DATATYPE* > can_rx_vect;
-	CAN_DATATYPE can_tx_buffer;
+	std::vector<CAN_DATATYPE* > can_tx_vect;
 };
 
 #endif /* CAN_STUB_HH_ */

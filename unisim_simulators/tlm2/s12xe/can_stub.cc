@@ -268,53 +268,82 @@ void CAN_STUB::inject(CAN_DATATYPE msg)
 
 void CAN_STUB::Inject_CAN(CAN_DATATYPE msg)
 {
-	CAN_DATATYPE* data = new CAN_DATATYPE();
-	can_rx_vect.push_back(data);
+	if (cosim_enabled) {
+		CAN_DATATYPE* data = new CAN_DATATYPE();
+		can_rx_vect.push_back(data);
 
-//	CAN_DATATYPE* data  = *(can_rx_vect.begin());
-
-	for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
-		data->ID[j] = msg.ID[j];
+		for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
+			data->ID[j] = msg.ID[j];
+		}
+		for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
+			data->Data[j] = msg.Data[j];
+		}
+		data->Length = msg.Length;
+		data->Priority = msg.Priority;
+		data->Extended = msg.Extended;
+		data->Error = msg.Error;
+		data->Remote = msg.Remote;
+		data->Timestamp[0] = msg.Timestamp[0];
+		data->Timestamp[1] = msg.Timestamp[1];
 	}
-	for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
-		data->Data[j] = msg.Data[j];
-	}
-	data->Length = msg.Length;
-	data->Priority = msg.Priority;
-	data->Extended = msg.Extended;
-	data->Error = msg.Error;
-	data->Remote = msg.Remote;
-	data->Timestamp[0] = msg.Timestamp[0];
-	data->Timestamp[1] = msg.Timestamp[1];
-
 }
 
 void CAN_STUB::Get_CAN(CAN_DATATYPE *msg)
 {
+	if (cosim_enabled && (can_tx_vect.size() > 0)) {
+		std::vector<CAN_DATATYPE*>::iterator it = can_tx_vect.begin();
+		for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
+			msg->ID[j] = (*it)->ID[j];
+		}
+		for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
+			msg->Data[j] = (*it)->Data[j];
+		}
+		msg->Length = (*it)->Length;
+		msg->Priority = (*it)->Priority;
+		msg->Extended = (*it)->Extended;
+		msg->Error = (*it)->Error;
+		msg->Remote = (*it)->Remote;
+		msg->Timestamp[0] = (*it)->Timestamp[0];
+		msg->Timestamp[1] = (*it)->Timestamp[1];
 
-	for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
-		msg->ID[j] = can_tx_buffer.ID[j];
+		can_tx_vect.erase(it);
 	}
-	for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
-		msg->Data[j] = can_tx_buffer.Data[j];
-	}
-	msg->Length = can_tx_buffer.Length;
-	msg->Priority = can_tx_buffer.Priority;
-	msg->Extended = can_tx_buffer.Extended;
-	msg->Error = can_tx_buffer.Error;
-	msg->Remote = can_tx_buffer.Remote;
-	msg->Timestamp[0] = can_tx_buffer.Timestamp[0];
-	msg->Timestamp[1] = can_tx_buffer.Timestamp[1];
 
 }
 
-void CAN_STUB::Inject_CANArray(CAN_DATATYPE_ARRAY msg)
+void CAN_STUB::Inject_CANArray(CAN_DATATYPE_ARRAY msgArray)
 {
-
+	unsigned int nbmsg = msgArray.nmsgs;
+	CAN_DATATYPE *canMsg = msgArray.canMsg;
+	for (unsigned int i=0; i<nbmsg; i++)
+	{
+		Inject_CAN(canMsg[i]);
+	}
 }
 
 void CAN_STUB::getCANArray(CAN_DATATYPE_ARRAY *msg){
+	msg->nmsgs = can_tx_vect.size();
+	msg->canMsg = new CAN_DATATYPE[msg->nmsgs];
+	unsigned int i = 0;
+	for (std::vector<CAN_DATATYPE*>::iterator it = can_tx_vect.begin() ; (it != can_tx_vect.end()) ; ++it)
+	{
+		for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
+			(msg->canMsg[i]).ID[j] = (*it)->ID[j];
+		}
+		for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
+			(msg->canMsg[i]).Data[j] = (*it)->Data[j];
+		}
+		(msg->canMsg[i]).Length = (*it)->Length;
+		(msg->canMsg[i]).Priority = (*it)->Priority;
+		(msg->canMsg[i]).Extended = (*it)->Extended;
+		(msg->canMsg[i]).Error = (*it)->Error;
+		(msg->canMsg[i]).Remote = (*it)->Remote;
+		(msg->canMsg[i]).Timestamp[0] = (*it)->Timestamp[0];
+		(msg->canMsg[i]).Timestamp[1] = (*it)->Timestamp[1];
 
+		i++;
+		can_tx_vect.erase(it);
+	}
 }
 
 void CAN_STUB::watchdog() {
@@ -332,7 +361,7 @@ void CAN_STUB::watchdog() {
 void CAN_STUB::processCANRX()
 {
 
-	CAN_DATATYPE can_rx_buffer;
+//	CAN_DATATYPE can_rx_buffer;
 
 	wait(sc_time(100, SC_MS));
 
@@ -342,24 +371,29 @@ void CAN_STUB::processCANRX()
 
 			wait(*can_rx_stimulus_period_sc);
 
-			for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
-				can_rx_buffer.ID[j] = (*it)->ID[j];
+//			for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
+//				can_rx_buffer.ID[j] = (*it)->ID[j];
+//			}
+//			for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
+//				can_rx_buffer.Data[j] = (*it)->Data[j];
+//			}
+//			can_rx_buffer.Length = (*it)->Length;
+//			can_rx_buffer.Priority = (*it)->Priority;
+//			can_rx_buffer.Extended = (*it)->Extended;
+//			can_rx_buffer.Error = (*it)->Error;
+//			can_rx_buffer.Remote = (*it)->Remote;
+//			can_rx_buffer.Timestamp[0] = (*it)->Timestamp[0];
+//			can_rx_buffer.Timestamp[1] = (*it)->Timestamp[1];
+//
+////			std::cout << sc_object::name() << "  Random " << std::endl;
+//
+//			inject(can_rx_buffer);
+
+			inject(*(*it));
+
+			if (cosim_enabled) {
+				can_rx_vect.erase(it);
 			}
-			for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
-				can_rx_buffer.Data[j] = (*it)->Data[j];
-			}
-			can_rx_buffer.Length = (*it)->Length;
-			can_rx_buffer.Priority = (*it)->Priority;
-			can_rx_buffer.Extended = (*it)->Extended;
-			can_rx_buffer.Error = (*it)->Error;
-			can_rx_buffer.Remote = (*it)->Remote;
-			can_rx_buffer.Timestamp[0] = (*it)->Timestamp[0];
-			can_rx_buffer.Timestamp[1] = (*it)->Timestamp[1];
-
-//			std::cout << sc_object::name() << "  Random " << std::endl;
-
-			inject(can_rx_buffer);
-
 		}
 	}
 
@@ -368,13 +402,21 @@ void CAN_STUB::processCANRX()
 
 void CAN_STUB::processCANTX()
 {
+	CAN_DATATYPE* data = new CAN_DATATYPE();
+	can_rx_vect.push_back(data);
 
 	while (!isTerminated())
 	{
-		observe(can_tx_buffer);
+		CAN_DATATYPE *can_tx_buffer = new CAN_DATATYPE();
+		observe(*can_tx_buffer);
 
-		inject(can_tx_buffer);
+		inject(*can_tx_buffer);
 
+		if (cosim_enabled) {
+			can_tx_vect.push_back(can_tx_buffer);
+		} else {
+			delete can_tx_buffer;
+		}
 	}
 
 }
