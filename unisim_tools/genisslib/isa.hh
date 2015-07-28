@@ -53,6 +53,9 @@ struct Isa
   Vect_t<Specialization_t>      m_specializations; /**< Requested specializations */
   Vect_t<Inheritance_t>         m_inheritances;    /**< Defined inheritances for operation class */
   
+  typedef std::map<ConstStr_t,Group_t*> GroupAccumulators;
+  GroupAccumulators             m_group_accs;      /**< Active group accumulators */
+  
   struct Ordering { FileLoc_t fileloc; std::vector<ConstStr_t> symbols; };
   typedef std::vector<Ordering> Orderings;
   Orderings                     m_user_orderings;
@@ -61,6 +64,7 @@ struct Isa
   ~Isa();
   
   void                          remove( Operation_t* _op );
+  void                          add( Operation_t* _op );
   void                          remove( ActionProto_t const* _ap );
   Operation_t*                  operation( ConstStr_t _symbol );
   bool                          operations( ConstStr_t _symbol, Vect_t<Operation_t>& _opvec );
@@ -84,6 +88,10 @@ struct Isa
   void                          setparam( ConstStr_t key, ConstStr_t value );
   void                          setparam( ConstStr_t key, SourceCode_t* value );
   void                          setparam( ConstStr_t key, unsigned int value );
+  
+  struct ParseError {};
+  
+  void                          group_command( ConstStr_t _symbol, ConstStr_t _command, FileLoc_t const& fl );
 };
 
 #endif // __ISA_HH__

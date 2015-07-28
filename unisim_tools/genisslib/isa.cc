@@ -103,7 +103,7 @@ Isa::operations( ConstStr_t _symbol, Vect_t<Operation_t>& _oplist )
 }
 
 
-/** Remove an operation object from the global operation object list (operation_list)
+/** Remove an operation object from the global operation object list (m_operations)
     @param operation the operation object to remove
 */
 void
@@ -114,6 +114,18 @@ Isa::remove( Operation_t* _op )
     m_operations.erase( iter );
     return;
   }
+}
+
+/** Add an operation object to the global operation object list
+    (m_operations) and to active group accumulators (m_group_accs)
+    @param operation the operation object to add
+*/
+void
+Isa::add( Operation_t* _op )
+{
+  m_operations.append( _op );
+  for (GroupAccumulators::iterator itr = m_group_accs.begin(), end = m_group_accs.end(); itr != end; ++itr)
+    oplist_insert_unique( itr->second->m_operations, _op );
 }
 
 /** Search the global group lists for the given symbol
@@ -412,4 +424,47 @@ Isa::sdinstance( ConstStr_t _symbol ) const
     if( (**sdi).m_symbol == _symbol ) return *sdi;
   }
   return 0;
+}
+
+void
+Isa::group_command( ConstStr_t group_symbol, ConstStr_t _command, FileLoc_t const& fl )
+{
+  static ConstStr_t  group_begin( "begin",  Scanner::symbols );
+  static ConstStr_t  group_end  ( "end",    Scanner::symbols );
+  
+  if (_command == group_begin)
+    {
+      m_group_accs[group_symbol] = new Group_t( group_symbol, fl );
+    }
+  else if (_command == group_end)
+    {
+      GroupAccumulators::iterator ga = m_group_accs.find( group_symbol );
+      
+      {
+        /* group accumulator should exist */
+        if (ga == m_group_accs.end()) {
+          fl.err( "error: no corresponding `group %s %s' to `group %s %s' directive.",
+                  group_symbol.str(), group_begin.str(), group_symbol.str(), group_end.str() );
+          throw ParseError();
+        }
+      
+        /* Operations and groups name should not conflict */
+        Operation_t* prev_op = Scanner::isa().operation( group_symbol );
+        if (prev_op) {
+          fl.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
+          prev_op->m_fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
+          throw ParseError();
+        }
+
+        Group_t* prev_grp = Scanner::isa().group( group_symbol );
+        if (prev_grp) {
+          fl.err( "conflicting group `%s' redefined", group_symbol.str() );
+          prev_grp->m_fileloc.err( "group `%s' previously defined here", group_symbol.str() );
+          throw ParseError();
+        }
+      }
+      
+      m_groups.push_back( ga->second );
+      m_group_accs.erase( ga );
+    }
 }

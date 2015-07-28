@@ -290,7 +290,7 @@ declaration:
            | subdecoder_instance TOK_ENDL
            | operation_declaration TOK_ENDL
 {
-  Scanner::isa().m_operations.append( $1 );
+  Scanner::isa().add( $1 );
 }
            | action_proto_declaration TOK_ENDL
 {
@@ -322,6 +322,7 @@ declaration:
 {
   Scanner::isa().m_inheritances.push_back( $1 );
 }
+  | group_environment
   | group_declaration
 {
   Scanner::isa().m_groups.push_back( $1 );
@@ -788,6 +789,18 @@ include : TOK_INCLUDE TOK_STRING
     YYABORT;
 }
 ;
+
+group_environment: TOK_GROUP TOK_IDENT TOK_IDENT
+{
+  ConstStr_t group_symbol = ConstStr_t( $2, Scanner::symbols );
+  ConstStr_t command( $3, Scanner::symbols );
+  
+  try {
+    Scanner::isa().group_command( group_symbol, command, Scanner::fileloc );
+  } catch (Isa::ParseError pe) {
+    YYABORT;
+  }
+}
 
 group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
 {
