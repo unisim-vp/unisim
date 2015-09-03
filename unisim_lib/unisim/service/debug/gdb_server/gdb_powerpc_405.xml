@@ -71,4 +71,47 @@
 	<register name="ctr" bitsize="32"/>
 	<register name="xer" bitsize="32"/>
 	<register name="fpscr" bitsize="32" regnum="70"/>
+	<register name="pvr" bitsize="32" regnum="87"/>
+	<register name="sprg0" bitsize="32" regnum="108"/>
+	<register name="sprg1" bitsize="32"/>
+	<register name="sprg2" bitsize="32"/>
+	<register name="sprg3" bitsize="32"/>
+	<register name="srr0" bitsize="32"/>
+	<register name="srr1" bitsize="32"/>
+	<register name="tbl" bitsize="32"/>
+	<register name="tbu" bitsize="32"/>
+	<register name="icdbdr" bitsize="32" regnum="119"/>
+	<register name="esr" bitsize="32"/>
+	<register name="dear" bitsize="32"/>
+	<register name="evpr" bitsize="32"/>
+	<register name="tsr" bitsize="32" regnum="124"/>
+	<register name="tcr" bitsize="32"/>
+	<register name="pit" bitsize="32"/>
+	<register name="srr2" bitsize="32" regnum="129"/>
+	<register name="srr3" bitsize="32"/>
+	<register name="dbsr" bitsize="32"/>
+	<register name="dbcr" bitsize="32"/>
+	<register name="iac1" bitsize="32"/>
+	<register name="iac2" bitsize="32"/>
+	<register name="dac1" bitsize="32"/>
+	<register name="dac2" bitsize="32"/>
+	<register name="dccr" bitsize="32"/>
+	<register name="iccr" bitsize="32"/>
+	<register name="zpr" bitsize="32" regnum="143"/>
+	<register name="pid" bitsize="32"/>
+	<register name="sgr" bitsize="32"/>
+	<register name="dcwr" bitsize="32"/>
+	<register name="ccr0" bitsize="32" regnum="149"/>
+	<register name="dbcr1" bitsize="32"/>
+	<register name="dvc1" bitsize="32"/>
+	<register name="dvc2" bitsize="32"/>
+	<register name="iac3" bitsize="32"/>
+	<register name="iac4" bitsize="32"/>
+	<register name="sler" bitsize="32"/>
+	<register name="sprg4" bitsize="32"/>
+	<register name="sprg5" bitsize="32"/>
+	<register name="sprg6" bitsize="32"/>
+	<register name="sprg7" bitsize="32"/>
+	<register name="su0r" bitsize="32"/>
+	<register name="usprg0" bitsize="32"/>
 </architecture>
