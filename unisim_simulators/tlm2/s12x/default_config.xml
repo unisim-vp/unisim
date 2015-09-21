@@ -172,13 +172,7 @@
 		<variable name="can-rx-stimulus-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
-			<value>8e+07</value>
-			<description></description>
-		</variable>
-		<variable name="can-tx-fetch-period">
-			<type>parameter</type>
-			<data_type>double precision floating-point</data_type>
-			<value>1e+09</value>
+			<value>20000</value>
 			<description></description>
 		</variable>
 		<variable name="can-rx-stimulus-file">
@@ -186,6 +180,16 @@
 			<data_type>string</data_type>
 			<value></value>
 			<description></description>
+		</variable>
+		<variable name="broadcast-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 	</object>
 	<object name="CAN0">
@@ -1027,6 +1031,12 @@
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
+		</variable>
+		<variable name="property-list">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of properties to monitor. The list use white spaces as a separator e.g. p1 p2</description>
 		</variable>
 	</object>
 	<object name="PIT">
@@ -2230,108 +2240,6 @@
 				<description>Memory mapping. Syntax: [[(memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;]][,[(memory=]&lt;memory2&gt;[:[range=]&lt;low2-high2&gt;]]... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff)</description>
 			</variable>
 		</object>
-		<object name="loader.file0">
-			<variable name="filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>the ELF filename to load into memory</description>
-			</variable>
-			<variable name="base-addr">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000000</value>
-				<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
-			</variable>
-			<variable name="force-base-addr">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>if true force base address for a unique program segment</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="force-use-virtual-address">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>true</value>
-				<description>force use of virtual addresses instead of physical addresses (default false)</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="initialize-extra-segment-bytes">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="dump-headers">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>dump headers while loading ELF file</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="dwarf-to-html-output-directory">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>DWARF v2/v3 to HTML output directory</description>
-			</variable>
-			<variable name="dwarf-to-xml-output-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>DWARF v2/v3 to XML output filename</description>
-			</variable>
-			<variable name="dwarf-register-number-mapping-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>DWARF register number mapping filename</description>
-			</variable>
-			<variable name="parse-dwarf">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable parsing of DWARF debugging informations</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="debug-dwarf">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable debugging of DWARF</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-		</object>
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -2355,7 +2263,7 @@
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>filename=/localhome/rnouacer/workspace/s12x_tests/XDP512_CAN0-5_CW45/bin/SofTec_HCS12.abs:format=ELF32</value>
+			<value></value>
 			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[:[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[:[format=]&lt;format2&gt;]]... (e.g. boot.bin:raw,app.elf)</description>
 		</variable>
 	</object>
@@ -2538,8 +2446,18 @@
 	<variable name="enable-inline-debugger">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>true</value>
+		<value>false</value>
 		<description>Enable/Disable inline debugger instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-monitor">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable monitoring tool</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>

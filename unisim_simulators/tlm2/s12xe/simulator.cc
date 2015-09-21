@@ -644,8 +644,8 @@ Simulator::~Simulator()
 
 		cerr << endl;
 
-//		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-//		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
 //		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
 
 		cerr << "Host simulation time   : " << spent_time << " seconds" << endl;
@@ -969,6 +969,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "68hc12_dwarf_register_number_mapping.xml");
 
 	simulator->SetVariable("Monitor.xml-spec-file-path", "xml_spec_file_path.xml");
+	simulator->SetVariable("Monitor.property-list", "");
 
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;
@@ -1001,6 +1002,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CAN-STUB.rand-enabled", false);
 	simulator->SetVariable("CAN-STUB.can-rx-stimulus-period", 20000);
 	simulator->SetVariable("CAN-STUB.can-rx-stimulus-file", "");
+	simulator->SetVariable("CAN-STUB.broadcast-enabled", true);
 
 	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);

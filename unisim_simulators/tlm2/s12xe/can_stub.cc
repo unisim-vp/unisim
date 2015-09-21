@@ -68,6 +68,9 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 	, can_rx_stimulus_file("")
 	, param_can_rx_stimulus_file("can-rx-stimulus-file", this, can_rx_stimulus_file)
 
+	, broadcast_enabled(false)
+	, param_broadcast_enabled("broadcast-enabled", this, broadcast_enabled)
+
 	, terminated(false)
 
 
@@ -360,10 +363,11 @@ void CAN_STUB::watchdog() {
 
 void CAN_STUB::processCANRX()
 {
+	sc_time frame_period = sc_time(100, SC_MS);
 
 	while (!isTerminated() && (rand_enabled || xml_enabled || cosim_enabled)) {
 
-		wait(sc_time(100, SC_MS));
+		wait(frame_period);
 
 		for (std::vector<CAN_DATATYPE*>::iterator it = can_rx_vect.begin() ; !can_rx_vect.empty() && (it != can_rx_vect.end()) && !isTerminated(); ++it) {
 
@@ -396,7 +400,9 @@ void CAN_STUB::processCANTX()
  * Don't automatically broadcast the CAN messages because it is point to point.
  *
  */
-		inject(*can_tx_buffer);
+		if (broadcast_enabled) {
+			inject(*can_tx_buffer);
+		}
 
 		if (cosim_enabled) {
 			can_tx_vect.push_back(can_tx_buffer);

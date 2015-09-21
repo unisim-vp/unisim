@@ -167,6 +167,9 @@ private:
 	string can_rx_stimulus_file;
 	Parameter<string>	param_can_rx_stimulus_file;
 
+	bool broadcast_enabled;
+	Parameter<bool>	param_broadcast_enabled;
+
 	ofstream can_rx_output_file;
 	ofstream can_tx_output_file;
 

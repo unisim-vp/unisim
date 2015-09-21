@@ -255,6 +255,12 @@ public:
 	static const uint8_t EXT_RTR_MASK = 0x01;
 	static const uint8_t STD_RTR_MASK = 0x10;
 
+	void setMsgVect(uint8_t vect[CAN_MSG_SIZE]) {
+		for (int i=0; i<CAN_MSG_SIZE; i++) {
+			msgVect[i] = vect[i];
+		}
+	}
+
 	void pack(CAN_DATATYPE msg) {
 
 		for (int i=0; i<CAN_ID_SIZE; i++) {

@@ -338,18 +338,25 @@ void S12MSCAN::RunTx() {
 				continue;
 			}
 
-			// TODO: *** Get Arbitration (hasArbitration = true) ***
-			addTimeStamp(tx_shift);
+			if (isLoopBack()) {
+				CAN_Payload *payload = payload_fabric.allocate();
+				payload->setMsgVect(tx_shift);
+				sc_time local_time = SC_ZERO_TIME;
+				rx_payload_queue.notify(*payload, local_time);
+//				setRxBG(tx_shift);
 
-			// TODO: handle arbitration lost
-			if (!isArbitrationStatus()) {
-				setRxBG(tx_shift, true);
+			} else {
+				// TODO: *** Get Arbitration (hasArbitration = true) ***
+				addTimeStamp(tx_shift);
+
+
+				if (!isArbitrationStatus()) {
+					// TODO: handle arbitration lost
+				} else {
+					refreshOutput(tx_shift);
+				}
+
 			}
-
-			refreshOutput(tx_shift);
-
-			// After transmission
-			setRxBG(tx_shift, true);
 
 		}
 
