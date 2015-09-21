@@ -389,8 +389,6 @@ void CAN_STUB::processCANRX()
 
 void CAN_STUB::processCANTX()
 {
-	CAN_DATATYPE* data = new CAN_DATATYPE();
-	can_rx_vect.push_back(data);
 
 	while (!isTerminated())
 	{

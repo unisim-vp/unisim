@@ -629,7 +629,7 @@ Simulator::~Simulator()
 		cerr << endl;
 
 		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+//		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
 //		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
 
 		cerr << "Host simulation time   : " << spent_time << " seconds" << endl;
