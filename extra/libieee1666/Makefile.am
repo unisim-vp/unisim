@@ -8,6 +8,8 @@ libdir= $(prefix)/lib
 nobase_include_HEADERS = \
 systemc \
 systemc.h \
+tlm \
+tlm.h \
 ieee1666/kernel/sensitive.h \
 ieee1666/kernel/port.h \
 ieee1666/kernel/interface.h \
@@ -53,7 +55,21 @@ ieee1666/util/report.h \
 ieee1666/util/report_handler.h \
 ieee1666/util/version.h \
 ieee1666/util/backtrace.h \
-ieee1666/util/vector.h
+ieee1666/util/vector.h \
+ieee1666/tlm2/interoperability_layer/fwd.h \
+ieee1666/tlm2/interoperability_layer/interface/blocking_transport.h \
+ieee1666/tlm2/interoperability_layer/interface/non_blocking_transport.h \
+ieee1666/tlm2/interoperability_layer/interface/debug_transport.h \
+ieee1666/tlm2/interoperability_layer/interface/direct_memory.h \
+ieee1666/tlm2/interoperability_layer/interface/combined.h \
+ieee1666/tlm2/interoperability_layer/socket/target_socket.h \
+ieee1666/tlm2/interoperability_layer/socket/initiator_socket.h \
+ieee1666/tlm2/interoperability_layer/protocol/base_protocol.h \
+ieee1666/tlm2/interoperability_layer/phase/base_phase.h \
+ieee1666/tlm2/interoperability_layer/payload/generic_payload.h \
+ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.h
+
+
 
 lib_LTLIBRARIES = libsystemc.la
 libsystemc_la_SOURCES = \
@@ -97,7 +113,11 @@ ieee1666/util/trace_file.cc \
 ieee1666/util/report.cc \
 ieee1666/util/report_handler.cc \
 ieee1666/util/version.cc \
-ieee1666/util/backtrace.cc
+ieee1666/util/backtrace.cc \
+ieee1666/tlm2/interoperability_layer/interface/direct_memory.cc \
+ieee1666/tlm2/interoperability_layer/phase/base_phase.cc \
+ieee1666/tlm2/interoperability_layer/payload/generic_payload.cc \
+ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.cc
 
 nobase_dist_share_DATA = \
 COPYING
