@@ -44,7 +44,7 @@ class tlm_global_quantum
 public:
 	static tlm_global_quantum& instance();
 	virtual ~tlm_global_quantum();
-	void set( const sc_core::sc_time& );
+	void set(const sc_core::sc_time& t);
 	const sc_core::sc_time& get() const;
 	sc_core::sc_time compute_local_quantum();
 protected:

@@ -35,6 +35,8 @@
 #ifndef __IEEE1666_TLM2_INTEROPERABILITY_LAYER_INTERFACE_DEBUG_TRANSPORT_H__
 #define __IEEE1666_TLM2_INTEROPERABILITY_LAYER_INTERFACE_DEBUG_TRANSPORT_H__
 
+#include <systemc>
+
 namespace tlm {
 
 template <typename TRANS = tlm_generic_payload>

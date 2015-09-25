@@ -36,6 +36,7 @@
 #define __IEEE1666_TLM2_INTEROPERABILITY_LAYER_INTERFACE_DIRECT_MEMORY_H__
 
 #include <ieee1666/tlm2/interoperability_layer/fwd.h>
+#include <systemc>
 
 namespace tlm {
 
@@ -72,6 +73,13 @@ public:
 	void allow_read();
 	void allow_write();
 	void allow_read_write();
+private:
+	unsigned char *dmi_ptr;
+	sc_dt::uint64 start_address;
+	sc_dt::uint64 end_address;
+	dmi_access_e granted_access;
+	sc_core::sc_time read_latency;
+	sc_core::sc_time write_latency;
 };
 
 template <typename TRANS = tlm_generic_payload>

@@ -35,6 +35,8 @@
 #ifndef __IEEE1666_TLM2_INTEROPERABILITY_LAYER_FWD_H__
 #define __IEEE1666_TLM2_INTEROPERABILITY_LAYER_FWD_H__
 
+#include <ieee1666/kernel/fwd.h>
+
 namespace tlm {
 
 template <typename TRANS> class tlm_blocking_transport_if;

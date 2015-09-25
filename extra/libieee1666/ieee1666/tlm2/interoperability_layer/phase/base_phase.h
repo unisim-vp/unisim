@@ -35,7 +35,8 @@
 #ifndef __IEEE1666_TLM2_INTEROPERABILITY_LAYER_PHASE_BASE_PHASE_H__
 #define __IEEE1666_TLM2_INTEROPERABILITY_LAYER_PHASE_BASE_PHASE_H__
 
-#include <iosfwd>
+#include <iostream>
+#include <vector>
 
 namespace tlm {
 
@@ -52,22 +53,58 @@ class tlm_phase
 {
 public:
 	tlm_phase();
-	tlm_phase( unsigned int );
-	tlm_phase( const tlm_phase_enum& );
-	tlm_phase& operator= ( const tlm_phase_enum& );
-	operator unsigned int() const;
+	tlm_phase(unsigned int v);
+	tlm_phase(const tlm_phase_enum& v);
+	tlm_phase& operator = (const tlm_phase_enum& v);
+	operator unsigned int () const;
+private:
+	tlm_phase_enum value;
+	friend std::ostream& operator << (std::ostream& os, const tlm_phase& phase);
+protected:
+	static std::vector<const char *> extended_phase_name;
+	static unsigned int last_extended_phase_value;
 };
 
-inline std::ostream& operator<< ( std::ostream& , const tlm_phase& );
+inline std::ostream& operator << (std::ostream& os, const tlm_phase& phase)
+{
+	switch(phase.value)
+	{
+		case UNINITIALIZED_PHASE:
+			os << "UNINITIALIZED_PHASE";
+			break;
+		case BEGIN_REQ:
+			os << "BEGIN_REQ";
+			break;
+		case END_REQ:
+			os << "END_REQ";
+			break;
+		case BEGIN_RESP:
+			os << "BEGIN_RESP";
+			break;
+		case END_RESP:
+			os << "END_RESP";
+			break;
+		default:
+			os << tlm_phase::extended_phase_name[phase.value - END_RESP + 1];
+			break;
+	}
+	return os;
+}
 
 #define TLM_DECLARE_EXTENDED_PHASE(name_arg) \
-	class tlm_phase_##name_arg : public tlm::tlm_phase \
-	{\
-	public:\
-		static const tlm_phase_##name_arg& get_phase();\
-		//implementation-defined \
+class tlm_phase_##name_arg : public tlm::tlm_phase \
+{\
+public:\
+	static const tlm_phase_##name_arg& get_phase();\
 }; \
-		static const tlm_phase_##name_arg& name_arg=tlm_phase_##name_arg::get_phase()
+const tlm_phase_##name_arg& tlm_phase_##name_arg::get_phase()\
+{\
+	tlm_phase::last_extended_phase_value++;\
+	tlm_phase::extended_phase_name.push_back(#name_arg);\
+	static tlm_phase extended_phase(tlm_phase::last_extended_phase_value);\
+	return extended_phase;\
+}\
+static const tlm_phase_##name_arg& name_arg=tlm_phase_##name_arg::get_phase()
 
 } // namespace tlm
 

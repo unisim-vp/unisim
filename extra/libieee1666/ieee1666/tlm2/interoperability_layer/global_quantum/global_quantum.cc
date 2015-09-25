@@ -10,7 +10,7 @@ tlm_global_quantum::~tlm_global_quantum()
 {
 }
 
-void tlm_global_quantum::set( const sc_core::sc_time& )
+void tlm_global_quantum::set(const sc_core::sc_time& t)
 {
 }
 
