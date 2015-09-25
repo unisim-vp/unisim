@@ -56,7 +56,7 @@ bool ArtimonMonitor<ADDRESS>::EndSetup()
 template <class ADDRESS>
 int ArtimonMonitor<ADDRESS>::generate_monitor_spec(const char* file_path)
 {
-	std::cout << "ARTiMon:: generate_monitor_spec() " << file_path << std::endl;
+//	std::cout << "ARTiMon:: generate_monitor_spec() " << file_path << std::endl;
 
 	if (! init_artimon_4_simulators((char*) "Dummy",&nb_atoms, &nb_sig, 1, &nb_main, &main_values))
 	{
@@ -132,7 +132,7 @@ int ArtimonMonitor<ADDRESS>::getPropertyIndex(const char* name)
 template <class ADDRESS>
 void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, bool value)
 {
-	std::cout << "ARTiMON::refresh_value bool is running" << std::endl;
+//	std::cout << "ARTiMON::refresh_value bool is running" << std::endl;
 
 	artimon_refresh_atom(getPropertyIndex(name), value);
 }
@@ -141,7 +141,7 @@ template <class ADDRESS>
 void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, double value)
 {
 
-	std::cout << "ARTiMON::refresh_value double is running" << std::endl;
+//	std::cout << "ARTiMON::refresh_value double is running" << std::endl;
 
 	unsigned sigtab[2];
 
@@ -154,7 +154,7 @@ void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, double value)
 template <class ADDRESS>
 void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, bool value, double time)
 {
-	std::cout << "ARTiMON::refresh_value bool/time is running" << std::endl;
+//	std::cout << "ARTiMON::refresh_value bool/time is running" << std::endl;
 
 	artimon_refresh_atom(getPropertyIndex(name), value);
 
@@ -164,7 +164,7 @@ void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, bool value, double
 template <class ADDRESS>
 void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, double value, double time)
 {
-	std::cout << "ARTiMON::refresh_value double/time is running" << std::endl;
+//	std::cout << "ARTiMON::refresh_value double/time is running" << std::endl;
 
 	unsigned sigtab[2];
 
@@ -178,7 +178,7 @@ void ArtimonMonitor<ADDRESS>::refresh_value(const char* name, double value, doub
 template <class ADDRESS>
 void ArtimonMonitor<ADDRESS>::refresh_time(double time)
 {
-	std::cout << "ARTiMON::refresh_time is running" << std::endl;
+//	std::cout << "ARTiMON::refresh_time is running" << std::endl;
 
 	artimon_refresh_time(time);
 }
