@@ -56,7 +56,7 @@
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12pit24b.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12sci.hh>
-#include <unisim/component/tlm2/processor/hcs12x/s12spi.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12spi_v5.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12mpu.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xftmx.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12mscan.hh>

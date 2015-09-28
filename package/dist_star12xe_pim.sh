@@ -217,7 +217,7 @@ unisim/component/tlm2/processor/hcs12x/s12xgate.cc \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.cc \
 unisim/component/tlm2/processor/hcs12x/s12sci.cc \
 unisim/component/tlm2/processor/hcs12x/s12mpu.cc \
-unisim/component/tlm2/processor/hcs12x/s12spi.cc \
+unisim/component/tlm2/processor/hcs12x/s12spi_v5.cc \
 unisim/component/tlm2/processor/hcs12x/s12mscan.cc \
 unisim/component/tlm2/interconnect/generic_router/router.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
@@ -437,7 +437,7 @@ unisim/component/tlm2/processor/hcs12x/s12xftmx.hh \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.hh \
 unisim/component/tlm2/processor/hcs12x/s12sci.hh \
 unisim/component/tlm2/processor/hcs12x/s12mpu.hh \
-unisim/component/tlm2/processor/hcs12x/s12spi.hh \
+unisim/component/tlm2/processor/hcs12x/s12spi_v5.hh \
 unisim/component/tlm2/processor/hcs12x/s12mscan.hh \
 unisim/component/tlm2/processor/hcs12x/can_struct.h \
 "

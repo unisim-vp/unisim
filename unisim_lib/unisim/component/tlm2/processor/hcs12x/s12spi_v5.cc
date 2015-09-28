@@ -5,7 +5,7 @@
  *      Author: rnouacer
  */
 
-#include <unisim/component/tlm2/processor/hcs12x/s12spi.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12spi_v5.hh>
 #include <unisim/component/tlm2/processor/hcs12x/xint.hh>
 
 namespace unisim {
@@ -34,6 +34,8 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 
 	, slave_socket("slave_socket")
 	, bus_clock_socket("bus_clock_socket")
+
+	, frameLength(8)
 
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
@@ -76,7 +78,7 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	, spicr2_register(0x00)
 	, spibr_register(0x00)
 	, spisr_register(0x20)
-	, spidr_register(0x00)
+	, spidr_register(0x0000)
 
 	, spidr_rx_buffer(0)
 
@@ -158,7 +160,7 @@ void S12SPI::TxRun() {
 
 			if (tx_debug_enabled)	std::cout << sc_object::name() << "::txShiftOut Start transmission -> " << std::hex << (unsigned int) spidr_register << std::dec << std::endl;
 
-			uint8_t tx_shift = spidr_register;
+			uint16_t tx_shift = spidr_register;
 
 			setSPTEF();
 
@@ -166,7 +168,17 @@ void S12SPI::TxRun() {
 
 			// use Telnet as an echo
 			if (telnet_enabled) {
-				add(telnet_tx_fifo, spidr_register, telnet_tx_event);
+				if (is16bitsMode()) {
+					if (isLSBFirst()) {
+						add(telnet_tx_fifo, ((uint8_t*) &tx_shift)[0], telnet_tx_event);
+						add(telnet_tx_fifo, ((uint8_t*) &tx_shift)[1], telnet_tx_event);
+					} else {
+						add(telnet_tx_fifo, ((uint8_t*) &tx_shift)[1], telnet_tx_event);
+						add(telnet_tx_fifo, ((uint8_t*) &tx_shift)[0], telnet_tx_event);
+					}
+				} else {
+					add(telnet_tx_fifo, ((uint8_t*) &tx_shift)[0], telnet_tx_event);
+				}
 				TelnetProcessOutput(true);
 
 				// TODO I have to emulate Mode Fault Error
@@ -182,11 +194,15 @@ void S12SPI::TxRun() {
 					if (checkModeFaultError()) { break;}
 
 					if (isLSBFirst()) {
-						pinWrite(tx_shift & 0x01);
+						pinWrite(tx_shift & 0x0001);
 
 						tx_shift = tx_shift >> 1;
 					} else {
-						pinWrite(tx_shift & 0x80);
+						if (is16bitsMode()) {
+							pinWrite(tx_shift & 0x8000);
+						} else {
+							pinWrite(tx_shift & 0x0080);
+						}
 
 						tx_shift = tx_shift << 1;
 					}
@@ -200,6 +216,10 @@ void S12SPI::TxRun() {
 			}
 
 			endTransmission();
+
+			// this is a hack code
+			setSPIDR(spidr_rx_buffer);
+			// end hack code
 
 			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (7) " << std::endl;
 
@@ -266,13 +286,23 @@ void S12SPI::RxRun() {
 
 		setActive();
 
-		uint8_t rx_shift = 0;
+		uint16_t rx_shift = 0;
 
 		if (telnet_enabled) {
 
 			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (12) " << std::endl;
 
-			next(telnet_rx_fifo, rx_shift, telnet_rx_event);
+			if (is16bitsMode()) {
+				if (isLSBFirst()) {
+					next(telnet_rx_fifo, ((uint8_t*) &rx_shift)[0], telnet_rx_event);
+					next(telnet_rx_fifo, ((uint8_t*) &rx_shift)[1], telnet_rx_event);
+				} else {
+					next(telnet_rx_fifo, ((uint8_t*) &rx_shift)[1], telnet_rx_event);
+					next(telnet_rx_fifo, ((uint8_t*) &rx_shift)[0], telnet_rx_event);
+				}
+			} else {
+				next(telnet_rx_fifo, ((uint8_t*) &rx_shift)[0], telnet_rx_event);
+			}
 
 			if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::get  HAVE DATA" << std::endl;
 
@@ -286,13 +316,22 @@ void S12SPI::RxRun() {
 			uint8_t rx_shift_mask = 1;
 			uint8_t index = 0;
 
+			if (!isLSBFirst()) {
+				rx_shift_mask = (is16bitsMode())? 0x8000: 0x0080;
+			}
+
 			while (isSPIEnabled() && isSSLow() && (index < frameLength)) {
 				bool val = pinRead();
 				if (val) {
 					rx_shift = rx_shift | rx_shift_mask;
 				}
 
-				rx_shift_mask = rx_shift_mask << 1;
+				if (isLSBFirst()) {
+					rx_shift_mask = rx_shift_mask << 1;
+				} else {
+					rx_shift_mask = rx_shift_mask >> 1;
+				}
+
 				index = index + 1;
 
 				wait(spi_baud_rate);
@@ -398,7 +437,7 @@ bool S12SPI::read(unsigned int offset, const void *buffer, unsigned int data_len
 			*((uint8_t *) buffer) = spicr1_register;
 		} break;	// 1 byte
 		case SPICR2: {
-			*((uint8_t *) buffer) = spicr2_register & 0x1B;
+			*((uint8_t *) buffer) = spicr2_register & 0x5B;
 		} break;	// 1 byte
 		case SPIBR: {
 			*((uint8_t *) buffer) = spibr_register & 0x77;
@@ -411,14 +450,25 @@ bool S12SPI::read(unsigned int offset, const void *buffer, unsigned int data_len
 		} break; // 1 byte
 		case RESERVED1: {
 			if (data_length == 2) {
-				*((uint16_t *) buffer) = 0x00;
+				*((uint16_t *) buffer) = Host2BigEndian(spidr_register);
 			} else {
-				*((uint8_t *) buffer) = 0x00;
+				*((uint8_t *) buffer) = (uint8_t) (spidr_register >> 8);
+			}
+
+			if (isSPISR_Read()) {
+				if (isValideFrameWaiting()) {
+					spidr_register = spidr_rx_buffer;
+					setSPIF();
+					validFrameWaiting = false;
+				} else {
+					// clear SPIF
+					spisr_register = spisr_register & 0x7F;
+				}
 			}
 
 		} break; // 1 byte
 		case SPIDR: {
-			*((uint8_t *) buffer) = spidr_register;
+			*((uint8_t *) buffer) = (uint8_t) (spidr_register & 0x00FF);
 			if (isSPISR_Read()) {
 				if (isValideFrameWaiting()) {
 					spidr_register = spidr_rx_buffer;
@@ -442,12 +492,6 @@ bool S12SPI::read(unsigned int offset, const void *buffer, unsigned int data_len
 }
 
 bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_length) {
-
-//	if (data_length == 1) {
-//		std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) BigEndian2Host(*((uint16_t *)buffer)) << std::dec << std::endl;
-//	} else {
-//		std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) *((uint16_t*) buffer) << std::dec << std::endl;
-//	}
 
 	switch (offset) {
 		case SPICR1: {
@@ -476,9 +520,11 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 		} break;	// 1 byte
 		case SPICR2: {
 			uint8_t old = spicr2_register;
-			spicr2_register = *((uint8_t *) buffer) & 0x1B;
+			spicr2_register = *((uint8_t *) buffer) & 0x5B;
 
-			if (isActive() && (((old & 0x19) ^ (spicr2_register & 0x19)) != 0)) {
+			frameLength = (is16bitsMode())? 16: 8;
+
+			if (isActive() && (((old & 0x59) ^ (spicr2_register & 0x59)) != 0)) {
 				abortTX();
 			}
 
@@ -499,13 +545,42 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 			// Write has no effect. Flags are cleared by reading the SPISR register and doing read/write operation
 		} break; // 1 byte
 
-		case RESERVED1: break; // 1 byte
-
-		case SPIDR:  {
+		case RESERVED1: {
+				if (data_length == 1) {
+					std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) *((uint8_t*) buffer) << std::dec << std::endl;
+				} else {
+					std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) BigEndian2Host(*((uint16_t *)buffer)) << std::dec << std::endl;
+				}
 
 			if (!isSPTEF() || isSPISR_Read()) {
 				// (SPTEF = 1) has to be read before a write to SPIDR can happen and taken into account
-				spidr_register = *((uint8_t *) buffer);
+				if (data_length == 2) {
+					spidr_register = BigEndian2Host(*((uint16_t *) buffer));
+				} else {
+					spidr_register = (spidr_register & 0x00FF) | (((uint16_t)*((uint8_t *) buffer)) << 8);
+				}
+
+				tx_load_event.notify();
+			}
+
+			if (isSPISR_Read()) {
+				// clear SPTEF flag
+				spisr_register = spisr_register & 0xDF;
+			}
+
+		} break; // 1 byte
+
+		case SPIDR:  {
+				if (data_length == 1) {
+					std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) *((uint8_t*) buffer) << std::dec << std::endl;
+				} else {
+					std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) BigEndian2Host(*((uint16_t *)buffer)) << std::dec << std::endl;
+				}
+
+
+			if (!isSPTEF() || isSPISR_Read()) {
+				// (SPTEF = 1) has to be read before a write to SPIDR can happen and taken into account
+				spidr_register = (spidr_register & 0xFF00) | *((uint8_t *) buffer);
 
 				tx_load_event.notify();
 			}
@@ -658,9 +733,9 @@ bool S12SPI::BeginSetup() {
 	spisr_var->setCallBack(this, SPISR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SPIDR",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &spidr_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &spidr_register);
 
-	unisim::kernel::service::Register<uint8_t> *spidr_var = new unisim::kernel::service::Register<uint8_t>("SPIDR", this, spidr_register, "SPI Data register (SPIDR)");
+	unisim::kernel::service::Register<uint16_t> *spidr_var = new unisim::kernel::service::Register<uint16_t>("SPIDR", this, spidr_register, "SPI Data register (SPIDR)");
 	extended_registers_registry.push_back(spidr_var);
 	spidr_var->setCallBack(this, SPIDR, &CallBackObject::write, NULL);
 
@@ -703,7 +778,9 @@ void S12SPI::Reset() {
 	spicr2_register = 0x00;
 	spibr_register = 0x00;
 	spisr_register = 0x20;
-	spidr_register = 0x00;
+	spidr_register = 0x0000;
+
+	frameLength = 8;
 
 	if(char_io_import)
 	{
@@ -738,10 +815,16 @@ bool S12SPI::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 				*((uint8_t *) buffer) = spisr_register;
 			} break; // 1 byte
 			case RESERVED1: {
-				*((uint8_t *) buffer) = 0x00;
-			} break; // 1 byte
+				if (size == 2)
+				{
+					*((uint16_t *) buffer) = spidr_register;
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (spidr_register >> 8);
+				}
+
+			} break; // 2 byte
 			case SPIDR: {
-				*((uint8_t *) buffer) = spidr_register;
+				*((uint8_t *) buffer) = (uint8_t) (spidr_register & 0x00FF);
 			} break; // 1 bytes
 			case RESERVED2: {
 				*((uint8_t *) buffer) = 0x00;
@@ -783,9 +866,15 @@ bool S12SPI::WriteMemory(physical_address_t addr, const void *buffer, uint32_t s
 			case SPISR:  {
 				spisr_register = *((uint8_t *) buffer);
 			} break; // 1 byte
-			case RESERVED1:  break; // 1 byte
+			case RESERVED1: {
+				if (size == 2) {
+					spidr_register = *((uint16_t *) buffer);
+				} else {
+					spidr_register = (spidr_register & 0x00FF) | (((uint16_t) *((uint8_t *) buffer)) << 8);
+				}
+			} break; // 2 byte
 			case SPIDR:  {
-				spidr_register = *((uint8_t *) buffer);
+				spidr_register = (spidr_register & 0xFF00) | (((uint16_t) *((uint8_t *) buffer)) & 0x00FF);
 			} break; // 1 bytes
 			case RESERVED2:  break; // 1 bytes
 			case RESERVED3:  break; // 1 bytes
