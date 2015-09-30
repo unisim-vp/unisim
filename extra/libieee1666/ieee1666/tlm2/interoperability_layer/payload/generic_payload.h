@@ -56,6 +56,8 @@ public:
 	virtual void copy_from(tlm_extension_base const &) = 0;
 protected:
 	virtual ~tlm_extension_base() {}
+private:
+	static unsigned int allocate_extension_id();
 };
 
 template <typename T>
@@ -162,38 +164,63 @@ public:
 	template <typename T> void release_extension( T* );
 	template <typename T> void release_extension();
 	void resize_extensions();
+private:
+	tlm_mm_interface *mm;
+	int ref_count;
+	tlm_gp_option gp_option;
+	tlm_command command;
+	sc_dt::int64 address;
+	unsigned char *data_ptr;
+	unsigned int data_length;
+	unsigned int streaming_width;
+	unsigned char *byte_enable_ptr;
+	unsigned int byte_enable_length;
+	bool dmi_allowed;
+	tlm_response_status response_status;
+	std::vector<tlm_extension_base *> extensions;
 };
 
-template <typename T> T* tlm_generic_payload::set_extension( T* )
+template <typename T>
+const unsigned int tlm_extension<T>::ID = tlm_extension_base::allocate_extension_id();
+
+template <typename T> T *tlm_generic_payload::set_extension(T *extension)
 {
+	return static_cast<T *>(set_extension(T::ID, extension));
 }
 
-template <typename T> T* tlm_generic_payload::set_auto_extension( T* )
+template <typename T> T *tlm_generic_payload::set_auto_extension(T *extension)
 {
+	return static_cast<T *>(set_auto_extension(T::ID, extension));
 }
 
-template <typename T> void tlm_generic_payload::get_extension( T*& ) const
+template <typename T> void tlm_generic_payload::get_extension(T*& p_extension) const
 {
+	p_extension = get_extension<T>();
 }
 
-template <typename T> T* tlm_generic_payload::get_extension() const
+template <typename T> T *tlm_generic_payload::get_extension() const
 {
+	return static_cast<T *>(get_extension(T::ID));
 }
 
-template <typename T> void tlm_generic_payload::clear_extension( const T* )
+template <typename T> void tlm_generic_payload::clear_extension(const T *extension)
 {
+	extensions[T::ID] = 0;
 }
 
 template <typename T> void tlm_generic_payload::clear_extension()
 {
+	extensions[T::ID] = 0;
 }
 
 template <typename T> void tlm_generic_payload::release_extension( T* )
 {
+	release_extension<T>();
 }
 
 template <typename T> void tlm_generic_payload::release_extension()
 {
+	release_extension(T::ID);
 }
 
 enum tlm_endianness
