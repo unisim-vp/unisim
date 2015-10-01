@@ -675,13 +675,13 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 			}
 				break;
 
-			case DBGData::UNKNOWN: {
-
-				DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
-
-				gdbThread->sendData(response);
-			}
-				break;
+//			case DBGData::UNKNOWN: {
+//
+//				DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
+//
+//				gdbThread->sendData(response);
+//			}
+//				break;
 			default:
 
 				if(request->getCommand() == DBGData::QUERY_SYMBOL_READ) {
@@ -848,22 +848,14 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 					return (DebugControl<ADDRESS>::DBG_STEP);
 				}
-				else if (request->getCommand()  == DBGData::DBG_UNKNOWN) {
-					if(verbose)
-					{
-						logger << DebugWarning << "Received an unknown GDB remote protocol packet" << EndDebugWarning;
-					}
-
-					DBGData *response =  new DBGData(DBGData::DBG_UNKNOWN);
-					gdbThread->sendData(response);
-
-				}
 				else if (!HandleQRcmd(request)) {
 					if(verbose)
 					{
 						logger << DebugWarning << "Received an unknown command" << EndDebugWarning;
 					}
 
+					DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
+					gdbThread->sendData(response);
 				}
 
 				break;
@@ -1577,9 +1569,9 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 				const Statement<ADDRESS> *stmt = 0;
 				ADDRESS addr = *pc_reg;
-				long mcuAddress = Object::GetSimulator()->GetStructuredAddress(addr);
+				uint64_t mcuAddress = Object::GetSimulator()->GetStructuredAddress(addr);
 
-				number2HexString((uint8_t*) &mcuAddress, sizeof(mcuAddress), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				number2HexString((uint8_t*) &mcuAddress, 8, hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				sstr << hex << ":";
 
@@ -1635,7 +1627,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 				uint64_t physicalAddress = Object::GetSimulator()->GetPhysicalAddress(logical_address);
 
-				number2HexString((uint8_t*) &physicalAddress, sizeof(uint64_t), hex_addr_str, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				number2HexString((uint8_t*) &physicalAddress, 8, hex_addr_str, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				response->addAttribute(DBGData::ADDRESS_ATTR, hex_addr_str);
 			}
@@ -1659,7 +1651,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 				uint64_t physicalAddress = Object::GetSimulator()->GetStructuredAddress(logical_address);
 
-				number2HexString((uint8_t*) &physicalAddress, sizeof(uint64_t), hex_addr_str, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				number2HexString((uint8_t*) &physicalAddress, 8, hex_addr_str, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				response->addAttribute(DBGData::ADDRESS_ATTR, hex_addr_str);
 			}

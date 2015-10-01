@@ -222,7 +222,7 @@ bool CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, ui
 }
 
 template <class CONFIG>
-template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN>
+template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
 inline bool CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 {
 	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (ea & (CONFIG::FSB_WIDTH - 1));
@@ -280,7 +280,7 @@ inline bool CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 }
 
 template <class CONFIG>
-template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN>
+template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
 inline bool CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 {
 	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (ea & (CONFIG::FSB_WIDTH - 1));
@@ -517,8 +517,9 @@ bool CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea
 
 		case 3:
 		{
+			typedef uint8_t array_uint8_3_t[3];
 			uint8_t buffer[3];
-			bool status = EmuLoad<typeof(buffer), false, true>(buffer, ea);
+			bool status = EmuLoad<array_uint8_3_t, false, true>(buffer, ea);
 			if(unlikely(!status)) return false;
 			uint32_t value = ((uint32_t) buffer[0] << 24) | ((uint32_t) buffer[1] << 16) | ((uint32_t) buffer[2] << 8);
 			gpr[rd] = value;
@@ -681,12 +682,13 @@ bool CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t e
 
 		case 3:
 			{
+				typedef uint8_t array_uint8_3_t[3];
 				uint32_t value = gpr[rs];
 				uint8_t buffer[3];
 				buffer[0] = value >> 24;
 				buffer[1] = value >> 16;
 				buffer[2] = value >> 8;
-				bool status = EmuStore<typeof(buffer), false, true>(buffer, ea);
+				bool status = EmuStore<array_uint8_3_t, false, true>(buffer, ea);
 				if(unlikely(!status)) return false;
 				break;
 			}

@@ -174,6 +174,7 @@ template <class MEMORY_ADDR>
 DWARF_Location<MEMORY_ADDR>::~DWARF_Location()
 {
 	Clear();
+	ClearRanges();
 }
 
 template <class MEMORY_ADDR>
@@ -204,6 +205,12 @@ void DWARF_Location<MEMORY_ADDR>::Clear()
 		delete dw_location_piece;
 	}
 	dw_location_pieces.clear();
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::ClearRanges()
+{
+	ranges.clear();
 }
 
 template <class MEMORY_ADDR>
@@ -307,6 +314,13 @@ void DWARF_Location<MEMORY_ADDR>::SetEncoding(uint8_t _dw_encoding)
 }
 
 template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::SetRanges(const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& _ranges)
+{
+	ranges = _ranges;
+}
+
+
+template <class MEMORY_ADDR>
 uint64_t DWARF_Location<MEMORY_ADDR>::GetByteSize() const
 {
 	return dw_byte_size;
@@ -328,6 +342,18 @@ template <class MEMORY_ADDR>
 uint8_t DWARF_Location<MEMORY_ADDR>::GetEncoding() const
 {
 	return dw_encoding;
+}
+
+template <class MEMORY_ADDR>
+const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& DWARF_Location<MEMORY_ADDR>::GetRanges() const
+{
+	return ranges;
+}
+
+template <class MEMORY_ADDR>
+std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& DWARF_Location<MEMORY_ADDR>::GetRanges()
+{
+	return ranges;
 }
 
 template <class MEMORY_ADDR>

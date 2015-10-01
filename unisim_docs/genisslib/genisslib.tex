@@ -77,9 +77,9 @@ action {void} disasm({uint16_t} {pc}, {char *} {s}) {
 			\hline
 			not    &   0  &   1  &   0  &   0  & \multicolumn{4}{|c|}{rd}  & \multicolumn{4}{|c|}{rs} &   x  &   x  &   x  &   x \\
 			\hline
-			shl    &   0  &   1  &   0  &   1  & \multicolumn{4}{|c|}{rd}  & \multicolumn{4}{|c|}{rs} &   x  &   x  &   x  &   x \\
+			shl    &   0  &   1  &   0  &   1  & \multicolumn{4}{|c|}{rd}  & \multicolumn{4}{|c|}{rs} & \multicolumn{4}{|c|}{shamt}\\
 			\hline
-			shr    &   0  &   1  &   1  &   0  & \multicolumn{4}{|c|}{rd}  & \multicolumn{4}{|c|}{rs} &   x  &   x  &   x  &   x \\
+			shr    &   0  &   1  &   1  &   0  & \multicolumn{4}{|c|}{rd}  & \multicolumn{4}{|c|}{rs} & \multicolumn{4}{|c|}{shamt}\\
 			\hline
 			load   &   0  &   1  &   1  &   1  & \multicolumn{4}{|c|}{rd}  & \multicolumn{4}{|c|}{base} & \multicolumn{4}{|c|}{index}\\
 			\hline
@@ -88,6 +88,8 @@ action {void} disasm({uint16_t} {pc}, {char *} {s}) {
 			branch &   1  &   0  &   0  &   1  & \multicolumn{12}{|c|}{addr}\\
 			\hline
 			bne    &   1  &   0  &   1  &   0  & \multicolumn{4}{|c|}{rs} & \multicolumn{8}{|c|}{offset}\\
+			\hline
+			li     &   1  &   0  &   1  &   1  & \multicolumn{4}{|c|}{rd} & \multicolumn{8}{|c|}{immed}\\
 			\hline
 		\end{tabular}
 		\caption{Instruction Set Summary.}

@@ -37,7 +37,7 @@ using unisim::kernel::service::VariableBase;
 class PIMThread : virtual public Object, public SocketThread, VariableBaseListener {
 public:
 	PIMThread(const char *_name, Object *_parent = 0);
-	~PIMThread();
+	virtual ~PIMThread();
 
 	virtual void run();
 

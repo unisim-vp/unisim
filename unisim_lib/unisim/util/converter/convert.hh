@@ -77,9 +77,9 @@ inline uint8_t hexChar2Nibble(char ch)
 	return (0);
 }
 
-inline void number2HexString(uint8_t* value, unsigned int size, std::string& hex, std::string endian) {
+inline void number2HexString(uint8_t* value, size_t size, std::string& hex, std::string endian) {
 
-	unsigned int i;
+	ssize_t i;
 	char c[2];
 	c[1] = 0;
 
@@ -87,65 +87,119 @@ inline void number2HexString(uint8_t* value, unsigned int size, std::string& hex
 
 	if(endian == "big")
 	{
+//#if BYTE_ORDER == BIG_ENDIAN
+//		for(i = 0; i < size; i++)
+//#else
+//		for(i = size - 1; i >= 0; i--)
+//#endif
+
 #if BYTE_ORDER == BIG_ENDIAN
-		for(i = 0; i < size; i++)
+		i = 0;
 #else
-		for(i = size - 1; i >= 0; i--)
+		i = size - 1;
 #endif
+
+		for (size_t j=0; j<size; j++)
 		{
 			c[0] = nibble2HexChar(value[i] >> 4);
 			hex += c;
 			c[0] = nibble2HexChar(value[i] & 0xf);
 			hex += c;
+
+#if BYTE_ORDER == BIG_ENDIAN
+		i = i + 1;
+#else
+		i = i - 1;
+#endif
 		}
 	}
 	else
 	{
+//#if BYTE_ORDER == LITTLE_ENDIAN
+//		for(i = 0; i < size; i++)
+//#else
+//		for(i = size - 1; i >= 0; i--)
+//#endif
+
 #if BYTE_ORDER == LITTLE_ENDIAN
-		for(i = 0; i < size; i++)
+		i = 0;
 #else
-		for(i = size - 1; i >= 0; i--)
+		i = size - 1;
 #endif
+		for (size_t j=0; j<size; j++)
 		{
 			c[0] = nibble2HexChar(value[i] >> 4);
 			hex += c;
 			c[0] = nibble2HexChar(value[i] & 0xf);
 			hex += c;
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+		i = i + 1;
+#else
+		i = i - 1;
+#endif
 		}
 	}
 
 }
 
-inline bool hexString2Number(const std::string& hex, void* value, unsigned int size, std::string endian) {
+inline bool hexString2Number(const std::string& hex, void* value, size_t size, std::string endian) {
 
-	unsigned int i;
-	unsigned int len = hex.length();
-	unsigned int pos = 0;
+	ssize_t i;
+	size_t len = hex.length();
+	size_t pos = 0;
 
 	if(endian == "big")
 	{
+//#if BYTE_ORDER == BIG_ENDIAN
+//		for(i = 0; i < size && pos < len; i++, pos += 2)
+//#else
+//		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+//#endif
+
 #if BYTE_ORDER == BIG_ENDIAN
-		for(i = 0; i < size && pos < len; i++, pos += 2)
+		i = 0;
 #else
-		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+		i = size - 1;
 #endif
+
+		for (size_t j = 0; j < size && pos < len; j++, pos += 2)
 		{
 			if(!isHexChar(hex[pos]) || !isHexChar(hex[pos + 1])) return (false);
 
 			((uint8_t*) value)[i] = (hexChar2Nibble(hex[pos]) << 4) | hexChar2Nibble(hex[pos + 1]);
+
+#if BYTE_ORDER == BIG_ENDIAN
+		i = i + 1;
+#else
+		i = i - 1;
+#endif
 		}
 	}
 	else
 	{
+//#if BYTE_ORDER == LITTLE_ENDIAN
+//		for(i = 0; i < size && pos < len; i++, pos += 2)
+//#else
+//		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+//#endif
+
 #if BYTE_ORDER == LITTLE_ENDIAN
-		for(i = 0; i < size && pos < len; i++, pos += 2)
+		i = 0;
 #else
-		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+		i = size - 1;
 #endif
+		for(size_t j = 0; j < size && pos < len; j++, pos += 2)
 		{
 			if(!isHexChar(hex[pos]) || !isHexChar(hex[pos + 1])) return (false);
 
 			((uint8_t*) value)[i] = (hexChar2Nibble(hex[pos]) << 4) | hexChar2Nibble(hex[pos + 1]);
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+		i = i + 1;
+#else
+		i = i - 1;
+#endif
 		}
 	}
 
@@ -153,9 +207,9 @@ inline bool hexString2Number(const std::string& hex, void* value, unsigned int s
 
 }
 
-inline void textToHex(const char *s, int count, std::string& packet)
+inline void textToHex(const char *s, size_t count, std::string& packet)
 {
-	int i;
+	size_t i;
 	std::stringstream strm;
 
 	for(i = 0; (i<count); i++)
@@ -169,9 +223,9 @@ inline void textToHex(const char *s, int count, std::string& packet)
 
 }
 
-inline void hexToText(const char *s, int count, std::string& packet)
+inline void hexToText(const char *s, size_t count, std::string& packet)
 {
-	int i;
+	size_t i;
 	std::stringstream strm;
 	uint8_t c;
 
@@ -186,23 +240,18 @@ inline void hexToText(const char *s, int count, std::string& packet)
 
 inline void stringSplit(std::string str, const std::string delim, std::vector<std::string>& results)
 {
-	size_t cutAt;
+	size_t cutAt = 0;
 
-	do {
+	while ((cutAt != str.npos) && !str.empty()) {
 
 		cutAt = str.find_first_of(delim);
 
-		if (cutAt > 0) {
+		if (cutAt == str.npos) {
+			results.push_back(str);
+		} else {
 			results.push_back(str.substr(0,cutAt));
+			str = str.substr(cutAt+1);
 		}
-
-		str = str.substr(cutAt+1);
-
-	} while (cutAt != str.npos);
-
-	if(str.length() > 0)
-	{
-		results.push_back(str);
 	}
 
 }
@@ -223,10 +272,10 @@ inline bool getParity(T n)
 }
 
 template <typename T>
-bool ParseHex(const std::string& s, unsigned int& pos, T& value)
+inline bool ParseHex(const std::string& s, size_t& pos, T& value)
 {
-	unsigned int len = s.length();
-	unsigned int n = 0;
+	size_t len = s.length();
+	size_t n = 0;
 
 	value = 0;
 	while(pos < len && n < 2 * sizeof(T))

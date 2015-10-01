@@ -21,7 +21,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{The different abstraction levels.\newline Algorithm level}
+	\frametitle{The abstraction levels: Algorithm}
 	\begin{itemize}
 		\item<1-> It defines what your system does.
 		\item<1-> For example it can be described as a simple C++ program that computes Fibonacci.
@@ -32,7 +32,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{The different abstraction levels.\newline Functional level}
+	\frametitle{The abstraction levels: Functional}
 	\begin{itemize}
 		\item<1-> It defines how your system does what it is supposed to.
 		\item<1-> The different system blocks appear at this stage.
@@ -44,14 +44,14 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{The different abstraction levels:\newline Functional level (II)}
+	\frametitle{The abstraction levels: Functional (II)}
 	\begin{figure}[h]
 		\lstinputlisting{introduction/fibonacci_annotated_presentation_1.cc}
 	\end{figure}
 \end{frame}
 
 \begin{frame}
-	\frametitle{The different abstraction levels:\newline Functional level (II)}
+	\frametitle{The abstraction levels: Functional (II)}
 	\begin{itemize}
 		\item<1-> The {\color{red}read} and {\color{red}write} methods are responsible of sending messages using the SystemC primitives (which we will ignore for the moment).
 	\end{itemize}
@@ -61,7 +61,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{The different abstraction levels:\newline Timed functional level}
+	\frametitle{The abstraction levels: Timed functional}
 	\begin{itemize}
 		\item<1-> Adds time to the functional model, allowing you to model concurrency and resources constraints of your system. 
 		\item<1-> The time description does not need to be precise,for example you can use average access times.
@@ -72,7 +72,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{The different abstraction levels:\newline Cycle-accurate level}
+	\frametitle{The abstraction levels: Cycle-accurate}
 	\begin{itemize}
 		\item<1-> At this level time is very detailed, and matches closely that of the final system.
 		\item<1-> Modeling at this level may require to write a new functional model.
@@ -83,7 +83,7 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{The different abstraction levels:\newline Synthetizable (RTL) level}
+	\frametitle{The abstraction levels: Synthesizable (RTL)}
 	\begin{itemize}
 		\item<1-> At this level the description is so detailed that the system can be synthetized.
 	\end{itemize}

@@ -84,13 +84,20 @@ CLocOperationStream::CLocOperationStream(Notation _notation)
 {
 }
 
+CLocOperationStream::CLocOperationStream(const CLocOperationStream& c_loc_operation_stream)
+	: notation(c_loc_operation_stream.notation)
+	, storage()
+{
+	std::deque<const CLocOperation *>::const_iterator it;
+	for(it = c_loc_operation_stream.storage.begin(); it != c_loc_operation_stream.storage.end(); it++)
+	{
+		storage.push_back((*it)->Clone());
+	}
+}
+
 CLocOperationStream::~CLocOperationStream()
 {
-	std::deque<const CLocOperation *>::iterator it;
-	for(it = storage.begin(); it != storage.end(); it++)
-	{
-		delete *it;
-	}
+	Clear();
 }
 
 void CLocOperationStream::Push(const CLocOperation *op)
@@ -127,6 +134,16 @@ bool CLocOperationStream::Empty() const
 Notation CLocOperationStream::GetNotation() const
 {
 	return notation;
+}
+
+void CLocOperationStream::Clear()
+{
+	std::deque<const CLocOperation *>::iterator it;
+	for(it = storage.begin(); it != storage.end(); it++)
+	{
+		delete *it;
+	}
+	storage.clear();
 }
 
 std::ostream& operator << (std::ostream& os, const CLocOperationStream& c_loc_operation_stream)
@@ -394,6 +411,11 @@ CLocOperation::~CLocOperation()
 {
 }
 
+CLocOperation *CLocOperation::Clone() const
+{
+	return new CLocOperation(opcode);
+}
+
 CLocOpcode CLocOperation::GetOpcode() const
 {
 	return opcode;
@@ -436,6 +458,11 @@ int CLocOpLiteralInteger::GetValue() const
 	return value;
 }
 
+CLocOperation *CLocOpLiteralInteger::Clone() const
+{
+	return new CLocOpLiteralInteger(value);
+}
+
 CLocOpLiteralIdentifier::CLocOpLiteralIdentifier(const char *_identifier)
 	: CLocOperation(OP_LIT_IDENT)
 	, identifier(_identifier)
@@ -447,6 +474,10 @@ const char *CLocOpLiteralIdentifier::GetIdentifier() const
 	return identifier.c_str();
 }
 
+CLocOperation *CLocOpLiteralIdentifier::Clone() const
+{
+	return new CLocOpLiteralIdentifier(identifier.c_str());
+}
 
 } // end of namespace dwarf
 } // end of namespace debug

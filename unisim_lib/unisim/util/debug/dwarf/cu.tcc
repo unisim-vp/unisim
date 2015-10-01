@@ -442,6 +442,22 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::
 }
 
 template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindSubProgram(const char *name) const
+{
+	if(!dw_die) return 0;
+	
+	return dw_die->FindSubProgram(name);
+}
+
+template <class MEMORY_ADDR>
+const char *DWARF_CompilationUnit<MEMORY_ADDR>::GetName() const
+{
+	const DWARF_String<MEMORY_ADDR> *dw_at_name = 0;
+	if(!dw_die || !dw_die->GetAttributeValue(DW_AT_name, dw_at_name)) return 0;
+	return dw_at_name->GetValue();
+}
+
+template <class MEMORY_ADDR>
 uint16_t DWARF_CompilationUnit<MEMORY_ADDR>::GetLanguage() const
 {
 	const DWARF_Constant<MEMORY_ADDR> *dw_at_language = 0;

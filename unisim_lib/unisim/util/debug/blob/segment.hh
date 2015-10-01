@@ -82,6 +82,7 @@ public:
 	MEMORY_ADDR GetDataSize() const;
 	const void *GetData() const;
 	void GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const;
+	bool HasOverlap(MEMORY_ADDR min_addr, MEMORY_ADDR max_addr) const;
 	
 	void Catch() const;
 	void Release() const;

@@ -48,7 +48,7 @@ public:
 	typedef ATD_PWM_STUB inherited;
 
 	XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
-	~XML_ATD_PWM_STUB();
+	virtual ~XML_ATD_PWM_STUB();
 
 	void processATD0();
 	void processATD1();

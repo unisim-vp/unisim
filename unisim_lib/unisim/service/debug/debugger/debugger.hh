@@ -57,6 +57,7 @@
 #include <unisim/service/interfaces/profiling.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
+#include <unisim/service/interfaces/subprogram_lookup.hh>
 
 #include <string>
 
@@ -87,6 +88,7 @@ using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::DebugEventListener;
 using unisim::service::interfaces::DebugInfoLoading;
 using unisim::service::interfaces::DataObjectLookup;
+using unisim::service::interfaces::SubProgramLookup;
 
 template <class ADDRESS>
 class Debugger
@@ -102,6 +104,7 @@ class Debugger
 	, public Service<BackTrace<ADDRESS> >
 	, public Service<DebugInfoLoading>
 	, public Service<DataObjectLookup<ADDRESS> >
+	, public Service<SubProgramLookup<ADDRESS> >
 	, public Client<DebugEventListener<ADDRESS> >
 	, public Client<DebugControl<ADDRESS> >
 	, public Client<MemoryAccessReportingControl>
@@ -125,6 +128,7 @@ public:
 	ServiceExport<BackTrace<ADDRESS> > backtrace_export;
 	ServiceExport<DebugInfoLoading> debug_info_loading_export;
 	ServiceExport<DataObjectLookup<ADDRESS> > data_object_lookup_export;
+	ServiceExport<SubProgramLookup<ADDRESS> > subprogram_lookup_export;
 	
 	ServiceImport<DebugEventListener<ADDRESS> > debug_event_listener_import;
 	ServiceImport<DebugControl<ADDRESS> > debug_control_import;
@@ -185,9 +189,11 @@ public:
 	virtual void EnumerateBinaries(std::list<std::string>& lst) const;
 	virtual bool IsBinaryEnabled(const char *filename) const;
 	
+	virtual unisim::util::debug::DataObject<ADDRESS> *GetDataObject(const char *data_object_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 	virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const;
 	virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, ADDRESS pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
+	virtual const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 private:
 	bool verbose;
 	std::string dwarf_to_html_output_directory;

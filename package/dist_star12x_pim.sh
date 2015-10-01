@@ -472,7 +472,8 @@ m4/check_lib.m4 \
 m4/rtbcob.m4 \
 m4/get_exec_path.m4 \
 m4/real_path.m4 \
-m4/pthread.m4"
+m4/pthread.m4 \
+m4/lua.m4"
 
 UNISIM_LIB_STAR12X_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_hcs12x.xml \
@@ -845,6 +846,7 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_LIBXML2(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CXXABI(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_PTHREAD(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LUA(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_RTBCOB(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${STAR12X_CONFIGURE_AC}"

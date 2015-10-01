@@ -34,78 +34,74 @@ const string GDBThread::FIELD_SEPARATOR = ":";
 std::ostream& operator << (std::ostream& os, DBGData& data) {
 
 	switch (data.getCommand()) {
-		case DBGData::DBG_KILL_COMMAND: {} break;
-		case DBGData::DBG_PROCESS_EXIT: {} break;
-		case DBGData::DBG_RESET_COMMAND: {} break;
-		case DBGData::DBG_EXTENDED_MODE_ENABLE: {} break;
-		case DBGData::DBG_SET_THREAD_CONTEXT: {} break;
-		case DBGData::DBG_REPORT_STOP: {} break;
-		case DBGData::DBG_OK_RESPONSE: {} break;
-		case DBGData::DBG_NOK_RESPONSE: {} break;
-		case DBGData::DBG_ERROR_MALFORMED_REQUEST: {} break;
-		case DBGData::DBG_ERROR_READING_DATA_EPERM: {} break;
-		case DBGData::DBG_UNKNOWN: {} break;
-		case DBGData::DBG_CONTINUE: {} break;
-		case DBGData::DBG_SUSPEND: {} break;
-		case DBGData::DBG_VERBOSE_RESUME_ACTIONS: {} break;
-		case DBGData::DBG_VERBOSE_RESUME_CONTINUE: {} break;
-		case DBGData::DBG_VERBOSE_RESUME_STEP: {} break;
-		case DBGData::DBG_DISCONNECT: {} break;
-		case DBGData::DBG_READ_REGISTERS: {} break;
-		case DBGData::DBG_WRITE_REGISTERS: {} break;
-		case DBGData::DBG_STEP_CYCLE: {} break;
-		case DBGData::DBG_READ_MEMORY: {} break;
-		case DBGData::DBG_WRITE_MEMORY: {} break;
-		case DBGData::DBG_READ_SELECTED_REGISTER: {} break;
-		case DBGData::DBG_WRITE_SELECTED_REGISTER: {} break;
-		case DBGData::DBG_QUERY_VARIABLE: {} break;
-		case DBGData::DBG_STEP_INSTRUCTION: {} break;
-		case DBGData::DBG_REMOVE_BREAKPOINT_WATCHPOINT: {} break;
-		case DBGData::DBG_SET_BREAKPOINT_WATCHPOINT: {} break;
-		case DBGData::DBG_READ_WATCHPOINT: {} break;
-		case DBGData::DBG_WRITE_WATCHPOINT: {} break;
-		case DBGData::DBG_ACCESS_WATCHPOINT: {} break;
-		case DBGData::DBG_REPORT_EXTENDED_STOP: {} break;
-		case DBGData::DBG_GET_LAST_SIGNAL: {} break;
-		case DBGData::DBG_ENABLE_EXTENDED_MODE: {} break;
-		case DBGData::TERMINATE: {
-			os << "Req./Res.=\"TERMINATE\"";
-		} break;
-		case DBGData::QUERY_DISASM: {} break;
-		case DBGData::QUERY_SRCADDR: {} break;
-		case DBGData::QUERY_STACK: {} break;
-		case DBGData::QUERY_SYMBOLES: {} break;
-		case DBGData::QUERY_PARAMETERS: {} break;
-		case DBGData::QUERY_PHYSICAL_ADDRESS: {} break;
-		case DBGData::QUERY_STATISTICS: {} break;
-		case DBGData::QUERY_STRUCTURED_ADDRESS: {} break;
-		case DBGData::QUERY_TIME: {} break;
-		case DBGData::QUERY_ENDIAN: {} break;
-		case DBGData::QUERY_REGISTERS: {} break;
-		case DBGData::QUERY_START_PIM: {} break;
-		case DBGData::QUERY_PARAMETER: {} break;
-		case DBGData::QUERY_SYMBOL: {} break;
-		case DBGData::QUERY_SYMBOL_ACCEPT: {} break;
-		case DBGData::QUERY_SYMBOL_READ: {} break;
-		case DBGData::QUERY_SYMBOL_READ_ALL: {} break;
-		case DBGData::QUERY_SYMBOL_WRITE: {} break;
-		case DBGData::QUERY_VAR_READ: {
-			os << "InitiatorSite=\"" << data.getMasterSite() << "\" : Initiator=\"" << data.getMaster() << "\" : : Target=\"" << data.getSlave()  << "\" : Req./Res.=\"READ\"";
-		} break;
-		case DBGData::QUERY_VAR_WRITE: {
-			os << "InitiatorSite=\"" << data.getMasterSite() << "\" : Initiator=\"" << data.getMaster() << "\" : : Target=\"" << data.getSlave()  << "\" : Req./Res.=\"WRITE\"";
+		case DBGData::DBG_KILL_COMMAND: { os << "DBG_KILL_COMMAND"; } break;
+		case DBGData::DBG_PROCESS_EXIT: { os << "DBG_PROCESS_EXIT"; } break;
+		case DBGData::DBG_RESET_COMMAND: { os << "DBG_RESET_COMMAND"; } break;
+		case DBGData::DBG_EXTENDED_MODE_ENABLE: { os << "DBG_EXTENDED_MODE_ENABLE"; } break;
+		case DBGData::DBG_SET_THREAD_CONTEXT: { os << "DBG_SET_THREAD_CONTEXT"; } break;
+		case DBGData::DBG_REPORT_STOP: { os << "DBG_REPORT_STOP"; } break;
+		case DBGData::DBG_OK_RESPONSE: { os << "DBG_OK_RESPONSE"; } break;
+		case DBGData::DBG_NOK_RESPONSE: { os << "DBG_NOK_RESPONSE"; } break;
+		case DBGData::DBG_ERROR_MALFORMED_REQUEST: { os << "DBG_ERROR_MALFORMED_REQUEST"; } break;
+		case DBGData::DBG_ERROR_READING_DATA_EPERM: { os << "DBG_ERROR_READING_DATA_EPERM"; } break;
+		case DBGData::DBG_UNKNOWN: { os << "DBG_UNKNOWN"; } break;
+		case DBGData::DBG_CONTINUE: { os << "DBG_CONTINUE"; } break;
+		case DBGData::DBG_SUSPEND: { os << "DBG_SUSPEND"; } break;
+		case DBGData::DBG_VERBOSE_RESUME_ACTIONS: { os << "DBG_VERBOSE_RESUME_ACTIONS"; } break;
+		case DBGData::DBG_VERBOSE_RESUME_CONTINUE: { os << "DBG_VERBOSE_RESUME_CONTINUE"; } break;
+		case DBGData::DBG_VERBOSE_RESUME_STEP: { os << "DBG_VERBOSE_RESUME_STEP"; } break;
+		case DBGData::DBG_DISCONNECT: { os << "DBG_DISCONNECT"; } break;
+		case DBGData::DBG_READ_REGISTERS: { os << "DBG_READ_REGISTERS"; } break;
+		case DBGData::DBG_WRITE_REGISTERS: { os << "DBG_WRITE_REGISTERS"; } break;
+		case DBGData::DBG_STEP_CYCLE: { os << "DBG_STEP_CYCLE"; } break;
+		case DBGData::DBG_READ_MEMORY: { os << "DBG_READ_MEMORY"; } break;
+		case DBGData::DBG_WRITE_MEMORY: { os << "DBG_WRITE_MEMORY"; } break;
+		case DBGData::DBG_READ_SELECTED_REGISTER: { os << "DBG_READ_SELECTED_REGISTER"; } break;
+		case DBGData::DBG_WRITE_SELECTED_REGISTER: { os << "DBG_WRITE_SELECTED_REGISTER"; } break;
+		case DBGData::DBG_QUERY_VARIABLE: { os << "DBG_QUERY_VARIABLE"; } break;
+		case DBGData::DBG_STEP_INSTRUCTION: { os << "DBG_STEP_INSTRUCTION"; } break;
+		case DBGData::DBG_REMOVE_BREAKPOINT_WATCHPOINT: { os << "DBG_REMOVE_BREAKPOINT_WATCHPOINT"; } break;
+		case DBGData::DBG_SET_BREAKPOINT_WATCHPOINT: { os << "DBG_SET_BREAKPOINT_WATCHPOINT"; } break;
+		case DBGData::DBG_READ_WATCHPOINT: { os << "DBG_READ_WATCHPOINT"; } break;
+		case DBGData::DBG_WRITE_WATCHPOINT: { os << "DBG_WRITE_WATCHPOINT"; } break;
+		case DBGData::DBG_ACCESS_WATCHPOINT: { os << "DBG_ACCESS_WATCHPOINT"; } break;
+		case DBGData::DBG_REPORT_EXTENDED_STOP: { os << "DBG_REPORT_EXTENDED_STOP"; } break;
+		case DBGData::DBG_GET_LAST_SIGNAL: { os << "DBG_GET_LAST_SIGNAL"; } break;
+		case DBGData::DBG_ENABLE_EXTENDED_MODE: { os << "DBG_ENABLE_EXTENDED_MODE"; } break;
+		case DBGData::TERMINATE: {  os << "TERMINATE"; } break;
+		case DBGData::QUERY_DISASM: { os << "QUERY_DISASM"; } break;
+		case DBGData::QUERY_SRCADDR: { os << "QUERY_SRCADDR"; } break;
+		case DBGData::QUERY_STACK: { os << "QUERY_STACK"; } break;
+		case DBGData::QUERY_SYMBOLES: { os << "QUERY_SYMBOLES"; } break;
+		case DBGData::QUERY_PARAMETERS: { os << "QUERY_PARAMETERS"; } break;
+		case DBGData::QUERY_PHYSICAL_ADDRESS: { os << "QUERY_PHYSICAL_ADDRESS"; } break;
+		case DBGData::QUERY_STATISTICS: { os << "QUERY_STATISTICS"; } break;
+		case DBGData::QUERY_STRUCTURED_ADDRESS: { os << "QUERY_STRUCTURED_ADDRESS"; } break;
+		case DBGData::QUERY_TIME: { os << "QUERY_TIME"; } break;
+		case DBGData::QUERY_ENDIAN: { os << "QUERY_ENDIAN"; } break;
+		case DBGData::QUERY_REGISTERS: { os << "QUERY_REGISTERS"; } break;
+		case DBGData::QUERY_START_PIM: { os << "QUERY_START_PIM"; } break;
+		case DBGData::QUERY_PARAMETER: { os << "QUERY_PARAMETER"; } break;
+		case DBGData::QUERY_SYMBOL: { os << "QUERY_SYMBOL"; } break;
+		case DBGData::QUERY_SYMBOL_ACCEPT: { os << "QUERY_SYMBOL_ACCEPT"; } break;
+		case DBGData::QUERY_SYMBOL_READ: { os << "QUERY_SYMBOL_READ"; } break;
+		case DBGData::QUERY_SYMBOL_READ_ALL: { os << "QUERY_SYMBOL_READ_ALL"; } break;
+		case DBGData::QUERY_SYMBOL_WRITE: {
+			os << "QUERY_SYMBOL_WRITE";
 			os << " : Value=\"" << data.getAttribute("value") << "\"";
 		} break;
-		case DBGData::QUERY_VAR_LISTEN: {
-			os << "InitiatorSite=\"" << data.getMasterSite() << "\" : Initiator=\"" << data.getMaster() << "\" : : Target=\"" << data.getSlave()  << "\" : Req./Res.=\"LISTEN\"";
+		case DBGData::QUERY_VAR_READ: { os << "QUERY_VAR_READ"; } break;
+		case DBGData::QUERY_VAR_WRITE: {
+			os << "QUERY_VAR_WRITE";
+			os << " : Value=\"" << data.getAttribute("value") << "\"";
 		} break;
-		case DBGData::QUERY_VAR_UNLISTEN: {
-			os << "InitiatorSite=\"" << data.getMasterSite() << "\" : Initiator=\"" << data.getMaster() << "\" : : Target=\"" << data.getSlave()  << "\" : Req./Res.=\"UNLISTEN\"";
-		} break;
-		case DBGData::UNKNOWN: {
-			os << "Req./Res.=\"" << data.getCommand() << "\"";
-		} break;
+		case DBGData::QUERY_VAR_LISTEN: { os << "QUERY_VAR_LISTEN"; } break;
+		case DBGData::QUERY_VAR_UNLISTEN: { os << "QUERY_VAR_UNLISTEN";	} break;
+		case DBGData::UNKNOWN: { os << "UNKNOWN"; } break;
+		default: { os << "?????"; } break;
 	}
+
+	os << " : InitiatorSite=\"" << data.getMasterSite() << "\" : Initiator=\"" << data.getMaster() << "\" : : Target=\"" << data.getSlave();
 
 	os << endl;
 
@@ -297,8 +293,8 @@ void GDBThread::ReceiveThread::run(){
 //		while (parent->GetPacketWithAck(buf_str, false, false)) {
 		while (parent->GetPacketWithAck(buf_str, true, false)) {
 
-			unsigned int pos = 0;
-			unsigned int len = buf_str.length();
+			size_t pos = 0;
+			size_t len = buf_str.length();
 
 			if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
 
@@ -425,8 +421,13 @@ void GDBThread::ReceiveThread::run(){
 							break;
 
 						case 'H': {
-							DBGData *request = new DBGData(DBGData::UNKNOWN);
-							dataQueue->add(request);
+//							DBGData *request = new DBGData(DBGData::UNKNOWN);
+//							dataQueue->add(request);
+
+							// unknown command response
+							DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
+
+							parent->sendData(response);
 
 						}
 							break;
@@ -559,6 +560,10 @@ void GDBThread::ReceiveThread::run(){
 //											{
 //												logger << DebugWarning << "HandleSymbolLookup:: unknown command (" << packet << ")" << EndDebugWarning;
 //											}
+
+											DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
+											parent->sendData(response);
+
 										}
 									}
 								}
@@ -587,8 +592,17 @@ void GDBThread::ReceiveThread::run(){
 							}
 							else
 							{
-								DBGData *request = new DBGData(DBGData::DBG_UNKNOWN);
-								dataQueue->add(request);
+//								if(verbose)
+//								{
+//									logger << DebugWarning << "Received an unknown GDB remote protocol packet" << EndDebugWarning;
+//								}
+
+//								DBGData *request = new DBGData(DBGData::DBG_UNKNOWN);
+//								dataQueue->add(request);
+								// unknown command response
+								DBGData *response = new DBGData(DBGData::DBG_ERROR_READING_DATA_EPERM);
+								parent->sendData(response);
+
 							}
 
 							break;
@@ -608,8 +622,8 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 	// qRcmd,cmd;var_name[:value]{;var_name[:value]}
 
-	unsigned int start_index = 0;
-	unsigned int end_index = command.find(';', start_index);
+	size_t start_index = 0;
+	size_t end_index = command.find(';', start_index);
 	string cmdPrefix = command.substr(start_index, end_index-start_index);
 
 	start_index = end_index+1;
@@ -620,7 +634,14 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			DBGData *request = new DBGData(DBGData::QUERY_VAR_LISTEN);
 
-			string name = command.substr(start_index, end_index-start_index);
+			end_index = command.find(';', start_index);
+			string name;
+			if (end_index == string::npos) {
+				name = command.substr(start_index);
+			} else {
+				name = command.substr(start_index, end_index-start_index);
+				start_index = end_index+1;
+			}
 
 			request->setMasterSite("workbench");
 			request->setMaster(name);
@@ -629,12 +650,6 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			dataQueue->add(request);
 
-			start_index = end_index+1;
-
-			end_index = command.find(';', start_index);
-			if (end_index != string::npos) {
-				start_index = end_index+1;
-			}
 		} while (end_index != string::npos);
 
 	}
@@ -643,7 +658,14 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 		do {
 			DBGData *request = new DBGData(DBGData::QUERY_VAR_UNLISTEN);
 
-			string name = command.substr(start_index, end_index-start_index);
+			end_index = command.find(';', start_index);
+			string name;
+			if (end_index == string::npos) {
+				name = command.substr(start_index);
+			} else {
+				name = command.substr(start_index, end_index-start_index);
+				start_index = end_index+1;
+			}
 
 			request->setMasterSite("workbench");
 			request->setMaster(name);
@@ -652,14 +674,7 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			dataQueue->add(request);
 
-			start_index = end_index+1;
-
-			end_index = command.find(';', start_index);
-			if (end_index != string::npos) {
-				start_index = end_index+1;
-			}
 		} while (end_index != string::npos);
-
 
 	}
 	else	if (cmdPrefix.compare("var_read") == 0) {
@@ -668,7 +683,14 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			DBGData *request = new DBGData(DBGData::QUERY_VAR_READ);
 
-			string name = command.substr(start_index, end_index-start_index);
+			end_index = command.find(';', start_index);
+			string name;
+			if (end_index == string::npos) {
+				name = command.substr(start_index);
+			} else {
+				name = command.substr(start_index, end_index-start_index);
+				start_index = end_index+1;
+			}
 
 			request->setMasterSite("workbench");
 			request->setMaster(name);
@@ -677,12 +699,6 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			dataQueue->add(request);
 
-			start_index = end_index+1;
-
-			end_index = command.find(';', start_index);
-			if (end_index != string::npos) {
-				start_index = end_index+1;
-			}
 		} while (end_index != string::npos);
 
 	}
@@ -710,7 +726,7 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 		// TODO: rewrite the string parsing to uniforms with the rest of the code
 
-		unsigned int separator_index = command.find_first_of(':');
+		size_t separator_index = command.find_first_of(':');
 		string cmdPrefix;
 
 		if (separator_index == string::npos) {
@@ -776,7 +792,7 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			if (separator_index != string::npos) {
 				separator_index++;
-				unsigned int symbol_address;
+				unsigned long long symbol_address;
 				unsigned int symbol_size;
 
 				if(ParseHex(command, separator_index, symbol_address)) {
@@ -828,8 +844,8 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			DBGData *request = new DBGData(DBGData::QUERY_PHYSICAL_ADDRESS);
 
-			unsigned int start_index = 0;
-			unsigned int end_index = command.find(':', start_index);
+			size_t start_index = 0;
+			size_t end_index = command.find(':', start_index);
 			if(end_index != string::npos) {
 
 				string cmd = command.substr(start_index, end_index-start_index);
@@ -849,8 +865,8 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 
 			DBGData *request = new DBGData(DBGData::QUERY_STRUCTURED_ADDRESS);
 
-			unsigned int start_index = 0;
-			unsigned int end_index = command.find(':', start_index);
+			size_t start_index = 0;
+			size_t end_index = command.find(':', start_index);
 			if(end_index != string::npos) {
 
 				string cmd = command.substr(start_index, end_index-start_index);
@@ -870,8 +886,8 @@ void GDBThread::ReceiveThread::HandleQRcmd(string command) {
 			// qRcmd,srcaddr:filename;lineno;colno
 			DBGData *request = new DBGData(DBGData::QUERY_SRCADDR);
 
-			unsigned int start_index = separator_index + 1;
-			unsigned int end_index = command.find(';');
+			size_t start_index = separator_index + 1;
+			size_t end_index = command.find(';');
 			if(end_index != string::npos) {
 				string source_filename = command.substr(start_index, end_index-start_index);
 				request->addAttribute(DBGData::FILE_NAME_ATTR, source_filename);

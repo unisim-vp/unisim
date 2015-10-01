@@ -212,13 +212,25 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       if( opbf->m_sext ) {
         int opsize = std::max( least_ctype_size( opbf->dstsize() ), m_minwordsize );
         int sext_shift = opsize - opbf->m_size;
-        _product.code( "(((((int%d_t)(%s >> %u)) & 0x%llx) << %u) >> %u)",
-                       opsize, _codename, fi.pos(),
-                       opbf->mask(), sext_shift, sext_shift );
+        if( fi.pos() ) {
+          _product.code( "((int%d_t)(((%s >> %u) & 0x%llx) << %u) >> %u)",
+                         opsize, _codename, fi.pos(),
+                         opbf->mask(), sext_shift, sext_shift );
+        }
+        else {
+          _product.code( "((int%d_t)((%s & 0x%llx) << %u) >> %u)",
+                         opsize, _codename,
+                         opbf->mask(), sext_shift, sext_shift );
+        }
       } else {
         // FIXME: a cast from the instruction type to the operand type
         // may be wiser...
-        _product.code( "((%s >> %u) & 0x%llx)", _codename, fi.pos(), opbf->mask() );
+        if( fi.pos() ) {
+          _product.code( "((%s >> %u) & 0x%llx)", _codename, fi.pos(), opbf->mask() );
+        }
+        else {
+          _product.code( "(%s & 0x%llx)", _codename, opbf->mask() );
+        }
       }
     
       if( opbf->m_shift > 0 )

@@ -91,6 +91,8 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(RunTx);
 
+	SC_THREAD(TelnetProcessInput);
+
 	xint_payload = xint_payload_fabric.allocate();
 
 }
@@ -307,6 +309,48 @@ void S12SCI::RunRx() {
 
 // *** From Now ***
 
+void S12SCI::TelnetProcessInput()
+{
+	while (telnet_enabled) {
+
+		while (!isReceiverEnabled() && telnet_enabled) {
+
+			wait(rx_run_event);
+		}
+
+		if(char_io_import)
+		{
+			char c;
+			uint8_t v;
+
+			if(!char_io_import->GetChar(c)) {
+				wait(telnet_process_input_period);
+
+				continue;
+			} else {
+				v = (uint8_t) c;
+				if(rx_debug_enabled)
+				{
+					logger << DebugInfo << "Receiving ";
+					if(v >= 32)
+						logger << "character '" << c << "'";
+					else
+						logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+					logger << " from telnet client" << EndDebugInfo;
+				}
+
+				add(telnet_rx_fifo, v, telnet_rx_event);
+			}
+
+		} else {
+			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
+		}
+
+	}
+
+}
+
+
 inline bool S12SCI::getRXD() {
 
 	static uint16_t telnet_charin_mask = 0x00;
@@ -325,7 +369,7 @@ inline bool S12SCI::getRXD() {
 		if (telnet_enabled) {
 
 			if (index >= frameLength) {
-				TelnetProcessInput();
+//				TelnetProcessInput();
 
 				if (isEmpty(telnet_rx_fifo)) {
 					bufferin = buildFrame(0xFF, 0xFF, SCIIDLE);
@@ -723,6 +767,7 @@ bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_le
 		} break;
 
 		case (SCIBDL | SCIACR1): {
+
 			if ((scisr2_register & 0x80) == 0) {
 				 scibdl_register = *((uint8_t *) buffer);
 				 ComputeBaudRate();
@@ -927,8 +972,9 @@ void S12SCI::ComputeBaudRate() {
 	if (!isInfraredEnabled()) {
 		// SCI baud rate = SCI bus clock / (16 x SBR[12:0])
 		uint16_t sbr12_0 = ((scibdh_register & 0x1F) << 8) | scibdl_register;
+
 		if (sbr12_0 != 0) {
-			sci_baud_rate = bus_cycle_time /(16 * sbr12_0);
+			sci_baud_rate = bus_cycle_time * (16 * sbr12_0);
 		} else {
 			sci_baud_rate = sc_time(-1, SC_PS);
 		}
@@ -937,12 +983,16 @@ void S12SCI::ComputeBaudRate() {
 		// SCIbaud rate = SCI bus clock / (32 x SBR[12:1])
 		uint16_t sbr12_1 = ((scibdh_register & 0x1F) << 7) | (scibdl_register >> 1);
 		if (sbr12_1 != 0) {
-			sci_baud_rate = bus_cycle_time /(32 * sbr12_1);
+			sci_baud_rate = bus_cycle_time * (32 * sbr12_1);
 		} else {
 			sci_baud_rate = sc_time(-1, SC_PS);
 		}
 
 	}
+
+//	telnet_process_input_period = sc_time(1, SC_MS);
+	telnet_process_input_period = sci_baud_rate * 8 * 8;
+
 }
 
 //=====================================================================

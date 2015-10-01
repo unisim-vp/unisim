@@ -114,6 +114,7 @@ public:
 	const Section<MEMORY_ADDR> *GetSection(unsigned int index) const;
 	const Segment<MEMORY_ADDR> *GetSegment(unsigned int index) const;
 	void GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const;
+	bool HasOverlap(MEMORY_ADDR min_addr, MEMORY_ADDR max_addr) const;
 	
 	void AddBlob(const Blob<MEMORY_ADDR> *blob);
 	void AddSection(const Section<MEMORY_ADDR> *section);

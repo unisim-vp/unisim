@@ -73,6 +73,10 @@ S12XMMC::~S12XMMC() {
 
 	mmc_trans->release();
 
+	for (uint16_t i=0; i <memoryMap.size(); i++) {
+		if (memoryMap[i]) { delete memoryMap[i]; memoryMap[i] = NULL; }
+	}
+
 }
 
 
@@ -263,6 +267,8 @@ bool S12XMMC::BeginSetup() {
 		std::stringstream ss;
 		ss << std::dec << oneMemoryMapEntrySegments[0] << " " << std::hex << oneMemoryMapEntrySegments[1] << " " << std::hex << oneMemoryMapEntrySegments[2] << std::dec;
 		ss >> std::dec >> oneMemoryMapEntry->module_index >> std::hex >> oneMemoryMapEntry->start_address >> std::hex >> oneMemoryMapEntry->end_address;
+
+		ss.str(std::string());
 
 		memoryMap.push_back(oneMemoryMapEntry);
 		oneMemoryMapEntrySegments.clear();

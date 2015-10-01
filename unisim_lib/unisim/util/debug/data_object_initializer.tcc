@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DATA_OBJECT_TCC__
-#define __UNISIM_UTIL_DEBUG_DATA_OBJECT_TCC__
+#ifndef __UNISIM_UTIL_DEBUG_DATA_OBJECT_INITIALIZER_TCC__
+#define __UNISIM_UTIL_DEBUG_DATA_OBJECT_INITIALIZER_TCC__
 
 #include <iostream>
 #include <unisim/util/ieee754/ieee754.hh>
@@ -68,6 +68,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 		case T_CHAR:
 			{
 				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())
@@ -112,6 +113,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 		case T_INTEGER:
 			{
 				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())
@@ -156,6 +158,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 		case T_FLOAT:
 			{
 				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				
 				if(data_object)
 				{
 					if(!data_object->IsOptimizedOut())
@@ -396,4 +399,4 @@ std::ostream& operator << (std::ostream& os, const DataObjectInitializer<ADDRESS
 } // end of namespace util
 } // end of namespace unisim
 
-#endif // __UNISIM_UTIL_DEBUG_DATA_OBJECT_TCC__
+#endif // __UNISIM_UTIL_DEBUG_DATA_OBJECT_INITIALIZER_TCC__

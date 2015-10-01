@@ -290,7 +290,7 @@ void GPIO_LEDs<NUM_LEDS>::ProcessGPIOEvent(Event *event)
 	
 	if(led_status[pin] != gpio_pin_value)
 	{
-		logger << DebugInfo << "LED #" << pin << " lights " << (gpio_pin_value ? "on" : "off") << EndDebugInfo;
+		logger << DebugInfo << "At " << event->GetTimeStamp() << ", LED #" << pin << " [" << (gpio_pin_value ? "*" : " ") << "]" << EndDebugInfo;
 		
 		if(led_board_import) led_board_import->SetLEDStatus(pin, gpio_pin_value);
 	}

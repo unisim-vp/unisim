@@ -65,6 +65,7 @@ Debugger<ADDRESS>::Debugger(const char *name, Object *parent)
 	, Service<BackTrace<ADDRESS> >(name, parent)
 	, Service<DebugInfoLoading>(name, parent)
 	, Service<DataObjectLookup<ADDRESS> >(name, parent)
+	, Service<SubProgramLookup<ADDRESS> >(name, parent)
 	, Client<DebugEventListener<ADDRESS> >(name, parent)
 	, Client<DebugControl<ADDRESS> >(name, parent)
 	, Client<MemoryAccessReportingControl>(name, parent)
@@ -86,6 +87,7 @@ Debugger<ADDRESS>::Debugger(const char *name, Object *parent)
 	, backtrace_export("backtrace-export", this)
 	, debug_info_loading_export("debug-info-loading-export", this)
 	, data_object_lookup_export("data-object-lookup-export", this)
+	, subprogram_lookup_export("subprogram-lookup-export", this)
 	, debug_event_listener_import("debug-event-listener", this)
 	, debug_control_import("debug-control-import", this)
 	, disasm_import("disasm-import", this)
@@ -181,6 +183,7 @@ bool Debugger<ADDRESS>::Setup(unisim::kernel::service::ServiceExportBase *srv_ex
 	if(srv_export == &stmt_lookup_export) return SetupDebugInfo();
 	if(srv_export == &backtrace_export) return SetupDebugInfo();
 	if(srv_export == &data_object_lookup_export) return SetupDebugInfo();
+	if(srv_export == &subprogram_lookup_export) return SetupDebugInfo();
 
 	logger << DebugError << "Internal Error" << EndDebugError;
 	return false;
@@ -1182,10 +1185,40 @@ bool Debugger<ADDRESS>::SetupDebugInfo()
 	if(setup_debug_info_done) return true;
 	if(!blob_import) return false;
 	const unisim::util::debug::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
-	if(!blob) return false;
+	if(!blob) return true; // no blob
 	bool status = SetupDebugInfo(blob);
 	if(status) setup_debug_info_done = true;
 	return setup_debug_info_done;
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::GetDataObject(const char *data_object_name, const char *filename, const char *compilation_unit_name) const
+{
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->GetDataObject(data_object_name, filename, compilation_unit_name);
+			if(data_object) return data_object;
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->GetDataObject(data_object_name, filename, compilation_unit_name);
+			if(data_object) return data_object;
+		}
+	}
+	
+	return 0;
 }
 
 template <class ADDRESS>
@@ -1242,6 +1275,36 @@ void Debugger<ADDRESS>::EnumerateDataObjectNames(std::set<std::string>& name_set
 			elf64_loader->EnumerateDataObjectNames(name_set, pc, scope);
 		}
 	}
+}
+
+template <class ADDRESS>
+const unisim::util::debug::SubProgram<ADDRESS> *Debugger<ADDRESS>::FindSubProgram(const char *subprogram_name, const char *filename, const char *compilation_unit_name) const
+{
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf32_loader->FindSubProgram(subprogram_name, filename, compilation_unit_name);
+			if(subprogram) return subprogram;
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf64_loader->FindSubProgram(subprogram_name, filename, compilation_unit_name);
+			if(subprogram) return subprogram;
+		}
+	}
+	
+	return 0;
 }
 
 } // end of namespace debugger

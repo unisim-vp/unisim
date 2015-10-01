@@ -5,13 +5,14 @@ public:
 
 class MyChannel : public sc_module, public MyInterface {
 public:
+	sc_export<MyInterface> exp;
 	virtual int Read(int addr) { ... }
 };
 
 class MyModule : public sc_module {
 public:
-	void Process()
-	{
+	sc_port<MyInterface> prt;
+	void Process() {
 		while(1) {
 			...
 			read_value = prt->Read(addr);
@@ -21,8 +22,7 @@ public:
 	}
 };
 
-int sc_main(int argc, char *argv[])
-{
+int sc_main(int argc, char *argv[]) {
 	MyModule *m = new MyModule("m");
 	MyChannel *c = new MyChannel("c");
 	m->prt(c->exp);

@@ -169,7 +169,7 @@ unisim/util/debug/stmt_64.cc \
 unisim/util/debug/symbol_64.cc \
 unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/symbol_32.cc \
-unisim/util/debug/data_object.cc \
+unisim/util/debug/type.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
@@ -274,6 +274,7 @@ unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
 unisim/service/interfaces/data_object_lookup.hh \
+unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/util/likely/likely.hh \
@@ -310,6 +311,7 @@ unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/dwarf/option.hh \
 unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/dwarf/data_object.hh \
+unisim/util/debug/dwarf/subprogram.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/symbol_table.hh \
@@ -328,6 +330,9 @@ unisim/util/debug/watchpoint.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/data_object.hh \
+unisim/util/debug/type.hh \
+unisim/util/debug/data_object_initializer.hh \
+unisim/util/debug/subprogram.hh \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
@@ -381,7 +386,7 @@ unisim/service/debug/debugger/debugger.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/os/linux_os/linux.tcc \
 unisim/util/debug/profile.tcc \
-unisim/util/debug/data_object.tcc \
+unisim/util/debug/data_object_initializer.tcc \
 unisim/util/debug/dwarf/die.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/addr_range.tcc \
@@ -400,6 +405,7 @@ unisim/util/debug/dwarf/loc.tcc \
 unisim/util/debug/dwarf/dwarf.tcc \
 unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/dwarf/data_object.tcc \
+unisim/util/debug/dwarf/subprogram.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
