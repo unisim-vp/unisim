@@ -60,6 +60,7 @@ class tlm_mm_interface;
 class tlm_extension_base;
 template <typename T> class tlm_extension;
 class tlm_generic_payload;
+class tlm_global_quantum;
 
 } // end of namespace tlm
 

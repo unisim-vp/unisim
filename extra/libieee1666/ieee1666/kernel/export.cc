@@ -57,31 +57,19 @@ void sc_export_base::end_of_simulation()
 {
 }
 
-sc_interface* sc_export_base::get_interface()
-{
-	return interf;
-}
-
-const sc_interface* sc_export_base::get_interface() const
-{
-	return interf;
-}
-
 sc_export_base::sc_export_base(const char *_name)
 	: sc_object(_name)
-	, interf(0)
 {
 }
 
 sc_export_base::sc_export_base()
 	: sc_object(sc_gen_unique_name("export"))
-	, interf(0)
 {
 }
 	
-void sc_export_base::bind(sc_interface *_if)
-{
-	interf = _if;
-}
+// void sc_export_base::bind(sc_interface *_if)
+// {
+// 	interf = _if;
+// }
 
 } // end of namespace sc_core

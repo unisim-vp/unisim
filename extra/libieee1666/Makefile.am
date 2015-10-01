@@ -1,5 +1,5 @@
 pkgconfig_DATA = systemc.pc
-ACLOCAL_AMFLAGS=-I $(top_srcdir)/m4
+ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I$(top_srcdir) -I$(top_builddir)
 AM_CXXFLAGS = -fPIC
 includedir = $(prefix)/include
@@ -67,8 +67,9 @@ ieee1666/tlm2/interoperability_layer/socket/initiator_socket.h \
 ieee1666/tlm2/interoperability_layer/protocol/base_protocol.h \
 ieee1666/tlm2/interoperability_layer/phase/base_phase.h \
 ieee1666/tlm2/interoperability_layer/payload/generic_payload.h \
-ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.h
-
+ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.h \
+tlm_utils/simple_initiator_socket.h \
+tlm_utils/simple_target_socket.h
 
 
 lib_LTLIBRARIES = libsystemc.la
@@ -117,7 +118,8 @@ ieee1666/util/backtrace.cc \
 ieee1666/tlm2/interoperability_layer/interface/direct_memory.cc \
 ieee1666/tlm2/interoperability_layer/phase/base_phase.cc \
 ieee1666/tlm2/interoperability_layer/payload/generic_payload.cc \
-ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.cc
+ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.cc \
+tlm_utils/test.cc
 
 nobase_dist_share_DATA = \
 COPYING

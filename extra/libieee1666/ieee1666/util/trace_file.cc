@@ -226,19 +226,19 @@ void sc_trace( sc_trace_file* , const long* , const std::string& , int width )
 {
 }
 
-void sc_trace( sc_trace_file* , const sc_dt::int64& , const std::string& , int width )
+void sc_trace( sc_trace_file* , const long long& , const std::string& , int width )
 {
 }
 
-void sc_trace( sc_trace_file* , const sc_dt::int64* , const std::string& , int width )
+void sc_trace( sc_trace_file* , const long long* , const std::string& , int width )
 {
 }
 
-void sc_trace( sc_trace_file* , const sc_dt::uint64& , const std::string& , int width )
+void sc_trace( sc_trace_file* , const unsigned long long& , const std::string& , int width )
 {
 }
 
-void sc_trace( sc_trace_file* , const sc_dt::uint64* , const std::string& , int width )
+void sc_trace( sc_trace_file* , const unsigned long long* , const std::string& , int width )
 {
 }
 

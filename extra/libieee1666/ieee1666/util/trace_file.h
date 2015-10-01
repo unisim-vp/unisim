@@ -95,10 +95,10 @@ void sc_trace( sc_trace_file* , const int& , const std::string& , int width = 8 
 void sc_trace( sc_trace_file* , const int* , const std::string& , int width = 8 * sizeof( int ) );
 void sc_trace( sc_trace_file* , const long& , const std::string& , int width = 8 * sizeof( long ) );
 void sc_trace( sc_trace_file* , const long* , const std::string& , int width = 8 * sizeof( long ) );
-void sc_trace( sc_trace_file* , const sc_dt::int64& , const std::string& , int width = 8 * sizeof( sc_dt::int64 ) );
-void sc_trace( sc_trace_file* , const sc_dt::int64* , const std::string& , int width = 8 * sizeof( sc_dt::int64 ) );
-void sc_trace( sc_trace_file* , const sc_dt::uint64& , const std::string& , int width = 8 * sizeof( sc_dt::uint64 ) );
-void sc_trace( sc_trace_file* , const sc_dt::uint64* , const std::string& , int width = 8 * sizeof( sc_dt::uint64 ) );
+void sc_trace( sc_trace_file* , const long long& , const std::string& , int width = 8 * sizeof( long long ) );
+void sc_trace( sc_trace_file* , const long long* , const std::string& , int width = 8 * sizeof( long long ) );
+void sc_trace( sc_trace_file* , const unsigned long long& , const std::string& , int width = 8 * sizeof( unsigned long long ) );
+void sc_trace( sc_trace_file* , const unsigned long long* , const std::string& , int width = 8 * sizeof( unsigned long long ) );
 template <class T>
 void sc_trace( sc_trace_file* , const sc_signal_in_if<T>& , const std::string& );
 void sc_trace( sc_trace_file* , const sc_signal_in_if<char>& , const std::string& , int width );

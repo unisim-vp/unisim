@@ -46,5 +46,6 @@
 #include <ieee1666/tlm2/interoperability_layer/protocol/base_protocol.h>
 #include <ieee1666/tlm2/interoperability_layer/phase/base_phase.h>
 #include <ieee1666/tlm2/interoperability_layer/payload/generic_payload.h>
+#include <ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.h>
 
 #endif

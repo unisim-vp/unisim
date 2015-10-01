@@ -49,6 +49,8 @@ public:
 	sc_core::sc_time compute_local_quantum();
 protected:
 	tlm_global_quantum();
+private:
+	sc_core::sc_time global_quantum;
 };
 
 } // namespace tlm

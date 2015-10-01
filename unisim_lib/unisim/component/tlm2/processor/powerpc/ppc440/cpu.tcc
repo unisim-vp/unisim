@@ -417,7 +417,9 @@ inline void CPU<CONFIG>::RunInternalTimers()
 	uint64_t delta = delta_time_tu / timer_cycle_time_tu;
 	inherited::RunTimers(delta);
 	sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
-	sc_time t(t_tu, false);
+	//sc_time t(t_tu, false);
+	sc_time t(sc_get_time_resolution());
+	t *= t_tu;
 	timer_time += t;
 #endif
 #endif
@@ -442,7 +444,9 @@ inline void CPU<CONFIG>::AlignToBusClock()
 	if(!modulo) return; // already aligned
 	
 	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
-	sc_time time_alignment(time_alignment_tu, false);
+	//sc_time time_alignment(time_alignment_tu, false);
+	sc_time time_alignment(sc_get_time_resolution());
+	time_alignment *= time_alignment_tu;
 	cpu_time += time_alignment;
 	run_time += time_alignment;
 }
@@ -456,7 +460,10 @@ void CPU<CONFIG>::AlignToBusClock(sc_time& t)
 	if(!modulo) return; // already aligned
 	
 	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
-	sc_time time_alignment(time_alignment_tu, false);
+	//sc_time time_alignment(time_alignment_tu, false);
+	sc_time time_alignment(sc_get_time_resolution());
+	time_alignment *= time_alignment_tu;
+
 	t += time_alignment;
 }
 
