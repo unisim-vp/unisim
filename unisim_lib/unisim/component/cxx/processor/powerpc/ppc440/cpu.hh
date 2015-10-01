@@ -1065,8 +1065,8 @@ private:
 	inline bool EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t size) ALWAYS_INLINE;
 	inline bool EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, uint32_t size) ALWAYS_INLINE;
 	
-	template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool EmuLoad(T& value, typename CONFIG::address_t ea);
-	template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool EmuStore(T value, typename CONFIG::address_t ea);
+	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool EmuLoad(T& value, typename CONFIG::address_t ea);
+	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool EmuStore(T value, typename CONFIG::address_t ea);
 	
 	//=====================================================================
 	//=               Programmer view memory access methods               =
