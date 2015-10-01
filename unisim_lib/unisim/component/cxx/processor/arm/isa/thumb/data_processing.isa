@@ -750,10 +750,18 @@ tst.execute = {
  */
 
 { CONFIG::insns6 }:                               \
-op rev( 0b1011101000[10]: r1[3]: r0[3] );
+op rev( 0b1011101000[10]: rm[3]: rd[3] );
 
 rev.disasm = {
-  buffer << "rev\tr" << r0 << ", r" << r1;
+  buffer << "rev\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+}
+
+rev.execute = {
+	uint32_t m = cpu.GetGPR(rm);
+	
+	uint32_t d = ByteSwap(m);
+	
+	cpu.SetGPR(rd, d);
 }
 
 /*

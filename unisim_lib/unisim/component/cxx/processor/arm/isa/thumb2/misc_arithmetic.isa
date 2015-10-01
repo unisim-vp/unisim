@@ -32,178 +32,241 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-op pkhbt( 0b111010101100[12]: r2[4]:> <: 0b0[1]: shl<2> off1[3]: r1[4]: off0[2]: shl<1> trans[1]: 0b0[1]: r0[4] );
+impl {
+
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/endian/endian.hh>
+
+using unisim::util::arithmetic::UnsignedAdd8;
+using unisim::util::arithmetic::RotateRight;
+using unisim::util::endian::ByteSwap;
+
+}
+
+op pkhbt( 0b111010101100[12]: rn[4]:> <: 0b0[1]: shl<2> off1[3]: rd[4]: off0[2]: shl<1> trans[1]: 0b0[1]: rm[4] );
 pkhbt.var off : {uint32_t} = {off1|off0}
 
 pkhbt.disasm = {
   char const* mnemonic = (trans != 2) ? "pkhbt" : "pkhtb";
-  buffer << "" << mnemonic << "\t" << DisasmRegister(r1) << ", " << DisasmRegister(r2) << ", " << DisasmRegister(r0);
+  buffer << "" << mnemonic << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
   buffer << DisasmShImm( trans, off );
 };
 
-op qadd8( 0b111110101000[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0001[4]: ra[4] );
-qadd8.disasm = { buffer << "qadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op qadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
+qadd8.disasm = { buffer << "qadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op qadd( 0b111110101000[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b1000[4]: ra[4] );
-qadd.disasm = { buffer << "qadd\t" << DisasmRegister(rb) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+op qadd( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm[4] );
+qadd.disasm = { buffer << "qadd\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn); };
 
-op qadd16( 0b111110101001[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0001[4]: ra[4] );
-qadd16.disasm = { buffer << "qadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op qadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
+qadd16.disasm = { buffer << "qadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op qasx( 0b111110101010[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0001[4]: ra[4] );
-qasx.disasm = { buffer << "qasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op qasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
+qasx.disasm = { buffer << "qasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op qdadd( 0b111110101000[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b1001[4]: ra[4] );
-qdadd.disasm = { buffer << "qdadd\t" << DisasmRegister(rb) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+op qdadd( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1001[4]: rm[4] );
+qdadd.disasm = { buffer << "qdadd\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn); };
 
-op qdsub( 0b111110101000[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b1011[4]: ra[4] );
-qdsub.disasm = { buffer << "qdsub\t" << DisasmRegister(rb) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+op qdsub( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm[4] );
+qdsub.disasm = { buffer << "qdsub\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn); };
 
-op qsax( 0b111110101110[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0001[4]: ra[4] );
-qsax.disasm = { buffer << "qsax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op qsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
+qsax.disasm = { buffer << "qsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op qsub( 0b111110101000[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b1010[4]: ra[4] );
-qsub.disasm = { buffer << "qsub\t" << DisasmRegister(rb) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+op qsub( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1010[4]: rm[4] );
+qsub.disasm = { buffer << "qsub\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn); };
 
-op qsub8( 0b111110101100[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0001[4]: ra[4] );
-qsub8.disasm = { buffer << "qsub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op qsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
+qsub8.disasm = { buffer << "qsub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op qsub16( 0b111110101101[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0001[4]: ra[4] );
-qsub16.disasm = { buffer << "qsub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op qsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
+qsub16.disasm = { buffer << "qsub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op rev_w( 0b111110101001[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b1000[4]: ?[4] );
-rev_w.disasm = { buffer << "rev.w\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc); };
+op rev_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm_[4] );
+rev_w.disasm = { buffer << "rev.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
+rev_w.execute = {
+	uint32_t m = cpu.GetGPR(rm);
+	
+	uint32_t d = ByteSwap(m);
+	
+	cpu.SetGPR(rd, d);
+}
 
-op revsh_w( 0b111110101001[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b1011[4]: ?[4] );
-revsh_w.disasm = { buffer << "revsh.w\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc); };
+op revsh_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm_[4] );
+revsh_w.disasm = { buffer << "revsh.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
 
-op rev16_w( 0b111110101001[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b1001[4]: ?[4] );
-rev16_w.disasm = { buffer << "rev16.w\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc); };
+op rev16_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1001[4]: rm_[4] );
+rev16_w.disasm = { buffer << "rev16.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
 
-op sadd8( 0b111110101000[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0000[4]: ra[4] );
-sadd8.disasm = { buffer << "sadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op sadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+sadd8.disasm = { buffer << "sadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op sadd16( 0b111110101001[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0000[4]: ra[4] );
-sadd16.disasm = { buffer << "sadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op sadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+sadd16.disasm = { buffer << "sadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op sasx( 0b111110101010[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0000[4]: ra[4] );
-sasx.disasm = { buffer << "sasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op sasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+sasx.disasm = { buffer << "sasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op sel( 0b111110101010[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b1000[4]: ra[4] );
-sel.disasm = { buffer << "sel\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op sel( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm[4] );
+sel.disasm = { buffer << "sel\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+sel.execute = {
+	// read input operands
+	uint32_t n = cpu.GetGPR(rn);
+	uint32_t m = cpu.GetGPR(rm);
+	uint8_t cpsr_ge = cpu.CPSR().Get( GE );
+	
+	// compute
+	uint32_t d = 0;
+	unsigned int i;
+	for(i = 0; i < 4; i++)
+	{
+		d = RotateRight((uint32_t) d | (((cpsr_ge >> i) & 1) ? (uint8_t) n : (uint8_t) m), 8);
+	}
+	
+	// write back results
+	cpu.SetGPR(rd, d);
+}
 
-op shadd8( 0b111110101000[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0010[4]: ra[4] );
-shadd8.disasm = { buffer << "shadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op shadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shadd8.disasm = { buffer << "shadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op shadd16( 0b111110101001[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0010[4]: ra[4] );
-shadd16.disasm = { buffer << "shadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op shadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shadd16.disasm = { buffer << "shadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op shasx( 0b111110101010[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0010[4]: ra[4] );
-shasx.disasm = { buffer << "shasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op shasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shasx.disasm = { buffer << "shasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op shsax( 0b111110101110[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0010[4]: ra[4] );
-shsax.disasm = { buffer << "shsax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op shsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shsax.disasm = { buffer << "shsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op shsub8( 0b111110101100[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0010[4]: ra[4] );
-shsub8.disasm = { buffer << "shsub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op shsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shsub8.disasm = { buffer << "shsub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op shsub16( 0b111110101101[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0010[4]: ra[4] );
-shsub16.disasm = { buffer << "shsub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op shsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shsub16.disasm = { buffer << "shsub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op ssat_rir( 0b1111001100[10]: sht[1]: 0b0[1]: rb[4]:> <: 0b0[1]: shl<2> shv1[3]: ra[4]: shv0[2]: 0b0[1]: imm[5] );
+op ssat_rir( 0b1111001100[10]: sht[1]: 0b0[1]: rn[4]:> <: 0b0[1]: shl<2> shv1[3]: rd[4]: shv0[2]: 0b0[1]: imm[5] );
 ssat_rir.var shv : {uint32_t} = {shv1|shv0};
 
 ssat_rir.disasm = {
-  buffer << "ssat\t" << DisasmRegister(ra) << ", #" << imm << ", " << DisasmRegister(rb);
+  buffer << "ssat\t" << DisasmRegister(rd) << ", #" << imm << ", " << DisasmRegister(rn);
   if (shv) buffer << ", " << (sht?"asr":"lsl") << " #" << shv;
 };
 
-op ssat16_rir( 0b1111001100[10]: 0b1[1]: 0b0[1]: rb[4]:> <: 0b0[1]: 0b000[3]: ra[4]: 0b00[2]: 0b0[1]: imm[5] );
+op ssat16_rir( 0b1111001100[10]: 0b1[1]: 0b0[1]: rn[4]:> <: 0b0[1]: 0b000[3]: rd[4]: 0b00[2]: 0b0[1]: imm[5] );
 
 ssat16_rir.disasm = {
-  buffer << "ssat16\t" << DisasmRegister(ra) << ", #" << imm << ", " << DisasmRegister(rb);
+  buffer << "ssat16\t" << DisasmRegister(rd) << ", #" << imm << ", " << DisasmRegister(rn);
 };
 
-op ssax( 0b111110101110[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0000[4]: ra[4] );
-ssax.disasm = { buffer << "ssax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op ssax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+ssax.disasm = { buffer << "ssax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op ssub8( 0b111110101100[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0000[4]: ra[4] );
-ssub8.disasm = { buffer << "ssub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op ssub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+ssub8.disasm = { buffer << "ssub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op ssub16( 0b111110101101[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0000[4]: ra[4] );
-ssub16.disasm = { buffer << "ssub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op ssub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+ssub16.disasm = { buffer << "ssub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uadd8( 0b111110101000[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0100[4]: ra[4] );
-uadd8.disasm = { buffer << "uadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+uadd8.disasm = { buffer << "uadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+uadd8.execute = {
+	// read input operands
+	uint32_t n = cpu.GetGPR(rn);
+	uint32_t m = cpu.GetGPR(rm);
 
-op uadd16( 0b111110101001[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0100[4]: ra[4] );
-uadd16.disasm = { buffer << "uadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+	// compute
+	uint32_t d = 0;
+	uint8_t cpsr_ge = 0;
+	unsigned int i;
+	for(i = 0; i < 4; i++, n >>= 8, m >>= 8)
+	{
+		uint8_t result = 0;
+		uint8_t carry_in = 0;
+		uint8_t carry_out = 0;
+		uint8_t overflow = 0;
+		uint8_t sign = 0;
+		
+		UnsignedAdd8(result, carry_out, overflow, sign, (uint8_t) n, (uint8_t) m, carry_in);
+		uint8_t ge = carry_out; //  whether unsigned operations produced a carry or a borrow.
+		
+		d = RotateRight((uint32_t) d | result, 8);
+		cpsr_ge = cpsr_ge | (ge << i);
+	}
+	
+	// write back result
+	cpu.SetGPR(rd, d);
+	cpu.CPSR().Set( GE, cpsr_ge);
+}
 
-op uasx( 0b111110101010[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0100[4]: ra[4] );
-uasx.disasm = { buffer << "uasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+uadd16.disasm = { buffer << "uadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uhadd8( 0b111110101000[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0110[4]: ra[4] );
-uhadd8.disasm = { buffer << "uhadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+uasx.disasm = { buffer << "uasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uhadd16( 0b111110101001[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0110[4]: ra[4] );
-uhadd16.disasm = { buffer << "uhadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uhadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhadd8.disasm = { buffer << "uhadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uhasx( 0b111110101010[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0110[4]: ra[4] );
-uhasx.disasm = { buffer << "uhasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uhadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhadd16.disasm = { buffer << "uhadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uhsax( 0b111110101110[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0110[4]: ra[4] );
-uhsax.disasm = { buffer << "uhsax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uhasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhasx.disasm = { buffer << "uhasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uhsub8( 0b111110101100[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0110[4]: ra[4] );
-uhsub8.disasm = { buffer << "uhsub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uhsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhsax.disasm = { buffer << "uhsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uhsub16( 0b111110101101[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0110[4]: ra[4] );
-uhsub16.disasm = { buffer << "uhsub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uhsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhsub8.disasm = { buffer << "uhsub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uqadd8( 0b111110101000[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0101[4]: ra[4] );
-uqadd8.disasm = { buffer << "uqadd8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uhsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhsub16.disasm = { buffer << "uhsub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uqadd16( 0b111110101001[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0101[4]: ra[4] );
-uqadd16.disasm = { buffer << "uqadd16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uqadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
+uqadd8.disasm = { buffer << "uqadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uqasx( 0b111110101010[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0101[4]: ra[4] );
-uqasx.disasm = { buffer << "uqasx\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uqadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
+uqadd16.disasm = { buffer << "uqadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uqsax( 0b111110101110[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0101[4]: ra[4] );
-uqsax.disasm = { buffer << "uqsax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uqasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
+uqasx.disasm = { buffer << "uqasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uqsub8( 0b111110101100[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0101[4]: ra[4] );
-uqsub8.disasm = { buffer << "uqsub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uqsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
+uqsax.disasm = { buffer << "uqsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uqsub16( 0b111110101101[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0101[4]: ra[4] );
-uqsub16.disasm = { buffer << "uqsub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op uqsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
+uqsub8.disasm = { buffer << "uqsub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op usad8( 0b111110110111[12]: rd[4]:> <: 0b1111[4]: rb[4]: 0b0000[4]: ra[4] );
-usad8.disasm = { buffer << "usad8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra); };
+op uqsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
+uqsub16.disasm = { buffer << "uqsub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op usada8( 0b111110110111[12]: rd[4]:> <: rc[4]: rb[4]: 0b0000[4]: ra[4] );
-usada8.disasm = { buffer << "usada8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(ra) << ", " << DisasmRegister(rc); };
+op usad8( 0b111110110111[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+usad8.disasm = { buffer << "usad8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op usat_rir( 0b1111001110[10]: sht[1]: 0b0[1]: rb[4]:> <: 0b0[1]: shl<2> shv1[3]: ra[4]: shv0[2]: 0b0[1]: imm[5] );
+op usada8( 0b111110110111[12]: rn[4]:> <: ra[4]: rd[4]: 0b0000[4]: rm[4] );
+usada8.disasm = { buffer << "usada8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra); };
+
+op usat_rir( 0b1111001110[10]: sht[1]: 0b0[1]: rn[4]:> <: 0b0[1]: shl<2> shv1[3]: rd[4]: shv0[2]: 0b0[1]: imm[5] );
 usat_rir.var shv : {uint32_t} = {shv1|shv0};
 
 usat_rir.disasm = {
-  buffer << "usat\t" << DisasmRegister(ra) << ", #" << imm << ", " << DisasmRegister(rb);
+  buffer << "usat\t" << DisasmRegister(rd) << ", #" << imm << ", " << DisasmRegister(rn);
   if (shv) buffer << ", " << (sht?"asr":"lsl") << " #" << shv;
 };
 
-op usat16_rir( 0b1111001110[10]: 0b1[1]: 0b0[1]: rb[4]:> <: 0b0[1]: 0b000[3]: ra[4]: 0b00[2]: 0b0[1]: imm[5] );
+op usat16_rir( 0b1111001110[10]: 0b1[1]: 0b0[1]: rn[4]:> <: 0b0[1]: 0b000[3]: rd[4]: 0b00[2]: 0b0[1]: imm[5] );
 
 usat16_rir.disasm = {
-  buffer << "usat16\t" << DisasmRegister(ra) << ", #" << imm << ", " << DisasmRegister(rb);
+  buffer << "usat16\t" << DisasmRegister(rd) << ", #" << imm << ", " << DisasmRegister(rn);
 };
 
-op usax( 0b111110101110[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0100[4]: ra[4] );
-usax.disasm = { buffer << "usax\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op usax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+usax.disasm = { buffer << "usax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op usub8( 0b111110101100[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0100[4]: ra[4] );
-usub8.disasm = { buffer << "usub8\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op usub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+usub8.disasm = { buffer << "usub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op usub16( 0b111110101101[12]: rc[4]:> <: 0b1111[4]: rb[4]: 0b0100[4]: ra[4] );
-usub16.disasm = { buffer << "usub16\t" << DisasmRegister(rb) << ", " << DisasmRegister(rc) << ", " << DisasmRegister(ra); };
+op usub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+usub16.disasm = { buffer << "usub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 

@@ -801,6 +801,9 @@ pld_imm.disasm = {
   buffer << "pld" << (w?"w":"") << "\t"
          << DisasmMemoryRI(rn,imm,true,false);
 };
+pld_imm.execute = {
+	/* nop: no architecturally visible changes */
+}
 
 op pld_lit( 0b11111000[8]: u[1]: 0b0[1]: w[1]: 0b1[1]: 0b1111[4]:> <: 0b1111[4]: offset[12] );
 pld_lit.var imm:{int32_t} = {u?offset:-offset};
@@ -808,12 +811,18 @@ pld_lit.var imm:{int32_t} = {u?offset:-offset};
 pld_lit.disasm = {
   buffer << "pld" << (w?"w":"") << "\t[pc, " << DisasmI(imm) << "]";
 };
+pld_lit.execute = {
+	/* nop: no architecturally visible changes */
+}
 
 op pld_reg( 0b11111000[8]: 0b00[2]: w[1]: 0b1[1]: rn[4]:> <: 0b1111[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
 
 pld_reg.disasm = {
   buffer << "pld" << (w?"w":"") << "\t" << DisasmMemoryRRI(rn, rm, 0, imm, true, true, false );
 };
+pld_reg.execute = {
+	/* nop: no architecturally visible changes */
+}
 
 /*
  * end of pld (Preload Data) instruction

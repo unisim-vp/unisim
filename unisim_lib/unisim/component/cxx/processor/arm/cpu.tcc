@@ -1078,6 +1078,7 @@ Disasm(uint64_t addr, uint64_t &next_addr) {
 	
 	stringstream buffer;
 	if(GetCPSR_T()) {
+		buffer << "[THUMB2] ";
 		if(!ReadMemory(addr, &tinsn, 2)) {
 			buffer << "Could not read from memory";
 			return buffer.str();
@@ -1089,6 +1090,7 @@ Disasm(uint64_t addr, uint64_t &next_addr) {
 		top = thumb_decoder.Decode(addr, tinsn);
 		top->disasm(*this, buffer);
 	} else {
+		buffer << "[ARM32] ";
 		if(!ReadMemory(addr, &insn, 4)) {
 			buffer << "Could not read from memory";
 			return buffer.str();

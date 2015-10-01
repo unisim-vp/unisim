@@ -1303,6 +1303,38 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByAddrRange(unsigne
 }
 
 template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByName(unsigned int dw_tag, const char *name, bool external) const
+{
+	if(!dw_tag || (GetTag() == dw_tag))
+	{
+		bool declaration_flag = false;
+		if(GetDeclarationFlag(declaration_flag) && declaration_flag)
+		{
+			return 0;
+		}
+		
+		bool external_flag;
+		if(!external || (GetExternalFlag(external_flag) && external_flag))
+		{
+			if(strcmp(GetName(), name) == 0) return this;
+		}
+	}
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_found_die = 0;
+	unsigned int num_children = children.size();
+	unsigned int i;
+	for(i = 0; i < num_children; i++)
+	{
+		DWARF_DIE<MEMORY_ADDR> *dw_child = children[i];
+		
+		dw_found_die = dw_child->FindDIEByName(dw_tag, name, external);
+		if(dw_found_die) return dw_found_die;
+	}
+	
+	return 0;
+}
+
+template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObject(const char *name) const
 {
 	if(GetTag() == DW_TAG_inlined_subroutine)
@@ -1472,6 +1504,16 @@ const char *DWARF_DIE<MEMORY_ADDR>::GetName() const
 	{
 		return dw_at_name->GetValue();
 	}
+	
+	bool declaration_flag = false;
+	GetDeclarationFlag(declaration_flag);
+	
+	if(declaration_flag)
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_specification = GetSpecification();
+		if(dw_die_specification) return dw_die_specification->GetName();
+	}
+	
 	return 0;
 }
 
@@ -2213,9 +2255,18 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 			return false;
 		}
 		
-		const DWARF_DIE<MEMORY_ADDR> *dw_defining_die = dw_handler->FindDIEByPubName(name);
+		const DWARF_DIE<MEMORY_ADDR> *dw_defining_die = dw_cu->FindDIEByName(GetTag(), name, false);
 		
-		if(!dw_defining_die)
+		if(!dw_defining_die) dw_defining_die = dw_handler->FindDIEByName(GetTag(), name, true);
+		
+		if(dw_defining_die)
+		{
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", defining DIE #" << dw_defining_die->GetId() << " for non-defining DIE #" << id << EndDebugInfo;
+			}
+		}
+		else
 		{
 			if(debug)
 			{
@@ -2495,6 +2546,22 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetAbstractOrigin() const
 	}
 	
 	return dw_at_abstract_origin;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetSpecification() const
+{
+	const DWARF_Reference<MEMORY_ADDR> *dw_at_specification_ref = 0;
+	if(!GetAttributeValue(DW_AT_specification, dw_at_specification_ref)) return 0;
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_specification = dw_at_specification_ref->GetValue();
+	
+	if(debug)
+	{
+		logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", specification of DIE #" << id << " is DIE #" << dw_at_specification->GetId() << EndDebugInfo;
+	}
+	
+	return dw_at_specification;
 }
 
 template <class MEMORY_ADDR>

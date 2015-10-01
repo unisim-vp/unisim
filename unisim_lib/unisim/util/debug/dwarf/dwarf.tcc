@@ -2657,6 +2657,22 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDIEByPubType(const
 }
 
 template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDIEByName(unsigned int dw_tag, const char *name, bool external) const
+{
+	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
+	
+	for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++)
+	{
+		DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
+
+		const DWARF_DIE<MEMORY_ADDR> *dw_found_die = dw_cu->FindDIEByName(dw_tag, name, external);
+		if(dw_found_die) return dw_found_die;
+	}
+	
+	return 0;
+}
+
+template <class MEMORY_ADDR>
 const DWARF_CompilationUnit<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCompilationUnitByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const
 {
 	unsigned int num_aranges = dw_aranges.size();

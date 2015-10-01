@@ -350,6 +350,12 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDIEByAddrR
 }
 
 template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDIEByName(unsigned int dw_tag, const char *name, bool external) const
+{
+	return dw_die->FindDIEByName(dw_tag, name, external);
+}
+
+template <class MEMORY_ADDR>
 bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const
 {
 	return dw_die->GetDefaultBaseAddress(base_addr);

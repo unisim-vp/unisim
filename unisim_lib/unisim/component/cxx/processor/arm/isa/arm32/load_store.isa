@@ -1018,6 +1018,8 @@ ldrex.disasm = {
 };
 
 ldrex.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   cpu.SetGPR_mem( rt , cpu.MemRead32( cpu.GetGPR( rn ) ) );
 };
 
@@ -1037,6 +1039,8 @@ ldrexh.disasm = {
 };
 
 ldrexh.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemRead16( cpu.GetGPR( rn ) ) );
 };
 
@@ -1056,6 +1060,8 @@ ldrexb.disasm = {
 };
 
 ldrexb.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR( rn ) ) );
 };
 
@@ -1075,6 +1081,8 @@ ldrexd.disasm = {
 };
 
 ldrexd.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   uint32_t addr = cpu.GetGPR( rn );
   cpu.SetGPR_mem( (rt+0) & 0xf, cpu.MemRead32( addr + 0 ) );
   cpu.SetGPR_mem( (rt+1) & 0xf, cpu.MemRead32( addr + 4 ) );
@@ -1102,6 +1110,8 @@ strex.disasm = {
 };
 
 strex.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   cpu.MemWrite32( cpu.GetGPR( rn ), cpu.GetGPR( rt ) );
   cpu.SetGPR( rd, 0 );
 };
@@ -1123,6 +1133,8 @@ strexh.disasm = {
 };
 
 strexh.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   cpu.MemWrite16( cpu.GetGPR( rn ), cpu.GetGPR( rt ) );
   cpu.SetGPR( rd, 0 );
 };
@@ -1144,6 +1156,8 @@ strexb.disasm = {
 };
 
 strexb.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   cpu.MemWrite8( cpu.GetGPR( rn ), cpu.GetGPR( rt ) );
   cpu.SetGPR( rd, 0 );
 };
@@ -1165,6 +1179,8 @@ strexd.disasm = {
 };
 
 strexd.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   uint32_t addr = cpu.GetGPR( rn );
   cpu.MemWrite32( addr + 0, cpu.GetGPR( (rt+0) & 0xf ) );
   cpu.MemWrite32( addr + 4, cpu.GetGPR( (rt+1) & 0xf ) );

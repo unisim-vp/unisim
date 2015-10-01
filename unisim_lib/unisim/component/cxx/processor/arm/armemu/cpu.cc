@@ -176,6 +176,10 @@ CPU::CPU(const char *name, Object *parent)
   registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
   registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
   
+  registers_registry["sl"] = new SimpleRegister<uint32_t>("sl", &gpr[10]);
+  registers_registry["fp"] = new SimpleRegister<uint32_t>("fp", &gpr[11]);
+  registers_registry["ip"] = new SimpleRegister<uint32_t>("ip", &gpr[12]);
+  
   for (unsigned int i = 0; i < num_phys_gprs; i++)
     {
       std::stringstream ss, ss_desc;
@@ -1154,18 +1158,43 @@ CPU::GetRegister( const char *name )
 std::string 
 CPU::Disasm(uint32_t addr, uint32_t &next_addr)
 {
-	isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::Config> * op = NULL;
-	uint32_t insn;
-	
-        std::stringstream buffer;
+	std::stringstream buffer;
 	if (cpsr.Get( T ))
 	{
-		logger << DebugError << "Thumb instructions not supported in" << std::endl
-		       << unisim::kernel::debug::BackTrace() << EndDebugError;
-		Stop(-1);
+		buffer << "[THUMB2]";
+		
+		uint8_t insn_bytes[4];
+		isa::thumb2::CodeType insn;
+		isa::thumb2::Operation<unisim::component::cxx::processor::arm::armemu::Config> *op = 0;
+		if (!ReadMemory(addr, insn_bytes, 4)) 
+		{
+			buffer << "Could not read from memory";
+			return buffer.str();
+		}
+  
+		// Instruction fetch ignores "Endianness execution state bit"
+		insn.str[0] = insn_bytes[0];
+		insn.str[1] = insn_bytes[1];
+		insn.str[2] = insn_bytes[2];
+		insn.str[3] = insn_bytes[3];
+		insn.size = 32;
+		
+		op = thumb_decoder.Decode(addr, insn);
+		unsigned insn_length = op->GetLength();
+		if (insn_length % 16) throw 0;
+		
+		buffer << "0x";
+		buffer << op->GetEncoding() << " ";
+		op->disasm(*this, buffer);
+
+		next_addr = addr + (insn_length / 8);
 	} 
 	else 
 	{
+		buffer << "[ARM32]";
+		
+		isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::Config> * op = NULL;
+		uint32_t insn;
 		if (!ReadMemory(addr, &insn, 4)) 
 		{
 			buffer << "Could not read from memory";

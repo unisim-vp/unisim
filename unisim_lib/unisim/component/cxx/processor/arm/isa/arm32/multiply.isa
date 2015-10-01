@@ -51,13 +51,13 @@ mla.disasm = {
 };
 
 mla.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   uint32_t res;
   uint32_t rm_value = cpu.GetGPR(rm);
   uint32_t rn_value = cpu.GetGPR(rn);
   uint32_t rs_value = cpu.GetGPR(rs);
   
-  if (not CheckCondition(cpu, cond)) return;
-
   res = rm_value * rs_value;
   res += rn_value;
   cpu.SetGPR(rd, res);
@@ -102,12 +102,12 @@ mul.disasm = {
 };
 
 mul.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   uint32_t res;
   uint32_t rm_value = cpu.GetGPR(rm);
   uint32_t rs_value = cpu.GetGPR(rs);
   
-  if (not CheckCondition(cpu, cond)) return;
-
   res = rm_value * rs_value;
   cpu.SetGPR(rd, res);
   
@@ -136,15 +136,14 @@ smlal.disasm = {
 };
   
 smlal.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   uint64_t res;
   uint64_t res_lo, res_hi;
   uint32_t rdhi_value = cpu.GetGPR(rdhi);
   uint32_t rdlo_value = cpu.GetGPR(rdlo);
   uint32_t rn_value = cpu.GetGPR(rn);
   uint32_t rm_value = cpu.GetGPR(rm);
-
-
-  if (not CheckCondition(cpu, cond)) return;
 
   res = rdlo_value + (((uint64_t)rdhi_value) << 32);
   res = (int64_t)res + ((int64_t)(int32_t)rn_value) * ((int64_t)(int32_t)rm_value);
@@ -217,13 +216,12 @@ smull.disasm = {
 };
 
 smull.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   uint64_t res;
   uint64_t res_lo, res_hi;
   uint32_t rn_value = cpu.GetGPR(rn);
   uint32_t rm_value = cpu.GetGPR(rm);
-
-
-  if (not CheckCondition(cpu, cond)) return;
 
   res = ((int64_t)(int32_t)rn_value) * ((int64_t)(int32_t)rm_value);
   res_lo = res & (uint64_t)(~(uint32_t)0);
@@ -255,14 +253,14 @@ umlal.disasm = {
 };
 
 umlal.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   uint64_t res;
   uint64_t res_lo, res_hi;
   uint32_t rdhi_value = cpu.GetGPR(rdhi);
   uint32_t rdlo_value = cpu.GetGPR(rdlo);
   uint32_t rn_value = cpu.GetGPR(rn);
   uint32_t rm_value = cpu.GetGPR(rm);
-
-  if (not CheckCondition(cpu, cond)) return;
 
   res = rdlo_value + (((uint64_t)rdhi_value) << 32);
   res += ((int64_t)rn_value) * ((int64_t)rm_value);
@@ -315,13 +313,13 @@ umull.disasm = {
 };
 
 umull.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   uint64_t res;
   uint64_t res_lo, res_hi;
   uint32_t rn_value = cpu.GetGPR(rn);
   uint32_t rm_value = cpu.GetGPR(rm);
   
-  if (not CheckCondition(cpu, cond)) return;
-
   res = ((int64_t)rn_value) * ((int64_t)rm_value);
   res_lo = res & (uint64_t)(~(uint32_t)0);
   res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
@@ -353,15 +351,14 @@ smlaxy.disasm = {
 };
 
 smlaxy.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   int32_t op1;
   int32_t op2;
   uint32_t val_rn;
   uint32_t val_rm;
   uint32_t val_ra;
   uint32_t val_rd;
-  
-
-  if(not CheckCondition(cpu, cond)) return;
   
   if(rd == cpu.PC_reg || rn == cpu.PC_reg || ra == cpu.PC_reg || rm == cpu.PC_reg) {
     // unpredictable behavior, we do nothing
@@ -569,14 +566,13 @@ smlawy.disasm = {
 };
 
 smlawy.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   int32_t op;
   uint32_t val_rm;
   uint32_t val_rs;
   uint32_t val_rn;
   uint32_t val_rd;
-  
-
-  if(not CheckCondition(cpu, cond)) return;
   
   if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg || rs == cpu.PC_reg) {
     // unpredictable behavior, we do nothing
@@ -645,14 +641,13 @@ smulxy.disasm = {
 };
 
 smulxy.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   int32_t op1;
   int32_t op2;
   uint32_t val_rm;
   uint32_t val_rs;
   uint32_t val_rd;
-  
-
-  if(not CheckCondition(cpu, cond)) return;
   
   if(rd == cpu.PC_reg || rm == cpu.PC_reg || rs == cpu.PC_reg) {
     // unpredictable behavior, we do nothing
@@ -704,14 +699,13 @@ smulwy.disasm = {
 };
 
 smulwy.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   int32_t op1;
   int32_t op2;
   uint32_t val_rm;
   uint32_t val_rs;
   uint32_t val_rd;
-  
-
-  if(not CheckCondition(cpu, cond)) return;
   
   if(rd == cpu.PC_reg || rm == cpu.PC_reg || rs == cpu.PC_reg) {
     // unpredictable behavior, we do nothing

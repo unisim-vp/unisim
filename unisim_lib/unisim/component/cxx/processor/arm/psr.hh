@@ -78,6 +78,10 @@ namespace arm {
   /* RegisterField<25,2> */         /* IT[1:0] */
   RegisterField<24,1> const J;      /* Jazelle execution state bit */
   /* RegisterField<20,4> */         /* RAZ/SBZP */
+  RegisterField<19,1> const GE3;    /* Greater than or Equal flag #3, for SIMD instructions */
+  RegisterField<18,1> const GE2;    /* Greater than or Equal flag #2, for SIMD instructions */
+  RegisterField<17,1> const GE1;    /* Greater than or Equal flag #1, for SIMD instructions */
+  RegisterField<16,1> const GE0;    /* Greater than or Equal flag #0, for SIMD instructions */
   RegisterField<16,4> const GE;     /* Greater than or Equal flags, for SIMD instructions */
   /* RegisterField<10,6> */         /* IT[7:2] */
   RegisterField< 9,1> const E;      /* Endianness execution state */

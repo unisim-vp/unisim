@@ -131,6 +131,8 @@ vcmp_f32d.disasm = {
 };
 
 vcmp_f32d.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   typename CONFIG::F32 op1 = cpu.GetVSR( vd ), op2 = cpu.GetVSR( vm );
   
   FPCompare( op1, op2, e, cpu.FPSCR() );
@@ -144,6 +146,8 @@ vcmp_f64d.disasm = {
 };
 
 vcmp_f64d.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   typename CONFIG::F64 op1 = cpu.GetVDR( vd ), op2 = cpu.GetVDR( vm );
   
   FPCompare( op1, op2, e, cpu.FPSCR() );
@@ -157,6 +161,8 @@ vcmp_f32i.disasm = {
 };
 
 vcmp_f32i.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   typename CONFIG::F32 op1 = cpu.GetVSR( vd ), op2 = VFPExpandImm( 0, 7, 0 ); /* ZERO */
   
   FPCompare( op1, op2, e, cpu.FPSCR() );
@@ -170,6 +176,8 @@ vcmp_f64i.disasm = {
 };
 
 vcmp_f64i.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   typename CONFIG::F64 op1 = cpu.GetVDR( vd ), op2 = VFPExpandImm( 0, 7, 0 ); /* ZERO */
   
   FPCompare( op1, op2, e, cpu.FPSCR() );
@@ -1420,6 +1428,8 @@ vmrs.disasm = {
 };
 
 vmrs.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   switch (spr) {
   default: throw 0;
   case 1: {
@@ -1450,6 +1460,8 @@ vmsr.disasm = {
 };
 
 vmsr.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+  
   switch (spr) {
   default: throw 0;
   case 1: {

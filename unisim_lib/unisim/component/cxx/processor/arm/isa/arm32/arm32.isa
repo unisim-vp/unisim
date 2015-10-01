@@ -63,7 +63,7 @@ action {void} execute({typename CONFIG::Arch &} {cpu}) {
 }
 
 action {void} disasm({typename CONFIG::Arch &} {cpu}, {std::ostream&} {buffer}) {
-  buffer << "Unknown instruction";
+  buffer << "Unknown instruction (arm32)";
 }
 
 include "data_processing.isa"

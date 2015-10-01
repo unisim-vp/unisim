@@ -1028,6 +1028,8 @@ rbit.disasm = {
 };
 
 rbit.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   uint32_t src = cpu.GetGPR( rm ), dst = 0;
   for (int idx = 0; idx < 32; ++idx) { dst = (dst << 1) | (src & 1); src >>= 1; }
   cpu.SetGPR( rd, dst );
@@ -1052,6 +1054,8 @@ rev.disasm = {
 };
 
 rev.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   uint32_t src = cpu.GetGPR( rm ), dst = 0;
   for (int idx = 0; idx < 32; idx += 8) { dst = (dst << 8) | (src & 0xff); src >>= 8; }
   cpu.SetGPR( rd, dst );
@@ -1095,6 +1099,8 @@ rev16.disasm = {
 };
 
 rev16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   uint32_t src = cpu.GetGPR( rm ), dst = 0;
   for (int idx = 0; idx < 32; idx += 8) { dst = (dst << 8) | (src & 0xff); src >>= 8; }
   cpu.SetGPR( rd, (dst << 16) | (dst >> 16) );
@@ -1122,6 +1128,8 @@ movw.disasm = {
 };
 
 movw.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   cpu.SetGPR( rd, imm );
 };
 
@@ -1147,6 +1155,8 @@ movt.disasm = {
 };
 
 movt.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
   cpu.SetGPR( rd, (cpu.GetGPR( rd ) & 0xffff) | (imm << 16) );
 };
 
