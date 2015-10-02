@@ -93,6 +93,8 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 
 {
 	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_memory_usage.SetVisible(false);
+
 	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_initial_byte_value.SetFormat(unisim::kernel::service::VariableBase::FMT_HEX);
 }
