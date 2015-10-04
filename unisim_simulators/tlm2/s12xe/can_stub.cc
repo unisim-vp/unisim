@@ -131,7 +131,8 @@ bool CAN_STUB::BeginSetup() {
 		strm.str(string());
 	}
 
-	can_rx_stimulus_period_sc = new sc_time(can_rx_stimulus_period, SC_US);
+//	can_rx_stimulus_period_sc = new sc_time(can_rx_stimulus_period, SC_US);
+	can_rx_stimulus_period_sc = new sc_time(100000, SC_US);
 
 	watchdog_delay = sc_time(1, SC_US);
 

@@ -129,6 +129,7 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
+
 class S12SPI :
 	public sc_module
 	, public CallBackObject

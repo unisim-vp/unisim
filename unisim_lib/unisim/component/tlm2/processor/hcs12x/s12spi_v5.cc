@@ -218,7 +218,8 @@ void S12SPI::TxRun() {
 			endTransmission();
 
 			// this is a hack code
-			setSPIDR(spidr_rx_buffer);
+//			uint16_t last_state = spi_stub->setCmd(spidr_register);
+//			setSPIDR(last_state);
 			// end hack code
 
 			if (tx_debug_enabled)	std::cout << sc_object::name() << "::Tx  (7) " << std::endl;
@@ -430,7 +431,7 @@ void S12SPI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 bool S12SPI::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
-//	std::cout << sc_object::name() << "::read offset= " << std::dec << offset << "  size=" << data_length << std::endl;
+//	std::cout << sc_time_stamp() << "  " << sc_object::name() << "::read offset= " << std::dec << offset << "  size=" << data_length << std::endl;
 
 	switch (offset) {
 		case SPICR1: {
@@ -451,8 +452,10 @@ bool S12SPI::read(unsigned int offset, const void *buffer, unsigned int data_len
 		case RESERVED1: {
 			if (data_length == 2) {
 				*((uint16_t *) buffer) = Host2BigEndian(spidr_register);
+				std::cout << sc_time_stamp() << "  " <<  sc_object::name() << "::read offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) BigEndian2Host(*((uint16_t *)buffer)) << std::dec << std::endl;
 			} else {
 				*((uint8_t *) buffer) = (uint8_t) (spidr_register >> 8);
+				std::cout << sc_time_stamp() << "  " <<  sc_object::name() << "::read offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) *((uint8_t*) buffer) << std::dec << std::endl;
 			}
 
 			if (isSPISR_Read()) {
@@ -547,12 +550,13 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 
 		case RESERVED1: {
 				if (data_length == 1) {
-					std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) *((uint8_t*) buffer) << std::dec << std::endl;
+					std::cout << sc_time_stamp() << "  " << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) *((uint8_t*) buffer) << std::dec << std::endl;
 				} else {
-					std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) BigEndian2Host(*((uint16_t *)buffer)) << std::dec << std::endl;
+					std::cout << sc_time_stamp() << "  " << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) BigEndian2Host(*((uint16_t *)buffer)) << std::dec << std::endl;
 				}
 
 			if (!isSPTEF() || isSPISR_Read()) {
+
 				// (SPTEF = 1) has to be read before a write to SPIDR can happen and taken into account
 				if (data_length == 2) {
 					spidr_register = BigEndian2Host(*((uint16_t *) buffer));
