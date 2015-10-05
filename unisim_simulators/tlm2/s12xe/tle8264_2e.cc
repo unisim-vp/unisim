@@ -7,8 +7,11 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 
 	, interrupt_request("interrupt-request")
 	, bus_clock_socket("bus-clock-socket")
-	, slave_rx_sock("slave-rx")
-	, slave_tx_sock("slave-tx")
+	, can_slave_rx_sock("slave-rx")
+	, can_slave_tx_sock("slave-tx")
+
+	, spi_tx_socket("tx-socket")
+	, spi_rx_socket("rx-socket")
 
 	, rx_payload_queue("input_anx_payload_queue")
 
@@ -41,13 +44,14 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 
 	xint_payload = xint_payload_fabric.allocate();
 
-	slave_rx_sock(*this);
-	slave_tx_sock(*this);
+	can_slave_rx_sock(*this);
+	can_slave_tx_sock(*this);
 
 	interrupt_request(*this);
 
 	bus_clock_socket.register_b_transport(this, &TLE8264_2E::updateBusClock);
 
+	spi_rx_socket.register_b_transport(this, &TLE8264_2E::spi_rx_b_transport);
 }
 
 TLE8264_2E::~TLE8264_2E() { }
@@ -91,6 +95,24 @@ void TLE8264_2E::Reset() {
 }
 
 void TLE8264_2E::Stop(int exit_status) {}
+
+void TLE8264_2E::spi_rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+{
+	payload.acquire();
+	unsigned int length = payload.get_data_length();
+	unsigned char* data = payload.get_data_ptr();
+
+	if (payload.get_byte_enable_length() != 2)
+	{
+		std::cerr << sc_object::name() << "::Warning interface is configured for 2-bytes" << std::endl;
+	}
+
+	uint16_t spi_rx_buffer = *((uint16_t *) payload.get_data_ptr());
+
+	setCmd(spi_rx_buffer);
+
+	payload.release();
+}
 
 tlm_sync_enum TLE8264_2E::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
 {
@@ -312,17 +334,49 @@ void TLE8264_2E::enter_sailsafe() {
 
 }
 
-void TLE8264_2E::assert_interrup(uint16_t int_offset) {
-	// TODO: raises interrupt onto pin INT (TLM transaction)
+void TLE8264_2E::assertInterrupt(uint8_t interrupt_offset) {
+
+
+	tlm_phase phase = BEGIN_REQ;
+
+	xint_payload->acquire();
+
+	xint_payload->setInterruptOffset(interrupt_offset);
+
+	sc_time local_time = quantumkeeper.get_local_time();
+
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
+
+	xint_payload->release();
+
+	switch(ret)
+	{
+		case TLM_ACCEPTED:
+			// neither payload, nor phase and local_time have been modified by the callee
+			quantumkeeper.sync(); // synchronize to leave control to the callee
+			break;
+		case TLM_UPDATED:
+			// the callee may have modified 'payload', 'phase' and 'local_time'
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+			break;
+		case TLM_COMPLETED:
+			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			break;
+	}
+
 }
 
 void TLE8264_2E::assert_int_interrup() {
 	registers[0b000] = registers[0b000] | INT;
-	assert_interrup(int_interrupt);
+	assertInterrupt(int_interrupt);
 }
 void TLE8264_2E::assert_reset_interrupt() {
 	registers[0b001] = registers[0b001] | RESET;
-	assert_interrup(reset_interrupt);
+	assertInterrupt(reset_interrupt);
 }
 
 void TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
@@ -517,7 +571,16 @@ uint16_t TLE8264_2E::setCmd(uint16_t cmd) {
 
 	triggerStateMachine(cmd);
 
-	std::cout << sc_time_stamp() << " last_state 0x" << std::hex << last_state << "  current_state 0x" << current_cmd << std::hex << std::endl;
+	tlm::tlm_generic_payload *payload = spi_payload_fabric.allocate();
+
+	payload->set_data_length(2);
+	payload->set_data_ptr((unsigned char*) &last_state);
+
+	sc_time local_time = SC_ZERO_TIME;
+	spi_tx_socket->b_transport(*payload, local_time);
+
+	payload->release();
+
 
 	return last_state;
 

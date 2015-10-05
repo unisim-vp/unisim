@@ -18,6 +18,7 @@
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
+#include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
 
 #include <unisim/kernel/service/service.hh>
@@ -107,11 +108,14 @@ public:
 
 	tlm_utils::simple_target_socket<TLE8264_2E> bus_clock_socket;
 
-	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > slave_rx_sock;
-	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > slave_tx_sock;
+	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_rx_sock;
+	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_tx_sock;
 
 //	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > init_rx_sock;
 //	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > init_tx_sock;
+
+	tlm_utils::simple_initiator_socket<TLE8264_2E> spi_tx_socket;
+	tlm_utils::simple_target_socket<TLE8264_2E> spi_rx_socket;
 
 	TLE8264_2E(const sc_module_name& name, Object *parent = 0);
 	~TLE8264_2E();
@@ -127,6 +131,8 @@ public:
 
 	bool isTerminated() { return terminated; }
 	void ComputeInternalTime();
+
+	void spi_rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
 
 	// Slave methods
 	virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
@@ -161,7 +167,7 @@ public:
 	void enter_stop();
 	void enter_sailsafe();
 
-	void assert_interrup(uint16_t int_offset);
+	void assertInterrupt(uint8_t int_offset);
 
 	void assert_int_interrup();
 	void assert_reset_interrupt();
@@ -177,9 +183,12 @@ private:
 
 	PayloadFabric<CAN_Payload > payload_fabric;
 
+	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
 	XINT_Payload *xint_payload;
+
+	PayloadFabric<tlm::tlm_generic_payload> spi_payload_fabric;
 
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;
@@ -203,10 +212,10 @@ private:
 	Signal<bool> sig_limp_home;
 
 	// Interrupt ID
-	uint16_t reset_interrupt;
-	Parameter<uint16_t> param_reset_interrupt;
-	uint16_t int_interrupt;
-	Parameter<uint16_t> param_int_interrupt;
+	uint8_t reset_interrupt;
+	Parameter<uint8_t> param_reset_interrupt;
+	uint8_t int_interrupt;
+	Parameter<uint8_t> param_int_interrupt;
 
 };
 
