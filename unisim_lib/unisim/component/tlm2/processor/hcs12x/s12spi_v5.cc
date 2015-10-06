@@ -584,8 +584,14 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 
 				// (SPTEF = 1) has to be read before a write to SPIDR can happen and taken into account
 				if (data_length == 2) {
+					if (!is16bitsMode()) {
+						std::cerr << sc_object::name() << "::Warning interface is configured for 1-bytes" << std::endl;
+					}
 					spidr_register = BigEndian2Host(*((uint16_t *) buffer));
 				} else {
+					if (is16bitsMode()) {
+						std::cerr << sc_object::name() << "::Warning interface is configured for 2-bytes" << std::endl;
+					}
 					spidr_register = (spidr_register & 0x00FF) | (((uint16_t)*((uint8_t *) buffer)) << 8);
 				}
 

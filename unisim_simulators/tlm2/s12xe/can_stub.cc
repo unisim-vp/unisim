@@ -40,8 +40,8 @@
 CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 	Object(name)
 	, sc_module(name)
-	, can_rx_sock("can_rx_sock")
-	, can_tx_sock("can_tx_sock")
+	, can_tx_sock("can_rx_sock")
+	, can_rx_sock("can_tx_sock")
 
 	, can_rx_stimulus_period(20000)
 	, can_rx_stimulus_period_sc(NULL)
@@ -75,8 +75,8 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 
 
 {
-	can_rx_sock(*this);
 	can_tx_sock(*this);
+	can_rx_sock(*this);
 
 	SC_HAS_PROCESS(CAN_STUB);
 
@@ -192,7 +192,7 @@ tlm_sync_enum CAN_STUB::nb_transport_bw( CAN_Payload& payload, tlm_phase& phase,
 	{
 		//payload.release();
 		bw_inject_count++;
-		if (bw_inject_count == can_rx_sock.size()) {
+		if (bw_inject_count == can_tx_sock.size()) {
 			can_bw_event.notify();
 		}
 
@@ -225,7 +225,7 @@ void CAN_STUB::observe(CAN_DATATYPE &msg)
 
 	tlm_phase phase = BEGIN_RESP;
 	sc_time local_time = SC_ZERO_TIME;
-	can_tx_sock->nb_transport_bw( *payload, phase, local_time);
+	can_rx_sock->nb_transport_bw( *payload, phase, local_time);
 
 }
 
@@ -236,12 +236,12 @@ void CAN_STUB::inject(CAN_DATATYPE msg)
 
 	can_rx_payload->pack(msg);
 
-	for (int i=0; i<can_rx_sock.size(); i++) {
+	for (int i=0; i<can_tx_sock.size(); i++) {
 		sc_time local_time = SC_ZERO_TIME;
 
 		tlm_phase phase = BEGIN_REQ;
 
-		tlm_sync_enum ret = can_rx_sock[i]->nb_transport_fw(*can_rx_payload, phase, local_time);
+		tlm_sync_enum ret = can_tx_sock[i]->nb_transport_fw(*can_rx_payload, phase, local_time);
 
 		switch(ret)
 		{

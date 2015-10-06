@@ -75,6 +75,7 @@
 
 #include <xml_atd_pwm_stub.hh>
 #include <can_stub.hh>
+#include <tle8264_2e.hh>
 
 #ifdef HAVE_RTBCOB
 #include "rtb_unisim.hh"
@@ -335,6 +336,7 @@ private:
 #endif
 
 	CAN_STUB *can_stub;
+	TLE8264_2E *tranceiver0, *tranceiver1,*tranceiver2,*tranceiver3,*tranceiver4;
 
 	//=========================================================================
 	//===                         Service instantiations                    ===

@@ -13,7 +13,7 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 	, spi_tx_socket("tx-socket")
 	, spi_rx_socket("rx-socket")
 
-	, rx_payload_queue("input_anx_payload_queue")
+//	, rx_payload_queue("input_anx_payload_queue")
 
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
@@ -33,7 +33,7 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 // Interrupt ID
 	, reset_interrupt(0xFE)
 	, param_reset_interrupt("reset-interrupt", this, reset_interrupt)
-	, int_interrupt(1) // TODO; look to BCM specification
+	, int_interrupt(0xF2) // TODO; look to BCM specification
 	, param_int_interrupt("int-interrupt", this, int_interrupt)
 
 
@@ -44,14 +44,30 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 
 	xint_payload = xint_payload_fabric.allocate();
 
-	can_slave_rx_sock(*this);
-	can_slave_tx_sock(*this);
-
 	interrupt_request(*this);
 
 	bus_clock_socket.register_b_transport(this, &TLE8264_2E::updateBusClock);
 
 	spi_rx_socket.register_b_transport(this, &TLE8264_2E::spi_rx_b_transport);
+
+	// target
+	can_slave_rx_sock.register_b_transport(this, &TLE8264_2E::can_slave_b_transport);
+	can_slave_rx_sock.register_get_direct_mem_ptr(this, &TLE8264_2E::can_slave_get_direct_mem_ptr);
+	can_slave_rx_sock.register_nb_transport_fw(this, &TLE8264_2E::can_slave_nb_transport_fw);
+	can_slave_rx_sock.register_transport_dbg(this, &TLE8264_2E::can_slave_transport_dbg);
+
+	can_master_rx_sock.register_b_transport(this, &TLE8264_2E::can_master_b_transport);
+	can_master_rx_sock.register_get_direct_mem_ptr(this, &TLE8264_2E::can_master_get_direct_mem_ptr);
+	can_master_rx_sock.register_nb_transport_fw(this, &TLE8264_2E::can_master_nb_transport_fw);
+	can_master_rx_sock.register_transport_dbg(this, &TLE8264_2E::can_master_transport_dbg);
+
+	// initiator
+	can_slave_tx_sock.register_invalidate_direct_mem_ptr(this, &TLE8264_2E::can_slave_invalidate_direct_mem_ptr);
+	can_slave_tx_sock.register_nb_transport_bw(this, &TLE8264_2E::can_slave_nb_transport_bw);
+
+	can_master_tx_sock.register_invalidate_direct_mem_ptr(this, &TLE8264_2E::can_master_invalidate_direct_mem_ptr);
+	can_master_tx_sock.register_nb_transport_bw(this, &TLE8264_2E::can_master_nb_transport_bw);
+
 }
 
 TLE8264_2E::~TLE8264_2E() { }
@@ -124,27 +140,37 @@ tlm_sync_enum TLE8264_2E::nb_transport_bw( XINT_Payload& payload, tlm_phase& pha
 	return (TLM_ACCEPTED);
 }
 
-bool TLE8264_2E::get_direct_mem_ptr(CAN_Payload& payload, tlm_dmi&  dmi_data) {
+void TLE8264_2E::invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	// Leave this empty as it is designed for memory mapped buses
+}
+
+/** CAN slave interface micro->tle **/
+bool TLE8264_2E::can_slave_get_direct_mem_ptr(CAN_Payload& payload, tlm_dmi&  dmi_data) {
 	return (false);
 }
 
-unsigned int TLE8264_2E::transport_dbg(CAN_Payload& payload)
+unsigned int TLE8264_2E::can_slave_transport_dbg(CAN_Payload& payload)
 {
 	// Leave this empty as it is designed for memory mapped buses
 	return (0);
 }
 
-tlm_sync_enum TLE8264_2E::nb_transport_fw(CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+tlm_sync_enum TLE8264_2E::can_slave_nb_transport_fw(CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
 {
+	tlm_sync_enum resp = TLM_ACCEPTED;
 	switch(phase)
 	{
 		case BEGIN_REQ:
 			// accepts analog signals modeled by payload
-			phase = END_REQ; // update the phase
-			payload.acquire();
-			rx_payload_queue.notify(payload, t); // queue the payload and the associative time
+//			phase = END_REQ; // update the phase
+//			payload.acquire();
+//			rx_payload_queue.notify(payload, t); // queue the payload and the associative time
 
-			return (TLM_UPDATED);
+			slave_rx_event.notify();
+			resp = can_master_tx_sock->nb_transport_fw(payload, phase, t);
+
+			return (resp);
 		case END_REQ:
 			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << endl;
 			Object::Stop(-1);
@@ -163,11 +189,12 @@ tlm_sync_enum TLE8264_2E::nb_transport_fw(CAN_Payload& payload, tlm_phase& phase
 			break;
 	}
 
-	return (TLM_ACCEPTED);
+	return (resp);
 }
 
-tlm_sync_enum TLE8264_2E::nb_transport_bw(CAN_Payload& can_rx_payload, tlm_phase& phase, sc_core::sc_time& t)
+tlm_sync_enum TLE8264_2E::can_slave_nb_transport_bw(CAN_Payload& can_rx_payload, tlm_phase& phase, sc_core::sc_time& t)
 {
+	tlm_sync_enum resp = TLM_ACCEPTED;
 	switch(phase)
 	{
 		case BEGIN_REQ:
@@ -181,7 +208,100 @@ tlm_sync_enum TLE8264_2E::nb_transport_bw(CAN_Payload& can_rx_payload, tlm_phase
 			break;
 		case BEGIN_RESP:
 			//can_rx_payload.release();
-			can_bw_event.notify();
+			resp = can_master_rx_sock->nb_transport_bw(can_rx_payload, phase, t);
+			return (resp);
+		case END_RESP:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
+			Object::Stop(-1);
+			break;
+		default:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << endl;
+			Object::Stop(-1);
+			break;
+	}
+
+	return (TLM_ACCEPTED);
+}
+
+void TLE8264_2E::can_slave_b_transport(CAN_Payload& payload, sc_core::sc_time& t) {
+//	payload.acquire();
+//	rx_payload_queue.notify(payload, t);
+
+	slave_rx_event.notify();
+	can_master_tx_sock->b_transport(payload, t);
+}
+
+void TLE8264_2E::can_slave_invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	// Leave this empty as it is designed for memory mapped buses
+}
+
+/** CAN master interface tle->bus **/
+bool TLE8264_2E::can_master_get_direct_mem_ptr(CAN_Payload& payload, tlm_dmi&  dmi_data) {
+	return (false);
+}
+
+unsigned int TLE8264_2E::can_master_transport_dbg(CAN_Payload& payload)
+{
+	// Leave this empty as it is designed for memory mapped buses
+	return (0);
+}
+
+tlm_sync_enum TLE8264_2E::can_master_nb_transport_fw(CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	tlm_sync_enum resp = TLM_ACCEPTED;
+	switch(phase)
+	{
+		case BEGIN_REQ:
+//			phase = END_REQ; // update the phase
+//			payload.acquire();
+//			rx_payload_queue.notify(payload, t); // queue the payload and the associative time
+
+			master_rx_event.notify();
+			resp = can_slave_tx_sock->nb_transport_fw(payload, phase, t);
+
+			return (resp);
+		case END_REQ:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << endl;
+			Object::Stop(-1);
+			break;
+		case BEGIN_RESP:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_RESP" << endl;
+			Object::Stop(-1);
+			break;
+		case END_RESP:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
+			Object::Stop(-1);
+			break;
+		default:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << endl;
+			Object::Stop(-1);
+			break;
+	}
+
+	return (resp);
+}
+
+tlm_sync_enum TLE8264_2E::can_master_nb_transport_bw(CAN_Payload& can_rx_payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	tlm_sync_enum resp = TLM_ACCEPTED;
+
+	switch(phase)
+	{
+		case BEGIN_REQ:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_REQ" << endl;
+
+			Object::Stop(-1);
+			break;
+		case END_REQ:
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << endl;
+			Object::Stop(-1);
+			break;
+		case BEGIN_RESP:
+			//can_bw_event.notify();
+			resp = can_slave_rx_sock->nb_transport_bw(can_rx_payload, phase, t);
+			return (resp);
+
 			return (TLM_COMPLETED);
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
@@ -196,12 +316,16 @@ tlm_sync_enum TLE8264_2E::nb_transport_bw(CAN_Payload& can_rx_payload, tlm_phase
 	return (TLM_ACCEPTED);
 }
 
-void TLE8264_2E::b_transport(CAN_Payload& payload, sc_core::sc_time& t) {
-	payload.acquire();
-	rx_payload_queue.notify(payload, t);
+void TLE8264_2E::can_master_b_transport(CAN_Payload& payload, sc_core::sc_time& t) {
+//	payload.acquire();
+//	rx_payload_queue.notify(payload, t);
+
+	master_rx_event.notify();
+	can_slave_tx_sock->b_transport(payload, t);
+
 }
 
-void TLE8264_2E::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+void TLE8264_2E::can_master_invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	// Leave this empty as it is designed for memory mapped buses
 }

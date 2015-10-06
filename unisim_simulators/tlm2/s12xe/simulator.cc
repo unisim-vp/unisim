@@ -66,6 +66,11 @@ Simulator::Simulator(int argc, char **argv)
 #endif
 
 	, can_stub(0)
+	, tranceiver0(0)
+	, tranceiver1(0)
+	, tranceiver2(0)
+	, tranceiver3(0)
+	, tranceiver4(0)
 
 	, monitor(0)
 
@@ -217,6 +222,11 @@ Simulator::Simulator(int argc, char **argv)
 #endif
 
 	can_stub = new CAN_STUB("CAN-STUB");
+	tranceiver0 = new TLE8264_2E("Tranceiver0");
+	tranceiver1 = new TLE8264_2E("Tranceiver1");
+	tranceiver2 = new TLE8264_2E("Tranceiver2");
+	tranceiver3 = new TLE8264_2E("Tranceiver3");
+	tranceiver4 = new TLE8264_2E("Tranceiver4");
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -304,6 +314,12 @@ Simulator::Simulator(int argc, char **argv)
 	can3->interrupt_request(s12xint->interrupt_request);
 	can4->interrupt_request(s12xint->interrupt_request);
 
+	tranceiver0->interrupt_request(s12xint->interrupt_request);
+	tranceiver1->interrupt_request(s12xint->interrupt_request);
+	tranceiver2->interrupt_request(s12xint->interrupt_request);
+	tranceiver3->interrupt_request(s12xint->interrupt_request);
+	tranceiver4->interrupt_request(s12xint->interrupt_request);
+
 	spi0->interrupt_request(s12xint->interrupt_request);
 	spi1->interrupt_request(s12xint->interrupt_request);
 	spi2->interrupt_request(s12xint->interrupt_request);
@@ -318,16 +334,43 @@ Simulator::Simulator(int argc, char **argv)
 	xml_atd_pwm_stub->slave_sock(pwm->master_sock);
 #endif
 
-	can_stub->can_rx_sock(can0->can_rx_sock);
-	can0->can_tx_sock(can_stub->can_tx_sock);
-	can_stub->can_rx_sock(can1->can_rx_sock);
-	can1->can_tx_sock(can_stub->can_tx_sock);
-	can_stub->can_rx_sock(can2->can_rx_sock);
-	can2->can_tx_sock(can_stub->can_tx_sock);
-	can_stub->can_rx_sock(can3->can_rx_sock);
-	can3->can_tx_sock(can_stub->can_tx_sock);
-	can_stub->can_rx_sock(can4->can_rx_sock);
-	can4->can_tx_sock(can_stub->can_tx_sock);
+	can0->can_tx_sock(tranceiver0->can_slave_rx_sock);
+	tranceiver0->can_master_tx_sock(can_stub->can_rx_sock);
+	can_stub->can_tx_sock(tranceiver0->can_master_rx_sock);
+	tranceiver0->can_slave_tx_sock(can0->can_rx_sock);
+
+	tranceiver0->spi_tx_socket(spi0->rx_socket);
+	spi0->tx_socket(tranceiver0->spi_rx_socket);
+
+	can1->can_tx_sock(tranceiver1->can_slave_rx_sock);
+	tranceiver1->can_master_tx_sock(can_stub->can_rx_sock);
+	can_stub->can_tx_sock(tranceiver1->can_master_rx_sock);
+	tranceiver1->can_slave_tx_sock(can1->can_rx_sock);
+
+	tranceiver1->spi_tx_socket(spi1->rx_socket);
+	spi1->tx_socket(tranceiver1->spi_rx_socket);
+
+	can2->can_tx_sock(tranceiver2->can_slave_rx_sock);
+	tranceiver2->can_master_tx_sock(can_stub->can_rx_sock);
+	can_stub->can_tx_sock(tranceiver2->can_master_rx_sock);
+	tranceiver2->can_slave_tx_sock(can2->can_rx_sock);
+
+	tranceiver2->spi_tx_socket(spi2->rx_socket);
+	spi2->tx_socket(tranceiver2->spi_rx_socket);
+
+	can3->can_tx_sock(tranceiver3->can_slave_rx_sock);
+	tranceiver3->can_master_tx_sock(can_stub->can_rx_sock);
+	can_stub->can_tx_sock(tranceiver3->can_master_rx_sock);
+	tranceiver3->can_slave_tx_sock(can3->can_rx_sock);
+
+	tranceiver3->spi_tx_socket(tranceiver3->spi_rx_socket);
+
+	can4->can_tx_sock(tranceiver4->can_slave_rx_sock);
+	tranceiver4->can_master_tx_sock(can_stub->can_rx_sock);
+	can_stub->can_tx_sock(tranceiver4->can_master_rx_sock);
+	tranceiver4->can_slave_tx_sock(can4->can_rx_sock);
+
+	tranceiver4->spi_tx_socket(tranceiver4->spi_rx_socket);
 
 	// This order is mandatory (see the memoryMapping)
 	mmc->init_socket(crg->slave_socket);
@@ -382,6 +425,11 @@ Simulator::Simulator(int argc, char **argv)
 	crg->bus_clock_socket(can2->bus_clock_socket);
 	crg->bus_clock_socket(can3->bus_clock_socket);
 	crg->bus_clock_socket(can4->bus_clock_socket);
+	crg->bus_clock_socket(tranceiver0->bus_clock_socket);
+	crg->bus_clock_socket(tranceiver1->bus_clock_socket);
+	crg->bus_clock_socket(tranceiver2->bus_clock_socket);
+	crg->bus_clock_socket(tranceiver3->bus_clock_socket);
+	crg->bus_clock_socket(tranceiver4->bus_clock_socket);
 	crg->bus_clock_socket(spi0->bus_clock_socket);
 	crg->bus_clock_socket(spi1->bus_clock_socket);
 	crg->bus_clock_socket(spi2->bus_clock_socket);
@@ -687,6 +735,11 @@ Simulator::~Simulator()
 #endif
 
 	if (can_stub) { delete can_stub; can_stub = NULL; }
+	if (tranceiver0) { delete tranceiver0; tranceiver0 = NULL; }
+	if (tranceiver1) { delete tranceiver1; tranceiver1 = NULL; }
+	if (tranceiver2) { delete tranceiver2; tranceiver2 = NULL; }
+	if (tranceiver3) { delete tranceiver3; tranceiver3 = NULL; }
+	if (tranceiver4) { delete tranceiver4; tranceiver4 = NULL; }
 
 	if(global_ram) { delete global_ram; global_ram = NULL; }
 	if(global_flash) { delete global_flash; global_flash = NULL; }

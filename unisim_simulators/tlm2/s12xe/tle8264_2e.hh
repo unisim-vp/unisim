@@ -55,8 +55,8 @@ class TLE8264_2E :
 	, public sc_module
 
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
-	, virtual public tlm_fw_transport_if<UNISIM_CAN_ProtocolTypes >
-	, virtual public tlm_bw_transport_if<UNISIM_CAN_ProtocolTypes >
+//	, virtual public tlm_fw_transport_if<UNISIM_CAN_ProtocolTypes >
+//	, virtual public tlm_bw_transport_if<UNISIM_CAN_ProtocolTypes >
 {
 public:
 	static const unsigned int INIT=0b000;
@@ -108,8 +108,14 @@ public:
 
 	tlm_utils::simple_target_socket<TLE8264_2E> bus_clock_socket;
 
-	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_rx_sock;
-	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_tx_sock;
+//	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_rx_sock;
+//	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_tx_sock;
+
+	tlm_utils::simple_target_socket<TLE8264_2E, CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_rx_sock;
+	tlm_utils::simple_initiator_socket<TLE8264_2E, CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_tx_sock;
+
+	tlm_utils::simple_target_socket<TLE8264_2E, CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_master_rx_sock;
+	tlm_utils::simple_initiator_socket<TLE8264_2E, CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_master_tx_sock;
 
 //	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > init_rx_sock;
 //	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > init_tx_sock;
@@ -136,17 +142,30 @@ public:
 
 	// Slave methods
 	virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
     void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
-	virtual bool get_direct_mem_ptr( CAN_Payload& payload, tlm_dmi&  dmi_data);
-	virtual unsigned int transport_dbg( CAN_Payload& payload);
+    /** CAN slave interface micro->tle **/
+    // Slave methods
+	virtual bool can_slave_get_direct_mem_ptr( CAN_Payload& payload, tlm_dmi&  dmi_data);
+	virtual unsigned int can_slave_transport_dbg( CAN_Payload& payload);
 
-	virtual tlm_sync_enum nb_transport_fw( CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
-	virtual void b_transport( CAN_Payload& payload, sc_core::sc_time& t);
+	virtual tlm_sync_enum can_slave_nb_transport_fw( CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void can_slave_b_transport( CAN_Payload& payload, sc_core::sc_time& t);
 	// Master methods
-	virtual tlm_sync_enum nb_transport_bw( CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
-	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	virtual tlm_sync_enum can_slave_nb_transport_bw( CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void can_slave_invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
+    /** CAN initiator interface tle->can_bus **/
+	// Slave methods
+	virtual bool can_master_get_direct_mem_ptr( CAN_Payload& payload, tlm_dmi&  dmi_data);
+	virtual unsigned int can_master_transport_dbg( CAN_Payload& payload);
+
+	virtual tlm_sync_enum can_master_nb_transport_fw( CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void can_master_b_transport( CAN_Payload& payload, sc_core::sc_time& t);
+	// Master methods
+	virtual tlm_sync_enum can_master_nb_transport_bw( CAN_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void can_master_invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
 	void setLimpHome(bool val);
 	bool isLimpHome();
@@ -179,7 +198,9 @@ public:
 	uint16_t read(uint16_t sel, uint16_t& val);
 
 private:
-	peq_with_get<CAN_Payload > rx_payload_queue;
+//	peq_with_get<CAN_Payload > rx_payload_queue;
+
+	sc_event slave_rx_event, master_rx_event;
 
 	PayloadFabric<CAN_Payload > payload_fabric;
 
@@ -206,7 +227,7 @@ private:
 
 	sc_time frame_time;
 	sc_event watchdog_enable_event;
-	sc_event can_bw_event;
+//	sc_event can_bw_event;
 
 	bool limp_home;
 	Signal<bool> sig_limp_home;

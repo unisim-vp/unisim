@@ -89,9 +89,9 @@ class CAN_STUB :
 
 {
 public:
-	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_rx_sock;  // binded to RX pin of the CAN (master)
+	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_tx_sock;  // binded to RX pin of the CAN (master)
 
-	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_tx_sock;  // binded to TX pin of the CAN (slave)
+	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_rx_sock;  // binded to TX pin of the CAN (slave)
 
 	CAN_STUB(const sc_module_name& name, Object *parent = 0);
 	~CAN_STUB();
