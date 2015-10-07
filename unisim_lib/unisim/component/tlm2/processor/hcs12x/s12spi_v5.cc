@@ -282,7 +282,7 @@ void S12SPI::RxRun() {
 				if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (6) " << std::endl;
 
 				wait(rx_buffer_event);
-				newFrameStart = isSSLow();
+				newFrameStart = true;
 			}
 
 		}
@@ -353,16 +353,16 @@ void S12SPI::rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time&
 	setActive();
 
 	if (is16bitsMode()) {
-		if (payload.get_byte_enable_length() != 2)
-		{
-			std::cerr << sc_object::name() << "::Warning interface is configured for 2-bytes" << std::endl;
-		}
+//		if (payload.get_byte_enable_length() != 2)
+//		{
+//			std::cerr << sc_object::name() << "::Warning interface is configured for 2-bytes" << std::endl;
+//		}
 		spidr_rx_buffer = *((uint16_t *) payload.get_data_ptr());
 	} else {
-		if (payload.get_byte_enable_length() != 1)
-		{
-			std::cerr << sc_object::name() << "::Warning interface is configured for 1-byte" << std::endl;
-		}
+//		if (payload.get_byte_enable_length() != 1)
+//		{
+//			std::cerr << sc_object::name() << "::Warning interface is configured for 1-byte" << std::endl;
+//		}
 		spidr_rx_buffer = *((uint8_t *) payload.get_data_ptr());
 	}
 

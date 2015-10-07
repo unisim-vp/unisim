@@ -85,8 +85,10 @@ public:
 	static const uint16_t FAILSPI	= 0b0000000001000000;
 
 	// reg 0b100
-	static const uint16_t LIMPHOME	= 0b0000000001000000;
 	static const uint16_t RESETDELAY= 0b0000000000000100;
+	static const uint16_t WKPIN		= 0b0000000000010000;
+	static const uint16_t LIMPHOME	= 0b0000000001000000;
+	static const uint16_t CYCLICWK	= 0b0000000010000000;
 
 	// reg 0b110
 	static const uint16_t CHKSUM	= 0b0000000100000000;
@@ -95,14 +97,19 @@ public:
 	static const uint16_t SETTO1	= 0b0000000000100000;
 	static const uint16_t TIMEBITS	= 0b0000000000011111;
 
-	static const uint16_t REG_OOO_DEFAULT = 0b000000000; //input=0b000111111  ; output=0b000000000
-	static const uint16_t REG_001_DEFAULT = 0b000000000; //input=0b111111111  ; output=0b000000000
-	static const uint16_t REG_010_DEFAULT = 0b000000000; //input=0b101010110  ; output=0b000000000
-	static const uint16_t REG_011_DEFAULT = 0b000000000; //input=0b000000000  ; output=0b000000000  reserved register
-	static const uint16_t REG_100_DEFAULT = 0b100010101; //input=0b100010101  ; output=0b100010101
-	static const uint16_t REG_101_DEFAULT = 0b100000000; //input=0b100000000  ; output=0b100000000
-	static const uint16_t REG_110_DEFAULT = 0b111111111; //input=0b111111111  ; output=0b111111111
-	static const uint16_t REG_111_DEFAULT = 0b000000000; //input=0b000000000  ; output=0b000000000  reserved register
+	static const uint16_t WK_STATE_DEFAULT		= 0b1000000000;
+	static const uint16_t WD_REFRESH_DEFAULT	= 0b0000000000;
+	static const uint16_t REG_000_MSK_DEFAULT	= 0b0000111111;
+	static const uint16_t REG_001_MSK_DEFAULT	= 0b0111111111;
+	static const uint16_t REG_010_MSK_DEFAULT	= 0b0010101101;
+	static const uint16_t REG_000_DEFAULT		= 0b0000000000;
+	static const uint16_t REG_001_DEFAULT 		= 0b0000000000;
+	static const uint16_t REG_010_DEFAULT 		= 0b0000000000;
+	static const uint16_t REG_011_DEFAULT 		= 0b0000000000; // input-output reserved register
+	static const uint16_t REG_100_DEFAULT 		= 0b0100010101;
+	static const uint16_t REG_101_DEFAULT 		= 0b0100000000;
+	static const uint16_t REG_110_DEFAULT 		= 0b0111111111;
+	static const uint16_t REG_111_DEFAULT 		= 0b0000000000; // input reserved register
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
@@ -137,6 +144,9 @@ public:
 
 	bool isTerminated() { return terminated; }
 	void ComputeInternalTime();
+
+	void WatchDogThread();
+	void stateMachineThread();
 
 	void spi_rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
 
@@ -174,28 +184,27 @@ public:
 	bool isINT();
 	bool isWKCyclicEnabled();
 
-	void WatchDogThread();
 	void refresh_watchdog();
 
-	void enter_init();
-
-	void enter_restart();
-	void enter_swflash();
-	void enter_normal();
-	void enter_sleep();
-	void enter_stop();
-	void enter_sailsafe();
+	void execute_init(/*uint16_t sel*/);
+	void execute_restart(/*uint16_t sel*/);
+	void execute_swflash(/*uint16_t sel*/);
+	void execute_normal(/*uint16_t sel*/);
+	void execute_sleep(/*uint16_t sel*/);
+	void execute_stop(/*uint16_t sel*/);
+	void execute_sailsafe(/*uint16_t sel*/);
+	uint16_t execute_readonly(uint16_t sel);
 
 	void assertInterrupt(uint8_t int_offset);
 
 	void assert_int_interrup();
 	void assert_reset_interrupt();
 
-	void triggerStateMachine(uint16_t spi_cmd);
-	uint16_t setCmd(uint16_t cmd);
+	uint16_t triggerStateMachine(uint16_t spi_cmd);
+	void setCmd(uint16_t cmd);
 
 	uint16_t write(uint16_t sel, uint16_t val);
-	uint16_t read(uint16_t sel, uint16_t& val);
+	void read(uint16_t sel, uint16_t& val);
 
 private:
 //	peq_with_get<CAN_Payload > rx_payload_queue;
@@ -218,16 +227,24 @@ private:
 
 	uint16_t current_mode;
 	uint16_t current_cmd;
+	uint16_t last_state;
 
-	uint16_t registers[8]; // 9-bits by register
 	bool wd_refresh;
+	uint16_t wk_state_register;
+	uint16_t mask_registers[3]; // 9lsb are mask bits and the 10th bit is wd_refresh
+	uint16_t status_registers[3]; // 9lsb are status bits and the 10th bit is wk_state
+	uint16_t reserved;
+	uint16_t cfg_registers[4]; // 9-bits by register
+	uint16_t spi_rx_buffer;
+
+
 	bool SPIWake_read;
 
 	bool terminated;
 
 	sc_time frame_time;
 	sc_event watchdog_enable_event;
-//	sc_event can_bw_event;
+	sc_event state_machine_event;
 
 	bool limp_home;
 	Signal<bool> sig_limp_home;

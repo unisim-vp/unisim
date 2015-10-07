@@ -21,6 +21,8 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 
 	, current_mode(INIT)
 	, current_cmd(INIT)
+	, last_state(INIT)
+	, spi_rx_buffer(false)
 	, wd_refresh(false)
 	, SPIWake_read(false)
 
@@ -41,6 +43,7 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 	SC_HAS_PROCESS(TLE8264_2E);
 
 	SC_THREAD(WatchDogThread);
+	SC_THREAD(stateMachineThread);
 
 	xint_payload = xint_payload_fabric.allocate();
 
@@ -95,22 +98,47 @@ void TLE8264_2E::OnDisconnect() {
 
 void TLE8264_2E::Reset() {
 
-	// interrupt mask               default INPUT        default OUTPUT
-	registers[0] = 0b000000000; //input=0b000111111  ; output=0b000000000
-	registers[1] = 0b000000000; //input=0b111111111  ; output=0b000000000
-	registers[2] = 0b000000000; //input=0b101010110  ; output=0b000000000
-	registers[3] = 0b000000000; //input=0b000000000  ; output=0b000000000  reserved register
-
-	// register
-	registers[4] = 0b100010101; //input=0b100010101  ; output=0b100010101
-	registers[5] = 0b100000000; //input=0b100000000  ; output=0b100000000
-	registers[6] = 0b111111111; //input=0b111111111  ; output=0b111111111
-	registers[7] = 0b000000000; //input=0b000000000  ; output=0b000000000  reserved register
-
+	wk_state_register = WK_STATE_DEFAULT;
 	wd_refresh = false;
+
+	// interrupt mask
+	mask_registers[0b000] = REG_000_MSK_DEFAULT;
+	mask_registers[0b001] = REG_001_MSK_DEFAULT;
+	mask_registers[0b010] = REG_010_MSK_DEFAULT;
+
+	// interrupt status
+	status_registers[0b000] = REG_000_DEFAULT;
+	status_registers[0b001] = REG_001_DEFAULT;
+	status_registers[0b010] = REG_010_DEFAULT;
+
+	reserved = REG_011_DEFAULT;
+
+	// configuration registers
+	cfg_registers[0b100] = REG_100_DEFAULT;
+	cfg_registers[0b101] = REG_101_DEFAULT;
+	cfg_registers[0b110] = REG_110_DEFAULT;
+	cfg_registers[0b111] = REG_111_DEFAULT;
+
 }
 
 void TLE8264_2E::Stop(int exit_status) {}
+
+void TLE8264_2E::ComputeInternalTime() {
+
+	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
+
+}
+
+void TLE8264_2E::stateMachineThread()
+{
+	while (true) {
+
+		wait(state_machine_event);
+
+		setCmd(spi_rx_buffer);
+	}
+}
+
 
 void TLE8264_2E::spi_rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
@@ -118,14 +146,14 @@ void TLE8264_2E::spi_rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::
 	unsigned int length = payload.get_data_length();
 	unsigned char* data = payload.get_data_ptr();
 
-	if (payload.get_byte_enable_length() != 2)
-	{
-		std::cerr << sc_object::name() << "::Warning interface is configured for 2-bytes" << std::endl;
-	}
+//	if (payload.get_byte_enable_length() != 2)
+//	{
+//		std::cerr << sc_object::name() << "::Warning interface is configured for 2-bytes" << std::endl;
+//	}
 
-	uint16_t spi_rx_buffer = *((uint16_t *) payload.get_data_ptr());
+	spi_rx_buffer = *((uint16_t *) payload.get_data_ptr());
 
-	setCmd(spi_rx_buffer);
+	state_machine_event.notify();
 
 	payload.release();
 }
@@ -340,24 +368,17 @@ void TLE8264_2E::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay)
 	ComputeInternalTime();
 }
 
-void TLE8264_2E::ComputeInternalTime() {
-
-	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
-
-}
-
-
 
 void TLE8264_2E::setLimpHome(bool val) {
-	registers[0b100] = (registers[0b100] & 0xFFBF) | ((val)? LIMPHOME: 0x0000);
+	cfg_registers[0] = (cfg_registers[0] & 0xFFBF) | ((val)? LIMPHOME: 0x0000);
 }
-bool TLE8264_2E::isLimpHome() { return ((registers[0b100] & LIMPHOME) != 0); }
+bool TLE8264_2E::isLimpHome() { return ((cfg_registers[0] & LIMPHOME) != 0); }
 
 bool TLE8264_2E::isWatchDogEnable() {
-	return ((registers[6] & WDONOFF) != 0);
+	return ((cfg_registers[2] & WDONOFF) != 0);
 }
-bool TLE8264_2E::isINT() { return ((registers[0] & INT) != 0); }
-bool TLE8264_2E::isWKCyclicEnabled() { return ((registers[0] & WKCYCLIC) != 0); }
+bool TLE8264_2E::isINT() { return ((status_registers[0] & INT) != 0); }
+bool TLE8264_2E::isWKCyclicEnabled() { return ((status_registers[0] & WKCYCLIC) != 0); }
 
 void TLE8264_2E::WatchDogThread() {
 
@@ -374,12 +395,12 @@ void TLE8264_2E::WatchDogThread() {
 			if ((state_before == INIT) && (state_before == current_mode)) {
 				setLimpHome(true);
 				current_mode = RESTART;
-				enter_restart();
+				execute_restart();
 			}
 			else if (isWKCyclicEnabled() && (state_before == STOP) && (state_before == current_mode)) {
 				if (isINT() && !SPIWake_read) {
 					current_mode = RESTART;
-					enter_restart();
+					execute_restart();
 				} else {
 					assert_int_interrup();
 				}
@@ -391,10 +412,10 @@ void TLE8264_2E::WatchDogThread() {
 				// when leaving the SWFlash a reset is generated
 				assert_reset_interrupt();
 				current_mode = RESTART;
-				enter_restart();
+				execute_restart();
 			} else if ((state_before == RESTART) && (state_before == current_mode)) {
 				current_mode = NORMAL;
-				enter_normal();
+				execute_normal();
 			}
 		}
 	}
@@ -402,34 +423,35 @@ void TLE8264_2E::WatchDogThread() {
 
 void TLE8264_2E::refresh_watchdog()
 {
-	// TODO: compute frame_time for watchdog
+	// TODO: compute frame_time for watchdog and effectif refresh of watchdog
+	wd_refresh = false;
 }
 
-void TLE8264_2E::enter_init() {
+void TLE8264_2E::execute_init() {
 
 }
-void TLE8264_2E::enter_restart() {
+void TLE8264_2E::execute_restart() {
 	/*
 	 * TODO:
 	 * The first SPI output data will provide information about the reason for entering Restart Mode.
 	 * The reason for entering Restart Mode is stored and kept until the microcontroller reads
 	 * the corresponding “LH0..2” or “RM0..1” SPI bits.
 	 */
-	if ((registers[0b100] & RESETDELAY) == 0) {
+	if ((cfg_registers[0] & RESETDELAY) == 0) {
 		current_mode = NORMAL;
-		enter_normal();
+		execute_normal();
 	}
 }
-void TLE8264_2E::enter_swflash() {
+void TLE8264_2E::execute_swflash() {
 
 }
-void TLE8264_2E::enter_normal() {
+void TLE8264_2E::execute_normal() {
 	if (!isWatchDogEnable()) { std::cerr << "In Normal Mode the watchdog needs to be triggered !!!" << std::endl; }
 
 }
-void TLE8264_2E::enter_sleep() {
-	// Watchdog is disabled is Sleep Mode and the last configuration isn't saved
-	registers[0b110] = REG_110_DEFAULT;
+void TLE8264_2E::execute_sleep() {
+	// Watchdog is disabled by entering Sleep Mode and the last configuration isn't saved
+	cfg_registers[2] = REG_110_DEFAULT;
 
 	/*
 	 *  TODO: emulate sleep mode and wakeup waiting
@@ -446,16 +468,72 @@ void TLE8264_2E::enter_sleep() {
 	 * In case of a wakeup from Sleep Mode the wake source is seen at the interrupt bit
 	 * (config. select 0b000) an interrupt is not generated
 	 */
-	registers[0b000] = registers[0b000] | INT;
+	status_registers[00] = status_registers[0] | INT;
 	current_mode = RESTART;
-	registers[0b000] = registers[0b000] | WKCAN;
-	enter_restart();
+
+	// To change. I have choose to set wakeup reason to CAN event. Others event are possible LIN, WK-pin, cyclic
+	status_registers[0b000] = ((mask_registers[0] & WKCAN) != 0)? status_registers[0] | WKCAN: status_registers[0];
+
+	execute_restart();
 }
-void TLE8264_2E::enter_stop() {
+void TLE8264_2E::execute_stop() {
 
 }
-void TLE8264_2E::enter_sailsafe() {
+void TLE8264_2E::execute_sailsafe() {
 
+}
+
+uint16_t TLE8264_2E::execute_readonly(uint16_t sel)
+{
+    // response word = WK(1) REG(9) SEL(3) CMD(3)
+
+	uint16_t response = wk_state_register | (sel << 3) | READONLY;
+
+	switch (sel)
+	{
+		case 0b000: {
+			if ((current_mode == STOP) && isWKCyclicEnabled() && isINT()) {
+				SPIWake_read = true;
+			}
+			status_registers[0] = status_registers[0] & 0x100; // clear all interrupt flags and left 'INT' as it
+			response = response | (status_registers[0] << 6);
+		} break;
+		case 0b001: {
+			status_registers[1] = status_registers[1] & 0x000;
+			response = response | (status_registers[1] << 6);
+		} break;
+		case 0b010: {
+			status_registers[2] = status_registers[2] & 0x000;
+			response = response | (status_registers[2] << 6);
+		} break;
+		case 0b011: {
+			/* NOP; reserved register */
+			std::cerr << "TLE8264_2E:: read of reserved register 0b000" << std::endl;
+			response = response | reserved;
+		} break;
+		case 0b100: {
+			response = response | (cfg_registers[0] << 6);
+		} break;
+		case 0b101: {
+			response = response | (cfg_registers[1] << 6);
+		} break;
+		case 0b110: {
+			response = response | (cfg_registers[2] << 6);
+		} break;
+		case 0b111: {
+			response = response | (cfg_registers[3] << 6);
+		} break;
+	}
+
+	if (((status_registers[0] & 0x07F) == 0) && ((status_registers[1] & 0x17F) == 0) && ((status_registers[2] & 0x1FF) == 0))
+	{
+		status_registers[0] = status_registers[0] & 0x0FF;  // clear 'INT' flag. equivalent to 'status_registers[0] = REG_000_DEFAULT'
+		if (sel == 0b000) {
+			response = wk_state_register | (sel << 3) | READONLY;  // all flags of status_reg_000 are cleared
+		}
+	}
+
+	return (response);
 }
 
 void TLE8264_2E::assertInterrupt(uint8_t interrupt_offset) {
@@ -495,19 +573,21 @@ void TLE8264_2E::assertInterrupt(uint8_t interrupt_offset) {
 }
 
 void TLE8264_2E::assert_int_interrup() {
-	registers[0b000] = registers[0b000] | INT;
+	status_registers[0] = status_registers[0b000] | INT;
 	assertInterrupt(int_interrupt);
 }
 void TLE8264_2E::assert_reset_interrupt() {
-	registers[0b001] = registers[0b001] | RESET;
+	status_registers[1] = status_registers[1] | RESET;
 	assertInterrupt(reset_interrupt);
 }
 
-void TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
+uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 
 	uint16_t new_mode = spi_cmd & 0x0007;
 	uint16_t sel  = (spi_cmd & 0x0038) >> 3;
 	uint16_t val = spi_cmd >> 6;
+
+	std::cout << sc_object::name() << "::triggerStateMachine()  execute CMD 0x" << std::hex << spi_cmd << std::dec << std::endl;
 
 	switch (current_cmd & 0x0007)
 	{
@@ -521,14 +601,18 @@ void TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 		case NORMAL: {
 			current_mode = new_mode;
 			current_cmd = write(sel, val);
-			enter_normal();
+			execute_normal();
 		} break;
 		case SWFLASH: {
 			current_mode = new_mode;
 			current_cmd = write(sel, val);
-			enter_swflash();
+			execute_swflash();
 		} break;
-		case READONLY: /*no change but triggers wd and clear int ...*/ break;
+		case READONLY: {
+			/*no change but triggers wd and clear int ...*/
+			return (execute_readonly(sel));
+
+		} break;
 		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
@@ -539,8 +623,11 @@ void TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 		case INIT: {
 			current_cmd = write(sel, val);
 		} break;
-		//					case NORMAL: current_cmd = normal(spi_cmd); break;
-		case READONLY: /*no change but triggers wd and clear int ...*/ break;
+//					case NORMAL: current_cmd = normal(spi_cmd); break;
+		case READONLY: {
+			/*no change but triggers wd and clear int ...*/
+			return (execute_readonly(sel));
+		} break;
 		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
@@ -560,9 +647,12 @@ void TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			current_cmd = write(sel, val);
 			// when leaving the SWFlash a reset is generated
 			assert_reset_interrupt();
-			enter_restart();
+			execute_restart();
 		} break;
-		case READONLY: /*no change but triggers wd and clear int ...*/ break;
+		case READONLY: {
+			/*no change but triggers wd and clear int ...*/
+			return (execute_readonly(sel));
+		} break;
 		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
@@ -581,44 +671,49 @@ void TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			current_mode = new_mode;
 			current_cmd = write(sel, val);
 			assert_reset_interrupt(); // A reset is triggered when entering SWFlash from Normal
-			enter_swflash();
+			execute_swflash();
 		} break;
 		case NORMAL: {
 			current_cmd = write(sel, val);
 		} break;
 		case SLEEP: {
 			current_cmd = write(sel, val);
-			if ((registers[0b000] & 0x7F) == 0) {
+			if (((mask_registers[0] & 0x0F) == 0) && ((cfg_registers[0] & (CYCLICWK | WKPIN)) ==0 ))
+			{
 				/*
 				 * In Sleep Mode, not all wake-up sources should be inhibited,
 				 * this is required to not program the device in a mode where it can not wake up.
 				 * If all wake sources are inhibited when sending the SBC to Sleep Mode,
 				 * the SBC does not go to Sleep Mode, the microcontroller is informed via the INT output, and the SPI bit “Fail SPI” is set.
 				 */
-				registers[0b001] = registers[0b001] | FAILSPI;
+				status_registers[1] = status_registers[1] | FAILSPI;
 				assert_int_interrup();
 
 			} else {
 				current_mode = new_mode;
-				enter_sleep();
+				execute_sleep();
 			}
 
 		} break;
 		case STOP: {
-			uint16_t watchdog_settings = registers[0b110];
+			uint16_t watchdog_settings = cfg_registers[2];
 			current_cmd = write(sel, val);
-			if ((registers[0b000] & 0x7F) == 0) {
+			if (((mask_registers[0] & 0x0F) == 0) && ((cfg_registers[0] & (CYCLICWK | WKPIN)) ==0 ))
+			{
 				/*
 				 * If all wakeup sources are disabled, (CAN, LIN, WK, cyclic wake) the watchdog can not be disabled,
 				 * the SBC stays in Normal Mode and the watchdog continues with the old settings.
 				 */
-				registers[0b110] = watchdog_settings;
+				cfg_registers[2] = watchdog_settings;
 			} else {
 				current_mode = new_mode;
-				enter_stop();
+				execute_stop();
 			}
 		} break;
-		case READONLY: /*no change but triggers wd and clear int ...*/ break;
+		case READONLY: {
+			/*no change but triggers wd and clear int ...*/
+			return (execute_readonly(sel));
+		} break;
 		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
@@ -633,7 +728,10 @@ void TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			current_cmd = write(sel, val);
 		} break;
 		//					case RESTART: current_cmd = restart(spi_cmd); break;
-		case READONLY: /*no change but triggers wd and clear int ...*/ break;
+		case READONLY: {
+			/*no change but triggers wd and clear int ...*/
+			return (execute_readonly(sel));
+		} break;
 		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
@@ -647,17 +745,20 @@ void TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 		case NORMAL: {
 			current_mode = new_mode;
 			current_cmd = write(sel, val);
-			enter_normal();
+			execute_normal();
 		} break;
 		case SLEEP: {
 			current_mode = new_mode;
 			current_cmd = write(sel, val);
-			enter_sleep();
+			execute_sleep();
 		} break;
 		case STOP: {
 			current_cmd = write(sel, val);
 		} break;
-		case READONLY: /*no change but triggers wd and clear int ...*/ break;
+		case READONLY: {
+			/*no change but triggers wd and clear int ...*/
+			return (execute_readonly(sel));
+		} break;
 		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
@@ -672,12 +773,15 @@ void TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 		case FAILSAFE: {
 			current_cmd = write(sel, val);
 		} break;
-		case READONLY: /*no change but triggers wd and clear int ...*/ break;
+		case READONLY: {
+			/*no change but triggers wd and clear int ...*/
+			return (execute_readonly(sel));
+		} break;
 		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
 	} break;
-	default: break;
+	default: std::cout << "Reserved mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 	}
 
 	// The default value of 'WD refresh bit' is 0. The first trigger must be 1 and the following triggers must be 0.
@@ -687,66 +791,68 @@ void TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 		refresh_watchdog();
 	}
 
+	return (current_cmd);
 }
 
-uint16_t TLE8264_2E::setCmd(uint16_t cmd) {
+void TLE8264_2E::setCmd(uint16_t cmd) {
 
-	uint16_t last_state = current_cmd;
+	uint16_t state_to_send = last_state;
 
-	triggerStateMachine(cmd);
+	last_state = triggerStateMachine(cmd);
 
 	tlm::tlm_generic_payload *payload = spi_payload_fabric.allocate();
 
 	payload->set_data_length(2);
-	payload->set_data_ptr((unsigned char*) &last_state);
+	payload->set_data_ptr((unsigned char*) &state_to_send);
 
 	sc_time local_time = SC_ZERO_TIME;
 	spi_tx_socket->b_transport(*payload, local_time);
 
 	payload->release();
 
-
-	return last_state;
-
 }
 
 uint16_t TLE8264_2E::write(uint16_t sel, uint16_t val) {
 
-	switch (sel)
-	{
-	case 0b000: registers[sel] = ~(registers[sel] ^ val) & 0x01FF; break;
-	case 0b001: registers[sel] = ~(registers[sel] ^ val) & 0x01FF; break;
-	case 0b010: registers[sel] = ~(registers[sel] ^ val) & 0x01FF; break;
-	case 0b011: /* NOP; reserved register */ std::cerr << "TLE8264_2E:: write to reserved register 0b000" << std::endl; break;
-	case 0b100: registers[sel] = val; break;
-	case 0b101: registers[sel] = val; break;
-	case 0b110: registers[sel] = val; break;
-	case 0b111: /* NOP; reserved register */ std::cerr << "TLE8264_2E:: write to reserved register 0b111" << std::endl;break;
-	}
+    // response word = WK(1) REG(9) SEL(3) CMD(3)
 
-	return ((registers[sel] << 6) | (sel << 3) | current_mode);
-}
-
-uint16_t TLE8264_2E::read(uint16_t sel, uint16_t& val) {
-
-	switch (sel)
-	{
+	uint16_t response = wk_state_register | (sel << 3) | current_mode;
 	/* 0b000-0b001-0b010-0b011: Interrupt mask. A value of 0 will set the SBC into the opposite state. */
-	case 0b000: {
-		val = registers[sel];
-		if ((current_mode == STOP) && isWKCyclicEnabled() && isINT()) {
-			SPIWake_read = true;
-		}
-	} break;
-	case 0b001: val = registers[sel]; break;
-	case 0b010: val = registers[sel]; break;
-	case 0b011: /* NOP; reserved register */ val = 0; std::cerr << "TLE8264_2E:: read of reserved register 0b000" << std::endl; break;
-	case 0b100: val = registers[sel]; break;
-	case 0b101: val = registers[sel]; break;
-	case 0b110: val = registers[sel]; break;
-	case 0b111: /* NOP; reserved register */ val = 0; std::cerr << "TLE8264_2E:: read of reserved register 0b111" << std::endl; break;
+	switch (sel)
+	{
+		case 0b000: {
+			mask_registers[0] = ~(mask_registers[0] ^ val) & 0x01FF;
+			response = response | (status_registers[0] << 6);
+		} break;
+		case 0b001: {
+			mask_registers[1] = ~(mask_registers[1] ^ val) & 0x01FF;
+			response = response | (status_registers[1] << 6);
+		} break;
+		case 0b010: {
+			mask_registers[2] = ~(mask_registers[2] ^ val) & 0x01FF;
+			response = response | (status_registers[2] << 6);
+		} break;
+		case 0b011: {
+			/* NOP; reserved register */
+			std::cerr << "TLE8264_2E:: write to reserved register 0b000" << std::endl;
+		} break;
+		case 0b100: {
+			cfg_registers[0] = val;
+			response = response | (cfg_registers[0] << 6);
+		} break;
+		case 0b101: {
+			cfg_registers[1] = val;
+			response = response | (cfg_registers[1] << 6);
+		} break;
+		case 0b110: {
+			cfg_registers[2] = val;
+			response = response | (cfg_registers[2] << 6);
+		} break;
+		case 0b111: {
+			/* NOP; reserved register */
+			response = response | (cfg_registers[3] << 6);
+		} break;
 	}
 
-	return ((registers[sel] << 6) | (sel << 3) | current_mode);
+	return (response);
 }
-
