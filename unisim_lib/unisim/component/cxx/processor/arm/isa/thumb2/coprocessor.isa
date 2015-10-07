@@ -131,7 +131,7 @@ stc.disasm = {
 };
 
 // stc.execute = {
-//   if (not CheckCondition(cpu, cond)) return;
+//   if (not CheckCondition(cpu, cpu.itcond())) return;
   
 //   uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
 //   if (w) cpu.SetGPR( rn, oaddr );
@@ -157,7 +157,7 @@ stc_unindexed.disasm = {
 };
 
 // stc_unindexed.execute = {
-//   if (not CheckCondition(cpu, cond)) return;
+//   if (not CheckCondition(cpu, cpu.itcond())) return;
 	
 //   uint32_t address = cpu.GetGPR(rn);
 //   while(cpu.CoprocessorStore(cp_num, address, option)) { address += 4; }
@@ -229,7 +229,7 @@ ldc.disasm = {
 };
 
 // ldc.execute = {
-//   if (not CheckCondition(cpu, cond)) return;
+//   if (not CheckCondition(cpu, cpu.itcond())) return;
 	
 //   uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
 //   if (w) cpu.SetGPR( rn, oaddr );
@@ -255,7 +255,7 @@ ldc_unindexed.disasm = {
 };
 
 // ldc_unindexed.execute = {
-//   if (not CheckCondition(cpu, cond)) return;
+//   if (not CheckCondition(cpu, cpu.itcond())) return;
 	
 //   uint32_t address = cpu.GetGPR(rn);
 //   while(cpu.CoprocessorLoad(cp_num, address, option)) { address += 4; }

@@ -87,6 +87,7 @@ bcc_w.disasm = {
 
 bcc_w.execute = {
   assert((cond & 0xe) != 0xe);
+  // Note: according to specification, if InITBlock() then UNPREDICTABLE;
   if (CheckCondition(cpu, cond)) cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
 };
 
@@ -106,15 +107,15 @@ b_w.execute = {
 op bxj( 0b111100111100[12]: ra[4]:> <: 0b1000111100000000[16] );
 bxj.disasm = { buffer << "bxj\t" << DisasmRegister(ra); };
 
-op it( 0b10111111[8]: cond[4]: mask[4] );
+op it( 0b10111111[8]: firstcond[4]: mask[4] );
 
 it.disasm = {
   if (mask == 0) { buffer << "<undefined>"; return; }
-  buffer << 'i' << DisasmITSequence(mask) << '\t' << DisasmCondition(cond,DisasmCondition::explicit_always);
+  buffer << 'i' << DisasmITSequence(mask) << '\t' << DisasmCondition( firstcond, DisasmCondition::explicit_always );
 };
 
 it.execute = {
-  cpu.ITSetState( cond, mask );
+  cpu.ITSetState( firstcond, mask );
 };
 
 op nop( 0b10111111[8]: idx[4]: 0b0000[4] );

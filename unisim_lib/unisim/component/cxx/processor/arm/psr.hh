@@ -59,11 +59,17 @@ namespace arm {
     enum size_e { size = sizeT };
     
     template <typename T>
-    T    Get( T const& reg ) const
-    { return (reg >> pos) & ((1ull << size)-1); }
+    T Get( T const& reg ) const
+    {
+      T const mask = ((~T(0)) >> ((8*sizeof (T)) - size)) << pos;
+      return (reg & mask) >> pos;
+    }
     template <typename T>
     void Set( T& reg, T const& value ) const
-    { reg ^= (((value ^ this->Get( reg )) & ((1ull << size) - 1)) << pos); }
+    {
+      T const mask = ((~T(0)) >> ((8*sizeof (T)) - size)) << pos;
+      reg = (reg & ~mask) | ((value << pos) & mask);
+    }
   };
   
   /* Special bitfields */

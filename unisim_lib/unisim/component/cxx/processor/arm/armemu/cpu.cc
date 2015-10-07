@@ -760,7 +760,7 @@ CPU::StepInstruction()
 		
     /* Execute instruction */
     asm volatile( "thumb2_operation_execute:" );
-    op->execute(*this);
+    op->execute( *this );
     
     this->ITAdvance();
     //op->profile(profile);
@@ -782,7 +782,8 @@ CPU::StepInstruction()
     this->next_pc += 4;
 		
     /* Execute instruction */
-    op->execute(*this);
+    asm volatile( "arm32_operation_execute:" );
+    op->execute( *this );
     //op->profile(profile);
   }
 	

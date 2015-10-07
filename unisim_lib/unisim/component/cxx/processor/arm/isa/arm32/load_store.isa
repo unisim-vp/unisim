@@ -898,8 +898,8 @@ ldm_usr.disasm = {
 };
 
 ldm_usr.execute = {
-  assert( not "privileged" );
   if (not CheckCondition(cpu, cond)) return;
+  assert( not "privileged" );
   
   LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
   while (itr.next()) {
@@ -928,8 +928,8 @@ stm_usr.disasm = {
 };
 
 stm_usr.execute = {
-  assert( not "privileged" );
   if (not CheckCondition(cpu, cond)) return;
+  assert( not "privileged" );
   
   LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
   while (itr.next()) {

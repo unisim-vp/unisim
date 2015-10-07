@@ -53,7 +53,8 @@ b_1.disasm = {
 
 b_1.execute = {
   if (not CheckCondition(cpu, cond)) return;
-	
+  // Note: according to specification, if InITBlock() then UNPREDICTABLE;
+  
   cpu.Branch(cpu.GetGPR(cpu.PC_reg) + imm);
 };
 
