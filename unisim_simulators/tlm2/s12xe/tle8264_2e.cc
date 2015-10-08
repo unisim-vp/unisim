@@ -13,11 +13,8 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 	, spi_tx_socket("tx-socket")
 	, spi_rx_socket("rx-socket")
 
-//	, rx_payload_queue("input_anx_payload_queue")
-
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
-
 
 	, current_mode(INIT)
 	, current_cmd(INIT)
@@ -35,9 +32,11 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 // Interrupt ID
 	, reset_interrupt(0xFE)
 	, param_reset_interrupt("reset-interrupt", this, reset_interrupt)
-	, int_interrupt(0xF2) // TODO; look to BCM specification
+	, int_interrupt(0xF2) // look to BCM specification
 	, param_int_interrupt("int-interrupt", this, int_interrupt)
 
+	, debug_enabled(false)
+	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
 {
 	SC_HAS_PROCESS(TLE8264_2E);
@@ -587,7 +586,9 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 	uint16_t sel  = (spi_cmd & 0x0038) >> 3;
 	uint16_t val = spi_cmd >> 6;
 
-	std::cout << sc_object::name() << "::triggerStateMachine()  execute CMD 0x" << std::hex << spi_cmd << std::dec << std::endl;
+	if (debug_enabled) {
+		std::cout << sc_object::name() << "::triggerStateMachine()  execute CMD 0x" << std::hex << spi_cmd << std::dec << std::endl;
+	}
 
 	switch (current_cmd & 0x0007)
 	{

@@ -242,7 +242,7 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 			if (interrupt_flags[index].getState()) {
 
 				if (debug_enabled) {
-					std::cout << sc_object::name() << " Interrupt State true for 0x" << std::hex << (unsigned int) (index * 2) << std::endl;
+					std::cout << sc_time_stamp() << "  " << sc_object::name() << " Interrupt State true for 0x" << std::hex << (unsigned int) (index * 2) << std::dec << "  priority " << (unsigned int) (int_cfwdata[index] & 0x07) << "  current priority " << (unsigned int) buffer.getPriority() << std::endl;
 				}
 
 				uint8_t dataPriority = 0;
@@ -262,7 +262,7 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 					}
 				}
 
-				if (dataPriority >= buffer.getPriority()) {  // priority of maskable interrupts is from high offset to low
+				if (dataPriority > buffer.getPriority()) {  // priority of maskable interrupts is from high offset to low
 					buffer.setPriority(dataPriority);
 					buffer.setID(index);
 					buffer.setVectorAddress(((address_t) getIVBR() << 8) + index * 2);
@@ -275,7 +275,7 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 	}
 
 	if (debug_enabled) {
-		std::cout << sc_object::name() << " Interrupt 0x" << std::hex << buffer.getVectorAddress() << " at " << sc_time_stamp() << std::endl;
+		std::cout << sc_time_stamp() << "  " << sc_object::name() << " Interrupt 0x" << std::hex << buffer.getVectorAddress() << std::endl;
 	}
 
 	if (buffer.getVectorAddress() == 0) {
@@ -305,8 +305,6 @@ void XINT::run()
 
 		*phase = BEGIN_REQ;
 
-		bool found_cpu = false;
-		bool found_xgate = false;
 		do
 		{
 
@@ -321,35 +319,38 @@ void XINT::run()
 					interrupt_flags[id].setState(true);
 					interrupt_flags[id].setPayload(payload);
 
-					found_cpu = true;
-
 				} else {
 
 					unsigned int id = payload->getInterruptOffset()/2;
 
 					interrupt_flags[id].setState(true);
 					interrupt_flags[id].setPayload(payload);
-
-					// if 7-bit=0 then cpu else xgate
-					if ((int_cfwdata[id] & 0x80) == 0)
-					{
-						found_cpu = true;
-					}
-					else {
-						found_xgate = true;
-					}
 				}
 			}
 
 		} while(payload);
 
-		if (found_cpu) {
-			toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+// ***************
+		// cpu
+		for (int index=0x7F; index > 0x9; index--) {
+			if (interrupt_flags[index].getState()) {
+				if (interrupt_flags[index].getPayload().isXGATE_shared_channel())
+				{
+					toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+				} else {
+					if ((int_cfwdata[index] & 0x80) == 0)
+					{
+						toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+					}
+					else {
+						toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
+					}
+				}
+				break;
+			}
 		}
 
-		if (found_xgate) {
-			toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
-		}
+// ***************
 
 		trans->release();
 
@@ -363,6 +364,7 @@ tlm_sync_enum XINT::cpu_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_pha
 {
 
 	// The comparaison of the newIPL to the currentIPL is done by the CPU during I-bit-interrupt handling
+	// note: The IPL bits allow the nesting of interrupts, blocking interrupts of an equal or lower priority
 
 	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
 	uint8_t cpuIPL = buffer->getPriority();
@@ -370,11 +372,10 @@ tlm_sync_enum XINT::cpu_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_pha
 		if (buffer->getPriority() > cpuIPL) {
 			interrupt_flags[buffer->getID()].setState(false);
 			interrupt_flags[buffer->getID()].releasePayload();
-
 		}
 
 		if (debug_enabled) {
-			std::cerr << "XINT::CPU12::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getVectorAddress() << "  @ " << sc_time_stamp().to_seconds() << std::endl;
+			std::cout << sc_time_stamp() << "  " << sc_object::name() << "::CPU12::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getVectorAddress() << std::endl;
 		}
 
 		retry_event.notify();

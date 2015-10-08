@@ -167,6 +167,7 @@ unsigned int S12MSCAN::transport_dbg(CAN_Payload& payload)
 void S12MSCAN::b_transport(CAN_Payload& payload, sc_core::sc_time& t) {
 	if (isCANEnabled()) {
 		payload.acquire();
+		cout << sc_time_stamp() << "  " << sc_object::name() << "::b_transport  " << payload << endl;
 		rx_payload_queue.notify(payload, t);
 	}
 }
@@ -190,6 +191,9 @@ tlm_sync_enum S12MSCAN::nb_transport_fw(CAN_Payload& payload, tlm_phase& phase, 
 			phase = END_REQ; // update the phase
 			if (isCANEnabled()) {
 				payload.acquire();
+				if (rx_debug_enabled) {
+					cout << sc_time_stamp() << "  " << sc_object::name() << "::nb_transport_fw  " << payload << endl;
+				}
 				rx_payload_queue.notify(payload, t); // queue the payload and the associative time
 			}
 
@@ -266,17 +270,17 @@ void S12MSCAN::RunRx() {
 		while (!isCANEnabled()) {
 			wait(can_enable_event);
 
-//			std::cout << sc_object::name() << ":: RX enabled " << std::endl;
+			if (rx_debug_enabled) {
+				std::cout << sc_object::name() << ":: RX enabled " << std::endl;
+			}
 		}
 
-		// TODO: I have to complete receiver automata
 		wait(rx_payload_queue.get_event());
 
 		setReceiverActive();
 
+		// buffer 4xIDByte + 8xDataByte + 1xLengthByte+ 1xPriorityByte + 2xTimeStampByte = 16xByte
 		uint8_t rx_shift[CAN_MSG_SIZE];
-
-		// Todo: buffer 4xIDByte + 8xDataByte + 1xLengthByte+ 1xPriorityByte + 2xTimeStampByte = 16xByte
 
 		InputRX(&rx_shift);
 
@@ -321,8 +325,6 @@ void S12MSCAN::RunTx() {
 		while (!isCANEnabled()) {
 
 			wait(can_enable_event);
-
-//			std::cout << sc_object::name() << ":: TX enabled " << std::endl;
 
 		}
 
@@ -432,8 +434,6 @@ void S12MSCAN::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 //=====================================================================
 
 bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_length) {
-
-//	std::cout << sc_object::name() << "::Read Offset -> " << std::dec << offset << "  at  " << sc_time_stamp() << std::endl;
 
 	switch (offset) {
 		case CANCTL0: {
@@ -546,6 +546,9 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 
 		default: {
 			if ((offset >= CANRXFG_START) && (offset <= CANRXFG_END)) {
+				if (rx_debug_enabled) {
+					std::cout << sc_time_stamp() << "  " << sc_object::name() << "::Read CANRXFG"  << std::endl;
+				}
 				if (canrxfg_index.isEmpty()) {
 					*((uint8_t *) buffer) = 0x00;
 				} else {
@@ -571,8 +574,6 @@ bool S12MSCAN::read(unsigned int offset, const void *buffer, unsigned int data_l
 }
 
 bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_length) {
-
-//	std::cout << sc_object::name() << "::Write Offset -> " << std::dec << offset << "  value -> 0x" << std::hex << (unsigned int) *((uint8_t *) buffer) << std::dec << "  at  " << sc_time_stamp() << std::endl;
 
 	switch (offset) {
 		case CANCTL0: {
@@ -643,10 +644,9 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 			uint8_t oldrflg = canrflg_register;
 			canrflg_register = (canrflg_register & 0x3C) | (canrflg_register & ~(value | 0x3C));
 
-//			std::cout << "CANRFLG (1)  " << sc_time_stamp() << std::endl;
 			if (((oldrflg & 0x01) == 0x01)  && ((canrflg_register & 0x01) != 0x01)) {
 				canrxfg_index.incHead();
-//				std::cout << "CANRFLG (2)" << sc_time_stamp() << std::endl;
+
 				if (!canrxfg_index.isEmpty()) {
 					setReceiverBufferFull();
 				}
@@ -827,6 +827,10 @@ bool S12MSCAN::write(unsigned int offset, const void *buffer, unsigned int data_
 }
 
 void S12MSCAN::assertInterrupt(uint8_t interrupt_offset) {
+
+	if (tx_debug_enabled || rx_debug_enabled) {
+		std::cout << sc_time_stamp() << "  " << sc_object::name() << "::AssertInterrupt  0x" << std::hex << (unsigned int) interrupt_offset << std::dec << std::endl;
+	}
 
 	tlm_phase phase = BEGIN_REQ;
 

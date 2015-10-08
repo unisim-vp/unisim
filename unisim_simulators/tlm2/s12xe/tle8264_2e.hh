@@ -255,6 +255,8 @@ private:
 	uint8_t int_interrupt;
 	Parameter<uint8_t> param_int_interrupt;
 
+	bool debug_enabled;
+	Parameter<bool> param_debug_enabled;
 };
 
 #endif // _TLE8264_2E_HH_

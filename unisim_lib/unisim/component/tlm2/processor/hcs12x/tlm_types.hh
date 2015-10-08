@@ -313,21 +313,23 @@ public:
 		CAN_DATATYPE msg;
 		((CAN_Payload) payload).unpack(msg);
 
-		os << std::hex << (unsigned int) msg.Extended << "-" << (unsigned int) msg.Length;
+		os << std::hex << (unsigned int) msg.Extended << "-" << std::hex << (unsigned int) msg.Length;
 
 		os << "-" ;
 		for (int i=0; i<CAN_ID_SIZE; i++) {
-			os << std::hex << (unsigned int) msg.ID[i];
+			os << std::hex << (unsigned int) msg.ID[i] << ".";
 		}
 
 		os << "-" ;
 		for (int i=0; i < CAN_DATA_SIZE; i++) {
-			os << std::hex << (unsigned int) msg.Data[i];
+			os << std::hex << (unsigned int) msg.Data[i] << ".";
 		}
 
 		os << "-" << std::hex << (unsigned int) msg.Remote << "-" << (unsigned int) msg.Error;
 
 		os << "-" << std::hex << (unsigned int) msg.Timestamp[0] << (unsigned int) msg.Timestamp[1];
+
+		os << std::dec;
 
 		return (os);
 	}

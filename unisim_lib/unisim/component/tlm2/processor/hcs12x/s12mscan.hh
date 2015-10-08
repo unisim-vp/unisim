@@ -142,26 +142,31 @@ public:
 	CircularIndex() {
 	    head = 0;
 		tail = 0;
+		length = 0;
 	}
 
 	~CircularIndex() {}
 
-	unsigned int getHead() { return (head); }
-	unsigned int getTail() { return (tail); }
+	int getHead() { return (head); }
+	int getTail() { return (tail); }
 
-	bool incHead() {
+	bool incHead()  // Get element
+	{
 
 		if (isEmpty()) { return (false); }
 
+		length--;
 	    head = (head+1) % MAX_SIZE;
 
 	    return (true);
 	}
 
-	bool incTail() {
+	bool incTail()   // Put element
+	{
 
 		if (isFull()) {	return (false);	}
 
+		length++;
 	    tail = (tail+1) % MAX_SIZE;
 
 	    return (true);
@@ -169,22 +174,24 @@ public:
 
 	bool isEmpty() {
 
-	    return (head == tail);
+	    return (length == 0);
 	}
 
 	bool isFull() {
 
-	    return ((abs(tail-head)+1) == MAX_SIZE);
+	    return (length == MAX_SIZE);
+
 	}
 
 	int size() {
 
-	    return abs(tail - head) + 1;
+	    return length;
 	}
 
 private:
-    unsigned int head;
-    unsigned int tail;
+    int head;
+    int tail;
+    int length;
 
 };
 
@@ -422,8 +429,6 @@ private:
 	inline void enable_can() {
 		setIdle();
 
-//		std::cout << sc_object::name() << "::enable_can" << std::endl;
-
 		can_enable_event.notify();
 	}
 
@@ -584,10 +589,14 @@ private:
 
 		canrflg_register = canrflg_register | 0x01;
 
-//		std::cout << sc_object::name() << "  RXF is SET " << sc_time_stamp() << std::endl;
+		if (rx_debug_enabled) {
+			std::cout << sc_time_stamp() << "  " << sc_object::name() << "  RXF is SET " << std::endl;
+		}
 
 		if (isReceiverFullInterruptEnable()) {
-//			std::cout << sc_object::name() << "  FullInterrupt " << sc_time_stamp() << std::endl;
+			if (rx_debug_enabled) {
+				std::cout << sc_time_stamp() << "  " << sc_object::name() << "  FullInterrupt " << sc_time_stamp() << std::endl;
+			}
 			assertInterrupt(receive_interrupt_offset);
 		}
 	}
@@ -721,16 +730,25 @@ private:
 
 	inline bool setRxBG(uint8_t (&rx_buffer)[16], bool isTransmitter=false) {
 
+		if (rx_debug_enabled) {
+			std::cout << sc_object::name() << "::  setRxBG *** " << sc_time_stamp() << std::endl;
+		}
+
 		addTimeStamp(rx_buffer);
 
 		if (!isTransmitter) {
 			uint8_t hit_index = 0;
 			if (checkAcceptance(rx_buffer, hit_index)) {
-//				std::cout << sc_object::name() << "  Accepted *** " << sc_time_stamp() << std::endl;
+				if (rx_debug_enabled) {
+					std::cout << sc_object::name() << "  Accepted *** " << sc_time_stamp() << std::endl;
+				}
+
 				setCanRxFG(rx_buffer, hit_index);
 				return (true);
 			} else {
-//				std::cout << sc_object::name() << "  Not Accepted *** " << sc_time_stamp() << std::endl;
+				if (rx_debug_enabled) {
+					std::cout << sc_object::name() << "  Not Accepted *** " << sc_time_stamp() << std::endl;
+				}
 			}
 		}
 
@@ -870,7 +888,6 @@ private:
 	inline bool setCanRxFG(uint8_t rx_buffer[16], uint8_t hit_index) {
 
 		if (canrxfg_index.isFull()) {
-//			std::cout << sc_object::name() << "  FIFO FULL " << sc_time_stamp() << std::endl;
 			setOverrunInterrupt();
 			return (false);
 		}

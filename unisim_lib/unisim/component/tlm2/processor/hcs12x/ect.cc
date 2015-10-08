@@ -684,6 +684,10 @@ bool ECT::read(unsigned int offset, const void *buffer, unsigned int data_length
 
 bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
+	if (debug_enabled) {
+		std::cout << sc_time_stamp() << "  " << sc_object::name() << ":: write at " << std::dec << offset << "  value 0x" << std::hex << ((data_length==2)? BigEndian2Host(*((uint16_t*) buffer)): *((uint8_t*) buffer)) << std::dec << std::endl;
+	}
+
 	switch (offset) {
 		case TIOS: {
 			 tios_register = *((uint8_t *)buffer);
