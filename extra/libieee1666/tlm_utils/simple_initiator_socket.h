@@ -53,9 +53,9 @@ public:
 	void register_nb_transport_bw(MODULE *mod, sync_enum_type (MODULE::*cb)(transaction_type&, phase_type&, sc_core::sc_time&));
 	void register_invalidate_direct_mem_ptr(MODULE* mod, void (MODULE::*cb)(sc_dt::uint64, sc_dt::uint64));
 private:
-	struct trampoline_s : public tlm::tlm_bw_transport_if<TYPES>
+	struct bw_transport_intermediate_s : public tlm::tlm_bw_transport_if<TYPES>
 	{
-		trampoline_s();
+		bw_transport_intermediate_s();
 		
 		virtual tlm::tlm_sync_enum nb_transport_bw(transaction_type&, phase_type&, sc_core::sc_time&);
 		virtual void invalidate_direct_mem_ptr(sc_dt::uint64, sc_dt::uint64);
@@ -65,8 +65,40 @@ private:
 		void (MODULE::*invalidate_direct_mem_ptr_cb)(sc_dt::uint64, sc_dt::uint64);
 	};
 	
-	trampoline_s trampoline;
+	bw_transport_intermediate_s bw_transport_intermediate;
 };
+
+template <typename MODULE, unsigned int BUSWIDTH = 32, typename TYPES = tlm::tlm_base_protocol_types>
+class simple_initiator_socket_tagged
+	: public tlm::tlm_initiator_socket<BUSWIDTH, TYPES>
+{
+public:
+	typedef typename TYPES::tlm_payload_type transaction_type;
+	typedef typename TYPES::tlm_phase_type phase_type;
+	typedef tlm::tlm_sync_enum sync_enum_type;
+
+	simple_initiator_socket_tagged();
+	explicit simple_initiator_socket_tagged(const char *n);
+	void register_nb_transport_bw(MODULE *mod, sync_enum_type (MODULE::*cb)(int,transaction_type&, phase_type&, sc_core::sc_time&), int id);
+	void register_invalidate_direct_mem_ptr(MODULE* mod, void (MODULE::*cb)(int,sc_dt::uint64, sc_dt::uint64), int id);
+private:
+	struct bw_transport_intermediate_s : public tlm::tlm_bw_transport_if<TYPES>
+	{
+		bw_transport_intermediate_s();
+		
+		virtual tlm::tlm_sync_enum nb_transport_bw(transaction_type&, phase_type&, sc_core::sc_time&);
+		virtual void invalidate_direct_mem_ptr(sc_dt::uint64, sc_dt::uint64);
+		
+		MODULE *mod;
+		int id;
+		tlm::tlm_sync_enum (MODULE::*nb_transport_bw_cb)(typename TYPES::tlm_payload_type&, typename TYPES::tlm_phase_type&, sc_core::sc_time&);
+		void (MODULE::*invalidate_direct_mem_ptr_cb)(sc_dt::uint64, sc_dt::uint64);
+	};
+	
+	bw_transport_intermediate_s bw_transport_intermediate;
+};
+
+/////////////////////////////////////////////// simple_initiator_socket<> ////////////////////////////////////////////////////
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::simple_initiator_socket()
@@ -83,21 +115,21 @@ simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::simple_initiator_socket(const 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::register_nb_transport_bw(MODULE *mod, sync_enum_type (MODULE::*cb)(transaction_type&, phase_type&, sc_core::sc_time&))
 {
-	if(trampoline.mod && (trampoline.mod != mod)) throw "tlm_utils::simple_initiator_socket: a module is already registered";
-	trampoline.mod = mod;
-	trampoline.nb_transport_bw_cb = cb;
+	if(bw_transport_intermediate.mod && (bw_transport_intermediate.mod != mod)) throw "tlm_utils::simple_initiator_socket: a module is already registered";
+	bw_transport_intermediate.mod = mod;
+	bw_transport_intermediate.nb_transport_bw_cb = cb;
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::register_invalidate_direct_mem_ptr(MODULE *mod, void (MODULE::*cb)(sc_dt::uint64, sc_dt::uint64))
 {
-	if(trampoline.mod && (trampoline.mod != mod)) throw "tlm_utils::simple_initiator_socket: a module is already registered";
-	trampoline.mod = mod;
-	trampoline.invalidate_direct_mem_ptr_cb = cb;
+	if(bw_transport_intermediate.mod && (bw_transport_intermediate.mod != mod)) throw "tlm_utils::simple_initiator_socket: a module is already registered";
+	bw_transport_intermediate.mod = mod;
+	bw_transport_intermediate.invalidate_direct_mem_ptr_cb = cb;
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::trampoline_s::trampoline_s()
+simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_intermediate_s::bw_transport_intermediate_s()
 	: mod(0)
 	, nb_transport_bw_cb(0)
 	, invalidate_direct_mem_ptr_cb(0)
@@ -105,18 +137,73 @@ simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::trampoline_s::trampoline_s()
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-tlm::tlm_sync_enum simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::trampoline_s::nb_transport_bw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_intermediate_s::nb_transport_bw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t)
 {
 	if(!mod || !nb_transport_bw_cb) throw std::runtime_error("tlm_utils::simple_initiator_socket: no nb_transport_bw callback registered");
 	(mod->*nb_transport_bw_cb)(trans, phase, t);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-void simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::trampoline_s::invalidate_direct_mem_ptr(sc_dt::uint64 start_address, sc_dt::uint64 end_address)
+void simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_intermediate_s::invalidate_direct_mem_ptr(sc_dt::uint64 start_address, sc_dt::uint64 end_address)
 {
 	if(!mod || !invalidate_direct_mem_ptr_cb) return;
 	
 	(mod->*invalidate_direct_mem_ptr_cb)(start_address, end_address);
+}
+
+//////////////////////////////////////////// simple_initiator_socket_tagged<> //////////////////////////////////////////////////
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+simple_initiator_socket_tagged<MODULE, BUSWIDTH, TYPES>::simple_initiator_socket_tagged()
+	: tlm::tlm_initiator_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name("simple_initiator_socket_tagged"))
+{
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+simple_initiator_socket_tagged<MODULE, BUSWIDTH, TYPES>::simple_initiator_socket_tagged(const char *n)
+	: tlm::tlm_initiator_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name(n))
+{
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+void simple_initiator_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_nb_transport_bw(MODULE *mod, sync_enum_type (MODULE::*cb)(int, transaction_type&, phase_type&, sc_core::sc_time&), int id)
+{
+	if(bw_transport_intermediate.mod && (bw_transport_intermediate.mod != mod)) throw "tlm_utils::simple_initiator_socket_tagged: a module is already registered";
+	bw_transport_intermediate.mod = mod;
+	bw_transport_intermediate.id = id;	
+	bw_transport_intermediate.nb_transport_bw_cb = cb;
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+void simple_initiator_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_invalidate_direct_mem_ptr(MODULE *mod, void (MODULE::*cb)(int, sc_dt::uint64, sc_dt::uint64), int id)
+{
+	if(bw_transport_intermediate.mod && (bw_transport_intermediate.mod != mod)) throw "tlm_utils::simple_initiator_socket_tagged: a module is already registered";
+	bw_transport_intermediate.mod = mod;
+	bw_transport_intermediate.id = id;
+	bw_transport_intermediate.invalidate_direct_mem_ptr_cb = cb;
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+simple_initiator_socket_tagged<MODULE, BUSWIDTH, TYPES>::bw_transport_intermediate_s::bw_transport_intermediate_s()
+	: mod(0)
+	, nb_transport_bw_cb(0)
+	, invalidate_direct_mem_ptr_cb(0)
+{
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+tlm::tlm_sync_enum simple_initiator_socket_tagged<MODULE, BUSWIDTH, TYPES>::bw_transport_intermediate_s::nb_transport_bw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t)
+{
+	if(!mod || !nb_transport_bw_cb) throw std::runtime_error("tlm_utils::simple_initiator_socket_tagged: no nb_transport_bw callback registered");
+	(mod->*nb_transport_bw_cb)(id, trans, phase, t);
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+void simple_initiator_socket_tagged<MODULE, BUSWIDTH, TYPES>::bw_transport_intermediate_s::invalidate_direct_mem_ptr(sc_dt::uint64 start_address, sc_dt::uint64 end_address)
+{
+	if(!mod || !invalidate_direct_mem_ptr_cb) return;
+	
+	(mod->*invalidate_direct_mem_ptr_cb)(id, start_address, end_address);
 }
 
 } // end of namespace tlm_utils

@@ -63,6 +63,9 @@ private:
 		virtual unsigned int transport_dbg(transaction_type& trans);
 		virtual bool get_direct_mem_ptr(transaction_type& trans, tlm::tlm_dmi& dmi_data);
 
+		virtual tlm::tlm_sync_enum nb_transport_bw(transaction_type&, phase_type&, sc_core::sc_time&);
+		virtual void invalidate_direct_mem_ptr(sc_dt::uint64, sc_dt::uint64);
+
 		MODULE *mod;
 		sync_enum_type (MODULE::*nb_transport_fw_cb)(transaction_type&, phase_type&, sc_core::sc_time&);
 		void (MODULE::*b_transport_cb)(transaction_type&, sc_core::sc_time&);
@@ -71,6 +74,8 @@ private:
 	};
 	
 	trampoline_s trampoline;
+	
+	void response_process();
 };
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -149,20 +154,18 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::trampoline_s::b_transport(tr
 	else
 	{
 		if(!nb_transport_fw) throw "tlm_utils::simple_target_socket: no nb_transport_fw callback registered";
-	
+
 		/*
 		tlm::tlm_phase phase;
 		tlm::tlm_sync_enum sync = (mod->*nb_transport_fw)(trans, phase, t);
 		
 		switch(sync)
 		{
-			case BEGIN_REQ:
+			case tlm::TLM_ACCEPTED:
 				break;
-			case END_REQ:
+			case tlm::TLM_UPDATED:
 				break;
-			case BEGIN_RESP:
-				break;
-			case END_RESP:
+			case tlm::TLM_COMPLETED:
 				break;
 		}
 		
@@ -193,6 +196,16 @@ template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 bool simple_target_socket<MODULE, BUSWIDTH, TYPES>::trampoline_s::get_direct_mem_ptr(transaction_type& trans, tlm::tlm_dmi& dmi_data)
 {
 	return (mod->*get_direct_mem_ptr_cb)(trans, dmi_data);
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+tlm::tlm_sync_enum simple_target_socket<MODULE, BUSWIDTH, TYPES>::trampoline_s::nb_transport_bw(transaction_type&, phase_type&, sc_core::sc_time&)
+{
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+void simple_target_socket<MODULE, BUSWIDTH, TYPES>::trampoline_s::invalidate_direct_mem_ptr(sc_dt::uint64, sc_dt::uint64)
+{
 }
 
 } // end of namespace tlm_utils
