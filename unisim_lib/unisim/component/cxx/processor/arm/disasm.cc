@@ -174,6 +174,12 @@ namespace arm {
     sink << register_dis[m_reg];
   }
   
+  /* Coprocessor Register disassembling method */
+  void DisasmCPR::operator() ( std::ostream& sink ) const
+  {
+    sink << "cr" << m_reg;
+  }
+  
   /* Register list disassembling method */
   void DisasmRegList::operator() ( std::ostream& sink ) const
   {

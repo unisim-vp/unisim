@@ -487,6 +487,8 @@ namespace arm {
         fpscr.Set( NZCV, 2 ); /* N=0,Z=0,C=1,V=0 */
     }
   }
+
+  struct Reject { void operator = ( bool condition ) const { if (condition) throw *this; } };
   
 } // end of namespace arm
 } // end of namespace processor

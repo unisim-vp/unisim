@@ -411,7 +411,7 @@ op vcvt_f32s16i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b010[3]: shl<1> vd1[4]:
 vcvt_f32s16i.var imm : {int32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f32s16i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".f32.s16\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".f32.s16\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_f32s16i.execute = {
@@ -430,7 +430,7 @@ op vcvt_f32s32i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b010[3]: shl<1> vd1[4]:
 vcvt_f32s32i.var imm : {int32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f32s32i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".f32.s32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".f32.s32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_f32s32i.execute = {
@@ -449,7 +449,7 @@ op vcvt_f64s16i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b010[3]: vd0[4]:
 vcvt_f64s16i.var imm : {uint32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f64s16i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".f64.s16\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".f64.s16\td" << vd << ", d" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_f64s16i.execute = {
@@ -468,7 +468,7 @@ op vcvt_f64s32i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b010[3]: vd0[4]:
 vcvt_f64s32i.var imm : {uint32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f64s32i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".f64.s32\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".f64.s32\td" << vd << ", d" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_f64s32i.execute = {
@@ -487,7 +487,7 @@ op vcvt_f32u16i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b011[3]: shl<1> vd1[4]:
 vcvt_f32u16i.var imm : {int32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f32u16i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".f32.u16\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".f32.u16\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_f32u16i.execute = {
@@ -506,7 +506,7 @@ op vcvt_f32u32i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b011[3]: shl<1> vd1[4]:
 vcvt_f32u32i.var imm : {int32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f32u32i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".f32.u32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".f32.u32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_f32u32i.execute = {
@@ -525,7 +525,7 @@ op vcvt_f64u16i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b011[3]: vd0[4]:
 vcvt_f64u16i.var imm : {uint32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f64u16i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".f64.u16\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".f64.u16\td" << vd << ", d" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_f64u16i.execute = {
@@ -544,7 +544,7 @@ op vcvt_f64u32i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b011[3]: vd0[4]:
 vcvt_f64u32i.var imm : {uint32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f64u32i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".f64.u32\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".f64.u32\td" << vd << ", d" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_f64u32i.execute = {
@@ -563,7 +563,7 @@ op vcvt_s16f32i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b110[3]: shl<1> vd1[4]:
 vcvt_s16f32i.var imm : {int32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_s16f32i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".s16.f32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".s16.f32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_s16f32i.execute = {
@@ -582,7 +582,7 @@ op vcvt_s16f64i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b110[3]: vd0[4]:
 vcvt_s16f64i.var imm : {uint32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_s16f64i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".s16.f64\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".s16.f64\td" << vd << ", d" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_s16f64i.execute = {
@@ -601,7 +601,7 @@ op vcvt_s32f32i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b110[3]: shl<1> vd1[4]:
 vcvt_s32f32i.var imm : {int32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_s32f32i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".s32.f32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".s32.f32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_s32f32i.execute = {
@@ -620,7 +620,7 @@ op vcvt_s32f64i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b110[3]: vd0[4]:
 vcvt_s32f64i.var imm : {uint32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_s32f64i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".s32.f64\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".s32.f64\td" << vd << ", d" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_s32f64i.execute = {
@@ -639,7 +639,7 @@ op vcvt_u16f32i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b111[3]: shl<1> vd1[4]:
 vcvt_u16f32i.var imm : {int32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_u16f32i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".u16.f32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".u16.f32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_u16f32i.execute = {
@@ -658,7 +658,7 @@ op vcvt_u16f64i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b111[3]: vd0[4]:
 vcvt_u16f64i.var imm : {uint32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_u16f64i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".u16.f64\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".u16.f64\td" << vd << ", d" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_u16f64i.execute = {
@@ -677,7 +677,7 @@ op vcvt_u32f32i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b111[3]: shl<1> vd1[4]:
 vcvt_u32f32i.var imm : {int32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_u32f32i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".u32.f32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".u32.f32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_u32f32i.execute = {
@@ -696,7 +696,7 @@ op vcvt_u32f64i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b111[3]: vd0[4]:
 vcvt_u32f64i.var imm : {uint32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_u32f64i.disasm = {
-  buffer << "vcvt" << DisasmCondition(cond) << ".u32.f64\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt" << DisasmCondition(cond) << ".u32.f64\td" << vd << ", d" << vd << ", " << DisasmI(imm);
 };
 
 vcvt_u32f64i.execute = {
@@ -1268,7 +1268,7 @@ op vmov_f32i( cond[4]: 0b1110[4]: 0b1[1]: vd0[1]: 0b11[2]: n[1]: exp[3]: shl<1> 
 vmov_f32i.var vd : {uint32_t} = {vd1|vd0}, fpimm : {typename CONFIG::F32} = {VFPExpandImm( n, exp, man )};
 
 vmov_f32i.disasm = {
-  buffer << "vmov" << DisasmCondition(cond) << ".f32\ts" << vd << ", #" << uint32_t((n << 7) | (exp << 4) | man) << "; " << fpimm;
+  buffer << "vmov" << DisasmCondition(cond) << ".f32\ts" << vd << ", " << DisasmI((n << 7) | (exp << 4) | man) << "; " << fpimm;
 };
 
 vmov_f32i.execute = {
@@ -1281,7 +1281,7 @@ op vmov_f64i( cond[4]: 0b1110[4]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: n[1]: exp[3]: 
 vmov_f64i.var vd : {uint32_t} = {vd1|vd0}, fpimm : {typename CONFIG::F64} = {VFPExpandImm( n, exp, man )};
 
 vmov_f64i.disasm = {
-  buffer << "vmov" << DisasmCondition(cond) << ".f64\td" << vd << ", #" << uint32_t((n << 7) | (exp << 4) | man) << "; " << fpimm;
+  buffer << "vmov" << DisasmCondition(cond) << ".f64\td" << vd << ", " << DisasmI((n << 7) | (exp << 4) | man) << "; " << fpimm;
 };
 
 vmov_f64i.execute = {

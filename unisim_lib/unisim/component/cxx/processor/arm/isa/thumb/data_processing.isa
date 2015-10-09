@@ -775,10 +775,10 @@ rev.execute = {
  */
 
 { CONFIG::insns6 }:                               \
-op rev16( 0b1011101001[10]: r1[3]: r0[3] );
+op rev16( 0b1011101001[10]: rm[3]: rd[3] );
 
 rev16.disasm = {
-  buffer << "rev16\tr" << r0 << ", r" << r1;
+  buffer << "rev16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 }
 
 /*
@@ -792,10 +792,10 @@ rev16.disasm = {
  */
 
 { CONFIG::insns6 }:                               \
-op revsh( 0b1011101011[10]: r1[3]: r0[3] );
+op revsh( 0b1011101011[10]: rm[3]: rd[3] );
 
 revsh.disasm = {
-  buffer << "revsh\tr" << r0 << ", r" << r1;
+  buffer << "revsh\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 }
 
 /*

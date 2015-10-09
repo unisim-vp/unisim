@@ -78,13 +78,14 @@ yield_w.disasm = {
 /* DBG instruction */
 
 op dbg_i( 0b1111001110101111[16]:> <: 0b100000001111[12]: imm[4] );
-dbg_i.disasm = { buffer << "dbg\t#" << imm; };
+dbg_i.disasm = { buffer << "dbg\t" << DisasmI(imm); };
 
 /* DMB instruction */
 
 op dmb( 0b1111001110111111[16]:> <: 0b100011110101[12]: opt[4] );
+dmb.var reject : {Reject} = {(opt & 2) == 0};
+
 dmb.disasm = {
-  if (0x3333 >> opt) { buffer << "<undefined>"; return; }
   buffer << "dmb\t" << DisasmBarrierOption( opt );
 };
 
@@ -95,8 +96,9 @@ dmb.execute = {
 /* DSB instruction */
 
 op dsb( 0b1111001110111111[16]:> <: 0b100011110100[12]: opt[4] );
+dsb.var reject : {Reject} = {(opt & 2) == 0};
+
 dsb.disasm = {
-  if (0x3333 >> opt) { buffer << "<undefined>"; return; }
   buffer << "dsb\t" << DisasmBarrierOption( opt );
 };
 
@@ -107,8 +109,9 @@ dsb.execute = {
 /* ISB instruction */
 
 op isb( 0b1111001110111111[16]:> <: 0b100011110110[12]: opt[4] );
+isb.var reject : {Reject} = {opt == 15};
+
 isb.disasm = {
-  if (opt != 15) { buffer << "<undefined>"; return; }
   buffer << "isb\t" << DisasmBarrierOption( opt );
 };
 

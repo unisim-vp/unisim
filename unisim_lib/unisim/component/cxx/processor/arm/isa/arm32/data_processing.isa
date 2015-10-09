@@ -904,7 +904,8 @@ mov_imm_shift.disasm = {
     }
     shift_value = 32;
   }
-  buffer << DisasmShift(shift) << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << shift_value;
+  buffer << DisasmShift(shift) << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << ", " << DisasmI(shift_value);
 };
 
 mov_imm_shift.execute = {

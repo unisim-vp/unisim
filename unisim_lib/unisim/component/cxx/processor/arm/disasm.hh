@@ -163,7 +163,14 @@ namespace arm {
     void operator() ( std::ostream& sink ) const;
     uint32_t m_reglist;
   };
-
+  
+  struct DisasmCPR : public DisasmObject
+  {
+    DisasmCPR( uint32_t reg ) : m_reg( reg ) {}
+    void operator() ( std::ostream& sink ) const;
+    uint32_t m_reg;
+  };
+  
   /* Multiple Load Store Mode disassembling method */
   struct DisasmLSMMode : public DisasmObject
   {

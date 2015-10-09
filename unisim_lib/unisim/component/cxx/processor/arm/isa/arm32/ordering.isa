@@ -32,8 +32,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-ldc2.specialize( ldc_undefined, ldc_unindexed, mrrc );
-stc2.specialize( stc_undefined, stc_unindexed, mcrr );
+ldc2.specialize( ldc_unindexed, mrrc );
+stc2.specialize( stc_unindexed, mcrr );
 blx_pcrel.specialize( b, bl );
 pld_imm.specialize( ldr_imm, ldrb_imm );
 pld_reg.specialize( ldr_reg, ldrb_reg );
@@ -48,8 +48,8 @@ group conditional (ldr_imm,ldr_reg,ldrh_imm,ldrh_reg,ldrsh_imm,ldrsh_reg,ldrb_im
                    ldrsht_imm,ldrsht_reg,ldrbt_imm,ldrbt_reg,ldrsbt_imm,ldrsbt_reg,strt_imm,strt_reg,\
                    strht_imm,strht_reg,strbt_imm,strbt_reg,ldm,stm,ldm_npcusr,ldm_pcusr,\
                    stm_usr,swp,swpb,ldrex,ldrexh,ldrexb,ldrexd,strex,\
-                   strexh,strexb,strexd,cdp,ldc,ldc_undefined,ldc_unindexed,mcr,\
-                   mrc,stc,stc_undefined,stc_unindexed,mcrr,mrrc,b,bl,\
+                   strexh,strexb,strexd,cdp,ldc,ldc_unindexed,mcr,\
+                   mrc,stc,stc_unindexed,mcrr,mrrc,b,bl,\
                    bx,bxj,blx_reg,mla,mls,mul,smlal,smlald,\
                    smlsld,smull,umlal,umaal,umull,smlaxy,smlad,smuad,\
                    smlsd,smusd,smmla,smmul,smmls,smlalxy,smlawy,smulxy,\

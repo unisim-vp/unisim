@@ -42,11 +42,10 @@
  * mrs instruction
  */
 
-op mrs( 0b11110[5]: 0b011111[6]: shl<6> sr2[1]: sr0[4]:> <: 0b1000[4]: rd[4]: sbz0[2]: shl<4> sr1[2]: sbz1[4] );
+op mrs( 0b11110[5]: 0b011111[6]: shl<6> sr2[1]: sr0[4]:> <: 0b1000[4]: rd[4]: 0[2]: shl<4> sr1[2]: 0[4] );
 mrs.var sr : {uint32_t} = {sr2|sr1|sr0};
 
 mrs.disasm = {
-  if (sbz0 or sbz1) { buffer << "<undefined>"; return; }
   buffer << "mrs\t" << DisasmRegister(rd) << ", " << DisasmSpecReg(sr);
 };
 
@@ -97,11 +96,10 @@ mrs_CONTROLr.disasm = { buffer << "mrs\t" << DisasmRegister(rd) << ", CONTROL"; 
  * msr instruction
  */
 
-op msr_reg( 0b11110[5]: 0b011100[6]: shl<6> sr2[1]: rn[4]:> <: 0b1000[4]: sr0[4]: sbz0[2]: shl<4> sr1[2]: sbz1[4] );
+op msr_reg( 0b11110[5]: 0b011100[6]: shl<6> sr2[1]: rn[4]:> <: 0b1000[4]: sr0[4]: 0[2]: shl<4> sr1[2]: 0[4] );
 msr_reg.var sr : {uint32_t} = {sr2|sr1|sr0};
 
 msr_reg.disasm = {
-  if (sbz0 or sbz1) { buffer << "<undefined>"; return; }
   buffer << "msr\t" << DisasmSpecReg(sr) << ", " << DisasmRegister(rn);
 };
 

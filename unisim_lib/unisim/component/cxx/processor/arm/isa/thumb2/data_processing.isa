@@ -78,7 +78,7 @@ ThumbExpandImm( uint32_t code )
 op mov_wri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b010[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 mov_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-mov_wri.disasm = { buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", #" << imm; };
+mov_wri.disasm = { buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
 mov_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -111,7 +111,7 @@ mov_w.execute = {
 op movt( 0b11110[5]: shl <11> imm2[1]: 0b101100[6]: shl<12> imm3[4]:> <: 0b0[1]: shl<8> imm1[3]: rsd[4]: imm0[8] );
 movt.var imm : {uint32_t} = {imm3|imm2|imm1|imm0};
 
-movt.disasm = { buffer << "movt\t" << DisasmRegister(rsd) << ", #" << imm; };
+movt.disasm = { buffer << "movt\t" << DisasmRegister(rsd) << ", " << DisasmI(imm); };
 
 movt.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -122,7 +122,7 @@ movt.execute = {
 op movw( 0b11110[5]: shl <11> imm2[1]: 0b100100[6]: shl<12> imm3[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 movw.var imm : {uint32_t} = {imm3|imm2|imm1|imm0};
 
-movw.disasm = { buffer << "movw\t" << DisasmRegister(rd) << ", #" << imm; };
+movw.disasm = { buffer << "movw\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
 movw.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -151,7 +151,7 @@ mvn_w.execute = {
 op mvn_wri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b011[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 mvn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-mvn_wri.disasm = { buffer << "mvn" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", #" << imm; };
+mvn_wri.disasm = { buffer << "mvn" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
 mvn_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -206,7 +206,7 @@ sub_w.execute = {
 op sub_wrri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b101[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 sub_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-sub_wrri.disasm = { buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+sub_wrri.disasm = { buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 sub_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -217,7 +217,7 @@ sub_wrri.execute = {
 };
 
 op subs_pclri( 0b1111001111011110[16]:> <: 0b10001111[8]: imm[8] );
-subs_pclri.disasm = { buffer << "subs\tpc, lr, #" << imm; };
+subs_pclri.disasm = { buffer << "subs\tpc, lr, " << DisasmI(imm); };
 
 subs_pclri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -278,7 +278,7 @@ sbc_w.execute = {
 op sbc_wrri( 0b11110[5]: shl <11> imm2[1]: 0b01[2]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 sbc_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-sbc_wrri.disasm = { buffer << "sbc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+sbc_wrri.disasm = { buffer << "sbc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 sbc_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -312,7 +312,7 @@ op rsb_rri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b110[3]: s[1]: rn[4]:
 rsb_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 rsb_rri.disasm = {
-  buffer << "rsb" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "rsb" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 rsb_rri.execute = {
@@ -347,7 +347,7 @@ add_w.execute = {
 op add_wrri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 add_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-add_wrri.disasm = { buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+add_wrri.disasm = { buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 add_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -406,7 +406,7 @@ adc_w.execute = {
 op adc_wrri( 0b11110[5]: shl <11> imm2[1]: 0b01[2]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 adc_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-adc_wrri.disasm = { buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+adc_wrri.disasm = { buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 adc_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -438,7 +438,7 @@ eor_w.execute = {
 op eor_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b100[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 eor_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-eor_wrri.disasm = { buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+eor_wrri.disasm = { buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 eor_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -475,7 +475,7 @@ orn.execute = {
 op orn_rri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 orn_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-orn_rri.disasm = { buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+orn_rri.disasm = { buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 orn_rri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -514,7 +514,7 @@ op orr_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b010[3]: s[1]: rn[4]:> <: 0
 orr_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 orr_wrri.disasm = {
-  buffer << "orr" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "orr" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 orr_wrri.execute = {
@@ -555,7 +555,7 @@ op bic_wrri( 0b11110[5]: shl <11> imm2[1]: 0b0[1]: 0b0001[4]: s[1]: rn[4]:> <: 0
 bic_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 bic_wrri.disasm = {
-  buffer << "bic" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "bic" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 bic_wrri.execute = {
@@ -594,7 +594,7 @@ op and_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b000[3]: s[1]: rn[4]:> <: 0
 and_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
 and_wrri.disasm = {
-  buffer << "and" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "and" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 and_wrri.execute = {
@@ -666,7 +666,7 @@ cmn_w.execute = {
 op cmn_wri( 0b11110[5]: shl <11> imm2[1]: 0b010001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 cmn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-cmn_wri.disasm = { buffer << "cmn.w\t" << DisasmRegister(rn) << ", #" << imm; };
+cmn_wri.disasm = { buffer << "cmn.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 cmn_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -697,7 +697,7 @@ teq.execute = {
 op teq_wri( 0b11110[5]: shl <11> imm2[1]: 0b001001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 teq_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-teq_wri.disasm = { buffer << "teq\t" << DisasmRegister(rn) << ", #" << imm; };
+teq_wri.disasm = { buffer << "teq\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 teq_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -731,7 +731,7 @@ tst_w.execute = {
 op tst_wri( 0b11110[5]: shl <11> imm2[1]: 0b000001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 tst_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
 
-tst_wri.disasm = { buffer << "tst.w\t" << DisasmRegister(rn) << ", #" << imm; };
+tst_wri.disasm = { buffer << "tst.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 tst_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -761,7 +761,7 @@ uxtab16.var ror : {uint32_t} = {8*ror0};
 
 uxtab16.disasm = {
   buffer << "uxtab16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 uxtab16.execute = {
@@ -780,7 +780,7 @@ uxtab.var ror : {uint32_t} = {8*ror0};
 
 uxtab.disasm = {
   buffer << "uxtab\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 uxtab.execute = {
@@ -795,7 +795,7 @@ op uxtah( 0b111110100001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[
 uxtah.var ror : {uint32_t} = {8*ror0};
 uxtah.disasm = {
   buffer << "uxtah\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 uxtah.execute = {
@@ -812,7 +812,7 @@ op uxtb16( 0b1111101000111111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4]
 uxtb16.var ror : {uint32_t} = {8*ror0};
 uxtb16.disasm = {
   buffer << "uxtb16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 uxtb16.execute = {
@@ -827,7 +827,7 @@ op uxtb_w( 0b1111101001011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4]
 uxtb_w.var ror : {uint32_t} = {8*ror0};
 uxtb_w.disasm = {
   buffer << "uxtb.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 uxtb_w.execute = {
@@ -842,7 +842,7 @@ op uxth_w( 0b1111101000011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4]
 uxth_w.var ror : {uint32_t} = {8*ror0};
 uxth_w.disasm = {
   buffer << "uxth.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 uxth_w.execute = {
@@ -860,7 +860,7 @@ sxtab16.var ror : {uint32_t} = {8*ror0};
 
 sxtab16.disasm = {
   buffer << "sxtab16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 sxtab16.execute = {
@@ -879,7 +879,7 @@ sxtab.var ror : {uint32_t} = {8*ror0};
 
 sxtab.disasm = {
   buffer << "sxtab\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 sxtab.execute = {
@@ -895,7 +895,7 @@ sxtah.var ror : {uint32_t} = {8*ror0};
 
 sxtah.disasm = {
   buffer << "sxtah\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 sxtah.execute = {
@@ -913,7 +913,7 @@ sxtb16.var ror : {uint32_t} = {8*ror0};
 
 sxtb16.disasm = {
   buffer << "sxtb16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 sxtb16.execute = {
@@ -930,7 +930,7 @@ op sxtb_w( 0b1111101001001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4]
 sxtb_w.var ror : {uint32_t} = {8*ror0};
 sxtb_w.disasm = {
   buffer << "sxtb.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 sxtb_w.execute = {
@@ -945,7 +945,7 @@ op sxth_w( 0b1111101000001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4]
 sxth_w.var ror : {uint32_t} = {8*ror0};
 sxth_w.disasm = {
   buffer << "sxth.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 sxth_w.execute = {
@@ -962,7 +962,7 @@ op ubfx_rrii( 0b111100111100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0
 ubfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {width0+1};
 
 ubfx_rrii.disasm = {
-  buffer << "ubfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << lsb << ", #" << width;
+  buffer << "ubfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
 };
 
 ubfx_rrii.execute = {
@@ -977,7 +977,7 @@ op sbfx_rrii( 0b111100110100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0
 sbfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {width0+1};
 
 sbfx_rrii.disasm = {
-  buffer << "sbfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << lsb << ", #" << width;
+  buffer << "sbfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
 };
 
 sbfx_rrii.execute = {
@@ -988,28 +988,62 @@ sbfx_rrii.execute = {
 
 /* BF[IC] instructions (bit field insertion/clear) */
 
+/*******************************************************************
+ * bfi (Bit Field Insert) instruction
+ * 
+ * BFI copies any number of low order bits from a register into the
+ * same number of adjacent bits at any position in the destination
+ * register.
+ */
+
 op bfi( 0b111100110110[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
-op bfc( 0b111100110110[12]: 0b1111[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
-group bf( bfi, bfc );
+bfi.var lsb : {uint8_t} = {lsb1|lsb0};
+bfi.var reject : {Reject} = {msb < lsb};
+bfi.var width : {uint32_t} = {msb-lsb+1};
+bfi.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
 
-bf.var lsb : {uint32_t} = {lsb1|lsb0};
-bf.var width : {uint32_t} = {msb-(lsb1|lsb0)+1};
-bf.var clear : {uint32_t} = {~(((1 << (msb-(lsb1|lsb0)+1))-1) << (lsb1|lsb0))};
-
-bfc.disasm = { buffer << "bfc\t" << DisasmRegister(rd) << ", #" << lsb << ", #" << width; };
-bfi.disasm = { buffer << "bfi\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << lsb << ", #" << width; };
-
-bfc.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
-  
-  cpu.SetGPR( rd, (cpu.GetGPR( rd ) & clear) );
+bfi.disasm = {
+  buffer << "bfi\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
 };
 
 bfi.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
+  // if (msb < lsb) UNPREDICTABLE
   cpu.SetGPR( rd, (cpu.GetGPR( rd ) & clear) | ((cpu.GetGPR( rn ) << lsb) & ~clear) );
 };
+
+/*
+ * end of bfi instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * bfc (Bit Field Clear) instruction
+ *
+ * BFC clears any number of adjacent bits at any position in a
+ * register, without affecting the other bits in the register.
+ */
+
+op bfc( 0b111100110110[12]: 0b1111[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
+bfc.var lsb : {uint32_t} = {lsb1|lsb0};
+bfc.var reject : {Reject} = {msb < lsb};
+bfc.var width : {uint32_t} = {msb-lsb+1};
+bfc.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+
+bfc.disasm = {
+  buffer << "bfc\t" << DisasmRegister(rd) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
+};
+
+bfc.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  // if (msb < lsb) UNPREDICTABLE
+  cpu.SetGPR( rd, cpu.GetGPR( rd ) & clear );
+};
+
+/*
+ * end of bfc instruction
+ *******************************************************************/
 
 /* RBIT instruction */
 
