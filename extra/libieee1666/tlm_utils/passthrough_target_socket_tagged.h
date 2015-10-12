@@ -57,9 +57,9 @@ public:
 	
 private:
 	
-	struct fw_transport_intermediate_s : public tlm::tlm_fw_transport_if<TYPES>
+	struct fw_transport_impl_s : public tlm::tlm_fw_transport_if<TYPES>
 	{
-		fw_transport_intermediate_s();
+		fw_transport_impl_s();
 		
 		virtual tlm::tlm_sync_enum nb_transport_fw(transaction_type&, phase_type&, sc_core::sc_time&);
 		virtual void b_transport(transaction_type& trans, sc_core::sc_time& t);
@@ -74,7 +74,7 @@ private:
 		bool (MODULE::*get_direct_mem_ptr_cb)(int id, transaction_type&, tlm::tlm_dmi&);
 	};
 
-	fw_transport_intermediate_s fw_transport_intermediate;
+	fw_transport_impl_s fw_transport_impl;
 };
 
 //////////////////////////////////// passthrough_target_socket_tagged<> ///////////////////////////////////////
@@ -83,49 +83,52 @@ template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::passthrough_target_socket_tagged()
 	: tlm::tlm_target_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name("passthrough_target_socket_tagged"))
 {
+	bind(fw_transport_impl);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::passthrough_target_socket_tagged(const char *n)
 	: tlm::tlm_target_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name(n))
 {
+	bind(fw_transport_impl);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_nb_transport_fw(MODULE* mod, sync_enum_type (MODULE::*cb)(int id, transaction_type&, phase_type&, sc_core::sc_time&),int id)
 {
-	fw_transport_intermediate.mod = mod;
-	fw_transport_intermediate.mod = id;
-	fw_transport_intermediate.nb_transport_fw_cb = cb;
+	fw_transport_impl.mod = mod;
+	fw_transport_impl.mod = id;
+	fw_transport_impl.nb_transport_fw_cb = cb;
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_b_transport(MODULE *mod, void (MODULE::*cb)(int id, transaction_type&, sc_core::sc_time&), int id)
 {
-	fw_transport_intermediate.mod = mod;
-	fw_transport_intermediate.mod = id;
-	fw_transport_intermediate.b_transport_cb = cb;
+	fw_transport_impl.mod = mod;
+	fw_transport_impl.mod = id;
+	fw_transport_impl.b_transport_cb = cb;
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_transport_dbg(MODULE *mod, unsigned int (MODULE::*cb)(int id, transaction_type&), int id)
 {
-	fw_transport_intermediate.mod = mod;
-	fw_transport_intermediate.mod = id;
-	fw_transport_intermediate.transport_dbg = cb;
+	fw_transport_impl.mod = mod;
+	fw_transport_impl.mod = id;
+	fw_transport_impl.transport_dbg = cb;
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_get_direct_mem_ptr(MODULE *mod, bool (MODULE::*cb)(int id, transaction_type&, tlm::tlm_dmi&), int id)
 {
-	fw_transport_intermediate.mod = mod;
-	fw_transport_intermediate.mod = id;
-	fw_transport_intermediate.get_direct_mem_ptr_cb = cb;
+	fw_transport_impl.mod = mod;
+	fw_transport_impl.mod = id;
+	fw_transport_impl.get_direct_mem_ptr_cb = cb;
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_intermediate_s::fw_transport_intermediate_s()
+passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::fw_transport_impl_s()
 	: mod(0)
+	, id(0)
 	, nb_transport_fw_cb(0)
 	, b_transport_cb(0)
 	, transport_dbg_cb(0)
@@ -134,28 +137,28 @@ passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_intermed
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-tlm::tlm_sync_enum passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_intermediate_s::nb_transport_fw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_transport_fw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t)
 {
 	if(!mod || !nb_transport_fw_cb) throw std::runtime_error("tlm_utils::passthrough_target_socket_tagged: no nb_transport_fw callback registered");
 	(mod->*nb_transport_fw_cb)(id, trans, phase, t);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-void passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_intermediate_s::b_transport(transaction_type& trans, sc_core::sc_time& t)
+void passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::b_transport(transaction_type& trans, sc_core::sc_time& t)
 {
 	if(!mod || !b_transport_cb) throw std::runtime_error("tlm_utils::simple_initiator_socket: no b_transport callback registered");
 	(mod->*b_transport_cb)(id, trans, t);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-unsigned int passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_intermediate_s::transport_dbg(transaction_type& trans)
+unsigned int passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::transport_dbg(transaction_type& trans)
 {
 	if(!mod || !transport_dbg_cb) throw std::runtime_error("tlm_utils::simple_initiator_socket: no transport_dbg callback registered");
 	(mod->*transport_dbg_cb)(id, trans);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-bool passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_intermediate_s::get_direct_mem_ptr(transaction_type& trans, tlm::tlm_dmi& dmi_data)
+bool passthrough_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::get_direct_mem_ptr(transaction_type& trans, tlm::tlm_dmi& dmi_data)
 {
 	if(!mod || !get_direct_mem_ptr_cb) throw std::runtime_error("tlm_utils::simple_initiator_socket: no get_direct_mem_ptr callback registered");
 	(mod->*get_direct_mem_ptr_cb)(id, dmi_data);

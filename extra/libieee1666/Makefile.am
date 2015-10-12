@@ -70,6 +70,7 @@ ieee1666/tlm2/interoperability_layer/payload/generic_payload.h \
 ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.h \
 tlm_utils/simple_initiator_socket.h \
 tlm_utils/simple_target_socket.h \
+tlm_utils/passthrough_target_socket.h \
 tlm_utils/passthrough_target_socket_tagged.h \
 tlm_utils/peq_with_get.h \
 tlm_utils/peq_with_cb_and_phase.h \
@@ -123,7 +124,6 @@ ieee1666/tlm2/interoperability_layer/phase/base_phase.cc \
 ieee1666/tlm2/interoperability_layer/payload/generic_payload.cc \
 ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.cc \
 tlm_utils/tlm_quantumkeeper.cc
-#tlm_utils/test.cc
 
 nobase_dist_share_DATA = \
 COPYING
