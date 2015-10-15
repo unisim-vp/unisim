@@ -115,17 +115,11 @@ public:
 
 	tlm_utils::simple_target_socket<TLE8264_2E> bus_clock_socket;
 
-//	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_rx_sock;
-//	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_tx_sock;
-
 	tlm_utils::simple_target_socket<TLE8264_2E, CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_rx_sock;
 	tlm_utils::simple_initiator_socket<TLE8264_2E, CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_slave_tx_sock;
 
 	tlm_utils::simple_target_socket<TLE8264_2E, CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_master_rx_sock;
 	tlm_utils::simple_initiator_socket<TLE8264_2E, CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > can_master_tx_sock;
-
-//	tlm_target_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > init_rx_sock;
-//	tlm_initiator_socket<CAN_BUS_WIDTH, UNISIM_CAN_ProtocolTypes > init_tx_sock;
 
 	tlm_utils::simple_initiator_socket<TLE8264_2E> spi_tx_socket;
 	tlm_utils::simple_target_socket<TLE8264_2E> spi_rx_socket;
@@ -180,7 +174,6 @@ public:
 	void setLimpHome(bool val);
 	bool isLimpHome();
 
-	bool isWatchDogEnable();
 	bool isINT();
 	bool isWKCyclicEnabled();
 
@@ -235,6 +228,7 @@ private:
 	uint16_t status_registers[3]; // 9lsb are status bits and the 10th bit is wk_state
 	uint16_t reserved;
 	uint16_t cfg_registers[4]; // 9-bits by register
+
 	uint16_t spi_rx_buffer;
 
 
@@ -257,6 +251,68 @@ private:
 
 	bool debug_enabled;
 	Parameter<bool> param_debug_enabled;
+
+	// status 000
+	bool isIntWKCANEnabled() { return ((mask_registers[0] & 0x0001) != 0); }
+	bool isIntWKLINxEnabled(int num) { assert(num > 0); return ((mask_registers[0] & (0x0001 << num)) != 0); }
+	bool isIntWKPINEnabled() { return ((mask_registers[0] & 0x0030) != 0); }
+
+	// status 001
+	bool isIntOTPVEnabled() { return ((mask_registers[1] & 0x0001) != 0); }
+	bool isIntOTHSCANEnabled() { return ((mask_registers[1] & 0x0002) != 0); }
+	bool isIntOTVenabled() { return ((mask_registers[1] & 0x0004) != 0); }
+	bool isIntUVVCC2Enabled() { return ((mask_registers[1] & 0x0008) != 0); }
+	bool isIntUVVCC3Enabled() { return ((mask_registers[1] & 0x0010) != 0); }
+	bool isIntICC3Enabled() { return ((mask_registers[1] & 0x0020) != 0); }
+	bool isIntSPIFailEnabled() { return ((mask_registers[1] & 0x0040) != 0); }
+	bool isIntResetEnabled() { return ((mask_registers[1] & 0x0080) != 0); }
+	bool isIntWringWDEnabled() { return ((mask_registers[1] & 0x0100) != 0); }
+
+	// status 010
+	bool isIntCANTxDFailureEnabled() { return ((mask_registers[2] & 0x0001) != 0); }
+	bool isIntCANRxDFailureEnabled() { return ((mask_registers[2] & 0x0002) != 0); }
+	bool isIntCANTxDRxDFailureEnabled() { return ((mask_registers[2] & 0x0003) != 0); }
+
+	bool isIntCANBusFailureEnabled() { return ((mask_registers[2] & 0x0004) != 0); }
+
+	bool isIntLIN1TxDFailureEnabled(int num) { return ((mask_registers[2] & 0x0008) != 0); }
+	bool isIntLIN1RxDFailureEnabled(int num) { return ((mask_registers[2] & 0x0010) != 0); }
+	bool isIntLIN1TxDRxDFailureEnabled(int num) { return ((mask_registers[2] & 0x0018) != 0); }
+
+	bool isIntLIN2TxDFailureEnabled(int num) { return ((mask_registers[2] & 0x0020) != 0); }
+	bool isIntLIN2RxDFailureEnabled(int num) { return ((mask_registers[2] & 0x0040) != 0); }
+	bool isIntLIN2TxDRxDFailureEnabled(int num) { return ((mask_registers[2] & 0x0060) != 0); }
+
+	bool isIntLIN3TxDFailureEnabled(int num) { return ((mask_registers[2] & 0x0080) != 0); }
+	bool isIntLIN3RxDFailureEnabled(int num) { return ((mask_registers[2] & 0x0100) != 0); }
+	bool isIntLIN3TxDRxDFailureEnabled(int num) { return ((mask_registers[2] & 0x0180) != 0); }
+
+	// TODO: cfg 100
+
+	// cfg 101
+	bool isLIN1WakeCapable() { return ((cfg_registers[1] & 0x0001) != 0); }
+	bool isLIN1ReceiveOnly() { return ((cfg_registers[1] & 0x0002) != 0); }
+	bool isLIN1NormalMode() { return ((cfg_registers[1] & 0x0003) != 0); }
+
+	bool isLIN2WakeCapable() { return ((cfg_registers[1] & 0x0004) != 0); }
+	bool isLIN2ReceiveOnly() { return ((cfg_registers[1] & 0x0008) != 0); }
+	bool isLIN2NormalMode() { return ((cfg_registers[1] & 0x000C) != 0); }
+
+	bool isLIN3WakeCapable() { return ((cfg_registers[1] & 0x0010) != 0); }
+	bool isLIN3ReceiveOnly() { return ((cfg_registers[1] & 0x0020) != 0); }
+	bool isLIN3NormalMode() { return ((cfg_registers[1] & 0x0030) != 0); }
+
+	bool isCANWakeCapable() { return ((cfg_registers[1] & 0x0040) != 0); }
+	bool isCANReceiveOnly() { return ((cfg_registers[1] & 0x0080) != 0); }
+	bool isCANNormalMode() { return ((cfg_registers[1] & 0x00C0) != 0); }
+
+	// cfg 110
+	bool isTimeOutActivated() { return ((cfg_registers[2] & 0x0040) !=0); }
+	bool isWatchDogEnable() { return ((cfg_registers[2] & WDONOFF) != 0); }
+	void computeWDTimeer() {
+		int index = cfg_registers[2] & 0x001F;
+		frame_time = (index < 0x10)? sc_time((index + 1) * 16, SC_MS) : sc_time(index * 48 - 464, SC_MS);
+	}
 };
 
 #endif // _TLE8264_2E_HH_

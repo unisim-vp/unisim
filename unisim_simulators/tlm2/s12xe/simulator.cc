@@ -1231,6 +1231,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CAN0.TXD", true);
 	simulator->SetVariable("CAN0.RXD", true);
 
+	simulator->SetVariable("Tranceiver0.bus-cycle-time", 250000);
+	simulator->SetVariable("Tranceiver0.reset-interrupt", 0xFE);
+	simulator->SetVariable("Tranceiver0.int-interrupt", 0xF2);
+	simulator->SetVariable("Tranceiver0.debug-enabled", false);
+
 	simulator->SetVariable("CAN1.bus-cycle-time", 250000);
 	simulator->SetVariable("CAN1.base-address", 0x0180);
 	simulator->SetVariable("CAN1.transmit-interrupt-offset", 0xA8);
@@ -1241,6 +1246,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CAN1.debug-enabled", false);
 	simulator->SetVariable("CAN1.TXD", true);
 	simulator->SetVariable("CAN1.RXD", true);
+
+	simulator->SetVariable("Tranceiver1.bus-cycle-time", 250000);
+	simulator->SetVariable("Tranceiver1.reset-interrupt", 0xFE);
+	simulator->SetVariable("Tranceiver1.int-interrupt", 0xF2);
+	simulator->SetVariable("Tranceiver1.debug-enabled", false);
 
 	simulator->SetVariable("CAN2.bus-cycle-time", 250000);
 	simulator->SetVariable("CAN2.base-address", 0x01C0);
@@ -1253,6 +1263,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CAN2.TXD", true);
 	simulator->SetVariable("CAN2.RXD", true);
 
+	simulator->SetVariable("Tranceiver2.bus-cycle-time", 250000);
+	simulator->SetVariable("Tranceiver2.reset-interrupt", 0xFE);
+	simulator->SetVariable("Tranceiver2.int-interrupt", 0xF2);
+	simulator->SetVariable("Tranceiver2.debug-enabled", false);
+
 	simulator->SetVariable("CAN3.bus-cycle-time", 250000);
 	simulator->SetVariable("CAN3.base-address", 0x0200);
 	simulator->SetVariable("CAN3.transmit-interrupt-offset", 0x98);
@@ -1264,6 +1279,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CAN3.TXD", true);
 	simulator->SetVariable("CAN3.RXD", true);
 
+	simulator->SetVariable("Tranceiver3.bus-cycle-time", 250000);
+	simulator->SetVariable("Tranceiver3.reset-interrupt", 0xFE);
+	simulator->SetVariable("Tranceiver3.int-interrupt", 0xF2);
+	simulator->SetVariable("Tranceiver3.debug-enabled", false);
+
 	simulator->SetVariable("CAN4.bus-cycle-time", 250000);
 	simulator->SetVariable("CAN4.base-address", 0x0280);
 	simulator->SetVariable("CAN4.transmit-interrupt-offset", 0x48);
@@ -1274,6 +1294,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CAN4.debug-enabled", false);
 	simulator->SetVariable("CAN4.TXD", true);
 	simulator->SetVariable("CAN4.RXD", true);
+
+	simulator->SetVariable("Tranceiver4.bus-cycle-time", 250000);
+	simulator->SetVariable("Tranceiver4.reset-interrupt", 0xFE);
+	simulator->SetVariable("Tranceiver4.int-interrupt", 0xF2);
+	simulator->SetVariable("Tranceiver4.debug-enabled", false);
 
 	simulator->SetVariable("spi-telnet.telnet-tcp-port", 1234);
 	simulator->SetVariable("spi-enable-telnet", false);

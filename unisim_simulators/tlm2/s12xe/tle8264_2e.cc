@@ -21,6 +21,8 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 	, last_state(INIT)
 	, spi_rx_buffer(false)
 	, wd_refresh(false)
+	, wk_state_register(WK_STATE_DEFAULT)
+	, reserved(0x0000)
 	, SPIWake_read(false)
 
 	, terminated(false)
@@ -373,9 +375,6 @@ void TLE8264_2E::setLimpHome(bool val) {
 }
 bool TLE8264_2E::isLimpHome() { return ((cfg_registers[0] & LIMPHOME) != 0); }
 
-bool TLE8264_2E::isWatchDogEnable() {
-	return ((cfg_registers[2] & WDONOFF) != 0);
-}
 bool TLE8264_2E::isINT() { return ((status_registers[0] & INT) != 0); }
 bool TLE8264_2E::isWKCyclicEnabled() { return ((status_registers[0] & WKCYCLIC) != 0); }
 
@@ -847,6 +846,9 @@ uint16_t TLE8264_2E::write(uint16_t sel, uint16_t val) {
 		} break;
 		case 0b110: {
 			cfg_registers[2] = val;
+			computeWDTimeer();
+			if (isWatchDogEnable()) { watchdog_enable_event.notify(); }
+
 			response = response | (cfg_registers[2] << 6);
 		} break;
 		case 0b111: {

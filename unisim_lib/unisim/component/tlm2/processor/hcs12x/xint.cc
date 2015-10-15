@@ -200,6 +200,10 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 
 bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 
+	if (debug_enabled) {
+		std::cout << sc_time_stamp() << "  " << sc_object::name() << " Select Interrupt IPL= " << std::dec << (unsigned int) buffer.getPriority() << std::endl;
+	}
+
 	if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_ClockMonitorReset_Vector());
@@ -321,6 +325,10 @@ void XINT::run()
 
 				} else {
 
+					if (debug_enabled) {
+						std::cout << sc_time_stamp() << "  " << sc_object::name() << " Received Interrupt 0x" << std::hex << payload->getInterruptOffset() << std::dec << std::endl;
+					}
+
 					unsigned int id = payload->getInterruptOffset()/2;
 
 					interrupt_flags[id].setState(true);
@@ -379,7 +387,26 @@ tlm_sync_enum XINT::cpu_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_pha
 		}
 
 		retry_event.notify();
+
 	}
+
+//	// release all pending interrupts - This is a hack code to ceck behavior
+//	for (int index=0x7F; index > 0x9; index--) {
+//		if (interrupt_flags[index].getState()) {
+//			if (interrupt_flags[index].getPayload().isXGATE_shared_channel())
+//			{
+//				interrupt_flags[buffer->getID()].setState(false);
+//				interrupt_flags[buffer->getID()].releasePayload();
+//			} else {
+//				if ((int_cfwdata[index] & 0x80) == 0)
+//				{
+//					interrupt_flags[buffer->getID()].setState(false);
+//					interrupt_flags[buffer->getID()].releasePayload();
+//				}
+//			}
+//		}
+//	}
+//	// end hack code
 
 	trans.set_response_status(tlm::TLM_OK_RESPONSE);
 	return (TLM_ACCEPTED);
@@ -405,7 +432,29 @@ tlm_sync_enum XINT::xgate_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_p
 		}
 
 		retry_event.notify();
+
 	}
+
+//	// release all pending interrupts - This is a hack code to ceck behavior
+//	for (int index=0x7F; index > 0x9; index--) {
+//		if (interrupt_flags[index].getState()) {
+//			if (interrupt_flags[index].getPayload().isXGATE_shared_channel())
+//			{
+//				// nothing
+//			} else {
+//				if ((int_cfwdata[index] & 0x80) == 0)
+//				{
+//					// nothing
+//				}
+//				else {
+//					interrupt_flags[buffer->getID()].setState(false);
+//					interrupt_flags[buffer->getID()].releasePayload();
+//				}
+//			}
+//			break;
+//		}
+//	}
+//	// end hack code
 
 	trans.set_response_status(tlm::TLM_OK_RESPONSE);
 	return (TLM_ACCEPTED);
