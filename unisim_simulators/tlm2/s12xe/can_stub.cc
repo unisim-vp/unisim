@@ -346,8 +346,9 @@ void CAN_STUB::getCANArray(CAN_DATATYPE_ARRAY *msg){
 		(msg->canMsg[i]).Timestamp[1] = (*it)->Timestamp[1];
 
 		i++;
-		can_tx_vect.erase(it);
+//		can_tx_vect.erase(it);
 	}
+	can_tx_vect.clear();
 }
 
 void CAN_STUB::watchdog() {
@@ -375,13 +376,17 @@ void CAN_STUB::processCANRX()
 			if ((*it) != NULL) {
 				inject(*(*it));
 
-				if (cosim_enabled) {
-					can_rx_vect.erase(it);
-				}
+//				if (cosim_enabled) {
+//					can_rx_vect.erase(it);
+//				}
 			}
 
 			wait(*can_rx_stimulus_period_sc);
 
+		}
+
+		if (cosim_enabled) {
+			can_rx_vect.clear();
 		}
 	}
 
