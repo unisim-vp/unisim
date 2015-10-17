@@ -43,10 +43,9 @@ namespace sc_core {
 sc_clock::sc_clock()
 	: sc_signal<bool>(sc_gen_unique_name("clock"))
 	, clock_period(sc_time(1.0, SC_NS))
-	, clock_duty_cycle(clock_period * 0.5)
+	, clock_duty_cycle(0.5)
 	, clock_start_time(SC_ZERO_TIME)
 	, clock_posedge_first(true)
-	, clock_value(!clock_posedge_first)
 	, posedge_event(sc_gen_unique_name((std::string(name()) + "_posedge_event").c_str()))
 	, negedge_event(sc_gen_unique_name((std::string(name()) + "_negedge_event").c_str()))
 {
@@ -56,10 +55,9 @@ sc_clock::sc_clock()
 sc_clock::sc_clock(const char *name_)
 	: sc_signal<bool>(name_)
 	, clock_period(sc_time(1.0, SC_NS))
-	, clock_duty_cycle(clock_period * 0.5)
+	, clock_duty_cycle(0.5)
 	, clock_start_time(SC_ZERO_TIME)
 	, clock_posedge_first(true)
-	, clock_value(!clock_posedge_first)
 	, posedge_event(sc_gen_unique_name((std::string(name()) + "_posedge_event").c_str()))
 	, negedge_event(sc_gen_unique_name((std::string(name()) + "_negedge_event").c_str()))
 {
@@ -76,7 +74,6 @@ sc_clock::sc_clock(const char *name_,
 	, clock_duty_cycle(duty_cycle_)
 	, clock_start_time(start_time_)
 	, clock_posedge_first(posedge_first_)
-	, clock_value(!clock_posedge_first)
 	, posedge_event(sc_gen_unique_name((std::string(name()) + "_posedge_event").c_str()))
 	, negedge_event(sc_gen_unique_name((std::string(name()) + "_negedge_event").c_str()))
 {
@@ -92,7 +89,6 @@ sc_clock::sc_clock( const char* name_,
 	, clock_duty_cycle(duty_cycle_)
 	, clock_start_time(SC_ZERO_TIME)
 	, clock_posedge_first(true)
-	, clock_value(!clock_posedge_first)
 	, posedge_event(sc_gen_unique_name((std::string(name()) + "_posedge_event").c_str()))
 	, negedge_event(sc_gen_unique_name((std::string(name()) + "_negedge_event").c_str()))
 {
@@ -111,7 +107,6 @@ sc_clock::sc_clock( const char* name_,
 	, clock_duty_cycle(duty_cycle_)
 	, clock_start_time(sc_time(start_time_v_, start_time_tu_))
 	, clock_posedge_first(posedge_first_)
-	, clock_value(!clock_posedge_first)
 	, posedge_event(sc_gen_unique_name((std::string(name()) + "_posedge_event").c_str()))
 	, negedge_event(sc_gen_unique_name((std::string(name()) + "_negedge_event").c_str()))
 {
@@ -154,6 +149,8 @@ const char* sc_clock::kind() const
 
 void sc_clock::before_end_of_elaboration()
 {
+	sc_signal<bool>::write(!clock_posedge_first);
+	
 	if(clock_posedge_first)
 		posedge_event.notify(clock_start_time);
 	else
@@ -201,15 +198,13 @@ void sc_clock::initialize()
 
 void sc_clock::posedge_process()
 {
-	clock_value = true;
-	request_update();
+	sc_signal<bool>::write(true);
 	posedge_event.notify(clock_negedge_time);
 }
 
 void sc_clock::negedge_process()
 {
-	clock_value = false;
-	request_update();
+	sc_signal<bool>::write(false);
 	negedge_event.notify(clock_posedge_time);
 }
 

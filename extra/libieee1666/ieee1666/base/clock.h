@@ -90,7 +90,6 @@ private:
 	double clock_duty_cycle;
 	sc_time clock_start_time;
 	bool clock_posedge_first;
-	bool clock_value;
 	sc_time clock_posedge_time;
 	sc_time clock_negedge_time;
 	sc_event posedge_event;
