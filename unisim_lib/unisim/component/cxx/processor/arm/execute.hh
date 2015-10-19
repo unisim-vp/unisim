@@ -208,13 +208,23 @@ namespace arm {
   void
   ComputeMoveToPSR( coreT& core, uint32_t operand, uint32_t mask, bool isSPSR )
   {
-    static uint32_t const msr_unallocmask = 0x06ffff00UL;
-    static uint32_t const msr_usermask    = 0xf8000000UL;
+    // static uint32_t const msr_unallocmask = 0x06ffff00UL; // Constant from DGP, ARMv5?
+    // static uint32_t const msr_usermask    = 0xf8000000UL; // Constant from DGP, ARMv5?
+    // static uint32_t const msr_privmask    = 0x000000dfUL; // Constant from DGP, ARMv5?
+    // static uint32_t const msr_statemask   = 0x01000020UL; // Constant from DGP, ARMv5?
+    
+    /* TODO: all the following constant should be taken from the
+     * config-templated CPU...
+     */
+    static uint32_t const msr_unallocmask = 0x00f00000UL;
+    static uint32_t const msr_usermask    = 0xf80f0000UL;
     static uint32_t const msr_privmask    = 0x000000dfUL;
     static uint32_t const msr_statemask   = 0x01000020UL;
     
-    if ( operand & msr_unallocmask ) // unpredictable
+    if ( operand & msr_unallocmask ) {
+      core.UnpredictableInsnBehaviour();
       return;
+    }
   
     /* creating the byte mask */
     uint32_t byte_mask = 0;
@@ -229,8 +239,10 @@ namespace arm {
         uint32_t reg_mask = 0;
         if ( run_mode != core.USER_MODE ) // we are in a privileged mode
           {
-            if ( operand & msr_statemask )
-              return; // unpredictable
+            if ( operand & msr_statemask ) {
+              core.UnpredictableInsnBehaviour();
+              return;
+            }
             reg_mask = byte_mask &
               ( msr_usermask | msr_privmask );
           }
@@ -255,8 +267,10 @@ namespace arm {
             uint32_t reg = (core.SPSR().bits() & ~reg_mask) | (operand & reg_mask);
             core.SPSR().bits() = reg;
           }
-        else
-          return; // unpredictable
+        else {
+          core.UnpredictableInsnBehaviour();
+          return;
+        }
       }
   }
 

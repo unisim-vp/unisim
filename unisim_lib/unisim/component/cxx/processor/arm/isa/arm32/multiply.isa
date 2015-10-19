@@ -351,7 +351,7 @@ smlaxy.disasm = {
 };
 
 smlaxy.execute = {
-  if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
   
   int32_t op1;
   int32_t op2;
@@ -360,8 +360,8 @@ smlaxy.execute = {
   uint32_t val_ra;
   uint32_t val_rd;
   
-  if(rd == cpu.PC_reg || rn == cpu.PC_reg || ra == cpu.PC_reg || rm == cpu.PC_reg) {
-    // unpredictable behavior, we do nothing
+  if ((rd == 15) or (rn == 15) or (ra == 15) or (rm == 15)) {
+    cpu.UnpredictableInsnBehaviour();
     return;
   }
   
@@ -369,9 +369,9 @@ smlaxy.execute = {
   val_rm = cpu.GetGPR(rm);
   val_ra = cpu.GetGPR(ra);
   
-  if(x)
+  if (x)
     val_rn = val_rn >> 16;
-  if(val_rn & (uint32_t)0x00008000ULL) {
+  if (val_rn & (uint32_t)0x00008000ULL) {
     val_rn = val_rn | (uint32_t)0xffff0000ULL;
     op1 = (int32_t)val_rn;
   } else {
@@ -379,9 +379,9 @@ smlaxy.execute = {
     op1 = (int32_t)val_rn;
   }
   
-  if(y)
+  if (y)
     val_rm = val_rm >> 16;
-  if(val_rm & (uint32_t)0x00008000ULL) {
+  if (val_rm & (uint32_t)0x00008000ULL) {
     val_rm = val_rm | (uint32_t)0xffff0000ULL;
     op2 = (int32_t)val_rm;
   } else {
@@ -393,7 +393,7 @@ smlaxy.execute = {
   //val_rd = op1 + val_ra;
   uint8_t carry_out, overflow_out, sign;
   unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, mul_res, val_ra, 0);
-  //if(op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
+  //if (op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
   if (overflow_out) {
     cpu.CPSR().Set( Q, 1 );
   }
@@ -539,8 +539,8 @@ smlalxy.disasm = {
 smlalxy.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  if ((rdhi == cpu.PC_reg) or (rdlo == cpu.PC_reg) or (rn == cpu.PC_reg) or (rm == cpu.PC_reg))
-    { /* unpredictable behavior, we do nothing */ return; }
+  if (((rdhi == 15)) or ((rdlo == 15)) or ((rn == 15)) or ((rm == 15)))
+    { cpu.UnpredictableInsnBehaviour(); return; }
   
   uint64_t val_rd = (uint64_t( cpu.GetGPR(rdhi) ) << 32) | uint64_t( cpu.GetGPR(rdlo) );
   int32_t op1 = int32_t( int16_t(cpu.GetGPR(rn) >> (n*16)) );
@@ -566,7 +566,7 @@ smlawy.disasm = {
 };
 
 smlawy.execute = {
-  if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
   
   int32_t op;
   uint32_t val_rm;
@@ -574,18 +574,19 @@ smlawy.execute = {
   uint32_t val_rn;
   uint32_t val_rd;
   
-  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg || rs == cpu.PC_reg) {
-    // unpredictable behavior, we do nothing
-    return;
-  }
+  if ((rd == 15) or (rm == 15) or (rn == 15) or (rs == 15))
+    {
+      cpu.UnpredictableInsnBehaviour();
+      return;
+    }
   
   val_rm = cpu.GetGPR(rm);
   val_rs = cpu.GetGPR(rs);
   val_rn = cpu.GetGPR(rn);
   
-  if(y)
+  if (y)
     val_rs = val_rs >> 16;
-  if(val_rs & (uint32_t)0x00008000ULL) {
+  if (val_rs & (uint32_t)0x00008000ULL) {
     val_rs = val_rs | (uint32_t)0xffff0000ULL;
     op = (int32_t)val_rs;
   } else {
@@ -605,7 +606,7 @@ smlawy.execute = {
   unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, op_tmp, val_rn, 0);
   //   if ( (op_tmp & (uint32_t)0x80000000ULL) !=
   //     (val_rn & (uint32_t)0x80000000ULL) )
-  if(overflow_out)
+  if (overflow_out)
     {
       //    cpu.SetCPSR_Q(false);
       cpu.CPSR().Set( Q, 1 );
@@ -641,7 +642,7 @@ smulxy.disasm = {
 };
 
 smulxy.execute = {
-  if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
   
   int32_t op1;
   int32_t op2;
@@ -649,17 +650,17 @@ smulxy.execute = {
   uint32_t val_rs;
   uint32_t val_rd;
   
-  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rs == cpu.PC_reg) {
-    // unpredictable behavior, we do nothing
+  if ((rd == 15) or (rm == 15) or (rs == 15)) {
+    cpu.UnpredictableInsnBehaviour();
     return;
   }
   
   val_rm = cpu.GetGPR(rm);
   val_rs = cpu.GetGPR(rs);
   
-  if(x)
+  if (x)
     val_rm = val_rm >> 16;
-  if(val_rm & (uint32_t)0x00008000ULL) {
+  if (val_rm & (uint32_t)0x00008000ULL) {
     val_rm = val_rm | (uint32_t)0xffff0000ULL;
     op1 = (int32_t)val_rm;
   } else {
@@ -667,9 +668,9 @@ smulxy.execute = {
     op1 = (int32_t)val_rm;
   }
   
-  if(y)
+  if (y)
     val_rs = val_rs >> 16;
-  if(val_rs & (uint32_t)0x00008000ULL) {
+  if (val_rs & (uint32_t)0x00008000ULL) {
     val_rs = val_rs | (uint32_t)0xffff0000ULL;
     op2 = (int32_t)val_rs;
   } else {
@@ -699,7 +700,7 @@ smulwy.disasm = {
 };
 
 smulwy.execute = {
-  if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
   
   int32_t op1;
   int32_t op2;
@@ -707,17 +708,17 @@ smulwy.execute = {
   uint32_t val_rs;
   uint32_t val_rd;
   
-  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rs == cpu.PC_reg) {
-    // unpredictable behavior, we do nothing
+  if ((rd == 15) or (rm == 15) or (rs == 15)) {
+    cpu.UnpredictableInsnBehaviour();
     return;
   }
   
   val_rm = cpu.GetGPR(rm);
   val_rs = cpu.GetGPR(rs);
   
-  if(y)
+  if (y)
     val_rs = val_rs >> 16;
-  if(val_rs & (uint32_t)0x00008000ULL) {
+  if (val_rs & (uint32_t)0x00008000ULL) {
     val_rs = val_rs | (uint32_t)0xffff0000ULL;
     op2 = (int32_t)val_rs;
   } else {
