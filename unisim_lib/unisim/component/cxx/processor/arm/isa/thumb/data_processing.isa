@@ -154,7 +154,7 @@ add_4_pc.disasm = {
 add_4_pc.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( 15, cpu.GetGPR(cpu.PC_reg) + cpu.GetGPR( rm ) );
+  cpu.SetGPR( 15, cpu.GetGPR( 15 ) + cpu.GetGPR( rm ) );
 };
 
 /*
@@ -174,7 +174,7 @@ adr.disasm = {
 adr.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (cpu.GetGPR(cpu.PC_reg) & -4) + imm );
+  cpu.SetGPR( rd, (cpu.GetGPR( 15 ) & -4) + imm );
 };
 
 /*

@@ -55,7 +55,7 @@ bl_h1.disasm = {
 bl_h1.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + imm1 );
+  cpu.SetGPR( 14, cpu.GetGPR( 15 ) + imm1 );
 };
 
 /*

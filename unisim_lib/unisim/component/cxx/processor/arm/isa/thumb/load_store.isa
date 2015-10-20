@@ -92,7 +92,7 @@ ldr_3.disasm = {
 ldr_3.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead32( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
+  cpu.SetGPR_mem( rt, cpu.MemRead32( (cpu.GetGPR( 15 ) & -4) + imm ) );
 };
 
 /*
@@ -112,7 +112,7 @@ ldr_4.disasm = {
 ldr_4.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR(cpu.SP_reg) + imm ) );
+  cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR( 13 ) + imm ) );
 };
 
 /*

@@ -343,6 +343,7 @@ umull.execute = {
 
 { CONFIG::insns5E }:                                                     \
 op smlaxy( cond[4]: 0b00010000[8]: rd[4]: ra[4]: rm[4]: 0b1[1]: y[1]: x[1]: 0b0[1]: rn[4] );
+smlaxy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (ra == 15) or (rm == 15)};
 
 smlaxy.disasm = {
   buffer << "smla" << (x?"t":"b") << (y?"t":"b") << DisasmCondition(cond) << '\t'
@@ -359,11 +360,6 @@ smlaxy.execute = {
   uint32_t val_rm;
   uint32_t val_ra;
   uint32_t val_rd;
-  
-  if ((rd == 15) or (rn == 15) or (ra == 15) or (rm == 15)) {
-    cpu.UnpredictableInsnBehaviour();
-    return;
-  }
   
   val_rn = cpu.GetGPR(rn);
   val_rm = cpu.GetGPR(rm);
@@ -529,6 +525,7 @@ smmls.disasm = {
 
 { CONFIG::insns5E }:                                                     \
 op smlalxy( cond[4]: 0b00010100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b1[1]: m[1]: n[1]: 0b0[1]: rn[4] );
+smlalxy.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or (rdhi == rdlo)};
 
 smlalxy.disasm = {
   buffer << "smlal" << (n?"t":"b") << (m?"t":"b") << DisasmCondition(cond) << '\t'
@@ -538,9 +535,6 @@ smlalxy.disasm = {
 
 smlalxy.execute = {
   if (not CheckCondition(cpu, cond)) return;
-  
-  if (((rdhi == 15)) or ((rdlo == 15)) or ((rn == 15)) or ((rm == 15)))
-    { cpu.UnpredictableInsnBehaviour(); return; }
   
   uint64_t val_rd = (uint64_t( cpu.GetGPR(rdhi) ) << 32) | uint64_t( cpu.GetGPR(rdlo) );
   int32_t op1 = int32_t( int16_t(cpu.GetGPR(rn) >> (n*16)) );
@@ -560,6 +554,7 @@ smlalxy.execute = {
 
 { CONFIG::insns5E }:                                                     \
 op smlawy( cond[4]: 0b00010010[8]: rd[4]: rn[4]: rs[4]: 0b1[1]: y[1]: 0b00[2]: rm[4] );
+smlawy.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15) or (rs == 15)};
 
 smlawy.disasm = {
   buffer << "smlaw" << (y?"t":"b") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs) << ", " << DisasmRegister(rn);
@@ -573,12 +568,6 @@ smlawy.execute = {
   uint32_t val_rs;
   uint32_t val_rn;
   uint32_t val_rd;
-  
-  if ((rd == 15) or (rm == 15) or (rn == 15) or (rs == 15))
-    {
-      cpu.UnpredictableInsnBehaviour();
-      return;
-    }
   
   val_rm = cpu.GetGPR(rm);
   val_rs = cpu.GetGPR(rs);
@@ -635,6 +624,7 @@ smlawy.execute = {
 
 { CONFIG::insns5E }:                                                     \
 op smulxy( cond[4]: 0b00010110[8]: rd[4]: 0b0000[4]: rs[4]: 0b1[1]: y[1]: x[1]: 0b0[1]: rm[4] );
+smulxy.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rs == 15)};
 
 smulxy.disasm = {
   buffer << "smul" << (x?"t":"b") << (y?"t":"b") << DisasmCondition(cond) << '\t'
@@ -649,11 +639,6 @@ smulxy.execute = {
   uint32_t val_rm;
   uint32_t val_rs;
   uint32_t val_rd;
-  
-  if ((rd == 15) or (rm == 15) or (rs == 15)) {
-    cpu.UnpredictableInsnBehaviour();
-    return;
-  }
   
   val_rm = cpu.GetGPR(rm);
   val_rs = cpu.GetGPR(rs);
@@ -693,6 +678,7 @@ smulxy.execute = {
 
 { CONFIG::insns5E }:                                                     \
 op smulwy( cond[4]: 0b00010010[8]: rd[4]: 0b0000[4]: rs[4]: 0b1[1]: y[1]: 0b10[2]: rm[4] );
+smulwy.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rs == 15)};
 
 smulwy.disasm = {
   buffer << "smulw" << (y?"t":"b") << DisasmCondition(cond) << '\t'
@@ -707,11 +693,6 @@ smulwy.execute = {
   uint32_t val_rm;
   uint32_t val_rs;
   uint32_t val_rd;
-  
-  if ((rd == 15) or (rm == 15) or (rs == 15)) {
-    cpu.UnpredictableInsnBehaviour();
-    return;
-  }
   
   val_rm = cpu.GetGPR(rm);
   val_rs = cpu.GetGPR(rs);

@@ -55,7 +55,7 @@ b_1.execute = {
   if (not CheckCondition(cpu, cond)) return;
   // Note: according to specification, if InITBlock() then UNPREDICTABLE;
   
-  cpu.Branch(cpu.GetGPR(cpu.PC_reg) + imm);
+  cpu.Branch(cpu.GetGPR( 15 ) + imm);
 };
 
 op b_2( 0b11100[5]: shl<1> sext<32> imm[11] );
@@ -67,7 +67,7 @@ b_2.disasm = {
 b_2.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.Branch(cpu.GetGPR(cpu.PC_reg) + imm);
+  cpu.Branch(cpu.GetGPR( 15 ) + imm);
 };
 
 /*

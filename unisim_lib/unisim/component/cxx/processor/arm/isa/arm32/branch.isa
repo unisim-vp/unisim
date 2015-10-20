@@ -51,7 +51,7 @@ b.disasm = {
 b.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
+  cpu.Branch( cpu.GetGPR( 15 ) + imm );
 };
 
 /*
@@ -72,7 +72,7 @@ bl.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
-  cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
+  cpu.Branch( cpu.GetGPR( 15 ) + imm );
 };
 
 /*
@@ -136,7 +136,7 @@ blx_pcrel.disasm = {
 
 blx_pcrel.execute = {
   cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
-  cpu.BranchExchange( (cpu.GetGPR(cpu.PC_reg) + imm) | 1 );
+  cpu.BranchExchange( (cpu.GetGPR( 15 ) + imm) | 1 );
 };
 
 { CONFIG::insns5T }: \

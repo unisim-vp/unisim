@@ -83,7 +83,7 @@ ldr_lit.disasm = {
 ldr_lit.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead32( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
+  cpu.SetGPR_mem( rt, cpu.MemRead32( (cpu.GetGPR( 15 ) & -4) + imm ) );
 };
 
 op ldr_reg( 0b111110000101[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
@@ -146,7 +146,7 @@ ldrh_lit.disasm = {
 ldrh_lit.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead16( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
+  cpu.SetGPR_mem( rt, cpu.MemRead16( (cpu.GetGPR( 15 ) & -4) + imm ) );
 };
 
 op ldrh_reg( 0b111110000011[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
@@ -209,7 +209,7 @@ ldrsh_lit.disasm = {
 ldrsh_lit.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( (cpu.GetGPR(cpu.PC_reg) & -4) - imm ) );
+  cpu.SetGPR_mem( rt, cpu.MemReadS16( (cpu.GetGPR( 15 ) & -4) - imm ) );
 };
 
 op ldrsh_reg( 0b111110010011[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
@@ -272,7 +272,7 @@ ldrb_lit.disasm = {
 ldrb_lit.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead8( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
+  cpu.SetGPR_mem( rt, cpu.MemRead8( (cpu.GetGPR( 15 ) & -4) + imm ) );
 };
 
 op ldrb_reg( 0b111110000001[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
@@ -335,7 +335,7 @@ ldrsb_lit.disasm = {
 ldrsb_lit.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
+  cpu.SetGPR_mem( rt, cpu.MemReadS8( (cpu.GetGPR( 15 ) & -4) + imm ) );
 };
 
 op ldrsb_reg( 0b111110010001[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
@@ -386,7 +386,7 @@ ldrd_lit.disasm = {
 ldrd_lit.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t addr = cpu.GetGPR(cpu.PC_reg) & -4, oaddr = addr + imm;
+  uint32_t addr = cpu.GetGPR( 15 ) & -4, oaddr = addr + imm;
   cpu.SetGPR_mem( rt1, cpu.MemRead32( oaddr + 0 ) );
   cpu.SetGPR_mem( rt2, cpu.MemRead32( oaddr + 4 ) );
 };
@@ -429,7 +429,7 @@ str_imm.execute = {
 };
 
 op str_reg( 0b111110000100[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
-str_reg.var reject : {Reject} = {rn == 15};
+str_reg.var reject : {Reject} = {(rn == 15)};
 
 str_reg.disasm = {
   buffer << "str.w\t" << DisasmRegister(rt) << ", " << DisasmMemoryRRI(rn,rm,0,imm,true,true,false);
@@ -690,7 +690,7 @@ ldrsbt.execute = {
  */
 
 op strt( 0b11111[5]: 0b00[2]: 0b0[1]: 0b0[1]: 0b10[2]: 0b0[1]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
-strt.var reject : {Reject} = {rn == 15};
+strt.var reject : {Reject} = {(rn == 15)};
 
 strt.disasm = {
   buffer << "strt\t" << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,true,false);
@@ -713,7 +713,7 @@ strt.execute = {
  */
 
 op strht( 0b11111[5]: 0b00[2]: 0b0[1]: 0b0[1]: 0b01[2]: 0b0[1]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
-strht.var reject : {Reject} = {rn == 15};
+strht.var reject : {Reject} = {(rn == 15)};
 
 strht.disasm = {
   buffer << "strht\t" << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,true,false);
@@ -736,7 +736,7 @@ strht.execute = {
  */
 
 op strbt( 0b11111[5]: 0b00[2]: 0b0[1]: 0b0[1]: 0b00[2]: 0b0[1]: rn[4]:> <: rt[4]: 0b1[1]: 0b110[3]: imm[8] );
-strbt.var reject : {Reject} = {rn == 15};
+strbt.var reject : {Reject} = {(rn == 15)};
 
 strbt.disasm = {
   buffer << "strbt\t" << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,true,false);

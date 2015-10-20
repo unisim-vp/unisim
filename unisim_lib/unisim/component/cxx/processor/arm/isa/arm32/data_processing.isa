@@ -82,6 +82,7 @@ and_imm_shift.execute = {
 };
 
 op and_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0000[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+and_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (rs == 15)};
 
 and_reg_shift.disasm = {
   buffer << "and" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -145,6 +146,7 @@ eor_imm_shift.execute = {
 };
 
 op eor_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0001[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+eor_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (rs == 15)};
 
 eor_reg_shift.disasm = {
   buffer << "eor" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -262,6 +264,7 @@ rsb_imm_shift.execute = {
 };
 
 op rsb_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0011[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+rsb_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (rs == 15)};
 
 rsb_reg_shift.disasm = {
   buffer << "rsb" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -321,6 +324,7 @@ add_imm_shift.execute = {
 };
 
 op add_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0100[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+add_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (rs == 15)};
 
 add_reg_shift.disasm = {
   buffer << "add" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -380,6 +384,7 @@ adc_imm_shift.execute = {
 };
 
 op adc_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0101[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+adc_reg_shift.var reject : {Reject} = {((rd == 15) or (rn == 15) or (rm == 15) or (rs == 15))};
 
 adc_reg_shift.disasm = {
   buffer << "adc" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -439,6 +444,7 @@ sbc_imm_shift.execute = {
 };
 
 op sbc_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0110[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+sbc_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (rs == 15)};
 
 sbc_reg_shift.disasm = {
   buffer << "sbc" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -497,6 +503,7 @@ rsc_imm_shift.execute = {
 };
 
 op rsc_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0111[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+rsc_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (rs == 15)};
 
 rsc_reg_shift.disasm = {
   buffer << "rsc" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -560,6 +567,7 @@ orr_imm_shift.execute = {
 };
 
 op orr_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1100[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+orr_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (rs == 15)};
 
 orr_reg_shift.disasm = {
   buffer << "orr" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -623,6 +631,7 @@ bic_imm_shift.execute = {
 };
 
 op bic_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1110[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+bic_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (rs == 15)};
 
 bic_reg_shift.disasm = {
   buffer << "bic" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -916,21 +925,22 @@ mov_imm_shift.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op mov_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1101[4]: s[1]: 0b0000[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+op mov_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1101[4]: s[1]: 0b0000[4]: rd[4]: rm[4]: 0b0[1]: shift[2]: 0b1[1]: rn[4] );
+mov_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 mov_reg_shift.disasm = {
   buffer << DisasmShift(shift) << (s?"s":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 mov_reg_shift.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   uint32_t
-    rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
-    res = ComputeRegShift( cpu, rmval, shift, rsval );
+    rnval = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
+    res = ComputeRegShift( cpu, rnval, shift, rmval );
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
+  if (s) UpdateStatusRegShift( cpu, res, rnval, shift, rmval );
 };
 
 /*
@@ -976,6 +986,7 @@ mvn_imm_shift.execute = {
 };
 
 op mvn_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1111[4]: s[1]: 0b0000[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+mvn_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 mvn_reg_shift.disasm = {
   buffer << "mvn" << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );

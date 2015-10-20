@@ -44,6 +44,7 @@
 
 op mrs( cond[4]: 0b00010[5]: shl <6> sr2[1]: 0b00[2]: sr0[4]: rd[4]: 0b00[2]: shl <4> sr1[2]: 0b00000000[8] );
 mrs.var sr : {uint8_t} = {sr2|sr1|sr0};
+mrs.var reject : {Reject} = {(rd == 15)};
 
 mrs.disasm = {
   buffer << "mrs" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmSpecReg(sr);
@@ -51,7 +52,7 @@ mrs.disasm = {
 
 mrs.execute = {
   if (not CheckCondition(cpu, cond)) return;
-  if (rd == cpu.PC_reg) { cpu.UnpredictableInsnBehaviour(); return; }
+  
   switch (sr) {
   case 15: cpu.SetGPR(rd, cpu.CPSR().bits()); break;
   case 79: cpu.SetGPR(rd, cpu.SPSR().bits()); break;
