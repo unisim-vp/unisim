@@ -757,11 +757,11 @@ rev.disasm = {
 }
 
 rev.execute = {
-	uint32_t m = cpu.GetGPR(rm);
-	
-	uint32_t d = ByteSwap(m);
-	
-	cpu.SetGPR(rd, d);
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  uint32_t rmval = cpu.GetGPR(rm), rdval = ByteSwap( rmval );
+
+  cpu.SetGPR( rd, rdval );
 }
 
 /*

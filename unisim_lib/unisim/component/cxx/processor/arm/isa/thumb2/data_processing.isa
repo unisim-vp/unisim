@@ -767,8 +767,7 @@ uxtab16.disasm = {
 uxtab16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
+  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
   uint16_t lo = rmval << 8, hi = rmval >> 8;
   lo >>= 8; hi >>= 8;
   lo += rnval; hi += rnval >> 16;
@@ -786,8 +785,7 @@ uxtab.disasm = {
 uxtab.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
+  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
   cpu.SetGPR( rd, rnval + ((uint32_t)((uint8_t)rmval)) );
 };
 
@@ -801,8 +799,7 @@ uxtah.disasm = {
 uxtah.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
+  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
   cpu.SetGPR( rd, rnval + ((uint32_t)((uint16_t)rmval)) );
 };
 
@@ -818,8 +815,7 @@ uxtb16.disasm = {
 uxtb16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
+  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
   cpu.SetGPR( rd, rmval & 0x00ff00ff );
 };
 
@@ -833,8 +829,7 @@ uxtb_w.disasm = {
 uxtb_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
+  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
   cpu.SetGPR( rd, ((uint32_t)((uint8_t)rmval)) );
 };
 
@@ -848,8 +843,7 @@ uxth_w.disasm = {
 uxth_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
+  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
   cpu.SetGPR( rd, (uint32_t)((uint16_t)rmval) );
 };
 
@@ -866,12 +860,11 @@ sxtab16.disasm = {
 sxtab16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  int16_t lo = rmval << 8, hi = rmval >> 8;
-  lo >>= 8; hi >>= 8;
-  lo += rnval; hi += rnval >> 16;
-  cpu.SetGPR( rd, ((uint32_t)lo) | (((uint32_t)hi) << 16) );
+  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  int16_t lo = int16_t( rmval << 8 ) >> 8, hi = int16_t( rmval >> 8 ) >> 8;
+  
+  lo += int16_t( rnval >> 0 ); hi += int16_t( rnval >> 16 );
+  cpu.SetGPR( rd, (uint32_t( uint16_t( lo ) ) << 0) | (uint32_t( uint16_t( hi ) ) << 16) );
 };
 
 op sxtab( 0b111110100100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
@@ -885,8 +878,7 @@ sxtab.disasm = {
 sxtab.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
+  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
   cpu.SetGPR( rd, rnval + ((int32_t)((int8_t)rmval)) );
 };
 
@@ -901,8 +893,7 @@ sxtah.disasm = {
 sxtah.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
+  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
   cpu.SetGPR( rd, rnval + ((int32_t)((int16_t)rmval)) );
 };
 
@@ -919,11 +910,9 @@ sxtb16.disasm = {
 sxtb16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  int16_t lo = rmval << 8, hi = rmval >> 8;
-  lo >>= 8; hi >>= 8;
-  cpu.SetGPR( rd, (((uint32_t)hi) << 16) | ((uint32_t)hi) );
+  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  int16_t lo = int16_t( rmval << 8 ) >> 8, hi = int16_t( rmval >> 8 ) >> 8;
+  cpu.SetGPR( rd, (uint32_t( uint16_t( lo ) ) << 0) | (uint32_t( uint16_t( hi ) ) << 16) );
 };
 
 op sxtb_w( 0b1111101001001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
@@ -936,8 +925,7 @@ sxtb_w.disasm = {
 sxtb_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
+  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
   cpu.SetGPR( rd, ((int32_t)((int8_t)rmval)) );
 };
 
@@ -951,15 +939,15 @@ sxth_w.disasm = {
 sxth_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
+  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
   cpu.SetGPR( rd, (int32_t)((int16_t)rmval) );
 };
 
 /* UBFX instructions */
 
-op ubfx_rrii( 0b111100111100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: width0[5] );
-ubfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {width0+1};
+op ubfx_rrii( 0b111100111100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: widthm1[5] );
+ubfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {widthm1+1};
+ubfx_rrii.var reject : {Reject} = {(lsb + widthm1) > 31};
 
 ubfx_rrii.disasm = {
   buffer << "ubfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
@@ -973,8 +961,9 @@ ubfx_rrii.execute = {
 
 /* SBFX instructions */
 
-op sbfx_rrii( 0b111100110100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: width0[5] );
-sbfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {width0+1};
+op sbfx_rrii( 0b111100110100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: widthm1[5] );
+sbfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {widthm1+1};
+sbfx_rrii.var reject : {Reject} = {(lsb + widthm1) > 31};
 
 sbfx_rrii.disasm = {
   buffer << "sbfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);

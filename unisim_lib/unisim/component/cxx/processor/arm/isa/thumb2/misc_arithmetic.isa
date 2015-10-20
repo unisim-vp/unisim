@@ -83,14 +83,16 @@ op qsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
 qsub16.disasm = { buffer << "qsub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 op rev_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm_[4] );
+
 rev_w.disasm = { buffer << "rev.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
+
 rev_w.execute = {
-	uint32_t m = cpu.GetGPR(rm);
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint32_t rmval = cpu.GetGPR( rm ), rdval = ByteSwap( rmval );
 	
-	uint32_t d = ByteSwap(m);
-	
-	cpu.SetGPR(rd, d);
-}
+  cpu.SetGPR( rd, rdval );
+};
 
 op revsh_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm_[4] );
 revsh_w.disasm = { buffer << "revsh.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
@@ -108,23 +110,28 @@ op sasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
 sasx.disasm = { buffer << "sasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 op sel( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm[4] );
+sel.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)}
+
 sel.disasm = { buffer << "sel\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+
 sel.execute = {
-	// read input operands
-	uint32_t n = cpu.GetGPR(rn);
-	uint32_t m = cpu.GetGPR(rm);
-	uint8_t cpsr_ge = cpu.CPSR().Get( GE );
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  // read input operands
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm );
+  uint8_t cpsr_ge = cpu.CPSR().Get( GE );
 	
-	// compute
-	uint32_t d = 0;
-	unsigned int i;
-	for(i = 0; i < 4; i++)
-	{
-		d = RotateRight((uint32_t) d | (((cpsr_ge >> i) & 1) ? (uint8_t) n : (uint8_t) m), 8);
-	}
+  // compute
+  uint32_t rdval = 0;
+  
+  for (unsigned byte_index = 0; byte_index < 4; byte_index++)
+    {
+      uint32_t mask = uint32_t( 0xff ) << (8*byte_index);
+      rdval |= ((cpsr_ge >> byte_index) & 1) ? (rnval & mask) : (rmval & mask);
+    }
 	
-	// write back results
-	cpu.SetGPR(rd, d);
+  // write back results
+  cpu.SetGPR( rd, rdval );
 }
 
 op shadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
@@ -169,34 +176,33 @@ op ssub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
 ssub16.disasm = { buffer << "ssub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 op uadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
-uadd8.disasm = { buffer << "uadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-uadd8.execute = {
-	// read input operands
-	uint32_t n = cpu.GetGPR(rn);
-	uint32_t m = cpu.GetGPR(rm);
+uadd8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)}
 
-	// compute
-	uint32_t d = 0;
-	uint8_t cpsr_ge = 0;
-	unsigned int i;
-	for(i = 0; i < 4; i++, n >>= 8, m >>= 8)
-	{
-		uint8_t result = 0;
-		uint8_t carry_in = 0;
-		uint8_t carry_out = 0;
-		uint8_t overflow = 0;
-		uint8_t sign = 0;
+uadd8.disasm = { buffer << "uadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+
+uadd8.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  // read input operands
+  uint32_t rnval = cpu.GetGPR(rn), rmval = cpu.GetGPR(rm);
+  
+  // compute
+  uint32_t rdval = 0;
+  uint8_t cpsr_ge = 0;
+  
+  for(unsigned int byte_index = 0; byte_index < 4; byte_index++, rnval >>= 8, rmval >>= 8)
+    {
+      uint8_t result = 0, carry_in = 0, carry_out = 0, overflow = 0, sign = 0;
 		
-		UnsignedAdd8(result, carry_out, overflow, sign, (uint8_t) n, (uint8_t) m, carry_in);
-		uint8_t ge = carry_out; //  whether unsigned operations produced a carry or a borrow.
-		
-		d = RotateRight((uint32_t) d | result, 8);
-		cpsr_ge = cpsr_ge | (ge << i);
-	}
+      UnsignedAdd8(result, carry_out, overflow, sign, uint8_t( rnval ), uint8_t( rmval ), carry_in);
+      
+      rdval = RotateRight(rdval | uint32_t( result ), 8);
+      cpsr_ge = cpsr_ge | (carry_out << byte_index);//  whether unsigned operations produced a carry or a borrow.
+    }
 	
-	// write back result
-	cpu.SetGPR(rd, d);
-	cpu.CPSR().Set( GE, cpsr_ge);
+  // write back result
+  cpu.SetGPR(rd, rdval);
+  cpu.CPSR().Set( GE, cpsr_ge);
 }
 
 op uadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );

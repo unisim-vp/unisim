@@ -504,7 +504,7 @@ uxtb.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   uint32_t rmval = cpu.GetGPR( rm );
-  uint32_t result = RotateRight(rmval, ror);
+  uint32_t result = uint32_t( uint8_t( RotateRight(rmval, ror) ) );
   //rmval = (rmval >> ror) | (rmval << (32-ror));
   //cpu.SetGPR( rd, ((uint32_t)((uint8_t)rmval)) );
   cpu.SetGPR(rd, result);

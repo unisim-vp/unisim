@@ -205,6 +205,7 @@ sub_imm_shift.execute = {
 };
 
 op sub_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0010[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+sub_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (rs == 15)};
 
 sub_reg_shift.disasm = {
   buffer << "sub" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -985,21 +986,21 @@ mvn_imm_shift.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op mvn_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1111[4]: s[1]: 0b0000[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+op mvn_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1111[4]: s[1]: 0b0000[4]: rd[4]: rm[4]: 0b0[1]: shift[2]: 0b1[1]: rn[4] );
 mvn_reg_shift.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 mvn_reg_shift.disasm = {
-  buffer << "mvn" << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "mvn" << (s?"s":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmShReg( shift, rm );
 };
 
 mvn_reg_shift.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   uint32_t
-    rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
-  res = ~(ComputeRegShift( cpu, rmval, shift, rsval ));
+    rnval = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
+  res = ~(ComputeRegShift( cpu, rnval, shift, rmval ));
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
+  if (s) UpdateStatusRegShift( cpu, res, rnval, shift, rmval );
 };
 
 /*

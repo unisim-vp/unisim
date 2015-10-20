@@ -76,59 +76,65 @@ mls.execute = {
 
 /* UMULL, UMLAL, UMAAL instructions */
 
-op umull( 0b111110111010[12]: rm[4]:> <: rdlo[4]: rdhi[4]: 0b0000[4]: rs[4] );
+op umull( 0b111110111010[12]: rn[4]:> <: rdlo[4]: rdhi[4]: 0b0000[4]: rm[4] );
+umull.var reject : {Reject} = {(rdhi == 13) or (rdhi == 15) or (rdlo == 13) or (rdlo == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (rdhi == rdlo)};
 
 umull.disasm = {
-  buffer << "umull\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+  buffer << "umull\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 umull.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint64_t res = (uint64_t)cpu.GetGPR_npc( rm ) * (uint64_t)cpu.GetGPR_npc( rs );
+  uint64_t res = (uint64_t)cpu.GetGPR_npc( rn ) * (uint64_t)cpu.GetGPR_npc( rm );
   cpu.SetGPR( rdlo, res >> 0 );
   cpu.SetGPR( rdhi, res >> 32 );
 };
 
-op umlal( 0b111110111110[12]: rm[4]:> <: rdlo[4]: rdhi[4]: 0b0000[4]: rs[4] );
+op umlal( 0b111110111110[12]: rn[4]:> <: rdlo[4]: rdhi[4]: 0b0000[4]: rm[4] );
+umlal.var reject : {Reject} = {(rdhi == 13) or (rdhi == 15) or (rdlo == 13) or (rdlo == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (rdhi == rdlo)};
+
 umlal.disasm = {
-  buffer << "umlal\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+  buffer << "umlal\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 umlal.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint64_t res = (((uint64_t)cpu.GetGPR_npc( rdlo )) <<  0) |
-                 (((uint64_t)cpu.GetGPR_npc( rdhi )) << 32);
-  res += (uint64_t)cpu.GetGPR_npc( rm ) * (uint64_t)cpu.GetGPR_npc( rs );
+  uint64_t res = (((uint64_t)cpu.GetGPR( rdlo )) <<  0) |
+                 (((uint64_t)cpu.GetGPR( rdhi )) << 32);
+  res += (uint64_t)cpu.GetGPR( rn ) * (uint64_t)cpu.GetGPR( rm );
   cpu.SetGPR( rdlo, res >> 0 );
   cpu.SetGPR( rdhi, res >> 32 );
 };
 
-op umaal( 0b111110111110[12]: rm[4]:> <: rdlo[4]: rdhi[4]: 0b0110[4]: rs[4] );
+op umaal( 0b111110111110[12]: rn[4]:> <: rdlo[4]: rdhi[4]: 0b0110[4]: rm[4] );
+umaal.var reject : {Reject} = {(rdhi == 13) or (rdhi == 15) or (rdlo == 13) or (rdlo == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (rdhi == rdlo)};
+
 umaal.disasm = {
-  buffer << "umaal\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+  buffer << "umaal\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 umaal.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint64_t res = ((uint64_t)cpu.GetGPR_npc( rm ) * (uint64_t)cpu.GetGPR_npc( rs )) +
-                 cpu.GetGPR_npc( rdlo ) + cpu.GetGPR_npc( rdhi );
+  uint64_t res = ((uint64_t)cpu.GetGPR( rn ) * (uint64_t)cpu.GetGPR( rm )) +
+                 cpu.GetGPR( rdlo ) + cpu.GetGPR( rdhi );
   cpu.SetGPR( rdlo, res >> 0 );
   cpu.SetGPR( rdhi, res >> 32 );
 };
 
-op smull( 0b111110111000[12]: rm[4]:> <: rdlo[4]: rdhi[4]: 0b0000[4]: rs[4] );
+op smull( 0b111110111000[12]: rn[4]:> <: rdlo[4]: rdhi[4]: 0b0000[4]: rm[4] );
+smull.var reject : {Reject} = {(rdhi == 13) or (rdhi == 15) or (rdlo == 13) or (rdlo == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (rdhi == rdlo)};
 
 smull.disasm = {
-  buffer << "smull\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+  buffer << "smull\t" << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 smull.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint64_t res = (int64_t)(int32_t)cpu.GetGPR_npc( rm ) * (int64_t)(int32_t)cpu.GetGPR_npc( rs );
+  uint64_t res = (int64_t)(int32_t)cpu.GetGPR( rn ) * (int64_t)(int32_t)cpu.GetGPR( rm );
   cpu.SetGPR( rdlo, res >> 0 );
   cpu.SetGPR( rdhi, res >> 32 );
 };
@@ -177,7 +183,7 @@ udiv.disasm = {
 
 { CONFIG::insns5E }:                                                     \
 op smlalxy( 0b11111[5]: 0b0111[4]: 0b100[3]: rn[4]:> <: rdlo[4]: rdhi[4]: 0b10[2]: n[1]: m[1]: rm[4] );
-smlalxy.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or (rdhi == rdlo)};
+smlalxy.var reject : {Reject} = {(rdhi == 13) or (rdhi == 15) or (rdlo == 13) or (rdlo == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (rdhi == rdlo)};
 
 smlalxy.disasm = {
   buffer << "smlal" << (n?"t":"b") << (m?"t":"b") << '\t'
@@ -206,6 +212,7 @@ smlalxy.execute = {
 
 { CONFIG::insns5E }:                                                     \
 op smlal( 0b11111[5]: 0b0111[4]: 0b100[3]: rn[4]:> <: rdlo[4]: rdhi[4]: 0b0000[4]: rm[4] );
+smlal.var reject : {Reject} = {(rdhi == 13) or (rdhi == 15) or (rdlo == 13) or (rdlo == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (rdhi == rdlo)};
 
 smlal.disasm = {
   buffer << "smlal\t"
@@ -234,7 +241,7 @@ smlal.execute = {
 
 { CONFIG::insns5E }:                                                     \
 op smlaxy( 0b11111[5]: 0b0110[4]: 0b001[3]: rn[4]:> <: ra[4]: rd[4]: 0b00[2]: n[1]: m[1]: rm[4] );
-smlaxy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
+smlaxy.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (ra == 13) or (ra == 15)};
 
 smlaxy.disasm = {
   buffer << "smla" << (n?"t":"b") << (m?"t":"b") << '\t'
@@ -444,7 +451,7 @@ smmls.disasm = {
 
 { CONFIG::insns5E }:                                                     \
 op smulxy( 0b111110110001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b00[2]: n[1]: m[1]: rm[4] );
-smulxy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+smulxy.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 smulxy.disasm = {
   buffer << "smul" << (n?"t":"b") << (m?"t":"b") << '\t'
@@ -499,7 +506,7 @@ smulxy.execute = {
 
 { CONFIG::insns5E }:                                                     \
 op smlawy( 0b111110110011[12]: rn[4]:> <: ra[4]: rd[4]: 0b000[3]: m[1]: rm[4] );
-smlawy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (ra == 15) or (rm == 15)};
+smlawy.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (ra == 13) or (ra == 15) or (rm == 13) or (rm == 15)};
 
 smlawy.disasm = {
   buffer << "smlaw" << (m?"t":"b") << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
@@ -570,7 +577,7 @@ smlawy.execute = {
 
 { CONFIG::insns5E }:                                                     \
 op smulwy( 0b111110110011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b000[3]: m[1]: rm[4] );
-smulwy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+smulwy.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 smulwy.disasm = {
   buffer << "smulw" << (m?"t":"b") << "\t"

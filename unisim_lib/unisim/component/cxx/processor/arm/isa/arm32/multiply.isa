@@ -128,6 +128,9 @@ mul.execute = {
 
 { CONFIG::insns5E }:                                                     \
 op smlal( cond[4]: 0b0000111[7]: s[1]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
+smlal.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or
+                               (rdhi == rdlo) or
+                               ((CONFIG::MODEL < ARMV6) and ((rdhi == rn) or (rdlo == rn)))};
 
 smlal.disasm = {
   buffer << "smlal" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -208,6 +211,9 @@ smlsld.disasm = {
  */
 
 op smull( cond[4]: 0b0000110[7]: s[1]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
+smull.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or
+                               (rdhi == rdlo) or
+                               ((CONFIG::MODEL < ARMV6) and ((rdhi == rn) or (rdlo == rn)))};
 
 smull.disasm = {
   buffer << "smull" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -245,6 +251,9 @@ smull.execute = {
  */
 
 op umlal( cond[4]: 0b0000101[7]: s[1]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
+umlal.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or
+                               (rdhi == rdlo) or
+                               ((CONFIG::MODEL < ARMV6) and ((rdhi == rn) or (rdlo == rn)))};
 
 umlal.disasm = {
   buffer << "umlal" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -286,11 +295,23 @@ umlal.execute = {
 
 { CONFIG::insns6 }:                                                      \
 op umaal( cond[4]: 0b00000100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
+umaal.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or
+                               (rdhi == rdlo) or
+                               ((CONFIG::MODEL < ARMV6) and ((rdhi == rn) or (rdlo == rn)))};
 
 umaal.disasm = {
   buffer << "umaal" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
          << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+umaal.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint64_t res = ((uint64_t)cpu.GetGPR( rn ) * (uint64_t)cpu.GetGPR( rm )) +
+                 cpu.GetGPR( rdlo ) + cpu.GetGPR( rdhi );
+  cpu.SetGPR( rdlo, res >> 0 );
+  cpu.SetGPR( rdhi, res >> 32 );
 };
 
 /*
@@ -305,6 +326,9 @@ umaal.disasm = {
  */
 
 op umull( cond[4]: 0b0000100[7]: s[1]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
+umull.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or
+                               (rdhi == rdlo) or
+                               ((CONFIG::MODEL < ARMV6) and ((rdhi == rn) or (rdlo == rn)))};
 
 umull.disasm = {
   buffer << "umull" << (s?"s":"") << DisasmCondition(cond) << '\t'
