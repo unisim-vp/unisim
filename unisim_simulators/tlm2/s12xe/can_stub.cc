@@ -43,8 +43,8 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 	, can_tx_sock("can_rx_sock")
 	, can_rx_sock("can_tx_sock")
 
-	, can_rx_stimulus_period(20000)
-	, can_rx_stimulus_period_sc(NULL)
+	, can_inject_stimulus_period(20000)
+	, can_inject_stimulus_period_sc(NULL)
 
 	, bw_inject_count(0)
 	, dont_care_bw_event(false)
@@ -63,10 +63,10 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 
 	, input_payload_queue("input_payload_queue")
 
-	, param_can_rx_stimulus_period("can-rx-stimulus-period", this, can_rx_stimulus_period)
+	, param_can_inject_stimulus_period("can-rx-stimulus-period", this, can_inject_stimulus_period)
 
-	, can_rx_stimulus_file("")
-	, param_can_rx_stimulus_file("can-rx-stimulus-file", this, can_rx_stimulus_file)
+	, can_inject_stimulus_file("")
+	, param_can_inject_stimulus_file("can-rx-stimulus-file", this, can_inject_stimulus_file)
 
 	, broadcast_enabled(false)
 	, param_broadcast_enabled("broadcast-enabled", this, broadcast_enabled)
@@ -80,8 +80,8 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(CAN_STUB);
 
-	SC_THREAD(processCANRX);
-	SC_THREAD(processCANTX);
+	SC_THREAD(processCAN_Inject);
+	SC_THREAD(processCAN_Observe);
 	SC_THREAD(watchdog);
 
 }
@@ -89,11 +89,11 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 CAN_STUB::~CAN_STUB() {
 
 	if (trace_enable) {
-		can_rx_output_file.close();
-		can_tx_output_file.close();
+		can_inject_output_file.close();
+		can_observe_output_file.close();
 	}
 
-	if (can_rx_stimulus_period_sc) { delete can_rx_stimulus_period_sc; can_rx_stimulus_period_sc = NULL; }
+	if (can_inject_stimulus_period_sc) { delete can_inject_stimulus_period_sc; can_inject_stimulus_period_sc = NULL; }
 }
 
 bool CAN_STUB::BeginSetup() {
@@ -116,23 +116,23 @@ bool CAN_STUB::BeginSetup() {
 //		can_rx_vect.push_back(data0);
 	}
 	else if (xml_enabled) {
-		LoadXmlData(can_rx_stimulus_file.c_str(), can_rx_vect);
+		LoadXmlData(can_inject_stimulus_file.c_str(), can_inject_vect);
 	} else if (rand_enabled) {
-		RandomizeData(can_rx_vect);
+		RandomizeData(can_inject_vect);
 	}
 
 	if (trace_enable) {
 		stringstream strm;
-		strm << sc_object::name() << "_rx_output.txt";
-		can_rx_output_file.open (strm.str().c_str());
+		strm << sc_object::name() << "_inject_output.txt";
+		can_inject_output_file.open (strm.str().c_str());
 		strm.str(string());
-		strm << sc_object::name() << "_tx_output.txt";
-		can_tx_output_file.open (strm.str().c_str());
+		strm << sc_object::name() << "_observe_output.txt";
+		can_observe_output_file.open (strm.str().c_str());
 		strm.str(string());
 	}
 
 //	can_rx_stimulus_period_sc = new sc_time(can_rx_stimulus_period, SC_US);
-	can_rx_stimulus_period_sc = new sc_time(100000, SC_US);
+	can_inject_stimulus_period_sc = new sc_time(100, SC_MS);
 
 	watchdog_delay = sc_time(1, SC_US);
 
@@ -218,7 +218,7 @@ void CAN_STUB::observe(CAN_DATATYPE &msg)
 	payload->unpack(msg);
 
 	if (trace_enable) {
-		can_tx_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *payload <<  std::endl;
+		can_observe_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *payload <<  std::endl;
 	}
 
 	payload->release();
@@ -232,9 +232,14 @@ void CAN_STUB::observe(CAN_DATATYPE &msg)
 void CAN_STUB::inject(CAN_DATATYPE msg)
 {
 
-	CAN_Payload *can_rx_payload = can_rx_payload_fabric.allocate();
+	CAN_Payload *can_rx_payload = can_inject_payload_fabric.allocate();
 
 	can_rx_payload->pack(msg);
+
+	if (trace_enable) {
+		can_inject_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *can_rx_payload << std::endl;
+		can_inject_output_file.flush();
+	}
 
 	for (int i=0; i<can_tx_sock.size(); i++) {
 		sc_time local_time = SC_ZERO_TIME;
@@ -257,10 +262,6 @@ void CAN_STUB::inject(CAN_DATATYPE msg)
 		}
 	}
 
-	if (trace_enable) {
-		can_rx_output_file << (sc_time_stamp().to_seconds() * 1000) << " ms \t\t" << *can_rx_payload << std::endl;
-	}
-
 	dont_care_bw_event = false;
 	watchdog_enable_event.notify();
 	wait(can_bw_event | time_out_event);
@@ -274,7 +275,7 @@ void CAN_STUB::Inject_CAN(CAN_DATATYPE msg)
 {
 	if (cosim_enabled) {
 		CAN_DATATYPE* data = new CAN_DATATYPE();
-		can_rx_vect.push_back(data);
+		can_inject_vect.push_back(data);
 
 		for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
 			data->ID[j] = msg.ID[j];
@@ -294,8 +295,8 @@ void CAN_STUB::Inject_CAN(CAN_DATATYPE msg)
 
 void CAN_STUB::Get_CAN(CAN_DATATYPE *msg)
 {
-	if (cosim_enabled && (can_tx_vect.size() > 0)) {
-		std::vector<CAN_DATATYPE*>::iterator it = can_tx_vect.begin();
+	if (cosim_enabled && (can_observe_vect.size() > 0)) {
+		std::vector<CAN_DATATYPE*>::iterator it = can_observe_vect.begin();
 		for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
 			msg->ID[j] = (*it)->ID[j];
 		}
@@ -310,7 +311,8 @@ void CAN_STUB::Get_CAN(CAN_DATATYPE *msg)
 		msg->Timestamp[0] = (*it)->Timestamp[0];
 		msg->Timestamp[1] = (*it)->Timestamp[1];
 
-		can_tx_vect.erase(it);
+		delete (*it); (*it) = NULL;
+		can_observe_vect.erase(it);
 	}
 
 }
@@ -326,29 +328,33 @@ void CAN_STUB::Inject_CANArray(CAN_DATATYPE_ARRAY msgArray)
 }
 
 void CAN_STUB::getCANArray(CAN_DATATYPE_ARRAY *msg){
-	msg->nmsgs = can_tx_vect.size();
-	msg->canMsg = new CAN_DATATYPE[msg->nmsgs];
-	unsigned int i = 0;
-	for (std::vector<CAN_DATATYPE*>::iterator it = can_tx_vect.begin() ; (it != can_tx_vect.end()) ; ++it)
-	{
-		for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
-			(msg->canMsg[i]).ID[j] = (*it)->ID[j];
-		}
-		for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
-			(msg->canMsg[i]).Data[j] = (*it)->Data[j];
-		}
-		(msg->canMsg[i]).Length = (*it)->Length;
-		(msg->canMsg[i]).Priority = (*it)->Priority;
-		(msg->canMsg[i]).Extended = (*it)->Extended;
-		(msg->canMsg[i]).Error = (*it)->Error;
-		(msg->canMsg[i]).Remote = (*it)->Remote;
-		(msg->canMsg[i]).Timestamp[0] = (*it)->Timestamp[0];
-		(msg->canMsg[i]).Timestamp[1] = (*it)->Timestamp[1];
+	msg->nmsgs = can_observe_vect.size();
+	if (can_observe_vect.size() > 0) {
+		msg->canMsg = new CAN_DATATYPE[msg->nmsgs];
+		unsigned int i = 0;
+		for (std::vector<CAN_DATATYPE*>::iterator it = can_observe_vect.begin() ; (it != can_observe_vect.end()) ; ++it)
+		{
+			for (uint8_t j=0; j < CAN_ID_SIZE; j++) {
+				(msg->canMsg[i]).ID[j] = (*it)->ID[j];
+			}
+			for (uint8_t j=0; j < CAN_DATA_SIZE; j++) {
+				(msg->canMsg[i]).Data[j] = (*it)->Data[j];
+			}
+			(msg->canMsg[i]).Length = (*it)->Length;
+			(msg->canMsg[i]).Priority = (*it)->Priority;
+			(msg->canMsg[i]).Extended = (*it)->Extended;
+			(msg->canMsg[i]).Error = (*it)->Error;
+			(msg->canMsg[i]).Remote = (*it)->Remote;
+			(msg->canMsg[i]).Timestamp[0] = (*it)->Timestamp[0];
+			(msg->canMsg[i]).Timestamp[1] = (*it)->Timestamp[1];
 
-		i++;
-//		can_tx_vect.erase(it);
+			i++;
+		}
+		for (unsigned int i=0; i<can_observe_vect.size(); i++) {
+			if (can_observe_vect[i]) { delete can_observe_vect[i]; can_observe_vect[i] = NULL; }
+		}
+		can_observe_vect.clear();
 	}
-	can_tx_vect.clear();
 }
 
 void CAN_STUB::watchdog() {
@@ -363,55 +369,50 @@ void CAN_STUB::watchdog() {
 	}
 }
 
-void CAN_STUB::processCANRX()
+void CAN_STUB::processCAN_Inject()
 {
-	sc_time frame_period = sc_time(100, SC_MS);
-
 	while (!isTerminated() && (rand_enabled || xml_enabled || cosim_enabled)) {
 
-		wait(frame_period);
+		wait(*can_inject_stimulus_period_sc);
 
-		for (std::vector<CAN_DATATYPE*>::iterator it = can_rx_vect.begin() ; !can_rx_vect.empty() && (it != can_rx_vect.end()) && !isTerminated(); ++it) {
-
-			if ((*it) != NULL) {
-				inject(*(*it));
-
-//				if (cosim_enabled) {
-//					can_rx_vect.erase(it);
-//				}
+		for (unsigned int i=0; i<can_inject_vect.size()  && !isTerminated(); i++) {
+			if (can_inject_vect[i] != NULL) {
+				inject(*(can_inject_vect[i]));
 			}
 
-			wait(*can_rx_stimulus_period_sc);
-
+			wait(*can_inject_stimulus_period_sc);
 		}
 
 		if (cosim_enabled) {
-			can_rx_vect.clear();
+			for (unsigned int i=0; i<can_inject_vect.size(); i++) {
+				if (can_inject_vect[i]) { delete can_inject_vect[i]; can_inject_vect[i] = NULL; }
+			}
+			can_inject_vect.clear();
 		}
 	}
 
 }
 
 
-void CAN_STUB::processCANTX()
+void CAN_STUB::processCAN_Observe()
 {
 
 	while (!isTerminated())
 	{
-		CAN_DATATYPE *can_tx_buffer = new CAN_DATATYPE();
-		observe(*can_tx_buffer);
+		CAN_DATATYPE *can_observe_buffer = new CAN_DATATYPE();
+		observe(*can_observe_buffer);
 /*
  * Don't automatically broadcast the CAN messages because it is point to point.
  *
  */
 		if (broadcast_enabled) {
-			inject(*can_tx_buffer);
+			inject(*can_observe_buffer);
 		}
 
 		if (cosim_enabled) {
-			can_tx_vect.push_back(can_tx_buffer);
+			can_observe_vect.push_back(can_observe_buffer);
 		} else {
-			delete can_tx_buffer;
+			delete can_observe_buffer;
 		}
 	}
 

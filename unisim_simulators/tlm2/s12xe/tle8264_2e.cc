@@ -147,7 +147,7 @@ void TLE8264_2E::spi_rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::
 	unsigned int length = payload.get_data_length();
 	unsigned char* data = payload.get_data_ptr();
 
-//	if (payload.get_byte_enable_length() != 2)
+//	if (payload.get_data_length() != 2)
 //	{
 //		std::cerr << sc_object::name() << "::Warning interface is configured for 2-bytes" << std::endl;
 //	}

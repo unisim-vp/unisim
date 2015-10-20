@@ -618,25 +618,8 @@ Simulator::Simulator(int argc, char **argv)
 		spi0->char_io_import >> spi_telnet->char_io_export;
 	}
 
-//	if (isS19) {
-//		loaderS19->memory_import >> mmc->memory_export;
-//	} else if (loaderELF) {
-//		loaderELF->memory_import >> mmc->memory_export;
-//	}
-//
-//	if (loaderELF) {
-//
-//		if(enable_inline_debugger || enable_gdb_server || enable_pim_server) {
-//			debugger->loader_import >> loaderELF->loader_export;
-//			debugger->blob_import >> loaderELF->blob_export;
-//		}
-//
-//		cpu->symbol_table_lookup_import >> loaderELF->symbol_table_lookup_export;
-//
-//	}
-
 	*loader->memory_import[0] >>  mmc->memory_export;
-	loader->registers_import >> cpu->registers_export; // je ne comprend pas cette ligne !!!
+	loader->registers_import >> cpu->registers_export;
 	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
 }
@@ -693,11 +676,8 @@ Simulator::~Simulator()
 		cerr << endl;
 
 		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-//		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
-//		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
 
 		cerr << "Host simulation time   : " << spent_time << " seconds" << endl;
-//		cerr << "Host simulation speed  : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / spent_time) / 1000000.0) << " MIPS" << endl;
 		cerr << "Host simulation speed  : " << (((double) (*cpu)["instruction-counter"] / spent_time) / 1000000.0) << " MIPS" << endl;
 
 		cerr << "Time dilation          : " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
@@ -725,8 +705,6 @@ Simulator::~Simulator()
 	if (monitor) { delete monitor; monitor = NULL; }
 
 	if(loader) delete loader;
-//	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
-//	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
 #ifdef HAVE_RTBCOB
 	if (rtbStub) { delete rtbStub; rtbStub = NULL; }
@@ -801,39 +779,9 @@ Simulator::SetupStatus Simulator::Setup()
 
 	Simulator::SetupStatus result = unisim::kernel::service::Simulator::Setup();
 
-// **********
-//	physical_address_t entry_point = 0;
-	std::cout << "entry-point 0x" << std::hex << entry_point << std::dec << std::endl;
-
 	address_t cpu_address;
 	uint8_t page = 0;
 
-//	if (isS19) {
-//		entry_point = loaderS19->GetEntryPoint();
-//		if (entry_point == 0) {
-//			address_t reset_addr;
-//			const address_t reset_vect = 0xFFFE;
-//			cpu->ReadMemory(reset_vect, &reset_addr, 2);
-//
-//			entry_point = unisim::util::endian::BigEndian2Host(reset_addr);
-//		}
-//		mmc->splitPagedAddress(entry_point, page, cpu_address);
-//	} else {
-//		const unisim::util::debug::blob::Blob<physical_address_t>* blob = loaderELF->GetBlob();
-//		if (blob != NULL) {
-//			entry_point = blob->GetEntryPoint();
-//		}
-//
-//		cpu_address = (address_t) entry_point;
-//	}
-// *****************
-
-/* TODO: Discuss with Gilles about this
-	const unisim::util::debug::blob::Blob<physical_address_t>* blob = loader->GetBlob();
-	if (blob != NULL) {
-		entry_point = blob->GetEntryPoint();
-	}
-*/
 	if (entry_point == 0) {
 		address_t reset_addr;
 		const address_t reset_vect = 0xFFFE;
@@ -845,8 +793,8 @@ Simulator::SetupStatus Simulator::Setup()
 	else {
 		cpu_address = (address_t) entry_point;
 	}
-// *****************
 
+	std::cout << "entry-point 0x" << std::hex << entry_point << std::dec << std::endl;
 	cpu->setEntryPoint(cpu_address);
 
 	EnableDebug();

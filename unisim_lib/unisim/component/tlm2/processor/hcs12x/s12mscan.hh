@@ -139,12 +139,7 @@ template <unsigned int MAX_SIZE>
 class CircularIndex {
 public:
 
-	CircularIndex() {
-	    head = 0;
-		tail = 0;
-		length = 0;
-	}
-
+	CircularIndex() : head(0), tail(0),	length(0) {	}
 	~CircularIndex() {}
 
 	int getHead() { return (head); }
@@ -152,7 +147,6 @@ public:
 
 	bool incHead()  // Get element
 	{
-
 		if (isEmpty()) { return (false); }
 
 		length--;
@@ -163,7 +157,6 @@ public:
 
 	bool incTail()   // Put element
 	{
-
 		if (isFull()) {	return (false);	}
 
 		length++;
@@ -172,27 +165,16 @@ public:
 	    return (true);
 	}
 
-	bool isEmpty() {
+	bool isEmpty() { return (length == 0); }
 
-	    return (length == 0);
-	}
+	bool isFull() { return (length == MAX_SIZE); }
 
-	bool isFull() {
-
-	    return (length == MAX_SIZE);
-
-	}
-
-	int size() {
-
-	    return length;
-	}
+	int size() { return length;	}
 
 private:
     int head;
     int tail;
     int length;
-
 };
 
 class S12MSCAN :
@@ -430,6 +412,7 @@ private:
 		setIdle();
 
 		can_enable_event.notify();
+		std::cout << sc_object::name() << ":: Enabled " << std::endl;
 	}
 
 
