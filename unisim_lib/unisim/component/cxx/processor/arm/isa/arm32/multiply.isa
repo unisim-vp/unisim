@@ -78,11 +78,18 @@ mla.execute = {
  */
 
 op mls( cond[4]: 0b00000110[8]: rd[4]: ra[4]: rm[4]: 0b1001[4]: rn[4] );
+mls.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
 
 mls.disasm = {
   buffer << "mls" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+mls.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  cpu.SetGPR( rd, cpu.GetGPR( ra ) - (cpu.GetGPR( rn ) * cpu.GetGPR( rm )) );
 };
 
 /*
@@ -93,22 +100,23 @@ mls.disasm = {
  * mul instruction
  */
 
-op mul( cond[4]: 0b0000000[7]: s[1]: rd[4]: 0b0000[4]: rs[4]: 0b1001[4]: rm[4] );
+op mul( cond[4]: 0b0000000[7]: s[1]: rd[4]: 0b0000[4]: rm[4]: 0b1001[4]: rn[4] );
+mul.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or ((CONFIG::MODEL < ARMV6) and (rd == rn))};
 
 mul.disasm = {
   buffer << "mul" << (s?"s":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
-         << DisasmRegister(rs);
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm);
 };
 
 mul.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
   uint32_t res;
+  uint32_t rn_value = cpu.GetGPR(rn);
   uint32_t rm_value = cpu.GetGPR(rm);
-  uint32_t rs_value = cpu.GetGPR(rs);
   
-  res = rm_value * rs_value;
+  res = rn_value * rm_value;
   cpu.SetGPR(rd, res);
   
   if (s)
