@@ -40,38 +40,41 @@
 
 /* MUL, MLA, MLS instructions */
 
-op mul_w( 0b111110110000[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rs[4] );
+op mul_w( 0b111110110000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+mul_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
-mul_w.disasm = { buffer << "mul.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs); };
+mul_w.disasm = { buffer << "mul.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 mul_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, cpu.GetGPR_npc( rm ) * cpu.GetGPR_npc( rs ) );
+  cpu.SetGPR( rd, cpu.GetGPR( rn ) * cpu.GetGPR( rm ) );
 };
 
-op mla( 0b111110110000[12]: rm[4]:> <: rn[4]: rd[4]: 0b0000[4]: rs[4] );
+op mla( 0b111110110000[12]: rn[4]:> <: ra[4]: rd[4]: 0b0000[4]: rm[4] );
+mla.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (ra == 13) or (ra == 15)};
 
 mla.disasm = {
-  buffer << "mla\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs) << ", " << DisasmRegister(rn);
+  buffer << "mla\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
 };
 
 mla.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, cpu.GetGPR_npc( rn ) + (cpu.GetGPR_npc( rm ) * cpu.GetGPR_npc( rs )) );
+  cpu.SetGPR( rd, cpu.GetGPR( ra ) + (cpu.GetGPR( rn ) * cpu.GetGPR( rm )) );
 };
 
-op mls( 0b111110110000[12]: rm[4]:> <: rn[4]: rd[4]: 0b0001[4]: rs[4] );
+op mls( 0b111110110000[12]: rn[4]:> <: ra[4]: rd[4]: 0b0001[4]: rm[4] );
+mls.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (ra == 13) or (ra == 15)};
 
 mls.disasm = {
-  buffer << "mls\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs) << ", " << DisasmRegister(rn);
+  buffer << "mls\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
 };
 
 mls.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, cpu.GetGPR_npc( rn ) - (cpu.GetGPR_npc( rm ) * cpu.GetGPR_npc( rs )) );
+  cpu.SetGPR( rd, cpu.GetGPR( ra ) - (cpu.GetGPR( rn ) * cpu.GetGPR( rm )) );
 };
 
 /* UMULL, UMLAL, UMAAL instructions */
@@ -86,7 +89,7 @@ umull.disasm = {
 umull.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint64_t res = (uint64_t)cpu.GetGPR_npc( rn ) * (uint64_t)cpu.GetGPR_npc( rm );
+  uint64_t res = (uint64_t)cpu.GetGPR( rn ) * (uint64_t)cpu.GetGPR( rm );
   cpu.SetGPR( rdlo, res >> 0 );
   cpu.SetGPR( rdhi, res >> 32 );
 };

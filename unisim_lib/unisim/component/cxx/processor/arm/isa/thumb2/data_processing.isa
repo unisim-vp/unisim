@@ -77,6 +77,7 @@ ThumbExpandImm( uint32_t code )
 
 op mov_wri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b010[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 mov_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+mov_wri.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
 mov_wri.disasm = { buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
@@ -93,34 +94,36 @@ mov_wri.execute = {
 };
 
 op mov_w( 0b11101010[8]: 0b010[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
-mov_w.var imm : {uint32_t} = {imm1|imm0}
+mov_w.var imm : {uint32_t} = {imm1|imm0};
+mov_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 mov_w.disasm = {
-  buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 mov_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ), res = ComputeImmShift( cpu, rmval, shift, imm );
+  uint32_t rmval = cpu.GetGPR( rm ), res = ComputeImmShift( cpu, rmval, shift, imm );
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op movt( 0b11110[5]: shl <11> imm2[1]: 0b101100[6]: shl<12> imm3[4]:> <: 0b0[1]: shl<8> imm1[3]: rsd[4]: imm0[8] );
 movt.var imm : {uint32_t} = {imm3|imm2|imm1|imm0};
+movt.var reject : {Reject} = {(rsd == 13) or (rsd == 15)};
 
 movt.disasm = { buffer << "movt\t" << DisasmRegister(rsd) << ", " << DisasmI(imm); };
 
 movt.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rsd, (cpu.GetGPR_npc( rsd ) & 0xffff) | (imm << 16) );
+  cpu.SetGPR( rsd, (cpu.GetGPR( rsd ) & 0xffff) | (imm << 16) );
 };
 
 op movw( 0b11110[5]: shl <11> imm2[1]: 0b100100[6]: shl<12> imm3[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 movw.var imm : {uint32_t} = {imm3|imm2|imm1|imm0};
+movw.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
 movw.disasm = { buffer << "movw\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
@@ -133,7 +136,8 @@ movw.execute = {
 /* MVN instructions */
 
 op mvn_w( 0b11101010[8]: 0b011[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
-mvn_w.var imm : {uint32_t} = {imm1|imm0}
+mvn_w.var imm : {uint32_t} = {imm1|imm0};
+mvn_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 mvn_w.disasm = {
   buffer << "mvn" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -143,13 +147,14 @@ mvn_w.disasm = {
 mvn_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ), res = ~(ComputeImmShift( cpu, rmval, shift, imm ));
+  uint32_t rmval = cpu.GetGPR( rm ), res = ~(ComputeImmShift( cpu, rmval, shift, imm ));
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op mvn_wri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b011[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 mvn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+mvn_wri.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
 mvn_wri.disasm = { buffer << "mvn" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
@@ -168,15 +173,16 @@ mvn_wri.execute = {
 /* LSL, LSR, ASR, ROR shift instructions */
 
 op shift_w( 0b11111010[8]: 0b0[1]: shift[2]: s[1]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+shift_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 shift_w.disasm = {
-  buffer << "" << DisasmShift(shift) << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << DisasmShift(shift) << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 shift_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
            res = ComputeRegShift( cpu, rnval, shift, rmval );
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusRegShift( cpu, res, rnval, shift, rmval );
@@ -186,6 +192,7 @@ shift_w.execute = {
 
 op sub_w( 0b11101011[8]: 0b101[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 sub_w.var imm : {uint32_t} = {imm1|imm0}
+sub_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 sub_w.disasm = {
   buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -196,7 +203,7 @@ sub_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 - op2;
   cpu.SetGPR( rd, res );
@@ -205,31 +212,34 @@ sub_w.execute = {
 
 op sub_wrri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b101[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 sub_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+sub_wrri.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
 
 sub_wrri.disasm = { buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 sub_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 - op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
 op subs_pclri( 0b1111001111011110[16]:> <: 0b10001111[8]: imm[8] );
+
 subs_pclri.disasm = { buffer << "subs\tpc, lr, " << DisasmI(imm); };
 
 subs_pclri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   assert( not "sure" );
-  uint32_t op1 = cpu.GetGPR_npc( 14 ), op2 = imm, res = op1 - op2;
+  uint32_t op1 = cpu.GetGPR( 14 ), op2 = imm, res = op1 - op2;
   cpu.SetGPR( 15, res );
   if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
 op subw( 0b11110[5]: shl<11> imm2[1]: 0b101010[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 subw.var imm : {uint32_t} = {imm2|imm1|imm0};
+subw.var reject : {Reject} = {(rn == 15) or (rd == 13) or (rd == 15)};
 
 subw.disasm = {
   buffer << "subw\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -243,6 +253,7 @@ subw.execute = {
 
 op adr_subw( 0b11110[5]: shl<11> imm2[1]: 0b101010[6]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 adr_subw.var imm : {uint32_t} = {imm2|imm1|imm0};
+adr_subw.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
 adr_subw.disasm = {
   buffer << "subw\t" << DisasmRegister(rd) << ", pc, " << DisasmI(imm);
@@ -258,6 +269,7 @@ adr_subw.execute = {
 
 op sbc_w( 0b11101011[8]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 sbc_w.var imm : {uint32_t} = {imm1|imm0}
+sbc_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 sbc_w.disasm = {
   buffer << "sbc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -268,7 +280,7 @@ sbc_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 - op2 - (cpu.CPSR().Get( C ) ^ 1);
   cpu.SetGPR( rd, res );
@@ -277,13 +289,14 @@ sbc_w.execute = {
 
 op sbc_wrri( 0b11110[5]: shl <11> imm2[1]: 0b01[2]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 sbc_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+sbc_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 sbc_wrri.disasm = { buffer << "sbc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 sbc_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 - op2 - (cpu.CPSR().Get( C ) ^ 1);
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2 - (cpu.CPSR().Get( C ) ^ 1);
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -292,6 +305,7 @@ sbc_wrri.execute = {
 
 op rsb( 0b11101011[8]: 0b110[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 rsb.var imm : {uint32_t} = {imm1|imm0}
+rsb.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 rsb.disasm = {
   buffer << "rsb" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -301,8 +315,8 @@ rsb.disasm = {
 rsb.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR_npc( rn ),
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
            res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
@@ -310,6 +324,7 @@ rsb.execute = {
 
 op rsb_rri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b110[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 rsb_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+rsb_rri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 rsb_rri.disasm = {
   buffer << "rsb" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -318,7 +333,7 @@ rsb_rri.disasm = {
 rsb_rri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = imm, op2 = cpu.GetGPR_npc( rn ), res = op1 - op2;
+  uint32_t op1 = imm, op2 = cpu.GetGPR( rn ), res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -327,6 +342,7 @@ rsb_rri.execute = {
 
 op add_w( 0b11101011[8]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 add_w.var imm : {uint32_t} = {imm1|imm0}
+add_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 add_w.disasm = {
   buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -337,7 +353,7 @@ add_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 + op2;
   cpu.SetGPR( rd, res );
@@ -346,19 +362,21 @@ add_w.execute = {
 
 op add_wrri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 add_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+add_wrri.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
 
 add_wrri.disasm = { buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 add_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 + op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 + op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
 op addw( 0b11110[5]: shl<11> imm2[1]: 0b100000[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 addw.var imm : {uint32_t} = {imm2|imm1|imm0};
+addw.var reject : {Reject} = {(rn == 15) or (rd == 13) or (rd == 15)};
 
 addw.disasm = {
   buffer << "addw\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -372,6 +390,7 @@ addw.execute = {
 
 op adr_addw( 0b11110[5]: shl<11> imm2[1]: 0b100000[6]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 adr_addw.var imm : {uint32_t} = {imm2|imm1|imm0};
+adr_addw.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
 adr_addw.disasm = {
   buffer << "addw\t" << DisasmRegister(rd) << ", pc, " << DisasmI(imm);
@@ -387,6 +406,7 @@ adr_addw.execute = {
 
 op adc_w( 0b11101011[8]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 adc_w.var imm : {uint32_t} = {imm1|imm0}
+adc_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
 
 adc_w.disasm = {
   buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -396,8 +416,8 @@ adc_w.disasm = {
 adc_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 + op2 + cpu.CPSR().Get( C );
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
@@ -405,13 +425,14 @@ adc_w.execute = {
 
 op adc_wrri( 0b11110[5]: shl <11> imm2[1]: 0b01[2]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 adc_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+adc_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 adc_wrri.disasm = { buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 adc_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 + op2 + cpu.CPSR().Get( C );
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 + op2 + cpu.CPSR().Get( C );
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
@@ -419,6 +440,7 @@ adc_wrri.execute = {
 /* EOR instructions */
 op eor_w( 0b11101010[8]: 0b100[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 eor_w.var imm : {uint32_t} = {imm1|imm0}
+eor_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
 
 eor_w.disasm = {
   buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -428,8 +450,8 @@ eor_w.disasm = {
 eor_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 ^ op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
@@ -437,13 +459,14 @@ eor_w.execute = {
 
 op eor_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b100[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 eor_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+eor_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 eor_wrri.disasm = { buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 eor_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 ^ op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 ^ op2;
   cpu.SetGPR( rd, res );
   if (s)
     {
@@ -456,6 +479,7 @@ eor_wrri.execute = {
 
 op orn( 0b11101010[8]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 orn.var imm : {uint32_t} = {imm1|imm0}
+orn.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
 
 orn.disasm = {
   buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -465,8 +489,8 @@ orn.disasm = {
 orn.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 | ~op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
@@ -474,13 +498,14 @@ orn.execute = {
 
 op orn_rri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 orn_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+orn_rri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 orn_rri.disasm = { buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 orn_rri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 | ~op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 | ~op2;
   cpu.SetGPR( rd, res );
   if (s)
     {
@@ -494,6 +519,7 @@ orn_rri.execute = {
 
 op orr_w( 0b11101010[8]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 orr_w.var  imm : {uint32_t} = {imm1|imm0}
+orr_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
 
 orr_w.disasm = {
   buffer << "orr" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -503,8 +529,8 @@ orr_w.disasm = {
 orr_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 | op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
@@ -512,6 +538,7 @@ orr_w.execute = {
 
 op orr_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 orr_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+orr_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 orr_wrri.disasm = {
   buffer << "orr" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -520,7 +547,7 @@ orr_wrri.disasm = {
 orr_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 | op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 | op2;
   cpu.SetGPR( rd, res );
   if (s)
     {
@@ -535,6 +562,7 @@ orr_wrri.execute = {
 
 op bic_w( 0b11101010[8]: 0b001[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 bic_w.var imm : {uint32_t} = {imm1|imm0}
+bic_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
 
 bic_w.disasm = {
   buffer << "bic" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -544,8 +572,8 @@ bic_w.disasm = {
 bic_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 & ~op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
@@ -553,6 +581,7 @@ bic_w.execute = {
 
 op bic_wrri( 0b11110[5]: shl <11> imm2[1]: 0b0[1]: 0b0001[4]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 bic_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+bic_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 bic_wrri.disasm = {
   buffer << "bic" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -561,7 +590,7 @@ bic_wrri.disasm = {
 bic_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 & ~op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 & ~op2;
   cpu.SetGPR( rd, res );
   if (s)
     {
@@ -573,7 +602,8 @@ bic_wrri.execute = {
 /* AND instructions */
 
 op and_w( 0b11101010[8]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
-and_w.var imm : {uint32_t} = {imm1|imm0}
+and_w.var imm : {uint32_t} = {imm1|imm0};
+and_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
 
 and_w.disasm = {
   buffer << "and" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -583,8 +613,8 @@ and_w.disasm = {
 and_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 & op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
@@ -592,6 +622,7 @@ and_w.execute = {
 
 op and_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 and_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+and_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 and_wrri.disasm = {
   buffer << "and" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -600,7 +631,7 @@ and_wrri.disasm = {
 and_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 & op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 & op2;
   cpu.SetGPR( rd, res );
   if (s)
     {
@@ -613,6 +644,7 @@ and_wrri.execute = {
 
 op cmp_w( 0b111010111011[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 cmp_w.var imm : {uint32_t} = {imm1|imm0}
+cmp_w.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 cmp_w.disasm = {
   buffer << "cmp.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -623,7 +655,7 @@ cmp_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 - op2;
   UpdateStatusSub( cpu, res, op1, op2 );
@@ -631,6 +663,7 @@ cmp_w.execute = {
 
 op cmp_wri( 0b11110[5]: shl <11> imm2[1]: 0b011011[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 cmp_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+cmp_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
 
 cmp_wri.disasm = {
   buffer << "cmp.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -639,7 +672,7 @@ cmp_wri.disasm = {
 cmp_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 - op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
   UpdateStatusSub( cpu, res, op1, op2 );
 };
 
@@ -647,17 +680,17 @@ cmp_wri.execute = {
 
 op cmn_w( 0b111010110001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 cmn_w.var imm : {uint32_t} = {imm1|imm0}
+cmn_w.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 cmn_w.disasm = {
-  buffer << "cmn.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "cmn.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 cmn_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 + op2;
   UpdateStatusAdd( cpu, res, op1, op2 );
@@ -665,13 +698,16 @@ cmn_w.execute = {
 
 op cmn_wri( 0b11110[5]: shl <11> imm2[1]: 0b010001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 cmn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+cmn_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
 
-cmn_wri.disasm = { buffer << "cmn.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
+cmn_wri.disasm = {
+  buffer << "cmn.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm);
+};
 
 cmn_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 + op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 + op2;
   UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
@@ -679,30 +715,31 @@ cmn_wri.execute = {
 
 op teq( 0b111010101001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 teq.var imm : {uint32_t} = {imm1|imm0}
+teq.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 teq.disasm = {
-  buffer << "teq\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "teq\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 teq.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 ^ op2;
   UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op teq_wri( 0b11110[5]: shl <11> imm2[1]: 0b001001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 teq_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+teq_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
 
 teq_wri.disasm = { buffer << "teq\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 teq_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 ^ op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 ^ op2;
   cpu.CPSR().Set( N, (res >> 31) & 1 );
   cpu.CPSR().Set( Z, res == 0 );
 };
@@ -711,17 +748,17 @@ teq_wri.execute = {
 
 op tst_w( 0b111010100001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 tst_w.var imm : {uint32_t} = {imm1|imm0}
+tst_w.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 tst_w.disasm = {
-  buffer << "tst.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "tst.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 tst_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 & op2;
   cpu.CPSR().Set( N, (res >> 31) & 1 );
@@ -730,13 +767,14 @@ tst_w.execute = {
 
 op tst_wri( 0b11110[5]: shl <11> imm2[1]: 0b000001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 tst_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+tst_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
 
 tst_wri.disasm = { buffer << "tst.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 tst_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 & op2;
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 & op2;
   cpu.CPSR().Set( N, (res >> 31) & 1 );
   cpu.CPSR().Set( Z, res == 0 );
 };
@@ -744,6 +782,7 @@ tst_wri.execute = {
 /* CLZ instructions */
 
 op clz( 0b111110101011[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: ?[4] );
+clz.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 clz.disasm = { buffer << "clz\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
 
@@ -751,13 +790,14 @@ clz.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   // TODO: Use a portable function...
-  cpu.SetGPR( rd, __builtin_clz( cpu.GetGPR_npc( rm ) ) );
+  cpu.SetGPR( rd, __builtin_clz( cpu.GetGPR( rm ) ) );
 };
 
 /* UXTA instructions */
 
 op uxtab16( 0b111110100011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxtab16.var ror : {uint32_t} = {8*ror0};
+uxtab16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 uxtab16.disasm = {
   buffer << "uxtab16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -767,7 +807,7 @@ uxtab16.disasm = {
 uxtab16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
   uint16_t lo = rmval << 8, hi = rmval >> 8;
   lo >>= 8; hi >>= 8;
   lo += rnval; hi += rnval >> 16;
@@ -776,6 +816,7 @@ uxtab16.execute = {
 
 op uxtab( 0b111110100101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxtab.var ror : {uint32_t} = {8*ror0};
+uxtab.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 uxtab.disasm = {
   buffer << "uxtab\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -785,12 +826,14 @@ uxtab.disasm = {
 uxtab.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
   cpu.SetGPR( rd, rnval + ((uint32_t)((uint8_t)rmval)) );
 };
 
 op uxtah( 0b111110100001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxtah.var ror : {uint32_t} = {8*ror0};
+uxtah.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
+
 uxtah.disasm = {
   buffer << "uxtah\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
   if (ror) buffer << ", ror " << DisasmI(ror);
@@ -799,7 +842,7 @@ uxtah.disasm = {
 uxtah.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
   cpu.SetGPR( rd, rnval + ((uint32_t)((uint16_t)rmval)) );
 };
 
@@ -807,6 +850,8 @@ uxtah.execute = {
 
 op uxtb16( 0b1111101000111111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxtb16.var ror : {uint32_t} = {8*ror0};
+uxtb16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+
 uxtb16.disasm = {
   buffer << "uxtb16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
   if (ror) buffer << ", ror " << DisasmI(ror);
@@ -815,12 +860,14 @@ uxtb16.disasm = {
 uxtb16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
   cpu.SetGPR( rd, rmval & 0x00ff00ff );
 };
 
 op uxtb_w( 0b1111101001011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxtb_w.var ror : {uint32_t} = {8*ror0};
+uxtb_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+
 uxtb_w.disasm = {
   buffer << "uxtb.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
   if (ror) buffer << ", ror " << DisasmI(ror);
@@ -829,12 +876,14 @@ uxtb_w.disasm = {
 uxtb_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
   cpu.SetGPR( rd, ((uint32_t)((uint8_t)rmval)) );
 };
 
 op uxth_w( 0b1111101000011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 uxth_w.var ror : {uint32_t} = {8*ror0};
+uxth_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+
 uxth_w.disasm = {
   buffer << "uxth.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
   if (ror) buffer << ", ror " << DisasmI(ror);
@@ -843,7 +892,7 @@ uxth_w.disasm = {
 uxth_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
   cpu.SetGPR( rd, (uint32_t)((uint16_t)rmval) );
 };
 
@@ -851,6 +900,7 @@ uxth_w.execute = {
 
 op sxtab16( 0b111110100010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxtab16.var ror : {uint32_t} = {8*ror0};
+sxtab16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 sxtab16.disasm = {
   buffer << "sxtab16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -860,7 +910,7 @@ sxtab16.disasm = {
 sxtab16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
   int16_t lo = int16_t( rmval << 8 ) >> 8, hi = int16_t( rmval >> 8 ) >> 8;
   
   lo += int16_t( rnval >> 0 ); hi += int16_t( rnval >> 16 );
@@ -869,6 +919,7 @@ sxtab16.execute = {
 
 op sxtab( 0b111110100100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxtab.var ror : {uint32_t} = {8*ror0};
+sxtab.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 sxtab.disasm = {
   buffer << "sxtab\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -878,12 +929,13 @@ sxtab.disasm = {
 sxtab.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
   cpu.SetGPR( rd, rnval + ((int32_t)((int8_t)rmval)) );
 };
 
 op sxtah( 0b111110100000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxtah.var ror : {uint32_t} = {8*ror0};
+sxtah.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 sxtah.disasm = {
   buffer << "sxtah\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -893,7 +945,7 @@ sxtah.disasm = {
 sxtah.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
   cpu.SetGPR( rd, rnval + ((int32_t)((int16_t)rmval)) );
 };
 
@@ -901,6 +953,7 @@ sxtah.execute = {
 
 op sxtb16( 0b1111101000101111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxtb16.var ror : {uint32_t} = {8*ror0};
+sxtb16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 sxtb16.disasm = {
   buffer << "sxtb16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -910,13 +963,15 @@ sxtb16.disasm = {
 sxtb16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
   int16_t lo = int16_t( rmval << 8 ) >> 8, hi = int16_t( rmval >> 8 ) >> 8;
   cpu.SetGPR( rd, (uint32_t( uint16_t( lo ) ) << 0) | (uint32_t( uint16_t( hi ) ) << 16) );
 };
 
 op sxtb_w( 0b1111101001001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxtb_w.var ror : {uint32_t} = {8*ror0};
+sxtb_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+
 sxtb_w.disasm = {
   buffer << "sxtb.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
   if (ror) buffer << ", ror " << DisasmI(ror);
@@ -925,12 +980,14 @@ sxtb_w.disasm = {
 sxtb_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
   cpu.SetGPR( rd, ((int32_t)((int8_t)rmval)) );
 };
 
 op sxth_w( 0b1111101000001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
 sxth_w.var ror : {uint32_t} = {8*ror0};
+sxth_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+
 sxth_w.disasm = {
   buffer << "sxth.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
   if (ror) buffer << ", ror " << DisasmI(ror);
@@ -939,40 +996,40 @@ sxth_w.disasm = {
 sxth_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = RotateRight( cpu.GetGPR_npc( rm ), ror );
+  uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
   cpu.SetGPR( rd, (int32_t)((int16_t)rmval) );
 };
 
 /* UBFX instructions */
 
-op ubfx_rrii( 0b111100111100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: widthm1[5] );
-ubfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {widthm1+1};
-ubfx_rrii.var reject : {Reject} = {(lsb + widthm1) > 31};
+op ubfx( 0b111100111100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: widthm1[5] );
+ubfx.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {widthm1+1};
+ubfx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or ((lsb + widthm1) > 31)};
 
-ubfx_rrii.disasm = {
+ubfx.disasm = {
   buffer << "ubfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
 };
 
-ubfx_rrii.execute = {
+ubfx.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (((uint32_t)cpu.GetGPR_npc( rn )) << (32 - width - lsb)) >> (32 - width) );
+  cpu.SetGPR( rd, (((uint32_t)cpu.GetGPR( rn )) << (32 - width - lsb)) >> (32 - width) );
 };
 
 /* SBFX instructions */
 
-op sbfx_rrii( 0b111100110100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: widthm1[5] );
-sbfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {widthm1+1};
-sbfx_rrii.var reject : {Reject} = {(lsb + widthm1) > 31};
+op sbfx( 0b111100110100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: widthm1[5] );
+sbfx.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {widthm1+1};
+sbfx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (lsb + widthm1) > 31};
 
-sbfx_rrii.disasm = {
+sbfx.disasm = {
   buffer << "sbfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
 };
 
-sbfx_rrii.execute = {
+sbfx.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (((int32_t)cpu.GetGPR_npc( rn )) << (32 - width - lsb)) >> (32 - width) );
+  cpu.SetGPR( rd, (((int32_t)cpu.GetGPR( rn )) << (32 - width - lsb)) >> (32 - width) );
 };
 
 /* BF[IC] instructions (bit field insertion/clear) */

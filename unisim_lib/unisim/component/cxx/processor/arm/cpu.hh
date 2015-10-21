@@ -151,17 +151,6 @@ struct CPU
     return gpr[id];
   }
 
-  /** Get the value contained by a GPR, excluding PC.
-   *
-   * @param id the register index
-   * @return the value contained by the register
-   */
-  uint32_t GetGPR_npc(uint32_t id) const
-  {
-    if (id == 15) throw 0; /* TODO: ARM specifies "unpredictable" */
-    return gpr[id];
-  }
-
   /** Assign a GPR with a value coming from the Execute stage (See
    * ARM's ALUWritePC).  In ARMv7 architectures this is interworking
    * except in thumb state.
@@ -187,17 +176,6 @@ struct CPU
   {
     if (id != 15) gpr[id] = val;
     else this->BranchExchange( val );
-  }
-  
-  /** Set the value contained by a GPR, excluding PC.
-   *
-   * @param id the register index
-   * @param val the value to set
-   */
-  void SetGPR_npc(uint32_t id, uint32_t val)
-  {
-    if (id != 15) throw 0; /* TODO: ARM specifies "unpredictable" */
-    gpr[id] = val;
   }
   
   /** Sets the PC (and potentially exchanges mode ARM<->Thumb)

@@ -66,15 +66,15 @@ blx_w.execute = {
   cpu.BranchExchange( (cpu.GetGPR( 15 ) + imm) & -4 );
 };
 
-op cbnz( 0b1011[4]: nz[1]: 0b0[1]: shl<6> imm1[1]: 0b1[1]: shl<1> imm0[5]: rs[3] );
+op cbnz( 0b1011[4]: nz[1]: 0b0[1]: shl<6> imm1[1]: 0b1[1]: shl<1> imm0[5]: rn[3] );
 cbnz.var imm : {uint32_t} = {imm1 | imm0};
 
 cbnz.disasm = {
-  buffer << "cb" << (nz ? "nz" : "z") << "\t" << DisasmRegister(rs) << ", 0x" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
+  buffer << "cb" << (nz ? "nz" : "z") << "\t" << DisasmRegister(rn) << ", 0x" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
 };
 
 cbnz.execute = {
-  if ((cpu.GetGPR_npc( rs ) == 0) xor nz) cpu.Branch( cpu.GetGPR( 15 ) + imm );
+  if ((cpu.GetGPR( rn ) == 0) xor nz) cpu.Branch( cpu.GetGPR( 15 ) + imm );
 };
 
 op bcc_w( 0b11110[5]: shl<20> sext<32> imm4[1]: cond[4]: shl<12> imm1[6]:> <: 0b10[2]: shl<18> imm2[1]: 0b0[1]: shl<19> imm3[1]: shl<1> imm0[11] );
