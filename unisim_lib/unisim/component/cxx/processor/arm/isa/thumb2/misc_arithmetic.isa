@@ -33,29 +33,157 @@
  */
 
 impl {
-
-#include <unisim/util/arithmetic/arithmetic.hh>
+#include "unisim/util/arithmetic/arithmetic.hh"
 #include <unisim/util/endian/endian.hh>
 
 using unisim::util::arithmetic::UnsignedAdd8;
 using unisim::util::arithmetic::RotateRight;
 using unisim::util::endian::ByteSwap;
+using unisim::util::arithmetic::SignedSatAdd32;
+using unisim::util::arithmetic::SignedSatSub32;
+using unisim::util::arithmetic::SignExtend;
+using unisim::util::arithmetic::UnsignedSatSub8;
+using unisim::util::arithmetic::RotateRight;
+using unisim::util::arithmetic::UnsignedSub8;
 
 }
 
-op pkh( 0b111010101100[12]: rn[4]:> <: 0b0[1]: shl<2> off1[3]: rd[4]: off0[2]: shl<1> trans[1]: 0b0[1]: rm[4] );
-pkh.var off : {uint32_t} = {off1|off0}
+/*******************************************************************
+ * qadd instruction
+ */
+
+{ CONFIG::insns5E }: \
+op qadd( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm[4] );
+qadd.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
+
+qadd.disasm = {
+  buffer << "qadd\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+};
+
+qadd.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint8_t does_sat;
+  uint32_t result;
+  
+  SignedSatAdd32(result, does_sat, cpu.GetGPR(rn) , cpu.GetGPR(rm));
+  cpu.CPSR().Set( Q, (does_sat == 1) );
+  cpu.SetGPR(rd, result);
+};
+
+/*
+ * end of qadd instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsub instruction
+ */
+
+{ CONFIG::insns5E }: \
+op qsub( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1010[4]: rm[4] );
+qsub.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
+
+qsub.disasm = {
+  buffer << "qsub\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+};
+
+qsub.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint8_t does_sat;
+  uint32_t result;
+  
+  SignedSatSub32(result, does_sat, cpu.GetGPR(rm) , cpu.GetGPR(rn));
+  cpu.CPSR().Set( Q, (does_sat == 1) );
+  cpu.SetGPR(rd, result);
+};
+
+/*
+ * end of qsub instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qdadd instruction
+ */
+
+{ CONFIG::insns5E }: \
+op qdadd( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1001[4]: rm[4] );
+qdadd.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
+
+qdadd.disasm = {
+  buffer << "qdadd\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+};
+
+qdadd.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint8_t does_sat, does_sat_tmp;
+  uint32_t result;
+  
+  SignedSatAdd32(result, does_sat_tmp, cpu.GetGPR(rn) , cpu.GetGPR(rn));
+  SignedSatAdd32(result, does_sat, cpu.GetGPR(rm) , result);
+  cpu.CPSR().Set( Q, (does_sat == 1) or (does_sat_tmp == 1) );
+  cpu.SetGPR(rd, result);
+};
+
+/*
+ * end of qdadd instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qdsub instruction
+ */
+
+{ CONFIG::insns5E }: \
+op qdsub( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm[4] );
+qdsub.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
+
+qdsub.disasm = {
+  buffer << "qdsub\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+};
+
+qdsub.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint8_t does_sat, does_sat_tmp;
+  uint32_t result;
+  
+  SignedSatAdd32(result, does_sat_tmp, cpu.GetGPR(rn) , cpu.GetGPR(rn));
+  SignedSatSub32(result, does_sat, cpu.GetGPR(rm) , result);
+  cpu.CPSR().Set( Q, (does_sat == 1) );
+  cpu.SetGPR(rd, result);
+};
+
+/*
+ * end of qdsub instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * pkh (Pack Halfword) instruction
+ *
+ * PKH combines one halfword of its first operand with the other
+ * halfword of its shifted second operand.
+ */
+
+op pkh( 0b111010101100[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shl<1> tb[1]: 0b0[1]: rm[4] );
+pkh.var imm : {uint32_t} = {imm1|imm0}
 
 pkh.disasm = {
-  char const* mnemonic = (trans != 2) ? "pkhbt" : "pkhtb";
-  buffer << mnemonic << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( trans, off );
+  buffer << "pkh" << (tb?"tb":"bt") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( tb, imm );
 };
+
+/*
+ * end of pkh instruction
+ *******************************************************************/
 
 op qadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
 qadd8.disasm = { buffer << "qadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op qadd( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm[4] );
-qadd.disasm = { buffer << "qadd\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn); };
 
 op qadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
 qadd16.disasm = { buffer << "qadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
@@ -63,17 +191,8 @@ qadd16.disasm = { buffer << "qadd16\t" << DisasmRegister(rd) << ", " << DisasmRe
 op qasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
 qasx.disasm = { buffer << "qasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op qdadd( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1001[4]: rm[4] );
-qdadd.disasm = { buffer << "qdadd\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn); };
-
-op qdsub( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm[4] );
-qdsub.disasm = { buffer << "qdsub\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn); };
-
 op qsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
 qsax.disasm = { buffer << "qsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op qsub( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1010[4]: rm[4] );
-qsub.disasm = { buffer << "qsub\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn); };
 
 op qsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
 qsub8.disasm = { buffer << "qsub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
@@ -82,6 +201,7 @@ op qsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
 qsub16.disasm = { buffer << "qsub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 op rev_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm_[4] );
+rev_w.var reject : {Reject} = {(rm != rm_)};
 
 rev_w.disasm = { buffer << "rev.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
 
@@ -94,10 +214,11 @@ rev_w.execute = {
 };
 
 op revsh_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm_[4] );
-revsh_w.disasm = { buffer << "revsh.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
+revsh_w.var reject : {Reject} = {(rm != rm_)};
 
-op rev16_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1001[4]: rm_[4] );
-rev16_w.disasm = { buffer << "rev16.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
+revsh_w.disasm = {
+  buffer << "revsh.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 op sadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
 sadd8.disasm = { buffer << "sadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
@@ -108,10 +229,20 @@ sadd16.disasm = { buffer << "sadd16\t" << DisasmRegister(rd) << ", " << DisasmRe
 op sasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
 sasx.disasm = { buffer << "sasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op sel( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm[4] );
-sel.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)}
+/*******************************************************************
+ * sel (Select Bytes) instruction
+ *
+ * SEL selects each byte of its result from either its first operand
+ * or its second operand, according to the values of the GE flags.
+ */
 
-sel.disasm = { buffer << "sel\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+op sel( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm[4] );
+sel.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+sel.disasm = {
+  buffer << "sel\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
 sel.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -132,6 +263,10 @@ sel.execute = {
   // write back results
   cpu.SetGPR( rd, rdval );
 }
+
+/*
+ * end of sel instruction
+ *******************************************************************/
 
 op shadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
 shadd8.disasm = { buffer << "shadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
@@ -174,10 +309,22 @@ ssub8.disasm = { buffer << "ssub8\t" << DisasmRegister(rd) << ", " << DisasmRegi
 op ssub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
 ssub16.disasm = { buffer << "ssub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
-uadd8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)}
+/*******************************************************************
+ * uadd8 (unsigned add 8) instruction
+ * 
+ * UADD8 performs four unsigned 8-bit integer additions, and writes
+ * the results to the destination register. It sets the APSR.GE bits
+ * according to the results of the additions.
+ */
 
-uadd8.disasm = { buffer << "uadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+{ CONFIG::insns6 }:                                              \
+op uadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+uadd8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uadd8.disasm = {
+  buffer << "uadd8\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
 uadd8.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -203,6 +350,10 @@ uadd8.execute = {
   cpu.SetGPR(rd, rdval);
   cpu.CPSR().Set( GE, cpsr_ge);
 }
+
+/*
+ * end of uadd8 instruction
+ *******************************************************************/
 
 op uadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
 uadd16.disasm = { buffer << "uadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
@@ -240,8 +391,50 @@ uqasx.disasm = { buffer << "uqasx\t" << DisasmRegister(rd) << ", " << DisasmRegi
 op uqsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
 uqsax.disasm = { buffer << "uqsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
+/*******************************************************************
+ * uqsub8 (Unsigned Saturating Subtract 8) instruction
+ * 
+ * UQSUB8 performs four unsigned 8-bit integer
+ * subtractions, saturates the results to the 8-bit unsigned integer
+ * range 0 <= x < 255, and writes the results to the destination
+ * register.
+ */
+
+{ CONFIG::insns6 }: \
 op uqsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
-uqsub8.disasm = { buffer << "uqsub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+
+uqsub8.disasm = {
+  buffer << "uqsub8\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+uqsub8.execute = {
+  if(not CheckCondition(cpu, cpu.itcond())) return;
+  
+  // read input operands
+  uint32_t n = cpu.GetGPR(rn);
+  uint32_t m = cpu.GetGPR(rm);
+
+  // compute
+  uint32_t d = 0;
+  unsigned int i;
+  for(i = 0; i < 4; i++, n >>= 8, m >>= 8)
+    {
+      uint8_t result = 0;
+      uint8_t overflow = 0;
+		
+      UnsignedSatSub8(result, overflow, (uint8_t) n, (uint8_t) m);
+		
+      d = RotateRight((uint32_t) d | result, 8);
+    }
+	
+  // write back result
+  cpu.SetGPR(rd, d);
+}
+
+/*
+ * end of uqsub8 instruction
+ *******************************************************************/
 
 op uqsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
 uqsub16.disasm = { buffer << "uqsub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
@@ -269,8 +462,51 @@ usat16_rir.disasm = {
 op usax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
 usax.disasm = { buffer << "usax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
+/*******************************************************************
+ * usub8 (Unsigned Subtract 8) instruction
+ *
+ * USUB8 performs four 8-bit unsigned integer subtractions, and writes
+ * the results to the destination register. It sets the APSR.GE bits
+ * according to the results of the subtractions.
+ */
+
+{ CONFIG::insns6 }:                                       \
 op usub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
-usub8.disasm = { buffer << "usub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+usub8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+usub8.disasm = {
+  buffer << "usub8\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+usub8.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  // read input operands
+  uint32_t rnval = cpu.GetGPR(rn), rmval = cpu.GetGPR(rm);
+  
+  // compute
+  uint32_t rdval = 0;
+  uint8_t cpsr_ge = 0;
+  
+  for(unsigned int byte_index = 0; byte_index < 4; byte_index++, rnval >>= 8, rmval >>= 8)
+    {
+      uint8_t result = 0, carry_in = 0, carry_out = 0, overflow = 0, sign = 0;
+		
+      UnsignedSub8(result, carry_out, overflow, sign, uint8_t( rnval ), uint8_t( rmval ), carry_in);
+      
+      rdval = RotateRight(rdval | uint32_t( result ), 8);
+      cpsr_ge = cpsr_ge | (carry_out << byte_index);//  whether unsigned operations produced a carry or a borrow.
+    }
+	
+  // write back result
+  cpu.SetGPR(rd, rdval);
+  cpu.CPSR().Set( GE, cpsr_ge);
+}
+
+/*
+ * end of usub8 instruction
+ *******************************************************************/
 
 op usub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
 usub16.disasm = { buffer << "usub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };

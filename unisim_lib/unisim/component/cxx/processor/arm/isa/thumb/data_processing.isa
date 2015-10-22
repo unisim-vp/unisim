@@ -781,6 +781,13 @@ rev16.disasm = {
   buffer << "rev16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 }
 
+rev16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint32_t rmval = cpu.GetGPR( rm ), rdval = ByteSwap( RotateRight( rmval, 16 ) );
+  cpu.SetGPR( rd, rdval );
+};
+
 /*
  * end of rev16 instruction
  *******************************************************************/

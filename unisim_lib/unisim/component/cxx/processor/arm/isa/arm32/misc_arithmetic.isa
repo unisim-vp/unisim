@@ -40,12 +40,17 @@
 
 impl {
 #include "unisim/util/arithmetic/arithmetic.hh"
+#include <unisim/util/endian/endian.hh>
 
+using unisim::util::arithmetic::UnsignedAdd8;
+using unisim::util::arithmetic::RotateRight;
+using unisim::util::endian::ByteSwap;
 using unisim::util::arithmetic::SignedSatAdd32;
 using unisim::util::arithmetic::SignedSatSub32;
 using unisim::util::arithmetic::SignExtend;
 using unisim::util::arithmetic::UnsignedSatSub8;
 using unisim::util::arithmetic::RotateRight;
+using unisim::util::arithmetic::UnsignedSub8;
 
 };
 
@@ -58,8 +63,8 @@ op qadd( cond[4]: 0b00010000[8]: rn[4]: rd[4]: 0b0000[4]: 0b0101[4]: rm[4] );
 qadd.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 qadd.disasm = {
-  buffer << "qadd" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+  buffer << "qadd" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 };
 
 qadd.execute = {
@@ -86,8 +91,8 @@ op qsub( cond[4]: 0b00010010[8]: rn[4]: rd[4]: 0b0000[4]: 0b0101[4]: rm[4] );
 qsub.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 qsub.disasm = {
-  buffer << "qsub" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+  buffer << "qsub" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 };
 
 qsub.execute = {
@@ -176,12 +181,12 @@ qdsub.execute = {
  * halfword of its shifted second operand.
  */
 
-op pkh( cond[4]: 0b01101000[8]: rn[4]: rd[4]: imm[5]: tb[1]: 0b01[2]: rm[4] );
+op pkh( cond[4]: 0b01101000[8]: rn[4]: rd[4]: imm[5]: shl<1> tb[1]: 0b01[2]: rm[4] );
 
 pkh.disasm = {
-  buffer << "pkh" << (tb?"tb":"bt")<< DisasmCondition(cond) << '\t'
+  buffer << "pkh" << (tb?"tb":"bt") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << DisasmShImm( tb?2:0, imm );
+         << DisasmRegister(rm) << DisasmShImm( tb, imm );
 };
 
 /*
@@ -205,11 +210,23 @@ pkh.disasm = {
  */
 
 op sxtab16( cond[4]: 0b01101000[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
+sxtab16.var ror : {uint8_t} = {8*rotate};
+sxtab16.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 sxtab16.disasm = {
   buffer << "sxtab16" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << DisasmShImm( rotate?3:0, (rotate<<3) );
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
+};
+
+sxtab16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  int16_t lo = int16_t( rmval << 8 ) >> 8, hi = int16_t( rmval >> 8 ) >> 8;
+  
+  lo += int16_t( rnval >> 0 ); hi += int16_t( rnval >> 16 );
+  cpu.SetGPR( rd, (uint32_t( uint16_t( lo ) ) << 0) | (uint32_t( uint16_t( hi ) ) << 16) );
 };
 
 /*
@@ -226,10 +243,20 @@ sxtab16.disasm = {
  */
 
 op sxtb16( cond[4]: 0b01101000[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
+sxtb16.var ror : {uint8_t} = {8*rotate};
+sxtb16.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 sxtb16.disasm = {
-  buffer << "sxtb16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( rotate?3:0, (rotate<<3) );
+  buffer << "sxtb16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
+};
+
+sxtb16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  int16_t lo = int16_t( rmval << 8 ) >> 8, hi = int16_t( rmval >> 8 ) >> 8;
+  cpu.SetGPR( rd, (uint32_t( uint16_t( lo ) ) << 0) | (uint32_t( uint16_t( hi ) ) << 16) );
 };
 
 /*
@@ -247,11 +274,22 @@ sxtb16.disasm = {
  */
 
 op uxtab16( cond[4]: 0b01101100[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
+uxtab16.var ror : {uint8_t} = {8*rotate};
+uxtab16.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 uxtab16.disasm = {
   buffer << "uxtab16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << DisasmShImm( rotate?3:0, (rotate<<3) );
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
+};
+
+uxtab16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+   
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  uint16_t lo = uint16_t( rmval << 8 ) >> 8, hi = uint16_t( rmval >> 8 ) >> 8;
+  lo += uint16_t( rnval >> 0 ); hi += uint16_t( rnval >> 16 );
+  cpu.SetGPR( rd, (uint32_t( lo ) << 0) | (uint32_t( hi ) << 16) );
 };
 
 /*
@@ -261,17 +299,26 @@ uxtab16.disasm = {
 /*******************************************************************
  * uxtb16 (Unsigned Extend Byte 16) instruction
  *  
- * UXTB16 extracts two 8-bit values from a register, sign-extends them
- * to 16 bits each, and writes the results to the destination
+ * UXTB16 extracts two 8-bit values from a register, unsign-extends
+ * them to 16 bits each, and writes the results to the destination
  * register. You can specify a rotation by 0, 8, 16, or 24 bits before
  * extracting the 8-bit values.
  */
 
 op uxtb16( cond[4]: 0b01101100[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
+uxtb16.var ror : {uint8_t} = {8*rotate};
+uxtb16.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 uxtb16.disasm = {
-  buffer << "uxtb16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( rotate?3:0, (rotate<<3) );
+  buffer << "uxtb16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
+};
+
+uxtb16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, rmval & 0x00ff00ff );
 };
 
 /*
@@ -286,12 +333,32 @@ uxtb16.disasm = {
  */
 
 op sel( cond[4]: 0b01101000[8]: rn[4]: rd[4]: 0b1111[4]: 0b1011[4]: rm[4] );
+sel.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 sel.disasm = {
-  buffer << "sel" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm);
+  buffer << "sel" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
+
+sel.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  // read input operands
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm );
+  uint8_t cpsr_ge = cpu.CPSR().Get( GE );
+	
+  // compute
+  uint32_t rdval = 0;
+  
+  for (unsigned byte_index = 0; byte_index < 4; byte_index++)
+    {
+      uint32_t mask = uint32_t( 0xff ) << (8*byte_index);
+      rdval |= ((cpsr_ge >> byte_index) & 1) ? (rnval & mask) : (rmval & mask);
+    }
+	
+  // write back results
+  cpu.SetGPR( rd, rdval );
+}
 
 /*
  * end of sel instruction
@@ -382,11 +449,20 @@ usat16.disasm = {
  */
 
 op sxtab( cond[4]: 0b01101010[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
+sxtab.var ror : {uint8_t} = {8*rotate};
+sxtab.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 sxtab.disasm = {
   buffer << "sxtab" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << DisasmShImm( rotate?3:0, (rotate<<3) );
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
+};
+
+sxtab.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, rnval + int32_t( int8_t( rmval ) ) );
 };
 
 /*
@@ -394,19 +470,28 @@ sxtab.disasm = {
  *******************************************************************/
 
 /*******************************************************************
- * sxtb (Signed Extend Byte 16) instruction
+ * sxtb (Signed Extend Byte) instruction
  *  
- * SXTB extracts two 8-bit values from a register, sign-extends them
- * to 16 bits each, and writes the results to the destination
- * register. You can specify a rotation by 0, 8, 16, or 24 bits before
- * extracting the 8-bit values.
+ * SXTB extracts an 8-bit value from a register, sign-extends it to 32
+ * bits, and writes the result to the destination register. The
+ * instruction can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit value.
  */
 
 op sxtb( cond[4]: 0b01101010[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
+sxtb.var ror : {uint8_t} = {rotate << 3};
+sxtb.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 sxtb.disasm = {
-  buffer << "sxtb" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( rotate?3:0, (rotate<<3) );
+  buffer << "sxtb" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
+};
+
+sxtb.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, int32_t( int8_t( rmval ) ) );
 };
 
 /*
@@ -424,11 +509,20 @@ sxtb.disasm = {
  */
 
 op sxtah( cond[4]: 0b01101011[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
+sxtah.var ror : {uint8_t} = {8*rotate};
+sxtah.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 sxtah.disasm = {
   buffer << "sxtah" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << DisasmShImm( rotate?3:0, (rotate<<3) );
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
+};
+
+sxtah.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, rnval + int32_t( int16_t( rmval ) ) );
 };
 
 /*
@@ -440,21 +534,19 @@ sxtah.disasm = {
  */
 
 op sxth( cond[4]: 0b01101011[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
+sxth.var ror : {uint8_t} = {8*rotate};
+sxth.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 sxth.disasm = {
-  buffer << "sxth" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( rotate?3:0, (rotate<<3) );
+  buffer << "sxth" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxth.execute = {
-	if (not CheckCondition(cpu, cond)) return;
-
-	uint32_t m = cpu.GetGPR(rm);
-
-	uint32_t rotated = RotateRight(m, 8 * rotate);
-	uint32_t d = SignExtend(rotated, 16);
-
-	cpu.SetGPR(rd, d);
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, int32_t( int16_t( rmval ) ) );
 }
 
 /*
@@ -472,11 +564,20 @@ sxth.execute = {
  */
 
 op uxtab( cond[4]: 0b01101110[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
+uxtab.var ror : {uint8_t} = {8*rotate};
+uxtab.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 uxtab.disasm = {
   buffer << "uxtab" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << DisasmShImm( rotate?3:0, (rotate<<3) );
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
+};
+
+uxtab.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, rnval + ((uint32_t)((uint8_t)rmval)) );
 };
 
 /*
@@ -985,32 +1086,92 @@ usub16.disasm = {
  *******************************************************************/
 
 /*******************************************************************
- * uadd8 instruction
+ * uadd8 (unsigned add 8) instruction
+ * 
+ * UADD8 performs four unsigned 8-bit integer additions, and writes
+ * the results to the destination register. It sets the APSR.GE bits
+ * according to the results of the additions.
  */
 
 { CONFIG::insns6 }:                                              \
 op uadd8( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
+uadd8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 uadd8.disasm = {
-  buffer << "uadd8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "uadd8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
+
+uadd8.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  // read input operands
+  uint32_t rnval = cpu.GetGPR(rn), rmval = cpu.GetGPR(rm);
+  
+  // compute
+  uint32_t rdval = 0;
+  uint8_t cpsr_ge = 0;
+  
+  for(unsigned int byte_index = 0; byte_index < 4; byte_index++, rnval >>= 8, rmval >>= 8)
+    {
+      uint8_t result = 0, carry_in = 0, carry_out = 0, overflow = 0, sign = 0;
+		
+      UnsignedAdd8(result, carry_out, overflow, sign, uint8_t( rnval ), uint8_t( rmval ), carry_in);
+      
+      rdval = RotateRight(rdval | uint32_t( result ), 8);
+      cpsr_ge = cpsr_ge | (carry_out << byte_index);//  whether unsigned operations produced a carry or a borrow.
+    }
+	
+  // write back result
+  cpu.SetGPR(rd, rdval);
+  cpu.CPSR().Set( GE, cpsr_ge);
+}
 
 /*
  * end of uadd8 instruction
  *******************************************************************/
 
 /*******************************************************************
- * usub8 instruction
+ * usub8 (Unsigned Subtract 8) instruction
+ *
+ * USUB8 performs four 8-bit unsigned integer subtractions, and writes
+ * the results to the destination register. It sets the APSR.GE bits
+ * according to the results of the subtractions.
  */
 
 { CONFIG::insns6 }:                                       \
 op usub8( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
+usub8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 usub8.disasm = {
-  buffer << "usub8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "usub8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
+
+usub8.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  // read input operands
+  uint32_t rnval = cpu.GetGPR(rn), rmval = cpu.GetGPR(rm);
+  
+  // compute
+  uint32_t rdval = 0;
+  uint8_t cpsr_ge = 0;
+  
+  for(unsigned int byte_index = 0; byte_index < 4; byte_index++, rnval >>= 8, rmval >>= 8)
+    {
+      uint8_t result = 0, carry_in = 0, carry_out = 0, overflow = 0, sign = 0;
+		
+      UnsignedSub8(result, carry_out, overflow, sign, uint8_t( rnval ), uint8_t( rmval ), carry_in);
+      
+      rdval = RotateRight(rdval | uint32_t( result ), 8);
+      cpsr_ge = cpsr_ge | (carry_out << byte_index);//  whether unsigned operations produced a carry or a borrow.
+    }
+	
+  // write back result
+  cpu.SetGPR(rd, rdval);
+  cpu.CPSR().Set( GE, cpsr_ge);
+}
 
 /*
  * end of usub8 instruction
@@ -1193,39 +1354,44 @@ uqadd8.disasm = {
  *******************************************************************/
 
 /*******************************************************************
- * uqsub8 instruction
+ * uqsub8 (Unsigned Saturating Subtract 8) instruction
+ * 
+ * UQSUB8 performs four unsigned 8-bit integer
+ * subtractions, saturates the results to the 8-bit unsigned integer
+ * range 0 <= x < 255, and writes the results to the destination
+ * register.
  */
 
 { CONFIG::insns6 }: \
 op uqsub8( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
 
 uqsub8.disasm = {
-  buffer << "uqsub8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "uqsub8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 uqsub8.execute = {
-	if(not CheckCondition(cpu, cond)) return;
+  if(not CheckCondition(cpu, cond)) return;
   
-	// read input operands
-	uint32_t n = cpu.GetGPR(rn);
-	uint32_t m = cpu.GetGPR(rm);
+  // read input operands
+  uint32_t n = cpu.GetGPR(rn);
+  uint32_t m = cpu.GetGPR(rm);
 
-	// compute
-	uint32_t d = 0;
-	unsigned int i;
-	for(i = 0; i < 4; i++, n >>= 8, m >>= 8)
-	{
-		uint8_t result = 0;
-		uint8_t overflow = 0;
+  // compute
+  uint32_t d = 0;
+  unsigned int i;
+  for(i = 0; i < 4; i++, n >>= 8, m >>= 8)
+    {
+      uint8_t result = 0;
+      uint8_t overflow = 0;
 		
-		UnsignedSatSub8(result, overflow, (uint8_t) n, (uint8_t) m);
+      UnsignedSatSub8(result, overflow, (uint8_t) n, (uint8_t) m);
 		
-		d = RotateRight((uint32_t) d | result, 8);
-	}
+      d = RotateRight((uint32_t) d | result, 8);
+    }
 	
-	// write back result
-	cpu.SetGPR(rd, d);
+  // write back result
+  cpu.SetGPR(rd, d);
 }
 
 /*

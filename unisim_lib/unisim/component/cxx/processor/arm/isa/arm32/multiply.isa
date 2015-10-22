@@ -87,7 +87,7 @@ mls.disasm = {
 };
 
 mls.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (not CheckCondition(cpu, cond)) return;
 
   cpu.SetGPR( rd, cpu.GetGPR( ra ) - (cpu.GetGPR( rn ) * cpu.GetGPR( rm )) );
 };

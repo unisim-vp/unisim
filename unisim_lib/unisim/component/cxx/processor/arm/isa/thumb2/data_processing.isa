@@ -406,7 +406,7 @@ adr_addw.execute = {
 
 op adc_w( 0b11101011[8]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 adc_w.var imm : {uint32_t} = {imm1|imm0}
-adc_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
+adc_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 adc_w.disasm = {
   buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -440,7 +440,7 @@ adc_wrri.execute = {
 /* EOR instructions */
 op eor_w( 0b11101010[8]: 0b100[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 eor_w.var imm : {uint32_t} = {imm1|imm0}
-eor_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
+eor_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 eor_w.disasm = {
   buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -479,7 +479,7 @@ eor_wrri.execute = {
 
 op orn( 0b11101010[8]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 orn.var imm : {uint32_t} = {imm1|imm0}
-orn.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
+orn.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 orn.disasm = {
   buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -519,7 +519,7 @@ orn_rri.execute = {
 
 op orr_w( 0b11101010[8]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 orr_w.var  imm : {uint32_t} = {imm1|imm0}
-orr_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
+orr_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 orr_w.disasm = {
   buffer << "orr" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -562,7 +562,7 @@ orr_wrri.execute = {
 
 op bic_w( 0b11101010[8]: 0b001[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 bic_w.var imm : {uint32_t} = {imm1|imm0}
-bic_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
+bic_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 bic_w.disasm = {
   buffer << "bic" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -603,7 +603,7 @@ bic_wrri.execute = {
 
 op and_w( 0b11101010[8]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 and_w.var imm : {uint32_t} = {imm1|imm0};
-and_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
+and_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 and_w.disasm = {
   buffer << "and" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -781,8 +781,8 @@ tst_wri.execute = {
 
 /* CLZ instructions */
 
-op clz( 0b111110101011[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: ?[4] );
-clz.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+op clz( 0b111110101011[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm_[4] );
+clz.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rm != rm_)};
 
 clz.disasm = { buffer << "clz\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
 
@@ -793,34 +793,57 @@ clz.execute = {
   cpu.SetGPR( rd, __builtin_clz( cpu.GetGPR( rm ) ) );
 };
 
-/* UXTA instructions */
+/*******************************************************************
+ * uxtab16 (Unsigned Extend and Add Byte 16) instruction
+ *
+ * UXTAB16 extracts two 8-bit values from a register, sign-extends
+ * them to 16 bits each, adds the results to two 16-bit values from
+ * another register, and writes the final results to the destination
+ * register. You can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit values.
+ */
 
-op uxtab16( 0b111110100011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxtab16.var ror : {uint32_t} = {8*ror0};
+op uxtab16( 0b111110100011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxtab16.var ror : {uint8_t} = {8*rotate};
 uxtab16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 uxtab16.disasm = {
-  buffer << "uxtab16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror " << DisasmI(ror);
+  buffer << "uxtab16\t"
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 uxtab16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
-  uint16_t lo = rmval << 8, hi = rmval >> 8;
-  lo >>= 8; hi >>= 8;
-  lo += rnval; hi += rnval >> 16;
-  cpu.SetGPR( rd, ((uint32_t)lo) | (((uint32_t)hi) << 16) );
+  uint16_t lo = uint16_t( rmval << 8 ) >> 8, hi = uint16_t( rmval >> 8 ) >> 8;
+  lo += uint16_t( rnval >> 0 ); hi += uint16_t( rnval >> 16 );
+  cpu.SetGPR( rd, (uint32_t( lo ) << 0) | (uint32_t( hi ) << 16) );
 };
 
-op uxtab( 0b111110100101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxtab.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of uxtab16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uxtab (Signed Extend and Add Byte) instruction
+ *
+ * UXTAB extracts an 8-bit value from a register, sign-extends it to
+ * 32 bits, adds the result to the value in another register, and
+ * writes the final result to the destination register. You can
+ * specify a rotation by 0, 8, 16, or 24 bits before extracting the
+ * 8-bit value.
+ */
+
+op uxtab( 0b111110100101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxtab.var ror : {uint8_t} = {8*rotate};
 uxtab.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 uxtab.disasm = {
-  buffer << "uxtab\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror " << DisasmI(ror);
+  buffer << "uxtab\t"
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 uxtab.execute = {
@@ -830,8 +853,12 @@ uxtab.execute = {
   cpu.SetGPR( rd, rnval + ((uint32_t)((uint8_t)rmval)) );
 };
 
-op uxtah( 0b111110100001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxtah.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of uxtab instruction
+ *******************************************************************/
+
+op uxtah( 0b111110100001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxtah.var ror : {uint8_t} = {8*rotate};
 uxtah.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 uxtah.disasm = {
@@ -846,15 +873,22 @@ uxtah.execute = {
   cpu.SetGPR( rd, rnval + ((uint32_t)((uint16_t)rmval)) );
 };
 
-/* UXT instructions */
+/*******************************************************************
+ * uxtb16 (Unsigned Extend Byte 16) instruction
+ *  
+ * UXTB16 extracts two 8-bit values from a register, sign-extends them
+ * to 16 bits each, and writes the results to the destination
+ * register. You can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit values.
+ */
 
-op uxtb16( 0b1111101000111111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxtb16.var ror : {uint32_t} = {8*ror0};
+op uxtb16( 0b1111101000111111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxtb16.var ror : {uint8_t} = {8*rotate};
 uxtb16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 uxtb16.disasm = {
-  buffer << "uxtb16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror " << DisasmI(ror);
+  buffer << "uxtb16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 uxtb16.execute = {
@@ -864,8 +898,12 @@ uxtb16.execute = {
   cpu.SetGPR( rd, rmval & 0x00ff00ff );
 };
 
-op uxtb_w( 0b1111101001011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxtb_w.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of uxtb16 instruction
+ *******************************************************************/
+
+op uxtb_w( 0b1111101001011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxtb_w.var ror : {uint8_t} = {8*rotate};
 uxtb_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 uxtb_w.disasm = {
@@ -880,8 +918,8 @@ uxtb_w.execute = {
   cpu.SetGPR( rd, ((uint32_t)((uint8_t)rmval)) );
 };
 
-op uxth_w( 0b1111101000011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxth_w.var ror : {uint32_t} = {8*ror0};
+op uxth_w( 0b1111101000011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxth_w.var ror : {uint8_t} = {8*rotate};
 uxth_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 uxth_w.disasm = {
@@ -896,15 +934,24 @@ uxth_w.execute = {
   cpu.SetGPR( rd, (uint32_t)((uint16_t)rmval) );
 };
 
-/* STXA instructions */
+/*******************************************************************
+ * sxtab16 (Signed Extend and Add Byte 16) instruction
+ *
+ * SXTAB16 extracts two 8-bit values from a register, sign-extends
+ * them to 16 bits each, adds the results to two 16-bit values from
+ * another register, and writes the final results to the destination
+ * register. You can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit values.
+ */
 
-op sxtab16( 0b111110100010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxtab16.var ror : {uint32_t} = {8*ror0};
+op sxtab16( 0b111110100010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxtab16.var ror : {uint8_t} = {8*rotate};
 sxtab16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 sxtab16.disasm = {
-  buffer << "sxtab16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror " << DisasmI(ror);
+  buffer << "sxtab16\t"
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxtab16.execute = {
@@ -917,47 +964,88 @@ sxtab16.execute = {
   cpu.SetGPR( rd, (uint32_t( uint16_t( lo ) ) << 0) | (uint32_t( uint16_t( hi ) ) << 16) );
 };
 
-op sxtab( 0b111110100100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxtab.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of sxtab16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sxtab (Signed Extend and Add Byte) instruction
+ *
+ * SXTAB extracts an 8-bit value from a register, sign-extends it to
+ * 32 bits, adds the result to the value in another register, and
+ * writes the final result to the destination register. You can
+ * specify a rotation by 0, 8, 16, or 24 bits before extracting the
+ * 8-bit value.
+ */
+
+op sxtab( 0b111110100100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxtab.var ror : {uint8_t} = {8*rotate};
 sxtab.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 sxtab.disasm = {
-  buffer << "sxtab\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror " << DisasmI(ror);
+  buffer << "sxtab\t"
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxtab.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
-  cpu.SetGPR( rd, rnval + ((int32_t)((int8_t)rmval)) );
+  cpu.SetGPR( rd, rnval + int32_t( int8_t( rmval ) ) );
 };
 
-op sxtah( 0b111110100000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxtah.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of sxtab instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sxtah (Signed Extend and Add Halfword) instruction
+ *  
+ * SXTAH extracts a 16-bit value from a register, sign-extends it to
+ * 32 bits, adds the result to a value from another register, and
+ * writes the final result to the destination register. You can
+ * specify a rotation by 0, 8, 16, or 24 bits before extracting the
+ * 16-bit value.
+ */
+
+op sxtah( 0b111110100000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxtah.var ror : {uint8_t} = {8*rotate};
 sxtah.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 sxtah.disasm = {
-  buffer << "sxtah\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror " << DisasmI(ror);
+  buffer << "sxtah\t"
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxtah.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
-  cpu.SetGPR( rd, rnval + ((int32_t)((int16_t)rmval)) );
+  cpu.SetGPR( rd, rnval + int32_t( int16_t( rmval ) ) );
 };
 
-/* STX instructions */
+/*
+ * end of sxtah instruction
+ *******************************************************************/
 
-op sxtb16( 0b1111101000101111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxtb16.var ror : {uint32_t} = {8*ror0};
+/*******************************************************************
+ * sxtb16 (Signed Extend Byte 16) instruction
+ *  
+ * SXTB16 extracts two 8-bit values from a register, sign-extends them
+ * to 16 bits each, and writes the results to the destination
+ * register. You can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit values.
+ */
+
+op sxtb16( 0b1111101000101111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxtb16.var ror : {uint8_t} = {8*rotate};
 sxtb16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 sxtb16.disasm = {
-  buffer << "sxtb16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror " << DisasmI(ror);
+  buffer << "sxtb16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxtb16.execute = {
@@ -968,37 +1056,62 @@ sxtb16.execute = {
   cpu.SetGPR( rd, (uint32_t( uint16_t( lo ) ) << 0) | (uint32_t( uint16_t( hi ) ) << 16) );
 };
 
-op sxtb_w( 0b1111101001001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxtb_w.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of sxtb16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sxtb (Signed Extend Byte) instruction
+ *  
+ * SXTB extracts an 8-bit value from a register, sign-extends it to 32
+ * bits, and writes the result to the destination register. The
+ * instruction can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit value.
+ */
+
+op sxtb_w( 0b1111101001001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxtb_w.var ror : {uint8_t} = {8*rotate};
 sxtb_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 sxtb_w.disasm = {
-  buffer << "sxtb.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror " << DisasmI(ror);
+  buffer << "sxtb.w\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxtb_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
-  cpu.SetGPR( rd, ((int32_t)((int8_t)rmval)) );
+  cpu.SetGPR( rd, int32_t( int8_t( rmval ) ) );
 };
 
-op sxth_w( 0b1111101000001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxth_w.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of sxtb instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sxth (Signed Extend Halfword) instruction
+ */
+
+op sxth_w( 0b1111101000001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxth_w.var ror : {uint8_t} = {8*rotate};
 sxth_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 sxth_w.disasm = {
-  buffer << "sxth.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror " << DisasmI(ror);
+  buffer << "sxth.w\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxth_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t rmval = RotateRight( cpu.GetGPR( rm ), ror );
-  cpu.SetGPR( rd, (int32_t)((int16_t)rmval) );
+  cpu.SetGPR( rd, int32_t( int16_t( rmval ) ) );
 };
+
+/*
+ * end of sxth instruction
+ *******************************************************************/
 
 /* UBFX instructions */
 
@@ -1093,9 +1206,12 @@ bfc.execute = {
 
 /* RBIT instruction */
 
-op rbit( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1010[4]: ?[4] );
+op rbit( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1010[4]: rm_[4] );
+rbit.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rm != rm_)};
 
-rbit.disasm = { buffer << "rbit\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
+rbit.disasm = {
+  buffer << "rbit\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 rbit.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -1104,3 +1220,30 @@ rbit.execute = {
   for (int idx = 0; idx < 32; ++idx) { dst = (dst << 1) | (src & 1); src >>= 1; }
   cpu.SetGPR( rd, dst );
 }
+
+/*******************************************************************
+ * rev16 (Byte-Reverse Packed Halfword) instruction
+ *
+ * REV16 reverses the byte order in each16-bit halfword of a 32-bit
+ * register.
+ */
+
+{ CONFIG::insns6 }:                                       \
+op rev16_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1001[4]: rm_[4] );
+rev16_w.var reject : {Reject} = {(rm != rm_)};
+
+rev16_w.disasm = {
+  buffer << "rev16.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
+
+rev16_w.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), rdval = ByteSwap( RotateRight( rmval, 16 ) );
+  cpu.SetGPR( rd, rdval );
+};
+
+/*
+ * end of rev16 instruction
+ *******************************************************************/
+

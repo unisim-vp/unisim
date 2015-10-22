@@ -1034,10 +1034,10 @@ clz.execute = {
 
 { CONFIG::insnsT2 }:                      \
 op rbit( cond[4]: 0b011011111111[12]: rd[4]: 0b11110011[8]: rm[4] );
+rbit.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 rbit.disasm = {
-  buffer << "rbit" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+  buffer << "rbit" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 };
 
 rbit.execute = {
@@ -1069,9 +1069,9 @@ rev.disasm = {
 rev.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t src = cpu.GetGPR( rm ), dst = 0;
-  for (int idx = 0; idx < 32; idx += 8) { dst = (dst << 8) | (src & 0xff); src >>= 8; }
-  cpu.SetGPR( rd, dst );
+  uint32_t rmval = cpu.GetGPR(rm), rdval = ByteSwap( rmval );
+
+  cpu.SetGPR( rd, rdval );
 };
 
 /*
@@ -1107,16 +1107,14 @@ revsh.disasm = {
 op rev16( cond[4]: 0b01101[5]: 0b0[1]: 0b11[2]: 0b1111[4]: rd[4]: 0b1111[4]: 0b1011[4]: rm[4] );
 
 rev16.disasm = {
-  buffer << "rev16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+  buffer << "rev16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 };
 
 rev16.execute = {
   if (not CheckCondition(cpu, cond)) return;
-
-  uint32_t src = cpu.GetGPR( rm ), dst = 0;
-  for (int idx = 0; idx < 32; idx += 8) { dst = (dst << 8) | (src & 0xff); src >>= 8; }
-  cpu.SetGPR( rd, (dst << 16) | (dst >> 16) );
+  
+  uint32_t rmval = cpu.GetGPR( rm ), rdval = ByteSwap( RotateRight( rmval, 16 ) );
+  cpu.SetGPR( rd, rdval );
 };
 
 /*
