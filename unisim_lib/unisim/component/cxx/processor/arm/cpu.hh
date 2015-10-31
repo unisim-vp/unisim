@@ -341,10 +341,66 @@ struct CPU
       this->cpsr.ITAdvance();
   }
 
-  /**************************************************************/
-  /* Registers access methods    END                            */
-  /**************************************************************/
-
+  /*************************/
+  /* Memory access methods */
+  /*************************/
+  
+  /** 32bits memory read.
+   *
+   * This method reads 32bits from memory and returns a
+   * corresponding pending memory operation.
+   * 
+   * @param address the base address of the 32bits read
+   * 
+   * @return a pointer to the pending memory operation
+   */
+  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4, false ); }
+  
+  /** 16bits memory read.
+   * 
+   * This method reads 16bits from memory and returns a
+   * corresponding pending memory operation.
+   * 
+   * @param address the base address of the 16bits read
+   * 
+   * @return a pointer to the pending memory operation
+   */
+  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2, false ); }
+  /** Signed 16bits memory read.
+   *
+   * This method reads 16bits from memory and return a
+   * corresponding signed pending memory operation.
+   * 
+   * @param address the base address of the 16bits read
+   * 
+   * @return a pointer to the pending memory operation
+   */
+  uint32_t MemReadS16( uint32_t address ) { return PerformReadAccess( address, 2, true ); }
+  /** 8bits memory read.
+   *
+   * This method reads 8bits from memory and returns a
+   * corresponding pending memory operation.
+   * 
+   * @param address the base address of the 8bits read
+   * 
+   * @return a pointer to the pending memory operation
+   */
+  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1, false ); }
+  /** Signed 8bits memory read.
+   *
+   * This method reads 8bits from memory and returns a
+   * corresponding signed pending memory operation.
+   * 
+   * @param address the base address of the 8bits read
+   * 
+   * @return a pointer to the pending memory operation
+   */
+  uint32_t MemReadS8( uint32_t address ) { return PerformReadAccess( address, 1, true ); }
+  
+  /**********************/
+  /* Exception handling */
+  /**********************/
+  
   /** Mark an exception in the virtual exception vector.
    * This marks an new exception in the virtual exception vector for 
    *   later treatment.
@@ -416,6 +472,27 @@ protected:
    * Memory access variables
    */
   
+  /** Performs a prefetch access.
+   * @param addr the address of the memory prefetch access
+   */
+  void PerformPrefetchAccess( uint32_t addr );
+
+
+  /** Performs a write access.
+   * @param addr the address of the memory write access
+   * @param size the size of the memory write access
+   * @param value the value of the memory write access
+   */
+  void PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
+
+
+  /** Performs a read access.
+   * @param addr the address of the memory read access
+   * @param size the size of the memory read access
+   * @param _signed the nature of the memory read access (signed or unsigned)
+   */
+  uint32_t PerformReadAccess( uint32_t addr, uint32_t size, bool _signed );
+  
   /* Storage for Modes and banked registers */
   typedef std::map<uint8_t, Mode*> ModeMap;
   ModeMap modes;
@@ -475,4 +552,3 @@ public:
 } // end of namespace unisim
 
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
-

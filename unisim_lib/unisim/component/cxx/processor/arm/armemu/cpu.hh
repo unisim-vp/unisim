@@ -36,9 +36,9 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/armemu/cache.hh>
+#include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
-#include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/memory_op.hh>
@@ -71,7 +71,7 @@ namespace armemu {
 
 struct CPU;
 
-struct Config
+struct ARMv7emu
 {
   typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR FPSCR;
   typedef double   F64;
@@ -105,7 +105,7 @@ struct Config
 
 struct CPU
   : public virtual unisim::kernel::service::Object
-  , public unisim::component::cxx::processor::arm::CPU<Config>
+  , public unisim::component::cxx::processor::arm::CPU<ARMv7emu>
   , public unisim::kernel::service::Client<
   unisim::service::interfaces::LinuxOS>
   , public unisim::kernel::service::Service<
@@ -125,7 +125,7 @@ struct CPU
   , public unisim::kernel::service::Service<
   unisim::service::interfaces::Memory<uint32_t> >
 {
-  typedef Config CONFIG;
+  typedef ARMv7emu CONFIG;
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
@@ -410,58 +410,6 @@ struct CPU
    */
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn);
   
-  /** 32bits memory read.
-   *
-   * This method reads 32bits from memory and returns a
-   * corresponding pending memory operation.
-   * 
-   * @param address the base address of the 32bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4, false ); }
-  
-  /** 16bits memory read.
-   * 
-   * This method reads 16bits from memory and returns a
-   * corresponding pending memory operation.
-   * 
-   * @param address the base address of the 16bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2, false ); }
-  /** Signed 16bits memory read.
-   *
-   * This method reads 16bits from memory and return a
-   * corresponding signed pending memory operation.
-   * 
-   * @param address the base address of the 16bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  uint32_t MemReadS16( uint32_t address ) { return PerformReadAccess( address, 2, true ); }
-  /** 8bits memory read.
-   *
-   * This method reads 8bits from memory and returns a
-   * corresponding pending memory operation.
-   * 
-   * @param address the base address of the 8bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1, false ); }
-  /** Signed 8bits memory read.
-   *
-   * This method reads 8bits from memory and returns a
-   * corresponding signed pending memory operation.
-   * 
-   * @param address the base address of the 8bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  uint32_t MemReadS8( uint32_t address ) { return PerformReadAccess( address, 1, true ); }
-  
   /** Get the SPSR register according to current mode.
    *
    * @return the SPSR structured register according to current mode.
@@ -628,9 +576,9 @@ struct CPU
 		
 protected:
   /** Decoder for the arm32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<Config> arm32_decoder;
+  unisim::component::cxx::processor::arm::isa::arm32::Decoder<ARMv7emu> arm32_decoder;
   /** Decoder for the thumb instruction set. */
-  unisim::component::cxx::processor::arm::isa::thumb2::Decoder<Config> thumb_decoder;
+  unisim::component::cxx::processor::arm::isa::thumb2::Decoder<ARMv7emu> thumb_decoder;
 
   /** The registers interface for debugging purpose */
   typedef std::map<std::string, unisim::util::debug::Register *> RegistersRegistry;
