@@ -39,4 +39,4 @@
 
 using namespace unisim::component::cxx::processor;
 
-template struct arm::isa::thumb2::Decoder<arm::armemu::Config>;
+template struct arm::isa::thumb2::Decoder<arm::armemu::ARMv7emu>;

@@ -38,12 +38,48 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/util/likely/likely.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/endian/endian.hh>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+
+/** Constructor.
+ * Initializes CPU
+ *
+ * @param name the name that will be used by the UNISIM service 
+ *   infrastructure and will identify this object
+ * @param parent the parent object of this object
+ */
+  
+template <class _CONFIG_>
+CPU<_CONFIG_>::CPU(const char *name, Object *parent)
+  : unisim::kernel::service::Object(name, parent)
+  , dcache("dcache", this)
+  , exception(0)
+{
+  // Initialize general purpose registers
+  for(unsigned int i = 0; i < num_log_gprs; i++)
+    gpr[i] = 0;
+  this->current_pc = 0;
+  this->next_pc = 0;
+  
+  // Initialize ARM Modes (TODO: modes should be conditionnaly selected based on CONFIG)
+  modes[0b10000] = new Mode( "usr" ); // User mode (No banked regs, using main regs)
+  modes[0b10001] = new BankedMode<0b0111111100000000>( "fiq" ); // FIQ mode
+  modes[0b10010] = new BankedMode<0b0110000000000000>( "irq" ); // IRQ mode
+  modes[0b10011] = new BankedMode<0b0110000000000000>( "svc" ); // Supervisor mode
+  modes[0b10110] = new BankedMode<0b0110000000000000>( "mon" ); // Monitor mode
+  modes[0b10111] = new BankedMode<0b0110000000000000>( "abt" ); // Abort mode
+  modes[0b11010] = new BankedMode<0b0110000000000000>( "hyp" ); // Hyp mode
+  modes[0b11011] = new BankedMode<0b0110000000000000>( "und" ); // Undefined mode
+  modes[0b11111] = new Mode( "sys" ); // System mode (No banked regs, using main regs)
+}
 
 /** Performs a prefetch access.
  *
@@ -53,73 +89,73 @@ template <class _CONFIG_>
 void 
 CPU<_CONFIG_>::PerformPrefetchAccess( uint32_t addr )
 {
-	if ( likely(dcache.GetSize()) )
-	{
-		dcache.prefetch_accesses++;
-		uint32_t cache_tag = dcache.GetTag(addr);
-		uint32_t cache_set = dcache.GetSet(addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( dcache.GetValid(cache_set, cache_way) )
-			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
-			}
-		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( likely(!cache_hit) )
-		{
-			// get a way to replace
-			cache_way = dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			bool cache_valid = dcache.GetValid(cache_set,
-					cache_way);
-			bool cache_dirty = dcache.GetDirty(cache_set,
-					cache_way);
-			if ( cache_valid & cache_dirty )
-			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t rep_cache_address =
-						dcache.GetBaseAddress(cache_set,
-								cache_way);
-				dcache.GetData(cache_set, cache_way,
-						&rep_cache_data);
-				PrWrite(rep_cache_address, rep_cache_data,
-						dcache.LINE_SIZE);
-			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					dcache.GetBaseAddressFromAddress(addr);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = dcache.GetData(cache_set,
-					cache_way, &cache_data);
-			PrRead(cache_address, cache_data,
-					cache_line_size);
-			dcache.SetTag(cache_set, cache_way, cache_tag);
-			dcache.SetValid(cache_set, cache_way, 1);
-			dcache.SetDirty(cache_set, cache_way, 0);
-		}
-		else
-		{
-			dcache.prefetch_hits++;
-		}
-		if ( unlikely(dcache.power_estimator_import != 0) )
-			dcache.power_estimator_import->ReportReadAccess();
-	}
-	else
-	{
-		/* it is just a cache prefetch, ignore the request if there is 
-		 * no cache */
-	}
-	/* CHECK: should we report a memory access for a prefetch???? */
+  if ( likely(dcache.GetSize()) )
+    {
+      dcache.prefetch_accesses++;
+      uint32_t cache_tag = dcache.GetTag(addr);
+      uint32_t cache_set = dcache.GetSet(addr);
+      uint32_t cache_way;
+      bool cache_hit = false;
+      if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+        {
+          if ( dcache.GetValid(cache_set, cache_way) )
+            {
+              // the access is a hit, nothing needs to be done
+              cache_hit = true;
+            }
+        }
+      // if the access was a miss, data needs to be fetched from main
+      //   memory and placed into the cache
+      if ( likely(!cache_hit) )
+        {
+          // get a way to replace
+          cache_way = dcache.GetNewWay(cache_set);
+          // get the valid and dirty bits from the way to replace
+          bool cache_valid = dcache.GetValid(cache_set,
+                                             cache_way);
+          bool cache_dirty = dcache.GetDirty(cache_set,
+                                             cache_way);
+          if ( cache_valid & cache_dirty )
+            {
+              // the cache line to replace is valid and dirty so it needs
+              //   to be sent to the main memory
+              uint8_t *rep_cache_data = 0;
+              uint32_t rep_cache_address =
+                dcache.GetBaseAddress(cache_set,
+                                      cache_way);
+              dcache.GetData(cache_set, cache_way,
+                             &rep_cache_data);
+              PrWrite(rep_cache_address, rep_cache_data,
+                      dcache.LINE_SIZE);
+            }
+          // the new data can be requested
+          uint8_t *cache_data = 0;
+          uint32_t cache_address =
+            dcache.GetBaseAddressFromAddress(addr);
+          // when getting the data we get the pointer to the cache line
+          //   containing the data, so no need to write the cache
+          //   afterwards
+          uint32_t cache_line_size = dcache.GetData(cache_set,
+                                                    cache_way, &cache_data);
+          PrRead(cache_address, cache_data,
+                 cache_line_size);
+          dcache.SetTag(cache_set, cache_way, cache_tag);
+          dcache.SetValid(cache_set, cache_way, 1);
+          dcache.SetDirty(cache_set, cache_way, 0);
+        }
+      else
+        {
+          dcache.prefetch_hits++;
+        }
+      if ( unlikely(dcache.power_estimator_import != 0) )
+        dcache.power_estimator_import->ReportReadAccess();
+    }
+  else
+    {
+      /* it is just a cache prefetch, ignore the request if there is 
+       * no cache */
+    }
+  /* CHECK: should we report a memory access for a prefetch???? */
 }
 
 /** Performs a write access.
@@ -133,10 +169,10 @@ CPU<_CONFIG_>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
 {
   uint32_t write_addr = addr;
   uint8_t data[4];
-  
+
   if (size > 4) throw 0; // should never happen
-  
-  if (GetEndianness() == E_BIG_ENDIAN) {
+
+  if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
     // fix the write address according to request size when big endian
     write_addr ^= ((-size) & 3);
     // TODO: need to check that because it seems astonishingly incorrect
@@ -148,7 +184,7 @@ CPU<_CONFIG_>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
     for (int byte = 0; byte < int( size ); ++byte)
       { data[byte] = shifter; shifter >>= 8; }
   }
-  
+
   if ( likely(dcache.GetSize()) )
     {
       dcache.write_accesses++;
@@ -191,9 +227,7 @@ CPU<_CONFIG_>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
     }
 
   /* report read memory access if necessary */
-  if (requires_memory_access_reporting and memory_access_reporting_import)
-    memory_access_reporting_import->
-      ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+  ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 }
 
 /** Performs a read access.
@@ -210,9 +244,9 @@ CPU<_CONFIG_>::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
 
   if (size > 4) throw 0;
   uint32_t misalignment = addr & (size-1);
-  
+
   // fix the read address depending on the request size and endianess
-  if (GetEndianness() == E_BIG_ENDIAN) {
+  if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
     // TODO: need to check that because it seems astonishingly
     // incorrect to perform address masking and endianness conversion
     read_addr ^= ((-size) & 3);
@@ -291,7 +325,7 @@ CPU<_CONFIG_>::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
     }
 
   uint32_t value;
-  if (GetEndianness() == E_LITTLE_ENDIAN) {
+  if (GetEndianness() == unisim::util::endian::E_LITTLE_ENDIAN) {
     uint32_t shifter = 0;
     for (int byte = size; --byte >= 0;)
       { shifter = (shifter << 8) | uint32_t( data[byte] ); }
@@ -306,16 +340,17 @@ CPU<_CONFIG_>::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
       shifter = unisim::util::arithmetic::RotateRight( shifter, misalignment*8 );
     value = shifter;
   }
-  
+
   if ( likely(dcache.GetSize()) )
     if ( unlikely(dcache.power_estimator_import != 0) )
       dcache.power_estimator_import->ReportReadAccess();
 
   /* report read memory access if necessary */
-  if (requires_memory_access_reporting and memory_access_reporting_import)
-    memory_access_reporting_import->
-      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
-        
+  ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+  // if (requires_memory_access_reporting and memory_access_reporting_import)
+  //   memory_access_reporting_import->
+  //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+      
   return value;
 }
 

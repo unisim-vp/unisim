@@ -225,7 +225,7 @@ unisim/component/cxx/processor/arm/disasm.cc \
 unisim/component/cxx/processor/arm/arm926ejs/cpu.cc \
 unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.cc \
 unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.cc \
-unisim/component/cxx/processor/arm/arm926ejs/cache.cc \
+unisim/component/cxx/processor/arm/cache.cc \
 unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.cc \
 unisim/component/cxx/processor/arm/arm926ejs/tlb.cc \
 unisim/component/cxx/processor/arm/arm926ejs/cp15.cc \
@@ -438,7 +438,7 @@ unisim/component/cxx/processor/arm/arm926ejs/cpu.hh \
 unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh \
 unisim/component/cxx/processor/arm/arm926ejs/cp15.hh \
 unisim/component/cxx/processor/arm/arm926ejs/cp15interface.hh \
-unisim/component/cxx/processor/arm/arm926ejs/cache.hh \
+unisim/component/cxx/processor/arm/cache.hh \
 unisim/component/cxx/processor/arm/arm926ejs/tlb.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/exception.hh \

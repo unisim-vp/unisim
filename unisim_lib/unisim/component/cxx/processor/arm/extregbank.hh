@@ -154,7 +154,7 @@ namespace arm {
             ExtTypeInfo<valT>::ToBytes( ptr, regs[idx] );
             copy.mask |= mask;
           }
-          if (copy.mask == ((1 << copy.size)-1)) copy.buffer = 0;
+          if (copy.mask == unsigned((1 << copy.size)-1)) copy.buffer = 0;
         }
       else
         {

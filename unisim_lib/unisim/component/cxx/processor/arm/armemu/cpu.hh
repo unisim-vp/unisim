@@ -35,7 +35,6 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
 
-#include <unisim/component/cxx/processor/arm/armemu/cache.hh>
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
@@ -43,23 +42,21 @@
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/memory_op.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/memory_op.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/disassembly.hh>
-#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
-#include <unisim/component/cxx/processor/arm/memory_op.hh>
-// #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/register.hh>
-#include <string>
 #include <unisim/util/queue/queue.hh>
 #include <unisim/util/queue/queue.tcc>
+#include <string>
 #include <inttypes.h>
 
 namespace unisim {
@@ -104,74 +101,47 @@ struct ARMv7emu
 };
 
 struct CPU
-  : public virtual unisim::kernel::service::Object
-  , public unisim::component::cxx::processor::arm::CPU<ARMv7emu>
-  , public unisim::kernel::service::Client<
-  unisim::service::interfaces::LinuxOS>
-  , public unisim::kernel::service::Service<
-  unisim::service::interfaces::MemoryInjection<uint32_t> >
-  , public unisim::kernel::service::Client<
-  unisim::service::interfaces::DebugControl<uint32_t> >
-  , public unisim::kernel::service::Client<
-  unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
-  , public unisim::kernel::service::Client<
-  unisim::service::interfaces::TrapReporting>
-  , public unisim::kernel::service::Service<
-  unisim::service::interfaces::MemoryAccessReportingControl>
-  , public unisim::kernel::service::Service<
-  unisim::service::interfaces::Disassembly<uint32_t> >
-  , public unisim::kernel::service::Service<
-  unisim::service::interfaces::Registers >
-  , public unisim::kernel::service::Service<
-  unisim::service::interfaces::Memory<uint32_t> >
+  : public unisim::component::cxx::processor::arm::CPU<ARMv7emu>
+  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
+  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint32_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint32_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+  , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint32_t> >
+  , public unisim::kernel::service::Service<unisim::service::interfaces::Registers >
+  , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint32_t> >
 {
   typedef ARMv7emu CONFIG;
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
 		
-  /** Disassembly service export. */
-  unisim::kernel::service::ServiceExport<
-    unisim::service::interfaces::Disassembly<uint32_t> >
-  disasm_export;
-  /** Registers service export. */
-  unisim::kernel::service::ServiceExport<
-    unisim::service::interfaces::Registers>
-  registers_export;
-  /** Memory injection service export. */
-  unisim::kernel::service::ServiceExport<
-    unisim::service::interfaces::MemoryInjection<uint32_t> > 
-  memory_injection_export;
-  /** Memory service export. */
-  unisim::kernel::service::ServiceExport<
-    unisim::service::interfaces::Memory<uint32_t> > 
-  memory_export;
   /** Memory access reporting control service export. */
-  unisim::kernel::service::ServiceExport<
-    unisim::service::interfaces::MemoryAccessReportingControl> 
-  memory_access_reporting_control_export;
-
-  /** Debug control service import. */
-  unisim::kernel::service::ServiceImport<
-    unisim::service::interfaces::DebugControl<uint32_t> >
-  debug_control_import;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
   /** Memory access reporting service import. */
-  unisim::kernel::service::ServiceImport<
-    unisim::service::interfaces::MemoryAccessReporting<uint32_t> > 
-  memory_access_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint32_t> > memory_access_reporting_import;
+  /** Disassembly service export. */
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint32_t> >  disasm_export;
+  /** Registers service export. */
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers>  registers_export;
+  /** Memory injection service export. */
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint32_t> >  memory_injection_export;
+  /** Memory service export. */
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint32_t> >  memory_export;
+  /** Debug control service import. */
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint32_t> >  debug_control_import;
   /** Symbol table lookup service import. */
-  unisim::kernel::service::ServiceImport<
-    unisim::service::interfaces::SymbolTableLookup<uint32_t> > 
-  symbol_table_lookup_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint32_t> > symbol_table_lookup_import;
   /** Linux OS service import. */
-  unisim::kernel::service::ServiceImport<
-    unisim::service::interfaces::LinuxOS> 
-  linux_os_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
   /** Trap reporting service import. */
-  unisim::kernel::service::ServiceImport<
-    unisim::service::interfaces::TrapReporting> 
-  instruction_counter_trap_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>  instruction_counter_trap_reporting_import;
 
+  /** Indicates if the finished instructions require to be reported. */
+  bool requires_finished_instruction_reporting;
+  /** Indicates if the memory accesses require to be reported. */
+  bool requires_memory_access_reporting;
   //=====================================================================
   //=                    Constructor/Destructor                         =
   //=====================================================================
@@ -220,29 +190,6 @@ struct CPU
   void StepInstruction();
 
   //=====================================================================
-  //=                      memory methods                               =
-  //=====================================================================
-
-  /** Processor external memory write.
-   * Perform an external write memory access, that is an access that is not
-   *   in cache (or cache absent).
-   *
-   * @param addr the address of the access
-   * @param buffer byte buffer with the data to write
-   * @param size the size of the access
-   */
-  virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
-  /** Processor external memory read.
-   * Perform an external read memory access, that is an access that is not
-   *   in cache (or cache absent).
-   *
-   * @param addr the address of the access
-   * @param buffer byte buffer that will be filled with the read data
-   * @param size the size of the access
-   */
-  virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
-
-  //=====================================================================
   //=             memory injection interface methods                    =
   //=====================================================================
 
@@ -270,18 +217,18 @@ struct CPU
   //=             memory access reporting control interface methods     =
   //=====================================================================
 
+  /** Set/unset the reporting of finishing instructions.
+   * 
+   * @param report if true set the reporting of finishing
+   *   instructions, unset otherwise
+   */
+  virtual void RequiresFinishedInstructionReporting( bool report );
   /** Set/unset the reporting of memory accesses.
-   *
-   * @param report if true set the reporting of memory acesses, unset 
+   * 
+   * @param report if true set the reporting of memory accesses, unset
    *   otherwise
    */
   virtual void RequiresMemoryAccessReporting( bool report );
-  /** Set/unset the reporting of finishing instructions.
-   * 
-   * @param report if true set the reporting of finishing instructions, 
-   *   unset otherwise
-   */
-  virtual void RequiresFinishedInstructionReporting( bool report );
 
   //=====================================================================
   //=             non intrusive memory interface methods                =
@@ -426,28 +373,11 @@ struct CPU
    */
   void MoveSPSRtoCPSR();
   
-  /** 32bits memory write.
-   * This method write the giving 32bits value into the memory system.
-   * 
-   * @param address the base address of the 32bits write
-   * @param value the value to write into memory
-   */
-  void MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
-  /** 16bits memory write.
-   * This method write the giving 16bits value into the memory system.
-   * 
-   * @param address the base address of the 16bits write
-   * @param value the value to write into memory
-   */
-  void MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
-  /** 8bits memory write.
-   * This method write the giving 8bits value into the memory system.
-   * 
-   * @param address the base address of the 8bits write
-   * @param value the value to write into memory
-   */
-  void MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
-
+  void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
+  {
+    if (requires_memory_access_reporting and memory_access_reporting_import)
+      memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
+  }
   /**************************************************************/
   /* Memory access methods       END                            */
   /**************************************************************/
@@ -571,9 +501,6 @@ struct CPU
 
   /** Instruction cache */
   Cache icache;
-  /** Data cache */
-  Cache dcache;
-		
 protected:
   /** Decoder for the arm32 instruction set. */
   unisim::component::cxx::processor::arm::isa::arm32::Decoder<ARMv7emu> arm32_decoder;
@@ -624,13 +551,6 @@ protected:
    */
   std::string default_endianness_string;
 	
-  /** Indicates if the memory accesses require to be reported.
-   */
-  bool requires_memory_access_reporting;
-  /** Indicates if the finished instructions require to be reported.
-   */
-  bool requires_finished_instruction_reporting;
-		
   /************************************************************************/
   /* UNISIM parameters, statistics and registers                    START */
   /************************************************************************/

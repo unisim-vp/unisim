@@ -35,10 +35,12 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
-#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/extregbank.hh>
+#include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <map>
 #include <inttypes.h>
 
@@ -78,6 +80,7 @@ template <> struct ModeInfo<0>
 
 template <typename _CONFIG_>
 struct CPU
+  : public virtual unisim::kernel::service::Object
 {
   typedef _CONFIG_ CONFIG;
   typedef typename CONFIG::FPSCR fpscr_type;
@@ -97,32 +100,9 @@ struct CPU
    *
    * @param endianness the endianness to use
    */
-  CPU( unisim::util::endian::endian_type endianness = unisim::util::endian::E_LITTLE_ENDIAN )
-    : exception(0)
-  {
-    // Initialize general purpose registers
-    for(unsigned int i = 0; i < num_log_gprs; i++)
-      gpr[i] = 0;
-    this->current_pc = 0;
-    this->next_pc = 0;
-    
-    // Initialize ARM Modes (TODO: modes should be conditionnaly selected based on CONFIG)
-    modes[0b10000] = new Mode( "usr" ); // User mode (No banked regs, using main regs)
-    modes[0b10001] = new BankedMode<0b0111111100000000>( "fiq" ); // FIQ mode
-    modes[0b10010] = new BankedMode<0b0110000000000000>( "irq" ); // IRQ mode
-    modes[0b10011] = new BankedMode<0b0110000000000000>( "svc" ); // Supervisor mode
-    modes[0b10110] = new BankedMode<0b0110000000000000>( "mon" ); // Monitor mode
-    modes[0b10111] = new BankedMode<0b0110000000000000>( "abt" ); // Abort mode
-    modes[0b11010] = new BankedMode<0b0110000000000000>( "hyp" ); // Hyp mode
-    modes[0b11011] = new BankedMode<0b0110000000000000>( "und" ); // Undefined mode
-    modes[0b11111] = new Mode( "sys" ); // System mode (No banked regs, using main regs)
-    
-    // Initialize address mungling
-    cpsr.Set( E, endianness == unisim::util::endian::E_LITTLE_ENDIAN ? 0 : 1 );
-  }
+  CPU(const char* name, Object* parent);
 
-  /** Destructor.
-   */
+  /** Destructor. */
   ~CPU()
   {
     for (typename ModeMap::iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr)
@@ -344,7 +324,26 @@ struct CPU
   /*************************/
   /* Memory access methods */
   /*************************/
-  
+
+  /** Processor external memory write.
+   * Perform an external write memory access, that is an access that is not
+   *   in cache (or cache absent).
+   *
+   * @param addr the address of the access
+   * @param buffer byte buffer with the data to write
+   * @param size the size of the access
+   */
+  virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
+  /** Processor external memory read.
+   * Perform an external read memory access, that is an access that is not
+   *   in cache (or cache absent).
+   *
+   * @param addr the address of the access
+   * @param buffer byte buffer that will be filled with the read data
+   * @param size the size of the access
+   */
+  virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
+
   /** 32bits memory read.
    *
    * This method reads 32bits from memory and returns a
@@ -396,6 +395,30 @@ struct CPU
    * @return a pointer to the pending memory operation
    */
   uint32_t MemReadS8( uint32_t address ) { return PerformReadAccess( address, 1, true ); }
+
+  /** 32bits memory write.
+   * This method write the giving 32bits value into the memory system.
+   * 
+   * @param address the base address of the 32bits write
+   * @param value the value to write into memory
+   */
+  void MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
+  /** 16bits memory write.
+   * This method write the giving 16bits value into the memory system.
+   * 
+   * @param address the base address of the 16bits write
+   * @param value the value to write into memory
+   */
+  void MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
+  /** 8bits memory write.
+   * This method write the giving 8bits value into the memory system.
+   * 
+   * @param address the base address of the 8bits write
+   * @param value the value to write into memory
+   */
+  void MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
+
+  virtual void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size ) = 0;
   
   /**********************/
   /* Exception handling */
@@ -467,6 +490,9 @@ struct CPU
   static uint32_t const COND_LE = 0x0d;
   static uint32_t const COND_AL = 0x0e;
 
+  /** Data cache */
+  Cache dcache;
+		
 protected:
   /*
    * Memory access variables
@@ -502,7 +528,7 @@ protected:
   uint32_t gpr[num_log_gprs];
   uint32_t current_pc, next_pc;
   
-  /** PSR registers. */
+  /** PSR registers */
   PSR      cpsr;
   
   /** Exception vector.

@@ -34,7 +34,6 @@
  */
 #include "unisim/component/cxx/processor/arm/arm926ejs/cpu.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/cp15.hh"
-#include "unisim/component/cxx/processor/arm/arm926ejs/cache.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/tlb.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
 #include "unisim/util/endian/endian.hh"

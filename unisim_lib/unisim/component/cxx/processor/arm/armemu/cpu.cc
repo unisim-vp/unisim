@@ -32,8 +32,9 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
+#include <unisim/component/cxx/processor/arm/armemu/cpu.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
-#include <unisim/component/cxx/processor/arm/armemu/cache.hh>
+#include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/memory_op.hh>
 #include <unisim/kernel/debug/debug.hh>
 #include <unisim/util/endian/endian.hh>
@@ -65,8 +66,6 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
-using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::LittleEndian2Host;
 using unisim::util::debug::SimpleRegister;
@@ -101,37 +100,37 @@ private:
  */
 
 CPU::CPU(const char *name, Object *parent)
-  : Object(name, parent)
+  : unisim::kernel::service::Object(name, parent)
+  , unisim::component::cxx::processor::arm::CPU<ARMv7emu>(name, parent)
+  , unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
+  , unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >(name, parent)
   , Client<LinuxOS>(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
   , Client<DebugControl<uint32_t> >(name, parent)
-  , Client<MemoryAccessReporting<uint32_t> >(name, parent)
   , Client<TrapReporting>(name, parent)
-  , Service<MemoryAccessReportingControl>(name, parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service<Registers>(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
+  , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
+  , memory_access_reporting_import("memory-access-reporting-import", this)
   , disasm_export("disasm-export", this)
   , registers_export("registers-export", this)
   , memory_injection_export("memory-injection-export", this)
   , memory_export("memory-export", this)
-  , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
   , debug_control_import("debug-control-import", this)
-  , memory_access_reporting_import("memory-access-reporting-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
   , linux_os_import("linux-os-import", this)
   , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
+  , requires_finished_instruction_reporting(true)
+  , requires_memory_access_reporting(true)
   , logger(*this)
   , icache("icache", this)
-  , dcache("dcache", this)
   , arm32_decoder()
   , instruction_counter(0)
   , voltage(0)
   , verbose(0)
   , trap_on_instruction_counter(0)
-  , default_endianness_string(GetEndianness() == E_BIG_ENDIAN ? "big-endian" : "little-endian")
-  , requires_memory_access_reporting(true)
-  , requires_finished_instruction_reporting(true)
+  , default_endianness_string(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN ? "big-endian" : "little-endian")
   , param_default_endianness("default-endianness", this,
                            default_endianness_string,
                            "The processor default/boot endianness. Available values are: "
@@ -529,7 +528,7 @@ CPU::StepInstruction()
     ReadInsn(current_pc, insn);
 		
     /* Decode current PC */
-    isa::thumb2::Operation<unisim::component::cxx::processor::arm::armemu::Config>* op;
+    isa::thumb2::Operation<unisim::component::cxx::processor::arm::armemu::ARMv7emu>* op;
     op = thumb_decoder.Decode(current_pc, insn);
     unsigned insn_length = op->GetLength();
     if (insn_length % 16) throw 0;
@@ -554,7 +553,7 @@ CPU::StepInstruction()
     ReadInsn(current_pc, insn);
 			
     /* Decode current PC */
-    isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::Config>* op;
+    isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::ARMv7emu>* op;
     op = arm32_decoder.Decode(current_pc, insn);
 		
     /* update PC registers value before execution */
@@ -730,17 +729,6 @@ CPU::InjectWriteMemory( uint32_t addr, const void* buffer, uint32_t size )
 	return true;
 }
 
-/** Set/unset the reporting of memory accesses.
- *
- * @param report if true set the reporting of memory acesses, unset 
- *   otherwise
- */
-void 
-CPU::RequiresMemoryAccessReporting( bool report )
-{
-	requires_memory_access_reporting = report;
-}
-
 /** Set/unset the reporting of finishing instructions.
  * 
  * @param report if true set the reporting of finishing instructions, 
@@ -750,6 +738,17 @@ void
 CPU::RequiresFinishedInstructionReporting( bool report )
 {
 	requires_finished_instruction_reporting = report;
+}
+
+/** Set/unset the reporting of memory accesses.
+ *
+ * @param report if true/false sets/unsets the reporting of memory
+ *        acesseses
+ */
+void
+CPU::RequiresMemoryAccessReporting( bool report )
+{
+	requires_memory_access_reporting = report;
 }
 
 /** Perform a non intrusive read access.
@@ -946,7 +945,7 @@ CPU::Disasm(uint32_t addr, uint32_t &next_addr)
 		
 		uint8_t insn_bytes[4];
 		isa::thumb2::CodeType insn;
-		isa::thumb2::Operation<unisim::component::cxx::processor::arm::armemu::Config> *op = 0;
+		isa::thumb2::Operation<unisim::component::cxx::processor::arm::armemu::ARMv7emu> *op = 0;
 		if (!ReadMemory(addr, insn_bytes, 4)) 
 		{
 			buffer << "Could not read from memory";
@@ -974,14 +973,14 @@ CPU::Disasm(uint32_t addr, uint32_t &next_addr)
 	{
 		buffer << "[ARM32]";
 		
-		isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::Config> * op = NULL;
+		isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::ARMv7emu> * op = NULL;
 		uint32_t insn;
 		if (!ReadMemory(addr, &insn, 4)) 
 		{
 			buffer << "Could not read from memory";
 			return buffer.str();
 		}
-		if (GetEndianness() == E_BIG_ENDIAN)
+		if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN)
 			insn = BigEndian2Host(insn);
 		else
 			insn = LittleEndian2Host(insn);
