@@ -2342,25 +2342,6 @@ ReadInsn(address_t address, uint32_t &val)
 template<class CONFIG>
 void
 CPU<CONFIG> ::
-ReadPrefetch(address_t address)
-{
-	address = address & ~(0x3);
-	MemoryOp<CONFIG> *memop;
-	
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetPrefetch(address);
-	lsQueue.push(memop);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
 Read32toPCUpdateT(address_t address)
 {
 	MemoryOp<CONFIG> *memop;

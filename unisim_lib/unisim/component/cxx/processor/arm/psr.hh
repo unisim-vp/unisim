@@ -231,21 +231,6 @@ namespace arm {
 //   return rm;
 // }
 
-// /** Copy the value of current SPSR register into CPSR.
-//  */
-// void 
-// MoveSPSRtoCPSR()
-// {
-//   /* SPSR needs to be moved to CPSR
-//    * This means that we need to change the register mapping if the running mode has changed
-//    */
-//   uint32_t src_mode = CPSR().M().Get();
-//   uint32_t dst_mode = SPSR().M().Get();
-//   uint32_t cur_spsr = SPSR().bits();
-//   CPSR().bits() = SPSR().bits();
-//   if (src_mode != dst_mode)
-//     SetGPRMapping(src_mode, dst_mode);
-// }
 
 } // end of namespace arm
 } // end of namespace processor

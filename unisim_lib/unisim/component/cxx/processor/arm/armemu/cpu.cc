@@ -180,14 +180,15 @@ CPU::CPU(const char *name, Object *parent)
   registers_registry["fp"] = new SimpleRegister<uint32_t>("fp", &gpr[11]);
   registers_registry["ip"] = new SimpleRegister<uint32_t>("ip", &gpr[12]);
   
-  for (unsigned int i = 0; i < num_phys_gprs; i++)
-    {
-      std::stringstream ss, ss_desc;
-      ss << "PHYS_GPR[" << i << "]";
-      ss_desc << "Physical register " << i;
-      reg_phys_gpr[i] =  
-        new unisim::kernel::service::Register<uint32_t>( ss.str().c_str(), this, phys_gpr[i], ss_desc.str().c_str() );
-    }
+  // TODO: Provide access to Banked Registers
+  // for (unsigned int i = 0; i < num_phys_gprs; i++)
+  //   {
+  //     std::stringstream ss, ss_desc;
+  //     ss << "PHYS_GPR[" << i << "]";
+  //     ss_desc << "Physical register " << i;
+  //     reg_phys_gpr[i] =  
+  //       new unisim::kernel::service::Register<uint32_t>( ss.str().c_str(), this, phys_gpr[i], ss_desc.str().c_str() );
+  //   }
   for (unsigned int i = 0; i < (num_log_gprs - 1); i++)
     {
       std::stringstream ss, ss_desc;
@@ -198,15 +199,16 @@ CPU::CPU(const char *name, Object *parent)
                                                         this, gpr[i], ss_desc.str().c_str());
     }
   reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
-  for (unsigned int i = 0; i < num_phys_spsrs; i++)
-    {
-      std::stringstream ss, ss_desc;
-      ss << "SPSR[" << i << "]";
-      ss_desc << "SPSR[" << i << "] register";
-      reg_spsr[i] =
-        new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-                                                        this, spsr[i].m_value, ss_desc.str().c_str());
-    }
+  // TODO: provide unisim registers for SPSRs
+  // for (unsigned int i = 0; i < num_phys_spsrs; i++)
+  //   {
+  //     std::stringstream ss, ss_desc;
+  //     ss << "SPSR[" << i << "]";
+  //     ss_desc << "SPSR[" << i << "] register";
+  //     reg_spsr[i] =
+  //       new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
+  //                                                       this, spsr[i].m_value, ss_desc.str().c_str());
+  //   }
 
   // This implementation of the arm architecture can only run in user mode,
   //   so we can already set CPSR to that mode.
@@ -227,233 +229,12 @@ CPU::CPU(const char *name, Object *parent)
  */
 CPU::~CPU()
 {
-  for (unsigned int i = 0; i < num_phys_gprs; i++)
-    if (reg_phys_gpr[i]) delete reg_phys_gpr[i];
   for (unsigned int i = 0; i < num_log_gprs; i++)
     if (reg_gpr[i]) delete reg_gpr[i];
-  for (unsigned int i = 0; i < num_phys_spsrs; i++)
-    if (reg_spsr[i]) delete reg_spsr[i];
 
   for (RegistersRegistry::iterator itr = registers_registry.begin(), end = registers_registry.end(); itr != end; itr++)
     delete itr->second;
   registers_registry.clear();
-}
-
-/** Arrange the GPR mapping depending on initial and target running mode.
- *
- * @param src_mode the running mode the processor is currently in
- * @param tar_mode the target running mode the registers should be mapped to
- */
-void 
-CPU::
-SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
-{
-	/* gpr organization per running mode:
-	 * - user:           0-14 (R0-R14),                  15 (PC)
-	 * - system:         0-14 (R0-R14),                  15 (PC)
-	 * - supervisor:     0-12 (R0-R12), 16-17 (R13-R14), 15 (PC)
-	 * - abort:          0-12 (R0-R12), 18-19 (R13-R14), 15 (PC)
-	 * - undefined:      0-12 (R0-R12), 20-21 (R13-R14), 15 (PC)
-	 * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
-	 * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
-	 */
-
-	/* Backup current running mode */
-	switch (src_mode)
-	{
-		case USER_MODE:
-		case SYSTEM_MODE:
-			for (unsigned int i = 0; i < 15; i++) 
-			{
-				phys_gpr[i] = gpr[i];
-			}
-			phys_gpr[15] = this->next_pc;
-			break;
-		case SUPERVISOR_MODE:
-			for (unsigned int i = 0; i < 13; i++) 
-			{
-				phys_gpr[i] = gpr[i];
-			}
-			phys_gpr[16] = gpr[13];
-			phys_gpr[17] = gpr[14];
-			phys_gpr[15] = this->next_pc;
-			break;
-		case ABORT_MODE:
-			for (unsigned int i = 0; i < 13; i++) 
-			{
-				phys_gpr[i] = gpr[i];
-			}
-			phys_gpr[18] = gpr[13];
-			phys_gpr[19] = gpr[14];
-			phys_gpr[15] = this->next_pc;
-			break;
-		case UNDEFINED_MODE:
-			for (unsigned int i = 0; i < 13; i++) 
-			{
-				phys_gpr[i] = gpr[i];
-			}
-			phys_gpr[20] = gpr[13];
-			phys_gpr[21] = gpr[14];
-			phys_gpr[15] = this->next_pc;
-			break;
-		case IRQ_MODE:
-			for (unsigned int i = 0; i < 13; i++) 
-			{
-				phys_gpr[i] = gpr[i];
-			}
-			phys_gpr[22] = gpr[13];
-			phys_gpr[23] = gpr[14];
-			phys_gpr[15] = this->next_pc;
-			break;
-		case FIQ_MODE:
-			for (unsigned int i = 0; i < 8; i++) 
-			{
-				phys_gpr[i] = gpr[i];
-			}
-			for (unsigned int i = 0; i < 7; i++) 
-			{
-				phys_gpr[24 + i] = gpr[8 + i];
-			}
-			phys_gpr[15] = this->next_pc;
-			break;
-		default:
-			assert(0);
-	}
-
-	/* Update registers to the target mode */
-	switch (tar_mode) 
-	{
-		case USER_MODE:
-		case SYSTEM_MODE:
-			for (unsigned int i = 0; i < 15; i++) 
-			{
-				gpr[i] = phys_gpr[i];
-			}
-			this->next_pc = phys_gpr[15];
-			break;
-		case SUPERVISOR_MODE:
-			for (unsigned int i = 0; i < 13; i++) 
-			{
-				gpr[i] = phys_gpr[i];
-			}
-			gpr[13] = phys_gpr[16];
-			gpr[14] = phys_gpr[17];
-			this->next_pc = phys_gpr[15];
-			break;
-		case ABORT_MODE:
-			for (unsigned int i = 0; i < 13; i++) 
-			{
-				gpr[i] = phys_gpr[i];
-			}
-			gpr[13] = phys_gpr[18];
-			gpr[14] = phys_gpr[19];
-			this->next_pc = phys_gpr[15];
-			break;
-		case UNDEFINED_MODE:
-			for (unsigned int i = 0; i < 13; i++) 
-			{
-				gpr[i] = phys_gpr[i];
-			}
-			gpr[13] = phys_gpr[20];
-			gpr[14] = phys_gpr[21];
-			this->next_pc = phys_gpr[15];
-			break;
-		case IRQ_MODE:
-			for (unsigned int i = 0; i < 13; i++) 
-			{
-				gpr[i] = phys_gpr[i];
-			}
-			gpr[13] = phys_gpr[22];
-			gpr[14] = phys_gpr[23];
-			this->next_pc = phys_gpr[15];
-			break;
-		case FIQ_MODE:
-			for (unsigned int i = 0; i < 8; i++) 
-			{
-				gpr[i] = phys_gpr[i];
-			}
-			for (unsigned int i = 0; i < 7; i++) 
-			{
-				gpr[8 + i] = phys_gpr[24 + i];
-			}
-			this->next_pc = phys_gpr[15];
-			break;
-		default:
-			assert(0);
-	}
-}
-
-/** Get the value contained by a user GPR.
- * Returns the value contained by a user GPR. It is the same than GetGPR but
- *   restricting the index from 0 to 15 (only the first 16 registers).
- *
- * @param id the register index
- * @return the value contained by the register
- */
-uint32_t 
-CPU::
-GetGPR_usr(uint32_t id)
-{
-  uint32_t mode = cpsr.Get( M );
-  switch ( mode )
-    {
-    case SUPERVISOR_MODE:
-    case ABORT_MODE:
-    case UNDEFINED_MODE:
-    case IRQ_MODE:
-      if ( (id < 13) || (id == 15) )
-        return GetGPR(id);
-      else
-        return phys_gpr[id];
-      break;
-    case FIQ_MODE:
-      if ( (id < 8) || (id == 15) )
-        return GetGPR(id);
-      else
-        return phys_gpr[id];
-      break;
-    case USER_MODE:
-    case SYSTEM_MODE:
-    default:
-      return GetGPR(id);
-      break;
-    }
-}
-
-/** Set the value contained by a user GPR.
- * Sets the value contained by a user GPR. It is the same than SetGPR byt
- *   restricting the index from 0 to 15 (only the first 16 registers).
- *
- * @param id the register index
- * @param val the value to set
- */
-void
-CPU::
-SetGPR_usr(uint32_t id, uint32_t val)
-{
-  uint32_t mode = cpsr.Get( M );
-  switch ( mode )
-    {
-    case USER_MODE:
-    case SYSTEM_MODE:
-      SetGPR( id, val );
-      break;
-    case SUPERVISOR_MODE:
-    case ABORT_MODE:
-    case UNDEFINED_MODE:
-    case IRQ_MODE:
-      if ( (id < 13) || (id == 15) )
-        SetGPR( id, val );
-      else
-        phys_gpr[id] = val;
-      break;
-    case FIQ_MODE:
-      if ( (id < 8) || (id == 15 ) )
-        SetGPR( id, val );
-      else
-        phys_gpr[id] = val;
-      break;
-    }
 }
 
 /** Get SPSR index from current running mode
@@ -510,8 +291,7 @@ GetSPSRIndex()
 /** Copy the value of current SPSR register into CPSR.
  */
 void 
-CPU::
-MoveSPSRtoCPSR()
+CPU::MoveSPSRtoCPSR()
 {
   /* SPSR needs to be moved to CPSR
    * This means that we need to change the register mapping if the running mode has changed
@@ -520,7 +300,10 @@ MoveSPSRtoCPSR()
   uint32_t dst_mode = SPSR().Get( M );
   CPSR().bits() = SPSR().bits();
   if (src_mode != dst_mode)
-    SetGPRMapping(src_mode, dst_mode);
+    {
+      GetMode(src_mode).Swap(*this); // OUT
+      GetMode(dst_mode).Swap(*this); // IN
+    }
 }
 
 /** Object setup method.
@@ -569,9 +352,7 @@ CPU::EndSetup()
 				<< "Setting endianness to "
 				<< default_endianness_string
 				<< EndDebugInfo;
-		SetEndianness(
-				default_endianness_string.compare("little-endian") == 0 ?
-				E_LITTLE_ENDIAN : E_BIG_ENDIAN);
+                cpsr.Set( E, default_endianness_string.compare("little-endian") == 0 ? 0 : 1 );
 	}
 
 	if ( cpu_cycle_time_ps == 0 )
@@ -1641,88 +1422,69 @@ CPU::PerformPrefetchAccess( uint32_t addr )
 void 
 CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
-	uint32_t write_addr = addr;
-	uint8_t val8 = 0;
-	uint16_t val16 = 0;
-	uint32_t val32 = 0;
-	uint8_t data8, data16[2], data32[4];
-	uint8_t *data = 0;
+  uint32_t write_addr = addr;
+  uint8_t data[4];
+  
+  if (size > 4) throw 0; // should never happen
+  
+  if (GetEndianness() == E_BIG_ENDIAN) {
+    // fix the write address according to request size when big endian
+    write_addr ^= ((-size) & 3);
+    // TODO: need to check that because it seems astonishingly incorrect
+    uint32_t shifter = value;
+    for (int byte = size; --byte >= 0;)
+      { data[byte] = shifter; shifter >>= 8; }
+  } else {
+    uint32_t shifter = value;
+    for (int byte = 0; byte < int( size ); ++byte)
+      { data[byte] = shifter; shifter >>= 8; }
+  }
+  
+  if ( likely(dcache.GetSize()) )
+    {
+      dcache.write_accesses++;
+      uint32_t cache_tag = dcache.GetTag(write_addr);
+      uint32_t cache_set = dcache.GetSet(write_addr);
+      uint32_t cache_way;
+      bool cache_hit = false;
+      if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+        {
+          if ( dcache.GetValid(cache_set, cache_way) != 0 )
+            {
+              // the access is a hit
+              cache_hit = true;
+            }
+        }
+      // if the access was a hit the data needs to be written into
+      //   the cache, if the access was a miss the data needs to be
+      //   written into memory, but the cache doesn't need to be updated
+      if ( likely(cache_hit) )
+        {
+          dcache.write_hits++;
+          uint32_t cache_index = dcache.GetIndex(write_addr);
+          dcache.SetData(cache_set, cache_way, cache_index,
+                         size, data);
+          dcache.SetDirty(cache_set, cache_way, 1);
+        }
+      else
+        {
+          PrWrite(write_addr, data, size);
+        }
 
-	data8 = 0;
-	memset(data16, 0, sizeof(uint8_t) * 2);
-	memset(data32, 0, sizeof(uint8_t) * 4);
-	// fix the write address depending on the request size and endianess
-	//   and prepare the data to write
-	switch(size)
-	{
-	case 1:
-		write_addr = write_addr ^ munged_address_mask8;
-		val8 = (uint8_t)value;
-		memcpy(&data8, &val8, 1);
-		data = &data8;
-		break;
-	case 2:
-		write_addr = write_addr ^ munged_address_mask16;
-		val16 = (uint16_t)value;
-		val16 = Host2Target(GetEndianness(), val16);
-		memcpy(data16, &val16, 2);
-		data = data16;
-		break;
-	case 4:
-		val32 = value;
-		val32 = Host2Target(GetEndianness(), val32);
-		memcpy(data32, &val32, 4);
-		data = data32;
-		break;
-	default: // should never happen
-		break;
-	}
+      if ( unlikely(dcache.power_estimator_import != 0) )
+        dcache.power_estimator_import->ReportWriteAccess();
+    }
+  else // there is no data cache
+    {
+      // there is no data cache, so just send the request to the
+      //   memory interface
+      PrWrite(write_addr, data, size);
+    }
 
-	if ( likely(dcache.GetSize()) )
-	{
-		dcache.write_accesses++;
-		uint32_t cache_tag = dcache.GetTag(write_addr);
-		uint32_t cache_set = dcache.GetSet(write_addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( dcache.GetValid(cache_set, cache_way) != 0 )
-			{
-				// the access is a hit
-				cache_hit = true;
-			}
-		}
-		// if the access was a hit the data needs to be written into
-		//   the cache, if the access was a miss the data needs to be
-		//   written into memory, but the cache doesn't need to be updated
-		if ( likely(cache_hit) )
-		{
-			dcache.write_hits++;
-			uint32_t cache_index = dcache.GetIndex(write_addr);
-			dcache.SetData(cache_set, cache_way, cache_index,
-					size, data);
-			dcache.SetDirty(cache_set, cache_way, 1);
-		}
-		else
-		{
-			PrWrite(write_addr, data, size);
-		}
-
-		if ( unlikely(dcache.power_estimator_import != 0) )
-			dcache.power_estimator_import->ReportWriteAccess();
-	}
-	else // there is no data cache
-	{
-		// there is no data cache, so just send the request to the
-		//   memory interface
-			PrWrite(write_addr, data, size);
-	}
-
-	/* report read memory access if necessary */
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+  /* report read memory access if necessary */
+  if (requires_memory_access_reporting and memory_access_reporting_import)
+    memory_access_reporting_import->
+      ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 }
 
 /** Performs a read access.
@@ -1733,143 +1495,118 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 uint32_t
 CPU::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
 {
-	uint32_t read_addr = addr & ~(uint32_t)(size - 1);
-	uint8_t data32[4];
-	uint8_t *data;
+  uint32_t read_addr = addr & ~(uint32_t)(size - 1);
+  uint8_t data[4];
 
-	// fix the read address depending on the request size and endianess
-	switch (size)
-	{
-		case 1: read_addr = read_addr ^ munged_address_mask8; break;
-		case 2: read_addr = read_addr ^ munged_address_mask16; break;
-		case 4: // nothing to do
-		default: // nothing to do
-			break;
-	}
+  if (size > 4) throw 0;
+  uint32_t misalignment = addr & (size-1);
+  
+  // fix the read address depending on the request size and endianess
+  if (GetEndianness() == E_BIG_ENDIAN) {
+    // TODO: need to check that because it seems astonishingly
+    // incorrect to perform address masking and endianness conversion
+    read_addr ^= ((-size) & 3);
+  }
 
-	if ( likely(dcache.GetSize()) )
-	{
-		dcache.read_accesses++;
-		uint32_t cache_tag = dcache.GetTag(read_addr);
-		uint32_t cache_set = dcache.GetSet(read_addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( dcache.GetValid(cache_set, cache_way) )
-			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
-			}
-		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( unlikely(!cache_hit) )
-		{
-			// get a way to replace
-			cache_way = dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			uint8_t cache_valid = dcache.GetValid(cache_set,
-					cache_way);
-			uint8_t cache_dirty = dcache.GetDirty(cache_set,
-					cache_way);
+  if ( likely(dcache.GetSize()) )
+    {
+      dcache.read_accesses++;
+      uint32_t cache_tag = dcache.GetTag(read_addr);
+      uint32_t cache_set = dcache.GetSet(read_addr);
+      uint32_t cache_way;
+      bool cache_hit = false;
+      if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+        {
+          if ( dcache.GetValid(cache_set, cache_way) )
+            {
+              // the access is a hit, nothing needs to be done
+              cache_hit = true;
+            }
+        }
+      // if the access was a miss, data needs to be fetched from main
+      //   memory and placed into the cache
+      if ( unlikely(!cache_hit) )
+        {
+          // get a way to replace
+          cache_way = dcache.GetNewWay(cache_set);
+          // get the valid and dirty bits from the way to replace
+          uint8_t cache_valid = dcache.GetValid(cache_set,
+                                                cache_way);
+          uint8_t cache_dirty = dcache.GetDirty(cache_set,
+                                                cache_way);
 
-			if ( (cache_valid != 0) & (cache_dirty != 0) )
-			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t rep_cache_address =
-					dcache.GetBaseAddress(cache_set, cache_way);
-					dcache.GetData(cache_set, cache_way, &rep_cache_data);
-					PrWrite(rep_cache_address, rep_cache_data,
-							dcache.LINE_SIZE);
-			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					dcache.GetBaseAddressFromAddress(read_addr);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = dcache.GetData(cache_set,
-					cache_way, &cache_data);
-			PrRead(cache_address, cache_data,
-					cache_line_size);
-			dcache.SetTag(cache_set, cache_way, cache_tag);
-			dcache.SetValid(cache_set, cache_way, 1);
-			dcache.SetDirty(cache_set, cache_way, 0);
-		}
-		else
-		{
-			// cache hit
-			dcache.read_hits++;
-		}
+          if ( (cache_valid != 0) & (cache_dirty != 0) )
+            {
+              // the cache line to replace is valid and dirty so it needs
+              //   to be sent to the main memory
+              uint8_t *rep_cache_data = 0;
+              uint32_t rep_cache_address =
+                dcache.GetBaseAddress(cache_set, cache_way);
+              dcache.GetData(cache_set, cache_way, &rep_cache_data);
+              PrWrite(rep_cache_address, rep_cache_data,
+                      dcache.LINE_SIZE);
+            }
+          // the new data can be requested
+          uint8_t *cache_data = 0;
+          uint32_t cache_address =
+            dcache.GetBaseAddressFromAddress(read_addr);
+          // when getting the data we get the pointer to the cache line
+          //   containing the data, so no need to write the cache
+          //   afterwards
+          uint32_t cache_line_size = dcache.GetData(cache_set,
+                                                    cache_way, &cache_data);
+          PrRead(cache_address, cache_data,
+                 cache_line_size);
+          dcache.SetTag(cache_set, cache_way, cache_tag);
+          dcache.SetValid(cache_set, cache_way, 1);
+          dcache.SetDirty(cache_set, cache_way, 0);
+        }
+      else
+        {
+          // cache hit
+          dcache.read_hits++;
+        }
 
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = dcache.GetIndex(read_addr);
-		(void)dcache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
-	}
-	else // there is no data cache
-	{
-			// just read the data from the memory system
-		PrRead(read_addr, data32, size);
-		data = data32;
-	}
+      // at this point the data is in the cache, we can read it from the
+      //   cache
+      uint32_t cache_index = dcache.GetIndex(read_addr);
+      uint8_t* ptr;
+      (void)dcache.GetData(cache_set, cache_way, cache_index, size, &ptr);
+      memcpy( &data[0], ptr, size );
+    }
+  else // there is no data cache
+    {
+      // just read the data from the memory system
+      PrRead(read_addr, &data[0], size);
+    }
 
-	// fix the data depending on its size
-	uint32_t value = 0;
-	if (size == 1)
-	{
-		uint8_t val8 = *data;
-		if (_signed)
-			value = (int32_t)(int8_t)val8;
-		else
-			value = val8;
-	}
-	else if (size == 2)
-	{
-		uint16_t val16 = 0;
-		memcpy(&val16, data, 2);
-		val16 = Target2Host(GetEndianness(), val16);
-		if (_signed)
-			value = (int32_t)(int16_t)val16;
-		else
-			value = val16;
-	}
-	else if (size == 4)
-	{
-		uint32_t val32;
-		uint32_t val32_l, val32_r;
-		uint32_t align;
+  uint32_t value;
+  if (GetEndianness() == E_LITTLE_ENDIAN) {
+    uint32_t shifter = 0;
+    for (int byte = size; --byte >= 0;)
+      { shifter = (shifter << 8) | uint32_t( data[byte] ); }
+    if ((size == 4) and (CONFIG::MODEL < ARMV6) and misalignment)
+      shifter = unisim::util::arithmetic::RotateLeft( shifter, misalignment*8 );
+    value = shifter;
+  } else {
+    uint32_t shifter = 0;
+    for (int byte = 0; byte < int( size ); ++byte)
+      { shifter = (shifter << 8) | uint32_t( data[byte] ); }
+    if ((size == 4) and (CONFIG::MODEL < ARMV6) and misalignment)
+      shifter = unisim::util::arithmetic::RotateRight( shifter, misalignment*8 );
+    value = shifter;
+  }
+  
+  if ( likely(dcache.GetSize()) )
+    if ( unlikely(dcache.power_estimator_import != 0) )
+      dcache.power_estimator_import->ReportReadAccess();
 
-		memcpy(&val32, data, 4);
-		val32 = Target2Host(GetEndianness(), val32);
-		// we need to check alignment
-		align = addr & (uint32_t)0x03;
-		if (align != 0)
-		{
-			val32_l = (val32 << (align*8)) &
-					((~((uint32_t)0)) << (align*8));
-			val32_r = (val32 >> ((4 - align) * 8)) &
-					((~((uint32_t)0)) >> ((4 - align) * 8));
-			val32 = val32_l + val32_r;
-		}
-		value = val32;
-	}
-
-	if ( likely(dcache.GetSize()) )
-		if ( unlikely(dcache.power_estimator_import != 0) )
-			dcache.power_estimator_import->ReportReadAccess();
-
-	/* report read memory access if necessary */
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+  /* report read memory access if necessary */
+  if (requires_memory_access_reporting and memory_access_reporting_import)
+    memory_access_reporting_import->
+      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
         
-        return value;
+  return value;
 }
 
 

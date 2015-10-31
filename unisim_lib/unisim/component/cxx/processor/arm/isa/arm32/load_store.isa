@@ -909,13 +909,13 @@ ldm_usr.execute = {
   
   LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
   while (itr.next()) {
-    cpu.SetGPR_usr( itr.reg(), cpu.MemRead32( itr.addr() ) );
+    cpu.SetBankedRegister( cpu.USER_MODE, itr.reg(), cpu.MemRead32( itr.addr() ) );
   }
   
   // TODO: if (reglist & 0x8000) cpu.MoveSPSRtoCPSR();
   
   bool overwritten = (reglist >> rn) & 1;
-  if (w and not overwritten) cpu.SetGPR_usr( rn, itr.addr() );
+  if (w and not overwritten) cpu.SetBankedRegister( cpu.USER_MODE, rn, itr.addr() );
 };
 
 /*
@@ -939,10 +939,10 @@ stm_usr.execute = {
   
   LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
   while (itr.next()) {
-    cpu.MemWrite32( itr.addr(), cpu.GetGPR_usr( itr.reg() ) );
+    cpu.MemWrite32( itr.addr(), cpu.GetBankedRegister( cpu.USER_MODE, itr.reg() ) );
   }
   
-  if (w) cpu.SetGPR_usr( rn, itr.addr() );
+  if (w) cpu.SetBankedRegister( cpu.USER_MODE, rn, itr.addr() );
 };
 
 /*

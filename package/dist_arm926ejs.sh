@@ -248,20 +248,23 @@ unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
 "
 
 UNISIM_LIB_ARM926EJS_ISA_ARM32_FILES="\
-unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
-unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
-unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
-unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
+unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
+unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
+unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/hints.isa \
+unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
+unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
 unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
-unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
+unisim/component/cxx/processor/arm/isa/arm32/neon.isa \
 unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
 unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
+unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
+unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
+unisim/component/cxx/processor/arm/isa/arm32/vfp.isa \
+unisim/component/cxx/processor/arm/isa/arm32/xscale.isa \
 unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
 UNISIM_LIB_ARM926EJS_ISA_FILES="${UNISIM_LIB_ARM926EJS_ISA_THUMB_FILES} ${UNISIM_LIB_ARM926EJS_ISA_ARM32_FILES}"
@@ -443,6 +446,8 @@ unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
+unisim/component/cxx/processor/arm/extregbank.hh \
+unisim/component/cxx/processor/arm/hostfloat.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
 UNISIM_LIB_ARM926EJS_TEMPLATE_FILES="\
@@ -1073,7 +1078,7 @@ if [ "${has_to_build_arm926ejs_configure}" = "yes" ]; then
 	echo "AC_CONFIG_FILES([Makefile])" >> "${ARM926EJS_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${ARM926EJS_CONFIGURE_AC}"
 
-	AM_ARM926EJS_VERSION=$(printf ${ARM926EJS_VERSION} | sed -e 's/\./_/g')
+	AM_ARM926EJS_VERSION=$(printf "${ARM926EJS_VERSION}" | sed -e 's/\./_/g')
 	echo "Generating arm926ejs Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${ARM926EJS_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARM926EJS_MAKEFILE_AM}"

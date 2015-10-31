@@ -35,28 +35,28 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
 
-#include "unisim/component/cxx/processor/arm/armemu/cache.hh"
-#include "unisim/component/cxx/processor/arm/isa_arm32.hh"
-#include "unisim/component/cxx/processor/arm/isa_thumb.hh"
-#include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/hostfloat.hh"
-#include "unisim/component/cxx/processor/arm/models.hh"
-#include "unisim/component/cxx/processor/arm/memory_op.hh"
-#include "unisim/component/cxx/processor/arm/models.hh"
-#include "unisim/service/interfaces/linux_os.hh"
-#include "unisim/service/interfaces/debug_control.hh"
-#include "unisim/service/interfaces/disassembly.hh"
-#include "unisim/service/interfaces/memory_access_reporting.hh"
-#include "unisim/service/interfaces/symbol_table_lookup.hh"
-#include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/memory_injection.hh"
-#include "unisim/service/interfaces/registers.hh"
-#include "unisim/service/interfaces/trap_reporting.hh"
-#include "unisim/component/cxx/processor/arm/memory_op.hh"
-// #include "unisim/component/cxx/processor/arm/exception.hh"
+#include <unisim/component/cxx/processor/arm/armemu/cache.hh>
+#include <unisim/component/cxx/processor/arm/isa_arm32.hh>
+#include <unisim/component/cxx/processor/arm/isa_thumb.hh>
+#include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/hostfloat.hh>
+#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/memory_op.hh>
+#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/trap_reporting.hh>
+#include <unisim/component/cxx/processor/arm/memory_op.hh>
+// #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/kernel/logger/logger.hh>
-#include "unisim/util/endian/endian.hh"
-#include "unisim/util/debug/register.hh"
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/debug/register.hh>
 #include <string>
 #include <unisim/util/queue/queue.hh>
 #include <unisim/util/queue/queue.tcc>
@@ -125,6 +125,7 @@ struct CPU
   , public unisim::kernel::service::Service<
   unisim::service::interfaces::Memory<uint32_t> >
 {
+  typedef Config CONFIG;
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
@@ -409,14 +410,6 @@ struct CPU
    */
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn);
   
-  /** Memory prefetch instruction.
-   * This method is used to make memory prefetches into the caches (if 
-   *   available), that is it sends a memory read that doesn't keep the 
-   *   request result.
-   * 
-   * @param address the address of the prefetch
-   */
-  void ReadPrefetch( uint32_t address ) { PerformPrefetchAccess( address ); }
   /** 32bits memory read.
    *
    * This method reads 32bits from memory and returns a
@@ -468,30 +461,6 @@ struct CPU
    * @return a pointer to the pending memory operation
    */
   uint32_t MemReadS8( uint32_t address ) { return PerformReadAccess( address, 1, true ); }
-  
-  /** Arrange the GPR mapping depending on initial and target running mode.
-   *
-   * @param src_mode the running mode the processor is currently in
-   * @param tar_mode the target running mode the registers should be mapped to
-   */
-  void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode );
-  
-  /** Get the value contained by a user GPR.
-   * Returns the value contained by a user GPR. It is the same than GetGPR but
-   *   restricting the index from 0 to 15 (only the first 16 registers).
-   *
-   * @param id the register index
-   * @return the value contained by the register
-   */
-  uint32_t GetGPR_usr( uint32_t id );
-  /** Set the value contained by a user GPR.
-   * Sets the value contained by a user GPR. It is the same than SetGPR byt
-   *   restricting the index from 0 to 15 (only the first 16 registers).
-   *
-   * @param id the register index
-   * @param val the value to set
-   */
-  void SetGPR_usr( uint32_t id, uint32_t val );
   
   /** Get the SPSR register according to current mode.
    *
@@ -739,9 +708,6 @@ protected:
    */
   unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
 
-  /** UNISIM registers for the physical registers.
-   */
-  unisim::kernel::service::Register<uint32_t> *reg_phys_gpr[32];
   /** UNISIM registers for the logical registers.
    */
   unisim::kernel::service::Register<uint32_t> *reg_gpr[16];
@@ -757,9 +723,12 @@ protected:
   /** UNISIM register for the CPSR register.
    */
   unisim::kernel::service::Register<uint32_t> reg_cpsr;
-  /** UNISIM registers for the SPRS registers.
-   */
-  unisim::kernel::service::Register<uint32_t> *reg_spsr[5];
+  
+  // TODO: provide UNISIM registers for SPSRS (will be possible once
+  // UNISIM registers go back in base class).
+  //
+  // /** UNISIM registers for the SPRS registers.  */
+  // unisim::kernel::service::Register<uint32_t> *reg_spsr[5];
 
   /************************************************************************/
   /* UNISIM parameters, statistics and registers                      END */

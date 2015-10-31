@@ -35,27 +35,28 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CPU_HH__
 
-#include "unisim/component/cxx/processor/arm/models.hh"
-#include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/memory_op.hh"
-#include "unisim/component/cxx/processor/arm/arm926ejs/cp15.hh"
-#include "unisim/component/cxx/processor/arm/arm926ejs/cp15interface.hh"
-#include "unisim/component/cxx/processor/arm/arm926ejs/cache.hh"
-#include "unisim/component/cxx/processor/arm/arm926ejs/tlb.hh"
-#include "unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh"
-#include "unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh"
-#include "unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh"
-#include "unisim/service/interfaces/debug_control.hh"
-#include "unisim/service/interfaces/disassembly.hh"
-#include "unisim/service/interfaces/memory_access_reporting.hh"
-#include "unisim/service/interfaces/symbol_table_lookup.hh"
-#include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/memory_injection.hh"
-#include "unisim/service/interfaces/registers.hh"
-#include "unisim/service/interfaces/trap_reporting.hh"
-#include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/util/endian/endian.hh"
-#include "unisim/util/debug/register.hh"
+#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/hostfloat.hh>
+#include <unisim/component/cxx/processor/arm/memory_op.hh>
+#include <unisim/component/cxx/processor/arm/arm926ejs/cp15.hh>
+#include <unisim/component/cxx/processor/arm/arm926ejs/cp15interface.hh>
+#include <unisim/component/cxx/processor/arm/arm926ejs/cache.hh>
+#include <unisim/component/cxx/processor/arm/arm926ejs/tlb.hh>
+#include <unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh>
+#include <unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh>
+#include <unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh>
+#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/trap_reporting.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/debug/register.hh>
 #include <string>
 #include <queue>
 #include <inttypes.h>
@@ -67,25 +68,52 @@ namespace processor {
 namespace arm {
 namespace arm926ejs {
 
+struct CPU;
+
+struct Config
+{
+  typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR FPSCR;
+  typedef double   F64;
+  typedef float    F32;
+  typedef uint8_t U8;
+  typedef uint16_t U16;
+  typedef uint32_t U32;
+  typedef uint64_t U64;
+  typedef int8_t   S8;
+  typedef int16_t  S16;
+  typedef int32_t  S32;
+  typedef int64_t  S64;
+  
+  typedef CPU      Arch;
+
+  //=====================================================================
+  //=                  ARM architecture model description               =
+  //=====================================================================
+  
+  // Following a standard armv7 configuration
+  static uint32_t const MODEL = unisim::component::cxx::processor::arm::ARMEMU;
+  static bool const     insns4T = true;
+  static bool const     insns5E = true;
+  static bool const     insns5J = true;
+  static bool const     insns5T = true;
+  static bool const     insns6  = true;
+  static bool const     insnsRM = false;
+  static bool const     insnsT2 = true;
+  static bool const     insns7  = true;
+};
+
+
 class CPU
-	: public unisim::component::cxx::processor::arm::CPU
-	, public unisim::component::cxx::processor::arm::arm926ejs::CP15Interface
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::MemoryInjection<uint64_t> >
-	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::DebugControl<uint64_t> >
-	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
-	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::TrapReporting>
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::MemoryAccessReportingControl>
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::Disassembly<uint64_t> >
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::Registers >
-	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::Memory<uint64_t> >
+  : public unisim::component::cxx::processor::arm::CPU<Config>
+  , public unisim::component::cxx::processor::arm::arm926ejs::CP15Interface
+  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint64_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint64_t> >
+  , public unisim::kernel::service::Service<unisim::service::interfaces::Registers >
+  , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >
 {
 public:
   //=====================================================================
@@ -376,14 +404,6 @@ public:
    * @param insn the resulting instruction word (output reference)
    */
   void ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn);
-  /** Memory prefetch instruction.
-   * This method is used to make memory prefetches into the caches (if 
-   *   available), that is it sends a memory read that doesn't keep the 
-   *   request result.
-   * 
-   * @param address the address of the prefetch
-   */
-  void ReadPrefetch(uint32_t address);
   /** 32bits memory read.
    *
    * This method reads 32bits from memory and returns a

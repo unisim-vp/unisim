@@ -35,10 +35,11 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
-#include "unisim/component/cxx/processor/arm/psr.hh"
-#include "unisim/component/cxx/processor/arm/extregbank.hh"
-#include "unisim/util/endian/endian.hh"
-#include "unisim/util/inlining/inlining.hh"
+#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/extregbank.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/inlining/inlining.hh>
+#include <map>
 #include <inttypes.h>
 
 namespace unisim {
@@ -47,6 +48,27 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
+/** ModeInfo: compile time generation of ARM Modes parameters
+ *
+ * This meta class generates at compile-time parameters and structure
+ * of Banked Registers for ARM Modes.
+ */
+
+template <uint32_t MAPPED>
+struct ModeInfo
+{
+  static uint32_t const next = MAPPED & (MAPPED-1);
+  static uint32_t const count = 1 + ModeInfo<next>::count;
+  static uint32_t const flag = MAPPED ^ next;
+  static unsigned GetBRIndex( uint32_t regflag ) { if (regflag == flag) return 0; return 1 + ModeInfo<next>::GetBRIndex( regflag ); }
+};
+
+template <> struct ModeInfo<0>
+{
+  static uint32_t const count = 0;
+  static unsigned GetBRIndex( uint32_t regflag ) { throw "Illegal Banked Register"; return 0; }
+};
+
 /** Base class for the ARM family.
  *
  * This class is the base for all the cpu's of the ARM processor
@@ -54,9 +76,10 @@ namespace arm {
  * different methods to handle them.
  */
 
-template <typename CONFIG>
+template <typename _CONFIG_>
 struct CPU
 {
+  typedef _CONFIG_ CONFIG;
   typedef typename CONFIG::FPSCR fpscr_type;
   typedef typename CONFIG::F64   F64;
   typedef typename CONFIG::F32   F32;
@@ -75,53 +98,82 @@ struct CPU
    * @param endianness the endianness to use
    */
   CPU( unisim::util::endian::endian_type endianness = unisim::util::endian::E_LITTLE_ENDIAN )
-    : munged_address_mask8(0)
-    , munged_address_mask16(0)
-    , exception(0)
+    : exception(0)
   {
     // Initialize general purpose registers
     for(unsigned int i = 0; i < num_log_gprs; i++)
       gpr[i] = 0;
     this->current_pc = 0;
     this->next_pc = 0;
-	
-    for(unsigned int i = 0; i < num_phys_gprs; i++)
-      phys_gpr[i] = 0;
-
+    
+    // Initialize ARM Modes (TODO: modes should be conditionnaly selected based on CONFIG)
+    modes[0b10000] = new Mode( "usr" ); // User mode (No banked regs, using main regs)
+    modes[0b10001] = new BankedMode<0b0111111100000000>( "fiq" ); // FIQ mode
+    modes[0b10010] = new BankedMode<0b0110000000000000>( "irq" ); // IRQ mode
+    modes[0b10011] = new BankedMode<0b0110000000000000>( "svc" ); // Supervisor mode
+    modes[0b10110] = new BankedMode<0b0110000000000000>( "mon" ); // Monitor mode
+    modes[0b10111] = new BankedMode<0b0110000000000000>( "abt" ); // Abort mode
+    modes[0b11010] = new BankedMode<0b0110000000000000>( "hyp" ); // Hyp mode
+    modes[0b11011] = new BankedMode<0b0110000000000000>( "und" ); // Undefined mode
+    modes[0b11111] = new Mode( "sys" ); // System mode (No banked regs, using main regs)
+    
     // Initialize address mungling
-    this->SetEndianness( endianness );
+    cpsr.Set( E, endianness == unisim::util::endian::E_LITTLE_ENDIAN ? 0 : 1 );
   }
 
   /** Destructor.
    */
-  ~CPU() {}
+  ~CPU()
+  {
+    for (typename ModeMap::iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr)
+      delete itr->second;
+  }
+  
+  /** ARM modes (Banked Registers)
+   * At any given running mode only 16 registers are accessible.
+   * The following list indicates the mapping per running modes.
+   * - user:           0-14 (R0-R14),                  15 (PC)
+   * - system:         0-14 (R0-R14),                  15 (PC)
+   * - supervisor:     0-12 (R0-R12), 16-17 (R13-R14), 15 (PC)
+   * - abort:          0-12 (R0-R12), 18-19 (R13-R14), 15 (PC)
+   * - undefined:      0-12 (R0-R12), 20-21 (R13-R14), 15 (PC)
+   * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
+   * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
+   */
+  struct Mode
+  {
+    Mode( char const* _suffix ) : suffix( _suffix ) {} char const* suffix;
+    virtual ~Mode() {}
+    virtual void     SetBR( unsigned index, uint32_t value ) { throw 0; };
+    virtual uint32_t GetBR( unsigned index ) { throw 0; return 0; };
+    virtual void     SetSPSR( unsigned index, uint32_t value ) { throw 0; };
+    virtual uint32_t GetSPSR( unsigned index ) { throw 0; return 0; };
+    virtual void     Swap( CPU& cpu ) {};
+  };
+  
+  template <uint32_t MAPPED>
+  struct BankedMode : public Mode
+  {
+    BankedMode( char const* _suffix ) : Mode( _suffix ) {}
+    uint32_t banked_regs[ModeInfo<MAPPED>::count];
+    uint32_t spsr;
+
+    virtual void     SetBR( unsigned index, uint32_t value ) { banked_regs[ModeInfo<MAPPED>::GetBRIndex( uint32_t(1) << index )] = value; };
+    virtual uint32_t GetBR( unsigned index ) { return banked_regs[ModeInfo<MAPPED>::GetBRIndex( uint32_t(1) << index )]; };
+    virtual void     SetSPSR( unsigned index, uint32_t value ) { spsr = value; };
+    virtual uint32_t GetSPSR( unsigned index ) { return spsr; };
+    virtual void     Swap( CPU& cpu )
+    {
+      for (unsigned idx = 0, bidx = 0; idx < num_log_gprs; ++idx)
+        if ((MAPPED >> idx) & 1)
+          std::swap( banked_regs[bidx++], cpu.gpr[idx] );
+    }
+  };
   
   /**************************************************************/
   /* Endian variables and methods                         START */
   /**************************************************************/
 
-  /** Set the endianness of the processor to the given endianness.
-   * This method takes into charge to set the correct address mungling 
-   *   depending on the endianness.
-   *
-   * @param endianness the endianness to use
-   */
-  void
-  SetEndianness(unisim::util::endian::endian_type endianness)
-  {
-    // Setting the PSR according to endianness and init address masks
-    // needed to compute the final address of memory accesses
-    if(endianness == unisim::util::endian::E_BIG_ENDIAN) {
-      this->cpsr.Set( E, 1 );
-      munged_address_mask8 = (uint32_t)0x03;;
-      munged_address_mask16 = (uint32_t)0x02;
-    } else {
-      this->cpsr.Set( E, 0 );
-      munged_address_mask8 = 0;
-      munged_address_mask16 = 0;
-    }
-  }
-  
   /** Get the endian configuration of the processor.
    *
    * @return the endian being used
@@ -210,6 +262,56 @@ struct CPU
    * @return the CPSR structured register.
    */
   PSR&  CPSR() { return cpsr; };
+  
+  /*********************************************/
+  /* Modes and Banked Registers access methods */
+  /*********************************************/
+  
+  Mode& GetMode(uint8_t mode)
+  {
+    typename ModeMap::iterator itr = modes.find(mode);
+    if (itr == modes.end()) throw 0;
+    return *(itr->second);
+  }
+  
+  /** Get the value contained by a banked register GPR.  Returns the
+   * value contained by a banked register.  It is the same than GetGPR
+   * but mode can be different from the running mode.
+   *
+   * @param mode the mode of banked register
+   * @param idx the register index
+   * @return the value contained by the register
+   */
+  uint32_t GetBankedRegister( uint8_t foreign_mode, uint32_t idx )
+  {
+    uint8_t running_mode = cpsr.Get( M );
+    if (running_mode == foreign_mode) return GetGPR( idx );
+    GetMode(running_mode).Swap(*this); // OUT
+    GetMode(foreign_mode).Swap(*this); // IN
+    uint32_t value = GetGPR( idx );
+    GetMode(foreign_mode).Swap(*this); // OUT
+    GetMode(running_mode).Swap(*this); // IN
+    return value;
+  }
+  
+  /** Set the value contained by a user GPR.
+   * Sets the value contained by a user GPR. It is the same than SetGPR byt
+   *   restricting the index from 0 to 15 (only the first 16 registers).
+   *
+   * @param mode the mode of banked register
+   * @param idx the register index
+   * @param val the value to set
+   */
+  void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, uint32_t value )
+  {
+    uint8_t running_mode = cpsr.Get( M );
+    if (running_mode == foreign_mode) return SetGPR( idx, value );
+    GetMode(running_mode).Swap(*this); // OUT
+    GetMode(foreign_mode).Swap(*this); // IN
+    SetGPR( idx, value );
+    GetMode(foreign_mode).Swap(*this); // OUT
+    GetMode(running_mode).Swap(*this); // IN
+  }
   
   /*************************************/
   /* IT Conditional State manipulation */
@@ -313,47 +415,19 @@ protected:
   /*
    * Memory access variables
    */
-  /**
-   * This variable is used to compute the effective address of a 1 byte memory
-   * access using the arm endianess mapping (only if os support is not 
-   * connected to the simulator. 
-   * This variable is set during the setup face or later when the endianess of
-   * the processor is changed.
-   */
-  uint32_t munged_address_mask8;
-  /**
-   * This variable is used to compute the effective address of a 2 byte memory
-   * access using the arm endianess mapping (only if os support is not 
-   * connected to the simulator.
-   * This variable is set during the setup face or later when the endianess of
-   * the processor is changed.
-   */
-  uint32_t munged_address_mask16;
-		
-  /** The total number of physical registers.
-   * The arm has only 31 registers, but we are using an 
-   *   additional one to store the NextPC, which does not really
-   *   exist */
-  const static uint32_t num_phys_gprs = 32;
-  /** The total number of logical registers.
-   * At any given running mode only 16 registers are accessible.
-   * The following list indicates the indexes used per running mode:
-   * - user:           0-14 (R0-R14),                  15 (PC)
-   * - system:         0-14 (R0-R14),                  15 (PC)
-   * - supervisor:     0-12 (R0-R12), 16-17 (R13-R14), 15 (PC)
-   * - abort:          0-12 (R0-R12), 18-19 (R13-R14), 15 (PC)
-   * - undefined:      0-12 (R0-R12), 20-21 (R13-R14), 15 (PC)
-   * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
-   * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
-   */
-  const static uint32_t num_log_gprs = 16;
-  /** Storage for the physical registers */
-  uint32_t phys_gpr[num_phys_gprs]; 
+  
+  /* Storage for Modes and banked registers */
+  typedef std::map<uint8_t, Mode*> ModeMap;
+  ModeMap modes;
+  
   /** Storage for the logical registers */
+  const static uint32_t num_log_gprs = 16;
   uint32_t gpr[num_log_gprs];
   uint32_t current_pc, next_pc;
+  
   /** PSR registers. */
   PSR      cpsr;
+  
   /** Exception vector.
    * This is a virtual exception vector (it doesn't exists as such in the arm
    *   architecture) to rapidly set and check exceptions.

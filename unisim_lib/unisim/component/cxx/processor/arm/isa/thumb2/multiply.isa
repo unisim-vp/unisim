@@ -545,27 +545,13 @@ smlawy.execute = {
   op64 = op64 >> 16;
   op64 = op64 & (uint64_t)0xffffffffULL;
   uint32_t op_tmp = op64;
-  //int32_t sval_rd = (int32_t)op_tmp;
-  //val_rd = (uint32_t)(sval_rd + (int32_t)val_ra);
+  
   uint8_t carry_out, overflow_out, sign;
   unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, op_tmp, val_ra, 0);
-  //   if ( (op_tmp & (uint32_t)0x80000000ULL) !=
-  //     (val_ra & (uint32_t)0x80000000ULL) )
+  
   if(overflow_out)
-    {
-      //    cpu.SetCPSR_Q(false);
       cpu.CPSR().Set( Q, 1 );
-    }
-  //   else
-  //   {
-  //     if ( (op_tmp & (uint32_t)0x80000000ULL) !=
-  //       (val_rd & (uint32_t)0x80000000ULL) )
-  //     {
-  //       cpu.SetCPSR_Q(true);
-  //     }
-  //     else
-  //       cpu.SetCPSR_Q(false);
-  //   }
+  
   cpu.SetGPR(rd, val_rd);
 
 };

@@ -255,8 +255,10 @@ namespace arm {
       
         /* check if the running mode did change, if so switch registers */
         uint32_t new_run_mode = reg & core.RUNNING_MODE_MASK;
-        if ( run_mode != new_run_mode )
-          core.SetGPRMapping(run_mode, new_run_mode);
+        if ( run_mode != new_run_mode ) {
+          core.GetMode(run_mode).Swap(core); // OUT
+          core.GetMode(new_run_mode).Swap(core); // IN
+        }
       }
     else // isSPSR == 1
       {

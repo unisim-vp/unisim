@@ -1236,21 +1236,6 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
       ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, address, size);
 }
 
-/** Memory prefetch instruction.
- * This method is used to make memory prefetches into the caches (if 
- *   available), that is it sends a memory read that doesn't keep the 
- *   request result.
- * 
- * @param address the address of the prefetch
- */
-void 
-CPU::ReadPrefetch(uint32_t address)
-{
-	MemoryOp *memop = MemoryOp::alloc();
-	memop->SetPrefetch(address & -4);
-	ls_queue.push(memop);
-}
-
 /** 32bits memory read into one of the general purpose registers.
  * This method reads 32bits from memory and stores the result into
  *   the general purpose register indicated by the input reg
