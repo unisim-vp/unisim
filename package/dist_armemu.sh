@@ -191,7 +191,6 @@ unisim/component/cxx/processor/arm/armemu/cpu.cc \
 unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
 unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
-unisim/component/cxx/processor/arm/cpu.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
 
@@ -446,6 +445,7 @@ unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
 unisim/util/queue/queue.tcc \
+unisim/component/cxx/processor/arm/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 

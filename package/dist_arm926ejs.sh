@@ -230,7 +230,6 @@ unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.cc \
 unisim/component/cxx/processor/arm/arm926ejs/tlb.cc \
 unisim/component/cxx/processor/arm/arm926ejs/cp15.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
-unisim/component/cxx/processor/arm/cpu.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
 
@@ -513,6 +512,7 @@ unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
 unisim/util/queue/queue.tcc \
+unisim/component/cxx/processor/arm/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 
