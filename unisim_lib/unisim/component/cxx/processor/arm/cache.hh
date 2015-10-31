@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CACHE_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CACHE_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_HH__
 
 #include <inttypes.h>
 #include "unisim/kernel/service/service.hh"
@@ -47,7 +47,6 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-namespace armemu {
 
 struct Cache
   : public unisim::kernel::service::Client<unisim::service::interfaces::CachePowerEstimator>
@@ -248,11 +247,10 @@ public:
   static const uint32_t LINE_SIZE = m_line_size_;
 };
 
-} // end of namespace armemu
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CACHE_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_HH__

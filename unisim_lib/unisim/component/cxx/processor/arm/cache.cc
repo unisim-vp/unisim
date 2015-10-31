@@ -36,7 +36,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
-#include "unisim/component/cxx/processor/arm/arm926ejs/cache.hh"
+#include "unisim/component/cxx/processor/arm/cache.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 
@@ -52,7 +52,6 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-namespace arm926ejs {
 
   using unisim::service::interfaces::CachePowerEstimator;
   using unisim::service::interfaces::PowerMode;
@@ -165,7 +164,7 @@ namespace arm926ejs {
       m_is_ok = true;
     else if ( size > 0 )
       {
-        // ARM926EJS caches can only be between 4KB (0x01000) and 128KB (0x020000)
+        // ARM caches can only be between 4KB (0x01000) and 128KB (0x020000)
         //   and must be 2^x = size
 #ifdef ARM_CACHE_DEBUG
         cerr << "Cache size = 0x" << hex << size << dec
@@ -227,7 +226,7 @@ namespace arm926ejs {
   uint32_t
   Cache::GetNewWay(uint32_t set)
   {
-    // apply the arm926ejs replacement policy
+    // apply the ARM replacement policy
     if ( m_round_robin_replacement_policy )
       {
         // current replacement policy is round robin
@@ -329,7 +328,6 @@ namespace arm926ejs {
     memset(m_valid, 0, sizeof(uint8_t) * m_sets_ * m_associativity_);
   }
 
-} // end of namespace arm926ejs
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
