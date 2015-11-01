@@ -79,6 +79,26 @@ CPU<_CONFIG_>::CPU(const char *name, Object *parent)
   modes[0b11010] = new BankedMode<0b0110000000000000>( "hyp" ); // Hyp mode
   modes[0b11011] = new BankedMode<0b0110000000000000>( "und" ); // Undefined mode
   modes[0b11111] = new Mode( "sys" ); // System mode (No banked regs, using main regs)
+
+  // TODO: Provide access to Banked Registers
+  // for (unsigned int i = 0; i < num_phys_gprs; i++)
+  //   {
+  //     std::stringstream ss, ss_desc;
+  //     ss << "PHYS_GPR[" << i << "]";
+  //     ss_desc << "Physical register " << i;
+  //     reg_phys_gpr[i] =  
+  //       new unisim::kernel::service::Register<uint32_t>( ss.str().c_str(), this, phys_gpr[i], ss_desc.str().c_str() );
+  //   }
+  // TODO: provide unisim registers for SPSRs
+  // for (unsigned int i = 0; i < num_phys_spsrs; i++)
+  //   {
+  //     std::stringstream ss, ss_desc;
+  //     ss << "SPSR[" << i << "]";
+  //     ss_desc << "SPSR[" << i << "] register";
+  //     reg_spsr[i] =
+  //       new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), this, spsr[i].m_value, ss_desc.str().c_str());
+  //   }
+
 }
 
 /** Performs a prefetch access.

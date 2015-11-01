@@ -112,6 +112,7 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint32_t> >
 {
+  typedef CPU this_type;
   typedef ARMv7emu CONFIG;
   //=====================================================================
   //=                  public service imports/exports                   =

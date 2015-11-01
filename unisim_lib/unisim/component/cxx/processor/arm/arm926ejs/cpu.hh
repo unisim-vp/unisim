@@ -70,7 +70,7 @@ namespace arm926ejs {
 
 struct CPU;
 
-struct Config
+struct ARM926ejs
 {
   typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR FPSCR;
   typedef double   F64;
@@ -103,8 +103,8 @@ struct Config
 };
 
 
-class CPU
-  : public unisim::component::cxx::processor::arm::CPU<Config>
+struct CPU
+  : public unisim::component::cxx::processor::arm::CPU<ARM926ejs>
   , public unisim::component::cxx::processor::arm::arm926ejs::CP15Interface
   , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint64_t> >
@@ -115,7 +115,8 @@ class CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >
 {
-public:
+  typedef CPU this_type;
+  typedef ARM926ejs CONFIG;
   //=====================================================================
   //=                  ARM architecture model description               =
   //=====================================================================
@@ -130,50 +131,36 @@ public:
   static bool const     insnsT2 = false;
 
   //=====================================================================
+  //=                       Logger                                      =
+  //=====================================================================
+  
+  /** Unisim logging services. */
+  unisim::kernel::logger::Logger logger;
+  
+  //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
 		
   /** Disassembly service export. */
-  unisim::kernel::service::ServiceExport<
-    unisim::service::interfaces::Disassembly<uint64_t> >
-  disasm_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> >  disasm_export;
   /** Registers service export. */
-  unisim::kernel::service::ServiceExport<
-    unisim::service::interfaces::Registers>
-  registers_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers>  registers_export;
   /** Memory injection service export. */
-  unisim::kernel::service::ServiceExport<
-    unisim::service::interfaces::MemoryInjection<uint64_t> > 
-  memory_injection_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> >   memory_injection_export;
   /** Memory service export. */
-  unisim::kernel::service::ServiceExport<
-    unisim::service::interfaces::Memory<uint64_t> > 
-  memory_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> >   memory_export;
   /** Memory access reporting control service export. */
-  unisim::kernel::service::ServiceExport<
-    unisim::service::interfaces::MemoryAccessReportingControl> 
-  memory_access_reporting_control_export;
-
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl>   memory_access_reporting_control_export;
   /** Debug control service import. */
-  unisim::kernel::service::ServiceImport<
-    unisim::service::interfaces::DebugControl<uint64_t> >
-  debug_control_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint64_t> >  debug_control_import;
   /** Memory access reporting service import. */
-  unisim::kernel::service::ServiceImport<
-    unisim::service::interfaces::MemoryAccessReporting<uint64_t> > 
-  memory_access_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >   memory_access_reporting_import;
   /** Symbol table lookup service import. */
-  unisim::kernel::service::ServiceImport<
-    unisim::service::interfaces::SymbolTableLookup<uint64_t> > 
-  symbol_table_lookup_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> >   symbol_table_lookup_import;
   /** Instruction counter trap reporting service import. */
-  unisim::kernel::service::ServiceImport<
-    unisim::service::interfaces::TrapReporting> 
-  instruction_counter_trap_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>   instruction_counter_trap_reporting_import;
   /** Exception trap reporting service import. */
-  unisim::kernel::service::ServiceImport<
-    unisim::service::interfaces::TrapReporting>
-  exception_trap_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>  exception_trap_reporting_import;
 
   //=====================================================================
   //=                    Constructor/Destructor                         =
@@ -404,103 +391,6 @@ public:
    * @param insn the resulting instruction word (output reference)
    */
   void ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn);
-  /** 32bits memory read.
-   *
-   * This method reads 32bits from memory and returns a
-   * corresponding pending memory operation.
-   * 
-   * @param address the base address of the 32bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  MemoryOp* MemRead32(uint32_t address);
-  /** 16bits memory read.
-   * 
-   * This method reads 16bits from memory and returns a
-   * corresponding pending memory operation.
-   * 
-   * @param address the base address of the 16bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  MemoryOp* MemRead16(uint32_t address);
-  /** Signed 16bits memory read.
-   *
-   * This method reads 16bits from memory and return a
-   * corresponding signed pending memory operation.
-   * 
-   * @param address the base address of the 16bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  MemoryOp* MemReadS16(uint32_t address);
-  /** 8bits memory read.
-   *
-   * This method reads 8bits from memory and returns a
-   * corresponding pending memory operation.
-   * 
-   * @param address the base address of the 8bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  MemoryOp* MemRead8(uint32_t address);
-  /** Signed 8bits memory read.
-   *
-   * This method reads 8bits from memory and returns a
-   * corresponding signed pending memory operation.
-   * 
-   * @param address the base address of the 8bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  MemoryOp* MemReadS8(uint32_t address);
-  /* Prevent hiding base SetGPR_mem */
-  using unisim::component::cxx::processor::arm::CPU::SetGPR_mem;
-  /** Mark a GPR to be updated by a MemoryOp pending memory operation.
-   *
-   * @param id the register index
-   * @param memop the pending memory operation
-   */
-  void SetGPR_mem(uint32_t id, MemoryOp* memop)
-  {
-    memop->SetDestReg( id );
-    ls_queue.push(memop);		
-  }
-  /* Prevent hiding base SetGPR_usr */
-  using unisim::component::cxx::processor::arm::CPU::SetGPR_usr;
-  /** Mark a user GPR to be updated by a MemoryOp pending memory operation.
-   *
-   * @param id the register index
-   * @param memop the pending memory operation
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  void SetGPR_usr(uint32_t id, MemoryOp* memop)
-  {
-    memop->SetDestUserReg( id );
-    ls_queue.push(memop);		
-  }
-  /** 32bits memory write.
-   * This method write the giving 32bits value into the memory system.
-   * 
-   * @param address the base address of the 32bits write
-   * @param value the value to write into memory
-   */
-  void MemWrite32(uint32_t address, uint32_t value);
-  /** 16bits memory write.
-   * This method write the giving 16bits value into the memory system.
-   * 
-   * @param address the base address of the 16bits write
-   * @param value the value to write into memory
-   */
-  void MemWrite16(uint32_t address, uint16_t value);
-  /** 8bits memory write.
-   * This method write the giving 8bits value into the memory system.
-   * 
-   * @param address the base address of the 8bits write
-   * @param value the value to write into memory
-   */
-  void MemWrite8(uint32_t address, uint8_t value);
 
   /**************************************************************/
   /* Memory access methods       END                            */
@@ -700,14 +590,14 @@ public:
   TLB tlb;
 
 protected:
+  /** The registers interface for debugging purpose */
+  typedef std::map<std::string, unisim::util::debug::Register *> RegistersRegistry;
+  RegistersRegistry registers_registry;
+		
   /** Decoder for the arm32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<
-  unisim::component::cxx::processor::arm::arm926ejs::CPU>
-  arm32_decoder;
+  unisim::component::cxx::processor::arm::isa::arm32::Decoder<ARM926ejs>  arm32_decoder;
   /** Decoder for the thumb instruction set. */
-  unisim::component::cxx::processor::arm::isa::thumb::Decoder<
-    unisim::component::cxx::processor::arm::arm926ejs::CPU>
-  thumb_decoder;
+  unisim::component::cxx::processor::arm::isa::thumb::Decoder<ARM926ejs>  thumb_decoder;
 
   /** The exceptions that have occured */
   uint32_t exception;

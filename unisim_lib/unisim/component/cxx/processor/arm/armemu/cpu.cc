@@ -178,15 +178,6 @@ CPU::CPU(const char *name, Object *parent)
   registers_registry["fp"] = new SimpleRegister<uint32_t>("fp", &gpr[11]);
   registers_registry["ip"] = new SimpleRegister<uint32_t>("ip", &gpr[12]);
   
-  // TODO: Provide access to Banked Registers
-  // for (unsigned int i = 0; i < num_phys_gprs; i++)
-  //   {
-  //     std::stringstream ss, ss_desc;
-  //     ss << "PHYS_GPR[" << i << "]";
-  //     ss_desc << "Physical register " << i;
-  //     reg_phys_gpr[i] =  
-  //       new unisim::kernel::service::Register<uint32_t>( ss.str().c_str(), this, phys_gpr[i], ss_desc.str().c_str() );
-  //   }
   for (unsigned int i = 0; i < (num_log_gprs - 1); i++)
     {
       std::stringstream ss, ss_desc;
@@ -197,17 +188,6 @@ CPU::CPU(const char *name, Object *parent)
                                                         this, gpr[i], ss_desc.str().c_str());
     }
   reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
-  // TODO: provide unisim registers for SPSRs
-  // for (unsigned int i = 0; i < num_phys_spsrs; i++)
-  //   {
-  //     std::stringstream ss, ss_desc;
-  //     ss << "SPSR[" << i << "]";
-  //     ss_desc << "SPSR[" << i << "] register";
-  //     reg_spsr[i] =
-  //       new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-  //                                                       this, spsr[i].m_value, ss_desc.str().c_str());
-  //   }
-
   // This implementation of the arm architecture can only run in user mode,
   //   so we can already set CPSR to that mode.
   cpsr.Set( M, USER_MODE );
@@ -1337,6 +1317,9 @@ CPU::UnpredictableInsnBehaviour()
 }
 
 } // end of namespace armemu
+
+template struct unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::armemu::ARMv7emu>;
+
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
