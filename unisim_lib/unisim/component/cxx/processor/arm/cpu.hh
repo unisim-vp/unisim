@@ -39,6 +39,7 @@
 #include <unisim/component/cxx/processor/arm/extregbank.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
+#include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
@@ -59,10 +60,23 @@ namespace arm {
  * different methods to handle them.
  */
 
-template <typename _CONFIG_>
+template <typename CONFIG>
 struct CPU
   : public virtual unisim::kernel::service::Object
 {
+  typedef CONFIG Config;
+  typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR fpscr_type;
+  typedef double   F64;
+  typedef float    F32;
+  typedef uint8_t  U8;
+  typedef uint16_t U16;
+  typedef uint32_t U32;
+  typedef uint64_t U64;
+  typedef int8_t   S8;
+  typedef int16_t  S16;
+  typedef int32_t  S32;
+  typedef int64_t  S64;
+  
   /*
    * ARM architecture constants
    */
@@ -122,13 +136,6 @@ struct CPU
     virtual void     Swap( CPU& cpu ) {};
   };
   
-  typedef _CONFIG_ CONFIG;
-  typedef typename CONFIG::FPSCR fpscr_type;
-  typedef typename CONFIG::F64   F64;
-  typedef typename CONFIG::F32   F32;
-  typedef typename CONFIG::U64   U64;
-  typedef typename CONFIG::U32   U32;
-
   //=====================================================================
   //=                       Logger                                      =
   //=====================================================================

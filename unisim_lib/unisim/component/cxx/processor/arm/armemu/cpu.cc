@@ -437,7 +437,7 @@ CPU::StepInstruction()
     ReadInsn(current_pc, insn);
 		
     /* Decode current PC */
-    isa::thumb2::Operation<unisim::component::cxx::processor::arm::armemu::ARMv7emu>* op;
+    isa::thumb2::Operation<CPU>* op;
     op = thumb_decoder.Decode(current_pc, insn);
     unsigned insn_length = op->GetLength();
     if (insn_length % 16) throw 0;
@@ -462,7 +462,7 @@ CPU::StepInstruction()
     ReadInsn(current_pc, insn);
 			
     /* Decode current PC */
-    isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::ARMv7emu>* op;
+    isa::arm32::Operation<CPU>* op;
     op = arm32_decoder.Decode(current_pc, insn);
 		
     /* update PC registers value before execution */
@@ -854,7 +854,7 @@ CPU::Disasm(uint32_t addr, uint32_t &next_addr)
 		
 		uint8_t insn_bytes[4];
 		isa::thumb2::CodeType insn;
-		isa::thumb2::Operation<unisim::component::cxx::processor::arm::armemu::ARMv7emu> *op = 0;
+		isa::thumb2::Operation<CPU> *op = 0;
 		if (!ReadMemory(addr, insn_bytes, 4)) 
 		{
 			buffer << "Could not read from memory";
@@ -882,7 +882,7 @@ CPU::Disasm(uint32_t addr, uint32_t &next_addr)
 	{
 		buffer << "[ARM32]";
 		
-		isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::ARMv7emu> * op = NULL;
+		isa::arm32::Operation<CPU> * op = NULL;
 		uint32_t insn;
 		if (!ReadMemory(addr, &insn, 4)) 
 		{

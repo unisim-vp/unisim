@@ -748,7 +748,7 @@ tst.execute = {
  * REV reverses the byte order in a 32-bit register.
  */
 
-{ CONFIG::insns6 }:                               \
+{ ARCH::Config::insns6 }:                               \
 op rev( 0b1011101000[10]: rm[3]: rd[3] );
 
 rev.disasm = {
@@ -773,7 +773,7 @@ rev.execute = {
  * REV16 reverses the byte order in each16-bit halfword of a 32-bit register.
  */
 
-{ CONFIG::insns6 }:                               \
+{ ARCH::Config::insns6 }:                               \
 op rev16( 0b1011101001[10]: rm[3]: rd[3] );
 
 rev16.disasm = {
@@ -797,7 +797,7 @@ rev16.execute = {
  * REVSH 16-bit halfword of a 32-bit register, and sign-extends the result to 32 bits.
  */
 
-{ CONFIG::insns6 }:                               \
+{ ARCH::Config::insns6 }:                               \
 op revsh( 0b1011101011[10]: rm[3]: rd[3] );
 
 revsh.disasm = {
@@ -814,7 +814,7 @@ revsh.disasm = {
  * SETEND writes a new value to ENDIANSTATE.
  */
 
-{ CONFIG::insns6 }:                               \
+{ ARCH::Config::insns6 }:                               \
 op setend( 0b101101100101[12]: end[1]: 0b000[3] );
 
 setend.disasm = {

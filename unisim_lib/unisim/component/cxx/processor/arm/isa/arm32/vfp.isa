@@ -53,8 +53,8 @@ vabs_f32.disasm = {
 vabs_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op = cpu.GetVSR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatAbs( res, op, fpscr );
   
@@ -71,8 +71,8 @@ vabs_f64.disasm = {
 vabs_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatAbs( res, op, fpscr );
   
@@ -93,8 +93,8 @@ vadd_f32.disasm = {
 vadd_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPAdd( res, op1, op2, fpscr );
   
@@ -111,8 +111,8 @@ vadd_f64.disasm = {
 vadd_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPAdd( res, op1, op2, fpscr );
   
@@ -133,7 +133,7 @@ vcmp_f32d.disasm = {
 vcmp_f32d.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op1 = cpu.GetVSR( vd ), op2 = cpu.GetVSR( vm );
+  typename ARCH::F32 op1 = cpu.GetVSR( vd ), op2 = cpu.GetVSR( vm );
   
   FPCompare( op1, op2, e, cpu.FPSCR() );
 };
@@ -148,7 +148,7 @@ vcmp_f64d.disasm = {
 vcmp_f64d.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op1 = cpu.GetVDR( vd ), op2 = cpu.GetVDR( vm );
+  typename ARCH::F64 op1 = cpu.GetVDR( vd ), op2 = cpu.GetVDR( vm );
   
   FPCompare( op1, op2, e, cpu.FPSCR() );
 }
@@ -163,7 +163,7 @@ vcmp_f32i.disasm = {
 vcmp_f32i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op1 = cpu.GetVSR( vd ), op2 = VFPExpandImm( 0, 7, 0 ); /* ZERO */
+  typename ARCH::F32 op1 = cpu.GetVSR( vd ), op2 = VFPExpandImm( 0, 7, 0 ); /* ZERO */
   
   FPCompare( op1, op2, e, cpu.FPSCR() );
 };
@@ -178,7 +178,7 @@ vcmp_f64i.disasm = {
 vcmp_f64i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op1 = cpu.GetVDR( vd ), op2 = VFPExpandImm( 0, 7, 0 ); /* ZERO */
+  typename ARCH::F64 op1 = cpu.GetVDR( vd ), op2 = VFPExpandImm( 0, 7, 0 ); /* ZERO */
   
   FPCompare( op1, op2, e, cpu.FPSCR() );
 }
@@ -195,8 +195,8 @@ vcvt_f32u32.disasm = {
 vcvt_f32u32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 op = cpu.GetVU32( vm );
-  typename CONFIG::F32 res;
+  typename ARCH::U32 op = cpu.GetVU32( vm );
+  typename ARCH::F32 res;
   
   FloatItoF( res, op, 0, cpu.FPSCR() );
   
@@ -213,8 +213,8 @@ vcvt_f64u32.disasm = {
 vcvt_f64u32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 op = cpu.GetVU32( vm );
-  typename CONFIG::F64 res;
+  typename ARCH::U32 op = cpu.GetVU32( vm );
+  typename ARCH::F64 res;
   
   FloatItoF( res, op, 0, cpu.FPSCR() );
   
@@ -231,8 +231,8 @@ vcvt_f32s32.disasm = {
 vcvt_f32s32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::S32 op = typename CONFIG::S32( cpu.GetVU32( vm ) );
-  typename CONFIG::F32 res;
+  typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( vm ) );
+  typename ARCH::F32 res;
   
   FloatItoF( res, op, 0, cpu.FPSCR() );
   
@@ -249,8 +249,8 @@ vcvt_f64s32.disasm = {
 vcvt_f64s32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::S32 op = typename CONFIG::S32( cpu.GetVU32( vm ) );
-  typename CONFIG::F64 res;
+  typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( vm ) );
+  typename ARCH::F64 res;
   
   FloatItoF( res, op, 0, cpu.FPSCR() );
   
@@ -267,8 +267,8 @@ vcvt_u32f32.disasm = {
 vcvt_u32f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op = cpu.GetVSR( vm );
-  typename CONFIG::U32 res;
+  typename ARCH::F32 op = cpu.GetVSR( vm );
+  typename ARCH::U32 res;
   
   FloatFtoI( res, op, 0, cpu.FPSCR() );
   
@@ -285,8 +285,8 @@ vcvtr_u32f32.disasm = {
 vcvtr_u32f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op = cpu.GetVSR( vm );
-  typename CONFIG::U32 res;
+  typename ARCH::F32 op = cpu.GetVSR( vm );
+  typename ARCH::U32 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, 0, cpu.FPSCR() );
@@ -304,8 +304,8 @@ vcvt_u32f64.disasm = {
 vcvt_u32f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vm );
-  typename CONFIG::U32 res;
+  typename ARCH::F64 op = cpu.GetVDR( vm );
+  typename ARCH::U32 res;
   
   FloatFtoI( res, op, 0, cpu.FPSCR() );
   
@@ -322,8 +322,8 @@ vcvtr_u32f64.disasm = {
 vcvtr_u32f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vm );
-  typename CONFIG::U32 res;
+  typename ARCH::F64 op = cpu.GetVDR( vm );
+  typename ARCH::U32 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, 0, cpu.FPSCR() );
@@ -341,12 +341,12 @@ vcvt_s32f32.disasm = {
 vcvt_s32f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op = cpu.GetVSR( vm );
-  typename CONFIG::S32 res;
+  typename ARCH::F32 op = cpu.GetVSR( vm );
+  typename ARCH::S32 res;
   
   FloatFtoI( res, op, 0, cpu.FPSCR() );
   
-  cpu.SetVU32( vd, typename CONFIG::U32( res ) );
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
 
 op vcvtr_s32f32( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b101[3]: shl<1> vd1[4]: 0b101[3]: 0b00[2]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -359,13 +359,13 @@ vcvtr_s32f32.disasm = {
 vcvtr_s32f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op = cpu.GetVSR( vm );
-  typename CONFIG::S32 res;
+  typename ARCH::F32 op = cpu.GetVSR( vm );
+  typename ARCH::S32 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, 0, cpu.FPSCR() );
   
-  cpu.SetVU32( vd, typename CONFIG::U32( res ) );
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
 
 op vcvt_s32f64( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b101[3]: shl<1> vd1[4]: 0b101[3]: 0b11[2]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -378,12 +378,12 @@ vcvt_s32f64.disasm = {
 vcvt_s32f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vm );
-  typename CONFIG::S32 res;
+  typename ARCH::F64 op = cpu.GetVDR( vm );
+  typename ARCH::S32 res;
   
   FloatFtoI( res, op, 0, cpu.FPSCR() );
   
-  cpu.SetVU32( vd, typename CONFIG::U32( res ) );
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
 
 op vcvtr_s32f64( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b101[3]: shl<1> vd1[4]: 0b101[3]: 0b10[2]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -396,13 +396,13 @@ vcvtr_s32f64.disasm = {
 vcvtr_s32f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vm );
-  typename CONFIG::S32 res;
+  typename ARCH::F64 op = cpu.GetVDR( vm );
+  typename ARCH::S32 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, 0, cpu.FPSCR() );
   
-  cpu.SetVU32( vd, typename CONFIG::U32( res ) );
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
 
 /* VCVT (Convert between floating-point and fixed-point, Floating-point) */
@@ -417,8 +417,8 @@ vcvt_f32s16i.disasm = {
 vcvt_f32s16i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::S32 op = typename CONFIG::S32( typename CONFIG::S16( cpu.GetVU32( vd ) ) );
-  typename CONFIG::F32 res;
+  typename ARCH::S32 op = typename ARCH::S32( typename ARCH::S16( cpu.GetVU32( vd ) ) );
+  typename ARCH::F32 res;
   
   // TODO: Rounding
   FloatItoF( res, op, imm, cpu.FPSCR() );
@@ -436,8 +436,8 @@ vcvt_f32s32i.disasm = {
 vcvt_f32s32i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::S32 op = typename CONFIG::S32( cpu.GetVU32( vd ) );
-  typename CONFIG::F32 res;
+  typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( vd ) );
+  typename ARCH::F32 res;
   
   // TODO: Rounding
   FloatItoF( res, op, imm, cpu.FPSCR() );
@@ -455,8 +455,8 @@ vcvt_f64s16i.disasm = {
 vcvt_f64s16i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::S32 op = typename CONFIG::S32( typename CONFIG::S16( cpu.GetVU32( 2*vd ) ) );
-  typename CONFIG::F32 res;
+  typename ARCH::S32 op = typename ARCH::S32( typename ARCH::S16( cpu.GetVU32( 2*vd ) ) );
+  typename ARCH::F32 res;
   
   // TODO: Rounding
   FloatItoF( res, op, imm, cpu.FPSCR() );
@@ -474,8 +474,8 @@ vcvt_f64s32i.disasm = {
 vcvt_f64s32i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::S32 op = typename CONFIG::S32( cpu.GetVU32( 2*vd ) );
-  typename CONFIG::F32 res;
+  typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( 2*vd ) );
+  typename ARCH::F32 res;
   
   // TODO: Rounding
   FloatItoF( res, op, imm, cpu.FPSCR() );
@@ -493,8 +493,8 @@ vcvt_f32u16i.disasm = {
 vcvt_f32u16i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 op = typename CONFIG::U32( typename CONFIG::U16( cpu.GetVU32( vd ) ) );
-  typename CONFIG::F32 res;
+  typename ARCH::U32 op = typename ARCH::U32( typename ARCH::U16( cpu.GetVU32( vd ) ) );
+  typename ARCH::F32 res;
   
   // TODO: Rounding
   FloatItoF( res, op, imm, cpu.FPSCR() );
@@ -512,8 +512,8 @@ vcvt_f32u32i.disasm = {
 vcvt_f32u32i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 op = cpu.GetVU32( vd );
-  typename CONFIG::F32 res;
+  typename ARCH::U32 op = cpu.GetVU32( vd );
+  typename ARCH::F32 res;
   
   // TODO: Rounding
   FloatItoF( res, op, imm, cpu.FPSCR() );
@@ -531,8 +531,8 @@ vcvt_f64u16i.disasm = {
 vcvt_f64u16i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 op = typename CONFIG::U32( typename CONFIG::U16( cpu.GetVU32( 2*vd ) ) );
-  typename CONFIG::F32 res;
+  typename ARCH::U32 op = typename ARCH::U32( typename ARCH::U16( cpu.GetVU32( 2*vd ) ) );
+  typename ARCH::F32 res;
   
   // TODO: Rounding
   FloatItoF( res, op, imm, cpu.FPSCR() );
@@ -550,8 +550,8 @@ vcvt_f64u32i.disasm = {
 vcvt_f64u32i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 op = typename CONFIG::U32( cpu.GetVU32( 2*vd ) );
-  typename CONFIG::F32 res;
+  typename ARCH::U32 op = typename ARCH::U32( cpu.GetVU32( 2*vd ) );
+  typename ARCH::F32 res;
   
   // TODO: Rounding
   FloatItoF( res, op, imm, cpu.FPSCR() );
@@ -569,13 +569,13 @@ vcvt_s16f32i.disasm = {
 vcvt_s16f32i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op = cpu.GetVSR( vd );
-  typename CONFIG::S16 res;
+  typename ARCH::F32 op = cpu.GetVSR( vd );
+  typename ARCH::S16 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, imm, cpu.FPSCR() );
   
-  cpu.SetVU32( vd, typename CONFIG::U32( typename CONFIG::S32( res ) ) );
+  cpu.SetVU32( vd, typename ARCH::U32( typename ARCH::S32( res ) ) );
 };
 
 op vcvt_s16f64i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b110[3]: vd0[4]: 0b101[3]: 0b10[2]: 0b1[1]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
@@ -588,13 +588,13 @@ vcvt_s16f64i.disasm = {
 vcvt_s16f64i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vd );
-  typename CONFIG::S16 res;
+  typename ARCH::F64 op = cpu.GetVDR( vd );
+  typename ARCH::S16 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, imm, cpu.FPSCR() );
   
-  cpu.SetVU64( vd, typename CONFIG::U64( typename CONFIG::S64( res ) ) );
+  cpu.SetVU64( vd, typename ARCH::U64( typename ARCH::S64( res ) ) );
 };
 
 op vcvt_s32f32i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b110[3]: shl<1> vd1[4]: 0b101[3]: 0b01[2]: 0b1[1]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
@@ -607,13 +607,13 @@ vcvt_s32f32i.disasm = {
 vcvt_s32f32i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op = cpu.GetVSR( vd );
-  typename CONFIG::S32 res;
+  typename ARCH::F32 op = cpu.GetVSR( vd );
+  typename ARCH::S32 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, imm, cpu.FPSCR() );
   
-  cpu.SetVU32( vd, typename CONFIG::U32( res ) );
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
 
 op vcvt_s32f64i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b110[3]: vd0[4]: 0b101[3]: 0b11[2]: 0b1[1]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
@@ -626,13 +626,13 @@ vcvt_s32f64i.disasm = {
 vcvt_s32f64i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vd );
-  typename CONFIG::S32 res;
+  typename ARCH::F64 op = cpu.GetVDR( vd );
+  typename ARCH::S32 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, imm, cpu.FPSCR() );
   
-  cpu.SetVU32( vd, typename CONFIG::U64( typename CONFIG::S64( res ) ) );
+  cpu.SetVU32( vd, typename ARCH::U64( typename ARCH::S64( res ) ) );
 };
 
 op vcvt_u16f32i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b111[3]: shl<1> vd1[4]: 0b101[3]: 0b00[2]: 0b1[1]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
@@ -645,13 +645,13 @@ vcvt_u16f32i.disasm = {
 vcvt_u16f32i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op = cpu.GetVSR( vd );
-  typename CONFIG::U16 res;
+  typename ARCH::F32 op = cpu.GetVSR( vd );
+  typename ARCH::U16 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, imm, cpu.FPSCR() );
   
-  cpu.SetVU32( vd, typename CONFIG::U32( res ) );
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
 
 op vcvt_u16f64i( cond[4]: 0b11101[5]: shl<4> vd1[1]: 0b111[3]: 0b111[3]: vd0[4]: 0b101[3]: 0b10[2]: 0b1[1]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
@@ -664,13 +664,13 @@ vcvt_u16f64i.disasm = {
 vcvt_u16f64i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vd );
-  typename CONFIG::U16 res;
+  typename ARCH::F64 op = cpu.GetVDR( vd );
+  typename ARCH::U16 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, imm, cpu.FPSCR() );
   
-  cpu.SetVU64( vd, typename CONFIG::U64( res ) );
+  cpu.SetVU64( vd, typename ARCH::U64( res ) );
 };
 
 op vcvt_u32f32i( cond[4]: 0b11101[5]: vd0[1]: 0b111[3]: 0b111[3]: shl<1> vd1[4]: 0b101[3]: 0b01[2]: 0b1[1]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
@@ -683,8 +683,8 @@ vcvt_u32f32i.disasm = {
 vcvt_u32f32i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op = cpu.GetVSR( vd );
-  typename CONFIG::U32 res;
+  typename ARCH::F32 op = cpu.GetVSR( vd );
+  typename ARCH::U32 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, imm, cpu.FPSCR() );
@@ -702,13 +702,13 @@ vcvt_u32f64i.disasm = {
 vcvt_u32f64i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vd );
-  typename CONFIG::U32 res;
+  typename ARCH::F64 op = cpu.GetVDR( vd );
+  typename ARCH::U32 res;
   
   // TODO: Rounding
   FloatFtoI( res, op, imm, cpu.FPSCR() );
   
-  cpu.SetVU32( vd, typename CONFIG::U64( res ) );
+  cpu.SetVU32( vd, typename ARCH::U64( res ) );
 };
 
 /* VCVT (Convert between double-precision and single-precision) */
@@ -723,12 +723,12 @@ vcvt_f64f32.disasm = {
 vcvt_f64f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op = cpu.GetVSR( vm );
-  typename CONFIG::F64 res;
+  typename ARCH::F32 op = cpu.GetVSR( vm );
+  typename ARCH::F64 res;
   
   FloatFtoF( res, op, cpu.FPSCR() );
   
-  cpu.SetVDR( vd, typename CONFIG::U32( res ) );
+  cpu.SetVDR( vd, typename ARCH::U32( res ) );
 };
 
 op vcvt_f32f64( cond[4]: 0b1110[4]: 0b1[1]: vd0[1]: 0b11[2]: 0b0111[4]: shl<1> vd1[4]: 0b1011[4]: 0b11[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -741,12 +741,12 @@ vcvt_f32f64.disasm = {
 vcvt_f32f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vm );
-  typename CONFIG::F32 res;
+  typename ARCH::F64 op = cpu.GetVDR( vm );
+  typename ARCH::F32 res;
   
   FloatFtoF( res, op, cpu.FPSCR() );
   
-  cpu.SetVSR( vd, typename CONFIG::U32( res ) );
+  cpu.SetVSR( vd, typename ARCH::U32( res ) );
 };
 
 /* VDIV */
@@ -761,8 +761,8 @@ vdiv_f32.disasm = {
 vdiv_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPDiv( res, op1, op2, fpscr );
 
@@ -779,8 +779,8 @@ vdiv_f64.disasm = {
 vdiv_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPDiv( res, op1, op2, fpscr );
   
@@ -799,8 +799,8 @@ vfma_f32.disasm = {
 vfma_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMulAdd( acc, op1, op2, fpscr );
   
@@ -817,8 +817,8 @@ vfma_f64.disasm = {
 vfma_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMulAdd( acc, op1, op2, fpscr );
   
@@ -835,8 +835,8 @@ vfms_f32.disasm = {
 vfms_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( op1, op1, fpscr );
   FPMulAdd( acc, op1, op2, fpscr );
@@ -854,8 +854,8 @@ vfms_f64.disasm = {
 vfms_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( op1, op1, fpscr );
   FPMulAdd( acc, op1, op2, fpscr );
@@ -875,8 +875,8 @@ vfnma_f32.disasm = {
 vfnma_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( acc, acc, fpscr );
   FPMulAdd( acc, op1, op2, fpscr );
@@ -894,8 +894,8 @@ vfnma_f64.disasm = {
 vfnma_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( acc, acc, fpscr );
   FPMulAdd( acc, op1, op2, fpscr );
@@ -913,8 +913,8 @@ vfnms_f32.disasm = {
 vfnms_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( acc, acc, fpscr );
   FloatNeg( op1, op1, fpscr );
@@ -933,8 +933,8 @@ vfnms_f64.disasm = {
 vfnms_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( acc, acc, fpscr );
   FloatNeg( op1, op1, fpscr );
@@ -962,7 +962,7 @@ vldmdb_f32.disasm = {
 vldmdb_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 address = cpu.GetGPR( rn ) - typename CONFIG::U32( regs << 2 );
+  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 2 );
   cpu.SetGPR( rn, address  );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
@@ -987,7 +987,7 @@ vldmdb_f64.disasm = {
 vldmdb_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 address = cpu.GetGPR( rn ) - typename CONFIG::U32( regs << 3 );
+  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 3 );
   cpu.SetGPR( rn, address );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
@@ -1013,8 +1013,8 @@ vldmia_f32.disasm = {
 vldmia_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename CONFIG::U32( regs << 2 ) );
+  typename ARCH::U32 address = cpu.GetGPR( rn );
+  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 2 ) );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
     cpu.SetVU32( vd + reg, cpu.MemRead32( address ) );
@@ -1039,8 +1039,8 @@ vldmia_f64.disasm = {
 vldmia_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename CONFIG::U32( regs << 3 ) );
+  typename ARCH::U32 address = cpu.GetGPR( rn );
+  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 3 ) );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
     cpu.SetVU64( 2*(vd+reg) + 0, cpu.MemRead32( address + 0 ) );
@@ -1100,8 +1100,8 @@ vmla_f32.disasm = {
 vmla_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FPAdd( acc, acc, product, fpscr );
@@ -1119,8 +1119,8 @@ vmla_f64.disasm = {
 vmla_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FPAdd( acc, acc, product, fpscr );
@@ -1138,8 +1138,8 @@ vmls_f32.disasm = {
 vmls_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FloatNeg( product, product, fpscr );
@@ -1158,8 +1158,8 @@ vmls_f64.disasm = {
 vmls_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FloatNeg( product, product, fpscr );
@@ -1184,8 +1184,8 @@ vnmla_f32.disasm = {
 vnmla_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FloatNeg( product, product, fpscr );
@@ -1205,8 +1205,8 @@ vnmla_f64.disasm = {
 vnmla_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FloatNeg( product, product, fpscr );
@@ -1232,8 +1232,8 @@ vnmls_f32.disasm = {
 vnmls_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FloatNeg( acc, acc, fpscr );
@@ -1252,8 +1252,8 @@ vnmls_f64.disasm = {
 vnmls_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FloatNeg( acc, acc, fpscr );
@@ -1265,7 +1265,7 @@ vnmls_f64.execute = {
 /* VMOV; Move immediate */
 
 op vmov_f32i( cond[4]: 0b1110[4]: 0b1[1]: vd0[1]: 0b11[2]: n[1]: exp[3]: shl<1> vd1[4]: 0b10100000[8]: man[4] );
-vmov_f32i.var vd : {uint32_t} = {vd1|vd0}, fpimm : {typename CONFIG::F32} = {VFPExpandImm( n, exp, man )};
+vmov_f32i.var vd : {uint32_t} = {vd1|vd0}, fpimm : {typename ARCH::F32} = {VFPExpandImm( n, exp, man )};
 
 vmov_f32i.disasm = {
   buffer << "vmov" << DisasmCondition(cond) << ".f32\ts" << vd << ", " << DisasmI((n << 7) | (exp << 4) | man) << "; " << fpimm;
@@ -1278,7 +1278,7 @@ vmov_f32i.execute = {
 };
 
 op vmov_f64i( cond[4]: 0b1110[4]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: n[1]: exp[3]: vd0[4]: 0b10110000[8]: man[4] );
-vmov_f64i.var vd : {uint32_t} = {vd1|vd0}, fpimm : {typename CONFIG::F64} = {VFPExpandImm( n, exp, man )};
+vmov_f64i.var vd : {uint32_t} = {vd1|vd0}, fpimm : {typename ARCH::F64} = {VFPExpandImm( n, exp, man )};
 
 vmov_f64i.disasm = {
   buffer << "vmov" << DisasmCondition(cond) << ".f64\td" << vd << ", " << DisasmI((n << 7) | (exp << 4) | man) << "; " << fpimm;
@@ -1482,8 +1482,8 @@ vmul_f32.disasm = {
 vmul_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( res, op1, op2, fpscr );
   
@@ -1500,8 +1500,8 @@ vmul_f64.disasm = {
 vmul_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( res, op1, op2, fpscr );
   
@@ -1522,8 +1522,8 @@ vnmul_f32.disasm = {
 vnmul_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( res, op1, op2, fpscr );
   FloatNeg( res, res, fpscr );
@@ -1541,8 +1541,8 @@ vnmul_f64.disasm = {
 vnmul_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( res, op1, op2, fpscr );
   FloatNeg( res, res, fpscr );
@@ -1562,8 +1562,8 @@ vneg_f32.disasm = {
 vneg_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op = cpu.GetVSR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( res, op, fpscr );
   
@@ -1580,8 +1580,8 @@ vneg_f64.disasm = {
 vneg_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( res, op, fpscr );
   
@@ -1600,8 +1600,8 @@ vsqrt_f32s.disasm = {
 vsqrt_f32s.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op = cpu.GetVSR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPSqrt( res, op, fpscr );
   
@@ -1618,8 +1618,8 @@ vsqrt_f64d.disasm = {
 vsqrt_f64d.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op = cpu.GetVDR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPSqrt( res, op, fpscr );
   
@@ -1645,7 +1645,7 @@ vstmdb_f32.disasm = {
 vstmdb_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 address = cpu.GetGPR( rn ) - typename CONFIG::U32( regs << 2 );
+  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 2 );
   cpu.SetGPR( rn, address );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
@@ -1671,7 +1671,7 @@ vstmdb_f64.disasm = {
 vstmdb_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 address = cpu.GetGPR( rn ) - typename CONFIG::U32( regs << 3 );
+  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 3 );
   cpu.SetGPR( rn, address );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
@@ -1695,8 +1695,8 @@ vstmia_f32.disasm = {
 vstmia_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename CONFIG::U32( regs << 2 ) );
+  typename ARCH::U32 address = cpu.GetGPR( rn );
+  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 2 ) );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
     cpu.MemWrite32( address, cpu.GetVU32( vd + reg ) );
@@ -1720,8 +1720,8 @@ vstmia_f64.disasm = {
 vstmia_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename CONFIG::U32( regs << 3 ) );
+  typename ARCH::U32 address = cpu.GetGPR( rn );
+  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 3 ) );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
     cpu.MemWrite32( address + 0, cpu.GetVU64( 2*(vd+reg) + 0 ) );
@@ -1781,8 +1781,8 @@ vsub_f32.disasm = {
 vsub_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  typename CONFIG::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPSub( res, op1, op2, fpscr );
   
@@ -1799,8 +1799,8 @@ vsub_f64.disasm = {
 vsub_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename CONFIG::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
-  typename CONFIG::FPSCR& fpscr = cpu.FPSCR();
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPSub( res, op1, op2, fpscr );
   

@@ -52,7 +52,7 @@ using unisim::util::arithmetic::UnsignedSub8;
  * qadd instruction
  */
 
-{ CONFIG::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op qadd( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm[4] );
 qadd.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
@@ -80,7 +80,7 @@ qadd.execute = {
  * qsub instruction
  */
 
-{ CONFIG::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op qsub( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1010[4]: rm[4] );
 qsub.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
@@ -108,7 +108,7 @@ qsub.execute = {
  * qdadd instruction
  */
 
-{ CONFIG::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op qdadd( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1001[4]: rm[4] );
 qdadd.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
@@ -137,7 +137,7 @@ qdadd.execute = {
  * qdsub instruction
  */
 
-{ CONFIG::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op qdsub( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm[4] );
 qdsub.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
@@ -317,7 +317,7 @@ ssub16.disasm = { buffer << "ssub16\t" << DisasmRegister(rd) << ", " << DisasmRe
  * according to the results of the additions.
  */
 
-{ CONFIG::insns6 }:                                              \
+{ ARCH::Config::insns6 }:                                              \
 op uadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
 uadd8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
@@ -400,7 +400,7 @@ uqsax.disasm = { buffer << "uqsax\t" << DisasmRegister(rd) << ", " << DisasmRegi
  * register.
  */
 
-{ CONFIG::insns6 }: \
+{ ARCH::Config::insns6 }: \
 op uqsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
 
 uqsub8.disasm = {
@@ -470,7 +470,7 @@ usax.disasm = { buffer << "usax\t" << DisasmRegister(rd) << ", " << DisasmRegist
  * according to the results of the subtractions.
  */
 
-{ CONFIG::insns6 }:                                       \
+{ ARCH::Config::insns6 }:                                       \
 op usub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
 usub8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 

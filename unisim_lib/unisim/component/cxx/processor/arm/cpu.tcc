@@ -111,8 +111,8 @@ struct BankedMode : public CORE::Mode
  * @param parent the parent object of this object
  */
   
-template <class _CONFIG_>
-CPU<_CONFIG_>::CPU(const char *name, Object *parent)
+template <class CONFIG>
+CPU<CONFIG>::CPU(const char *name, Object *parent)
   : unisim::kernel::service::Object(name, parent)
   , logger(*this)
   , icache("icache", this)
@@ -173,9 +173,9 @@ CPU<_CONFIG_>::CPU(const char *name, Object *parent)
  *
  * @param addr the address of the memory prefetch access
  */
-template <class _CONFIG_>
+template <class CONFIG>
 void 
-CPU<_CONFIG_>::PerformPrefetchAccess( uint32_t addr )
+CPU<CONFIG>::PerformPrefetchAccess( uint32_t addr )
 {
   if ( likely(dcache.GetSize()) )
     {
@@ -251,9 +251,9 @@ CPU<_CONFIG_>::PerformPrefetchAccess( uint32_t addr )
  * @param size the size of the memory write access
  * @param value the value of the memory write access
  */
-template <class _CONFIG_>
+template <class CONFIG>
 void 
-CPU<_CONFIG_>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
+CPU<CONFIG>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t write_addr = addr;
   uint8_t data[4];
@@ -323,9 +323,9 @@ CPU<_CONFIG_>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
  * @param size the size of the memory read access
  * @param _signed the nature of the memory read access (signed or unsigned)
  */
-template <class _CONFIG_>
+template <class CONFIG>
 uint32_t
-CPU<_CONFIG_>::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
+CPU<CONFIG>::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
 {
   uint32_t read_addr = addr & ~(uint32_t)(size - 1);
   uint8_t data[4];
@@ -417,14 +417,14 @@ CPU<_CONFIG_>::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
     uint32_t shifter = 0;
     for (int byte = size; --byte >= 0;)
       { shifter = (shifter << 8) | uint32_t( data[byte] ); }
-    if ((size == 4) and (CONFIG::MODEL < ARMV6) and misalignment)
+    if ((size == 4) and (CONFIG::model < ARMV6) and misalignment)
       shifter = unisim::util::arithmetic::RotateLeft( shifter, misalignment*8 );
     value = shifter;
   } else {
     uint32_t shifter = 0;
     for (int byte = 0; byte < int( size ); ++byte)
       { shifter = (shifter << 8) | uint32_t( data[byte] ); }
-    if ((size == 4) and (CONFIG::MODEL < ARMV6) and misalignment)
+    if ((size == 4) and (CONFIG::model < ARMV6) and misalignment)
       shifter = unisim::util::arithmetic::RotateRight( shifter, misalignment*8 );
     value = shifter;
   }
@@ -446,9 +446,9 @@ CPU<_CONFIG_>::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
 /** Get caches info
  *
  */
-template <class _CONFIG_>
+template <class CONFIG>
 void
-CPU<_CONFIG_>::GetCacheInfo(bool &unified, 
+CPU<CONFIG>::GetCacheInfo(bool &unified, 
                   uint32_t &isize, uint32_t &iassoc, uint32_t &ilen,
                   uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen)
 {
@@ -464,9 +464,9 @@ CPU<_CONFIG_>::GetCacheInfo(bool &unified,
 /** Drain write buffer.
  * Perform a memory barrier by draining the write buffer.
  */
-template <class _CONFIG_>
+template <class CONFIG>
 void
-CPU<_CONFIG_>::DrainWriteBuffer()
+CPU<CONFIG>::DrainWriteBuffer()
 {
   logger << DebugWarning << "TODO: Drain write buffer once implemented" << EndDebugWarning;
 }
@@ -478,9 +478,9 @@ CPU<_CONFIG_>::DrainWriteBuffer()
  *
  * @param mva the address to invalidate
  */
-template <class _CONFIG_>
+template <class CONFIG>
 void 
-CPU<_CONFIG_>::InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
+CPU<CONFIG>::InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
 {
   uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
 
@@ -528,9 +528,9 @@ CPU<_CONFIG_>::InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
  * @param mva the address to clean
  * @param invalidate true if the line needs to be also invalidated
  */
-template <class _CONFIG_>
+template <class CONFIG>
 void 
-CPU<_CONFIG_>::CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
+CPU<CONFIG>::CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
 {
   uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
   uint32_t pa = mva;
@@ -615,9 +615,9 @@ CPU<_CONFIG_>::CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
  *   invalidated
  * @param data_cache whether or not the data cache should be invalidated
  */
-template <class _CONFIG_>
+template <class CONFIG>
 void 
-CPU<_CONFIG_>::InvalidateCache(bool insn_cache, bool data_cache)
+CPU<CONFIG>::InvalidateCache(bool insn_cache, bool data_cache)
 {
   if ( insn_cache )
     {
@@ -636,9 +636,9 @@ CPU<_CONFIG_>::InvalidateCache(bool insn_cache, bool data_cache)
  * @param insn_tlb whether or not the instruction tlb should be invalidated
  * @param data_tlb whether or not the data tlb should be invalidated
  */
-template <class _CONFIG_>
+template <class CONFIG>
 void 
-CPU<_CONFIG_>::InvalidateTLB()
+CPU<CONFIG>::InvalidateTLB()
 {
   // only the tlb needs to be invalidated, do not touch the lockdown tlb
   // tlb.Invalidate();
@@ -649,9 +649,9 @@ CPU<_CONFIG_>::InvalidateTLB()
  *
  * @return return true if the complete cache is clean, false otherwise
  */
-template <class _CONFIG_>
+template <class CONFIG>
 bool 
-CPU<_CONFIG_>::TestAndCleanDCache()
+CPU<CONFIG>::TestAndCleanDCache()
 {
   bool cleaned = true;
   uint32_t num_sets = dcache.GetNumSets();
@@ -725,9 +725,9 @@ CPU<_CONFIG_>::TestAndCleanDCache()
  *
  * @return return true if the complete cache is clean, false otherwise
  */
-template <class _CONFIG_>
+template <class CONFIG>
 bool 
-CPU<_CONFIG_>::TestCleanAndInvalidateDCache()
+CPU<CONFIG>::TestCleanAndInvalidateDCache()
 {
   bool cleaned = TestAndCleanDCache();
 
@@ -744,9 +744,9 @@ CPU<_CONFIG_>::TestCleanAndInvalidateDCache()
  * @param opcode2 the "opcode2" field of the instruction code
  * @return        the read value
  */
-template <class _CONFIG_>
+template <class CONFIG>
 uint32_t
-CPU<_CONFIG_>::CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+CPU<CONFIG>::CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
   return CP15GetRegister( crn, opcode1, crm, opcode2 ).Read( *this );
 }
@@ -759,9 +759,9 @@ CPU<_CONFIG_>::CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint
  * @param opcode2 the "opcode2" field of the instruction code
  * @param val     value to be written to the register
  */
-template <class _CONFIG_>
+template <class CONFIG>
 void
-CPU<_CONFIG_>::CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, uint32_t value )
+CPU<CONFIG>::CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, uint32_t value )
 {
   return CP15GetRegister( crn, opcode1, crm, opcode2 ).Write( *this, value );
 }
@@ -774,9 +774,9 @@ CPU<_CONFIG_>::CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uin
  * @param opcode2 the "opcode2" field of the instruction code
  * @return        a C string describing the CP15 register
  */
-template <class _CONFIG_>
+template <class CONFIG>
 char const*
-CPU<_CONFIG_>::CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+CPU<CONFIG>::CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
   return CP15GetRegister( crn, opcode1, crm, opcode2 ).Describe();
 }
@@ -789,9 +789,9 @@ CPU<_CONFIG_>::CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, 
  * @param opcode2 the "opcode2" field of the instruction code
  * @return        an internal CP15Reg
  */
-template <class _CONFIG_>
-typename CPU<_CONFIG_>::CP15Reg&
-CPU<_CONFIG_>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+template <class CONFIG>
+typename CPU<CONFIG>::CP15Reg&
+CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
 
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))

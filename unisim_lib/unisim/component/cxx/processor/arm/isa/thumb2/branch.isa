@@ -48,7 +48,7 @@ bl_w.disasm = {
 bl_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( 14, cpu.GetNPC() | typename CONFIG::U32(1) );
+  cpu.SetGPR( 14, cpu.GetNPC() | typename ARCH::U32(1) );
   cpu.Branch( cpu.GetGPR( 15 ) + imm );
 };
 
@@ -62,7 +62,7 @@ blx_w.disasm = {
 blx_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( 14, cpu.GetNPC() | typename CONFIG::U32(1) );
+  cpu.SetGPR( 14, cpu.GetNPC() | typename ARCH::U32(1) );
   cpu.BranchExchange( (cpu.GetGPR( 15 ) + imm) & -4 );
 };
 

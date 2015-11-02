@@ -57,14 +57,14 @@ nopw.disasm = {
  * yield instruction
  */
 
-{ CONFIG::insns7 }:                               \
+{ ARCH::Config::insns7 }:                               \
 op yield( 0b1011111100010000[16] );
 
 yield.disasm = {
   buffer << "yield";
 };
 
-{ CONFIG::insns7 }:                               \
+{ ARCH::Config::insns7 }:                               \
 op yield_w( 0b1111001110101111[16]:> <: 0b1000000000000001[16] );
 
 yield_w.disasm = {
@@ -120,37 +120,37 @@ isb.execute = {
   
 };
 
-{ CONFIG::insns7 }:                               \
+{ ARCH::Config::insns7 }:                               \
 op wfe( 0b1011111100100000[16] );
 wfe.disasm = {
   buffer << "wfe";
 };
 
-{ CONFIG::insns7 }:                               \
+{ ARCH::Config::insns7 }:                               \
 op wfi( 0b1011111100110000[16] );
 wfi.disasm = {
   buffer << "wfi";
 };
 
-{ CONFIG::insns7 }:                               \
+{ ARCH::Config::insns7 }:                               \
 op sev( 0b1011111101000000[16] );
 sev.disasm = {
   buffer << "sev";
 };
 
-{ CONFIG::insns7 }:                               \
+{ ARCH::Config::insns7 }:                               \
 op wfe_w( 0b1111001110101111[16]:> <: 0b1000000000000010[16] );
 wfe_w.disasm = {
   buffer << "wfe.w";
 };
 
-{ CONFIG::insns7 }:                               \
+{ ARCH::Config::insns7 }:                               \
 op wfi_w( 0b1111001110101111[16]:> <: 0b1000000000000011[16] );
 wfi_w.disasm = {
   buffer << "wfi.w";
 };
 
-{ CONFIG::insns7 }:                               \
+{ ARCH::Config::insns7 }:                               \
 op sev_w( 0b1111001110101111[16]:> <: 0b1000000000000100[16] );
 sev_w.disasm = {
   buffer << "sev.w";

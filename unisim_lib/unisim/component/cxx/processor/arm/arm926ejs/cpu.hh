@@ -65,40 +65,23 @@ namespace processor {
 namespace arm {
 namespace arm926ejs {
 
-struct CPU;
-
 struct ARM926ejs
 {
-  typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR FPSCR;
-  typedef double   F64;
-  typedef float    F32;
-  typedef uint8_t U8;
-  typedef uint16_t U16;
-  typedef uint32_t U32;
-  typedef uint64_t U64;
-  typedef int8_t   S8;
-  typedef int16_t  S16;
-  typedef int32_t  S32;
-  typedef int64_t  S64;
-  
-  typedef CPU      Arch;
-
   //=====================================================================
   //=                  ARM architecture model description               =
   //=====================================================================
   
   // Following a standard armv7 configuration
-  static uint32_t const MODEL = unisim::component::cxx::processor::arm::ARMEMU;
+  static uint32_t const model = unisim::component::cxx::processor::arm::ARMV5TEJ;
   static bool const     insns4T = true;
   static bool const     insns5E = true;
   static bool const     insns5J = true;
   static bool const     insns5T = true;
-  static bool const     insns6  = true;
+  static bool const     insns6  = false;
   static bool const     insnsRM = false;
-  static bool const     insnsT2 = true;
+  static bool const     insnsT2 = false;
   static bool const     insns7  = true;
 };
-
 
 struct CPU
   : public unisim::component::cxx::processor::arm::CPU<ARM926ejs>
@@ -112,22 +95,9 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >
 {
   typedef CPU this_type;
-  typedef ARM926ejs CONFIG;
   typedef unisim::component::cxx::processor::arm::CPU<ARM926ejs> base_cpu;
   typedef typename base_cpu::CP15Reg CP15Reg;
-  //=====================================================================
-  //=                  ARM architecture model description               =
-  //=====================================================================
   
-  static uint32_t const MODEL = unisim::component::cxx::processor::arm::ARMV5TEJ;
-  static bool const     insns4T = true;
-  static bool const     insns5E = true;
-  static bool const     insns5J = true;
-  static bool const     insns5T = true;
-  static bool const     insns6  = false;
-  static bool const     insnsRM = false;
-  static bool const     insnsT2 = false;
-
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
@@ -428,9 +398,9 @@ protected:
   RegistersRegistry registers_registry;
 		
   /** Decoder for the arm32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<ARM926ejs>  arm32_decoder;
+  unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU>  arm32_decoder;
   /** Decoder for the thumb instruction set. */
-  unisim::component::cxx::processor::arm::isa::thumb::Decoder<ARM926ejs>  thumb_decoder;
+  unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU>  thumb_decoder;
 
   /** The exceptions that have occured */
   uint32_t exception;

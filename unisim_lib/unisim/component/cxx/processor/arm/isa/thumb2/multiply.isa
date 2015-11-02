@@ -150,7 +150,7 @@ smull.execute = {
  * destination register. The condition code flags are not affected
  */
 
-{ CONFIG::insnsRM }:                                                      \
+{ ARCH::Config::insnsRM }:                                                      \
 op sdiv( 0b111110111001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1111[4]: rm[4] );
 
 sdiv.disasm = {
@@ -169,7 +169,7 @@ sdiv.disasm = {
  * destination register. The condition code flags are not affected.
  */
 
-{ CONFIG::insnsRM }:                                                      \
+{ ARCH::Config::insnsRM }:                                                      \
 op udiv( 0b111110111011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b1111[4]: rm[4] );
 
 udiv.disasm = {
@@ -184,7 +184,7 @@ udiv.disasm = {
  * smlalxy instruction
  */
 
-{ CONFIG::insns5E }:                                                     \
+{ ARCH::Config::insns5E }:                                                     \
 op smlalxy( 0b11111[5]: 0b0111[4]: 0b100[3]: rn[4]:> <: rdlo[4]: rdhi[4]: 0b10[2]: n[1]: m[1]: rm[4] );
 smlalxy.var reject : {Reject} = {(rdhi == 13) or (rdhi == 15) or (rdlo == 13) or (rdlo == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (rdhi == rdlo)};
 
@@ -213,7 +213,7 @@ smlalxy.execute = {
  * smlal instruction
  */
 
-{ CONFIG::insns5E }:                                                     \
+{ ARCH::Config::insns5E }:                                                     \
 op smlal( 0b11111[5]: 0b0111[4]: 0b100[3]: rn[4]:> <: rdlo[4]: rdhi[4]: 0b0000[4]: rm[4] );
 smlal.var reject : {Reject} = {(rdhi == 13) or (rdhi == 15) or (rdlo == 13) or (rdlo == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (rdhi == rdlo)};
 
@@ -242,7 +242,7 @@ smlal.execute = {
  * smlaxy instruction
  */
 
-{ CONFIG::insns5E }:                                                     \
+{ ARCH::Config::insns5E }:                                                     \
 op smlaxy( 0b11111[5]: 0b0110[4]: 0b001[3]: rn[4]:> <: ra[4]: rd[4]: 0b00[2]: n[1]: m[1]: rm[4] );
 smlaxy.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15) or (ra == 13) or (ra == 15)};
 
@@ -309,7 +309,7 @@ smlaxy.execute = {
  * products to a 64-bit accumulate operand.
  */
 
-{ CONFIG::insns6 }:                                                      \
+{ ARCH::Config::insns6 }:                                                      \
 op smlald( 0b11111[5]: 0b0111[4]: 0b100[3]: rd[4]:> <: rc[4]: rb[4]: 0b110[3]: m[1]: ra[4] );
 
 smlald.disasm = {
@@ -328,7 +328,7 @@ smlald.disasm = {
  * products to a 64-bit accumulate operand.
  */
 
-{ CONFIG::insns6 }:                                                      \
+{ ARCH::Config::insns6 }:                                                      \
 op smlsld( 0b11111[5]: 0b0111[4]: 0b101[3]: rd[4]:> <: rc[4]: rb[4]: 0b110[3]: m[1]: ra[4] );
 
 smlsld.disasm = {
@@ -345,7 +345,7 @@ smlsld.disasm = {
  * smlad instruction
  */
 
-{ CONFIG::insns6 }:                                                       \
+{ ARCH::Config::insns6 }:                                                       \
 op smlad( 0b11111[5]: 0b0110[4]: 0b010[3]: rd[4]:> <: rc[4]: rb[4]: 0b000[3]: m[1]: ra[4] );
 
 smlad.disasm = {
@@ -362,7 +362,7 @@ smlad.disasm = {
  * smuad instruction
  */
 
-{ CONFIG::insns6 }:                                                      \
+{ ARCH::Config::insns6 }:                                                      \
 op smuad( 0b111110110010[12]: rd[4]:> <: 0b1111[4]: rb[4]: 0b000[3]: m[1]: ra[4] );
 
 smuad.disasm = {
@@ -377,7 +377,7 @@ smuad.disasm = {
  * smlsd instruction
  */
 
-{ CONFIG::insns6 }:                                                      \
+{ ARCH::Config::insns6 }:                                                      \
 op smlsd( 0b111110110100[12]: rd[4]:> <: rc[4]: rb[4]: 0b000[3]: m[1]: ra[4] );
 
 smlsd.disasm = {
@@ -392,7 +392,7 @@ smlsd.disasm = {
  * smusd instruction
  */
 
-{ CONFIG::insns6 }:                                                      \
+{ ARCH::Config::insns6 }:                                                      \
 op smusd( 0b111110110100[12]: rd[4]:> <: 0b1111[4]: rb[4]: 0b000[3]: m[1]: ra[4] );
 
 smusd.disasm = {
@@ -407,7 +407,7 @@ smusd.disasm = {
  * smmla instruction
  */
 
-{ CONFIG::insns6 }:                                                      \
+{ ARCH::Config::insns6 }:                                                      \
 op smmla( 0b111110110101[12]: rd[4]:> <: rc[4]: rb[4]: 0b000[3]: r[1]: ra[4] );
 
 smmla.disasm = {
@@ -422,7 +422,7 @@ smmla.disasm = {
  * smmul instruction
  */
 
-{ CONFIG::insns6 }:                                                       \
+{ ARCH::Config::insns6 }:                                                       \
 op smmul( 0b111110110101[12]: rd[4]:> <: 0b1111[4]: rb[4]: 0b000[3]: r[1]: ra[4] );
 
 smmul.disasm = {
@@ -437,7 +437,7 @@ smmul.disasm = {
  * smmls instruction
  */
 
-{ CONFIG::insns6 }:                                                      \
+{ ARCH::Config::insns6 }:                                                      \
 op smmls( 0b111110110110[12]: rd[4]:> <: rc[4]: rb[4]: 0b000[3]: r[1]: ra[4] );
 
 smmls.disasm = {
@@ -452,7 +452,7 @@ smmls.disasm = {
  * smulxy instruction
  */
 
-{ CONFIG::insns5E }:                                                     \
+{ ARCH::Config::insns5E }:                                                     \
 op smulxy( 0b111110110001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b00[2]: n[1]: m[1]: rm[4] );
 smulxy.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
@@ -507,7 +507,7 @@ smulxy.execute = {
  * smlawy instruction
  */
 
-{ CONFIG::insns5E }:                                                     \
+{ ARCH::Config::insns5E }:                                                     \
 op smlawy( 0b111110110011[12]: rn[4]:> <: ra[4]: rd[4]: 0b000[3]: m[1]: rm[4] );
 smlawy.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (ra == 13) or (ra == 15) or (rm == 13) or (rm == 15)};
 
@@ -564,7 +564,7 @@ smlawy.execute = {
  * smulwy instruction
  */
 
-{ CONFIG::insns5E }:                                                     \
+{ ARCH::Config::insns5E }:                                                     \
 op smulwy( 0b111110110011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b000[3]: m[1]: rm[4] );
 smulwy.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 

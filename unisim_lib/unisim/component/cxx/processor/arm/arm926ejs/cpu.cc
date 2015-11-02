@@ -440,7 +440,7 @@ CPU::StepInstruction()
       ReadInsn(current_pc, insn);
 			
       /* Decode current PC */
-      isa::thumb::Operation<ARM926ejs>* op;
+      isa::thumb::Operation<CPU>* op;
       op = thumb_decoder.Decode(current_pc, insn);
 			
       /* update PC registers value before execution */
@@ -460,7 +460,7 @@ CPU::StepInstruction()
     ReadInsn(current_pc, insn);
 			
     /* Decode current PC */
-    isa::arm32::Operation<ARM926ejs>* op;
+    isa::arm32::Operation<CPU>* op;
     op = arm32_decoder.Decode(current_pc, insn);
 		
     /* update PC registers value before execution */
@@ -884,7 +884,7 @@ CPU::GetRegister(const char *name)
 std::string 
 CPU::Disasm(uint64_t addr, uint64_t &next_addr)
 {
-  isa::arm32::Operation<ARM926ejs>* op= NULL;
+  isa::arm32::Operation<CPU>* op= NULL;
   uint32_t insn;
 	
   std::stringstream buffer;

@@ -1228,7 +1228,7 @@ rbit.execute = {
  * register.
  */
 
-{ CONFIG::insns6 }:                                       \
+{ ARCH::Config::insns6 }:                                       \
 op rev16_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1001[4]: rm_[4] );
 rev16_w.var reject : {Reject} = {(rm != rm_)};
 

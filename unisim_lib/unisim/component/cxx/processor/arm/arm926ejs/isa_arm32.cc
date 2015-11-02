@@ -39,4 +39,4 @@
 
 using namespace unisim::component::cxx::processor::arm;
 
-template class isa::arm32::Decoder<arm926ejs::ARM926ejs>;
+template class isa::arm32::Decoder<arm926ejs::CPU>;

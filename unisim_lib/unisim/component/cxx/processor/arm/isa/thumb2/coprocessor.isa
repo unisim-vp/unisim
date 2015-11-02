@@ -200,7 +200,7 @@ stc_unindexed.execute = {
  * stc2 instruction
  */
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op stc2( 0b1111[4]: 0b110[3]: p[1]: u[1]: d[1]: w[1]: 0b0[1]: rn[4]:> <: crd[4]: cp_num[4]: shl<2> offset[8] );
 stc2.var imm : {int32_t} = {u?offset:-offset};
 stc2.var reject : {Reject} = {(not p) and (not u) and (not d) and (not w)};
@@ -216,7 +216,7 @@ stc2.execute = {
   cpu.UnpredictableInsnBehaviour();
 };
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op stc2_unindexed( 0b1111[4]: 0b110[3]: 0b0[1]: 0b1[1]: d[1]: 0b0[1]: 0b0[1]: rn[4]:> <: crd[4]: cp_num[4]: option[8] );
 
 stc2_unindexed.disasm = {
@@ -277,7 +277,7 @@ ldc_unindexed.execute = {
  * ldc2 instruction
  */
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op ldc2( 0b1111[4]: 0b110[3]: p[1]: u[1]: d[1]: w[1]: 0b1[1]: rn[4]:> <: crd[4]: cp_num[4]: shl<2> offset[8] );
 ldc2.var imm : {int32_t} = {u?offset:-offset};
 ldc2.var reject : {Reject} = {(not p) and (not u) and (not d) and (not w)};
@@ -294,7 +294,7 @@ ldc2.execute = {
   cpu.UnpredictableInsnBehaviour();
 };
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op ldc2_unindexed( 0b1111[4]: 0b110[3]: 0b0[1]: 0b1[1]: d[1]: 0b0[1]: 0b1[1]: rn[4]:> <: crd[4]: cp_num[4]: option[8] );
 
 ldc2_unindexed.disasm = {

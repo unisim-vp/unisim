@@ -38,7 +38,6 @@
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
-#include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/memory_op.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
@@ -65,30 +64,14 @@ namespace processor {
 namespace arm {
 namespace armemu {
 
-struct CPU;
-
 struct ARMv7emu
 {
-  typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR FPSCR;
-  typedef double   F64;
-  typedef float    F32;
-  typedef uint8_t U8;
-  typedef uint16_t U16;
-  typedef uint32_t U32;
-  typedef uint64_t U64;
-  typedef int8_t   S8;
-  typedef int16_t  S16;
-  typedef int32_t  S32;
-  typedef int64_t  S64;
-  
-  typedef CPU      Arch;
-
   //=====================================================================
   //=                  ARM architecture model description               =
   //=====================================================================
   
   // Following a standard armv7 configuration
-  static uint32_t const MODEL = unisim::component::cxx::processor::arm::ARMEMU;
+  static uint32_t const model = unisim::component::cxx::processor::arm::ARMEMU;
   static bool const     insns4T = true;
   static bool const     insns5E = true;
   static bool const     insns5J = true;
@@ -114,7 +97,7 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint32_t> >
 {
   typedef CPU this_type;
-  typedef ARMv7emu CONFIG;
+
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
@@ -387,9 +370,9 @@ struct CPU
 
 protected:
   /** Decoder for the arm32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<ARMv7emu> arm32_decoder;
+  unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
   /** Decoder for the thumb instruction set. */
-  unisim::component::cxx::processor::arm::isa::thumb2::Decoder<ARMv7emu> thumb_decoder;
+  unisim::component::cxx::processor::arm::isa::thumb2::Decoder<CPU> thumb_decoder;
 
   /** The registers interface for debugging purpose */
   typedef std::map<std::string, unisim::util::debug::Register *> RegistersRegistry;

@@ -184,7 +184,7 @@ stc_unindexed.execute = {
  * cdp2 instruction
  */
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op cdp2( 0b1111[4]: 0b1110[4]: opc1[4]: crn[4]: crd[4]: cp_num[4]: opc2[3]: 0b0[1]: crm[4] );
 
 cdp2.disasm = {
@@ -205,7 +205,7 @@ cdp2.execute = {
  * ldc2 instruction
  */
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op ldc2( 0b1111[4]: 0b110[3]: p[1]: u[1]: d[1]: w[1]: 0b1[1]: rn[4]: crd[4]: cp_num[4]: shl<2> offset[8] );
 ldc2.var imm : {int32_t} = {u?offset:-offset};
 ldc2.var reject : {Reject} = {(not p) and (not u) and (not d) and (not w)};
@@ -219,7 +219,7 @@ ldc2.execute = {
   cpu.UnpredictableInsnBehaviour();
 };
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op ldc2_unindexed( 0b1111[4]: 0b110[3]: 0b0[1]: 0b1[1]: d[1]: 0b0[1]: 0b1[1]: rn[4]: crd[4]: cp_num[4]: option[8] );
 
 ldc2_unindexed.disasm = {
@@ -240,7 +240,7 @@ ldc2_unindexed.execute = {
  * mcr2 instruction
  */
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op mcr2( 0b1111[4]: 0b1110[4]: opc1[3]: 0b0[1]: crn[4]: rd[4]: cp_num[4]: opc2[3]: 0b1[1]: crm[4] );
 
 mcr2.disasm = {
@@ -261,7 +261,7 @@ mcr2.execute = {
  * mrc2 instruction
  */
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op mrc2( 0b1111[4]: 0b1110[4]: opc1[3]: 0b1[1]: crn[4]: rt[4]: cp_num[4]: opc2[3]: 0b1[1]: crm[4] );
 
 mrc2.disasm = {
@@ -282,7 +282,7 @@ mrc2.execute = {
  * stc2 instruction
  */
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op stc2( 0b1111[4]: 0b110[3]: p[1]: u[1]: d[1]: w[1]: 0b0[1]: rn[4]: crd[4]: cp_num[4]: shl<2> offset[8] );
 stc2.var imm : {int32_t} = {u?offset:-offset};
 stc2.var reject : {Reject} = {(not p) and (not u) and (not d) and (not w)};
@@ -296,7 +296,7 @@ stc2.execute = {
   cpu.UnpredictableInsnBehaviour();
 };
 
-{ CONFIG::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op stc2_unindexed( 0b1111[4]: 0b110[3]: 0b0[1]: 0b1[1]: d[1]: 0b0[1]: 0b0[1]: rn[4]: crd[4]: cp_num[4]: option[8] );
 
 stc2_unindexed.disasm = {
@@ -317,7 +317,7 @@ stc2_unindexed.execute = {
  * mcrr instruction
  */
 
-{ CONFIG::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op mcrr( cond[4]: 0b11000100[8]: rn[4]: rd[4]: cp_num[4]: opc1[4]: crm[4] );
 
 mcrr.disasm = {
@@ -340,7 +340,7 @@ mcrr.execute = {
  * mrrc instruction
  */
 
-{ CONFIG::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op mrrc( cond[4]: 0b11000101[8]: rn[4]: rd[4]: cp_num[4]: opc1[4]: crm[4] );
 
 mrrc.disasm = {
@@ -362,7 +362,7 @@ mrrc.execute = {
  * mcrr2 instruction
  */
 
-{ CONFIG::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op mcrr2( 0b1111[4]: 0b11000100[8]: rn[4]: rd[4]: cp_num[4]: opc1[4]: crm[4] );
 
 mcrr2.disasm = {
@@ -382,7 +382,7 @@ mcrr2.execute = {
  * mrrc2 instruction
  */
 
-{ CONFIG::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op mrrc2( 0b1111[4]: 0b11000101[8]: rn[4]: rd[4]: cp_num[4]: opc1[4]: crm[4] );
 
 mrrc2.disasm = {
