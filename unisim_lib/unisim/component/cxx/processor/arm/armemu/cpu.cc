@@ -120,7 +120,6 @@ CPU::CPU(const char *name, Object *parent)
   , debug_control_import("debug-control-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
   , linux_os_import("linux-os-import", this)
-  , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
   , requires_finished_instruction_reporting(true)
   , requires_memory_access_reporting(true)
   , arm32_decoder()
@@ -222,168 +221,168 @@ CPU::~CPU()
 bool 
 CPU::EndSetup()
 {
-	if (verbose)
-		logger << DebugInfo
-			<< "Verbose activated."
-			<< EndDebugInfo;
-	
-	/* check that the linux_os_import is connected, otherwise setup fails
-	 * NOTE: is not that the setup fails, it is that actually this implmentation
-	 *   is not supposed to work without the linux_os_import, so better to stop 
-	 *   now than later.
-	 */
-	if ( !linux_os_import )
-	{
-		logger << DebugError
-			<< "The connection to the Linux OS (linux_import) is broken or has "
-			<< "not been done."
-			<< EndDebugError;
-		return false;
-	}
-	/* fix the endianness depending on the endianness parameter */
-	if ( (default_endianness_string.compare("little-endian") != 0) &&
-			(default_endianness_string.compare("big-endian") != 0) )
-	{
-		logger << DebugError
-			<< "Error while setting the default endianness."
-			<< " '" << default_endianness_string << "' is not a correct"
-			<< " value."
-			<< " Available values are: little-endian and big-endian."
-			<< EndDebugError;
-		return false;
-	}
-	else
-	{
-		if ( verbose )
-			logger << DebugInfo
-				<< "Setting endianness to "
-				<< default_endianness_string
-				<< EndDebugInfo;
-                cpsr.Set( E, default_endianness_string.compare("little-endian") == 0 ? 0 : 1 );
-	}
+  if (verbose)
+    logger << DebugInfo
+           << "Verbose activated."
+           << EndDebugInfo;
+  
+  /* check that the linux_os_import is connected, otherwise setup fails
+   * NOTE: is not that the setup fails, it is that actually this implmentation
+   *   is not supposed to work without the linux_os_import, so better to stop 
+   *   now than later.
+   */
+  if ( !linux_os_import )
+    {
+      logger << DebugError
+             << "The connection to the Linux OS (linux_import) is broken or has "
+             << "not been done."
+             << EndDebugError;
+      return false;
+    }
+  /* fix the endianness depending on the endianness parameter */
+  if ( (default_endianness_string.compare("little-endian") != 0) &&
+       (default_endianness_string.compare("big-endian") != 0) )
+    {
+      logger << DebugError
+             << "Error while setting the default endianness."
+             << " '" << default_endianness_string << "' is not a correct"
+             << " value."
+             << " Available values are: little-endian and big-endian."
+             << EndDebugError;
+      return false;
+    }
+  else
+    {
+      if ( verbose )
+        logger << DebugInfo
+               << "Setting endianness to "
+               << default_endianness_string
+               << EndDebugInfo;
+      cpsr.Set( E, default_endianness_string.compare("little-endian") == 0 ? 0 : 1 );
+    }
 
-	if ( cpu_cycle_time_ps == 0 )
-	{
-		// we can't provide a valid cpu cycle time configuration
-		//   automatically
-		logger << DebugError
-			<< "cpu-cycle-time-ps should be bigger than 0"
-			<< EndDebugError;
-		return false;
-	}
+  if ( cpu_cycle_time_ps == 0 )
+    {
+      // we can't provide a valid cpu cycle time configuration
+      //   automatically
+      logger << DebugError
+             << "cpu-cycle-time-ps should be bigger than 0"
+             << EndDebugError;
+      return false;
+    }
 
-	/* Initialize the caches and power support as required. */
-	unsigned int min_cycle_time = 0;
-	uint64_t il1_def_voltage = 0;
-	uint64_t dl1_def_voltage = 0;
+  /* Initialize the caches and power support as required. */
+  unsigned int min_cycle_time = 0;
+  uint64_t il1_def_voltage = 0;
+  uint64_t dl1_def_voltage = 0;
 
-	if ( icache.power_mode_import )
-	{
-		min_cycle_time =
-			icache.power_mode_import->GetMinCycleTime();
-		il1_def_voltage =
-			icache.power_mode_import->GetDefaultVoltage();
-	}
-	if ( dcache.power_mode_import )
-	{
-		if ( dcache.power_mode_import->GetMinCycleTime() >
-				min_cycle_time )
-			min_cycle_time =
-				dcache.power_mode_import->GetMinCycleTime();
-		dl1_def_voltage = 
-			dcache.power_mode_import->GetDefaultVoltage();
-	}
+  if ( icache.power_mode_import )
+    {
+      min_cycle_time =
+        icache.power_mode_import->GetMinCycleTime();
+      il1_def_voltage =
+        icache.power_mode_import->GetDefaultVoltage();
+    }
+  if ( dcache.power_mode_import )
+    {
+      if ( dcache.power_mode_import->GetMinCycleTime() >
+           min_cycle_time )
+        min_cycle_time =
+          dcache.power_mode_import->GetMinCycleTime();
+      dl1_def_voltage = 
+        dcache.power_mode_import->GetDefaultVoltage();
+    }
 
-	if ( min_cycle_time > 0 )
-	{
-		if ( cpu_cycle_time_ps < min_cycle_time )
-		{
-			logger << DebugWarning;
-			logger << "A cycle time of " << cpu_cycle_time_ps
-				<< " ps is too low for the simulated"
-				<< " hardware !" << std::endl;
-			logger << "cpu cycle time should be >= "
-				<< min_cycle_time << " ps." << std::endl;
-			logger << EndDebugWarning;
-		}
-	}
+  if ( min_cycle_time > 0 )
+    {
+      if ( cpu_cycle_time_ps < min_cycle_time )
+        {
+          logger << DebugWarning;
+          logger << "A cycle time of " << cpu_cycle_time_ps
+                 << " ps is too low for the simulated"
+                 << " hardware !" << std::endl;
+          logger << "cpu cycle time should be >= "
+                 << min_cycle_time << " ps." << std::endl;
+          logger << EndDebugWarning;
+        }
+    }
 
-	if ( voltage == 0 )
-	{
-		voltage = (il1_def_voltage > dl1_def_voltage) ? 
-			il1_def_voltage :
-			dl1_def_voltage;
-		logger << DebugWarning
-			<< "A cpu voltage was not defined (set to 0)."
-			<< " Using the maximum voltage found from the caches as "
-			<< " current voltage. Voltage used is "
-			<< voltage
-			<< " mV." << std::endl;
-		if ( icache.power_mode_import )
-			logger << "  - instruction cache voltage = "
-				<< il1_def_voltage
-				<< " mV";
-		if ( dcache.power_mode_import )
-		{
-			if ( icache.power_mode_import )
-				logger << std::endl;
-			logger << "  - data cache voltage = "
-				<< dl1_def_voltage
-				<< " mV";
-		}
-		logger << EndDebugWarning;
-	}
-	
-	if ( icache.power_mode_import )
-		icache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
-	if ( dcache.power_mode_import )
-		dcache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
+  if ( voltage == 0 )
+    {
+      voltage = (il1_def_voltage > dl1_def_voltage) ? 
+        il1_def_voltage :
+        dl1_def_voltage;
+      logger << DebugWarning
+             << "A cpu voltage was not defined (set to 0)."
+             << " Using the maximum voltage found from the caches as "
+             << " current voltage. Voltage used is "
+             << voltage
+             << " mV." << std::endl;
+      if ( icache.power_mode_import )
+        logger << "  - instruction cache voltage = "
+               << il1_def_voltage
+               << " mV";
+      if ( dcache.power_mode_import )
+        {
+          if ( icache.power_mode_import )
+            logger << std::endl;
+          logger << "  - data cache voltage = "
+                 << dl1_def_voltage
+                 << " mV";
+        }
+      logger << EndDebugWarning;
+    }
+  
+  if ( icache.power_mode_import )
+    icache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
+  if ( dcache.power_mode_import )
+    dcache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
 
-	if ( verbose )
-	{
-		logger << DebugInfo
-			<< "Setting cpu cycle time to "
-			<< cpu_cycle_time_ps
-			<< " ps."
-			<< EndDebugInfo;
-		logger << DebugInfo
-			<< "Setting cpu voltage to "
-			<< voltage
-			<< " mV."
-			<< EndDebugInfo;
-	}
-			
-	/* TODO: Remove this section once all the debuggers use the unisim
-	 *   kernel interface for registers.
-	 */
-	/* setting debugging registers */
-	if (verbose)
-		logger << DebugInfo
-		<< "Initializing debugging registers"
-		<< EndDebugError;
-	
-	for ( int i = 0; i < 16; i++ ) 
-	{
-          std::stringstream str;
-		str << "r" << i;
-		registers_registry[str.str().c_str()] =
-			new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
-	}
-	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
-	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &next_pc);
-	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
-	/* End TODO */
+  if ( verbose )
+    {
+      logger << DebugInfo
+             << "Setting cpu cycle time to "
+             << cpu_cycle_time_ps
+             << " ps."
+             << EndDebugInfo;
+      logger << DebugInfo
+             << "Setting cpu voltage to "
+             << voltage
+             << " mV."
+             << EndDebugInfo;
+    }
+      
+  /* TODO: Remove this section once all the debuggers use the unisim
+   *   kernel interface for registers.
+   */
+  /* setting debugging registers */
+  if (verbose)
+    logger << DebugInfo
+           << "Initializing debugging registers"
+           << EndDebugError;
+  
+  for ( int i = 0; i < 16; i++ ) 
+    {
+      std::stringstream str;
+      str << "r" << i;
+      registers_registry[str.str().c_str()] =
+        new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
+    }
+  registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
+  registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
+  registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &next_pc);
+  registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
+  /* End TODO */
 
-	/* If the memory access reporting import is not connected remove the need of
-	 *   reporting memory accesses and finished instruction.
-	 */
-	if(!memory_access_reporting_import) {
-		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
-	}
-	
-	return true;
+  /* If the memory access reporting import is not connected remove the need of
+   *   reporting memory accesses and finished instruction.
+   */
+  if(!memory_access_reporting_import) {
+    requires_memory_access_reporting = false;
+    requires_finished_instruction_reporting = false;
+  }
+  
+  return true;
 }
 
 /** Object disconnect method.
@@ -393,7 +392,7 @@ CPU::EndSetup()
 void 
 CPU::OnDisconnect()
 {
-	/* TODO */
+  /* TODO */
 }
 
 /** Execute one complete instruction.
@@ -410,7 +409,7 @@ CPU::StepInstruction()
       do 
         {
           dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
-	
+  
           if (likely(dbg_cmd == DebugControl<uint32_t>::DBG_STEP)) 
             {
               /* Nothing to do */
@@ -430,22 +429,22 @@ CPU::StepInstruction()
           }
         } while(1);
     }
-	
+  
   if (cpsr.Get( T )) {
     /* Thumb state */
     isa::thumb2::CodeType insn;
     ReadInsn(current_pc, insn);
-		
+    
     /* Decode current PC */
     isa::thumb2::Operation<CPU>* op;
     op = thumb_decoder.Decode(current_pc, insn);
     unsigned insn_length = op->GetLength();
     if (insn_length % 16) throw 0;
-		
+    
     /* update PC registers value before execution */
     this->gpr[15] = this->next_pc + 4;
     this->next_pc += insn_length / 8;
-		
+    
     /* Execute instruction */
     asm volatile( "thumb2_operation_execute:" );
     op->execute( *this );
@@ -453,28 +452,28 @@ CPU::StepInstruction()
     this->ITAdvance();
     //op->profile(profile);
   }
-	
+  
   else {
     /* Arm32 state */
-		
+    
     /* fetch instruction word from memory */
     isa::arm32::CodeType insn;
     ReadInsn(current_pc, insn);
-			
+      
     /* Decode current PC */
     isa::arm32::Operation<CPU>* op;
     op = arm32_decoder.Decode(current_pc, insn);
-		
+    
     /* update PC registers value before execution */
     this->gpr[15] = this->next_pc + 8;
     this->next_pc += 4;
-		
+    
     /* Execute instruction */
     asm volatile( "arm32_operation_execute:" );
     op->execute( *this );
     //op->profile(profile);
   }
-	
+  
   /* check that an exception has not occurred, if so 
    * stop the simulation */
   if ( unlikely(GetVirtualExceptionVector()) )
@@ -487,9 +486,9 @@ CPU::StepInstruction()
     }
   instruction_counter++;
   if ( unlikely(instruction_counter_trap_reporting_import &&
-		trap_on_instruction_counter == instruction_counter) )
+                trap_on_instruction_counter == instruction_counter) )
     instruction_counter_trap_reporting_import->ReportTrap(*this);
-	
+  
   if(unlikely(requires_finished_instruction_reporting && memory_access_reporting_import))
     memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
 }
@@ -506,63 +505,63 @@ CPU::StepInstruction()
 bool 
 CPU::InjectReadMemory( uint32_t addr, void *buffer, uint32_t size )
 {
-	uint32_t index = 0;
-	uint32_t base_addr = (uint32_t)addr;
-	uint32_t ef_addr;
+  uint32_t index = 0;
+  uint32_t base_addr = (uint32_t)addr;
+  uint32_t ef_addr;
 
-	if ( likely(dcache.GetSize()) )
-	{
-		while (size != 0)
-		{
-			// need to access the data cache before accessing the main memory
-			ef_addr = base_addr + index;
+  if ( likely(dcache.GetSize()) )
+    {
+      while (size != 0)
+        {
+          // need to access the data cache before accessing the main memory
+          ef_addr = base_addr + index;
 
-			uint32_t cache_tag = dcache.GetTag(ef_addr);
-			uint32_t cache_set = dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
-				if ( dcache.GetValid(cache_set, cache_way) )
-				{
-					// the cache access is a hit, data can be simply read from 
-					//   the cache
-					uint32_t cache_index = dcache.GetIndex(ef_addr);
-					uint32_t read_data_size =
-						dcache.GetDataCopy(cache_set, cache_way, 
-								cache_index, size, 
-								&(((uint8_t *)buffer)[index]));
-					index += read_data_size;
-					size -= read_data_size;
-					cache_hit = true;
-				}
-			}
-			if ( !cache_hit )
-			{
-				PrRead(ef_addr,
-						&(((uint8_t *)buffer)[index]),
-						1);
-				index++;
-				size--;
-			}
-		}
-	}
-	else
-	{
-		// no data cache on this system, just send request to the memory
-		//   subsystem
-		while ( size != 0 )
-		{
-			ef_addr = base_addr + index;
-			PrRead(ef_addr,
-					&(((uint8_t *)buffer)[index]),
-					1);
-			index++;
-			size--;
-		}
-	}
+          uint32_t cache_tag = dcache.GetTag(ef_addr);
+          uint32_t cache_set = dcache.GetSet(ef_addr);
+          uint32_t cache_way;
+          bool cache_hit = false;
+          if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+            {
+              if ( dcache.GetValid(cache_set, cache_way) )
+                {
+                  // the cache access is a hit, data can be simply read from 
+                  //   the cache
+                  uint32_t cache_index = dcache.GetIndex(ef_addr);
+                  uint32_t read_data_size =
+                    dcache.GetDataCopy(cache_set, cache_way, 
+                                       cache_index, size, 
+                                       &(((uint8_t *)buffer)[index]));
+                  index += read_data_size;
+                  size -= read_data_size;
+                  cache_hit = true;
+                }
+            }
+          if ( !cache_hit )
+            {
+              PrRead(ef_addr,
+                     &(((uint8_t *)buffer)[index]),
+                     1);
+              index++;
+              size--;
+            }
+        }
+    }
+  else
+    {
+      // no data cache on this system, just send request to the memory
+      //   subsystem
+      while ( size != 0 )
+        {
+          ef_addr = base_addr + index;
+          PrRead(ef_addr,
+                 &(((uint8_t *)buffer)[index]),
+                 1);
+          index++;
+          size--;
+        }
+    }
 
-	return true;
+  return true;
 }
 
 /** Inject an intrusive write memory operation
@@ -576,66 +575,66 @@ CPU::InjectReadMemory( uint32_t addr, void *buffer, uint32_t size )
 bool 
 CPU::InjectWriteMemory( uint32_t addr, const void* buffer, uint32_t size )
 {
-	uint32_t index = 0;
-	uint32_t base_addr = (uint32_t)addr;
-	uint32_t ef_addr;
-	
-	if ( likely(dcache.GetSize()) )
-	{
-		// access memory while using the linux_os_import
-		//   tcm is ignored
-		while ( size != 0 )
-		{
-			// need to access the data cache before accessing the main memory
-			ef_addr = base_addr + index;
+  uint32_t index = 0;
+  uint32_t base_addr = (uint32_t)addr;
+  uint32_t ef_addr;
+  
+  if ( likely(dcache.GetSize()) )
+    {
+      // access memory while using the linux_os_import
+      //   tcm is ignored
+      while ( size != 0 )
+        {
+          // need to access the data cache before accessing the main memory
+          ef_addr = base_addr + index;
 
-			uint32_t cache_tag = dcache.GetTag(ef_addr);
-			uint32_t cache_set = dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
-				if ( dcache.GetValid(cache_set, cache_way) )
-				{
-					// the cache access is a hit, data can be simply read from 
-					//   the cache
-					uint32_t cache_index = dcache.GetIndex(ef_addr);
-					uint32_t write_data_size =
-							dcache.SetData(cache_set, cache_way, 
-									cache_index, size, 
-									&(((uint8_t *)buffer)[index]));
-					dcache.SetDirty(cache_set, cache_way, 1);
-					index += write_data_size;
-					size -= write_data_size;
-					cache_hit = true;
-				}
-			}
-			if ( !cache_hit )
-			{
-				PrWrite(ef_addr,
-						&(((uint8_t *)buffer)[index]),
-						1);
-				index++;
-				size--;
-			}
-		}
-	}
-	else
-	{
-		// there is no data cache in this system just send the request to
-		//   the memory subsystem
-		while ( size != 0 )
-		{
-			ef_addr = base_addr + index;
-			PrWrite(ef_addr,
-					&(((uint8_t *)buffer)[index]),
-					1);
-			index++;
-			size--;
-		}
-	}
+          uint32_t cache_tag = dcache.GetTag(ef_addr);
+          uint32_t cache_set = dcache.GetSet(ef_addr);
+          uint32_t cache_way;
+          bool cache_hit = false;
+          if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+            {
+              if ( dcache.GetValid(cache_set, cache_way) )
+                {
+                  // the cache access is a hit, data can be simply read from 
+                  //   the cache
+                  uint32_t cache_index = dcache.GetIndex(ef_addr);
+                  uint32_t write_data_size =
+                    dcache.SetData(cache_set, cache_way, 
+                                   cache_index, size, 
+                                   &(((uint8_t *)buffer)[index]));
+                  dcache.SetDirty(cache_set, cache_way, 1);
+                  index += write_data_size;
+                  size -= write_data_size;
+                  cache_hit = true;
+                }
+            }
+          if ( !cache_hit )
+            {
+              PrWrite(ef_addr,
+                      &(((uint8_t *)buffer)[index]),
+                      1);
+              index++;
+              size--;
+            }
+        }
+    }
+  else
+    {
+      // there is no data cache in this system just send the request to
+      //   the memory subsystem
+      while ( size != 0 )
+        {
+          ef_addr = base_addr + index;
+          PrWrite(ef_addr,
+                  &(((uint8_t *)buffer)[index]),
+                  1);
+          index++;
+          size--;
+        }
+    }
 
-	return true;
+  return true;
 }
 
 /** Set/unset the reporting of finishing instructions.
@@ -646,7 +645,7 @@ CPU::InjectWriteMemory( uint32_t addr, const void* buffer, uint32_t size )
 void 
 CPU::RequiresFinishedInstructionReporting( bool report )
 {
-	requires_finished_instruction_reporting = report;
+  requires_finished_instruction_reporting = report;
 }
 
 /** Set/unset the reporting of memory accesses.
@@ -657,7 +656,7 @@ CPU::RequiresFinishedInstructionReporting( bool report )
 void
 CPU::RequiresMemoryAccessReporting( bool report )
 {
-	requires_memory_access_reporting = report;
+  requires_memory_access_reporting = report;
 }
 
 /** Perform a non intrusive read access.
@@ -674,69 +673,69 @@ CPU::RequiresMemoryAccessReporting( bool report )
 bool 
 CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
 {
-	bool status = true;
-	uint32_t index = 0;
-	uint32_t base_addr = (uint32_t)addr;
-	uint32_t ef_addr;
+  bool status = true;
+  uint32_t index = 0;
+  uint32_t base_addr = (uint32_t)addr;
+  uint32_t ef_addr;
 
-	if ( likely(dcache.GetSize()) )
-	{
-		// non intrusive access with linux support
-		while (size != 0 && status)
-		{
-			// need to access the data cache before accessing the main
-			//   memory
-			ef_addr = base_addr + index;
+  if ( likely(dcache.GetSize()) )
+    {
+      // non intrusive access with linux support
+      while (size != 0 && status)
+        {
+          // need to access the data cache before accessing the main
+          //   memory
+          ef_addr = base_addr + index;
 
-			uint32_t cache_tag = dcache.GetTag(ef_addr);
-			uint32_t cache_set = dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
-				if ( dcache.GetValid(cache_set, cache_way) )
-				{
-					// the cache access is a hit, data can be simply read
-					//   from the cache
-					uint32_t cache_index =
-							dcache.GetIndex(ef_addr);
-					uint32_t data_read_size =
-							dcache.GetDataCopy(cache_set,
-									cache_way, cache_index, size,
-									&(((uint8_t *)buffer)[index]));
-					index += data_read_size;
-					size -= data_read_size;
-					cache_hit = true;
-				}
-			}
-			if ( !cache_hit )
-			{
-				status = status &&
-					ExternalReadMemory(ef_addr,
-									   &(((uint8_t *)buffer)[index]),
-									   1);
-				index++;
-				size--;
-			}
-		}
-	}
-	else
-	{
-		// there is no data cache in this system just perform the request
-		//   to the memory subsystem
-		while ( size != 0 && status )
-		{
-			ef_addr = base_addr + index;
-			status = status &&
-					ExternalReadMemory(ef_addr,
-							&(((uint8_t *)buffer)[index]),
-							1);
-			index++;
-			size--;
-		}
-	}
+          uint32_t cache_tag = dcache.GetTag(ef_addr);
+          uint32_t cache_set = dcache.GetSet(ef_addr);
+          uint32_t cache_way;
+          bool cache_hit = false;
+          if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+            {
+              if ( dcache.GetValid(cache_set, cache_way) )
+                {
+                  // the cache access is a hit, data can be simply read
+                  //   from the cache
+                  uint32_t cache_index =
+                    dcache.GetIndex(ef_addr);
+                  uint32_t data_read_size =
+                    dcache.GetDataCopy(cache_set,
+                                       cache_way, cache_index, size,
+                                       &(((uint8_t *)buffer)[index]));
+                  index += data_read_size;
+                  size -= data_read_size;
+                  cache_hit = true;
+                }
+            }
+          if ( !cache_hit )
+            {
+              status = status &&
+                ExternalReadMemory(ef_addr,
+                                   &(((uint8_t *)buffer)[index]),
+                                   1);
+              index++;
+              size--;
+            }
+        }
+    }
+  else
+    {
+      // there is no data cache in this system just perform the request
+      //   to the memory subsystem
+      while ( size != 0 && status )
+        {
+          ef_addr = base_addr + index;
+          status = status &&
+            ExternalReadMemory(ef_addr,
+                               &(((uint8_t *)buffer)[index]),
+                               1);
+          index++;
+          size--;
+        }
+    }
 
-	return status;
+  return status;
 }
 
 /** Perform a non intrusive write access.
@@ -752,70 +751,70 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
  */
 bool 
 CPU::WriteMemory(uint32_t addr, 
-		const void *buffer, 
-		uint32_t size)
+    const void *buffer, 
+    uint32_t size)
 {
-	bool status = true;
-	uint32_t index = 0;
-	uint32_t base_addr = (uint32_t)addr;
-	uint32_t ef_addr;
+  bool status = true;
+  uint32_t index = 0;
+  uint32_t base_addr = (uint32_t)addr;
+  uint32_t ef_addr;
 
-	if ( dcache.GetSize() )
-	{
-		// non intrusive access with linux support
-		while (size != 0 && status)
-		{
-			// need to access the data cache before accessing the main memory
-			ef_addr = base_addr + index;
+  if ( dcache.GetSize() )
+    {
+      // non intrusive access with linux support
+      while (size != 0 && status)
+        {
+          // need to access the data cache before accessing the main memory
+          ef_addr = base_addr + index;
 
-			uint32_t cache_tag = dcache.GetTag(ef_addr);
-			uint32_t cache_set = dcache.GetSet(ef_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
-				if ( dcache.GetValid(cache_set, cache_way) )
-				{
-					// the cache access is a hit, data can be simply written to 
-					//   the cache
-					uint32_t cache_index = dcache.GetIndex(ef_addr);
-					uint32_t data_read_size =
-							dcache.SetData(cache_set, cache_way, cache_index, 
-									size, &(((uint8_t *)buffer)[index]));
-					dcache.SetDirty(cache_set, cache_way, 1);
-					index += data_read_size;
-					size -= data_read_size;
-					cache_hit = true;
-				}
-			}
-			if ( !cache_hit )
-			{
-				status = status &&
-					ExternalWriteMemory(ef_addr,
-										&(((uint8_t *)buffer)[index]),
-										1);
-				index++;
-				size--;
-			}
-		}
-	}
-	else
-	{
-		// there is no data cache in this system, just write the data to
-		//   the memory subsystem
-		while ( size != 0 && status )
-		{
-			ef_addr = base_addr + index;
-			status = status &&
-					ExternalWriteMemory(ef_addr,
-							&(((uint8_t *)buffer)[index]),
-							1);
-			index++;
-			size--;
-		}
-	}
+          uint32_t cache_tag = dcache.GetTag(ef_addr);
+          uint32_t cache_set = dcache.GetSet(ef_addr);
+          uint32_t cache_way;
+          bool cache_hit = false;
+          if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+            {
+              if ( dcache.GetValid(cache_set, cache_way) )
+                {
+                  // the cache access is a hit, data can be simply written to 
+                  //   the cache
+                  uint32_t cache_index = dcache.GetIndex(ef_addr);
+                  uint32_t data_read_size =
+                    dcache.SetData(cache_set, cache_way, cache_index, 
+                                   size, &(((uint8_t *)buffer)[index]));
+                  dcache.SetDirty(cache_set, cache_way, 1);
+                  index += data_read_size;
+                  size -= data_read_size;
+                  cache_hit = true;
+                }
+            }
+          if ( !cache_hit )
+            {
+              status = status &&
+                ExternalWriteMemory(ef_addr,
+                                    &(((uint8_t *)buffer)[index]),
+                                    1);
+              index++;
+              size--;
+            }
+        }
+    }
+  else
+    {
+      // there is no data cache in this system, just write the data to
+      //   the memory subsystem
+      while ( size != 0 && status )
+        {
+          ef_addr = base_addr + index;
+          status = status &&
+            ExternalWriteMemory(ef_addr,
+                                &(((uint8_t *)buffer)[index]),
+                                1);
+          index++;
+          size--;
+        }
+    }
 
-	return status;
+  return status;
 }
 
 /** Get a register by its name.
@@ -834,7 +833,7 @@ CPU::GetRegister( const char *name )
   else
     return 0;
 }
-		
+    
 /** Disasm an instruction address.
  * Returns a string with the disassembling of the instruction found 
  *   at address addr.
@@ -847,65 +846,65 @@ CPU::GetRegister( const char *name )
 std::string 
 CPU::Disasm(uint32_t addr, uint32_t &next_addr)
 {
-	std::stringstream buffer;
-	if (cpsr.Get( T ))
-	{
-		buffer << "[THUMB2]";
-		
-		uint8_t insn_bytes[4];
-		isa::thumb2::CodeType insn;
-		isa::thumb2::Operation<CPU> *op = 0;
-		if (!ReadMemory(addr, insn_bytes, 4)) 
-		{
-			buffer << "Could not read from memory";
-			return buffer.str();
-		}
+  std::stringstream buffer;
+  if (cpsr.Get( T ))
+    {
+      buffer << "[THUMB2]";
+    
+      uint8_t insn_bytes[4];
+      isa::thumb2::CodeType insn;
+      isa::thumb2::Operation<CPU> *op = 0;
+      if (!ReadMemory(addr, insn_bytes, 4)) 
+        {
+          buffer << "Could not read from memory";
+          return buffer.str();
+        }
   
-		// Instruction fetch ignores "Endianness execution state bit"
-		insn.str[0] = insn_bytes[0];
-		insn.str[1] = insn_bytes[1];
-		insn.str[2] = insn_bytes[2];
-		insn.str[3] = insn_bytes[3];
-		insn.size = 32;
-		
-		op = thumb_decoder.Decode(addr, insn);
-		unsigned insn_length = op->GetLength();
-		if (insn_length % 16) throw 0;
-		
-		buffer << "0x";
-		buffer << op->GetEncoding() << " ";
-		op->disasm(*this, buffer);
+      // Instruction fetch ignores "Endianness execution state bit"
+      insn.str[0] = insn_bytes[0];
+      insn.str[1] = insn_bytes[1];
+      insn.str[2] = insn_bytes[2];
+      insn.str[3] = insn_bytes[3];
+      insn.size = 32;
+    
+      op = thumb_decoder.Decode(addr, insn);
+      unsigned insn_length = op->GetLength();
+      if (insn_length % 16) throw 0;
+    
+      buffer << "0x";
+      buffer << op->GetEncoding() << " ";
+      op->disasm(*this, buffer);
 
-		next_addr = addr + (insn_length / 8);
-	} 
-	else 
-	{
-		buffer << "[ARM32]";
-		
-		isa::arm32::Operation<CPU> * op = NULL;
-		uint32_t insn;
-		if (!ReadMemory(addr, &insn, 4)) 
-		{
-			buffer << "Could not read from memory";
-			return buffer.str();
-		}
-		if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN)
-			insn = BigEndian2Host(insn);
-		else
-			insn = LittleEndian2Host(insn);
+      next_addr = addr + (insn_length / 8);
+    } 
+  else 
+    {
+      buffer << "[ARM32]";
+    
+      isa::arm32::Operation<CPU> * op = NULL;
+      uint32_t insn;
+      if (!ReadMemory(addr, &insn, 4)) 
+        {
+          buffer << "Could not read from memory";
+          return buffer.str();
+        }
+      if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN)
+        insn = BigEndian2Host(insn);
+      else
+        insn = LittleEndian2Host(insn);
 
-		op = arm32_decoder.Decode(addr, insn);
-		buffer << "0x" << std::hex;
-		buffer.fill('0'); buffer.width(8); 
-		buffer << op->GetEncoding() << std::dec << " ";
-		op->disasm(*this, buffer);
+      op = arm32_decoder.Decode(addr, insn);
+      buffer << "0x" << std::hex;
+      buffer.fill('0'); buffer.width(8); 
+      buffer << op->GetEncoding() << std::dec << " ";
+      op->disasm(*this, buffer);
 
-		next_addr = addr + 4;
-	}
+      next_addr = addr + 4;
+    }
 
-	return buffer.str();
+  return buffer.str();
 }
-		
+    
 /** Exit system call.
  * The LinuxOS service calls this method when the program has finished.
  *
@@ -914,8 +913,8 @@ CPU::Disasm(uint32_t addr, uint32_t &next_addr)
 void 
 CPU::PerformExit(int ret)
 {
-	// running = false;
-	Stop(ret);
+  // running = false;
+  Stop(ret);
 }
 
 /** Refill the Instruction Prefetch Buffer from the memory system
@@ -1037,14 +1036,6 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
   insn.size = 32;
 }
 
-#define CP15_ENCODE( CODE, OP1, CRN, CRM, OP2 ) ((CODE<<16) | (OP1<<12) | (CRN<<8) | (CRM<<4) | (OP2<<0))
-
-uint32_t
-CPU::Coproc_GetOneWord( unsigned code, unsigned cp_num, unsigned op1, unsigned op2, unsigned crn, unsigned crm )
-{
-  return 0;
-}
-
 /** Software Interrupt
  *  This method is called by SWI instructions to handle software interrupts.
  */
@@ -1071,24 +1062,7 @@ CPU::BKPT( uint32_t imm )
   // we are executing on linux emulation mode
   // what should we do with this kind of call? ignore it
 }
-	
-/** Unpredictable Instruction Behaviour.
- * This method is just called when an unpredictable behaviour is detected to
- *   notifiy the processor.
- */
-void 
-CPU::UnpredictableInsnBehaviour()
-{
-	logger << DebugWarning
-		<< "Trying to execute unpredictable behavior instruction,"
-		<< "Location: " 
-		<< __FUNCTION__ << ":" 
-		<< __FILE__ << ":" 
-		<< __LINE__ << ": "
-		<< EndDebugWarning;
-	instruction_counter_trap_reporting_import->ReportTrap();
-}
-
+  
 } // end of namespace armemu
 
 template struct unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::armemu::ARMv7emu>;

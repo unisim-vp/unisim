@@ -109,15 +109,11 @@ CPU::CPU(const char *name, Object *parent)
   , registers_export("registers-export", this)
   , memory_injection_export("memory-injection-export", this)
   , memory_export("memory-export", this)
-  , memory_access_reporting_control_export(
-                                           "memory-access-reporting-control-export", this)
+  , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
   , debug_control_import("debug-control-import", this)
   , memory_access_reporting_import("memory-access-reporting-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
-  , instruction_counter_trap_reporting_import(
-                                              "instruction-counter-trap-reporting-import", this)
-  , exception_trap_reporting_import(
-                                    "exception-trap-reporting-import", this)
+  , exception_trap_reporting_import("exception-trap-reporting-import", this)
   , ltlb("lockdown-tlb", this)
   , tlb("tlb", this)
   , arm32_decoder()
@@ -130,48 +126,27 @@ CPU::CPU(const char *name, Object *parent)
   , trap_on_exception(false)
   , requires_memory_access_reporting(true)
   , requires_finished_instruction_reporting(true)
-  , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this,
-                            cpu_cycle_time_ps,
-                            "The processor cycle time in picoseconds.")
-  , param_voltage("voltage", this,
-                  voltage,
-                  "The processor voltage in mV.")
-  , param_verbose("verbose", this,
-                  verbose,
-                  "Activate the verbose system (0 = inactive, different than 0 = "
-                  "active).")
-  , param_trap_on_instruction_counter("trap-on-instruction-counter", this,
-                                      trap_on_instruction_counter,
+  , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
+  , param_voltage("voltage", this, voltage, "The processor voltage in mV.")
+  , param_verbose("verbose", this, verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
+  , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
                                       "Produce a trap when the given instruction count is reached.")
-  , param_trap_on_exception("trap-on-exception", this,
-                            trap_on_exception,
-                            "Produce a trap when an exception occurs.")
-  , stat_instruction_counter("instruction-counter", this,
-                             instruction_counter,
-                             "Number of instructions executed.")
-  , stat_cur_instruction_address("cur-instruction-address", this,
-                                 cur_instruction_address,
+  , param_trap_on_exception("trap-on-exception", this, trap_on_exception, "Produce a trap when an exception occurs.")
+  , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
+  , stat_cur_instruction_address("cur-instruction-address", this, cur_instruction_address,
                                  "Address of the instruction currently being executed.")
-  , reg_sp("SP", this, gpr[13],
-           "The stack pointer (SP) register (alias of GPR[13]).")
-  , reg_lr("LR", this, gpr[14],
-           "The link register (LR) (alias of GPR[14]).")
-  , reg_pc("PC", this, gpr[15],
-           "The program counter (PC) register (alias of debug logical GPR[15]).")
-  , reg_cpsr("CPSR", this, cpsr.m_value,
-             "The CPSR register.")
+  , reg_sp("SP", this, gpr[13], "The stack pointer (SP) register (alias of GPR[13]).")
+  , reg_lr("LR", this, gpr[14], "The link register (LR) (alias of GPR[14]).")
+  , reg_pc("PC", this, gpr[15], "The program counter (PC) register (alias of debug logical GPR[15]).")
+  , reg_cpsr("CPSR", this, cpsr.m_value, "The CPSR register.")
   , num_data_prefetches(0)
   , num_data_reads(0)
   , num_data_writes(0)
   , num_insn_reads(0)
-  , stat_num_data_prefetches("num-data-prefetches", this,	num_data_prefetches,
-                             "Number of data prefetches issued to the memory system.")
-  , stat_num_data_reads("num-data-reads", this, num_data_reads,
-                        "Number of data reads issued to the memory system.")
-  , stat_num_data_writes("num-data-writes", this, num_data_writes,
-                         "Number of data writes issued to the memory system.")
-  , stat_num_insn_reads("num-insn-reads", this, num_insn_reads,
-                        "Number of instruction reads issued to the memory system.")
+  , stat_num_data_prefetches("num-data-prefetches", this,  num_data_prefetches, "Number of data prefetches issued to the memory system.")
+  , stat_num_data_reads("num-data-reads", this, num_data_reads, "Number of data reads issued to the memory system.")
+  , stat_num_data_writes("num-data-writes", this, num_data_writes, "Number of data writes issued to the memory system.")
+  , stat_num_insn_reads("num-insn-reads", this, num_insn_reads, "Number of instruction reads issued to the memory system.")
 {
   for (unsigned int i = 0; i < (num_log_gprs-1); i++)
     {
@@ -193,14 +168,10 @@ CPU::CPU(const char *name, Object *parent)
   cpsr.Set(F, 1);
 
   // Set the right format for various of the variables
-  param_cpu_cycle_time_ps.SetFormat(
-                                    unisim::kernel::service::VariableBase::FMT_DEC);
-  param_voltage.SetFormat(
-                          unisim::kernel::service::VariableBase::FMT_DEC);
-  param_trap_on_instruction_counter.SetFormat(
-                                              unisim::kernel::service::VariableBase::FMT_DEC);
-  stat_instruction_counter.SetFormat(
-                                     unisim::kernel::service::VariableBase::FMT_DEC);
+  param_cpu_cycle_time_ps.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_voltage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 }
 
 /** Destructor.
@@ -226,7 +197,7 @@ CPU::BeginSetup()
 {
   logger << DebugInfo << "CPU Setup" << EndDebugInfo;
   if (verbose)
-		logger << DebugInfo
+    logger << DebugInfo
            << "Verbose activated."
            << EndDebugInfo;
 
@@ -263,7 +234,7 @@ CPU::BeginSetup()
   /* setting debugging registers */
   if (verbose)
     logger << DebugInfo << "Initializing debugging registers" << EndDebugError;
-	
+  
   for (int i = 0; i < 16; i++) 
     {
       std::stringstream str;
@@ -350,11 +321,11 @@ CPU::EndSetup()
         }
       logger << EndDebugWarning;
     }
-	
+  
   if ( icache.power_mode_import )
-		icache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
+    icache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
   if ( dcache.power_mode_import )
-		dcache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
+    dcache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
 
   if ( verbose )
     {
@@ -369,15 +340,15 @@ CPU::EndSetup()
              << " mV."
              << EndDebugInfo;
     }
-			
+      
   /* If the memory access reporting import is not connected remove the need of
    *   reporting memory accesses and finished instruction.
    */
   if(!memory_access_reporting_import) {
-		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
+    requires_memory_access_reporting = false;
+    requires_finished_instruction_reporting = false;
   }
-	
+  
   return true;
 }
 
@@ -407,26 +378,26 @@ CPU::StepInstruction()
       do 
         {
           dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
-	
+  
           if (dbg_cmd == DebugControl<uint64_t>::DBG_STEP) 
-			{
+            {
               /* Nothing to do */
               break;
-			}
+            }
           if (dbg_cmd == DebugControl<uint64_t>::DBG_SYNC) 
-			{
+            {
               // Sync();
               continue;
-			}
+            }
 
           if (dbg_cmd == DebugControl<uint64_t>::DBG_KILL) 
-			{
+            {
               Stop(0);
-			}
+            }
           if(dbg_cmd == DebugControl<uint64_t>::DBG_RESET) 
-			{
+            {
               // TODO : memory_interface->Reset(); 
-			}
+            }
         }
       while(1);
     }
@@ -434,60 +405,60 @@ CPU::StepInstruction()
   if (cpsr.Get(T))
     {
       /* Thumb state */
-	
+  
       /* fetch instruction word from memory */
       isa::thumb::CodeType insn;
       ReadInsn(current_pc, insn);
-			
+      
       /* Decode current PC */
       isa::thumb::Operation<CPU>* op;
       op = thumb_decoder.Decode(current_pc, insn);
-			
+      
       /* update PC registers value before execution */
       this->gpr[15] = this->next_pc + 4;
       this->next_pc += 2;
-			
+      
       /* Execute instruction */
       op->execute(*this);
       //op->profile(profile);
     }
-	
+  
   else {
     /* Arm32 state */
-		
+    
     /* fetch instruction word from memory */
     isa::arm32::CodeType insn;
     ReadInsn(current_pc, insn);
-			
+      
     /* Decode current PC */
     isa::arm32::Operation<CPU>* op;
     op = arm32_decoder.Decode(current_pc, insn);
-		
+    
     /* update PC registers value before execution */
     this->gpr[15] = this->next_pc + 8;
     this->next_pc += 4;
-		
+    
     /* Execute instruction */
     op->execute(*this);
     //op->profile(profile);
   }
-	
+  
   bool exception_occurred = false;
   if ( unlikely(exception) )
-		exception_occurred = HandleException();
-	
+    exception_occurred = HandleException();
+  
   instruction_counter++;
   stat_instruction_counter.NotifyListeners();
   if ( unlikely((trap_on_instruction_counter == instruction_counter)
                 && instruction_counter_trap_reporting_import) )
-		instruction_counter_trap_reporting_import->ReportTrap(*this);
+    instruction_counter_trap_reporting_import->ReportTrap(*this);
 
   if ( unlikely(trap_on_exception && exception_occurred
                 && exception_trap_reporting_import) )
-		exception_trap_reporting_import->ReportTrap(*this);
-	
+    exception_trap_reporting_import->ReportTrap(*this);
+  
   if(requires_finished_instruction_reporting)
-		if(memory_access_reporting_import)
+    if(memory_access_reporting_import)
       memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
 }
 
@@ -502,8 +473,8 @@ CPU::StepInstruction()
  */
 bool 
 CPU::InjectReadMemory(uint64_t addr, 
-                      void *buffer,
-                      uint32_t size)
+          void *buffer,
+          uint32_t size)
 {
   uint32_t index = 0;
   uint32_t base_addr = (uint32_t)addr;
@@ -521,7 +492,7 @@ CPU::InjectReadMemory(uint64_t addr,
           uint32_t cache_way;
           bool cache_hit = false;
           if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
+            {
               if ( dcache.GetValid(cache_set, cache_way) )
                 {
                   // the cache access is a hit, data can be simply read from 
@@ -535,15 +506,15 @@ CPU::InjectReadMemory(uint64_t addr,
                   size -= read_data_size;
                   cache_hit = true;
                 }
-			}
+            }
           if ( !cache_hit )
-			{
+            {
               PrRead(ef_addr,
                      &(((uint8_t *)buffer)[index]),
                      1);
               index++;
               size--;
-			}
+            }
         }
     }
   else
@@ -574,13 +545,13 @@ CPU::InjectReadMemory(uint64_t addr,
  */
 bool 
 CPU::InjectWriteMemory(uint64_t addr, 
-                       const void *buffer, 
-                       uint32_t size)
+           const void *buffer, 
+           uint32_t size)
 {
   uint32_t index = 0;
   uint32_t base_addr = (uint32_t)addr;
   uint32_t ef_addr;
-	
+  
   if ( likely((SCTLR::C.Get( sctlr )) && dcache.GetSize()) )
     {
       // access memory while using the linux_os_import
@@ -595,7 +566,7 @@ CPU::InjectWriteMemory(uint64_t addr,
           uint32_t cache_way;
           bool cache_hit = false;
           if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
+            {
               if ( dcache.GetValid(cache_set, cache_way) )
                 {
                   // the cache access is a hit, data can be simply read from 
@@ -610,15 +581,15 @@ CPU::InjectWriteMemory(uint64_t addr,
                   size -= write_data_size;
                   cache_hit = true;
                 }
-			}
+            }
           if ( !cache_hit )
-			{
+            {
               PrWrite(ef_addr,
                       &(((uint8_t *)buffer)[index]),
                       1);
               index++;
               size--;
-			}
+            }
         }
     }
   else
@@ -674,8 +645,8 @@ CPU::RequiresFinishedInstructionReporting(bool report)
  */
 bool 
 CPU::ReadMemory(uint64_t addr, 
-                void *buffer, 
-                uint32_t size)
+    void *buffer, 
+    uint32_t size)
 {
   bool status = true;
   uint32_t index = 0;
@@ -694,12 +665,12 @@ CPU::ReadMemory(uint64_t addr,
           pa = mva;
           // if ( likely(cp15.IsMMUEnabled()) )
           //   status = NonIntrusiveTranslateVA(true, 
-          //                                    va + index, mva, pa, cacheable, bufferable);
+          //va + index, mva, pa, cacheable, bufferable);
 
           bool cache_hit = false;
           if ( likely(// status && 
                       cacheable) )
-			{
+            {
               uint32_t cache_tag = dcache.GetTag(mva);
               uint32_t cache_set = dcache.GetSet(mva);
               uint32_t cache_way;
@@ -720,9 +691,9 @@ CPU::ReadMemory(uint64_t addr,
                       cache_hit = true;
                     }
                 }
-			}
+            }
           if ( status && !cache_hit )
-			{
+            {
               status = status &&
                 ExternalReadMemory(pa,
                                    &(((uint8_t *)buffer)[index]),
@@ -732,7 +703,7 @@ CPU::ReadMemory(uint64_t addr,
                   index++;
                   size--;
                 }
-			}
+            }
         }
     }
   else
@@ -743,17 +714,17 @@ CPU::ReadMemory(uint64_t addr,
         {
           // if ( likely(cp15.IsMMUEnabled()) )
           //   status = NonIntrusiveTranslateVA(true, 
-          //                                    va + index, mva, pa, cacheable, bufferable);
+          //va + index, mva, pa, cacheable, bufferable);
 
           status = // status &&
             ExternalReadMemory(pa + index,
                                &(((uint8_t *)buffer)[index]),
                                1);
           if ( status )
-			{
+            {
               index++;
               size--;
-			}
+            }
         }
     }
 
@@ -773,8 +744,8 @@ CPU::ReadMemory(uint64_t addr,
  */
 bool 
 CPU::WriteMemory(uint64_t addr, 
-                 const void *buffer, 
-                 uint32_t size)
+     const void *buffer, 
+     uint32_t size)
 {
   bool status = true;
   uint32_t index = 0;
@@ -793,12 +764,12 @@ CPU::WriteMemory(uint64_t addr,
           pa = mva;
           // if ( likely(cp15.IsMMUEnabled()) )
           //   status = NonIntrusiveTranslateVA(false,
-          //                                    va + index, mva, pa, cacheable, bufferable);
+          //va + index, mva, pa, cacheable, bufferable);
 
           bool cache_hit = false;
           if ( likely(// status && 
                       cacheable) )
-			{
+            {
               uint32_t cache_tag = dcache.GetTag(mva);
               uint32_t cache_set = dcache.GetSet(mva);
               uint32_t cache_way;
@@ -816,9 +787,9 @@ CPU::WriteMemory(uint64_t addr,
                       cache_hit = true;
                     }
                 }
-			}
+            }
           if ( status && !cache_hit )
-			{
+            {
               status = status &&
                 ExternalWriteMemory(pa,
                                     &(((uint8_t *)buffer)[index]),
@@ -828,7 +799,7 @@ CPU::WriteMemory(uint64_t addr,
                   index++;
                   size--;
                 }
-			}
+            }
         }
     }
   else
@@ -839,16 +810,16 @@ CPU::WriteMemory(uint64_t addr,
         {
           // if ( likely(cp15.IsMMUEnabled()) )
           //   status = NonIntrusiveTranslateVA(false,
-          //                                    va + index, mva, pa, cacheable, bufferable);
+          //va + index, mva, pa, cacheable, bufferable);
           status = // status &&
             ExternalWriteMemory(pa,
                                 &(((uint8_t *)buffer)[index]),
                                 1);
           if ( status )
-			{
+            {
               index++;
               size--;
-			}
+            }
         }
     }
 
@@ -871,7 +842,7 @@ CPU::GetRegister(const char *name)
   else
     return 0;
 }
-		
+    
 /** Disasm an instruction address.
  * Returns a string with the disassembling of the instruction found 
  *   at address addr.
@@ -886,7 +857,7 @@ CPU::Disasm(uint64_t addr, uint64_t &next_addr)
 {
   isa::arm32::Operation<CPU>* op= NULL;
   uint32_t insn;
-	
+  
   std::stringstream buffer;
   if (cpsr.Get(T)) 
     {
@@ -909,7 +880,7 @@ CPU::Disasm(uint64_t addr, uint64_t &next_addr)
 
   return buffer.str();
 }
-		
+    
 /** Reads 32bits instructions from the memory system
  * This method allows the user to read instructions from the memory system,
  *   that is, it tries to read from the pertinent caches and if failed from
@@ -933,20 +904,20 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
   num_insn_reads++;
 
   if ( verbose & 0x04 )
-		logger << DebugInfo
+    logger << DebugInfo
            << "Fetching instruction at address 0x" << std::hex << va
            << std::dec
            << EndDebugInfo;
 
   // if ( likely(cp15.IsMMUEnabled()) )
-  //       	if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
+  //         if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
   //     {
   //       logger << DebugError
-  //              << "Could not translate address when performing instruction read"
-  //              << std::endl
-  //              << " - va = 0x" << std::hex << va << std::dec << std::endl
-  //              << " - instruction counter = " << instruction_counter
-  //              << EndDebugError;
+  //  << "Could not translate address when performing instruction read"
+  //  << std::endl
+  //  << " - va = 0x" << std::hex << va << std::dec << std::endl
+  //  << " - instruction counter = " << instruction_counter
+  //  << EndDebugError;
   //       unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
   //     }
 
@@ -962,7 +933,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
       if ( icache.GetWay(cache_tag, cache_set, &cache_way) )
         {
           if ( icache.GetValid(cache_set, cache_way) )
-			{
+            {
               // the access is a hit, nothing needs to be done
               cache_hit = true;
               if ( verbose & 0x04 )
@@ -972,7 +943,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
                        << " - mva = 0x" << mva << std::endl
                        << " - pa = 0x" << pa << std::dec
                        << EndDebugInfo;
-			}
+            }
         }
       if ( unlikely(!cache_hit) )
         {
@@ -1033,7 +1004,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
       // another possibility is that the access is not cacheable
       PrRead(pa, (uint8_t *)&word, size);
     }
-	
+  
   insn = Target2Host(GetEndianness(), word);
 
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
@@ -1064,20 +1035,20 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
   num_insn_reads++;
 
   if ( verbose & 0x04 )
-		logger << DebugInfo
+    logger << DebugInfo
            << "Fetching instruction at address 0x" << std::hex << va
            << std::dec
            << EndDebugInfo;
 
   // if ( likely(cp15.IsMMUEnabled()) )
-  //       	if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
+  //         if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
   //     {
   //       logger << DebugError
-  //              << "Could not translate address when performing instruction read"
-  //              << std::endl
-  //              << " - va = 0x" << std::hex << va << std::dec << std::endl
-  //              << " - instruction counter = " << instruction_counter
-  //              << EndDebugError;
+  //  << "Could not translate address when performing instruction read"
+  //  << std::endl
+  //  << " - va = 0x" << std::hex << va << std::dec << std::endl
+  //  << " - instruction counter = " << instruction_counter
+  //  << EndDebugError;
   //       unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
   //     }
 
@@ -1093,7 +1064,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
       if ( icache.GetWay(cache_tag, cache_set, &cache_way) )
         {
           if ( icache.GetValid(cache_set, cache_way) )
-			{
+            {
               // the access is a hit, nothing needs to be done
               cache_hit = true;
               if ( verbose & 0x04 )
@@ -1103,7 +1074,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
                        << " - mva = 0x" << mva << std::endl
                        << " - pa = 0x" << pa << std::dec
                        << EndDebugInfo;
-			}
+            }
         }
       if ( unlikely(!cache_hit) )
         {
@@ -1199,27 +1170,11 @@ CPU::BKPT( uint32_t imm )
   // we are executing on full system mode
   this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
 }
-	
-/** Unpredictable Instruction Behaviour.
- * This method is just called when an unpredictable behaviour is detected to
- *   notifiy the processor.
- */
-void 
-CPU::UnpredictableInsnBehaviour()
-{
-  logger << DebugWarning
-         << "Trying to execute unpredictable behavior instruction"
-         << "Location: " 
-         << __FUNCTION__ << ":" 
-         << __FILE__ << ":" 
-         << __LINE__ << ": "
-         << EndDebugWarning;
-}
-
+  
 /************************************************************************/
-/* Exception handling                                             START */
+/* Exception handling         START */
 /************************************************************************/
-	
+  
 /** Process exceptions
  *
  * Returns true if there is an exception to handle.
@@ -1239,20 +1194,20 @@ CPU::HandleException()
   // - 5 Imprecise Abort (external abort) - ARMv6 (so ignored here)
   // - 6 Prefetch Abort (including prefetch TLB miss)
   // - 7 Undefined instruction / SWI
-	
+  
   if ( exception & 
        unisim::component::cxx::processor::arm::exception::RESET )
     {
     }
 
   else if ( exception & 
-			unisim::component::cxx::processor::arm::exception::DATA_ABORT )
+            unisim::component::cxx::processor::arm::exception::DATA_ABORT )
     {
     }
 
   else if ( (exception &
              unisim::component::cxx::processor::arm::exception::FIQ) &&
-			!cpsr.Get(F) )
+            !cpsr.Get(F) )
     {
       report = true;
     }
@@ -1299,19 +1254,19 @@ CPU::HandleException()
       uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
       Branch(exc_vector_base + vect_offset);
     }
-	
+  
   else if ( exception &
-			unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT )
+            unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT )
     {
     }
-	
+  
   else if ( exception &
-			unisim::component::cxx::processor::arm::exception::SWI )
+            unisim::component::cxx::processor::arm::exception::SWI )
     {
     }
 
   else if ( exception &
-			unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN )
+            unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN )
     {
     }
 
@@ -1347,7 +1302,7 @@ CPU::HandleException()
 }
 
 /************************************************************************/
-/* Exception handling                                               END */
+/* Exception handling           END */
 /************************************************************************/
 
 /** Get the Internal representation of the CP15 Register
@@ -1370,12 +1325,12 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "MIDR, Main ID Register"; }
           void Write( base_cpu& cpu, uint32_t value ) { throw 0; }
           uint32_t Read( base_cpu& cpu ) {
-            return
-              ((uint32_t)0x041  << 24) |
-              ((uint32_t)0x0    << 20) |
-              ((uint32_t)0x06   << 16) |
-              ((uint32_t)0x0926 <<  4) |
-              ((uint32_t)0x05   <<  0);
+return
+  ((uint32_t)0x041  << 24) |
+  ((uint32_t)0x0    << 20) |
+  ((uint32_t)0x06   << 16) |
+  ((uint32_t)0x0926 <<  4) |
+  ((uint32_t)0x05   <<  0);
           }
         } x;
         return x;
@@ -1404,15 +1359,15 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
       } break;
       
     case CP15ENCODE( 7, 0, 14, 3 ):
-    {
-      static struct : public CP15Reg
       {
-        char const* Describe() { return "?, Test Clean And Invalidate DCache"; }
-        uint32_t Read( base_cpu& cpu ) { return cpu.TestCleanAndInvalidateDCache() ? 0x40000000UL : 0; }
-        void Write( base_cpu& cpu, uint32_t value ) { throw 0; }
-      } x;
-      return x;
-    } break;
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "?, Test Clean And Invalidate DCache"; }
+          uint32_t Read( base_cpu& cpu ) { return cpu.TestCleanAndInvalidateDCache() ? 0x40000000UL : 0; }
+          void Write( base_cpu& cpu, uint32_t value ) { throw 0; }
+        } x;
+        return x;
+      } break;
        
     }
   

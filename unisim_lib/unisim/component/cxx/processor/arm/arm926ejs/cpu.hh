@@ -118,8 +118,6 @@ struct CPU
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >   memory_access_reporting_import;
   /** Symbol table lookup service import. */
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> >   symbol_table_lookup_import;
-  /** Instruction counter trap reporting service import. */
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>   instruction_counter_trap_reporting_import;
   /** Exception trap reporting service import. */
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>  exception_trap_reporting_import;
 
@@ -381,12 +379,6 @@ struct CPU
    */
   void BKPT( uint32_t imm );
 	
-  /** Unpredictable Instruction Behaviour.
-   * This method is just called when an unpredictable behaviour is detected to
-   *   notifiy the processor.
-   */
-  void UnpredictableInsnBehaviour();
-  
   /** The Lockdown TLB */
   LockdownTLB ltlb;
   /** The TLB */

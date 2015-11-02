@@ -101,7 +101,6 @@ struct BankedMode : public CORE::Mode
       }
   }
 };
-  
 
 /** Constructor.
  * Initializes CPU
@@ -115,6 +114,7 @@ template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
   : unisim::kernel::service::Object(name, parent)
   , logger(*this)
+  , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
   , icache("icache", this)
   , dcache("dcache", this)
   , exception(0)
@@ -1014,6 +1014,24 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
   return err;
 }
     
+/** Unpredictable Instruction Behaviour.
+ * This method is just called when an unpredictable behaviour is detected to
+ *   notifiy the processor.
+ */
+template <class CONFIG>
+void 
+CPU<CONFIG>::UnpredictableInsnBehaviour()
+{
+  logger << DebugWarning
+    << "Trying to execute unpredictable behavior instruction,"
+    << "Location: " 
+    << __FUNCTION__ << ":" 
+    << __FILE__ << ":" 
+    << __LINE__ << ": "
+    << EndDebugWarning;
+  instruction_counter_trap_reporting_import->ReportTrap();
+}
+
 
     
 } // end of namespace arm

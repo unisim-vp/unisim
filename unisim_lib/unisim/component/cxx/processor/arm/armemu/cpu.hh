@@ -120,8 +120,6 @@ struct CPU
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint32_t> > symbol_table_lookup_import;
   /** Linux OS service import. */
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
-  /** Trap reporting service import. */
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>  instruction_counter_trap_reporting_import;
 
   /** Indicates if the finished instructions require to be reported. */
   bool requires_finished_instruction_reporting;
@@ -362,12 +360,6 @@ struct CPU
    */
   void BKPT( uint32_t imm );
 	
-  /** Unpredictable Instruction Behaviour.
-   * This method is just called when an unpredictable behaviour is detected to
-   *   notifiy the processor.
-   */
-  void UnpredictableInsnBehaviour();
-
 protected:
   /** Decoder for the arm32 instruction set. */
   unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;

@@ -111,7 +111,6 @@ add_custom_command (
 set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/models.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/masks.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor_interface.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.hh

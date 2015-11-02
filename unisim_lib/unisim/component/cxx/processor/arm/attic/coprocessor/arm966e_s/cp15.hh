@@ -35,7 +35,6 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_ARM966E_S_CP15_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_ARM966E_S_CP15_HH__
 
-#include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
 #include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
 

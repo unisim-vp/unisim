@@ -592,7 +592,6 @@ add_custom_command (
 
 set ( COMP_CXX_ARMEMU_SRCS
   ${COMP_CXX_ARMEMU_SRCS_PATH}/masks.hh
-  ${COMP_CXX_ARMEMU_SRCS_PATH}/coprocessor_interface.hh
   ${COMP_CXX_ARMEMU_SRCS_PATH}/cpu.hh
   ${COMP_CXX_ARMEMU_SRCS_PATH}/cpu.cc
   ${COMP_CXX_ARMEMU_SRCS_PATH}/armemu/cpu.hh

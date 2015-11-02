@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
@@ -147,6 +148,9 @@ struct CPU
   //=                  public service imports/exports                   =
   //=====================================================================
 		
+  /** Instruction counter trap reporting service import. */
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>   instruction_counter_trap_reporting_import;
+  
   //=====================================================================
   //=                    Constructor/Destructor                         =
   //=====================================================================
@@ -443,6 +447,12 @@ struct CPU
   /* Exception handling */
   /**********************/
   
+  /** Unpredictable Instruction Behaviour.
+   * This method is just called when an unpredictable behaviour is detected to
+   *   notifiy the processor.
+   */
+  void UnpredictableInsnBehaviour();
+
   /** Mark an exception in the virtual exception vector.
    * This marks an new exception in the virtual exception vector for 
    *   later treatment.

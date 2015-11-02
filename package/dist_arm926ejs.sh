@@ -433,7 +433,6 @@ unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
-unisim/component/cxx/processor/arm/coprocessor_interface.hh \
 unisim/component/cxx/processor/arm/arm926ejs/cpu.hh \
 unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh \
 unisim/component/cxx/processor/arm/cp15.hh \
