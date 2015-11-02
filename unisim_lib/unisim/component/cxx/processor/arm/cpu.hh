@@ -126,8 +126,8 @@ struct CPU
     virtual ~Mode() {}
     virtual void     SetBR( unsigned index, uint32_t value ) { throw 0; };
     virtual uint32_t GetBR( unsigned index ) { throw 0; return 0; };
-    virtual void     SetSPSR( unsigned index, uint32_t value ) { throw 0; };
-    virtual uint32_t GetSPSR( unsigned index ) { throw 0; return 0; };
+    virtual void     SetSPSR(uint32_t value ) { throw 0; };
+    virtual uint32_t GetSPSR() { throw 0; return 0; };
     virtual void     Swap( CPU& cpu ) {};
   };
   
@@ -140,8 +140,8 @@ struct CPU
 
     virtual void     SetBR( unsigned index, uint32_t value ) { banked_regs[ModeInfo<MAPPED>::GetBRIndex( uint32_t(1) << index )] = value; };
     virtual uint32_t GetBR( unsigned index ) { return banked_regs[ModeInfo<MAPPED>::GetBRIndex( uint32_t(1) << index )]; };
-    virtual void     SetSPSR( unsigned index, uint32_t value ) { spsr = value; };
-    virtual uint32_t GetSPSR( unsigned index ) { return spsr; };
+    virtual void     SetSPSR(uint32_t value ) { spsr = value; };
+    virtual uint32_t GetSPSR() { return spsr; };
     virtual void     Swap( CPU& cpu )
     {
       for (unsigned idx = 0, bidx = 0; idx < num_log_gprs; ++idx)

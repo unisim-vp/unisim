@@ -37,7 +37,6 @@
 #include "unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.tcc"
 #include "unisim/component/cxx/processor/arm/arm926ejs/cpu.hh"
 
-template 
-class
-unisim::component::cxx::processor::arm::isa::thumb::Decoder<
-	unisim::component::cxx::processor::arm::arm926ejs::CPU>;
+using namespace unisim::component::cxx::processor::arm;
+
+template class isa::thumb::Decoder<arm926ejs::ARM926ejs>;
