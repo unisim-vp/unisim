@@ -880,8 +880,107 @@ CPU<_CONFIG_>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8
         {
           char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
           /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write( CPU& cpu, uint32_t value ) { /* cpu.ttbr0 = value; */ }
-          uint32_t Read( CPU& cpu ) { return 0 /* cpu.ttbr0 */; }
+          void Write( CPU& cpu, uint32_t value ) { throw 0; /* cpu.ttbr0 = value; */ }
+          uint32_t Read( CPU& cpu ) { throw 0; return 0 /* cpu.ttbr0 */; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 3, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DACR, Domain Access Control Register"; }
+          uint32_t Read( CPU& cpu ) { throw 0; return 0 /* cpu.dacr */; }
+          void Write( CPU& cpu, uint32_t value ) { throw 0; /*cpu.dacr = value;*/ }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 5, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
+          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.InvalidateCache(true, false); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 5, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ICIMVAU, Invalidate instruction caches by MVA to PoU"; }
+          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.InvalidateICacheSingleEntryWithMVA(value); }
+        } x;
+        return x;
+      } break;
+
+    case CP15ENCODE( 7, 0, 10, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DCCMVAC, Clean data cache line by MVA to PoC"; }
+          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.CleanDCacheSingleEntryWithMVA(value, false); }
+        } x;
+        return x;
+      } break;
+
+    case CP15ENCODE( 7, 0, 10, 4 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CP15DSB, Data Synchronization Barrier operation"; }
+          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.DrainWriteBuffer(); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 14, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
+          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.CleanDCacheSingleEntryWithMVA(value, true); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 8, 0, 5, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ITLBIALL, invalidate instruction TLB"; }
+          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.InvalidateTLB(); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 8, 0, 6, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DTLBIALL, invalidate data TLB"; }
+          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.InvalidateTLB(); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 8, 0, 7, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
+          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.InvalidateTLB(); }
         } x;
         return x;
       } break;

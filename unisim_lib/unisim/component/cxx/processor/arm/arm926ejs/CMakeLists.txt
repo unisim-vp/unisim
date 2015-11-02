@@ -112,6 +112,7 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/coprocessor_interface.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cp15.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cpu.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cpu.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/cache.hh
@@ -120,8 +121,6 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/tlb.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/arm926ejs/tlb.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cp15.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cp15.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/memory_op.hh

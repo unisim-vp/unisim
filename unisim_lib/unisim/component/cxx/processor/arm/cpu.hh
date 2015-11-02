@@ -502,25 +502,6 @@ public:
    */
   char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   
-protected:
-  struct CP15Reg
-  {
-    virtual ~CP15Reg() {}
-    virtual void Write( CPU& cpu, uint32_t value ) = 0;
-    virtual uint32_t Read( CPU& cpu ) = 0;
-    virtual char const* Describe() = 0;
-  };
-  
-  /** Get the Internal representation of the CP15Register
-   * 
-   * @param crn     the "crn" field of the instruction code
-   * @param opcode1 the "opcode1" field of the instruction code
-   * @param crm     the "crm" field of the instruction code
-   * @param opcode2 the "opcode2" field of the instruction code
-   * @return        an internal CP15Reg
-   */
-  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-    
   /** Get caches info
    *
    */
@@ -573,6 +554,25 @@ protected:
    */
   bool TestCleanAndInvalidateDCache();
   
+protected:
+  struct CP15Reg
+  {
+    virtual ~CP15Reg() {}
+    virtual void Write( CPU& cpu, uint32_t value ) = 0;
+    virtual uint32_t Read( CPU& cpu ) = 0;
+    virtual char const* Describe() = 0;
+  };
+  
+  /** Get the Internal representation of the CP15Register
+   * 
+   * @param crn     the "crn" field of the instruction code
+   * @param opcode1 the "opcode1" field of the instruction code
+   * @param crm     the "crm" field of the instruction code
+   * @param opcode2 the "opcode2" field of the instruction code
+   * @return        an internal CP15Reg
+   */
+  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+    
   /**************************/
   /* CP15 Interface     END */
   /**************************/

@@ -230,10 +230,9 @@ CPU::BeginSetup()
            << "Verbose activated."
            << EndDebugInfo;
 
-  /* endianness should be fixed by the time we arrive here by the
-   *   cp15
-   */
-  if (cp15.GetEndianness() == E_LITTLE_ENDIAN) {
+  /* Looking at endianness in SCTLR.B, Note: Configuring endianness
+   * through SCTLR.B is obsolete in ARMv7 */
+  if (SCTLR::B.Get( sctlr )) {
     if (verbose)
       logger << DebugInfo << "Setting endianness to little endian" << EndDebugInfo;
     cpsr.Set( E, 0 );
@@ -245,7 +244,7 @@ CPU::BeginSetup()
   }
 
   /* setting initial pc by the cp15 vinithi parameter */
-  uint32_t init_pc = cp15.GetVINITHI() ? 0xFFFF0000UL : 0;
+  uint32_t init_pc = SCTLR::V.Get( sctlr ) ? 0xFFFF0000UL : 0;
   if (verbose)
     logger << DebugInfo << "Setting initial pc to 0x" << std::hex << init_pc << std::dec << EndDebugInfo;
   BranchExchange( init_pc );
@@ -510,7 +509,7 @@ CPU::InjectReadMemory(uint64_t addr,
   uint32_t base_addr = (uint32_t)addr;
   uint32_t ef_addr;
 
-  if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
+  if ( likely(SCTLR::C.Get( sctlr ) && dcache.GetSize()) )
     {
       while (size != 0)
         {
@@ -582,7 +581,7 @@ CPU::InjectWriteMemory(uint64_t addr,
   uint32_t base_addr = (uint32_t)addr;
   uint32_t ef_addr;
 	
-  if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
+  if ( likely((SCTLR::C.Get( sctlr )) && dcache.GetSize()) )
     {
       // access memory while using the linux_os_import
       //   tcm is ignored
@@ -686,7 +685,7 @@ CPU::ReadMemory(uint64_t addr,
   uint32_t cacheable = 1;
   // uint32_t bufferable = 1;
 
-  if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
+  if ( likely((SCTLR::C.Get( sctlr )) && dcache.GetSize()) )
     {
       // non intrusive access with linux support
       while (size != 0 && status)
@@ -785,7 +784,7 @@ CPU::WriteMemory(uint64_t addr,
   uint32_t cacheable = 1;
   // uint32_t bufferable = 1;
 
-  if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
+  if ( likely((SCTLR::C.Get( sctlr )) && dcache.GetSize()) )
     {
       // non intrusive access with linux support
       while ( size != 0 && status )
@@ -952,7 +951,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
   //     }
 
 
-  if ( likely(cp15.IsICacheEnabled() && icache.GetSize() && cacheable) )
+  if ( likely(SCTLR::I.Get( sctlr ) && icache.GetSize() && cacheable) )
     {
       icache.read_accesses++;
       // check the instruction cache
@@ -1083,7 +1082,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
   //     }
 
 
-  if ( likely(cp15.IsICacheEnabled() && icache.GetSize() && cacheable) )
+  if ( likely(SCTLR::I.Get( sctlr ) && icache.GetSize() && cacheable) )
     {
       icache.read_accesses++;
       // check the instruction cache
@@ -1297,7 +1296,7 @@ CPU::HandleException()
       cpsr.Set( T, 0 ); // TODO: controlled by SCTLR.TE
       cpsr.Set( E, 0 ); // TODO: controlled by SCTLR.EE
       // Branch to correct IRQ vector ("implementation defined" if SCTLR.VE == '1').
-      uint32_t exc_vector_base = cp15.GetVINITHI() ? 0xffff0000 : 0x00000000;
+      uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
       Branch(exc_vector_base + vect_offset);
     }
 	
@@ -1362,7 +1361,6 @@ CPU::HandleException()
 CPU::CP15Reg&
 CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
-
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
     {
     case CP15ENCODE( 0, 0, 0, 0 ):
@@ -1370,8 +1368,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "MIDR, Main ID Register"; }
-          void Write( CPU& cpu, uint32_t value ) { throw 0; }
-          uint32_t Read( CPU& cpu ) {
+          void Write( base_cpu& cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( base_cpu& cpu ) {
             return
               ((uint32_t)0x041  << 24) |
               ((uint32_t)0x0    << 20) |
@@ -1383,204 +1381,44 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
+    case CP15ENCODE( 7, 0, 7, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "?, Invalidating instruction and data"; }
+          uint32_t Read( base_cpu& cpu ) { throw 0; return 0; }
+          void Write( base_cpu& cpu, uint32_t value ) { cpu.InvalidateCache(true, true); }
+        } x;
+        return x;
+      } break;
+      
     case CP15ENCODE( 7, 0, 10, 3 ):
       {
         static struct : public CP15Reg
         {
           char const* Describe() { return "Test And Clean DCache"; }
-          void Write( CPU& cpu, uint32_t value ) { throw 0; }
-          uint32_t Read( CPU& cpu ) { return core.TestAndCleanDCache() ? 0x40000000UL : 0; }
+          void Write( base_cpu& cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( base_cpu& cpu ) { return cpu.TestAndCleanDCache() ? 0x40000000UL : 0; }
         } x;
         return x;
       } break;
       
-    case CP15ENCODE( 7, 0, 14, 3 );
+    case CP15ENCODE( 7, 0, 14, 3 ):
     {
       static struct : public CP15Reg
       {
         char const* Describe() { return "?, Test Clean And Invalidate DCache"; }
-        uint32_t Read( CPU& cpu ) { return core.TestCleanAndInvalidateDCache() ? 0x40000000UL : 0; }
-        void Write( CPU& cpu, uint32_t value ) { throw 0; }
+        uint32_t Read( base_cpu& cpu ) { return cpu.TestCleanAndInvalidateDCache() ? 0x40000000UL : 0; }
+        void Write( base_cpu& cpu, uint32_t value ) { throw 0; }
       } x;
       return x;
     } break;
        
     }
   
-  return this->base_cpu::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  // Fall back to base cpu CP15 registers
+  return this->base_cpu::CP15GetRegister( crn, opcode1, crm, opcode2 );
 }
-
-// /** Write a value in a register
-//  *
-//  * @param core    the CORE this CP15 coprocessor is attached to
-//  * @param opcode1 the "opcode1" field of the instruction code
-//  * @param opcode2 the "opcode2" field of the instruction code
-//  * @param crn     the "crn" field of the instruction code
-//  * @param crm     the "crm" field of the instruction code
-//  * @param val     value to be written in the register
-//  */
-// template <class CORE>
-// void
-// CP15::WriteRegister( CORE& core, uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, uint32_t value )
-// {
-//   uint32_t orig = value;
-//   uint32_t mod = value;
-//   bool handled = false;
-// #ifdef CP15__DEBUG
-//   std::cerr << "CP15: Received write register command with: " << std::endl;
-//   std::cerr << " - opcode1 = " << (unsigned int)opcode1 << std::endl;
-//   std::cerr << " - opcode2 = " << (unsigned int)opcode2 << std::endl;
-//   std::cerr << " - crn     = " << (unsigned int)crn << std::endl;
-//   std::cerr << " - crm     = " << (unsigned int)crm << std::endl;
-//   std::cerr << " - value   = 0x" << std::hex << value << std::dec << std::endl;
-// #endif // CP15__DEBUG
-//   if ( likely(opcode1 == 0) )
-//   {
-    
-//     // domain access control
-//     else if ( crn == 3 )
-//     {
-//       if ( crm == 0 )
-//       {
-//         if ( opcode2 == 0 )
-//         {
-// #ifdef CP15__DEBUG
-//           std::cerr << "CP15: Writing domain access control register"
-//             << " c3"
-//             << std::endl;
-// #endif // CP15__DEBUG
-//           handled = true;
-//           domain_access_control_register_c3 = orig;
-//         }
-//       }
-//     }
-    
-//     // cache management functions
-//     else if ( crn == 7 )
-//     {
-//       if ( crm == 5 )
-//       {
-//         if ( opcode2 == 0 )
-//         {
-// #ifdef CP15__DEBUG
-//           std::cerr << "CP15: Invalidating instruction cache"
-//             << std::endl;
-// #endif // CP15__DEBUG
-//           core.InvalidateCache(true, false);
-//           handled = true;
-//         }
-
-//         else if ( opcode2 == 1 )
-//         {
-// #ifdef CP15__DEBUG
-//           std::cerr << "CP15: Invalidating ICache single entry (MVA)"
-//             << std::endl;
-// #endif // CP15__DEBUG
-//           core.InvalidateICacheSingleEntryWithMVA(value);
-//           handled = true;
-//         }
-//       }
-    
-//       else if ( crm == 7 )
-//       {
-//         if ( opcode2 == 0 )
-//         {
-// #ifdef CP15__DEBUG
-//             std::cerr << "CP15: Invalidating instruction and data"
-//               << " caches" << std::endl;
-// #endif // CP15__DEBUG
-//             core.InvalidateCache(true, true);
-//             handled = true;
-//         }
-//       }
-      
-//       else if ( crm == 10 )
-//       {
-//         if ( opcode2 == 1 )
-//         {
-// #ifdef CP15__DEBUG
-//           std::cerr << "CP15: Clean DCache single entry (MVA)"
-//             << std::endl;
-// #endif // CP15__DEBUG
-//           core.CleanDCacheSingleEntryWithMVA(value, false);
-//           handled = true;
-//         }
-
-//         else if ( opcode2 == 4 )
-//         {
-// #ifdef CP15__DEBUG
-//           std::cerr << "CP15: Draining write buffer"
-//             << std::endl;
-// #endif // CP15__DEBUG
-//           core.DrainWriteBuffer();
-//           handled = true;
-//         }
-//       }
-
-//       else if ( crm == 14 )
-//       {
-//         if ( opcode2 == 1 )
-//         {
-// #ifdef CP15__DEBUG
-//           std::cerr << "CP15: Clean and invalidate DCache"
-//             << " single entry (MVA)"
-//             << std::endl;
-// #endif // CP15__DEBUG
-//           core.CleanDCacheSingleEntryWithMVA(value, true);
-//           handled = true;
-//         }
-//       }
-//     }
-
-//     // TLB functions
-//     else if ( crn == 8 )
-//     {
-//       if ( crm == 7 )
-//       {
-//         if ( opcode2 == 0 )
-//         {
-// #ifdef CP15__DEBUG
-//           std::cerr << "CP15: Invalidating set-associative TLB"
-//             << std::endl;
-// #endif // CP15__DEBUG
-//           core.InvalidateTLB();
-//           handled = true;
-//         }
-//       }
-
-//       else if ( crm == 5 )
-//       {
-//         if ( opcode2 == 0 )
-//         {
-// #ifdef CP15_DEBUG
-//           std::cerr << "CP15: Invalidating set-associative TLB"
-//             << std::endl;
-// #endif // CP15_DEBUG
-//           core.InvalidateTLB();
-//           handled = true;
-//         }
-//       }
-
-//       else if ( crm == 6 )
-//       {
-//         if ( opcode2 == 0 )
-//         {
-// #ifdef CP15_DEBUG
-//           std::cerr << "CP15: Invalidating set-associative TLB"
-//             << std::endl;
-// #endif // CP15_DEBUG
-//           core.InvalidateTLB();
-//           handled = true;
-//         }
-//       }
-//     }
-//   }
-
-//   if ( unlikely(!handled) )
-//   {
-//     assert("CP15 write register not handled" == 0);
-//   }
-// }
 
 } // end of namespace arm926ejs
 

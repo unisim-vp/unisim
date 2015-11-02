@@ -187,7 +187,6 @@ unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
 unisim/component/cxx/processor/arm/cache.cc \
-unisim/component/cxx/processor/arm/cp15.cc \
 unisim/component/cxx/processor/arm/armemu/cpu.cc \
 unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
 unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
@@ -388,7 +387,6 @@ unisim/component/cxx/processor/arm/coprocessor_interface.hh \
 unisim/component/cxx/processor/arm/armemu/cpu.hh \
 unisim/component/cxx/processor/arm/cache.hh \
 unisim/component/cxx/processor/arm/cp15.hh \
-unisim/component/cxx/processor/arm/cp15.tcc \
 unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
