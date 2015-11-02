@@ -190,25 +190,6 @@ CPU<_CONFIG_>::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value 
   uint32_t write_addr = addr;
   uint8_t data[4];
 
-  uint32_t va = memop->GetAddress();
-  uint32_t mva = va;
-  uint32_t pa = va;
-  uint32_t size = memop->GetSize();
-  uint8_t val8 = 0;
-  uint16_t val16 = 0;
-  uint32_t val32 = 0;
-  uint8_t data8, data16[2], data32[4];
-  uint8_t *data = 0;
-  uint32_t cacheable = 1;
-  uint32_t bufferable = 1;
-
-  if ( unlikely(verbose & 0x02) )
-		logger << DebugInfo
-           << "Performing write with memop values:" << std::endl
-           << " - addr = 0x" << std::hex << va << std::dec << std::endl
-           << "- size = " << size
-           << EndDebugInfo;
-
   if (size > 4) throw 0; // should never happen
 
   if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
