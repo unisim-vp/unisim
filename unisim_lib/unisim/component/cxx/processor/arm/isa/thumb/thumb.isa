@@ -59,9 +59,13 @@ impl {
 #include "unisim/component/cxx/processor/arm/execute.hh"
 #include "unisim/component/cxx/processor/arm/disasm.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
+#include <unisim/util/endian/endian.hh>
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include <iostream>
 #include <iomanip>
+
+using unisim::util::endian::ByteSwap;
+using unisim::util::arithmetic::RotateRight;
 } // end of impl
 
 action {void} execute({typename CONFIG::Arch &} {cpu}) {

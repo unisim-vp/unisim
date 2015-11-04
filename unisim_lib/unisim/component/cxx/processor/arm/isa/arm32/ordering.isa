@@ -50,6 +50,7 @@ group conditional (ldr_imm,ldr_reg,ldrh_imm,ldrh_reg,ldrsh_imm,ldrsh_reg,ldrb_im
                    stm_usr,swp,swpb,ldrex,ldrexh,ldrexb,ldrexd,strex,\
                    strexh,strexb,strexd,cdp,ldc,ldc_unindexed,mcr,\
                    mrc,stc,stc_unindexed,mcrr,mrrc,b,bl,\
+                   cp15_mrc,\
                    bx,bxj,blx_reg,mla,mls,mul,smlal,smlald,\
                    smlsld,smull,umlal,umaal,umull,smlaxy,smlad,smuad,\
                    smlsd,smusd,smmla,smmul,smmls,smlalxy,smlawy,smulxy,\

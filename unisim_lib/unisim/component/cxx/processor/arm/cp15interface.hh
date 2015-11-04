@@ -40,7 +40,6 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-namespace arm926ejs {
 
 class CP15Interface
 {
@@ -103,7 +102,6 @@ public:
 	virtual bool TestCleanAndInvalidateDCache() = 0;
 };
 
-} // end of namespace arm926ejs
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

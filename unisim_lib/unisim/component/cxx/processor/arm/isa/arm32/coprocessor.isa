@@ -53,7 +53,7 @@ cdp.disasm = {
 cdp.execute = {
   if (not CheckCondition(cpu, cond)) return;
 	
-  cpu.CoprocessorDataProcess(cp_num, opc1, opc2, crd, crn, crm);
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -76,11 +76,7 @@ ldc.disasm = {
 ldc.execute = {
   if (not CheckCondition(cpu, cond)) return;
 	
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
-  if (w) cpu.SetGPR( rn, oaddr );
-  
-  uint32_t address = p?oaddr:addr;
-  while (cpu.CoprocessorLoad(cp_num, address)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 op ldc_unindexed( cond[4]: 0b110[3]: 0b0[1]: 0b1[1]: d[1]: 0b0[1]: 0b1[1]: rn[4]: crd[4]: cp_num[4]: option[8] );
@@ -95,8 +91,7 @@ ldc_unindexed.disasm = {
 ldc_unindexed.execute = {
   if (not CheckCondition(cpu, cond)) return;
 	
-  uint32_t address = cpu.GetGPR(rn);
-  while(cpu.CoprocessorLoad(cp_num, address, option)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -116,7 +111,7 @@ mcr.disasm = {
 mcr.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  cpu.MoveToCoprocessor(cp_num, opc1, opc2, rd, crn, crm);
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -138,13 +133,29 @@ mrc.disasm = {
 
 mrc.execute = {
   if (not CheckCondition(cpu, cond)) return;
+  
+  cpu.UnpredictableInsnBehaviour();
+};
 
-  uint32_t value = cpu.Coproc_GetOneWord( 1, cp_num, opc1, opc2, crn, crm );
+op cp15_mrc( cond[4]: 0b1110[4]: opc1[3]: 0b1[1]: crn[4]: rt[4]: 0b1111[4]: opc2[3]: 0b1[1]: crm[4] );
+
+cp15_mrc.disasm = {
+  buffer << "mrc" << DisasmCondition(cond) << "\t15, " << unsigned( opc1 ) << ", ";
+  if (rt == 15) buffer << "APSR_nzcv";
+  else          buffer << DisasmRegister(rt);
+  buffer << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "}";
+};
+
+cp15_mrc.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t value = cpu.CP15ReadRegister( opc1, opc2, crn, crm );
   if (rt != 15)
     cpu.SetGPR( rt, value );
   else
     cpu.CPSR().Set( NZCV, value >> 28 );
 };
+
 
 /*
  * end of mrc instruction
@@ -166,11 +177,7 @@ stc.disasm = {
 stc.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
-  if (w) cpu.SetGPR( rn, oaddr );
-  
-  uint32_t address = p?oaddr:addr;
-  while(cpu.CoprocessorStore(cp_num, address)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 op stc_unindexed( cond[4]: 0b110[3]: 0b0[1]: 0b1[1]: d[1]: 0b0[1]: 0b0[1]: rn[4]: crd[4]: cp_num[4]: option[8] );
@@ -185,8 +192,7 @@ stc_unindexed.disasm = {
 stc_unindexed.execute = {
   if (not CheckCondition(cpu, cond)) return;
 	
-  uint32_t address = cpu.GetGPR(rn);
-  while(cpu.CoprocessorStore(cp_num, address, option)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -207,7 +213,7 @@ cdp2.disasm = {
 };
 
 cdp2.execute = {
-  cpu.CoprocessorDataProcess(cp_num, opc1, opc2, crd, crn, crm);
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -229,11 +235,7 @@ ldc2.disasm = {
 };
 
 ldc2.execute = {
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
-  if (w) cpu.SetGPR( rn, oaddr );
-  
-  uint32_t address = p?oaddr:addr;
-  while(cpu.CoprocessorLoad(cp_num, address)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 { CONFIG::insns5T }: \
@@ -246,8 +248,7 @@ ldc2_unindexed.disasm = {
 };
 
 ldc2_unindexed.execute = {
-  uint32_t address = cpu.GetGPR(rn);
-  while(cpu.CoprocessorLoad(cp_num, address, option)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -268,7 +269,7 @@ mcr2.disasm = {
 };
 
 mcr2.execute = {
-  cpu.MoveToCoprocessor(cp_num, opc1, opc2, rd, crn, crm);
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -289,11 +290,7 @@ mrc2.disasm = {
 };
 
 mrc2.execute = {
-  uint32_t value = cpu.Coproc_GetOneWord( 2, cp_num, opc1, opc2, crn, crm );
-  if (rt != 15)
-    cpu.SetGPR( rt, value );
-  else
-    cpu.CPSR().Set( NZCV, value >> 28 );
+  cpu.UnpredictableInsnBehaviour();
 }
 
 /*
@@ -315,11 +312,7 @@ stc2.disasm = {
 };
 
 stc2.execute = {
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
-  if (w) cpu.SetGPR( rn, oaddr );
-  
-  uint32_t address = p?oaddr:addr;
-  while (cpu.CoprocessorStore(cp_num, address)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 { CONFIG::insns5T }: \
@@ -332,8 +325,7 @@ stc2_unindexed.disasm = {
 };
 
 stc2_unindexed.execute = {
-  uint32_t address = cpu.GetGPR(rn);
-  while(cpu.CoprocessorStore(cp_num, address, option)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -356,8 +348,7 @@ mcrr.disasm = {
 mcrr.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  cpu.MoveToCoprocessor(cp_num, opc1, 0, rd, 0, crm);
-  cpu.MoveToCoprocessor(cp_num, opc1, 0, rn, 0, crm);
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -379,8 +370,7 @@ mrrc.disasm = {
 mrrc.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  cpu.MoveFromCoprocessor(cp_num, opc1, 0, rd, 0, crm);
-  cpu.MoveFromCoprocessor(cp_num, opc1, 0, rn, 0, crm);
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -400,8 +390,7 @@ mcrr2.disasm = {
 };
 
 mcrr2.execute = {
-  cpu.MoveToCoprocessor(cp_num, opc1, 0, rd, 0, crm);
-  cpu.MoveToCoprocessor(cp_num, opc1, 0, rn, 0, crm);
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -421,8 +410,7 @@ mrrc2.disasm = {
 };
 
 mrrc2.execute = {
-  cpu.MoveFromCoprocessor(cp_num, opc1, 0, rd, 0, crm);
-  cpu.MoveFromCoprocessor(cp_num, opc1, 0, rn, 0, crm);
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*

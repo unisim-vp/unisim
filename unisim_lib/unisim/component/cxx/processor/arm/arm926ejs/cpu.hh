@@ -39,8 +39,6 @@
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/component/cxx/processor/arm/memory_op.hh>
-#include <unisim/component/cxx/processor/arm/arm926ejs/cp15.hh>
-#include <unisim/component/cxx/processor/arm/arm926ejs/cp15interface.hh>
 #include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/arm926ejs/tlb.hh>
 #include <unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh>
@@ -105,7 +103,6 @@ struct ARM926ejs
 
 struct CPU
   : public unisim::component::cxx::processor::arm::CPU<ARM926ejs>
-  , public unisim::component::cxx::processor::arm::arm926ejs::CP15Interface
   , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint64_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
@@ -392,6 +389,11 @@ struct CPU
    */
   void ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn);
 
+  void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
+  {
+    if (requires_memory_access_reporting and memory_access_reporting_import)
+      memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
+  }
   /**************************************************************/
   /* Memory access methods       END                            */
   /**************************************************************/
@@ -405,164 +407,6 @@ struct CPU
    * processor. Always "AL" before ARMv6T2 architectures.
    */
   uint32_t itcond() const { return this->COND_AL; }
-
-  /**************************************************************/
-  /* Coprocessor methods required be the isa          START     */
-  /**************************************************************/
-
-  /** Coprocessor Load
-   * This method is called each time a coprocessor load (for whatever 
-   *   coprocessor) is found in the instruction set.
-   * 
-   * @param cp_num the coprocessor for which the load is requested
-   * @param address the address for the load
-   * 
-   * @return the target coprocessor decides if the loads have finished by 
-   *   returning true, false if it has not finished
-   */ 
-  bool CoprocessorLoad(uint32_t cp_num, uint32_t address);
-  /** Coprocessor Load with options
-   * This method is called each time a coprocessor load (for whatever 
-   *   coprocessor) is found in the instruction set. This method has an extra 
-   *   field to pass options to the coprocessor.
-   * 
-   * @param cp_num the coprocessor for which the load is requested
-   * @param address the address for the load
-   * @param option options for the target coprocessor
-   * 
-   * @return the target coprocessor decides if the loads have finished by 
-   *   returning true, false if it has not finished
-   */ 
-  bool CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option);
-  /** Coprocessor Store
-   * This method is called each time a coprocessor store (for whatever 
-   *   coprocessor) is found in the instruction set.
-   * 
-   * @param cp_num the coprocessor for which the store is requested
-   * @param address the address for the store
-   * 
-   * @return the target coprocessor decides if the stores have finished by 
-   *   returning true, false if it has not finished
-   */ 
-  bool CoprocessorStore(uint32_t cp_num, uint32_t address);
-  /** Coprocessor Store with options
-   * This method is called each time a coprocessor store (for whatever 
-   *   coprocessor) is found in the instruction set. This method has an extra 
-   *   field to pass options to the coprocessor.
-   * 
-   * @param cp_num the coprocessor for which the store is requested
-   * @param address the address for the store
-   * @param option options for the target coprocessor
-   * 
-   * @return the target coprocessor decides if the stores have finished by 
-   *   returning true, false if it has not finished
-   */ 
-  bool CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option);
-  /** Coprocessor Data Processing method
-   * 
-   * @param cp_num the coprocessor for which the data processing is requested
-   * @param op1 first opcode for the coprocessor
-   * @param op2 second opcode for the coprocessor
-   * @param crd coprocessor destination register
-   * @param crn coprocessor first operand register
-   * @param crm coprocessor second operand register
-   */
-  void CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
-                              uint32_t crd, uint32_t crn, uint32_t crm);
-  /** Move to Coprocessor from ARM register
-   * Copies the value from the rd ARM register to the coprocessor cp_num 
-   *   register crn (and depending on the opcodes to crm)
-   * 
-   * @param cp_num the coprocessor for which the move operation is requested
-   * @param op1 first opcode for the coprocessor
-   * @param op2 second opcode for the coprocessor
-   * @param rd the index of the ARM register whose value will be copied
-   * @param crn the destination coprocessor register
-   * @param crm the additional destination or source coprocessor register
-   */
-  void MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
-                         uint32_t rd, uint32_t crn, uint32_t crm);
-  /** Move to ARM register from Coprocessor.
-   * Transfers a value from the coprocessor cp_num to an ARM register or to 
-   *   the condition flags
-   * 
-   * @param cp_num the coprocessor for the which the move operation is 
-   *   requested
-   * @param op1 first opcode for the coprocessor
-   * @param op2 second opcode for the coprocessor
-   * @param rd the destination ARM register
-   * @param crn specifies the coprocessor register that contains the first 
-   *   operand for the instruction
-   * @param crm additional coprocessor source or destination register 
-   */
-  void MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
-                           uint32_t rd, uint32_t crn, uint32_t crm);
-
-  /**************************************************************/
-  /* Coprocessor methods required by the isa          END       */
-  /**************************************************************/
-
-  /**************************************************************/
-  /* cp15 to cpu interface                           START      */
-  /**************************************************************/
-
-  /** Get caches info
-   *
-   */
-  void GetCacheInfo(bool &unified, 
-                    uint32_t &isize, uint32_t &iassoc, uint32_t &ilen,
-                    uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen);
-  /** Drain write buffer.
-   * Perform a memory barrier by draining the write buffer.
-   */
-  void DrainWriteBuffer();
-  /** Invalidate ICache single entry using MVA
-   *
-   * Perform an invalidation of a single entry in the ICache using the
-   *   given address in MVA format.
-   *
-   * @param mva the address to invalidate
-   */
-  void InvalidateICacheSingleEntryWithMVA(uint32_t mva);
-  /** Clean DCache single entry using MVA
-   *
-   * Perform a clean of a single entry in the DCache using the given
-   *   address in MVA format.
-   *
-   * @param mva the address to clean
-   * @param invalidate true if the line needs to be also invalidated
-   */
-  void CleanDCacheSingleEntryWithMVA(uint32_t mva, bool invalidate);
-  /** Invalidate the caches.
-   * Perform a complete invalidation of the instruction cache and/or the 
-   *   data cache.
-   *
-   * @param insn_cache whether or not the instruction cache should be 
-   *   invalidated
-   * @param data_cache whether or not the data cache should be invalidated
-   */
-  void InvalidateCache(bool insn_cache, bool data_insn);
-  /** Invalidate the TLBs.
-   * Perform a complete invalidation of the unified TLB.
-   */
-  void InvalidateTLB();
-  /** Test and clean DCache.
-   * Perform a test and clean operation of the DCache.
-   *
-   * @return return true if the complete cache is clean, false otherwise
-   */
-  bool TestAndCleanDCache();
-  /** Test, clean and invalidate DCache.
-   * Perform a test and clean operation of the DCache, and invalidate the
-   *   complete cache if it is clean.
-   *
-   * @return return true if the complete cache is clean, false otherwise
-   */
-  bool TestCleanAndInvalidateDCache();
-
-  /**************************************************************/
-  /* cp15 to cpu interface                            END       */
-  /**************************************************************/
 
   /** Software Interrupt
    *  This method is called by SWI instructions to handle software interrupts.
@@ -601,9 +445,6 @@ protected:
 
   /** The exceptions that have occured */
   uint32_t exception;
-
-  /** CP15 */
-  CP15 cp15;
 
   /** Instruction counter */
   uint64_t instruction_counter;

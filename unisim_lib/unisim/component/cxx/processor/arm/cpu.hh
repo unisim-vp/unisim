@@ -38,6 +38,8 @@
 #include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/extregbank.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/component/cxx/processor/arm/cp15.hh>
+#include <unisim/component/cxx/processor/arm/cp15interface.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
@@ -81,6 +83,7 @@ template <> struct ModeInfo<0>
 template <typename _CONFIG_>
 struct CPU
   : public virtual unisim::kernel::service::Object
+  , public unisim::component::cxx::processor::arm::CP15Interface
 {
   typedef _CONFIG_ CONFIG;
   typedef typename CONFIG::FPSCR fpscr_type;
@@ -457,6 +460,79 @@ struct CPU
     exception = mask;
   }
   
+  /**************************************************************/
+  /* cp15 to cpu interface                           START      */
+  /**************************************************************/
+
+  /** Get caches info
+   *
+   */
+  void GetCacheInfo(bool &unified, 
+                    uint32_t &isize, uint32_t &iassoc, uint32_t &ilen,
+                    uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen);
+  /** Drain write buffer.
+   * Perform a memory barrier by draining the write buffer.
+   */
+  void DrainWriteBuffer();
+  /** Invalidate ICache single entry using MVA
+   *
+   * Perform an invalidation of a single entry in the ICache using the
+   *   given address in MVA format.
+   *
+   * @param mva the address to invalidate
+   */
+  void InvalidateICacheSingleEntryWithMVA(uint32_t mva);
+  /** Clean DCache single entry using MVA
+   *
+   * Perform a clean of a single entry in the DCache using the given
+   *   address in MVA format.
+   *
+   * @param mva the address to clean
+   * @param invalidate true if the line needs to be also invalidated
+   */
+  void CleanDCacheSingleEntryWithMVA(uint32_t mva, bool invalidate);
+  /** Invalidate the caches.
+   * Perform a complete invalidation of the instruction cache and/or the 
+   *   data cache.
+   *
+   * @param insn_cache whether or not the instruction cache should be 
+   *   invalidated
+   * @param data_cache whether or not the data cache should be invalidated
+   */
+  void InvalidateCache(bool insn_cache, bool data_insn);
+  /** Invalidate the TLBs.
+   * Perform a complete invalidation of the unified TLB.
+   */
+  void InvalidateTLB();
+  /** Test and clean DCache.
+   * Perform a test and clean operation of the DCache.
+   *
+   * @return return true if the complete cache is clean, false otherwise
+   */
+  bool TestAndCleanDCache();
+  /** Test, clean and invalidate DCache.
+   * Perform a test and clean operation of the DCache, and invalidate the
+   *   complete cache if it is clean.
+   *
+   * @return return true if the complete cache is clean, false otherwise
+   */
+  bool TestCleanAndInvalidateDCache();
+
+  /**************************************************************/
+  /* cp15 to cpu interface                            END       */
+  /**************************************************************/
+
+  uint32_t CP15ReadRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm )
+  {
+    return cp15.ReadRegister( opcode1, opcode2, crn, crm );
+  }
+  
+  void     CP15WriteRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, uint32_t value )
+  {
+    return cp15.WriteRegister( opcode1, opcode2, crn, crm, value );
+  }
+    
+
   /*
    * ARM architecture constants
    */
@@ -542,6 +618,9 @@ protected:
    *   NOTE: exceptions are defined at cxx/arm/exception.hh
    */
   uint32_t exception;
+
+  /** CP15 */
+  CP15 cp15;
 
 public:
   // VFP/NEON registers
