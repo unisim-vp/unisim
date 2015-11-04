@@ -215,75 +215,6 @@ CPU::~CPU()
   registers_registry.clear();
 }
 
-/** Get SPSR index from current running mode
- *
- * @return the SPSR index from current running mode
- */
-uint32_t 
-CPU::
-GetSPSRIndex()
-{
-  uint32_t rm = 0;
-  uint32_t run_mode = cpsr.Get( M );
-  switch (run_mode)
-    {
-    case USER_MODE: case SYSTEM_MODE: {
-      /* In user or system mode, access to SPSR are unpredictable,
-       * thus the code whould never try to access SPSR in such
-       * modes. */
-      
-      logger << DebugWarning
-             << "trying to access SPSR while running in "
-             << ((run_mode == USER_MODE) ? "user" : "system")
-             << " mode with the following instruction: "
-             << std::endl
-             << "Location: " << __FUNCTION__
-             << ":" << __FILE__
-             << ":" << __LINE__
-             << EndDebugWarning;
-      Stop(-1);
-    } break;
-    case SUPERVISOR_MODE:
-      rm = 0;
-      break;
-    case ABORT_MODE:
-      rm = 1;
-      break;
-    case UNDEFINED_MODE:
-      rm = 2;
-      break;
-    case IRQ_MODE:
-      rm = 3;
-      break;
-    case FIQ_MODE:
-      rm = 4;
-      break;
-    default:
-      assert(0);
-      break;
-    }
-	
-  return rm;
-}
-
-/** Copy the value of current SPSR register into CPSR.
- */
-void 
-CPU::MoveSPSRtoCPSR()
-{
-  /* SPSR needs to be moved to CPSR
-   * This means that we need to change the register mapping if the running mode has changed
-   */
-  uint32_t src_mode = CPSR().Get( M );
-  uint32_t dst_mode = SPSR().Get( M );
-  CPSR().bits() = SPSR().bits();
-  if (src_mode != dst_mode)
-    {
-      GetMode(src_mode).Swap(*this); // OUT
-      GetMode(dst_mode).Swap(*this); // IN
-    }
-}
-
 /** Object setup method.
  * This method is required for all UNISIM objects and will be called during
  *   the setup phase.
@@ -1251,6 +1182,8 @@ CPU::MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
 
 #define CP15_ENCODE( CODE, OP1, CRN, CRM, OP2 ) ((CODE<<16) | (OP1<<12) | (CRN<<8) | (CRM<<4) | (OP2<<0))
 
+#define READ_THREAD_ID_PRIVILEGED_READ_WRITE_ONLY_REGISTER CP15_ENCODE( 1, 0, 13, 0, 3 )
+
 uint32_t
 CPU::Coproc_GetOneWord( unsigned code, unsigned cp_num, unsigned op1, unsigned op2, unsigned crn, unsigned crm )
 {
@@ -1262,7 +1195,7 @@ CPU::Coproc_GetOneWord( unsigned code, unsigned cp_num, unsigned op1, unsigned o
       switch (CP15_ENCODE( code, op1, crn, crm, op2 ))
         {
         default: throw 0;
-        case CP15_ENCODE( 1, 0, 13, 0, 3 ):
+        case READ_THREAD_ID_PRIVILEGED_READ_WRITE_ONLY_REGISTER:
            /* TODO: check if there exist two uncoherent value (ex. memory and register). */
           return MemRead32( 0xffff0ff0 );
         }

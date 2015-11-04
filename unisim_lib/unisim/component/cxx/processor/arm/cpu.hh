@@ -254,6 +254,8 @@ struct CPU
     return *(itr->second);
   }
   
+  Mode& CurrentMode() { return GetMode(cpsr.Get(M)); }
+  
   /** Get the value contained by a banked register GPR.  Returns the
    * value contained by a banked register.  It is the same than GetGPR
    * but mode can be different from the running mode.
@@ -465,14 +467,15 @@ struct CPU
   static unsigned int const SP_reg = 13;
 
   /* masks for the different running modes */
-  static uint32_t const RUNNING_MODE_MASK = 0x1F;
-  static uint32_t const USER_MODE = 0x10;
-  static uint32_t const FIQ_MODE = 0x11;
-  static uint32_t const IRQ_MODE = 0x12;
-  static uint32_t const SUPERVISOR_MODE = 0x13;
-  static uint32_t const ABORT_MODE = 0x17;
-  static uint32_t const UNDEFINED_MODE = 0x1B;
-  static uint32_t const SYSTEM_MODE = 0x1F;
+  static uint32_t const USER_MODE = 0b10000;
+  static uint32_t const FIQ_MODE = 0b10001;
+  static uint32_t const IRQ_MODE = 0b10010;
+  static uint32_t const SUPERVISOR_MODE = 0b10011;
+  static uint32_t const MONITOR_MODE = 0b10110;
+  static uint32_t const ABORT_MODE = 0b10111;
+  static uint32_t const HYPERVISOR_MODE = 0b11010;
+  static uint32_t const UNDEFINED_MODE = 0b11011;
+  static uint32_t const SYSTEM_MODE = 0b11111;
   /* values of the different condition codes */
   static uint32_t const COND_EQ = 0x00;
   static uint32_t const COND_NE = 0x01;
@@ -489,7 +492,9 @@ struct CPU
   static uint32_t const COND_GT = 0x0c;
   static uint32_t const COND_LE = 0x0d;
   static uint32_t const COND_AL = 0x0e;
-
+  /* mask for valid bits in processor control and status registers */
+  static uint32_t const PSR_UNALLOC_MASK = 0xff0fffff;
+  
   /** Data cache */
   Cache dcache;
 		

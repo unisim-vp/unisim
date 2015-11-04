@@ -70,6 +70,7 @@ namespace arm {
       T const mask = ((~T(0)) >> ((8*sizeof (T)) - size)) << pos;
       reg = (reg & ~mask) | ((value << pos) & mask);
     }
+    template <typename T> void Set( T& reg, bool ones ) const { this->Set( reg, ones ? ~T( 0 ) : T( 0 )); }
   };
   
   /* Special bitfields */
@@ -140,6 +141,7 @@ namespace arm {
   struct PSR
   {
     PSR() : m_value( 0 ) {}
+    PSR( uint32_t value ) : m_value( value ) {}
   
     /* Raw bits */
     uint32_t&   bits() { return m_value; }

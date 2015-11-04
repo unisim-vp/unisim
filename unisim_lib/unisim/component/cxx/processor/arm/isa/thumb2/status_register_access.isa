@@ -50,14 +50,65 @@ mrs.disasm = {
 };
 
 mrs.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cpu.itcond())) return;
   
   switch (sr) {
-  case 15: cpu.SetGPR(rd, cpu.CPSR().bits()); break;
-  case 79: cpu.SetGPR(rd, cpu.SPSR().bits()); break;
   default: cpu.UnpredictableInsnBehaviour(); break;
+  case 0b0001111: cpu.SetGPR(rd, cpu.CPSR().bits()); break;
+  
+  case 0b0100000: cpu.GetBankedRegister(cpu.USER_MODE, 8); break;
+  case 0b0100001: cpu.GetBankedRegister(cpu.USER_MODE, 9); break;
+  case 0b0100010: cpu.GetBankedRegister(cpu.USER_MODE, 10); break;
+  case 0b0100011: cpu.GetBankedRegister(cpu.USER_MODE, 11); break;
+  case 0b0100100: cpu.GetBankedRegister(cpu.USER_MODE, 12); break;
+  case 0b0100101: cpu.GetBankedRegister(cpu.USER_MODE, 13); break;
+  case 0b0100110: cpu.GetBankedRegister(cpu.USER_MODE, 14); break;
+  
+  case 0b0101000: cpu.GetBankedRegister(cpu.FIQ_MODE, 8); break;
+  case 0b0101001: cpu.GetBankedRegister(cpu.FIQ_MODE, 9); break;
+  case 0b0101010: cpu.GetBankedRegister(cpu.FIQ_MODE, 10); break;
+  case 0b0101011: cpu.GetBankedRegister(cpu.FIQ_MODE, 11); break;
+  case 0b0101100: cpu.GetBankedRegister(cpu.FIQ_MODE, 12); break;
+  case 0b0101101: cpu.GetBankedRegister(cpu.FIQ_MODE, 13); break;
+  case 0b0101110: cpu.GetBankedRegister(cpu.FIQ_MODE, 14); break;
+  case 0b0110000: cpu.GetBankedRegister(cpu.IRQ_MODE, 14); break;
+  case 0b0110001: cpu.GetBankedRegister(cpu.IRQ_MODE, 13); break;
+  
+  case 0b0110010: cpu.GetBankedRegister(cpu.SUPERVISOR_MODE, 14); break;
+  case 0b0110011: cpu.GetBankedRegister(cpu.SUPERVISOR_MODE, 13); break;
+  
+  case 0b0110100: cpu.GetBankedRegister(cpu.ABORT_MODE, 14); break;
+  case 0b0110101: cpu.GetBankedRegister(cpu.ABORT_MODE, 13); break;
+  
+  case 0b0110110: cpu.GetBankedRegister(cpu.UNDEFINED_MODE, 14); break;
+  case 0b0110111: cpu.GetBankedRegister(cpu.UNDEFINED_MODE, 13); break;
+  
+  case 0b0111100: cpu.GetBankedRegister(cpu.MONITOR_MODE, 14); break;
+  case 0b0111101: cpu.GetBankedRegister(cpu.MONITOR_MODE, 13); break;
+  
+  case 0b0111110: cpu.GetBankedRegister(cpu.HYPERVISOR_MODE, 14); break;
+  case 0b0111111: cpu.GetBankedRegister(cpu.HYPERVISOR_MODE, 13); break;
+  
+  case 0b1001111: cpu.CurrentMode().GetSPSR(); break;
+  case 0b1101110: cpu.GetMode(cpu.FIQ_MODE).GetSPSR(); break;
+  case 0b1110000: cpu.GetMode(cpu.IRQ_MODE).GetSPSR(); break;
+  case 0b1110010: cpu.GetMode(cpu.SUPERVISOR_MODE).GetSPSR(); break;
+  case 0b1110100: cpu.GetMode(cpu.ABORT_MODE).GetSPSR(); break;
+  case 0b1110110: cpu.GetMode(cpu.UNDEFINED_MODE).GetSPSR(); break;
+  case 0b1111100: cpu.GetMode(cpu.MONITOR_MODE).GetSPSR(); break;
+  case 0b1111110: cpu.GetMode(cpu.HYPERVISOR_MODE).GetSPSR(); break;
   }
 };
+
+// mrs.execute = {
+//   if (not CheckCondition(cpu, cond)) return;
+  
+//   switch (sr) {
+//   case 15: cpu.SetGPR(rd, cpu.CPSR().bits()); break;
+//   case 79: cpu.SetGPR(rd, cpu.SPSR().bits()); break;
+//   default: cpu.UnpredictableInsnBehaviour(); break;
+//   }
+// };
 
 // op mrs_IAPSRr( 0b11110011[8]: 0b111[3]: ?[1]: ?[4]:> <: 0b1000[4]: rd[4]: 0b00000001[8] );
 // mrs_IAPSRr.disasm = { buffer << "mrs\t" << DisasmRegister(rd) << ", IAPSR"; };
@@ -113,16 +164,22 @@ msr_reg.disasm = {
   buffer << "msr\t" << DisasmSpecReg(sr) << ", " << DisasmRegister(rn);
 };
 
-op msr_reg_psr( 0b11110011[8]: 0b100[3]: r[1]: rn[4]:> <: 0b1000[4]: mask[4]: 0b00000000[8] );
+op msr_reg_psr( 0b11110011[8]: 0b100[3]: write_spsr[1]: rn[4]:> <: 0b1000[4]: mask[4]: 0b00000000[8] );
 
 msr_reg_psr.disasm = {
-  buffer << "msr\t" << DisasmPSRMask(r,mask) << ", " << DisasmRegister(rn);
+  buffer << "msr\t" << DisasmPSRMask(write_spsr,mask) << ", " << DisasmRegister(rn);
 };
 
 msr_reg_psr.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  ComputeMoveToPSR( cpu, cpu.GetGPR(rn), mask, r );
+  if (write_spsr) {
+    SPSRWriteByInstr( cpu, cpu.GetGPR(rn), mask );
+  } else {
+    CPSRWriteByInstr( cpu, cpu.GetGPR(rn), mask, false ); // Does not affect execution state bits other than E
+    if ((cpu.CPSR().Get(M) == cpu.HYPERVISOR_MODE) and cpu.CPSR().Get(J) and cpu.CPSR().Get(T)) // Cannot return to Hyp mode and ThumbEE state
+      cpu.UnpredictableInsnBehaviour();
+  }
 };
 
 // op msr_IAPSRr( 0b11110011[8]: 0b100[3]: ?[1]: ra[4]:> <: 0b1000[4]: ?[4]: 0b00000001[8] );

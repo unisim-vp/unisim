@@ -98,6 +98,8 @@ struct ARMv7emu
   static bool const     insnsRM = false;
   static bool const     insnsT2 = true;
   static bool const     insns7  = true;
+  static bool const     hasVFP  = true;
+  static bool const     hasAdvSIMD = false;
 };
 
 struct CPU
@@ -357,22 +359,6 @@ struct CPU
    * @param insn the resulting instruction word (output reference)
    */
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn);
-  
-  /** Get the SPSR register according to current mode.
-   *
-   * @return the SPSR structured register according to current mode.
-   */
-  PSR& SPSR() { return spsr[GetSPSRIndex()]; };
-  
-  /** Get SPSR index from current running mode
-   *
-   * @return the SPSR index from current running mode
-   */
-  uint32_t GetSPSRIndex();
-
-  /** Copy the value of current SPSR register into CPSR.
-   */
-  void MoveSPSRtoCPSR();
   
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
   {

@@ -203,77 +203,63 @@ namespace arm {
     core.CPSR().Set( C, ((lhs & (~rhs)) | ((~res) & (lhs | (~rhs)))) >> 31 );
     core.CPSR().Set( V, ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
   }
+  
+  template <typename coreT>
+  void
+  CPSRWriteByInstr( coreT& core, uint32_t value, uint8_t mask, bool is_excpt_return )
+  {
+    uint32_t write_mask =
+      ((mask & 1 ? 0xff : 0) <<  0) |
+      ((mask & 2 ? 0xff : 0) <<  8) |
+      ((mask & 4 ? 0xff : 0) << 16) |
+      ((mask & 8 ? 0xff : 0) << 24);
+    
+    if (value & write_mask & core.PSR_UNALLOC_MASK) core.UnpredictableInsnBehaviour();
+    
+    bool const is_secure = true; // IsSecure()
+    bool const nmfi = false; // Non Maskable FIQ (SCTLR.NMFI == '1');
+    bool const scr_aw = false; // prevents Non-secure masking of asynchronous aborts that are taken to Monitor mode
+    bool const scr_fw = false; // prevents Non-secure masking of FIQs that are taken to Monitor mode
+    bool const have_virt_ext = false; // HaveVirtExt()
+
+    bool privileged = (core.CPSR().Get(M) != core.USER_MODE);
+    
+    // ITSTATE, ISETSTATE are only written when returning from exception
+    RegisterField<10,6>().Set( write_mask, is_excpt_return ); // IT<7:2>
+    RegisterField<25,2>().Set( write_mask, is_excpt_return ); // IT<1:0>
+    J.Set( write_mask, is_excpt_return );
+    T.Set( write_mask, is_excpt_return );
+    
+    A.Set( write_mask, privileged and (is_secure or  scr_aw or have_virt_ext) );
+    I.Set( write_mask, privileged );
+    F.Set( write_mask, privileged and (not nmfi or not F.Get( value )) and (is_secure or scr_fw or have_virt_ext) );
+    M.Set( write_mask, privileged );
+    
+    // TODO: Check for attempts to enter modes only permitted in
+    // Secure state from Non-secure state. These are Monitor mode
+    // ('10110'), and FIQ mode ('10001') if the Security Extensions
+    // have reserved it. The definition of UNPREDICTABLE does not
+    // permit the resulting behavior to be a security hole.
+
+    uint32_t new_cpsr = (core.CPSR().Get( ALL32 ) & ~write_mask) | (value & write_mask);
+    
+    core.CurrentMode().Swap(core); // OUT
+    core.CPSR().Set( ALL32, new_cpsr );
+    core.CurrentMode().Swap(core); // IN
+  }
 
   template <typename coreT>
   void
-  ComputeMoveToPSR( coreT& core, uint32_t operand, uint32_t mask, bool isSPSR )
+  SPSRWriteByInstr( coreT& core, uint32_t value, uint8_t mask )
   {
-    // static uint32_t const msr_unallocmask = 0x06ffff00UL; // Constant from DGP, ARMv5?
-    // static uint32_t const msr_usermask    = 0xf8000000UL; // Constant from DGP, ARMv5?
-    // static uint32_t const msr_privmask    = 0x000000dfUL; // Constant from DGP, ARMv5?
-    // static uint32_t const msr_statemask   = 0x01000020UL; // Constant from DGP, ARMv5?
-    
-    /* TODO: all the following constant should be taken from the
-     * config-templated CPU...
-     */
-    static uint32_t const msr_unallocmask = 0x00f00000UL;
-    static uint32_t const msr_usermask    = 0xf80f0000UL;
-    static uint32_t const msr_privmask    = 0x000000dfUL;
-    static uint32_t const msr_statemask   = 0x01000020UL;
-    
-    if ( operand & msr_unallocmask ) {
-      core.UnpredictableInsnBehaviour();
-      return;
-    }
-  
-    /* creating the byte mask */
-    uint32_t byte_mask = 0;
-    if ((mask & 0x01) == 0x01) byte_mask |= 0x000000ff;
-    if ((mask & 0x02) == 0x02) byte_mask |= 0x0000ff00;
-    if ((mask & 0x04) == 0x04) byte_mask |= 0x00ff0000;
-    if ((mask & 0x08) == 0x08) byte_mask |= 0xff000000;
-  
-    uint32_t run_mode = core.CPSR().Get( M ); /* get running mode */
-    if (isSPSR == 0)
-      {
-        uint32_t reg_mask = 0;
-        if ( run_mode != core.USER_MODE ) // we are in a privileged mode
-          {
-            if ( operand & msr_statemask ) {
-              core.UnpredictableInsnBehaviour();
-              return;
-            }
-            reg_mask = byte_mask &
-              ( msr_usermask | msr_privmask );
-          }
-        else
-          {
-            reg_mask = byte_mask & msr_usermask;
-          }
-        uint32_t reg = (core.CPSR().bits() & ~reg_mask) | (operand & reg_mask);
-        core.CPSR().bits() = reg;
-      
-        /* check if the running mode did change, if so switch registers */
-        uint32_t new_run_mode = reg & core.RUNNING_MODE_MASK;
-        if ( run_mode != new_run_mode ) {
-          core.GetMode(run_mode).Swap(core); // OUT
-          core.GetMode(new_run_mode).Swap(core); // IN
-        }
-      }
-    else // isSPSR == 1
-      {
-        // check that the mode has SPSR
-        if ( !((run_mode == core.USER_MODE) || (run_mode == core.SYSTEM_MODE)) )
-          {
-            uint32_t reg_mask = byte_mask & (msr_usermask | msr_privmask | msr_statemask);
-            uint32_t reg = (core.SPSR().bits() & ~reg_mask) | (operand & reg_mask);
-            core.SPSR().bits() = reg;
-          }
-        else {
-          core.UnpredictableInsnBehaviour();
-          return;
-        }
-      }
+    uint32_t write_mask =
+      ((mask & 1 ? 0xff : 0) <<  0) |
+      ((mask & 2 ? 0xff : 0) <<  8) |
+      ((mask & 4 ? 0xff : 0) << 16) |
+      ((mask & 8 ? 0xff : 0) << 24);
+    uint32_t spsr = core.CurrentMode().GetSPSR();
+    spsr = (spsr & ~write_mask) | (value & write_mask);
+    core.CurrentMode().SetSPSR( spsr );
   }
 
   struct LSMIter
