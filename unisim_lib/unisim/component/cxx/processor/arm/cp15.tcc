@@ -268,6 +268,7 @@ CP15::ReadRegister( CORE& core, uint8_t opcode1, uint8_t opcode2, uint8_t crn, u
             << std::endl;
 #endif // CP15__DEBUG
           handled = true;
+          result = 0;
           if ( core.TestAndCleanDCache() )
             result |= 0x40000000UL;
           else
@@ -285,6 +286,7 @@ CP15::ReadRegister( CORE& core, uint8_t opcode1, uint8_t opcode2, uint8_t crn, u
             << std::endl;
 #endif // CP15__DEBUG
           handled = true;
+          result = 0;
           if ( core.TestCleanAndInvalidateDCache() )
             result |= 0x40000000UL;
           else
