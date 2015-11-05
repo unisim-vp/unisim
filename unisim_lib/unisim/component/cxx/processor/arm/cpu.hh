@@ -39,10 +39,10 @@
 #include <unisim/component/cxx/processor/arm/extregbank.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
-#include <unisim/component/cxx/processor/arm/cp15interface.hh>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
-#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <map>
 #include <inttypes.h>
 
@@ -51,27 +51,6 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-
-/** ModeInfo: compile time generation of ARM Modes parameters
- *
- * This meta class generates at compile-time parameters and structure
- * of Banked Registers for ARM Modes.
- */
-
-template <uint32_t MAPPED>
-struct ModeInfo
-{
-  static uint32_t const next = MAPPED & (MAPPED-1);
-  static uint32_t const count = 1 + ModeInfo<next>::count;
-  static uint32_t const flag = MAPPED ^ next;
-  static unsigned GetBRIndex( uint32_t regflag ) { if (regflag == flag) return 0; return 1 + ModeInfo<next>::GetBRIndex( regflag ); }
-};
-
-template <> struct ModeInfo<0>
-{
-  static uint32_t const count = 0;
-  static unsigned GetBRIndex( uint32_t regflag ) { throw "Illegal Banked Register"; return 0; }
-};
 
 /** Base class for the ARM family.
  *
@@ -83,15 +62,84 @@ template <> struct ModeInfo<0>
 template <typename _CONFIG_>
 struct CPU
   : public virtual unisim::kernel::service::Object
-  , public unisim::component::cxx::processor::arm::CP15Interface
 {
+  /*
+   * ARM architecture constants
+   */
+    
+  /* specific register indices */
+  static unsigned int const PC_reg = 15;
+  static unsigned int const LR_reg = 14;
+  static unsigned int const SP_reg = 13;
+
+  /* masks for the different running modes */
+  static uint32_t const USER_MODE = 0b10000;
+  static uint32_t const FIQ_MODE = 0b10001;
+  static uint32_t const IRQ_MODE = 0b10010;
+  static uint32_t const SUPERVISOR_MODE = 0b10011;
+  static uint32_t const MONITOR_MODE = 0b10110;
+  static uint32_t const ABORT_MODE = 0b10111;
+  static uint32_t const HYPERVISOR_MODE = 0b11010;
+  static uint32_t const UNDEFINED_MODE = 0b11011;
+  static uint32_t const SYSTEM_MODE = 0b11111;
+  /* values of the different condition codes */
+  static uint32_t const COND_EQ = 0x00;
+  static uint32_t const COND_NE = 0x01;
+  static uint32_t const COND_CS_HS = 0x02;
+  static uint32_t const COND_CC_LO = 0x03;
+  static uint32_t const COND_MI = 0x04;
+  static uint32_t const COND_PL = 0x05;
+  static uint32_t const COND_VS = 0x06;
+  static uint32_t const COND_VC = 0x07;
+  static uint32_t const COND_HI = 0x08;
+  static uint32_t const COND_LS = 0x09;
+  static uint32_t const COND_GE = 0x0a;
+  static uint32_t const COND_LT = 0x0b;
+  static uint32_t const COND_GT = 0x0c;
+  static uint32_t const COND_LE = 0x0d;
+  static uint32_t const COND_AL = 0x0e;
+  /* mask for valid bits in processor control and status registers */
+  static uint32_t const PSR_UNALLOC_MASK = 0xff0fffff;
+  /* Number of logic registers */
+  static unsigned const num_log_gprs = 16;
+  
+  /** Base class for the ARM Modes
+   *
+   * This class is the base for all ARM Modes specifying the interface
+   * of Mode related operation. Basically it specifies accessors for
+   * banked registers and SPSR. It also introduce an internal swaping
+   * mechanism to save/restore bancked registers.
+   */
+  
+  struct Mode
+  {
+    Mode( char const* _suffix ) : suffix( _suffix ) {} char const* suffix;
+    virtual ~Mode() {}
+    virtual void     SetBR( unsigned index, uint32_t value ) { throw 0; };
+    virtual uint32_t GetBR( unsigned index ) { throw 0; return 0; };
+    virtual void     SetSPSR(uint32_t value ) { throw 0; };
+    virtual uint32_t GetSPSR() { throw 0; return 0; };
+    virtual void     Swap( CPU& cpu ) {};
+  };
+  
   typedef _CONFIG_ CONFIG;
   typedef typename CONFIG::FPSCR fpscr_type;
   typedef typename CONFIG::F64   F64;
   typedef typename CONFIG::F32   F32;
   typedef typename CONFIG::U64   U64;
   typedef typename CONFIG::U32   U32;
+
+  //=====================================================================
+  //=                       Logger                                      =
+  //=====================================================================
   
+  /** Unisim logging services. */
+  unisim::kernel::logger::Logger logger;
+  
+  //=====================================================================
+  //=                  public service imports/exports                   =
+  //=====================================================================
+		
   //=====================================================================
   //=                    Constructor/Destructor                         =
   //=====================================================================
@@ -111,47 +159,6 @@ struct CPU
     for (typename ModeMap::iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr)
       delete itr->second;
   }
-  
-  /** ARM modes (Banked Registers)
-   * At any given running mode only 16 registers are accessible.
-   * The following list indicates the mapping per running modes.
-   * - user:           0-14 (R0-R14),                  15 (PC)
-   * - system:         0-14 (R0-R14),                  15 (PC)
-   * - supervisor:     0-12 (R0-R12), 16-17 (R13-R14), 15 (PC)
-   * - abort:          0-12 (R0-R12), 18-19 (R13-R14), 15 (PC)
-   * - undefined:      0-12 (R0-R12), 20-21 (R13-R14), 15 (PC)
-   * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
-   * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
-   */
-  struct Mode
-  {
-    Mode( char const* _suffix ) : suffix( _suffix ) {} char const* suffix;
-    virtual ~Mode() {}
-    virtual void     SetBR( unsigned index, uint32_t value ) { throw 0; };
-    virtual uint32_t GetBR( unsigned index ) { throw 0; return 0; };
-    virtual void     SetSPSR(uint32_t value ) { throw 0; };
-    virtual uint32_t GetSPSR() { throw 0; return 0; };
-    virtual void     Swap( CPU& cpu ) {};
-  };
-  
-  template <uint32_t MAPPED>
-  struct BankedMode : public Mode
-  {
-    BankedMode( char const* _suffix ) : Mode( _suffix ) {}
-    uint32_t banked_regs[ModeInfo<MAPPED>::count];
-    uint32_t spsr;
-
-    virtual void     SetBR( unsigned index, uint32_t value ) { banked_regs[ModeInfo<MAPPED>::GetBRIndex( uint32_t(1) << index )] = value; };
-    virtual uint32_t GetBR( unsigned index ) { return banked_regs[ModeInfo<MAPPED>::GetBRIndex( uint32_t(1) << index )]; };
-    virtual void     SetSPSR(uint32_t value ) { spsr = value; };
-    virtual uint32_t GetSPSR() { return spsr; };
-    virtual void     Swap( CPU& cpu )
-    {
-      for (unsigned idx = 0, bidx = 0; idx < num_log_gprs; ++idx)
-        if ((MAPPED >> idx) & 1)
-          std::swap( banked_regs[bidx++], cpu.gpr[idx] );
-    }
-  };
   
   /**************************************************************/
   /* Endian variables and methods                         START */
@@ -460,16 +467,14 @@ struct CPU
     exception = mask;
   }
   
-  /**************************************************************/
-  /* cp15 to cpu interface                           START      */
-  /**************************************************************/
+  /**************************/
+  /* CP15 Interface   START */
+  /**************************/
 
   /** Get caches info
    *
    */
-  void GetCacheInfo(bool &unified, 
-                    uint32_t &isize, uint32_t &iassoc, uint32_t &ilen,
-                    uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen);
+  void GetCacheInfo( bool &unified, uint32_t &isize, uint32_t &iassoc, uint32_t &ilen, uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen );
   /** Drain write buffer.
    * Perform a memory barrier by draining the write buffer.
    */
@@ -518,59 +523,32 @@ struct CPU
    */
   bool TestCleanAndInvalidateDCache();
 
-  /**************************************************************/
-  /* cp15 to cpu interface                            END       */
-  /**************************************************************/
-
-  uint32_t CP15ReadRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm )
-  {
-    return cp15.ReadRegister( opcode1, opcode2, crn, crm );
-  }
-  
-  void     CP15WriteRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, uint32_t value )
-  {
-    return cp15.WriteRegister( opcode1, opcode2, crn, crm, value );
-  }
-    
-
-  /*
-   * ARM architecture constants
+  /** Read the value of a CP15 coprocessor register
+   *
+   * @param opcode1 the "opcode1" field of the instruction code 
+   * @param opcode2 the "opcode2" field of the instruction code
+   * @param crn     the "crn" field of the instruction code
+   * @param crm     the "crm" field of the instruction code
+   * @return        the read value
    */
-    
-  /* specific register indices */
-  static unsigned int const PC_reg = 15;
-  static unsigned int const LR_reg = 14;
-  static unsigned int const SP_reg = 13;
-
-  /* masks for the different running modes */
-  static uint32_t const USER_MODE = 0b10000;
-  static uint32_t const FIQ_MODE = 0b10001;
-  static uint32_t const IRQ_MODE = 0b10010;
-  static uint32_t const SUPERVISOR_MODE = 0b10011;
-  static uint32_t const MONITOR_MODE = 0b10110;
-  static uint32_t const ABORT_MODE = 0b10111;
-  static uint32_t const HYPERVISOR_MODE = 0b11010;
-  static uint32_t const UNDEFINED_MODE = 0b11011;
-  static uint32_t const SYSTEM_MODE = 0b11111;
-  /* values of the different condition codes */
-  static uint32_t const COND_EQ = 0x00;
-  static uint32_t const COND_NE = 0x01;
-  static uint32_t const COND_CS_HS = 0x02;
-  static uint32_t const COND_CC_LO = 0x03;
-  static uint32_t const COND_MI = 0x04;
-  static uint32_t const COND_PL = 0x05;
-  static uint32_t const COND_VS = 0x06;
-  static uint32_t const COND_VC = 0x07;
-  static uint32_t const COND_HI = 0x08;
-  static uint32_t const COND_LS = 0x09;
-  static uint32_t const COND_GE = 0x0a;
-  static uint32_t const COND_LT = 0x0b;
-  static uint32_t const COND_GT = 0x0c;
-  static uint32_t const COND_LE = 0x0d;
-  static uint32_t const COND_AL = 0x0e;
-  /* mask for valid bits in processor control and status registers */
-  static uint32_t const PSR_UNALLOC_MASK = 0xff0fffff;
+  uint32_t CP15ReadRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm );
   
+  /** Write a value in a CP15 coprocessor register
+   * 
+   * @param opcode1 the "opcode1" field of the instruction code
+   * @param opcode2 the "opcode2" field of the instruction code
+   * @param crn     the "crn" field of the instruction code
+   * @param crm     the "crm" field of the instruction code
+   * @param val     value to be written to the register
+   */
+  void     CP15WriteRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, uint32_t value );
+    
+  /**************************/
+  /* CP15 Interface     END */
+  /**************************/
+  
+  /** Instruction cache */
+  Cache icache;
   /** Data cache */
   Cache dcache;
 		
@@ -605,7 +583,6 @@ protected:
   ModeMap modes;
   
   /** Storage for the logical registers */
-  const static uint32_t num_log_gprs = 16;
   uint32_t gpr[num_log_gprs];
   uint32_t current_pc, next_pc;
   

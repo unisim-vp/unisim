@@ -437,7 +437,7 @@ unisim/component/cxx/processor/arm/coprocessor_interface.hh \
 unisim/component/cxx/processor/arm/arm926ejs/cpu.hh \
 unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh \
 unisim/component/cxx/processor/arm/cp15.hh \
-unisim/component/cxx/processor/arm/cp15interface.hh \
+unisim/component/cxx/processor/arm/cp15.tcc \
 unisim/component/cxx/processor/arm/cache.hh \
 unisim/component/cxx/processor/arm/arm926ejs/tlb.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \

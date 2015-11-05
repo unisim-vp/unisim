@@ -39,6 +39,7 @@
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/cp15.tcc>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
@@ -48,6 +49,59 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+
+/** ModeInfo: compile time generation for parameters of ARM modes with banked registers
+ *
+ * This meta class generates at compile-time parameters and structure
+ * of Banked Registers for ARM Modes.
+ */
+
+template <uint32_t MAPPED>
+struct ModeInfo
+{
+  static uint32_t const next = MAPPED & (MAPPED-1);
+  static uint32_t const count = 1 + ModeInfo<next>::count;
+  static uint32_t const flag = MAPPED ^ next;
+  static unsigned GetBRIndex( uint32_t regflag ) { if (regflag == flag) return 0; return 1 + ModeInfo<next>::GetBRIndex( regflag ); }
+};
+
+template <>
+struct ModeInfo<0>
+{
+  static uint32_t const count = 0;
+  static unsigned GetBRIndex( uint32_t regflag ) { throw "Illegal Banked Register"; return 0; }
+};
+
+template <class CORE, uint32_t MAPPED>
+struct BankedMode : public CORE::Mode
+{
+  BankedMode( char const* _suffix ) : CORE::Mode( _suffix ) {}
+  uint32_t banked_regs[ModeInfo<MAPPED>::count];
+  uint32_t spsr;
+
+  virtual void     SetBR( unsigned index, uint32_t value ) { banked_regs[ModeInfo<MAPPED>::GetBRIndex( uint32_t(1) << index )] = value; };
+  virtual uint32_t GetBR( unsigned index ) { return banked_regs[ModeInfo<MAPPED>::GetBRIndex( uint32_t(1) << index )]; };
+  virtual void     SetSPSR(uint32_t value ) { spsr = value; };
+  virtual uint32_t GetSPSR() { return spsr; };
+  virtual void     Swap( CORE& cpu )
+  {
+    for (unsigned idx = 0, bidx = 0; idx < cpu.num_log_gprs; ++idx)
+      if ((MAPPED >> idx) & 1) {
+        uint32_t regval = cpu.GetGPR(idx);
+        cpu.SetGPR( idx, banked_regs[bidx] );
+        banked_regs[bidx] = regval;
+        bidx += 1;
+      }
+  }
+};
+  
 
 /** Constructor.
  * Initializes CPU
@@ -60,10 +114,11 @@ namespace arm {
 template <class _CONFIG_>
 CPU<_CONFIG_>::CPU(const char *name, Object *parent)
   : unisim::kernel::service::Object(name, parent)
-  , unisim::component::cxx::processor::arm::CP15Interface()
+  , logger(*this)
+  , icache("icache", this)
   , dcache("dcache", this)
   , exception(0)
-  , cp15(this, "cp15", this)
+  , cp15("cp15", this)
 {
   // Initialize general purpose registers
   for(unsigned int i = 0; i < num_log_gprs; i++)
@@ -71,15 +126,26 @@ CPU<_CONFIG_>::CPU(const char *name, Object *parent)
   this->current_pc = 0;
   this->next_pc = 0;
   
+  /* ARM modes (Banked Registers)
+   * At any given running mode only 16 registers are accessible.
+   * The following list indicates the mapping per running modes.
+   * - user:           0-14 (R0-R14),                  15 (PC)
+   * - system:         0-14 (R0-R14),                  15 (PC)
+   * - supervisor:     0-12 (R0-R12), 16-17 (R13-R14), 15 (PC)
+   * - abort:          0-12 (R0-R12), 18-19 (R13-R14), 15 (PC)
+   * - undefined:      0-12 (R0-R12), 20-21 (R13-R14), 15 (PC)
+   * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
+   * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
+   */
   // Initialize ARM Modes (TODO: modes should be conditionnaly selected based on CONFIG)
   modes[0b10000] = new Mode( "usr" ); // User mode (No banked regs, using main regs)
-  modes[0b10001] = new BankedMode<0b0111111100000000>( "fiq" ); // FIQ mode
-  modes[0b10010] = new BankedMode<0b0110000000000000>( "irq" ); // IRQ mode
-  modes[0b10011] = new BankedMode<0b0110000000000000>( "svc" ); // Supervisor mode
-  modes[0b10110] = new BankedMode<0b0110000000000000>( "mon" ); // Monitor mode
-  modes[0b10111] = new BankedMode<0b0110000000000000>( "abt" ); // Abort mode
-  modes[0b11010] = new BankedMode<0b0110000000000000>( "hyp" ); // Hyp mode
-  modes[0b11011] = new BankedMode<0b0110000000000000>( "und" ); // Undefined mode
+  modes[0b10001] = new BankedMode<CPU,0b0111111100000000>( "fiq" ); // FIQ mode
+  modes[0b10010] = new BankedMode<CPU,0b0110000000000000>( "irq" ); // IRQ mode
+  modes[0b10011] = new BankedMode<CPU,0b0110000000000000>( "svc" ); // Supervisor mode
+  modes[0b10110] = new BankedMode<CPU,0b0110000000000000>( "mon" ); // Monitor mode
+  modes[0b10111] = new BankedMode<CPU,0b0110000000000000>( "abt" ); // Abort mode
+  modes[0b11010] = new BankedMode<CPU,0b0110000000000000>( "hyp" ); // Hyp mode
+  modes[0b11011] = new BankedMode<CPU,0b0110000000000000>( "und" ); // Undefined mode
   modes[0b11111] = new Mode( "sys" ); // System mode (No banked regs, using main regs)
 
   // TODO: Provide access to Banked Registers
@@ -402,9 +468,7 @@ template <class _CONFIG_>
 void
 CPU<_CONFIG_>::DrainWriteBuffer()
 {
-  logger << DebugWarning
-         << "TODO: Drain write buffer once implemented"
-         << EndDebugWarning;
+  logger << DebugWarning << "TODO: Drain write buffer once implemented" << EndDebugWarning;
 }
 
 /** Invalidate ICache single entry using MVA
@@ -420,14 +484,11 @@ CPU<_CONFIG_>::InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
 {
   uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
 
-  if ( unlikely(verbose & 0x02) )
-    {
-      logger << DebugInfo
-             << "Invalidating ICache single entry with MVA:" << std::endl
-             << " - mva               = 0x" << std::hex << init_mva << std::endl
-             << " - cache aligned mva = 0x" << mva << std::dec
-             << EndDebugInfo;
-    }
+  logger << DebugInfo
+         << "Invalidating ICache single entry with MVA:" << std::endl
+         << " - mva               = 0x" << std::hex << init_mva << std::endl
+         << " - cache aligned mva = 0x" << mva << std::dec
+         << EndDebugInfo;
 
   if ( likely(cp15.IsICacheEnabled() && icache.GetSize()) )
     {
@@ -440,22 +501,20 @@ CPU<_CONFIG_>::InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
 
       if ( likely(cache_hit) )
         {
-          if ( unlikely(verbose & 0x02) )
-            logger << DebugInfo
-                   << "ICache hit (set = "
-                   << cache_set << ", way = "
-                   << cache_way << "), invalidating it"
-                   << EndDebugInfo;
+          logger << DebugInfo
+                 << "ICache hit (set = "
+                 << cache_set << ", way = "
+                 << cache_way << "), invalidating it"
+                 << EndDebugInfo;
           icache.SetValid(cache_set, cache_way, 0);
         }
       else
         {
-          if ( unlikely(verbose & 0x02) )
-            logger << DebugInfo
-                   << "ICache miss (set = "
-                   << cache_set
-                   << ")"
-                   << EndDebugInfo;
+          logger << DebugInfo
+                 << "ICache miss (set = "
+                 << cache_set
+                 << "), nothing to do"
+                 << EndDebugInfo;
         }
     }
 }
@@ -475,14 +534,11 @@ CPU<_CONFIG_>::CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
   uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
   uint32_t pa = mva;
 
-  if ( unlikely(verbose & 0x02) )
-    {
-      logger << DebugInfo
-             << "Cleaning DCache single entry with MVA:" << std::endl
-             << " - mva               = 0x" << std::hex << init_mva << std::endl
-             << " - cache aligned mva = 0x" << mva << std::dec
-             << EndDebugInfo;
-    }
+  logger << DebugInfo
+         << "Cleaning DCache single entry with MVA:" << std::endl
+         << " - mva               = 0x" << std::hex << init_mva << std::endl
+         << " - cache aligned mva = 0x" << mva << std::dec
+         << EndDebugInfo;
 
   if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
     {
@@ -495,61 +551,56 @@ CPU<_CONFIG_>::CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
 
       if ( likely(cache_hit) )
         {
-          if ( unlikely(verbose & 0x02) )
-            logger << DebugInfo
-                   << "Cache hit (set = "
-                   << cache_set << ", way = "
-                   << cache_way << ")"
-                   << EndDebugInfo;
+          logger << DebugInfo
+                 << "Cache hit (set = "
+                 << cache_set << ", way = "
+                 << cache_way << ")"
+                 << EndDebugInfo;
           uint8_t cache_dirty = dcache.GetDirty(cache_set, cache_way);
 
           if ( cache_dirty != 0 )
-			{
-              if ( unlikely(verbose & 0x02) )
-                logger << DebugInfo
-                       << "Line is dirty, performing a cleaning"
-                       << EndDebugInfo;
+            {
+              logger << DebugInfo
+                     << "Line is dirty, performing a cleaning"
+                     << EndDebugInfo;
               uint8_t *data = 0;
               // translate the address
               // if ( likely(cp15.IsMMUEnabled()) )
               //   TranslateMVA(mva, pa);
               dcache.GetData(cache_set, cache_way, &data);
-              if ( unlikely(verbose & 0x02) )
-                {
-                  logger << DebugInfo
-                         << "Cleaning cache line:" << std::endl
-                         << " - mva = 0x" << std::hex << mva << std::endl
-                         << " - pa  = 0x" << pa << std::endl
-                         << " - tag = 0x" << cache_tag << std::endl
-                         << " - set = " << std::dec << cache_set << std::endl
-                         << " - way = " << cache_way << std::endl
-                         << " - data =" << std::hex;
-                  for ( unsigned int i = 0; i < dcache.LINE_SIZE; i++ )
-                    logger << " " << (unsigned int)data[i];
-                  logger << std::dec
-                         << EndDebugInfo;
-                }
+              {
+                logger << DebugInfo
+                       << "Cleaning cache line:" << std::endl
+                       << " - mva = 0x" << std::hex << mva << std::endl
+                       << " - pa  = 0x" << pa << std::endl
+                       << " - tag = 0x" << cache_tag << std::endl
+                       << " - set = " << std::dec << cache_set << std::endl
+                       << " - way = " << cache_way << std::endl
+                       << " - data =" << std::hex;
+                for ( unsigned int i = 0; i < dcache.LINE_SIZE; i++ )
+                  logger << " " << (unsigned int)data[i];
+                logger << std::dec
+                       << EndDebugInfo;
+              }
               PrWrite(pa, data, dcache.LINE_SIZE);
               dcache.SetDirty(cache_set, cache_way, 0);
-			}
+            }
           else
-			{
-              if ( unlikely(verbose & 0x02) )
-                logger << DebugInfo
-                       << "Line is already cleaned, doing nothing"
-                       << EndDebugInfo;
-			}
+            {
+              logger << DebugInfo
+                     << "Line is already cleaned, doing nothing"
+                     << EndDebugInfo;
+            }
           if ( invalidate )
             dcache.SetValid(cache_set, cache_way, 0);
         }
       else
         {
-          if ( unlikely(verbose & 0x02) )
-            logger << DebugInfo
-                   << "Cache miss (set = "
-                   << cache_set
-                   << ")"
-                   << EndDebugInfo;
+          logger << DebugInfo
+                 << "Cache miss (set = "
+                 << cache_set
+                 << ")"
+                 << EndDebugInfo;
         }
     }
 }
@@ -588,7 +639,7 @@ void
 CPU<_CONFIG_>::InvalidateTLB()
 {
   // only the tlb needs to be invalidated, do not touch the lockdown tlb
-  tlb.Invalidate();
+  // tlb.Invalidate();
 }
 
 /** Test and clean DCache.
@@ -681,6 +732,36 @@ CPU<_CONFIG_>::TestCleanAndInvalidateDCache()
   if ( cleaned ) dcache.Invalidate();
 
   return cleaned;
+}
+
+/** Read the value of a CP15 coprocessor register
+ *
+ * @param opcode1 the "opcode1" field of the instruction code 
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @param crn     the "crn" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @return        the read value
+ */
+template <class _CONFIG_>
+uint32_t
+CPU<_CONFIG_>::CP15ReadRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm )
+{
+  return cp15.ReadRegister( *this, opcode1, opcode2, crn, crm );
+}
+
+/** Write a value in a CP15 coprocessor register
+ * 
+ * @param opcode1 the "opcode1" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @param crn     the "crn" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @param val     value to be written to the register
+ */
+template <class _CONFIG_>
+void
+CPU<_CONFIG_>::CP15WriteRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, uint32_t value )
+{
+  return cp15.WriteRegister( *this, opcode1, opcode2, crn, crm, value );
 }
 
 } // end of namespace arm

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2010-2015,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,11 +36,10 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CP15_HH__
 
 
+#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/util/endian/endian.hh>
 #include <inttypes.h>
-#include "unisim/component/cxx/processor/arm/cp15interface.hh"
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/util/endian/endian.hh"
 
 namespace unisim {
 namespace component {
@@ -48,22 +47,20 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-class CP15
+struct CP15
   : public unisim::kernel::service::Object
 {
-public:
-  /* TODO check if we really need the pointer to the cpu */
   /** Constructor
    *
-   * @param _cpu the cpu the coprocessor is attached to
+   * @param name   the UNISIM object name of this CP15
+   * @param parent the UNISIM parent object of this CP15
    */
-  CP15( CP15Interface* _cpu, const char *name, unisim::kernel::service::Object *parent = 0 );
-  /** Destructor */
-  ~CP15();
-
+  CP15( const char *name, unisim::kernel::service::Object *parent = 0 );
+  
+  virtual ~CP15() {}
   /** Object setup method.
-   * This method is required for all UNISIM objects and will be called during
-   *   the setup phase.
+   * This method is required for all UNISIM objects and will be called
+   *   during the setup phase.
    * 
    * @return true on success, false otherwise
    */
@@ -71,113 +68,71 @@ public:
 
   /** Read the value of a register
    *
+   * @param core    the CORE this CP15 coprocessor is attached to
    * @param opcode1 the "opcode1" field of the instruction code 
    * @param opcode2 the "opcode2" field of the instruction code
    * @param crn     the "crn" field of the instruction code
    * @param crm     the "crm" field of the instruction code
-   * @param reg     the read value
+   * @return        the read value
    */
-  uint32_t ReadRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm );
+  template <class CORE>
+  uint32_t ReadRegister( CORE& core, uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm );
 
   /** Write a value in a register
    * 
+   * @param core    the CORE this CP15 coprocessor is attached to
    * @param opcode1 the "opcode1" field of the instruction code
    * @param opcode2 the "opcode2" field of the instruction code
    * @param crn     the "crn" field of the instruction code
    * @param crm     the "crm" field of the instruction code
-   * @param val     value to be written in the register
+   * @param val     value to be written to the register
    */
-  void WriteRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, uint32_t value );
-
-  /** Perform a coprocessor operation
-   *
-   * @param opcode1 the "opcode1" field of the instruction code
-   * @param opcode2 the "opcode2" field of the instruction code
-   * @param crd     the "crd" field of the instruction code
-   * @param crn     the "crn" field of the instruction code
-   * @param crm     the "crm" field of the instruction code
-   */
-  void Operation(uint8_t opcode1,
-      uint8_t opcode2,
-      uint8_t crd,
-      uint8_t crn,
-      uint8_t crm);
-
-  /** Perform a coprocessor load
-   *
-   * @param crd     the "crd" field of the instruction code
-   * @param address the address to load data from
-   */
-  void Load(uint8_t crd,
-      uint32_t address);
-
-  /** Perform a coprocessor load
-   *
-   * @param crd     the "crd" field of the instruction code
-   * @param address the address to store the data to
-   */
-  void Store(uint8_t crd,
-      uint32_t address);
-
+  template <class CORE>
+  void WriteRegister( CORE& core, uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, uint32_t value );
+  
   /** Get the endianness of the processor
    *
    * @return the current endianness defined in the control register
    */
-  unisim::util::endian::endian_type
-    GetEndianness() const
+  unisim::util::endian::endian_type GetEndianness() const
   {
-    return 
-      (control_register_c1 & CONTROL_REGISTER_C1_B)
-      ? unisim::util::endian::E_BIG_ENDIAN
-      : unisim::util::endian::E_LITTLE_ENDIAN;
+    return (control_register_c1 & CONTROL_REGISTER_C1_B) ? unisim::util::endian::E_BIG_ENDIAN : unisim::util::endian::E_LITTLE_ENDIAN;
   };
 
   /** Get location of the exception vector
    *
-   * @return different than 0 if CONTROL_REGISTER_C1_V is set, 0 otherwise
+   * @return true if enabled, false otherwise
    */
-  uint32_t GetVINITHI() const
+  bool GetVINITHI() const
   {
-    return 
-      (control_register_c1 & CONTROL_REGISTER_C1_V)
-      ? 1
-      : 0;
+    return bool( control_register_c1 & CONTROL_REGISTER_C1_V );
   }
 
   /** MMU enable/disabled.
    *
-   * @return different than 0 if enabled, 0 otherwise
+   * @return true if enabled, false otherwise
    */
-  uint32_t IsMMUEnabled() const
+  bool IsMMUEnabled() const
   {
-    return 
-      (control_register_c1 & CONTROL_REGISTER_C1_M)
-      ? 1
-      : 0;
+    return bool( control_register_c1 & CONTROL_REGISTER_C1_M );
   }
 
   /** ICache enabled/disabled.
    *
-   * @return different than 0 if enabled, 0 otherwise
+   * @return true if enabled, false otherwise
    */
-  uint32_t IsICacheEnabled() const
+  bool IsICacheEnabled() const
   {
-    return
-      (control_register_c1 & CONTROL_REGISTER_C1_I)
-      ? 1
-      : 0;
+    return bool( control_register_c1 & CONTROL_REGISTER_C1_I );
   }
 
   /** DCache enabled/disabled.
    *
-   * @return different than 0 if enabled, 0 otherwise
+   * @return true if enabled, false otherwise
    */
   uint32_t IsDCacheEnabled() const
   {
-    return 
-      (control_register_c1 & CONTROL_REGISTER_C1_C)
-      ? 1
-      : 0;
+    return bool( control_register_c1 & CONTROL_REGISTER_C1_C );
   }
 
   /** Get the Translation Table Base register value.
@@ -202,8 +157,6 @@ public:
   static const uint32_t FCSE_PID_MASK = 0xfe000000UL;
 
 private:
-  CP15Interface *cpu;
-
   /** String describing the endianness of the processor. */
   std::string bigendinit_string;
   /** UNISIM Parameter to set the default endianness.

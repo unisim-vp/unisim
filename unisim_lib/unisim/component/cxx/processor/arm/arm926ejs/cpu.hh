@@ -39,7 +39,6 @@
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/component/cxx/processor/arm/memory_op.hh>
-#include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/arm926ejs/tlb.hh>
 #include <unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh>
 #include <unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh>
@@ -127,13 +126,6 @@ struct CPU
   static bool const     insnsRM = false;
   static bool const     insnsT2 = false;
 
-  //=====================================================================
-  //=                       Logger                                      =
-  //=====================================================================
-  
-  /** Unisim logging services. */
-  unisim::kernel::logger::Logger logger;
-  
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
@@ -422,12 +414,7 @@ struct CPU
    *   notifiy the processor.
    */
   void UnpredictableInsnBehaviour();
-
-  /** Instruction cache */
-  Cache icache;
-  /** Data cache */
-  Cache dcache;
-
+  
   /** The Lockdown TLB */
   LockdownTLB ltlb;
   /** The TLB */

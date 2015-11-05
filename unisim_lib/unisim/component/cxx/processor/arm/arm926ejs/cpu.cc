@@ -32,20 +32,19 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
-#include "unisim/component/cxx/processor/arm/arm926ejs/cpu.hh"
-#include "unisim/component/cxx/processor/arm/cp15.hh"
-#include "unisim/component/cxx/processor/arm/arm926ejs/tlb.hh"
-#include "unisim/component/cxx/processor/arm/memory_op.hh"
-#include "unisim/util/endian/endian.hh"
-#include "unisim/util/arithmetic/arithmetic.hh"
+#include <unisim/component/cxx/processor/arm/arm926ejs/cpu.hh>
+#include <unisim/component/cxx/processor/arm/cpu.tcc>
+#include <unisim/component/cxx/processor/arm/arm926ejs/tlb.hh>
+#include <unisim/component/cxx/processor/arm/memory_op.hh>
+#include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/util/debug/simple_register.hh>
+#include <unisim/util/likely/likely.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
 #include <sstream>
 #include <string>
 #include <string.h>
 
-#include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/util/debug/simple_register.hh"
-#include "unisim/util/likely/likely.hh"
-#include "unisim/kernel/logger/logger.hh"
 
 #ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS
@@ -69,12 +68,6 @@ namespace arm926ejs {
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
@@ -88,6 +81,12 @@ using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::LittleEndian2Host;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Register;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
 
 /** Constructor.
  *
@@ -106,7 +105,6 @@ CPU::CPU(const char *name, Object *parent)
   , Service<Disassembly<uint64_t> >(name, parent)
   , Service<Registers>(name, parent)
   , Service<Memory<uint64_t> >(name, parent)
-  , logger(*this)
   , disasm_export("disasm-export", this)
   , registers_export("registers-export", this)
   , memory_injection_export("memory-injection-export", this)
@@ -120,8 +118,6 @@ CPU::CPU(const char *name, Object *parent)
                                               "instruction-counter-trap-reporting-import", this)
   , exception_trap_reporting_import(
                                     "exception-trap-reporting-import", this)
-  , icache("icache", this)
-  , dcache("dcache", this)
   , ltlb("lockdown-tlb", this)
   , tlb("tlb", this)
   , arm32_decoder()

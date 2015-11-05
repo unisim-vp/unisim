@@ -51,7 +51,6 @@
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/register.hh>
 #include <unisim/util/queue/queue.hh>
@@ -160,13 +159,6 @@ struct CPU
    */
   ~CPU();
 
-  //=====================================================================
-  //=                       Logger                                      =
-  //=====================================================================
-  
-  /** Unisim logging services. */
-  unisim::kernel::logger::Logger logger;
-  
   //=====================================================================
   //=                  Client/Service setup methods                     =
   //=====================================================================
