@@ -44,11 +44,7 @@ mrc.disasm = {
 mrc.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t value = cpu.Coproc_GetOneWord( 1, cp_num, opc1, opc2, crn, crm );
-  if (rt != 15)
-    cpu.SetGPR( rt, value );
-  else
-    cpu.CPSR().Set( NZCV, value >> 28 );
+  cpu.UnpredictableInsnBehaviour();
 }
 
 op mrc2( 0b11111110[8]: opc1[3]: 0b1[1]: crn[4]:> <: rt[4]: cp_num[4]: opc2[3]: 0b1[1]: crm[4] );
@@ -60,18 +56,20 @@ mrc2.disasm = {
 mrc2.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t value = cpu.Coproc_GetOneWord( 2, cp_num, opc1, opc2, crn, crm );
-  if (rt != 15)
-    cpu.SetGPR( rt, value );
-  else
-    cpu.CPSR().Set( NZCV, value >> 28 );
+  cpu.UnpredictableInsnBehaviour();
 }
 
-op mcr( 0b11101110[8]: y[3]: 0b0[1]: cr1[4]:> <: r0[4]: cp_num[4]: imm[3]: 0b1[1]: cr0[4] );
+op mcr( 0b11101110[8]: opc1[3]: 0b0[1]: crn[4]:> <: rt[4]: cp_num[4]: opc2[3]: 0b1[1]: crm[4] );
 
 mcr.disasm = {
-  buffer << "mcr\t" << unsigned( cp_num ) << ", " << unsigned(y) << ", " << DisasmRegister(r0) << ", " << DisasmCPR(cr1) << ", " << DisasmCPR(cr0) << ", {" << unsigned(imm) << "}";
+  buffer << "mcr\t" << unsigned( cp_num ) << ", " << unsigned(opc1) << ", " << DisasmRegister(rt) << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned(opc2) << "}";
 };
+
+mcr.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.UnpredictableInsnBehaviour();
+}
 
 op mcr2( 0b1111[4]: 0b1110[4]: opc1[3]: 0b0[1]: crn[4]:> <: rt[4]: cp_num[4]: opc2[3]: 0b1[1]: crm[4] );
 
@@ -81,18 +79,36 @@ mcr2.disasm = {
          << ", {" << unsigned( opc2 ) << "}";
 };
 
-op cdp( 0b11101110[8]: y[4]: cr2[4]:> <: cr1[4]: cp_num[4]: imm[3]: 0b0[1]: cr0[4] );
+mcr2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.UnpredictableInsnBehaviour();
+}
+
+op cdp( 0b11101110[8]: opc1[4]: cr2[4]:> <: cr1[4]: cp_num[4]: opc2[3]: 0b0[1]: crm[4] );
 
 cdp.disasm = {
-  buffer << "cdp\t" << unsigned( cp_num ) << ", " << unsigned(y) << ", " << DisasmCPR(cr1) << ", " << DisasmCPR(cr2) << ", " << DisasmCPR(cr0) << ", {" << unsigned(imm) << "}";
+  buffer << "cdp\t" << unsigned( cp_num ) << ", " << unsigned(opc1) << ", " << DisasmCPR(cr1) << ", " << DisasmCPR(cr2) << ", " << DisasmCPR(crm) << ", {" << unsigned(opc2) << "}";
 };
 
-op cdp2( 0b11111110[8]: y[4]: cr2[4]:> <: cr1[4]: cp_num[4]: imm[3]: 0b0[1]: cr0[4] );
+cdp.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.UnpredictableInsnBehaviour();
+}
+
+op cdp2( 0b11111110[8]: opc1[4]: cr2[4]:> <: cr1[4]: cp_num[4]: opc2[3]: 0b0[1]: crm[4] );
 
 cdp2.disasm = {
-  buffer << "cdp2\t" << unsigned( cp_num ) << ", " << unsigned( y ) << ", "
-         << DisasmCPR(cr1) << ", " << DisasmCPR(cr2) << ", " << DisasmCPR(cr0) << ", {" << unsigned(imm) << "}";
+  buffer << "cdp2\t" << unsigned( cp_num ) << ", " << unsigned( opc1 ) << ", "
+         << DisasmCPR(cr1) << ", " << DisasmCPR(cr2) << ", " << DisasmCPR(crm) << ", {" << unsigned(opc2) << "}";
 };
+
+cdp2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.UnpredictableInsnBehaviour();
+}
 
 op mrrc( 0b111011000101[12]: rn[4]:> <: rd[4]: cp_num[4]: opc1[4]: crm[4] );
 
@@ -100,11 +116,23 @@ mrrc.disasm = {
   buffer << "mrrc\t" << unsigned( cp_num ) << ", " << unsigned( opc1 ) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmCPR(crm);
 };
 
+mrrc.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.UnpredictableInsnBehaviour();
+}
+
 op mrrc2( 0b111111000101[12]: rn[4]:> <: rd[4]: cp_num[4]: opc1[4]: crm[4] );
 
 mrrc2.disasm = {
   buffer << "mrrc2\t" << unsigned( cp_num ) << ", " << unsigned( opc1 ) << ", " << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmCPR(crm);
 };
+
+mrrc2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.UnpredictableInsnBehaviour();
+}
 
 op mcrr( 0b111011000100[12]: r1[4]:> <: r0[4]: cp_num[4]: x[4]: cr[4] );
 
@@ -112,11 +140,23 @@ mcrr.disasm = {
   buffer << "mcrr\t" << unsigned( cp_num ) << ", " << unsigned( x ) << ", " << DisasmRegister(r0) << ", " << DisasmRegister(r1) << ", " << DisasmCPR(cr);
 };
 
+mcrr.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.UnpredictableInsnBehaviour();
+}
+
 op mcrr2( 0b111111000100[12]: r1[4]:> <: r0[4]: cp_num[4]: x[4]: cr[4] );
 
 mcrr2.disasm = {
   buffer << "mcrr2\t" << unsigned( cp_num ) << ", " << unsigned( x ) << ", " << DisasmRegister(r0) << ", " << DisasmRegister(r1) << ", " << DisasmCPR(cr);
 };
+
+mcrr2.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.UnpredictableInsnBehaviour();
+}
 
 /*******************************************************************
  * stc instruction
@@ -135,11 +175,7 @@ stc.disasm = {
 stc.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
-  if (w) cpu.SetGPR( rn, oaddr );
-  
-  uint32_t address = p?oaddr:addr;
-  while(cpu.CoprocessorStore(cp_num, address)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 op stc_unindexed( 0b1110110[7]: 0b0[1]: 0b1[1]: d[1]: 0b0[1]: 0b0[1]: rn[4]:> <: crd[4]: cp_num[4]: option[8] );
@@ -153,8 +189,7 @@ stc_unindexed.disasm = {
 stc_unindexed.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 	
-  uint32_t address = cpu.GetGPR(rn);
-  while(cpu.CoprocessorStore(cp_num, address, option)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -176,11 +211,9 @@ stc2.disasm = {
 };
 
 stc2.execute = {
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
-  if (w) cpu.SetGPR( rn, oaddr );
-  
-  uint32_t address = p?oaddr:addr;
-  while (cpu.CoprocessorStore(cp_num, address)) { address += 4; }
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+	
+  cpu.UnpredictableInsnBehaviour();
 };
 
 { CONFIG::insns5T }: \
@@ -193,8 +226,9 @@ stc2_unindexed.disasm = {
 };
 
 stc2_unindexed.execute = {
-  uint32_t address = cpu.GetGPR(rn);
-  while(cpu.CoprocessorStore(cp_num, address, option)) { address += 4; }
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+	
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -218,11 +252,7 @@ ldc.disasm = {
 ldc.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 	
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
-  if (w) cpu.SetGPR( rn, oaddr );
-  
-  uint32_t address = p?oaddr:addr;
-  while (cpu.CoprocessorLoad(cp_num, address)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 op ldc_unindexed( 0b1110110[7]: 0b0[1]: 0b1[1]: d[1]: 0b0[1]: 0b1[1]: rn[4]:> <: crd[4]: cp_num[4]: option[8] );
@@ -236,8 +266,7 @@ ldc_unindexed.disasm = {
 ldc_unindexed.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 	
-  uint32_t address = cpu.GetGPR(rn);
-  while(cpu.CoprocessorLoad(cp_num, address, option)) { address += 4; }
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
@@ -260,11 +289,9 @@ ldc2.disasm = {
 };
 
 ldc2.execute = {
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
-  if (w) cpu.SetGPR( rn, oaddr );
-  
-  uint32_t address = p?oaddr:addr;
-  while(cpu.CoprocessorLoad(cp_num, address)) { address += 4; }
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+	
+  cpu.UnpredictableInsnBehaviour();
 };
 
 { CONFIG::insns5T }: \
@@ -277,10 +304,50 @@ ldc2_unindexed.disasm = {
 };
 
 ldc2_unindexed.execute = {
-  uint32_t address = cpu.GetGPR(rn);
-  while(cpu.CoprocessorLoad(cp_num, address, option)) { address += 4; }
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+	
+  cpu.UnpredictableInsnBehaviour();
 };
 
 /*
  * end of ldc2 instruction
  *******************************************************************/
+
+/********************/
+/* Coprocessor CP15 */
+/********************/
+
+op cp15_mcr( 0b11101110[8]: opc1[3]: 0b0[1]: crn[4]:> <: rt[4]: 0b1111[4]: opc2[3]: 0b1[1]: crm[4] );
+cp15_mcr.var reject : {Reject} = {(rt == 13) or (rt == 15)};
+
+cp15_mcr.disasm = {
+  buffer << "mcr\t15, " << unsigned(opc1) << ", "
+         << DisasmRegister(rt) << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned(opc2) << "}";
+};
+
+cp15_mcr.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  cpu.CP15WriteRegister( opc1, opc2, crn, crm, cpu.GetGPR(rt) );
+};
+
+op cp15_mrc( 0b11101110[8]: opc1[3]: 0b1[1]: crn[4]:> <: rt[4]: 0b1111[4]: opc2[3]: 0b1[1]: crm[4] );
+cp15_mrc.var reject : {Reject} = {(rt == 13)};
+
+cp15_mrc.disasm = {
+  buffer << "mrc\t15, " << unsigned(opc1) << ", ";
+  if (rt == 15) buffer << "APSR_nzcv";
+  else          buffer << DisasmRegister(rt);
+  buffer << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned(opc2) << "}";
+};
+
+cp15_mrc.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  uint32_t value = cpu.CP15ReadRegister( opc1, opc2, crn, crm );
+  if (rt != 15)
+    cpu.SetGPR( rt, value );
+  else
+    cpu.CPSR().Set( NZCV, value >> 28 );
+};
+

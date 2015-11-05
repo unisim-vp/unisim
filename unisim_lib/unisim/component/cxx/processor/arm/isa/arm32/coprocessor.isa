@@ -105,7 +105,8 @@ ldc_unindexed.execute = {
 op mcr( cond[4]: 0b1110[4]: opc1[3]: 0b0[1]: crn[4]: rd[4]: cp_num[4]: opc2[3]: 0b1[1]: crm[4] );
 
 mcr.disasm = {
-  buffer << "mcr" << DisasmCondition(cond) << '\t' << unsigned( cp_num ) << ", " << unsigned( opc1 ) << ", " << DisasmRegister(rd) << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "}";
+  buffer << "mcr" << DisasmCondition(cond) << '\t' << unsigned( cp_num ) << ", " << unsigned( opc1 ) << ", "
+         << DisasmRegister(rd) << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "}";
 };
 
 mcr.execute = {
@@ -136,26 +137,6 @@ mrc.execute = {
   
   cpu.UnpredictableInsnBehaviour();
 };
-
-op cp15_mrc( cond[4]: 0b1110[4]: opc1[3]: 0b1[1]: crn[4]: rt[4]: 0b1111[4]: opc2[3]: 0b1[1]: crm[4] );
-
-cp15_mrc.disasm = {
-  buffer << "mrc" << DisasmCondition(cond) << "\t15, " << unsigned( opc1 ) << ", ";
-  if (rt == 15) buffer << "APSR_nzcv";
-  else          buffer << DisasmRegister(rt);
-  buffer << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "}";
-};
-
-cp15_mrc.execute = {
-  if (not CheckCondition(cpu, cond)) return;
-
-  uint32_t value = cpu.CP15ReadRegister( opc1, opc2, crn, crm );
-  if (rt != 15)
-    cpu.SetGPR( rt, value );
-  else
-    cpu.CPSR().Set( NZCV, value >> 28 );
-};
-
 
 /*
  * end of mrc instruction
@@ -416,3 +397,41 @@ mrrc2.execute = {
 /*
  * end of mrrc2 instruction
  *******************************************************************/
+
+/********************/
+/* Coprocessor CP15 */
+/********************/
+
+op cp15_mcr( cond[4]: 0b1110[4]: opc1[3]: 0b0[1]: crn[4]: rt[4]: 0b1111[4]: opc2[3]: 0b1[1]: crm[4] );
+cp15_mcr.var reject : {Reject} = {(rt == 15)};
+
+cp15_mcr.disasm = {
+  buffer << "mcr" << DisasmCondition(cond) << "\t15, " << unsigned( opc1 ) << ", "
+         << DisasmRegister(rt) << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "}";
+};
+
+cp15_mcr.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  cpu.CP15WriteRegister( opc1, opc2, crn, crm, cpu.GetGPR(rt) );
+};
+
+op cp15_mrc( cond[4]: 0b1110[4]: opc1[3]: 0b1[1]: crn[4]: rt[4]: 0b1111[4]: opc2[3]: 0b1[1]: crm[4] );
+
+cp15_mrc.disasm = {
+  buffer << "mrc" << DisasmCondition(cond) << "\t15, " << unsigned( opc1 ) << ", ";
+  if (rt == 15) buffer << "APSR_nzcv";
+  else          buffer << DisasmRegister(rt);
+  buffer << ", " << DisasmCPR(crn) << ", " << DisasmCPR(crm) << ", {" << unsigned( opc2 ) << "}";
+};
+
+cp15_mrc.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t value = cpu.CP15ReadRegister( opc1, opc2, crn, crm );
+  if (rt != 15)
+    cpu.SetGPR( rt, value );
+  else
+    cpu.CPSR().Set( NZCV, value >> 28 );
+};
+
