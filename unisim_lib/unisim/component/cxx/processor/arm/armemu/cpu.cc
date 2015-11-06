@@ -123,7 +123,6 @@ CPU::CPU(const char *name, Object *parent)
   , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
   , requires_finished_instruction_reporting(true)
   , requires_memory_access_reporting(true)
-  , icache("icache", this)
   , arm32_decoder()
   , instruction_counter(0)
   , voltage(0)
@@ -1040,26 +1039,9 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
 
 #define CP15_ENCODE( CODE, OP1, CRN, CRM, OP2 ) ((CODE<<16) | (OP1<<12) | (CRN<<8) | (CRM<<4) | (OP2<<0))
 
-#define READ_THREAD_ID_PRIVILEGED_READ_WRITE_ONLY_REGISTER CP15_ENCODE( 1, 0, 13, 0, 3 )
-
 uint32_t
 CPU::Coproc_GetOneWord( unsigned code, unsigned cp_num, unsigned op1, unsigned op2, unsigned crn, unsigned crm )
 {
-  switch (cp_num)
-    {
-    default: throw 0;
-    case 15: {
-      /* CP15, ARM System coprocessor */
-      switch (CP15_ENCODE( code, op1, crn, crm, op2 ))
-        {
-        default: throw 0;
-        case READ_THREAD_ID_PRIVILEGED_READ_WRITE_ONLY_REGISTER:
-           /* TODO: check if there exist two uncoherent value (ex. memory and register). */
-          return MemRead32( 0xffff0ff0 );
-        }
-    } break;
-    }
-  
   return 0;
 }
 

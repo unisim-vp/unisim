@@ -432,6 +432,7 @@ unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh \
 unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.hh \
 unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.hh \
 unisim/component/cxx/processor/arm/psr.hh \
+unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
 unisim/component/cxx/processor/arm/coprocessor_interface.hh \
 unisim/component/cxx/processor/arm/arm926ejs/cpu.hh \

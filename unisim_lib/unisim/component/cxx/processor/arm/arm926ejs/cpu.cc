@@ -1351,6 +1351,237 @@ CPU::HandleException()
 /* Exception handling                                               END */
 /************************************************************************/
 
+/** Get the Internal representation of the CP15 Register
+ * 
+ * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @return        an internal CP15Reg
+ */
+CPU::CP15Reg&
+CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+
+  switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
+    {
+    case CP15ENCODE( 0, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "MIDR, Main ID Register"; }
+          void Write( CPU& cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( CPU& cpu ) {
+            return
+              ((uint32_t)0x041  << 24) |
+              ((uint32_t)0x0    << 20) |
+              ((uint32_t)0x06   << 16) |
+              ((uint32_t)0x0926 <<  4) |
+              ((uint32_t)0x05   <<  0);
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 10, 3 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "Test And Clean DCache"; }
+          void Write( CPU& cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( CPU& cpu ) { return core.TestAndCleanDCache() ? 0x40000000UL : 0; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 14, 3 );
+    {
+      static struct : public CP15Reg
+      {
+        char const* Describe() { return "?, Test Clean And Invalidate DCache"; }
+        uint32_t Read( CPU& cpu ) { return core.TestCleanAndInvalidateDCache() ? 0x40000000UL : 0; }
+        void Write( CPU& cpu, uint32_t value ) { throw 0; }
+      } x;
+      return x;
+    } break;
+       
+    }
+  
+  return this->base_cpu::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+}
+
+// /** Write a value in a register
+//  *
+//  * @param core    the CORE this CP15 coprocessor is attached to
+//  * @param opcode1 the "opcode1" field of the instruction code
+//  * @param opcode2 the "opcode2" field of the instruction code
+//  * @param crn     the "crn" field of the instruction code
+//  * @param crm     the "crm" field of the instruction code
+//  * @param val     value to be written in the register
+//  */
+// template <class CORE>
+// void
+// CP15::WriteRegister( CORE& core, uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, uint32_t value )
+// {
+//   uint32_t orig = value;
+//   uint32_t mod = value;
+//   bool handled = false;
+// #ifdef CP15__DEBUG
+//   std::cerr << "CP15: Received write register command with: " << std::endl;
+//   std::cerr << " - opcode1 = " << (unsigned int)opcode1 << std::endl;
+//   std::cerr << " - opcode2 = " << (unsigned int)opcode2 << std::endl;
+//   std::cerr << " - crn     = " << (unsigned int)crn << std::endl;
+//   std::cerr << " - crm     = " << (unsigned int)crm << std::endl;
+//   std::cerr << " - value   = 0x" << std::hex << value << std::dec << std::endl;
+// #endif // CP15__DEBUG
+//   if ( likely(opcode1 == 0) )
+//   {
+    
+//     // domain access control
+//     else if ( crn == 3 )
+//     {
+//       if ( crm == 0 )
+//       {
+//         if ( opcode2 == 0 )
+//         {
+// #ifdef CP15__DEBUG
+//           std::cerr << "CP15: Writing domain access control register"
+//             << " c3"
+//             << std::endl;
+// #endif // CP15__DEBUG
+//           handled = true;
+//           domain_access_control_register_c3 = orig;
+//         }
+//       }
+//     }
+    
+//     // cache management functions
+//     else if ( crn == 7 )
+//     {
+//       if ( crm == 5 )
+//       {
+//         if ( opcode2 == 0 )
+//         {
+// #ifdef CP15__DEBUG
+//           std::cerr << "CP15: Invalidating instruction cache"
+//             << std::endl;
+// #endif // CP15__DEBUG
+//           core.InvalidateCache(true, false);
+//           handled = true;
+//         }
+
+//         else if ( opcode2 == 1 )
+//         {
+// #ifdef CP15__DEBUG
+//           std::cerr << "CP15: Invalidating ICache single entry (MVA)"
+//             << std::endl;
+// #endif // CP15__DEBUG
+//           core.InvalidateICacheSingleEntryWithMVA(value);
+//           handled = true;
+//         }
+//       }
+    
+//       else if ( crm == 7 )
+//       {
+//         if ( opcode2 == 0 )
+//         {
+// #ifdef CP15__DEBUG
+//             std::cerr << "CP15: Invalidating instruction and data"
+//               << " caches" << std::endl;
+// #endif // CP15__DEBUG
+//             core.InvalidateCache(true, true);
+//             handled = true;
+//         }
+//       }
+      
+//       else if ( crm == 10 )
+//       {
+//         if ( opcode2 == 1 )
+//         {
+// #ifdef CP15__DEBUG
+//           std::cerr << "CP15: Clean DCache single entry (MVA)"
+//             << std::endl;
+// #endif // CP15__DEBUG
+//           core.CleanDCacheSingleEntryWithMVA(value, false);
+//           handled = true;
+//         }
+
+//         else if ( opcode2 == 4 )
+//         {
+// #ifdef CP15__DEBUG
+//           std::cerr << "CP15: Draining write buffer"
+//             << std::endl;
+// #endif // CP15__DEBUG
+//           core.DrainWriteBuffer();
+//           handled = true;
+//         }
+//       }
+
+//       else if ( crm == 14 )
+//       {
+//         if ( opcode2 == 1 )
+//         {
+// #ifdef CP15__DEBUG
+//           std::cerr << "CP15: Clean and invalidate DCache"
+//             << " single entry (MVA)"
+//             << std::endl;
+// #endif // CP15__DEBUG
+//           core.CleanDCacheSingleEntryWithMVA(value, true);
+//           handled = true;
+//         }
+//       }
+//     }
+
+//     // TLB functions
+//     else if ( crn == 8 )
+//     {
+//       if ( crm == 7 )
+//       {
+//         if ( opcode2 == 0 )
+//         {
+// #ifdef CP15__DEBUG
+//           std::cerr << "CP15: Invalidating set-associative TLB"
+//             << std::endl;
+// #endif // CP15__DEBUG
+//           core.InvalidateTLB();
+//           handled = true;
+//         }
+//       }
+
+//       else if ( crm == 5 )
+//       {
+//         if ( opcode2 == 0 )
+//         {
+// #ifdef CP15_DEBUG
+//           std::cerr << "CP15: Invalidating set-associative TLB"
+//             << std::endl;
+// #endif // CP15_DEBUG
+//           core.InvalidateTLB();
+//           handled = true;
+//         }
+//       }
+
+//       else if ( crm == 6 )
+//       {
+//         if ( opcode2 == 0 )
+//         {
+// #ifdef CP15_DEBUG
+//           std::cerr << "CP15: Invalidating set-associative TLB"
+//             << std::endl;
+// #endif // CP15_DEBUG
+//           core.InvalidateTLB();
+//           handled = true;
+//         }
+//       }
+//     }
+//   }
+
+//   if ( unlikely(!handled) )
+//   {
+//     assert("CP15 write register not handled" == 0);
+//   }
+// }
+
 } // end of namespace arm926ejs
 
 template struct unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::arm926ejs::ARM926ejs>;

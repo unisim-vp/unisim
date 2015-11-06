@@ -471,6 +471,56 @@ struct CPU
   /* CP15 Interface   START */
   /**************************/
 
+public:
+  /** Read the value of a CP15 coprocessor register
+   *
+   * @param crn     the "crn" field of the instruction code
+   * @param opcode1 the "opcode1" field of the instruction code 
+   * @param crm     the "crm" field of the instruction code
+   * @param opcode2 the "opcode2" field of the instruction code
+   * @return        the read value
+   */
+  uint32_t CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  
+  /** Write a value in a CP15 coprocessor register
+   * 
+   * @param crn     the "crn" field of the instruction code
+   * @param opcode1 the "opcode1" field of the instruction code
+   * @param crm     the "crm" field of the instruction code
+   * @param opcode2 the "opcode2" field of the instruction code
+   * @param val     value to be written to the register
+   */
+  void     CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, uint32_t value );
+    
+  /** Describe the nature of a CP15 coprocessor register
+   * 
+   * @param crn     the "crn" field of the instruction code
+   * @param opcode1 the "opcode1" field of the instruction code
+   * @param crm     the "crm" field of the instruction code
+   * @param opcode2 the "opcode2" field of the instruction code
+   * @return        a C string describing the CP15 register
+   */
+  char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  
+protected:
+  struct CP15Reg
+  {
+    virtual ~CP15Reg() {}
+    virtual void Write( CPU& cpu, uint32_t value ) = 0;
+    virtual uint32_t Read( CPU& cpu ) = 0;
+    virtual char const* Describe() = 0;
+  };
+  
+  /** Get the Internal representation of the CP15Register
+   * 
+   * @param crn     the "crn" field of the instruction code
+   * @param opcode1 the "opcode1" field of the instruction code
+   * @param crm     the "crm" field of the instruction code
+   * @param opcode2 the "opcode2" field of the instruction code
+   * @return        an internal CP15Reg
+   */
+  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+    
   /** Get caches info
    *
    */
@@ -522,31 +572,12 @@ struct CPU
    * @return return true if the complete cache is clean, false otherwise
    */
   bool TestCleanAndInvalidateDCache();
-
-  /** Read the value of a CP15 coprocessor register
-   *
-   * @param opcode1 the "opcode1" field of the instruction code 
-   * @param opcode2 the "opcode2" field of the instruction code
-   * @param crn     the "crn" field of the instruction code
-   * @param crm     the "crm" field of the instruction code
-   * @return        the read value
-   */
-  uint32_t CP15ReadRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm );
   
-  /** Write a value in a CP15 coprocessor register
-   * 
-   * @param opcode1 the "opcode1" field of the instruction code
-   * @param opcode2 the "opcode2" field of the instruction code
-   * @param crn     the "crn" field of the instruction code
-   * @param crm     the "crm" field of the instruction code
-   * @param val     value to be written to the register
-   */
-  void     CP15WriteRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, uint32_t value );
-    
   /**************************/
   /* CP15 Interface     END */
   /**************************/
-  
+
+public:
   /** Instruction cache */
   Cache icache;
   /** Data cache */
@@ -596,8 +627,9 @@ protected:
    */
   uint32_t exception;
 
-  /** CP15 */
-  CP15 cp15;
+  // /** CP15 */
+  // CP15 cp15;
+  uint32_t sctlr;
 
 public:
   // VFP/NEON registers
@@ -637,5 +669,7 @@ public:
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+#define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__

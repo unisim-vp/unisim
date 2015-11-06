@@ -113,6 +113,8 @@ struct CPU
 {
   typedef CPU this_type;
   typedef ARM926ejs CONFIG;
+  typedef unisim::component::cxx::processor::arm::CPU<ARM926ejs> base_cpu;
+  typedef typename base_cpu::CP15Reg CP15Reg;
   //=====================================================================
   //=                  ARM architecture model description               =
   //=====================================================================
@@ -554,6 +556,20 @@ protected:
   /* Memory statistics                                                END */
   /************************************************************************/
 
+  /**************************/
+  /* CP15 Interface   START */
+  /**************************/
+
+  /** Get the Internal representation of the CP15Register
+   * 
+   * @param crn     the "crn" field of the instruction code
+   * @param opcode1 the "opcode1" field of the instruction code
+   * @param crm     the "crm" field of the instruction code
+   * @param opcode2 the "opcode2" field of the instruction code
+   * @return        an internal CP15Reg
+   */
+  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+    
 };
 
 } // end of namespace arm926ejs

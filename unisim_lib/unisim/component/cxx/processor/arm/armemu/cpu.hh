@@ -385,8 +385,6 @@ struct CPU
    */
   void UnpredictableInsnBehaviour();
 
-  /** Instruction cache */
-  Cache icache;
 protected:
   /** Decoder for the arm32 instruction set. */
   unisim::component::cxx::processor::arm::isa::arm32::Decoder<ARMv7emu> arm32_decoder;

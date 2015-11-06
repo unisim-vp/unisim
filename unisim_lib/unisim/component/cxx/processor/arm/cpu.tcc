@@ -39,7 +39,7 @@
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
-#include <unisim/component/cxx/processor/arm/cp15.tcc>
+#include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
@@ -118,7 +118,7 @@ CPU<_CONFIG_>::CPU(const char *name, Object *parent)
   , icache("icache", this)
   , dcache("dcache", this)
   , exception(0)
-  , cp15("cp15", this)
+  , sctlr(0)
 {
   // Initialize general purpose registers
   for(unsigned int i = 0; i < num_log_gprs; i++)
@@ -490,7 +490,8 @@ CPU<_CONFIG_>::InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
          << " - cache aligned mva = 0x" << mva << std::dec
          << EndDebugInfo;
 
-  if ( likely(cp15.IsICacheEnabled() && icache.GetSize()) )
+  if ( likely(// SCTLR::C.Get( sctlr ) &&
+              icache.GetSize()) )
     {
       uint32_t cache_tag = icache.GetTag(mva);
       uint32_t cache_set = icache.GetSet(mva);
@@ -540,7 +541,8 @@ CPU<_CONFIG_>::CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
          << " - cache aligned mva = 0x" << mva << std::dec
          << EndDebugInfo;
 
-  if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
+  if ( likely(// cp15.IsDCacheEnabled() &&
+              dcache.GetSize()) )
     {
       uint32_t cache_tag = dcache.GetTag(mva);
       uint32_t cache_set = dcache.GetSet(mva);
@@ -736,34 +738,185 @@ CPU<_CONFIG_>::TestCleanAndInvalidateDCache()
 
 /** Read the value of a CP15 coprocessor register
  *
- * @param opcode1 the "opcode1" field of the instruction code 
- * @param opcode2 the "opcode2" field of the instruction code
  * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code 
  * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
  * @return        the read value
  */
 template <class _CONFIG_>
 uint32_t
-CPU<_CONFIG_>::CP15ReadRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm )
+CPU<_CONFIG_>::CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
-  return cp15.ReadRegister( *this, opcode1, opcode2, crn, crm );
+  return CP15GetRegister( crn, opcode1, crm, opcode2 ).Read( *this );
 }
 
 /** Write a value in a CP15 coprocessor register
  * 
- * @param opcode1 the "opcode1" field of the instruction code
- * @param opcode2 the "opcode2" field of the instruction code
  * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code
  * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
  * @param val     value to be written to the register
  */
 template <class _CONFIG_>
 void
-CPU<_CONFIG_>::CP15WriteRegister( uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, uint32_t value )
+CPU<_CONFIG_>::CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, uint32_t value )
 {
-  return cp15.WriteRegister( *this, opcode1, opcode2, crn, crm, value );
+  return CP15GetRegister( crn, opcode1, crm, opcode2 ).Write( *this, value );
 }
 
+/** Describe the nature of a CP15 coprocessor register
+ * 
+ * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @return        a C string describing the CP15 register
+ */
+template <class _CONFIG_>
+char const*
+CPU<_CONFIG_>::CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+  return CP15GetRegister( crn, opcode1, crm, opcode2 ).Describe();
+}
+
+/** Get the Internal representation of the CP15 Register
+ * 
+ * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @return        an internal CP15Reg
+ */
+template <class _CONFIG_>
+typename CPU<_CONFIG_>::CP15Reg&
+CPU<_CONFIG_>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+
+  switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
+    {
+    case CP15ENCODE( 0, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CTR, Cache Type Register"; }
+          void Write( CPU& cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( CPU& cpu ) {
+            bool unified = false;
+            uint32_t isize = 0, iassoc = 0, ilen = 0, dsize = 0, dassoc = 0, dlen = 0;
+            cpu.GetCacheInfo( unified, isize, iassoc, ilen, dsize, dassoc, dlen );
+            uint32_t result = 0x1c000000UL;
+            if (not unified) result |= 0x01000000UL;
+            else            { dsize = isize; dassoc = iassoc; dlen = ilen; }
+            
+            switch ( isize / 1024 )
+              {
+              case 4:        result |= (0x03UL << 6); break;
+              case 8:        result |= (0x04UL << 6); break;
+              case 16:       result |= (0x05UL << 6); break;
+              case 32:       result |= (0x06UL << 6); break;
+              case 64:       result |= (0x07UL << 6); break;
+              case 128:      result |= (0x08UL << 6); break;
+              default: throw 0;
+              }
+            switch ( dsize / 1024 )
+              {
+              case 4:        result |= ((0x03UL << 6) << 12); break;
+              case 8:        result |= ((0x04UL << 6) << 12); break;
+              case 16:       result |= ((0x05UL << 6) << 12); break;
+              case 32:       result |= ((0x06UL << 6) << 12); break;
+              case 64:       result |= ((0x07UL << 6) << 12); break;
+              case 128:      result |= ((0x08UL << 6) << 12); break;
+              default: throw 0;
+              }
+            switch ( iassoc )
+              {
+              case 4:        result |= (0x02UL << 3); break;
+              default: throw 0;
+              }
+            switch ( dassoc )
+              {
+              case 4:        result |= ((0x02UL << 3) << 12); break;
+              default: throw 0;
+              }
+            switch ( ilen )
+              {
+              case 32:       result |= 0x02UL; break;
+              default: throw 0;
+              }
+            switch ( dlen )
+              {
+              case 32:       result |= (0x02UL << 12); break;
+              default: throw 0;
+              }
+            // No need to set the M bit which should be always 0
+            //   meaning that the caches are present
+            return result;
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 1, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "SCTLR, System Control Register"; }
+          /* TODO: handle SBO(DGP=0x00050078UL) and SBZ(DGP=0xfffa0c00UL)... */
+          void Write( CPU& cpu, uint32_t value ) {
+            // cpu.sctlr = value;
+            if (SCTLR::C.Get( value ))
+              cpu.logger << DebugInfo << "Dcache Enabled !!!!!!!!" << EndDebugInfo;
+          }
+          uint32_t Read( CPU& cpu ) { return cpu.sctlr; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 2, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
+          /* TODO: handle SBZ(DGP=0x00003fffUL)... */
+          void Write( CPU& cpu, uint32_t value ) { /* cpu.ttbr0 = value; */ }
+          uint32_t Read( CPU& cpu ) { return 0 /* cpu.ttbr0 */; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 13, 0, 0, 3 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TPIDRURO, Thread Id Privileged Read Write Only Register"; }
+          void Write( CPU& cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( CPU& cpu ) {
+            /* TODO: the following only works in linux os
+             * emulation. We should really access the TPIDRURO
+             * register. */
+            return cpu.MemRead32( 0xffff0ff0 );
+          }
+        } x;
+        return x;
+      } break;
+    
+    }
+
+  logger << DebugError << "Unknown CP15 instruction: crn=" << crn << ", opc1=" << opcode1 << ", crm=" << crm << ", opc2=" << opcode2 << EndDebugError;
+  this->Stop( -1 );
+  
+  static struct CP15Error : public CP15Reg {
+    char const* Describe() { return ""; }
+    void Write( CPU&, uint32_t ) {}
+    uint32_t Read( CPU& ) { return 0; }
+  } err;
+  return err;
+}
+    
+
+    
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_STATUS_REGISTER_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_STATUS_REGISTER_HH__
 
+#include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -43,44 +44,12 @@ namespace cxx {
 namespace processor {
 namespace arm {
   
-  /** RegisterField
-   *
-   * This structure allows to declare names referring to bitfields of
-   * status/control ARM registers (e.g. PSR, FPSCR). It is implemented
-   * as a templated Traits structure that contains the position and
-   * size of the bitfield. It also contains convenience methods for
-   * getting/setting bitfield values in registers values (provided
-   * this values behave like scalar integers)
-   */
-  template <unsigned posT, unsigned sizeT>
-  struct RegisterField
-  {
-    enum pos_e { pos = posT };
-    enum size_e { size = sizeT };
-    
-    template <typename T>
-    T Get( T const& reg ) const
-    {
-      T const mask = ((~T(0)) >> ((8*sizeof (T)) - size)) << pos;
-      return (reg & mask) >> pos;
-    }
-    template <typename T>
-    void Set( T& reg, T const& value ) const
-    {
-      T const mask = ((~T(0)) >> ((8*sizeof (T)) - size)) << pos;
-      reg = (reg & ~mask) | ((value << pos) & mask);
-    }
-    template <typename T> void Set( T& reg, bool ones ) const { this->Set( reg, ones ? ~T( 0 ) : T( 0 )); }
-  };
-  
-  /* Special bitfields */
-  RegisterField<0,32> const ALL32;  /* Raw 32 bits of the any status/control register*/
-  
   /*** Program Status Register (PSR) ***/
   RegisterField<31,1> const N;      /* Negative Integer Condition Flag */
   RegisterField<30,1> const Z;      /* Zero     Integer Condition Flag */
   RegisterField<29,1> const C;      /* Carry    Integer Condition Flag */
   RegisterField<28,1> const V;      /* Overflow Integer Condition Flag */
+  RegisterField<28,4> const NZCV;   /* Compound value for N, Z, C, and V */
   RegisterField<27,1> const Q;      /* Cumulative saturation flag */
   /* RegisterField<25,2> */         /* IT[1:0] */
   RegisterField<24,1> const J;      /* Jazelle execution state bit */
@@ -89,7 +58,7 @@ namespace arm {
   RegisterField<18,1> const GE2;    /* Greater than or Equal flag #2, for SIMD instructions */
   RegisterField<17,1> const GE1;    /* Greater than or Equal flag #1, for SIMD instructions */
   RegisterField<16,1> const GE0;    /* Greater than or Equal flag #0, for SIMD instructions */
-  RegisterField<16,4> const GE;     /* Greater than or Equal flags, for SIMD instructions */
+  RegisterField<16,4> const GE;     /* Compound value for for Greater than or Equal flags */
   /* RegisterField<10,6> */         /* IT[7:2] */
   RegisterField< 9,1> const E;      /* Endianness execution state */
   RegisterField< 8,1> const A;      /* Asynchronous abort mask bit */
@@ -97,18 +66,7 @@ namespace arm {
   RegisterField< 6,1> const F;      /* FIQ mask bit */
   RegisterField< 5,1> const T;      /* Thumb execution state bit */
   RegisterField< 0,5> const M;      /* Mode field */
-  /* Running modes:
-   * - 0b10000: User
-   * - 0b10001: FIQ (Fast Interrupt)
-   * - 0b10010: IRQ (Interrupt) 
-   * - 0b10011: Supervisor
-   * - 0b10111: Abort
-   * - 0b11011: Undefined
-   * - 0b11111: System
-   */
-  
   /* PSR Aliases */
-  RegisterField<28,4> const NZCV;   /* Compound value for N, Z, C, and V */
 
   /*** Floating-Point Status and Control Register (FPSCR) ***/
   /* RegisterField<31,1> */         /* Negative FP Condition Flag (same as integer) */
@@ -177,62 +135,6 @@ namespace arm {
   
     uint32_t m_value;
   };
-
-// /* masks for the different running modes */
-// static uint32_t const RUNNING_MODE_MASK = 0x1F;
-// static uint32_t const USER_MODE = 0x10;
-// static uint32_t const FIQ_MODE = 0x11;
-// static uint32_t const IRQ_MODE = 0x12;
-// static uint32_t const SUPERVISOR_MODE = 0x13;
-// static uint32_t const ABORT_MODE = 0x17;
-// static uint32_t const UNDEFINED_MODE = 0x1B;
-// static uint32_t const SYSTEM_MODE = 0x1F;
-
-// uint32_t GetSPSRIndex()
-// {
-//   uint32_t rm = 0;
-//   uint32_t run_mode = cpsr & CPSR_RUNNING_MODE_MASK;
-//   switch (run_mode)
-//     {
-//     case USER_MODE: case SYSTEM_MODE: {
-//       /* In user or system mode, access to SPSR are unpredictable,
-//        * thus the code whould never try to access SPSR in such
-//        * modes. */
-      
-//       logger << DebugWarning
-//              << "trying to access SPSR while running in "
-//              << ((run_mode == USER_MODE) ? "user" : "system")
-//              << " mode with the following instruction: "
-//              << std::endl
-//              << "Location: " << __FUNCTION__
-//              << ":" << __FILE__
-//              << ":" << __LINE__
-//              << EndDebugWarning;
-//       Stop(-1);
-//     } break;
-//     case SUPERVISOR_MODE:
-//       rm = 0;
-//       break;
-//     case ABORT_MODE:
-//       rm = 1;
-//       break;
-//     case UNDEFINED_MODE:
-//       rm = 2;
-//       break;
-//     case IRQ_MODE:
-//       rm = 3;
-//       break;
-//     case FIQ_MODE:
-//       rm = 4;
-//       break;
-//     default:
-//       assert(0);
-//       break;
-//     }
-  
-//   return rm;
-// }
-
 
 } // end of namespace arm
 } // end of namespace processor
