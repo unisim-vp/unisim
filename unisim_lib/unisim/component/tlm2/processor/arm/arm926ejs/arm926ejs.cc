@@ -432,10 +432,7 @@ void
 ARM926EJS ::
 IRQHandler()
 {
-	if ( nirq )
-		exception &= ~unisim::component::cxx::processor::arm::exception::IRQ;
-	else
-		exception |= unisim::component::cxx::processor::arm::exception::IRQ;
+  unisim::component::cxx::processor::arm::exception::IRQ.Set( exception, not nirq );
 }
 
 /** nFIQ port handler */
@@ -443,10 +440,7 @@ void
 ARM926EJS ::
 FIQHandler()
 {
-	if ( nfiq )
-		exception &= ~unisim::component::cxx::processor::arm::exception::FIQ;
-	else
-		exception |= unisim::component::cxx::processor::arm::exception::FIQ;
+  unisim::component::cxx::processor::arm::exception::FIQ.Set( exception, not nfiq );
 }
 	
 /**

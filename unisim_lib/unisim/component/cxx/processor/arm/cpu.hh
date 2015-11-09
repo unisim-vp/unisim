@@ -460,9 +460,10 @@ struct CPU
    *
    * @param except the exception to mark
    */
-  void MarkVirtualExceptionVector(uint32_t except)
+  template <class RF>
+  void MarkVirtualExceptionVector( RF const& rf )
   {
-    exception |= except;
+    rf.Set( exception, uint32_t( 1 ) );
   }
   
   /** Get the virtual exception vector.

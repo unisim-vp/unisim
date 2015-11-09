@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 
+#include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -43,14 +44,17 @@ namespace cxx {
 namespace processor {
 namespace arm {
 namespace exception {
-
-static const uint32_t RESET = 1;
-static const uint32_t UNDEFINED_INSN = 2;
-static const uint32_t SWI = 4;
-static const uint32_t PREFETCH_ABORT = 8;
-static const uint32_t DATA_ABORT = 16;
-static const uint32_t IRQ = 32;
-static const uint32_t FIQ = 64;
+  
+  /* RegisterField for the virtual exception vector */
+  using unisim::component::cxx::processor::arm::RegisterField;
+  
+  static RegisterField< 0,1> const RESET;
+  static RegisterField< 1,1> const UNDEF;
+  static RegisterField< 2,1> const SWI;
+  static RegisterField< 3,1> const PABRT;
+  static RegisterField< 4,1> const DABRT;
+  static RegisterField< 5,1> const IRQ;
+  static RegisterField< 6,1> const FIQ;
 
 } // end of namespace exception
 } // end of namespace arm

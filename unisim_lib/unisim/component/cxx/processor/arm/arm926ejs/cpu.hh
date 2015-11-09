@@ -493,9 +493,6 @@ protected:
   /** UNISIM register for the CPSR register.
    */
   unisim::kernel::service::Register<uint32_t> reg_cpsr;
-  /** UNISIM registers for the SPRS registers.
-   */
-  unisim::kernel::service::Register<uint32_t> *reg_spsr[5];
 
   /************************************************************************/
   /* UNISIM parameters, statistics and registers                      END */

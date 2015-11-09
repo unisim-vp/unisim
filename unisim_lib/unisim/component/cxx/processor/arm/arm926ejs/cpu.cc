@@ -1168,7 +1168,7 @@ void
 CPU::BKPT( uint32_t imm )
 {
   // we are executing on full system mode
-  this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
+  this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::PABRT);
 }
   
 /************************************************************************/
@@ -1177,15 +1177,13 @@ CPU::BKPT( uint32_t imm )
   
 /** Process exceptions
  *
- * Returns true if there is an exception to handle.
- * @return true if an exception handling begins
+ * Processes pending exceptions and returns true if an exception were taken
+ *
+ * @return true if an exception were taken
  */
 bool
 CPU::HandleException()
 {
-  bool handled = false;
-  bool report = false;
-
   // Exception priorities (from higher to lower)
   // - 1 Reset
   // - 2 Data Abort (including data TLB miss)
@@ -1194,111 +1192,106 @@ CPU::HandleException()
   // - 5 Imprecise Abort (external abort) - ARMv6 (so ignored here)
   // - 6 Prefetch Abort (including prefetch TLB miss)
   // - 7 Undefined instruction / SWI
+
+  // If we reached this point at least one exception is pending (but maybe masked).
+  uint32_t masked_exception = exception;
+  if (cpsr.Get(F)) unisim::component::cxx::processor::arm::exception::FIQ.Set( masked_exception, 0 );
+  if (cpsr.Get(I)) unisim::component::cxx::processor::arm::exception::IRQ.Set( masked_exception, 0 );
   
-  if ( exception & 
-       unisim::component::cxx::processor::arm::exception::RESET )
-    {
-    }
+  if (not masked_exception) return false;
+  
+  // if (unisim::component::cxx::processor::arm::exception::RESET.Get( masked_exception ))
+  //   {
+  //   }
 
-  else if ( exception & 
-            unisim::component::cxx::processor::arm::exception::DATA_ABORT )
+  // if (unisim::component::cxx::processor::arm::exception::DABRT.Get( masked_exception ))
+  //   {
+  //   }
+  
+  if (unisim::component::cxx::processor::arm::exception::FIQ.Get( masked_exception ) or
+      unisim::component::cxx::processor::arm::exception::IRQ.Get( masked_exception ))
     {
-    }
-
-  else if ( (exception &
-             unisim::component::cxx::processor::arm::exception::FIQ) &&
-            !cpsr.Get(F) )
-    {
-      report = true;
-    }
-
-  else if ( (exception & unisim::component::cxx::processor::arm::exception::IRQ) and not cpsr.Get(I) )
-    {
-      report = true;
-      logger << DebugInfo << "Received IRQ interrupt, handling it." << EndDebugInfo;
-      handled = true;
-      // Determine return information. SPSR is to be the current CPSR, and LR is to be the
-      // current PC minus 0 for Thumb or 4 for ARM, to change the PC offsets of 4 or 8
-      // respectively from the address of the current instruction into the required address
-      // of the instruction boundary at which the interrupt occurred plus 4. For this
-      // purpose, the PC and CPSR are considered to have already moved on to their values
-      // for the instruction following that boundary. TODO: what does that mean ?!?!?
-      uint32_t new_lr_value = GetNPC();
+      // FIQs have higher priority
+      bool isIRQ = not unisim::component::cxx::processor::arm::exception::FIQ.Get( masked_exception );
+      logger << DebugInfo << "Received " << (isIRQ ? "IRQ" : "FIQ") << " interrupt, handling it." << EndDebugInfo;
+      
+      // Quote from the ARM doc:
+      //
+      //   Determine return information. SPSR is to be the current
+      // CPSR, and LR is to be the current PC minus 0 for Thumb or 4
+      // for ARM, to change the PC offsets of 4 or 8 respectively from
+      // the address of the current instruction into the required
+      // address of the instruction boundary at which the interrupt
+      // occurred plus 4. For this purpose, the PC and CPSR are
+      // considered to have already moved on to their values for the
+      // instruction following that boundary.
+      //
+      // Now what does that mean ?!?!?
+      //
+      //   Whatever the instruction set, the handler may perform a
+      // "subs PC, LR, #-4" to return from [IRQ|FIQ] exception. Thus, next
+      // instruction to execute should be LR-4, in other words, LR
+      // should be next instruction +4.
+      uint32_t new_lr_value = GetNPC() + 4;
       uint32_t new_spsr_value = cpsr.Get( ALL32 );
-      uint32_t vect_offset = 0x18;
+      uint32_t vect_offset = isIRQ ? 0x18 : 0x1C;
       
-      // TODO: IRQs may be routed to monitor (if HaveSecurityExt() and
-      // SCR.IRQ) or to Hypervisor if (HaveVirtExt() &&
-      // HaveSecurityExt() && SCR.IRQ == '0' && HCR.IMO == '1' &&
-      // !IsSecure()) || CPSR.M == '11010');
+      // TODO: [IRQ|FIQ]s may be routed to monitor (if
+      // HaveSecurityExt() and SCR.[IRQ|FIQ]) or to Hypervisor (if
+      // (HaveVirtExt() && HaveSecurityExt() && SCR.[IRQ|FIQ] == '0'
+      // && HCR.[IMO|FMO] == '1' && !IsSecure()) || CPSR.M ==
+      // '11010');
       
-      // Handle in IRQ mode. TODO: Ensure Secure state if initially in Monitor mode. This
-      // affects the Banked versions of various registers accessed later in the code.
-      uint8_t oldmode = cpsr.Get( M ), newmode = 0b10010;  // IRQ mode
-      GetMode(oldmode).Swap( *this ); // OUT
-      cpsr.Set( M, newmode ); // IRQ mode
-      GetMode(newmode).Swap( *this ); // IN
-      // Write return information to registers, and make further CPSR changes:
-      // IRQs disabled, IT state reset, instruction set and endianness set to
-      // SCTLR-configured values.
-      Mode& irqmode = GetMode(newmode);
-      irqmode.SetSPSR( new_spsr_value );
+      // Handle in [IRQ|FIQ] mode. TODO: Ensure Secure state if
+      // initially in Monitor mode. This affects the Banked versions
+      // of various registers accessed later in the code.
+      CurrentMode().Swap( *this ); // OUT
+      cpsr.Set( M, isIRQ ? IRQ_MODE : FIQ_MODE );
+      Mode& newmode = CurrentMode();
+      newmode.Swap( *this ); // IN
+      // Write return information to registers, and make further CPSR
+      // changes: [IRQ|FIQ]s disabled, other interrupts disabled if
+      // appropriate, IT state reset, instruction set and endianness
+      // set to SCTLR-configured values.
+      newmode.SetSPSR( new_spsr_value );
       SetGPR( 14, new_lr_value );
-      cpsr.Set( I, 1 ); // IRQs disabled
+      // [IRQ|FIQ]s disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.[IW|FW] == '1')
+      if (isIRQ) cpsr.Set( I, 1 );
+      else       cpsr.Set( F, 1 );
+      // Async Abort disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.AW == '1')
       cpsr.Set( A, 1 );
       cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
       cpsr.Set( J, 0 );
-      cpsr.Set( T, 0 ); // TODO: controlled by SCTLR.TE
-      cpsr.Set( E, 0 ); // TODO: controlled by SCTLR.EE
-      // Branch to correct IRQ vector ("implementation defined" if SCTLR.VE == '1').
+      cpsr.Set( T, SCTLR::TE.Get( sctlr ) );
+      cpsr.Set( E, SCTLR::EE.Get( sctlr ) );
+      // Branch to correct [IRQ|FIQ] vector ("implementation defined" if SCTLR.VE == '1').
       uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
       Branch(exc_vector_base + vect_offset);
+      
+      return true;
     }
   
-  else if ( exception &
-            unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT )
-    {
-    }
+  // else if (unisim::component::cxx::processor::arm::exception::PABRT.Get( masked_exception ))
+  //   {
+  //   }
   
-  else if ( exception &
-            unisim::component::cxx::processor::arm::exception::SWI )
-    {
-    }
+  // else if (unisim::component::cxx::processor::arm::exception::SWI.Get( masked_exception ))
+  //   {
+  //   }
 
-  else if ( exception &
-            unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN )
-    {
-    }
+  // else if (unisim::component::cxx::processor::arm::exception::UNDEF.Get( masked_exception ))
+  //   {
+  //   }
 
-  if ( !handled )
-    {
-      if ( (exception &
-            unisim::component::cxx::processor::arm::exception::FIQ) &&
-           cpsr.Get(F) )
-        handled = true;
-
-      if ( (exception & 
-            unisim::component::cxx::processor::arm::exception::IRQ) &&
-           cpsr.Get(I) )
-        handled = true;
-    }
-
-  if ( !handled )
-    {
-      logger << DebugError
-             << "Exception not handled (" << (unsigned int)exception << ")" 
-             << std::endl
-             << " - CPSR = 0x" << std::hex << cpsr.bits() << std::dec
-             << " - irq? = " 
-             << (exception & 
-                 unisim::component::cxx::processor::arm::exception::IRQ)
-             << std::endl
-             << " - CPSR_I = " << cpsr.Get(I)
-             << EndDebugError;
-      unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
-    }
-
-  return report;
+  
+  logger << DebugError
+         << "Exception not handled (" << std::hex << exception << ")"
+         << std::endl
+         << " - CPSR = 0x" << std::hex << cpsr.bits() << std::dec
+         << std::endl
+         << EndDebugError;
+  unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+  return false;
 }
 
 /************************************************************************/

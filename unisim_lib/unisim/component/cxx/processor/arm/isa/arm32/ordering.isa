@@ -46,7 +46,7 @@ group conditional (ldr_imm,ldr_reg,ldrh_imm,ldrh_reg,ldrsh_imm,ldrsh_reg,ldrb_im
                    ldrsb_imm,ldrsb_reg,ldrd_imm,ldrd_reg,str_imm,str_reg,strh_imm,strh_reg, \
                    strb_imm,strb_reg,strd_imm,strd_reg,ldrt_imm,ldrt_reg,ldrht_imm,ldrht_reg, \
                    ldrsht_imm,ldrsht_reg,ldrbt_imm,ldrbt_reg,ldrsbt_imm,ldrsbt_reg,strt_imm,strt_reg, \
-                   strht_imm,strht_reg,strbt_imm,strbt_reg,ldm,stm,ldm_npcusr,ldm_pcusr, \
+                   strht_imm,strht_reg,strbt_imm,strbt_reg,ldm,stm,ldm_usr,ldm_rfe, \
                    stm_usr,swp,swpb,ldrex,ldrexh,ldrexb,ldrexd,strex,   \
                    strexh,strexb,strexd,cdp,ldc,ldc_unindexed,mcr,      \
                    mrc,stc,stc_unindexed,mcrr,mrrc,b,bl,                \

@@ -59,7 +59,7 @@ impl {
 } // end of impl
 
 action {void} execute({ARCH &} {cpu}) {
-  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
+  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEF);
 }
 
 action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer}) {

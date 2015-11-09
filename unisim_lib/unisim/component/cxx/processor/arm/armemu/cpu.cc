@@ -190,14 +190,10 @@ CPU::CPU(const char *name, Object *parent)
   cpsr.Set( M, USER_MODE );
 
   // Set the right format for various of the variables
-  param_cpu_cycle_time_ps.SetFormat(
-                                    unisim::kernel::service::VariableBase::FMT_DEC);
-  param_voltage.SetFormat(
-                          unisim::kernel::service::VariableBase::FMT_DEC);
-  param_trap_on_instruction_counter.SetFormat(
-                                              unisim::kernel::service::VariableBase::FMT_DEC);
-  stat_instruction_counter.SetFormat(
-                                     unisim::kernel::service::VariableBase::FMT_DEC);
+  param_cpu_cycle_time_ps.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_voltage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 }
 
 /** Destructor.

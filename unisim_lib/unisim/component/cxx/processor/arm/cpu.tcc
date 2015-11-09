@@ -435,9 +435,6 @@ CPU<CONFIG>::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
 
   /* report read memory access if necessary */
   ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
-  // if (requires_memory_access_reporting and memory_access_reporting_import)
-  //   memory_access_reporting_import->
-  //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
       
   return value;
 }

@@ -341,15 +341,6 @@ struct CPU
   /**************************************************************/
   /* Memory access methods       END                            */
   /**************************************************************/
-  
-  /* TODO: move this stuff to CP15 */
-  uint32_t m_tls_reg;
-  
-  uint32_t Coproc_GetOneWord( unsigned code, unsigned cp_num, unsigned op1, unsigned op2, unsigned crn, unsigned crm );
-  
-  /**************************************************************/
-  /* Coprocessor methods          END                           */
-  /**************************************************************/
 	
   /** Software Interrupt
    *  This method is called by SWI instructions to handle software interrupts.
@@ -370,22 +361,6 @@ protected:
   typedef std::map<std::string, unisim::util::debug::Register *> RegistersRegistry;
   RegistersRegistry registers_registry;
 		
-  /** Number of SPSR registers.
-   * Privileged modes have private SPSR registers, the following is
-   *   the organization per running mode:
-   * - user:           --
-   * - system:         --
-   * - supervisor:     0
-   * - abort:          1
-   * - undefined:      2
-   * - interrupt:      3
-   * - fast interrupt: 4
-   */
-  const static uint32_t num_phys_spsrs = 5;
-  /** The SPSR registers storage.
-   */
-  PSR spsr[5];
-  
   /** Instruction counter */
   uint64_t instruction_counter;
 	

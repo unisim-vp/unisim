@@ -891,31 +891,75 @@ stm.execute = {
  * ldm ^ (Load Multiple User Registers) instruction 
  */
 
-op ldm_npcusr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: 0b0[1]: 0b1[1]: rn[4]: 0b0[1]: reglist[15] );
-ldm_npcusr.var w : {uint32_t} = {0};
-op ldm_pcusr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: w[1]: 0b1[1]: rn[4]: 0b1[1]: regnpclist[15] );
-ldm_pcusr.var reglist : {uint32_t} = {0x8000|regnpclist};
-
-group ldm_usr( ldm_npcusr, ldm_pcusr );
+op ldm_usr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: 0b0[1]: 0b1[1]: rn[4]: 0b0[1]: reglist[15] );
+ldm_usr.var reject : {Reject} = {(rn == 15) or (reglist == 0)};
 
 ldm_usr.disasm = {
-  buffer << "ldm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")
+  buffer << "ldm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn)
          << ", {" << DisasmRegList(reglist) << "}^";
 };
 
 ldm_usr.execute = {
   if (not CheckCondition(cpu, cond)) return;
-  assert( not "privileged" );
   
-  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
-  while (itr.next()) {
-    cpu.SetBankedRegister( cpu.USER_MODE, itr.reg(), cpu.MemRead32( itr.addr() ) );
+  uint8_t running_mode = cpu.CPSR().Get(M);
+  switch (running_mode) {
+  case ARCH::HYPERVISOR_MODE:
+    cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEF);
+    return;
+  case ARCH::USER_MODE:
+  case ARCH::SYSTEM_MODE:
+    cpu.UnpredictableInsnBehaviour();
+    return;
   }
   
-  // TODO: if (reglist & 0x8000) cpu.MoveSPSRtoCPSR();
+  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
+  // Now Register writes are in user mode
+  cpu.CurrentMode().Swap( cpu ); // OUT
+  cpu.GetMode(cpu.USER_MODE); // IN
+  while (itr.next()) {
+    cpu.SetGPR(itr.reg(), cpu.MemRead32( itr.addr() ) );
+  }
+  cpu.GetMode(cpu.USER_MODE); // OUT
+  cpu.CurrentMode().Swap( cpu ); // IN
+};
+
+op ldm_rfe( cond[4]: 0b100[3]: mod[2]: 0b1[1]: w[1]: 0b1[1]: rn[4]: 0b1[1]: regnpclist[15] );
+ldm_rfe.var reject : {Reject} = {(rn == 15) or ((reglist >> rn) & 1)};
+ldm_rfe.var reglist : {uint32_t} = {regnpclist | 0x8000};
+
+ldm_rfe.disasm = {
+  buffer << "ldm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")
+         << ", {" << DisasmRegList(reglist) << "}^";
+};
+
+ldm_rfe.execute = {
+  if (not CheckCondition(cpu, cond)) return;
   
-  bool overwritten = (reglist >> rn) & 1;
-  if (w and not overwritten) cpu.SetBankedRegister( cpu.USER_MODE, rn, itr.addr() );
+  uint8_t running_mode = cpu.CPSR().Get(M);
+  switch (running_mode) {
+  case ARCH::HYPERVISOR_MODE:
+    cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEF);
+    return;
+  case ARCH::USER_MODE:
+  case ARCH::SYSTEM_MODE:
+    cpu.UnpredictableInsnBehaviour();
+    return;
+  }
+  
+  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
+  uint32_t new_pc_value;
+  while (itr.next()) {
+    uint32_t value = cpu.MemRead32( itr.addr() );
+    if (itr.reg() != 15) cpu.SetGPR( itr.reg(), value );
+    else                 new_pc_value = value;
+  }
+  if (w) cpu.SetGPR( rn, itr.addr() );
+  
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  if ((cpu.CPSR().Get(M) == cpu.HYPERVISOR_MODE) and cpu.CPSR().Get(J) and cpu.CPSR().Get(T))
+    cpu.UnpredictableInsnBehaviour(); // Cannot return to Hyp mode and ThumbEE state
+  cpu.BranchExchange( new_pc_value );
 };
 
 /*
