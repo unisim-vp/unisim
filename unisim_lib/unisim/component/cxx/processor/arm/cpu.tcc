@@ -166,7 +166,29 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   //     reg_spsr[i] =
   //       new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), this, spsr[i].m_value, ss_desc.str().c_str());
   //   }
-
+  
+  // Default value for sctlr (will be overwritten as needed by simulators)
+  SCTLR::TE.Set(      sctlr, 0 ); // Thumb Exception enable
+  SCTLR::AFE.Set(     sctlr, 0 ); // Access flag enable.
+  SCTLR::TRE.Set(     sctlr, 0 ); // TEX remap enable
+  SCTLR::NMFI.Set(    sctlr, 1 ); // Non-maskable FIQ (NMFI) support
+  SCTLR::EE.Set(      sctlr, 0 ); // Exception Endianness.
+  SCTLR::VE.Set(      sctlr, 0 ); // Interrupt Vectors Enable
+  SCTLR::U.Set(       sctlr, 0 ); // Alignment Model (up to ARMv6)
+  SCTLR::FI.Set(      sctlr, 1 ); // Fast interrupts configuration enable
+  SCTLR::UWXN.Set(    sctlr, 0 ); // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
+  SCTLR::WXN.Set(     sctlr, 0 ); // Write permission implies XN (Virtualization Extensions)
+  SCTLR::HA.Set(      sctlr, 0 ); // Hardware Access flag enable.
+  SCTLR::RR.Set(      sctlr, 0 ); // Round Robin select
+  SCTLR::V.Set(       sctlr, 0 ); // Vectors bit
+  SCTLR::I.Set(       sctlr, 1 ); // Instruction cache enable
+  SCTLR::Z.Set(       sctlr, 1 ); // Branch prediction enable.
+  SCTLR::SW.Set(      sctlr, 1 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
+  SCTLR::B.Set(       sctlr, 0 ); // Endianness model (up to ARMv6)
+  SCTLR::CP15BEN.Set( sctlr, 0 ); // CP15 barrier enable.
+  SCTLR::C.Set(       sctlr, 1 ); // Cache enable. This is a global enable bit for data and unified caches.
+  SCTLR::A.Set(       sctlr, 0 ); // Alignment check enable
+  SCTLR::M.Set(       sctlr, 0 ); // MMU enable.
 }
 
 /** Performs a prefetch access.
