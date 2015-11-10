@@ -121,232 +121,97 @@ struct CPU
   //=                    Constructor/Destructor                         =
   //=====================================================================
 
-  /** Constructor.
-   *
-   * @param name the name that will be used by the UNISIM service 
-   *   infrastructure and will identify this object
-   * @param parent the parent object of this object
-   */
-  CPU(const char *name, Object *parent = 0);
-  /** Destructor.
-   */
+  CPU( const char *name, Object *parent = 0 );
   ~CPU();
 
   //=====================================================================
   //=                  Client/Service setup methods                     =
   //=====================================================================
 
-  /** Object setup method.
-   * This method is required for all UNISIM objects and will be called during
-   *   the setup phase.
-   * 
-   * @return true on success, false otherwise
-   */
   virtual bool EndSetup();
-  /** Object disconnect method.
-   * This method is called when this UNISIM object is disconnected from other
-   *   UNISIM objects.
-   */
   virtual void OnDisconnect();
 
   //=====================================================================
   //=                    execution handling methods                     =
   //=====================================================================
 
-  /** Execute one complete instruction.
-   */
   void StepInstruction();
 
   //=====================================================================
   //=             memory injection interface methods                    =
   //=====================================================================
 
-  /** Inject an intrusive read memory operation.
-   *
-   * @param addr the target address to read from
-   * @param buffer the buffer to fill with the read memory
-   * @param size the amount of bytes to read from starting from the target 
-   *   address
-   *
-   * @return true on success, false otherwise
-   */
   virtual bool InjectReadMemory( uint32_t addr, void* buffer, uint32_t size );
-  /** Inject an intrusive write memory operation
-   *
-   * @param addr the target address to write to
-   * @param buffer a buffer containing the data to write
-   * @param size the amount of bytes to write
-   *
-   * @return true on success, false otherwise
-   */
   virtual bool InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size );
 
   //=====================================================================
   //=             memory access reporting control interface methods     =
   //=====================================================================
 
-  /** Set/unset the reporting of finishing instructions.
-   * 
-   * @param report if true set the reporting of finishing
-   *   instructions, unset otherwise
-   */
   virtual void RequiresFinishedInstructionReporting( bool report );
-  /** Set/unset the reporting of memory accesses.
-   * 
-   * @param report if true set the reporting of memory accesses, unset
-   *   otherwise
-   */
   virtual void RequiresMemoryAccessReporting( bool report );
 
   //=====================================================================
   //=             non intrusive memory interface methods                =
   //=====================================================================
 
-  /** Perform a non intrusive read access.
-   * This method performs a normal read, but it does not change the state
-   *   of the caches. It calls ExternalReadMemory if data not in cache.
-   *
-   * @param addr the address to read from
-   * @param buffer the buffer to fill with the read data (must be allocated
-   *   by the caller)
-   * @param size the amount of data to read
-   *
-   * @return true on success, false otherwise
-   */
   virtual bool ReadMemory( uint32_t addr, void* buffer, uint32_t size );
-  /** Perform a non intrusive write access.
-   * This method perform a normal write, but it does not change the state
-   *   of the caches. It calls ExternalWriteMemory in order to modify external
-   *   ocurrences of the address.
-   *
-   * @param addr the address to write to
-   * @param buffer the data to write
-   * @param size the amount of data to write
-   *
-   * @return true on success, false otherwise
-   */
   virtual bool WriteMemory( uint32_t addr, void const* buffer, uint32_t size );
-  /** Perform a non intrusive external read access.
-   * This method is called when a ReadAccess does not find the data in the
-   *   cache.
-   *
-   * @param addr the address to read from
-   * @param buffer the buffer to fill with the read data (must be allocated
-   *   by the caller)
-   * @param size the amount of data to read
-   *
-   * @return true on success, false otherwise
-   */
   virtual bool ExternalReadMemory( uint32_t addr, void* buffer, uint32_t size ) = 0;
-  /** Perform a non intrusive external write access.
-   * This method is called to write non intrusively external memory locations.
-   *
-   * @param addr the address to write to
-   * @param buffer the data to write
-   * @param size the amount of data to write
-   *
-   * @return true on success, false otherwise
-   */
   virtual bool ExternalWriteMemory( uint32_t addr, void const* buffer, uint32_t size ) = 0;
 
   //=====================================================================
   //=             CPURegistersInterface interface methods               =
   //=====================================================================
 
-  /** Get a register by its name.
-   * Gets a register interface to the register specified by name.
-   *
-   * @param name the name of the requested register
-   *
-   * @return a pointer to the RegisterInterface corresponding to name
-   */
   virtual unisim::util::debug::Register* GetRegister( const char* name );
 		
   //=====================================================================
   //=                   DebugDisasmInterface methods                    =
   //=====================================================================
 
-  /** Disasm an instruction address.
-   * Returns a string with the disassembling of the instruction found 
-   *   at address addr.
-   * 
-   * @param addr the address of the instruction to disassemble
-   * @param next_addr the address following the requested instruction
-   *
-   * @return the disassembling of the requested instruction address
-   */
   virtual std::string Disasm(uint32_t addr, uint32_t &next_addr);
 		
   //=====================================================================
   //=                   LinuxOSInterface methods                        =
   //=====================================================================
 	
-  /** Exit system call.
-   * The LinuxOS service calls this method when the program has finished.
-   *
-   * @param ret the exit cade sent by the exit system call.
-   */
   virtual void PerformExit(int ret);
 	
   /**************************************************************/
   /* Memory access methods       START                          */
   /**************************************************************/
 	
-  /** Refill the Instruction Prefetch Buffer from the memory system
-   * (through the instruction cache if present).
-   *
-   * This method allows the user to prefetch instructions from the memory
-   * system, that is, it tries to read from the pertinent caches and if
-   * failed from the external memory system.
-   * 
-   * @param address the address of the requiered instruction that the
-   *                prefetch instruction buffer should encompass, once
-   *                the refill is complete.
-   */
-  void RefillInsnPrefetchBuffer(uint32_t base_address);
+  void RefillInsnPrefetchBuffer( uint32_t base_address );
   
-  /** Reads ARM32 instructions from the memory system
-   * This method allows the user to read instructions from the memory system,
-   *   that is, it tries to read from the pertinent caches and if failed from
-   *   the external memory system.
-   * 
-   * @param address the address to read data from
-   * @param insn the resulting instruction word (output reference)
-   */
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn);
-  
-  /** Reads THUMB instructions from the memory system
-   * This method allows the user to read instructions from the memory system,
-   *   that is, it tries to read from the pertinent caches and if failed from
-   *   the external memory system.
-   * 
-   * @param address the address to read data from
-   * @param insn the resulting instruction word (output reference)
-   */
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn);
+  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
+  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn );
   
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
   {
     if (requires_memory_access_reporting and memory_access_reporting_import)
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
+  
   /**************************************************************/
   /* Memory access methods       END                            */
   /**************************************************************/
 	
-  /** Software Interrupt
-   *  This method is called by SWI instructions to handle software interrupts.
-   */
+  /**************************************************/
+  /* Software Exceptions                     START  */
+  /**************************************************/
+	
   void SWI( uint32_t imm );
-  /** Breakpoint
-   *  This method is called by BKPT instructions to handle breakpoints.
-   */
   void BKPT( uint32_t imm );
 	
+  /**************************************************/
+  /* Software Exceptions                      END   */
+  /**************************************************/
+  
 protected:
-  /** Decoder for the arm32 instruction set. */
+  /** Decoder for the ARM32 instruction set. */
   unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
-  /** Decoder for the thumb instruction set. */
+  /** Decoder for the THUMB instruction set. */
   unisim::component::cxx::processor::arm::isa::thumb2::Decoder<CPU> thumb_decoder;
 
   /** The registers interface for debugging purpose */
@@ -356,66 +221,45 @@ protected:
   /** Instruction counter */
   uint64_t instruction_counter;
 	
-  /** CPU cycle time in picoseconds.
-   */
+  /** CPU cycle time in picoseconds. */
   uint64_t cpu_cycle_time_ps;
-  /** CPU voltage in mV, required to compute cache power consumption.
-   */
+  /** CPU voltage in mV, required to compute cache power consumption. */
   uint64_t voltage;
   // uint64_t cpu_cycle;      //!< Number of cpu cycles
   // uint64_t bus_cycle;      //!< Number of front side bus cycles
 
-  /** Indicates if the emulator is running in verbose mode.
-   * 0 indicates no verbose.
-   * Different than 0 indicates verbose.
-   */
+  /** Verbose level of the emulator */
   uint32_t verbose;
-  /** Trap when reaching the number of instructions indicated.
-   */
+  /** Trap when reaching the number of instructions indicated. */
   uint64_t trap_on_instruction_counter;
-  /** String describing the endianness of the processor.
-   */
+  /** String describing the endianness of the processor. */
   std::string default_endianness_string;
 	
   /************************************************************************/
   /* UNISIM parameters, statistics and registers                    START */
   /************************************************************************/
 
-  /** UNISIM Parameter to set the default endianness.
-   */
+  /** UNISIM Parameter to set the default endianness. */
   unisim::kernel::service::Parameter<std::string> param_default_endianness;
-  /** UNISIM Parameter to set the CPU cycle time.
-   */
+  /** UNISIM Parameter to set the CPU cycle time. */
   unisim::kernel::service::Parameter<uint64_t> param_cpu_cycle_time_ps;
-  /** UNISIM Parameter to set the CPU voltage.
-   */
+  /** UNISIM Parameter to set the CPU voltage. */
   unisim::kernel::service::Parameter<uint64_t> param_voltage;
-  /** UNISIM Parameter to set/unset verbose mode.
-   */
+  /** UNISIM Parameter to set/unset verbose mode. */
   unisim::kernel::service::Parameter<uint32_t> param_verbose;
-  /** UNISIM Parameter to set traps on instruction counter.
-   */
-  unisim::kernel::service::Parameter<uint64_t> 
-  param_trap_on_instruction_counter;
-	
-  /** UNISIM Statistic of the number of instructions executed.
-   */
+  /** UNISIM Parameter to set traps on instruction counter. */
+  unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
+  /** UNISIM Statistic of the number of instructions executed. */
   unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
-
-  /** UNISIM registers for the logical registers.
-   */
-  unisim::kernel::service::Register<uint32_t> *reg_gpr[16];
-  /** UNISIM register for the stack pointer register (gpr 13).
-   */
+  /** UNISIM registers for the logical registers. */
+  unisim::kernel::service::Register<uint32_t>* reg_gpr[16];
+  /** UNISIM register for the stack pointer register (gpr 13). */
   unisim::kernel::service::Register<uint32_t> reg_sp;
-  /** UNISIM register for the link register (gpr 14).
-   */
+  /** UNISIM register for the link register (gpr 14). */
   unisim::kernel::service::Register<uint32_t> reg_lr;
-  /** UNISIM register for the program counter register (gpr 15).
-   */
+  /** UNISIM register for the program counter register (gpr 15). */
   unisim::kernel::service::Register<uint32_t> reg_pc;
-  /** UNISIM register for the CPSR register.
-   */
+  /** UNISIM register for the CPSR register. */
   unisim::kernel::service::Register<uint32_t> reg_cpsr;
   
   // TODO: provide UNISIM registers for SPSRS (will be possible once
@@ -427,28 +271,6 @@ protected:
   /************************************************************************/
   /* UNISIM parameters, statistics and registers                      END */
   /************************************************************************/
-
-  /************************************************************************/
-  /* Memory access handling                                         START */
-  /************************************************************************/
-	
-  /** Performs a prefetch access.
-   *
-   * @param addr the address of the memory prefetch access
-   */
-  void PerformPrefetchAccess( uint32_t addr );
-  /** Performs a write access.
-   * @param addr the address of the memory write access
-   * @param size the size of the memory write access
-   * @param value the value of the memory write access
-   */
-  void PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
-  /** Performs a read access.
-   * @param addr the address of the memory read access
-   * @param size the size of the memory read access
-   * @param _signed the nature of the memory read access (signed or unsigned)
-   */
-  uint32_t PerformReadAccess( uint32_t addr, uint32_t size, bool _signed );
 
   //=====================================================================
   //=               Instruction prefetch buffer                         =

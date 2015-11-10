@@ -323,12 +323,12 @@ struct CPU
   /** Determine wether the processor instruction stream is inside an
    * IT block.
    */
-  bool itblock() const { return cpsr.InITBlock(); }
+  bool itblock() const { return CONFIG::insnsT2 ? cpsr.InITBlock() : false; }
   
   /** Return the current condition associated to the IT state of the
    * processor.
    */
-  uint32_t itcond() const { return cpsr.ITGetCondition(); }
+  uint32_t itcond() const { return CONFIG::insnsT2 ? cpsr.ITGetCondition() : COND_AL; }
   
   bool m_isit; /* determines wether current instruction is an IT one. */
   void ITSetState( uint32_t cond, uint32_t mask )
