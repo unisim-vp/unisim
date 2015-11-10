@@ -58,7 +58,6 @@ namespace armemu {
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
-using unisim::service::interfaces::LinuxOS;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
@@ -66,6 +65,9 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::LinuxOS;
+using unisim::util::endian::E_BIG_ENDIAN;
+using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::LittleEndian2Host;
 using unisim::util::debug::SimpleRegister;
@@ -98,19 +100,18 @@ private:
  *   infrastructure and will identify this object
  * @param parent the parent object of this object
  */
-
 CPU::CPU(const char *name, Object *parent)
   : unisim::kernel::service::Object(name, parent)
   , unisim::component::cxx::processor::arm::CPU<ARMv7emu>(name, parent)
-  , unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
-  , unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >(name, parent)
-  , Client<LinuxOS>(name, parent)
+  , Service<MemoryAccessReportingControl>(name, parent)
+  , Client<MemoryAccessReporting<uint32_t> >(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
   , Client<DebugControl<uint32_t> >(name, parent)
   , Client<TrapReporting>(name, parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service<Registers>(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
+  , Client<LinuxOS>(name, parent)
   , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
   , memory_access_reporting_import("memory-access-reporting-import", this)
   , disasm_export("disasm-export", this)
@@ -119,6 +120,7 @@ CPU::CPU(const char *name, Object *parent)
   , memory_export("memory-export", this)
   , debug_control_import("debug-control-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
+  , exception_trap_reporting_import("exception-trap-reporting-import", this)
   , linux_os_import("linux-os-import", this)
   , requires_finished_instruction_reporting(true)
   , requires_memory_access_reporting(true)

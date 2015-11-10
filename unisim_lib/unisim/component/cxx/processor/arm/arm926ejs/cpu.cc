@@ -75,6 +75,7 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::LinuxOS;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
@@ -88,6 +89,21 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 
+// class ProgramCounterRegister (unisim::util::debug::Register) used for PC/R15 view
+class ProgramCounterRegister : public Register
+{
+public:
+  ProgramCounterRegister(const char* _name, CPU& _cpu) : name(_name), cpu(_cpu) {}
+  virtual ~ProgramCounterRegister() {}
+  virtual const char *GetName() const { return name.c_str(); }
+  virtual void GetValue(void *buffer) const { *((uint32_t*)buffer) = cpu.GetNPC(); }
+  virtual void SetValue(const void *buffer) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
+  virtual int GetSize() const { return 4; }
+private:
+  std::string name;
+  CPU&        cpu;
+};
+
 /** Constructor.
  *
  * @param name the name that will be used by the UNISIM service 
@@ -97,23 +113,25 @@ using unisim::kernel::logger::EndDebugError;
 CPU::CPU(const char *name, Object *parent)
   : Object(name, parent)
   , unisim::component::cxx::processor::arm::CPU<ARM926ejs>(name, parent)
+  , Service<MemoryAccessReportingControl>(name, parent)
+  , Client<MemoryAccessReporting<uint64_t> >(name, parent)
   , Service<MemoryInjection<uint64_t> >(name, parent)
   , Client<DebugControl<uint64_t> >(name, parent)
-  , Client<MemoryAccessReporting<uint64_t> >(name, parent)
   , Client<TrapReporting>(name, parent)
-  , Service<MemoryAccessReportingControl>(name, parent)
   , Service<Disassembly<uint64_t> >(name, parent)
   , Service<Registers>(name, parent)
   , Service<Memory<uint64_t> >(name, parent)
+  , Client<LinuxOS>(name, parent)
+  , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
+  , memory_access_reporting_import("memory-access-reporting-import", this)
   , disasm_export("disasm-export", this)
   , registers_export("registers-export", this)
   , memory_injection_export("memory-injection-export", this)
   , memory_export("memory-export", this)
-  , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
   , debug_control_import("debug-control-import", this)
-  , memory_access_reporting_import("memory-access-reporting-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
   , exception_trap_reporting_import("exception-trap-reporting-import", this)
+  , linux_os_import("linux-os-import", this)
   , ltlb("lockdown-tlb", this)
   , tlb("tlb", this)
   , arm32_decoder()

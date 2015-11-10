@@ -35,27 +35,26 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CPU_HH__
 
-#include <unisim/component/cxx/processor/arm/models.hh>
-#include <unisim/component/cxx/processor/arm/cpu.hh>
-#include <unisim/component/cxx/processor/arm/hostfloat.hh>
-#include <unisim/component/cxx/processor/arm/memory_op.hh>
 #include <unisim/component/cxx/processor/arm/arm926ejs/tlb.hh>
 #include <unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh>
+#include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh>
+#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/component/cxx/processor/arm/hostfloat.hh>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/disassembly.hh>
-#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
-#include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/register.hh>
 #include <string>
-#include <queue>
 #include <inttypes.h>
 
 namespace unisim {
@@ -85,14 +84,15 @@ struct ARM926ejs
 
 struct CPU
   : public unisim::component::cxx::processor::arm::CPU<ARM926ejs>
+  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
   , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint64_t> >
-  , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
-  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint64_t> >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
 {
   typedef CPU this_type;
   typedef unisim::component::cxx::processor::arm::CPU<ARM926ejs> base_cpu;
@@ -102,24 +102,16 @@ struct CPU
   //=                  public service imports/exports                   =
   //=====================================================================
 		
-  /** Disassembly service export. */
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> >  disasm_export;
-  /** Registers service export. */
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers>  registers_export;
-  /** Memory injection service export. */
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> >   memory_injection_export;
-  /** Memory service export. */
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> >   memory_export;
-  /** Memory access reporting control service export. */
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl>   memory_access_reporting_control_export;
-  /** Debug control service import. */
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint64_t> >  debug_control_import;
-  /** Memory access reporting service import. */
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >   memory_access_reporting_import;
-  /** Symbol table lookup service import. */
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> >   symbol_table_lookup_import;
-  /** Exception trap reporting service import. */
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>  exception_trap_reporting_import;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint64_t> > debug_control_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> exception_trap_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
 
   //=====================================================================
   //=                    Constructor/Destructor                         =
@@ -390,9 +382,9 @@ protected:
   RegistersRegistry registers_registry;
 		
   /** Decoder for the arm32 instruction set. */
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU>  arm32_decoder;
+  unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
   /** Decoder for the thumb instruction set. */
-  unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU>  thumb_decoder;
+  unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU> thumb_decoder;
 
   /** The exceptions that have occured */
   uint32_t exception;

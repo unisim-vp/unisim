@@ -39,10 +39,9 @@
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
-#include <unisim/component/cxx/processor/arm/memory_op.hh>
-#include <unisim/component/cxx/processor/arm/models.hh>
-#include <unisim/component/cxx/processor/arm/memory_op.hh>
-#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/component/cxx/processor/arm/hostfloat.hh>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
@@ -50,10 +49,9 @@
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
+#include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/register.hh>
-#include <unisim/util/queue/queue.hh>
-#include <unisim/util/queue/queue.tcc>
 #include <string>
 #include <inttypes.h>
 
@@ -88,37 +86,31 @@ struct CPU
   : public unisim::component::cxx::processor::arm::CPU<ARMv7emu>
   , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
-  , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
   , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint32_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint32_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
   , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint32_t> >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint32_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
 {
   typedef CPU this_type;
+  typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> base_cpu;
+  typedef typename base_cpu::CP15Reg CP15Reg;
 
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
 		
-  /** Memory access reporting control service export. */
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
-  /** Memory access reporting service import. */
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint32_t> > memory_access_reporting_import;
-  /** Disassembly service export. */
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint32_t> >  disasm_export;
-  /** Registers service export. */
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers>  registers_export;
-  /** Memory injection service export. */
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint32_t> >  memory_injection_export;
-  /** Memory service export. */
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint32_t> >  memory_export;
-  /** Debug control service import. */
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint32_t> >  debug_control_import;
-  /** Symbol table lookup service import. */
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint32_t> > disasm_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint32_t> > memory_injection_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint32_t> > memory_export;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint32_t> > debug_control_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint32_t> > symbol_table_lookup_import;
-  /** Linux OS service import. */
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> exception_trap_reporting_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
 
   /** Indicates if the finished instructions require to be reported. */
