@@ -49,11 +49,9 @@
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/util/debug/register.hh>
 #include <string>
 #include <inttypes.h>
 
@@ -90,7 +88,6 @@ struct CPU
   , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint64_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
   , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint64_t> >
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Registers >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
 {
@@ -105,7 +102,6 @@ struct CPU
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint64_t> > debug_control_import;
@@ -237,10 +233,6 @@ protected:
   /** Decoder for the THUMB instruction set. */
   unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU> thumb_decoder;
 
-  /** The registers interface for debugging purpose */
-  typedef std::map<std::string, unisim::util::debug::Register *> RegistersRegistry;
-  RegistersRegistry registers_registry;
-		
   /** The exceptions that have occured */
   uint32_t exception;
 
@@ -269,7 +261,7 @@ protected:
   bool requires_finished_instruction_reporting;
 
   /************************************************************************/
-  /* UNISIM parameters, statistics and registers                    START */
+  /* UNISIM parameters and statistics                    START            */
   /************************************************************************/
 
   /** UNISIM Parameter to set the CPU cycle time. */
@@ -286,21 +278,9 @@ protected:
   unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
   /** UNISIM Statistic with the address of the current instruction. */
   unisim::kernel::service::Statistic<uint32_t> stat_cur_instruction_address;
-  /** UNISIM registers for the physical registers. */
-  unisim::kernel::service::Register<uint32_t>* reg_phys_gpr[32];
-  /** UNISIM registers for the logical registers. */
-  unisim::kernel::service::Register<uint32_t>* reg_gpr[16];
-  /** UNISIM register for the stack pointer register (gpr 13). */
-  unisim::kernel::service::Register<uint32_t> reg_sp;
-  /** UNISIM register for the link register (gpr 14). */
-  unisim::kernel::service::Register<uint32_t> reg_lr;
-  /** UNISIM register for the program counter register (gpr 15). */
-  unisim::kernel::service::Register<uint32_t> reg_pc;
-  /** UNISIM register for the CPSR register. */
-  unisim::kernel::service::Register<uint32_t> reg_cpsr;
-
+  
   /************************************************************************/
-  /* UNISIM parameters, statistics and registers                      END */
+  /* UNISIM parameters and statistics                                 END */
   /************************************************************************/
 
   /************************************************************************/

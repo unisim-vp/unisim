@@ -47,11 +47,9 @@
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/util/debug/register.hh>
 #include <string>
 #include <inttypes.h>
 
@@ -90,7 +88,6 @@ struct CPU
   , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint32_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
   , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint32_t> >
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Registers >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint32_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
 {
@@ -105,7 +102,6 @@ struct CPU
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint32_t> > memory_access_reporting_import;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint32_t> > disasm_export;
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint32_t> > memory_injection_export;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint32_t> > memory_export;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint32_t> > debug_control_import;
@@ -161,12 +157,6 @@ struct CPU
   virtual bool ExternalWriteMemory( uint32_t addr, void const* buffer, uint32_t size ) = 0;
 
   //=====================================================================
-  //=             CPURegistersInterface interface methods               =
-  //=====================================================================
-
-  virtual unisim::util::debug::Register* GetRegister( const char* name );
-		
-  //=====================================================================
   //=                   DebugDisasmInterface methods                    =
   //=====================================================================
 
@@ -214,10 +204,6 @@ protected:
   /** Decoder for the THUMB instruction set. */
   unisim::component::cxx::processor::arm::isa::thumb2::Decoder<CPU> thumb_decoder;
 
-  /** The registers interface for debugging purpose */
-  typedef std::map<std::string, unisim::util::debug::Register *> RegistersRegistry;
-  RegistersRegistry registers_registry;
-		
   /** Instruction counter */
   uint64_t instruction_counter;
 	
@@ -235,9 +221,9 @@ protected:
   /** String describing the endianness of the processor. */
   std::string default_endianness_string;
 	
-  /************************************************************************/
-  /* UNISIM parameters, statistics and registers                    START */
-  /************************************************************************/
+  /**********************************************************/
+  /* UNISIM parameters, statistics                    START */
+  /**********************************************************/
 
   /** UNISIM Parameter to set the default endianness. */
   unisim::kernel::service::Parameter<std::string> param_default_endianness;
@@ -251,26 +237,10 @@ protected:
   unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
   /** UNISIM Statistic of the number of instructions executed. */
   unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
-  /** UNISIM registers for the logical registers. */
-  unisim::kernel::service::Register<uint32_t>* reg_gpr[16];
-  /** UNISIM register for the stack pointer register (gpr 13). */
-  unisim::kernel::service::Register<uint32_t> reg_sp;
-  /** UNISIM register for the link register (gpr 14). */
-  unisim::kernel::service::Register<uint32_t> reg_lr;
-  /** UNISIM register for the program counter register (gpr 15). */
-  unisim::kernel::service::Register<uint32_t> reg_pc;
-  /** UNISIM register for the CPSR register. */
-  unisim::kernel::service::Register<uint32_t> reg_cpsr;
-  
-  // TODO: provide UNISIM registers for SPSRS (will be possible once
-  // UNISIM registers go back in base class).
-  //
-  // /** UNISIM registers for the SPRS registers.  */
-  // unisim::kernel::service::Register<uint32_t> *reg_spsr[5];
 
-  /************************************************************************/
-  /* UNISIM parameters, statistics and registers                      END */
-  /************************************************************************/
+  /**********************************************************/
+  /* UNISIM parameters, statistics                      END */
+  /**********************************************************/
 
   //=====================================================================
   //=               Instruction prefetch buffer                         =

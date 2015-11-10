@@ -45,6 +45,8 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/util/debug/register.hh>
 #include <map>
 #include <inttypes.h>
 
@@ -64,6 +66,7 @@ namespace arm {
 template <typename CONFIG>
 struct CPU
   : public virtual unisim::kernel::service::Object
+  , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
 {
   typedef CONFIG Config;
   typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR fpscr_type;
@@ -117,6 +120,8 @@ struct CPU
   static uint32_t const PSR_UNALLOC_MASK = 0xff0fffff;
   /* Number of logic registers */
   static unsigned const num_log_gprs = 16;
+  
+  
   
   /** Base class for the ARM Modes
    *
@@ -680,6 +685,31 @@ public:
   F64  GetVDR( unsigned idx ) { return erb.ef64.GetReg( erb, idx ); }
   void SetVDR( unsigned idx, F64 val )   { erb.ef64.SetReg( erb, idx, val ); }
 
+  /*************************************/
+  /* Debug Registers             START */
+  /*************************************/
+  
+public:
+
+  virtual unisim::util::debug::Register* GetRegister( const char* name );
+		
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+  
+protected:
+  /** The registers interface for debugging purpose */
+  typedef std::map<std::string, unisim::util::debug::Register*> RegistersRegistry;
+  RegistersRegistry registers_registry;
+  
+  typedef std::set<unisim::util::debug::Register*> DebugRegisterPool;
+  DebugRegisterPool debug_register_pool;
+  typedef std::set<unisim::kernel::service::VariableBase*> VariableRegisterPool;
+  VariableRegisterPool variable_register_pool;
+  
+  /*************************************/
+  /* Debug Registers              END  */
+  /*************************************/
+  
+  
 };
 	
 } // end of namespace arm

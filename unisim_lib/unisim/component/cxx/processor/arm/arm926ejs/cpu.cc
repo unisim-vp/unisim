@@ -89,21 +89,6 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 
-// class ProgramCounterRegister (unisim::util::debug::Register) used for PC/R15 view
-class ProgramCounterRegister : public Register
-{
-public:
-  ProgramCounterRegister(const char* _name, CPU& _cpu) : name(_name), cpu(_cpu) {}
-  virtual ~ProgramCounterRegister() {}
-  virtual const char *GetName() const { return name.c_str(); }
-  virtual void GetValue(void *buffer) const { *((uint32_t*)buffer) = cpu.GetNPC(); }
-  virtual void SetValue(const void *buffer) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
-  virtual int GetSize() const { return 4; }
-private:
-  std::string name;
-  CPU&        cpu;
-};
-
 /** Constructor.
  *
  * @param name the name that will be used by the UNISIM service 

@@ -148,6 +148,77 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   modes[0b11011] = new BankedMode<CPU,0b0110000000000000>( "und" ); // Undefined mode
   modes[0b11111] = new Mode( "sys" ); // System mode (No banked regs, using main regs)
 
+  /*************************************/
+  /* Registers Debug Accessors   START */
+  /*************************************/
+  
+  // initialize the registers debugging interface
+  for (unsigned i = 0; i < 15; i++) {
+    std::string name, pretty_name, description;
+    { std::stringstream ss; ss << "r" << i; name == ss.str(); }
+    { std::stringstream ss; ss << DisasmRegister( i ); pretty_name == ss.str(); }
+    { std::stringstream ss; ss << "Logical register #" << i; description == ss.str(); }
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( pretty_name, &gpr[i] );
+    var_reg = new unisim::kernel::service::Register<uint32_t>( pretty_name.c_str(), this, gpr[i], description.c_str() );
+    registers_registry[name] = dbg_reg;
+    if (pretty_name != name)
+      registers_registry[pretty_name] = dbg_reg;
+    debug_register_pool.insert( dbg_reg );
+    variable_register_pool.insert( var_reg );
+  }
+  
+  // Specific PC Accessor class
+  ProgramCounterRegister : public unisim::util::debug::Register
+  {
+    ProgramCounterRegister(CPU& _cpu) : cpu(_cpu) {}
+    virtual ~ProgramCounterRegister() {}
+    virtual const char *GetName() const { return "pc"; }
+    virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.next_pc; }
+    virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
+    virtual int  GetSize() const { return 4; }
+    CPU&        cpu;
+  };
+
+  // /** UNISIM registers for the logical registers. */
+  //  reg_gpr[16];
+  // /** UNISIM register for the stack pointer register (gpr 13). */
+  // unisim::kernel::service::Register<uint32_t> reg_sp;
+  // /** UNISIM register for the link register (gpr 14). */
+  // unisim::kernel::service::Register<uint32_t> reg_lr;
+  // /** UNISIM register for the program counter register (gpr 15). */
+  // unisim::kernel::service::Register<uint32_t> reg_pc;
+  
+  // TODO: provide UNISIM registers for SPSRS (will be possible once
+  // UNISIM registers go back in base class).
+  //
+  // /** UNISIM registers for the SPRS registers.  */
+  // unisim::kernel::service::Register<uint32_t> *reg_spsr[5];
+  registers_registry["r15"] =  new ProgramCounterRegister("r15", *this);
+  registers_registry["pc"] =   new ProgramCounterRegister("pc", *this);
+  registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
+  registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
+  registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
+  
+  registers_registry["sl"] = new SimpleRegister<uint32_t>("sl", &gpr[10]);
+  registers_registry["fp"] = new SimpleRegister<uint32_t>("fp", &gpr[11]);
+  registers_registry["ip"] = new SimpleRegister<uint32_t>("ip", &gpr[12]);
+  
+  for (unsigned int i = 0; i < (num_log_gprs - 1); i++)
+    {
+      std::stringstream ss, ss_desc;
+      ss << "GPR[" << i << "]";
+      ss_desc << "Logical register " << i;
+      reg_gpr[i] = 
+        
+    }
+  reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
+  // This implementation of the arm architecture can only run in user mode,
+  //   so we can already set CPSR to that mode.
+  cpsr.Set( M, USER_MODE );
+
+  
+  
+
   // TODO: Provide access to Banked Registers
   // for (unsigned int i = 0; i < num_phys_gprs; i++)
   //   {

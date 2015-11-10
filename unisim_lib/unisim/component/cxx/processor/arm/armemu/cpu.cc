@@ -79,21 +79,6 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 
-// class ProgramCounterRegister (unisim::util::debug::Register) used for PC/R15 view
-class ProgramCounterRegister : public Register
-{
-public:
-  ProgramCounterRegister(const char* _name, CPU& _cpu) : name(_name), cpu(_cpu) {}
-  virtual ~ProgramCounterRegister() {}
-  virtual const char *GetName() const { return name.c_str(); }
-  virtual void GetValue(void *buffer) const { *((uint32_t*)buffer) = cpu.GetNPC(); }
-  virtual void SetValue(const void *buffer) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
-  virtual int GetSize() const { return 4; }
-private:
-  std::string name;
-  CPU&        cpu;
-};
-
 /** Constructor.
  *
  * @param name the name that will be used by the UNISIM service 
@@ -160,37 +145,6 @@ CPU::CPU(const char *name, Object *parent)
            "The CPSR register.")
   , ipb_base_address( -1 )
 {
-  // initialize the registers debugging interface
-  for(int i = 0; i < 15; i++) {
-    std::stringstream str;
-    str << "r" << i;
-    registers_registry[str.str()] =
-      new SimpleRegister<uint32_t>(str.str(), &gpr[i]);
-  }
-  registers_registry["r15"] =  new ProgramCounterRegister("r15", *this);
-  registers_registry["pc"] =   new ProgramCounterRegister("pc", *this);
-  registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
-  registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
-  registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
-  
-  registers_registry["sl"] = new SimpleRegister<uint32_t>("sl", &gpr[10]);
-  registers_registry["fp"] = new SimpleRegister<uint32_t>("fp", &gpr[11]);
-  registers_registry["ip"] = new SimpleRegister<uint32_t>("ip", &gpr[12]);
-  
-  for (unsigned int i = 0; i < (num_log_gprs - 1); i++)
-    {
-      std::stringstream ss, ss_desc;
-      ss << "GPR[" << i << "]";
-      ss_desc << "Logical register " << i;
-      reg_gpr[i] = 
-        new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
-                                                        this, gpr[i], ss_desc.str().c_str());
-    }
-  reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
-  // This implementation of the arm architecture can only run in user mode,
-  //   so we can already set CPSR to that mode.
-  cpsr.Set( M, USER_MODE );
-
   // Set the right format for various of the variables
   param_cpu_cycle_time_ps.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   param_voltage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);

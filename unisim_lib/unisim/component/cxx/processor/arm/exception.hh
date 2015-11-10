@@ -46,8 +46,6 @@ namespace arm {
 namespace exception {
   
   /* RegisterField for the virtual exception vector */
-  using unisim::component::cxx::processor::arm::RegisterField;
-  
   static RegisterField< 0,1> const RESET;
   static RegisterField< 1,1> const UNDEF;
   static RegisterField< 2,1> const SWI;
