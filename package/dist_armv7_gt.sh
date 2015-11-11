@@ -466,6 +466,7 @@ m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
 m4/tlm20.m4 \
+m4/scml2.m4 \
 m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
@@ -692,7 +693,7 @@ Requirements:
   - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
 
 Building instructions:
-  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
+  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir> --with-scml2=<path-to-scml2-install-dir>
   $ make
 
 Installing (optional):
@@ -758,7 +759,7 @@ if [ "${has_to_build_configure_cross}" = "yes" ]; then
 HERE=\$(pwd)
 MY_DIR=\$(cd \$(dirname \$0); pwd)
 
-# remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
+# remove --host, --with-systemc, --with-tlm20, --with-scml2, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
 host=""
 help=""
 i=0
@@ -769,7 +770,7 @@ do
 		--host=*)
 			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
 			;;
-		--with-systemc=* | --with-tlm20=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
+		--with-systemc=* | --with-tlm20=* | --with-scml2 | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
 			;;
 		--help=* | --help)
 			help="yes"
@@ -989,6 +990,7 @@ if [ "${has_to_build_armv7_gt_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${ARMV7_GT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TLM20" >> "${ARMV7_GT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_SCML2" >> "${ARMV7_GT_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ARMV7_GT_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ARMV7_GT_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-armv7_gt-${ARMV7_GT_VERSION}\"], [path of shared data relative to bin directory])" >> "${ARMV7_GT_CONFIGURE_AC}"
