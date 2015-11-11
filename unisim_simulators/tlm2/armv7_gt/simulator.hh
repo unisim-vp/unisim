@@ -70,7 +70,7 @@ struct RouterCFG
 {
   typedef uint32_t ADDRESS;
   static unsigned const INPUT_SOCKETS = 1;
-  static unsigned const OUTPUT_SOCKETS = 2;
+  static unsigned const OUTPUT_SOCKETS = 1;
   static unsigned const MAX_NUM_MAPPINGS = 8;
   static unsigned const BUSWIDTH = 32;
   typedef tlm::tlm_base_protocol_types TYPES;
