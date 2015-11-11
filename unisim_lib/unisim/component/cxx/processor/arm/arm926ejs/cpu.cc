@@ -114,6 +114,8 @@ CPU::CPU(const char *name, Object *parent)
   , linux_os_import("linux-os-import", this)
   , ltlb("lockdown-tlb", this)
   , tlb("tlb", this)
+  , icache("icache", this)
+  , dcache("dcache", this)
   , arm32_decoder()
   , thumb_decoder()
   , exception(0)
@@ -1539,8 +1541,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "MIDR, Main ID Register"; }
-          void Write( base_cpu& cpu, uint32_t value ) { throw 0; }
-          uint32_t Read( base_cpu& cpu ) {
+          void Write( BaseCpu& _cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( BaseCpu& _cpu ) {
             return
               ((uint32_t)0x041  << 24) |
               ((uint32_t)0x0    << 20) |
@@ -1557,11 +1559,11 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CTR, Cache Type Register"; }
-          void Write( CPU& cpu, uint32_t value ) { throw 0; }
-          uint32_t Read( CPU& cpu ) {
+          void Write( BaseCpu& _cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( BaseCpu& _cpu ) {
             bool unified = false;
             uint32_t isize = 0, iassoc = 0, ilen = 0, dsize = 0, dassoc = 0, dlen = 0;
-            cpu.GetCacheInfo( unified, isize, iassoc, ilen, dsize, dassoc, dlen );
+            dynamic_cast<CPU&>( _cpu ).GetCacheInfo( unified, isize, iassoc, ilen, dsize, dassoc, dlen );
             uint32_t result = 0x1c000000UL;
             if (not unified) result |= 0x01000000UL;
             else            { dsize = isize; dassoc = iassoc; dlen = ilen; }
@@ -1614,24 +1616,91 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
+    case CP15ENCODE( 2, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
+          /* TODO: handle SBZ(DGP=0x00003fffUL)... */
+          void Write( BaseCpu& _cpu, uint32_t value ) { throw 0; /* dynamic_cast<CPU&>( _cpu ).ttbr0 = value; */ }
+          uint32_t Read( BaseCpu& _cpu ) { throw 0; return 0 /* dynamic_cast<CPU&>( _cpu ).ttbr0 */; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 5, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
+          uint32_t Read( BaseCpu& _cpu ) { throw 0; return 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).InvalidateCache(true, false); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 5, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ICIMVAU, Invalidate instruction caches by MVA to PoU"; }
+          uint32_t Read( BaseCpu& _cpu ) { throw 0; return 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).InvalidateICacheSingleEntryWithMVA(value); }
+        } x;
+        return x;
+      } break;
+
     case CP15ENCODE( 7, 0, 7, 0 ):
       {
         static struct : public CP15Reg
         {
           char const* Describe() { return "?, Invalidating instruction and data"; }
-          uint32_t Read( base_cpu& cpu ) { throw 0; return 0; }
-          void Write( base_cpu& cpu, uint32_t value ) { cpu.InvalidateCache(true, true); }
+          uint32_t Read( BaseCpu& _cpu ) { throw 0; return 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).InvalidateCache(true, true); }
         } x;
         return x;
       } break;
       
+    case CP15ENCODE( 7, 0, 10, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DCCMVAC, Clean data cache line by MVA to PoC"; }
+          uint32_t Read( BaseCpu& _cpu ) { throw 0; return 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).CleanDCacheSingleEntryWithMVA(value, false); }
+        } x;
+        return x;
+      } break;
+
     case CP15ENCODE( 7, 0, 10, 3 ):
       {
         static struct : public CP15Reg
         {
           char const* Describe() { return "Test And Clean DCache"; }
-          void Write( base_cpu& cpu, uint32_t value ) { throw 0; }
-          uint32_t Read( base_cpu& cpu ) { return cpu.TestAndCleanDCache() ? 0x40000000UL : 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).TestAndCleanDCache() ? 0x40000000UL : 0; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 10, 4 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CP15DSB, Data Synchronization Barrier operation"; }
+          uint32_t Read( BaseCpu& _cpu ) { throw 0; return 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).DrainWriteBuffer(); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 14, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
+          uint32_t Read( BaseCpu& _cpu ) { throw 0; return 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).CleanDCacheSingleEntryWithMVA(value, true); }
         } x;
         return x;
       } break;
@@ -1641,16 +1710,49 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "?, Test Clean And Invalidate DCache"; }
-          uint32_t Read( base_cpu& cpu ) { return cpu.TestCleanAndInvalidateDCache() ? 0x40000000UL : 0; }
-          void Write( base_cpu& cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).TestCleanAndInvalidateDCache() ? 0x40000000UL : 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { throw 0; }
         } x;
         return x;
       } break;
        
+    case CP15ENCODE( 8, 0, 5, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ITLBIALL, invalidate instruction TLB"; }
+          uint32_t Read( BaseCpu& _cpu ) { throw 0; return 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).InvalidateTLB(); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 8, 0, 6, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DTLBIALL, invalidate data TLB"; }
+          uint32_t Read( BaseCpu& _cpu ) { throw 0; return 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).InvalidateTLB(); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 8, 0, 7, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
+          uint32_t Read( BaseCpu& _cpu ) { throw 0; return 0; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).InvalidateTLB(); }
+        } x;
+        return x;
+      } break;
+      
     }
   
   // Fall back to base cpu CP15 registers
-  return this->base_cpu::CP15GetRegister( crn, opcode1, crm, opcode2 );
+  return this->BaseCpu::CP15GetRegister( crn, opcode1, crm, opcode2 );
 }
 
 } // end of namespace arm926ejs

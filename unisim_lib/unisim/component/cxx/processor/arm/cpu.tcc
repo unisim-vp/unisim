@@ -374,24 +374,12 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
         {
           char const* Describe() { return "SCTLR, System Control Register"; }
           /* TODO: handle SBO(DGP=0x00050078UL) and SBZ(DGP=0xfffa0c00UL)... */
+          uint32_t Read( CPU& cpu ) { return cpu.sctlr; }
           void Write( CPU& cpu, uint32_t value ) {
-            // cpu.sctlr = value;
+            cpu.sctlr = value;
             if (SCTLR::C.Get( value ))
               cpu.logger << DebugInfo << "Dcache Enabled !!!!!!!!" << EndDebugInfo;
           }
-          uint32_t Read( CPU& cpu ) { return cpu.sctlr; }
-        } x;
-        return x;
-      } break;
-      
-    case CP15ENCODE( 2, 0, 0, 0 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
-          /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write( CPU& cpu, uint32_t value ) { throw 0; /* cpu.ttbr0 = value; */ }
-          uint32_t Read( CPU& cpu ) { throw 0; return 0 /* cpu.ttbr0 */; }
         } x;
         return x;
       } break;
@@ -407,110 +395,6 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
         return x;
       } break;
       
-    case CP15ENCODE( 7, 0, 5, 0 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
-          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.InvalidateCache(true, false); }
-        } x;
-        return x;
-      } break;
-      
-    case CP15ENCODE( 7, 0, 5, 1 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "ICIMVAU, Invalidate instruction caches by MVA to PoU"; }
-          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.InvalidateICacheSingleEntryWithMVA(value); }
-        } x;
-        return x;
-      } break;
-
-    case CP15ENCODE( 7, 0, 10, 1 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "DCCMVAC, Clean data cache line by MVA to PoC"; }
-          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.CleanDCacheSingleEntryWithMVA(value, false); }
-        } x;
-        return x;
-      } break;
-
-    case CP15ENCODE( 7, 0, 10, 4 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "CP15DSB, Data Synchronization Barrier operation"; }
-          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.DrainWriteBuffer(); }
-        } x;
-        return x;
-      } break;
-      
-    case CP15ENCODE( 7, 0, 14, 1 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
-          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.CleanDCacheSingleEntryWithMVA(value, true); }
-        } x;
-        return x;
-      } break;
-      
-    case CP15ENCODE( 8, 0, 5, 0 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "ITLBIALL, invalidate instruction TLB"; }
-          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.InvalidateTLB(); }
-        } x;
-        return x;
-      } break;
-      
-    case CP15ENCODE( 8, 0, 6, 0 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "DTLBIALL, invalidate data TLB"; }
-          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.InvalidateTLB(); }
-        } x;
-        return x;
-      } break;
-      
-    case CP15ENCODE( 8, 0, 7, 0 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
-          uint32_t Read( CPU& cpu ) { throw 0; return 0; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.InvalidateTLB(); }
-        } x;
-        return x;
-      } break;
-      
-    case CP15ENCODE( 13, 0, 0, 3 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "TPIDRURO, Thread Id Privileged Read Write Only Register"; }
-          void Write( CPU& cpu, uint32_t value ) { throw 0; }
-          uint32_t Read( CPU& cpu ) {
-            /* TODO: the following only works in linux os
-             * emulation. We should really access the TPIDRURO
-             * register. */
-            return cpu.MemRead32( 0xffff0ff0 );
-          }
-        } x;
-        return x;
-      } break;
-    
     }
 
   logger << DebugError << "Unknown CP15 instruction: crn=" << crn << ", opc1=" << opcode1 << ", crm=" << crm << ", opc2=" << opcode2 << EndDebugError;

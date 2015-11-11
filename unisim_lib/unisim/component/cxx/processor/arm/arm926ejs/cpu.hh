@@ -92,8 +92,8 @@ struct CPU
   , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
 {
   typedef CPU this_type;
-  typedef unisim::component::cxx::processor::arm::CPU<ARM926ejs> base_cpu;
-  typedef typename base_cpu::CP15Reg CP15Reg;
+  typedef unisim::component::cxx::processor::arm::CPU<ARM926ejs> BaseCpu;
+  typedef typename BaseCpu::CP15Reg CP15Reg;
   
   //=====================================================================
   //=                  public service imports/exports                   =
@@ -132,13 +132,6 @@ struct CPU
   void StepInstruction();
 
   //=====================================================================
-  //=                      memory methods                               =
-  //=====================================================================
-
-  virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
-  virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
-
-  //=====================================================================
   //=             memory injection interface methods                    =
   //=====================================================================
 
@@ -172,6 +165,21 @@ struct CPU
   /* Memory access methods      START                           */
   /**************************************************************/
 
+  virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
+  virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
+
+  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4, false ); }
+  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2, false ); }
+  uint32_t MemReadS16( uint32_t address ) { return PerformReadAccess( address, 2, true ); }
+  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1, false ); }
+  uint32_t MemReadS8( uint32_t address ) { return PerformReadAccess( address, 1, true ); }
+  void     MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
+  void     MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
+  void     MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
+
+  void     PerformPrefetchAccess( uint32_t addr );
+  void     PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
+  uint32_t PerformReadAccess( uint32_t addr, uint32_t size, bool _signed );
 	
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn );
@@ -274,7 +282,14 @@ protected:
   /**************************/
   /* CP15 Interface    END */
   /**************************/
-
+  
+public:
+  /** Instruction cache */
+  Cache icache;
+  /** Data cache */
+  Cache dcache;
+  
+protected:
   /** Decoder for the ARM32 instruction set. */
   unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
   /** Decoder for the THUMB instruction set. */

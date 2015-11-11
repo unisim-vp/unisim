@@ -448,7 +448,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
   uint8_t data[4];
 
   if (size > 4) throw 0;
-  uint32_t misalignment = addr & (size-1);
+  //uint32_t misalignment = addr & (size-1);
 
   // fix the read address depending on the request size and endianess
   if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
@@ -1214,6 +1214,42 @@ CPU::BKPT( uint32_t imm )
   // what should we do with this kind of call? ignore it
 }
   
+/** Get the Internal representation of the CP15 Register
+ * 
+ * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @return        an internal CP15Reg
+ */
+CPU::CP15Reg&
+CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+  switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
+    {
+    case CP15ENCODE( 13, 0, 0, 3 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TPIDRURO, Thread Id Privileged Read Write Only Register"; }
+          void Write( BaseCpu& cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( BaseCpu& _cpu ) {
+            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            /* TODO: the following only works in linux os
+             * emulation. We should really access the TPIDRURO
+             * register. */
+            return cpu.MemRead32( 0xffff0ff0 );
+          }
+        } x;
+        return x;
+      } break;
+    
+    }
+  
+  // Fall back to base cpu CP15 registers
+  return this->BaseCpu::CP15GetRegister( crn, opcode1, crm, opcode2 );
+}
+
 } // end of namespace armemu
 
 template struct unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::armemu::ARMv7emu>;

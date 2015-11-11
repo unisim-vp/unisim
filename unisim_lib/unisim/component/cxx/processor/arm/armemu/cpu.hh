@@ -92,8 +92,8 @@ struct CPU
   , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
 {
   typedef CPU this_type;
-  typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> base_cpu;
-  typedef typename base_cpu::CP15Reg CP15Reg;
+  typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> BaseCpu;
+  typedef typename BaseCpu::CP15Reg CP15Reg;
 
   //=====================================================================
   //=                  public service imports/exports                   =
@@ -225,6 +225,16 @@ protected:
   unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
   /** Decoder for the THUMB instruction set. */
   unisim::component::cxx::processor::arm::isa::thumb2::Decoder<CPU> thumb_decoder;
+
+  /**************************/
+  /* CP15 Interface   START */
+  /**************************/
+
+  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+    
+  /**************************/
+  /* CP15 Interface    END */
+  /**************************/
 
   /** Instruction counter */
   uint64_t instruction_counter;
