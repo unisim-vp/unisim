@@ -522,9 +522,11 @@ string"
 UNISIM_SIMULATORS_ARMV7_GT_SOURCE_FILES="\
 main.cc \
 simulator.cc \
+GenericTimer.cc \
 "
 UNISIM_SIMULATORS_ARMV7_GT_HEADER_FILES="\
 simulator.hh \
+GenericTimer.hh \
 "
 
 UNISIM_SIMULATORS_ARMV7_GT_EXTRA_FILES="\
