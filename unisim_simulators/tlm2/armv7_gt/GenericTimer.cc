@@ -7,6 +7,6 @@
  *             between you, or your company, and Synopsys, Inc.               *
  ******************************************************************************/
  
-#include "GenericTimer.h"
+#include "GenericTimer.hh"
 
 template class GenericTimer<>;
