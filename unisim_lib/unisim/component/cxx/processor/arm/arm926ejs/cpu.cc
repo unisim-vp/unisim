@@ -37,7 +37,6 @@
 #include <unisim/component/cxx/processor/arm/arm926ejs/tlb.hh>
 #include <unisim/component/cxx/processor/arm/memory_op.hh>
 #include <unisim/component/cxx/processor/arm/cpu.hh>
-#include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -73,15 +72,12 @@ using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
-using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::LinuxOS;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::LittleEndian2Host;
-using unisim::util::debug::SimpleRegister;
-using unisim::util::debug::Register;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -104,13 +100,11 @@ CPU::CPU(const char *name, Object *parent)
   , Client<DebugControl<uint64_t> >(name, parent)
   , Client<TrapReporting>(name, parent)
   , Service<Disassembly<uint64_t> >(name, parent)
-  , Service<Registers>(name, parent)
   , Service<Memory<uint64_t> >(name, parent)
   , Client<LinuxOS>(name, parent)
   , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
   , memory_access_reporting_import("memory-access-reporting-import", this)
   , disasm_export("disasm-export", this)
-  , registers_export("registers-export", this)
   , memory_injection_export("memory-injection-export", this)
   , memory_export("memory-export", this)
   , debug_control_import("debug-control-import", this)
@@ -138,10 +132,6 @@ CPU::CPU(const char *name, Object *parent)
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
   , stat_cur_instruction_address("cur-instruction-address", this, cur_instruction_address,
                                  "Address of the instruction currently being executed.")
-  , reg_sp("SP", this, gpr[13], "The stack pointer (SP) register (alias of GPR[13]).")
-  , reg_lr("LR", this, gpr[14], "The link register (LR) (alias of GPR[14]).")
-  , reg_pc("PC", this, gpr[15], "The program counter (PC) register (alias of debug logical GPR[15]).")
-  , reg_cpsr("CPSR", this, cpsr.m_value, "The CPSR register.")
   , num_data_prefetches(0)
   , num_data_reads(0)
   , num_data_writes(0)
@@ -151,19 +141,6 @@ CPU::CPU(const char *name, Object *parent)
   , stat_num_data_writes("num-data-writes", this, num_data_writes, "Number of data writes issued to the memory system.")
   , stat_num_insn_reads("num-insn-reads", this, num_insn_reads, "Number of instruction reads issued to the memory system.")
 {
-  for (unsigned int i = 0; i < (num_log_gprs-1); i++)
-    {
-      std::string name, description;
-      std::stringstream ss;
-      ss << "GPR[" << i << "]";
-      name = ss.str();
-      ss.clear();
-      ss << "Logical register " << i;
-      description = ss.str();
-      reg_gpr[i] = new unisim::kernel::service::Register<uint32_t>(name.c_str(), this, gpr[i], description.c_str());
-    }
-  reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
-
   // Init the processor at SUPERVISOR mode
   cpsr.Set(M, SUPERVISOR_MODE);
   // Disable fast and normal interruptions
@@ -181,12 +158,6 @@ CPU::CPU(const char *name, Object *parent)
  */
 CPU::~CPU()
 {
-  for (unsigned int i = 0; i < num_log_gprs; i++)
-    if (reg_gpr[i]) delete reg_gpr[i];
-
-  for (RegistersRegistry::iterator itr = registers_registry.begin(), end = registers_registry.end(); itr != end; itr++)
-    delete itr->second;
-  registers_registry.clear();
 }
 
 /** Object setup method.
@@ -230,26 +201,6 @@ CPU::BeginSetup()
       logger << DebugError << "cpu-cycle-time should be strictly positive" << EndDebugError;
       return false;
     }
-
-  /* TODO: Remove this section once all the debuggers use the unisim
-   *   kernel interface for registers.
-   */
-  /* setting debugging registers */
-  if (verbose)
-    logger << DebugInfo << "Initializing debugging registers" << EndDebugError;
-  
-  for (int i = 0; i < 16; i++) 
-    {
-      std::stringstream str;
-      str << "r" << i;
-      registers_registry[str.str().c_str()] = new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
-    }
-  
-  registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
-  registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
-  registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &this->next_pc);
-  registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
-  /* End TODO */
 
   return true;
 }
@@ -417,7 +368,7 @@ CPU::StepInstruction()
       isa::thumb::Operation<CPU>* op;
       op = thumb_decoder.Decode(current_pc, insn);
       
-      /* update PC registers value before execution */
+      /* update PC register value before execution */
       this->gpr[15] = this->next_pc + 4;
       this->next_pc += 2;
       
@@ -437,7 +388,7 @@ CPU::StepInstruction()
     isa::arm32::Operation<CPU>* op;
     op = arm32_decoder.Decode(current_pc, insn);
     
-    /* update PC registers value before execution */
+    /* update PC register value before execution */
     this->gpr[15] = this->next_pc + 8;
     this->next_pc += 4;
     
@@ -829,23 +780,6 @@ CPU::WriteMemory(uint64_t addr,
   return status;
 }
 
-/** Get a register by its name.
- * Gets a register interface to the register specified by name.
- *
- * @param name the name of the requested register
- *
- * @return a pointer to the RegisterInterface corresponding to name
- */
-Register *
-CPU::GetRegister(const char *name)
-{
-  RegistersRegistry::iterator itr = registers_registry.find( name );
-  if (itr != registers_registry.end())
-    return itr->second;
-  else
-    return 0;
-}
-    
 /** Disasm an instruction address.
  * Returns a string with the disassembling of the instruction found 
  *   at address addr.
@@ -1321,12 +1255,12 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "MIDR, Main ID Register"; }
           void Write( base_cpu& cpu, uint32_t value ) { throw 0; }
           uint32_t Read( base_cpu& cpu ) {
-return
-  ((uint32_t)0x041  << 24) |
-  ((uint32_t)0x0    << 20) |
-  ((uint32_t)0x06   << 16) |
-  ((uint32_t)0x0926 <<  4) |
-  ((uint32_t)0x05   <<  0);
+            return
+              ((uint32_t)0x041  << 24) |
+              ((uint32_t)0x0    << 20) |
+              ((uint32_t)0x06   << 16) |
+              ((uint32_t)0x0926 <<  4) |
+              ((uint32_t)0x05   <<  0);
           }
         } x;
         return x;

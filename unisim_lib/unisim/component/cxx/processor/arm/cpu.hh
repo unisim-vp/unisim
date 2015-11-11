@@ -48,6 +48,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/debug/register.hh>
 #include <map>
+#include <set>
 #include <inttypes.h>
 
 namespace unisim {
@@ -121,8 +122,6 @@ struct CPU
   /* Number of logic registers */
   static unsigned const num_log_gprs = 16;
   
-  
-  
   /** Base class for the ARM Modes
    *
    * This class is the base for all ARM Modes specifying the interface
@@ -135,8 +134,8 @@ struct CPU
   {
     Mode( char const* _suffix ) : suffix( _suffix ) {} char const* suffix;
     virtual ~Mode() {}
-    virtual void     SetBR( unsigned index, uint32_t value ) { throw 0; };
-    virtual uint32_t GetBR( unsigned index ) { throw 0; return 0; };
+    virtual bool     HasBR( unsigned index ) { return false; }
+    virtual bool     HasSPSR() { return false; }
     virtual void     SetSPSR(uint32_t value ) { throw 0; };
     virtual uint32_t GetSPSR() { throw 0; return 0; };
     virtual void     Swap( CPU& cpu ) {};
@@ -154,27 +153,14 @@ struct CPU
   //=====================================================================
 		
   /** Instruction counter trap reporting service import. */
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>   instruction_counter_trap_reporting_import;
-  
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> instruction_counter_trap_reporting_import;
+     
   //=====================================================================
   //=                    Constructor/Destructor                         =
   //=====================================================================
 	
-  /** Constructor.
-   * Resets the simulator state, requires the endianness of the processor
-   *   to set address mungling. By default the processor is set to big
-   *   endian, but it can be changed later.
-   *
-   * @param endianness the endianness to use
-   */
   CPU(const char* name, Object* parent);
-
-  /** Destructor. */
-  ~CPU()
-  {
-    for (typename ModeMap::iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr)
-      delete itr->second;
-  }
+  ~CPU();
   
   /**************************************************************/
   /* Endian variables and methods                         START */
@@ -282,9 +268,10 @@ struct CPU
   
   Mode& CurrentMode() { return GetMode(cpsr.Get(M)); }
   
-  /** Get the value contained by a banked register GPR.  Returns the
-   * value contained by a banked register.  It is the same than GetGPR
-   * but mode can be different from the running mode.
+  /** Get the value contained by a banked register GPR.
+   *
+   * Returns the value contained by a banked register.  It is the same
+   * than GetGPR but mode can be different from the running mode.
    *
    * @param mode the mode of banked register
    * @param idx the register index
@@ -303,8 +290,9 @@ struct CPU
   }
   
   /** Set the value contained by a user GPR.
-   * Sets the value contained by a user GPR. It is the same than SetGPR byt
-   *   restricting the index from 0 to 15 (only the first 16 registers).
+   *
+   * Sets the value contained by a user GPR. It is the same than
+   * SetGPR but mode can be different from the running mode.
    *
    * @param mode the mode of banked register
    * @param idx the register index

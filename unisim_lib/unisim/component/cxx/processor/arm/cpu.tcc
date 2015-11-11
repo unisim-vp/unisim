@@ -38,11 +38,13 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/disasm.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/debug/simple_register.hh>
 
 namespace unisim {
 namespace component {
@@ -68,16 +70,9 @@ struct ModeInfo
 {
   static uint32_t const next = MAPPED & (MAPPED-1);
   static uint32_t const count = 1 + ModeInfo<next>::count;
-  static uint32_t const flag = MAPPED ^ next;
-  static unsigned GetBRIndex( uint32_t regflag ) { if (regflag == flag) return 0; return 1 + ModeInfo<next>::GetBRIndex( regflag ); }
 };
 
-template <>
-struct ModeInfo<0>
-{
-  static uint32_t const count = 0;
-  static unsigned GetBRIndex( uint32_t regflag ) { throw "Illegal Banked Register"; return 0; }
-};
+template <> struct ModeInfo<0> { static uint32_t const count = 0; };
 
 template <class CORE, uint32_t MAPPED>
 struct BankedMode : public CORE::Mode
@@ -86,8 +81,8 @@ struct BankedMode : public CORE::Mode
   uint32_t banked_regs[ModeInfo<MAPPED>::count];
   uint32_t spsr;
 
-  virtual void     SetBR( unsigned index, uint32_t value ) { banked_regs[ModeInfo<MAPPED>::GetBRIndex( uint32_t(1) << index )] = value; };
-  virtual uint32_t GetBR( unsigned index ) { return banked_regs[ModeInfo<MAPPED>::GetBRIndex( uint32_t(1) << index )]; };
+  virtual bool     HasBR( unsigned idx ) { return (MAPPED >> idx) & 1; }
+  virtual bool     HasSPSR() { return true; }
   virtual void     SetSPSR(uint32_t value ) { spsr = value; };
   virtual uint32_t GetSPSR() { return spsr; };
   virtual void     Swap( CORE& cpu )
@@ -109,16 +104,17 @@ struct BankedMode : public CORE::Mode
  *   infrastructure and will identify this object
  * @param parent the parent object of this object
  */
-  
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
   : unisim::kernel::service::Object(name, parent)
+  , Service<Registers>(name, parent)
   , logger(*this)
   , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
   , icache("icache", this)
   , dcache("dcache", this)
   , exception(0)
   , sctlr(0)
+  , registers_export("registers-export", this)
 {
   // Initialize general purpose registers
   for(unsigned int i = 0; i < num_log_gprs; i++)
@@ -152,92 +148,113 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   /* Registers Debug Accessors   START */
   /*************************************/
   
-  // initialize the registers debugging interface
-  for (unsigned i = 0; i < 15; i++) {
-    std::string name, pretty_name, description;
-    { std::stringstream ss; ss << "r" << i; name == ss.str(); }
-    { std::stringstream ss; ss << DisasmRegister( i ); pretty_name == ss.str(); }
-    { std::stringstream ss; ss << "Logical register #" << i; description == ss.str(); }
-    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( pretty_name, &gpr[i] );
-    var_reg = new unisim::kernel::service::Register<uint32_t>( pretty_name.c_str(), this, gpr[i], description.c_str() );
-    registers_registry[name] = dbg_reg;
-    if (pretty_name != name)
+  {
+    unisim::util::debug::Register* dbg_reg = 0;
+    unisim::kernel::service::Register<uint32_t>* var_reg = 0;
+  
+    /** Specific Banked Register Debugging Accessor */
+    struct BankedRegister : public unisim::util::debug::Register
+    {
+      BankedRegister(CPU& _cpu, std::string _name, uint8_t _mode, uint8_t _idx ) : cpu(_cpu), name(_name), mode(_mode), idx(_idx) {}
+      virtual const char *GetName() const { return name.c_str(); }
+      virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.GetBankedRegister( mode, idx ); }
+      virtual void SetValue( void const* buffer ) { cpu.SetBankedRegister( mode, idx, *((uint32_t*)buffer ) ); }
+      virtual int  GetSize() const { return 4; }
+      CPU&        cpu;
+      std::string name;
+      uint8_t     mode, idx;
+    };
+  
+    // initialize the registers debugging interface for the first 15 registers
+    for (unsigned idx = 0; idx < 15; idx++) {
+      std::string name, pretty_name, description;
+      { std::stringstream ss; ss << "r" << idx; name = ss.str(); }
+      { std::stringstream ss; ss << DisasmRegister( idx ); pretty_name = ss.str(); }
+      { std::stringstream ss; ss << "Logical register #" << idx << ": " << pretty_name; description = ss.str(); }
+      dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( pretty_name, &gpr[idx] );
       registers_registry[pretty_name] = dbg_reg;
+      if (name != pretty_name) {
+        registers_registry[name] = dbg_reg;
+        description =  description + ", " + name;
+      }
+      var_reg = new unisim::kernel::service::Register<uint32_t>( pretty_name.c_str(), this, gpr[idx], description.c_str() );
+      debug_register_pool.insert( dbg_reg );
+      variable_register_pool.insert( var_reg );
+      bool is_banked = false;
+      for (typename ModeMap::const_iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr) {
+        if (not itr->second->HasBR( idx )) continue;
+        is_banked = true;
+        std::string br_name = name + '_' + itr->second->suffix;
+        std::string br_pretty_name = name + '_' + itr->second->suffix;
+        dbg_reg = new BankedRegister( *this, br_pretty_name, itr->first, idx );
+        registers_registry[br_pretty_name] = dbg_reg;
+        if (br_name != br_pretty_name)
+          registers_registry[br_name] = dbg_reg;
+        debug_register_pool.insert( dbg_reg );
+      }
+      if (is_banked) {
+        std::string br_name = name + "_usr";
+        std::string br_pretty_name = name + "_usr";
+        dbg_reg = new BankedRegister( *this, br_pretty_name, USER_MODE, idx );
+        registers_registry[br_pretty_name] = dbg_reg;
+        if (br_name != br_pretty_name)
+          registers_registry[br_name] = dbg_reg;
+        debug_register_pool.insert( dbg_reg );
+      }
+    }
+  
+    /** Specific Program Counter Register Debugging Accessor */
+    struct ProgramCounterRegister : public unisim::util::debug::Register
+    {
+      ProgramCounterRegister( CPU& _cpu ) : cpu(_cpu) {}
+      virtual const char *GetName() const { return "pc"; }
+      virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.next_pc; }
+      virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
+      virtual int  GetSize() const { return 4; }
+      CPU&        cpu;
+    };
+
+    dbg_reg = new ProgramCounterRegister( *this );
+    registers_registry["pc"] = registers_registry["r15"] = dbg_reg;
     debug_register_pool.insert( dbg_reg );
+    var_reg = new unisim::kernel::service::Register<uint32_t>( "pc", this, this->next_pc, "Logical Register #15: pc, r15" );
     variable_register_pool.insert( var_reg );
+    
+    // Handling the CPSR register
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "cpsr", &cpsr.m_value );
+    registers_registry["cpsr"] = dbg_reg;
+    debug_register_pool.insert( dbg_reg );
+    var_reg = new unisim::kernel::service::Register<uint32_t>( "cpsr", this, this->cpsr.m_value, "Current Program Status Register" );
+    variable_register_pool.insert( var_reg );
+    
+    /** Specific SPSR */
+    struct SavedProgramStatusRegister : public unisim::util::debug::Register
+    {
+      SavedProgramStatusRegister( CPU& _cpu, std::string _name, uint8_t _mode ) : cpu(_cpu), name(_name), mode(_mode) {}
+      virtual ~SavedProgramStatusRegister() {}
+      virtual const char *GetName() const { return name.c_str(); }
+      virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.GetMode(mode).GetSPSR(); }
+      virtual void SetValue( void const* buffer ) { cpu.GetMode(mode).SetSPSR( *((uint32_t*)buffer) ); }
+      virtual int  GetSize() const { return 4; }
+      CPU&        cpu;
+      std::string name;
+      uint8_t     mode;
+    };
+    
+    for (typename ModeMap::const_iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr) {
+      if (not itr->second->HasSPSR()) continue;
+      
+      std::string name = std::string( "spsr_" ) + itr->second->suffix;
+      dbg_reg = new SavedProgramStatusRegister( *this, name, itr->first );
+      registers_registry[name] = dbg_reg;
+      debug_register_pool.insert( dbg_reg );
+    }
   }
   
-  // Specific PC Accessor class
-  ProgramCounterRegister : public unisim::util::debug::Register
-  {
-    ProgramCounterRegister(CPU& _cpu) : cpu(_cpu) {}
-    virtual ~ProgramCounterRegister() {}
-    virtual const char *GetName() const { return "pc"; }
-    virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.next_pc; }
-    virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
-    virtual int  GetSize() const { return 4; }
-    CPU&        cpu;
-  };
-
-  // /** UNISIM registers for the logical registers. */
-  //  reg_gpr[16];
-  // /** UNISIM register for the stack pointer register (gpr 13). */
-  // unisim::kernel::service::Register<uint32_t> reg_sp;
-  // /** UNISIM register for the link register (gpr 14). */
-  // unisim::kernel::service::Register<uint32_t> reg_lr;
-  // /** UNISIM register for the program counter register (gpr 15). */
-  // unisim::kernel::service::Register<uint32_t> reg_pc;
-  
-  // TODO: provide UNISIM registers for SPSRS (will be possible once
-  // UNISIM registers go back in base class).
-  //
-  // /** UNISIM registers for the SPRS registers.  */
-  // unisim::kernel::service::Register<uint32_t> *reg_spsr[5];
-  registers_registry["r15"] =  new ProgramCounterRegister("r15", *this);
-  registers_registry["pc"] =   new ProgramCounterRegister("pc", *this);
-  registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
-  registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
-  registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &(cpsr.m_value));
-  
-  registers_registry["sl"] = new SimpleRegister<uint32_t>("sl", &gpr[10]);
-  registers_registry["fp"] = new SimpleRegister<uint32_t>("fp", &gpr[11]);
-  registers_registry["ip"] = new SimpleRegister<uint32_t>("ip", &gpr[12]);
-  
-  for (unsigned int i = 0; i < (num_log_gprs - 1); i++)
-    {
-      std::stringstream ss, ss_desc;
-      ss << "GPR[" << i << "]";
-      ss_desc << "Logical register " << i;
-      reg_gpr[i] = 
-        
-    }
-  reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, this->next_pc, "Logical register 15");
   // This implementation of the arm architecture can only run in user mode,
   //   so we can already set CPSR to that mode.
   cpsr.Set( M, USER_MODE );
 
-  
-  
-
-  // TODO: Provide access to Banked Registers
-  // for (unsigned int i = 0; i < num_phys_gprs; i++)
-  //   {
-  //     std::stringstream ss, ss_desc;
-  //     ss << "PHYS_GPR[" << i << "]";
-  //     ss_desc << "Physical register " << i;
-  //     reg_phys_gpr[i] =  
-  //       new unisim::kernel::service::Register<uint32_t>( ss.str().c_str(), this, phys_gpr[i], ss_desc.str().c_str() );
-  //   }
-  // TODO: provide unisim registers for SPSRs
-  // for (unsigned int i = 0; i < num_phys_spsrs; i++)
-  //   {
-  //     std::stringstream ss, ss_desc;
-  //     ss << "SPSR[" << i << "]";
-  //     ss_desc << "SPSR[" << i << "] register";
-  //     reg_spsr[i] =
-  //       new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), this, spsr[i].m_value, ss_desc.str().c_str());
-  //   }
-  
   // Default value for sctlr (will be overwritten as needed by simulators)
   SCTLR::TE.Set(      sctlr, 0 ); // Thumb Exception enable
   SCTLR::AFE.Set(     sctlr, 0 ); // Access flag enable.
@@ -260,6 +277,38 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   SCTLR::C.Set(       sctlr, 1 ); // Cache enable. This is a global enable bit for data and unified caches.
   SCTLR::A.Set(       sctlr, 0 ); // Alignment check enable
   SCTLR::M.Set(       sctlr, 0 ); // MMU enable.
+}
+
+/** Destructor.
+ *
+ * Takes care of releasing:
+ *  - Debug Registers
+ */
+template <class CONFIG>
+CPU<CONFIG>::~CPU()
+{
+  for (typename DebugRegisterPool::iterator itr = debug_register_pool.begin(), end = debug_register_pool.end(); itr != end; ++itr)
+    delete *itr;
+  for (typename VariableRegisterPool::iterator itr = variable_register_pool.begin(), end = variable_register_pool.end(); itr != end; ++itr)
+    delete *itr;
+}
+
+/** Get a register by its name.
+ * Gets a register interface to the register specified by name.
+ *
+ * @param name the name of the requested register
+ *
+ * @return a pointer to the RegisterInterface corresponding to name
+ */
+template <class CONFIG>
+unisim::util::debug::Register*
+CPU<CONFIG>::GetRegister(const char *name)
+{
+  RegistersRegistry::iterator itr = registers_registry.find( name );
+  if (itr != registers_registry.end())
+    return itr->second;
+  else
+    return 0;
 }
 
 /** Performs a prefetch access.

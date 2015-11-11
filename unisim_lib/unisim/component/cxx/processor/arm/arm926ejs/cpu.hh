@@ -162,12 +162,6 @@ struct CPU
   virtual bool ExternalWriteMemory( uint64_t addr, void const* buffer, uint32_t size ) = 0;
 
   //=====================================================================
-  //=             CPURegistersInterface interface methods               =
-  //=====================================================================
-
-  virtual unisim::util::debug::Register* GetRegister( char const* name );
-		
-  //=====================================================================
   //=                   DebugDisasmInterface methods                    =
   //=====================================================================
 
