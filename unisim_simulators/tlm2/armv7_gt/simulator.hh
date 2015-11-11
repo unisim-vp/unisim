@@ -35,46 +35,58 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
+#include <unisim/component/tlm2/processor/arm/armemu/armemu.hh>
+#include <unisim/component/tlm2/memory/ram/memory.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/router.hh>
+#include <unisim/service/time/sc_time/time.hh>
+#include <unisim/service/time/host_time/time.hh>
+#include <unisim/service/os/linux_os/linux.hh>
+#include <unisim/service/trap_handler/trap_handler.hh>
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/profiling/addr_profiler/profiler.hh>
+#include <unisim/service/tee/memory_access_reporting/tee.hh>
+#include <unisim/kernel/service/service.hh>
+#include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <sstream>
-#include <list>
 #include <string>
-#include <getopt.h>
-#include <stdlib.h>
-
-#include "unisim/kernel/service/service.hh"
-#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
-#include "unisim/component/tlm2/memory/ram/memory.hh"
-#include "unisim/util/likely/likely.hh"
-#include "unisim/service/time/sc_time/time.hh"
-#include "unisim/service/time/host_time/time.hh"
-#include "unisim/service/os/linux_os/linux.hh"
-#include "unisim/service/trap_handler/trap_handler.hh"
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include "unisim/service/debug/gdb_server/gdb_server.hh"
-#include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#include "unisim/service/debug/debugger/debugger.hh"
-#include "unisim/service/power/cache_power_estimator.hh"
-#include "unisim/service/profiling/addr_profiler/profiler.hh"
-#include "unisim/service/tee/memory_access_reporting/tee.hh"
+#include <list>
+#include <cstdlib>
 
 #ifdef WIN32
-
 #include <winsock2.h>
 #include <windows.h>
-
 #else
 #include <signal.h>
 #endif
 
-class Simulator
-  : public unisim::kernel::service::Simulator
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+struct RouterCFG
 {
- public:
-  Simulator(int argc, char **argv);
+  typedef uint32_t ADDRESS;
+  static unsigned const INPUT_SOCKETS = 1;
+  static unsigned const OUTPUT_SOCKETS = 2;
+  static unsigned const MAX_NUM_MAPPINGS = 8;
+  static unsigned const BUSWIDTH = 32;
+  typedef tlm::tlm_base_protocol_types TYPES;
+  static const bool VERBOSE = false;
+};
+
+struct Router : public unisim::component::tlm2::interconnect::generic_router::Router<RouterCFG>
+{
+  Router( char const* name, unisim::kernel::service::Object* parent = 0 );
+};
+
+struct Simulator : public unisim::kernel::service::Simulator
+{
+  Simulator( int argc, char **argv );
   virtual ~Simulator();
+  
   int Run();
   int Run(double time, sc_time_unit unit);
   bool IsRunning() const;
@@ -84,7 +96,6 @@ class Simulator
   virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
 
- protected:
  private:
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::armemu::ARMEMU CPU;
@@ -93,16 +104,18 @@ class Simulator
 
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
-  typedef unisim::service::power::CachePowerEstimator POWER_ESTIMATOR;
   typedef unisim::service::debug::debugger::Debugger<uint32_t> DEBUGGER;
   typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
   typedef unisim::service::tee::memory_access_reporting::Tee<uint32_t> TEE_MEMORY_ACCESS_REPORTING;
-
-  CPU *cpu;
-  MEMORY *memory;
-  unisim::service::time::sc_time::ScTime *time;
-  unisim::service::time::host_time::HostTime *host_time;
-  LINUX_OS *linux_os;
+  typedef unisim::service::time::sc_time::ScTime ScTime;
+  typedef unisim::service::time::host_time::HostTime HostTime;
+  
+  CPU        cpu;
+  Router     router;
+  MEMORY     memory;
+  ScTime     time;
+  HostTime   host_time;
+  LINUX_OS*  linux_os;
   TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
 
   double simulation_spent_time;
@@ -112,18 +125,10 @@ class Simulator
   DEBUGGER *debugger;
   PROFILER *profiler;
   bool enable_gdb_server;
-  unisim::kernel::service::Parameter<bool> *param_enable_gdb_server;
+  unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
   bool enable_inline_debugger;
-  unisim::kernel::service::Parameter<bool> *param_enable_inline_debugger;
+  unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
 
-  POWER_ESTIMATOR *il1_power_estimator;
-  POWER_ESTIMATOR *dl1_power_estimator;
-  bool enable_power_estimation;
-  unisim::kernel::service::Parameter<bool> param_enable_power_estimation;
-  unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_energy;
-  unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_power;
-  unisim::kernel::service::Formula<double> *formula_caches_total_leakage_power;
-  unisim::kernel::service::Formula<double> *formula_caches_total_power;
   int exit_status;
 #ifdef WIN32
   static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
