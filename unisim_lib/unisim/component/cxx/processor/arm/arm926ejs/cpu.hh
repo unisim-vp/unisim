@@ -107,6 +107,7 @@ struct CPU
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint64_t> > debug_control_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> exception_trap_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> instruction_counter_trap_reporting_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
 
   //=====================================================================
@@ -218,6 +219,58 @@ protected:
 
   virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
     
+  /** Get caches info
+   *
+   */
+  void GetCacheInfo( bool &unified, uint32_t &isize, uint32_t &iassoc, uint32_t &ilen, uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen );
+  /** Drain write buffer.
+   * Perform a memory barrier by draining the write buffer.
+   */
+  void DrainWriteBuffer();
+  /** Invalidate ICache single entry using MVA
+   *
+   * Perform an invalidation of a single entry in the ICache using the
+   *   given address in MVA format.
+   *
+   * @param mva the address to invalidate
+   */
+  void InvalidateICacheSingleEntryWithMVA(uint32_t mva);
+  /** Clean DCache single entry using MVA
+   *
+   * Perform a clean of a single entry in the DCache using the given
+   *   address in MVA format.
+   *
+   * @param mva the address to clean
+   * @param invalidate true if the line needs to be also invalidated
+   */
+  void CleanDCacheSingleEntryWithMVA(uint32_t mva, bool invalidate);
+  /** Invalidate the caches.
+   * Perform a complete invalidation of the instruction cache and/or the 
+   *   data cache.
+   *
+   * @param insn_cache whether or not the instruction cache should be 
+   *   invalidated
+   * @param data_cache whether or not the data cache should be invalidated
+   */
+  void InvalidateCache(bool insn_cache, bool data_insn);
+  /** Invalidate the TLBs.
+   * Perform a complete invalidation of the unified TLB.
+   */
+  void InvalidateTLB();
+  /** Test and clean DCache.
+   * Perform a test and clean operation of the DCache.
+   *
+   * @return return true if the complete cache is clean, false otherwise
+   */
+  bool TestAndCleanDCache();
+  /** Test, clean and invalidate DCache.
+   * Perform a test and clean operation of the DCache, and invalidate the
+   *   complete cache if it is clean.
+   *
+   * @return return true if the complete cache is clean, false otherwise
+   */
+  bool TestCleanAndInvalidateDCache();
+  
   /**************************/
   /* CP15 Interface    END */
   /**************************/

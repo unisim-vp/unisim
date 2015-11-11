@@ -152,9 +152,6 @@ struct CPU
   //=                  public service imports/exports                   =
   //=====================================================================
 		
-  /** Instruction counter trap reporting service import. */
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> instruction_counter_trap_reporting_import;
-     
   //=====================================================================
   //=                    Constructor/Destructor                         =
   //=====================================================================
@@ -162,27 +159,9 @@ struct CPU
   CPU(const char* name, Object* parent);
   ~CPU();
   
-  /**************************************************************/
-  /* Endian variables and methods                         START */
-  /**************************************************************/
-
-  /** Get the endian configuration of the processor.
-   *
-   * @return the endian being used
-   */
-  unisim::util::endian::endian_type
-  GetEndianness()
-  {
-    return (this->cpsr.Get( E ) == 0) ? unisim::util::endian::E_LITTLE_ENDIAN : unisim::util::endian::E_BIG_ENDIAN;
-  }
-
-  /**************************************************************/
-  /* Endian variables and methods                           END */
-  /**************************************************************/
-
-  /**************************************************************/
-  /* Registers access methods    START                          */
-  /**************************************************************/
+  /********************************************/
+  /* General Purpose Registers access methods */
+  /********************************************/
 		
   /* GPR access functions */
   /** Get the value contained by a GPR.
@@ -247,7 +226,9 @@ struct CPU
   uint32_t GetNPC()
   { return this->next_pc; }
 	
-  /* PSR access functions */
+  /******************************************/
+  /* Program Status Register access methods */
+  /******************************************/
   
   /** Get the CPSR register.
    *
@@ -255,6 +236,40 @@ struct CPU
    */
   PSR&  CPSR() { return cpsr; };
   
+  /** Get the endian configuration of the processor.
+   *
+   * @return the endian being used
+   */
+  unisim::util::endian::endian_type
+  GetEndianness()
+  {
+    return (this->cpsr.Get( E ) == 0) ? unisim::util::endian::E_LITTLE_ENDIAN : unisim::util::endian::E_BIG_ENDIAN;
+  }
+
+  /** Determine wether the processor instruction stream is inside an
+   * IT block.
+   */
+  bool itblock() const { return CONFIG::insnsT2 ? cpsr.InITBlock() : false; }
+  
+  /** Return the current condition associated to the IT state of the
+   * processor.
+   */
+  uint32_t itcond() const { return CONFIG::insnsT2 ? cpsr.ITGetCondition() : COND_AL; }
+  
+  bool m_isit; /* determines wether current instruction is an IT one. */
+  void ITSetState( uint32_t cond, uint32_t mask )
+  {
+    this->cpsr.ITSetState( cond, mask );
+    m_isit = true;
+  }
+  void ITAdvance()
+  {
+    if (m_isit)
+      this->m_isit = false;
+    else if (this->itblock())
+      this->cpsr.ITAdvance();
+  }
+
   /*********************************************/
   /* Modes and Banked Registers access methods */
   /*********************************************/
@@ -308,133 +323,6 @@ struct CPU
     GetMode(foreign_mode).Swap(*this); // OUT
     GetMode(running_mode).Swap(*this); // IN
   }
-  
-  /*************************************/
-  /* IT Conditional State manipulation */
-  /*************************************/
-  
-  /** Determine wether the processor instruction stream is inside an
-   * IT block.
-   */
-  bool itblock() const { return CONFIG::insnsT2 ? cpsr.InITBlock() : false; }
-  
-  /** Return the current condition associated to the IT state of the
-   * processor.
-   */
-  uint32_t itcond() const { return CONFIG::insnsT2 ? cpsr.ITGetCondition() : COND_AL; }
-  
-  bool m_isit; /* determines wether current instruction is an IT one. */
-  void ITSetState( uint32_t cond, uint32_t mask )
-  {
-    this->cpsr.ITSetState( cond, mask );
-    m_isit = true;
-  }
-  void ITAdvance()
-  {
-    if (m_isit)
-      this->m_isit = false;
-    else if (this->itblock())
-      this->cpsr.ITAdvance();
-  }
-
-  /*************************/
-  /* Memory access methods */
-  /*************************/
-
-  /** Processor external memory write.
-   * Perform an external write memory access, that is an access that is not
-   *   in cache (or cache absent).
-   *
-   * @param addr the address of the access
-   * @param buffer byte buffer with the data to write
-   * @param size the size of the access
-   */
-  virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
-  /** Processor external memory read.
-   * Perform an external read memory access, that is an access that is not
-   *   in cache (or cache absent).
-   *
-   * @param addr the address of the access
-   * @param buffer byte buffer that will be filled with the read data
-   * @param size the size of the access
-   */
-  virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
-
-  /** 32bits memory read.
-   *
-   * This method reads 32bits from memory and returns a
-   * corresponding pending memory operation.
-   * 
-   * @param address the base address of the 32bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4, false ); }
-  
-  /** 16bits memory read.
-   * 
-   * This method reads 16bits from memory and returns a
-   * corresponding pending memory operation.
-   * 
-   * @param address the base address of the 16bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2, false ); }
-  /** Signed 16bits memory read.
-   *
-   * This method reads 16bits from memory and return a
-   * corresponding signed pending memory operation.
-   * 
-   * @param address the base address of the 16bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  uint32_t MemReadS16( uint32_t address ) { return PerformReadAccess( address, 2, true ); }
-  /** 8bits memory read.
-   *
-   * This method reads 8bits from memory and returns a
-   * corresponding pending memory operation.
-   * 
-   * @param address the base address of the 8bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1, false ); }
-  /** Signed 8bits memory read.
-   *
-   * This method reads 8bits from memory and returns a
-   * corresponding signed pending memory operation.
-   * 
-   * @param address the base address of the 8bits read
-   * 
-   * @return a pointer to the pending memory operation
-   */
-  uint32_t MemReadS8( uint32_t address ) { return PerformReadAccess( address, 1, true ); }
-
-  /** 32bits memory write.
-   * This method write the giving 32bits value into the memory system.
-   * 
-   * @param address the base address of the 32bits write
-   * @param value the value to write into memory
-   */
-  void MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
-  /** 16bits memory write.
-   * This method write the giving 16bits value into the memory system.
-   * 
-   * @param address the base address of the 16bits write
-   * @param value the value to write into memory
-   */
-  void MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
-  /** 8bits memory write.
-   * This method write the giving 8bits value into the memory system.
-   * 
-   * @param address the base address of the 8bits write
-   * @param value the value to write into memory
-   */
-  void MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
-
-  virtual void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size ) = 0;
   
   /**********************/
   /* Exception handling */
@@ -513,58 +401,6 @@ public:
    */
   char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   
-  /** Get caches info
-   *
-   */
-  void GetCacheInfo( bool &unified, uint32_t &isize, uint32_t &iassoc, uint32_t &ilen, uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen );
-  /** Drain write buffer.
-   * Perform a memory barrier by draining the write buffer.
-   */
-  void DrainWriteBuffer();
-  /** Invalidate ICache single entry using MVA
-   *
-   * Perform an invalidation of a single entry in the ICache using the
-   *   given address in MVA format.
-   *
-   * @param mva the address to invalidate
-   */
-  void InvalidateICacheSingleEntryWithMVA(uint32_t mva);
-  /** Clean DCache single entry using MVA
-   *
-   * Perform a clean of a single entry in the DCache using the given
-   *   address in MVA format.
-   *
-   * @param mva the address to clean
-   * @param invalidate true if the line needs to be also invalidated
-   */
-  void CleanDCacheSingleEntryWithMVA(uint32_t mva, bool invalidate);
-  /** Invalidate the caches.
-   * Perform a complete invalidation of the instruction cache and/or the 
-   *   data cache.
-   *
-   * @param insn_cache whether or not the instruction cache should be 
-   *   invalidated
-   * @param data_cache whether or not the data cache should be invalidated
-   */
-  void InvalidateCache(bool insn_cache, bool data_insn);
-  /** Invalidate the TLBs.
-   * Perform a complete invalidation of the unified TLB.
-   */
-  void InvalidateTLB();
-  /** Test and clean DCache.
-   * Perform a test and clean operation of the DCache.
-   *
-   * @return return true if the complete cache is clean, false otherwise
-   */
-  bool TestAndCleanDCache();
-  /** Test, clean and invalidate DCache.
-   * Perform a test and clean operation of the DCache, and invalidate the
-   *   complete cache if it is clean.
-   *
-   * @return return true if the complete cache is clean, false otherwise
-   */
-  bool TestCleanAndInvalidateDCache();
-  
 protected:
   struct CP15Reg
   {
@@ -589,36 +425,10 @@ protected:
   /**************************/
 
 public:
-  /** Instruction cache */
-  Cache icache;
-  /** Data cache */
-  Cache dcache;
-		
 protected:
   /*
    * Memory access variables
    */
-  
-  /** Performs a prefetch access.
-   * @param addr the address of the memory prefetch access
-   */
-  void PerformPrefetchAccess( uint32_t addr );
-
-
-  /** Performs a write access.
-   * @param addr the address of the memory write access
-   * @param size the size of the memory write access
-   * @param value the value of the memory write access
-   */
-  void PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
-
-
-  /** Performs a read access.
-   * @param addr the address of the memory read access
-   * @param size the size of the memory read access
-   * @param _signed the nature of the memory read access (signed or unsigned)
-   */
-  uint32_t PerformReadAccess( uint32_t addr, uint32_t size, bool _signed );
   
   /* Storage for Modes and banked registers */
   typedef std::map<uint8_t, Mode*> ModeMap;

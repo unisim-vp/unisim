@@ -107,6 +107,7 @@ struct CPU
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint32_t> > debug_control_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint32_t> > symbol_table_lookup_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> exception_trap_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> instruction_counter_trap_reporting_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
 
   /** Indicates if the finished instructions require to be reported. */
@@ -172,16 +173,32 @@ struct CPU
   /* Memory access methods       START                          */
   /**************************************************************/
 	
-  void RefillInsnPrefetchBuffer( uint32_t base_address );
+  virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
+  virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
   
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn );
+  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4, false ); }
+  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2, false ); }
+  uint32_t MemReadS16( uint32_t address ) { return PerformReadAccess( address, 2, true ); }
+  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1, false ); }
+  uint32_t MemReadS8( uint32_t address ) { return PerformReadAccess( address, 1, true ); }
+  void     MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
+  void     MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
+  void     MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
+
+  void     PerformPrefetchAccess( uint32_t addr );
+  void     PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
+  uint32_t PerformReadAccess( uint32_t addr, uint32_t size, bool _signed );
   
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
   {
     if (requires_memory_access_reporting and memory_access_reporting_import)
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
+  
+  void RefillInsnPrefetchBuffer( uint32_t base_address );
+  
+  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
+  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn );
   
   /**************************************************************/
   /* Memory access methods       END                            */
@@ -197,6 +214,11 @@ struct CPU
   /**************************************************/
   /* Software Exceptions                      END   */
   /**************************************************/
+  
+  /** Instruction cache */
+  Cache icache;
+  /** Data cache */
+  Cache dcache;
   
 protected:
   /** Decoder for the ARM32 instruction set. */

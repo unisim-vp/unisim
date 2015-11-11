@@ -110,6 +110,7 @@ CPU::CPU(const char *name, Object *parent)
   , debug_control_import("debug-control-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
   , exception_trap_reporting_import("exception-trap-reporting-import", this)
+  , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
   , linux_os_import("linux-os-import", this)
   , ltlb("lockdown-tlb", this)
   , tlb("tlb", this)
@@ -414,6 +415,291 @@ CPU::StepInstruction()
   if(requires_finished_instruction_reporting)
     if(memory_access_reporting_import)
       memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+}
+
+/** Get caches info
+ *
+ */
+void
+CPU::GetCacheInfo(bool &unified, 
+                  uint32_t &isize, uint32_t &iassoc, uint32_t &ilen,
+                  uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen)
+{
+  unified = false;
+  isize = icache.GetSize();
+  iassoc = icache.GetNumWays();
+  ilen = icache.LINE_SIZE;
+  dsize = icache.GetSize();
+  dassoc = dcache.GetNumWays();
+  dlen = dcache.LINE_SIZE;
+}
+
+/** Drain write buffer.
+ * Perform a memory barrier by draining the write buffer.
+ */
+void
+CPU::DrainWriteBuffer()
+{
+  logger << DebugWarning << "TODO: Drain write buffer once implemented" << EndDebugWarning;
+}
+
+/** Invalidate ICache single entry using MVA
+ *
+ * Perform an invalidation of a single entry in the ICache using the
+ *   given address in MVA format.
+ *
+ * @param mva the address to invalidate
+ */
+void 
+CPU::InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
+{
+  uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
+
+  logger << DebugInfo
+         << "Invalidating ICache single entry with MVA:" << std::endl
+         << " - mva               = 0x" << std::hex << init_mva << std::endl
+         << " - cache aligned mva = 0x" << mva << std::dec
+         << EndDebugInfo;
+
+  if ( likely(// SCTLR::C.Get( sctlr ) &&
+              icache.GetSize()) )
+    {
+      uint32_t cache_tag = icache.GetTag(mva);
+      uint32_t cache_set = icache.GetSet(mva);
+      uint32_t cache_way = 0;
+      bool cache_hit = false;
+      if ( likely(icache.GetWay(cache_tag, cache_set, &cache_way)) )
+        cache_hit = true;
+
+      if ( likely(cache_hit) )
+        {
+          logger << DebugInfo
+                 << "ICache hit (set = "
+                 << cache_set << ", way = "
+                 << cache_way << "), invalidating it"
+                 << EndDebugInfo;
+          icache.SetValid(cache_set, cache_way, 0);
+        }
+      else
+        {
+          logger << DebugInfo
+                 << "ICache miss (set = "
+                 << cache_set
+                 << "), nothing to do"
+                 << EndDebugInfo;
+        }
+    }
+}
+
+/** Clean DCache single entry using MVA
+ *
+ * Perform a clean of a single entry in the DCache using the given
+ *   address in MVA format.
+ *
+ * @param mva the address to clean
+ * @param invalidate true if the line needs to be also invalidated
+ */
+void 
+CPU::CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
+{
+  uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
+  uint32_t pa = mva;
+
+  logger << DebugInfo
+         << "Cleaning DCache single entry with MVA:" << std::endl
+         << " - mva               = 0x" << std::hex << init_mva << std::endl
+         << " - cache aligned mva = 0x" << mva << std::dec
+         << EndDebugInfo;
+
+  if ( likely(// cp15.IsDCacheEnabled() &&
+              dcache.GetSize()) )
+    {
+      uint32_t cache_tag = dcache.GetTag(mva);
+      uint32_t cache_set = dcache.GetSet(mva);
+      uint32_t cache_way;
+      bool cache_hit = false;
+      if ( likely(dcache.GetWay(cache_tag, cache_set, &cache_way)) )
+        cache_hit = true;
+
+      if ( likely(cache_hit) )
+        {
+          logger << DebugInfo
+                 << "Cache hit (set = "
+                 << cache_set << ", way = "
+                 << cache_way << ")"
+                 << EndDebugInfo;
+          uint8_t cache_dirty = dcache.GetDirty(cache_set, cache_way);
+
+          if ( cache_dirty != 0 )
+            {
+              logger << DebugInfo
+                     << "Line is dirty, performing a cleaning"
+                     << EndDebugInfo;
+              uint8_t *data = 0;
+              // translate the address
+              // if ( likely(cp15.IsMMUEnabled()) )
+              //   TranslateMVA(mva, pa);
+              dcache.GetData(cache_set, cache_way, &data);
+              {
+                logger << DebugInfo
+                       << "Cleaning cache line:" << std::endl
+                       << " - mva = 0x" << std::hex << mva << std::endl
+                       << " - pa  = 0x" << pa << std::endl
+                       << " - tag = 0x" << cache_tag << std::endl
+                       << " - set = " << std::dec << cache_set << std::endl
+                       << " - way = " << cache_way << std::endl
+                       << " - data =" << std::hex;
+                for ( unsigned int i = 0; i < dcache.LINE_SIZE; i++ )
+                  logger << " " << (unsigned int)data[i];
+                logger << std::dec
+                       << EndDebugInfo;
+              }
+              PrWrite(pa, data, dcache.LINE_SIZE);
+              dcache.SetDirty(cache_set, cache_way, 0);
+            }
+          else
+            {
+              logger << DebugInfo
+                     << "Line is already cleaned, doing nothing"
+                     << EndDebugInfo;
+            }
+          if ( invalidate )
+            dcache.SetValid(cache_set, cache_way, 0);
+        }
+      else
+        {
+          logger << DebugInfo
+                 << "Cache miss (set = "
+                 << cache_set
+                 << ")"
+                 << EndDebugInfo;
+        }
+    }
+}
+
+/** Invalidate the caches.
+ * Perform a complete invalidation of the instruction cache and/or the 
+ *   data cache.
+ *
+ * @param insn_cache whether or not the instruction cache should be 
+ *   invalidated
+ * @param data_cache whether or not the data cache should be invalidated
+ */
+void 
+CPU::InvalidateCache(bool insn_cache, bool data_cache)
+{
+  if ( insn_cache )
+    {
+      icache.Invalidate();
+    }
+  if ( data_cache )
+    {
+      dcache.Invalidate();
+    }
+}
+
+/** Invalidate the TLBs.
+ * Perform a complete invalidation of the instruction TLB and/or the 
+ *   data TLB.
+ *
+ * @param insn_tlb whether or not the instruction tlb should be invalidated
+ * @param data_tlb whether or not the data tlb should be invalidated
+ */
+void 
+CPU::InvalidateTLB()
+{
+  // only the tlb needs to be invalidated, do not touch the lockdown tlb
+  // tlb.Invalidate();
+}
+
+/** Test and clean DCache.
+ * Perform a test and clean operation of the DCache.
+ *
+ * @return return true if the complete cache is clean, false otherwise
+ */
+bool 
+CPU::TestAndCleanDCache()
+{
+  bool cleaned = true;
+  uint32_t num_sets = dcache.GetNumSets();
+  uint32_t num_ways = dcache.GetNumWays();
+  uint32_t set_index = 0;
+  uint32_t way_index = 0;
+
+  uint32_t dirty_set = 0;
+  uint32_t dirty_way = 0;
+
+  for ( set_index = 0; 
+        cleaned && (set_index < num_sets);
+        set_index++ )
+    {
+      for ( way_index = 0;
+            cleaned && (way_index < num_ways); 
+            way_index++ )
+        {
+          if ( dcache.GetValid(set_index, way_index) != 0 )
+			{
+              if ( dcache.GetDirty(set_index, way_index) != 0 )
+                {
+                  cleaned = false;
+                  dirty_set = set_index;
+                  dirty_way = way_index;
+                }
+			}
+        }
+    }
+
+  if ( !cleaned )
+    {
+      /* Get the address and data of the dirty line */
+      uint32_t mva = dcache.GetBaseAddress(dirty_set, dirty_way);
+      uint32_t pa = mva;
+      // if ( likely(cp15.IsMMUEnabled()) )
+      //   TranslateMVA(mva, pa);
+      uint8_t *data = 0;
+      dcache.GetData(dirty_set, dirty_way, &data);
+
+      /* Write the data into memory */
+      PrWrite(pa, data, dcache.LINE_SIZE);
+      /* Set the line as clean */
+      dcache.SetDirty(dirty_set, dirty_way, 0);
+
+      /* Check if there are still dirty lines */
+      cleaned = true;
+      for ( set_index = dirty_set;
+            cleaned && (set_index < num_sets);
+            set_index++ )
+        {
+          for ( way_index = 0; // we might be doing some useless work
+                cleaned && (way_index < num_ways);
+                way_index++ )
+			{
+              if ( (dcache.GetValid(set_index, way_index) != 0)
+                   && (dcache.GetDirty(set_index, way_index) != 0) )
+                {
+                  cleaned = false;
+                }
+			}
+        }
+    }
+
+  return cleaned;
+}
+
+/** Test, clean and invalidate DCache.
+ * Perform a test and clean operation of the DCache, and invalidate the
+ *   complete cache if it is clean.
+ *
+ * @return return true if the complete cache is clean, false otherwise
+ */
+bool 
+CPU::TestCleanAndInvalidateDCache()
+{
+  bool cleaned = TestAndCleanDCache();
+
+  if ( cleaned ) dcache.Invalidate();
+
+  return cleaned;
 }
 
 /** Inject an intrusive read memory operation.
@@ -847,7 +1133,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
            << EndDebugInfo;
 
   // if ( likely(cp15.IsMMUEnabled()) )
-  //         if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
+  //   if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
   //     {
   //       logger << DebugError
   //  << "Could not translate address when performing instruction read"
@@ -1261,6 +1547,68 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
               ((uint32_t)0x06   << 16) |
               ((uint32_t)0x0926 <<  4) |
               ((uint32_t)0x05   <<  0);
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 0, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CTR, Cache Type Register"; }
+          void Write( CPU& cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( CPU& cpu ) {
+            bool unified = false;
+            uint32_t isize = 0, iassoc = 0, ilen = 0, dsize = 0, dassoc = 0, dlen = 0;
+            cpu.GetCacheInfo( unified, isize, iassoc, ilen, dsize, dassoc, dlen );
+            uint32_t result = 0x1c000000UL;
+            if (not unified) result |= 0x01000000UL;
+            else            { dsize = isize; dassoc = iassoc; dlen = ilen; }
+            
+            switch ( isize / 1024 )
+              {
+              case 4:        result |= (0x03UL << 6); break;
+              case 8:        result |= (0x04UL << 6); break;
+              case 16:       result |= (0x05UL << 6); break;
+              case 32:       result |= (0x06UL << 6); break;
+              case 64:       result |= (0x07UL << 6); break;
+              case 128:      result |= (0x08UL << 6); break;
+              default: throw 0;
+              }
+            switch ( dsize / 1024 )
+              {
+              case 4:        result |= ((0x03UL << 6) << 12); break;
+              case 8:        result |= ((0x04UL << 6) << 12); break;
+              case 16:       result |= ((0x05UL << 6) << 12); break;
+              case 32:       result |= ((0x06UL << 6) << 12); break;
+              case 64:       result |= ((0x07UL << 6) << 12); break;
+              case 128:      result |= ((0x08UL << 6) << 12); break;
+              default: throw 0;
+              }
+            switch ( iassoc )
+              {
+              case 4:        result |= (0x02UL << 3); break;
+              default: throw 0;
+              }
+            switch ( dassoc )
+              {
+              case 4:        result |= ((0x02UL << 3) << 12); break;
+              default: throw 0;
+              }
+            switch ( ilen )
+              {
+              case 32:       result |= 0x02UL; break;
+              default: throw 0;
+              }
+            switch ( dlen )
+              {
+              case 32:       result |= (0x02UL << 12); break;
+              default: throw 0;
+              }
+            // No need to set the M bit which should be always 0
+            //   meaning that the caches are present
+            return result;
           }
         } x;
         return x;
