@@ -35,6 +35,7 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
+#include <GenericTimer.hh>
 #include <unisim/component/tlm2/processor/arm/armemu/armemu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
@@ -110,23 +111,28 @@ struct Simulator : public unisim::kernel::service::Simulator
   typedef unisim::service::time::sc_time::ScTime ScTime;
   typedef unisim::service::time::host_time::HostTime HostTime;
   
-  CPU        cpu;
-  Router     router;
-  MEMORY     memory;
-  ScTime     time;
-  HostTime   host_time;
-  LINUX_OS*  linux_os;
-  TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
+  CPU                          cpu;
+  Router                       router;
+  MEMORY                       memory;
+  GenericTimer<>               timer;
+  sc_signal<bool>              timer_reset;
+  sc_signal<bool>              timer_enable;
+  sc_signal<bool>              irq_signal;
+  
+  ScTime                       time;
+  HostTime                     host_time;
+  LINUX_OS*                    linux_os;
+  TEE_MEMORY_ACCESS_REPORTING* tee_memory_access_reporting;
 
-  double simulation_spent_time;
+  double                       simulation_spent_time;
 
-  GDB_SERVER *gdb_server;
-  INLINE_DEBUGGER *inline_debugger;
-  DEBUGGER *debugger;
-  PROFILER *profiler;
-  bool enable_gdb_server;
+  GDB_SERVER*                  gdb_server;
+  INLINE_DEBUGGER*             inline_debugger;
+  DEBUGGER*                    debugger;
+  PROFILER*                    profiler;
+  bool                         enable_gdb_server;
   unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
-  bool enable_inline_debugger;
+  bool                         enable_inline_debugger;
   unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
 
   int exit_status;

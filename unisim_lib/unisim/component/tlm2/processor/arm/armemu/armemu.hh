@@ -88,6 +88,26 @@ private:
 	 *   incomming calls.                                                     *
 	 **************************************************************************/
 
+	/**************************************************************************
+	 * Interrupt ports and their handles                                START *
+	 **************************************************************************/
+
+public:
+	// Slave port for the IRQ signal
+	sc_core::sc_in<bool> nirq;
+	// Slave port for the FIQ signal
+	sc_core::sc_in<bool> nfiq;
+
+private:
+	/** nIRQ port handler */
+	void IRQHandler();
+	/** nFIQ port handler */
+	void FIQHandler();
+	
+	/**************************************************************************
+	 * Interrupt ports and their handles                                  END *
+	 **************************************************************************/
+
 public:
 	SC_HAS_PROCESS(ARMEMU);
 	ARMEMU(const sc_module_name& name, Object *parent = 0);

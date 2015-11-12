@@ -50,11 +50,11 @@ Router::Router(const char* name, unisim::kernel::service::Object* parent)
   // this->mapping[0].output_port = 0;
   // this->mapping[0].translation = 0;
   /* Timer range */
-  // this->mapping[1].used = true;
-  // this->mapping[1].range_start = 0x00001000;
-  // this->mapping[1].range_end =   0x00001fff;
-  // this->mapping[1].output_port = 1;
-  // this->mapping[1].translation = 0;
+  this->mapping[1].used = true;
+  this->mapping[1].range_start = 0x00001000;
+  this->mapping[1].range_end =   0x00001fff;
+  this->mapping[1].output_port = 1;
+  this->mapping[1].translation = 0;
   /* High global memory range */
   this->mapping[2].used = true;
   this->mapping[2].range_start = 0x00002000;
@@ -68,6 +68,10 @@ Simulator::Simulator(int argc, char **argv)
   , cpu( "cpu" )
   , router( "router" )
   , memory( "memory" )
+  , timer( "timer" )
+  , timer_reset()
+  , timer_enable()
+  , irq_signal()
   , time("time")
   , host_time("host-time")
   , linux_os(0)
@@ -102,8 +106,17 @@ Simulator::Simulator(int argc, char **argv)
   // This mode allows to run Linux applications without simulating all the peripherals.
 
   cpu.master_socket( *router.targ_socket[0] );
+  cpu.nirq( irq_signal );
   // (*router.init_socket[0])( memory.slave_sock );
   (*router.init_socket[0])( memory.slave_sock );
+  (*router.init_socket[1])( timer.CTRL );
+  timer.IRQ( irq_signal );
+  timer.RST( timer_reset );
+  timer.ENABLE( timer_enable );
+  timer_reset = false;
+  timer_enable = true;
+  /* TODO: clock */
+
   
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;

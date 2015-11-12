@@ -32,14 +32,14 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
+#include <unisim/component/tlm2/processor/arm/armemu/armemu.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/util/likely/likely.hh>
 
 #include <systemc.h>
 #include <tlm.h>
-
-#include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/util/likely/likely.hh"
 
 #define LOCATION \
 	" - location = " \
@@ -164,6 +164,10 @@ ARMEMU(const sc_module_name& name, Object *parent)
 	master_socket.bind(*this);
 	
 	SC_THREAD(Run);
+	SC_METHOD(IRQHandler);
+	sensitive << nirq;
+	SC_METHOD(FIQHandler);
+	sensitive << nfiq;
 }
 
 ARMEMU ::
@@ -458,6 +462,20 @@ ARMEMU ::
 invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
 {
 	dmi_region_cache.Invalidate(start_range, end_range);
+}
+	
+/** nIRQ port handler */
+void 
+ARMEMU::IRQHandler()
+{
+  unisim::component::cxx::processor::arm::exception::IRQ.Set( this->exception, not nirq );
+}
+
+/** nFIQ port handler */
+void 
+ARMEMU::FIQHandler()
+{
+  unisim::component::cxx::processor::arm::exception::FIQ.Set( this->exception, not nfiq );
 }
 	
 /**
