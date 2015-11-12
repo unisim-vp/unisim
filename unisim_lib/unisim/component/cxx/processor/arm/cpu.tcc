@@ -535,7 +535,7 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
   this->Stop( -1 );
   
   static struct CP15Error : public CP15Reg {
-    char const* Describe() { return ""; }
+    char const* Describe() { return "Unknown CP15 register"; }
     void Write( CPU&, uint32_t ) {}
     uint32_t Read( CPU& ) { return 0; }
   } err;
@@ -550,13 +550,7 @@ template <class CONFIG>
 void 
 CPU<CONFIG>::UnpredictableInsnBehaviour()
 {
-  logger << DebugWarning
-    << "Trying to execute unpredictable behavior instruction,"
-    << "Location: " 
-    << __FUNCTION__ << ":" 
-    << __FILE__ << ":" 
-    << __LINE__ << ": "
-    << EndDebugWarning;
+  logger << DebugWarning << "Trying to execute unpredictable behavior instruction" << EndDebugWarning;
   this->Stop( -1 );
 }
 

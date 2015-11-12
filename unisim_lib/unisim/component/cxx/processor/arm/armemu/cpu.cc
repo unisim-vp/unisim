@@ -642,22 +642,27 @@ CPU::StepInstruction()
     //op->profile(profile);
   }
   
-  /* check that an exception has not occurred, if so 
-   * stop the simulation */
-  if ( unlikely(GetVirtualExceptionVector()) )
+  /* Handle any exception that may  have occured */
+  if (unlikely(this->exception))
     {
-      logger << DebugError
-             << "An exception has been found, this should never happen "
-             << "when simulating at user level."
-             << EndDebugError;
-      Stop(-1);
+      if (unlikely(this->linux_os_import)) {
+        // we are executing on linux emulation mode, no exception
+        // handling in this mode.
+        logger << DebugError
+               << "An exception has been found, this should never happen when simulating at user level."
+               << EndDebugError;
+        Stop(-1);
+        return;
+      }
+      // bool exception_occurred = 
+      HandleException();
     }
+  
   instruction_counter++;
-  if ( unlikely(instruction_counter_trap_reporting_import &&
-                trap_on_instruction_counter == instruction_counter) )
+  if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
     instruction_counter_trap_reporting_import->ReportTrap(*this);
   
-  if(unlikely(requires_finished_instruction_reporting && memory_access_reporting_import))
+  if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
     memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
 }
 
@@ -1193,15 +1198,20 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
 void
 CPU::SWI( uint32_t imm )
 {
-  // we are executing on linux emulation mode, use linux_os_import
-  try
-    {
+  if (this->linux_os_import) {
+    // we are executing on linux emulation mode, use linux_os_import
+    try {
       this->linux_os_import->ExecuteSystemCall(imm);
     }
-  catch(std::exception &e)
-    {
-      std::cerr << e.what() << std::endl;
-    }
+    catch(std::exception &e)
+      {
+        std::cerr << e.what() << std::endl;
+        this->Stop( -1 );
+      }
+  } else {
+    // we are executing on full system mode
+    this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::SWI);
+  }
 }
 
 /** Breakpoint
