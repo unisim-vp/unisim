@@ -386,14 +386,16 @@ CPU<CONFIG>::HandleException()
       Mode& newmode = CurrentMode();
       newmode.Swap( *this ); // IN
       // Write return information to registers, and make further CPSR
-      // changes: [IRQ|FIQ]s disabled, other interrupts disabled if
+      // changes: IRQs disabled, other interrupts disabled if
       // appropriate, IT state reset, instruction set and endianness
       // set to SCTLR-configured values.
       newmode.SetSPSR( new_spsr_value );
       SetGPR( 14, new_lr_value );
-      // [IRQ|FIQ]s disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.[IW|FW] == '1')
-      if (isIRQ) cpsr.Set( I, 1 );
-      else       cpsr.Set( F, 1 );
+      // IRQs disabled
+      cpsr.Set( I, 1 );
+      // When taking FIQ, FIQs masked (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.FW == '1')
+      if (not isIRQ)
+        cpsr.Set( F, 1 );
       // Async Abort disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.AW == '1')
       cpsr.Set( A, 1 );
       cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
