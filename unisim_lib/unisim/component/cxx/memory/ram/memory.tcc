@@ -379,7 +379,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 			{
 				uint8_t *src = &page->storage[page_offset];
 				uint8_t *dst = &((uint8_t *)buffer)[copied];
-
+				uint32_t copy_left = copy_size;
 				do
 				{
 					uint8_t mask = byte_enable[byte_enable_offset];
@@ -387,7 +387,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 					*dst = ((*dst) & ~mask) | ((*src) & mask);
 					// cycle through the byte enable buffer
 					if(++byte_enable_offset >= byte_enable_length) byte_enable_offset = 0;
-				} while(++src, ++dst, --copy_size);
+				} while (++src, ++dst, --copy_left);
 			}
 			else
 			{

@@ -225,15 +225,21 @@ namespace arm {
     bool privileged = (core.CPSR().Get(M) != core.USER_MODE);
     
     // ITSTATE, ISETSTATE are only written when returning from exception
-    RegisterField<10,6>().Set( write_mask, is_excpt_return ); // IT<7:2>
-    RegisterField<25,2>().Set( write_mask, is_excpt_return ); // IT<1:0>
-    J.Set( write_mask, is_excpt_return );
-    T.Set( write_mask, is_excpt_return );
+    if (not is_excpt_return) {
+      RegisterField<10,6>().Set( write_mask, 0 ); // IT<7:2>
+      RegisterField<25,2>().Set( write_mask, 0 ); // IT<1:0>
+      J.Set( write_mask, 0 );
+      T.Set( write_mask, 0 );
+    }
     
-    A.Set( write_mask, privileged and (is_secure or  scr_aw or have_virt_ext) );
-    I.Set( write_mask, privileged );
-    F.Set( write_mask, privileged and (not nmfi or not F.Get( value )) and (is_secure or scr_fw or have_virt_ext) );
-    M.Set( write_mask, privileged );
+    if (not    (privileged and (is_secure or  scr_aw or have_virt_ext)))
+      A.Set( write_mask, 0 );
+    if (not    (privileged))
+      I.Set( write_mask, 0 );
+    if (not    (privileged and (not nmfi or not F.Get( value )) and (is_secure or scr_fw or have_virt_ext)))
+      F.Set( write_mask, 0 );
+    if (not    (privileged))
+      M.Set( write_mask, 0 );
     
     // TODO: Check for attempts to enter modes only permitted in
     // Secure state from Non-secure state. These are Monitor mode

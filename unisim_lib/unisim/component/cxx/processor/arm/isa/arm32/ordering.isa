@@ -61,7 +61,9 @@ group conditional (ldr_imm,ldr_reg,ldrh_imm,ldrh_reg,ldrsh_imm,ldrsh_reg,ldrb_im
                    rsc_32imm,rsc_imm_shift,rsc_reg_shift,orr_32imm,orr_imm_shift,orr_reg_shift,bic_32imm,bic_imm_shift, \
                    bic_reg_shift,tst_32imm,tst_imm_shift,tst_reg_shift,teq_32imm,teq_imm_shift,teq_reg_shift,cmp_32imm, \
                    cmp_imm_shift,cmp_reg_shift,cmn_32imm,cmn_imm_shift,cmn_reg_shift,mov_32imm,mov_imm_shift,mov_reg_shift, \
-                   mvn_32imm,mvn_imm_shift,mvn_reg_shift,clz,rbit,rev,revsh,rev16, \
+                   mvn_32imm,mvn_imm_shift,mvn_reg_shift,               \
+                   subspc_imm, subspc_imm_shift,                        \
+                   clz,rbit,rev,revsh,rev16,                            \
                    movw,movt,                                           \
                    qadd,qsub,qdadd,qdsub,pkh,sxtab16,sxtb16,uxtab16,    \
                    uxtb16,sel,ssat,ssat16,usat,usat16,sxtab,sxtb,       \

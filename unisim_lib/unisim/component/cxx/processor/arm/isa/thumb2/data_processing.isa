@@ -224,19 +224,6 @@ sub_wrri.execute = {
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-op subs_pclri( 0b1111001111011110[16]:> <: 0b10001111[8]: imm[8] );
-
-subs_pclri.disasm = { buffer << "subs\tpc, lr, " << DisasmI(imm); };
-
-subs_pclri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
-  
-  assert( not "sure" );
-  uint32_t op1 = cpu.GetGPR( 14 ), op2 = imm, res = op1 - op2;
-  cpu.SetGPR( 15, res );
-  if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
-};
-
 op subw( 0b11110[5]: shl<11> imm2[1]: 0b101010[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 subw.var imm : {uint32_t} = {imm2|imm1|imm0};
 subw.var reject : {Reject} = {(rn == 15) or (rd == 13) or (rd == 15)};
