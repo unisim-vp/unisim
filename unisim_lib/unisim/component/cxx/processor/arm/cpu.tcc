@@ -39,6 +39,7 @@
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/util/likely/likely.hh>
@@ -111,6 +112,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , logger(*this)
   , exception(0)
   , sctlr(0)
+  , ttbr0(0)
   , registers_export("registers-export", this)
 {
   // Initialize general purpose registers
@@ -308,6 +310,126 @@ CPU<CONFIG>::GetRegister(const char *name)
     return 0;
 }
 
+/** Process exceptions
+ *
+ * Processes pending exceptions and returns true if an exception were taken
+ *
+ * @return true if an exception were taken, false if not (exception masked)
+ */
+template <class CONFIG>
+bool
+CPU<CONFIG>::HandleException()
+{
+  // Exception priorities (from higher to lower)
+  // - 1 Reset
+  // - 2 Data Abort (including data TLB miss)
+  // - 3 FIQ
+  // - 4 IRQ
+  // - 5 Imprecise Abort (external abort) - ARMv6 (so ignored here)
+  // - 6 Prefetch Abort (including prefetch TLB miss)
+  // - 7 Undefined instruction / SWI
+
+  // If we reached this point at least one exception is pending (but maybe masked).
+  uint32_t masked_exception = exception;
+  if (cpsr.Get(F)) unisim::component::cxx::processor::arm::exception::FIQ.Set( masked_exception, 0 );
+  if (cpsr.Get(I)) unisim::component::cxx::processor::arm::exception::IRQ.Set( masked_exception, 0 );
+  
+  if (not masked_exception) return false;
+  
+  // if (unisim::component::cxx::processor::arm::exception::RESET.Get( masked_exception ))
+  //   {
+  //   }
+
+  // if (unisim::component::cxx::processor::arm::exception::DABRT.Get( masked_exception ))
+  //   {
+  //   }
+  
+  if (unisim::component::cxx::processor::arm::exception::FIQ.Get( masked_exception ) or
+      unisim::component::cxx::processor::arm::exception::IRQ.Get( masked_exception ))
+    {
+      // FIQs have higher priority
+      bool isIRQ = not unisim::component::cxx::processor::arm::exception::FIQ.Get( masked_exception );
+      logger << DebugInfo << "Received " << (isIRQ ? "IRQ" : "FIQ") << " interrupt, handling it." << EndDebugInfo;
+      
+      // Quote from the ARM doc:
+      //
+      //   Determine return information. SPSR is to be the current
+      // CPSR, and LR is to be the current PC minus 0 for Thumb or 4
+      // for ARM, to change the PC offsets of 4 or 8 respectively from
+      // the address of the current instruction into the required
+      // address of the instruction boundary at which the interrupt
+      // occurred plus 4. For this purpose, the PC and CPSR are
+      // considered to have already moved on to their values for the
+      // instruction following that boundary.
+      //
+      // Now what does that mean ?!?!?
+      //
+      //   Whatever the instruction set, the handler may perform a
+      // "subs PC, LR, #-4" to return from [IRQ|FIQ] exception. Thus, next
+      // instruction to execute should be LR-4, in other words, LR
+      // should be next instruction +4.
+      uint32_t new_lr_value = GetNPC() + 4;
+      uint32_t new_spsr_value = cpsr.Get( ALL32 );
+      uint32_t vect_offset = isIRQ ? 0x18 : 0x1C;
+      
+      // TODO: [IRQ|FIQ]s may be routed to monitor (if
+      // HaveSecurityExt() and SCR.[IRQ|FIQ]) or to Hypervisor (if
+      // (HaveVirtExt() && HaveSecurityExt() && SCR.[IRQ|FIQ] == '0'
+      // && HCR.[IMO|FMO] == '1' && !IsSecure()) || CPSR.M ==
+      // '11010');
+      
+      // Handle in [IRQ|FIQ] mode. TODO: Ensure Secure state if
+      // initially in Monitor mode. This affects the Banked versions
+      // of various registers accessed later in the code.
+      CurrentMode().Swap( *this ); // OUT
+      cpsr.Set( M, isIRQ ? IRQ_MODE : FIQ_MODE );
+      Mode& newmode = CurrentMode();
+      newmode.Swap( *this ); // IN
+      // Write return information to registers, and make further CPSR
+      // changes: [IRQ|FIQ]s disabled, other interrupts disabled if
+      // appropriate, IT state reset, instruction set and endianness
+      // set to SCTLR-configured values.
+      newmode.SetSPSR( new_spsr_value );
+      SetGPR( 14, new_lr_value );
+      // [IRQ|FIQ]s disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.[IW|FW] == '1')
+      if (isIRQ) cpsr.Set( I, 1 );
+      else       cpsr.Set( F, 1 );
+      // Async Abort disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.AW == '1')
+      cpsr.Set( A, 1 );
+      cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
+      cpsr.Set( J, 0 );
+      cpsr.Set( T, SCTLR::TE.Get( sctlr ) );
+      cpsr.Set( E, SCTLR::EE.Get( sctlr ) );
+      // Branch to correct [IRQ|FIQ] vector ("implementation defined" if SCTLR.VE == '1').
+      uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
+      Branch(exc_vector_base + vect_offset);
+      
+      return true;
+    }
+  
+  // else if (unisim::component::cxx::processor::arm::exception::PABRT.Get( masked_exception ))
+  //   {
+  //   }
+  
+  // else if (unisim::component::cxx::processor::arm::exception::SWI.Get( masked_exception ))
+  //   {
+  //   }
+
+  // else if (unisim::component::cxx::processor::arm::exception::UNDEF.Get( masked_exception ))
+  //   {
+  //   }
+
+  
+  logger << DebugError
+         << "Exception not handled (" << std::hex << exception << ")"
+         << std::endl
+         << " - CPSR = 0x" << std::hex << cpsr.bits() << std::dec
+         << std::endl
+         << EndDebugError;
+  unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+  return false;
+}
+
 /** Read the value of a CP15 coprocessor register
  *
  * @param crn     the "crn" field of the instruction code
@@ -380,6 +502,18 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
             if (SCTLR::C.Get( value ))
               cpu.logger << DebugInfo << "Dcache Enabled !!!!!!!!" << EndDebugInfo;
           }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 2, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
+          /* TODO: handle SBZ(DGP=0x00003fffUL)... */
+          void Write( CPU& cpu, uint32_t value ) { cpu.ttbr0 = value; }
+          uint32_t Read( CPU& cpu ) { return cpu.ttbr0; }
         } x;
         return x;
       } break;

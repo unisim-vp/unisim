@@ -32,14 +32,15 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.hh"
+#include <unisim/component/tlm2/processor/arm/arm926ejs/arm926ejs.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/util/likely/likely.hh>
+
 
 #include <systemc.h>
 #include <tlm.h>
-
-#include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/util/likely/likely.hh"
 
 #define LOCATION \
 	" - location = " \

@@ -41,7 +41,6 @@
 #include <unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
-#include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_control.hh>
@@ -216,25 +215,15 @@ struct CPU
   TLB tlb;
 
 protected:
-  /************************************************************************/
-  /* Exception handling                                             START */
-  /************************************************************************/
-
-  bool HandleException();
-
-  /************************************************************************/
-  /* Exception handling                                               END */
-  /************************************************************************/
-
   /**************************/
   /* CP15 Interface   START */
   /**************************/
 
   virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   
-  static uint32_t const FCSE_PID_MASK = 0xf0000000;
-  uint32_t fcse_pid;
-  uint32_t ttb;
+  static uint32_t const FCSEIDR_MASK = 0xfe000000;
+  uint32_t fcseidr; /*< FCSEIDR, FCSE PID Register */
+  
   /** Get caches info
    *
    */
@@ -302,9 +291,6 @@ protected:
   unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
   /** Decoder for the THUMB instruction set. */
   unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU> thumb_decoder;
-
-  /** The exceptions that have occured */
-  uint32_t exception;
 
   /** Instruction counter */
   uint64_t instruction_counter;

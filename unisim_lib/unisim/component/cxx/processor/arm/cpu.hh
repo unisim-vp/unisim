@@ -324,22 +324,14 @@ struct CPU
     GetMode(running_mode).Swap(*this); // IN
   }
   
-  /**********************/
-  /* Exception handling */
-  /**********************/
-  
-  /** Unpredictable Instruction Behaviour.
-   * This method is just called when an unpredictable behaviour is detected to
-   *   notifiy the processor.
-   */
-  void UnpredictableInsnBehaviour();
+  /************************************************************************/
+  /* Exception handling                                             START */
+  /************************************************************************/
 
+public:
   /** Mark an exception in the virtual exception vector.
-   * This marks an new exception in the virtual exception vector for 
-   *   later treatment.
-   *   NOTE: exception types are available at cxx/processor/arm/exception.hh
    *
-   * @param except the exception to mark
+   * @param rf the register field of the exception to mark
    */
   template <class RF>
   void MarkVirtualExceptionVector( RF const& rf )
@@ -365,6 +357,23 @@ struct CPU
   {
     exception = mask;
   }
+  
+  void UnpredictableInsnBehaviour();
+
+protected:
+  bool HandleException();
+  
+  /** Exception vector.
+   * This is a virtual exception vector (it doesn't exists as such in the arm
+   *   architecture) to rapidly set and check exceptions.
+   *   NOTE: exceptions are defined at cxx/arm/exception.hh
+   */
+  uint32_t exception;
+
+  /************************************************************************/
+  /* Exception handling                                               END */
+  /************************************************************************/
+
   
   /**************************/
   /* CP15 Interface   START */
@@ -424,7 +433,6 @@ protected:
   /* CP15 Interface     END */
   /**************************/
 
-public:
 protected:
   /*
    * Memory access variables
@@ -441,16 +449,10 @@ protected:
   /** PSR registers */
   PSR      cpsr;
   
-  /** Exception vector.
-   * This is a virtual exception vector (it doesn't exists as such in the arm
-   *   architecture) to rapidly set and check exceptions.
-   *   NOTE: exceptions are defined at cxx/arm/exception.hh
-   */
-  uint32_t exception;
-
   // /** CP15 */
   // CP15 cp15;
-  uint32_t sctlr;
+  uint32_t sctlr; 
+  uint32_t ttbr0; /*< Translation Table Base Register 0 */
 
 public:
   // VFP/NEON registers
