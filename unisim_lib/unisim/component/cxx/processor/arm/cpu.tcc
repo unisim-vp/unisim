@@ -312,7 +312,16 @@ CPU<CONFIG>::GetRegister(const char *name)
 
 /** Process exceptions
  *
- * Processes pending exceptions and returns true if an exception were taken
+ * Processes pending exceptions and returns true if an exception were
+ * taken. Note 1: this function should be call after an instruction
+ * execution but before PC update; current_pc should point at this
+ * instruction and next_pc should point at whatever next instruction
+ * was computed by this instruction. Note 2: If a synchronous abort is
+ * detected, current_pc is considered as reliable, wheras next_pc is
+ * not (instruction didn't execute properly). If no synchronous abort
+ * is detected current_pc and next_pc are considered correct and thus,
+ * an asynchronous abort will consider saving next_pc since current_pc
+ * is completed.
  *
  * @return true if an exception were taken, false if not (exception masked)
  */
@@ -321,13 +330,23 @@ bool
 CPU<CONFIG>::HandleException()
 {
   // Exception priorities (from higher to lower)
-  // - 1 Reset
-  // - 2 Data Abort (including data TLB miss)
-  // - 3 FIQ
-  // - 4 IRQ
-  // - 5 Imprecise Abort (external abort) - ARMv6 (so ignored here)
-  // - 6 Prefetch Abort (including prefetch TLB miss)
-  // - 7 Undefined instruction / SWI
+  // Synchronous Exceptions
+  // - Reset
+  // - Prefetch Abort (including prefetch TLB miss)
+  // - Undefined instruction / SWI
+  // - Data Abort (including data TLB miss)
+  // - Synchronous External Abort
+  //
+  // Asynchronous/External Abort
+  // - FIQ
+  // - IRQ
+  
+  // Note: FIQs or IRQs may be considered to have higher priority in
+  // real implementations but here HandleException Handles both
+  // asynchronous and synchronous just after instruction execution and
+  // just before PC update, thus synchronous exceptions must be
+  // handled before so that instruction boundary is correct on taking
+  // asynchronous ones.
 
   // If we reached this point at least one exception is pending (but maybe masked).
   uint32_t masked_exception = exception;
@@ -340,87 +359,92 @@ CPU<CONFIG>::HandleException()
   //   {
   //   }
 
-  // if (unisim::component::cxx::processor::arm::exception::DABRT.Get( masked_exception ))
+  // else if (unisim::component::cxx::processor::arm::exception::PABRT.Get( masked_exception ))
   //   {
   //   }
   
-  if (unisim::component::cxx::processor::arm::exception::FIQ.Get( masked_exception ) or
-      unisim::component::cxx::processor::arm::exception::IRQ.Get( masked_exception ))
-    {
-      // FIQs have higher priority
-      bool isIRQ = not unisim::component::cxx::processor::arm::exception::FIQ.Get( masked_exception );
-      logger << DebugInfo << "Received " << (isIRQ ? "IRQ" : "FIQ") << " interrupt, handling it." << EndDebugInfo;
-      
-      // Quote from the ARM doc:
-      //
-      //   Determine return information. SPSR is to be the current
-      // CPSR, and LR is to be the current PC minus 0 for Thumb or 4
-      // for ARM, to change the PC offsets of 4 or 8 respectively from
-      // the address of the current instruction into the required
-      // address of the instruction boundary at which the interrupt
-      // occurred plus 4. For this purpose, the PC and CPSR are
-      // considered to have already moved on to their values for the
-      // instruction following that boundary.
-      //
-      // Now what does that mean ?!?!?
-      //
-      //   Whatever the instruction set, the handler may perform a
-      // "subs PC, LR, #-4" to return from [IRQ|FIQ] exception. Thus, next
-      // instruction to execute should be LR-4, in other words, LR
-      // should be next instruction +4.
-      uint32_t new_lr_value = GetNPC() + 4;
-      uint32_t new_spsr_value = cpsr.Get( ALL32 );
-      uint32_t vect_offset = isIRQ ? 0x18 : 0x1C;
-      
-      // TODO: [IRQ|FIQ]s may be routed to monitor (if
-      // HaveSecurityExt() and SCR.[IRQ|FIQ]) or to Hypervisor (if
-      // (HaveVirtExt() && HaveSecurityExt() && SCR.[IRQ|FIQ] == '0'
-      // && HCR.[IMO|FMO] == '1' && !IsSecure()) || CPSR.M ==
-      // '11010');
-      
-      // Handle in [IRQ|FIQ] mode. TODO: Ensure Secure state if
-      // initially in Monitor mode. This affects the Banked versions
-      // of various registers accessed later in the code.
-      CurrentMode().Swap( *this ); // OUT
-      cpsr.Set( M, isIRQ ? IRQ_MODE : FIQ_MODE );
-      Mode& newmode = CurrentMode();
-      newmode.Swap( *this ); // IN
-      // Write return information to registers, and make further CPSR
-      // changes: IRQs disabled, other interrupts disabled if
-      // appropriate, IT state reset, instruction set and endianness
-      // set to SCTLR-configured values.
-      newmode.SetSPSR( new_spsr_value );
-      SetGPR( 14, new_lr_value );
-      // IRQs disabled
-      cpsr.Set( I, 1 );
-      // When taking FIQ, FIQs masked (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.FW == '1')
-      if (not isIRQ)
-        cpsr.Set( F, 1 );
-      // Async Abort disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.AW == '1')
-      cpsr.Set( A, 1 );
-      cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
-      cpsr.Set( J, 0 );
-      cpsr.Set( T, SCTLR::TE.Get( sctlr ) );
-      cpsr.Set( E, SCTLR::EE.Get( sctlr ) );
-      // Branch to correct [IRQ|FIQ] vector ("implementation defined" if SCTLR.VE == '1').
-      uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
-      Branch(exc_vector_base + vect_offset);
-      
-      return true;
-    }
-  
-  // else if (unisim::component::cxx::processor::arm::exception::PABRT.Get( masked_exception ))
+  // else if (unisim::component::cxx::processor::arm::exception::UNDEF.Get( masked_exception ))
+  //   {
+  //   }
+
+  // if (unisim::component::cxx::processor::arm::exception::DABRT.Get( masked_exception ))
   //   {
   //   }
   
   // else if (unisim::component::cxx::processor::arm::exception::SWI.Get( masked_exception ))
   //   {
   //   }
+  
+  if (not unisim::component::cxx::processor::arm::exception::SYNC.Get( masked_exception ))
+    {
+      // No synchronous exception to handle; may safely handle asynchronous ones
 
-  // else if (unisim::component::cxx::processor::arm::exception::UNDEF.Get( masked_exception ))
-  //   {
-  //   }
+      if (unisim::component::cxx::processor::arm::exception::FIQ.Get( masked_exception ) or
+          unisim::component::cxx::processor::arm::exception::IRQ.Get( masked_exception ))
+        {
+          // FIQs have higher priority
+          bool isIRQ = not unisim::component::cxx::processor::arm::exception::FIQ.Get( masked_exception );
+          logger << DebugInfo << "Received " << (isIRQ ? "IRQ" : "FIQ") << " interrupt, handling it." << EndDebugInfo;
+      
+          // Quote from the ARM doc:
+          //
+          //   Determine return information. SPSR is to be the current
+          // CPSR, and LR is to be the current PC minus 0 for Thumb or 4
+          // for ARM, to change the PC offsets of 4 or 8 respectively from
+          // the address of the current instruction into the required
+          // address of the instruction boundary at which the interrupt
+          // occurred plus 4. For this purpose, the PC and CPSR are
+          // considered to have already moved on to their values for the
+          // instruction following that boundary.
+          //
+          // Now what does that mean ?!?!?
+          //
+          //   Whatever the instruction set, the handler may perform a
+          // "subs PC, LR, #-4" to return from [IRQ|FIQ] exception. Thus, next
+          // instruction to execute should be LR-4, in other words, LR
+          // should be next instruction +4.
+          uint32_t new_lr_value = GetNPC() + 4;
+          uint32_t new_spsr_value = cpsr.Get( ALL32 );
+          uint32_t vect_offset = isIRQ ? 0x18 : 0x1C;
+      
+          // TODO: [IRQ|FIQ]s may be routed to monitor (if
+          // HaveSecurityExt() and SCR.[IRQ|FIQ]) or to Hypervisor (if
+          // (HaveVirtExt() && HaveSecurityExt() && SCR.[IRQ|FIQ] == '0'
+          // && HCR.[IMO|FMO] == '1' && !IsSecure()) || CPSR.M ==
+          // '11010');
+      
+          // Handle in [IRQ|FIQ] mode. TODO: Ensure Secure state if
+          // initially in Monitor mode. This affects the Banked versions
+          // of various registers accessed later in the code.
+          CurrentMode().Swap( *this ); // OUT
+          cpsr.Set( M, isIRQ ? IRQ_MODE : FIQ_MODE );
+          Mode& newmode = CurrentMode();
+          newmode.Swap( *this ); // IN
+          // Write return information to registers, and make further CPSR
+          // changes: IRQs disabled, other interrupts disabled if
+          // appropriate, IT state reset, instruction set and endianness
+          // set to SCTLR-configured values.
+          newmode.SetSPSR( new_spsr_value );
+          SetGPR( 14, new_lr_value );
+          // IRQs disabled
+          cpsr.Set( I, 1 );
+          // When taking FIQ, FIQs masked (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.FW == '1')
+          if (not isIRQ)
+            cpsr.Set( F, 1 );
+          // Async Abort disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.AW == '1')
+          cpsr.Set( A, 1 );
+          cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
+          cpsr.Set( J, 0 );
+          cpsr.Set( T, SCTLR::TE.Get( sctlr ) );
+          cpsr.Set( E, SCTLR::EE.Get( sctlr ) );
+          // Branch to correct [IRQ|FIQ] vector ("implementation defined" if SCTLR.VE == '1').
+          uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
+          Branch(exc_vector_base + vect_offset);
+      
+          return true;
+        }
 
+    }  
   
   logger << DebugError
          << "Exception not handled (" << std::hex << exception << ")"

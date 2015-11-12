@@ -568,7 +568,8 @@ CPU::OnDisconnect()
 void 
 CPU::StepInstruction()
 {
-  uint32_t current_pc = this->current_pc = GetNPC();
+  /* Instruction boundary next_pc becomes current_pc */
+  uint32_t insn_addr = this->current_pc = GetNPC();
 
   if (debug_control_import) 
     {
@@ -576,7 +577,7 @@ CPU::StepInstruction()
 
       do 
         {
-          dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+          dbg_cmd = debug_control_import->FetchDebugCommand( insn_addr );
   
           if (likely(dbg_cmd == DebugControl<uint32_t>::DBG_STEP)) 
             {
@@ -598,48 +599,68 @@ CPU::StepInstruction()
         } while(1);
     }
   
-  if (cpsr.Get( T )) {
-    /* Thumb state */
-    isa::thumb2::CodeType insn;
-    ReadInsn(current_pc, insn);
+  try {
+    // Instruction Fetch Decode and Execution (may generate exceptions
+    // known as synchronous aborts since their occurences are a direct
+    // consequence of the instruction execution).
     
-    /* Decode current PC */
-    isa::thumb2::Operation<CPU>* op;
-    op = thumb_decoder.Decode(current_pc, insn);
-    unsigned insn_length = op->GetLength();
-    if (insn_length % 16) throw 0;
+    if (cpsr.Get( T )) {
+      /* Thumb state */
+      isa::thumb2::CodeType insn;
+      ReadInsn(insn_addr, insn);
     
-    /* update PC register value before execution */
-    this->gpr[15] = this->next_pc + 4;
-    this->next_pc += insn_length / 8;
+      /* Decode current PC */
+      isa::thumb2::Operation<CPU>* op;
+      op = thumb_decoder.Decode(insn_addr, insn);
+      unsigned insn_length = op->GetLength();
+      if (insn_length % 16) throw 0;
     
-    /* Execute instruction */
-    asm volatile( "thumb2_operation_execute:" );
-    op->execute( *this );
+      /* update PC register value before execution */
+      this->gpr[15] = this->next_pc + 4;
+      this->next_pc += insn_length / 8;
     
-    this->ITAdvance();
-    //op->profile(profile);
+      /* Execute instruction */
+      asm volatile( "thumb2_operation_execute:" );
+      op->execute( *this );
+    
+      this->ITAdvance();
+      //op->profile(profile);
+    }
+  
+    else {
+      /* Arm32 state */
+    
+      /* fetch instruction word from memory */
+      isa::arm32::CodeType insn;
+      ReadInsn(insn_addr, insn);
+      
+      /* Decode current PC */
+      isa::arm32::Operation<CPU>* op;
+      op = arm32_decoder.Decode(insn_addr, insn);
+    
+      /* update PC register value before execution */
+      this->gpr[15] = this->next_pc + 8;
+      this->next_pc += 4;
+    
+      /* Execute instruction */
+      asm volatile( "arm32_operation_execute:" );
+      op->execute( *this );
+      //op->profile(profile);
+    }
+  
+    if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
+      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+    
+    instruction_counter++;
+    if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
+      instruction_counter_trap_reporting_import->ReportTrap(*this);
+  
   }
   
-  else {
-    /* Arm32 state */
-    
-    /* fetch instruction word from memory */
-    isa::arm32::CodeType insn;
-    ReadInsn(current_pc, insn);
-      
-    /* Decode current PC */
-    isa::arm32::Operation<CPU>* op;
-    op = arm32_decoder.Decode(current_pc, insn);
-    
-    /* update PC register value before execution */
-    this->gpr[15] = this->next_pc + 8;
-    this->next_pc += 4;
-    
-    /* Execute instruction */
-    asm volatile( "arm32_operation_execute:" );
-    op->execute( *this );
-    //op->profile(profile);
+  catch (exception::SynchronousAbort sa) {
+    /* Instruction didn't execute has expected. TODO: ensure that an
+     * exception handler handles it (e.g. using a synchronous abort
+     * bit in the exception vector). */
   }
   
   /* Handle any exception that may  have occured */
@@ -657,13 +678,6 @@ CPU::StepInstruction()
       // bool exception_occurred = 
       HandleException();
     }
-  
-  instruction_counter++;
-  if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
-    instruction_counter_trap_reporting_import->ReportTrap(*this);
-  
-  if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-    memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
 }
 
 /** Inject an intrusive read memory operation.

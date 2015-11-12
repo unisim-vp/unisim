@@ -33,10 +33,9 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 #include <unisim/component/cxx/processor/arm/arm926ejs/cpu.hh>
-#include <unisim/component/cxx/processor/arm/cpu.tcc>
 #include <unisim/component/cxx/processor/arm/arm926ejs/tlb.hh>
-#include <unisim/component/cxx/processor/arm/memory_op.hh>
-#include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/cpu.tcc>
+#include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -324,9 +323,9 @@ CPU::OnDisconnect()
 void 
 CPU::StepInstruction()
 {
-  uint32_t current_pc = this->current_pc = GetNPC();
+  uint32_t insn_addr = this->current_pc = GetNPC();
 
-  cur_instruction_address = current_pc;
+  cur_instruction_address = insn_addr;
 
   if (debug_control_import) 
     {
@@ -334,7 +333,7 @@ CPU::StepInstruction()
 
       do 
         {
-          dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+          dbg_cmd = debug_control_import->FetchDebugCommand(insn_addr);
   
           if (dbg_cmd == DebugControl<uint64_t>::DBG_STEP) 
             {
@@ -358,65 +357,76 @@ CPU::StepInstruction()
         }
       while(1);
     }
-
-  if (cpsr.Get(T))
-    {
-      /* Thumb state */
   
+  try {
+    // Instruction Fetch Decode and Execution (may generate exceptions
+    // known as synchronous aborts since their occurences are a direct
+    // consequence of the instruction execution).
+    
+    if (cpsr.Get(T))
+      {
+        /* Thumb state */
+  
+        /* fetch instruction word from memory */
+        isa::thumb::CodeType insn;
+        ReadInsn(insn_addr, insn);
+      
+        /* Decode current PC */
+        isa::thumb::Operation<CPU>* op;
+        op = thumb_decoder.Decode(insn_addr, insn);
+      
+        /* update PC register value before execution */
+        this->gpr[15] = this->next_pc + 4;
+        this->next_pc += 2;
+      
+        /* Execute instruction */
+        op->execute(*this);
+        //op->profile(profile);
+      }
+  
+    else {
+      /* Arm32 state */
+    
       /* fetch instruction word from memory */
-      isa::thumb::CodeType insn;
-      ReadInsn(current_pc, insn);
+      isa::arm32::CodeType insn;
+      ReadInsn(insn_addr, insn);
       
       /* Decode current PC */
-      isa::thumb::Operation<CPU>* op;
-      op = thumb_decoder.Decode(current_pc, insn);
-      
+      isa::arm32::Operation<CPU>* op;
+      op = arm32_decoder.Decode(insn_addr, insn);
+    
       /* update PC register value before execution */
-      this->gpr[15] = this->next_pc + 4;
-      this->next_pc += 2;
-      
+      this->gpr[15] = this->next_pc + 8;
+      this->next_pc += 4;
+    
       /* Execute instruction */
       op->execute(*this);
       //op->profile(profile);
     }
   
-  else {
-    /* Arm32 state */
+    if (requires_finished_instruction_reporting && memory_access_reporting_import)
+      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+  
+    instruction_counter++;
     
-    /* fetch instruction word from memory */
-    isa::arm32::CodeType insn;
-    ReadInsn(current_pc, insn);
-      
-    /* Decode current PC */
-    isa::arm32::Operation<CPU>* op;
-    op = arm32_decoder.Decode(current_pc, insn);
-    
-    /* update PC register value before execution */
-    this->gpr[15] = this->next_pc + 8;
-    this->next_pc += 4;
-    
-    /* Execute instruction */
-    op->execute(*this);
-    //op->profile(profile);
+    stat_instruction_counter.NotifyListeners();
+  
+    if ( unlikely((trap_on_instruction_counter == instruction_counter) && instruction_counter_trap_reporting_import) )
+      instruction_counter_trap_reporting_import->ReportTrap(*this);
+
   }
   
-  bool exception_occurred = false;
-  if ( unlikely(exception) )
-    exception_occurred = HandleException();
+  catch (exception::SynchronousAbort sa) {
+    /* Instruction didn't execute has expected. TODO: ensure that an
+     * exception handler handles it (e.g. using a synchronous abort
+     * bit in the exception vector). */
+  }
   
-  instruction_counter++;
-  stat_instruction_counter.NotifyListeners();
-  if ( unlikely((trap_on_instruction_counter == instruction_counter)
-                && instruction_counter_trap_reporting_import) )
-    instruction_counter_trap_reporting_import->ReportTrap(*this);
-
-  if ( unlikely(trap_on_exception && exception_occurred
-                && exception_trap_reporting_import) )
-    exception_trap_reporting_import->ReportTrap(*this);
-  
-  if(requires_finished_instruction_reporting)
-    if(memory_access_reporting_import)
-      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+  /* Handle any exception that may  have occured */
+  if (unlikely(exception) && HandleException()) {
+    if (unlikely(trap_on_exception && exception_trap_reporting_import))
+      exception_trap_reporting_import->ReportTrap( *this );
+  }
 }
 
 /** Get caches info
