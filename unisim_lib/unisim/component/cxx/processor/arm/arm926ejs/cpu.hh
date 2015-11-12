@@ -181,10 +181,15 @@ struct CPU
   void     PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
   uint32_t PerformReadAccess( uint32_t addr, uint32_t size, bool _signed );
 	
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn );
+  bool     CheckAccessPermission( bool is_read, uint32_t ap, uint32_t domain );
+  bool     TranslateVA( bool is_read, uint32_t va, uint32_t &mva, uint32_t &pa, uint32_t &cacheable, uint32_t &bufferable );
+  bool     TranslateMVA( uint32_t mva, uint32_t &pa );
+  void     GetTLBEntry( uint32_t ttb_addr, uint32_t &descriptor );
+  
+  void     ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
+  void     ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn );
 
-  void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
+  void     ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
   {
     if (requires_memory_access_reporting and memory_access_reporting_import)
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
@@ -226,7 +231,10 @@ protected:
   /**************************/
 
   virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-    
+  
+  static uint32_t const FCSE_PID_MASK = 0xf0000000;
+  uint32_t fcse_pid;
+  uint32_t ttb;
   /** Get caches info
    *
    */
