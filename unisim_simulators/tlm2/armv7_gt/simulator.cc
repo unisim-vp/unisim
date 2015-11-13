@@ -52,6 +52,29 @@ struct RouterCFG
 
 struct Router : public unisim::component::tlm2::interconnect::generic_router::Router<RouterCFG>
 {
+  Router(const char* name, unisim::kernel::service::Object* parent)
+    : unisim::kernel::service::Object( name, parent )
+    , unisim::component::tlm2::interconnect::generic_router::Router<RouterCFG>( name, parent )
+  {
+    /* Low global memory range */
+    this->mapping[0].used = true;
+    this->mapping[0].range_start = 0x00000000;
+    this->mapping[0].range_end =   0x00000fff;
+    this->mapping[0].output_port = 0;
+    this->mapping[0].translation = 0;
+    /* Timer range */
+    this->mapping[1].used = true;
+    this->mapping[1].range_start = 0x00001000;
+    this->mapping[1].range_end =   0x00001fff;
+    this->mapping[1].output_port = 1;
+    this->mapping[1].translation = 0;
+    /* High global memory range */
+    this->mapping[2].used = true;
+    this->mapping[2].range_start = 0x00002000;
+    this->mapping[2].range_end =   0xffffffff;
+    this->mapping[2].output_port = 2;
+    this->mapping[2].translation = 0x00002000;
+  }
 };
 
 using namespace std;
