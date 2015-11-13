@@ -378,6 +378,8 @@ unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
 unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
+unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
+unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
@@ -446,6 +448,8 @@ unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
 unisim/util/queue/queue.tcc \
 unisim/component/cxx/processor/arm/cpu.tcc \
+unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
+unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 
