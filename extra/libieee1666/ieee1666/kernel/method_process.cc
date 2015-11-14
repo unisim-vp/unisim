@@ -57,7 +57,11 @@ sc_method_process::~sc_method_process()
 
 void sc_method_process::trigger_statically()
 {
-	if(next_trigger_type != NEXT_TRIGGER_DEFAULT) return;
+	if(next_trigger_type != NEXT_TRIGGER_DEFAULT)
+	{
+		// call to next_trigger(...) with one or more arguments overrides static sensitivity
+		return;
+	}
 	
 	if(suspended)
 	{

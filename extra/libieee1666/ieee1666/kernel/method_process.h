@@ -75,14 +75,14 @@ private:
 	
 	enum next_trigger_type_t
 	{
-		NEXT_TRIGGER_DEFAULT,
-		NEXT_TRIGGER_EVENT,
-		NEXT_TRIGGER_EVENT_AND_LIST,
-		NEXT_TRIGGER_EVENT_OR_LIST,
-		NEXT_TRIGGER_TIME_OUT,
-		NEXT_TRIGGER_TIME_OUT_OR_EVENT,
-		NEXT_TRIGGER_TIME_OUT_OR_EVENT_AND_LIST,
-		NEXT_TRIGGER_TIME_OUT_OR_EVENT_OR_LIST
+		NEXT_TRIGGER_DEFAULT,                    // next_trigger()
+		NEXT_TRIGGER_EVENT,                      // next_trigger(e)
+		NEXT_TRIGGER_EVENT_AND_LIST,             // next_trigger(e1 & ... & en)
+		NEXT_TRIGGER_EVENT_OR_LIST,              // next_trigger(e1 | ... | en)
+		NEXT_TRIGGER_TIME_OUT,                   // next_trigger(t)
+		NEXT_TRIGGER_TIME_OUT_OR_EVENT,          // next_trigger(t, e)
+		NEXT_TRIGGER_TIME_OUT_OR_EVENT_AND_LIST, // next_trigger(t, e1 & ... & en)
+		NEXT_TRIGGER_TIME_OUT_OR_EVENT_OR_LIST   // next_trigger(t, e1 | ... | en)
 	};
 	
 	bool method_process_terminated;

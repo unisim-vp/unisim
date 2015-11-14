@@ -111,7 +111,11 @@ void sc_thread_process::yield()
 
 void sc_thread_process::trigger_statically()
 {
-	if(wait_type != WAIT_DEFAULT) return;
+	if(wait_type != WAIT_DEFAULT)
+	{
+		// call to wait(...) with one or more arguments overrides static sensitivity
+		return;
+	}
 	
 	if(suspended)
 	{

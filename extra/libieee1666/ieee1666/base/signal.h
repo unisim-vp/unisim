@@ -38,6 +38,7 @@
 #include <ieee1666/kernel/prim_channel.h>
 #include <ieee1666/kernel/port.h>
 #include <ieee1666/kernel/event.h>
+#include <ieee1666/kernel/kernel.h>
 #include <ieee1666/base/fwd.h>
 #include <ieee1666/base/signal_if.h>
 #include <ieee1666/base/signal.h>
@@ -50,30 +51,36 @@ class sc_signal : public sc_signal_inout_if<T>, public sc_prim_channel
 {
 public:
 	sc_signal();
-	explicit sc_signal( const char* );
+	explicit sc_signal(const char *);
 	virtual ~sc_signal();
-	virtual void register_port( sc_port_base&, const char* );
+	virtual void register_port(sc_port_base&, const char *);
 	virtual const T& read() const;
 	operator const T& () const;
 	virtual sc_writer_policy get_writer_policy() const;
-	virtual void write( const T& );
-	sc_signal<T,WRITER_POLICY>& operator= ( const T& );
-	sc_signal<T,WRITER_POLICY>& operator= ( const sc_signal<T,WRITER_POLICY>& );
+	virtual void write(const T&);
+	sc_signal<T,WRITER_POLICY>& operator = (const T&);
+	sc_signal<T,WRITER_POLICY>& operator = (const sc_signal<T,WRITER_POLICY>&);
 	virtual const sc_event& default_event() const;
 	virtual const sc_event& value_changed_event() const;
 	virtual bool event() const;
-	virtual void print( std::ostream& = std::cout ) const;
-	virtual void dump( std::ostream& = std::cout ) const;
-	virtual const char* kind() const;
+	virtual void print(std::ostream& = std::cout) const;
+	virtual void dump(std::ostream& = std::cout) const;
+	virtual const char *kind() const;
 protected:
 	virtual void update();
 private:
 	// Disabled
 	sc_signal( const sc_signal<T,WRITER_POLICY>& );
 	
+	sc_port_base *registered_port;
 	sc_event signal_value_changed_event;
-	unsigned int read_idx;
+	sc_dt::uint64 value_changed_delta_cycle;
+	unsigned int value_index;
 	T value[2];
+
+	T& current_value();
+	T& new_value();
+	void toggle_value();
 };
 
 template <class T, sc_writer_policy WRITER_POLICY>
@@ -108,6 +115,7 @@ protected:
 private:
 	// Disabled
 	sc_signal( const sc_signal<bool,WRITER_POLICY>& );
+	
 };
 
 // template <sc_writer_policy WRITER_POLICY>
@@ -186,7 +194,8 @@ template <class T, sc_writer_policy WRITER_POLICY>
 sc_signal<T, WRITER_POLICY>::sc_signal()
 	: sc_prim_channel(IEEE1666_KERNEL_PREFIX "_signal")
 	, signal_value_changed_event(IEEE1666_KERNEL_PREFIX "_value_changed_event")
-	, read_idx(0)
+	, value_changed_delta_cycle(0x7fffffffffffffffULL)
+	, value_index(0)
 	, value()
 {
 }
@@ -194,8 +203,8 @@ sc_signal<T, WRITER_POLICY>::sc_signal()
 template <class T, sc_writer_policy WRITER_POLICY>
 sc_signal<T, WRITER_POLICY>::sc_signal(const char* _name)
 	: sc_prim_channel(_name)
-	, signal_value_changed_event(IEEE1666_KERNEL_PREFIX "_value_changed_event")
-	, read_idx(0)
+	, signal_value_changed_event(IEEE1666_KERNEL_PREFIX "_signal_value_changed_event")
+	, value_index(0)
 	, value()
 {
 }
@@ -206,14 +215,25 @@ sc_signal<T, WRITER_POLICY>::~sc_signal()
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-void sc_signal<T, WRITER_POLICY>::register_port( sc_port_base&, const char* )
+void sc_signal<T, WRITER_POLICY>::register_port(sc_port_base& port, const char *if_typename)
 {
+	if(std::string(typeid(sc_signal_inout_if<T>).name()).compare(if_typename) != 0)
+	{
+		throw std::runtime_error("sc_signal is not bound to sc_signal_inout_if<T>");
+	}
+	
+	if((WRITER_POLICY == SC_ONE_WRITER) && (registered_port != &port))
+	{
+		throw std::runtime_error("sc_signal can't be bound to more than one port");
+	}
+	
+	registered_port = &port;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
 const T& sc_signal<T, WRITER_POLICY>::read() const
 {
-	return value[read_idx];
+	return current_value();
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
@@ -225,32 +245,33 @@ sc_signal<T, WRITER_POLICY>::operator const T& () const
 template <class T, sc_writer_policy WRITER_POLICY>
 sc_writer_policy sc_signal<T, WRITER_POLICY>::get_writer_policy() const
 {
+	return WRITER_POLICY;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
 void sc_signal<T, WRITER_POLICY>::write(const T& v)
 {
-	unsigned int write_idx = read_idx ^ 1;
-	T& current_value = value[read_idx];
-	T& new_value = value[write_idx];
-	bool value_changed = !(v == current_value);
+	bool value_changed = !(v == current_value());
 	
 	if(value_changed)
 	{
-		new_value = v;
+		new_value() = v;
 		request_update();
 	}
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-sc_signal<T,WRITER_POLICY>& sc_signal<T, WRITER_POLICY>::operator= (const T& v)
+sc_signal<T,WRITER_POLICY>& sc_signal<T, WRITER_POLICY>::operator = (const T& v)
 {
 	write(v);
+	return *this;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-sc_signal<T,WRITER_POLICY>& sc_signal<T, WRITER_POLICY>::operator= ( const sc_signal<T,WRITER_POLICY>& )
+sc_signal<T,WRITER_POLICY>& sc_signal<T, WRITER_POLICY>::operator = (const sc_signal<T,WRITER_POLICY>& s)
 {
+	write(s.read());
+	return *this;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
@@ -268,37 +289,63 @@ const sc_event& sc_signal<T, WRITER_POLICY>::value_changed_event() const
 template <class T, sc_writer_policy WRITER_POLICY>
 bool sc_signal<T, WRITER_POLICY>::event() const
 {
+	return value_changed_delta_cycle == kernel->get_delta_count();
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-void sc_signal<T, WRITER_POLICY>::print( std::ostream& ) const
+void sc_signal<T, WRITER_POLICY>::print(std::ostream& os) const
 {
+	os << *this;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-void sc_signal<T, WRITER_POLICY>::dump( std::ostream& ) const
+void sc_signal<T, WRITER_POLICY>::dump(std::ostream& os) const
 {
+	os << name() << ": kind=\"" << kind() << "\", current_value=" << current_value() << ", new_value=" << new_value();
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
 const char* sc_signal<T, WRITER_POLICY>::kind() const
 {
+	return "sc_signal";
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
 void sc_signal<T, WRITER_POLICY>::update()
 {
-	read_idx ^= 1;
+	toggle_value();
+	value_changed_delta_cycle = kernel->get_delta_count();
+	value_changed_event.notify(SC_ZERO_TIME);
 }
 
+// disabled
 template <class T, sc_writer_policy WRITER_POLICY>
 sc_signal<T, WRITER_POLICY>::sc_signal( const sc_signal<T,WRITER_POLICY>& )
 {
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-inline std::ostream& operator<< ( std::ostream&, const sc_signal<T,WRITER_POLICY>& )
+T& sc_signal<T, WRITER_POLICY>::current_value()
 {
+	return value[value_index];
+}
+
+template <class T, sc_writer_policy WRITER_POLICY>
+T& sc_signal<T, WRITER_POLICY>::new_value()
+{
+	return value[value_index ^ 1];
+}
+
+template <class T, sc_writer_policy WRITER_POLICY>
+void sc_signal<T, WRITER_POLICY>::toggle_value()
+{
+	value_index ^= 1;
+}
+
+template <class T, sc_writer_policy WRITER_POLICY>
+inline std::ostream& operator << (std::ostream& os, const sc_signal<T,WRITER_POLICY>& s)
+{
+	return os << s.current_value();
 }
 
 ///////////////////////////// sc_signal<bool,WRITER_POLICY> ///////////////////////////////////

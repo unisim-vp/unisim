@@ -103,14 +103,14 @@ private:
 	
 	enum wait_type_t
 	{
-		WAIT_DEFAULT,
-		WAIT_EVENT,
-		WAIT_EVENT_AND_LIST,
-		WAIT_EVENT_OR_LIST,
-		WAIT_TIME_OUT,
-		WAIT_TIME_OUT_OR_EVENT,
-		WAIT_TIME_OUT_OR_EVENT_AND_LIST,
-		WAIT_TIME_OUT_OR_EVENT_OR_LIST
+		WAIT_DEFAULT,                    // wait()
+		WAIT_EVENT,                      // wait(e)
+		WAIT_EVENT_AND_LIST,             // wait(e1 & ... & en)
+		WAIT_EVENT_OR_LIST,              // wait(e1 | ... | en)
+		WAIT_TIME_OUT,                   // wait(t)
+		WAIT_TIME_OUT_OR_EVENT,          // wait(t, e)
+		WAIT_TIME_OUT_OR_EVENT_AND_LIST, // wait(t, e1 & ... & en)
+		WAIT_TIME_OUT_OR_EVENT_OR_LIST   // wait(t, e1 | ... | en)
 	};
 	
 	wait_type_t wait_type;

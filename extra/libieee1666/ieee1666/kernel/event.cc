@@ -140,21 +140,58 @@ sc_object* sc_event::get_parent_object() const
 
 void sc_event::notify()
 {
-	state = DELTA_NOTIFIED;
-	kernel_event = kernel->notify(this);
+	// immediate notification
+	cancel();
+	trigger();
 }
 
 void sc_event::notify(const sc_time& t)
 {
-	state = TIMED_NOTIFIED;
-	timed_kernel_event = kernel->notify(this, t);
+	// this is a delta or timed notification
+	
+	if(state == DELTA_NOTIFIED)
+	{
+		// there's already a pending delta notification that takes precedence over a delta or timed notification
+		return;
+	}
+
+	if(t == SC_ZERO_TIME)
+	{
+		// this is a delta notification
+		
+		if(state == TIMED_NOTIFIED)
+		{
+			// cancel pending timed notification because delta notification takes precedence
+			cancel();
+		}
+		
+		state = DELTA_NOTIFIED;
+		kernel_event = kernel->notify(this);
+	}
+	else
+	{
+		// this is a timed notification
+		
+		if(state == TIMED_NOTIFIED)
+		{
+			// there's already a pending timed notification
+			
+			sc_time event_time(kernel->get_current_time_stamp());
+			event_time += t;
+			if(timed_kernel_event->get_time() <= event_time)
+			{
+				// there's already an earlier pending timed notification that takes precedence
+				return;
+			}
+		}
+		state = TIMED_NOTIFIED;
+		timed_kernel_event = kernel->notify(this, t);
+	}
 }
 
 void sc_event::notify(double d, sc_time_unit tu)
 {
-	sc_time t = sc_time(d, tu);
-	state = TIMED_NOTIFIED;
-	timed_kernel_event = kernel->notify(this, t);
+	notify(sc_time(d, tu));
 }
 
 void sc_event::cancel()
@@ -313,6 +350,21 @@ void sc_event::remove_statically_sensitive_thread_process(sc_thread_process *thr
 void sc_event::remove_statically_sensitive_method_process(sc_method_process *method_process) const
 {
 	statically_sensitive_method_processes.erase(method_process);
+}
+
+sc_event::state_t sc_event::get_state() const
+{
+	return state;
+}
+
+sc_kernel_event *sc_event::get_kernel_event() const
+{
+	return kernel_event;
+}
+
+sc_kernel_event *sc_event::get_timed_kernel_event() const
+{
+	return timed_kernel_event;
 }
 
 ////////////////////////////// sc_event_list ///////////////////////////////

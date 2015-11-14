@@ -105,6 +105,10 @@ private:
 	void remove_statically_sensitive_method_process(sc_method_process *method_process) const;
 	void trigger();
 	void clear_dynamically_sensitive_processes();
+
+	state_t get_state() const;
+	sc_kernel_event *get_kernel_event() const;
+	sc_kernel_event *get_timed_kernel_event() const;
 };
 
 enum sc_event_list_type_t
