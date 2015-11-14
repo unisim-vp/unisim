@@ -61,6 +61,8 @@ public:
 	void begin_object(sc_object *object);
 	void end_object();
 	sc_object *get_current_object() const;
+	sc_object *get_current_writer() const;
+	sc_method_process *get_current_method_process() const;
 	sc_thread_process *get_current_thread_process() const;
 
 	sc_process_handle create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options * = 0);
@@ -182,6 +184,7 @@ private:
 	
 	// discrete event simulation kernel
 	sc_object *current_object;
+	sc_object *current_writer;
 	sc_thread_process *current_thread_process;
 	sc_method_process *current_method_process;
 	sc_time current_time_stamp;                                        // current time stamp

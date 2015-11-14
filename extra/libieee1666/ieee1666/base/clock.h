@@ -47,26 +47,26 @@ class sc_clock : public sc_signal<bool>
 {
 public:
 	sc_clock();
-	explicit sc_clock( const char *name_);
+	explicit sc_clock(const char *name_);
 	
-	sc_clock( const char *name_,
-	          const sc_time& period_,
-	          double duty_cycle_ = 0.5,
-	          const sc_time& start_time_ = SC_ZERO_TIME,
-	          bool posedge_first_ = true);
+	sc_clock(const char *name_,
+	         const sc_time& period_,
+	         double duty_cycle_ = 0.5,
+	         const sc_time& start_time_ = SC_ZERO_TIME,
+	         bool posedge_first_ = true);
 	
-	sc_clock( const char *name_,
-	          double period_v_,
-	          sc_time_unit period_tu_,
-	          double duty_cycle_ = 0.5);
+	sc_clock(const char *name_,
+	         double period_v_,
+	         sc_time_unit period_tu_,
+	         double duty_cycle_ = 0.5);
 	
-	sc_clock( const char *name_,
-	          double period_v_,
-	          sc_time_unit period_tu_,
-	          double duty_cycle_,
-	          double start_time_v_,
-	          sc_time_unit start_time_tu_,
-	          bool posedge_first_ = true);
+	sc_clock(const char *name_,
+	         double period_v_,
+	         sc_time_unit period_tu_,
+	         double duty_cycle_,
+	         double start_time_v_,
+	         sc_time_unit start_time_tu_,
+	         bool posedge_first_ = true);
 	
 	virtual ~sc_clock();
 	virtual void write( const bool& );
@@ -74,13 +74,13 @@ public:
 	double duty_cycle() const;
 	const sc_time& start_time() const;
 	bool posedge_first() const;
-	virtual const char* kind() const;
+	virtual const char *kind() const;
 protected:
 	virtual void before_end_of_elaboration();
 private:
 	// Disabled
-	sc_clock( const sc_clock& );
-	sc_clock& operator= ( const sc_clock& );
+	sc_clock(const sc_clock&);
+	sc_clock& operator = (const sc_clock&);
 	
 	void initialize();
 	void posedge_process();
@@ -92,8 +92,8 @@ private:
 	bool clock_posedge_first;
 	sc_time clock_posedge_time;
 	sc_time clock_negedge_time;
-	sc_event posedge_event;
-	sc_event negedge_event;
+	sc_event gen_posedge_event;
+	sc_event gen_negedge_event;
 };
 
 typedef sc_in<bool> sc_in_clk ;

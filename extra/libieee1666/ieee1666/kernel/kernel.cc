@@ -179,6 +179,16 @@ sc_object *sc_kernel::get_current_object() const
 	}
 }
 
+sc_object *sc_kernel::get_current_writer() const
+{
+	return current_writer;
+}
+
+sc_method_process *sc_kernel::get_current_method_process() const
+{
+	return current_method_process;
+}
+
 sc_thread_process *sc_kernel::get_current_thread_process() const
 {
 	return current_thread_process;
@@ -323,11 +333,13 @@ void sc_kernel::initialize()
 		sc_method_process *method_process = method_process_table[i];
 		
 		current_object = method_process;
+		current_writer = method_process;
 		current_method_process = method_process;
 		method_process->call_process_owner_method();
 		method_process->commit_next_trigger();
 	}
 	current_object = 0;
+	current_writer = 0;
 	current_method_process = 0;
 	
 
@@ -337,10 +349,12 @@ void sc_kernel::initialize()
 		sc_thread_process *thread_process = thread_process_table[i];
 		
 		current_object = thread_process;
+		current_writer = thread_process;
 		current_thread_process = thread_process;
 		thread_process->switch_to();
 	}
 	current_object = 0;
+	current_writer = 0;
 	current_thread_process = 0;
 	
 	initialized = true;
@@ -361,6 +375,7 @@ void sc_kernel::do_delta_steps(bool once)
 				runnable_method_processes.pop_front();
 				
 				current_object = method_process;
+				current_writer = method_process;
 				current_method_process = method_process;
 				method_process->call_process_owner_method();
 				method_process->commit_next_trigger();
@@ -369,6 +384,7 @@ void sc_kernel::do_delta_steps(bool once)
 			}
 			while(runnable_method_processes.size());
 			current_object = 0;
+			current_writer = 0;
 			current_method_process = 0;
 		}
 
@@ -381,12 +397,14 @@ void sc_kernel::do_delta_steps(bool once)
 				runnable_thread_processes.pop_front();
 				
 				current_object = thread_process;
+				current_writer = thread_process;
 				current_thread_process = thread_process;
 				thread_process->switch_to();
 				if(user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE)) return;
 			}
 			while(runnable_thread_processes.size());
 			current_object = 0;
+			current_writer = 0;
 			current_thread_process = 0;
 		}
 		
