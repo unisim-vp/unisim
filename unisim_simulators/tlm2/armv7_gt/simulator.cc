@@ -44,23 +44,23 @@ Router::Router(const char* name, unisim::kernel::service::Object* parent)
   , unisim::component::tlm2::interconnect::generic_router::Router<RouterCFG>( name, parent )
 {
   /* Low global memory range */
-  // this->mapping[0].used = true;
-  // this->mapping[0].range_start = 0x00000000;
-  // this->mapping[0].range_end =   0x00000fff;
-  // this->mapping[0].output_port = 0;
-  // this->mapping[0].translation = 0;
+  this->mapping[0].used = true;
+  this->mapping[0].range_start = 0x00000000;
+  this->mapping[0].range_end =   0x00000fff;
+  this->mapping[0].output_port = 0;
+  this->mapping[0].translation = 0;
   /* Timer range */
   this->mapping[1].used = true;
   this->mapping[1].range_start = 0x00001000;
   this->mapping[1].range_end =   0x00001fff;
   this->mapping[1].output_port = 1;
   this->mapping[1].translation = 0;
-  /* High global memory range */
-  this->mapping[2].used = true;
-  this->mapping[2].range_start = 0x00002000;
-  this->mapping[2].range_end =   0xffffffff;
-  this->mapping[2].output_port = 0;
-  this->mapping[2].translation = 0x00002000;
+  // /* High global memory range */
+  // this->mapping[2].used = true;
+  // this->mapping[2].range_start = 0x00002000;
+  // this->mapping[2].range_end =   0xffffffff;
+  // this->mapping[2].output_port = 0;
+  // this->mapping[2].translation = 0x00002000;
 }
 
 Simulator::Simulator(int argc, char **argv)
@@ -75,7 +75,8 @@ Simulator::Simulator(int argc, char **argv)
   , irq_signal("IRQ")
   , time("time")
   , host_time("host-time")
-  , linux_os(0)
+  // , linux_os(0)
+  , loader("loader")
   , tee_memory_access_reporting(0)
   , simulation_spent_time(0.0)
   , gdb_server(0)
@@ -88,7 +89,7 @@ Simulator::Simulator(int argc, char **argv)
   , param_enable_inline_debugger( "enable-inline-debugger", 0, enable_inline_debugger, "Enable inline debugger." )
   , exit_status(0)
 {
-  linux_os = new LINUX_OS("linux-os");
+  //linux_os = new LINUX_OS("linux-os");
 
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
@@ -123,11 +124,15 @@ Simulator::Simulator(int argc, char **argv)
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;
   cpu.instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
-  cpu.symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+  //cpu.symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+	cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   debugger->disasm_import >> cpu.disasm_export;
-  debugger->memory_import >> cpu.memory_export;
+  // debugger->memory_import >> cpu.memory_export;
+	*loader.memory_import[0] >> memory->memory_export;
   debugger->registers_import >> cpu.registers_export;
-  debugger->blob_import >> linux_os->blob_export_;
+  // debugger->blob_import >> linux_os->blob_export_;
+  debugger->loader_import >> loader.loader_export;
+  debugger->blob_import >> loader.blob_export;
 
   if(enable_inline_debugger)
     {
@@ -175,15 +180,15 @@ Simulator::Simulator(int argc, char **argv)
     }
 
   // Connect everything
-  cpu.linux_os_import >> linux_os->linux_os_export_;
-  linux_os->memory_import_ >> cpu.memory_export;
-  linux_os->memory_injection_import_ >> cpu.memory_injection_export;
-  linux_os->registers_import_ >> cpu.registers_export;
+  // cpu.linux_os_import >> linux_os->linux_os_export_;
+  // linux_os->memory_import_ >> cpu.memory_export;
+  // linux_os->memory_injection_import_ >> cpu.memory_injection_export;
+  // linux_os->registers_import_ >> cpu.registers_export;
 }
 
 Simulator::~Simulator()
 {
-  delete linux_os;
+  // delete linux_os;
   delete gdb_server;
   delete inline_debugger;
   delete debugger;
@@ -338,22 +343,13 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
       SetVariable("debugger.parse-dwarf", true);
     }
   
-  // Build the Linux OS arguments from the command line arguments
+  // Build the Loader arguments from the command line arguments
   
   unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
   unsigned int cmd_args_length = cmd_args->GetLength();
   if(cmd_args_length > 0)
     {
-      SetVariable("linux-os.binary", ((std::string)(*cmd_args)[0]).c_str());
-      SetVariable("linux-os.argc", cmd_args_length);
-    
-      unsigned int i;
-      for(i = 0; i < cmd_args_length; i++)
-        {
-          std::stringstream sstr;
-          sstr << "linux-os.argv[" << i << "]";
-          SetVariable(sstr.str().c_str(), ((std::string)(*cmd_args)[i]).c_str());
-        }
+      SetVariable("loader.filename" ((std::string)(*cmd_args)[0]).c_str()
     }
 
   unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
@@ -431,20 +427,30 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "memory.cycle-time",        "31250 ps" );
   sim->SetVariable( "memory.read-latency",      "31250 ps" );
   sim->SetVariable( "memory.write-latency",     "0 ps" );
-  sim->SetVariable( "linux-os.system",          "arm-eabi" );
-  sim->SetVariable( "linux-os.endianness",      "little-endian" );
-  sim->SetVariable( "linux-os.memory-page-size",0x01000UL );
-  sim->SetVariable( "linux-os.stack-base",      0x40000000UL );
-  sim->SetVariable( "linux-os.envc",            0 );
-  sim->SetVariable( "linux-os.utsname-sysname", "Linux" );
-  sim->SetVariable( "linux-os.utsname-nodename","localhost" );
-  sim->SetVariable( "linux-os.utsname-release", "2.6.27.35" );
-  sim->SetVariable( "linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010" );
-  sim->SetVariable( "linux-os.utsname-machine", "armv5" );
-  sim->SetVariable( "linux-os.utsname-domainname","localhost" );
-  sim->SetVariable( "linux-os.apply-host-environment", false );
-  sim->SetVariable( "linux-os.hwcap", "swp half fastmult" );
-
+  // sim->SetVariable( "linux-os.system",          "arm-eabi" );
+  // sim->SetVariable( "linux-os.endianness",      "little-endian" );
+  // sim->SetVariable( "linux-os.memory-page-size",0x01000UL );
+  // sim->SetVariable( "linux-os.stack-base",      0x40000000UL );
+  // sim->SetVariable( "linux-os.envc",            0 );
+  // sim->SetVariable( "linux-os.utsname-sysname", "Linux" );
+  // sim->SetVariable( "linux-os.utsname-nodename","localhost" );
+  // sim->SetVariable( "linux-os.utsname-release", "2.6.27.35" );
+  // sim->SetVariable( "linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010" );
+  // sim->SetVariable( "linux-os.utsname-machine", "armv5" );
+  // sim->SetVariable( "linux-os.utsname-domainname","localhost" );
+  // sim->SetVariable( "linux-os.apply-host-environment", false );
+  // sim->SetVariable( "linux-os.hwcap", "swp half fastmult" );
+	sim->SetVariable("loader.filename" ,         "boot.elf");
+	// sim->SetVariable("loader.memory-mapper.mapping", "memory=memory:0x0-0xffffffff");
+	// sim->SetVariable("loader.file0.base-addr",    0x0);
+	// sim->SetVariable("loader.file1.force-base-addr", true);
+	// sim->SetVariable("loader.file1.base-addr",    0x10000);
+	// sim->SetVariable("loader.file1.force-use-virtual-address",
+	//                                               true);
+	// sim->SetVariable("loader.file2.base-addr",    0x110000);
+	// sim->SetVariable("loader.file3.base-addr",    0x1110000);
+  
+  
   sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_armv5l.xml" );
   sim->SetVariable( "debugger.parse-dwarf", false );
   sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml" );

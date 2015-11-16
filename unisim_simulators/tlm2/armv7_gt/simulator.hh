@@ -41,7 +41,8 @@
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/os/linux_os/linux.hh>
+//#include <unisim/service/os/linux_os/linux.hh>
+#include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/trap_handler/trap_handler.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
@@ -71,8 +72,8 @@ struct RouterCFG
 {
   typedef uint32_t ADDRESS;
   static unsigned const INPUT_SOCKETS = 1;
-  static unsigned const OUTPUT_SOCKETS = 1;
-  static unsigned const MAX_NUM_MAPPINGS = 8;
+  static unsigned const OUTPUT_SOCKETS = 2;
+  static unsigned const MAX_NUM_MAPPINGS = 2;
   static unsigned const BUSWIDTH = 32;
   typedef tlm::tlm_base_protocol_types TYPES;
   static const bool VERBOSE = false;
@@ -101,7 +102,8 @@ struct Simulator : public unisim::kernel::service::Simulator
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::armemu::ARMEMU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
-  typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
+  //typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
+	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<uint32_t> LOADER;
 
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
@@ -122,7 +124,8 @@ struct Simulator : public unisim::kernel::service::Simulator
   
   ScTime                       time;
   HostTime                     host_time;
-  LINUX_OS*                    linux_os;
+  //LINUX_OS*                    linux_os;
+  LOADER                       loader;
   TEE_MEMORY_ACCESS_REPORTING* tee_memory_access_reporting;
 
   double                       simulation_spent_time;
