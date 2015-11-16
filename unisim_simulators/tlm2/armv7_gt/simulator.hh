@@ -111,6 +111,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   typedef unisim::service::time::sc_time::ScTime ScTime;
   typedef unisim::service::time::host_time::HostTime HostTime;
   
+  scml_clock                   clock;
   CPU                          cpu;
   Router                       router;
   MEMORY                       memory;

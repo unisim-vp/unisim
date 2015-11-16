@@ -65,13 +65,14 @@ Router::Router(const char* name, unisim::kernel::service::Object* parent)
 
 Simulator::Simulator(int argc, char **argv)
   : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
+  , clock("CLK", sc_core::sc_time(10.0, SC_NS))
   , cpu( "cpu" )
   , router( "router" )
   , memory( "memory" )
   , timer( "timer" )
-  , timer_reset()
-  , timer_enable()
-  , irq_signal()
+  , timer_reset("RESET")
+  , timer_enable("ENABLE")
+  , irq_signal("IRQ")
   , time("time")
   , host_time("host-time")
   , linux_os(0)
@@ -113,6 +114,7 @@ Simulator::Simulator(int argc, char **argv)
   timer.IRQ( irq_signal );
   timer.RST( timer_reset );
   timer.ENABLE( timer_enable );
+  timer.CLK(clock);
   timer_reset = false;
   timer_enable = true;
   /* TODO: clock */
