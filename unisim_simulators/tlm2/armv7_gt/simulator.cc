@@ -128,7 +128,7 @@ Simulator::Simulator(int argc, char **argv)
 	cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   debugger->disasm_import >> cpu.disasm_export;
   // debugger->memory_import >> cpu.memory_export;
-	*loader.memory_import[0] >> memory->memory_export;
+	*loader.memory_import[0] >> memory.memory_export;
   debugger->registers_import >> cpu.registers_export;
   // debugger->blob_import >> linux_os->blob_export_;
   debugger->loader_import >> loader.loader_export;
@@ -349,7 +349,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
   unsigned int cmd_args_length = cmd_args->GetLength();
   if(cmd_args_length > 0)
     {
-      SetVariable("loader.filename" ((std::string)(*cmd_args)[0]).c_str()
+      SetVariable( "loader.filename", ((std::string)(*cmd_args)[0]).c_str() );
     }
 
   unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();

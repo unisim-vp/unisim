@@ -121,6 +121,22 @@ unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/loader/multiformat_loader/multiformat_loader32.cc \
 unisim/service/loader/multiformat_loader/multiformat_loader64.cc \
 unisim/service/loader/multiformat_loader/multiformat_loader.cc \
+unisim/service/loader/coff_loader/coff_loader32.cc \
+unisim/service/loader/coff_loader/coff_loader64.cc \
+unisim/service/loader/raw_loader/raw_loader32.cc \
+unisim/service/loader/raw_loader/raw_loader64.cc \
+unisim/service/loader/elf_loader/elf32_loader.cc \
+unisim/service/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/s19_loader/s19_loader.cc \
+unisim/service/tee/loader/tee.cc \
+unisim/service/tee/blob/tee_32.cc \
+unisim/service/tee/blob/tee_64.cc \
+unisim/service/tee/backtrace/tee_32.cc \
+unisim/service/tee/backtrace/tee_64.cc \
+unisim/service/tee/stmt_lookup/tee_32.cc \
+unisim/service/tee/stmt_lookup/tee_64.cc \
+unisim/service/tee/symbol_table_lookup/tee_32.cc \
+unisim/service/tee/symbol_table_lookup/tee_64.cc \
 unisim/service/debug/sim_debugger/sim_debugger_64.cc \
 unisim/service/debug/sim_debugger/sim_debugger_32.cc \
 unisim/service/debug/sim_debugger/sim_debugger.cc \
@@ -196,7 +212,8 @@ unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
 unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
-unisim/component/cxx/memory/ram/memory_32.cc"
+unisim/component/cxx/memory/ram/memory_32.cc \
+"
 
 UNISIM_LIB_ARMV7_GT_ISA_THUMB_FILES="\
 unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
@@ -259,6 +276,17 @@ unisim/api/debug/debug_api.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/loader/multiformat_loader/multiformat_loader.hh \
+unisim/service/loader/elf_loader/elf32_loader.hh \
+unisim/service/loader/elf_loader/elf64_loader.hh \
+unisim/service/loader/s19_loader/s19_loader.hh \
+unisim/service/loader/coff_loader/coff_loader.hh \
+unisim/service/loader/elf_loader/elf_loader.hh \
+unisim/service/loader/raw_loader/raw_loader.hh \
+unisim/service/tee/blob/tee.hh \
+unisim/service/tee/backtrace/tee.hh \
+unisim/service/tee/symbol_table_lookup/tee.hh \
+unisim/service/tee/stmt_lookup/tee.hh \
+unisim/service/tee/loader/tee.hh \
 unisim/service/debug/sim_debugger/sim_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -405,6 +433,17 @@ UNISIM_LIB_ARMV7_GT_TEMPLATE_FILES="\
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
+unisim/service/loader/elf_loader/elf32_loader.tcc \
+unisim/service/loader/elf_loader/elf64_loader.tcc \
+unisim/service/loader/s19_loader/s19_loader.tcc \
+unisim/service/loader/coff_loader/coff_loader.tcc \
+unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/raw_loader/raw_loader.tcc \
+unisim/service/tee/blob/tee.tcc \
+unisim/service/tee/backtrace/tee.tcc \
+unisim/service/tee/symbol_table_lookup/tee.tcc \
+unisim/service/tee/stmt_lookup/tee.tcc \
+unisim/service/tee/loader/tee.tcc \
 unisim/service/debug/sim_debugger/sim_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
@@ -457,7 +496,8 @@ unisim/component/cxx/processor/arm/cpu.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
-unisim/component/cxx/memory/ram/memory.tcc"
+unisim/component/cxx/memory/ram/memory.tcc \
+"
 
 UNISIM_LIB_ARMV7_GT_M4_FILES="\
 m4/times.m4 \
