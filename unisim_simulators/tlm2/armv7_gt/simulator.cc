@@ -120,9 +120,9 @@ Simulator::Simulator(int argc, char **argv)
   timer.CLK(clock);
   timer_reset = false;
   timer_enable = true;
-  fiq_signal = true;
-  /* TODO: clock */
-
+  fiq_signal = true; 
+  /* We disable clock (useless in this model and extremely cpu consuming) */
+  clock.disable();
   
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;
@@ -415,11 +415,11 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "kernel_logger.std_err", true );
   sim->SetVariable( "kernel_logger.std_err_color", true );
   
-  sim->SetVariable( "router.cycle_time",        "31250 ps" );
+  sim->SetVariable( "router.cycle_time",        "10 ns" );
   
   sim->SetVariable( "cpu.default-endianness",   "little-endian" );
-  sim->SetVariable( "cpu.cpu-cycle-time",       "31250 ps" ); // 32Mhz
-  sim->SetVariable( "cpu.bus-cycle-time",       "31250 ps" ); // 32Mhz
+  sim->SetVariable( "cpu.cpu-cycle-time",       "10 ns" ); // 32Mhz
+  sim->SetVariable( "cpu.bus-cycle-time",       "10 ns" ); // 32Mhz
   sim->SetVariable( "cpu.icache.size",          0x020000 ); // 128 KB
   sim->SetVariable( "cpu.dcache.size",          0x020000 ); // 128 KB
   sim->SetVariable( "cpu.nice-time",            "1 ms" ); // 1ms
@@ -428,8 +428,8 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "cpu.enable-dmi",           true ); // Enable SystemC TLM 2.0 DMI
   sim->SetVariable( "cpu.verbose",              true );
   sim->SetVariable( "memory.bytesize",          0xffffffffUL ); 
-  sim->SetVariable( "memory.cycle-time",        "31250 ps" );
-  sim->SetVariable( "memory.read-latency",      "31250 ps" );
+  sim->SetVariable( "memory.cycle-time",        "10 ns" );
+  sim->SetVariable( "memory.read-latency",      "10 ns" );
   sim->SetVariable( "memory.write-latency",     "0 ps" );
   // sim->SetVariable( "linux-os.system",          "arm-eabi" );
   // sim->SetVariable( "linux-os.endianness",      "little-endian" );

@@ -118,7 +118,7 @@ struct CPU
   static uint32_t const COND_LE = 0x0d;
   static uint32_t const COND_AL = 0x0e;
   /* mask for valid bits in processor control and status registers */
-  static uint32_t const PSR_UNALLOC_MASK = 0xff0fffff;
+  static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
   /* Number of logic registers */
   static unsigned const num_log_gprs = 16;
   

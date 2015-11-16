@@ -587,11 +587,15 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 
   // 2 - create the transaction
   transaction_type *trans;
+  uint32_t byte_enable = 0xffffffffUL;
   trans = payload_fabric.allocate();
   trans->set_address(addr);
-  trans->set_data_length(size);
-  trans->set_data_ptr(buffer);
   trans->set_read();
+  trans->set_data_ptr(buffer);
+  trans->set_data_length(size);
+  trans->set_streaming_width(size);
+  trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
+  trans->set_byte_enable_length(size);
 
   // 3 - send the transaction
   master_socket->b_transport(*trans, quantum_time);
@@ -669,11 +673,15 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   
   // 2 - create the transaction
   transaction_type *trans;
+  uint32_t byte_enable = 0xffffffffUL;
   trans = payload_fabric.allocate();
   trans->set_address(addr);
-  trans->set_data_length(size);
-  trans->set_data_ptr((unsigned char *)buffer);
   trans->set_write();
+  trans->set_data_ptr((unsigned char *)buffer);
+  trans->set_data_length(size);
+  trans->set_streaming_width(size);
+  trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
+  trans->set_byte_enable_length(size);
 
   // 3 - send the transaction
   master_socket->b_transport(*trans, quantum_time);
