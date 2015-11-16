@@ -73,6 +73,7 @@ Simulator::Simulator(int argc, char **argv)
   , timer_reset("RESET")
   , timer_enable("ENABLE")
   , irq_signal("IRQ")
+  , fiq_signal("FIQ")
   , time("time")
   , host_time("host-time")
   // , linux_os(0)
@@ -109,6 +110,7 @@ Simulator::Simulator(int argc, char **argv)
 
   cpu.master_socket( *router.targ_socket[0] );
   cpu.nirq( irq_signal );
+  cpu.nfiq( fiq_signal );
   // (*router.init_socket[0])( memory.slave_sock );
   (*router.init_socket[0])( memory.slave_sock );
   (*router.init_socket[1])( timer.CTRL );
@@ -118,6 +120,7 @@ Simulator::Simulator(int argc, char **argv)
   timer.CLK(clock);
   timer_reset = false;
   timer_enable = true;
+  fiq_signal = true;
   /* TODO: clock */
 
   
@@ -423,6 +426,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "cpu.ipc",                  1.0  );
   sim->SetVariable( "cpu.voltage",              1.8 * 1e3 ); // 1800 mV
   sim->SetVariable( "cpu.enable-dmi",           true ); // Enable SystemC TLM 2.0 DMI
+  sim->SetVariable( "cpu.verbose",              true ); // Enable SystemC TLM 2.0 DMI
   sim->SetVariable( "memory.bytesize",          0xffffffffUL ); 
   sim->SetVariable( "memory.cycle-time",        "31250 ps" );
   sim->SetVariable( "memory.read-latency",      "31250 ps" );
@@ -441,7 +445,8 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   // sim->SetVariable( "linux-os.apply-host-environment", false );
   // sim->SetVariable( "linux-os.hwcap", "swp half fastmult" );
 	sim->SetVariable("loader.filename" ,         "boot.elf");
-	// sim->SetVariable("loader.memory-mapper.mapping", "memory=memory:0x0-0xffffffff");
+	sim->SetVariable("loader.verbose" ,          true);
+	sim->SetVariable("loader.memory-mapper.mapping", "memory=memory:0x0-0x00000fff");
 	// sim->SetVariable("loader.file0.base-addr",    0x0);
 	// sim->SetVariable("loader.file1.force-base-addr", true);
 	// sim->SetVariable("loader.file1.base-addr",    0x10000);

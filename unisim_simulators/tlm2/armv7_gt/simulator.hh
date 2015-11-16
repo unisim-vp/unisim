@@ -121,6 +121,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   sc_signal<bool>              timer_reset;
   sc_signal<bool>              timer_enable;
   sc_signal<bool>              irq_signal;
+  sc_signal<bool>              fiq_signal;
   
   ScTime                       time;
   HostTime                     host_time;
