@@ -426,7 +426,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "cpu.ipc",                  1.0  );
   sim->SetVariable( "cpu.voltage",              1.8 * 1e3 ); // 1800 mV
   sim->SetVariable( "cpu.enable-dmi",           true ); // Enable SystemC TLM 2.0 DMI
-  sim->SetVariable( "cpu.verbose",              true ); // Enable SystemC TLM 2.0 DMI
+  sim->SetVariable( "cpu.verbose",              true );
   sim->SetVariable( "memory.bytesize",          0xffffffffUL ); 
   sim->SetVariable( "memory.cycle-time",        "31250 ps" );
   sim->SetVariable( "memory.read-latency",      "31250 ps" );
