@@ -70,34 +70,12 @@ public:
 	tlm::tlm_initiator_socket<32> master_socket;
 
 private:
-	/** Non blocking backward method
-	 *
-	 * Virtual method implementation to handle backward path of transactions 
-	 * sent through the master_port
-	 *
-	 * @param trans the transcation to handle
-	 * @param phase the state of the transaction to handle (should only be 
-	 *        END_REQ or BEGIN_RESP)
-	 * @param time  the relative time at which the call is being done
-	 *
-	 * @return      the synchronization status
-	 */
-	virtual sync_enum_type nb_transport_bw(transaction_type &trans, 
-			phase_type &phase, 
-			sc_core::sc_time &time);
-	/** Invalidate direct memory pointer
-	 *
- 	 * Virtual method implementation to handle backward path of dmi requests 
-	 * sent through the master port.
-	 * We do not use the dmi option in our simulator, so this method is 
-	 * unnecessary. However, we have to declare it in order to be able to 
-	 * compile the simulator.
-	 *
-	 * @param start_range the start address of the memory range to remove
-	 * @param end_range   the end address of the memory range to remove
-	 */
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, 
-			sc_dt::uint64 end_range);
+	// virtual method implementation to handle backward path of
+	//   transactions sent through the master_port
+	virtual sync_enum_type nb_transport_bw(transaction_type &trans, phase_type &phase, sc_core::sc_time &time);
+	// virtual method implementation to handle backward path of the dmi
+	//   mechanism
+	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
 	/**************************************************************************
 	 * Port to the bus and its virtual methods to handle                  END *
@@ -150,32 +128,8 @@ public:
 	virtual void PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
 
 private:
-	/** Non intrusive memory read method.
-	 * Non intrusive memory read method that the inherited cpu uses and should 
-	 *   be redefined to access the tlm2 debug interface.
-	 *
-	 * @param addr the address to read
-	 * @param buffer a buffer to put the read data
-	 * @param size the amount of data to read
-	 *
-	 * @return true on success, false otherwise
-	 */
-	virtual bool ExternalReadMemory(uint64_t addr, 
-			void *buffer, 
-			uint32_t size);
-	/** Non intrusive memory write method.
-	 * Non intrusive memory write method that the inherited cpu uses and should 
-	 *   be redefined to access the tlm2 debug interface.
-	 *
-	 * @param addr the address to write
-	 * @param buffer a buffer with the write data
-	 * @param size the amount of data to read
-	 *
-	 * @return true on success, false otherwise
-	 */
-	virtual bool ExternalWriteMemory(uint64_t addr, 
-			const void *buffer, 
-			uint32_t size);
+	virtual bool ExternalReadMemory(uint64_t addr, void* buffer, uint32_t size);
+	virtual bool ExternalWriteMemory(uint64_t addr, void const* buffer, uint32_t size);
 	
 	/** Event used to signalize the end of a read transaction.
 	 * Method PrRead waits for this event once the read transaction has been 

@@ -59,6 +59,7 @@ namespace arm {
 
   namespace SCTLR
   {
+    RegisterField<31,1> const IE;      // Instruction Endianness
     RegisterField<30,1> const TE;      // Thumb Exception enable
     RegisterField<29,1> const AFE;     // Access flag enable.
     RegisterField<28,1> const TRE;     // TEX remap enable

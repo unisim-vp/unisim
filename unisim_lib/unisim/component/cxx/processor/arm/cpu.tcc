@@ -250,32 +250,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     }
   }
   
-  // This implementation of the arm architecture can only run in user mode,
-  //   so we can already set CPSR to that mode.
-  cpsr.Set( M, USER_MODE );
-
-  // Default value for sctlr (will be overwritten as needed by simulators)
-  SCTLR::TE.Set(      sctlr, 0 ); // Thumb Exception enable
-  SCTLR::AFE.Set(     sctlr, 0 ); // Access flag enable.
-  SCTLR::TRE.Set(     sctlr, 0 ); // TEX remap enable
-  SCTLR::NMFI.Set(    sctlr, 1 ); // Non-maskable FIQ (NMFI) support
-  SCTLR::EE.Set(      sctlr, 0 ); // Exception Endianness.
-  SCTLR::VE.Set(      sctlr, 0 ); // Interrupt Vectors Enable
-  SCTLR::U.Set(       sctlr, 0 ); // Alignment Model (up to ARMv6)
-  SCTLR::FI.Set(      sctlr, 1 ); // Fast interrupts configuration enable
-  SCTLR::UWXN.Set(    sctlr, 0 ); // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
-  SCTLR::WXN.Set(     sctlr, 0 ); // Write permission implies XN (Virtualization Extensions)
-  SCTLR::HA.Set(      sctlr, 0 ); // Hardware Access flag enable.
-  SCTLR::RR.Set(      sctlr, 0 ); // Round Robin select
-  SCTLR::V.Set(       sctlr, 0 ); // Vectors bit
-  SCTLR::I.Set(       sctlr, 1 ); // Instruction cache enable
-  SCTLR::Z.Set(       sctlr, 1 ); // Branch prediction enable.
-  SCTLR::SW.Set(      sctlr, 1 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
-  SCTLR::B.Set(       sctlr, 0 ); // Endianness model (up to ARMv6)
-  SCTLR::CP15BEN.Set( sctlr, 0 ); // CP15 barrier enable.
-  SCTLR::C.Set(       sctlr, 1 ); // Cache enable. This is a global enable bit for data and unified caches.
-  SCTLR::A.Set(       sctlr, 0 ); // Alignment check enable
-  SCTLR::M.Set(       sctlr, 0 ); // MMU enable.
+  this->CPU<CONFIG>::CP15ResetRegisters();
 }
 
 /** Destructor.
@@ -385,62 +360,9 @@ CPU<CONFIG>::HandleException()
           // FIQs have higher priority
           bool isIRQ = not unisim::component::cxx::processor::arm::exception::FIQ.Get( masked_exception );
           logger << DebugInfo << "Received " << (isIRQ ? "IRQ" : "FIQ") << " interrupt, handling it." << EndDebugInfo;
-      
-          // Quote from the ARM doc:
-          //
-          //   Determine return information. SPSR is to be the current
-          // CPSR, and LR is to be the current PC minus 0 for Thumb or 4
-          // for ARM, to change the PC offsets of 4 or 8 respectively from
-          // the address of the current instruction into the required
-          // address of the instruction boundary at which the interrupt
-          // occurred plus 4. For this purpose, the PC and CPSR are
-          // considered to have already moved on to their values for the
-          // instruction following that boundary.
-          //
-          // Now what does that mean ?!?!?
-          //
-          //   Whatever the instruction set, the handler may perform a
-          // "subs PC, LR, #-4" to return from [IRQ|FIQ] exception. Thus, next
-          // instruction to execute should be LR-4, in other words, LR
-          // should be next instruction +4.
-          uint32_t new_lr_value = GetNPC() + 4;
-          uint32_t new_spsr_value = cpsr.Get( ALL32 );
-          uint32_t vect_offset = isIRQ ? 0x18 : 0x1C;
-      
-          // TODO: [IRQ|FIQ]s may be routed to monitor (if
-          // HaveSecurityExt() and SCR.[IRQ|FIQ]) or to Hypervisor (if
-          // (HaveVirtExt() && HaveSecurityExt() && SCR.[IRQ|FIQ] == '0'
-          // && HCR.[IMO|FMO] == '1' && !IsSecure()) || CPSR.M ==
-          // '11010');
-      
-          // Handle in [IRQ|FIQ] mode. TODO: Ensure Secure state if
-          // initially in Monitor mode. This affects the Banked versions
-          // of various registers accessed later in the code.
-          CurrentMode().Swap( *this ); // OUT
-          cpsr.Set( M, isIRQ ? IRQ_MODE : FIQ_MODE );
-          Mode& newmode = CurrentMode();
-          newmode.Swap( *this ); // IN
-          // Write return information to registers, and make further CPSR
-          // changes: IRQs disabled, other interrupts disabled if
-          // appropriate, IT state reset, instruction set and endianness
-          // set to SCTLR-configured values.
-          newmode.SetSPSR( new_spsr_value );
-          SetGPR( 14, new_lr_value );
-          // IRQs disabled
-          cpsr.Set( I, 1 );
-          // When taking FIQ, FIQs masked (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.FW == '1')
-          if (not isIRQ)
-            cpsr.Set( F, 1 );
-          // Async Abort disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.AW == '1')
-          cpsr.Set( A, 1 );
-          cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
-          cpsr.Set( J, 0 );
-          cpsr.Set( T, SCTLR::TE.Get( sctlr ) );
-          cpsr.Set( E, SCTLR::EE.Get( sctlr ) );
-          // Branch to correct [IRQ|FIQ] vector ("implementation defined" if SCTLR.VE == '1').
-          uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
-          Branch(exc_vector_base + vect_offset);
-      
+          
+          TakePhysicalFIQorIRQException( isIRQ );
+          
           return true;
         }
 
@@ -454,6 +376,107 @@ CPU<CONFIG>::HandleException()
          << EndDebugError;
   unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
   return false;
+}
+
+/** Take Rest Exception
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::TakeReset()
+{
+  // Enter Supervisor mode and (if relevant) Secure state, and reset CP15. This affects
+  // the Banked versions and values of various registers accessed later in the code.
+  // Also reset other system components.
+  cpsr.Set( M, SUPERVISOR_MODE );
+  //if HaveSecurityExt() then SCR.NS = '0';
+  
+  //this->CP14ResetRegisters();
+  this->CP15ResetRegisters();
+  
+  //if HaveAdvSIMDorVFP() then FPEXC.EN = '0'; SUBARCHITECTURE_DEFINED further resetting;
+  //if HaveThumbEE() then TEECR.XED = '0';
+  //if HaveJazelle() then JMCR.JE = '0'; SUBARCHITECTURE_DEFINED further resetting;
+  // Further CPSR changes: all interrupts disabled, IT state reset, instruction set
+  // and endianness according to the SCTLR values produced by the above call to
+  // ResetControlRegisters().
+  cpsr.Set( I, 1 );
+  cpsr.Set( F, 1 );
+  cpsr.Set( A, 1 );
+  cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
+  cpsr.Set( J, 0 );
+  cpsr.Set( T, SCTLR::TE.Get( sctlr ) );
+  cpsr.Set( E, SCTLR::EE.Get( sctlr ) );
+  // All registers, bits and fields not reset by the above pseudocode or by the
+  // BranchTo() call below are UNKNOWN bitstrings after reset. In particular, the
+  // return information registers R14_svc and SPSR_svc have UNKNOWN values, so that
+  // it is impossible to return from a reset in an architecturally defined way.
+  // Branch to Reset vector.
+  uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
+  Branch(exc_vector_base + 0);
+}
+
+/** Take Physical FIQ or IRQ Exception
+ *
+ * @param isIRQ   whether the Exception is an IRQ (true) or an FIQ (false)
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::TakePhysicalFIQorIRQException( bool isIRQ )
+{
+  // Quote from the ARM doc:
+  //
+  //   Determine return information. SPSR is to be the current
+  // CPSR, and LR is to be the current PC minus 0 for Thumb or 4
+  // for ARM, to change the PC offsets of 4 or 8 respectively from
+  // the address of the current instruction into the required
+  // address of the instruction boundary at which the interrupt
+  // occurred plus 4. For this purpose, the PC and CPSR are
+  // considered to have already moved on to their values for the
+  // instruction following that boundary.
+  //
+  // Now what does that mean ?!?!?
+  //
+  //   Whatever the instruction set, the handler may perform a
+  // "subs PC, LR, #-4" to return from [IRQ|FIQ] exception. Thus, next
+  // instruction to execute should be LR-4, in other words, LR
+  // should be next instruction +4.
+  uint32_t new_lr_value = GetNPC() + 4;
+  uint32_t new_spsr_value = cpsr.Get( ALL32 );
+  uint32_t vect_offset = isIRQ ? 0x18 : 0x1C;
+      
+  // TODO: [IRQ|FIQ]s may be routed to monitor (if
+  // HaveSecurityExt() and SCR.[IRQ|FIQ]) or to Hypervisor (if
+  // (HaveVirtExt() && HaveSecurityExt() && SCR.[IRQ|FIQ] == '0'
+  // && HCR.[IMO|FMO] == '1' && !IsSecure()) || CPSR.M ==
+  // '11010');
+      
+  // Handle in [IRQ|FIQ] mode. TODO: Ensure Secure state if
+  // initially in Monitor mode. This affects the Banked versions
+  // of various registers accessed later in the code.
+  CurrentMode().Swap( *this ); // OUT
+  cpsr.Set( M, isIRQ ? IRQ_MODE : FIQ_MODE );
+  Mode& newmode = CurrentMode();
+  newmode.Swap( *this ); // IN
+  // Write return information to registers, and make further CPSR
+  // changes: IRQs disabled, other interrupts disabled if
+  // appropriate, IT state reset, instruction set and endianness
+  // set to SCTLR-configured values.
+  newmode.SetSPSR( new_spsr_value );
+  SetGPR( 14, new_lr_value );
+  // IRQs disabled
+  cpsr.Set( I, 1 );
+  // When taking FIQ, FIQs masked (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.FW == '1')
+  if (not isIRQ)
+    cpsr.Set( F, 1 );
+  // Async Abort disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.AW == '1')
+  cpsr.Set( A, 1 );
+  cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
+  cpsr.Set( J, 0 );
+  cpsr.Set( T, SCTLR::TE.Get( sctlr ) );
+  cpsr.Set( E, SCTLR::EE.Get( sctlr ) );
+  // Branch to correct [IRQ|FIQ] vector ("implementation defined" if SCTLR.VE == '1').
+  uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
+  Branch(exc_vector_base + vect_offset);
 }
 
 /** Read the value of a CP15 coprocessor register
@@ -566,6 +589,37 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
     uint32_t Read( CPU& ) { return 0; }
   } err;
   return err;
+}
+
+/** Resets the internal values of corresponding CP15 Registers
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::CP15ResetRegisters()
+{
+  // Default value for sctlr (will be overwritten as needed by simulators)
+  sctlr = 0x00c50058; // SBO mask
+  SCTLR::TE.Set(      sctlr, 0 ); // Thumb Exception enable
+  SCTLR::AFE.Set(     sctlr, 0 ); // Access flag enable.
+  SCTLR::TRE.Set(     sctlr, 0 ); // TEX remap enable
+  SCTLR::NMFI.Set(    sctlr, 0 ); // Non-maskable FIQ (NMFI) support
+  SCTLR::EE.Set(      sctlr, 0 ); // Exception Endianness.
+  SCTLR::VE.Set(      sctlr, 0 ); // Interrupt Vectors Enable
+  SCTLR::U.Set(       sctlr, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
+  SCTLR::FI.Set(      sctlr, 0 ); // Fast interrupts configuration enable
+  SCTLR::UWXN.Set(    sctlr, 0 ); // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
+  SCTLR::WXN.Set(     sctlr, 0 ); // Write permission implies XN (Virtualization Extensions)
+  SCTLR::HA.Set(      sctlr, 0 ); // Hardware Access flag enable.
+  SCTLR::RR.Set(      sctlr, 0 ); // Round Robin select
+  SCTLR::V.Set(       sctlr, 0 ); // Vectors bit
+  SCTLR::I.Set(       sctlr, 0 ); // Instruction cache enable
+  SCTLR::Z.Set(       sctlr, 0 ); // Branch prediction enable.
+  SCTLR::SW.Set(      sctlr, 0 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
+  SCTLR::B.Set(       sctlr, 0 ); // Endianness model (up to ARMv6)
+  SCTLR::CP15BEN.Set( sctlr, 1 ); // CP15 barrier enable.
+  SCTLR::C.Set(       sctlr, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
+  SCTLR::A.Set(       sctlr, 0 ); // Alignment check enable
+  SCTLR::M.Set(       sctlr, 0 ); // MMU enable.
 }
     
 /** Unpredictable Instruction Behaviour.

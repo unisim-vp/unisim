@@ -48,7 +48,6 @@
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/linux_os.hh>
-#include <unisim/util/endian/endian.hh>
 #include <string>
 #include <inttypes.h>
 
@@ -124,6 +123,7 @@ struct CPU
   //=                  Client/Service setup methods                     =
   //=====================================================================
 
+  virtual bool BeginSetup();
   virtual bool EndSetup();
   virtual void OnDisconnect();
 
@@ -230,6 +230,7 @@ protected:
   /**************************/
 
   virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  virtual void     CP15ResetRegisters();
     
   /**************************/
   /* CP15 Interface    END */
@@ -249,15 +250,14 @@ protected:
   uint32_t verbose;
   /** Trap when reaching the number of instructions indicated. */
   uint64_t trap_on_instruction_counter;
-  /** String describing the endianness of the processor. */
-  std::string default_endianness_string;
 	
   /**********************************************************/
   /* UNISIM parameters, statistics                    START */
   /**********************************************************/
-
-  /** UNISIM Parameter to set the default endianness. */
-  unisim::kernel::service::Parameter<std::string> param_default_endianness;
+  
+  uint32_t sctlr_rstval;
+  /** UNISIM Parameter to set the reset value of SCTLR. */
+  unisim::kernel::service::Parameter<uint32_t> param_sctlr_rstval;
   /** UNISIM Parameter to set the CPU cycle time. */
   unisim::kernel::service::Parameter<uint64_t> param_cpu_cycle_time_ps;
   /** UNISIM Parameter to set the CPU voltage. */

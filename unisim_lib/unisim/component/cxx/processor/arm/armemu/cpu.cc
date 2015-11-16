@@ -112,12 +112,9 @@ CPU::CPU(const char *name, Object *parent)
   , voltage(0)
   , verbose(0)
   , trap_on_instruction_counter(0)
-  , default_endianness_string(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN ? "big-endian" : "little-endian")
-  , param_default_endianness("default-endianness", this, default_endianness_string,
-                           "The processor default/boot endianness. Available values are: little-endian and big-endian.")
-  , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this,
-                           cpu_cycle_time_ps,
-                          "The processor cycle time in picoseconds.")
+  , sctlr_rstval( this->BaseCpu::sctlr )
+  , param_sctlr_rstval("SCTLR", this, this->sctlr, "The processor reset value of the SCTLR register.")
+  , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
   , param_voltage("voltage", this, voltage, "The processor voltage in mV.")
   , param_verbose("verbose", this, verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
   , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
@@ -139,147 +136,128 @@ CPU::~CPU()
 }
 
 /** Object setup method.
- * This method is required for all UNISIM objects and will be called during
- *   the setup phase.
+ * This method is called during the setup phase (1st phase).
+ * 
+ * @return true on success, false otherwise
+ */
+bool 
+CPU::BeginSetup()
+{
+  logger << DebugInfo << "CPU::BeginSetup" << EndDebugInfo;
+  if (verbose)
+    logger << DebugInfo << "Verbose activated." << EndDebugInfo;
+
+  if (cpu_cycle_time_ps == 0)
+    {
+      // We can't (don't want to) provide a default valid cycle time
+      logger << DebugError << "cpu-cycle-time should be strictly positive" << EndDebugError;
+      return false;
+    }
+
+  return true;
+}
+
+/** Resets the internal values of corresponding CP15 Registers
+ */
+void
+CPU::CP15ResetRegisters()
+{
+  this->BaseCpu::CP15ResetRegisters();
+  /* sctlr takes its reset value */
+  sctlr = sctlr_rstval;
+}
+    
+/** Object setup method.
+ * This method is called during the setup phase (2nd and final phase).
  * 
  * @return true on success, false otherwise
  */
 bool 
 CPU::EndSetup()
 {
+  /* Finalizing LOAD job */
+  if (not linux_os_import) {
+    if (verbose)
+      logger << DebugInfo << "No Linux OS connection ==> **bare metal/full system** mode" << EndDebugInfo;
+    this->TakeReset();
+  } else {
+    /* Linux OS has setup Memory and User Registers */
+    if (verbose)
+      logger << DebugInfo << "Linux OS connection present ==> using linux os emulation" << EndDebugInfo;
+    
+    // TODO: Following should be done by linux_os
+    /* We need to set System Registers as a standard linux would have
+     * done, we only affects flags that impact a Linux OS emulation
+     * (others are unaffected).
+     */
+    SCTLR::I.Set(       sctlr, 1 ); // Instruction Cache enable
+    SCTLR::C.Set(       sctlr, 1 ); // Cache enable
+    SCTLR::A.Set(       sctlr, 0 ); // Alignment check enable
+    /*** Program Status Register (PSR) ***/
+    cpsr.Set( J, 0 );
+    cpsr.ITSetState( 0b0000, 0b0000 );
+    cpsr.Set( E, 0 ); // TODO, should *REALLY* be done in LinuxOS
+    // Thumb execution state bit already set by LinuxOS, as a side-effect of PC assignment */
+    cpsr.Set( M, USER_MODE );
+  }
+  
   if (verbose)
-    logger << DebugInfo
-           << "Verbose activated."
-           << EndDebugInfo;
+    logger << DebugInfo << "Initial pc set to 0x" << std::hex << GetNPC() << std::dec << EndDebugInfo;
   
-  /* check that the linux_os_import is connected, otherwise setup fails
-   * NOTE: is not that the setup fails, it is that actually this implmentation
-   *   is not supposed to work without the linux_os_import, so better to stop 
-   *   now than later.
-   */
-  if ( !linux_os_import )
-    {
-      logger << DebugError
-             << "The connection to the Linux OS (linux_import) is broken or has "
-             << "not been done."
-             << EndDebugError;
-      return false;
-    }
-  /* fix the endianness depending on the endianness parameter */
-  if ( (default_endianness_string.compare("little-endian") != 0) &&
-       (default_endianness_string.compare("big-endian") != 0) )
-    {
-      logger << DebugError
-             << "Error while setting the default endianness."
-             << " '" << default_endianness_string << "' is not a correct"
-             << " value."
-             << " Available values are: little-endian and big-endian."
-             << EndDebugError;
-      return false;
-    }
-  else
-    {
-      if ( verbose )
-        logger << DebugInfo
-               << "Setting endianness to "
-               << default_endianness_string
-               << EndDebugInfo;
-      cpsr.Set( E, default_endianness_string.compare("little-endian") == 0 ? 0 : 1 );
-    }
-
-  if ( cpu_cycle_time_ps == 0 )
-    {
-      // we can't provide a valid cpu cycle time configuration
-      //   automatically
-      logger << DebugError
-             << "cpu-cycle-time-ps should be bigger than 0"
-             << EndDebugError;
-      return false;
-    }
-
   /* Initialize the caches and power support as required. */
-  unsigned int min_cycle_time = 0;
-  uint64_t il1_def_voltage = 0;
-  uint64_t dl1_def_voltage = 0;
+  {
+    unsigned int min_cycle_time = 0;
+    uint64_t il1_def_voltage = 0;
+    uint64_t dl1_def_voltage = 0;
 
-  if ( icache.power_mode_import )
-    {
-      min_cycle_time =
-        icache.power_mode_import->GetMinCycleTime();
-      il1_def_voltage =
-        icache.power_mode_import->GetDefaultVoltage();
-    }
-  if ( dcache.power_mode_import )
-    {
-      if ( dcache.power_mode_import->GetMinCycleTime() >
-           min_cycle_time )
-        min_cycle_time =
-          dcache.power_mode_import->GetMinCycleTime();
-      dl1_def_voltage = 
-        dcache.power_mode_import->GetDefaultVoltage();
-    }
+    if (icache.power_mode_import)
+      {
+        min_cycle_time =  icache.power_mode_import->GetMinCycleTime();
+        il1_def_voltage = icache.power_mode_import->GetDefaultVoltage();
+      }
+    if (dcache.power_mode_import)
+      {
+        if ( dcache.power_mode_import->GetMinCycleTime() > min_cycle_time )
+          min_cycle_time = dcache.power_mode_import->GetMinCycleTime();
+        dl1_def_voltage =  dcache.power_mode_import->GetDefaultVoltage();
+      }
 
-  if ( min_cycle_time > 0 )
-    {
-      if ( cpu_cycle_time_ps < min_cycle_time )
-        {
-          logger << DebugWarning;
-          logger << "A cycle time of " << cpu_cycle_time_ps
-                 << " ps is too low for the simulated"
-                 << " hardware !" << std::endl;
-          logger << "cpu cycle time should be >= "
-                 << min_cycle_time << " ps." << std::endl;
-          logger << EndDebugWarning;
-        }
-    }
+    if (min_cycle_time > 0)
+      {
+        if ( cpu_cycle_time_ps < min_cycle_time )
+          {
+            logger << DebugWarning;
+            logger << "A cycle time of " << cpu_cycle_time_ps << " ps is too low for the simulated hardware !" << std::endl;
+            logger << "cpu cycle time should be >= " << min_cycle_time << " ps." << std::endl;
+            logger << EndDebugWarning;
+          }
+      }
 
-  if ( voltage == 0 )
-    {
-      voltage = (il1_def_voltage > dl1_def_voltage) ? 
-        il1_def_voltage :
-        dl1_def_voltage;
-      logger << DebugWarning
-             << "A cpu voltage was not defined (set to 0)."
-             << " Using the maximum voltage found from the caches as "
-             << " current voltage. Voltage used is "
-             << voltage
-             << " mV." << std::endl;
-      if ( icache.power_mode_import )
-        logger << "  - instruction cache voltage = "
-               << il1_def_voltage
-               << " mV";
-      if ( dcache.power_mode_import )
-        {
-          if ( icache.power_mode_import )
-            logger << std::endl;
-          logger << "  - data cache voltage = "
-                 << dl1_def_voltage
-                 << " mV";
-        }
-      logger << EndDebugWarning;
-    }
+    if (voltage == 0)
+      {
+        voltage = (il1_def_voltage > dl1_def_voltage) ? il1_def_voltage : dl1_def_voltage;
+        logger << DebugWarning
+               << "A cpu voltage was not defined (set to 0). Using the maximum voltage found from the caches as current voltage. "
+               << "Voltage used is " << voltage << " mV.";
+        if ( icache.power_mode_import )
+          logger << std::endl << "  - instruction cache voltage = " << il1_def_voltage << " mV";
+        if ( dcache.power_mode_import )
+          logger << std::endl << "  - data cache voltage = " << dl1_def_voltage << " mV";
+        logger << EndDebugWarning;
+      }
   
-  if ( icache.power_mode_import )
-    icache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
-  if ( dcache.power_mode_import )
-    dcache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
+    if (icache.power_mode_import)
+      icache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
+    if (dcache.power_mode_import)
+      dcache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
 
-  if ( verbose )
-    {
-      logger << DebugInfo
-             << "Setting cpu cycle time to "
-             << cpu_cycle_time_ps
-             << " ps."
-             << EndDebugInfo;
-      logger << DebugInfo
-             << "Setting cpu voltage to "
-             << voltage
-             << " mV."
-             << EndDebugInfo;
-    }
-
-  /* If the memory access reporting import is not connected remove the need of
-   *   reporting memory accesses and finished instruction.
+    if (verbose)
+      logger << DebugInfo << "Setting cpu cycle time to " << cpu_cycle_time_ps << " ps." << std::endl
+             << DebugInfo << "Setting cpu voltage to " << voltage << " mV." << EndDebugInfo;
+  }
+  
+  /* If the memory access reporting import is not connected remove the
+   *   need of reporting memory accesses and finished instruction.
    */
   if(!memory_access_reporting_import) {
     requires_memory_access_reporting = false;
