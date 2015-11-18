@@ -549,32 +549,25 @@ CPU::StepInstruction()
   /* Instruction boundary next_pc becomes current_pc */
   uint32_t insn_addr = this->current_pc = GetNPC();
 
-  if (debug_control_import) 
+  if (debug_control_import)
     {
-      DebugControl<uint32_t>::DebugCommand dbg_cmd;
-
-      do 
+      for (bool proceed = false; not proceed; )
         {
-          dbg_cmd = debug_control_import->FetchDebugCommand( insn_addr );
-  
-          if (likely(dbg_cmd == DebugControl<uint32_t>::DBG_STEP)) 
+          switch (debug_control_import->FetchDebugCommand( insn_addr ))
             {
-              /* Nothing to do */
+            case DebugControl<uint32_t>::DBG_STEP: 
+              proceed = true;
               break;
-            }
-          if (dbg_cmd == DebugControl<uint32_t>::DBG_SYNC) 
-            {
-              // Sync();
+            case DebugControl<uint32_t>::DBG_SYNC:
+              Sync();
               continue;
+              break;
+            case DebugControl<uint32_t>::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
+            case DebugControl<uint32_t>::DBG_KILL:
+              Stop(0);
+              return;
             }
-
-          if (dbg_cmd == DebugControl<uint32_t>::DBG_KILL) {
-            Stop(0);
-          }
-          if(dbg_cmd == DebugControl<uint32_t>::DBG_RESET) {
-            // TODO : memory_interface->Reset(); 
-          }
-        } while(1);
+        }
     }
   
   try {
@@ -625,7 +618,7 @@ CPU::StepInstruction()
       op->execute( *this );
       //op->profile(profile);
     }
-  
+    
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
       memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
     
@@ -635,27 +628,20 @@ CPU::StepInstruction()
   
   }
   
-  catch (exception::SynchronousAbort sa) {
-    /* Instruction didn't execute has expected. TODO: ensure that an
-     * exception handler handles it (e.g. using a synchronous abort
-     * bit in the exception vector). */
+  catch (exception::SVCException const& svexc) {
+    /* Resuming execution, since SVC exceptions are explicitly
+     * requested from regular instructions. ITState will be updated by
+     * TakeSVCException (as done in the ARM spec). */
+    if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
+      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+
+    instruction_counter++;
+    if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
+      instruction_counter_trap_reporting_import->ReportTrap(*this);
+    
+    this->TakeSVCException();
   }
   
-  /* Handle any exception that may  have occured */
-  if (unlikely(this->exception))
-    {
-      if (unlikely(this->linux_os_import)) {
-        // we are executing on linux emulation mode, no exception
-        // handling in this mode.
-        logger << DebugError
-               << "An exception has been found, this should never happen when simulating at user level."
-               << EndDebugError;
-        Stop(-1);
-        return;
-      }
-      // bool exception_occurred = 
-      HandleException();
-    }
 }
 
 /** Inject an intrusive read memory operation.
@@ -1184,11 +1170,12 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
   insn.size = 32;
 }
 
-/** Software Interrupt
- *  This method is called by SWI instructions to handle software interrupts.
+/** CallSupervisor
+ * 
+ *  This method is called by SWI/SVC instructions to handle software interrupts.
  */
 void
-CPU::SWI( uint32_t imm )
+CPU::CallSupervisor( uint16_t imm )
 {
   if (this->linux_os_import) {
     // we are executing on linux emulation mode, use linux_os_import
@@ -1202,7 +1189,7 @@ CPU::SWI( uint32_t imm )
       }
   } else {
     // we are executing on full system mode
-    this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::SWI);
+    this->BaseCpu::CallSupervisor( imm );
   }
 }
 

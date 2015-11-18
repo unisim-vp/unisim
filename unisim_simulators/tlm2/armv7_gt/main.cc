@@ -32,9 +32,13 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include <iostream>
+#include <simulator.hh>
+#include <scml2.h>
+#include <scml.h>
+#include <scmlinc/scml_simple_property_server.h>
+#include <scml2_logging.h>
 #include <systemc.h>
-#include "simulator.hh"
+#include <iostream>
 
 using namespace std;
 
@@ -51,6 +55,28 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 #endif
+  
+  scml2::logging::registry& registry = scml2::logging::registry::get_instance();
+  scml2::logging::logger_base *default_cerr_logger = registry.find_logger_by_name("default_cerr_logger");
+  if(default_cerr_logger)
+    {
+      bool debug = true;
+      if(debug)
+        default_cerr_logger->enable(scml2::logging::match::severity_threshold_match(scml2::logging::severity::debug().get_level()));
+      else
+        default_cerr_logger->disable(scml2::logging::match::severity_threshold_match(scml2::logging::severity::debug().get_level()));
+    }
+
+  const char *settings_filename = "settings.txt";
+  scml_simple_property_server simple_property_server;
+  if(!simple_property_server.load(settings_filename))
+    {
+      std::cerr << "Error while loading \"" << settings_filename << "\"" << std::endl;
+      return 0;
+    }
+  scml_property_registry& property_registry = scml_property_registry::inst();
+  property_registry.setCustomPropertyServer(&simple_property_server);
+
 
 	Simulator *simulator = new Simulator(argc, argv);
 

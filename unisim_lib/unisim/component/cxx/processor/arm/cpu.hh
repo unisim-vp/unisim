@@ -329,48 +329,17 @@ struct CPU
   /************************************************************************/
 
 public:
-  /** Mark an exception in the virtual exception vector.
-   *
-   * @param rf the register field of the exception to mark
-   */
-  template <class RF>
-  void MarkVirtualExceptionVector( RF const& rf )
-  {
-    rf.Set( exception, uint32_t( 1 ) );
-  }
-  
-  /** Get the virtual exception vector.
-   * This returns the value of the virtual exception vector.
-   *
-   * @return the value of the exception vector
-   */
-  uint32_t GetVirtualExceptionVector()
-  {
-    return exception;
-  }
-  
-  /** Reset the value of the virtual exception vector.
-   *
-   * @param mask the value to set at reset
-   */
-  void ResetVirtualExceptionVector(uint32_t mask = 0)
-  {
-    exception = mask;
-  }
-  
   void UnpredictableInsnBehaviour();
-
+  
 protected:
-  bool HandleException();
-  void TakeReset();
-  void TakePhysicalFIQorIRQException( bool isIRQ );
-  /** Exception vector.
-   * This is a virtual exception vector (it doesn't exists as such in the arm
-   *   architecture) to rapidly set and check exceptions.
-   *   NOTE: exceptions are defined at cxx/arm/exception.hh
-   */
-  uint32_t exception;
+  void     HandleSynchronousException();
+  void     CallSupervisor( uint16_t imm );
 
+  uint32_t HandleAsynchronousException( uint32_t );
+  void     TakeReset();
+  void     TakePhysicalFIQorIRQException( bool isIRQ );
+  void     TakeSVCException();
+  
   /************************************************************************/
   /* Exception handling                                               END */
   /************************************************************************/

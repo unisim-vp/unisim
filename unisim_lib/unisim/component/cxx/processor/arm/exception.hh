@@ -45,10 +45,8 @@ namespace processor {
 namespace arm {
 namespace exception {
   
-  /*** RegisterField for the virtual exception vector ***/
+  /*** RegisterField for the Synchronous Virtual exception vector ***/
   /* Synchronous */
-  static RegisterField< 0,24> const SYNC;   // Mask for all synchronous abort
-  
   static RegisterField< 0, 1> const RESET;  // Reset
   static RegisterField< 1, 1> const PABRT;  // Prefetch Abort (including prefetch TLB miss)
   static RegisterField< 2, 1> const UNDEF;  // Undefined instruction
@@ -65,8 +63,15 @@ namespace exception {
   /** SynchronousAbort the class used to abort normal execution of an
    *  instruction (using a throw).
    */
-  struct SynchronousAbort {};
-
+  struct UndefInstrException { UndefInstrException() {} };
+  struct HypTrapException { HypTrapException() {} };
+  struct SVCException { SVCException() {} };
+  struct SMCException { SMCException() {} };
+  struct HVCException { HVCException() {} };
+  struct PrefetchAbortException { PrefetchAbortException() {} };
+  struct DataAbortException { DataAbortException() {} };
+  struct VirtualAbortException { VirtualAbortException() {} };
+  
 } // end of namespace exception
 } // end of namespace arm
 } // end of namespace processor

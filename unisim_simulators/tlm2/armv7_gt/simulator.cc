@@ -35,6 +35,7 @@
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 #include <simulator.hh>
 #include <stdexcept>
+#include <iostream>
 #include <inttypes.h>
 
 bool debug_enabled;
@@ -72,8 +73,8 @@ Simulator::Simulator(int argc, char **argv)
   , timer( "timer" )
   , timer_reset("RESET")
   , timer_enable("ENABLE")
-  , irq_signal("IRQ")
-  , fiq_signal("FIQ")
+  , nirq_signal("nIRQm")
+  , nfiq_signal("nFIQm")
   , time("time")
   , host_time("host-time")
   // , linux_os(0)
@@ -108,19 +109,22 @@ Simulator::Simulator(int argc, char **argv)
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
 
+  nfiq_signal = true; 
+  nirq_signal = true; 
+  timer_enable = true;
+  timer_reset = false;
+  
   cpu.master_socket( *router.targ_socket[0] );
-  cpu.nirq( irq_signal );
-  cpu.nfiq( fiq_signal );
+  cpu.nirq( nirq_signal );
+  cpu.nfiq( nfiq_signal );
+
   // (*router.init_socket[0])( memory.slave_sock );
   (*router.init_socket[0])( memory.slave_sock );
   (*router.init_socket[1])( timer.CTRL );
-  timer.IRQ( irq_signal );
+  timer.IRQ( nirq_signal );
   timer.RST( timer_reset );
   timer.ENABLE( timer_enable );
   timer.CLK(clock);
-  timer_reset = false;
-  timer_enable = true;
-  fiq_signal = true; 
   /* We disable clock (useless in this model and extremely cpu consuming) */
   clock.disable();
   
@@ -130,7 +134,7 @@ Simulator::Simulator(int argc, char **argv)
   //cpu.symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 	cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   debugger->disasm_import >> cpu.disasm_export;
-  // debugger->memory_import >> cpu.memory_export;
+  debugger->memory_import >> cpu.memory_export;
 	*loader.memory_import[0] >> memory.memory_export;
   debugger->registers_import >> cpu.registers_export;
   // debugger->blob_import >> linux_os->blob_export_;
@@ -422,11 +426,12 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "cpu.bus-cycle-time",       "10 ns" ); // 32Mhz
   sim->SetVariable( "cpu.icache.size",          0x020000 ); // 128 KB
   sim->SetVariable( "cpu.dcache.size",          0x020000 ); // 128 KB
-  sim->SetVariable( "cpu.nice-time",            "1 ms" ); // 1ms
+  sim->SetVariable( "cpu.nice-time",            "1 us" ); // 1us
   sim->SetVariable( "cpu.ipc",                  1.0  );
   sim->SetVariable( "cpu.voltage",              1.8 * 1e3 ); // 1800 mV
   sim->SetVariable( "cpu.enable-dmi",           true ); // Enable SystemC TLM 2.0 DMI
   sim->SetVariable( "cpu.verbose",              true );
+  sim->SetVariable( "cpu.verbose-tlm",          false );
   sim->SetVariable( "memory.bytesize",          0xffffffffUL ); 
   sim->SetVariable( "memory.cycle-time",        "10 ns" );
   sim->SetVariable( "memory.read-latency",      "10 ns" );

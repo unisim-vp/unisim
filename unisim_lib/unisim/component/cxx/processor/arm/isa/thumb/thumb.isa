@@ -69,7 +69,7 @@ using unisim::util::arithmetic::RotateRight;
 } // end of impl
 
 action {void} execute({ARCH &} {cpu}) {
-  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEF);
+  throw unisim::component::cxx::processor::arm::exception::UndefInstrException();
 }
 
 action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {

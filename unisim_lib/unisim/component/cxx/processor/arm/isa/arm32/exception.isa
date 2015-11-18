@@ -52,7 +52,7 @@ swi.disasm = {
 swi.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  cpu.SWI( imm );
+  cpu.CallSupervisor( imm );
 };
 
 /*

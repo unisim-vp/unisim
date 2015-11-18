@@ -65,6 +65,12 @@ namespace arm {
       return (reg & mask) >> pos;
     }
     template <typename T>
+    T Mask( T const& reg ) const
+    {
+      T const mask = ((~T(0)) >> ((8*sizeof (T)) - size)) << pos;
+      return reg & mask;
+    }
+    template <typename T>
     void Set( T& reg, T const& value ) const
     {
       T const mask = ((~T(0)) >> ((8*sizeof (T)) - size)) << pos;

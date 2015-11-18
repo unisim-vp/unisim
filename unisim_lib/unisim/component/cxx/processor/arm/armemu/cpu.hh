@@ -132,6 +132,7 @@ struct CPU
   //=====================================================================
 
   void StepInstruction();
+  virtual void Sync() = 0;
 
   //=====================================================================
   //=             memory injection interface methods                    =
@@ -207,7 +208,7 @@ struct CPU
   /* Software Exceptions                     START  */
   /**************************************************/
 	
-  void SWI( uint32_t imm );
+  void CallSupervisor( uint16_t imm );
   void BKPT( uint32_t imm );
 	
   /**************************************************/

@@ -120,8 +120,8 @@ struct Simulator : public unisim::kernel::service::Simulator
   GenericTimer<>               timer;
   sc_signal<bool>              timer_reset;
   sc_signal<bool>              timer_enable;
-  sc_signal<bool>              irq_signal;
-  sc_signal<bool>              fiq_signal;
+  sc_signal<bool>              nirq_signal;
+  sc_signal<bool>              nfiq_signal;
   
   ScTime                       time;
   HostTime                     host_time;

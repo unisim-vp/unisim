@@ -33,6 +33,7 @@
  */
  
 #include <unisim/component/tlm2/processor/arm/armemu/armemu.hh>
+#include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -131,6 +132,8 @@ ARMEMU::ARMEMU(const sc_module_name& name, Object *parent)
   , master_socket("master_socket")
   , nirq("nirq_port")
   , nfiq("nfiq_port")
+  , missed_irqs()
+  , missed_fiqs()
   , end_read_rsp_event()
   , payload_fabric()
   , tmp_time()
@@ -244,6 +247,30 @@ ARMEMU::Sync()
   wait(quantum_time);
   cpu_time = sc_time_stamp();
   quantum_time = SC_ZERO_TIME;
+  
+  if (verbose)
+    inherited::logger << DebugInfo
+                      << "Resuming after wait" << std::endl
+                      << " - cpu_time     = " << cpu_time << std::endl
+                      << " - nice_time     = " << nice_time << std::endl
+                      << EndDebugInfo;
+  /** Handling signals at this point (they won't change until the next call to Sync) */
+  uint32_t exceptions = 0;
+  unisim::component::cxx::processor::arm::I.Set( exceptions, not nirq or (missed_irqs > 0) );
+  unisim::component::cxx::processor::arm::F.Set( exceptions, not nfiq or (missed_fiqs > 0) );
+  
+  exceptions = this->HandleAsynchronousException( exceptions );
+  
+  if      (unisim::component::cxx::processor::arm::I.Get( exceptions ))
+    {
+      if (--missed_irqs > 0) inherited::logger << DebugWarning << "Missed " << missed_irqs << " IRQs" << EndDebugWarning;
+      missed_irqs = 0;
+    }
+  else if (unisim::component::cxx::processor::arm::F.Get( exceptions ))
+    {
+      if (--missed_fiqs > 0) inherited::logger << DebugWarning << "Missed " << missed_fiqs << " FIQs" << EndDebugWarning;
+      missed_fiqs = 0;
+    }
 }
 
 /** Updates the cpu time to the next bus cycle.
@@ -295,6 +322,19 @@ ARMEMU::BusSynchronize()
 void
 ARMEMU::Run()
 {
+  /* Ignoring any interrupt that could have occur before simulation (initialization artifacts) */
+  missed_irqs = 0;
+  missed_fiqs = 0;
+  
+  if ( unlikely(verbose) )
+    {
+      inherited::logger << DebugInfo
+                        << "Starting ARMEMU::Run loop" << std::endl
+                        << " - cpu_time     = " << cpu_time << std::endl
+                        << " - nice_time = " << nice_time
+                        << EndDebugInfo;
+    }
+    
   /* compute the average time of each instruction */
   sc_time time_per_instruction = cpu_cycle_time * ipc;
   for (;;)
@@ -307,7 +347,22 @@ ARMEMU::Run()
         << " - quantum_time = " << quantum_time
         << EndDebugInfo;
     }
+    
+    uint32_t unmasked_interrupts = CPSR().bits();
     StepInstruction();
+    unmasked_interrupts &= ~(CPSR().bits());
+    if (unisim::component::cxx::processor::arm::I.Get( unmasked_interrupts ) or
+        unisim::component::cxx::processor::arm::F.Get( unmasked_interrupts ))
+      {
+        if (verbose)
+          inherited::logger << DebugInfo
+                            << "Syncing due to exception being unmasked" << std::endl
+                            << " - unmasked_interrupts = 0x" << std::hex << unmasked_interrupts << std::dec << std::endl
+                            << " - cpu_time     = " << cpu_time << std::endl
+                            << " - quantum_time = " << quantum_time
+                            << EndDebugInfo;
+        Sync();
+      }
     // cpu_time += time_per_instruction;
     quantum_time += time_per_instruction;
     if ( unlikely(verbose_tlm) )
@@ -446,19 +501,33 @@ ARMEMU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_r
 {
   dmi_region_cache.Invalidate(start_range, end_range);
 }
-  
+
 /** nIRQ port handler */
-void 
+void
 ARMEMU::IRQHandler()
 {
-  unisim::component::cxx::processor::arm::exception::IRQ.Set( this->exception, not nirq );
+  if (nirq) missed_irqs += 1;
+  if (verbose)
+    inherited::logger << DebugInfo
+                      << "IRQ level change:" << std::endl
+                      << " - nIRQ = " << nirq << std::endl
+                      << " - missed_irqs = " << missed_irqs << std::endl
+                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << EndDebugInfo;
 }
 
 /** nFIQ port handler */
 void 
 ARMEMU::FIQHandler()
 {
-  unisim::component::cxx::processor::arm::exception::FIQ.Set( this->exception, not nfiq );
+  if (nfiq) missed_fiqs += 1;
+  if (verbose)
+    inherited::logger << DebugInfo
+                      << "FIQ level change:" << std::endl
+                      << " - nFIQ = " << nfiq << std::endl
+                      << " - missed_fiqs = " << missed_fiqs << std::endl
+                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << EndDebugInfo;
 }
   
 /**
@@ -482,6 +551,7 @@ ARMEMU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
   trans->set_data_length(size);
   trans->set_data_ptr((uint8_t *)buffer);
   trans->set_read();
+  trans->set_streaming_width(size);
 
   read_size = master_socket->transport_dbg(*trans);
 
@@ -515,6 +585,7 @@ ARMEMU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
   trans->set_data_length(size);
   trans->set_data_ptr((uint8_t *)buffer);
   trans->set_write();
+  trans->set_streaming_width(size);
 
   write_size = master_socket->transport_dbg(*trans);
 
@@ -594,8 +665,8 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
   trans->set_data_ptr(buffer);
   trans->set_data_length(size);
   trans->set_streaming_width(size);
-  trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
-  trans->set_byte_enable_length(size);
+  // trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
+  // trans->set_byte_enable_length(size);
 
   // 3 - send the transaction
   master_socket->b_transport(*trans, quantum_time);
@@ -680,8 +751,8 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   trans->set_data_ptr((unsigned char *)buffer);
   trans->set_data_length(size);
   trans->set_streaming_width(size);
-  trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
-  trans->set_byte_enable_length(size);
+  // trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
+  // trans->set_byte_enable_length(size);
 
   // 3 - send the transaction
   master_socket->b_transport(*trans, quantum_time);

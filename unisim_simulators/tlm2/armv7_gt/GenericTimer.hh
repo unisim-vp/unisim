@@ -179,8 +179,8 @@ GenericTimer<BUSWIDTH>::GenericTimer(const sc_core::sc_module_name& name)
 	, enable(false)
 	, rst(false)
 	, clear(false)
-	, irq(!irq_level)
 {
+	irq = !irq_level;
 	SC_HAS_PROCESS(GenericTimer);
 	
 	scml2::set_write_callback<uint32_t, scml2::reg>(ModeReg, SCML2_CALLBACK(WriteModeReg), scml2::AUTO_SYNCING);
@@ -429,7 +429,7 @@ sc_core::sc_time GenericTimer<BUSWIDTH>::TimeToNextStateUpdate()
 {
 	sc_core::sc_time time_to_next_tick = TimeToNextTick();
 	SCML2_LOG(debug_log) << sc_core::sc_time_stamp() << ":irq=" << irq << ", irq_time=" << irq_time;
-	sc_core::sc_time time_to_next_state_update = (!irq || (irq_time == sc_core::SC_ZERO_TIME)) ? time_to_next_tick : (time_to_next_tick < irq_time) ? time_to_next_tick : irq_time;
+	sc_core::sc_time time_to_next_state_update = ((irq != irq_level) || (irq_time == sc_core::SC_ZERO_TIME)) ? time_to_next_tick : (time_to_next_tick < irq_time) ? time_to_next_tick : irq_time;
 	SCML2_LOG(debug_log) << ", returns " << time_to_next_state_update << std::endl;
 	return time_to_next_state_update;
 }
@@ -447,7 +447,7 @@ void GenericTimer<BUSWIDTH>::UpdateState()
 		
 		sc_dt::uint64 prescaled_clock_ticks_since_last_update = (delay_since_last_update / clock_gate.get_period()) / PrescaleReg;
 		
-		if(irq)
+		if(irq == irq_level)
 		{
 			assert(irq_time >= delay_since_last_update);
 			irq_time -= delay_since_last_update;

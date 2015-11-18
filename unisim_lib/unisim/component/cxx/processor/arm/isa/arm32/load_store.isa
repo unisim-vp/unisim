@@ -905,7 +905,7 @@ ldm_usr.execute = {
   uint8_t running_mode = cpu.CPSR().Get(M);
   switch (running_mode) {
   case ARCH::HYPERVISOR_MODE:
-    cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEF);
+    throw unisim::component::cxx::processor::arm::exception::UndefInstrException();
     return;
   case ARCH::USER_MODE:
   case ARCH::SYSTEM_MODE:
@@ -939,7 +939,7 @@ ldm_rfe.execute = {
   uint8_t running_mode = cpu.CPSR().Get(M);
   switch (running_mode) {
   case ARCH::HYPERVISOR_MODE:
-    cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEF);
+    throw unisim::component::cxx::processor::arm::exception::UndefInstrException();
     return;
   case ARCH::USER_MODE:
   case ARCH::SYSTEM_MODE:
