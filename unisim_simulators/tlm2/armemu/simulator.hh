@@ -105,6 +105,9 @@ class Simulator
   LINUX_OS *linux_os;
   TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
 
+  sc_signal<bool>              nirq_signal;
+  sc_signal<bool>              nfiq_signal;
+  
   double simulation_spent_time;
 
   GDB_SERVER *gdb_server;

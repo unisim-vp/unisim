@@ -658,7 +658,7 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 
   // 2 - create the transaction
   transaction_type *trans;
-  uint32_t byte_enable = 0xffffffffUL;
+  //uint32_t byte_enable = 0xffffffffUL;
   trans = payload_fabric.allocate();
   trans->set_address(addr);
   trans->set_read();
@@ -744,7 +744,7 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   
   // 2 - create the transaction
   transaction_type *trans;
-  uint32_t byte_enable = 0xffffffffUL;
+  //uint32_t byte_enable = 0xffffffffUL;
   trans = payload_fabric.allocate();
   trans->set_address(addr);
   trans->set_write();
