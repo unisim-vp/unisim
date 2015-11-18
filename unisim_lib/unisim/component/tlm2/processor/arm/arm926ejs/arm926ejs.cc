@@ -133,6 +133,8 @@ ARM926EJS::ARM926EJS(const sc_module_name& name, Object *parent)
   , master_socket("master_socket")
   , nirq("nirq_port")
   , nfiq("nfiq_port")
+  , missed_irqs()
+  , missed_fiqs()
   , end_read_rsp_event()
   , payload_fabric()
   , tmp_time()
@@ -237,6 +239,26 @@ ARM926EJS::Sync()
   cpu_time = sc_time_stamp();
   stat_cpu_time.NotifyListeners();
   quantum_time = SC_ZERO_TIME;
+  
+  /** Handling signals at this point (they won't change until the next call to Sync) */
+  uint32_t exceptions = 0;
+  unisim::component::cxx::processor::arm::I.Set( exceptions, not nirq or (missed_irqs > 0) );
+  unisim::component::cxx::processor::arm::F.Set( exceptions, not nfiq or (missed_fiqs > 0) );
+  
+  exceptions = this->HandleAsynchronousException( exceptions );
+  
+  if      (unisim::component::cxx::processor::arm::I.Get( exceptions ))
+    {
+      if (--missed_irqs > 0) inherited::logger << DebugWarning << "Missed " << missed_irqs << " IRQs" << EndDebugWarning;
+      // Discard missed interrupt buffer
+      missed_irqs = nirq ? 0 : -1;
+    }
+  else if (unisim::component::cxx::processor::arm::F.Get( exceptions ))
+    {
+      if (--missed_fiqs > 0) inherited::logger << DebugWarning << "Missed " << missed_fiqs << " FIQs" << EndDebugWarning;
+      // Discard missed interrupt buffer
+      missed_fiqs = nfiq ? 0 : -1;
+    }
 }
 
 /** Updates the cpu time to the next bus cycle.
@@ -271,11 +293,29 @@ ARM926EJS::BusSynchronize()
 void
 ARM926EJS::Run()
 {
+  /* Dismiss any interrupt that could have started before simulation (initialization artifacts) */
+  missed_irqs = nirq ? 0 : -1;
+  missed_fiqs = nfiq ? 0 : -1;
+  
   /* compute the average time of each instruction */
   sc_time time_per_instruction = cpu_cycle_time * ipc;
   for (;;)
   {
+    uint32_t unmasked_interrupts = CPSR().bits();
     StepInstruction();
+    unmasked_interrupts &= ~(CPSR().bits());
+    if (unisim::component::cxx::processor::arm::I.Get( unmasked_interrupts ) or
+        unisim::component::cxx::processor::arm::F.Get( unmasked_interrupts ))
+      {
+        if (verbose)
+          inherited::logger << DebugInfo
+                            << "Syncing due to exception being unmasked" << std::endl
+                            << " - unmasked_interrupts = 0x" << std::hex << unmasked_interrupts << std::dec << std::endl
+                            << " - cpu_time     = " << cpu_time << std::endl
+                            << " - quantum_time = " << quantum_time
+                            << EndDebugInfo;
+        Sync();
+      }
     quantum_time += time_per_instruction;
     if (quantum_time > nice_time)
       Sync();
@@ -410,18 +450,31 @@ ARM926EJS::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 en
 }
   
 /** nIRQ port handler */
-void 
+void
 ARM926EJS::IRQHandler()
 {
-  unisim::component::cxx::processor::arm::exception::IRQ.Set( exception, not nirq );
+  if (nirq) missed_irqs += 1;
+  if (verbose)
+    inherited::logger << DebugInfo
+                      << "IRQ level change:" << std::endl
+                      << " - nIRQ = " << nirq << std::endl
+                      << " - missed_irqs = " << missed_irqs << std::endl
+                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << EndDebugInfo;
 }
 
 /** nFIQ port handler */
 void 
-ARM926EJS ::
-FIQHandler()
+ARM926EJS::FIQHandler()
 {
-  unisim::component::cxx::processor::arm::exception::FIQ.Set( exception, not nfiq );
+  if (nfiq) missed_fiqs += 1;
+  if (verbose)
+    inherited::logger << DebugInfo
+                      << "FIQ level change:" << std::endl
+                      << " - nFIQ = " << nfiq << std::endl
+                      << " - missed_fiqs = " << missed_fiqs << std::endl
+                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << EndDebugInfo;
 }
   
 /**

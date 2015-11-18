@@ -143,9 +143,8 @@ CPU::~CPU()
 bool 
 CPU::BeginSetup()
 {
-  logger << DebugInfo << "CPU::BeginSetup" << EndDebugInfo;
   if (verbose)
-    logger << DebugInfo << "Verbose activated." << EndDebugInfo;
+    logger << DebugInfo << "CPU::BeginSetup(): Verbose activated." << EndDebugInfo;
 
   if (cpu_cycle_time_ps == 0)
     {
@@ -1200,7 +1199,7 @@ void
 CPU::BKPT( uint32_t imm )
 {
   // we are executing on linux emulation mode
-  // what should we do with this kind of call? ignore it
+  throw "TODO: Generate a debug event: virtual BKPTInstrDebugEvent() method ?";
 }
   
 /** Get the Internal representation of the CP15 Register

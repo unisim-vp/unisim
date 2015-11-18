@@ -329,11 +329,11 @@ struct CPU
   /************************************************************************/
 
 public:
-  void UnpredictableInsnBehaviour();
+  void     UnpredictableInsnBehaviour();
+  void     CallSupervisor( uint16_t imm );
   
 protected:
   void     HandleSynchronousException();
-  void     CallSupervisor( uint16_t imm );
 
   uint32_t HandleAsynchronousException( uint32_t );
   void     TakeReset();

@@ -416,14 +416,19 @@ CPU::StepInstruction()
 
   }
   
-  catch (exception::SynchronousAbort sa) {
-    /* Instruction didn't execute has expected. TODO: ensure that an
-     * exception handler handles it (e.g. using a synchronous abort
-     * bit in the exception vector). */
-  }
-  
-  /* Handle any exception that may  have occured */
-  if (unlikely(exception) && HandleException()) {
+  catch (exception::SVCException const& svexc) {
+    /* Resuming execution, since SVC exceptions are explicitly
+     * requested from regular instructions. ITState will be updated by
+     * TakeSVCException (as done in the ARM spec). */
+    if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
+      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+
+    instruction_counter++;
+    if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
+      instruction_counter_trap_reporting_import->ReportTrap(*this);
+    
+    this->TakeSVCException();
+    
     if (unlikely(trap_on_exception && exception_trap_reporting_import))
       exception_trap_reporting_import->ReportTrap( *this );
   }
@@ -1386,16 +1391,6 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
 }
 
 
-/** Software Interrupt
- *  This method is called by SWI instructions to handle software interrupts.
- */
-void
-CPU::SWI( uint32_t imm )
-{
-  // we are executing on full system mode
-  this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::SWI);
-}
-
 /** Breakpoint
  *  This method is called by BKPT instructions to handle breakpoints.
  */
@@ -1403,7 +1398,7 @@ void
 CPU::BKPT( uint32_t imm )
 {
   // we are executing on full system mode
-  this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::PABRT);
+  throw "TODO: Generate a debug event: virtual BKPTInstrDebugEvent() method ?";
 }
   
 /** Check access permission and domain bits.

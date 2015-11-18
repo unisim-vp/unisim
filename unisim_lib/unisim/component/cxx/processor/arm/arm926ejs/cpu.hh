@@ -202,7 +202,6 @@ struct CPU
   /* Software Exceptions                     START  */
   /**************************************************/
 	
-  void SWI( uint32_t imm );
   void BKPT( uint32_t imm );
 	
   /**************************************************/

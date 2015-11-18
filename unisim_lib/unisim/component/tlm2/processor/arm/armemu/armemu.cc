@@ -264,12 +264,14 @@ ARMEMU::Sync()
   if      (unisim::component::cxx::processor::arm::I.Get( exceptions ))
     {
       if (--missed_irqs > 0) inherited::logger << DebugWarning << "Missed " << missed_irqs << " IRQs" << EndDebugWarning;
-      missed_irqs = 0;
+      // Discard missed interrupt buffer
+      missed_irqs = nirq ? 0 : -1;
     }
   else if (unisim::component::cxx::processor::arm::F.Get( exceptions ))
     {
       if (--missed_fiqs > 0) inherited::logger << DebugWarning << "Missed " << missed_fiqs << " FIQs" << EndDebugWarning;
-      missed_fiqs = 0;
+      // Discard missed interrupt buffer
+      missed_fiqs = nfiq ? 0 : -1;
     }
 }
 
@@ -322,9 +324,9 @@ ARMEMU::BusSynchronize()
 void
 ARMEMU::Run()
 {
-  /* Ignoring any interrupt that could have occur before simulation (initialization artifacts) */
-  missed_irqs = 0;
-  missed_fiqs = 0;
+  /* Dismiss any interrupt that could have started before simulation (initialization artifacts) */
+  missed_irqs = nirq ? 0 : -1;
+  missed_fiqs = nfiq ? 0 : -1;
   
   if ( unlikely(verbose) )
     {
