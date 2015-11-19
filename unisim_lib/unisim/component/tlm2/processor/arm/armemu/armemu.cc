@@ -132,8 +132,8 @@ ARMEMU::ARMEMU(const sc_module_name& name, Object *parent)
   , master_socket("master_socket")
   , nirq("nirq_port")
   , nfiq("nfiq_port")
-  , missed_irqs()
-  , missed_fiqs()
+  , raised_irqs()
+  , raised_fiqs()
   , end_read_rsp_event()
   , payload_fabric()
   , tmp_time()
@@ -254,24 +254,25 @@ ARMEMU::Sync()
                       << " - cpu_time     = " << cpu_time << std::endl
                       << " - nice_time     = " << nice_time << std::endl
                       << EndDebugInfo;
+  
   /** Handling signals at this point (they won't change until the next call to Sync) */
   uint32_t exceptions = 0;
-  unisim::component::cxx::processor::arm::I.Set( exceptions, not nirq or (missed_irqs > 0) );
-  unisim::component::cxx::processor::arm::F.Set( exceptions, not nfiq or (missed_fiqs > 0) );
+  unisim::component::cxx::processor::arm::I.Set( exceptions, raised_irqs > 0 );
+  unisim::component::cxx::processor::arm::F.Set( exceptions, raised_fiqs > 0 );
   
   exceptions = this->HandleAsynchronousException( exceptions );
   
   if      (unisim::component::cxx::processor::arm::I.Get( exceptions ))
     {
-      if (--missed_irqs > 0) inherited::logger << DebugWarning << "Missed " << missed_irqs << " IRQs" << EndDebugWarning;
-      // Discard missed interrupt buffer
-      missed_irqs = nirq ? 0 : -1;
+      if (--raised_irqs > 0) inherited::logger << DebugWarning << "Missed " << raised_irqs << " IRQs" << EndDebugWarning;
+      // Discard raised interrupt buffer
+      raised_irqs = 0;
     }
   else if (unisim::component::cxx::processor::arm::F.Get( exceptions ))
     {
-      if (--missed_fiqs > 0) inherited::logger << DebugWarning << "Missed " << missed_fiqs << " FIQs" << EndDebugWarning;
-      // Discard missed interrupt buffer
-      missed_fiqs = nfiq ? 0 : -1;
+      if (--raised_fiqs > 0) inherited::logger << DebugWarning << "Missed " << raised_fiqs << " FIQs" << EndDebugWarning;
+      // Discard raised interrupt buffer
+      raised_fiqs = 0;
     }
 }
 
@@ -325,20 +326,22 @@ void
 ARMEMU::Run()
 {
   /* Dismiss any interrupt that could have started before simulation (initialization artifacts) */
-  missed_irqs = nirq ? 0 : -1;
-  missed_fiqs = nfiq ? 0 : -1;
+  raised_irqs = 0;
+  raised_fiqs = 0;
+
+  /* compute the average time of each instruction */
+  sc_time time_per_instruction = cpu_cycle_time * ipc;
   
   if ( unlikely(verbose) )
     {
       inherited::logger << DebugInfo
                         << "Starting ARMEMU::Run loop" << std::endl
                         << " - cpu_time     = " << cpu_time << std::endl
-                        << " - nice_time = " << nice_time
+                        << " - nice_time = " << nice_time << std::endl
+                        << " - time_per_instruction = " << time_per_instruction
                         << EndDebugInfo;
     }
     
-  /* compute the average time of each instruction */
-  sc_time time_per_instruction = cpu_cycle_time * ipc;
   for (;;)
   {
     if ( unlikely(verbose_tlm) )
@@ -350,23 +353,24 @@ ARMEMU::Run()
         << EndDebugInfo;
     }
     
-    uint32_t unmasked_interrupts = CPSR().bits();
+    uint32_t cpsr_cleared_bits = CPSR().bits();
     StepInstruction();
-    unmasked_interrupts &= ~(CPSR().bits());
-    if (unisim::component::cxx::processor::arm::I.Get( unmasked_interrupts ) or
-        unisim::component::cxx::processor::arm::F.Get( unmasked_interrupts ))
+    // cpu_time += time_per_instruction;
+    quantum_time += time_per_instruction;
+    cpsr_cleared_bits &= ~(CPSR().bits());
+    
+    if (unisim::component::cxx::processor::arm::I.Get( cpsr_cleared_bits ) or
+        unisim::component::cxx::processor::arm::F.Get( cpsr_cleared_bits ))
       {
         if (verbose)
           inherited::logger << DebugInfo
                             << "Syncing due to exception being unmasked" << std::endl
-                            << " - unmasked_interrupts = 0x" << std::hex << unmasked_interrupts << std::dec << std::endl
+                            << " - cpsr_cleared_bits = 0x" << std::hex << cpsr_cleared_bits << std::dec << std::endl
                             << " - cpu_time     = " << cpu_time << std::endl
                             << " - quantum_time = " << quantum_time
                             << EndDebugInfo;
         Sync();
       }
-    // cpu_time += time_per_instruction;
-    quantum_time += time_per_instruction;
     if ( unlikely(verbose_tlm) )
     {
       inherited::logger << DebugInfo
@@ -508,12 +512,12 @@ ARMEMU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_r
 void
 ARMEMU::IRQHandler()
 {
-  if (nirq) missed_irqs += 1;
+  if (not nirq) raised_irqs += 1;
   if (verbose)
     inherited::logger << DebugInfo
                       << "IRQ level change:" << std::endl
                       << " - nIRQ = " << nirq << std::endl
-                      << " - missed_irqs = " << missed_irqs << std::endl
+                      << " - raised_irqs = " << raised_irqs << std::endl
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
@@ -522,12 +526,12 @@ ARMEMU::IRQHandler()
 void 
 ARMEMU::FIQHandler()
 {
-  if (nfiq) missed_fiqs += 1;
+  if (not nfiq) raised_fiqs += 1;
   if (verbose)
     inherited::logger << DebugInfo
                       << "FIQ level change:" << std::endl
                       << " - nFIQ = " << nfiq << std::endl
-                      << " - missed_fiqs = " << missed_fiqs << std::endl
+                      << " - raised_fiqs = " << raised_fiqs << std::endl
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }

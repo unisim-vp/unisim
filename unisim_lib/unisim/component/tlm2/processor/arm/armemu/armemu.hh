@@ -93,8 +93,8 @@ public:
 	sc_core::sc_in<bool> nfiq;
 
 private:
-  int missed_irqs;
-  int missed_fiqs;
+  int raised_irqs;
+  int raised_fiqs;
 	/** nIRQ port handler */
 	void IRQHandler();
 	/** nFIQ port handler */
