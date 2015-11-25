@@ -948,7 +948,7 @@ ldm_rfe.execute = {
   }
   
   LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
-  uint32_t new_pc_value;
+  uint32_t new_pc_value = 1; //< Illegal address to be sure that value is overwritten
   while (itr.next()) {
     uint32_t value = cpu.MemRead32( itr.addr() );
     if (itr.reg() != 15) cpu.SetGPR( itr.reg(), value );

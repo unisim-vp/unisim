@@ -1060,7 +1060,8 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
       RefillInsnPrefetchBuffer( base_address );
     }
   
-  uint32_t word = *((uint32_t*)(&ipb_bytes[buffer_index]));
+  uint32_t word;
+  memcpy( &word, &ipb_bytes[buffer_index], 4 );
   insn = Target2Host(GetEndianness(), word);
 }
 
