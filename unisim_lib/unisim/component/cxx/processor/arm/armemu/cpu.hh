@@ -247,8 +247,6 @@ protected:
   // uint64_t cpu_cycle;      //!< Number of cpu cycles
   // uint64_t bus_cycle;      //!< Number of front side bus cycles
 
-  /** Verbose level of the emulator */
-  uint32_t verbose;
   /** Trap when reaching the number of instructions indicated. */
   uint64_t trap_on_instruction_counter;
 	
@@ -264,7 +262,7 @@ protected:
   /** UNISIM Parameter to set the CPU voltage. */
   unisim::kernel::service::Parameter<uint64_t> param_voltage;
   /** UNISIM Parameter to set/unset verbose mode. */
-  unisim::kernel::service::Parameter<uint32_t> param_verbose;
+  unisim::kernel::service::Parameter<bool> param_verbose;
   /** UNISIM Parameter to set traps on instruction counter. */
   unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
   /** UNISIM Statistic of the number of instructions executed. */

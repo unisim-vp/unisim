@@ -110,6 +110,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   : unisim::kernel::service::Object(name, parent)
   , Service<Registers>(name, parent)
   , logger(*this)
+  , verbose(false)
   , sctlr(0)
   , ttbr0(0)
   , registers_export("registers-export", this)
@@ -367,6 +368,7 @@ CPU<CONFIG>::HandleAsynchronousException( uint32_t exceptions )
     {
       // FIQs have higher priority
       bool isIRQ = not F.Get( exceptions );
+      if (this->verbose)
       logger << DebugInfo << "Received " << (isIRQ ? "IRQ" : "FIQ") << " interrupt, handling it." << EndDebugInfo;
       
       TakePhysicalFIQorIRQException( isIRQ );
@@ -610,7 +612,7 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
           uint32_t Read( CPU& cpu ) { return cpu.sctlr; }
           void Write( CPU& cpu, uint32_t value ) {
             cpu.sctlr = value;
-            if (SCTLR::C.Get( value ))
+            if (SCTLR::C.Get( value ) and cpu.verbose)
               cpu.logger << DebugInfo << "Dcache Enabled !!!!!!!!" << EndDebugInfo;
           }
         } x;

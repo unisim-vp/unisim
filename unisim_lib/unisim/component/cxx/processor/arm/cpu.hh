@@ -147,6 +147,8 @@ struct CPU
   
   /** Unisim logging services. */
   unisim::kernel::logger::Logger logger;
+  /** Verbosity of the CPU implementation */
+  bool verbose;
   
   //=====================================================================
   //=                  public service imports/exports                   =
