@@ -161,7 +161,7 @@ struct CPU
   //=                   DebugDisasmInterface methods                    =
   //=====================================================================
 
-  virtual std::string Disasm(uint32_t addr, uint32_t &next_addr);
+  virtual std::string Disasm(uint32_t addr, uint32_t& next_addr);
 		
   //=====================================================================
   //=                   LinuxOSInterface methods                        =

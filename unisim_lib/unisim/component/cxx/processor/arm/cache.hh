@@ -174,8 +174,8 @@ struct Cache
                    uint8_t **data);
   uint32_t GetDataCopy(uint32_t set, uint32_t way, uint8_t *data) const;
   uint32_t GetDataCopy(uint32_t set, uint32_t way, uint32_t index, uint32_t size, uint8_t *data) const;
-  uint32_t SetData(uint32_t set, uint32_t way, uint8_t *data);
-  uint32_t SetData(uint32_t set, uint32_t way, uint32_t index, uint32_t size, uint8_t *data);
+  uint32_t SetData(uint32_t set, uint32_t way, uint8_t const* data);
+  uint32_t SetData(uint32_t set, uint32_t way, uint32_t index, uint32_t size, uint8_t const* data);
   uint8_t GetValid(uint32_t set, uint32_t way) const { return m_valid[set][way]; }
   void SetValid(uint32_t set, uint32_t way, uint8_t valid) { m_valid[set][way] = valid; }
   uint8_t GetDirty(uint32_t set, uint32_t way) const { return m_dirty[set][way]; }

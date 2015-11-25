@@ -273,71 +273,58 @@ CPU::EndSetup()
 void
 CPU::PerformPrefetchAccess( uint32_t addr )
 {
-  if ( likely(dcache.GetSize()) )
+  bool cache_access = SCTLR::C.Get( sctlr ) and dcache.GetSize();
+  
+  if (likely(cache_access))
     {
       dcache.prefetch_accesses++;
       uint32_t cache_tag = dcache.GetTag(addr);
       uint32_t cache_set = dcache.GetSet(addr);
       uint32_t cache_way;
-      bool cache_hit = false;
-      if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-        {
-          if ( dcache.GetValid(cache_set, cache_way) )
-            {
-              // the access is a hit, nothing needs to be done
-              cache_hit = true;
-            }
-        }
-      // if the access was a miss, data needs to be fetched from main
+      bool cache_hit =
+        dcache.GetWay(cache_tag, cache_set, &cache_way) and
+        dcache.GetValid(cache_set, cache_way);
+      
+      // If the access was a miss, data needs to be fetched from main
       //   memory and placed into the cache
-      if ( likely(!cache_hit) )
+      if (likely(not cache_hit))
         {
           // get a way to replace
-          cache_way = dcache.GetNewWay(cache_set);
+          cache_way = dcache.GetNewWay( cache_set );
           // get the valid and dirty bits from the way to replace
-          bool cache_valid = dcache.GetValid(cache_set,
-                                             cache_way);
-          bool cache_dirty = dcache.GetDirty(cache_set,
-                                             cache_way);
-          if ( cache_valid & cache_dirty )
+          bool cache_valid = dcache.GetValid( cache_set, cache_way );
+          bool cache_dirty = dcache.GetDirty( cache_set, cache_way );
+          if (cache_valid and cache_dirty)
             {
               // the cache line to replace is valid and dirty so it needs
               //   to be sent to the main memory
               uint8_t *rep_cache_data = 0;
-              uint32_t rep_cache_address =
-                dcache.GetBaseAddress(cache_set,
-                                      cache_way);
-              dcache.GetData(cache_set, cache_way,
-                             &rep_cache_data);
-              PrWrite(rep_cache_address, rep_cache_data,
-                      dcache.LINE_SIZE);
+              uint32_t rep_cache_address = dcache.GetBaseAddress( cache_set, cache_way );
+              dcache.GetData( cache_set, cache_way, &rep_cache_data );
+              PrWrite( rep_cache_address, rep_cache_data, dcache.LINE_SIZE );
             }
           // the new data can be requested
           uint8_t *cache_data = 0;
-          uint32_t cache_address =
-            dcache.GetBaseAddressFromAddress(addr);
-          // when getting the data we get the pointer to the cache line
-          //   containing the data, so no need to write the cache
+          uint32_t cache_address = dcache.GetBaseAddressFromAddress(addr);
+          // When getting the data we get the pointer to the cache
+          //   line containing the data, so no need to write the cache
           //   afterwards
-          uint32_t cache_line_size = dcache.GetData(cache_set,
-                                                    cache_way, &cache_data);
-          PrRead(cache_address, cache_data,
-                 cache_line_size);
-          dcache.SetTag(cache_set, cache_way, cache_tag);
-          dcache.SetValid(cache_set, cache_way, 1);
-          dcache.SetDirty(cache_set, cache_way, 0);
+          uint32_t cache_line_size = dcache.GetData( cache_set, cache_way, &cache_data );
+          PrRead( cache_address, cache_data, cache_line_size );
+          dcache.SetTag( cache_set, cache_way, cache_tag );
+          dcache.SetValid( cache_set, cache_way, 1 );
+          dcache.SetDirty( cache_set, cache_way, 0 );
         }
       else
         {
           dcache.prefetch_hits++;
         }
-      if ( unlikely(dcache.power_estimator_import != 0) )
+      if (unlikely( dcache.power_estimator_import ))
         dcache.power_estimator_import->ReportReadAccess();
     }
   else
     {
-      /* it is just a cache prefetch, ignore the request if there is 
-       * no cache */
+      /* it is just a cache prefetch, ignore the request if cache is not active */
     }
   /* CHECK: should we report a memory access for a prefetch???? */
 }
@@ -352,6 +339,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t write_addr = addr;
   uint8_t data[4];
+  bool cache_access = dcache.GetSize() and SCTLR::C.Get( this->sctlr );
 
   if (size > 4) throw 0; // should never happen
 
@@ -368,16 +356,16 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
       { data[byte] = shifter; shifter >>= 8; }
   }
 
-  if ( likely(dcache.GetSize()) )
+  if (likely(cache_access))
     {
       dcache.write_accesses++;
       uint32_t cache_tag = dcache.GetTag(write_addr);
       uint32_t cache_set = dcache.GetSet(write_addr);
       uint32_t cache_way;
       bool cache_hit = false;
-      if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+      if (dcache.GetWay( cache_tag, cache_set, &cache_way ))
         {
-          if ( dcache.GetValid(cache_set, cache_way) != 0 )
+          if (dcache.GetValid( cache_set, cache_way))
             {
               // the access is a hit
               cache_hit = true;
@@ -386,31 +374,30 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
       // if the access was a hit the data needs to be written into
       //   the cache, if the access was a miss the data needs to be
       //   written into memory, but the cache doesn't need to be updated
-      if ( likely(cache_hit) )
+      if (likely(cache_hit))
         {
           dcache.write_hits++;
-          uint32_t cache_index = dcache.GetIndex(write_addr);
-          dcache.SetData(cache_set, cache_way, cache_index,
-                         size, data);
-          dcache.SetDirty(cache_set, cache_way, 1);
+          uint32_t cache_index = dcache.GetIndex( write_addr );
+          dcache.SetData( cache_set, cache_way, cache_index, size, data );
+          dcache.SetDirty( cache_set, cache_way, 1 );
         }
       else
         {
-          PrWrite(write_addr, data, size);
+          PrWrite( write_addr, data, size );
         }
 
-      if ( unlikely(dcache.power_estimator_import != 0) )
+      if (unlikely(dcache.power_estimator_import))
         dcache.power_estimator_import->ReportWriteAccess();
     }
-  else // there is no data cache
+  else
     {
-      // there is no data cache, so just send the request to the
-      //   memory interface
-      PrWrite(write_addr, data, size);
+      // There is no data cache or data should not be cached.
+      // Just send the request to the memory interface
+      PrWrite( write_addr, data, size );
     }
 
   /* report read memory access if necessary */
-  ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+  ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
 }
 
 /** Performs a read access.
@@ -423,6 +410,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
 {
   uint32_t read_addr = addr & ~(uint32_t)(size - 1);
   uint8_t data[4];
+  bool cache_access = dcache.GetSize() and SCTLR::C.Get( this->sctlr );
 
   if (size > 4) throw 0;
   //uint32_t misalignment = addr & (size-1);
@@ -434,58 +422,42 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
     read_addr ^= ((-size) & 3);
   }
 
-  if ( likely(dcache.GetSize()) )
+  if (likely(cache_access))
     {
       dcache.read_accesses++;
-      uint32_t cache_tag = dcache.GetTag(read_addr);
-      uint32_t cache_set = dcache.GetSet(read_addr);
+      uint32_t cache_tag = dcache.GetTag( read_addr );
+      uint32_t cache_set = dcache.GetSet( read_addr );
       uint32_t cache_way;
-      bool cache_hit = false;
-      if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-        {
-          if ( dcache.GetValid(cache_set, cache_way) )
-            {
-              // the access is a hit, nothing needs to be done
-              cache_hit = true;
-            }
-        }
-      // if the access was a miss, data needs to be fetched from main
+      bool cache_hit =
+        dcache.GetWay(cache_tag, cache_set, &cache_way) and
+        dcache.GetValid(cache_set, cache_way);
+      // If the access was a miss, data needs to be fetched from main
       //   memory and placed into the cache
-      if ( unlikely(!cache_hit) )
+      if (unlikely(not cache_hit))
         {
           // get a way to replace
-          cache_way = dcache.GetNewWay(cache_set);
-          // get the valid and dirty bits from the way to replace
-          uint8_t cache_valid = dcache.GetValid(cache_set,
-                                                cache_way);
-          uint8_t cache_dirty = dcache.GetDirty(cache_set,
-                                                cache_way);
-
-          if ( (cache_valid != 0) & (cache_dirty != 0) )
+          cache_way = dcache.GetNewWay( cache_set );
+          // Check if the way to replace needs to be written back
+          if (dcache.GetValid( cache_set, cache_way ) and dcache.GetDirty( cache_set, cache_way ))
             {
-              // the cache line to replace is valid and dirty so it needs
-              //   to be sent to the main memory
-              uint8_t *rep_cache_data = 0;
-              uint32_t rep_cache_address =
-                dcache.GetBaseAddress(cache_set, cache_way);
-              dcache.GetData(cache_set, cache_way, &rep_cache_data);
-              PrWrite(rep_cache_address, rep_cache_data,
-                      dcache.LINE_SIZE);
+              // The cache line to replace is valid and dirty so it
+              //   needs to be sent back
+              uint8_t* rep_cache_data = 0;
+              uint32_t rep_cache_address = dcache.GetBaseAddress( cache_set, cache_way );
+              dcache.GetData( cache_set, cache_way, &rep_cache_data );
+              PrWrite( rep_cache_address, rep_cache_data, dcache.LINE_SIZE );
             }
           // the new data can be requested
-          uint8_t *cache_data = 0;
-          uint32_t cache_address =
-            dcache.GetBaseAddressFromAddress(read_addr);
-          // when getting the data we get the pointer to the cache line
-          //   containing the data, so no need to write the cache
-          //   afterwards
-          uint32_t cache_line_size = dcache.GetData(cache_set,
-                                                    cache_way, &cache_data);
-          PrRead(cache_address, cache_data,
-                 cache_line_size);
-          dcache.SetTag(cache_set, cache_way, cache_tag);
-          dcache.SetValid(cache_set, cache_way, 1);
-          dcache.SetDirty(cache_set, cache_way, 0);
+          uint8_t* cache_data = 0;
+          uint32_t cache_address = dcache.GetBaseAddressFromAddress( read_addr );
+          // When getting the data we get the pointer to the cache
+          // line containing the data, so no need to write the cache
+          // afterwards
+          uint32_t cache_line_size = dcache.GetData( cache_set, cache_way, &cache_data );
+          PrRead( cache_address, cache_data, cache_line_size );
+          dcache.SetTag( cache_set, cache_way, cache_tag );
+          dcache.SetValid( cache_set, cache_way, 1 );
+          dcache.SetDirty( cache_set, cache_way, 0 );
         }
       else
         {
@@ -499,6 +471,9 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
       uint8_t* ptr;
       (void)dcache.GetData(cache_set, cache_way, cache_index, size, &ptr);
       memcpy( &data[0], ptr, size );
+      
+      if (unlikely(dcache.power_estimator_import))
+        dcache.power_estimator_import->ReportReadAccess();
     }
   else // there is no data cache
     {
@@ -506,6 +481,10 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
       PrRead(read_addr, &data[0], size);
     }
 
+  /* report read memory access if necessary */
+  ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+  
+  /* Compute return value */
   uint32_t value;
   if (GetEndianness() == unisim::util::endian::E_LITTLE_ENDIAN) {
     uint32_t shifter = 0;
@@ -519,13 +498,6 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
     value = shifter;
   }
 
-  if ( likely(dcache.GetSize()) )
-    if ( unlikely(dcache.power_estimator_import != 0) )
-      dcache.power_estimator_import->ReportReadAccess();
-
-  /* report read memory access if necessary */
-  ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
-      
   return value;
 }
 
@@ -547,7 +519,7 @@ CPU::StepInstruction()
 {
   /* Instruction boundary next_pc becomes current_pc */
   uint32_t insn_addr = this->current_pc = GetNPC();
-
+  
   if (debug_control_import)
     {
       for (bool proceed = false; not proceed; )
@@ -653,44 +625,38 @@ CPU::StepInstruction()
  * @return true on success, false otherwise
  */
 bool 
-CPU::InjectReadMemory( uint32_t addr, void *buffer, uint32_t size )
+CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
 {
   uint32_t index = 0;
   uint32_t base_addr = (uint32_t)addr;
   uint32_t ef_addr;
+  uint8_t* rbuffer = (uint8_t*)buffer;
 
-  if ( likely(dcache.GetSize()) )
+  if (likely(dcache.GetSize()))
     {
       while (size != 0)
         {
-          // need to access the data cache before accessing the main memory
           ef_addr = base_addr + index;
 
-          uint32_t cache_tag = dcache.GetTag(ef_addr);
-          uint32_t cache_set = dcache.GetSet(ef_addr);
+          // Need to access the data cache before the memory subsystem
+          uint32_t cache_tag = dcache.GetTag( ef_addr );
+          uint32_t cache_set = dcache.GetSet( ef_addr );
           uint32_t cache_way;
-          bool cache_hit = false;
-          if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+          bool cache_hit =
+            dcache.GetWay(cache_tag, cache_set, &cache_way) and
+            dcache.GetValid(cache_set, cache_way);
+          if (cache_hit)
             {
-              if ( dcache.GetValid(cache_set, cache_way) )
-                {
-                  // the cache access is a hit, data can be simply read from 
-                  //   the cache
-                  uint32_t cache_index = dcache.GetIndex(ef_addr);
-                  uint32_t read_data_size =
-                    dcache.GetDataCopy(cache_set, cache_way, 
-                                       cache_index, size, 
-                                       &(((uint8_t *)buffer)[index]));
-                  index += read_data_size;
-                  size -= read_data_size;
-                  cache_hit = true;
-                }
+              // Read data from the cache
+              uint32_t cache_index = dcache.GetIndex( ef_addr );
+              uint32_t read_data_size = dcache.GetDataCopy( cache_set, cache_way, cache_index, size, &rbuffer[index] );
+              index += read_data_size;
+              size -= read_data_size;
             }
-          if ( !cache_hit )
+          else
             {
-              PrRead(ef_addr,
-                     &(((uint8_t *)buffer)[index]),
-                     1);
+              // Read data from memory subsystem
+              PrRead( ef_addr, &rbuffer[index], 1);
               index++;
               size--;
             }
@@ -698,14 +664,11 @@ CPU::InjectReadMemory( uint32_t addr, void *buffer, uint32_t size )
     }
   else
     {
-      // no data cache on this system, just send request to the memory
-      //   subsystem
-      while ( size != 0 )
+      // No data cache, just send request to the memory subsystem
+      while (size != 0)
         {
           ef_addr = base_addr + index;
-          PrRead(ef_addr,
-                 &(((uint8_t *)buffer)[index]),
-                 1);
+          PrRead(ef_addr, &rbuffer[index], 1);
           index++;
           size--;
         }
@@ -723,47 +686,38 @@ CPU::InjectReadMemory( uint32_t addr, void *buffer, uint32_t size )
  * @return true on success, false otherwise
  */
 bool 
-CPU::InjectWriteMemory( uint32_t addr, const void* buffer, uint32_t size )
+CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
 {
   uint32_t index = 0;
   uint32_t base_addr = (uint32_t)addr;
   uint32_t ef_addr;
+  uint8_t const* wbuffer = (uint8_t const*)buffer;
   
-  if ( likely(dcache.GetSize()) )
+  if (likely(dcache.GetSize()))
     {
-      // access memory while using the linux_os_import
-      //   tcm is ignored
-      while ( size != 0 )
+      while (size != 0)
         {
-          // need to access the data cache before accessing the main memory
           ef_addr = base_addr + index;
 
+          // Need to access the data cache before accessing the main memory
           uint32_t cache_tag = dcache.GetTag(ef_addr);
           uint32_t cache_set = dcache.GetSet(ef_addr);
           uint32_t cache_way;
-          bool cache_hit = false;
-          if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+          bool cache_hit =
+            dcache.GetWay( cache_tag, cache_set, &cache_way ) and
+            dcache.GetValid( cache_set, cache_way );
+          if (cache_hit)
             {
-              if ( dcache.GetValid(cache_set, cache_way) )
-                {
-                  // the cache access is a hit, data can be simply read from 
-                  //   the cache
-                  uint32_t cache_index = dcache.GetIndex(ef_addr);
-                  uint32_t write_data_size =
-                    dcache.SetData(cache_set, cache_way, 
-                                   cache_index, size, 
-                                   &(((uint8_t *)buffer)[index]));
-                  dcache.SetDirty(cache_set, cache_way, 1);
-                  index += write_data_size;
-                  size -= write_data_size;
-                  cache_hit = true;
-                }
+              // Write data in the cache
+              uint32_t cache_index = dcache.GetIndex( ef_addr );
+              uint32_t write_data_size = dcache.SetData( cache_set, cache_way, cache_index, size, &wbuffer[index] );
+              dcache.SetDirty( cache_set, cache_way, 1 );
+              index += write_data_size;
+              size -= write_data_size;
             }
-          if ( !cache_hit )
+          else
             {
-              PrWrite(ef_addr,
-                      &(((uint8_t *)buffer)[index]),
-                      1);
+              PrWrite( ef_addr, &wbuffer[index], 1 );
               index++;
               size--;
             }
@@ -771,14 +725,11 @@ CPU::InjectWriteMemory( uint32_t addr, const void* buffer, uint32_t size )
     }
   else
     {
-      // there is no data cache in this system just send the request to
-      //   the memory subsystem
-      while ( size != 0 )
+      // No data cache, just send the request to the memory subsystem
+      while (size != 0)
         {
           ef_addr = base_addr + index;
-          PrWrite(ef_addr,
-                  &(((uint8_t *)buffer)[index]),
-                  1);
+          PrWrite( ef_addr, &wbuffer[index], 1 );
           index++;
           size--;
         }
@@ -827,43 +778,34 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
   uint32_t index = 0;
   uint32_t base_addr = (uint32_t)addr;
   uint32_t ef_addr;
+  bool cache_access = SCTLR::C.Get( this->sctlr ) and dcache.GetSize();
+  uint8_t* rbuffer = (uint8_t*)buffer;
 
-  if ( likely(dcache.GetSize()) )
+  if (likely(cache_access))
     {
-      // non intrusive access with linux support
-      while (size != 0 && status)
+      while ((size != 0) and status)
         {
-          // need to access the data cache before accessing the main
-          //   memory
           ef_addr = base_addr + index;
 
+          // Need to access the data cache before memory subsystem
           uint32_t cache_tag = dcache.GetTag(ef_addr);
           uint32_t cache_set = dcache.GetSet(ef_addr);
           uint32_t cache_way;
-          bool cache_hit = false;
-          if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+          bool cache_hit =
+            dcache.GetWay( cache_tag, cache_set, &cache_way ) and
+            dcache.GetValid( cache_set, cache_way );
+          if (cache_hit)
             {
-              if ( dcache.GetValid(cache_set, cache_way) )
-                {
-                  // the cache access is a hit, data can be simply read
-                  //   from the cache
-                  uint32_t cache_index =
-                    dcache.GetIndex(ef_addr);
-                  uint32_t data_read_size =
-                    dcache.GetDataCopy(cache_set,
-                                       cache_way, cache_index, size,
-                                       &(((uint8_t *)buffer)[index]));
-                  index += data_read_size;
-                  size -= data_read_size;
-                  cache_hit = true;
-                }
+              // Read data from the cache
+              uint32_t cache_index = dcache.GetIndex(ef_addr);
+              uint32_t data_read_size = dcache.GetDataCopy( cache_set, cache_way, cache_index, size, &rbuffer[index] );
+              index += data_read_size;
+              size -= data_read_size;
             }
-          if ( !cache_hit )
+          else
             {
-              status = status &&
-                ExternalReadMemory(ef_addr,
-                                   &(((uint8_t *)buffer)[index]),
-                                   1);
+              // Read data from the memory subsystem
+              status &= ExternalReadMemory( ef_addr, &rbuffer[index], 1 );
               index++;
               size--;
             }
@@ -871,15 +813,11 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
     }
   else
     {
-      // there is no data cache in this system just perform the request
-      //   to the memory subsystem
-      while ( size != 0 && status )
+      // No data cache, just send request to the memory subsystem
+      while ((size != 0) and status)
         {
           ef_addr = base_addr + index;
-          status = status &&
-            ExternalReadMemory(ef_addr,
-                               &(((uint8_t *)buffer)[index]),
-                               1);
+          status &= ExternalReadMemory( ef_addr, &rbuffer[index], 1 );
           index++;
           size--;
         }
@@ -900,49 +838,41 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
  * @return true on success, false otherwise
  */
 bool 
-CPU::WriteMemory(uint32_t addr, 
-    const void *buffer, 
-    uint32_t size)
+CPU::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
 {
   bool status = true;
   uint32_t index = 0;
   uint32_t base_addr = (uint32_t)addr;
   uint32_t ef_addr;
+  bool cache_access = SCTLR::C.Get( this->sctlr ) and dcache.GetSize();
+  uint8_t const* wbuffer = (uint8_t const*)buffer;
 
-  if ( dcache.GetSize() )
+  if (cache_access)
     {
-      // non intrusive access with linux support
-      while (size != 0 && status)
+      while ((size != 0) and status)
         {
-          // need to access the data cache before accessing the main memory
           ef_addr = base_addr + index;
-
-          uint32_t cache_tag = dcache.GetTag(ef_addr);
-          uint32_t cache_set = dcache.GetSet(ef_addr);
+          
+          // Need to access the data cache before accessing the main memory
+          uint32_t cache_tag = dcache.GetTag( ef_addr );
+          uint32_t cache_set = dcache.GetSet( ef_addr );
           uint32_t cache_way;
-          bool cache_hit = false;
-          if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+          bool cache_hit =
+            dcache.GetWay( cache_tag, cache_set, &cache_way ) and
+            dcache.GetValid( cache_set, cache_way );
+          if (cache_hit)
             {
-              if ( dcache.GetValid(cache_set, cache_way) )
-                {
-                  // the cache access is a hit, data can be simply written to 
-                  //   the cache
-                  uint32_t cache_index = dcache.GetIndex(ef_addr);
-                  uint32_t data_read_size =
-                    dcache.SetData(cache_set, cache_way, cache_index, 
-                                   size, &(((uint8_t *)buffer)[index]));
-                  dcache.SetDirty(cache_set, cache_way, 1);
-                  index += data_read_size;
-                  size -= data_read_size;
-                  cache_hit = true;
-                }
+              // Write data to the cache
+              uint32_t cache_index = dcache.GetIndex( ef_addr );
+              uint32_t data_read_size = dcache.SetData( cache_set, cache_way, cache_index, size, &wbuffer[index] );
+              dcache.SetDirty( cache_set, cache_way, 1 );
+              index += data_read_size;
+              size -= data_read_size;
             }
-          if ( !cache_hit )
+          else
             {
-              status = status &&
-                ExternalWriteMemory(ef_addr,
-                                    &(((uint8_t *)buffer)[index]),
-                                    1);
+              // Write data to the memory subsytem
+              status &= ExternalWriteMemory( ef_addr, &wbuffer[index], 1);
               index++;
               size--;
             }
@@ -950,15 +880,11 @@ CPU::WriteMemory(uint32_t addr,
     }
   else
     {
-      // there is no data cache in this system, just write the data to
-      //   the memory subsystem
-      while ( size != 0 && status )
+      // No data cache, just send request to the memory subsystem
+      while ((size != 0) and status)
         {
           ef_addr = base_addr + index;
-          status = status &&
-            ExternalWriteMemory(ef_addr,
-                                &(((uint8_t *)buffer)[index]),
-                                1);
+          status &= ExternalWriteMemory( ef_addr, &wbuffer[index], 1 );
           index++;
           size--;
         }
@@ -977,7 +903,7 @@ CPU::WriteMemory(uint32_t addr,
  * @return the disassembling of the requested instruction address
  */
 std::string 
-CPU::Disasm(uint32_t addr, uint32_t &next_addr)
+CPU::Disasm(uint32_t addr, uint32_t& next_addr)
 {
   std::stringstream buffer;
   if (cpsr.Get( T ))
@@ -987,7 +913,7 @@ CPU::Disasm(uint32_t addr, uint32_t &next_addr)
       uint8_t insn_bytes[4];
       isa::thumb2::CodeType insn;
       isa::thumb2::Operation<CPU> *op = 0;
-      if (!ReadMemory(addr, insn_bytes, 4)) 
+      if (not ReadMemory(addr, insn_bytes, 4))
         {
           buffer << "Could not read from memory";
           return buffer.str();
@@ -1016,7 +942,7 @@ CPU::Disasm(uint32_t addr, uint32_t &next_addr)
     
       isa::arm32::Operation<CPU> * op = NULL;
       uint32_t insn;
-      if (!ReadMemory(addr, &insn, 4)) 
+      if (not ReadMemory(addr, &insn, 4))
         {
           buffer << "Could not read from memory";
           return buffer.str();
@@ -1065,8 +991,9 @@ void
 CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 {
   this->ipb_base_address = base_address;
-  
-  if (likely(icache.GetSize()))
+  bool cache_access = SCTLR::I.Get( this->sctlr ) and icache.GetSize();
+
+  if (likely(cache_access))
     {
       icache.read_accesses++;
       // check the instruction cache
@@ -1100,7 +1027,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
       uint32_t cache_index = icache.GetIndex(base_address);
       icache.GetDataCopy(cache_set, cache_way, cache_index, Cache::LINE_SIZE, &this->ipb_bytes[0]);
 
-      if ( unlikely(icache.power_estimator_import != 0) )
+      if (unlikely(icache.power_estimator_import))
         icache.power_estimator_import->ReportReadAccess();
     }
   else
@@ -1181,7 +1108,7 @@ CPU::CallSupervisor( uint16_t imm )
     try {
       this->linux_os_import->ExecuteSystemCall(imm);
     }
-    catch(std::exception &e)
+    catch (std::exception const& e)
       {
         std::cerr << e.what() << std::endl;
         this->Stop( -1 );

@@ -307,14 +307,14 @@ namespace arm {
   }
 
   uint32_t
-  Cache::SetData(uint32_t set, uint32_t way, uint8_t *data)
+  Cache::SetData(uint32_t set, uint32_t way, uint8_t const* data)
   {
     memcpy(m_data[set][way], data, m_line_size_);
     return m_line_size_;
   }
 
   uint32_t
-  Cache::SetData(uint32_t set, uint32_t way, uint32_t index, uint32_t size, uint8_t *data)
+  Cache::SetData(uint32_t set, uint32_t way, uint32_t index, uint32_t size, uint8_t const* data)
   {
     uint32_t max_size = m_line_size_ - index;
     size = (max_size < size) ? max_size : size;

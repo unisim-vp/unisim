@@ -125,7 +125,7 @@ namespace armemu {
 
 using namespace unisim::kernel::logger;
 
-ARMEMU::ARMEMU(const sc_module_name& name, Object *parent)
+ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
   : unisim::kernel::service::Object(name, parent)
   , sc_module(name)
   , unisim::component::cxx::processor::arm::armemu::CPU(name, parent)
@@ -401,7 +401,7 @@ ARMEMU::Reset()
  * @return      the synchronization status
  */
 tlm::tlm_sync_enum 
-ARMEMU::nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &time)
+ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_time& time)
 {
   sync_enum_type ret = tlm::TLM_ACCEPTED;
 
@@ -561,7 +561,7 @@ ARMEMU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 
   read_size = master_socket->transport_dbg(*trans);
 
-  if (trans->is_response_ok() && read_size == size)
+  if (trans->is_response_ok() and read_size == size)
   {
     trans->release();
     return true;
@@ -595,7 +595,7 @@ ARMEMU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 
   write_size = master_socket->transport_dbg(*trans);
 
-  if (trans->is_response_ok() && write_size == size)
+  if (trans->is_response_ok() and (write_size == size))
   {
     trans->release();
     return true;
@@ -639,13 +639,13 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
   BusSynchronize();
 
   // pre2 - DMI access (if possible)
-  unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
+  unisim::kernel::tlm2::DMIRegion* dmi_region = 0;
   
   if(likely(enable_dmi))
   {
     dmi_region = dmi_region_cache.Lookup(addr, size);
     
-    if(likely(dmi_region != 0))
+    if(likely(dmi_region))
     {
       if(likely(dmi_region->IsAllowed()))
       {
@@ -674,8 +674,13 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
   // trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
   // trans->set_byte_enable_length(size);
 
-  // 3 - send the transaction
+  // 3 - send the transaction and check response status
   master_socket->b_transport(*trans, quantum_time);
+  if (not trans->is_response_ok()) {
+    // TODO: asynchronous abort
+    throw "smells bad...";
+  }
+  
   // cpu_time = sc_time_stamp() + quantum_time;
   if (quantum_time > nice_time)
     Sync();
@@ -683,7 +688,7 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
   // post3 - update DMI region cache
   if(likely(enable_dmi))
   {
-    if(likely(!dmi_region && trans->is_dmi_allowed()))
+    if(likely(not dmi_region and trans->is_dmi_allowed()))
     {
       tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
       unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
@@ -725,13 +730,13 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   BusSynchronize();
 
   // pre2 - DMI access (if possible)
-  unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
+  unisim::kernel::tlm2::DMIRegion* dmi_region = 0;
   
   if(likely(enable_dmi))
   {
     dmi_region = dmi_region_cache.Lookup(addr, size);
     
-    if(likely(dmi_region != 0))
+    if(likely(dmi_region))
     {
       if(likely(dmi_region->IsAllowed()))
       {
@@ -760,15 +765,20 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   // trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
   // trans->set_byte_enable_length(size);
 
-  // 3 - send the transaction
+  // 3 - send the transaction and check response status
   master_socket->b_transport(*trans, quantum_time);
+  if (not trans->is_response_ok()) {
+    // TODO: asynchronous abort
+    throw "smells bad...";
+  }
+  
   if (quantum_time > nice_time)
     Sync();
 
   // post3 - update DMI region cache
-  if(likely(enable_dmi))
+  if (likely(enable_dmi))
   {
-    if(likely(!dmi_region && trans->is_dmi_allowed()))
+    if (likely(not dmi_region and trans->is_dmi_allowed()))
     {
       tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
       unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
