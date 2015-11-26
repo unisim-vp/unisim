@@ -130,6 +130,7 @@ public:
 	inline void SetRegisterInterface(unisim::util::debug::Register *reg) { this->reg = reg; }
 	inline GDBEndian GetEndian() const { return endian; }
 	unsigned int GetRegNum() const { return reg_num; }
+	bool IsEmpty() const { return (bitsize == 0) and (not reg); }
 private:
 	string name;
 	int bitsize;

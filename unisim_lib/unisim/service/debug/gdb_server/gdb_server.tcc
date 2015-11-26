@@ -270,6 +270,10 @@ bool GDBServer<ADDRESS>::EndSetup()
 							{
 								reg_bitsize = atoi((*xml_node_property)->Value().c_str());
 								has_reg_bitsize = true;
+								if(reg_bitsize == 0)
+								{
+									logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ": bitsize should not be 0" << EndDebugWarning;
+								}
 							}
 							else
 							{
@@ -333,7 +337,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 					}
 					else
 					{
-						logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name() << "' has no 'name' or 'size' property" << EndDebugWarning;
+						logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name() << "' has no 'name' or 'bitsize' property" << EndDebugWarning;
 					}
 					
 					reg_num++;
@@ -1127,6 +1131,11 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 	}
 	const GDBRegister& gdb_reg = gdb_registers[regnum];
 	string packet;
+	if(gdb_reg.IsEmpty())
+	{
+		logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
+		return PutPacket("E00");
+	}
 	gdb_reg.GetValue(packet);
 	return PutPacket(packet);
 }
