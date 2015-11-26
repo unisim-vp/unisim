@@ -469,9 +469,7 @@ m4/real_path.m4 \
 m4/pthread.m4"
 
 UNISIM_LIB_ARMEMU_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_armv5l.xml \
-unisim/service/debug/gdb_server/gdb_armv4l.xml \
-unisim/service/debug/gdb_server/gdb_armv5b.xml \
+unisim/service/debug/gdb_server/gdb_armv7l.xml \
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
 

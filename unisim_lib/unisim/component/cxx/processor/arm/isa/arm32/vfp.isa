@@ -1043,8 +1043,8 @@ vldmia_f64.execute = {
   if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 3 ) );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.SetVU64( 2*(vd+reg) + 0, cpu.MemRead32( address + 0 ) );
-    cpu.SetVU64( 2*(vd+reg) + 1, cpu.MemRead32( address + 4 ) );
+    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( address + 0 ) );
+    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( address + 4 ) );
     address += 8;
   }
 };
@@ -1724,8 +1724,8 @@ vstmia_f64.execute = {
   if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 3 ) );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.MemWrite32( address + 0, cpu.GetVU64( 2*(vd+reg) + 0 ) );
-    cpu.MemWrite32( address + 4, cpu.GetVU64( 2*(vd+reg) + 1 ) );
+    cpu.MemWrite32( address + 0, cpu.GetVU32( 2*(vd+reg) + 0 ) );
+    cpu.MemWrite32( address + 4, cpu.GetVU32( 2*(vd+reg) + 1 ) );
     address += 8;
   }
 };
