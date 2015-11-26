@@ -515,7 +515,10 @@ LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 SetupBlobARM()
 {
 	if(!blob) return false;
-	if ( utsname_machine.compare("armv5") == 0 )
+	if ((utsname_machine.compare("armv5") == 0) or
+      (utsname_machine.compare("armv6") == 0) or
+      (utsname_machine.compare("armv7") == 0) or
+      )
 	{
 		// TODO: Check that the program/stack is not in conflict with the
 		//   tls and cmpxchg interfaces
@@ -630,13 +633,13 @@ SetupBlobARM()
 			logger << DebugInfo
 					<< "cmpxchg handler configured." << EndDebugInfo;
 		}
-		typename unisim::util::debug::blob::Blob<ADDRESS_TYPE> *armv5_blob = 
+		typename unisim::util::debug::blob::Blob<ADDRESS_TYPE> *arm_blob = 
 			new typename unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
-		armv5_blob->SetArchitecture("arm");
-		armv5_blob->SetEndian(endianess);
-		armv5_blob->AddSection(tls_if_section);
-		armv5_blob->AddSection(cmpxchg_if_section);
-		blob->AddBlob(armv5_blob);
+		arm_blob->SetArchitecture("arm");
+		arm_blob->SetEndian(endianess);
+		arm_blob->AddSection(tls_if_section);
+		arm_blob->AddSection(cmpxchg_if_section);
+		blob->AddBlob(arm_blob);
 	}
 
 	return true;
@@ -2974,7 +2977,7 @@ SetSyscallNameMap()
 	syscall_name_map[string("kill")] = &thistype::LSC_kill;
 	syscall_name_map[string("ftruncate")] = &thistype::LSC_ftruncate;
 	// the following are arm private system calls
-	if (utsname_machine.compare("armv5") == 0)
+	if ((system.compare("arm") == 0) || (system.compare("arm-eabi") == 0))
 	{
 		syscall_name_map[string("breakpoint")] = &thistype::LSC_arm_breakpoint;
 		syscall_name_map[string("cacheflush")] = &thistype::LSC_arm_cacheflush;

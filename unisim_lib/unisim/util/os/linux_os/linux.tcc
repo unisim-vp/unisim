@@ -1857,11 +1857,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemBlob(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const
+{
   typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
-  if (utsname_machine_.compare("armv5") == 0) {
+  if ((utsname_machine_.compare("armv5") == 0) or
+      (utsname_machine_.compare("armv6") == 0) or
+      (utsname_machine_.compare("armv7") == 0)) {
     if (blob == NULL) return false;
     // TODO: Check that the program/stack is not in conflict with the
     //   tls and cmpxchg interfaces
@@ -2776,7 +2778,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap()
 	syscall_name_map_["statfs"] = &thistype::LSC_statfs;
 	
 	// the following are arm private system calls
-	if (utsname_machine_.compare("armv5") == 0)
+	if ((system_type_.compare("arm") == 0) || (system_type_.compare("arm-eabi") == 0))
 	{
 		syscall_name_map_["breakpoint"] = &thistype::LSC_arm_breakpoint;
 		syscall_name_map_["cacheflush"] = &thistype::LSC_arm_cacheflush;
