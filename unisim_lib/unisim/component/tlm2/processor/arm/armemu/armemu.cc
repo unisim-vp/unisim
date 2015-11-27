@@ -130,10 +130,12 @@ ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
   , sc_module(name)
   , unisim::component::cxx::processor::arm::armemu::CPU(name, parent)
   , master_socket("master_socket")
-  , nirq("nirq_port")
-  , nfiq("nfiq_port")
+  , nIRQm("nIRQm_port")
+  , nFIQm("nFIQm_port")
+  , nRESETm("nRESETm_port")
   , raised_irqs()
   , raised_fiqs()
+  , raised_rsts()
   , end_read_rsp_event()
   , payload_fabric()
   , tmp_time()
@@ -163,9 +165,11 @@ ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
   
   SC_THREAD(Run);
   SC_METHOD(IRQHandler);
-  sensitive << nirq;
+  sensitive << nIRQm;
   SC_METHOD(FIQHandler);
-  sensitive << nfiq;
+  sensitive << nFIQm;
+  SC_METHOD(ResetHandler);
+  sensitive << nRESETm;
 }
 
 ARMEMU::~ARMEMU()
@@ -255,24 +259,32 @@ ARMEMU::Sync()
                       << " - nice_time     = " << nice_time << std::endl
                       << EndDebugInfo;
   
-  /** Handling signals at this point (they won't change until the next call to Sync) */
+  /** Handling external signals at this point (they won't change until the next call to Sync) */
+  if (raised_rsts > 0) {
+    if (verbose)
+      logger << DebugInfo << "Received RESET!" << EndDebugInfo;
+    this->TakeReset();
+    if (--raised_rsts > 0) inherited::logger << DebugWarning << "Missed " << raised_rsts << " RESETs" << EndDebugWarning;
+    raised_rsts = 0; // Discard raised reset queue
+    return;
+  }
+  
   uint32_t exceptions = 0;
   unisim::component::cxx::processor::arm::I.Set( exceptions, raised_irqs > 0 );
   unisim::component::cxx::processor::arm::F.Set( exceptions, raised_fiqs > 0 );
   
+  if (not exceptions) return;
   exceptions = this->HandleAsynchronousException( exceptions );
   
   if      (unisim::component::cxx::processor::arm::I.Get( exceptions ))
     {
       if (--raised_irqs > 0) inherited::logger << DebugWarning << "Missed " << raised_irqs << " IRQs" << EndDebugWarning;
-      // Discard raised interrupt buffer
-      raised_irqs = 0;
+      raised_irqs = 0; // Discard raised IRQ queue
     }
   else if (unisim::component::cxx::processor::arm::F.Get( exceptions ))
     {
       if (--raised_fiqs > 0) inherited::logger << DebugWarning << "Missed " << raised_fiqs << " FIQs" << EndDebugWarning;
-      // Discard raised interrupt buffer
-      raised_fiqs = 0;
+      raised_fiqs = 0; // Discard raised FIQ queue
     }
 }
 
@@ -508,30 +520,44 @@ ARMEMU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_r
   dmi_region_cache.Invalidate(start_range, end_range);
 }
 
-/** nIRQ port handler */
+/** nIRQm port handler */
 void
 ARMEMU::IRQHandler()
 {
-  if (not nirq) raised_irqs += 1;
+  if (not nIRQm) raised_irqs += 1;
   if (verbose)
     inherited::logger << DebugInfo
                       << "IRQ level change:" << std::endl
-                      << " - nIRQ = " << nirq << std::endl
+                      << " - nIRQm = " << nIRQm << std::endl
                       << " - raised_irqs = " << raised_irqs << std::endl
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
 
-/** nFIQ port handler */
+/** nFIQm port handler */
 void 
 ARMEMU::FIQHandler()
 {
-  if (not nfiq) raised_fiqs += 1;
+  if (not nFIQm) raised_fiqs += 1;
   if (verbose)
     inherited::logger << DebugInfo
                       << "FIQ level change:" << std::endl
-                      << " - nFIQ = " << nfiq << std::endl
+                      << " - nFIQm = " << nFIQm << std::endl
                       << " - raised_fiqs = " << raised_fiqs << std::endl
+                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << EndDebugInfo;
+}
+  
+/** nRESETm port handler */
+void 
+ARMEMU::ResetHandler()
+{
+  if (not nRESETm) raised_rsts += 1;
+  if (verbose)
+    inherited::logger << DebugInfo
+                      << "RESET level change:" << std::endl
+                      << " - nRESETm = " << nRESETm << std::endl
+                      << " - raised_rsts = " << raised_rsts << std::endl
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }

@@ -87,18 +87,24 @@ private:
 	 **************************************************************************/
 
 public:
-	// Slave port for the IRQ signal
-	sc_core::sc_in<bool> nirq;
-	// Slave port for the FIQ signal
-	sc_core::sc_in<bool> nfiq;
-
+	// Slave port for the nIRQm signal
+	sc_core::sc_in<bool> nIRQm;
+	// Slave port for the nFIQm signal
+	sc_core::sc_in<bool> nFIQm;
+  // Slave port for the nRESETm signal
+  sc_core::sc_in<bool> nRESETm;
+  
 private:
   int raised_irqs;
   int raised_fiqs;
-	/** nIRQ port handler */
+  int raised_rsts;
+  
+	/** nIRQm port handler */
 	void IRQHandler();
-	/** nFIQ port handler */
+	/** nFIQm port handler */
 	void FIQHandler();
+  /** nRESETm port hander */
+	void ResetHandler();
 	
 	/**************************************************************************
 	 * Interrupt ports and their handles                                  END *

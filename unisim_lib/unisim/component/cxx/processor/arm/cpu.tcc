@@ -369,7 +369,7 @@ CPU<CONFIG>::HandleAsynchronousException( uint32_t exceptions )
       // FIQs have higher priority
       bool isIRQ = not F.Get( exceptions );
       if (this->verbose)
-      logger << DebugInfo << "Received " << (isIRQ ? "IRQ" : "FIQ") << " interrupt, handling it." << EndDebugInfo;
+        logger << DebugInfo << "Received " << (isIRQ ? "IRQ" : "FIQ") << " interrupt, handling it." << EndDebugInfo;
       
       TakePhysicalFIQorIRQException( isIRQ );
       
