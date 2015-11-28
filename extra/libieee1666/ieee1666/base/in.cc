@@ -38,39 +38,61 @@ namespace sc_core {
 
 sc_in<bool>::sc_in()
 	: sc_port<sc_signal_in_if<bool>,1>()
+	, value_changed_event_finder(0)
+	, posedge_event_finder(0)
+	, negedge_event_finder(0)
 {
+	value_changed_event_finder = new sc_event_finder_t<sc_signal_in_if<bool> >(*this, &sc_signal_in_if<bool>::value_changed_event);
+	posedge_event_finder = new sc_event_finder_t<sc_signal_in_if<bool> >(*this, &sc_signal_in_if<bool>::posedge_event);
+	negedge_event_finder = new sc_event_finder_t<sc_signal_in_if<bool> >(*this, &sc_signal_in_if<bool>::negedge_event);
 }
 
-sc_in<bool>::sc_in( const char* )
+sc_in<bool>::sc_in(const char *_name)
+	: sc_port<sc_signal_in_if<bool>,1>(_name)
+	, value_changed_event_finder(0)
+	, posedge_event_finder(0)
+	, negedge_event_finder(0)
 {
+	value_changed_event_finder = new sc_event_finder_t<sc_signal_in_if<bool> >(*this, &sc_signal_in_if<bool>::value_changed_event);
+	posedge_event_finder = new sc_event_finder_t<sc_signal_in_if<bool> >(*this, &sc_signal_in_if<bool>::posedge_event);
+	negedge_event_finder = new sc_event_finder_t<sc_signal_in_if<bool> >(*this, &sc_signal_in_if<bool>::negedge_event);
 }
 
 sc_in<bool>::~sc_in()
 {
+	delete value_changed_event_finder;
+	delete posedge_event_finder;
+	delete negedge_event_finder;
 }
 
-void sc_in<bool>::bind ( const sc_signal_in_if<bool>& )
+void sc_in<bool>::bind(const sc_signal_in_if<bool>& _if)
 {
+	sc_port_base::bind(const_cast<sc_signal_in_if<bool>&>(_if));
 }
 
-void sc_in<bool>::operator() ( const sc_signal_in_if<bool>& )
+void sc_in<bool>::operator() (const sc_signal_in_if<bool>& _if)
 {
+	sc_in<bool>::bind(_if);
 }
 
-void sc_in<bool>::bind ( sc_port<sc_signal_in_if<bool>, 1>& )
+void sc_in<bool>::bind(sc_port<sc_signal_in_if<bool>, 1>& port)
 {
+	sc_port_base::bind(port);
 }
 
-void sc_in<bool>::operator() ( sc_port<sc_signal_in_if<bool>, 1>& )
+void sc_in<bool>::operator() (sc_port<sc_signal_in_if<bool>, 1>& port)
 {
+	sc_in<bool>::bind(port);
 }
 
-void sc_in<bool>::bind ( sc_port<sc_signal_inout_if<bool>, 1>& )
+void sc_in<bool>::bind(sc_port<sc_signal_inout_if<bool>, 1>& port)
 {
+	sc_port_base::bind(port);
 }
 
-void sc_in<bool>::operator() ( sc_port<sc_signal_inout_if<bool>, 1>& )
+void sc_in<bool>::operator() (sc_port<sc_signal_inout_if<bool>, 1>& port)
 {
+	sc_in<bool>::bind(port);
 }
 
 void sc_in<bool>::end_of_elaboration()
@@ -79,60 +101,77 @@ void sc_in<bool>::end_of_elaboration()
 
 const bool& sc_in<bool>::read() const
 {
+	return (*this)->read();
 }
 
 sc_in<bool>::operator const bool& () const
 {
+	return (*this)->read();
 }
 
 const sc_event& sc_in<bool>::default_event() const
 {
+	return (*this)->default_event();
 }
 
 const sc_event& sc_in<bool>::value_changed_event() const
 {
+	return (*this)->value_changed_event();
 }
 
 const sc_event& sc_in<bool>::posedge_event() const
 {
+	const sc_interface *itf = this->get_interface();
+	std::cerr << "get_interface()="  << itf << std::endl;
+	return (*this)->posedge_event();
 }
 
 const sc_event& sc_in<bool>::negedge_event() const
 {
+	return (*this)->negedge_event();
 }
 
 bool sc_in<bool>::event() const
 {
+	return (*this)->event();
 }
 
 bool sc_in<bool>::posedge() const
 {
+	return (*this)->posedge();
 }
 
 bool sc_in<bool>::negedge() const
 {
+	return (*this)->posedge();
 }
 
 sc_event_finder& sc_in<bool>::value_changed() const
 {
+	return *value_changed_event_finder;
 }
 
 sc_event_finder& sc_in<bool>::pos() const
 {
+	return *posedge_event_finder;
 }
 
 sc_event_finder& sc_in<bool>::neg() const
 {
+	return *negedge_event_finder;
 }
 
 const char* sc_in<bool>::kind() const
 {
+	return "sc_in";
 }
 
-sc_in<bool>::sc_in( const sc_in<bool>& )
+// Disabled
+sc_in<bool>::sc_in(const sc_in<bool>&)
 {
 }
 
+// Disabled
 sc_in<bool>& sc_in<bool>::operator= ( const sc_in<bool>& )
 {
 }

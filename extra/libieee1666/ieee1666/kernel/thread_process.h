@@ -63,7 +63,7 @@ class sc_thread_process : public sc_process
 {
 public:
 	
-	sc_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options = 0);
+	sc_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, bool clocked, const sc_spawn_options *spawn_options);
 	virtual ~sc_thread_process();
 	
 	void set_stack_size(int stack_size);
@@ -74,6 +74,7 @@ public:
 	void trigger_statically();
 	
 	void wait();
+	void wait(int n);
 	void wait(const sc_event& e);
 	void wait(const sc_event_and_list& el);
 	void wait(const sc_event_or_list& el);
@@ -91,6 +92,7 @@ public:
 	virtual void kill(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 	virtual void reset(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 	
+	virtual const char *kind() const;
 private:
 	friend class sc_thread_process_helper;
 	friend class sc_kernel;
@@ -103,7 +105,7 @@ private:
 	
 	enum wait_type_t
 	{
-		WAIT_DEFAULT,                    // wait()
+		WAIT_DEFAULT,                    // wait() or wait(n)
 		WAIT_EVENT,                      // wait(e)
 		WAIT_EVENT_AND_LIST,             // wait(e1 & ... & en)
 		WAIT_EVENT_OR_LIST,              // wait(e1 | ... | en)
@@ -114,6 +116,7 @@ private:
 	};
 	
 	wait_type_t wait_type;
+	int wait_count;
 	const sc_event *wait_event;
 	const sc_event_list *wait_event_list;
 	unsigned int wait_and_event_list_remaining_count;

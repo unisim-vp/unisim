@@ -39,10 +39,12 @@
 #include <ieee1666/kernel/prim_channel.h>
 #include <ieee1666/kernel/module_name.h>
 #include <ieee1666/kernel/thread_process.h>
+#include <ieee1666/kernel/cthread_process.h>
 #include <ieee1666/kernel/method_process.h>
 #include <ieee1666/kernel/process_handle.h>
 #include <ieee1666/kernel/time.h>
 #include <ieee1666/kernel/kernel_event.h>
+#include <ieee1666/kernel/event_finder.h>
 #include <math.h>
 #include <string.h>
 #include <limits>
@@ -157,19 +159,19 @@ sc_module_name *sc_kernel::get_top_of_module_name_stack() const
 	return module_name;
 }
 
-void sc_kernel::begin_object(sc_object *object)
+void sc_kernel::begin_module(sc_object *object)
 {
 	object_stack.push(object);
 }
 
-void sc_kernel::end_object()
+void sc_kernel::end_module()
 {
 	object_stack.pop();
 }
 
 sc_object *sc_kernel::get_current_object() const
 {
-	if(status > SC_START_OF_SIMULATION)
+	if(status >= SC_START_OF_SIMULATION)
 	{
 		return current_object;
 	}
@@ -196,23 +198,41 @@ sc_thread_process *sc_kernel::get_current_thread_process() const
 
 sc_process_handle sc_kernel::create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options)
 {
-	sc_thread_process *thread_process = new sc_thread_process(name, process_owner, process_owner_method_ptr, spawn_options);
+	bool clocked = false;
+	sc_thread_process *thread_process = new sc_thread_process(name, process_owner, process_owner_method_ptr, clocked, spawn_options);
 	
-	thread_process->start();
-
-	if((status > SC_START_OF_SIMULATION) && (!spawn_options || !spawn_options->get_flag_dont_initialize()))
+	if(status >= SC_START_OF_SIMULATION)
 	{
-		trigger(thread_process);
+		thread_process->start(); // start thread process in suspend state
+		
+		if(!spawn_options || !spawn_options->get_flag_dont_initialize())
+		{
+			trigger(thread_process);
+		}
 	}
 	
 	return sc_process_handle(thread_process);
+}
+
+sc_process_handle sc_kernel::create_cthread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options, sc_event_finder& edge_event_finder)
+{
+	sc_cthread_process *cthread_process = new sc_cthread_process(name, process_owner, process_owner_method_ptr, spawn_options);
+	
+	edge_event_finder.get_port().add_process_statically_sensitive_to_event_finder((sc_process *) cthread_process, edge_event_finder);
+	
+	if(status >= SC_START_OF_SIMULATION)
+	{
+		cthread_process->start();
+	}
+
+	return sc_process_handle(cthread_process);
 }
 
 sc_process_handle sc_kernel::create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options)
 {
 	sc_method_process *method_process = new sc_method_process(name, process_owner, process_owner_method_ptr, spawn_options);
 	
-	if((status > SC_START_OF_SIMULATION) && (!spawn_options || !spawn_options->get_flag_dont_initialize()))
+	if((status >= SC_START_OF_SIMULATION) && (!spawn_options || !spawn_options->get_flag_dont_initialize()))
 	{
 		trigger(method_process);
 	}
@@ -332,11 +352,14 @@ void sc_kernel::initialize()
 	{
 		sc_method_process *method_process = method_process_table[i];
 		
-		current_object = method_process;
-		current_writer = method_process;
-		current_method_process = method_process;
-		method_process->call_process_owner_method();
-		method_process->commit_next_trigger();
+		if(!method_process->dont_initialize())
+		{
+			current_object = method_process;
+			current_writer = method_process;
+			current_method_process = method_process;
+			method_process->call_process_owner_method();
+			method_process->commit_next_trigger();
+		}
 	}
 	current_object = 0;
 	current_writer = 0;
@@ -348,10 +371,13 @@ void sc_kernel::initialize()
 	{
 		sc_thread_process *thread_process = thread_process_table[i];
 		
-		current_object = thread_process;
-		current_writer = thread_process;
-		current_thread_process = thread_process;
-		thread_process->switch_to();
+		if(!thread_process->dont_initialize())
+		{
+			current_object = thread_process;
+			current_writer = thread_process;
+			current_thread_process = thread_process;
+			thread_process->switch_to();
+		}
 	}
 	current_object = 0;
 	current_writer = 0;
@@ -365,6 +391,7 @@ void sc_kernel::do_delta_steps(bool once)
 	do
 	{
 		// evaluation phase
+		unsigned int eval_flag = 0; // 0 = no evaluation, 1 = at least one evaluation
 		
 		// wake up SC_METHOD processes
 		if(runnable_method_processes.size())
@@ -377,10 +404,10 @@ void sc_kernel::do_delta_steps(bool once)
 				current_object = method_process;
 				current_writer = method_process;
 				current_method_process = method_process;
+				eval_flag = 1;
 				method_process->call_process_owner_method();
 				method_process->commit_next_trigger();
 				if(user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE)) return;
-				
 			}
 			while(runnable_method_processes.size());
 			current_object = 0;
@@ -399,6 +426,7 @@ void sc_kernel::do_delta_steps(bool once)
 				current_object = thread_process;
 				current_writer = thread_process;
 				current_thread_process = thread_process;
+				eval_flag = 1;
 				thread_process->switch_to();
 				if(user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE)) return;
 			}
@@ -408,7 +436,7 @@ void sc_kernel::do_delta_steps(bool once)
 			current_thread_process = 0;
 		}
 		
-		delta_count++;
+		delta_count += eval_flag;
 
 		// update phase
 		
@@ -803,49 +831,55 @@ sc_timed_kernel_event *sc_kernel::notify(sc_event *e, const sc_time& t)
 
 void sc_kernel::wait()
 {
-	if(!current_thread_process) throw std::runtime_error("calling next_trigger from something not an SC_THREAD/SC_CTHREAD process");
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
 	current_thread_process->wait();
+}
+
+void sc_kernel::wait(int n)
+{
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	current_thread_process->wait(n);
 }
 
 void sc_kernel::wait(const sc_event& e)
 {
-	if(!current_thread_process) throw std::runtime_error("calling next_trigger from something not an SC_THREAD/SC_CTHREAD process");
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
 	current_thread_process->wait(e);
 }
 
 void sc_kernel::wait(const sc_event_and_list& el)
 {
-	if(!current_thread_process) throw std::runtime_error("calling next_trigger from something not an SC_THREAD/SC_CTHREAD process");
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
 	current_thread_process->wait(el);
 }
 
 void sc_kernel::wait(const sc_event_or_list& el)
 {
-	if(!current_thread_process) throw std::runtime_error("calling next_trigger from something not an SC_THREAD/SC_CTHREAD process");
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
 	current_thread_process->wait(el);
 }
 
 void sc_kernel::wait(const sc_time& t)
 {
-	if(!current_thread_process) throw std::runtime_error("calling next_trigger from something not an SC_THREAD/SC_CTHREAD process");
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
 	current_thread_process->wait(t);
 }
 
 void sc_kernel::wait(const sc_time& t, const sc_event& e)
 {
-	if(!current_thread_process) throw std::runtime_error("calling next_trigger from something not an SC_THREAD/SC_CTHREAD process");
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
 	current_thread_process->wait(t, e);
 }
 
 void sc_kernel::wait(const sc_time& t, const sc_event_and_list& el)
 {
-	if(!current_thread_process) throw std::runtime_error("calling next_trigger from something not an SC_THREAD/SC_CTHREAD process");
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
 	current_thread_process->wait(t, el);
 }
 
 void sc_kernel::wait(const sc_time& t, const sc_event_or_list& el)
 {
-	if(!current_thread_process) throw std::runtime_error("calling next_trigger from something not an SC_THREAD/SC_CTHREAD process");
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
 	current_thread_process->wait(t, el);
 }
 
@@ -1160,7 +1194,7 @@ void sc_pause()
 	sc_kernel::get_kernel()->pause();
 }
 
-void sc_set_stop_mode( sc_stop_mode mode )
+void sc_set_stop_mode(sc_stop_mode mode)
 {
 	sc_kernel::get_kernel()->set_stop_mode(mode);
 }

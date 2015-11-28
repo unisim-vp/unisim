@@ -27,6 +27,7 @@ ieee1666/kernel/time.h \
 ieee1666/kernel/object.h \
 ieee1666/kernel/process.h \
 ieee1666/kernel/thread_process.h \
+ieee1666/kernel/cthread_process.h \
 ieee1666/kernel/method_process.h \
 ieee1666/kernel/kernel_event.h \
 ieee1666/kernel/allocator.h \
@@ -93,6 +94,7 @@ ieee1666/kernel/sensitive.cc \
 ieee1666/kernel/time.cc \
 ieee1666/kernel/process.cc \
 ieee1666/kernel/thread_process.cc \
+ieee1666/kernel/cthread_process.cc \
 ieee1666/kernel/method_process.cc \
 ieee1666/kernel/kernel_event.cc \
 ieee1666/kernel/spawn.cc \

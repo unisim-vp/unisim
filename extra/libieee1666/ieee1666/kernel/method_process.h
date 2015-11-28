@@ -46,7 +46,7 @@ class sc_method_process : public sc_process
 {
 public:
 	
-	sc_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options = 0);
+	sc_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options);
 	virtual ~sc_method_process();
 
 	void trigger_dynamically(const sc_event *e);
@@ -70,6 +70,8 @@ public:
 	virtual void enable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 	virtual void kill(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
 	virtual void reset(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	
+	virtual const char *kind() const;
 private:
 	friend class sc_kernel;
 	

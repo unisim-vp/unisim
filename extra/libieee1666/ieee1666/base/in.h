@@ -71,7 +71,7 @@ private:
 	sc_in<T>& operator= ( const sc_in<T>& );
 	
 	////////////////////////////////////////////
-	sc_event_finder_t<sc_in<T> > value_changed_event_finder;
+	sc_event_finder_t<sc_signal_in_if<T> > *value_changed_event_finder;
 };
 
 template <class T>
@@ -108,6 +108,11 @@ private:
 	// Disabled
 	sc_in( const sc_in<bool>& );
 	sc_in<bool>& operator= ( const sc_in<bool>& );
+
+	////////////////////////////////////////////
+	sc_event_finder_t<sc_signal_in_if<bool> > *value_changed_event_finder;
+	sc_event_finder_t<sc_signal_in_if<bool> > *posedge_event_finder;
+	sc_event_finder_t<sc_signal_in_if<bool> > *negedge_event_finder;
 };
 
 template <>
@@ -183,25 +188,29 @@ inline void sc_trace<bool>( sc_trace_file*, const sc_in<bool>&, const std::strin
 template <class T>
 sc_in<T>::sc_in()
 	: sc_port<sc_signal_in_if<T>,1>()
-	, value_changed_event_finder(this, value_changed_event)
+	, value_changed_event_finder(0)
 {
+	value_changed_event_finder = new sc_event_finder_t<sc_signal_in_if<T> >(*this, &sc_in<T>::value_changed_event);
 }
 
 template <class T>
 sc_in<T>::sc_in(const char* _name)
 	: sc_port<sc_signal_in_if<T>,1>(_name)
+	, value_changed_event_finder(0)
 {
+	value_changed_event_finder = new sc_event_finder_t<sc_signal_in_if<T> >(*this, &sc_in<T>::value_changed_event);
 }
 
 template <class T>
 sc_in<T>::~sc_in()
 {
+	delete value_changed_event_finder;
 }
 
 template <class T>
 void sc_in<T>::bind(const sc_signal_in_if<T>& _if)
 {
-	sc_port_base::bind(_if);
+	sc_port_base::bind(const_cast<sc_signal_in_if<T> *>(&_if));
 }
 
 template <class T>
@@ -213,7 +222,7 @@ void sc_in<T>::operator() (const sc_signal_in_if<T>& _if)
 template <class T>
 void sc_in<T>::bind(sc_port<sc_signal_in_if<T>, 1>& port)
 {
-	sc_port_base::bind(port);
+	sc_port_base::bind(&port);
 }
 
 template <class T>
@@ -225,7 +234,7 @@ void sc_in<T>::operator() (sc_port<sc_signal_in_if<T>, 1>& port)
 template <class T>
 void sc_in<T>::bind(sc_port<sc_signal_inout_if<T>, 1>& port)
 {
-	sc_port_base::bind(port);
+	sc_port_base::bind(&port);
 }
 
 template <class T>
@@ -272,7 +281,7 @@ bool sc_in<T>::event() const
 template <class T>
 sc_event_finder& sc_in<T>::value_changed() const
 {
-	return value_changed_event_finder;
+	return *value_changed_event_finder;
 }
 
 template <class T>

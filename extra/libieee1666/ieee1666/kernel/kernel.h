@@ -58,15 +58,16 @@ public:
 	
 	static sc_kernel *get_kernel();
 	
-	void begin_object(sc_object *object);
-	void end_object();
+	void begin_module(sc_object *object);
+	void end_module();
 	sc_object *get_current_object() const;
 	sc_object *get_current_writer() const;
 	sc_method_process *get_current_method_process() const;
 	sc_thread_process *get_current_thread_process() const;
 
-	sc_process_handle create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options * = 0);
-	sc_process_handle create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options * = 0);
+	sc_process_handle create_thread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *);
+	sc_process_handle create_cthread_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *, sc_event_finder& edge_event_finder);
+	sc_process_handle create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *);
 	
 	void initialize();
 	void do_delta_steps(bool once);
@@ -99,6 +100,7 @@ public:
 	
 	// wait
 	void wait();
+	void wait(int n);
 	void wait(const sc_event& e);
 	void wait(const sc_event_and_list& el);
 	void wait(const sc_event_or_list& el);

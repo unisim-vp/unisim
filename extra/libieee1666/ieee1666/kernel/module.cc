@@ -193,8 +193,9 @@ void sc_module::wait()
 	kernel->wait();
 }
 
-void sc_module::wait( int )
+void sc_module::wait(int n)
 {
+	kernel->wait(n);
 }
 
 void sc_module::wait(const sc_event& e)
@@ -285,13 +286,14 @@ sc_module& sc_module::operator = ( const sc_module& )
 void sc_module::end_module()
 {
 	sc_kernel *kernel = sc_kernel::get_kernel();
-	kernel->end_object();
+	kernel->end_module();
 }
 
 void sc_module::init()
 {
 	sc_module_name *non_const_module_name = kernel->get_top_of_module_name_stack();
 	non_const_module_name->set_module(this);
+	kernel->begin_module(this);
 	kernel->add_module(this);
 }
 

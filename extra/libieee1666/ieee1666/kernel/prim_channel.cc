@@ -47,11 +47,14 @@ const char* sc_prim_channel::kind() const
 sc_prim_channel::sc_prim_channel()
 	: kernel(sc_kernel::get_kernel())
 {
+	kernel->add_prim_channel(this);
 }
 
-sc_prim_channel::sc_prim_channel( const char* )
-	: kernel(sc_kernel::get_kernel())
+sc_prim_channel::sc_prim_channel(const char *_name)
+	: sc_object(_name)
+	, kernel(sc_kernel::get_kernel())
 {
+	kernel->add_prim_channel(this);
 }
 
 sc_prim_channel::~sc_prim_channel()
@@ -73,102 +76,135 @@ void sc_prim_channel::update()
 
 void sc_prim_channel::next_trigger()
 {
+	kernel->next_trigger();
 }
 
-void sc_prim_channel::next_trigger( const sc_event& )
+void sc_prim_channel::next_trigger(const sc_event& e)
 {
+	kernel->next_trigger(e);
 }
 
-void sc_prim_channel::next_trigger( const sc_event_or_list & )
+void sc_prim_channel::next_trigger(const sc_event_or_list& el)
 {
+	kernel->next_trigger(el);
 }
 
-void sc_prim_channel::next_trigger( const sc_event_and_list & )
+void sc_prim_channel::next_trigger(const sc_event_and_list& el)
 {
+	kernel->next_trigger(el);
 }
 
-void sc_prim_channel::next_trigger( const sc_time& )
+void sc_prim_channel::next_trigger(const sc_time& t)
 {
+	kernel->next_trigger(t);
 }
 
-void sc_prim_channel::next_trigger( double , sc_time_unit )
+void sc_prim_channel::next_trigger(double d, sc_time_unit tu)
 {
+	sc_time t = sc_time(d, tu);
+	kernel->next_trigger(t);
 }
 
-void sc_prim_channel::next_trigger( const sc_time& , const sc_event& )
+void sc_prim_channel::next_trigger(const sc_time& t, const sc_event& e)
 {
+	kernel->next_trigger(t, e);
 }
 
-void sc_prim_channel::next_trigger( double , sc_time_unit , const sc_event& )
+void sc_prim_channel::next_trigger(double d, sc_time_unit tu, const sc_event& e)
 {
+	sc_time t = sc_time(d, tu);
+	kernel->next_trigger(t, e);
 }
 
-void sc_prim_channel::next_trigger( const sc_time& , const sc_event_or_list & )
+void sc_prim_channel::next_trigger(const sc_time& t, const sc_event_or_list& el)
 {
+	kernel->next_trigger(t, el);
 }
 
-void sc_prim_channel::next_trigger( double , sc_time_unit , const sc_event_or_list & )
+void sc_prim_channel::next_trigger(double d, sc_time_unit tu, const sc_event_or_list& el)
 {
+	sc_time t = sc_time(d, tu);
+	kernel->next_trigger(t, el);
 }
 
-void sc_prim_channel::next_trigger( const sc_time& , const sc_event_and_list & )
+void sc_prim_channel::next_trigger(const sc_time& t, const sc_event_and_list& el)
 {
+	kernel->next_trigger(t, el);
 }
 
-void sc_prim_channel::next_trigger( double , sc_time_unit , const sc_event_and_list & )
+void sc_prim_channel::next_trigger(double d, sc_time_unit tu, const sc_event_and_list& el)
 {
+	sc_time t = sc_time(d, tu);
+	kernel->next_trigger(t, el);
 }
 
 void sc_prim_channel::wait()
 {
+	kernel->wait();
 }
 
-void sc_prim_channel::wait( int )
+void sc_prim_channel::wait(int n)
 {
+	kernel->wait(n);
 }
 
-void sc_prim_channel::wait( const sc_event& )
+void sc_prim_channel::wait(const sc_event& e)
 {
+	kernel->wait(e);
 }
 
-void sc_prim_channel::wait( const sc_event_or_list & )
+void sc_prim_channel::wait(const sc_event_or_list& el)
 {
+	kernel->wait(el);
 }
 
-void sc_prim_channel::wait( const sc_event_and_list & )
+void sc_prim_channel::wait(const sc_event_and_list& el)
 {
+	kernel->wait(el);
 }
 
-void sc_prim_channel::wait( const sc_time& )
+void sc_prim_channel::wait(const sc_time& t)
 {
+	kernel->wait(t);
 }
 
-void sc_prim_channel::wait( double , sc_time_unit )
+void sc_prim_channel::wait(double d, sc_time_unit tu)
 {
+	sc_time t = sc_time(d, tu);
+	kernel->wait(t);
 }
 
-void sc_prim_channel::wait( const sc_time& , const sc_event& )
+void sc_prim_channel::wait(const sc_time& t, const sc_event& e)
 {
+	kernel->wait(t, e);
 }
 
-void sc_prim_channel::wait( double , sc_time_unit , const sc_event& )
+void sc_prim_channel::wait(double d, sc_time_unit tu, const sc_event& e)
 {
+	sc_time t = sc_time(d, tu);
+	kernel->wait(t, e);
 }
 
-void sc_prim_channel::wait( const sc_time& , const sc_event_or_list & )
+void sc_prim_channel::wait(const sc_time& t, const sc_event_or_list& el)
 {
+	kernel->wait(t, el);
 }
 
-void sc_prim_channel::wait( double , sc_time_unit , const sc_event_or_list & )
+void sc_prim_channel::wait(double d, sc_time_unit tu, const sc_event_or_list& el)
 {
+	sc_time t = sc_time(d, tu);
+	kernel->wait(t, el);
 }
 
-void sc_prim_channel::wait( const sc_time& , const sc_event_and_list & )
+void sc_prim_channel::wait(const sc_time& t, const sc_event_and_list& el)
 {
+	kernel->wait(t, el);
 }
 
-void sc_prim_channel::wait( double , sc_time_unit , const sc_event_and_list & )
+void sc_prim_channel::wait(double d, sc_time_unit tu, const sc_event_and_list& el)
 {
+	sc_time t = sc_time(d, tu);
+	kernel->wait(t, el);
 }
 
 void sc_prim_channel::before_end_of_elaboration()
@@ -187,10 +223,12 @@ void sc_prim_channel::end_of_simulation()
 {
 }
 
+// Disabled
 sc_prim_channel::sc_prim_channel( const sc_prim_channel& )
 {
 }
 
+// Disabled
 sc_prim_channel& sc_prim_channel::operator= ( const sc_prim_channel& )
 {
 }

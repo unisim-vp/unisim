@@ -244,14 +244,17 @@ sc_signal<T, WRITER_POLICY>::~sc_signal()
 template <class T, sc_writer_policy WRITER_POLICY>
 void sc_signal<T, WRITER_POLICY>::register_port(sc_port_base& port, const char *if_typename)
 {
-	if(std::string(typeid(sc_signal_inout_if<T>).name()).compare(if_typename) != 0)
+	if(std::string(typeid(sc_signal_inout_if<T>).name()).compare(if_typename) == 0)
 	{
-		throw std::runtime_error("sc_signal is not bound to sc_signal_inout_if<T>");
+		// output port
+		if((WRITER_POLICY == SC_ONE_WRITER) && (registered_port != &port))
+		{
+			throw std::runtime_error("sc_signal can't be bound to more than one output port");
+		}
 	}
-	
-	if((WRITER_POLICY == SC_ONE_WRITER) && (registered_port != &port))
+	else if(std::string(typeid(sc_signal_in_if<T>).name()).compare(if_typename) != 0)
 	{
-		throw std::runtime_error("sc_signal can't be bound to more than one port");
+		throw std::runtime_error("sc_signal is not bound to sc_signal_in_if<T> nor sc_signal_inout_if<T>");
 	}
 	
 	registered_port = &port;
@@ -433,14 +436,17 @@ sc_signal<bool, WRITER_POLICY>::~sc_signal()
 template <sc_writer_policy WRITER_POLICY>
 void sc_signal<bool, WRITER_POLICY>::register_port(sc_port_base& port, const char *if_typename)
 {
-	if(std::string(typeid(sc_signal_inout_if<bool>).name()).compare(if_typename) != 0)
+	if(std::string(typeid(sc_signal_inout_if<bool>).name()).compare(if_typename) == 0)
 	{
-		throw std::runtime_error("sc_signal is not bound to sc_signal_inout_if<bool>");
+		// output port
+		if((WRITER_POLICY == SC_ONE_WRITER) && (registered_port != &port))
+		{
+			throw std::runtime_error("sc_signal can't be bound to more than one output port");
+		}
 	}
-	
-	if((WRITER_POLICY == SC_ONE_WRITER) && (registered_port != &port))
+	else if(std::string(typeid(sc_signal_in_if<bool>).name()).compare(if_typename) != 0)
 	{
-		throw std::runtime_error("sc_signal can't be bound to more than one port");
+		throw std::runtime_error("sc_signal is not bound to sc_signal_in_if<bool> nor sc_signal_inout_if<bool>");
 	}
 	
 	registered_port = &port;

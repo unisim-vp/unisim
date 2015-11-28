@@ -159,13 +159,13 @@ void sc_clock::before_end_of_elaboration()
 	sc_spawn_options posedge_process_spawn_options;
 	posedge_process_spawn_options.spawn_method();
 	posedge_process_spawn_options.set_sensitivity(&gen_posedge_event);
-	if(!clock_posedge_first) posedge_process_spawn_options.dont_initialize();
+	posedge_process_spawn_options.dont_initialize();
 	sc_spawn(sc_bind(&sc_clock::posedge_process, this), (std::string(name()) + "_posedge_process").c_str(), &posedge_process_spawn_options);
 	
 	sc_spawn_options negedge_process_spawn_options;
 	negedge_process_spawn_options.spawn_method();
 	negedge_process_spawn_options.set_sensitivity(&gen_negedge_event);
-	if(clock_posedge_first) negedge_process_spawn_options.dont_initialize();
+	negedge_process_spawn_options.dont_initialize();
 	sc_spawn(sc_bind(&sc_clock::negedge_process, this), (std::string(name()) + "_negedge_process").c_str(), &negedge_process_spawn_options);
 }
 
@@ -200,14 +200,14 @@ void sc_clock::posedge_process()
 {
 	new_value() = true;
 	request_update();
-	gen_posedge_event.notify(clock_negedge_time);
+	gen_negedge_event.notify(clock_negedge_time);
 }
 
 void sc_clock::negedge_process()
 {
-	new_value() = true;
+	new_value() = false;
 	request_update();
-	gen_negedge_event.notify(clock_posedge_time);
+	gen_posedge_event.notify(clock_posedge_time);
 }
 
 } // end of namespace sc_core

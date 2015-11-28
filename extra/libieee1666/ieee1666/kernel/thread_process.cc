@@ -54,21 +54,21 @@ sc_thread_process_helper::~sc_thread_process_helper()
 	thread_process->thread_process_helper = 0;
 }
 
-sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, const sc_spawn_options *spawn_options)
-	: sc_process(_name, _process_owner, _process_owner_method_ptr, SC_THREAD_PROC_)
+sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, bool clocked, const sc_spawn_options *spawn_options)
+	: sc_process(_name, _process_owner, _process_owner_method_ptr, clocked ? SC_CTHREAD_PROC_ : SC_THREAD_PROC_, spawn_options)
 	, coro(0)
 	, thread_process_helper(0)
 	, stack_size(spawn_options ? spawn_options->get_stack_size() : 0)
 	, thread_process_terminated(false)
 	, thread_process_terminated_event(IEEE1666_KERNEL_PREFIX "_terminated_event")
 	, wait_type(WAIT_DEFAULT)
+	, wait_count(0)
 	, wait_event(0)
 	, wait_event_list(0)
 	, wait_and_event_list_remaining_count(0)
 	, wait_time_out_event(IEEE1666_KERNEL_PREFIX "_wait_time_out_event")
 {
 	kernel->add_thread_process(this);
-	kernel->end_object();
 }
 
 sc_thread_process::~sc_thread_process()
@@ -113,7 +113,13 @@ void sc_thread_process::trigger_statically()
 {
 	if(wait_type != WAIT_DEFAULT)
 	{
-		// call to wait(...) with one or more arguments overrides static sensitivity
+		// call to wait(...) with one or more non-integer arguments overrides static sensitivity
+		return;
+	}
+	
+	if(wait_count > 0)
+	{
+		wait_count--;
 		return;
 	}
 	
@@ -236,6 +242,15 @@ void sc_thread_process::trigger_dynamically(const sc_event *triggered_event)
 void sc_thread_process::wait()
 {
 	wait_type = WAIT_DEFAULT;
+	yield();
+}
+
+void sc_thread_process::wait(int n)
+{
+	if(n <= 0) throw std::runtime_error("wait argument shall be greater than zero");
+	
+	wait_type = WAIT_DEFAULT;
+	wait_count = n - 1;
 	yield();
 }
 
@@ -377,6 +392,11 @@ void sc_thread_process::kill(sc_descendant_inclusion_info include_descendants)
 
 void sc_thread_process::reset(sc_descendant_inclusion_info include_descendants)
 {
+}
+
+const char *sc_thread_process::kind() const
+{
+	return "sc_thread_process";
 }
 
 } // end of namespace sc_core

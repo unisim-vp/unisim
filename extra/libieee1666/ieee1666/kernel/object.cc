@@ -194,7 +194,6 @@ sc_object::sc_object(const sc_object& object)
 void sc_object::init()
 {
 	parent_object = kernel->get_current_object();
-	kernel->begin_object(this);
 
 	if(parent_object)
 		parent_object->add_child_object(this);

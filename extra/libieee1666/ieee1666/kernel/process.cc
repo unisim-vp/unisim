@@ -33,7 +33,12 @@
  */
 
 #include <ieee1666/kernel/process.h>
+#include <ieee1666/kernel/spawn.h>
 #include <ieee1666/kernel/kernel.h>
+#include <ieee1666/kernel/event.h>
+#include <ieee1666/kernel/interface.h>
+#include <ieee1666/kernel/port.h>
+#include <ieee1666/kernel/event_finder.h>
 
 namespace sc_core {
 
@@ -51,18 +56,20 @@ bool sc_process_owner::is_automatic() const
 	return automatic;
 }
 
-sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, sc_curr_proc_kind _process_kind)
+sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, sc_curr_proc_kind _process_kind, const sc_spawn_options *spawn_options)
 	: sc_object(_name)
 	, process_owner(_process_owner)
 	, process_owner_method_ptr(_process_owner_method_ptr)
 	, process_kind(_process_kind)
 	, flag_dynamic(sc_kernel::get_kernel()->get_status() > SC_END_OF_ELABORATION)
+	, flag_dont_initialize((process_kind == SC_CTHREAD_PROC_) ? true : (spawn_options ? spawn_options->get_flag_dont_initialize() : false))
 	, automatic_process_owner(process_owner->is_automatic())
 	, ref_count(1)
 	, enabled(true)
 	, suspended(false)
 	, runnable_on_resuming(false)
 {
+	add_static_sensitivity(spawn_options);
 }
 
 sc_process::~sc_process()
@@ -82,6 +89,16 @@ sc_curr_proc_kind sc_process::proc_kind() const
 bool sc_process::dynamic() const
 {
 	return flag_dynamic;
+}
+
+bool sc_process::dont_initialize() const
+{
+	return flag_dont_initialize;
+}
+
+const char *sc_process::kind() const
+{
+	return "sc_process";
 }
 
 void sc_process::call_process_owner_method()
@@ -120,6 +137,67 @@ void sc_process::add_static_sensitivity(const sc_event& event)
 	}
 }
 
+void sc_process::add_static_sensitivity(const sc_interface& itf)
+{
+	const sc_event& event = itf.default_event();
+	add_static_sensitivity(event);
+}
+
+void sc_process::add_static_sensitivity(const sc_port_base& port)
+{
+	port.add_process_statically_sensitive_to_port(this);
+}
+
+void sc_process::add_static_sensitivity(const sc_export_base& exp)
+{
+	throw std::runtime_error("unimplemented function: sc_process sensitive to sc_export");
+}
+
+void sc_process::add_static_sensitivity(const sc_event_finder& event_finder)
+{
+	event_finder.get_port().add_process_statically_sensitive_to_event_finder(this, event_finder);
+}
+
+void sc_process::add_static_sensitivity(const sc_spawn_options *spawn_options)
+{
+	unsigned int i;
+	
+	const std::vector<const sc_event *>& sensitive_events = spawn_options->get_sensitive_events();
+	unsigned int num_sensitive_events = sensitive_events.size();
+	for(i = 0; i <num_sensitive_events; i++)
+	{
+		add_static_sensitivity(*sensitive_events[i]);
+	}
+
+	const std::vector<const sc_port_base *>& sensitive_ports = spawn_options->get_sensitive_ports();
+	unsigned int num_sensitive_ports = sensitive_ports.size();
+	for(i = 0; i <num_sensitive_ports; i++)
+	{
+		add_static_sensitivity(*sensitive_ports[i]);
+	}
+
+	const std::vector<const sc_export_base *>& sensitive_exports = spawn_options->get_sensitive_exports();
+	unsigned int num_sensitive_exports = sensitive_exports.size();
+	for(i = 0; i <num_sensitive_exports; i++)
+	{
+		add_static_sensitivity(*sensitive_exports[i]);
+	}
+
+	const std::vector<const sc_interface *>& sensitive_interfaces = spawn_options->get_sensitive_interfaces();
+	unsigned int num_sensitive_interfaces = sensitive_interfaces.size();
+	for(i = 0; i <num_sensitive_interfaces; i++)
+	{
+		add_static_sensitivity(*sensitive_interfaces[i]);
+	}
+
+	const std::vector<const sc_event_finder *>& sensitive_event_finders = spawn_options->get_sensitive_event_finders();
+	unsigned int num_sensitive_event_finders = sensitive_event_finders.size();
+	for(i = 0; i <num_sensitive_event_finders; i++)
+	{
+		add_static_sensitivity(*sensitive_event_finders[i]);
+	}
+}
+
 void sc_process::clear_static_sensitivity()
 {
 	unsigned int i;
@@ -145,5 +223,20 @@ void sc_process::clear_static_sensitivity()
 	
 	static_sensitivity.clear();
 }
+/*
+void sc_process::process_spawn_options(const spawn_options *spawn_options)
+{
+	if(spawn_options)
+	{
+		const std::vector<const sc_event *>& sensitive_events = get_sensitive_events();
+		
+		
+		
+		const std::vector<const sc_port_base *>& sensitive_ports = get_sensitive_ports();
+		const std::vector<const sc_export_base *>& sensitive_exports = get_sensitive_exports();
+		const std::vector<const sc_interface *>& sensitive_interfaces = get_sensitive_interfaces();
+		const std::vector<const sc_event_finder *>& sensitive_event_finders = get_sensitive_event_finders();
+	}
+}*/
 
 } // end of namespace sc_core

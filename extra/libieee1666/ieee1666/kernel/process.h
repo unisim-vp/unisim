@@ -54,13 +54,15 @@ private:
 class sc_process : public sc_object
 {
 public:
-	sc_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, sc_curr_proc_kind process_kind);
+	sc_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, sc_curr_proc_kind process_kind, const sc_spawn_options *spawn_options);
 	virtual ~sc_process();
 	
 	void call_process_owner_method();
 	
 	sc_curr_proc_kind proc_kind() const;
 	bool dynamic() const;
+	bool dont_initialize() const;
+	virtual const char *kind() const;
 	
 	virtual bool terminated() const = 0;
 	virtual const sc_event& terminated_event() const = 0;
@@ -74,17 +76,24 @@ public:
 	void release();
 	
 	void add_static_sensitivity(const sc_event& e);
-	void clear_static_sensitivity();
+	void add_static_sensitivity(const sc_interface& itf);
+	void add_static_sensitivity(const sc_port_base& port);
+	void add_static_sensitivity(const sc_export_base& exp);
+	void add_static_sensitivity(const sc_event_finder& event_finder);
 private:
 	sc_process_owner *process_owner;
 	sc_process_owner_method_ptr process_owner_method_ptr;
 	sc_curr_proc_kind process_kind;
 	bool flag_dynamic;
+	bool flag_dont_initialize;
 	bool automatic_process_owner;
 
 	unsigned int ref_count;
 
 	std::vector<const sc_event *> static_sensitivity;
+	
+	void add_static_sensitivity(const sc_spawn_options *spawn_options);
+	void clear_static_sensitivity();
 protected:
 	bool enabled;
 	bool suspended;

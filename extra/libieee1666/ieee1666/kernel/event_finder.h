@@ -47,8 +47,9 @@ class sc_event_finder // implementation-defined
 public:
 	
 protected:
-	friend class sc_sensitive;
+	friend class sc_process;
 	friend class sc_port_base;
+	friend class sc_kernel;
 	
 	sc_event_finder(const sc_port_base& _port);
 
@@ -73,7 +74,7 @@ private:
 //////////////////////////////////// sc_event_finder_t<> /////////////////////////////////////////////
 
 template <class IF>
-sc_event_finder_t<IF>::sc_event_finder_t( const sc_port_base& _port, const sc_event& (IF::*_event_method) () const )
+sc_event_finder_t<IF>::sc_event_finder_t(const sc_port_base& _port, const sc_event& (IF::*_event_method) () const)
 	: sc_event_finder(_port)
 	, event_method(_event_method)
 {
@@ -82,10 +83,10 @@ sc_event_finder_t<IF>::sc_event_finder_t( const sc_port_base& _port, const sc_ev
 template <class IF>
 const sc_event& sc_event_finder_t<IF>::find_event(sc_interface *_if) const
 {
-	IF *interf = _if ? (IF *) _if : (IF *) get_port().get_interface();
+	const IF *interf = _if ? dynamic_cast<const IF *>(_if) : dynamic_cast<const IF *>(get_port().get_interface());
 	if(!interf) throw std::runtime_error("port is unbound");
 	
-	return (interf->*event_method)();
+	return (const_cast<IF *>(interf)->*event_method)();
 }
 
 } // end of namespace sc_core

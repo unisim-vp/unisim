@@ -69,10 +69,10 @@ struct sc_process_static_sensitivity
 {
 	static_sensitivity_type_t type;
 	sc_process *process;              
-	sc_event_finder *event_finder;    // only used if type == PROCESS_STATICALLY_SENSITIVE_TO_EVENT_FINDER
+	const sc_event_finder *event_finder;    // only used if type == PROCESS_STATICALLY_SENSITIVE_TO_EVENT_FINDER
 	
 	sc_process_static_sensitivity(sc_process *process);
-	sc_process_static_sensitivity(sc_process *process, sc_event_finder *event_finder);
+	sc_process_static_sensitivity(sc_process *process, const sc_event_finder *event_finder);
 };
 
 class sc_port_base : public sc_object
@@ -84,20 +84,23 @@ protected:
 	virtual void end_of_simulation();
 
 	//////////////////////////////////////////
-	virtual sc_interface* get_interface();
-	virtual const sc_interface* get_interface() const;
+public: // this is public for event_finder_t<T>::find_event
+	virtual sc_interface *get_interface() const = 0;
+	virtual sc_interface *get_interface(int if_idx) const = 0;
 protected:
 	sc_port_base(const char *name, int N, sc_port_policy P);
 	sc_port_base(int N, sc_port_policy P);
 	
-	void bind(sc_interface *_if);
-	void bind(sc_port_base *port);
-	virtual const char *get_interface_typename() = 0;
+	void bind(sc_interface& _if);
+	void bind(sc_port_base& port);
+	virtual const char *get_interface_typename() const = 0;
+	virtual void add_interface(sc_interface *) = 0;
+	virtual int get_size() = 0;
 private:
 	friend class sc_kernel;
-	friend class sc_sensitive;
+	friend class sc_process;
 
-	std::vector<sc_interface *> interfaces;                     // interfaces as of simulation time
+//	std::vector<sc_interface *> interfaces;                     // interfaces as of simulation time
 
 	int max_bindings;
 	sc_port_policy port_policy;
@@ -107,7 +110,7 @@ private:
 	bool elaboration_finalized;
 	
 	void add_process_statically_sensitive_to_port(sc_process *process) const;
-	void add_process_statically_sensitive_to_event_finder(sc_process *process, sc_event_finder& event_finder) const;
+	void add_process_statically_sensitive_to_event_finder(sc_process *process, const sc_event_finder& event_finder) const;
 	
 	void finalize_elaboration();
 };
@@ -116,29 +119,36 @@ template <class IF>
 class sc_port_b : public sc_port_base
 {
 public:
-	void operator() ( IF& );
-	void operator() ( sc_port_b<IF>& );
-	virtual void bind( IF& );
-	virtual void bind( sc_port_b<IF>& );
+	void operator() (IF&);
+	void operator() (sc_port_b<IF>&);
+	virtual void bind(IF&);
+	virtual void bind(sc_port_b<IF>&);
 	int size() const;
-	IF* operator-> ();
-	const IF* operator-> () const;
-	IF* operator[] ( int );
-	const IF* operator[] ( int ) const;
+	IF *operator -> ();
+	const IF *operator -> () const;
+	IF *operator [] (int);
+	const IF *operator [] (int) const;
+
 protected:
-	explicit sc_port_b( int , sc_port_policy );
-	sc_port_b( const char* , int , sc_port_policy );
+	explicit sc_port_b(int, sc_port_policy);
+	sc_port_b(const char *, int, sc_port_policy);
 	virtual ~sc_port_b();
 private:
 	// Disabled
 	sc_port_b();
-	sc_port_b( const sc_port_b<IF>& );
-	sc_port_b<IF>& operator = ( const sc_port_b<IF>& );
+	sc_port_b(const sc_port_b<IF>&);
+	sc_port_b<IF>& operator = (const sc_port_b<IF>&);
 	
 	//////////////////////////////////////////////////////
 	std::vector<IF *> interfaces;
 
-	virtual const char *get_interface_typename();
+	virtual const char *get_interface_typename() const;
+protected:
+	virtual void add_interface(sc_interface *);
+	virtual int get_size();
+public:
+	virtual sc_interface *get_interface() const;
+	virtual sc_interface *get_interface(int if_idx) const;
 };
 
 template <class IF, int N = 1, sc_port_policy P = SC_ONE_OR_MORE_BOUND>
@@ -146,13 +156,13 @@ class sc_port : public sc_port_b<IF>
 {
 public:
 	sc_port();
-	explicit sc_port( const char* );
+	explicit sc_port(const char *);
 	virtual ~sc_port();
-	virtual const char* kind() const;
+	virtual const char *kind() const;
 private:
 	// Disabled
-	sc_port( const sc_port<IF,N,P>& );
-	sc_port<IF,N,P>& operator= ( const sc_port<IF,N,P>& );
+	sc_port(const sc_port<IF,N,P>&);
+	sc_port<IF,N,P>& operator = (const sc_port<IF,N,P>&);
 };
 
 //////////////////////////////////// sc_port_b<> /////////////////////////////////////////////
@@ -172,13 +182,13 @@ void sc_port_b<IF>::operator () (sc_port_b<IF>& port)
 template <class IF>
 void sc_port_b<IF>::bind(IF& itf)
 {
-	sc_port_base::bind((sc_interface *) &itf);
+	sc_port_base::bind(itf);
 }
 
 template <class IF>
 void sc_port_b<IF>::bind(sc_port_b<IF>& port)
 {
-	sc_port_base::bind((sc_port_base *) &port);
+	sc_port_base::bind(port);
 }
 
 template <class IF>
@@ -212,14 +222,28 @@ const IF* sc_port_b<IF>::operator[] (int if_idx) const
 }
 
 template <class IF>
+sc_interface *sc_port_b<IF>::get_interface() const
+{
+	return interfaces[0];
+}
+
+template <class IF>
+sc_interface *sc_port_b<IF>::get_interface(int if_idx) const
+{
+	return interfaces[if_idx];
+}
+
+template <class IF>
 sc_port_b<IF>::sc_port_b(int N, sc_port_policy P)
 	: sc_port_base(N, P)
+	, interfaces()
 {
 }
 
 template <class IF>
 sc_port_b<IF>::sc_port_b(const char *_name, int N, sc_port_policy P)
 	: sc_port_base(_name, N, P)
+	, interfaces()
 {
 }
 
@@ -247,9 +271,21 @@ sc_port_b<IF>& sc_port_b<IF>::operator = ( const sc_port_b<IF>& )
 }
 
 template <class IF>
-const char *sc_port_b<IF>::get_interface_typename()
+const char *sc_port_b<IF>::get_interface_typename() const
 {
 	return typeid(IF).name();
+}
+
+template <class IF>
+void sc_port_b<IF>::add_interface(sc_interface *_if)
+{
+	interfaces.push_back(dynamic_cast<IF *>(_if));
+}
+
+template <class IF>
+int sc_port_b<IF>::get_size()
+{
+	return interfaces.size();
 }
 
 //////////////////////////////////// sc_port<> /////////////////////////////////////////////

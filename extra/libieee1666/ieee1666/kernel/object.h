@@ -47,19 +47,19 @@ namespace sc_core {
 class sc_object
 {
 public:
-	const char* name() const;
-	const char* basename() const;
-	virtual const char* kind() const;
+	const char *name() const;
+	const char *basename() const;
+	virtual const char *kind() const;
 	
-	virtual void print( std::ostream& = std::cout ) const;
-	virtual void dump( std::ostream& = std::cout ) const;
-	virtual const std::vector<sc_object*>& get_child_objects() const;
-	virtual const std::vector<sc_event*>& get_child_events() const;
+	virtual void print(std::ostream& = std::cout) const;
+	virtual void dump(std::ostream& = std::cout) const;
+	virtual const std::vector<sc_object *>& get_child_objects() const;
+	virtual const std::vector<sc_event *>& get_child_events() const;
 	sc_object* get_parent_object() const;
-	bool add_attribute( sc_attr_base& );
-	sc_attr_base* get_attribute( const std::string& );
-	const sc_attr_base* get_attribute( const std::string& ) const;
-	sc_attr_base* remove_attribute( const std::string& );
+	bool add_attribute(sc_attr_base&);
+	sc_attr_base* get_attribute(const std::string&);
+	const sc_attr_base* get_attribute(const std::string&) const;
+	sc_attr_base* remove_attribute(const std::string&);
 	void remove_all_attributes();
 	int num_attributes() const;
 	sc_attr_cltn& attr_cltn();

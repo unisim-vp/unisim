@@ -101,7 +101,7 @@ private:
 	std::vector<const sc_port_base *> sensitive_ports;
 	std::vector<const sc_export_base *> sensitive_exports;
 	std::vector<const sc_interface *> sensitive_interfaces;
-	std::vector<const sc_event_finder *> sensitive_event_finders;	
+	std::vector<const sc_event_finder *> sensitive_event_finders;
 };
 
 template <typename T>

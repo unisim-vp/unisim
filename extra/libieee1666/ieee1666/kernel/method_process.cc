@@ -38,7 +38,7 @@
 namespace sc_core {
 
 sc_method_process::sc_method_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, const sc_spawn_options *spawn_options)
-	: sc_process(_name, _process_owner, _process_owner_method_ptr, SC_METHOD_PROC_)
+	: sc_process(_name, _process_owner, _process_owner_method_ptr, SC_METHOD_PROC_, spawn_options)
 	, method_process_terminated(false)
 	, method_process_terminated_event(IEEE1666_KERNEL_PREFIX "_terminated_event")
 	, next_trigger_type(NEXT_TRIGGER_DEFAULT)
@@ -48,7 +48,6 @@ sc_method_process::sc_method_process(const char *_name, sc_process_owner *_proce
 	, next_trigger_time_out_event(IEEE1666_KERNEL_PREFIX "_next_trigger_time_out_event")
 {
 	kernel->add_method_process(this);
-	kernel->end_object();
 }
 
 sc_method_process::~sc_method_process()
@@ -360,6 +359,11 @@ void sc_method_process::kill(sc_descendant_inclusion_info include_descendants)
 
 void sc_method_process::reset(sc_descendant_inclusion_info include_descendants)
 {
+}
+
+const char *sc_method_process::kind() const
+{
+	return "sc_method_process";
 }
 
 } // end of namespace sc_core
