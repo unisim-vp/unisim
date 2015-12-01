@@ -62,6 +62,7 @@ public:
 	sc_time& operator -= (const sc_time&);
 	sc_time& operator *= (double);
 	sc_time& operator /= (double);
+	sc_time& operator %= (const sc_time&); // This is not part of IEEE1666-2011
 	void print(std::ostream& = std::cout) const;
 	
 	/////////////////////////////
@@ -73,6 +74,7 @@ private:
 	friend const sc_time operator * (double, const sc_time&);
 	friend const sc_time operator / (const sc_time&, double);
 	friend double operator / (const sc_time&, const sc_time&);
+	friend const sc_time operator % (const sc_time&, const sc_time&); // This is not part of IEEE1666-2011
 	
 	explicit sc_time(sc_dt::uint64);
 	
@@ -86,6 +88,7 @@ const sc_time operator - (const sc_time&, const sc_time&);
 const sc_time operator * (const sc_time&, double);
 const sc_time operator * (double, const sc_time&);
 const sc_time operator / (const sc_time&, double);
+const sc_time operator % (const sc_time&, const sc_time&); // This is not part of IEEE1666-2011
 double operator / ( const sc_time&, const sc_time& );
 std::ostream& operator << (std::ostream&, const sc_time&);
 extern const sc_time SC_ZERO_TIME;

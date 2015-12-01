@@ -144,6 +144,12 @@ sc_time& sc_time::operator /= (double d)
 	return *this;
 }
 
+sc_time& sc_time::operator %= (const sc_time& t)
+{
+	discrete_value %= t.discrete_value;
+	return *this;
+}
+
 void sc_time::print(std::ostream& os) const
 {
 	sc_kernel::get_kernel()->print_time(os, *this);
@@ -179,6 +185,11 @@ const sc_time operator / (const sc_time& t, double d)
 double operator / (const sc_time& t1, const sc_time& t2)
 {
 	return (double) t1.discrete_value / t2.discrete_value;
+}
+
+const sc_time operator % (const sc_time& t1, const sc_time& t2)
+{
+	return sc_time(t1.discrete_value % t2.discrete_value);
 }
 
 std::ostream& operator << (std::ostream& os, const sc_time& t)
