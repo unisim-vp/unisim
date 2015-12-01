@@ -158,6 +158,24 @@ void sc_process::add_static_sensitivity(const sc_event_finder& event_finder)
 	event_finder.get_port().add_process_statically_sensitive_to_event_finder(this, event_finder);
 }
 
+void sc_process::remove_static_sensitivity(const sc_event& e)
+{
+	std::list<const sc_event *>::iterator it;
+	
+	for(it = static_sensitivity.begin(); it != static_sensitivity.end();)
+	{
+		const sc_event *event = *it;
+		if(event == &e)
+		{
+			it = static_sensitivity.erase(it); 
+		}
+		else
+		{
+			it++;
+		}
+	}
+}
+
 void sc_process::add_static_sensitivity(const sc_spawn_options *spawn_options)
 {
 	unsigned int i;
@@ -200,12 +218,11 @@ void sc_process::add_static_sensitivity(const sc_spawn_options *spawn_options)
 
 void sc_process::clear_static_sensitivity()
 {
-	unsigned int i;
-	unsigned int num_events = static_sensitivity.size();
+	std::list<const sc_event *>::iterator it;
 	
-	for(i = 0; i < num_events; i++)
+	for(it = static_sensitivity.begin(); it != static_sensitivity.end(); it++)
 	{
-		const sc_event *event = static_sensitivity[i];
+		const sc_event *event = *it;
 		
 		switch(process_kind)
 		{

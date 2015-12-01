@@ -40,6 +40,7 @@
 #include <ieee1666/kernel/thread_process.h>
 #include <ieee1666/kernel/method_process.h>
 #include <ieee1666/util/backtrace.h>
+#include <string.h>
 
 namespace sc_core {
 
@@ -78,6 +79,8 @@ sc_event::sc_event( const char* _name)
 sc_event::~sc_event()
 {
 	cancel();
+	
+	clear_statically_sensitive_processes();
 	
 	if(parent_object) parent_object->remove_child_event(this);
 	if(kernel) kernel->unregister_event(this);
@@ -350,6 +353,27 @@ void sc_event::remove_statically_sensitive_thread_process(sc_thread_process *thr
 void sc_event::remove_statically_sensitive_method_process(sc_method_process *method_process) const
 {
 	statically_sensitive_method_processes.erase(method_process);
+}
+
+void sc_event::clear_statically_sensitive_processes()
+{
+	std::unordered_set<sc_method_process *>::iterator method_process_it;
+	
+	for(method_process_it  = statically_sensitive_method_processes.begin(); method_process_it != statically_sensitive_method_processes.end(); method_process_it++)
+	{
+		sc_method_process *method_process = *method_process_it;
+		
+		method_process->remove_static_sensitivity(*this);
+	}
+
+	std::unordered_set<sc_thread_process *>::iterator thread_process_it;
+	
+	for(thread_process_it  = statically_sensitive_thread_processes.begin(); thread_process_it != statically_sensitive_thread_processes.end(); thread_process_it++)
+	{
+		sc_thread_process *thread_process = *thread_process_it;
+		
+		thread_process->remove_static_sensitivity(*this);
+	}
 }
 
 sc_event::state_t sc_event::get_state() const

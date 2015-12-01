@@ -36,6 +36,7 @@
 #define __IEEE1666_KERNEL_FWD_H__
 
 #include <inttypes.h>
+#include <ieee1666/kernel/features.h>
 
 namespace sc_dt {
 	typedef ::uint64_t uint64;

@@ -32,6 +32,7 @@ ieee1666/kernel/method_process.h \
 ieee1666/kernel/kernel_event.h \
 ieee1666/kernel/allocator.h \
 ieee1666/kernel/spawn.h \
+ieee1666/kernel/features.h \
 ieee1666/base/fifo_in.h \
 ieee1666/base/clock.h \
 ieee1666/base/fifo_if.h \
@@ -75,6 +76,10 @@ tlm_utils/passthrough_target_socket.h \
 tlm_utils/peq_with_get.h \
 tlm_utils/peq_with_cb_and_phase.h \
 tlm_utils/tlm_quantumkeeper.h
+
+BUILT_SOURCES = ieee1666/kernel/features.h
+
+CLEANFILES = ieee1666/kernel/features.h
 
 lib_LTLIBRARIES = libsystemc.la
 libsystemc_la_SOURCES = \
@@ -126,14 +131,29 @@ ieee1666/tlm2/interoperability_layer/payload/generic_payload.cc \
 ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.cc \
 tlm_utils/tlm_quantumkeeper.cc
 
+libsystemc_la_LIBADD=$(BOOST_COROUTINE_LIB) $(BOOST_CONTEXT_LIB) $(BOOST_SYSTEM_LIB) $(PTHREAD_LIBS) $(LIBS)
+
 nobase_dist_share_DATA = \
 COPYING
 
 EXTRA_DIST = \
-m4/with_boost.m4 \
 m4/cxxabi.m4 \
 m4/check_lib.m4 \
-m4/boost_coroutine.m4
+m4/sc_thread_process_backend.m4
+
+ieee1666/kernel/features.h: Makefile
+	echo "// Do not modify: this file is generated while building process." > $@; \
+	echo "#ifndef __IEEE1666_KERNEL_FEATURES_H__" >> $@; \
+	echo "#define __IEEE1666_KERNEL_FEATURES_H__" >> $@; \
+	echo "#ifndef SC_THREAD_PROCESSES_USE_PTHREADS" >> $@; \
+	if test ${SC_THREAD_PROCESSES_USE_PTHREADS} -ne 0; then \
+		echo "// using POSIX threads for SystemC thread processes" >> $@; \
+	else \
+		echo "// using boost coroutine for SystemC thread processes" >> $@; \
+	fi; \
+	echo "#define SC_THREAD_PROCESSES_USE_PTHREADS $(SC_THREAD_PROCESSES_USE_PTHREADS)" >> $@; \
+	echo "#endif" >> $@; \
+	echo "#endif" >> $@
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

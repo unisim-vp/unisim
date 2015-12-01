@@ -39,11 +39,17 @@
 #include <ieee1666/kernel/object.h>
 #include <ieee1666/kernel/process.h>
 #include <ieee1666/kernel/time.h>
+
+#if USE_PTHREADS
+#include <pthread.h>
+#else
 //#include <boost/bind.hpp>
 #include <boost/coroutine/coroutine.hpp>
+#endif
 
 namespace sc_core {
 
+#if !USE_PTHREADS
 typedef boost::coroutines::coroutine<void()> sc_coroutine;
 typedef boost::coroutines::attributes sc_coroutine_attributes;
 
@@ -58,6 +64,7 @@ private:
 	sc_thread_process *thread_process;
 	sc_coroutine::caller_type& yield;
 };
+#endif
 
 class sc_thread_process : public sc_process
 {
@@ -94,11 +101,20 @@ public:
 	
 	virtual const char *kind() const;
 private:
+#if !USE_PTHREADS
 	friend class sc_thread_process_helper;
+#endif
 	friend class sc_kernel;
 	
+#if USE_PTHREADS
+	pthread_t thrd;
+	pthread_mutex_t mutex;
+	pthread_cond_t cond_callee;
+	pthread_cond_t cond_caller;
+#else
 	sc_coroutine *coro;
 	sc_thread_process_helper *thread_process_helper;
+#endif
 	int stack_size;
 	bool thread_process_terminated;
 	sc_event thread_process_terminated_event;
@@ -123,7 +139,11 @@ private:
 	sc_time wait_time_out;
 	sc_event wait_time_out_event;
 
+#if USE_PTHREADS
+	static void *thread_work(void *);
+#else
 	void coroutine_work(sc_coroutine::caller_type& yield);
+#endif
 	void yield();
 	void switch_to();
 };

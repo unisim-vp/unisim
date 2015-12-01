@@ -37,6 +37,7 @@
 
 #include <ieee1666/kernel/fwd.h>
 #include <ieee1666/kernel/object.h>
+#include <list>
 
 namespace sc_core {
 
@@ -80,6 +81,8 @@ public:
 	void add_static_sensitivity(const sc_port_base& port);
 	void add_static_sensitivity(const sc_export_base& exp);
 	void add_static_sensitivity(const sc_event_finder& event_finder);
+	
+	void remove_static_sensitivity(const sc_event& e);
 private:
 	sc_process_owner *process_owner;
 	sc_process_owner_method_ptr process_owner_method_ptr;
@@ -90,7 +93,7 @@ private:
 
 	unsigned int ref_count;
 
-	std::vector<const sc_event *> static_sensitivity;
+	std::list<const sc_event *> static_sensitivity;
 	
 	void add_static_sensitivity(const sc_spawn_options *spawn_options);
 	void clear_static_sensitivity();

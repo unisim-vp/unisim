@@ -46,6 +46,7 @@ const char* sc_prim_channel::kind() const
 
 sc_prim_channel::sc_prim_channel()
 	: kernel(sc_kernel::get_kernel())
+	, update_requested(false)
 {
 	kernel->add_prim_channel(this);
 }
@@ -53,6 +54,7 @@ sc_prim_channel::sc_prim_channel()
 sc_prim_channel::sc_prim_channel(const char *_name)
 	: sc_object(_name)
 	, kernel(sc_kernel::get_kernel())
+	, update_requested(false)
 {
 	kernel->add_prim_channel(this);
 }

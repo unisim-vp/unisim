@@ -40,6 +40,7 @@
 
 namespace sc_core {
 
+#if !USE_PTHREADS
 sc_thread_process_helper::sc_thread_process_helper(sc_thread_process *_thread_process, sc_coroutine::caller_type& _yield)
 	: thread_process(_thread_process)
 	, yield(_yield)
@@ -53,11 +54,19 @@ sc_thread_process_helper::~sc_thread_process_helper()
 {
 	thread_process->thread_process_helper = 0;
 }
+#endif
 
 sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, bool clocked, const sc_spawn_options *spawn_options)
 	: sc_process(_name, _process_owner, _process_owner_method_ptr, clocked ? SC_CTHREAD_PROC_ : SC_THREAD_PROC_, spawn_options)
+#if USE_PTHREADS
+	, thrd()
+	, mutex()
+	, cond_callee()
+	, cond_caller()
+#else
 	, coro(0)
 	, thread_process_helper(0)
+#endif
 	, stack_size(spawn_options ? spawn_options->get_stack_size() : 0)
 	, thread_process_terminated(false)
 	, thread_process_terminated_event(IEEE1666_KERNEL_PREFIX "_terminated_event")
@@ -73,10 +82,13 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 
 sc_thread_process::~sc_thread_process()
 {
+#if USE_PTHREADS
+#else
 	if(coro)
 	{
 		delete coro;
 	}
+#endif
 }
 
 void sc_thread_process::set_stack_size(int _stack_size)
@@ -86,6 +98,15 @@ void sc_thread_process::set_stack_size(int _stack_size)
 
 void sc_thread_process::start()
 {
+#if USE_PTHREADS
+	pthread_mutex_init(&mutex, NULL);
+	pthread_cond_init(&cond_callee, NULL);
+	pthread_cond_init(&cond_caller, NULL);
+	
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_create(&thrd, &attr, &sc_thread_process::thread_work, this);
+#else
 	if(stack_size)
 	{
 		sc_coroutine_attributes coro_attributes = sc_coroutine_attributes(stack_size);
@@ -95,10 +116,17 @@ void sc_thread_process::start()
 	{
 		coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1));
 	}
+#endif
 }
 
 void sc_thread_process::yield()
 {
+#if USE_PTHREADS
+	pthread_mutex_lock(&mutex);
+	pthread_cond_signal(&cond_caller);
+	pthread_cond_wait(&cond_callee, &mutex);
+	pthread_mutex_unlock(&mutex);
+#else
 	if(thread_process_helper)
 	{
 		thread_process_helper->yield(); // yield to kernel
@@ -107,6 +135,7 @@ void sc_thread_process::yield()
 	{
 		throw std::runtime_error("Internal error! No thread process helper");
 	}
+#endif
 }
 
 void sc_thread_process::trigger_statically()
@@ -327,18 +356,36 @@ void sc_thread_process::wait(const sc_time& t, const sc_event_or_list& el)
 
 void sc_thread_process::switch_to()
 {
+#if USE_PTHREADS
+	pthread_mutex_lock(&mutex);
+	pthread_cond_signal(&cond_callee);
+	pthread_cond_wait(&cond_caller, &mutex);
+	pthread_mutex_unlock(&mutex);
+#else
 	if(*coro)
 	{
 		(*coro)(); // yield to thread
 	}
+#endif
 }
 
+#if USE_PTHREADS
+void *sc_thread_process::thread_work(void *arg)
+{
+	sc_thread_process *thread_process = static_cast<sc_thread_process *>(arg);
+	thread_process->yield();
+	thread_process->call_process_owner_method();
+	thread_process->thread_process_terminated = true;
+	thread_process->thread_process_terminated_event.notify();
+}
+#else
 void sc_thread_process::coroutine_work(sc_coroutine::caller_type& yield)
 {
 	sc_thread_process_helper(this, yield);
 	thread_process_terminated = true;
 	thread_process_terminated_event.notify();
 }
+#endif
 
 bool sc_thread_process::terminated() const
 {
@@ -380,12 +427,14 @@ void sc_thread_process::enable(sc_descendant_inclusion_info include_descendants)
 void sc_thread_process::kill(sc_descendant_inclusion_info include_descendants)
 {
 	enabled = false;
-	
+
+#if !USE_PTHREADS	
 	if(coro)
 	{
 		delete coro;
 		coro = 0;
 	}
+#endif
 	thread_process_terminated = true;
 	thread_process_terminated_event.notify();
 }

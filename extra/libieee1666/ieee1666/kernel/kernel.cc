@@ -48,6 +48,7 @@
 #include <math.h>
 #include <string.h>
 #include <limits>
+#include <sstream>
 
 extern int sc_main(int argc, char *argv[]);
 
@@ -505,7 +506,7 @@ void sc_kernel::do_timed_step()
 			schedule.erase(it);
 			it = schedule.begin();			
 		}
-		while((*it).first == current_time_stamp);
+		while((it != schedule.end()) && ((*it).first == current_time_stamp));
 	}
 }
 
