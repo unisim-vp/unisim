@@ -40,7 +40,16 @@
 
 namespace sc_core {
 
-#if !USE_PTHREADS
+#if !SC_THREAD_PROCESSES_USE_PTHREADS
+struct sc_coroutine_exited
+{
+	sc_coroutine_exited();
+};
+
+sc_coroutine_exited::sc_coroutine_exited()
+{
+}
+
 sc_thread_process_helper::sc_thread_process_helper(sc_thread_process *_thread_process, sc_coroutine::caller_type& _yield)
 	: thread_process(_thread_process)
 	, yield(_yield)
@@ -58,7 +67,7 @@ sc_thread_process_helper::~sc_thread_process_helper()
 
 sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, bool clocked, const sc_spawn_options *spawn_options)
 	: sc_process(_name, _process_owner, _process_owner_method_ptr, clocked ? SC_CTHREAD_PROC_ : SC_THREAD_PROC_, spawn_options)
-#if USE_PTHREADS
+#if SC_THREAD_PROCESSES_USE_PTHREADS
 	, thrd()
 	, mutex()
 	, cond_callee()
@@ -68,6 +77,7 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, thread_process_helper(0)
 #endif
 	, stack_size(spawn_options ? spawn_options->get_stack_size() : 0)
+	, killed(false)
 	, thread_process_terminated(false)
 	, thread_process_terminated_event(IEEE1666_KERNEL_PREFIX "_terminated_event")
 	, wait_type(WAIT_DEFAULT)
@@ -82,7 +92,7 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 
 sc_thread_process::~sc_thread_process()
 {
-#if USE_PTHREADS
+#if SC_THREAD_PROCESSES_USE_PTHREADS
 #else
 	if(coro)
 	{
@@ -98,7 +108,7 @@ void sc_thread_process::set_stack_size(int _stack_size)
 
 void sc_thread_process::start()
 {
-#if USE_PTHREADS
+#if SC_THREAD_PROCESSES_USE_PTHREADS
 	pthread_mutex_init(&mutex, NULL);
 	pthread_cond_init(&cond_callee, NULL);
 	pthread_cond_init(&cond_caller, NULL);
@@ -121,15 +131,27 @@ void sc_thread_process::start()
 
 void sc_thread_process::yield()
 {
-#if USE_PTHREADS
+#if SC_THREAD_PROCESSES_USE_PTHREADS
 	pthread_mutex_lock(&mutex);
 	pthread_cond_signal(&cond_caller);
 	pthread_cond_wait(&cond_callee, &mutex);
 	pthread_mutex_unlock(&mutex);
+	if(killed)
+	{
+		thread_process_terminated = true;
+		thread_process_terminated_event.notify();
+		pthread_cond_signal(&cond_caller);
+		pthread_exit(NULL);
+		return;
+	}
 #else
 	if(thread_process_helper)
 	{
 		thread_process_helper->yield(); // yield to kernel
+		if(killed)
+		{
+			throw sc_coroutine_exited();
+		}
 	}
 	else
 	{
@@ -356,7 +378,7 @@ void sc_thread_process::wait(const sc_time& t, const sc_event_or_list& el)
 
 void sc_thread_process::switch_to()
 {
-#if USE_PTHREADS
+#if SC_THREAD_PROCESSES_USE_PTHREADS
 	pthread_mutex_lock(&mutex);
 	pthread_cond_signal(&cond_callee);
 	pthread_cond_wait(&cond_caller, &mutex);
@@ -369,7 +391,7 @@ void sc_thread_process::switch_to()
 #endif
 }
 
-#if USE_PTHREADS
+#if SC_THREAD_PROCESSES_USE_PTHREADS
 void *sc_thread_process::thread_work(void *arg)
 {
 	sc_thread_process *thread_process = static_cast<sc_thread_process *>(arg);
@@ -381,7 +403,13 @@ void *sc_thread_process::thread_work(void *arg)
 #else
 void sc_thread_process::coroutine_work(sc_coroutine::caller_type& yield)
 {
-	sc_thread_process_helper(this, yield);
+	try
+	{
+		sc_thread_process_helper(this, yield);
+	}
+	catch(sc_coroutine_exited& dummy)
+	{
+	}
 	thread_process_terminated = true;
 	thread_process_terminated_event.notify();
 }
@@ -427,16 +455,20 @@ void sc_thread_process::enable(sc_descendant_inclusion_info include_descendants)
 void sc_thread_process::kill(sc_descendant_inclusion_info include_descendants)
 {
 	enabled = false;
-
-#if !USE_PTHREADS	
+	killed = true;
+	if(!thread_process_terminated)
+	{
+		switch_to(); // let thread die
+	}
+#if SC_THREAD_PROCESSES_USE_PTHREADS
+	pthread_join(thrd, NULL);
+#else
 	if(coro)
 	{
 		delete coro;
 		coro = 0;
 	}
 #endif
-	thread_process_terminated = true;
-	thread_process_terminated_event.notify();
 }
 
 void sc_thread_process::reset(sc_descendant_inclusion_info include_descendants)

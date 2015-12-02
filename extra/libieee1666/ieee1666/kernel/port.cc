@@ -175,7 +175,11 @@ void sc_port_base::finalize_elaboration()
 				add_interface(port_binding->bound_interface);
 				break;
 		}
+		
+		delete port_binding; // free unused resource
 	}
+	
+	port_bindings.clear();
 
 	if(terminal_inner_port)
 	{
@@ -231,10 +235,13 @@ void sc_port_base::finalize_elaboration()
 					}
 					break;
 			}
+			
+			delete process_static_sensitivity; // free unused resource
 		}
 	}
 	
-
+	processes_static_sensitivity.clear();
+	
 	elaboration_finalized = true;
 }
 

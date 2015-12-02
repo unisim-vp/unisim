@@ -127,6 +127,11 @@ sc_kernel::~sc_kernel()
 	{
 		sc_thread_process *thread_process = thread_process_table[i];
 		
+		if(!thread_process->terminated())
+		{
+			thread_process->kill();
+		}
+
 		delete thread_process;
 	}
 }

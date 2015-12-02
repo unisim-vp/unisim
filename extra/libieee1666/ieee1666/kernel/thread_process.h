@@ -40,7 +40,7 @@
 #include <ieee1666/kernel/process.h>
 #include <ieee1666/kernel/time.h>
 
-#if USE_PTHREADS
+#if SC_THREAD_PROCESSES_USE_PTHREADS
 #include <pthread.h>
 #else
 //#include <boost/bind.hpp>
@@ -49,7 +49,7 @@
 
 namespace sc_core {
 
-#if !USE_PTHREADS
+#if !SC_THREAD_PROCESSES_USE_PTHREADS
 typedef boost::coroutines::coroutine<void()> sc_coroutine;
 typedef boost::coroutines::attributes sc_coroutine_attributes;
 
@@ -101,12 +101,12 @@ public:
 	
 	virtual const char *kind() const;
 private:
-#if !USE_PTHREADS
+#if !SC_THREAD_PROCESSES_USE_PTHREADS
 	friend class sc_thread_process_helper;
 #endif
 	friend class sc_kernel;
 	
-#if USE_PTHREADS
+#if SC_THREAD_PROCESSES_USE_PTHREADS
 	pthread_t thrd;
 	pthread_mutex_t mutex;
 	pthread_cond_t cond_callee;
@@ -116,6 +116,7 @@ private:
 	sc_thread_process_helper *thread_process_helper;
 #endif
 	int stack_size;
+	bool killed;
 	bool thread_process_terminated;
 	sc_event thread_process_terminated_event;
 	
@@ -139,7 +140,7 @@ private:
 	sc_time wait_time_out;
 	sc_event wait_time_out_event;
 
-#if USE_PTHREADS
+#if SC_THREAD_PROCESSES_USE_PTHREADS
 	static void *thread_work(void *);
 #else
 	void coroutine_work(sc_coroutine::caller_type& yield);
