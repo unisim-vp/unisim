@@ -244,7 +244,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 			bool has_program_counter = false;
 			string program_counter_name;
 
-			int reg_num = 0;
+			unsigned reg_num = 0;
 			for(xml_node = xml_nodes->begin(); xml_node != xml_nodes->end(); xml_node++)
 			{
 				if((*xml_node)->Name() == string("register"))

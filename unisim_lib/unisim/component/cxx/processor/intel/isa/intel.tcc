@@ -256,7 +256,7 @@ namespace intel {
     
     uint8_t bytes[BYTES];
     uint8_t post;
-    OpCode( uint8_t const* _bytes, uint8_t _post ) : post( _post ) { for (int idx = 0; idx < BYTES; ++idx ) bytes[idx] = _bytes[idx]; }
+    OpCode( uint8_t const* _bytes, uint8_t _post ) : post( _post ) { for (unsigned idx = 0; idx < BYTES; ++idx ) bytes[idx] = _bytes[idx]; }
     
     template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* code ) { return code + BYTES; }
     
