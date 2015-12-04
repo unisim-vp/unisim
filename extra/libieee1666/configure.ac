@@ -19,19 +19,10 @@ AC_PROG_LN_S
 
 AC_LANG([C++])
 
-AX_CXX_COMPILE_STDCXX_11
+AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
 
 PKG_PROG_PKG_CONFIG
 PKG_INSTALLDIR
-
-###### CHECK FOR STANDARD C HEADERS ###########################################
-
-AC_CHECK_HEADERS([iostream stdio.h math.h stdlib.h string.h],,\
-                  AC_MSG_ERROR([Some standard headers are missing.]))
-
-###### CHECK FOR STANDARD C++ HEADERS #########################################
-AC_CHECK_HEADERS([iostream],,\
-                  AC_MSG_ERROR([Some standard headers are missing.]))
 
 CXX_COMP=`basename $CXX`
 case "${host}" in

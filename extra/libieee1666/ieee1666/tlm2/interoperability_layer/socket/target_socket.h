@@ -44,7 +44,7 @@ template <unsigned int BUSWIDTH = 32, typename FW_IF = tlm_fw_transport_if<>, ty
 class tlm_base_target_socket_b
 {
 public:
-	virtual ~tlm_base_target_socket_b();
+	virtual ~tlm_base_target_socket_b() {}
 	virtual sc_core::sc_port_b<BW_IF>& get_base_port() = 0;
 	virtual const sc_core::sc_port_b<BW_IF>& get_base_port() const = 0;
 	virtual sc_core::sc_export<FW_IF>& get_base_export() = 0;
@@ -167,7 +167,11 @@ template <unsigned int BUSWIDTH, typename FW_IF, typename BW_IF, int N, sc_core:
 void tlm_base_target_socket<BUSWIDTH, FW_IF, BW_IF, N, POL>::bind(fw_interface_type& ifs)
 {
 	// binding interface to export (forward path)
-	(get_base_export())(ifs);
+	export_type& exp = get_base_export();
+	if(&exp == this)
+		export_type::bind(ifs);
+	else
+		exp.bind(ifs);
 }
 
 template <unsigned int BUSWIDTH, typename FW_IF, typename BW_IF, int N, sc_core::sc_port_policy POL>

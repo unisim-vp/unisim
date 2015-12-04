@@ -9,4 +9,4 @@ URL: http://www.unisim-vp.org
 Version: @VERSION@
 Requires:
 Libs: -L${libdir} -lsystemc @BOOST_COROUTINE_LIB@ @BOOST_CONTEXT_LIB@ @BOOST_SYSTEM_LIB@ @PTHREAD_LIBS@ @LIBS@
-Cflags: -I${includedir}
+Cflags: -I${includedir} @CXXFLAGS@ @PTHREAD_CFLAGS@

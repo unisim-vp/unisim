@@ -91,8 +91,8 @@ private:
 		
 		MODULE *mod;
 		int id;
-		tlm::tlm_sync_enum (MODULE::*nb_transport_bw_cb)(typename TYPES::tlm_payload_type&, typename TYPES::tlm_phase_type&, sc_core::sc_time&);
-		void (MODULE::*invalidate_direct_mem_ptr_cb)(sc_dt::uint64, sc_dt::uint64);
+		tlm::tlm_sync_enum (MODULE::*nb_transport_bw_cb)(int, typename TYPES::tlm_payload_type&, typename TYPES::tlm_phase_type&, sc_core::sc_time&);
+		void (MODULE::*invalidate_direct_mem_ptr_cb)(int, sc_dt::uint64, sc_dt::uint64);
 	};
 	
 	bw_transport_impl_s bw_transport_impl;
@@ -104,14 +104,14 @@ template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::simple_initiator_socket()
 	: tlm::tlm_initiator_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name("simple_initiator_socket"))
 {
-	bind(bw_transport_impl);
+	this->bind(bw_transport_impl);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 simple_initiator_socket<MODULE, BUSWIDTH, TYPES>::simple_initiator_socket(const char *n)
 	: tlm::tlm_initiator_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name(n))
 {
-	bind(bw_transport_impl);
+	this->bind(bw_transport_impl);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -159,12 +159,14 @@ template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 simple_initiator_socket_tagged<MODULE, BUSWIDTH, TYPES>::simple_initiator_socket_tagged()
 	: tlm::tlm_initiator_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name("simple_initiator_socket_tagged"))
 {
+	this->bind(bw_transport_impl);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 simple_initiator_socket_tagged<MODULE, BUSWIDTH, TYPES>::simple_initiator_socket_tagged(const char *n)
 	: tlm::tlm_initiator_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name(n))
 {
+	this->bind(bw_transport_impl);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>

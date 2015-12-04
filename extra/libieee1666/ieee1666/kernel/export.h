@@ -126,7 +126,8 @@ void sc_export<IF>::bind(IF& _if)
 template<class IF>
 sc_export<IF>::operator IF& ()
 {
-	return *(IF *) interf;
+	std::cerr << "interf=" << interf << std::endl;
+	return *interf;
 }
 
 template<class IF>

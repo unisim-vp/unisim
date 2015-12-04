@@ -139,7 +139,8 @@ COPYING
 EXTRA_DIST = \
 m4/cxxabi.m4 \
 m4/check_lib.m4 \
-m4/sc_thread_process_backend.m4
+m4/sc_thread_process_backend.m4 \
+systemc.pc.in
 
 ieee1666/kernel/features.h: Makefile
 	echo "// Do not modify: this file is generated while building process." > $@; \
@@ -162,3 +163,4 @@ uninstall-hook:
 	
 install-exec-hook:
 	(cd $(prefix) && ( [ -d lib-$(IEEE1666_TARGET_ARCH) ] || $(LN_S) lib lib-$(IEEE1666_TARGET_ARCH) ) )
+	sed -e 's/-g//g' -e 's/-O[0123]\?//g' -e 's/-lc//g' systemc.pc > systemc.pc.fixed && mv -f systemc.pc.fixed systemc.pc

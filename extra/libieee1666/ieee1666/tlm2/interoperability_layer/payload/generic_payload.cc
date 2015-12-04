@@ -3,6 +3,8 @@
 
 namespace tlm {
 
+static unsigned int next_extension_id = 0;
+
 tlm_generic_payload::tlm_generic_payload()
 	: mm(0)
 	, ref_count(0)
@@ -16,7 +18,7 @@ tlm_generic_payload::tlm_generic_payload()
 	, byte_enable_length(0)
 	, dmi_allowed(false)
 	, response_status(TLM_INCOMPLETE_RESPONSE)
-	, extensions()
+	, extensions(next_extension_id)
 {
 }
 
@@ -33,7 +35,7 @@ tlm_generic_payload::tlm_generic_payload( tlm_mm_interface *_mm)
 	, byte_enable_length(0)
 	, dmi_allowed(false)
 	, response_status(TLM_INCOMPLETE_RESPONSE)
-	, extensions()
+	, extensions(next_extension_id)
 {
 }
 
@@ -370,24 +372,22 @@ bool tlm_generic_payload::is_response_error()
 
 tlm_extension_base *tlm_generic_payload::set_extension(unsigned int id, tlm_extension_base *extension)
 {
-	tlm_extension_base *old_extension = extensions[id];
+	tlm_extension_base *old_extension = (id < extensions.size()) ? extensions[id] : 0;
 	extensions[id] = extension;
 	return old_extension;
 }
 
 tlm_extension_base* tlm_generic_payload::set_auto_extension(unsigned int id, tlm_extension_base *extension)
 {
-	tlm_extension_base *old_extension = extensions[id];
+	tlm_extension_base *old_extension = (id < extensions.size()) ? extensions[id] : 0;
 	extensions[id] = extension;
 	return old_extension;
 }
 
 tlm_extension_base* tlm_generic_payload::get_extension(unsigned int id) const
 {
-	return extensions[id];
+	return (id < extensions.size()) ? extensions[id] : 0;
 }
-
-static unsigned int next_extension_id = 0;
 
 void tlm_generic_payload::resize_extensions()
 {

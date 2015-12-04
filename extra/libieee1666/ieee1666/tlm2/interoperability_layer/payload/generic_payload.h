@@ -56,7 +56,7 @@ public:
 	virtual void copy_from(tlm_extension_base const &) = 0;
 protected:
 	virtual ~tlm_extension_base() {}
-private:
+public:
 	static unsigned int allocate_extension_id();
 };
 
