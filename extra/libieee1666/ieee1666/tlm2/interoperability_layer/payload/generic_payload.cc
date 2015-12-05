@@ -1,5 +1,6 @@
 #include <ieee1666/tlm2/interoperability_layer/payload/generic_payload.h>
 #include <string.h>
+#include <stdexcept>
 
 namespace tlm {
 
@@ -18,11 +19,11 @@ tlm_generic_payload::tlm_generic_payload()
 	, byte_enable_length(0)
 	, dmi_allowed(false)
 	, response_status(TLM_INCOMPLETE_RESPONSE)
-	, extensions(next_extension_id)
+	, extension_slots(next_extension_id)
 {
 }
 
-tlm_generic_payload::tlm_generic_payload( tlm_mm_interface *_mm)
+tlm_generic_payload::tlm_generic_payload(tlm_mm_interface *_mm)
 	: mm(_mm)
 	, ref_count(0)
 	, gp_option(TLM_MIN_PAYLOAD)
@@ -35,27 +36,28 @@ tlm_generic_payload::tlm_generic_payload( tlm_mm_interface *_mm)
 	, byte_enable_length(0)
 	, dmi_allowed(false)
 	, response_status(TLM_INCOMPLETE_RESPONSE)
-	, extensions(next_extension_id)
+	, extension_slots(next_extension_id)
 {
 }
 
 tlm_generic_payload::~tlm_generic_payload()
 {
+	free_all_extensions();
 }
 
 // disabled
-tlm_generic_payload::tlm_generic_payload( const tlm_generic_payload& )
+tlm_generic_payload::tlm_generic_payload(const tlm_generic_payload&)
 {
 }
 
 // disabled
-tlm_generic_payload& tlm_generic_payload::operator= ( const tlm_generic_payload& )
+tlm_generic_payload& tlm_generic_payload::operator = (const tlm_generic_payload&)
 {
 	return *this;
 }
 
 // Memory management
-void tlm_generic_payload::set_mm( tlm_mm_interface *_mm)
+void tlm_generic_payload::set_mm(tlm_mm_interface *_mm)
 {
 	mm = _mm;
 }
@@ -85,19 +87,8 @@ int tlm_generic_payload::get_ref_count() const
 
 void tlm_generic_payload::reset()
 {
-	mm = 0;
-	ref_count = 0;
+	free_auto_extensions();
 	gp_option = TLM_MIN_PAYLOAD;
-	command = TLM_IGNORE_COMMAND;
-	address = 0;
-	data_ptr = 0;
-	data_length = 0;
-	streaming_width = 0;
-	byte_enable_ptr = 0;
-	byte_enable_length = 0;
-	dmi_allowed = false;
-	response_status = TLM_INCOMPLETE_RESPONSE;
-	extensions.clear();
 }
 
 void tlm_generic_payload::deep_copy_from(const tlm_generic_payload& payload)
@@ -121,23 +112,29 @@ void tlm_generic_payload::deep_copy_from(const tlm_generic_payload& payload)
 		memcpy(byte_enable_ptr, payload.byte_enable_ptr, byte_enable_length);
 	}
 	
-	extensions.reserve(payload.extensions.capacity());
-	typename std::vector<tlm_extension_base *>::size_type num_extensions = payload.extensions.size();
-	typename std::vector<tlm_extension_base *>::size_type extension_id;
+	extension_slots.reserve(payload.extension_slots.capacity());
+	typename std::vector<tlm_extension_slot>::size_type num_extensions = payload.extension_slots.size();
+	
+	if(num_extensions > extension_slots.size())
+	{
+		extension_slots.resize(num_extensions);
+	}
+	
+	typename std::vector<tlm_extension_slot>::size_type extension_id;
 	
 	for(extension_id = 0; extension_id < num_extensions; extension_id++)
 	{
-		tlm_extension_base *orig_extension = payload.extensions[extension_id];
+		const tlm_extension_slot& orig_extension_slot = payload.extension_slots[extension_id];
 		
-		if(orig_extension)
+		if(orig_extension_slot.extension)
 		{
-			if(extensions[extension_id])
+			if(extension_slots[extension_id].extension)
 			{
-				extensions[extension_id]->copy_from(*orig_extension);
+				extension_slots[extension_id].extension->copy_from(*orig_extension_slot.extension);
 			}
 			else
 			{
-				tlm_extension_base *cloned_extension = payload.extensions[extension_id]->clone();
+				tlm_extension_base *cloned_extension = payload.extension_slots[extension_id].extension->clone();
 				
 				if(cloned_extension)
 				{
@@ -159,13 +156,15 @@ void tlm_generic_payload::update_original_from(const tlm_generic_payload& payloa
 {
 	response_status = payload.response_status;
 	dmi_allowed = payload.dmi_allowed;
-	if((command == TLM_READ_COMMAND) && data_ptr && payload.data_ptr && payload.data_length)
+	if((command == TLM_READ_COMMAND) && data_ptr && payload.data_ptr && (data_ptr != payload.data_ptr) && payload.data_length)
 	{
+		unsigned int min_data_length = (data_length < payload.data_length) ? data_length : payload.data_length; // avoid buffer copy overflow
+		
 		if(byte_enable_ptr && byte_enable_length)
 		{
 			unsigned char *src = payload.data_ptr;
 			unsigned char *dst = data_ptr;
-			unsigned int copy_size = data_length;
+			unsigned int copy_size = min_data_length;
 			unsigned int byte_enable_offset = 0;
 
 			do
@@ -179,7 +178,7 @@ void tlm_generic_payload::update_original_from(const tlm_generic_payload& payloa
 		}
 		else
 		{
-			memcpy(data_ptr, payload.data_ptr, data_length);
+			memcpy(data_ptr, payload.data_ptr, min_data_length);
 		}
 	}
 	
@@ -188,18 +187,18 @@ void tlm_generic_payload::update_original_from(const tlm_generic_payload& payloa
 
 void tlm_generic_payload::update_extensions_from(const tlm_generic_payload& payload)
 {
-	typename std::vector<tlm_extension_base *>::size_type num_extensions = payload.extensions.size();
-	typename std::vector<tlm_extension_base *>::size_type extension_id;
+	typename std::vector<tlm_extension_slot>::size_type num_extensions = payload.extension_slots.size();
+	typename std::vector<tlm_extension_slot>::size_type extension_id;
 	
 	for(extension_id = 0; extension_id < num_extensions; extension_id++)
 	{
-		tlm_extension_base *orig_extension = payload.extensions[extension_id];
+		const tlm_extension_slot& orig_extension_slot = payload.extension_slots[extension_id];
 		
-		if(orig_extension)
+		if(orig_extension_slot.extension)
 		{
-			if(extensions[extension_id])
+			if(extension_slots[extension_id].extension)
 			{
-				extensions[extension_id]->copy_from(*orig_extension);
+				extension_slots[extension_id].extension->copy_from(*orig_extension_slot.extension);
 			}
 		}
 	}
@@ -207,18 +206,35 @@ void tlm_generic_payload::update_extensions_from(const tlm_generic_payload& payl
 
 void tlm_generic_payload::free_all_extensions()
 {
-	typename std::vector<tlm_extension_base *>::size_type num_extensions = extensions.size();
-	typename std::vector<tlm_extension_base *>::size_type extension_id;
+	typename std::vector<tlm_extension_slot>::size_type num_extensions = extension_slots.size();
+	typename std::vector<tlm_extension_slot>::size_type extension_id;
 	
 	for(extension_id = 0; extension_id < num_extensions; extension_id++)
 	{
-		tlm_extension_base *extension = extensions[extension_id];
+		const tlm_extension_slot& extension_slot = extension_slots[extension_id];
 		
-		if(extension)
+		if(extension_slot.extension)
 		{
-			extension->free();
+			extension_slot.extension->free();
 			
-			extensions[extension_id] = 0;
+			extension_slots[extension_id].extension = 0;
+		}
+	}
+}
+
+void tlm_generic_payload::free_auto_extensions()
+{
+	typename std::vector<tlm_extension_slot>::size_type num_extensions = extension_slots.size();
+	typename std::vector<tlm_extension_slot>::size_type extension_id;
+
+	for(extension_id = 0; extension_id < num_extensions; extension_id++)
+	{
+		tlm_extension_slot& extension_slot = extension_slots[extension_id];
+		
+		if(!extension_slot.sticky && extension_slot.extension)
+		{
+			extension_slot.extension->free();
+			extension_slot.extension = 0;
 		}
 	}
 }
@@ -372,31 +388,43 @@ bool tlm_generic_payload::is_response_error()
 
 tlm_extension_base *tlm_generic_payload::set_extension(unsigned int id, tlm_extension_base *extension)
 {
-	tlm_extension_base *old_extension = (id < extensions.size()) ? extensions[id] : 0;
-	extensions[id] = extension;
+	tlm_extension_base *old_extension = (id < extension_slots.size()) ? extension_slots[id].extension : 0;
+	extension_slots[id].extension = extension;
+	extension_slots[id].sticky = true;
 	return old_extension;
 }
 
 tlm_extension_base* tlm_generic_payload::set_auto_extension(unsigned int id, tlm_extension_base *extension)
 {
-	tlm_extension_base *old_extension = (id < extensions.size()) ? extensions[id] : 0;
-	extensions[id] = extension;
+	if(!mm) throw std::runtime_error("call to tlm_generic_payload::set_auto_extension while payload has no memory management"); 
+	tlm_extension_base *old_extension = (id < extension_slots.size()) ? extension_slots[id].extension : 0;
+	extension_slots[id].extension = extension;
+	extension_slots[id].sticky = false;
 	return old_extension;
 }
 
 tlm_extension_base* tlm_generic_payload::get_extension(unsigned int id) const
 {
-	return (id < extensions.size()) ? extensions[id] : 0;
+	return (id < extension_slots.size()) ? extension_slots[id].extension : 0;
 }
 
 void tlm_generic_payload::resize_extensions()
 {
-	extensions.resize(next_extension_id);
+	if(next_extension_id > extension_slots.size())
+	{
+		extension_slots.resize(next_extension_id);
+	}
 }
 
 unsigned int tlm_extension_base::allocate_extension_id()
 {
 	return next_extension_id++;
+}
+
+tlm_generic_payload::tlm_extension_slot::tlm_extension_slot()
+	: extension(0)
+	, sticky(false)
+{
 }
 
 } // end of namespace tlm

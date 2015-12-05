@@ -37,6 +37,19 @@
 
 #include <systemc>
 
+#if defined(__APPLE_CC__)
+#include <sys/types.h>
+#elif defined(WIN32) || defined(WIN64)
+#define __LITTLE_ENDIAN 1234
+#define __BIG_ENDIAN    4321
+#define LITTLE_ENDIAN __LITTLE_ENDIAN
+#define BIG_ENDIAN __BIG_ENDIAN
+#define __BYTE_ORDER __LITTLE_ENDIAN
+#define BYTE_ORDER LITTLE_ENDIAN
+#else
+#include <endian.h>
+#endif
+
 namespace tlm {
 
 class tlm_generic_payload;
@@ -111,21 +124,21 @@ private:
 	tlm_generic_payload& operator= ( const tlm_generic_payload& );
 public:
 	// Memory management
-	void set_mm( tlm_mm_interface* );
+	void set_mm(tlm_mm_interface *);
 	bool has_mm() const;
 	void acquire();
 	void release();
 	int get_ref_count() const;
 	void reset();
-	void deep_copy_from( const tlm_generic_payload & );
-	void update_original_from( const tlm_generic_payload & , bool use_byte_enable_on_read = true );
-	void update_extensions_from( const tlm_generic_payload & );
+	void deep_copy_from(const tlm_generic_payload &);
+	void update_original_from(const tlm_generic_payload&, bool use_byte_enable_on_read = true);
+	void update_extensions_from(const tlm_generic_payload &);
 	void free_all_extensions();
 	// Access methods
 	tlm_gp_option get_gp_option() const;
-	void set_gp_option( const tlm_gp_option );
+	void set_gp_option(const tlm_gp_option);
 	tlm_command get_command() const;
-	void set_command( const tlm_command );
+	void set_command(const tlm_command);
 	bool is_read();
 	void set_read();
 	bool is_write();
@@ -133,35 +146,35 @@ public:
 	sc_dt::uint64 get_address() const;
 	void set_address( const sc_dt::uint64 );
 	unsigned char* get_data_ptr() const;
-	void set_data_ptr( unsigned char* );
+	void set_data_ptr(unsigned char *);
 	unsigned int get_data_length() const;
 
-	void set_data_length( const unsigned int );
+	void set_data_length(const unsigned int);
 	unsigned int get_streaming_width() const;
-	void set_streaming_width( const unsigned int );
+	void set_streaming_width(const unsigned int);
 	unsigned char* get_byte_enable_ptr() const;
-	void set_byte_enable_ptr( unsigned char* );
+	void set_byte_enable_ptr(unsigned char *);
 	unsigned int get_byte_enable_length() const;
-	void set_byte_enable_length( const unsigned int );
+	void set_byte_enable_length(const unsigned int);
 	// DMI hint
-	void set_dmi_allowed( bool );
+	void set_dmi_allowed(bool);
 	bool is_dmi_allowed() const;
 	tlm_response_status get_response_status() const;
-	void set_response_status( const tlm_response_status );
+	void set_response_status(const tlm_response_status);
 	std::string get_response_string();
 	bool is_response_ok();
 	bool is_response_error();
 	// Extension mechanism
-	template <typename T> T* set_extension( T* );
-	tlm_extension_base* set_extension( unsigned int , tlm_extension_base* );
-	template <typename T> T* set_auto_extension( T* );
-	tlm_extension_base* set_auto_extension( unsigned int , tlm_extension_base* );
-	template <typename T> void get_extension( T*& ) const;
+	template <typename T> T *set_extension(T *);
+	tlm_extension_base* set_extension(unsigned int, tlm_extension_base *);
+	template <typename T> T *set_auto_extension(T *);
+	tlm_extension_base *set_auto_extension(unsigned int, tlm_extension_base *);
+	template <typename T> void get_extension(T *&) const;
 	template <typename T> T* get_extension() const;
-	tlm_extension_base* get_extension( unsigned int ) const;
-	template <typename T> void clear_extension( const T* );
+	tlm_extension_base *get_extension(unsigned int) const;
+	template <typename T> void clear_extension(const T *);
 	template <typename T> void clear_extension();
-	template <typename T> void release_extension( T* );
+	template <typename T> void release_extension(T *);
 	template <typename T> void release_extension();
 	void resize_extensions();
 private:
@@ -177,7 +190,18 @@ private:
 	unsigned int byte_enable_length;
 	bool dmi_allowed;
 	tlm_response_status response_status;
-	std::vector<tlm_extension_base *> extensions;
+	
+	struct tlm_extension_slot
+	{
+		tlm_extension_slot();
+		
+		tlm_extension_base *extension;
+		bool sticky;
+	};
+	
+	std::vector<tlm_extension_slot> extension_slots;
+	
+	void free_auto_extensions();
 };
 
 template <typename T>
@@ -193,7 +217,7 @@ template <typename T> T *tlm_generic_payload::set_auto_extension(T *extension)
 	return static_cast<T *>(set_auto_extension(T::ID, extension));
 }
 
-template <typename T> void tlm_generic_payload::get_extension(T*& p_extension) const
+template <typename T> void tlm_generic_payload::get_extension(T *& p_extension) const
 {
 	p_extension = get_extension<T>();
 }
@@ -205,15 +229,15 @@ template <typename T> T *tlm_generic_payload::get_extension() const
 
 template <typename T> void tlm_generic_payload::clear_extension(const T *extension)
 {
-	extensions[T::ID] = 0;
+	extension_slots[T::ID].extension = 0;
 }
 
 template <typename T> void tlm_generic_payload::clear_extension()
 {
-	extensions[T::ID] = 0;
+	extension_slots[T::ID].extension = 0;
 }
 
-template <typename T> void tlm_generic_payload::release_extension( T* )
+template <typename T> void tlm_generic_payload::release_extension(T *)
 {
 	release_extension<T>();
 }
@@ -232,23 +256,42 @@ enum tlm_endianness
 
 inline tlm_endianness get_host_endianness(void)
 {
+#if BYTE_ORDER == LITTLE_ENDIAN
+	return TLM_LITTLE_ENDIAN;
+#elif BYTE_ORDER == BIG_ENDIAN
+	return TLM_BIG_ENDIAN;
+#else
+	return TLM_UNKNOWN_ENDIAN;
+#endif
 }
 
 inline bool host_has_little_endianness(void)
 {
+#if BYTE_ORDER == LITTLE_ENDIAN
+	return true;
+#else
+	return false;
+#endif
 }
 
 inline bool has_host_endianness(tlm_endianness endianness)
 {
+#if BYTE_ORDER == LITTLE_ENDIAN
+	return endianness == TLM_LITTLE_ENDIAN;
+#elif BYTE_ORDER == BIG_ENDIAN
+	return endianness == TLM_BIG_ENDIAN;
+#else
+	return false;
+#endif
 }
 
 template<class DATAWORD>
-inline void tlm_to_hostendian_generic(tlm_generic_payload *, unsigned int )
+inline void tlm_to_hostendian_generic(tlm_generic_payload *, unsigned int)
 {
 }
 
 template<class DATAWORD>
-inline void tlm_from_hostendian_generic(tlm_generic_payload *, unsigned int )
+inline void tlm_from_hostendian_generic(tlm_generic_payload *, unsigned int)
 {
 }
 
