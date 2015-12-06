@@ -77,15 +77,22 @@ public:
 	
 	void register_object(sc_object *object);
 	void register_event(sc_event *event);
+	void register_module(sc_module *module);
+	void register_port(sc_port_base *port);
+	void register_export(sc_export_base *exp);
+	void register_prim_channel(sc_prim_channel *prim_channel);
+	void register_thread_process(sc_thread_process *thread_process);
+	void register_method_process(sc_method_process *method_process);
+	
 	void unregister_object(sc_object *object);
 	void unregister_event(sc_event *event);
-	void add_module(sc_module *module);
-	void add_port(sc_port_base *port);
-	void add_export(sc_export_base *exp);
-	void add_prim_channel(sc_prim_channel *prim_channel);
-	void add_thread_process(sc_thread_process *thread_process);
-	void add_method_process(sc_method_process *method_process);
-	
+	void unregister_module(sc_module *module);
+	void unregister_port(sc_port_base *port);
+	void unregister_export(sc_export_base *exp);
+	void unregister_prim_channel(sc_prim_channel *prim_channel);
+	void unregister_thread_process(sc_thread_process *thread_process);
+	void unregister_method_process(sc_method_process *method_process);
+
 	// time resolution management
 	void set_time_resolution(double v, sc_time_unit tu, bool user);
 	sc_dt::uint64 get_time_discrete_value(double d, sc_time_unit tu) const;

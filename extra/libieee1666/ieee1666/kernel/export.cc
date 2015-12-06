@@ -60,16 +60,18 @@ void sc_export_base::end_of_simulation()
 sc_export_base::sc_export_base(const char *_name)
 	: sc_object(_name)
 {
+	kernel->register_export(this);
 }
 
 sc_export_base::sc_export_base()
 	: sc_object(sc_gen_unique_name("export"))
 {
+	kernel->register_export(this);
 }
-	
-// void sc_export_base::bind(sc_interface *_if)
-// {
-// 	interf = _if;
-// }
+
+sc_export_base::~sc_export_base()
+{
+	kernel->unregister_export(this);
+}
 
 } // end of namespace sc_core

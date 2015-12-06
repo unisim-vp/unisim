@@ -50,6 +50,7 @@ namespace sc_core {
 
 sc_module::~sc_module()
 {
+	kernel->unregister_module(this);
 }
 
 const char* sc_module::kind() const
@@ -294,7 +295,7 @@ void sc_module::init()
 	sc_module_name *non_const_module_name = kernel->get_top_of_module_name_stack();
 	non_const_module_name->set_module(this);
 	kernel->begin_module(this);
-	kernel->add_module(this);
+	kernel->register_module(this);
 }
 
 } // end of namespace sc_core

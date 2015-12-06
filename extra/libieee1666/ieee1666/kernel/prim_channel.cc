@@ -48,7 +48,7 @@ sc_prim_channel::sc_prim_channel()
 	: kernel(sc_kernel::get_kernel())
 	, update_requested(false)
 {
-	kernel->add_prim_channel(this);
+	kernel->register_prim_channel(this);
 }
 
 sc_prim_channel::sc_prim_channel(const char *_name)
@@ -56,11 +56,12 @@ sc_prim_channel::sc_prim_channel(const char *_name)
 	, kernel(sc_kernel::get_kernel())
 	, update_requested(false)
 {
-	kernel->add_prim_channel(this);
+	kernel->register_prim_channel(this);
 }
 
 sc_prim_channel::~sc_prim_channel()
 {
+	kernel->unregister_prim_channel(this);
 }
 
 void sc_prim_channel::request_update()

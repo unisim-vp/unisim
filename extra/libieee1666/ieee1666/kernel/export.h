@@ -57,10 +57,7 @@ protected:
 protected:
 	sc_export_base(const char *name);
 	sc_export_base();
-	
-//	void bind(sc_interface *_if);
-	
-//	sc_interface *interf;
+	virtual ~sc_export_base();
 };
 
 template<class IF>

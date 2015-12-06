@@ -87,7 +87,7 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, wait_and_event_list_remaining_count(0)
 	, wait_time_out_event(IEEE1666_KERNEL_PREFIX "_wait_time_out_event")
 {
-	kernel->add_thread_process(this);
+	kernel->register_thread_process(this);
 }
 
 sc_thread_process::~sc_thread_process()
@@ -99,6 +99,7 @@ sc_thread_process::~sc_thread_process()
 		delete coro;
 	}
 #endif
+	kernel->unregister_thread_process(this);
 }
 
 void sc_thread_process::set_stack_size(int _stack_size)

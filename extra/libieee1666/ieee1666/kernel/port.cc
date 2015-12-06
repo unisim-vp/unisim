@@ -78,7 +78,7 @@ sc_port_base::sc_port_base(const char *_name, int N, sc_port_policy P)
 	, processes_static_sensitivity()
 	, elaboration_finalized(false)
 {
-	kernel->add_port(this);
+	kernel->register_port(this);
 }
 
 sc_port_base::sc_port_base(int N, sc_port_policy P)
@@ -90,7 +90,12 @@ sc_port_base::sc_port_base(int N, sc_port_policy P)
 	, processes_static_sensitivity()
 	, elaboration_finalized(false)
 {
-	kernel->add_port(this);
+	kernel->register_port(this);
+}
+
+sc_port_base::~sc_port_base()
+{
+	kernel->unregister_port(this);
 }
 
 // Note: in IEEE1666-2011 callbacks are misplaced (in sc_port_b<IF>) because kernel don't known user interface passed as template arguments !

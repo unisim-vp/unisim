@@ -600,6 +600,40 @@ void sc_kernel::register_event(sc_event *event)
 	}
 }
 
+void sc_kernel::register_module(sc_module *module)
+{
+	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_module instantiation is not allowed after the end of elaboration");
+	module_table.push_back(module);
+}
+
+void sc_kernel::register_port(sc_port_base *port)
+{
+	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_port instantiation is not allowed after the end of elaboration");
+	port_table.push_back(port);
+}
+
+void sc_kernel::register_export(sc_export_base *exp)
+{
+	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_export instantiation is not allowed after the end of elaboration");
+	export_table.push_back(exp);
+}
+
+void sc_kernel::register_prim_channel(sc_prim_channel *prim_channel)
+{
+	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_prim_channel instantiation is not allowed after the end of elaboration");
+	prim_channel_table.push_back(prim_channel);
+}
+
+void sc_kernel::register_thread_process(sc_thread_process *thread_process)
+{
+	thread_process_table.push_back(thread_process);
+}
+
+void sc_kernel::register_method_process(sc_method_process *method_process)
+{
+	method_process_table.push_back(method_process);
+}
+
 void sc_kernel::unregister_object(sc_object *object)
 {
 	std::map<std::string, sc_object *>::iterator it = object_registry.find(object->name());
@@ -661,38 +695,94 @@ void sc_kernel::unregister_event(sc_event *event)
 	}
 }
 
-void sc_kernel::add_module(sc_module *module)
+void sc_kernel::unregister_module(sc_module *module)
 {
-	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_module instantiation is not allowed after the end of elaboration");
-	module_table.push_back(module);
+	unsigned int num_modules = module_table.size();
+	unsigned int i;
+	
+	for(i = 0; i < num_modules; i++)
+	{
+		if(module_table[i] == module)
+		{
+			module_table[i] = module_table[num_modules - 1];
+			module_table.resize(num_modules - 1);
+		}
+	}
 }
 
-void sc_kernel::add_port(sc_port_base *port)
+void sc_kernel::unregister_port(sc_port_base *port)
 {
-	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_port instantiation is not allowed after the end of elaboration");
-	port_table.push_back(port);
+	unsigned int num_ports = port_table.size();
+	unsigned int i;
+	
+	for(i = 0; i < num_ports; i++)
+	{
+		if(port_table[i] == port)
+		{
+			port_table[i] = port_table[num_ports - 1];
+			port_table.resize(num_ports - 1);
+		}
+	}
 }
 
-void sc_kernel::add_export(sc_export_base *exp)
+void sc_kernel::unregister_export(sc_export_base *exp)
 {
-	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_export instantiation is not allowed after the end of elaboration");
-	export_table.push_back(exp);
+	unsigned int num_exports = export_table.size();
+	unsigned int i;
+	
+	for(i = 0; i < num_exports; i++)
+	{
+		if(export_table[i] == exp)
+		{
+			export_table[i] = export_table[num_exports - 1];
+			export_table.resize(num_exports - 1);
+		}
+	}
 }
 
-void sc_kernel::add_prim_channel(sc_prim_channel *prim_channel)
+void sc_kernel::unregister_prim_channel(sc_prim_channel *prim_channel)
 {
-	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_prim_channel instantiation is not allowed after the end of elaboration");
-	prim_channel_table.push_back(prim_channel);
+	unsigned int num_prim_channels = prim_channel_table.size();
+	unsigned int i;
+	
+	for(i = 0; i < num_prim_channels; i++)
+	{
+		if(prim_channel_table[i] == prim_channel)
+		{
+			prim_channel_table[i] = prim_channel_table[num_prim_channels - 1];
+			prim_channel_table.resize(num_prim_channels - 1);
+		}
+	}
 }
 
-void sc_kernel::add_thread_process(sc_thread_process *thread_process)
+void sc_kernel::unregister_thread_process(sc_thread_process *thread_process)
 {
-	thread_process_table.push_back(thread_process);
+	unsigned int num_thread_processes = thread_process_table.size();
+	unsigned int i;
+	
+	for(i = 0; i < num_thread_processes; i++)
+	{
+		if(thread_process_table[i] == thread_process)
+		{
+			thread_process_table[i] = thread_process_table[num_thread_processes - 1];
+			thread_process_table.resize(num_thread_processes - 1);
+		}
+	}
 }
 
-void sc_kernel::add_method_process(sc_method_process *method_process)
+void sc_kernel::unregister_method_process(sc_method_process *method_process)
 {
-	method_process_table.push_back(method_process);
+	unsigned int num_method_processes = method_process_table.size();
+	unsigned int i;
+	
+	for(i = 0; i < num_method_processes; i++)
+	{
+		if(method_process_table[i] == method_process)
+		{
+			method_process_table[i] = method_process_table[num_method_processes - 1];
+			method_process_table.resize(num_method_processes - 1);
+		}
+	}
 }
 
 void sc_kernel::set_time_resolution(double v, sc_time_unit tu, bool user)

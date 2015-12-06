@@ -90,6 +90,7 @@ public: // this is public for event_finder_t<T>::find_event
 protected:
 	sc_port_base(const char *name, int N, sc_port_policy P);
 	sc_port_base(int N, sc_port_policy P);
+	virtual ~sc_port_base();
 	
 	void bind(sc_interface& _if);
 	void bind(sc_port_base& port);
