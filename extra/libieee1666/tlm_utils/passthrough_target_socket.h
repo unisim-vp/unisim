@@ -120,14 +120,14 @@ template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 passthrough_target_socket<MODULE, BUSWIDTH, TYPES>::passthrough_target_socket()
 	: tlm::tlm_target_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name("passthrough_target_socket"))
 {
-	bind(fw_transport_impl);
+	this->bind(fw_transport_impl);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 passthrough_target_socket<MODULE, BUSWIDTH, TYPES>::passthrough_target_socket(const char *n)
 	: tlm::tlm_target_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name(n))
 {
-	bind(fw_transport_impl);
+	this->bind(fw_transport_impl);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -193,7 +193,7 @@ template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 bool passthrough_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::get_direct_mem_ptr(transaction_type& trans, tlm::tlm_dmi& dmi_data)
 {
 	if(!mod || !get_direct_mem_ptr_cb) throw std::runtime_error("tlm_utils::simple_initiator_socket: no get_direct_mem_ptr callback registered");
-	(mod->*get_direct_mem_ptr_cb)(dmi_data);
+	(mod->*get_direct_mem_ptr_cb)(trans, dmi_data);
 }
 
 //////////////////////////////////// passthrough_target_socket_tagged<> ///////////////////////////////////////

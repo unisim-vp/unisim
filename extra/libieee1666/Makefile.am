@@ -1,4 +1,4 @@
-pkgconfig_DATA = systemc.pc
+pkgconfig_DATA = libieee1666.pc systemc.pc tlm.pc
 ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I$(top_srcdir) -I$(top_builddir)
 AM_CXXFLAGS = -fPIC
@@ -81,8 +81,8 @@ BUILT_SOURCES = ieee1666/kernel/features.h
 
 CLEANFILES = ieee1666/kernel/features.h
 
-lib_LTLIBRARIES = libsystemc.la
-libsystemc_la_SOURCES = \
+lib_LTLIBRARIES = libieee1666.la
+libieee1666_la_SOURCES = \
 ieee1666/kernel/attribute.cc \
 ieee1666/kernel/event.cc \
 ieee1666/kernel/event_finder.cc \
@@ -131,7 +131,7 @@ ieee1666/tlm2/interoperability_layer/payload/generic_payload.cc \
 ieee1666/tlm2/interoperability_layer/global_quantum/global_quantum.cc \
 tlm_utils/tlm_quantumkeeper.cc
 
-libsystemc_la_LIBADD=$(BOOST_COROUTINE_LIB) $(BOOST_CONTEXT_LIB) $(BOOST_SYSTEM_LIB) $(PTHREAD_LIBS) $(LIBS)
+libieee1666_la_LIBADD=$(BOOST_COROUTINE_LIB) $(BOOST_CONTEXT_LIB) $(BOOST_SYSTEM_LIB) $(PTHREAD_LIBS) $(LIBS)
 
 nobase_dist_share_DATA = \
 COPYING
@@ -140,7 +140,9 @@ EXTRA_DIST = \
 m4/cxxabi.m4 \
 m4/check_lib.m4 \
 m4/sc_thread_process_backend.m4 \
-systemc.pc.in
+libieee1666.pc.in \
+systemc.pc.in \
+tlm.pc.in
 
 ieee1666/kernel/features.h: Makefile
 	echo "// Do not modify: this file is generated while building process." > $@; \
@@ -163,4 +165,6 @@ uninstall-hook:
 	
 install-exec-hook:
 	(cd $(prefix) && ( [ -d lib-$(IEEE1666_TARGET_ARCH) ] || $(LN_S) lib lib-$(IEEE1666_TARGET_ARCH) ) )
+	sed -e 's/-g//g' -e 's/-O[0123]\?//g' -e 's/-lc//g' libieee1666.pc > libieee1666.pc.fixed && mv -f libieee1666.pc.fixed libieee1666.pc
 	sed -e 's/-g//g' -e 's/-O[0123]\?//g' -e 's/-lc//g' systemc.pc > systemc.pc.fixed && mv -f systemc.pc.fixed systemc.pc
+	sed -e 's/-g//g' -e 's/-O[0123]\?//g' -e 's/-lc//g' tlm.pc > tlm.pc.fixed && mv -f tlm.pc.fixed tlm.pc

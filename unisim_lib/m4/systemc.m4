@@ -63,41 +63,14 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 
     # Check if SystemC path has been overloaded
     AC_ARG_WITH(systemc,
-	AS_HELP_STRING([--with-systemc=<path>], [SystemC library to use (will be completed with /include and /lib-${SYSTEMC_TARGET_ARCH})]))
-    if test "x$with_systemc" != "x"; then
-	AC_MSG_NOTICE([using SystemC at $with_systemc])
-	LDFLAGS=${LDFLAGS}" -L$with_systemc/lib-${SYSTEMC_TARGET_ARCH}"
-	CPPFLAGS=${CPPFLAGS}" -I$with_systemc/include"
+	AS_HELP_STRING([--with-systemc=<path>], [Overrides search path to SystemC library]))
+    if test -n "$with_systemc"; then
+		AC_MSG_NOTICE([using SystemC at $with_systemc])
+		export PKG_CONFIG_PATH="${with_systemc}/lib-${SYSTEMC_TARGET_ARCH}/pkgconfig"
     fi
-	CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
 
-    # Check for systemc.h
-    AC_CHECK_HEADER(systemc.h,, AC_MSG_ERROR([systemc.h not found. Please install the SystemC library (version >= 2.1). Use --with-systemc=<path> to overload default search path.]))
-
-    # Check for function 'sc_start' in libsystemc.a
-	unisim_check_systemc_save_LIBS="${LIBS}"
-	LIBS="-lsystemc ${LIBS}"
-	AC_MSG_CHECKING([for sc_start in -lsystemc])
-	AC_LINK_IFELSE([AC_LANG_SOURCE([[
-#include <systemc.h>
-int sc_main(int argc, char **argv)
-{
-	sc_start();
-	return 0;
-}
-extern "C"
-int main(int argc, char *argv[])
-{
-	return sc_core::sc_elab_and_sim(argc, argv);
-}]])],
-		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([yes]); [broken_systemc=no],
-		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([no]); [broken_systemc=yes])
-
-    #AC_CHECK_LIB(systemc,main,broken_systemc=no,broken_systemc=yes)
-
-    if test "$broken_systemc" == "yes"; then
-	AC_MSG_ERROR([installed SystemC is broken. Please install the SystemC library (version > 2.1). Use --with-systemc=<path> to overload default search path.])
-    else
-	LIBS="-lsystemc ${LIBS}"
-    fi
+	PKG_CHECK_MODULES(SystemC, systemc, AC_MSG_NOTICE([SystemC found]), AC_MSG_ERROR([SystemC not found]))
+	
+	CXXFLAGS="${CXXFLAGS} ${SystemC_CFLAGS}"
+	LIBS="${LIBS} ${SystemC_LIBS}"
 ])

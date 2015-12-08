@@ -72,8 +72,8 @@ private:
 	// Disabled
 	sc_inout( const sc_inout<T>& );
 	
-	/////////////////////////////////////
-	sc_event_finder_t<sc_in<T> > value_changed_event_finder;
+	////////////////////////////////////////////
+	sc_event_finder_t<sc_signal_inout_if<T> > *value_changed_event_finder;
 };
 
 template <class T>
@@ -111,6 +111,11 @@ public:
 private:
 	// Disabled
 	sc_inout( const sc_inout<bool>& );
+
+	////////////////////////////////////////////
+	sc_event_finder_t<sc_signal_inout_if<bool> > *value_changed_event_finder;
+	sc_event_finder_t<sc_signal_inout_if<bool> > *posedge_event_finder;
+	sc_event_finder_t<sc_signal_inout_if<bool> > *negedge_event_finder;
 };
 
 template <>
@@ -195,19 +200,23 @@ inline void sc_trace<bool>( sc_trace_file*, const sc_inout<bool>&, const std::st
 template <class T>
 sc_inout<T>::sc_inout()
 	: sc_port<sc_signal_inout_if<T>,1>()
-	, value_changed_event_finder(this, value_changed_event)
+	, value_changed_event_finder(0)
 {
+	value_changed_event_finder = new sc_event_finder_t<sc_signal_inout_if<T> >(*this, &sc_signal_inout_if<T>::value_changed_event);
 }
 
 template <class T>
 sc_inout<T>::sc_inout(const char *_name)
 	: sc_port<sc_signal_inout_if<T>,1>(_name)
+	, value_changed_event_finder(0)
 {
+	value_changed_event_finder = new sc_event_finder_t<sc_signal_inout_if<T> >(*this, &sc_signal_inout_if<T>::value_changed_event);
 }
 
 template <class T>
 sc_inout<T>::~sc_inout()
 {
+	delete value_changed_event_finder;
 }
 
 template <class T>
@@ -253,7 +262,7 @@ sc_inout<T>& sc_inout<T>::operator = (const T& v)
 template <class T>
 sc_inout<T>& sc_inout<T>::operator = (const sc_signal_in_if<T>& _if)
 {
-	(*this)->write(_if->read());
+	(*this)->write(_if.read());
 	return *this;
 }
 
@@ -299,7 +308,7 @@ bool sc_inout<T>::event() const
 template <class T>
 sc_event_finder& sc_inout<T>::value_changed() const
 {
-	return value_changed_event_finder;
+	return *value_changed_event_finder;
 }
 
 template <class T>

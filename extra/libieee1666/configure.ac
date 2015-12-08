@@ -88,7 +88,7 @@ LIBIEEE1666_CHECK_CXXABI(main)
 
 # files to generate
 #   this should include all the makefiles to generate
-AC_CONFIG_FILES([Makefile systemc.pc])
+AC_CONFIG_FILES([Makefile libieee1666.pc systemc.pc tlm.pc])
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

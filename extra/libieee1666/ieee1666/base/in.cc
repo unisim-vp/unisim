@@ -121,8 +121,6 @@ const sc_event& sc_in<bool>::value_changed_event() const
 
 const sc_event& sc_in<bool>::posedge_event() const
 {
-	const sc_interface *itf = this->get_interface();
-	std::cerr << "get_interface()="  << itf << std::endl;
 	return (*this)->posedge_event();
 }
 

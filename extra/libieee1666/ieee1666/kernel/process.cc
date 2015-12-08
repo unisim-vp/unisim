@@ -64,6 +64,7 @@ sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_p
 	, flag_dynamic(sc_kernel::get_kernel()->get_status() > SC_END_OF_ELABORATION)
 	, flag_dont_initialize((process_kind == SC_CTHREAD_PROC_) ? true : (spawn_options ? spawn_options->get_flag_dont_initialize() : false))
 	, automatic_process_owner(process_owner->is_automatic())
+	, trigger_requested(false)
 	, ref_count(1)
 	, enabled(true)
 	, suspended(false)

@@ -36,6 +36,7 @@
 #include <ieee1666/kernel/kernel.h>
 #include <ieee1666/kernel/spawn.h>
 #include <ieee1666/kernel/event.h>
+#include <ieee1666/util/backtrace.h>
 #include <stdexcept>
 
 namespace sc_core {
@@ -287,7 +288,7 @@ void sc_thread_process::trigger_dynamically(const sc_event *triggered_event)
 		else
 		{
 			kernel->trigger(this);
-		}	
+		}
 	}
 }
 

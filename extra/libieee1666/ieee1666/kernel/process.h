@@ -84,12 +84,15 @@ public:
 	
 	void remove_static_sensitivity(const sc_event& e);
 private:
+	friend class sc_kernel;
+	
 	sc_process_owner *process_owner;
 	sc_process_owner_method_ptr process_owner_method_ptr;
 	sc_curr_proc_kind process_kind;
 	bool flag_dynamic;
 	bool flag_dont_initialize;
 	bool automatic_process_owner;
+	bool trigger_requested;
 
 	unsigned int ref_count;
 

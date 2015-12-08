@@ -315,7 +315,7 @@ public:
 	Schedule()
 		: schedule()
 		, free_list()
-		, kernel_event()
+		, kernel_event("schedule_kernel_event")
 	{
 	}
 	

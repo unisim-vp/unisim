@@ -75,7 +75,7 @@ private:
 	// Disabled
 	sc_signal( const sc_signal<T,WRITER_POLICY>& );
 	
-	sc_port_base *registered_port;
+	sc_port_base *registered_inout_port;
 	sc_object *writer;
 	sc_event signal_value_changed_event;
 	sc_dt::uint64 signal_value_changed_delta_cycle;
@@ -122,7 +122,7 @@ private:
 	// Disabled
 	sc_signal( const sc_signal<bool,WRITER_POLICY>& );
 	
-	sc_port_base *registered_port;
+	sc_port_base *registered_inout_port;
 	sc_object *writer;
 	sc_event signal_value_changed_event;
 	sc_event signal_posedge_event;
@@ -216,7 +216,7 @@ protected:
 template <class T, sc_writer_policy WRITER_POLICY>
 sc_signal<T, WRITER_POLICY>::sc_signal()
 	: sc_prim_channel(IEEE1666_KERNEL_PREFIX "_signal")
-	, registered_port(0)
+	, registered_inout_port(0)
 	, writer(0)
 	, signal_value_changed_event(IEEE1666_KERNEL_PREFIX "_value_changed_event")
 	, signal_value_changed_delta_cycle(0x7fffffffffffffffULL)
@@ -228,7 +228,7 @@ sc_signal<T, WRITER_POLICY>::sc_signal()
 template <class T, sc_writer_policy WRITER_POLICY>
 sc_signal<T, WRITER_POLICY>::sc_signal(const char* _name)
 	: sc_prim_channel(_name)
-	, registered_port(0)
+	, registered_inout_port(0)
 	, writer(0)
 	, signal_value_changed_event(IEEE1666_KERNEL_PREFIX "_signal_value_changed_event")
 	, value_index(0)
@@ -247,17 +247,16 @@ void sc_signal<T, WRITER_POLICY>::register_port(sc_port_base& port, const char *
 	if(std::string(typeid(sc_signal_inout_if<T>).name()).compare(if_typename) == 0)
 	{
 		// output port
-		if((WRITER_POLICY == SC_ONE_WRITER) && (registered_port != &port))
+		if((WRITER_POLICY == SC_ONE_WRITER) && registered_inout_port && (registered_inout_port != &port))
 		{
 			throw std::runtime_error("sc_signal can't be bound to more than one output port");
 		}
+		registered_inout_port = &port;
 	}
 	else if(std::string(typeid(sc_signal_in_if<T>).name()).compare(if_typename) != 0)
 	{
 		throw std::runtime_error("sc_signal is not bound to sc_signal_in_if<T> nor sc_signal_inout_if<T>");
 	}
-	
-	registered_port = &port;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
@@ -405,7 +404,7 @@ inline std::ostream& operator << (std::ostream& os, const sc_signal<T,WRITER_POL
 template <sc_writer_policy WRITER_POLICY>
 sc_signal<bool, WRITER_POLICY>::sc_signal()
 	: sc_prim_channel(IEEE1666_KERNEL_PREFIX "_signal")
-	, registered_port(0)
+	, registered_inout_port(0)
 	, writer(0)
 	, signal_value_changed_event(IEEE1666_KERNEL_PREFIX "_signal_value_changed_event")
 	, signal_posedge_event(IEEE1666_KERNEL_PREFIX "_signal_posedge_event")
@@ -418,7 +417,7 @@ sc_signal<bool, WRITER_POLICY>::sc_signal()
 template <sc_writer_policy WRITER_POLICY>
 sc_signal<bool, WRITER_POLICY>::sc_signal(const char *_name)
 	: sc_prim_channel(_name)
-	, registered_port(0)
+	, registered_inout_port(0)
 	, writer(0)
 	, signal_value_changed_event(IEEE1666_KERNEL_PREFIX "_signal_value_changed_event")
 	, signal_posedge_event(IEEE1666_KERNEL_PREFIX "_signal_posedge_event")
@@ -439,17 +438,17 @@ void sc_signal<bool, WRITER_POLICY>::register_port(sc_port_base& port, const cha
 	if(std::string(typeid(sc_signal_inout_if<bool>).name()).compare(if_typename) == 0)
 	{
 		// output port
-		if((WRITER_POLICY == SC_ONE_WRITER) && (registered_port != &port))
+		if((WRITER_POLICY == SC_ONE_WRITER) && registered_inout_port && (registered_inout_port != &port))
 		{
 			throw std::runtime_error("sc_signal can't be bound to more than one output port");
 		}
+		registered_inout_port = &port;
 	}
 	else if(std::string(typeid(sc_signal_in_if<bool>).name()).compare(if_typename) != 0)
 	{
 		throw std::runtime_error("sc_signal is not bound to sc_signal_in_if<bool> nor sc_signal_inout_if<bool>");
 	}
 	
-	registered_port = &port;
 }
 
 template <sc_writer_policy WRITER_POLICY>

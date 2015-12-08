@@ -406,6 +406,7 @@ void sc_kernel::do_delta_steps(bool once)
 			{
 				sc_method_process *method_process = runnable_method_processes.front();
 				runnable_method_processes.pop_front();
+				method_process->trigger_requested = false;
 				
 				current_object = method_process;
 				current_writer = method_process;
@@ -428,6 +429,7 @@ void sc_kernel::do_delta_steps(bool once)
 			{
 				sc_thread_process *thread_process = runnable_thread_processes.front();
 				runnable_thread_processes.pop_front();
+				thread_process->trigger_requested = false;
 				
 				current_object = thread_process;
 				current_writer = thread_process;
@@ -1029,12 +1031,20 @@ void sc_kernel::next_trigger(const sc_time& t, const sc_event_or_list& el)
 
 void sc_kernel::trigger(sc_thread_process *thread_process)
 {
-	runnable_thread_processes.push_back(thread_process);
+	if(!thread_process->trigger_requested)
+	{
+		runnable_thread_processes.push_back(thread_process);
+		thread_process->trigger_requested = true;
+	}
 }
 
 void sc_kernel::trigger(sc_method_process *method_process)
 {
-	runnable_method_processes.push_back(method_process);
+	if(!method_process->trigger_requested)
+	{
+		runnable_method_processes.push_back(method_process);
+		method_process->trigger_requested = true;
+	}
 }
 
 void sc_kernel::request_update(sc_prim_channel *prim_channel)
