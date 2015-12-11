@@ -143,6 +143,7 @@ sc_object* sc_event::get_parent_object() const
 
 void sc_event::notify()
 {
+// 	std::cerr << name() << ".notify()" << std::endl;
 	// immediate notification
 	cancel();
 	trigger();
@@ -150,10 +151,12 @@ void sc_event::notify()
 
 void sc_event::notify(const sc_time& t)
 {
+//  	std::cerr << name() << ".notify(t=" << t << ")" << std::endl;
 	// this is a delta or timed notification
 	
 	if(state == DELTA_NOTIFIED)
 	{
+// 		std::cerr << name() << ": there's already a pending delta notification that takes precedence over a delta or timed notification" << std::endl;
 		// there's already a pending delta notification that takes precedence over a delta or timed notification
 		return;
 	}
@@ -165,6 +168,7 @@ void sc_event::notify(const sc_time& t)
 		if(state == TIMED_NOTIFIED)
 		{
 			// cancel pending timed notification because delta notification takes precedence
+// 			std::cerr << name() << ": cancel pending timed notification because delta notification takes precedence" << std::endl;
 			cancel();
 		}
 		
@@ -184,6 +188,7 @@ void sc_event::notify(const sc_time& t)
 			if(timed_kernel_event->get_time() <= event_time)
 			{
 				// there's already an earlier pending timed notification that takes precedence
+// 				std::cerr << name() << ": there's already an earlier pending timed notification that takes precedence" << std::endl;
 				return;
 			}
 		}
@@ -194,6 +199,7 @@ void sc_event::notify(const sc_time& t)
 
 void sc_event::notify(double d, sc_time_unit tu)
 {
+// 	std::cerr << name() << ".notify(d=" << d << ", tu=" << tu << ")" << std::endl;
 	notify(sc_time(d, tu));
 }
 
@@ -216,6 +222,7 @@ void sc_event::cancel()
 
 void sc_event::trigger()
 {
+//  	std::cerr << name() << ".trigger()" << std::endl;
 	if(statically_sensitive_method_processes.size())
 	{
 		std::unordered_set<sc_method_process *>::iterator it = statically_sensitive_method_processes.begin();
@@ -240,29 +247,39 @@ void sc_event::trigger()
 		while(++it, it != statically_sensitive_thread_processes.end());
 	}
 
+	sc_method_process *current_method_process = kernel->get_current_method_process();
+	sc_thread_process *current_thread_process = kernel->get_current_thread_process();
+
 	if(dynamically_sensitive_method_processes.size())
 	{
 		std::unordered_set<sc_method_process *>::iterator it = dynamically_sensitive_method_processes.begin();
 		
 		do
 		{
-			sc_method_process *method_process = *it;
-			method_process->trigger_dynamically(this);
+			sc_method_process *method_process = *it++;
+			if(method_process != current_method_process)
+			{
+				method_process->trigger_dynamically(this);
+			}
 		}
-		while(++it, it != dynamically_sensitive_method_processes.end());
+		while(it != dynamically_sensitive_method_processes.end());
 		dynamically_sensitive_method_processes.clear();
 	}
 
 	if(dynamically_sensitive_thread_processes.size())
 	{
 		std::unordered_set<sc_thread_process *>::iterator it = dynamically_sensitive_thread_processes.begin();
-		
+
 		do
 		{
-			sc_thread_process *thread_process = *it;
-			thread_process->trigger_dynamically(this);
+			sc_thread_process *thread_process = *it++;
+			if(thread_process != current_thread_process)
+			{
+				thread_process->trigger_dynamically(this);
+			}
 		}
-		while(++it, it != dynamically_sensitive_thread_processes.end());
+		while(it != dynamically_sensitive_thread_processes.end());
+		
 		dynamically_sensitive_thread_processes.clear();
 	}
 
@@ -313,16 +330,6 @@ sc_event::sc_event( const sc_event& )
 
 sc_event& sc_event::operator= ( const sc_event& )
 {
-}
-
-void sc_event::add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
-{
-	dynamically_sensitive_thread_processes.insert(thread_process);
-}
-
-void sc_event::add_dynamically_sensitive_method_process(sc_method_process *method_process) const
-{
-	dynamically_sensitive_method_processes.insert(method_process);
 }
 
 void sc_event::remove_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
@@ -505,7 +512,7 @@ void sc_event_list::release() const
 {
 	if(auto_mm)
 	{
-		if(--ref_count) delete this;
+		if(--ref_count == 0) delete this;
 	}
 }
 

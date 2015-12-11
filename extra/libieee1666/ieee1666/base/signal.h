@@ -282,6 +282,8 @@ void sc_signal<T, WRITER_POLICY>::write(const T& v)
 {
 	bool value_changed = !(v == current_value());
 	
+	new_value() = v;
+	
 	if(value_changed)
 	{
 		if(WRITER_POLICY == SC_ONE_WRITER)
@@ -294,7 +296,6 @@ void sc_signal<T, WRITER_POLICY>::write(const T& v)
 			}
 		}
 		
-		new_value() = v;
 		request_update();
 	}
 }
@@ -352,9 +353,14 @@ const char* sc_signal<T, WRITER_POLICY>::kind() const
 template <class T, sc_writer_policy WRITER_POLICY>
 void sc_signal<T, WRITER_POLICY>::update()
 {
-	toggle_value();
-	signal_value_changed_delta_cycle = kernel->get_delta_count();
-	signal_value_changed_event.notify(SC_ZERO_TIME);
+	bool value_changed = !(current_value() == new_value());
+	
+	if(value_changed)
+	{
+		toggle_value();
+		signal_value_changed_delta_cycle = kernel->get_delta_count();
+		signal_value_changed_event.notify(SC_ZERO_TIME);
+	}
 }
 
 // disabled
@@ -473,7 +479,9 @@ template <sc_writer_policy WRITER_POLICY>
 void sc_signal<bool, WRITER_POLICY>::write(const bool& v)
 {
 	bool value_changed = !(v == current_value());
-	
+
+	new_value() = v;
+
 	if(value_changed)
 	{
 		if(WRITER_POLICY == SC_ONE_WRITER)
@@ -486,7 +494,6 @@ void sc_signal<bool, WRITER_POLICY>::write(const bool& v)
 			}
 		}
 		
-		new_value() = v;
 		request_update();
 	}
 }
@@ -568,16 +575,21 @@ const char* sc_signal<bool, WRITER_POLICY>::kind() const
 template <sc_writer_policy WRITER_POLICY>
 void sc_signal<bool, WRITER_POLICY>::update()
 {
-	toggle_value();
-	signal_value_changed_delta_cycle = kernel->get_delta_count();
-	signal_value_changed_event.notify(SC_ZERO_TIME);
-	if(current_value())
+	bool value_changed = !(current_value() == new_value());
+	
+	if(value_changed)
 	{
-		signal_posedge_event.notify(SC_ZERO_TIME);
-	}
-	else
-	{
-		signal_negedge_event.notify(SC_ZERO_TIME);
+		toggle_value();
+		signal_value_changed_delta_cycle = kernel->get_delta_count();
+		signal_value_changed_event.notify(SC_ZERO_TIME);
+		if(current_value())
+		{
+			signal_posedge_event.notify(SC_ZERO_TIME);
+		}
+		else
+		{
+			signal_negedge_event.notify(SC_ZERO_TIME);
+		}
 	}
 }
 
@@ -614,7 +626,7 @@ bool& sc_signal<bool, WRITER_POLICY>::new_value()
 template <sc_writer_policy WRITER_POLICY>
 void sc_signal<bool, WRITER_POLICY>::toggle_value()
 {
-	value[0] = value[1];
+	current_value() = new_value();
 }
 
 } // end of namespace sc_core

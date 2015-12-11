@@ -70,7 +70,8 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	: sc_process(_name, _process_owner, _process_owner_method_ptr, clocked ? SC_CTHREAD_PROC_ : SC_THREAD_PROC_, spawn_options)
 #if SC_THREAD_PROCESSES_USE_PTHREADS
 	, thrd()
-	, mutex()
+	, callee_mutex()
+	, caller_mutex()
 	, cond_callee()
 	, cond_caller()
 #else
@@ -78,6 +79,7 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, thread_process_helper(0)
 #endif
 	, stack_size(spawn_options ? spawn_options->get_stack_size() : 0)
+	, started(false)
 	, killed(false)
 	, thread_process_terminated(false)
 	, thread_process_terminated_event(IEEE1666_KERNEL_PREFIX "_terminated_event")
@@ -88,19 +90,30 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, wait_and_event_list_remaining_count(0)
 	, wait_time_out_event(IEEE1666_KERNEL_PREFIX "_wait_time_out_event")
 {
+#if SC_THREAD_PROCESSES_USE_PTHREADS
+	pthread_mutex_init(&callee_mutex, NULL);
+	pthread_mutex_init(&caller_mutex, NULL);
+	pthread_cond_init(&cond_callee, NULL);
+	pthread_cond_init(&cond_caller, NULL);
+#endif
 	kernel->register_thread_process(this);
 }
 
 sc_thread_process::~sc_thread_process()
 {
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-#else
-	if(coro)
+	if(started)
 	{
-		delete coro;
+		kill();
 	}
-#endif
+
 	kernel->unregister_thread_process(this);
+
+#if SC_THREAD_PROCESSES_USE_PTHREADS
+	pthread_mutex_destroy(&callee_mutex);
+	pthread_mutex_destroy(&caller_mutex);
+	pthread_cond_destroy(&cond_callee);
+	pthread_cond_destroy(&cond_caller);
+#endif
 }
 
 void sc_thread_process::set_stack_size(int _stack_size)
@@ -111,13 +124,18 @@ void sc_thread_process::set_stack_size(int _stack_size)
 void sc_thread_process::start()
 {
 #if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_mutex_init(&mutex, NULL);
-	pthread_cond_init(&cond_callee, NULL);
-	pthread_cond_init(&cond_caller, NULL);
-	
+	pthread_mutex_lock(&caller_mutex);
+
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_create(&thrd, &attr, &sc_thread_process::thread_work, this);
+
+	started = true;
+// 	std::cerr << "kernel waits " << name() << std::endl;
+	pthread_cond_wait(&cond_caller, &caller_mutex);
+// 	std::cerr << "kernel wakes up" << std::endl;
+	pthread_mutex_unlock(&caller_mutex);
+
 #else
 	if(stack_size)
 	{
@@ -128,22 +146,25 @@ void sc_thread_process::start()
 	{
 		coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1));
 	}
+	started = true;
 #endif
 }
 
 void sc_thread_process::yield()
 {
 #if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&caller_mutex);
+// 	std::cerr << name() << " signals kernel" << std::endl;
 	pthread_cond_signal(&cond_caller);
-	pthread_cond_wait(&cond_callee, &mutex);
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_lock(&callee_mutex);
+	pthread_mutex_unlock(&caller_mutex);
+// 	std::cerr << name() << " waits kernel" << std::endl;
+	pthread_cond_wait(&cond_callee, &callee_mutex);
+// 	std::cerr << name() << " wakes up" << std::endl;
+	pthread_mutex_unlock(&callee_mutex);
 	if(killed)
 	{
-		thread_process_terminated = true;
-		thread_process_terminated_event.notify();
-		pthread_cond_signal(&cond_caller);
-		pthread_exit(NULL);
+		terminate();
 		return;
 	}
 #else
@@ -381,15 +402,34 @@ void sc_thread_process::wait(const sc_time& t, const sc_event_or_list& el)
 void sc_thread_process::switch_to()
 {
 #if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&callee_mutex);
+// 	std::cerr << "kernel signals " << name() << std::endl;
 	pthread_cond_signal(&cond_callee);
-	pthread_cond_wait(&cond_caller, &mutex);
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_lock(&caller_mutex);
+	pthread_mutex_unlock(&callee_mutex);
+// 	std::cerr << "kernel waits " << name() << std::endl;
+	pthread_cond_wait(&cond_caller, &caller_mutex);
+// 	std::cerr << "kernel wakes up" << std::endl;
+	pthread_mutex_unlock(&caller_mutex);
 #else
 	if(*coro)
 	{
 		(*coro)(); // yield to thread
 	}
+#endif
+}
+
+void sc_thread_process::terminate()
+{
+	thread_process_terminated = true;
+	thread_process_terminated_event.notify();
+#if SC_THREAD_PROCESSES_USE_PTHREADS
+	pthread_mutex_lock(&caller_mutex);
+// 	std::cerr << name() << "signals kernel" << std::endl;
+	pthread_cond_signal(&cond_caller);
+	pthread_mutex_unlock(&caller_mutex);
+	
+	pthread_exit(NULL);
 #endif
 }
 
@@ -399,8 +439,7 @@ void *sc_thread_process::thread_work(void *arg)
 	sc_thread_process *thread_process = static_cast<sc_thread_process *>(arg);
 	thread_process->yield();
 	thread_process->call_process_owner_method();
-	thread_process->thread_process_terminated = true;
-	thread_process->thread_process_terminated_event.notify();
+	thread_process->terminate();
 }
 #else
 void sc_thread_process::coroutine_work(sc_coroutine::caller_type& yield)
@@ -458,19 +497,25 @@ void sc_thread_process::kill(sc_descendant_inclusion_info include_descendants)
 {
 	enabled = false;
 	killed = true;
-	if(!thread_process_terminated)
+	
+	if(started)
 	{
-		switch_to(); // let thread die
-	}
+		if(!thread_process_terminated)
+		{
+			switch_to(); // let thread die
+		}
 #if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_join(thrd, NULL);
+		pthread_join(thrd, NULL);		
 #else
-	if(coro)
-	{
-		delete coro;
-		coro = 0;
-	}
+		if(coro)
+		{
+			delete coro;
+			coro = 0;
+		}
 #endif
+
+		started = false;
+	}
 }
 
 void sc_thread_process::reset(sc_descendant_inclusion_info include_descendants)

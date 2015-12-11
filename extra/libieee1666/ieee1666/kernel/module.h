@@ -76,31 +76,31 @@ protected:
 	sc_sensitive sensitive;
 	void dont_initialize();
 	void set_stack_size( size_t );
-	void next_trigger();
-	void next_trigger( const sc_event& );
-	void next_trigger( const sc_event_or_list & );
-	void next_trigger( const sc_event_and_list & );
-	void next_trigger( const sc_time& );
-	void next_trigger( double , sc_time_unit );
-	void next_trigger( const sc_time& , const sc_event& );
-	void next_trigger( double , sc_time_unit , const sc_event& );
-	void next_trigger( const sc_time& , const sc_event_or_list &);
-	void next_trigger( double , sc_time_unit , const sc_event_or_list & );
-	void next_trigger( const sc_time& , const sc_event_and_list & );
-	void next_trigger( double , sc_time_unit , const sc_event_and_list & );
-	void wait();
-	void wait( int );
-	void wait( const sc_event& );
-	void wait( const sc_event_or_list &);
-	void wait( const sc_event_and_list & );
-	void wait( const sc_time& );
-	void wait( double , sc_time_unit );
-	void wait( const sc_time& , const sc_event& );
-	void wait( double , sc_time_unit , const sc_event& );
-	void wait( const sc_time& , const sc_event_or_list & );
-	void wait( double , sc_time_unit , const sc_event_or_list & );
-	void wait( const sc_time& , const sc_event_and_list & );
-	void wait( double , sc_time_unit , const sc_event_and_list & );
+	inline void next_trigger() ALWAYS_INLINE;
+	inline void next_trigger( const sc_event& ) ALWAYS_INLINE;
+	inline void next_trigger( const sc_event_or_list & ) ALWAYS_INLINE;
+	inline void next_trigger( const sc_event_and_list & ) ALWAYS_INLINE;
+	inline void next_trigger( const sc_time& ) ALWAYS_INLINE;
+	inline void next_trigger( double , sc_time_unit ) ALWAYS_INLINE;
+	inline void next_trigger( const sc_time& , const sc_event& ) ALWAYS_INLINE;
+	inline void next_trigger( double , sc_time_unit , const sc_event& ) ALWAYS_INLINE;
+	inline void next_trigger( const sc_time& , const sc_event_or_list &) ALWAYS_INLINE;
+	inline void next_trigger( double , sc_time_unit , const sc_event_or_list & ) ALWAYS_INLINE;
+	inline void next_trigger( const sc_time& , const sc_event_and_list & ) ALWAYS_INLINE;
+	inline void next_trigger( double , sc_time_unit , const sc_event_and_list & ) ALWAYS_INLINE;
+	inline void wait() ALWAYS_INLINE;
+	inline void wait( int ) ALWAYS_INLINE;
+	inline void wait( const sc_event& ) ALWAYS_INLINE;
+	inline void wait( const sc_event_or_list &) ALWAYS_INLINE;
+	inline void wait( const sc_event_and_list & ) ALWAYS_INLINE;
+	inline void wait( const sc_time& ) ALWAYS_INLINE;
+	inline void wait( double , sc_time_unit ) ALWAYS_INLINE;
+	inline void wait( const sc_time& , const sc_event& ) ALWAYS_INLINE;
+	inline void wait( double , sc_time_unit , const sc_event& ) ALWAYS_INLINE;
+	inline void wait( const sc_time& , const sc_event_or_list & ) ALWAYS_INLINE;
+	inline void wait( double , sc_time_unit , const sc_event_or_list & ) ALWAYS_INLINE;
+	inline void wait( const sc_time& , const sc_event_and_list & ) ALWAYS_INLINE;
+	inline void wait( double , sc_time_unit , const sc_event_and_list & ) ALWAYS_INLINE;
 	virtual void before_end_of_elaboration();
 	virtual void end_of_elaboration();
 	virtual void start_of_simulation();
@@ -131,6 +131,140 @@ private:
 #define SC_CTHREAD(name,clk_edge_event_finder) ::sc_core::sc_kernel::get_kernel()->create_cthread_process(#name, this, static_cast<::sc_core::sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name),&this->spawn_options, clk_edge_event_finder) // implementation-defined
 typedef sc_module sc_behavior;
 typedef sc_module sc_channel;
+
+inline void sc_module::next_trigger()
+{
+	kernel->next_trigger();
+}
+
+inline void sc_module::next_trigger( const sc_event& e)
+{
+	kernel->next_trigger(e);
+}
+
+inline void sc_module::next_trigger(const sc_event_or_list& el)
+{
+	kernel->next_trigger(el);
+}
+
+inline void sc_module::next_trigger(const sc_event_and_list& el)
+{
+	kernel->next_trigger(el);
+}
+
+inline void sc_module::next_trigger(const sc_time& t)
+{
+	kernel->next_trigger(t);
+}
+
+inline void sc_module::next_trigger(double d, sc_time_unit tu)
+{
+	sc_time t = sc_time(d, tu);
+	kernel->next_trigger(t);
+}
+
+inline void sc_module::next_trigger(const sc_time& t, const sc_event& e)
+{
+	kernel->next_trigger(t, e);
+}
+
+inline void sc_module::next_trigger(double d, sc_time_unit tu, const sc_event& e)
+{
+	sc_time t = sc_time(d, tu);
+	kernel->next_trigger(t, e);
+}
+
+inline void sc_module::next_trigger(const sc_time& t, const sc_event_or_list& el)
+{
+	kernel->next_trigger(t, el);
+}
+
+inline void sc_module::next_trigger(double d, sc_time_unit tu, const sc_event_or_list& el)
+{
+	sc_time t = sc_time(d, tu);
+	kernel->next_trigger(t, el);
+}
+
+inline void sc_module::next_trigger(const sc_time& t, const sc_event_and_list& el)
+{
+	kernel->next_trigger(t, el);
+}
+
+inline void sc_module::next_trigger(double d, sc_time_unit tu, const sc_event_and_list& el)
+{
+	sc_time t = sc_time(d, tu);
+	kernel->next_trigger(t, el);
+}
+
+inline void sc_module::wait()
+{
+	kernel->wait();
+}
+
+inline void sc_module::wait(int n)
+{
+	kernel->wait(n);
+}
+
+inline void sc_module::wait(const sc_event& e)
+{
+	kernel->wait(e);
+}
+
+inline void sc_module::wait(const sc_event_or_list& el)
+{
+	kernel->wait(el);
+}
+
+inline void sc_module::wait(const sc_event_and_list& el)
+{
+	kernel->wait(el);
+}
+
+inline void sc_module::wait(const sc_time& t)
+{
+	kernel->wait(t);
+}
+
+inline void sc_module::wait(double d, sc_time_unit tu)
+{
+	sc_time t = sc_time(d, tu);
+	kernel->wait(t);
+}
+
+inline void sc_module::wait(const sc_time& t, const sc_event& e)
+{
+	kernel->wait(t, e);
+}
+
+inline void sc_module::wait(double d, sc_time_unit tu, const sc_event& e)
+{
+	sc_time t = sc_time(d, tu);
+	kernel->wait(t, e);
+}
+
+inline void sc_module::wait(const sc_time& t, const sc_event_or_list& el)
+{
+	kernel->wait(t, el);
+}
+
+inline void sc_module::wait(double d, sc_time_unit tu, const sc_event_or_list& el)
+{
+	sc_time t = sc_time(d, tu);
+	kernel->wait(t, el);
+}
+
+inline void sc_module::wait(const sc_time& t, const sc_event_and_list& el)
+{
+	kernel->wait(t, el);
+}
+
+inline void sc_module::wait(double d, sc_time_unit tu, const sc_event_and_list& el)
+{
+	sc_time t = sc_time(d, tu);
+	kernel->wait(t, el);
+}
+
 
 } // end of namespace sc_core
 

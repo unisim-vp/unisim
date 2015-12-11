@@ -150,7 +150,7 @@ void sc_method_process::trigger_dynamically(const sc_event *triggered_event)
 				}
 				break;
 
-			case NEXT_TRIGGER_TIME_OUT_OR_EVENT_OR_LIST: // next_trigger(t, e1 | ... \ en)
+			case NEXT_TRIGGER_TIME_OUT_OR_EVENT_OR_LIST: // next_trigger(t, e1 | ... | en)
 				if(triggered_event == &next_trigger_time_out_event)
 				{
 					// got time out event first
@@ -186,11 +186,13 @@ void sc_method_process::trigger_dynamically(const sc_event *triggered_event)
 
 void sc_method_process::next_trigger()
 {
+// 	std::cerr << name() << ".next_trigger()" << std::endl;
 	cancel_next_trigger();
 }
 
 void sc_method_process::next_trigger(const sc_event& e)
 {
+// 	std::cerr << name() << ".next_trigger(e=" << e.name() << ")" << std::endl;
 	cancel_next_trigger();
 	next_trigger_type = NEXT_TRIGGER_EVENT;
 	next_trigger_event = &e;

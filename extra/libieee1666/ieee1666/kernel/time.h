@@ -44,25 +44,25 @@ namespace sc_core {
 class sc_time
 {
 public:
-	sc_time();
+	inline sc_time() ALWAYS_INLINE;
 	sc_time(double, sc_time_unit);
-	sc_time(const sc_time&);
-	sc_time& operator = (const sc_time&);
-	sc_dt::uint64 value() const;
-	double to_double() const;
+	inline sc_time(const sc_time&) ALWAYS_INLINE;
+	inline sc_time& operator = (const sc_time&) ALWAYS_INLINE;
+	inline sc_dt::uint64 value() const ALWAYS_INLINE;
+	inline double to_double() const ALWAYS_INLINE;
 	double to_seconds() const;
 	const std::string to_string() const;
-	bool operator == (const sc_time&) const;
-	bool operator != (const sc_time&) const;
-	bool operator < (const sc_time&) const;
-	bool operator <= (const sc_time&) const;
-	bool operator > (const sc_time&) const;
-	bool operator >= (const sc_time&) const;
-	sc_time& operator += (const sc_time&);
-	sc_time& operator -= (const sc_time&);
-	sc_time& operator *= (double);
-	sc_time& operator /= (double);
-	sc_time& operator %= (const sc_time&); // This is not part of IEEE1666-2011
+	inline bool operator == (const sc_time&) const ALWAYS_INLINE;
+	inline bool operator != (const sc_time&) const ALWAYS_INLINE;
+	inline bool operator < (const sc_time&) const ALWAYS_INLINE;
+	inline bool operator <= (const sc_time&) const ALWAYS_INLINE;
+	inline bool operator > (const sc_time&) const ALWAYS_INLINE;
+	inline bool operator >= (const sc_time&) const ALWAYS_INLINE;
+	inline sc_time& operator += (const sc_time&) ALWAYS_INLINE;
+	inline sc_time& operator -= (const sc_time&) ALWAYS_INLINE;
+	inline sc_time& operator *= (double) ALWAYS_INLINE;
+	inline sc_time& operator /= (double) ALWAYS_INLINE;
+	inline sc_time& operator %= (const sc_time&) ALWAYS_INLINE; // This is not part of IEEE1666-2011
 	void print(std::ostream& = std::cout) const;
 	
 	/////////////////////////////
@@ -83,18 +83,148 @@ private:
 	sc_dt::uint64 discrete_value;
 };
 
-const sc_time operator + (const sc_time&, const sc_time&);
-const sc_time operator - (const sc_time&, const sc_time&);
-const sc_time operator * (const sc_time&, double);
-const sc_time operator * (double, const sc_time&);
-const sc_time operator / (const sc_time&, double);
-const sc_time operator % (const sc_time&, const sc_time&); // This is not part of IEEE1666-2011
-double operator / ( const sc_time&, const sc_time& );
+inline const sc_time operator + (const sc_time&, const sc_time&) ALWAYS_INLINE;
+inline const sc_time operator - (const sc_time&, const sc_time&) ALWAYS_INLINE;
+inline const sc_time operator * (const sc_time&, double) ALWAYS_INLINE;
+inline const sc_time operator * (double, const sc_time&) ALWAYS_INLINE;
+inline const sc_time operator / (const sc_time&, double) ALWAYS_INLINE;
+inline const sc_time operator % (const sc_time&, const sc_time&) ALWAYS_INLINE; // This is not part of IEEE1666-2011
+inline double operator / ( const sc_time&, const sc_time& ) ALWAYS_INLINE;
 std::ostream& operator << (std::ostream&, const sc_time&);
 extern const sc_time SC_ZERO_TIME;
 void sc_set_time_resolution(double, sc_time_unit);
 sc_time sc_get_time_resolution();
 const sc_time& sc_max_time();
+
+//////////////////////////////////// sc_time /////////////////////////////////////
+
+inline sc_time::sc_time()
+	: discrete_value(0)
+{
+}
+
+inline sc_time::sc_time(sc_dt::uint64 v)
+	: discrete_value(v)
+{
+}
+
+inline sc_time::sc_time( const sc_time& t)
+	: discrete_value(t.discrete_value)
+{
+}
+
+inline sc_time& sc_time::operator = ( const sc_time& t)
+{
+	discrete_value = t.discrete_value;
+	return *this;
+}
+
+inline sc_dt::uint64 sc_time::value() const
+{
+	return discrete_value;
+}
+
+inline double sc_time::to_double() const
+{
+	return static_cast<double>(discrete_value);
+}
+
+inline bool sc_time::operator == (const sc_time& t) const
+{
+	return discrete_value == t.discrete_value;
+}
+
+inline bool sc_time::operator != (const sc_time& t) const
+{
+	return discrete_value != t.discrete_value;
+}
+
+inline bool sc_time::operator < (const sc_time& t) const
+{
+	return discrete_value < t.discrete_value;
+}
+
+inline bool sc_time::operator <= (const sc_time& t) const
+{
+	return discrete_value <= t.discrete_value;
+}
+
+inline bool sc_time::operator > (const sc_time& t) const
+{
+	return discrete_value > t.discrete_value;
+}
+
+inline bool sc_time::operator >= (const sc_time& t) const
+{
+	return discrete_value >= t.discrete_value;
+}
+
+inline sc_time& sc_time::operator += (const sc_time& t)
+{
+	discrete_value += t.discrete_value;
+	return *this;
+}
+
+inline sc_time& sc_time::operator -= (const sc_time& t)
+{
+	discrete_value -= t.discrete_value;
+	return *this;
+}
+
+inline sc_time& sc_time::operator *= (double d)
+{
+	discrete_value = static_cast<sc_dt::uint64>((discrete_value * d) + 0.5);
+	return *this;
+}
+
+inline sc_time& sc_time::operator /= (double d)
+{
+	discrete_value = static_cast<sc_dt::uint64>((discrete_value / d) + 0.5);
+	return *this;
+}
+
+inline sc_time& sc_time::operator %= (const sc_time& t)
+{
+	discrete_value %= t.discrete_value;
+	return *this;
+}
+
+//////////////////////////////// global functions /////////////////////////////////
+
+inline const sc_time operator + (const sc_time& t1, const sc_time& t2)
+{
+	return sc_time(t1.discrete_value + t2.discrete_value);
+}
+
+inline const sc_time operator - (const sc_time& t1, const sc_time& t2)
+{
+	return sc_time(t1.discrete_value - t2.discrete_value);
+}
+
+inline const sc_time operator * (const sc_time& t, double d)
+{
+	return sc_time(static_cast<sc_dt::uint64>((t.discrete_value * d) + 0.5));
+}
+
+inline const sc_time operator * (double d, const sc_time& t)
+{
+	return sc_time(static_cast<sc_dt::uint64>((d * t.discrete_value) + 0.5));
+}
+
+inline const sc_time operator / (const sc_time& t, double d)
+{
+	return sc_time(static_cast<sc_dt::uint64>((t.discrete_value / d) + 0.5));
+}
+
+inline double operator / (const sc_time& t1, const sc_time& t2)
+{
+	return (double) t1.discrete_value / t2.discrete_value;
+}
+
+inline const sc_time operator % (const sc_time& t1, const sc_time& t2)
+{
+	return sc_time(t1.discrete_value % t2.discrete_value);
+}
 
 } // end of namespace sc_core
 

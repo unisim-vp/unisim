@@ -108,7 +108,8 @@ private:
 	
 #if SC_THREAD_PROCESSES_USE_PTHREADS
 	pthread_t thrd;
-	pthread_mutex_t mutex;
+	pthread_mutex_t callee_mutex;
+	pthread_mutex_t caller_mutex;
 	pthread_cond_t cond_callee;
 	pthread_cond_t cond_caller;
 #else
@@ -116,6 +117,7 @@ private:
 	sc_thread_process_helper *thread_process_helper;
 #endif
 	int stack_size;
+	bool started;
 	bool killed;
 	bool thread_process_terminated;
 	sc_event thread_process_terminated_event;
@@ -147,6 +149,8 @@ private:
 #endif
 	void yield();
 	void switch_to();
+	
+	void terminate();
 };
 
 } // end of namespace sc_core

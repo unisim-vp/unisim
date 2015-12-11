@@ -43,6 +43,11 @@
 #include <iosfwd>
 #include <map>
 #include <deque>
+#include <unordered_set>
+#include <ieee1666/kernel/kernel_event.h>
+#include <ieee1666/kernel/thread_process.h>
+#include <ieee1666/kernel/method_process.h>
+#include <ieee1666/kernel/prim_channel.h>
 
 namespace sc_core {
 
@@ -71,7 +76,7 @@ public:
 	
 	void initialize();
 	void do_delta_steps(bool once);
-	void do_timed_step();
+	bool do_timed_step();
 	void simulate(const sc_time& duration);
 	void start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
 	
@@ -102,38 +107,38 @@ public:
 	double time_discrete_value_to_seconds(sc_dt::uint64 discrete_value) const;
 
 	// events
-	sc_kernel_event *notify(sc_event *e);
-	sc_timed_kernel_event *notify(sc_event *e, const sc_time& t);
+	inline sc_kernel_event *notify(sc_event *e) ALWAYS_INLINE;
+	inline sc_timed_kernel_event *notify(sc_event *e, const sc_time& t) ALWAYS_INLINE;
 	
 	// wait
-	void wait();
-	void wait(int n);
-	void wait(const sc_event& e);
-	void wait(const sc_event_and_list& el);
-	void wait(const sc_event_or_list& el);
-	void wait(const sc_time& t);
-	void wait(const sc_time& t, const sc_event& e);
-	void wait(const sc_time& t, const sc_event_and_list& el);
-	void wait(const sc_time& t, const sc_event_or_list& el);
+	inline void wait() ALWAYS_INLINE;
+	inline void wait(int n) ALWAYS_INLINE;
+	inline void wait(const sc_event& e) ALWAYS_INLINE;
+	inline void wait(const sc_event_and_list& el) ALWAYS_INLINE;
+	inline void wait(const sc_event_or_list& el) ALWAYS_INLINE;
+	inline void wait(const sc_time& t) ALWAYS_INLINE;
+	inline void wait(const sc_time& t, const sc_event& e) ALWAYS_INLINE;
+	inline void wait(const sc_time& t, const sc_event_and_list& el) ALWAYS_INLINE;
+	inline void wait(const sc_time& t, const sc_event_or_list& el) ALWAYS_INLINE;
 
 	// next_trigger
-	void next_trigger();
-	void next_trigger(const sc_event& e);
-	void next_trigger(const sc_event_and_list& el);
-	void next_trigger(const sc_event_or_list& el);
-	void next_trigger(const sc_time& t);
-	void next_trigger(const sc_time& t, const sc_event& e);
-	void next_trigger(const sc_time& t, const sc_event_and_list& el);
-	void next_trigger(const sc_time& t, const sc_event_or_list& el);
+	inline void next_trigger() ALWAYS_INLINE;
+	inline void next_trigger(const sc_event& e) ALWAYS_INLINE;
+	inline void next_trigger(const sc_event_and_list& el) ALWAYS_INLINE;
+	inline void next_trigger(const sc_event_or_list& el) ALWAYS_INLINE;
+	inline void next_trigger(const sc_time& t) ALWAYS_INLINE;
+	inline void next_trigger(const sc_time& t, const sc_event& e) ALWAYS_INLINE;
+	inline void next_trigger(const sc_time& t, const sc_event_and_list& el) ALWAYS_INLINE;
+	inline void next_trigger(const sc_time& t, const sc_event_or_list& el) ALWAYS_INLINE;
 	
 	// processes
-	void trigger(sc_thread_process *thread_process);
-	void trigger(sc_method_process *method_process);
+	inline void trigger(sc_thread_process *thread_process) ALWAYS_INLINE;
+	inline void trigger(sc_method_process *method_process) ALWAYS_INLINE;
 	
 	// primitive channels
-	void request_update(sc_prim_channel *prim_channel);
+	inline void request_update(sc_prim_channel *prim_channel) ALWAYS_INLINE;
 	
-	const sc_time& get_current_time_stamp() const;
+	inline const sc_time& get_current_time_stamp() const ALWAYS_INLINE;
 	sc_process_handle get_current_process_handle() const;
 	
 	void set_stop_mode(sc_stop_mode mode);
@@ -199,10 +204,10 @@ private:
 	sc_time current_time_stamp;                                        // current time stamp
 	sc_allocator<sc_kernel_event> kernel_events_allocator;             // kernel events (delta event) allocator
 	sc_allocator<sc_timed_kernel_event> timed_kernel_events_allocator; // timed kernel events (timed event) allocator	
-	std::deque<sc_thread_process *> runnable_thread_processes;         // SC_THREAD/SC_CTHREAD processes to wake-up
-	std::deque<sc_method_process *> runnable_method_processes;         // SC_METHOD processes to wake-up
-	std::deque<sc_prim_channel *> updatable_prim_channels;             // primitive channels to update
-	std::deque<sc_kernel_event *> delta_events;                        // notified delta events set 
+	std::unordered_set<sc_thread_process *> runnable_thread_processes;         // SC_THREAD/SC_CTHREAD processes to wake-up
+	std::unordered_set<sc_method_process *> runnable_method_processes;         // SC_METHOD processes to wake-up
+	std::unordered_set<sc_prim_channel *> updatable_prim_channels;             // primitive channels to update
+	std::unordered_set<sc_kernel_event *> delta_events;                        // notified delta events set 
 	std::multimap<sc_time, sc_timed_kernel_event *> schedule;          // notified timed events set
 	bool user_requested_stop;
 	bool user_requested_pause;
@@ -238,7 +243,7 @@ extern void sc_set_stop_mode( sc_stop_mode mode );
 extern sc_stop_mode sc_get_stop_mode();
 
 void sc_stop();
-const sc_time& sc_time_stamp();
+inline const sc_time& sc_time_stamp() ALWAYS_INLINE;
 sc_process_handle sc_get_current_process_handle();
 bool sc_is_unwinding();
 const sc_dt::uint64 sc_delta_count();
@@ -283,6 +288,168 @@ void wait( const sc_time& , const sc_event_or_list & );
 void wait( double , sc_time_unit , const sc_event_or_list & );
 void wait( const sc_time& , const sc_event_and_list & );
 void wait( double , sc_time_unit , const sc_event_and_list & );
+
+/////////////////////////////// sc_kernel ////////////////////////////////
+
+inline sc_kernel_event *sc_kernel::notify(sc_event *e)
+{
+// 	std::cerr << "sc_kernel::notify(" << e->name() << ")" << std::endl;
+	sc_kernel_event *kernel_event = kernel_events_allocator.allocate();
+	kernel_event->initialize(e);
+	delta_events.insert(kernel_event);
+	return kernel_event;
+}
+
+inline sc_timed_kernel_event *sc_kernel::notify(sc_event *e, const sc_time& t)
+{
+// 	std::cerr << "sc_kernel::notify(" << e->name() << ", " << t << ")" << std::endl;
+	sc_time kernel_event_time = current_time_stamp;
+	kernel_event_time += t;
+	sc_timed_kernel_event *timed_kernel_event = timed_kernel_events_allocator.allocate();
+	timed_kernel_event->initialize(e, kernel_event_time);
+	schedule.insert(std::pair<sc_time, sc_timed_kernel_event *>(kernel_event_time, timed_kernel_event));
+	return timed_kernel_event;
+}
+
+inline void sc_kernel::wait()
+{
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	current_thread_process->wait();
+}
+
+inline void sc_kernel::wait(int n)
+{
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	current_thread_process->wait(n);
+}
+
+inline void sc_kernel::wait(const sc_event& e)
+{
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	current_thread_process->wait(e);
+}
+
+inline void sc_kernel::wait(const sc_event_and_list& el)
+{
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	current_thread_process->wait(el);
+}
+
+inline void sc_kernel::wait(const sc_event_or_list& el)
+{
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	current_thread_process->wait(el);
+}
+
+inline void sc_kernel::wait(const sc_time& t)
+{
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	current_thread_process->wait(t);
+}
+
+inline void sc_kernel::wait(const sc_time& t, const sc_event& e)
+{
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	current_thread_process->wait(t, e);
+}
+
+inline void sc_kernel::wait(const sc_time& t, const sc_event_and_list& el)
+{
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	current_thread_process->wait(t, el);
+}
+
+inline void sc_kernel::wait(const sc_time& t, const sc_event_or_list& el)
+{
+	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	current_thread_process->wait(t, el);
+}
+
+inline void sc_kernel::next_trigger()
+{
+	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	current_method_process->next_trigger();
+}
+
+inline void sc_kernel::next_trigger(const sc_event& e)
+{
+	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	current_method_process->next_trigger(e);
+}
+
+inline void sc_kernel::next_trigger(const sc_event_and_list& el)
+{
+	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	current_method_process->next_trigger(el);
+}
+
+inline void sc_kernel::next_trigger(const sc_event_or_list& el)
+{
+	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	current_method_process->next_trigger(el);
+}
+
+inline void sc_kernel::next_trigger(const sc_time& t)
+{
+	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	current_method_process->next_trigger(t);
+}
+
+inline void sc_kernel::next_trigger(const sc_time& t, const sc_event& e)
+{
+	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	current_method_process->next_trigger(t, e);
+}
+
+inline void sc_kernel::next_trigger(const sc_time& t, const sc_event_and_list& el)
+{
+	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	current_method_process->next_trigger(t, el);
+}
+
+inline void sc_kernel::next_trigger(const sc_time& t, const sc_event_or_list& el)
+{
+	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	current_method_process->next_trigger(t, el);
+}
+
+inline void sc_kernel::trigger(sc_thread_process *thread_process)
+{
+	if(!thread_process->trigger_requested)
+	{
+		runnable_thread_processes.insert(thread_process);
+		thread_process->trigger_requested = true;
+	}
+}
+
+inline void sc_kernel::trigger(sc_method_process *method_process)
+{
+// 	std::cerr << method_process->name() << " is runnable" << std::endl;
+	if(!method_process->trigger_requested)
+	{
+		runnable_method_processes.insert(method_process);
+		method_process->trigger_requested = true;
+	}
+}
+
+inline void sc_kernel::request_update(sc_prim_channel *prim_channel)
+{
+	if(!prim_channel->update_requested)
+	{
+		updatable_prim_channels.insert(prim_channel);
+		prim_channel->update_requested = true;
+	}
+}
+
+inline const sc_time& sc_kernel::get_current_time_stamp() const
+{
+	return current_time_stamp;
+}
+
+const sc_time& sc_time_stamp()
+{
+	return sc_kernel::get_kernel()->get_current_time_stamp();
+}
 
 } // end of namespace sc_core
 

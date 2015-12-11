@@ -95,8 +95,8 @@ private:
 
 	void init();
 	std::string create_hierarchical_name(const char *_name) const;
-	void add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
-	void add_dynamically_sensitive_method_process(sc_method_process *method_process) const;
+	inline void add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const ALWAYS_INLINE;
+	inline void add_dynamically_sensitive_method_process(sc_method_process *method_process) const ALWAYS_INLINE;
 	void remove_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const;
 	void remove_dynamically_sensitive_method_process(sc_method_process *method_process) const;
 	void add_statically_sensitive_thread_process(sc_thread_process *thread_process) const;
@@ -226,6 +226,18 @@ private:
 
 sc_event_or_expr operator | (sc_event_or_expr event_or_expr, const sc_event& e);
 sc_event_or_expr operator | (sc_event_or_expr event_or_expr, const sc_event_or_list& el);
+
+//////////////////////////////////// sc_event /////////////////////////////////////////////
+
+inline void sc_event::add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
+{
+	dynamically_sensitive_thread_processes.insert(thread_process);
+}
+
+inline void sc_event::add_dynamically_sensitive_method_process(sc_method_process *method_process) const
+{
+	dynamically_sensitive_method_processes.insert(method_process);
+}
 
 } // end of namespace sc_core
 

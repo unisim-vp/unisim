@@ -43,31 +43,82 @@ namespace sc_core {
 class sc_kernel_event
 {
 public:
-	sc_kernel_event();
-	sc_kernel_event(sc_event *event);
-	void initialize(sc_event *event);
-	void cancel();
-	bool canceled() const;
+	inline sc_kernel_event() ALWAYS_INLINE;
+	inline sc_kernel_event(sc_event *event) ALWAYS_INLINE;
+	inline void initialize(sc_event *event) ALWAYS_INLINE;
+	inline void cancel() ALWAYS_INLINE;
+	inline bool canceled() const ALWAYS_INLINE;
 	
-	sc_event *get_event() const;
+	inline sc_event *get_event() const ALWAYS_INLINE;
 	
 protected:
 	sc_event *event;
-
 };
 
 class sc_timed_kernel_event : public sc_kernel_event
 {
 public:
-	sc_timed_kernel_event();
-	sc_timed_kernel_event(sc_event *event, const sc_time& time);
-	void initialize(sc_event *event, const sc_time& time);
+	inline sc_timed_kernel_event() ALWAYS_INLINE;
+	inline sc_timed_kernel_event(sc_event *event, const sc_time& time) ALWAYS_INLINE;
+	inline void initialize(sc_event *event, const sc_time& time) ALWAYS_INLINE;
 
-	const sc_time& get_time() const;
+	inline const sc_time& get_time() const ALWAYS_INLINE;
 	
 private:
 	sc_time time;
 };
+
+inline sc_kernel_event::sc_kernel_event()
+	: event(0)
+{
+}
+
+inline sc_kernel_event::sc_kernel_event(sc_event *_event)
+	: event(_event)
+{
+}
+
+inline void sc_kernel_event::initialize(sc_event *_event)
+{
+	event = _event;
+}
+
+inline void sc_kernel_event::cancel()
+{
+	event = 0;
+}
+
+inline bool sc_kernel_event::canceled() const
+{
+	return event != 0;
+}
+
+inline sc_event *sc_kernel_event::get_event() const
+{
+	return event;
+}
+
+inline sc_timed_kernel_event::sc_timed_kernel_event()
+	: sc_kernel_event()
+	, time()
+{
+}
+
+inline sc_timed_kernel_event::sc_timed_kernel_event(sc_event *_event, const sc_time& _time)
+	: sc_kernel_event(_event), time(_time)
+{
+}
+
+inline void sc_timed_kernel_event::initialize(sc_event *_event, const sc_time& _time)
+{
+	sc_kernel_event::initialize(_event);
+	time = _time;
+}
+
+inline const sc_time& sc_timed_kernel_event::get_time() const
+{
+	return time;
+}
 
 } // end of namespace sc_core
 

@@ -38,6 +38,43 @@
 #include <inttypes.h>
 #include <ieee1666/kernel/features.h>
 
+#if defined(ALWAYS_INLINE)
+#undef ALWAYS_INLINE
+#endif
+
+#if defined(__GNUC__)
+#if (__GNUC__ > 4) || ((__GNUC__ >= 4) && ((__GNUC_MINOR__ > 1) || ((__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 3))))     // GNU C version >= 4.1.3
+#define ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define ALWAYS_INLINE
+#endif
+
+#elif defined(__clang__)
+
+#if __has_attribute(always_inline)
+#define ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define ALWAYS_INLINE
+#endif
+
+#endif // __clang__
+
+#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
+#if defined(likely)
+#undef likely
+#endif
+
+#if defined(unlikely)
+#undef unlikely
+#endif
+
+#define likely(x)       __builtin_expect(!!(x),1)
+#define unlikely(x)     __builtin_expect(!!(x),0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
+
 namespace sc_dt {
 	typedef ::uint64_t uint64;
 	typedef ::int64_t int64;

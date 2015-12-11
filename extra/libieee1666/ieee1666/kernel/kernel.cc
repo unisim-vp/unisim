@@ -36,14 +36,10 @@
 #include <ieee1666/kernel/module.h>
 #include <ieee1666/kernel/port.h>
 #include <ieee1666/kernel/export.h>
-#include <ieee1666/kernel/prim_channel.h>
 #include <ieee1666/kernel/module_name.h>
-#include <ieee1666/kernel/thread_process.h>
 #include <ieee1666/kernel/cthread_process.h>
-#include <ieee1666/kernel/method_process.h>
 #include <ieee1666/kernel/process_handle.h>
 #include <ieee1666/kernel/time.h>
-#include <ieee1666/kernel/kernel_event.h>
 #include <ieee1666/kernel/event_finder.h>
 #include <math.h>
 #include <string.h>
@@ -104,6 +100,29 @@ sc_kernel::sc_kernel()
 
 sc_kernel::~sc_kernel()
 {
+	if(delta_events.size())
+	{
+		do
+		{
+			std::unordered_set<sc_kernel_event *>::iterator it = delta_events.begin();
+			sc_kernel_event *kernel_event = *it++;
+			kernel_events_allocator.free(kernel_event);
+		}
+		while(delta_events.size());
+	}
+
+	std::multimap<sc_time, sc_timed_kernel_event *>::iterator it = schedule.begin();
+
+	if(it != schedule.end())
+	{
+		do
+		{
+			sc_timed_kernel_event *kernel_event = (*it).second;
+			kernel_events_allocator.free(kernel_event);
+		}
+		while(++it != schedule.end());
+	}
+
 	unsigned int i;
 	
 	unsigned int num_top_level_events = top_level_events.size();
@@ -126,12 +145,6 @@ sc_kernel::~sc_kernel()
 	for(i = 0; i < num_thread_processes; i++)
 	{
 		sc_thread_process *thread_process = thread_process_table[i];
-		
-		if(!thread_process->terminated())
-		{
-			thread_process->kill();
-		}
-
 		delete thread_process;
 	}
 }
@@ -363,6 +376,7 @@ void sc_kernel::initialize()
 			current_object = method_process;
 			current_writer = method_process;
 			current_method_process = method_process;
+// 			std::cerr << current_time_stamp << ": init /\\/ " << method_process->name() << std::endl;
 			method_process->call_process_owner_method();
 			method_process->commit_next_trigger();
 		}
@@ -382,6 +396,7 @@ void sc_kernel::initialize()
 			current_object = thread_process;
 			current_writer = thread_process;
 			current_thread_process = thread_process;
+//			std::cerr << current_time_stamp << ": init /\\/ " << thread_process->name() << std::endl;
 			thread_process->switch_to();
 		}
 	}
@@ -402,46 +417,58 @@ void sc_kernel::do_delta_steps(bool once)
 		// wake up SC_METHOD processes
 		if(runnable_method_processes.size())
 		{
+			std::unordered_set<sc_method_process *>::iterator it = runnable_method_processes.begin();
+
+			bool stop_immediate = false;
+			
 			do
 			{
-				sc_method_process *method_process = runnable_method_processes.front();
-				runnable_method_processes.pop_front();
+				sc_method_process *method_process = *it;
+				runnable_method_processes.erase(it++);
 				method_process->trigger_requested = false;
 				
 				current_object = method_process;
 				current_writer = method_process;
 				current_method_process = method_process;
 				eval_flag = 1;
+// 				std::cerr << current_time_stamp << ": /\\/ " << method_process->name() << std::endl;
 				method_process->call_process_owner_method();
 				method_process->commit_next_trigger();
-				if(user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE)) return;
+				stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
 			}
-			while(runnable_method_processes.size());
+			while(!stop_immediate && (it != runnable_method_processes.end()));
 			current_object = 0;
 			current_writer = 0;
 			current_method_process = 0;
+			if(stop_immediate) return;
 		}
 
 		// wake up SC_THREAD/SC_CTHREAD processes
 		if(runnable_thread_processes.size())
 		{
+			std::unordered_set<sc_thread_process *>::iterator it = runnable_thread_processes.begin();
+
+			bool stop_immediate = false;
+			
 			do
 			{
-				sc_thread_process *thread_process = runnable_thread_processes.front();
-				runnable_thread_processes.pop_front();
+				sc_thread_process *thread_process = *it;
+				runnable_thread_processes.erase(it++);
 				thread_process->trigger_requested = false;
 				
 				current_object = thread_process;
 				current_writer = thread_process;
 				current_thread_process = thread_process;
 				eval_flag = 1;
+// 				std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
 				thread_process->switch_to();
-				if(user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE)) return;
+				stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
 			}
-			while(runnable_thread_processes.size());
+			while(!stop_immediate &&  (it != runnable_thread_processes.end()));
 			current_object = 0;
 			current_writer = 0;
 			current_thread_process = 0;
+			if(stop_immediate) return;
 		}
 		
 		delta_count += eval_flag;
@@ -450,15 +477,18 @@ void sc_kernel::do_delta_steps(bool once)
 		
 		if(updatable_prim_channels.size())
 		{
+			std::unordered_set<sc_prim_channel *>::iterator it = updatable_prim_channels.begin();
+
 			do
 			{
-				sc_prim_channel *prim_channel = updatable_prim_channels.front();
-				updatable_prim_channels.pop_front();
+				sc_prim_channel *prim_channel = *it++;
+				prim_channel->update_requested = false;
 				
 				prim_channel->update();
-				prim_channel->update_requested = false;
 			}
-			while(updatable_prim_channels.size());
+			while(it != updatable_prim_channels.end());
+			
+			updatable_prim_channels.clear();
 		}
 		
 		if(user_requested_stop) return;
@@ -467,10 +497,11 @@ void sc_kernel::do_delta_steps(bool once)
 		
 		if(delta_events.size())
 		{
+			std::unordered_set<sc_kernel_event *>::iterator it = delta_events.begin();
+			
 			do
 			{
-				sc_kernel_event *kernel_event = delta_events.front();
-				delta_events.pop_front();
+				sc_kernel_event *kernel_event = *it++;
 				
 				sc_event *e = kernel_event->get_event();
 				
@@ -481,7 +512,9 @@ void sc_kernel::do_delta_steps(bool once)
 				
 				kernel_events_allocator.free(kernel_event);
 			}
-			while(delta_events.size());
+			while(it != delta_events.end());
+			
+			delta_events.clear();
 		}
 		
 		if(user_requested_pause) break;
@@ -489,32 +522,33 @@ void sc_kernel::do_delta_steps(bool once)
 	while(!once && (runnable_thread_processes.size() || runnable_method_processes.size()));
 }
 
-void sc_kernel::do_timed_step()
+bool sc_kernel::do_timed_step()
 {
 	std::multimap<sc_time, sc_timed_kernel_event *>::iterator it = schedule.begin();
 
-	if(it != schedule.end())
+	if(it == schedule.end()) return false;
+	
+	current_time_stamp = (*it).first;
+	
+	do
 	{
-		current_time_stamp = (*it).first;
+		sc_timed_kernel_event *kernel_event = (*it).second;
 		
-		do
+		sc_event *e = kernel_event->get_event();
+		
+		if(e)
 		{
-			sc_timed_kernel_event *kernel_event = (*it).second;
-			
-			sc_event *e = kernel_event->get_event();
-			
-			if(e)
-			{
-				e->trigger();
-			}
-			
-			kernel_events_allocator.free(kernel_event);
-			
-			schedule.erase(it);
-			it = schedule.begin();			
+			e->trigger();
 		}
-		while((it != schedule.end()) && ((*it).first == current_time_stamp));
+		
+		kernel_events_allocator.free(kernel_event);
+		
+		schedule.erase(it);
+		it = schedule.begin();			
 	}
+	while((it != schedule.end()) && ((*it).first == current_time_stamp));
+	
+	return schedule.size() != 0;
 }
 
 void sc_kernel::simulate(const sc_time& duration)
@@ -530,14 +564,16 @@ void sc_kernel::simulate(const sc_time& duration)
 		sc_time until_time(current_time_stamp);
 		until_time += duration;
 
+		bool pending_timed_notifications_exist = false;
+		
 		do
 		{
 			do_delta_steps(false);
 			if(user_requested_stop || user_requested_pause) break;
-			do_timed_step();
+			pending_timed_notifications_exist = do_timed_step();
 			if(user_requested_stop) break;
 		}
-		while((current_time_stamp < until_time) && (runnable_thread_processes.size() || runnable_method_processes.size()));
+		while((current_time_stamp < until_time) && (pending_timed_notifications_exist || runnable_thread_processes.size() || runnable_method_processes.size()));
 	}
 	
 	if(user_requested_stop)
@@ -909,158 +945,6 @@ const sc_time& sc_kernel::get_max_time() const
 	return max_time;
 }
 
-sc_kernel_event *sc_kernel::notify(sc_event *e)
-{
-	sc_kernel_event *kernel_event = kernel_events_allocator.allocate();
-	kernel_event->initialize(e);
-	delta_events.push_back(kernel_event);
-	return kernel_event;
-}
-
-sc_timed_kernel_event *sc_kernel::notify(sc_event *e, const sc_time& t)
-{
-	sc_time kernel_event_time = current_time_stamp;
-	kernel_event_time += t;
-	sc_timed_kernel_event *timed_kernel_event = timed_kernel_events_allocator.allocate();
-	timed_kernel_event->initialize(e, kernel_event_time);
-	schedule.insert(std::pair<sc_time, sc_timed_kernel_event *>(kernel_event_time, timed_kernel_event));
-	return timed_kernel_event;
-}
-
-void sc_kernel::wait()
-{
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
-	current_thread_process->wait();
-}
-
-void sc_kernel::wait(int n)
-{
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
-	current_thread_process->wait(n);
-}
-
-void sc_kernel::wait(const sc_event& e)
-{
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
-	current_thread_process->wait(e);
-}
-
-void sc_kernel::wait(const sc_event_and_list& el)
-{
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
-	current_thread_process->wait(el);
-}
-
-void sc_kernel::wait(const sc_event_or_list& el)
-{
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
-	current_thread_process->wait(el);
-}
-
-void sc_kernel::wait(const sc_time& t)
-{
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
-	current_thread_process->wait(t);
-}
-
-void sc_kernel::wait(const sc_time& t, const sc_event& e)
-{
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
-	current_thread_process->wait(t, e);
-}
-
-void sc_kernel::wait(const sc_time& t, const sc_event_and_list& el)
-{
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
-	current_thread_process->wait(t, el);
-}
-
-void sc_kernel::wait(const sc_time& t, const sc_event_or_list& el)
-{
-	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
-	current_thread_process->wait(t, el);
-}
-
-void sc_kernel::next_trigger()
-{
-	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
-	current_method_process->next_trigger();
-}
-
-void sc_kernel::next_trigger(const sc_event& e)
-{
-	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
-	current_method_process->next_trigger(e);
-}
-
-void sc_kernel::next_trigger(const sc_event_and_list& el)
-{
-	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
-	current_method_process->next_trigger(el);
-}
-
-void sc_kernel::next_trigger(const sc_event_or_list& el)
-{
-	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
-	current_method_process->next_trigger(el);
-}
-
-void sc_kernel::next_trigger(const sc_time& t)
-{
-	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
-	current_method_process->next_trigger(t);
-}
-
-void sc_kernel::next_trigger(const sc_time& t, const sc_event& e)
-{
-	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
-	current_method_process->next_trigger(t, e);
-}
-
-void sc_kernel::next_trigger(const sc_time& t, const sc_event_and_list& el)
-{
-	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
-	current_method_process->next_trigger(t, el);
-}
-
-void sc_kernel::next_trigger(const sc_time& t, const sc_event_or_list& el)
-{
-	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
-	current_method_process->next_trigger(t, el);
-}
-
-void sc_kernel::trigger(sc_thread_process *thread_process)
-{
-	if(!thread_process->trigger_requested)
-	{
-		runnable_thread_processes.push_back(thread_process);
-		thread_process->trigger_requested = true;
-	}
-}
-
-void sc_kernel::trigger(sc_method_process *method_process)
-{
-	if(!method_process->trigger_requested)
-	{
-		runnable_method_processes.push_back(method_process);
-		method_process->trigger_requested = true;
-	}
-}
-
-void sc_kernel::request_update(sc_prim_channel *prim_channel)
-{
-	if(!prim_channel->update_requested)
-	{
-		updatable_prim_channels.push_back(prim_channel);
-		prim_channel->update_requested = true;
-	}
-}
-
-const sc_time& sc_kernel::get_current_time_stamp() const
-{
-	return current_time_stamp;
-}
-
 sc_process_handle sc_kernel::get_current_process_handle() const
 {
 	if(current_method_process) return sc_process_handle((sc_process *) current_method_process);
@@ -1313,11 +1197,6 @@ sc_stop_mode sc_get_stop_mode()
 void sc_stop()
 {
 	sc_kernel::get_kernel()->stop();
-}
-
-const sc_time& sc_time_stamp()
-{
-	return sc_kernel::get_kernel()->get_current_time_stamp();
 }
 
 sc_process_handle sc_get_current_process_handle()

@@ -52,6 +52,8 @@ m_cb(cb),
 m_id(id),
 m_cycle_time(SC_ZERO_TIME),
 m_queue(),
+m_event("m_event"),
+m_complete_event("m_complete_event"),
 state(0)
 // m_queue(this, &RouterDispatcher<OWNER, CONFIG>::QueueCB)
 {

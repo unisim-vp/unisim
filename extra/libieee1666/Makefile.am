@@ -101,7 +101,6 @@ ieee1666/kernel/process.cc \
 ieee1666/kernel/thread_process.cc \
 ieee1666/kernel/cthread_process.cc \
 ieee1666/kernel/method_process.cc \
-ieee1666/kernel/kernel_event.cc \
 ieee1666/kernel/spawn.cc \
 ieee1666/base/buffer.cc \
 ieee1666/base/clock.cc \
