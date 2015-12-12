@@ -466,14 +466,14 @@ const sc_event& sc_thread_process::terminated_event() const
 	return thread_process_terminated_event;
 }
 
-void sc_thread_process::suspend(sc_descendant_inclusion_info include_descendants)
+void sc_thread_process::suspend()
 {
 	suspended = true;
 }
 
-void sc_thread_process::resume(sc_descendant_inclusion_info include_descendants)
+void sc_thread_process::resume()
 {
-	suspended = false;
+    suspended = false;
 
 	if(runnable_on_resuming)
 	{
@@ -483,17 +483,17 @@ void sc_thread_process::resume(sc_descendant_inclusion_info include_descendants)
 	}
 }
 
-void sc_thread_process::disable(sc_descendant_inclusion_info include_descendants)
+void sc_thread_process::disable()
 {
 	enabled = false;
 }
 
-void sc_thread_process::enable(sc_descendant_inclusion_info include_descendants)
+void sc_thread_process::enable()
 {
 	enabled = true;
 }
 
-void sc_thread_process::kill(sc_descendant_inclusion_info include_descendants)
+void sc_thread_process::kill()
 {
 	enabled = false;
 	killed = true;
@@ -518,7 +518,7 @@ void sc_thread_process::kill(sc_descendant_inclusion_info include_descendants)
 	}
 }
 
-void sc_thread_process::reset(sc_descendant_inclusion_info include_descendants)
+void sc_thread_process::reset()
 {
 }
 

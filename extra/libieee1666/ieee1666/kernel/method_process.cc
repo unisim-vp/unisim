@@ -316,20 +316,12 @@ const sc_event& sc_method_process::terminated_event() const
 	return method_process_terminated_event;
 }
 
-void sc_method_process::suspend(sc_descendant_inclusion_info include_descendants)
+void sc_method_process::suspend()
 {
-	switch(include_descendants)
-	{
-		case SC_NO_DESCENDANTS:
-			break;
-		case SC_INCLUDE_DESCENDANTS:
-			break;
-	}
-	
 	suspended = true;
 }
 
-void sc_method_process::resume(sc_descendant_inclusion_info include_descendants)
+void sc_method_process::resume()
 {
 	suspended = false;
 
@@ -341,26 +333,26 @@ void sc_method_process::resume(sc_descendant_inclusion_info include_descendants)
 	}
 }
 
-void sc_method_process::disable(sc_descendant_inclusion_info include_descendants)
+void sc_method_process::disable()
 {
 	if(method_process_terminated) return;
 	enabled = false;
 }
 
-void sc_method_process::enable(sc_descendant_inclusion_info include_descendants)
+void sc_method_process::enable()
 {
 	if(method_process_terminated) return;
 	enabled = true;
 }
 
-void sc_method_process::kill(sc_descendant_inclusion_info include_descendants)
+void sc_method_process::kill()
 {
 	enabled = false;
 	method_process_terminated = true;
 	method_process_terminated_event.notify();
 }
 
-void sc_method_process::reset(sc_descendant_inclusion_info include_descendants)
+void sc_method_process::reset()
 {
 }
 

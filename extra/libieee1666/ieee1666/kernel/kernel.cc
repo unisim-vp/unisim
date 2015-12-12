@@ -413,64 +413,68 @@ void sc_kernel::do_delta_steps(bool once)
 	{
 		// evaluation phase
 		unsigned int eval_flag = 0; // 0 = no evaluation, 1 = at least one evaluation
-		
-		// wake up SC_METHOD processes
-		if(runnable_method_processes.size())
+
+		do
 		{
-			std::unordered_set<sc_method_process *>::iterator it = runnable_method_processes.begin();
-
-			bool stop_immediate = false;
-			
-			do
+			// wake up SC_METHOD processes
+			if(runnable_method_processes.size())
 			{
-				sc_method_process *method_process = *it;
-				runnable_method_processes.erase(it++);
-				method_process->trigger_requested = false;
+				std::unordered_set<sc_method_process *>::iterator it = runnable_method_processes.begin();
+
+				bool stop_immediate = false;
 				
-				current_object = method_process;
-				current_writer = method_process;
-				current_method_process = method_process;
-				eval_flag = 1;
-// 				std::cerr << current_time_stamp << ": /\\/ " << method_process->name() << std::endl;
-				method_process->call_process_owner_method();
-				method_process->commit_next_trigger();
-				stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
+				do
+				{
+					sc_method_process *method_process = *it;
+					it = runnable_method_processes.erase(it);
+					method_process->trigger_requested = false;
+					
+					current_object = method_process;
+					current_writer = method_process;
+					current_method_process = method_process;
+					eval_flag = 1;
+	// 				std::cerr << current_time_stamp << ": /\\/ " << method_process->name() << std::endl;
+					method_process->call_process_owner_method();
+					method_process->commit_next_trigger();
+					stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
+				}
+				while(!stop_immediate && (it != runnable_method_processes.end()));
+				current_object = 0;
+				current_writer = 0;
+				current_method_process = 0;
+				if(stop_immediate) return;
 			}
-			while(!stop_immediate && (it != runnable_method_processes.end()));
-			current_object = 0;
-			current_writer = 0;
-			current_method_process = 0;
-			if(stop_immediate) return;
-		}
 
-		// wake up SC_THREAD/SC_CTHREAD processes
-		if(runnable_thread_processes.size())
-		{
-			std::unordered_set<sc_thread_process *>::iterator it = runnable_thread_processes.begin();
-
-			bool stop_immediate = false;
-			
-			do
+			// wake up SC_THREAD/SC_CTHREAD processes
+			if(runnable_thread_processes.size())
 			{
-				sc_thread_process *thread_process = *it;
-				runnable_thread_processes.erase(it++);
-				thread_process->trigger_requested = false;
+				std::unordered_set<sc_thread_process *>::iterator it = runnable_thread_processes.begin();
+
+				bool stop_immediate = false;
 				
-				current_object = thread_process;
-				current_writer = thread_process;
-				current_thread_process = thread_process;
-				eval_flag = 1;
-// 				std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
-				thread_process->switch_to();
-				stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
+				do
+				{
+					sc_thread_process *thread_process = *it;
+					it = runnable_thread_processes.erase(it);
+					thread_process->trigger_requested = false;
+					
+					current_object = thread_process;
+					current_writer = thread_process;
+					current_thread_process = thread_process;
+					eval_flag = 1;
+	// 				std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
+					thread_process->switch_to();
+					stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
+				}
+				while(!stop_immediate &&  (it != runnable_thread_processes.end()));
+				current_object = 0;
+				current_writer = 0;
+				current_thread_process = 0;
+				if(stop_immediate) return;
 			}
-			while(!stop_immediate &&  (it != runnable_thread_processes.end()));
-			current_object = 0;
-			current_writer = 0;
-			current_thread_process = 0;
-			if(stop_immediate) return;
 		}
-		
+		while(runnable_thread_processes.size() || runnable_method_processes.size());
+
 		delta_count += eval_flag;
 
 		// update phase

@@ -92,12 +92,12 @@ public:
 	
 	virtual bool terminated() const;
 	virtual const sc_event& terminated_event() const;
-	virtual void suspend(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
-	virtual void resume(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
-	virtual void disable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
-	virtual void enable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
-	virtual void kill(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
-	virtual void reset(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS);
+	virtual void suspend();
+	virtual void resume();
+	virtual void disable();
+	virtual void enable();
+	virtual void kill();
+	virtual void reset();
 	
 	virtual const char *kind() const;
 private:

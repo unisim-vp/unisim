@@ -232,7 +232,7 @@ void sc_event::trigger()
 			sc_method_process *method_process = *it;
 			method_process->trigger_statically();
 		}
-		while(++it, it != statically_sensitive_method_processes.end());
+		while(++it != statically_sensitive_method_processes.end());
 	}
 
 	if(statically_sensitive_thread_processes.size())
@@ -244,7 +244,7 @@ void sc_event::trigger()
 			sc_thread_process *thread_process = *it;
 			thread_process->trigger_statically();
 		}
-		while(++it, it != statically_sensitive_thread_processes.end());
+		while(++it != statically_sensitive_thread_processes.end());
 	}
 
 	sc_method_process *current_method_process = kernel->get_current_method_process();
@@ -263,6 +263,7 @@ void sc_event::trigger()
 			}
 		}
 		while(it != dynamically_sensitive_method_processes.end());
+		
 		dynamically_sensitive_method_processes.clear();
 	}
 

@@ -120,6 +120,156 @@ void sc_process::release()
 	}
 }
 
+void sc_process::suspend(sc_descendant_inclusion_info include_descendants)
+{
+	if(include_descendants == SC_INCLUDE_DESCENDANTS)
+	{
+		const std::vector<sc_object *> child_objects = get_child_objects();
+		unsigned int num_child_objects = child_objects.size();
+		unsigned int i;
+
+		for(i = 0; i < num_child_objects; i++)
+		{
+			sc_object *child_object = child_objects[i];
+			
+			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
+			
+			if(child_process)
+			{
+				// child object is confirmed to be an sc_process instance
+				child_process->suspend(include_descendants);
+			}
+		}
+	}
+	
+	suspend();
+}
+
+void sc_process::resume(sc_descendant_inclusion_info include_descendants)
+{
+	if(include_descendants == SC_INCLUDE_DESCENDANTS)
+	{
+		const std::vector<sc_object *> child_objects = get_child_objects();
+		unsigned int num_child_objects = child_objects.size();
+		unsigned int i;
+
+		for(i = 0; i < num_child_objects; i++)
+		{
+			sc_object *child_object = child_objects[i];
+			
+			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
+			
+			if(child_process)
+			{
+				// child object is confirmed to be an sc_process instance
+				child_process->resume(include_descendants);
+			}
+		}
+	}
+	
+	resume();
+}
+
+void sc_process::disable(sc_descendant_inclusion_info include_descendants)
+{
+	if(include_descendants == SC_INCLUDE_DESCENDANTS)
+	{
+		const std::vector<sc_object *> child_objects = get_child_objects();
+		unsigned int num_child_objects = child_objects.size();
+		unsigned int i;
+
+		for(i = 0; i < num_child_objects; i++)
+		{
+			sc_object *child_object = child_objects[i];
+			
+			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
+			
+			if(child_process)
+			{
+				// child object is confirmed to be an sc_process instance
+				child_process->disable(include_descendants);
+			}
+		}
+	}
+	
+	disable();
+}
+
+void sc_process::enable(sc_descendant_inclusion_info include_descendants)
+{
+	if(include_descendants == SC_INCLUDE_DESCENDANTS)
+	{
+		const std::vector<sc_object *> child_objects = get_child_objects();
+		unsigned int num_child_objects = child_objects.size();
+		unsigned int i;
+
+		for(i = 0; i < num_child_objects; i++)
+		{
+			sc_object *child_object = child_objects[i];
+			
+			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
+			
+			if(child_process)
+			{
+				// child object is confirmed to be an sc_process instance
+				child_process->enable(include_descendants);
+			}
+		}
+	}
+	
+	enable();
+}
+
+void sc_process::kill(sc_descendant_inclusion_info include_descendants)
+{
+	if(include_descendants == SC_INCLUDE_DESCENDANTS)
+	{
+		const std::vector<sc_object *> child_objects = get_child_objects();
+		unsigned int num_child_objects = child_objects.size();
+		unsigned int i;
+
+		for(i = 0; i < num_child_objects; i++)
+		{
+			sc_object *child_object = child_objects[i];
+			
+			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
+			
+			if(child_process)
+			{
+				// child object is confirmed to be an sc_process instance
+				child_process->kill(include_descendants);
+			}
+		}
+	}
+	
+	kill();
+}
+
+void sc_process::reset(sc_descendant_inclusion_info include_descendants)
+{
+	if(include_descendants == SC_INCLUDE_DESCENDANTS)
+	{
+		const std::vector<sc_object *> child_objects = get_child_objects();
+		unsigned int num_child_objects = child_objects.size();
+		unsigned int i;
+
+		for(i = 0; i < num_child_objects; i++)
+		{
+			sc_object *child_object = child_objects[i];
+			
+			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
+			
+			if(child_process)
+			{
+				// child object is confirmed to be an sc_process instance
+				child_process->reset(include_descendants);
+			}
+		}
+	}
+	
+	reset();
+}
+
 void sc_process::add_static_sensitivity(const sc_event& event)
 {
 	static_sensitivity.push_back(&event);
@@ -241,20 +391,5 @@ void sc_process::clear_static_sensitivity()
 	
 	static_sensitivity.clear();
 }
-/*
-void sc_process::process_spawn_options(const spawn_options *spawn_options)
-{
-	if(spawn_options)
-	{
-		const std::vector<const sc_event *>& sensitive_events = get_sensitive_events();
-		
-		
-		
-		const std::vector<const sc_port_base *>& sensitive_ports = get_sensitive_ports();
-		const std::vector<const sc_export_base *>& sensitive_exports = get_sensitive_exports();
-		const std::vector<const sc_interface *>& sensitive_interfaces = get_sensitive_interfaces();
-		const std::vector<const sc_event_finder *>& sensitive_event_finders = get_sensitive_event_finders();
-	}
-}*/
 
 } // end of namespace sc_core

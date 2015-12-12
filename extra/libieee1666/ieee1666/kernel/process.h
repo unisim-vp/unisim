@@ -67,12 +67,20 @@ public:
 	
 	virtual bool terminated() const = 0;
 	virtual const sc_event& terminated_event() const = 0;
-	virtual void suspend(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
-	virtual void resume(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
-	virtual void disable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
-	virtual void enable(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
-	virtual void kill(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
-	virtual void reset(sc_descendant_inclusion_info include_descendants = SC_NO_DESCENDANTS) = 0;
+	
+	virtual void suspend(sc_descendant_inclusion_info include_descendants);
+	virtual void resume(sc_descendant_inclusion_info include_descendants);
+	virtual void disable(sc_descendant_inclusion_info include_descendants);
+	virtual void enable(sc_descendant_inclusion_info include_descendants);
+	virtual void kill(sc_descendant_inclusion_info include_descendants);
+	virtual void reset(sc_descendant_inclusion_info include_descendants);
+
+	virtual void suspend() = 0;
+	virtual void resume() = 0;
+	virtual void disable() = 0;
+	virtual void enable() = 0;
+	virtual void kill() = 0;
+	virtual void reset() = 0;
 	void acquire();
 	void release();
 	
