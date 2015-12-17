@@ -1,5 +1,5 @@
 #include <unisim/component/cxx/processor/intel/arch.hh>
-#include <unisim/component/cxx/processor/intel/isa.tcc>
+#include <unisim/component/cxx/processor/intel/isa/intel.tcc>
 #include <unisim/component/cxx/processor/intel/math.hh>
 #include <dtlib/misc.hh>
 #include <cmath>

@@ -1,7 +1,7 @@
 #ifndef ISA_TCC
 #define ISA_TCC
 
-#include <unisim/component/cxx/processor/intel/isa.hh>
+#include <unisim/component/cxx/processor/intel/isa/intel.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/execute.hh>
 #include <unisim/component/cxx/processor/intel/arch.hh>
@@ -448,13 +448,13 @@ namespace intel {
   typedef RM_RegOrMem<true>  RM_reg;
   typedef RM_RegOrMem<false> RM_mem;
     
-#include <unisim/component/cxx/processor/intel/isbranch.hh>
-#include <unisim/component/cxx/processor/intel/isinteger.hh>
-#include <unisim/component/cxx/processor/intel/isfloatingpoint.hh>
-#include <unisim/component/cxx/processor/intel/ismove.hh>
-#include <unisim/component/cxx/processor/intel/isstring.hh>
-#include <unisim/component/cxx/processor/intel/isspecial.hh>
-#include <unisim/component/cxx/processor/intel/issimd.hh>
+#include <unisim/component/cxx/processor/intel/isa/branch.hh>
+#include <unisim/component/cxx/processor/intel/isa/integer.hh>
+#include <unisim/component/cxx/processor/intel/isa/floatingpoint.hh>
+#include <unisim/component/cxx/processor/intel/isa/move.hh>
+#include <unisim/component/cxx/processor/intel/isa/string.hh>
+#include <unisim/component/cxx/processor/intel/isa/special.hh>
+#include <unisim/component/cxx/processor/intel/isa/simd.hh>
 
   template <unsigned COUNT>
   Operation* decode_all( CodeBase const& cb )

@@ -43,10 +43,8 @@
 #include <stdlib.h>
 
 #include "unisim/kernel/service/service.hh"
-#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
-#include "unisim/component/tlm2/memory/ram/memory.hh"
+#include "unisim/component/cxx/processor/intel/arch.hh"
 #include "unisim/util/likely/likely.hh"
-#include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
 #include "unisim/service/os/linux_os/linux.hh"
 #include "unisim/service/trap_handler/trap_handler.hh"
@@ -76,7 +74,6 @@ class Simulator
   Simulator(int argc, char **argv);
   virtual ~Simulator();
   int Run();
-  int Run(double time, sc_time_unit unit);
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;
@@ -87,46 +84,33 @@ class Simulator
  protected:
  private:
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
-  typedef unisim::component::tlm2::processor::arm::armemu::ARMEMU CPU;
-  typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
+  typedef unisim::component::cxx::processor::intel::Arch Arch;
   typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
 
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
-  typedef unisim::service::power::CachePowerEstimator POWER_ESTIMATOR;
   typedef unisim::service::debug::debugger::Debugger<uint32_t> DEBUGGER;
   typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
   typedef unisim::service::tee::memory_access_reporting::Tee<uint32_t> TEE_MEMORY_ACCESS_REPORTING;
-
-  CPU *cpu;
-  MEMORY *memory;
-  unisim::service::time::sc_time::ScTime *time;
-  unisim::service::time::host_time::HostTime *host_time;
-  LINUX_OS *linux_os;
-  TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
-
-  sc_signal<bool>              nirq_signal;
-  sc_signal<bool>              nfiq_signal;
   
-  double simulation_spent_time;
+  Arch cpu;
+  // LINUX_OS *linux_os;
+  // TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
 
-  GDB_SERVER *gdb_server;
-  INLINE_DEBUGGER *inline_debugger;
-  DEBUGGER *debugger;
-  PROFILER *profiler;
-  bool enable_gdb_server;
-  unisim::kernel::service::Parameter<bool> *param_enable_gdb_server;
-  bool enable_inline_debugger;
-  unisim::kernel::service::Parameter<bool> *param_enable_inline_debugger;
+  // sc_signal<bool>              nirq_signal;
+  // sc_signal<bool>              nfiq_signal;
+  
+  // double simulation_spent_time;
 
-  POWER_ESTIMATOR *il1_power_estimator;
-  POWER_ESTIMATOR *dl1_power_estimator;
-  bool enable_power_estimation;
-  unisim::kernel::service::Parameter<bool> param_enable_power_estimation;
-  unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_energy;
-  unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_power;
-  unisim::kernel::service::Formula<double> *formula_caches_total_leakage_power;
-  unisim::kernel::service::Formula<double> *formula_caches_total_power;
+  // GDB_SERVER *gdb_server;
+  // INLINE_DEBUGGER *inline_debugger;
+  // DEBUGGER *debugger;
+  // PROFILER *profiler;
+  // bool enable_gdb_server;
+  // unisim::kernel::service::Parameter<bool> *param_enable_gdb_server;
+  // bool enable_inline_debugger;
+  // unisim::kernel::service::Parameter<bool> *param_enable_inline_debugger;
+
   int exit_status;
 #ifdef WIN32
   static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);

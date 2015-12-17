@@ -33,10 +33,7 @@
  */
 
 #include <iostream>
-#include <systemc.h>
 #include "simulator.hh"
-
-using namespace std;
 
 int main(int argc, char *argv[])
 {

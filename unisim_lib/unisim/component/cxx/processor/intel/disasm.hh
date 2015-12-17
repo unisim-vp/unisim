@@ -1,5 +1,39 @@
-#ifndef INTEL_DISASM_HH
-#define INTEL_DISASM_HH
+/*
+ *  Copyright (c) 2007-2015,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without 
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, 
+ *     this list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific 
+ *     prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  ARE DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_DISASM_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_DISASM_HH__
 
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/fwd.hh>
@@ -7,8 +41,12 @@
 #include <stdint.h>
 #include <iosfwd>
 
-namespace intel
-{
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace intel {
+
   struct DisasmObject
   {
     virtual void operator() ( std::ostream& sink ) const = 0;
@@ -20,29 +58,29 @@ namespace intel
   /* ModRM disassembly */
   struct DisasmRoM : public DisasmObject
   {
-    DisasmRoM( MOp const* _mop ) : mop( _mop ) {} MOp const* mop;
+    DisasmRoM( isa::MOp const* _mop ) : mop( _mop ) {} isa::MOp const* mop;
     void operator() ( std::ostream& sink ) const;
     virtual void disasm_register( std::ostream& sink, unsigned reg ) const = 0;
   };
   struct DisasmEb : public DisasmRoM
   {
-    DisasmEb( MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmEb( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   struct DisasmEw : public DisasmRoM
   {
-    DisasmEw( MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmEw( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   struct DisasmEd : public DisasmRoM
   {
-    DisasmEd( MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmEd( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   template <unsigned OPSIZE>
   struct DisasmE : public DisasmObject
   {
-    DisasmE( MOp const* _mop ) : mop( _mop ) {} MOp const* mop;
+    DisasmE( isa::MOp const* _mop ) : mop( _mop ) {} isa::MOp const* mop;
     void operator() ( std::ostream& sink ) const {
       if      (OPSIZE == 8)  sink << DisasmEb( mop );
       else if (OPSIZE == 16) sink << DisasmEw( mop );
@@ -52,17 +90,17 @@ namespace intel
   };
   struct DisasmQq : public DisasmRoM
   {
-    DisasmQq( MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmQq( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   struct DisasmWdq : public DisasmRoM
   {
-    DisasmWdq( MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmWdq( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   struct DisasmM : public DisasmRoM
   {
-    DisasmM( MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmM( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   
@@ -175,12 +213,12 @@ namespace intel
     
   };
 
-  bool has_implicit_size( MOp const* _mop );
+  bool has_implicit_size( isa::MOp const* _mop );
   
   template <unsigned OPSIZE>
   struct DisasmMnemonic : public DisasmObject
   {
-    DisasmMnemonic( char const* _mnemonic, MOp const* _mop ) : mnemonic( _mnemonic ), implicit_size( has_implicit_size( _mop ) ) {}
+    DisasmMnemonic( char const* _mnemonic, isa::MOp const* _mop ) : mnemonic( _mnemonic ), implicit_size( has_implicit_size( _mop ) ) {}
     DisasmMnemonic( char const* _mnemonic ) : mnemonic( _mnemonic ), implicit_size( false ) {}
     char const* mnemonic;
     bool implicit_size;
@@ -206,6 +244,11 @@ namespace intel
     
     void operator() ( std::ostream& _sink ) const;
   };
-};
 
-#endif // INTEL_DISASM_HH
+} // end of namespace intel
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_DISASM_HH__

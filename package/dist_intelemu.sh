@@ -371,11 +371,20 @@ string \
 UNISIM_SIMULATORS_INTELEMU_SOURCE_FILES="\
 main.cc \
 simulator.cc \
-linuxsystem.cc
+linuxsystem.cc \
+dtlib/loader.cc \
+dtlib/misc.cc \
+dtlib/sink.cc \
 "
+
 UNISIM_SIMULATORS_INTELEMU_HEADER_FILES="\
 simulator.hh \
 linuxsystem.hh \
+dtlib/fwd.hh \
+dtlib/loader.hh \
+dtlib/misc.hh \
+dtlib/sink.hh \
+dtlib/target.hh \
 "
 
 UNISIM_SIMULATORS_INTELEMU_EXTRA_FILES="\
