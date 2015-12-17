@@ -1,5 +1,5 @@
 #!/bin/bash
-function Usage
+Usage ()
 {
 	echo "Usage:"
 	echo "  $0 <destination directory>"
@@ -30,8 +30,6 @@ unisim/kernel/debug/debug.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/api/api.cc \
-unisim/kernel/tlm/tlm.cc \
-unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/api/debug/debug_api.cc \
@@ -56,7 +54,6 @@ unisim/service/os/linux_os/linux.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/time/host_time/time.cc \
-unisim/service/time/sc_time/time.cc \
 unisim/util/debug/symbol_table_64.cc \
 unisim/util/debug/symbol_table_32.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -105,11 +102,10 @@ unisim/util/random/random.cc \
 unisim/util/queue/queue.cc \
 unisim/component/cxx/processor/intel/disasm.cc \
 unisim/component/cxx/processor/intel/arch.cc \
-unisim/component/cxx/processor/intel/memory_op.cc \
-unisim/component/cxx/memory/ram/memory_64.cc \
-unisim/component/cxx/memory/ram/memory_32.cc"
+unisim/component/cxx/processor/intel/math.cc \
+"
 
-UNISIM_LIB_INTELEMU_HEADER_FILES="
+UNISIM_LIB_INTELEMU_HEADER_FILES="\
 unisim/api/debug/debug_api.hh \
 unisim/kernel/api/api.hh \
 unisim/kernel/debug/debug.hh \
@@ -117,8 +113,6 @@ unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
-unisim/kernel/tlm/tlm.hh \
-unisim/kernel/tlm2/tlm.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.hh \
@@ -161,7 +155,6 @@ unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/time/host_time/time.hh \
-unisim/service/time/sc_time/time.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
@@ -277,10 +270,10 @@ unisim/util/os/linux_os/calls.tcc \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/errno.hh \
 unisim/util/os/linux_os/files_flags.hh \
-unisim/util/os/linux_os/intel.hh \
 unisim/util/os/linux_os/linux.hh \
 unisim/util/os/linux_os/linux.tcc \
 unisim/util/os/linux_os/ppc.hh \
+unisim/util/os/linux_os/arm.hh \
 unisim/util/parser/parser.hh \
 unisim/util/parser/parser.tcc \
 unisim/util/queue/queue.hh \
@@ -293,17 +286,26 @@ unisim/util/simfloat/host_floating.tcc \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/integer.tcc \
 unisim/util/xml/xml.hh \
-unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/cxx/memory/ram/memory.tcc \
-unisim/component/cxx/processor/intel/arch.hh \
-unisim/component/cxx/processor/intel/disasm.hh \
-unisim/component/cxx/processor/intel/exception.hh \
 unisim/component/cxx/processor/intel/execute.hh \
-unisim/component/cxx/processor/intel/extregbank.hh \
-unisim/component/cxx/processor/intel/hostfloat.hh \
-unisim/component/cxx/processor/intel/models.hh \
-unisim/component/cxx/processor/intel/psr.hh \
-unisim/component/cxx/processor/intel/register_field.hh \
+unisim/component/cxx/processor/intel/modrm.hh \
+unisim/component/cxx/processor/intel/memory.hh \
+unisim/component/cxx/processor/intel/arch.hh \
+unisim/component/cxx/processor/intel/segments.hh \
+unisim/component/cxx/processor/intel/vectorbank.hh \
+unisim/component/cxx/processor/intel/math.hh \
+unisim/component/cxx/processor/intel/fwd.hh \
+unisim/component/cxx/processor/intel/isa/string.hh \
+unisim/component/cxx/processor/intel/isa/special.hh \
+unisim/component/cxx/processor/intel/isa/integer.hh \
+unisim/component/cxx/processor/intel/isa/simd.hh \
+unisim/component/cxx/processor/intel/isa/move.hh \
+unisim/component/cxx/processor/intel/isa/branch.hh \
+unisim/component/cxx/processor/intel/isa/intel.hh \
+unisim/component/cxx/processor/intel/isa/intel.tcc \
+unisim/component/cxx/processor/intel/isa/floatingpoint.hh \
+unisim/component/cxx/processor/intel/disasm.hh \
+unisim/component/cxx/processor/intel/types.hh \
+unisim/component/cxx/processor/intel/tmp.hh \
 "
 
 UNISIM_LIB_INTELEMU_M4_FILES="\
@@ -369,9 +371,11 @@ string \
 UNISIM_SIMULATORS_INTELEMU_SOURCE_FILES="\
 main.cc \
 simulator.cc \
+linuxsystem.cc
 "
 UNISIM_SIMULATORS_INTELEMU_HEADER_FILES="\
 simulator.hh \
+linuxsystem.hh \
 "
 
 UNISIM_SIMULATORS_INTELEMU_EXTRA_FILES="\
@@ -386,7 +390,8 @@ ChangeLog \
 
 has_to_build_configure=no
 
-install_src_file () {
+install_src_file ()
+{
     has_new_src_file=no
     src_path="$1"
     dst_path="$2"
@@ -419,7 +424,7 @@ done
 
 if [ "${has_new_src_file}" = "yes" ]; then
     has_to_build_configure=yes
-if 
+fi
 
 # Top level
 
@@ -469,136 +474,111 @@ if [ ! -e "${INTELEMU_CONFIGURE_AC}" ] || [ "$0" -nt "${INTELEMU_CONFIGURE_AC}" 
 fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
-	echo "Generating intelemu configure.ac"
-        exec 5> "${INTELEMU_CONFIGURE_AC}"
-	echo "AC_INIT([UNISIM INTELemu C++ simulator], [${INTELEMU_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-intelemu])" >&5
-	echo "AC_CONFIG_MACRO_DIR([m4])" >&5
-	echo "AC_CONFIG_AUX_DIR(config)" >&5
-	echo "AC_CONFIG_HEADERS([config.h])" >&5
-	echo "AC_CANONICAL_BUILD" >&5
-	echo "AC_CANONICAL_HOST" >&5
-	echo "AC_CANONICAL_TARGET" >&5
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >&5
-	echo "AC_PATH_PROGS(SH, sh)" >&5
-	echo "AC_PROG_CXX" >&5
-	echo "AC_PROG_RANLIB" >&5
-	echo "AC_PROG_INSTALL" >&5
-	echo "AC_PROG_LN_S" >&5
-	echo "AC_LANG([C++])" >&5
-	echo "AM_PROG_CC_C_O" >&5
-	echo "AC_CHECK_HEADERS([${INTELEMU_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >&5
-	echo "UNISIM_CHECK_PTHREAD(main)" >&5
-	echo "UNISIM_CHECK_TIMES(main)" >&5
-	echo "UNISIM_CHECK_ENDIAN(main)" >&5
-	echo "UNISIM_CHECK_CURSES(main)" >&5
-	echo "UNISIM_CHECK_LIBEDIT(main)" >&5
-	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >&5
-	echo "UNISIM_CHECK_ZLIB(main)" >&5
-	echo "UNISIM_CHECK_LIBXML2(main)" >&5
-	echo "UNISIM_CHECK_CXXABI(main)" >&5
-	echo "UNISIM_WITH_BOOST(main)" >&5
-	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >&5
-	echo "UNISIM_CHECK_CACTI(main)" >&5
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >&5
-	echo "UNISIM_CHECK_REAL_PATH(main)" >&5
-	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >&5
-	echo "AC_SUBST(GENISSLIB_PATH)" >&5
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-intelemu-${INTELEMU_VERSION}\"], [path of shared data relative to bin directory])" >&5
-	SIM_VERSION_MAJOR=$(printf "${INTELEMU_VERSION}" | cut -f 1 -d .)
-	SIM_VERSION_MINOR=$(printf "${INTELEMU_VERSION}" | cut -f 2 -d .)
-	SIM_VERSION_PATCH=$(printf "${INTELEMU_VERSION}" | cut -f 3 -d .)
-	SIM_VERSION="${INTELEMU_VERSION}"
-	SIM_VERSION_CODENAME="Triumphalis Tarraco"
-	SIM_AUTHOR="Daniel Gracia Perez (daniel.gracia-perez@cea.fr)"
-	SIM_PROGRAM_NAME="UNISIM INTELEmu"
-	SIM_LICENSE="BSD (See file COPYING)"
-	SIM_COPYRIGHT="Copyright (C) 2007-2010, Commissariat a l'Energie Atomique"
-	SIM_DESCRIPTION="UNISIM INTELv5 User Level Simulator"
-	SIM_SCHEMATIC="fig_schematic.pdf"
-	echo "AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])" >&5
-	echo "AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])" >&5
-	echo "AC_DEFINE([SIM_VERSION_PATCH], [${SIM_VERSION_PATCH}], [Version patch number])" >&5
-	echo "AC_DEFINE([SIM_VERSION], [\"${SIM_VERSION}\"], [Version])" >&5
-	echo "AC_DEFINE([SIM_VERSION_CODENAME], [\"${SIM_VERSION_CODENAME}\"], [Version code name])" >&5
-	echo "AC_DEFINE([SIM_AUTHOR], [\"${SIM_AUTHOR}\"], [Author])" >&5
-	echo "AC_DEFINE([SIM_PROGRAM_NAME], [\"${SIM_PROGRAM_NAME}\"], [Program name])" >&5
-	echo "AC_DEFINE([SIM_COPYRIGHT], [\"${SIM_COPYRIGHT}\"], [Copyright])" >&5
-	echo "AC_DEFINE([SIM_LICENSE], [\"${SIM_LICENSE}\"], [License])" >&5
-	echo "AC_DEFINE([SIM_DESCRIPTION], [\"${SIM_DESCRIPTION}\"], [Description])" >&5
-	echo "AC_DEFINE([SIM_SCHEMATIC], [\"${SIM_SCHEMATIC}\"], [Schematic])" >&5
-	echo "AC_CONFIG_FILES([Makefile])" >&5
-	echo "AC_OUTPUT" >&5
-        exec 5>&-
+    echo "Generating intelemu configure.ac"
+    exec 5> "${INTELEMU_CONFIGURE_AC}"
+    echo "AC_INIT([UNISIM INTELemu C++ simulator], [${INTELEMU_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-intelemu])" >&5
+    echo "AC_CONFIG_MACRO_DIR([m4])" >&5
+    echo "AC_CONFIG_AUX_DIR(config)" >&5
+    echo "AC_CONFIG_HEADERS([config.h])" >&5
+    echo "AC_CANONICAL_BUILD" >&5
+    echo "AC_CANONICAL_HOST" >&5
+    echo "AC_CANONICAL_TARGET" >&5
+    echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >&5
+    echo "AC_PATH_PROGS(SH, sh)" >&5
+    echo "CXXFLAGS=\"$CXXFLAGS -std=c++11\"" >&5
+    echo "AC_PROG_CXX" >&5
+    echo "AC_PROG_RANLIB" >&5
+    echo "AC_PROG_INSTALL" >&5
+    echo "AC_PROG_LN_S" >&5
+    echo "AC_LANG([C++])" >&5
+    echo "AM_PROG_CC_C_O" >&5
+    echo "AC_CHECK_HEADERS([${INTELEMU_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >&5
+    echo "UNISIM_CHECK_PTHREAD(main)" >&5
+    echo "UNISIM_CHECK_TIMES(main)" >&5
+    echo "UNISIM_CHECK_ENDIAN(main)" >&5
+    echo "UNISIM_CHECK_CURSES(main)" >&5
+    echo "UNISIM_CHECK_LIBEDIT(main)" >&5
+    echo "UNISIM_CHECK_BSD_SOCKETS(main)" >&5
+    echo "UNISIM_CHECK_ZLIB(main)" >&5
+    echo "UNISIM_CHECK_LIBXML2(main)" >&5
+    echo "UNISIM_CHECK_CXXABI(main)" >&5
+    echo "UNISIM_WITH_BOOST(main)" >&5
+    echo "UNISIM_CHECK_BOOST_GRAPH(main)" >&5
+    echo "UNISIM_CHECK_CACTI(main)" >&5
+    echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >&5
+    echo "UNISIM_CHECK_REAL_PATH(main)" >&5
+    echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-intelemu-${INTELEMU_VERSION}\"], [path of shared data relative to bin directory])" >&5
+    SIM_VERSION_MAJOR=$(printf "${INTELEMU_VERSION}" | cut -f 1 -d .)
+    SIM_VERSION_MINOR=$(printf "${INTELEMU_VERSION}" | cut -f 2 -d .)
+    SIM_VERSION_PATCH=$(printf "${INTELEMU_VERSION}" | cut -f 3 -d .)
+    SIM_VERSION="${INTELEMU_VERSION}"
+    SIM_VERSION_CODENAME="Triumphalis Tarraco"
+    SIM_AUTHOR="Daniel Gracia Perez (daniel.gracia-perez@cea.fr)"
+    SIM_PROGRAM_NAME="UNISIM INTELEmu"
+    SIM_LICENSE="BSD (See file COPYING)"
+    SIM_COPYRIGHT="Copyright (C) 2007-2010, Commissariat a l'Energie Atomique"
+    SIM_DESCRIPTION="UNISIM INTELv5 User Level Simulator"
+    SIM_SCHEMATIC="fig_schematic.pdf"
+    echo "AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])" >&5
+    echo "AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])" >&5
+    echo "AC_DEFINE([SIM_VERSION_PATCH], [${SIM_VERSION_PATCH}], [Version patch number])" >&5
+    echo "AC_DEFINE([SIM_VERSION], [\"${SIM_VERSION}\"], [Version])" >&5
+    echo "AC_DEFINE([SIM_VERSION_CODENAME], [\"${SIM_VERSION_CODENAME}\"], [Version code name])" >&5
+    echo "AC_DEFINE([SIM_AUTHOR], [\"${SIM_AUTHOR}\"], [Author])" >&5
+    echo "AC_DEFINE([SIM_PROGRAM_NAME], [\"${SIM_PROGRAM_NAME}\"], [Program name])" >&5
+    echo "AC_DEFINE([SIM_COPYRIGHT], [\"${SIM_COPYRIGHT}\"], [Copyright])" >&5
+    echo "AC_DEFINE([SIM_LICENSE], [\"${SIM_LICENSE}\"], [License])" >&5
+    echo "AC_DEFINE([SIM_DESCRIPTION], [\"${SIM_DESCRIPTION}\"], [Description])" >&5
+    echo "AC_DEFINE([SIM_SCHEMATIC], [\"${SIM_SCHEMATIC}\"], [Schematic])" >&5
+    echo "AC_CONFIG_FILES([Makefile])" >&5
+    echo "AC_OUTPUT" >&5
+    exec 5>&-
 
-	AM_INTELEMU_VERSION=$(printf ${INTELEMU_VERSION} | sed -e 's/\./_/g')
-	echo "Generating intelemu Makefile.am"
-        exec 5> "${INTELEMU_MAKEFILE_AM}"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" >&5
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >&5
-	echo "noinst_LIBRARIES = libintelemu-${INTELEMU_VERSION}.a" >&5
-	echo "libintelemu_${AM_INTELEMU_VERSION}_a_SOURCES = ${UNISIM_LIB_INTELEMU_SOURCE_FILES}" >&5
-	echo "bin_PROGRAMS = unisim-intelemu-${INTELEMU_VERSION}" >&5
-	echo "unisim_intelemu_${AM_INTELEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_INTELEMU_SOURCE_FILES}" >&5
-	echo "unisim_intelemu_${AM_INTELEMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >&5
-	echo "unisim_intelemu_${AM_INTELEMU_VERSION}_LDADD = libintelemu-${INTELEMU_VERSION}.a" >&5
+    AM_INTELEMU_VERSION=$(printf ${INTELEMU_VERSION} | sed -e 's/\./_/g')
+    echo "Generating intelemu Makefile.am"
+    exec 5> "${INTELEMU_MAKEFILE_AM}"
+    echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" >&5
+    echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >&5
+    echo "noinst_LIBRARIES = libintelemu-${INTELEMU_VERSION}.a" >&5
+    echo "libintelemu_${AM_INTELEMU_VERSION}_a_SOURCES = ${UNISIM_LIB_INTELEMU_SOURCE_FILES}" >&5
+    echo "bin_PROGRAMS = unisim-intelemu-${INTELEMU_VERSION}" >&5
+    echo "unisim_intelemu_${AM_INTELEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_INTELEMU_SOURCE_FILES}" >&5
+    echo "unisim_intelemu_${AM_INTELEMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >&5
+    echo "unisim_intelemu_${AM_INTELEMU_VERSION}_LDADD = libintelemu-${INTELEMU_VERSION}.a" >&5
 
-	echo "noinst_HEADERS = ${UNISIM_LIB_INTELEMU_HEADER_FILES} ${UNISIM_SIMULATORS_INTELEMU_HEADER_FILES}" >&5
-	echo "EXTRA_DIST = ${UNISIM_LIB_INTELEMU_M4_FILES}" >&5
-	echo "sharedir = \$(prefix)/share/unisim-intelemu-${INTELEMU_VERSION}" >&5
-	echo "dist_share_DATA = ${UNISIM_LIB_INTELEMU_DATA_FILES} ${UNISIM_SIMULATORS_INTELEMU_DATA_FILES}" >&5
+    echo "noinst_HEADERS = ${UNISIM_LIB_INTELEMU_HEADER_FILES} ${UNISIM_SIMULATORS_INTELEMU_HEADER_FILES}" >&5
+    echo "EXTRA_DIST = ${UNISIM_LIB_INTELEMU_M4_FILES}" >&5
+    echo "sharedir = \$(prefix)/share/unisim-intelemu-${INTELEMU_VERSION}" >&5
+    echo "dist_share_DATA = ${UNISIM_LIB_INTELEMU_DATA_FILES} ${UNISIM_SIMULATORS_INTELEMU_DATA_FILES}" >&5
 
-	echo -n "BUILT_SOURCES=" >&5
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_intel32.hh " >&5
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_intel32.tcc " >&5
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_thumb.hh " >&5
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_thumb.tcc " >&5
-	echo >&5
-	
-	echo -n "CLEANFILES=" >&5
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_intel32.hh " >&5
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_intel32.tcc " >&5
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_thumb.hh " >&5
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_thumb.tcc " >&5
-	echo >&5
-	
-	echo "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_intel32.tcc: \$(top_builddir)/unisim/component/cxx/processor/intel/isa_intel32.hh" >&5
-	echo "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_intel32.hh: ${UNISIM_LIB_INTELEMU_ISA_INTEL32_FILES}" >&5
-	printf "\t" >&5
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/intel/isa_intel32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/intel/isa/intel32 \$(top_srcdir)/unisim/component/cxx/processor/intel/isa/intel32/intel32.isa" >&5
-
-	echo "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/intel/isa_thumb.hh" >&5
-	echo "\$(top_builddir)/unisim/component/cxx/processor/intel/isa_thumb.hh: ${UNISIM_LIB_INTELEMU_ISA_THUMB_FILES}" >&5
-	printf "\t" >&5
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/intel/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/intel/isa/thumb2 \$(top_srcdir)/unisim/component/cxx/processor/intel/isa/thumb2/thumb.isa" >&5
-
-	echo "all-local: all-local-bin all-local-share" >&5
-	echo "clean-local: clean-local-bin clean-local-share" >&5
-	echo "all-local-bin: \$(bin_PROGRAMS)" >&5
-	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >&5
-	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >&5
-	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >&5
-	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >&5
-	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >&5
-	printf "\tdone\n" >&5
-	echo "clean-local-bin:" >&5
-	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >&5
-	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >&5
-	printf "\tfi\n" >&5
-	echo "all-local-share: \$(dist_share_DATA)" >&5
-	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >&5
-	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >&5
-	printf "\trm -f \"\$(top_builddir)/share/unisim-intelemu-${INTELEMU_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >&5
-	printf "\tmkdir -p '\$(top_builddir)/share/unisim-intelemu-${INTELEMU_VERSION}'; \\\\\n" >&5
-	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-intelemu-${INTELEMU_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >&5
-	printf "\tdone\n" >&5
-	echo "clean-local-share:" >&5
-	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >&5
-	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >&5
-	printf "\tfi\n" >&5
-        exec 5>&-
+    echo "all-local: all-local-bin all-local-share" >&5
+    echo "clean-local: clean-local-bin clean-local-share" >&5
+    echo "all-local-bin: \$(bin_PROGRAMS)" >&5
+    printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >&5
+    printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >&5
+    printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >&5
+    printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >&5
+    printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >&5
+    printf "\tdone\n" >&5
+    echo "clean-local-bin:" >&5
+    printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >&5
+    printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >&5
+    printf "\tfi\n" >&5
+    echo "all-local-share: \$(dist_share_DATA)" >&5
+    printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >&5
+    printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >&5
+    printf "\trm -f \"\$(top_builddir)/share/unisim-intelemu-${INTELEMU_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >&5
+    printf "\tmkdir -p '\$(top_builddir)/share/unisim-intelemu-${INTELEMU_VERSION}'; \\\\\n" >&5
+    printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-intelemu-${INTELEMU_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >&5
+    printf "\tdone\n" >&5
+    echo "clean-local-share:" >&5
+    printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >&5
+    printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >&5
+    printf "\tfi\n" >&5
+    exec 5>&-
         
-	echo "Building intelemu configure"
-	${SHELL} -c "cd ${DEST_DIR}/intelemu && aclocal -I m4 && autoconf --force && automake -ac"
+    echo "Building intelemu configure"
+    ${SHELL} -c "cd ${DEST_DIR} && aclocal -I m4 && autoconf --force && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

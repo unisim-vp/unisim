@@ -1,10 +1,10 @@
 #ifndef INTEL_MODRM_HH
 #define INTEL_MODRM_HH
 
-#include <intel/types.hh>
-#include <intel/segments.hh>
-#include <intel/disasm.hh>
-#include <intel/fwd.hh>
+#include <unisim/component/cxx/processor/intel/types.hh>
+#include <unisim/component/cxx/processor/intel/segments.hh>
+#include <unisim/component/cxx/processor/intel/disasm.hh>
+#include <unisim/component/cxx/processor/intel/fwd.hh>
 #include <iosfwd>
 #include <iostream>
 
@@ -25,7 +25,7 @@ namespace intel
     _RMOp( _RMOp const& _rmop ) : mop( _rmop.mop ) {}
     bool is_memory_operand() const { return (uintptr_t( mop ) > 0x1000); }
     MOp const* operator -> () const { return mop; }
-    unsigned ereg() const { return unsigned( mop ); }
+    unsigned ereg() const { return unsigned( uintptr_t( mop ) ); }
     operator MOp const* () const { return mop; }
   };
     

@@ -1,7 +1,7 @@
 #ifndef INTEL_EXEC_HH
 #define INTEL_EXEC_HH
 
-#include <intel/types.hh>
+#include <unisim/component/cxx/processor/intel/types.hh>
 #include <stdexcept>
 
 namespace intel

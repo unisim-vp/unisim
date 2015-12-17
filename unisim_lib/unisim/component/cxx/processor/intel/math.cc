@@ -1,4 +1,4 @@
-#include <intel/math.hh>
+#include <unisim/component/cxx/processor/intel/math.hh>
 #include <cmath>
 #include <fenv.h>
 

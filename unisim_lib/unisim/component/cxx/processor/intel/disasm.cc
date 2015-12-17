@@ -1,5 +1,5 @@
-#include <intel/disasm.hh>
-#include <intel/modrm.hh>
+#include <unisim/component/cxx/processor/intel/disasm.hh>
+#include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <iostream>
 
 namespace intel

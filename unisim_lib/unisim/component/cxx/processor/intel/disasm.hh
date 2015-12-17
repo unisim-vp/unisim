@@ -1,9 +1,9 @@
 #ifndef INTEL_DISASM_HH
 #define INTEL_DISASM_HH
 
-#include <intel/segments.hh>
-#include <intel/fwd.hh>
-#include <intel/tmp.hh>
+#include <unisim/component/cxx/processor/intel/segments.hh>
+#include <unisim/component/cxx/processor/intel/fwd.hh>
+#include <unisim/component/cxx/processor/intel/tmp.hh>
 #include <stdint.h>
 #include <iosfwd>
 

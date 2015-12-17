@@ -1,12 +1,12 @@
 #ifndef INTEL_ARCH_HH
 #define INTEL_ARCH_HH
 
-#include <intel/linuxsystem.hh>
-#include <intel/memory.hh>
-#include <intel/segments.hh>
-#include <intel/modrm.hh>
-#include <intel/vectorbank.hh>
-#include <intel/fwd.hh>
+#include <unisim/component/cxx/processor/intel/memory.hh>
+#include <unisim/component/cxx/processor/intel/segments.hh>
+#include <unisim/component/cxx/processor/intel/modrm.hh>
+#include <unisim/component/cxx/processor/intel/vectorbank.hh>
+#include <unisim/component/cxx/processor/intel/fwd.hh>
+#include <linuxsystem.hh>
 #include <dtlib/target.hh>
 #include <iostream>
 #include <vector>

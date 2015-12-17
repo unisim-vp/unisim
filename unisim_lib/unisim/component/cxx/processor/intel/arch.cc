@@ -1,6 +1,6 @@
-#include <intel/arch.hh>
-#include <intel/isa.tcc>
-#include <intel/math.hh>
+#include <unisim/component/cxx/processor/intel/arch.hh>
+#include <unisim/component/cxx/processor/intel/isa.tcc>
+#include <unisim/component/cxx/processor/intel/math.hh>
 #include <dtlib/misc.hh>
 #include <cmath>
 
