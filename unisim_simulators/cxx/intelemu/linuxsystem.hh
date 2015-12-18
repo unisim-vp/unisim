@@ -7,7 +7,7 @@
 #include <string>
 #include <inttypes.h>
 
-namespace intel {
+namespace todel {
   struct LinuxSystem
   {
     /* General*/
@@ -120,6 +120,6 @@ namespace intel {
     void                futex( dtlib::Target& target );
     
   };
-};
+} // end of namespace todel
 
 #endif // INTEL_LINUXSYSTEM_HH

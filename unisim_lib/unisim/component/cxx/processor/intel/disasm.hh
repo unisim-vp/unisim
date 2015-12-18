@@ -58,29 +58,29 @@ namespace intel {
   /* ModRM disassembly */
   struct DisasmRoM : public DisasmObject
   {
-    DisasmRoM( isa::MOp const* _mop ) : mop( _mop ) {} isa::MOp const* mop;
+    DisasmRoM( MOp const* _mop ) : mop( _mop ) {} MOp const* mop;
     void operator() ( std::ostream& sink ) const;
     virtual void disasm_register( std::ostream& sink, unsigned reg ) const = 0;
   };
   struct DisasmEb : public DisasmRoM
   {
-    DisasmEb( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmEb( MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   struct DisasmEw : public DisasmRoM
   {
-    DisasmEw( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmEw( MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   struct DisasmEd : public DisasmRoM
   {
-    DisasmEd( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmEd( MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   template <unsigned OPSIZE>
   struct DisasmE : public DisasmObject
   {
-    DisasmE( isa::MOp const* _mop ) : mop( _mop ) {} isa::MOp const* mop;
+    DisasmE( MOp const* _mop ) : mop( _mop ) {} MOp const* mop;
     void operator() ( std::ostream& sink ) const {
       if      (OPSIZE == 8)  sink << DisasmEb( mop );
       else if (OPSIZE == 16) sink << DisasmEw( mop );
@@ -90,17 +90,17 @@ namespace intel {
   };
   struct DisasmQq : public DisasmRoM
   {
-    DisasmQq( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmQq( MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   struct DisasmWdq : public DisasmRoM
   {
-    DisasmWdq( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmWdq( MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   struct DisasmM : public DisasmRoM
   {
-    DisasmM( isa::MOp const* _mop ) : DisasmRoM( _mop ) {}
+    DisasmM( MOp const* _mop ) : DisasmRoM( _mop ) {}
     void disasm_register( std::ostream& sink, unsigned reg ) const;
   };
   
@@ -213,12 +213,12 @@ namespace intel {
     
   };
 
-  bool has_implicit_size( isa::MOp const* _mop );
+  bool has_implicit_size( MOp const* _mop );
   
   template <unsigned OPSIZE>
   struct DisasmMnemonic : public DisasmObject
   {
-    DisasmMnemonic( char const* _mnemonic, isa::MOp const* _mop ) : mnemonic( _mnemonic ), implicit_size( has_implicit_size( _mop ) ) {}
+    DisasmMnemonic( char const* _mnemonic, MOp const* _mop ) : mnemonic( _mnemonic ), implicit_size( has_implicit_size( _mop ) ) {}
     DisasmMnemonic( char const* _mnemonic ) : mnemonic( _mnemonic ), implicit_size( false ) {}
     char const* mnemonic;
     bool implicit_size;

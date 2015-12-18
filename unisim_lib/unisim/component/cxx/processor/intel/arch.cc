@@ -1,11 +1,49 @@
+/*
+ *  Copyright (c) 2007-2015,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without 
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, 
+ *     this list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific 
+ *     prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  ARE DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+
 #include <unisim/component/cxx/processor/intel/arch.hh>
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
 #include <unisim/component/cxx/processor/intel/math.hh>
 #include <dtlib/misc.hh>
 #include <cmath>
 
-namespace intel
-{
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace intel {
+
   Arch::Arch()
     : m_running( true ), m_instcount( 0 ), m_disasm( false ), m_latest_insn( 0 )
     , m_target( *this ), m_EIP( 0 ), m_ftop( 0 ), m_fcw( 0x23f ),
@@ -30,14 +68,22 @@ namespace intel
       Page( Page* _next, uint32_t _key ) : next( _next ), key( _key ) { memset( operations, 0, sizeof (operations) ); }
       ~Page() { for( unsigned idx = 0; idx < NUM_OPERATIONS_PER_PAGE; ++idx ) delete operations[idx]; delete next; }
     };
-
+    
     static unsigned const NUM_HASH_TABLE_ENTRIES = 0x1000;
     Page* hash_table[NUM_HASH_TABLE_ENTRIES];
     Page* mru_page;
-    ICache() : mru_page( 0 ) { memset( hash_table, 0, sizeof (hash_table) ); }
-    ~ICache() { for(unsigned idx = 0; idx < NUM_HASH_TABLE_ENTRIES; ++idx) delete hash_table[idx]; }
+    ICache()
+      : mru_page( 0 )
+    {
+      memset( hash_table, 0, sizeof (hash_table) );
+    }
+    ~ICache()
+    {
+      for(unsigned idx = 0; idx < NUM_HASH_TABLE_ENTRIES; ++idx)
+        delete hash_table[idx];
+    }
     
-    Operation* Get( Mode mode, uint32_t address, uint8_t* bytes )
+    Operation*  Get( Mode mode, uint32_t address, uint8_t* bytes )
     {
       uint32_t offset;
       Page* page = GetPage( address, offset );
@@ -147,4 +193,9 @@ namespace intel
   f64_t logarithm( f64_t value ) { return log2( value ); }
 
   f64_t square_root( f64_t value ) { return sqrt( value ); }
-}
+
+} // end of namespace intel
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim

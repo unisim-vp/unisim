@@ -42,11 +42,8 @@ namespace processor {
 namespace intel {
 
   struct Arch;
-  
-  namespace isa {
-    struct Operation;
-    struct MOp;
-  }
+  struct MOp;
+  struct Operation;
 
 } // end of namespace intel
 } // end of namespace processor

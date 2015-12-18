@@ -22,7 +22,7 @@
 #include <unistd.h>
 
  
-namespace intel
+namespace todel
 {
   LinuxSystem::LinuxSystem()
     : m_verbose( 0 ), m_dynamic_p( false ), m_gdtentries( 0 )
@@ -1196,5 +1196,6 @@ namespace intel
     
     this->screturn( res, _target );
   }
-};
+
+} // end of namespace todel
 

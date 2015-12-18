@@ -55,22 +55,22 @@ int main(int argc, char *argv[])
   switch ( simulator->Setup() )
     {
     case unisim::kernel::service::Simulator::ST_ERROR:
-      cerr << "ERROR: Can't start simulation because of previous erros" << endl;
+      std::cerr << "ERROR: Can't start simulation because of previous erros" << std::endl;
       ret = -1;
       break;
     case unisim::kernel::service::Simulator::ST_OK_DONT_START:
 #ifdef SIM_PIM_SUPPORT
       simulator->GeneratePim();
 #endif
-      cerr << "Successfully configured the simulator." << endl;
+      std::cerr << "Successfully configured the simulator." << std::endl;
       ret = 0;
       break;
     case unisim::kernel::service::Simulator::ST_WARNING:
-      cerr << "WARNING: problems detected during setup."
-           << " Starting simulation anyway, but errors could appear during "
-           << "the simulation." << endl;
+      std::cerr << "WARNING: problems detected during setup."
+                << " Starting simulation anyway, but errors could appear during "
+                << "the simulation." << std::endl;
     case unisim::kernel::service::Simulator::ST_OK_TO_START:
-      cerr << "Starting simulation." << endl;
+      std::cerr << "Starting simulation." << std::endl;
       ret = simulator->Run();
       break;
     }

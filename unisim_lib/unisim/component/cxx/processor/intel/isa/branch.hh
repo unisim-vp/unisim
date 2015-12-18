@@ -1,5 +1,5 @@
 /* TODO:
- * - In 64 bit mode, for some breanch (if not all) operand-size is forced to 64 whatever the actual operand size is ...
+ * - In 64 bit mode, for some branch instructions (if not all) operand-size is forced to 64 whatever the actual operand size is ...
  * - Some instructions may incoherently depend on StackAddressSize and OperandSize (e.g. Enter & Leave)
  * - some branch struct offsets should depend on operand size
  * - the dissambly of non-default targetting mode needs a suffix

@@ -140,7 +140,7 @@ namespace intel {
       }
     }
     
-    ::intel::LinuxSystem         m_linux_system; ///< System support
+    todel::LinuxSystem         m_linux_system; ///< System support
     
     // PROCESSOR STATE
   private:
@@ -230,7 +230,7 @@ namespace intel {
       uint32_t id = (_value >> 3) & 0x1fff; // entry number
       uint32_t ti = (_value >> 2) & 0x0001; // global or local
       uint32_t pl = (_value >> 0) & 0x0003; // privilege level
-      intel::LinuxSystem::GDTEntry_t& gdtentry = m_linux_system.gdtentry( id );
+      todel::LinuxSystem::GDTEntry_t& gdtentry = m_linux_system.gdtentry( id );
       assert( _num < 6 and ti == 0 and pl == 3 );
       m_srs[_num].update( id, ti, pl, gdtentry.m_baseaddr );
     }
