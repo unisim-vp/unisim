@@ -9,7 +9,7 @@
 #include <cassert>
 #include <cerrno>
 #include <cstring>
-// Linux host emulation
+// Linux32 host-emulation
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -342,7 +342,8 @@ namespace todel
   }
 
   void
-  LinuxSystem::syscall( int _sc, dtlib::Target& _target ) {
+  LinuxSystem::syscall( int _sc, dtlib::Target& _target )
+  {
     switch( _sc ) {
     case 1: this->exit( _target ); break;
     case 3: this->read( _target ); break;
@@ -361,12 +362,14 @@ namespace todel
     case 90: this->mmap( _target ); break; // old mmap
     case 122: this->uname( _target ); break;
     case 140: this->llseek( _target ); break;
+    // case 141: this->getdents( _target ); break;
     case 146: this->writev( _target ); break;
     case 174: this->sigaction( _target ); break;
     case 175: this->sigprocmask( _target ); break;
     case 183: this->getcwd( _target ); break;
     case 191: this->ugetrlimit( _target ); break;
     case 192: this->mmap( _target ); break; // new mmap2
+    case 194: this->ftruncate64( _target ); break;
     case 195: this->stat64( _target ); break;
     case 197: this->fstat64( _target ); break;
     case 199: this->getuid32( _target ); break;
@@ -379,6 +382,7 @@ namespace todel
     case 258: this->set_tid_address( _target ); break;
     case 265: this->clock_gettime( _target ); break;
     case 270: this->tgkill( _target ); break;
+    case 295: this->openat( _target ); break;
     case 311: this->set_robust_list( _target ); break;
     default:
       std::cerr << "Unhandled system call #" << _sc << " (@" << std::hex << _target.geteip() << ")\n";
@@ -388,14 +392,16 @@ namespace todel
   }
   
   uint32_t
-  LinuxSystem::scident( dtlib::Target& _target ) {
+  LinuxSystem::scident( dtlib::Target& _target )
+  {
     assert( false ); /* FIXME */
     //     return _target.m_EREG[1];
     return 0;
   }
   
   uint32_t
-  LinuxSystem::scparam( int _idx, dtlib::Target& _target ) {
+  LinuxSystem::scparam( int _idx, dtlib::Target& _target )
+  {
     uint32_t reg_idx;
     switch( _idx ) {
     case 0: reg_idx = 3; break;
@@ -414,14 +420,16 @@ namespace todel
    * errors, unlike most Unices, which use the condition codes' carry
    * flag. */
   void
-  LinuxSystem::scerror( uint32_t _err, dtlib::Target& _target ) {
-    _target.regwrite32( 0 , _err );
+  LinuxSystem::scerror( int _err, dtlib::Target& _target )
+  {
+    _target.regwrite32( 0 , uint32_t( -_err ) );
   }
-
+  
   /* Linus said he will make sure the no syscall returns a value in
    * -1..-4095 as a valid result */
   void
-  LinuxSystem::screturn( uint32_t _res, dtlib::Target& _target ) {
+  LinuxSystem::screturn( uint32_t _res, dtlib::Target& _target )
+  {
     assert( _res <= 0xfffff000 );
     _target.regwrite32( 0 , _res );
   }
@@ -444,7 +452,8 @@ namespace todel
   }
 
   void
-  LinuxSystem::unimplemented_syscall( dtlib::Target& _target ) {
+  LinuxSystem::unimplemented_syscall( dtlib::Target& _target )
+  {
     int syscall_id = int( this->scident( _target ) );
     dtlib::osprintf( std::cerr, "[syscall] unimplemented (%d)...\n", syscall_id );
     assert( false );
@@ -486,25 +495,25 @@ namespace todel
     // this->screturn( 0, _target );
     
     // A systematic error forces glibc to inspect "/proc/sys/kernel/osrelease"
-    this->scerror( uint32_t( -EINVAL ), _target );
+    this->scerror( -EINVAL, _target );
   }
 
   void
   LinuxSystem::access( dtlib::Target& _target )
   {
     uint32_t path_addr = this->scparam( 0, _target );
-    uint32_t path_len = this->stringlength( path_addr, _target ) + 1;
     int mode = int( this->scparam( 1, _target ) );
     
+    uint32_t path_len = this->stringlength( path_addr, _target ) + 1;
     char path[path_len];
-    _target.read( (uint8_t*)path, path_addr, path_len );
+    _target.read( (uint8_t*)&path[0], path_addr, path_len );
     
     if (m_verbose)
-      dtlib::osprintf( m_sink(), "%#010x: [syscall] access( path=%s, mode=%#x )\n", _target.geteip(), path, mode );
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] access( path=%s, mode=%#x )\n", _target.geteip(), &path[0], mode );
     
-    int ret = ::access( path, mode );
+    int ret = ::access( &path[0], mode );
     
-    if (ret <  0) this->scerror( uint32_t( -(errno) ), _target );
+    if (ret <  0) this->scerror( errno, _target );
     else          this->screturn( ret, _target );
   }
   
@@ -517,58 +526,89 @@ namespace todel
     mode_t mode = mode_t( this->scparam( 2, _target ) );
     
     char path[path_len];
-    _target.read( (uint8_t*)path, path_addr, path_len );
+    _target.read( (uint8_t*)&path[0], path_addr, path_len );
     
     if (m_verbose)
-      dtlib::osprintf( m_sink(), "%#010x: [syscall] open( path=%s, flags=%#x, mode=%#x )\n", _target.geteip(), path, flags, mode );
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] open( path=%s, flags=%#x, mode=%#x )\n", _target.geteip(), &path[0], flags, mode );
     
-    int ret = ::open( path, flags, mode );
+    int ret = ::open( &path[0], flags, mode );
     
-    if (ret <  0) this->scerror( uint32_t( -(errno) ), _target );
+    if (ret <  0) this->scerror( errno, _target );
     else          this->screturn( ret, _target );
   }
   
   void
-  LinuxSystem::read( dtlib::Target& _target ) {
+  LinuxSystem::openat( dtlib::Target& _target )
+  {
+    /* Open a file relative to a directory file descriptor
+     * int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+     */
+    int dirfd  = this->scparam( 0, _target );
+    uint32_t path_addr = this->scparam( 1, _target );
+    int flags = int( this->scparam( 2, _target ) );
+    mode_t mode = mode_t( this->scparam( 3, _target ) );
+    
+    uint32_t path_len = this->stringlength( path_addr, _target ) + 1;
+    char path[path_len];
+    _target.read( (uint8_t*)&path[0], path_addr, path_len );
+    
+    if (m_verbose)
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] openat( dirfd=%d, path=%s, flags=%#x, mode=%#x )\n", _target.geteip(), dirfd, &path[0], flags, mode );
+    
+    int ret = ::openat( dirfd, &path[0], flags, mode );
+    
+    if (ret <  0) this->scerror( errno, _target );
+    else          this->screturn( ret, _target );
+  }
+  
+  void
+  LinuxSystem::read( dtlib::Target& _target )
+  {
     int fd = int( this->scparam( 0, _target ) );
     uint32_t bufaddr = this->scparam( 1, _target );
     size_t count = size_t( this->scparam( 2, _target ) );
-    size_t ret;
     
     if (m_verbose)
       dtlib::osprintf( m_sink(), "%#010x: [syscall] read( fd=%d, bufaddr=%#x, count=%#x )\n", _target.geteip(), fd, bufaddr, count );
-    assert( count < 0x1000000 );
+    
+    assert( count < 0x100000 );
     uint8_t buffer[count];
-    ret = ::read( fd, buffer, count );
-    if (ret < 0) { this->scerror( uint32_t( -(errno) ), _target ); return; }
-    if (ret > 0) _target.write( bufaddr, buffer, count );
+    size_t ret = ::read( fd, &buffer[0], count );
+    
+    if (ret < 0) { this->scerror( errno, _target ); return; }
+    if (ret > 0) _target.write( bufaddr, buffer, ret );
     this->screturn( ret, _target );
   }
   
-  void LinuxSystem::write( dtlib::Target& _target ) {
+  void
+  LinuxSystem::write( dtlib::Target& _target )
+  {
     int fd = int( this->scparam( 0, _target ) );
     uint32_t bufaddr = this->scparam( 1, _target );
     size_t count = size_t( this->scparam( 2, _target ) );
-    size_t ret;
     
     if (m_verbose)
       dtlib::osprintf( m_sink(), "%#010x: [syscall] write( fd=%d, base=%#x, count=%#x )\n", _target.geteip(), fd, bufaddr, count );
+    
     assert( count < 0x1000000 );
     uint8_t buffer[count];
-    _target.read( buffer, bufaddr, count );
-    ret = ::write( fd, buffer, count );
-    if (ret < 0) this->scerror( uint32_t( -(errno) ), _target );
+    _target.read( &buffer[0], bufaddr, count );
+    size_t ret = ::write( fd, &buffer[0], count );
+    
+    if (ret < 0) this->scerror( errno, _target );
     else         this->screturn( ret, _target );
   }
   
   void
-  LinuxSystem::close( dtlib::Target& _target ) {
+  LinuxSystem::close( dtlib::Target& _target )
+  {
     int fd = this->scparam( 0, _target );
     int ret = ::close( fd );
+    
     if (m_verbose)
       dtlib::osprintf( m_sink(), "%#010x: [syscall] close( fd=%d )\n", _target.geteip(), fd );
     
-    if (ret <  0) this->scerror( uint32_t( -(errno) ), _target );
+    if (ret <  0) this->scerror( errno, _target );
     else          this->screturn( ret, _target );
   }
   
@@ -577,76 +617,124 @@ namespace todel
   {
     uint32_t path_addr = this->scparam( 0, _target );
     uint32_t path_len = this->stringlength( path_addr, _target ) + 1;
+    
     char path[path_len];
-    _target.read( (uint8_t*)path, path_addr, path_len );
+    _target.read( (uint8_t*)&path, path_addr, path_len );
     
     int ret = ::chdir( &path[0] );
     
-    if (ret <  0) this->scerror( uint32_t( -(errno) ), _target );
+    if (ret <  0) this->scerror( errno, _target );
     else          this->screturn( 0, _target );
   }
   
-  void
-  LinuxSystem::time( dtlib::Target& _target ) {
-    uint32_t time_ptr = this->scparam( 0, _target );
-    assert( sizeof (time_t) == 4 );
-    time_t ret = ::time( 0 );
-    if (m_verbose)
-      dtlib::osprintf( m_sink(), "%#010x: [syscall] time( time_ptr=0x%x )\n", _target.geteip(), time_ptr );
-    if (ret != (time_t)-1 and time_ptr != 0)
-      _target.write32( time_ptr, ret );
-    this->screturn( ret, _target );
+  namespace {
+    template <typename srcT, typename dstT>
+    bool convert( srcT const& src, dstT& dst )
+    {
+      dstT conv = src;
+      dst = conv;
+      return conv == src;
+    }
   }
+  
+  void
+  LinuxSystem::time( dtlib::Target& _target )
+  {
+    uint32_t time_ptr = this->scparam( 0, _target );
+    
+    if (m_verbose)
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] time( time_ptr=%#x )\n", _target.geteip(), time_ptr );
+    
+    // Emulating a 32 bits linux OS, thus time_t is int32_t
+    time_t ret = ::time( 0 );
+    int32_t time32;
+    if (not convert( ret, time32 )) { std::cerr << "Warning: year 2038 bug.\n"; }
+    
+    if ((ret != ((time_t)-1)) and (time_ptr != 0))
+      _target.write32( time_ptr, time32 );
+    
+    this->screturn( time32, _target );
+  }
+  
+  // Compile time assertion that glibc wrapper function to file handling syscall will use large offset (64bit)
+  extern char __check_that_off_t_is_off64_t__[true];
+  extern char __check_that_off_t_is_off64_t__[(sizeof (off_t) == 8)];
   
   void
   LinuxSystem::llseek( dtlib::Target& _target )
   {
+    /* int _llseek(int fd, int32_t offset_hi, int32_t offset_lo, int64_t* result, int whence);
+     *   lseek - reposition read/write file offset
+     */
+
     int fd = this->scparam( 0, _target );;
     uint32_t offset_high = this->scparam( 1, _target );
     uint32_t offset_low = this->scparam( 2, _target );
     uint32_t result_addr = this->scparam( 3, _target );
     int whence = this->scparam( 4, _target );
     
-    assert( sizeof (off_t) == 4 );
-    assert( sizeof (loff_t) == 8 );
-
+    
     if (m_verbose)
-      dtlib::osprintf( m_sink(), "%#010x: [syscall] llseek( fd=%d, "
-                       "offset_high=0x%x, offset_low=0x%x, "
-                       "result=0x%x, whence=%d )\n",
-                       _target.geteip(), fd, offset_high, offset_low,
-                       result_addr, whence );
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] llseek( fd=%d, offset_high=%#x, offset_low=%#x, result=%#x, whence=%d )\n",
+                       _target.geteip(), fd, offset_high, offset_low, result_addr, whence );
     
-    loff_t loff;
-    int res = ::syscall( SYS__llseek, fd, offset_high, offset_low, &loff, whence );
+    off64_t offset = (uint64_t(offset_high) << 32) | (uint64_t( offset_low ) << 0);
+    off64_t res = lseek64(fd, offset, whence);
     
-    if (res == 0) {
-      /* Success */
-      uint8_t result[8];
-      for (int idx = 0; idx < 8; ++idx)
-        result[idx] = (loff >> (idx*8)) & 0xff;
-      _target.write( result_addr, &result[0], sizeof (result) );
-      this->screturn( res, _target );
-    } else {
-      this->scerror( uint32_t( -(errno) ), _target );
-    }
+    if (res == -1) { this->scerror( errno, _target ); return; }
+    
+    uint8_t result[8];
+    for (int idx = 0; idx < 8; ++idx)
+      result[idx] = (res >> (idx*8)) & 0xff;
+    _target.write( result_addr, &result[0], sizeof (result) );
+    
+    this->screturn( 0, _target );
   }
+  
+  // void
+  // LinuxSystem::getdents( dtlib::Target& _target )
+  // {
+  //   /* Get directory entries
+  //    * int getdents(int fd, struct linux_dirent *dirp, size_t count);
+  //    */
+  //   int fd = this->scparam( 0, _target );;
+  //   uint32_t dirp_addr = this->scparam( 1, _target );
+  //   size_t count = size_t( this->scparam( 2, _target ) );
+    
+    
+  //   if (m_verbose)
+  //     dtlib::osprintf( m_sink(), "%#010x: [syscall] getdents( fd=%d, dirp=%#x, count=%#x )\n", _target.geteip(), fd, dirp_addr, count );
+    
+  //   assert( count < 0x100000 );
+  //   uint8_t buf[count];
+  //   int nread = ::syscall(SYS_getdents, fd, &buf[0], count);
+    
+  //   if (nread < 0) { this->scerror( errno, _target ); return; }
+  //   if (nread > 0) _target.write( dirp_addr, &buf[0], nread );
+  //   this->screturn( nread, _target );
+  // }
   
   void
   LinuxSystem::lseek( dtlib::Target& _target )
   {
+    /* in32_t lseek(int fd, int32_t offset, int whence);
+     *   lseek - reposition read/write file offset
+     */
     int fd = this->scparam( 0, _target );
-    uint32_t offset = this->scparam( 1, _target );
+    int32_t offset32 = this->scparam( 1, _target );
     int whence = this->scparam( 2, _target );
-    assert( sizeof (off_t) == 4 );
 
     if (m_verbose)
-      dtlib::osprintf( m_sink(), "%#010x: [syscall] lseek( fd=%d, offset=0x%x, whence=%d )\n", _target.geteip(), fd, offset, whence );
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] lseek( fd=%d, offset=%d, whence=%d )\n", _target.geteip(), fd, offset32, whence );
     
-    off_t ret = ::lseek( fd, offset, whence );
+    off64_t offset = off64_t( offset32 );
+    off64_t res = lseek64(fd, offset, whence);
+    if (res <  0) { this->scerror( errno, _target ); return; }
     
-    if (ret <  0) this->scerror( uint32_t( -(errno) ), _target );
-    else          this->screturn( ret, _target );
+    int32_t res32;
+    if (not convert( res, res32 )) { this->scerror( EOVERFLOW, _target ); return; }
+    
+    this->screturn( res32, _target );
   }
   
   void
@@ -654,19 +742,35 @@ namespace todel
   {
     uint32_t buf_addr = this->scparam( 0, _target );
     
-    assert( sizeof (clock_t) == 4 );
+    // On linux32 clock_t is int32_t
+    struct
+    {
+      int32_t tms_utime;
+      int32_t tms_stime;
+      int32_t tms_cutime;
+      int32_t tms_cstime;
+    } linux32_tms;
+
+    struct tms host_tms;
+    clock_t res = ::times( &host_tms );
+    if (res == (clock_t)(-1)) { this->scerror( errno, _target ); return; }
     
-    struct tms buf;
-    clock_t ret = ::times( &buf );
+    int32_t res32;
+    bool success = convert( res, res32 );
+    success &= convert( host_tms.tms_utime, linux32_tms.tms_utime );
+    success &= convert( host_tms.tms_stime, linux32_tms.tms_stime );
+    success &= convert( host_tms.tms_cutime, linux32_tms.tms_cutime );
+    success &= convert( host_tms.tms_cstime, linux32_tms.tms_cstime );
+
+    if (not success) { this->scerror( EOVERFLOW, _target ); return; }
     
-    if (ret != (clock_t)(-1))
-      _target.write( buf_addr, (uint8_t*)&buf, sizeof (buf) );
-    
-    this->screturn( ret, _target );
+    _target.write( buf_addr, (uint8_t*)&linux32_tms, sizeof (linux32_tms) );
+    this->screturn( res32, _target );
   }
   
   void
-  LinuxSystem::brk( dtlib::Target& _target ) {
+  LinuxSystem::brk( dtlib::Target& _target ) 
+  {
     uint32_t new_brk_addr = this->scparam( 0, _target );
     
     if (m_verbose)
@@ -684,9 +788,7 @@ namespace todel
     int request = this->scparam( 1, _target );
 
     if (m_verbose)
-      dtlib::osprintf( m_sink(),
-                       "%#010x: [syscall] ioctl( fd=%d, request=%#x )\n",
-                       _target.geteip(), fd, request );
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] ioctl( fd=%d, request=%#x )\n", _target.geteip(), fd, request );
     
     
     // switch (request) {
@@ -695,7 +797,7 @@ namespace todel
     //   struct termios termios_buf;
     //   int ret = ::ioctl( fd, request, &termios_buf );
     //   if (ret < 0)
-    //     this->scerror( uint32_t( -(errno) ), _target );
+    //     this->scerror( errno, _target );
     //   else {
     //     _target.write( termios_addr, (uint8_t*)&termios_buf, sizeof (termios_buf) );
     //     this->screturn( ret, _target );
@@ -706,7 +808,7 @@ namespace todel
     //   throw RunTimeError;
     // }
     
-    this->scerror( uint32_t( -(EINVAL) ), _target );
+    this->scerror( EINVAL, _target );
   }
   
   void
@@ -716,21 +818,33 @@ namespace todel
     uint32_t tz_addr = this->scparam( 1, _target );
     
     if (m_verbose)
-      dtlib::osprintf( m_sink(), "%#010x: [syscall] "
-                       "gettimeofday( tv=%#x, tz=%#x )\n",
-                       _target.geteip(), tv_addr, tz_addr );
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] gettimeofday( tv=%#x, tz=%#x )\n", _target.geteip(), tv_addr, tz_addr );
     
-    struct timeval  tv;
-    struct timezone tz;
-    int ret = ::gettimeofday( &tv, &tz );
+    struct {
+      int32_t  tv_sec;
+      int32_t  tv_usec;
+    } linux32_tv;
+    struct {
+      int32_t  tz_minuteswest;
+      int32_t  tz_dsttime;
+    } linux32_tz;
     
-    if (ret != 0)
-      this->scerror( uint32_t( -(errno) ), _target );
-    else {
-      _target.write( tv_addr, (uint8_t*)&tv, sizeof (tv) );
-      _target.write( tz_addr, (uint8_t*)&tz, sizeof (tz) );
-      this->screturn( ret, _target );
-    }
+    struct timeval  host_tv;
+    struct timezone host_tz;
+    int ret = ::gettimeofday( &host_tv, &host_tz );
+    if (ret != 0) { this->scerror( errno, _target ); return; }
+    
+    bool success =
+      convert( host_tv.tv_sec, linux32_tv.tv_sec ) and
+      convert( host_tv.tv_usec, linux32_tv.tv_usec ) and
+      convert( host_tz.tz_minuteswest, linux32_tz.tz_minuteswest ) and
+      convert( host_tz.tz_dsttime, linux32_tz.tz_dsttime );
+    
+    if (not success) { this->scerror( EOVERFLOW, _target ); return; }
+    
+    _target.write( tv_addr, (uint8_t*)&linux32_tv, sizeof (linux32_tv) );
+    _target.write( tz_addr, (uint8_t*)&linux32_tz, sizeof (linux32_tz) );
+    this->screturn( ret, _target );
   }
 
   void
@@ -740,19 +854,26 @@ namespace todel
     uint32_t ts_addr = uint32_t( this->scparam( 1, _target ) );
     
     if (m_verbose)
-      dtlib::osprintf( m_sink(), "%#010x: [syscall] "
-                       "clock_gettime( clk_id=%d, ts=%#x )\n",
-                       _target.geteip(), clk_id, ts_addr );
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] clock_gettime( clk_id=%d, ts=%#x )\n", _target.geteip(), clk_id, ts_addr );
     
-    struct timespec ts;
-    int ret = ::clock_gettime( clk_id, &ts );
+    struct
+    {
+      time_t   tv_sec;        /* seconds */
+      long     tv_nsec;       /* nanoseconds */
+    } linux32_ts;
     
-    if (ret != 0)
-      this->scerror( uint32_t( -(errno) ), _target );
-    else {
-      _target.write( ts_addr, (uint8_t*)&ts, sizeof (ts) );
-      this->screturn( ret, _target );
-    }
+    struct timespec host_ts;
+    int ret = ::clock_gettime( clk_id, &host_ts );
+    if (ret != 0) { this->scerror( errno, _target ); return; }
+    
+    bool success =
+      convert( host_ts.tv_sec, linux32_ts.tv_sec ) and
+      convert( host_ts.tv_nsec, linux32_ts.tv_nsec );
+    
+    if (not success) { this->scerror( EOVERFLOW, _target ); return; }
+    
+    _target.write( ts_addr, (uint8_t*)&linux32_ts, sizeof (linux32_ts) );
+    this->screturn( ret, _target );
   }
 
   void LinuxSystem::getuid32( dtlib::Target& _target ) { this->screturn( uint32_t( ::getuid() ), _target ); }
@@ -763,56 +884,107 @@ namespace todel
 
   void LinuxSystem::getegid32( dtlib::Target& _target ) { this->screturn( uint32_t( ::getegid() ), _target ); }
   
-  template <typename dstT, typename srcT>
-  void write_le( uint8_t* where, dstT typeval, srcT value )
+  void
+  LinuxSystem::ftruncate64( dtlib::Target& _target )
   {
-    assert( srcT( dstT( value ) ) == value );
-    for (unsigned int idx = 0; idx < sizeof (dstT); ++idx) where[idx] = uint8_t( value >> (idx*8) );
+    int fd = this->scparam( 0, _target );;
+    uint32_t offset_high = this->scparam( 1, _target );
+    uint32_t offset_low = this->scparam( 2, _target );
+    
+    if (m_verbose)
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] ftruncate64( fd=%d, offset_high=%#x, offset_low=%#x )\n", _target.geteip(), fd, offset_high, offset_low );
+    
+    off64_t offset = (uint64_t(offset_high) << 32) | (uint64_t( offset_low ) << 0);
+    int res = ftruncate( fd, offset );
+    
+    if (res < 0) { this->scerror( errno, _target ); return; }
+    
+    this->screturn( res, _target );
   }
   
+  namespace {
+    // Emulating linux32 stat64 using the correct linux32 layout
+    struct Linux32Stat64
+    {
+      uint64_t st_dev;            // 00-08
+      uint32_t __pad1;            // 08-0c
+      uint32_t __st_ino;          // 0c-10
+      uint32_t st_mode;           // 10-14
+      uint32_t st_nlink;          // 14-18
+      uint32_t st_uid;            // 18-1c
+      uint32_t st_gid;            // 1c-20
+      uint64_t st_rdev;           // 20-28
+      uint32_t __pad2;            // 28-2c
+      int32_t  st_size_low;       // 2c-30 ... need to split st_size to solve
+      int32_t  st_size_high;      // 30-34 ... alignment issues on 64bits platforms
+      int32_t  st_blksize;        // 34-38
+      int64_t  st_blocks;         // 38-40
+      int32_t  st_atim_tv_sec;    // 40-44
+      int32_t  st_atim_tv_nsec;   // 44-48
+      int32_t  st_mtim_tv_sec;    // 48-4c
+      int32_t  st_mtim_tv_nsec;   // 4c-50
+      int32_t  st_ctim_tv_sec;    // 50-54
+      int32_t  st_ctim_tv_nsec;   // 54-58
+      uint64_t st_ino;            // 58-60
+    };
+    
+    // Compile time assertion that glibc wrapper function to file handling syscall will use large offset (64bit)
+    extern char __check_that_stat64_is_0x60_bytes__[true];
+    extern char __check_that_stat64_is_0x60_bytes__[(sizeof (Linux32Stat64) == 0x60)];
+
+    bool
+    writeStat64( dtlib::Target& _target, uint32_t stat_addr, struct stat const& host_stat )
+    {
+      Linux32Stat64 linux32_stat64;
+      uintptr_t ls64sz = sizeof linux32_stat64;
+      ::memset( (void*)&linux32_stat64, 0, ls64sz );
+      
+      bool success = true;
+      success &= convert( host_stat.st_dev, linux32_stat64.st_dev );
+      success &= convert( host_stat.st_ino, linux32_stat64.__st_ino );
+      success &= convert( host_stat.st_mode, linux32_stat64.st_mode );
+      success &= convert( host_stat.st_nlink, linux32_stat64.st_nlink );
+      success &= convert( host_stat.st_uid, linux32_stat64.st_uid );
+      success &= convert( host_stat.st_gid, linux32_stat64.st_gid );
+      success &= convert( host_stat.st_rdev, linux32_stat64.st_rdev );
+      int64_t st_size;
+      success &= convert( host_stat.st_size, st_size );
+      linux32_stat64.st_size_low =  int32_t( st_size >>  0 );
+      linux32_stat64.st_size_high = int32_t( st_size >> 32 );
+      success &= convert( host_stat.st_blksize, linux32_stat64.st_blksize );
+      success &= convert( host_stat.st_blocks, linux32_stat64.st_blocks );
+      success &= convert( host_stat.st_atim.tv_sec, linux32_stat64.st_atim_tv_sec );
+      success &= convert( host_stat.st_atim.tv_nsec, linux32_stat64.st_atim_tv_nsec );
+      success &= convert( host_stat.st_mtim.tv_sec, linux32_stat64.st_mtim_tv_sec );
+      success &= convert( host_stat.st_mtim.tv_nsec, linux32_stat64.st_mtim_tv_nsec );
+      success &= convert( host_stat.st_ctim.tv_sec, linux32_stat64.st_ctim_tv_sec );
+      success &= convert( host_stat.st_ctim.tv_nsec, linux32_stat64.st_ctim_tv_nsec );
+      success &= convert( host_stat.st_ino, linux32_stat64.st_ino );
+    
+      _target.write( stat_addr, (uint8_t*)&linux32_stat64, ls64sz );
+      
+      return success;
+    }
+  }
+
   void LinuxSystem::stat64( dtlib::Target& _target )
   {
     uint32_t path_addr = this->scparam( 0, _target );
-    uint32_t path_len = this->stringlength( path_addr, _target ) + 1;
-    uint32_t bufaddr = this->scparam( 1, _target );
-    int ret;
+    uint32_t stat_addr = this->scparam( 1, _target );
     
+    uint32_t path_len = this->stringlength( path_addr, _target ) + 1;
     char path[path_len];
-    _target.read( (uint8_t*)path, path_addr, path_len );
+    _target.read( (uint8_t*)&path[0], path_addr, path_len );
     
     if (m_verbose)
-      dtlib::osprintf( m_sink(), "%#010x: [syscall] stat64( path=%#x, base=%#x )\n", _target.geteip(), path_addr, bufaddr );
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] stat64( path=%s, base=%#x )\n", _target.geteip(), &path[0], stat_addr );
     
-    // Emulating with a single stat struct, which is sufficient for
-    // file < 4GB. On some systems, st_dev may size 4 whereas target
-    // st_dev is 8 bytes; these 4 bytes will be zero extended to 8
-    // bytes...
-    struct stat64 host_stat;
-    ret = ::stat64( &path[0], &host_stat );
-    if (ret < 0) { this->scerror( uint32_t( -(errno) ), _target ); return; }
-
-    uint8_t                     scratch[0x60];
-    ::memset( (void*)&scratch[0], 0, sizeof (scratch) );
+    struct stat host_stat;
+    int ret = ::stat( &path[0], &host_stat );
+    if (ret < 0) { this->scerror( errno, _target ); return; }
     
-    write_le( &scratch[0x00], uint64_t(), host_stat.st_dev );
-    write_le( &scratch[0x0c], uint32_t(), host_stat.__st_ino );
-    write_le( &scratch[0x10], uint32_t(), host_stat.st_mode );
-    write_le( &scratch[0x14], uint32_t(), host_stat.st_nlink );
-    write_le( &scratch[0x18], uint32_t(), host_stat.st_uid );
-    write_le( &scratch[0x1c], uint32_t(), host_stat.st_gid );
-    write_le( &scratch[0x20], uint64_t(), host_stat.st_rdev );
-    write_le( &scratch[0x2c], uint64_t(), host_stat.st_size );
-    write_le( &scratch[0x34], uint32_t(), host_stat.st_blksize );
-    write_le( &scratch[0x38], uint64_t(), host_stat.st_blocks );
-    write_le( &scratch[0x40], uint32_t(), host_stat.st_atim.tv_sec );
-    write_le( &scratch[0x44], uint32_t(), host_stat.st_atim.tv_nsec );
-    write_le( &scratch[0x48], uint32_t(), host_stat.st_mtim.tv_sec );
-    write_le( &scratch[0x4c], uint32_t(), host_stat.st_mtim.tv_nsec );
-    write_le( &scratch[0x50], uint32_t(), host_stat.st_ctim.tv_sec );
-    write_le( &scratch[0x54], uint32_t(), host_stat.st_ctim.tv_nsec );
-    write_le( &scratch[0x58], uint64_t(), host_stat.st_ino );
-    
-    _target.write( bufaddr, &scratch[0], sizeof (scratch) );
+    bool success = writeStat64( _target, stat_addr, host_stat );
+    assert( success );
     
     this->screturn( ret, _target );
   }
@@ -820,42 +992,23 @@ namespace todel
   void LinuxSystem::fstat64( dtlib::Target& _target )
   {
     int fd = this->scparam( 0, _target );
-    uint32_t bufaddr = this->scparam( 1, _target );
+    uint32_t stat_addr = this->scparam( 1, _target );
+    
     int ret;
     
     if (m_verbose)
-      dtlib::osprintf( m_sink(), "%#010x: [syscall] fstat64( fd=%d, base=%#x )\n", _target.geteip(), fd, bufaddr );
+      dtlib::osprintf( m_sink(), "%#010x: [syscall] fstat64( fd=%d, base=%#x )\n", _target.geteip(), fd, stat_addr );
     
     // Emulating with a single stat struct, which is sufficient for
     // file < 4GB. On some systems, st_dev may size 4 whereas target
     // st_dev is 8 bytes; these 4 bytes will be zero extended to 8
     // bytes...
-    struct stat64 host_stat;
-    ret = ::fstat64( fd, &host_stat );
-    if (ret < 0) { this->scerror( uint32_t( -(errno) ), _target ); return; }
+    struct stat host_stat;
+    ret = ::fstat( fd, &host_stat );
+    if (ret < 0) { this->scerror( errno, _target ); return; }
 
-    uint8_t                     scratch[0x60];
-    ::memset( (void*)&scratch[0], 0, sizeof (scratch) );
-    
-    write_le( &scratch[0x00], uint64_t(), host_stat.st_dev );
-    write_le( &scratch[0x0c], uint32_t(), host_stat.__st_ino );
-    write_le( &scratch[0x10], uint32_t(), host_stat.st_mode );
-    write_le( &scratch[0x14], uint32_t(), host_stat.st_nlink );
-    write_le( &scratch[0x18], uint32_t(), host_stat.st_uid );
-    write_le( &scratch[0x1c], uint32_t(), host_stat.st_gid );
-    write_le( &scratch[0x20], uint64_t(), host_stat.st_rdev );
-    write_le( &scratch[0x2c], uint64_t(), host_stat.st_size );
-    write_le( &scratch[0x34], uint32_t(), host_stat.st_blksize );
-    write_le( &scratch[0x38], uint64_t(), host_stat.st_blocks );
-    write_le( &scratch[0x40], uint32_t(), host_stat.st_atim.tv_sec );
-    write_le( &scratch[0x44], uint32_t(), host_stat.st_atim.tv_nsec );
-    write_le( &scratch[0x48], uint32_t(), host_stat.st_mtim.tv_sec );
-    write_le( &scratch[0x4c], uint32_t(), host_stat.st_mtim.tv_nsec );
-    write_le( &scratch[0x50], uint32_t(), host_stat.st_ctim.tv_sec );
-    write_le( &scratch[0x54], uint32_t(), host_stat.st_ctim.tv_nsec );
-    write_le( &scratch[0x58], uint64_t(), host_stat.st_ino );
-    
-    _target.write( bufaddr, &scratch[0], sizeof (scratch) );
+    bool success = writeStat64( _target, stat_addr, host_stat );
+    assert( success );
     
     this->screturn( ret, _target );
   }
@@ -900,18 +1053,17 @@ namespace todel
     uint32_t buf_size  = this->scparam( 2, _target );
     
     char path[path_len];
-    _target.read( (uint8_t*)path, path_addr, path_len );
+    _target.read( (uint8_t*)&path[0], path_addr, path_len );
     
+    assert( buf_size < 0x100000 );
     char buffer[buf_size];
     
     int ret = ::readlink( &path[0], &buffer[0], buf_size );
+    if (ret > int(buf_size)) throw 0;
     
-    if (ret >= 0) {
-      _target.write( buf_addr, (uint8_t*)&buffer[0], std::min( uint32_t( ret ), buf_size ) );
-      this->screturn( ret, _target );
-    } else {
-      this->scerror( uint32_t( -(errno) ), _target );
-    }
+    if (ret < 0) { this->scerror( errno, _target ); return; }
+    if (ret > 0) _target.write( buf_addr, (uint8_t*)&buffer[0], ret );
+    this->screturn( ret, _target );
   }
 
   void
@@ -930,7 +1082,7 @@ namespace todel
                        "prot=%#x, flags=%#x, fd=%d, offset=%#x )\n",
                        _target.geteip(), start, length, prot, flags, fd, offset );
     
-    this->scerror( uint32_t( -(EINVAL) ), _target );
+    this->scerror( EINVAL, _target );
   }
   
   void
@@ -939,16 +1091,16 @@ namespace todel
     uint32_t buf_addr = this->scparam( 0, _target );
     uint32_t buf_size = this->scparam( 1, _target );
     
+    assert( buf_size < 0x100000 );
     char buffer[buf_size];
     
     char* ret = ::getcwd( &buffer[0], buf_size );
-    if (ret) {
-      uint32_t len = strlen( ret ) + 1;
-      _target.write( buf_addr, (uint8_t*)&buffer[0], len );
-      this->screturn( len, _target );
-    } else {
-      this->scerror( uint32_t( -(errno) ), _target );
-    }
+    
+    if (not ret) { this->scerror( errno, _target ); return; }
+    
+    uint32_t len = strlen( ret ) + 1;
+    _target.write( buf_addr, (uint8_t*)&buffer[0], len );
+    this->screturn( len, _target );
   }
 
   void
@@ -960,15 +1112,23 @@ namespace todel
     if (m_verbose)
       dtlib::osprintf( m_sink(), "%#010x: [syscall] ugetrlimit( resource=%d, rlim=0x%#x )\n", _target.geteip(), resource, rlim_addr );
     
-    struct rlimit rlim;
-    int ret = ::getrlimit( resource, &rlim );
+    struct
+    {
+      uint32_t rlim_cur;  /* Soft limit */
+      uint32_t rlim_max;  /* Hard limit (ceiling for rlim_cur) */
+    } linux32_rlim;
     
-    if (ret <  0) {
-      this->scerror( uint32_t( -(errno) ), _target );
-      return;
-    }
+    struct rlimit host_rlim;
+    int ret = ::getrlimit( resource, &host_rlim );
+    if (ret <  0) { this->scerror( errno, _target ); return; }
     
-    _target.write( rlim_addr, (uint8_t const*)( &rlim ), sizeof (rlim) );
+    bool success =
+      convert( host_rlim.rlim_cur, linux32_rlim.rlim_cur ) and
+      convert( host_rlim.rlim_max, linux32_rlim.rlim_max );
+
+    if (not success) { this->scerror( EOVERFLOW, _target ); return; }
+    
+    _target.write( rlim_addr, (uint8_t const*)( &linux32_rlim ), sizeof (linux32_rlim) );
     this->screturn( ret, _target );
   }
   
@@ -982,7 +1142,8 @@ namespace todel
   }
   
   void
-  LinuxSystem::readv( dtlib::Target& _target ) {
+  LinuxSystem::readv( dtlib::Target& _target )
+  {
     int fd = int( this->scparam( 0, _target ) );
     uint32_t iovecaddr = this->scparam( 1, _target );
     int count = int( this->scparam( 2, _target ) );
@@ -996,7 +1157,7 @@ namespace todel
       assert( iov_len < 0x100000 );
       uint8_t buffer[iov_len];
       int ret = ::read( fd, buffer, iov_len );
-      if (ret < 0) { this->scerror( uint32_t( -(errno) ), _target ); return; }
+      if (ret < 0) { this->scerror( errno, _target ); return; }
       if (ret > 0) _target.write( iov_base, buffer, iov_len );
       sum += ret;
     }
@@ -1019,7 +1180,7 @@ namespace todel
       uint8_t buffer[iov_len];
       _target.read( buffer, iov_base, iov_len );
       int ret = ::write( fd, buffer, iov_len );
-      if (ret < 0) { this->scerror( uint32_t( -(errno) ), _target ); return; }
+      if (ret < 0) { this->scerror( errno, _target ); return; }
       sum += ret;
     }
 
@@ -1165,7 +1326,7 @@ namespace todel
         {
           int mval = int( _target.read32( uaddr ) );
           if (mval != val) {
-            this->scerror( uint32_t( -EWOULDBLOCK ), _target );
+            this->scerror( EWOULDBLOCK, _target );
             return;
           }
           if (m_verbose)
@@ -1196,6 +1357,5 @@ namespace todel
     
     this->screturn( res, _target );
   }
-
-} // end of namespace todel
+};
 

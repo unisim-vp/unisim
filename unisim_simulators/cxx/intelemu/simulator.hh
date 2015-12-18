@@ -35,8 +35,6 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
-#include <unisim/component/cxx/processor/intel/arch.hh>
-#include <linuxsystem.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/service/time/host_time/time.hh>

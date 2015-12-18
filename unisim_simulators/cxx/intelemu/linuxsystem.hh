@@ -1,5 +1,12 @@
-#ifndef INTEL_LINUXSYSTEM_HH
-#define INTEL_LINUXSYSTEM_HH
+#ifndef IA32_LINUXSYSTEM_HH
+#define IA32_LINUXSYSTEM_HH
+
+#ifndef _LARGEFILE64_SOURCE
+# define _LARGEFILE64_SOURCE 1
+#endif // _LARGEFILE64_SOURCE
+
+#undef _FILE_OFFSET_BITS
+#define _FILE_OFFSET_BITS 64
 
 #include <dtlib/fwd.hh>
 #include <dtlib/sink.hh>
@@ -51,7 +58,7 @@ namespace todel {
     uint32_t            scident( dtlib::Target& _arch );
     uint32_t            scparam( int _idx, dtlib::Target& _arch );
     void                screturn( uint32_t _res, dtlib::Target& _arch );
-    void                scerror( uint32_t _err, dtlib::Target& _arch );
+    void                scerror( int _err, dtlib::Target& _arch );
     
     // Common unix syscalls
     void                unimplemented_syscall( dtlib::Target& target );
@@ -65,6 +72,7 @@ namespace todel {
     void                time( dtlib::Target& target );
     void                lseek( dtlib::Target& target );
     void                llseek( dtlib::Target& target );
+    //void                getdents( dtlib::Target& target );
     void                times( dtlib::Target& target );
     void                brk( dtlib::Target& target );
     void                ioctl( dtlib::Target& target );
@@ -74,6 +82,7 @@ namespace todel {
     void                getegid32( dtlib::Target& target );
     void                getuid32( dtlib::Target& target );
     void                getgid32( dtlib::Target& target );
+    void                ftruncate64( dtlib::Target& target );
     void                stat64( dtlib::Target& target );
     void                fstat64( dtlib::Target& target );
     void                sigaction( dtlib::Target& target );
@@ -117,9 +126,10 @@ namespace todel {
     uint32_t            m_futex_listhead;
     uint32_t            m_futex_itemsize;
     void                tgkill( dtlib::Target& target );
+    void                openat( dtlib::Target& target );
     void                futex( dtlib::Target& target );
     
   };
-} // end of namespace todel
+};
 
-#endif // INTEL_LINUXSYSTEM_HH
+#endif // IA32_LINUXSYSTEM_HH

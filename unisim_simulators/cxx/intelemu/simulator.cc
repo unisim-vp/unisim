@@ -31,7 +31,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include "simulator.hh"
+#include <simulator.hh>
 #include <stdexcept>
 
 bool debug_enabled;
