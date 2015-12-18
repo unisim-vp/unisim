@@ -33,7 +33,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PCI_IDE_DEV_ATA_ATAREG_HH__
 #define __UNISIM_COMPONENT_CXX_PCI_IDE_DEV_ATA_ATAREG_HH__
 
-#if defined(linux)
+#if defined(linux) || defined(__linux__)
 #include <endian.h>
 #elif defined(WIN32)
 

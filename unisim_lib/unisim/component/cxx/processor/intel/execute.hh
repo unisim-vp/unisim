@@ -303,8 +303,8 @@ namespace intel {
   INTEGER
   eval_sar( Arch& arch, INTEGER const& arg1, u8_t const& arg2 )
   {
-    intptr_t const bitsize = tpinfo<INTEGER>::bitsize;
-    INTEGER const msb = INTEGER( 1 ) << (bitsize-1);
+    //intptr_t const bitsize = tpinfo<INTEGER>::bitsize;
+    //INTEGER const msb = INTEGER( 1 ) << (bitsize-1);
     INTEGER res( 0 );
     
     u8_t sharg = arg2 & u8_t( 0x1f ); 
@@ -355,7 +355,7 @@ namespace intel {
   template <typename INTEGER>
   void eval_mul( Arch& arch, INTEGER& hi, INTEGER& lo, INTEGER const& multiplier )
   {
-    typedef typename tpinfo<INTEGER>::utype utype;
+    // typedef typename tpinfo<INTEGER>::utype utype;
     typedef typename tpinfo<INTEGER>::twice twice;
     twice result = twice( lo ) * twice( multiplier );
     hi = INTEGER( result >> tpinfo<INTEGER>::bitsize );

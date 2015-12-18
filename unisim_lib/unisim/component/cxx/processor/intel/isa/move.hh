@@ -175,6 +175,7 @@ namespace {
     if (opsize==16) return new PopSeg<16>( opbase, _seg );
     if (opsize==32) return new PopSeg<32>( opbase, _seg );
     if (opsize==64) return new PopSeg<64>( opbase, _seg );
+    return 0;
   }
 }
 
@@ -295,7 +296,7 @@ struct MovImm : public Operation
 template <unsigned OPSIZE, bool STOE>
 struct MovSeg : public Operation
 {
-  MovSeg( OpBase const& opbase, MOp* _rmop, uint8_t _seg ) : Operation( opbase ), rmop( _rmop ), seg( _seg ) {} uint8_t seg; RMOp rmop;
+  MovSeg( OpBase const& opbase, MOp* _rmop, uint8_t _seg ) : Operation( opbase ), seg( _seg ), rmop( _rmop ) {} uint8_t seg; RMOp rmop;
   void disasm( std::ostream& sink ) const {
     if (STOE) sink << "mov " << DisasmS( seg ) << ',' << DisasmE<OPSIZE>( rmop );
     else      sink << "mov " << DisasmE<OPSIZE>( rmop ) << ',' << DisasmS( seg );

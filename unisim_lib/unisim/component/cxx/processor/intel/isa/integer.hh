@@ -1781,7 +1781,7 @@ struct BitScan : public Operation
     typedef typename TypeFor<OPSIZE>::u u_type;
     u_type src = arch.rmread<OPSIZE>( rmop );
     
-    bit_t zero = src == u_type( zero );
+    bit_t zero = (src == u_type( 0 ));
     arch.flagwrite( ZF, zero );
     if (mkbool( zero)) return;
     

@@ -55,7 +55,7 @@
 #include <unistd.h>
 //#include <limits.h>
 //#include <limits>
-#if defined(__APPLE_CC__) || defined (linux) 
+#if defined(__APPLE_CC__) || defined (linux)  || defined (__linux__)
 #include <dlfcn.h>
 #endif
 
@@ -257,7 +257,7 @@ bool ResolvePath(const std::string& prefix_dir,
 //	char resolved_dir_buf[PATH_MAX + 1];
 	char resolved_dir_buf[FILENAME_MAX + 1];
 
-#if defined(linux) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux__) || defined(__APPLE_CC__)
 	if ( realpath(unresolved_dir.c_str(), 
 				resolved_dir_buf) )
 	{
@@ -3359,7 +3359,7 @@ void Simulator::GetRootObjects(list<Object *>& lst) const
 	}
 }
 
-#if defined(__APPLE_CC__) || defined(linux)
+#if defined(__APPLE_CC__) || defined(linux) || defined(__linux__)
 void FindMyself()
 {
 	// stupid method to find the path to the executable/library using the dladdr
@@ -3369,7 +3369,7 @@ void FindMyself()
 
 bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
 {
-#if defined(linux) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux__) || defined(__APPLE_CC__)
 	Dl_info info;
 	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{

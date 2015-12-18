@@ -124,7 +124,7 @@ namespace intel {
     template <typename PROPERTY>
     uint8_t const* get( PROPERTY& out, uint8_t const* code )
     {
-      if (code = left.get( out, code ))
+      if ((code = left.get( out, code )))
         code = right.get( out, code );
       return code;
     }
@@ -456,6 +456,7 @@ namespace intel {
       length = cb.addrsize() / 8;
       if (length != 4) throw 0;
       segment = cb.segment;
+      return code + length;
     }
     
     uint8_t const* get( MOp*& out, uint8_t const* code )

@@ -333,7 +333,6 @@ namespace intel {
           word.as_u |= uint64_t(sign) << 63;
         } else /* exponent >= 1024 */ {
           /* huge number, convert to infinity */
-          union IEEE754_t { double as_f; uint64_t as_u; } word;
           word.as_u = (uint64_t(0x7ff) << 52) | (uint64_t(sign) << 63);
         }
       }

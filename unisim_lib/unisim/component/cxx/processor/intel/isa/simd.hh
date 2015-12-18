@@ -422,6 +422,7 @@ template <> Operation* decode<MOVDQU>( CodeBase const& cb )
     
     return new MovdquWV( _.opbase(), _.rmop(), _.greg() );
   
+  return 0;
 }
 
 // op movdqu_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x6f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
@@ -859,6 +860,7 @@ template <> Operation* decode<PCMPEQ>( CodeBase const& cb )
     
     return new PCmpEqVW<64>( _.opbase(), _.rmop(), _.greg() );
   
+  return 0;
 }
 // op pcmpeqb_pq_qq( 0x0f[8]:> <:0x74[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -1137,6 +1139,8 @@ template <> Operation* decode<PMOVMSKB>( CodeBase const& cb )
       if (cb._66()) return new PMovMskBRV( _.opbase(), _.ereg(), _.greg() );
       else          return new PMovMskBRP( _.opbase(), _.ereg(), _.greg() );
     }
+  
+  return 0;
 }
 
 // 
@@ -1617,6 +1621,8 @@ template <> Operation* decode<PXOR>( CodeBase const& cb )
       if (cb._66()) return new PXorVW( _.opbase(), _.rmop(), _.greg() );
       else          return new PXorPQ( _.opbase(), _.rmop(), _.greg() );
     }
+  
+  return 0;
 }
 
 // /* RCPPS -- Compute Reciprocals of Packed Single-Precision Floating-Point Values */

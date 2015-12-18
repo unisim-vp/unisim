@@ -494,7 +494,7 @@ if [ "${has_to_build_configure}" = "yes" ]; then
     echo "AC_CANONICAL_TARGET" >&5
     echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >&5
     echo "AC_PATH_PROGS(SH, sh)" >&5
-    echo "CXXFLAGS=\"$CXXFLAGS -std=c++11\"" >&5
+    echo "CXXFLAGS=\"\$CXXFLAGS -std=c++11\"" >&5
     echo "AC_PROG_CXX" >&5
     echo "AC_PROG_RANLIB" >&5
     echo "AC_PROG_INSTALL" >&5

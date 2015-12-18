@@ -83,7 +83,6 @@ class Simulator
  protected:
  private:
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
-  typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
   
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
@@ -91,7 +90,6 @@ class Simulator
   typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
   typedef unisim::service::tee::memory_access_reporting::Tee<uint32_t> TEE_MEMORY_ACCESS_REPORTING;
     
-  // LINUX_OS *linux_os;
   // TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
 
   // sc_signal<bool>              nirq_signal;

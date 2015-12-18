@@ -268,7 +268,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_open()
 		}
 		else
 		{
-#if defined(linux)
+#if defined(linux) || defined(__linux__)
 			ret = open(pathname, flags, mode);
 #else
 			int host_flags = 0;
@@ -735,7 +735,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat(int fd, struct powerpc_stat *targe
 	target_stat->st_ctim.tv_sec =
 		Host2Target(endianness_, (int64_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux x64
+#elif defined(linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize =
 		Host2Target(endianness_, (int64_t) host_stat.st_blksize);
 	target_stat->st_blocks =
@@ -794,7 +794,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat(int fd, struct powerpc_stat *targe
 	target_stat->st_ctim.tv_sec =
 		Host2Target(endianness_, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux 32
+#elif defined(linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize =
 		Host2Target(endianness_, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks =
@@ -841,7 +841,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct powerpc_stat64 *
 #if defined(WIN32) || defined(WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
-#elif defined(linux)
+#elif defined(linux) || defined(__linux__)
 	struct stat64 host_stat;
 	ret = fstat64(fd, &host_stat);
 #elif defined(__APPLE_CC__)
@@ -876,7 +876,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct powerpc_stat64 *
 	target_stat->st_ctim.tv_sec =
 		Host2Target(endianness_, (int64_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux x64
+#elif defined(linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize =
 		Host2Target(endianness_, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks =
@@ -935,7 +935,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct powerpc_stat64 *
 	target_stat->st_ctim.tv_sec =
 		Host2Target(endianness_, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux 32
+#elif defined(linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize =
 		Host2Target(endianness_, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks =
@@ -982,7 +982,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct pow
 #if defined(WIN32) || defined(WIN64)
 	struct _stati64 host_stat;
 	ret = _stati64(pathname, &host_stat);
-#elif defined(linux)
+#elif defined(linux) || defined(__linux__)
 	struct stat64 host_stat;
 	ret = stat64(pathname, &host_stat);
 #elif defined(__APPLE_CC__)
@@ -1017,7 +1017,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct pow
 	target_stat->st_ctim.tv_sec =
 		Host2Target(endianness_, (int64_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux x64
+#elif defined(linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize =
 		Host2Target(endianness_, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks =
@@ -1076,7 +1076,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct pow
 	target_stat->st_ctim.tv_sec =
 		Host2Target(endianness_, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux 32
+#elif defined(linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize =
 		Host2Target(endianness_, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks =
@@ -1123,7 +1123,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct arm_stat64 *targ
 #if defined(WIN32) || defined(WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
-#elif defined(linux)
+#elif defined(linux) || defined(__linux__)
 	struct stat64 host_stat;
 	ret = fstat64(fd, &host_stat);
 #elif defined(__APPLE_CC__)
@@ -1158,7 +1158,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct arm_stat64 *targ
 	target_stat->st_ctim.tv_sec =
 		Host2Target(endianness_, (uint32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux x64
+#elif defined(linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize =
 		Host2Target(endianness_, (uint32_t) host_stat.st_blksize);
 	target_stat->st_blocks =
@@ -1218,7 +1218,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct arm_stat64 *targ
 	target_stat->st_ctim.tv_sec =
 		Host2Target(endianness_, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux 32
+#elif defined(linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2Target(endianness_, (uint32_t)
 											host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianness_, (uint64_t)
@@ -1265,7 +1265,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct arm
 #if defined(WIN32) || defined(WIN64)
 	struct _stati64 host_stat;
 	ret = _stati64(pathname, &host_stat);
-#elif defined(linux)
+#elif defined(linux) || defined(__linux__)
 	struct stat64 host_stat;
 	ret = stat64(pathname, &host_stat);
 #elif defined(__APPLE_CC__)
@@ -1300,7 +1300,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct arm
 	target_stat->st_ctim.tv_sec =
 		Host2Target(endianness_, (uint32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux x64
+#elif defined(linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize =
 		Host2Target(endianness_, (uint32_t) host_stat.st_blksize);
 	target_stat->st_blocks =
@@ -1360,7 +1360,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct arm
 	target_stat->st_ctim.tv_sec =
 		Host2Target(endianness_, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux 32
+#elif defined(linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2Target(endianness_, (uint32_t)
 											host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianness_, (uint64_t)

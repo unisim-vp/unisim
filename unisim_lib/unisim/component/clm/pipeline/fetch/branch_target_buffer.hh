@@ -113,7 +113,7 @@ public:
 
 	INLINE int myrand()                    /* returns random number */
 	{
-#if !defined(__alpha) && !defined(linux) && !defined(WIN32) && !defined(WIN64) && !defined(__APPLE_CC__)
+#if !defined(__alpha) && !defined(linux) && !defined(__linux__) && !defined(WIN32) && !defined(WIN64) && !defined(__APPLE_CC__)
   		extern long random(void);
 #endif
 

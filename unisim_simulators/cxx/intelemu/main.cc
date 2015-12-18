@@ -40,6 +40,17 @@
 #include <simulator.hh>
 #include <iostream>
 
+struct Arch
+  : virtual unisim::kernel::service::Object
+  , public unisim::component::cxx::processor::intel::Arch
+{
+  Arch( char const* name, unisim::kernel::service::Object *parent = 0 )
+    : unisim::kernel::service::Object( name, parent )
+    , unisim::component::cxx::processor::intel::Arch()
+  {
+  }
+};
+
 int
 main( int argc, char *argv[] )
 {
@@ -60,9 +71,6 @@ main( int argc, char *argv[] )
 
   Simulator simulator( argc, argv );
 
-  typedef unisim::component::cxx::processor::intel::Arch Arch;
-  Arch cpu;
-
   switch (simulator.Setup())
     {
     case unisim::kernel::service::Simulator::ST_ERROR:
@@ -79,6 +87,11 @@ main( int argc, char *argv[] )
       std::cerr << "Starting simulation." << std::endl;
       break;
     }
+  
+  Arch cpu( "cpu" );
+
+  typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
+  LINUX_OS linux_os( "linux-os" );
   
   unisim::kernel::service::VariableBase* cmd_args = simulator.FindVariable("cmd-args");
   std::vector<std::string> args;

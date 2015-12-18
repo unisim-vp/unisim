@@ -70,7 +70,7 @@ namespace intel {
   struct Operation : public OpBase
   {
     Operation( OpBase const& _opbase ) : OpBase( _opbase ) {}
-    
+    virtual ~Operation() {}
     virtual void disasm( std::ostream& _sink ) const = 0;
     virtual void execute( Arch& arch ) const
     {
@@ -99,7 +99,6 @@ namespace intel {
       : bytes( _bytes ), address( _address ), mode( _mode ),
         adsz_67( 0 ), opsz_66( 0 ), lock_f0( 0 ), segment( DS ), rep( 0 ), opc_idx( 0 )
     {
-      unsigned int prfx_length = 0;
       uint8_t const* bptr = _bytes;
       for (bool inprfx = true; inprfx; ++bptr)
         {
