@@ -35,50 +35,64 @@
 #include <iostream>
 #include "simulator.hh"
 
-int main(int argc, char *argv[])
+#ifdef WIN32
+struct WSAEnv
+{ // Loads/Unloads the winsock2 dll
+  WSADATA wsaData;
+  WSAEnv()
+  {
+    WORD wVersionRequested = MAKEWORD( 2, 2 );
+    if(WSAStartup(wVersionRequested, &wsaData) == 0)
+      return;
+    std::cerr << "WSAStartup failed" << std::endl;
+    throw 0;
+  }
+  ~WSAEnv() { WSACleanup(); }
+};
+#endif
+
+int
+main( int argc, char *argv[] )
 {
   int ret = 0;
 
 #ifdef WIN32
-  // Loads the winsock2 dll
-  WORD wVersionRequested = MAKEWORD( 2, 2 );
-  WSADATA wsaData;
-  if(WSAStartup(wVersionRequested, &wsaData) != 0)
-    {
-      cerr << "WSAStartup failed" << endl;
-      return -1;
-    }
+  WSAEnv wsa_env;
 #endif
 
-  Simulator *simulator = new Simulator(argc, argv);
+  Simulator simulator( argc, argv );
 
-  switch ( simulator->Setup() )
+  typedef unisim::component::cxx::processor::intel::Arch Arch;
+  Arch cpu;
+
+  switch (simulator.Setup())
     {
     case unisim::kernel::service::Simulator::ST_ERROR:
-      std::cerr << "ERROR: Can't start simulation because of previous erros" << std::endl;
-      ret = -1;
-      break;
+      std::cerr << "ERROR: Can't start simulation because of previous errors" << std::endl;
+      return 1;
+      
     case unisim::kernel::service::Simulator::ST_OK_DONT_START:
-#ifdef SIM_PIM_SUPPORT
-      simulator->GeneratePim();
-#endif
       std::cerr << "Successfully configured the simulator." << std::endl;
-      ret = 0;
-      break;
+      return 0;
+      
     case unisim::kernel::service::Simulator::ST_WARNING:
-      std::cerr << "WARNING: problems detected during setup."
-                << " Starting simulation anyway, but errors could appear during "
-                << "the simulation." << std::endl;
+      std::cerr << "WARNING: problems detected during setup, trying anyway." << std::endl;
     case unisim::kernel::service::Simulator::ST_OK_TO_START:
       std::cerr << "Starting simulation." << std::endl;
-      ret = simulator->Run();
       break;
     }
+  
+  unisim::kernel::service::VariableBase* cmd_args = simulator.FindVariable("cmd-args");
+  std::vector<std::string> args;
+  
+  unsigned cmd_args_length = cmd_args->GetLength();
+  if (cmd_args_length == 0) {
+    std::cerr << "Simulation command line empty." << std::endl;
+    return 1;
+  }
+  for (unsigned idx = 0; idx < cmd_args_length; ++idx)
+    args.push_back( ((std::string)(*cmd_args)[idx]) );
 
-  if (simulator) delete simulator;
-#ifdef WIN32
-  //releases the winsock2 resources
-  WSACleanup();
-#endif
+  
   return ret;
 }

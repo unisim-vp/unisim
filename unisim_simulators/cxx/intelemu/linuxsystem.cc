@@ -1,5 +1,5 @@
-#include <intel/linuxsystem.hh>
-#include <intel/segments.hh>
+#include <linuxsystem.hh>
+#include <unisim/component/cxx/processor/intel/segments.hh>
 #include <dtlib/target.hh>
 #include <dtlib/loader.hh>
 #include <dtlib/misc.hh>
@@ -165,10 +165,10 @@ namespace todel
     // Initializing segmented memory
     gdtentry( 0xe ).m_baseaddr = 0; // code segment
     gdtentry( 0xf ).m_baseaddr = 0; // data segment
-    _target.segregwrite( ES, 0xf << 3 | 0 << 2 | 0x3 << 0 );
-    _target.segregwrite( CS, 0xe << 3 | 0 << 2 | 0x3 << 0 );
-    _target.segregwrite( SS, 0xf << 3 | 0 << 2 | 0x3 << 0 );
-    _target.segregwrite( DS, 0xf << 3 | 0 << 2 | 0x3 << 0 );
+    _target.segregwrite( unisim::component::cxx::processor::intel::ES, 0xf << 3 | 0 << 2 | 0x3 << 0 );
+    _target.segregwrite( unisim::component::cxx::processor::intel::CS, 0xe << 3 | 0 << 2 | 0x3 << 0 );
+    _target.segregwrite( unisim::component::cxx::processor::intel::SS, 0xf << 3 | 0 << 2 | 0x3 << 0 );
+    _target.segregwrite( unisim::component::cxx::processor::intel::DS, 0xf << 3 | 0 << 2 | 0x3 << 0 );
     
     // The following code is clearly a hack since linux doesn't
     // allocate any TLS. Allocating the TLS is the libc's
@@ -177,7 +177,7 @@ namespace todel
     // attempt to initialize it.
     _target.write32( tls_base, tls_base );
     gdtentry( 0x10 ).m_baseaddr = tls_base;
-    _target.segregwrite( GS, 0x10 << 3 | 0 << 2 | 0x3 << 0 );
+    _target.segregwrite( unisim::component::cxx::processor::intel::GS, 0x10 << 3 | 0 << 2 | 0x3 << 0 );
     
     // Heap setup
     uint32_t heap_start = _target.firstfreepage();
@@ -318,10 +318,10 @@ namespace todel
     // Initializing segmented memory
     gdtentry( 0xe ).m_baseaddr = 0; // code segment
     gdtentry( 0xf ).m_baseaddr = 0; // data segment
-    _target.segregwrite( ES, 0xf << 3 | 0 << 2 | 0x3 << 0 );
-    _target.segregwrite( CS, 0xe << 3 | 0 << 2 | 0x3 << 0 );
-    _target.segregwrite( SS, 0xf << 3 | 0 << 2 | 0x3 << 0 );
-    _target.segregwrite( DS, 0xf << 3 | 0 << 2 | 0x3 << 0 );
+    _target.segregwrite( unisim::component::cxx::processor::intel::ES, 0xf << 3 | 0 << 2 | 0x3 << 0 );
+    _target.segregwrite( unisim::component::cxx::processor::intel::CS, 0xe << 3 | 0 << 2 | 0x3 << 0 );
+    _target.segregwrite( unisim::component::cxx::processor::intel::SS, 0xf << 3 | 0 << 2 | 0x3 << 0 );
+    _target.segregwrite( unisim::component::cxx::processor::intel::DS, 0xf << 3 | 0 << 2 | 0x3 << 0 );
     
     // The following code is clearly a hack since linux doesn't
     // allocate any TLS. Allocating the TLS is the libc's
@@ -330,7 +330,7 @@ namespace todel
     // attempt to initialize it.
     _target.write32( tls_base, tls_base );
     gdtentry( 0x10 ).m_baseaddr = tls_base;
-    _target.segregwrite( GS, 0x10 << 3 | 0 << 2 | 0x3 << 0 );
+    _target.segregwrite( unisim::component::cxx::processor::intel::GS, 0x10 << 3 | 0 << 2 | 0x3 << 0 );
     
     // Heap setup
     uint32_t heap_start = _target.firstfreepage();

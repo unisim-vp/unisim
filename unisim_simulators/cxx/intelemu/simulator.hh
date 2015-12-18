@@ -35,28 +35,29 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
+#include <unisim/component/cxx/processor/intel/arch.hh>
+#include <linuxsystem.hh>
+#include <unisim/kernel/service/service.hh>
+#include <unisim/util/likely/likely.hh>
+#include <unisim/service/time/host_time/time.hh>
+#include <unisim/service/os/linux_os/linux.hh>
+#include <unisim/service/trap_handler/trap_handler.hh>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/power/cache_power_estimator.hh>
+#include <unisim/service/profiling/addr_profiler/profiler.hh>
+#include <unisim/service/tee/memory_access_reporting/tee.hh>
+
 #include <iostream>
 #include <sstream>
 #include <list>
 #include <string>
 #include <getopt.h>
 #include <stdlib.h>
-
-#include "unisim/kernel/service/service.hh"
-#include "unisim/component/cxx/processor/intel/arch.hh"
-#include "unisim/util/likely/likely.hh"
-#include "unisim/service/time/host_time/time.hh"
-#include "unisim/service/os/linux_os/linux.hh"
-#include "unisim/service/trap_handler/trap_handler.hh"
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include "unisim/service/debug/gdb_server/gdb_server.hh"
-#include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#include "unisim/service/debug/debugger/debugger.hh"
-#include "unisim/service/power/cache_power_estimator.hh"
-#include "unisim/service/profiling/addr_profiler/profiler.hh"
-#include "unisim/service/tee/memory_access_reporting/tee.hh"
 
 #ifdef WIN32
 
@@ -73,7 +74,7 @@ class Simulator
  public:
   Simulator(int argc, char **argv);
   virtual ~Simulator();
-  int Run();
+  //int Run();
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;
@@ -84,16 +85,14 @@ class Simulator
  protected:
  private:
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
-  typedef unisim::component::cxx::processor::intel::Arch Arch;
   typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
-
+  
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
   typedef unisim::service::debug::debugger::Debugger<uint32_t> DEBUGGER;
   typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
   typedef unisim::service::tee::memory_access_reporting::Tee<uint32_t> TEE_MEMORY_ACCESS_REPORTING;
-  
-  Arch cpu;
+    
   // LINUX_OS *linux_os;
   // TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
 
@@ -111,7 +110,7 @@ class Simulator
   // bool enable_inline_debugger;
   // unisim::kernel::service::Parameter<bool> *param_enable_inline_debugger;
 
-  int exit_status;
+  // int exit_status;
 #ifdef WIN32
   static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
 #else
