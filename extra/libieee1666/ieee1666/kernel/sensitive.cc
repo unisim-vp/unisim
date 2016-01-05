@@ -47,11 +47,8 @@ sc_sensitive& sc_sensitive::operator << (const sc_event& event)
 {
 	sc_object *process_object = process_handle.get_process_object();
 	
-	if(process_object) ((sc_process *) process_object)->add_static_sensitivity(event);
-// 	{
-// 		sc_process *process = (sc_process *) process_object;
-// 		process->add_static_sensitivity(event);
-// 	}
+	if(process_object) ((sc_process *) process_object)->make_statically_sensitive(event);
+
 	return *this;
 }
 
@@ -59,12 +56,8 @@ sc_sensitive& sc_sensitive::operator << (const sc_interface& itf)
 {
 	sc_object *process_object = process_handle.get_process_object();
 	
-	if(process_object) ((sc_process *) process_object)->add_static_sensitivity(itf);
-// 	{
-// 		sc_process *process = (sc_process *) process_object;
-// 		const sc_event& event = itf.default_event();
-// 		process->add_static_sensitivity(event);
-// 	}
+	if(process_object) ((sc_process *) process_object)->make_statically_sensitive(itf);
+
 	return *this;
 }
 
@@ -72,7 +65,7 @@ sc_sensitive& sc_sensitive::operator << (const sc_port_base& port)
 {
 	sc_object *process_object = process_handle.get_process_object();
 
-	if(process_object) ((sc_process *) process_object)->add_static_sensitivity(port); // port.add_process_statically_sensitive_to_port((sc_process *) process_object);
+	if(process_object) ((sc_process *) process_object)->make_statically_sensitive(port);
 
 	return *this;
 }
@@ -81,7 +74,7 @@ sc_sensitive& sc_sensitive::operator << (sc_event_finder& event_finder)
 {
 	sc_object *process_object = process_handle.get_process_object();
 	
-	if(process_object) ((sc_process *) process_object)->add_static_sensitivity(event_finder); //event_finder.get_port().add_process_statically_sensitive_to_event_finder((sc_process *) process_object, event_finder);
+	if(process_object) ((sc_process *) process_object)->make_statically_sensitive(event_finder);
 
 	return *this;
 }

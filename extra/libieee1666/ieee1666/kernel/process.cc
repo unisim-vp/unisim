@@ -65,17 +65,16 @@ sc_process::sc_process(const char *_name, sc_process_owner *_process_owner, sc_p
 	, flag_dont_initialize((process_kind == SC_CTHREAD_PROC_) ? true : (spawn_options ? spawn_options->get_flag_dont_initialize() : false))
 	, automatic_process_owner(process_owner->is_automatic())
 	, trigger_requested(false)
-	, ref_count(1)
+	, ref_count(0)
 	, enabled(true)
 	, suspended(false)
 	, runnable_on_resuming(false)
 {
-	add_static_sensitivity(spawn_options);
+	make_statically_sensitive(spawn_options);
 }
 
 sc_process::~sc_process()
 {
-	clear_static_sensitivity();
 	if(process_owner)
 	{
 		if(automatic_process_owner) delete process_owner;
@@ -270,10 +269,8 @@ void sc_process::reset(sc_descendant_inclusion_info include_descendants)
 	reset();
 }
 
-void sc_process::add_static_sensitivity(const sc_event& event)
+void sc_process::make_statically_sensitive(const sc_event& event)
 {
-	static_sensitivity.push_back(&event);
-	
 	switch(process_kind)
 	{
 		case SC_NO_PROC_:
@@ -288,46 +285,28 @@ void sc_process::add_static_sensitivity(const sc_event& event)
 	}
 }
 
-void sc_process::add_static_sensitivity(const sc_interface& itf)
+void sc_process::make_statically_sensitive(const sc_interface& itf)
 {
 	const sc_event& event = itf.default_event();
-	add_static_sensitivity(event);
+	make_statically_sensitive(event);
 }
 
-void sc_process::add_static_sensitivity(const sc_port_base& port)
+void sc_process::make_statically_sensitive(const sc_port_base& port)
 {
 	port.add_process_statically_sensitive_to_port(this);
 }
 
-void sc_process::add_static_sensitivity(const sc_export_base& exp)
+void sc_process::make_statically_sensitive(const sc_export_base& exp)
 {
 	throw std::runtime_error("unimplemented function: sc_process sensitive to sc_export");
 }
 
-void sc_process::add_static_sensitivity(const sc_event_finder& event_finder)
+void sc_process::make_statically_sensitive(const sc_event_finder& event_finder)
 {
 	event_finder.get_port().add_process_statically_sensitive_to_event_finder(this, event_finder);
 }
 
-void sc_process::remove_static_sensitivity(const sc_event& e)
-{
-	std::list<const sc_event *>::iterator it;
-	
-	for(it = static_sensitivity.begin(); it != static_sensitivity.end();)
-	{
-		const sc_event *event = *it;
-		if(event == &e)
-		{
-			it = static_sensitivity.erase(it); 
-		}
-		else
-		{
-			it++;
-		}
-	}
-}
-
-void sc_process::add_static_sensitivity(const sc_spawn_options *spawn_options)
+void sc_process::make_statically_sensitive(const sc_spawn_options *spawn_options)
 {
 	unsigned int i;
 	
@@ -335,61 +314,36 @@ void sc_process::add_static_sensitivity(const sc_spawn_options *spawn_options)
 	unsigned int num_sensitive_events = sensitive_events.size();
 	for(i = 0; i <num_sensitive_events; i++)
 	{
-		add_static_sensitivity(*sensitive_events[i]);
+		make_statically_sensitive(*sensitive_events[i]);
 	}
 
 	const std::vector<const sc_port_base *>& sensitive_ports = spawn_options->get_sensitive_ports();
 	unsigned int num_sensitive_ports = sensitive_ports.size();
 	for(i = 0; i <num_sensitive_ports; i++)
 	{
-		add_static_sensitivity(*sensitive_ports[i]);
+		make_statically_sensitive(*sensitive_ports[i]);
 	}
 
 	const std::vector<const sc_export_base *>& sensitive_exports = spawn_options->get_sensitive_exports();
 	unsigned int num_sensitive_exports = sensitive_exports.size();
 	for(i = 0; i <num_sensitive_exports; i++)
 	{
-		add_static_sensitivity(*sensitive_exports[i]);
+		make_statically_sensitive(*sensitive_exports[i]);
 	}
 
 	const std::vector<const sc_interface *>& sensitive_interfaces = spawn_options->get_sensitive_interfaces();
 	unsigned int num_sensitive_interfaces = sensitive_interfaces.size();
 	for(i = 0; i <num_sensitive_interfaces; i++)
 	{
-		add_static_sensitivity(*sensitive_interfaces[i]);
+		make_statically_sensitive(*sensitive_interfaces[i]);
 	}
 
 	const std::vector<const sc_event_finder *>& sensitive_event_finders = spawn_options->get_sensitive_event_finders();
 	unsigned int num_sensitive_event_finders = sensitive_event_finders.size();
 	for(i = 0; i <num_sensitive_event_finders; i++)
 	{
-		add_static_sensitivity(*sensitive_event_finders[i]);
+		make_statically_sensitive(*sensitive_event_finders[i]);
 	}
-}
-
-void sc_process::clear_static_sensitivity()
-{
-	std::list<const sc_event *>::iterator it;
-	
-	for(it = static_sensitivity.begin(); it != static_sensitivity.end(); it++)
-	{
-		const sc_event *event = *it;
-		
-		switch(process_kind)
-		{
-			case SC_NO_PROC_:
-				break;
-			case SC_METHOD_PROC_:
-				event->remove_statically_sensitive_method_process((sc_method_process *) this);
-				break;
-			case SC_THREAD_PROC_:
-			case SC_CTHREAD_PROC_:
-				event->remove_statically_sensitive_thread_process((sc_thread_process *) this);
-				break;
-		}
-	}
-	
-	static_sensitivity.clear();
 }
 
 } // end of namespace sc_core

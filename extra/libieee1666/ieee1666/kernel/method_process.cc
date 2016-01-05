@@ -55,6 +55,23 @@ sc_method_process::~sc_method_process()
 	kernel->unregister_method_process(this);
 }
 
+void sc_method_process::run()
+{
+	while(true)
+	{
+		try
+		{
+			call_process_owner_method();
+		}
+		catch(sc_unwind_exception& exc)
+		{
+			if(exc.is_reset()) continue;
+		}
+		
+		break;
+	}
+}
+
 void sc_method_process::trigger_statically()
 {
 	if(next_trigger_type != NEXT_TRIGGER_DEFAULT)
@@ -348,12 +365,40 @@ void sc_method_process::enable()
 void sc_method_process::kill()
 {
 	enabled = false;
+
+	if(!method_process_terminated)
+	{
+		if(kernel->get_current_method_process() == this)
+		{
+			// suicide
+			throw sc_unwind_exception(false);
+		}
+		else
+		{
+			// kill requested by another process
+		}
+	}
 	method_process_terminated = true;
 	method_process_terminated_event.notify();
+	kernel->terminate_method_process(this);
 }
 
 void sc_method_process::reset()
 {
+	next_trigger_type = NEXT_TRIGGER_DEFAULT; // restore static sensitivity
+
+	if(!method_process_terminated)
+	{
+		if(kernel->get_current_method_process() == this)
+		{
+			// self reset
+			throw sc_unwind_exception(true);
+		}
+		else
+		{
+			// reset by another process
+		}
+	}
 }
 
 const char *sc_method_process::kind() const

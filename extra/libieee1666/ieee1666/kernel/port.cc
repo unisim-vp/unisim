@@ -229,14 +229,14 @@ void sc_port_base::finalize_elaboration()
 				case PROCESS_STATICALLY_SENSITIVE_TO_PORT:
 					{
 						const sc_event& event = itf->default_event();
-						process->add_static_sensitivity(event);
+						process->make_statically_sensitive(event);
 					}
 					break;
 				case PROCESS_STATICALLY_SENSITIVE_TO_EVENT_FINDER:
 					{
 						const sc_event_finder *event_finder = process_static_sensitivity->event_finder;
 						const sc_event& event = event_finder->find_event(itf);
-						process->add_static_sensitivity(event);
+						process->make_statically_sensitive(event);
 					}
 					break;
 			}

@@ -84,13 +84,12 @@ public:
 	void acquire();
 	void release();
 	
-	void add_static_sensitivity(const sc_event& e);
-	void add_static_sensitivity(const sc_interface& itf);
-	void add_static_sensitivity(const sc_port_base& port);
-	void add_static_sensitivity(const sc_export_base& exp);
-	void add_static_sensitivity(const sc_event_finder& event_finder);
+	void make_statically_sensitive(const sc_event& e);
+	void make_statically_sensitive(const sc_interface& itf);
+	void make_statically_sensitive(const sc_port_base& port);
+	void make_statically_sensitive(const sc_export_base& exp);
+	void make_statically_sensitive(const sc_event_finder& event_finder);
 	
-	void remove_static_sensitivity(const sc_event& e);
 private:
 	friend class sc_kernel;
 	
@@ -104,10 +103,7 @@ private:
 
 	unsigned int ref_count;
 
-	std::list<const sc_event *> static_sensitivity;
-	
-	void add_static_sensitivity(const sc_spawn_options *spawn_options);
-	void clear_static_sensitivity();
+	void make_statically_sensitive(const sc_spawn_options *spawn_options);
 protected:
 	bool enabled;
 	bool suspended;

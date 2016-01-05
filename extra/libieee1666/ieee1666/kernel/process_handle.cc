@@ -41,17 +41,26 @@ namespace sc_core {
 
 const char* sc_unwind_exception::what() const throw()
 {
+	return reset ? "reset" : "kill";
 }
 
 bool sc_unwind_exception::is_reset() const
 {
+	return reset;
 }
 
 sc_unwind_exception::sc_unwind_exception()
+	: reset(false)
 {
 }
 
-sc_unwind_exception::sc_unwind_exception( const sc_unwind_exception& )
+sc_unwind_exception::sc_unwind_exception(bool _reset)
+	: reset(_reset)
+{
+}
+
+sc_unwind_exception::sc_unwind_exception(const sc_unwind_exception& exc)
+	: reset(exc.reset)
 {
 }
 

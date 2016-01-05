@@ -49,6 +49,8 @@ public:
 	sc_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *spawn_options);
 	virtual ~sc_method_process();
 
+	void run();
+	
 	void trigger_dynamically(const sc_event *e);
 	void trigger_statically();
 

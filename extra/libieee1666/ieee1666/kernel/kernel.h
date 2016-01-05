@@ -44,10 +44,12 @@
 #include <map>
 #include <deque>
 #include <unordered_set>
+#include <set>
 #include <ieee1666/kernel/kernel_event.h>
 #include <ieee1666/kernel/thread_process.h>
 #include <ieee1666/kernel/method_process.h>
 #include <ieee1666/kernel/prim_channel.h>
+#include <ieee1666/kernel/process_handle.h>
 
 namespace sc_core {
 
@@ -98,6 +100,13 @@ public:
 	void unregister_thread_process(sc_thread_process *thread_process);
 	void unregister_method_process(sc_method_process *method_process);
 
+	void terminate_thread_process(sc_thread_process *thread_process);
+	void terminate_method_process(sc_method_process *method_process);
+	void disconnect_thread_process(sc_thread_process *thread_process);
+	void disconnect_method_process(sc_method_process *method_process);
+	void release_terminated_thread_processes();
+	void release_terminated_method_processes();
+	
 	// time resolution management
 	void set_time_resolution(double v, sc_time_unit tu, bool user);
 	sc_dt::uint64 get_time_discrete_value(double d, sc_time_unit tu) const;
@@ -187,6 +196,7 @@ private:
 	std::vector<sc_prim_channel *> prim_channel_table;
 	std::vector<sc_thread_process *> thread_process_table;
 	std::vector<sc_method_process *> method_process_table;
+	std::set<sc_process_handle> process_handle_table;
 
 	// time resolution management
 	bool time_resolution_fixed_by_user;
@@ -209,6 +219,8 @@ private:
 	std::unordered_set<sc_prim_channel *> updatable_prim_channels;             // primitive channels to update
 	std::unordered_set<sc_kernel_event *> delta_events;                        // notified delta events set 
 	std::multimap<sc_time, sc_timed_kernel_event *> schedule;          // notified timed events set
+	std::unordered_set<sc_thread_process *> terminated_thread_processes;
+	std::unordered_set<sc_method_process *> terminated_method_processes;
 	bool user_requested_stop;
 	bool user_requested_pause;
 	sc_stop_mode stop_mode;

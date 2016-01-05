@@ -42,15 +42,6 @@
 namespace sc_core {
 
 #if !SC_THREAD_PROCESSES_USE_PTHREADS
-struct sc_coroutine_exited
-{
-	sc_coroutine_exited();
-};
-
-sc_coroutine_exited::sc_coroutine_exited()
-{
-}
-
 sc_thread_process_helper::sc_thread_process_helper(sc_thread_process *_thread_process, sc_coroutine::caller_type& _yield)
 	: thread_process(_thread_process)
 	, yield(_yield)
@@ -80,7 +71,8 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 #endif
 	, stack_size(spawn_options ? spawn_options->get_stack_size() : 0)
 	, started(false)
-	, killed(false)
+	, flag_killed(false)
+	, flag_reset(false)
 	, thread_process_terminated(false)
 	, thread_process_terminated_event(IEEE1666_KERNEL_PREFIX "_terminated_event")
 	, wait_type(WAIT_DEFAULT)
@@ -114,6 +106,7 @@ sc_thread_process::~sc_thread_process()
 	pthread_cond_destroy(&cond_callee);
 	pthread_cond_destroy(&cond_caller);
 #endif
+	
 }
 
 void sc_thread_process::set_stack_size(int _stack_size)
@@ -162,25 +155,20 @@ void sc_thread_process::yield()
 	pthread_cond_wait(&cond_callee, &callee_mutex);
 // 	std::cerr << name() << " wakes up" << std::endl;
 	pthread_mutex_unlock(&callee_mutex);
-	if(killed)
-	{
-		terminate();
-		return;
-	}
 #else
-	if(thread_process_helper)
-	{
-		thread_process_helper->yield(); // yield to kernel
-		if(killed)
-		{
-			throw sc_coroutine_exited();
-		}
-	}
-	else
-	{
-		throw std::runtime_error("Internal error! No thread process helper");
-	}
+	assert(thread_process_helper != 0);
+	thread_process_helper->yield(); // yield to kernel
 #endif
+	if(flag_killed)
+	{
+		flag_killed = false;
+		throw sc_unwind_exception(false);
+	}
+	else if(flag_reset)
+	{
+		flag_reset = true;
+		throw sc_unwind_exception(true);
+	}
 }
 
 void sc_thread_process::trigger_statically()
@@ -197,13 +185,16 @@ void sc_thread_process::trigger_statically()
 		return;
 	}
 	
-	if(suspended)
+	if(enabled)
 	{
-		runnable_on_resuming = true;
-	}
-	else
-	{
-		kernel->trigger(this);
+		if(suspended)
+		{
+			runnable_on_resuming = true;
+		}
+		else
+		{
+			kernel->trigger(this);
+		}
 	}
 }
 
@@ -421,6 +412,7 @@ void sc_thread_process::switch_to()
 
 void sc_thread_process::terminate()
 {
+//	std::cerr << sc_time_stamp() << ":" << name() << ".terminate()" << std::endl;
 	thread_process_terminated = true;
 	thread_process_terminated_event.notify();
 #if SC_THREAD_PROCESSES_USE_PTHREADS
@@ -431,28 +423,53 @@ void sc_thread_process::terminate()
 	
 	pthread_exit(NULL);
 #endif
+	started = false;
+	
+	kernel->terminate_thread_process(this);
 }
 
 #if SC_THREAD_PROCESSES_USE_PTHREADS
 void *sc_thread_process::thread_work(void *arg)
 {
 	sc_thread_process *thread_process = static_cast<sc_thread_process *>(arg);
-	thread_process->yield();
-	thread_process->call_process_owner_method();
+	
+	// SC_THREAD/SC_CTHREAD process method is run once unless process is reset
+	while(true)
+	{
+		try
+		{
+			thread_process->yield();
+			thread_process->call_process_owner_method();
+		}
+		catch(sc_unwind_exception& exc)
+		{
+			if(exc.is_reset()) continue;
+		}
+		
+		break;
+	}
+	
 	thread_process->terminate();
 }
 #else
 void sc_thread_process::coroutine_work(sc_coroutine::caller_type& yield)
 {
-	try
+	// SC_THREAD/SC_CTHREAD process method is run once unless process is reset
+	while(true)
 	{
-		sc_thread_process_helper(this, yield);
+		try
+		{
+			sc_thread_process_helper(this, yield);
+		}
+		catch(sc_unwind_exception& exc)
+		{
+			if(exc.is_reset()) continue;
+		}
+		
+		break;
 	}
-	catch(sc_coroutine_exited& dummy)
-	{
-	}
-	thread_process_terminated = true;
-	thread_process_terminated_event.notify();
+
+	terminate();
 }
 #endif
 
@@ -496,13 +513,23 @@ void sc_thread_process::enable()
 void sc_thread_process::kill()
 {
 	enabled = false;
-	killed = true;
+	flag_killed = true;
 	
 	if(started)
 	{
 		if(!thread_process_terminated)
 		{
-			switch_to(); // let thread die
+			if(kernel->get_current_thread_process() == this)
+			{
+				// suicide
+				throw sc_unwind_exception(false);
+			}
+			else
+			{
+				// kill requested by another process
+				
+				switch_to(); // switch to thread being killed and let thread die (throw)
+			}
 		}
 #if SC_THREAD_PROCESSES_USE_PTHREADS
 		pthread_join(thrd, NULL);		
@@ -520,6 +547,27 @@ void sc_thread_process::kill()
 
 void sc_thread_process::reset()
 {
+	wait_type = WAIT_DEFAULT; // restore static sensitivity
+	
+	flag_reset = true;
+	
+	if(started)
+	{
+		if(!thread_process_terminated)
+		{
+			if(kernel->get_current_thread_process() == this)
+			{
+				// self reset
+				throw sc_unwind_exception(true);
+			}
+			else
+			{
+				// reset requested by another process
+				
+				switch_to(); // switch to thread being reset and let thread reset (throw) itself
+			}
+		}
+	}
 }
 
 const char *sc_thread_process::kind() const

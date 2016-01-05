@@ -118,7 +118,8 @@ private:
 #endif
 	int stack_size;
 	bool started;
-	bool killed;
+	bool flag_killed;
+	bool flag_reset;
 	bool thread_process_terminated;
 	sc_event thread_process_terminated_event;
 	
