@@ -149,6 +149,7 @@ public:
 	
 	inline const sc_time& get_current_time_stamp() const ALWAYS_INLINE;
 	sc_process_handle get_current_process_handle() const;
+	bool is_unwinding() const;
 	
 	void set_stop_mode(sc_stop_mode mode);
 	sc_stop_mode get_stop_mode() const;

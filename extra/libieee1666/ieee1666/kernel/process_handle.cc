@@ -218,6 +218,7 @@ bool sc_process_handle::is_unwinding() const
 
 const sc_event& sc_process_handle::reset_event() const
 {
+	return process ? process->reset_event() : null_event;
 }
 
 void sc_process_handle::sync_reset_on( sc_descendant_inclusion_info include_descendants)

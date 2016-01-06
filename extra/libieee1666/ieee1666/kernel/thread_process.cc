@@ -73,8 +73,11 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, started(false)
 	, flag_killed(false)
 	, flag_reset(false)
+	, flag_is_unwinding(false)
+	, flag_throw_it(false)
 	, thread_process_terminated(false)
 	, thread_process_terminated_event(IEEE1666_KERNEL_PREFIX "_terminated_event")
+	, thread_process_reset_event(IEEE1666_KERNEL_PREFIX "_reset_event")
 	, wait_type(WAIT_DEFAULT)
 	, wait_count(0)
 	, wait_event(0)
@@ -121,6 +124,10 @@ void sc_thread_process::start()
 
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
+	if(stack_size)
+	{
+		pthread_attr_setstacksize(&attr, stack_size);
+	}
 	pthread_create(&thrd, &attr, &sc_thread_process::thread_work, this);
 
 	started = true;
@@ -162,12 +169,19 @@ void sc_thread_process::yield()
 	if(flag_killed)
 	{
 		flag_killed = false;
+		flag_is_unwinding = true;
 		throw sc_unwind_exception(false);
 	}
 	else if(flag_reset)
 	{
 		flag_reset = true;
+		flag_is_unwinding = true;
 		throw sc_unwind_exception(true);
+	}
+	else if(flag_throw_it)
+	{
+		flag_throw_it = false;
+		user_exception->throw_it();
 	}
 }
 
@@ -443,6 +457,7 @@ void *sc_thread_process::thread_work(void *arg)
 		}
 		catch(sc_unwind_exception& exc)
 		{
+			thread_process->flag_is_unwinding = false;
 			if(exc.is_reset()) continue;
 		}
 		
@@ -463,6 +478,7 @@ void sc_thread_process::coroutine_work(sc_coroutine::caller_type& yield)
 		}
 		catch(sc_unwind_exception& exc)
 		{
+			flag_is_unwinding = false;
 			if(exc.is_reset()) continue;
 		}
 		
@@ -481,6 +497,16 @@ bool sc_thread_process::terminated() const
 const sc_event& sc_thread_process::terminated_event() const
 {
 	return thread_process_terminated_event;
+}
+
+bool sc_thread_process::is_unwinding() const
+{
+	return flag_is_unwinding;
+}
+
+const sc_event& sc_thread_process::reset_event() const
+{
+	return thread_process_reset_event;
 }
 
 void sc_thread_process::suspend()
@@ -522,6 +548,7 @@ void sc_thread_process::kill()
 			if(kernel->get_current_thread_process() == this)
 			{
 				// suicide
+				flag_is_unwinding = true;
 				throw sc_unwind_exception(false);
 			}
 			else
@@ -558,6 +585,7 @@ void sc_thread_process::reset()
 			if(kernel->get_current_thread_process() == this)
 			{
 				// self reset
+				flag_is_unwinding = true;
 				throw sc_unwind_exception(true);
 			}
 			else
@@ -568,6 +596,30 @@ void sc_thread_process::reset()
 			}
 		}
 	}
+}
+
+void sc_thread_process::throw_it(const sc_user_exception& user_exception)
+{
+	wait_type = WAIT_DEFAULT; // restore static sensitivity
+	flag_throw_it = true;
+	
+	if(started)
+	{
+		if(!thread_process_terminated)
+		{
+			if(kernel->get_current_thread_process() == this)
+			{
+				// self throw
+				user_exception.throw_it(); 
+			}
+			else
+			{
+				this->user_exception = &user_exception;
+				switch_to(); // switch to thread being reset and let thread throw itself
+			}
+		}
+	}
+	
 }
 
 const char *sc_thread_process::kind() const

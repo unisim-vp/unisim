@@ -92,12 +92,15 @@ public:
 	
 	virtual bool terminated() const;
 	virtual const sc_event& terminated_event() const;
+	virtual bool is_unwinding() const;
+	virtual const sc_event& reset_event() const;
 	virtual void suspend();
 	virtual void resume();
 	virtual void disable();
 	virtual void enable();
 	virtual void kill();
 	virtual void reset();
+	virtual void throw_it(const sc_user_exception& user_exception);
 	
 	virtual const char *kind() const;
 private:
@@ -120,8 +123,12 @@ private:
 	bool started;
 	bool flag_killed;
 	bool flag_reset;
+	bool flag_is_unwinding;
+	bool flag_throw_it;
 	bool thread_process_terminated;
 	sc_event thread_process_terminated_event;
+	sc_event thread_process_reset_event;
+	const sc_user_exception *user_exception;
 	
 	enum wait_type_t
 	{

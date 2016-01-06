@@ -269,6 +269,31 @@ void sc_process::reset(sc_descendant_inclusion_info include_descendants)
 	reset();
 }
 
+void sc_process::throw_it(const sc_user_exception& user_defined_exception, sc_descendant_inclusion_info include_descendants)
+{
+	if(include_descendants == SC_INCLUDE_DESCENDANTS)
+	{
+		const std::vector<sc_object *> child_objects = get_child_objects();
+		unsigned int num_child_objects = child_objects.size();
+		unsigned int i;
+
+		for(i = 0; i < num_child_objects; i++)
+		{
+			sc_object *child_object = child_objects[i];
+			
+			sc_process *child_process = dynamic_cast<sc_process *>(child_object);
+			
+			if(child_process)
+			{
+				// child object is confirmed to be an sc_process instance
+				child_process->throw_it(user_defined_exception, include_descendants);
+			}
+		}
+	}
+	
+	throw_it(user_defined_exception);
+}
+
 void sc_process::make_statically_sensitive(const sc_event& event)
 {
 	switch(process_kind)

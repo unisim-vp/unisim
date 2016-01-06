@@ -52,6 +52,12 @@ private:
 	bool automatic;
 };
 
+class sc_user_exception
+{
+public:
+	virtual void throw_it() const = 0;
+};
+
 class sc_process : public sc_object
 {
 public:
@@ -67,6 +73,8 @@ public:
 	
 	virtual bool terminated() const = 0;
 	virtual const sc_event& terminated_event() const = 0;
+	virtual bool is_unwinding() const = 0;
+	virtual const sc_event& reset_event() const = 0;
 	
 	virtual void suspend(sc_descendant_inclusion_info include_descendants);
 	virtual void resume(sc_descendant_inclusion_info include_descendants);
@@ -74,6 +82,7 @@ public:
 	virtual void enable(sc_descendant_inclusion_info include_descendants);
 	virtual void kill(sc_descendant_inclusion_info include_descendants);
 	virtual void reset(sc_descendant_inclusion_info include_descendants);
+	virtual void throw_it(const sc_user_exception& user_defined_exception, sc_descendant_inclusion_info include_descendants);
 
 	virtual void suspend() = 0;
 	virtual void resume() = 0;
@@ -81,6 +90,8 @@ public:
 	virtual void enable() = 0;
 	virtual void kill() = 0;
 	virtual void reset() = 0;
+	virtual void throw_it(const sc_user_exception& user_exception) = 0;
+	
 	void acquire();
 	void release();
 	

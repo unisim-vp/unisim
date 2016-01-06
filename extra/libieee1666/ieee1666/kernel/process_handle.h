@@ -38,6 +38,7 @@
 #include <ieee1666/kernel/fwd.h>
 #include <ieee1666/kernel/object.h>
 #include <ieee1666/kernel/event.h>
+#include <ieee1666/kernel/process.h>
 #include <stdexcept>
 
 namespace sc_core {
@@ -113,8 +114,29 @@ private:
 ///////////////////////////////// sc_process_handle ///////////////////////////////////////////
 
 template <typename T>
+class sc_user_exception_t : sc_user_exception
+{
+public:
+	sc_user_exception_t(T _exc)
+		: exc(_exc)
+	{
+	}
+	
+	virtual void throw_it() const
+	{
+		throw exc;
+	}
+	
+private:
+	T exc;
+};
+
+template <typename T>
 void sc_process_handle::throw_it( const T& user_defined_exception, sc_descendant_inclusion_info include_descendants)
 {
+	sc_user_exception_t<T> user_exception(user_defined_exception);
+	
+	if(process) process->throw_it(user_exception, include_descendants);
 }
 
 } // end of namespace sc_core

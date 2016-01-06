@@ -66,12 +66,15 @@ public:
 
 	virtual bool terminated() const;
 	virtual const sc_event& terminated_event() const;
+	virtual bool is_unwinding() const;
+	virtual const sc_event& reset_event() const;
 	virtual void suspend();
 	virtual void resume();
 	virtual void disable();
 	virtual void enable();
 	virtual void kill();
 	virtual void reset();
+	virtual void throw_it(const sc_user_exception& user_exception);
 	
 	virtual const char *kind() const;
 private:
@@ -90,7 +93,9 @@ private:
 	};
 	
 	bool method_process_terminated;
+	bool flag_is_unwinding;
 	sc_event method_process_terminated_event;
+	sc_event method_process_reset_event;
 	
 	// next trigger
 	next_trigger_type_t next_trigger_type;

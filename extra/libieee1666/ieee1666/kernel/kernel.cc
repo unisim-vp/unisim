@@ -1043,6 +1043,13 @@ sc_process_handle sc_kernel::get_current_process_handle() const
 	return sc_process_handle();
 }
 
+bool sc_kernel::is_unwinding() const
+{
+	if(current_method_process) return current_method_process->is_unwinding();
+	if(current_thread_process) return current_thread_process->is_unwinding();
+	return false;
+}
+
 void sc_kernel::set_stop_mode(sc_stop_mode mode)
 {
 	stop_mode = mode;
@@ -1297,6 +1304,7 @@ sc_process_handle sc_get_current_process_handle()
 
 bool sc_is_unwinding()
 {
+	return sc_kernel::get_kernel()->is_unwinding();
 }
 
 const sc_dt::uint64 sc_delta_count()
