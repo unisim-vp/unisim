@@ -56,6 +56,12 @@ class Simulator;
 
 }
 
+namespace logger {
+
+struct Logger;
+
+}
+
 namespace api {
 
 class APIBase;
@@ -420,6 +426,18 @@ private:
 	string *cmd_args;
 	ParameterArray<string> *param_cmd_args;
 	
+	// KERNEL LOGGER START
+	unisim::kernel::logger::Logger*                  logger;
+	unisim::kernel::service::Parameter<bool>*        param_logger_std_err;
+	unisim::kernel::service::Parameter<bool>*        param_logger_std_out;
+	unisim::kernel::service::Parameter<bool>*        param_logger_std_err_color;
+	unisim::kernel::service::Parameter<bool>*        param_logger_std_out_color;
+	unisim::kernel::service::Parameter<bool>*        param_logger_file;
+	unisim::kernel::service::Parameter<std::string>* param_logger_filename;
+	unisim::kernel::service::Parameter<bool>*        param_logger_xml_file;
+	unisim::kernel::service::Parameter<std::string>* param_logger_xml_filename;
+	unisim::kernel::service::Parameter<bool>*        param_logger_xml_file_gzipped;
+	// KERNEL LOGGER END
 public:
 	template <typename T> T GetVariable(const char *variable_name, const T *t = 0) const;
 	

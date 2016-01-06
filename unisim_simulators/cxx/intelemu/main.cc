@@ -34,21 +34,43 @@
 
 #include <unisim/component/cxx/processor/intel/arch.hh>
 #include <unisim/component/cxx/processor/intel/isa/intel.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/kernel/logger/logger_server.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <linuxsystem.hh>
 #include <dtlib/loader.hh>
 #include <dtlib/misc.hh>
-#include <simulator.hh>
 #include <iostream>
 
 struct Arch
-  : virtual unisim::kernel::service::Object
-  , public unisim::component::cxx::processor::intel::Arch
+  : public unisim::component::cxx::processor::intel::Arch
+  , public unisim::service::interfaces::MemoryInjection<uint32_t>
+  , public unisim::service::interfaces::Memory<uint32_t>
+  , public unisim::service::interfaces::Registers
+
 {
-  Arch( char const* name, unisim::kernel::service::Object *parent = 0 )
-    : unisim::kernel::service::Object( name, parent )
-    , unisim::component::cxx::processor::intel::Arch()
+  
+  Arch()
+    : unisim::component::cxx::processor::intel::Arch()
+    , unisim::service::interfaces::MemoryInjection<uint32_t>()
+    , unisim::service::interfaces::Memory<uint32_t>()
+    , unisim::service::interfaces::Registers()
   {
   }
+  
+  // unisim::service::interfaces::Memory<uint32_t>
+  void Reset() {}
+  bool ReadMemory(uint32_t addr, void* buffer, uint32_t size ) { throw 0; return false; }
+  bool WriteMemory(uint32_t addr, void const* buffer, uint32_t size) { throw 0; return false; }
+  // unisim::service::interfaces::Registers
+  unisim::util::debug::Register* GetRegister(char const* name) { throw 0; return 0; }
+  // unisim::service::interfaces::MemoryInjection<ADDRESS>
+  bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { throw 0; return false; }
+  bool InjectWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { throw 0; return false; }
+  
 };
 
 int
@@ -69,57 +91,72 @@ main( int argc, char *argv[] )
   } wsa_env;
 #endif
 
-  Simulator simulator( argc, argv );
+  // Simulator simulator( argc, argv );
+  unisim::kernel::logger::Logger::StaticServerInstance()->opt_std_err_color_ = true;
 
-  switch (simulator.Setup())
-    {
-    case unisim::kernel::service::Simulator::ST_ERROR:
-      std::cerr << "ERROR: Can't start simulation because of previous errors" << std::endl;
-      return 1;
-      
-    case unisim::kernel::service::Simulator::ST_OK_DONT_START:
-      std::cerr << "Successfully configured the simulator." << std::endl;
-      return 0;
-      
-    case unisim::kernel::service::Simulator::ST_WARNING:
-      std::cerr << "WARNING: problems detected during setup, trying anyway." << std::endl;
-    case unisim::kernel::service::Simulator::ST_OK_TO_START:
-      std::cerr << "Starting simulation." << std::endl;
-      break;
+  Arch cpu;
+  
+  unisim::kernel::logger::Logger logger("linux32");
+  unisim::util::os::linux_os::Linux<uint32_t, uint32_t> linux32(logger, &cpu, &cpu, &cpu);
+  
+  
+  // Set up the different linuxlib parameters
+  linux32.SetVerbose(true);
+  
+  uintptr_t simargs_idx = 1;
+  std::vector<std::string> simargs(&argv[simargs_idx], &argv[argc]);
+  
+  {
+    std::cerr << "arguments:\n";
+    unsigned idx = 0;
+    for (std::string const& arg : simargs) {
+      std::cerr << "  args[" << idx << "]: " << arg << '\n';
     }
+  }
   
-  Arch cpu( "cpu" );
-
-  typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
-  LINUX_OS linux_os( "linux-os" );
-  
-  unisim::kernel::service::VariableBase* cmd_args = simulator.FindVariable("cmd-args");
-  std::vector<std::string> args;
-  
-  unsigned cmd_args_length = cmd_args->GetLength();
-  if (cmd_args_length == 0) {
+  if (simargs.size() == 0) {
     std::cerr << "Simulation command line empty." << std::endl;
     return 1;
   }
-  for (unsigned idx = 0; idx < cmd_args_length; ++idx)
-    args.push_back( ((std::string)(*cmd_args)[idx]) );
   
-  std::cerr << "arguments";
+  if (not linux32.SetCommandLine(simargs))
+    throw 0;
   
-  for (std::string const& arg : args)
-    {
-      std::cerr << "  " << arg << '\n';
-    }
+  // Set the linuxlib option to set the target environment with the
+  // host environment
+  linux32.SetApplyHostEnvironment(false);
+
+  // Set the binary that will be simulated in the target simulator
+  if (not linux32.AddLoadFile( simargs[0].c_str() ))
+    throw 0;
+  
+  // switch (simulator.Setup())
+  //   {
+  //   case unisim::kernel::service::Simulator::ST_ERROR:
+  //     std::cerr << "ERROR: Can't start simulation because of previous errors" << std::endl;
+  //     return 1;
+      
+  //   case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+  //     std::cerr << "Successfully configured the simulator." << std::endl;
+  //     return 0;
+      
+  //   case unisim::kernel::service::Simulator::ST_WARNING:
+  //     std::cerr << "WARNING: problems detected during setup, trying anyway." << std::endl;
+  //   case unisim::kernel::service::Simulator::ST_OK_TO_START:
+  //     std::cerr << "Starting simulation." << std::endl;
+  //     break;
+  //   }
   
   cpu.m_linux_system.m_sink.redirect( std::cerr );
+  cpu.m_linux_system.m_verbose = false;
   cpu.m_events.redirect( std::cerr );
   cpu.m_disasm = false;
   
   // Loading image
-  std::cerr << "*** Loading elf image: " << args[0] << " ***" << std::endl;
+  std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
   
   {
-    dtlib::ELF::Image elfimage( args[0].c_str() );
+    dtlib::ELF::Image elfimage( simargs[0].c_str() );
     
     elfimage.m_verbose = true;
     
@@ -134,7 +171,7 @@ main( int argc, char *argv[] )
     envs.push_back( "LANG=C" );
     dtlib::ELF::Root eiroot = elfimage.getroot();
     assert( eiroot.object_file_type() == dtlib::ELF::Root::etexec );
-    cpu.m_linux_system.static_setup( cpu.target(), eiroot, args, envs );
+    cpu.m_linux_system.static_setup( cpu.target(), eiroot, simargs, envs );
   }
   
   typedef unisim::component::cxx::processor::intel::Operation Operation;
