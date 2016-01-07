@@ -673,7 +673,7 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::Fstat(int fd, struct avr32_stat *target_sta
 	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atim);
 	target_stat->st_mtim = Host2BigEndian((int64_t) host_stat.st_mtim);
 	target_stat->st_ctim = Host2BigEndian((int64_t) host_stat.st_ctim);
-#elif defined(linux) || defined(__linux__) // Linux x64
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2BigEndian((int64_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2BigEndian((int64_t) host_stat.st_blocks);
 	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atim.tv_sec);
@@ -703,7 +703,7 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::Fstat(int fd, struct avr32_stat *target_sta
 	target_stat->st_atim = Host2BigEndian((int32_t) host_stat.st_atime);
 	target_stat->st_mtim = Host2BigEndian((int32_t) host_stat.st_mtime);
 	target_stat->st_ctim = Host2BigEndian((int32_t) host_stat.st_ctime);
-#elif defined(linux) || defined(__linux__) // Linux 32
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2BigEndian((int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2BigEndian((int64_t) host_stat.st_blocks);
 	target_stat->st_atim = Host2BigEndian((int32_t) host_stat.st_atim.tv_sec);
@@ -745,7 +745,7 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::Stat(const char *path, struct avr32_stat *t
 	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atim);
 	target_stat->st_mtim = Host2BigEndian((int64_t) host_stat.st_mtim);
 	target_stat->st_ctim = Host2BigEndian((int64_t) host_stat.st_ctim);
-#elif defined(linux) || defined(__linux__) // Linux x64
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2BigEndian((int64_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2BigEndian((int64_t) host_stat.st_blocks);
 	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atim.tv_sec);
@@ -775,7 +775,7 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::Stat(const char *path, struct avr32_stat *t
 	target_stat->st_atim = Host2BigEndian((int32_t) host_stat.st_atime);
 	target_stat->st_mtim = Host2BigEndian((int32_t) host_stat.st_mtime);
 	target_stat->st_ctim = Host2BigEndian((int32_t) host_stat.st_ctime);
-#elif defined(linux) || defined(__linux__) // Linux 32
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2BigEndian((int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2BigEndian((int64_t) host_stat.st_blocks);
 	target_stat->st_atim = Host2BigEndian((int32_t) host_stat.st_atim.tv_sec);

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_OS_LINUX_OS_LINUX_OS_TCC__
 #define __UNISIM_SERVICE_OS_LINUX_OS_LINUX_OS_TCC__
 
-#if !defined(linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(WIN64)
+#if !defined(linux) && !defined(__linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(WIN64)
 #error "Unsupported host machine for Linux system call translation !"
 #endif
 
@@ -1431,7 +1431,7 @@ LSC_open()
 	ReadMem(addr, pathname, pathnamelen + 1);
 	flags = GetSystemCallParam(1);
 	mode = GetSystemCallParam(2);
-#if defined(linux) || defined(__linux__)
+#if defined(linux) || defined(__linux) || defined(__linux__)
 	ret = open(pathname, flags, mode);
 #else
 	int host_flags = 0;
@@ -1796,7 +1796,7 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctim);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux__) // Linux x64
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2Target(endianess, (int64_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim.tv_sec);
@@ -1835,7 +1835,7 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux__) // Linux 32
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atim.tv_sec);
@@ -1871,7 +1871,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 #if defined(WIN32) || defined(WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
-#elif defined(linux) || defined(__linux__)
+#elif defined(linux) || defined(__linux) || defined(__linux__)
 	struct stat64 host_stat;
 	ret = fstat64(fd, &host_stat);
 #elif defined(__APPLE_CC__)
@@ -1900,7 +1900,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctim);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux__) // Linux x64
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim.tv_sec);
@@ -1939,7 +1939,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux__) // Linux 32
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atim.tv_sec);
@@ -1974,7 +1974,7 @@ Stat64(int fd, arm_stat64_t *target_stat)
 #if defined(WIN32) || defined(WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
-#elif defined(linux) || defined(__linux__)
+#elif defined(linux) || defined(__linux) || defined(__linux__)
 	struct stat64 host_stat;
 	ret = fstat64(fd, &host_stat);
 #elif defined(__APPLE_CC__)
@@ -2003,7 +2003,7 @@ Stat64(int fd, arm_stat64_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctim);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux__) // Linux x64
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim.tv_sec);
@@ -2043,7 +2043,7 @@ Stat64(int fd, arm_stat64_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux__) // Linux 32
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atim.tv_sec);
@@ -2134,7 +2134,7 @@ GetTimeOfDay(struct arm_timeval_t *target_tv)
 {
 	int ret = -1;
 
-#if defined(linux) || defined(__linux__) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	struct timeval host_tv;
 
 	ret = (int)gettimeofday(&host_tv, NULL);
@@ -2151,7 +2151,7 @@ GetTimeOfDay(struct powerpc_timeval_t *target_tv)
 {
 	int ret = -1;
 
-#if defined(linux) || defined(__linux__) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	struct timeval host_tv;
 
 	ret = (int) gettimeofday(&host_tv, NULL);
@@ -2168,7 +2168,7 @@ GetRUsage(PARAMETER_TYPE who, struct arm_rusage_t *target_ru)
 {
 	int ret = -1;
 
-#if defined(linux) || defined(__linux__) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	struct rusage host_ru;
 
 	ret = (int)getrusage((int)who, &host_ru);
@@ -2201,7 +2201,7 @@ GetRUsage(PARAMETER_TYPE who, struct powerpc_rusage_t *target_ru)
 {
 	int ret = -1;
 
-#if defined(linux) || defined(__linux__) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	struct rusage host_ru;
 
 	ret = (int)getrusage((int)who, &host_ru);
