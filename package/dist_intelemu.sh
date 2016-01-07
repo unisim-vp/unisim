@@ -370,7 +370,6 @@ string \
 
 UNISIM_SIMULATORS_INTELEMU_SOURCE_FILES="\
 main.cc \
-simulator.cc \
 linuxsystem.cc \
 dtlib/loader.cc \
 dtlib/misc.cc \
@@ -378,7 +377,6 @@ dtlib/sink.cc \
 "
 
 UNISIM_SIMULATORS_INTELEMU_HEADER_FILES="\
-simulator.hh \
 linuxsystem.hh \
 dtlib/fwd.hh \
 dtlib/loader.hh \

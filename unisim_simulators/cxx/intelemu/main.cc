@@ -130,6 +130,33 @@ main( int argc, char *argv[] )
   if (not linux32.AddLoadFile( simargs[0].c_str() ))
     throw 0;
   
+  // // Set the system type of the target simulator (should be the same than the
+  // // binary)
+  // if (not linux32.SetSystemType("ia32"))
+  //   throw 0;
+
+  // linux32.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
+  // linux32.SetStackBase( 0x40000000UL );
+  // linux32.SetMemoryPageSize( 0x1000UL );
+  
+  // linux32.SetUname("Linux" /* sysname */,
+  //                     "localhost" /* nodename */,
+  //                     "2.6.27.35" /* release */,
+  //                     "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
+  //                     "i386" /* machine */,
+  //                     "localhost" /* domainname */);
+  // linux32.SetHWCap("swp half fastmult");
+  // linux32.SetStdinPipeFilename(stdin_pipe_filename.c_str());
+  // linux32.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
+  // linux32.SetStderrPipeFilename(stderr_pipe_filename.c_str());
+
+  // now it is time to try to run the initialization of the linuxlib
+  // if (not linux32.Load())
+  //   throw 0;
+  
+  // if (!linux32.SetupTarget())
+  //   throw 0;
+  
   // switch (simulator.Setup())
   //   {
   //   case unisim::kernel::service::Simulator::ST_ERROR:
