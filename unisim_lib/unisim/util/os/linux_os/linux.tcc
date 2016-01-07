@@ -35,7 +35,7 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
 #define __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
 
-#if !defined(linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(WIN64)
+#if !defined(linux) && !defined(__linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(WIN64)
 #error "Unsupported host machine for Linux system call translation !"
 #endif
 

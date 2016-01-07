@@ -39,6 +39,7 @@
 #include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc"
 #include <cmath>
 #include <sstream>
+#include <iostream>
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim_lib/unisim/component/tlm2/interconnect/generic_router/router.tcc:" << __LINE__
 #define TIME(X) 	" - time = " << sc_time_stamp() + (X)
@@ -127,6 +128,9 @@ namespace tlm2 {
 namespace interconnect {
 namespace generic_router {
 
+using std::dec;
+using std::hex;
+using std::endl;
 using namespace unisim::kernel::logger;
 
 template <class CONFIG> const unsigned int unisim::component::tlm2::interconnect::generic_router::Router<CONFIG>::INPUT_SOCKETS;

@@ -56,7 +56,7 @@
 #include <unistd.h>
 //#include <limits.h>
 //#include <limits>
-#if defined(__APPLE_CC__) || defined (linux)  || defined (__linux__)
+#if defined(__APPLE_CC__) || defined(linux) || defined(__linux) || defined(__linux__)
 #include <dlfcn.h>
 #endif
 
@@ -258,7 +258,7 @@ bool ResolvePath(const std::string& prefix_dir,
 //	char resolved_dir_buf[PATH_MAX + 1];
 	char resolved_dir_buf[FILENAME_MAX + 1];
 
-#if defined(linux) || defined(__linux__) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	if ( realpath(unresolved_dir.c_str(), 
 				resolved_dir_buf) )
 	{
@@ -2355,22 +2355,22 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		if(GetBinPath(argv[0], bin_dir, program_binary))
 		{
-			// std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-			// std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+// 			 std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+// 			 std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 			if ( GetSharePath(bin_dir, shared_data_dir) )
 			{
-				// std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+// 				std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 			}
 			else
 			{
-				// std::cerr << "Could not resolve share data dir path" << std::endl;
+// 				std::cerr << "Could not resolve share data dir path" << std::endl;
 				warn_get_share_path = true;
 			}
 		}
 		else
 		{
-			// std::cerr << "Could not resolve bin and share data dir paths" << std::endl;
+// 			std::cerr << "Could not resolve bin and share data dir paths" << std::endl;
 			warn_get_bin_path = true;
 			warn_get_share_path = true;
 		}
@@ -2379,13 +2379,13 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		if ( !ResolvePath(shared_data_dir_hint, string(), shared_data_dir) )
 		{
-			// std::cerr << "Could not resolve share data dir path" << std::endl;
+// 			std::cerr << "Could not resolve share data dir path" << std::endl;
 			warn_get_share_path = true;
 		}
 		else
 		{
-			// std::cerr << "Resolved data dir path: " << shared_data_dir
-			// 	<< std::endl;
+// 			std::cerr << "Resolved data dir path: " << shared_data_dir
+// 			 	<< std::endl;
 		}
 	}
 
@@ -3392,7 +3392,7 @@ void Simulator::GetRootObjects(list<Object *>& lst) const
 	}
 }
 
-#if defined(__APPLE_CC__) || defined(linux) || defined(__linux__)
+#if defined(__APPLE_CC__) || defined(linux) || defined(__linux) || defined(__linux__)
 void FindMyself()
 {
 	// stupid method to find the path to the executable/library using the dladdr
@@ -3402,7 +3402,7 @@ void FindMyself()
 
 bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
 {
-#if defined(linux) || defined(__linux__) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	Dl_info info;
 	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{

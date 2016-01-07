@@ -579,9 +579,9 @@ m4/pthread.m4"
 
 UNISIM_LIB_VIRTEX5FXT_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_powerpc.xml \
-unisim/service/debug/gdb_server/gdb_powerpc_403.xml \
+unisim/service/debug/gdb_server/gdb_powerpc_405.xml \
 unisim/service/debug/gdb_server/gdb_powerpc_750.xml \
-unisim/service/debug/gdb_server/gdb_powerpc_7450.xml \
+unisim/service/debug/gdb_server/gdb_powerpc_7400.xml \
 unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
 
@@ -1109,6 +1109,7 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "AC_PROG_RANLIB" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "PKG_PROG_PKG_CONFIG([0.28])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "CPPFLAGS=\"${CPPFLAGS} -D_LARGEFILE64_SOURCE\"" >> "${VIRTEX5FXT_CONFIGURE_AC}"
