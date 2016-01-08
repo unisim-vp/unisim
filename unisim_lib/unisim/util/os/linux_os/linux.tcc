@@ -63,6 +63,7 @@
 
 #include "unisim/util/os/linux_os/arm.hh"
 #include "unisim/util/os/linux_os/ppc.hh"
+#include "unisim/util/os/linux_os/i386.hh"
 #include "unisim/util/os/linux_os/environment.hh"
 #include "unisim/util/os/linux_os/aux_table.hh"
 #include "unisim/util/os/linux_os/errno.hh"
@@ -82,7 +83,7 @@ using unisim::kernel::logger::EndDebugError;
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 const int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::kNumSupportedSystemTypes = 3;
 
-const char * tmp_supported_system_types[] = {"arm", "arm-eabi", "ppc"};
+const char * tmp_supported_system_types[] = {"arm", "arm-eabi", "ppc", "i386"};
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 const std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
 supported_system_types_(tmp_supported_system_types, 
@@ -837,6 +838,19 @@ unisim::util::debug::Register * Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister
       case unisim::util::os::linux_os::kPPC_cia: reg_name = "cia"; break;
       default: return NULL;
     }
+  } else if (system_type_.compare("ia32") == 0) {
+    switch (id) {
+      case unisim::util::os::linux_os::kI386_eax: reg_name = "%eax"; break;
+      case unisim::util::os::linux_os::kI386_ecx: reg_name = "%ecx"; break;
+      case unisim::util::os::linux_os::kI386_edx: reg_name = "%edx"; break;
+      case unisim::util::os::linux_os::kI386_ebx: reg_name = "%ebx"; break;
+      case unisim::util::os::linux_os::kI386_esp: reg_name = "%esp"; break;
+      case unisim::util::os::linux_os::kI386_ebp: reg_name = "%ebp"; break;
+      case unisim::util::os::linux_os::kI386_esi: reg_name = "%esi"; break;
+      case unisim::util::os::linux_os::kI386_edi: reg_name = "%edi"; break;
+      case unisim::util::os::linux_os::kI386_eip: reg_name = "%eip"; break;
+      default: return NULL;
+    }
   }
   return regs_if_->GetRegister(reg_name);
 }
@@ -930,7 +944,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	syscall_impl_assoc_map_.clear();
 	SetSyscallNameMap();
 	if ((system_type_.compare("arm") == 0) ||
-	(system_type_.compare("arm-eabi") == 0))
+	    (system_type_.compare("arm-eabi") == 0))
 	{
 		if(!SetupLinuxOSARM())
 		{
@@ -942,12 +956,24 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 		}
 	}
 	
-	if(system_type_.compare("ppc") == 0)
+	else if(system_type_.compare("ppc") == 0)
 	{
 		if(!SetupLinuxOSPPC())
 		{
 			logger_ << DebugError
 				<< "Error while trying to setup the linux os ppc"
+				<< EndDebugError;
+			blob->Release();
+			return false;
+		}
+	}
+
+	else if(system_type_.compare("i386") == 0)
+	{
+		if(!SetupLinuxOSI386())
+		{
+			logger_ << DebugError
+				<< "Error while trying to setup the linux os i386"
 				<< EndDebugError;
 			blob->Release();
 			return false;
@@ -1064,6 +1090,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget() {
     return SetupARMTarget();
   else if (system_type_.compare("ppc") == 0)
     return SetupPPCTarget();
+  else if (system_type_.compare("i386") == 0)
+    return SetupI386Target();
 
   logger_ << DebugError
       << "Unknown system to setup (" << system_type_ << ")." << EndDebugError;
@@ -1219,6 +1247,84 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupPPCTarget() {
   success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
   SetRegister(kPPC_r3, Target2Host(endianness_, par1));
   SetRegister(kPPC_r4, Target2Host(endianness_, par2));
+
+  return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupI386Target()
+{
+  typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
+  typedef std::vector<const Segment*> SegmentVector;
+  typedef typename SegmentVector::const_iterator SegmentVectorIterator;
+
+  bool success = true;
+  SegmentVector segments = blob_->GetSegments();
+  for (SegmentVectorIterator it = segments.begin();
+       success && (it != segments.end()); it++) {
+    if ((*it)->GetType() == Segment::TY_LOADABLE) {
+      uint8_t const * data = (uint8_t const *)(*it)->GetData();
+      ADDRESS_TYPE start, end;
+      (*it)->GetAddrRange(start, end);
+
+      if(verbose_) {
+        logger_ << DebugInfo << "--> writing memory segment start = 0x"
+            << std::hex << start << " end = 0x" << end << std::dec
+            << EndDebugInfo;
+      }
+
+      success = mem_if_->WriteMemory(start, data, end - start + 1);
+    }
+  }
+
+  if (!success) {
+    logger_ << DebugError
+        << "Error while writing the segments into the target memory."
+        << EndDebugError;
+    return false;
+  }
+
+  // // Reset all the target registers
+  // unsigned int reg_id = 0;
+  // PARAMETER_TYPE null_param = 0;
+  // for (reg_id = 0; success && (reg_id < kI386NumRegs); reg_id++) {
+  //   success = SetRegister(reg_id, null_param);
+  // }
+  // if (!success) {
+  //   logger_ << DebugError
+  //       << "Error while setting register '" << (reg_id - 1) << "'" << EndDebugError;
+  //   return false;
+  // }
+  // Set EIP to the program entry point
+  success = SetRegister(kI386_eip, entry_point_);
+  if (!success) {
+    logger_ << DebugError
+        << "Error while setting eip register (" << kI386_eip << ")" << EndDebugError;
+    return false;
+  }
+  // Set ESP to the base of the created stack
+  unisim::util::debug::blob::Section<ADDRESS_TYPE> const * esp_section =
+      blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
+  if (esp_section == NULL) {
+    logger_ << DebugError
+        << "Could not find the stack pointer section." << EndDebugError;
+    return false;
+  }
+  success = SetRegister(kI386_esp, esp_section->GetAddr());
+  if (!success) {
+    logger_ << DebugError
+        << "Error while setting esp register (" << kI386_esp << ")" << EndDebugError;
+    return false;
+  }
+  // ADDRESS_TYPE par1_addr = esp_section->GetAddr() + 4;
+  // ADDRESS_TYPE par2_addr = esp_section->GetAddr() + 8;
+  // PARAMETER_TYPE par1 = 0;
+  // PARAMETER_TYPE par2 = 0;
+  // success = mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
+  // success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
+  // SetRegister(kI386_r1, Target2Host(endianness_, par1));
+  // SetRegister(kI386_r2, Target2Host(endianness_, par2));
+
 
   return true;
 }
@@ -1850,6 +1956,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemBlob(
     return SetArmBlob(blob);
   else if (system_type_.compare("ppc") == 0)
     return SetPPCBlob(blob);
+  else if (system_type_.compare("i386") == 0)
+    return SetI386Blob(blob);
 
   logger_ << DebugError
       << "Unknown system type (" << system_type_ << ")" << EndDebugError;
@@ -1943,6 +2051,14 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
   // Nothing to do but that may change in the future if necessary
+  return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetI386Blob( unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob ) const
+{
+  // TODO: Need to setup Early TLS counter-measure
   return true;
 }
 
@@ -2334,6 +2450,400 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSARM() {
 	SetSyscallId("usr26", 983043);
 	SetSyscallId("usr32", 983044);
 	SetSyscallId("set_tls", 983045);
+
+	return true;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSI386()
+{
+  // TODO: fill syscall map
+	// see either arch/i386/include/asm/unistd.h or arch/i386/include/uapi/asm/unistd.h in Linux source
+	// SetSyscallId("restart_syscall", 0);
+	// SetSyscallId("exit", 1);
+	// SetSyscallId("fork", 2);
+	// SetSyscallId("read", 3);
+	// SetSyscallId("write", 4);
+	// SetSyscallId("open", 5);
+	// SetSyscallId("close", 6);
+	// // 7 was "waitpid"
+	// SetSyscallId("creat", 8);
+	// SetSyscallId("link", 9);
+	// SetSyscallId("unlink", 10);
+	// SetSyscallId("execve", 11);
+	// SetSyscallId("chdir", 12);
+	// SetSyscallId("time", 13);
+	// SetSyscallId("mknod", 14);
+	// SetSyscallId("chmod", 15);
+	// SetSyscallId("lchown", 16);
+	// // 17 was "break"
+	// // 18 was "stat"
+	// SetSyscallId("lseek", 19);
+	// SetSyscallId("getpid", 20);
+	// SetSyscallId("mount", 21);
+	// SetSyscallId("umount", 22);
+	// SetSyscallId("setuid", 23);
+	// SetSyscallId("getuid", 24);
+	// SetSyscallId("stime", 25);
+	// SetSyscallId("ptrace", 26);
+	// SetSyscallId("alarm", 27);
+	// // 28 was "fstat"
+	// SetSyscallId("pause", 29);
+	// SetSyscallId("utime", 30);
+	// // 31 was "stty"
+	// // 32 was "gtty"
+	// SetSyscallId("access", 33);
+	// SetSyscallId("nice", 34);
+	// // 35 was "ftime"
+	// SetSyscallId("sync", 36);
+	// SetSyscallId("kill", 37);
+	// SetSyscallId("rename", 38);
+	// SetSyscallId("mkdir", 39);
+	// SetSyscallId("rmdir", 40);
+	// SetSyscallId("dup", 41);
+	// SetSyscallId("pipe", 42);
+	// SetSyscallId("times", 43);
+	// // 44 was "prof"
+	// SetSyscallId("brk", 45);
+	// SetSyscallId("setgid", 46);
+	// SetSyscallId("getgid", 47);
+	// // 48 was "signal"
+	// SetSyscallId("geteuid", 49);
+	// SetSyscallId("getegid", 50);
+	// SetSyscallId("acct", 51);
+	// SetSyscallId("umount2", 52);
+	// // 53 was "lock"
+	// SetSyscallId("ioctl", 54);
+	// SetSyscallId("fcntl", 55);
+	// // 56 was "mpx"
+	// SetSyscallId("setpgid", 57);
+	// // 58 was "ulimit"
+	// // 59 was "olduname"
+	// SetSyscallId("umask", 60);
+	// SetSyscallId("chroot", 61);
+	// SetSyscallId("ustat", 62);
+	// SetSyscallId("dup2", 63);
+	// SetSyscallId("getppid", 64);
+	// SetSyscallId("getpgrp", 65);
+	// SetSyscallId("setsid", 66);
+	// SetSyscallId("sigaction", 67);
+	// // 68 was "sgetmask"
+	// // 69 was "ssetmask"
+	// SetSyscallId("setreuid", 70);
+	// SetSyscallId("setregid", 71);
+	// SetSyscallId("sigsuspend", 72);
+	// SetSyscallId("sigpending", 73);
+	// SetSyscallId("sethostname", 74);
+	// SetSyscallId("setrlimit", 75);
+	// SetSyscallId("getrlimit", 76);
+	// SetSyscallId("getrusage", 77);
+	// SetSyscallId("gettimeofday", 78);
+	// SetSyscallId("settimeofday", 79);
+	// SetSyscallId("getgroups", 80);
+	// SetSyscallId("setgroups", 81);
+	// SetSyscallId("select", 82);
+	// SetSyscallId("symlink", 83);
+	// // 84 was "lstat"
+	// SetSyscallId("readlink", 85);
+	// SetSyscallId("uselib", 86);
+	// SetSyscallId("swapon", 87);
+	// SetSyscallId("reboot", 88);
+	// SetSyscallId("readdir", 89);
+	// SetSyscallId("mmap", 90);
+	// SetSyscallId("munmap", 91);
+	// SetSyscallId("truncate", 92);
+	// SetSyscallId("ftruncate", 93);
+	// SetSyscallId("fchmod", 94);
+	// SetSyscallId("fchown", 95);
+	// SetSyscallId("getpriority", 96);
+	// SetSyscallId("setpriority", 97);
+	// // 98 was "profile"
+	// SetSyscallId("statfs", 99);
+	// SetSyscallId("fstatfs", 100);
+	// SetSyscallId("socketcall", 102);
+	// SetSyscallId("syslog", 103);
+	// SetSyscallId("setitimer", 104);
+	// SetSyscallId("getitimer", 105);
+	// SetSyscallId("stat", 106);
+	// SetSyscallId("lstat", 107);
+	// SetSyscallId("fstat", 108);
+	// // 109 was "uname"
+	// // 110 was "iopl"
+	// SetSyscallId("vhangup", 111);
+	// // 112 was "idle"
+	// SetSyscallId("syscall", 113);
+	// SetSyscallId("wait4", 114);
+	// SetSyscallId("swapoff", 115);
+	// SetSyscallId("sysinfo", 116);
+	// SetSyscallId("ipc", 117);
+	// SetSyscallId("fsync", 118);
+	// SetSyscallId("sigreturn", 119);
+	// SetSyscallId("clone", 120);
+	// SetSyscallId("setdomainname", 121);
+	// SetSyscallId("uname", 122);
+	// // 123 was "modify_ldt"
+	// SetSyscallId("adjtimex", 124);
+	// SetSyscallId("mprotect", 125);
+	// SetSyscallId("sigprocmask", 126);
+	// // 127 was "create_module"
+	// SetSyscallId("init_module", 128);
+	// SetSyscallId("delete_module", 129);
+	// // 130 was "get_kernel_syms"
+	// SetSyscallId("quotactl", 131);
+	// SetSyscallId("getpgid", 132);
+	// SetSyscallId("fchdir", 133);
+	// SetSyscallId("bdflush", 134);
+	// SetSyscallId("sysfs", 135);
+	// SetSyscallId("personality", 136);
+	// // 137 was "afs_syscall"
+	// SetSyscallId("setfsuid", 138);
+	// SetSyscallId("setfsgid", 139);
+	// SetSyscallId("_llseek", 140);
+	// SetSyscallId("getdents", 141);
+	// SetSyscallId("_newselect", 142);
+	// SetSyscallId("flock", 143);
+	// SetSyscallId("msync", 144);
+	// SetSyscallId("readv", 145);
+	// SetSyscallId("writev", 146);
+	// SetSyscallId("getsid", 147);
+	// SetSyscallId("fdatasync", 148);
+	// SetSyscallId("_sysctl", 149);
+	// SetSyscallId("mlock", 150);
+	// SetSyscallId("munlock", 151);
+	// SetSyscallId("mlockall", 152);
+	// SetSyscallId("munlockall", 153);
+	// SetSyscallId("sched_setparam", 154);
+	// SetSyscallId("sched_getparam", 155);
+	// SetSyscallId("sched_setscheduler", 156);
+	// SetSyscallId("sched_getscheduler", 157);
+	// SetSyscallId("sched_yield", 158);
+	// SetSyscallId("sched_get_priority_max", 159);
+	// SetSyscallId("sched_get_priority_min", 160);
+	// SetSyscallId("sched_rr_get_interval", 161);
+	// SetSyscallId("nanosleep", 162);
+	// SetSyscallId("mremap", 163);
+	// SetSyscallId("setresuid", 164);
+	// SetSyscallId("getresuid", 165);
+	// // 166 was "vm86"
+	// // 167 was "query_module"
+	// SetSyscallId("poll", 168);
+	// SetSyscallId("nfsservctl", 169);
+	// SetSyscallId("setresgid", 170);
+	// SetSyscallId("getresgid", 171);
+	// SetSyscallId("prctl", 172);
+	// SetSyscallId("rt_sigreturn", 173);
+	// SetSyscallId("rt_sigaction", 174);
+	// SetSyscallId("rt_sigprocmask", 175);
+	// SetSyscallId("rt_sigpending", 176);
+	// SetSyscallId("rt_sigtimedwait", 177);
+	// SetSyscallId("rt_sigqueueinfo", 178);
+	// SetSyscallId("rt_sigsuspend", 179);
+	// SetSyscallId("pread64", 180);
+	// SetSyscallId("pwrite64", 181);
+	// SetSyscallId("chown", 182);
+	// SetSyscallId("getcwd", 183);
+	// SetSyscallId("capget", 184);
+	// SetSyscallId("capset", 185);
+	// SetSyscallId("sigaltstack", 186);
+	// SetSyscallId("sendfile", 187);
+	// // 188 is reserved
+	// // 189 is reserved
+	// SetSyscallId("vfork", 190);
+	// SetSyscallId("ugetrlimit", 191);
+	// SetSyscallId("mmap2", 192);
+	// SetSyscallId("truncate64", 193);
+	// SetSyscallId("ftruncate64", 194);
+	// SetSyscallId("stat64", 195);
+	// SetSyscallId("lstat64", 196);
+	// SetSyscallId("fstat64", 197);
+	// SetSyscallId("lchown32", 198);
+	// SetSyscallId("getuid32", 199);
+	// SetSyscallId("getgid32", 200);
+	// SetSyscallId("geteuid32", 201);
+	// SetSyscallId("getegid32", 202);
+	// SetSyscallId("setreuid32", 203);
+	// SetSyscallId("setregid32", 204);
+	// SetSyscallId("getgroups32", 205);
+	// SetSyscallId("setgroups32", 206);
+	// SetSyscallId("fchown32", 207);
+	// SetSyscallId("setresuid32", 208);
+	// SetSyscallId("getresuid32", 209);
+	// SetSyscallId("setresgid32", 210);
+	// SetSyscallId("getresgid32", 211);
+	// SetSyscallId("chown32", 212);
+	// SetSyscallId("setuid32", 213);
+	// SetSyscallId("setgid32", 214);
+	// SetSyscallId("setfsuid32", 215);
+	// SetSyscallId("setfsgid32", 216);
+	// SetSyscallId("getdents64", 217);
+	// SetSyscallId("pivot_root", 218);
+	// SetSyscallId("mincore", 219);
+	// SetSyscallId("madvise", 220);
+	// SetSyscallId("fcntl64", 221);
+	// // 222 is for tux
+	// // 223 is unused
+	// SetSyscallId("gettid", 224);
+	// SetSyscallId("readahead", 225);
+	// SetSyscallId("setxattr", 226);
+	// SetSyscallId("lsetxattr", 227);
+	// SetSyscallId("fsetxattr", 228);
+	// SetSyscallId("getxattr", 229);
+	// SetSyscallId("lgetxattr", 230);
+	// SetSyscallId("fgetxattr", 231);
+	// SetSyscallId("listxattr", 232);
+	// SetSyscallId("llistxattr", 233);
+	// SetSyscallId("flistxattr", 234);
+	// SetSyscallId("removexattr", 235);
+	// SetSyscallId("lremovexattr", 236);
+	// SetSyscallId("fremovexattr", 237);
+	// SetSyscallId("tkill", 238);
+	// SetSyscallId("sendfile64", 239);
+	// SetSyscallId("futex", 240);
+	// SetSyscallId("sched_setaffinity", 241);
+	// SetSyscallId("sched_getaffinity", 242);
+	// SetSyscallId("io_setup", 243);
+	// SetSyscallId("io_destroy", 244);
+	// SetSyscallId("io_getevents", 245);
+	// SetSyscallId("io_submit", 246);
+	// SetSyscallId("io_cancel", 247);
+	// SetSyscallId("exit_group", 248);
+	// SetSyscallId("lookup_dcookie", 249);
+	// SetSyscallId("epoll_create", 250);
+	// SetSyscallId("epoll_ctl", 251);
+	// SetSyscallId("epoll_wait", 252);
+	// SetSyscallId("remap_file_pages", 253);
+	// // 254 is for set_thread_area
+	// // 255 is for get_thread_area
+	// SetSyscallId("set_tid_address", 256);
+	// SetSyscallId("timer_create", 257);
+	// SetSyscallId("timer_settime", 258);
+	// SetSyscallId("timer_gettime", 259);
+	// SetSyscallId("timer_getoverrun", 260);
+	// SetSyscallId("timer_delete", 261);
+	// SetSyscallId("clock_settime", 262);
+	// SetSyscallId("clock_gettime", 263);
+	// SetSyscallId("clock_getres", 264);
+	// SetSyscallId("clock_nanosleep", 265);
+	// SetSyscallId("statfs64", 266);
+	// SetSyscallId("fstatfs64", 267);
+	// SetSyscallId("tgkill", 268);
+	// SetSyscallId("utimes", 269);
+	// SetSyscallId("pciconfig_iobase", 271);
+	// SetSyscallId("pciconfig_read", 272);
+	// SetSyscallId("pciconfig_write", 273);
+	// SetSyscallId("mq_open", 274);
+	// SetSyscallId("mq_unlink", 275);
+	// SetSyscallId("mq_timedsend", 276);
+	// SetSyscallId("mq_timedreceive", 277);
+	// SetSyscallId("mq_notify", 278);
+	// SetSyscallId("mq_getsetattr", 279);
+	// SetSyscallId("waitid", 280);
+	// SetSyscallId("socket", 281);
+	// SetSyscallId("bind", 282);
+	// SetSyscallId("connect", 283);
+	// SetSyscallId("listen", 284);
+	// SetSyscallId("accept", 285);
+	// SetSyscallId("getsockname", 286);
+	// SetSyscallId("getpeername", 287);
+	// SetSyscallId("socketpair", 288);
+	// SetSyscallId("send", 289);
+	// SetSyscallId("sendto", 290);
+	// SetSyscallId("recv", 291);
+	// SetSyscallId("recvfrom", 292);
+	// SetSyscallId("shutdown", 293);
+	// SetSyscallId("setsockopt", 294);
+	// SetSyscallId("getsockopt", 295);
+	// SetSyscallId("sendmsg", 296);
+	// SetSyscallId("recvmsg", 297);
+	// SetSyscallId("semop", 298);
+	// SetSyscallId("semget", 299);
+	// SetSyscallId("semctl", 300);
+	// SetSyscallId("msgsnd", 301);
+	// SetSyscallId("msgrcv", 302);
+	// SetSyscallId("msgget", 303);
+	// SetSyscallId("msgctl", 304);
+	// SetSyscallId("shmat", 305);
+	// SetSyscallId("shmdt", 306);
+	// SetSyscallId("shmget", 307);
+	// SetSyscallId("shmctl", 308);
+	// SetSyscallId("add_key", 309);
+	// SetSyscallId("request_key", 310);
+	// SetSyscallId("keyctl", 311);
+	// SetSyscallId("semtimedop", 312);
+	// SetSyscallId("vserver", 313);
+	// SetSyscallId("ioprio_set", 314);
+	// SetSyscallId("ioprio_get", 315);
+	// SetSyscallId("inotify_init", 316);
+	// SetSyscallId("inotify_add_watch", 317);
+	// SetSyscallId("inotify_rm_watch", 318);
+	// SetSyscallId("mbind", 319);
+	// SetSyscallId("get_mempolicy", 320);
+	// SetSyscallId("set_mempolicy", 321);
+	// SetSyscallId("openat", 322);
+	// SetSyscallId("mkdirat", 323);
+	// SetSyscallId("mknodat", 324);
+	// SetSyscallId("fchownat", 325);
+	// SetSyscallId("futimesat", 326);
+	// SetSyscallId("fstatat64", 327);
+	// SetSyscallId("unlinkat", 328);
+	// SetSyscallId("renameat", 329);
+	// SetSyscallId("linkat", 330);
+	// SetSyscallId("symlinkat", 331);
+	// SetSyscallId("readlinkat", 332);
+	// SetSyscallId("fchmodat", 333);
+	// SetSyscallId("faccessat", 334);
+	// SetSyscallId("pselect6", 335);
+	// SetSyscallId("ppoll", 336);
+	// SetSyscallId("unshare", 337);
+	// SetSyscallId("set_robust_list", 338);
+	// SetSyscallId("get_robust_list", 339);
+	// SetSyscallId("splice", 340);
+	// SetSyscallId("sync_file_range2", 341);
+	// SetSyscallId("tee", 342);
+	// SetSyscallId("vmsplice", 343);
+	// SetSyscallId("move_pages", 344);
+	// SetSyscallId("getcpu", 345);
+	// SetSyscallId("epoll_pwait", 346);
+	// SetSyscallId("kexec_load", 347);
+	// SetSyscallId("utimensat", 348);
+	// SetSyscallId("signalfd", 349);
+	// SetSyscallId("timerfd_create", 350);
+	// SetSyscallId("eventfd", 351);
+	// SetSyscallId("fallocate", 352);
+	// SetSyscallId("timerfd_settime", 353);
+	// SetSyscallId("timerfd_gettime", 354);
+	// SetSyscallId("signalfd4", 355);
+	// SetSyscallId("eventfd2", 356);
+	// SetSyscallId("epoll_create1", 357);
+	// SetSyscallId("dup3", 358);
+	// SetSyscallId("pipe2", 359);
+	// SetSyscallId("inotify_init1", 360);
+	// SetSyscallId("preadv", 361);
+	// SetSyscallId("pwritev", 362);
+	// SetSyscallId("rt_tgsigqueueinfo", 363);
+	// SetSyscallId("perf_event_open", 364);
+	// SetSyscallId("recvmmsg", 365);
+	// SetSyscallId("accept4", 366);
+	// SetSyscallId("fanotify_init", 367);
+	// SetSyscallId("fanotify_mark", 368);
+	// SetSyscallId("prlimit64", 369);
+	// SetSyscallId("name_to_handle_at", 370);
+	// SetSyscallId("open_by_handle_at", 371);
+	// SetSyscallId("clock_adjtime", 372);
+	// SetSyscallId("syncfs", 373);
+	// SetSyscallId("sendmmsg", 374);
+	// SetSyscallId("setns", 375);
+	// SetSyscallId("process_vm_readv", 376);
+	// SetSyscallId("process_vm_writev", 377);
+	// // 378 is for kcmp
+	
+	// // the following are private to the arm
+	// SetSyscallId("breakpoint", 983041);
+	// SetSyscallId("cacheflush", 983042);
+	// SetSyscallId("usr26", 983043);
+	// SetSyscallId("usr32", 983044);
+	// SetSyscallId("set_tls", 983045);
 
 	return true;
 }
@@ -2786,6 +3296,15 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap()
 		syscall_name_map_["usr32"] = &thistype::LSC_arm_usr32;
 		syscall_name_map_["set_tls"] = &thistype::LSC_arm_set_tls;
 	}
+	// the following are i386 private system calls
+	else if ((system_type_.compare("i386") == 0))
+	{
+		syscall_name_map_["breakpoint"] = &thistype::LSC_arm_breakpoint;
+		syscall_name_map_["cacheflush"] = &thistype::LSC_arm_cacheflush;
+		syscall_name_map_["usr26"] = &thistype::LSC_arm_usr26;
+		syscall_name_map_["usr32"] = &thistype::LSC_arm_usr32;
+		syscall_name_map_["set_tls"] = &thistype::LSC_arm_set_tls;
+	}
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -2831,6 +3350,8 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallNumber(int id)
 		return ARMEABIGetSyscallNumber(id);
 	else if ( system_type_.compare("ppc") == 0 )
 		return PPCGetSyscallNumber(id);
+	else if ( system_type_.compare("i386") == 0 )
+		return I386GetSyscallNumber(id);
 
 	logger_ << DebugError
 		<< "Could not translate syscall number "
@@ -2872,6 +3393,12 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id)
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id)
+{
+	return id;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::I386GetSyscallNumber(int id)
 {
 	return id;
 }

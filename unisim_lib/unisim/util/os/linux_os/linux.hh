@@ -150,6 +150,7 @@ public:
 	bool SetupTarget();
 	bool SetupARMTarget();
 	bool SetupPPCTarget();
+        bool SetupI386Target();
 
 	// Gets the memory footprint of the application as a blob.
 	// Returns: a blob describing the memory footprint of the application. NULL
@@ -308,11 +309,17 @@ private:
 	// Fills the given blob with PPC dependent information
 	bool SetPPCBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
 
+	// Fills the given blob with I386 dependent information
+	bool SetI386Blob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
+
 	// Set the ARM syscall mappings
 	bool SetupLinuxOSARM();
 
 	// Set the PowerPC syscall mappings
 	bool SetupLinuxOSPPC();
+
+	// Set the i386 syscall mappings
+	bool SetupLinuxOSI386();
 
 	// Associate the syscall identifier to its name
 	void SetSyscallId(const char *syscall_name, int syscall_id);
@@ -333,6 +340,7 @@ private:
 	int ARMGetSyscallNumber(int id);
 	int ARMEABIGetSyscallNumber(int id);
 	int PPCGetSyscallNumber(int id);
+	int I386GetSyscallNumber(int id);
 
 	// helper methods to read/write from/into the system memory for performing
 	// system calls or loading the initial memory image
@@ -409,6 +417,7 @@ private:
 	void LSC_arm_usr26();
 	void LSC_arm_usr32();
 	void LSC_arm_set_tls();
+	void LSC_i386_set_thread_area();
 
 	// system call 'stat' helper methods
 	int Stat(int fd, struct powerpc_stat *target_stat);
@@ -416,12 +425,16 @@ private:
 	int Stat64(const char *pathname, struct powerpc_stat64 *target_stat);
 	int Fstat64(int fd, struct arm_stat64 *target_stat);
 	int Stat64(const char *pathname, struct arm_stat64 *target_stat);
+	int Fstat64(int fd, struct i386_stat64 *target_stat);
+	int Stat64(const char *pathname, struct i386_stat64 *target_stat);
 	// system call 'times' helper methods
 	int Times(struct powerpc_tms *target_tms);
 	int Times(struct arm_tms *target_tms);
+	int Times(struct i386_tms *target_tms);
 	// system call 'gettimeofday' helper methods
 	int GetTimeOfDay(struct powerpc_timeval *target_timeval, struct powerpc_timezone *target_timezone);
 	int GetTimeOfDay(struct arm_timeval *target_timeval, struct arm_timezone *target_timezone);
+	int GetTimeOfDay(struct i386_timeval *target_timeval, struct i386_timezone *target_timezone);
 	// handling the mmap base address
 	ADDRESS_TYPE GetMmapBase() const;
 	void SetMmapBase(ADDRESS_TYPE base);
@@ -436,11 +449,13 @@ private:
 	PARAMETER_TYPE ARMGetSystemCallParam(int id);
 	PARAMETER_TYPE ARMEABIGetSystemCallParam(int id);
 	PARAMETER_TYPE PPCGetSystemCallParam(int id);
+	PARAMETER_TYPE I386GetSystemCallParam(int id);
 	// writing system call status
 	void SetSystemCallStatus(int ret, bool error);
 	void ARMSetSystemCallStatus(int ret, bool error);
 	void ARMEABISetSystemCallStatus(int ret, bool error);
 	void PPCSetSystemCallStatus(int ret, bool error);
+	void I386SetSystemCallStatus(int ret, bool error);
 	// compute the length of a buffer string
 	int StringLength(ADDRESS_TYPE addr);
 };

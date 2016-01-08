@@ -274,6 +274,7 @@ unisim/util/os/linux_os/linux.hh \
 unisim/util/os/linux_os/linux.tcc \
 unisim/util/os/linux_os/ppc.hh \
 unisim/util/os/linux_os/arm.hh \
+unisim/util/os/linux_os/i386.hh \
 unisim/util/parser/parser.hh \
 unisim/util/parser/parser.tcc \
 unisim/util/queue/queue.hh \
