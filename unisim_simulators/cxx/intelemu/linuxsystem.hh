@@ -32,21 +32,7 @@ namespace todel {
     
     typedef std::vector<std::string> strvec;
     void static_setup( dtlib::Target& _target, dtlib::ELF::Root const& _img, strvec const& args, strvec const& envs );
-    void setup( dtlib::Target& _arch, dtlib::ELF::Root const& _img, int argc, char** argv, char** envp );
     
-    enum StackZone_t {
-      thread_local_storage = 0,
-      program_headers,
-      env_values, arg_values,
-      stack_padding,
-      aux_vector,
-      env_vector, arg_vector,
-      arg_count,
-      zone_count
-    };
-
-    uint32_t            m_zones[zone_count];
-
     // Syscall support
     
     uint32_t            m_brk_addr;

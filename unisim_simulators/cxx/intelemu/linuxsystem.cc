@@ -46,6 +46,18 @@ namespace todel
     }
     
     // Two-pass stack initialisation
+    enum StackZone_t {
+      thread_local_storage = 0,
+      program_headers,
+      env_values, arg_values,
+      stack_padding,
+      aux_vector,
+      env_vector, arg_vector,
+      arg_count,
+      zone_count
+    };
+
+    uint32_t      zones[zone_count];
     uint32_t item_count[zone_count];
     uint32_t item_sizes[zone_count];
     uint32_t item_align[zone_count];
@@ -110,30 +122,30 @@ namespace todel
     for (int idx = 0; idx < zone_count; ++ idx) {
       stackptr -= (item_sizes[idx] * item_count[idx]);
       stackptr &= ~(item_align[idx]-1);
-      m_zones[idx] = stackptr;
+      zones[idx] = stackptr;
     }
     
     assert( (stackptr & 0x7) == 0 );
 
     // Program headers
-    _target.write( m_zones[program_headers], _img.m_base + _img.phoff(), phentsize*phnum );
+    _target.write( zones[program_headers], _img.m_base + _img.phoff(), phentsize*phnum );
 
     // TLS
-    uint32_t tls_base = m_zones[thread_local_storage] + 0x800;
-    _target.clear( m_zones[thread_local_storage], 0x1000 );
+    uint32_t tls_base = zones[thread_local_storage] + 0x800;
+    _target.clear( zones[thread_local_storage], 0x1000 );
     
     // Auxilary vector
     struct AuxVector_t { uint32_t m_type, m_value; };
     enum AuxType_t { ATNULL=0, ATPHDR=3, ATPHENT=4, ATPHNUM=5, ATPAGESZ=6 };
     AuxVector_t aux_vector_init[] =
-      {{ATPAGESZ,0x1000},{ATPHDR,m_zones[program_headers]},{ATPHENT,phentsize},{ATPHNUM,phnum},{ATNULL,0}};
+      {{ATPAGESZ,0x1000},{ATPHDR,zones[program_headers]},{ATPHENT,phentsize},{ATPHNUM,phnum},{ATNULL,0}};
     for (int idx = 0; idx < 5; ++ idx) {
-      _target.write32( m_zones[aux_vector] + 8*idx + 0, aux_vector_init[idx].m_type );
-      _target.write32( m_zones[aux_vector] + 8*idx + 4, aux_vector_init[idx].m_value );
+      _target.write32( zones[aux_vector] + 8*idx + 0, aux_vector_init[idx].m_type );
+      _target.write32( zones[aux_vector] + 8*idx + 4, aux_vector_init[idx].m_value );
     }
 
     { // Environment vector
-      uint32_t env_val_ptr = m_zones[env_values], env_vec_ptr = m_zones[env_vector];
+      uint32_t env_val_ptr = zones[env_values], env_vec_ptr = zones[env_vector];
       for (strvec::const_iterator itr = envs.begin(), end = envs.end(); itr != end; ++itr) {
         uint32_t len = itr->size() + 1;
         _target.write32( env_vec_ptr, env_val_ptr );
@@ -145,7 +157,7 @@ namespace todel
     }
 
     { // Arguments vector
-      uint32_t arg_val_ptr = m_zones[arg_values], arg_vec_ptr = m_zones[arg_vector];
+      uint32_t arg_val_ptr = zones[arg_values], arg_vec_ptr = zones[arg_vector];
       for (strvec::const_iterator itr = args.begin(), end = args.end(); itr != end; ++itr) {
         uint32_t len = itr->size() + 1;
         _target.write32( arg_vec_ptr, arg_val_ptr );
@@ -156,7 +168,7 @@ namespace todel
       _target.write32( arg_vec_ptr, 0 ); // Null termination
     }
     // ArgC placeholder
-    _target.write32( m_zones[arg_count], args.size() );
+    _target.write32( zones[arg_count], args.size() );
     
     // FIXME: and the following ?
     // Stack registers
@@ -188,159 +200,6 @@ namespace todel
     //    _target.m_gpr[1] = 0;
   }
   
-  void
-  LinuxSystem::setup( dtlib::Target& _target, dtlib::ELF::Root const& _img, int argc, char** argv, char** envp )
-  {
-    _target.seteip( _img.entrypoint() );
-    if (m_verbose) {
-      dtlib::osprintf( m_sink(), "Entrypoint: %#010x\n", _img.entrypoint() );
-    }
-    
-    // Two-pass stack initialisation
-    uint32_t item_count[zone_count];
-    uint32_t item_sizes[zone_count];
-    uint32_t item_align[zone_count];
-    for (int idx = 0; idx < zone_count; ++ idx)
-      {  item_count[idx] = 0; item_sizes[idx] = 1; item_align[idx] = 1; }
-
-    // Program headers
-    uint32_t  phnum = _img.phnum(), phentsize = _img.phentsize();
-    item_count[program_headers] = phnum;
-    item_sizes[program_headers] = phentsize;
-    item_align[program_headers] = phentsize;
-    
-    // thread local storage
-    item_count[thread_local_storage] = 1;
-    item_sizes[thread_local_storage] = 0x1000;
-    item_align[thread_local_storage] = 0x1000;
-    
-    { // Environ
-      uint32_t env_vector_size = 0, env_values_size = 0;
-      for (int eidx = 0; envp[eidx]; ++eidx) {
-        env_values_size += (::strlen( envp[eidx] ) + 1); // Null terminated string
-        env_vector_size += 1;
-      }
-      item_count[env_values] = env_values_size;
-      item_count[env_vector] = env_vector_size + 1; // Null terminated vector
-      item_sizes[env_vector] = 4; // 4 bytes pointers
-      item_align[env_vector] = 4; // 4 bytes pointers
-    }
-    
-    { // Arguments
-      uint32_t arg_values_size = 0;
-      for (int aidx = 0; aidx < argc; ++aidx)
-        arg_values_size += (::strlen( argv[aidx] ) + 1);
-      item_count[arg_values] = arg_values_size;
-      item_count[arg_vector] = argc + 1; // Null terminated vector
-      item_sizes[arg_vector] = 4; // 4 bytes pointers
-      item_align[arg_vector] = 4; // 4 bytes pointers
-    }
-    
-    // Auxillary vector
-    item_count[aux_vector] = (4 + 1); // Null terminated vector
-    item_sizes[aux_vector] = 8; // 8 bytes Auxillary structures
-    item_align[aux_vector] = 4; // on ix86 linux system, AUXV is 4-bytes-aligned
-    
-    // Arguments count
-    item_count[arg_count] = 1;
-    item_sizes[arg_count] = 4; // 4 bytes pointer
-    item_align[arg_count] = 4; // 4 bytes pointer
-
-    uint32_t frameptr = 0xc0000000;
-    uint32_t stackptr = frameptr;
-
-    for (int idx = 0; idx < zone_count; ++ idx) {
-      stackptr -= (item_sizes[idx] * item_count[idx]);
-      stackptr &= ~(item_align[idx]-1);
-    }
-    // Fixing misalignment (stack pointer should be 8-aligned when
-    // starting). Because AUXV is 4-bytes-aligned, a simple padding
-    // may be perform before AUXV.
-    item_count[stack_padding] = (stackptr & 0x7);
-    
-    // Computing setup stack mapping (2nd pass)
-    stackptr = frameptr;
-    for (int idx = 0; idx < zone_count; ++ idx) {
-      stackptr -= (item_sizes[idx] * item_count[idx]);
-      stackptr &= ~(item_align[idx]-1);
-      m_zones[idx] = stackptr;
-    }
-    
-    assert( (stackptr & 0x7) == 0 );
-
-    // Program headers
-    _target.write( m_zones[program_headers], _img.m_base + _img.phoff(), phentsize*phnum );
-
-    // TLS
-    uint32_t tls_base = m_zones[thread_local_storage] + 0x800;
-    _target.clear( m_zones[thread_local_storage], 0x1000 );
-    
-    // Auxilary vector
-    struct AuxVector_t { uint32_t m_type, m_value; };
-    enum AuxType_t { ATNULL=0, ATPHDR=3, ATPHENT=4, ATPHNUM=5, ATPAGESZ=6 };
-    AuxVector_t aux_vector_init[] =
-      {{ATPAGESZ,0x1000},{ATPHDR,m_zones[program_headers]},{ATPHENT,phentsize},{ATPHNUM,phnum},{ATNULL,0}};
-    for (int idx = 0; idx < 5; ++ idx) {
-      _target.write32( m_zones[aux_vector] + 8*idx + 0, aux_vector_init[idx].m_type );
-      _target.write32( m_zones[aux_vector] + 8*idx + 4, aux_vector_init[idx].m_value );
-    }
-
-    { // Environment vector
-      uint32_t env_val_ptr = m_zones[env_values], env_vec_ptr = m_zones[env_vector];
-      for (int eidx = 0; envp[eidx]; eidx++) {
-        uint32_t len = ::strlen( envp[eidx] ) + 1;
-        _target.write32( env_vec_ptr, env_val_ptr );
-        _target.write( env_val_ptr, (uint8_t*)(envp[eidx]), len );
-        env_vec_ptr += 4;
-        env_val_ptr += len;
-      }
-      _target.write32( env_vec_ptr, 0 ); // Null termination
-    }
-
-    { // Arguments vector
-      uint32_t arg_val_ptr = m_zones[arg_values], arg_vec_ptr = m_zones[arg_vector];
-      for (int aidx = 0; aidx < argc; aidx++) {
-        uint32_t len = ::strlen( argv[aidx] ) + 1;
-        _target.write32( arg_vec_ptr, arg_val_ptr );
-        _target.write( arg_val_ptr, (uint8_t*)argv[aidx], len );
-        arg_vec_ptr += 4;
-        arg_val_ptr += len;
-      }
-      _target.write32( arg_vec_ptr, 0 );
-    }
-    // Argc placeholder
-    _target.write32( m_zones[arg_count], argc );
-    
-    // FIXME: and the following ?
-    // Stack registers
-    _target.setesp( stackptr );
-    
-    // Initializing segmented memory
-    gdtentry( 0xe ).m_baseaddr = 0; // code segment
-    gdtentry( 0xf ).m_baseaddr = 0; // data segment
-    _target.segregwrite( unisim::component::cxx::processor::intel::ES, 0xf << 3 | 0 << 2 | 0x3 << 0 );
-    _target.segregwrite( unisim::component::cxx::processor::intel::CS, 0xe << 3 | 0 << 2 | 0x3 << 0 );
-    _target.segregwrite( unisim::component::cxx::processor::intel::SS, 0xf << 3 | 0 << 2 | 0x3 << 0 );
-    _target.segregwrite( unisim::component::cxx::processor::intel::DS, 0xf << 3 | 0 << 2 | 0x3 << 0 );
-    
-    // The following code is clearly a hack since linux doesn't
-    // allocate any TLS. Allocating the TLS is the libc's
-    // responsability. Nevertheless, because syscalls emulation is
-    // incomplete, errno (located in TLS) may be used before any libc
-    // attempt to initialize it.
-    _target.write32( tls_base, tls_base );
-    gdtentry( 0x10 ).m_baseaddr = tls_base;
-    _target.segregwrite( unisim::component::cxx::processor::intel::GS, 0x10 << 3 | 0 << 2 | 0x3 << 0 );
-    
-    // Heap setup
-    uint32_t heap_start = _target.firstfreepage();
-    assert( heap_start < 0xe0000000 ); // FIXME: should handle that properly
-    this->m_brk_addr = (heap_start + uint32_t( 0xfff )) & ~uint32_t( 0xfff );
-
-    // Static setup
-    //    _target.m_gpr[1] = 0;
-  }
-
   void
   LinuxSystem::syscall( int _sc, dtlib::Target& _target )
   {
