@@ -135,9 +135,9 @@ main( int argc, char *argv[] )
   if (not linux32.SetSystemType("i386"))
     throw 0;
   
-  // linux32.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
-  // linux32.SetStackBase( 0x40000000UL );
-  // linux32.SetMemoryPageSize( 0x1000UL );
+  linux32.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
+  linux32.SetStackBase( 0x40000000UL );
+  linux32.SetMemoryPageSize( 0x1000UL );
   
   // linux32.SetUname("Linux" /* sysname */,
   //                     "localhost" /* nodename */,

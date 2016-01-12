@@ -81,21 +81,11 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-const int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::kNumSupportedSystemTypes = 3;
-
-const char * tmp_supported_system_types[] = {"arm", "arm-eabi", "ppc", "i386"};
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-const std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
-supported_system_types_(tmp_supported_system_types, 
-                        tmp_supported_system_types + 
-                        sizeof(tmp_supported_system_types) / sizeof(char *));
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(unisim::kernel::logger::Logger& logger,
       unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if,
       unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if)
 	: is_load_(false)
-	, system_type_("arm-eabi")
+	, target_system(0)
 	, endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
 	, load_files_()
 	, entry_point_(0)
@@ -129,11 +119,6 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(unisim::kernel::logger::Logger& logge
 	, regs_if_(regs_if)
 	, mem_if_(mem_if)
 	, mem_inject_if_(mem_inject_if)
-	, syscall_name_map_()
-	, syscall_name_assoc_map_()
-	, syscall_impl_assoc_map_()
-	, current_syscall_id_(0)
-	, current_syscall_name_("(NONE)")
 	, verbose_(false)
 	, parse_dwarf_(false)
 	, debug_dwarf_(false)
@@ -555,11 +540,27 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(unisim::kernel::logger::Logger& logge
 #ifdef EHWPOISON
 	host2linux_errno[EHWPOISON] = LINUX_EHWPOISON;
 #endif
+        
+	struct UndefinedTS : public TargetSystem
+        {
+          UndefinedTS( Linux& _lin ) : TargetSystem("", _lin) {}
+          virtual char const* GetRegisterName( unsigned id ) const { perr(); return 0; };
+          virtual bool SetupTarget() const { perr(); return false; }
+          virtual bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const { perr(); return false; };
+          virtual bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const { perr(); return false; };
+          virtual SysCall*  GetSystemCall( int& id ) const { perr(); return 0; }
+          virtual PARAMETER_TYPE GetSystemCallParam(int id) const { perr(); return 0; };
+          virtual void SetSystemCallStatus(int ret, bool error) const { perr(); };
+          void perr() const { TargetSystem::lin.logger_ << DebugError << "Undefined Target system." << EndDebugError; }
+        };
+        target_system = new UndefinedTS( *this );
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
 {
+	delete target_system;
+	
 	typename std::map<std::string, unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>::const_iterator it;
 	for(it = load_files_.begin(); it != load_files_.end(); it++)
 	{
@@ -610,8 +611,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetDWARFToXMLOutputFilename(const char
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetCommandLine(
-    std::vector<std::string> const &cmd) {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetCommandLine(std::vector<std::string> const &cmd)
+{
   argc_ = cmd.size();
   argv_ = cmd;
 
@@ -619,13 +620,14 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetCommandLine(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetCommandLine() {
+std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetCommandLine()
+{
   return argv_;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEnvironment(
-    std::vector<std::string> const &env) {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEnvironment(std::vector<std::string> const &env)
+{
   envc_ = env.size();
   envp_ = env;
 
@@ -633,24 +635,26 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEnvironment(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetEnvironment() {
+std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetEnvironment()
+{
   return envp_;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetApplyHostEnvironment(
-    bool use_host_environment) {
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetApplyHostEnvironment(bool use_host_environment)
+{
   apply_host_environnement_ = use_host_environment;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetApplyHostEnvironment() {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetApplyHostEnvironment()
+{
   return apply_host_environnement_;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
-    char const * const filename) {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(char const * const filename)
+{
   // NOTE: for the moment we only support one file to load, if this
   // method is called more than once it will return false.
   if (load_files_.size() != 0) return false;
@@ -707,15 +711,2134 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(
-    char const * const system_type) {
-  bool supported = false;
-  for (int i = 0; (!supported) && (i < kNumSupportedSystemTypes); ++i) {
-    supported = (supported_system_types_[i].compare(system_type) == 0);
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_name)
+{
+  if (target_system->name.size()) {
+    logger_ << DebugError << "System Type already assigned (" << target_system->name << ").\n" << EndDebugError;
+    return false;
   }
-  if (!supported) return false;
-  system_type_ = system_type;
-  return true;
+  
+  if ((system_type_name.compare( "arm" ) == 0) or (system_type_name.compare( "arm-eabi" ) == 0))
+    {
+      struct ARMTS : public TargetSystem
+      {
+        ARMTS( std::string _name, Linux& _lin ) : TargetSystem( _name, _lin ) {}
+        using TargetSystem::lin;
+        char const* GetRegisterName( unsigned id ) const
+        {
+          switch(id) {
+          case unisim::util::os::linux_os::kARM_r0: return "r0";
+          case unisim::util::os::linux_os::kARM_r1: return "r1";
+          case unisim::util::os::linux_os::kARM_r2: return "r2";
+          case unisim::util::os::linux_os::kARM_r3: return "r3";
+          case unisim::util::os::linux_os::kARM_r4: return "r4";
+          case unisim::util::os::linux_os::kARM_r5: return "r5";
+          case unisim::util::os::linux_os::kARM_r6: return "r6";
+          case unisim::util::os::linux_os::kARM_r7: return "r7";
+          case unisim::util::os::linux_os::kARM_r8: return "r8";
+          case unisim::util::os::linux_os::kARM_r9: return "r9";
+          case unisim::util::os::linux_os::kARM_r10: return "r10";
+          case unisim::util::os::linux_os::kARM_r11: return "r11";
+          case unisim::util::os::linux_os::kARM_r12: return "r12";
+          case unisim::util::os::linux_os::kARM_sp: return "sp";
+          case unisim::util::os::linux_os::kARM_lr: return "lr";
+          case unisim::util::os::linux_os::kARM_pc: return "pc";
+          }
+          return 0;
+        }
+        bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const
+        {
+          uint32_t arm_hwcap = 0;
+          std::string hwcap_token;
+          std::stringstream sstr(lin.hwcap_);
+          while(sstr >> hwcap_token)
+            {
+              if(hwcap_token.compare("swp") == 0)             { arm_hwcap |= ARM_HWCAP_ARM_SWP; }
+              else if(hwcap_token.compare("half") == 0)       { arm_hwcap |= ARM_HWCAP_ARM_HALF; }
+              else if(hwcap_token.compare("thumb") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_THUMB; }
+              else if(hwcap_token.compare("26bit") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_26BIT; }
+              else if(hwcap_token.compare("fastmult") == 0)   { arm_hwcap |= ARM_HWCAP_ARM_FAST_MULT; }
+              else if(hwcap_token.compare("fpa") == 0)        { arm_hwcap |= ARM_HWCAP_ARM_FPA; }
+              else if(hwcap_token.compare("vfp") == 0)        { arm_hwcap |= ARM_HWCAP_ARM_VFP; }
+              else if(hwcap_token.compare("edsp") == 0)       { arm_hwcap |= ARM_HWCAP_ARM_EDSP; }
+              else if(hwcap_token.compare("edsp") == 0)       { arm_hwcap |= ARM_HWCAP_ARM_JAVA; }
+              else if(hwcap_token.compare("java") == 0)       { arm_hwcap |= ARM_HWCAP_ARM_JAVA; }
+              else if(hwcap_token.compare("iwmmxt") == 0)     { arm_hwcap |= ARM_HWCAP_ARM_IWMMXT; }
+              else if(hwcap_token.compare("crunch") == 0)     { arm_hwcap |= ARM_HWCAP_ARM_CRUNCH; }
+              else if(hwcap_token.compare("thumbee") == 0)    { arm_hwcap |= ARM_HWCAP_ARM_THUMBEE; }
+              else if(hwcap_token.compare("neon") == 0)       { arm_hwcap |= ARM_HWCAP_ARM_NEON; }
+              else if(hwcap_token.compare("vfpv3") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_VFPv3; }
+              else if(hwcap_token.compare("vfpv3d16") == 0)   { arm_hwcap |= ARM_HWCAP_ARM_VFPv3D16; }
+              else if(hwcap_token.compare("tls") == 0)        { arm_hwcap |= ARM_HWCAP_ARM_TLS; }
+              else if(hwcap_token.compare("vfpv4") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_VFPv4; }
+              else if(hwcap_token.compare("idiva") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_IDIVA; }
+              else if(hwcap_token.compare("idivt") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_IDIVT; }
+              else { lin.logger_ << DebugWarning << "unknown hardware capability \"" << hwcap_token << "\"" << EndDebugWarning; }
+            }
+          hwcap = arm_hwcap;
+          return true;
+        }
+        bool SetupTarget() const
+        {
+          bool success = true;
+          // Reset all the target registers
+          unsigned int reg_id = 0;
+          PARAMETER_TYPE null_param = 0;
+          for (reg_id = 0; success && (reg_id < kARMNumRegs); reg_id++) {
+            success = lin.SetRegister(reg_id, null_param);
+          }
+          if (!success) {
+            lin.logger_ << DebugError
+                    << "Error while setting register '" << (reg_id - 1) << "'" << EndDebugError;
+            return false;
+          }
+          // Set PC to the program entry point
+          success = lin.SetRegister(kARM_pc, lin.entry_point_);
+          if (!success) {
+            lin.logger_ << DebugError
+                    << "Error while setting pc register (" << kARM_pc << ")" << EndDebugError;
+            return false;
+          }
+          // Set SP to the base of the created stack
+          unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
+            lin.blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
+          if (sp_section == NULL) {
+            lin.logger_ << DebugError
+                    << "Could not find the stack pointer section." << EndDebugError;
+            return false;
+          }
+          success = lin.SetRegister(kARM_sp, sp_section->GetAddr());
+          if (!success) {
+            lin.logger_ << DebugError
+                    << "Error while setting sp register (" << kARM_sp << ")" << EndDebugError;
+            return false;
+          }
+          ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
+          ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
+          PARAMETER_TYPE par1 = 0;
+          PARAMETER_TYPE par2 = 0;
+          success = lin.mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
+          success = lin.mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
+          lin.SetRegister(kARM_r1, Target2Host(lin.endianness_, par1));
+          lin.SetRegister(kARM_r2, Target2Host(lin.endianness_, par2));
+          
+          return true;
+        }
+
+        void SetSystemCallStatus(int ret, bool error) const
+        {
+          if (not lin.SetRegister(kARMSyscallStatusReg, (PARAMETER_TYPE) ret))
+            {
+              lin.logger_ << DebugWarning << "Can't write register #" << kARMSyscallStatusReg << DebugWarning;
+              return;
+            }
+        }
+        
+        SysCall* GetSystemCall( int& id ) const
+        {
+          if (TargetSystem::name.compare("arm-eabi") == 0)
+            {
+              // The arm eabi ignores the supplied id and uses register 7
+              PARAMETER_TYPE id_from_reg;
+              if (not lin.GetRegister(kARMEABISyscallNumberReg, &id_from_reg))
+                {
+                  lin.logger_ << DebugError << "Can't access register 7 (syscall id)." << EndDebugError;
+                  return 0;
+                }
+              id = int(id_from_reg);
+            }
+          else if (TargetSystem::name.compare("arm") == 0)
+            {
+              id -= 0x0900000; // Offset translation
+            }
+          
+          // see either arch/arm/include/asm/unistd.h or arch/arm/include/uapi/asm/unistd.h in Linux source
+          switch (id) {
+          case 0: return lin.GetSyscallByName("restart_syscall");
+          case 1: return lin.GetSyscallByName("exit");
+          case 2: return lin.GetSyscallByName("fork");
+          case 3: return lin.GetSyscallByName("read");
+          case 4: return lin.GetSyscallByName("write");
+          case 5: return lin.GetSyscallByName("open");
+          case 6: return lin.GetSyscallByName("close");
+          // 7 was "waitpid"
+          case 8: return lin.GetSyscallByName("creat");
+          case 9: return lin.GetSyscallByName("link");
+          case 10: return lin.GetSyscallByName("unlink");
+          case 11: return lin.GetSyscallByName("execve");
+          case 12: return lin.GetSyscallByName("chdir");
+          case 13: return lin.GetSyscallByName("time");
+          case 14: return lin.GetSyscallByName("mknod");
+          case 15: return lin.GetSyscallByName("chmod");
+          case 16: return lin.GetSyscallByName("lchown");
+          // 17 was "break"
+          // 18 was "stat"
+          case 19: return lin.GetSyscallByName("lseek");
+          case 20: return lin.GetSyscallByName("getpid");
+          case 21: return lin.GetSyscallByName("mount");
+          case 22: return lin.GetSyscallByName("umount");
+          case 23: return lin.GetSyscallByName("setuid");
+          case 24: return lin.GetSyscallByName("getuid");
+          case 25: return lin.GetSyscallByName("stime");
+          case 26: return lin.GetSyscallByName("ptrace");
+          case 27: return lin.GetSyscallByName("alarm");
+          // 28 was "fstat"
+          case 29: return lin.GetSyscallByName("pause");
+          case 30: return lin.GetSyscallByName("utime");
+          // 31 was "stty"
+          // 32 was "gtty"
+          case 33: return lin.GetSyscallByName("access");
+          case 34: return lin.GetSyscallByName("nice");
+          // 35 was "ftime"
+          case 36: return lin.GetSyscallByName("sync");
+          case 37: return lin.GetSyscallByName("kill");
+          case 38: return lin.GetSyscallByName("rename");
+          case 39: return lin.GetSyscallByName("mkdir");
+          case 40: return lin.GetSyscallByName("rmdir");
+          case 41: return lin.GetSyscallByName("dup");
+          case 42: return lin.GetSyscallByName("pipe");
+          // 43: times (see arm specific)
+          // 44 was "prof"
+          case 45: return lin.GetSyscallByName("brk");
+          case 46: return lin.GetSyscallByName("setgid");
+          case 47: return lin.GetSyscallByName("getgid");
+          // 48 was "signal"
+          case 49: return lin.GetSyscallByName("geteuid");
+          case 50: return lin.GetSyscallByName("getegid");
+          case 51: return lin.GetSyscallByName("acct");
+          case 52: return lin.GetSyscallByName("umount2");
+          // 53 was "lock"
+          case 54: return lin.GetSyscallByName("ioctl");
+          case 55: return lin.GetSyscallByName("fcntl");
+          // 56 was "mpx"
+          case 57: return lin.GetSyscallByName("setpgid");
+          // 58 was "ulimit"
+          // 59 was "olduname"
+          case 60: return lin.GetSyscallByName("umask");
+          case 61: return lin.GetSyscallByName("chroot");
+          case 62: return lin.GetSyscallByName("ustat");
+          case 63: return lin.GetSyscallByName("dup2");
+          case 64: return lin.GetSyscallByName("getppid");
+          case 65: return lin.GetSyscallByName("getpgrp");
+          case 66: return lin.GetSyscallByName("setsid");
+          case 67: return lin.GetSyscallByName("sigaction");
+          // 68 was "sgetmask"
+          // 69 was "ssetmask"
+          case 70: return lin.GetSyscallByName("setreuid");
+          case 71: return lin.GetSyscallByName("setregid");
+          case 72: return lin.GetSyscallByName("sigsuspend");
+          case 73: return lin.GetSyscallByName("sigpending");
+          case 74: return lin.GetSyscallByName("sethostname");
+          case 75: return lin.GetSyscallByName("setrlimit");
+          case 76: return lin.GetSyscallByName("getrlimit");
+          case 77: return lin.GetSyscallByName("getrusage");
+            // 78: gettimeofday (see arm specific)
+          case 79: return lin.GetSyscallByName("settimeofday");
+          case 80: return lin.GetSyscallByName("getgroups");
+          case 81: return lin.GetSyscallByName("setgroups");
+          case 82: return lin.GetSyscallByName("select");
+          case 83: return lin.GetSyscallByName("symlink");
+          // 84 was "lstat"
+          case 85: return lin.GetSyscallByName("readlink");
+          case 86: return lin.GetSyscallByName("uselib");
+          case 87: return lin.GetSyscallByName("swapon");
+          case 88: return lin.GetSyscallByName("reboot");
+          case 89: return lin.GetSyscallByName("readdir");
+          case 90: return lin.GetSyscallByName("mmap");
+          case 91: return lin.GetSyscallByName("munmap");
+          case 92: return lin.GetSyscallByName("truncate");
+          case 93: return lin.GetSyscallByName("ftruncate");
+          case 94: return lin.GetSyscallByName("fchmod");
+          case 95: return lin.GetSyscallByName("fchown");
+          case 96: return lin.GetSyscallByName("getpriority");
+          case 97: return lin.GetSyscallByName("setpriority");
+          // 98 was "profile"
+          case 99: return lin.GetSyscallByName("statfs");
+          case 100: return lin.GetSyscallByName("fstatfs");
+          case 102: return lin.GetSyscallByName("socketcall");
+          case 103: return lin.GetSyscallByName("syslog");
+          case 104: return lin.GetSyscallByName("setitimer");
+          case 105: return lin.GetSyscallByName("getitimer");
+          case 106: return lin.GetSyscallByName("stat");
+          case 107: return lin.GetSyscallByName("lstat");
+          // 108: fstat (see arm specific)
+          // 109 was "uname"
+          // 110 was "iopl"
+          case 111: return lin.GetSyscallByName("vhangup");
+          // 112 was "idle"
+          case 113: return lin.GetSyscallByName("syscall");
+          case 114: return lin.GetSyscallByName("wait4");
+          case 115: return lin.GetSyscallByName("swapoff");
+          case 116: return lin.GetSyscallByName("sysinfo");
+          case 117: return lin.GetSyscallByName("ipc");
+          case 118: return lin.GetSyscallByName("fsync");
+          case 119: return lin.GetSyscallByName("sigreturn");
+          case 120: return lin.GetSyscallByName("clone");
+          case 121: return lin.GetSyscallByName("setdomainname");
+            // 122: uname (see arm specific)
+          // 123 was "modify_ldt"
+          case 124: return lin.GetSyscallByName("adjtimex");
+          case 125: return lin.GetSyscallByName("mprotect");
+          case 126: return lin.GetSyscallByName("sigprocmask");
+          // 127 was "create_module"
+          case 128: return lin.GetSyscallByName("init_module");
+          case 129: return lin.GetSyscallByName("delete_module");
+          // 130 was "get_kernel_syms"
+          case 131: return lin.GetSyscallByName("quotactl");
+          case 132: return lin.GetSyscallByName("getpgid");
+          case 133: return lin.GetSyscallByName("fchdir");
+          case 134: return lin.GetSyscallByName("bdflush");
+          case 135: return lin.GetSyscallByName("sysfs");
+          case 136: return lin.GetSyscallByName("personality");
+          // 137 was "afs_syscall"
+          case 138: return lin.GetSyscallByName("setfsuid");
+          case 139: return lin.GetSyscallByName("setfsgid");
+          case 140: return lin.GetSyscallByName("_llseek");
+          case 141: return lin.GetSyscallByName("getdents");
+          case 142: return lin.GetSyscallByName("_newselect");
+          case 143: return lin.GetSyscallByName("flock");
+          case 144: return lin.GetSyscallByName("msync");
+          case 145: return lin.GetSyscallByName("readv");
+          case 146: return lin.GetSyscallByName("writev");
+          case 147: return lin.GetSyscallByName("getsid");
+          case 148: return lin.GetSyscallByName("fdatasync");
+          case 149: return lin.GetSyscallByName("_sysctl");
+          case 150: return lin.GetSyscallByName("mlock");
+          case 151: return lin.GetSyscallByName("munlock");
+          case 152: return lin.GetSyscallByName("mlockall");
+          case 153: return lin.GetSyscallByName("munlockall");
+          case 154: return lin.GetSyscallByName("sched_setparam");
+          case 155: return lin.GetSyscallByName("sched_getparam");
+          case 156: return lin.GetSyscallByName("sched_setscheduler");
+          case 157: return lin.GetSyscallByName("sched_getscheduler");
+          case 158: return lin.GetSyscallByName("sched_yield");
+          case 159: return lin.GetSyscallByName("sched_get_priority_max");
+          case 160: return lin.GetSyscallByName("sched_get_priority_min");
+          case 161: return lin.GetSyscallByName("sched_rr_get_interval");
+          case 162: return lin.GetSyscallByName("nanosleep");
+          case 163: return lin.GetSyscallByName("mremap");
+          case 164: return lin.GetSyscallByName("setresuid");
+          case 165: return lin.GetSyscallByName("getresuid");
+          // 166 was "vm86"
+          // 167 was "query_module"
+          case 168: return lin.GetSyscallByName("poll");
+          case 169: return lin.GetSyscallByName("nfsservctl");
+          case 170: return lin.GetSyscallByName("setresgid");
+          case 171: return lin.GetSyscallByName("getresgid");
+          case 172: return lin.GetSyscallByName("prctl");
+          case 173: return lin.GetSyscallByName("rt_sigreturn");
+          case 174: return lin.GetSyscallByName("rt_sigaction");
+          case 175: return lin.GetSyscallByName("rt_sigprocmask");
+          case 176: return lin.GetSyscallByName("rt_sigpending");
+          case 177: return lin.GetSyscallByName("rt_sigtimedwait");
+          case 178: return lin.GetSyscallByName("rt_sigqueueinfo");
+          case 179: return lin.GetSyscallByName("rt_sigsuspend");
+          case 180: return lin.GetSyscallByName("pread64");
+          case 181: return lin.GetSyscallByName("pwrite64");
+          case 182: return lin.GetSyscallByName("chown");
+          case 183: return lin.GetSyscallByName("getcwd");
+          case 184: return lin.GetSyscallByName("capget");
+          case 185: return lin.GetSyscallByName("capset");
+          case 186: return lin.GetSyscallByName("sigaltstack");
+          case 187: return lin.GetSyscallByName("sendfile");
+          // 188 is reserved
+          // 189 is reserved
+          case 190: return lin.GetSyscallByName("vfork");
+          case 191: return lin.GetSyscallByName("ugetrlimit");
+          case 192: return lin.GetSyscallByName("mmap2");
+          case 193: return lin.GetSyscallByName("truncate64");
+          case 194: return lin.GetSyscallByName("ftruncate64");
+            // 195: stat64 (see arm specific)
+          case 196: return lin.GetSyscallByName("lstat64");
+            // 197: fstat64 (see arm specific)  
+          case 198: return lin.GetSyscallByName("lchown32");
+          case 199: return lin.GetSyscallByName("getuid32");
+          case 200: return lin.GetSyscallByName("getgid32");
+          case 201: return lin.GetSyscallByName("geteuid32");
+          case 202: return lin.GetSyscallByName("getegid32");
+          case 203: return lin.GetSyscallByName("setreuid32");
+          case 204: return lin.GetSyscallByName("setregid32");
+          case 205: return lin.GetSyscallByName("getgroups32");
+          case 206: return lin.GetSyscallByName("setgroups32");
+          case 207: return lin.GetSyscallByName("fchown32");
+          case 208: return lin.GetSyscallByName("setresuid32");
+          case 209: return lin.GetSyscallByName("getresuid32");
+          case 210: return lin.GetSyscallByName("setresgid32");
+          case 211: return lin.GetSyscallByName("getresgid32");
+          case 212: return lin.GetSyscallByName("chown32");
+          case 213: return lin.GetSyscallByName("setuid32");
+          case 214: return lin.GetSyscallByName("setgid32");
+          case 215: return lin.GetSyscallByName("setfsuid32");
+          case 216: return lin.GetSyscallByName("setfsgid32");
+          case 217: return lin.GetSyscallByName("getdents64");
+          case 218: return lin.GetSyscallByName("pivot_root");
+          case 219: return lin.GetSyscallByName("mincore");
+          case 220: return lin.GetSyscallByName("madvise");
+          case 221: return lin.GetSyscallByName("fcntl64");
+          // 222 is for tux
+          // 223 is unused
+          case 224: return lin.GetSyscallByName("gettid");
+          case 225: return lin.GetSyscallByName("readahead");
+          case 226: return lin.GetSyscallByName("setxattr");
+          case 227: return lin.GetSyscallByName("lsetxattr");
+          case 228: return lin.GetSyscallByName("fsetxattr");
+          case 229: return lin.GetSyscallByName("getxattr");
+          case 230: return lin.GetSyscallByName("lgetxattr");
+          case 231: return lin.GetSyscallByName("fgetxattr");
+          case 232: return lin.GetSyscallByName("listxattr");
+          case 233: return lin.GetSyscallByName("llistxattr");
+          case 234: return lin.GetSyscallByName("flistxattr");
+          case 235: return lin.GetSyscallByName("removexattr");
+          case 236: return lin.GetSyscallByName("lremovexattr");
+          case 237: return lin.GetSyscallByName("fremovexattr");
+          case 238: return lin.GetSyscallByName("tkill");
+          case 239: return lin.GetSyscallByName("sendfile64");
+          case 240: return lin.GetSyscallByName("futex");
+          case 241: return lin.GetSyscallByName("sched_setaffinity");
+          case 242: return lin.GetSyscallByName("sched_getaffinity");
+          case 243: return lin.GetSyscallByName("io_setup");
+          case 244: return lin.GetSyscallByName("io_destroy");
+          case 245: return lin.GetSyscallByName("io_getevents");
+          case 246: return lin.GetSyscallByName("io_submit");
+          case 247: return lin.GetSyscallByName("io_cancel");
+          case 248: return lin.GetSyscallByName("exit_group");
+          case 249: return lin.GetSyscallByName("lookup_dcookie");
+          case 250: return lin.GetSyscallByName("epoll_create");
+          case 251: return lin.GetSyscallByName("epoll_ctl");
+          case 252: return lin.GetSyscallByName("epoll_wait");
+          case 253: return lin.GetSyscallByName("remap_file_pages");
+          // 254 is for set_thread_area
+          // 255 is for get_thread_area
+          case 256: return lin.GetSyscallByName("set_tid_address");
+          case 257: return lin.GetSyscallByName("timer_create");
+          case 258: return lin.GetSyscallByName("timer_settime");
+          case 259: return lin.GetSyscallByName("timer_gettime");
+          case 260: return lin.GetSyscallByName("timer_getoverrun");
+          case 261: return lin.GetSyscallByName("timer_delete");
+          case 262: return lin.GetSyscallByName("clock_settime");
+          case 263: return lin.GetSyscallByName("clock_gettime");
+          case 264: return lin.GetSyscallByName("clock_getres");
+          case 265: return lin.GetSyscallByName("clock_nanosleep");
+          case 266: return lin.GetSyscallByName("statfs64");
+          case 267: return lin.GetSyscallByName("fstatfs64");
+          case 268: return lin.GetSyscallByName("tgkill");
+          case 269: return lin.GetSyscallByName("utimes");
+          case 270: return lin.GetSyscallByName("arm_fadvise64_64");
+          case 271: return lin.GetSyscallByName("pciconfig_iobase");
+          case 272: return lin.GetSyscallByName("pciconfig_read");
+          case 273: return lin.GetSyscallByName("pciconfig_write");
+          case 274: return lin.GetSyscallByName("mq_open");
+          case 275: return lin.GetSyscallByName("mq_unlink");
+          case 276: return lin.GetSyscallByName("mq_timedsend");
+          case 277: return lin.GetSyscallByName("mq_timedreceive");
+          case 278: return lin.GetSyscallByName("mq_notify");
+          case 279: return lin.GetSyscallByName("mq_getsetattr");
+          case 280: return lin.GetSyscallByName("waitid");
+          case 281: return lin.GetSyscallByName("socket");
+          case 282: return lin.GetSyscallByName("bind");
+          case 283: return lin.GetSyscallByName("connect");
+          case 284: return lin.GetSyscallByName("listen");
+          case 285: return lin.GetSyscallByName("accept");
+          case 286: return lin.GetSyscallByName("getsockname");
+          case 287: return lin.GetSyscallByName("getpeername");
+          case 288: return lin.GetSyscallByName("socketpair");
+          case 289: return lin.GetSyscallByName("send");
+          case 290: return lin.GetSyscallByName("sendto");
+          case 291: return lin.GetSyscallByName("recv");
+          case 292: return lin.GetSyscallByName("recvfrom");
+          case 293: return lin.GetSyscallByName("shutdown");
+          case 294: return lin.GetSyscallByName("setsockopt");
+          case 295: return lin.GetSyscallByName("getsockopt");
+          case 296: return lin.GetSyscallByName("sendmsg");
+          case 297: return lin.GetSyscallByName("recvmsg");
+          case 298: return lin.GetSyscallByName("semop");
+          case 299: return lin.GetSyscallByName("semget");
+          case 300: return lin.GetSyscallByName("semctl");
+          case 301: return lin.GetSyscallByName("msgsnd");
+          case 302: return lin.GetSyscallByName("msgrcv");
+          case 303: return lin.GetSyscallByName("msgget");
+          case 304: return lin.GetSyscallByName("msgctl");
+          case 305: return lin.GetSyscallByName("shmat");
+          case 306: return lin.GetSyscallByName("shmdt");
+          case 307: return lin.GetSyscallByName("shmget");
+          case 308: return lin.GetSyscallByName("shmctl");
+          case 309: return lin.GetSyscallByName("add_key");
+          case 310: return lin.GetSyscallByName("request_key");
+          case 311: return lin.GetSyscallByName("keyctl");
+          case 312: return lin.GetSyscallByName("semtimedop");
+          case 313: return lin.GetSyscallByName("vserver");
+          case 314: return lin.GetSyscallByName("ioprio_set");
+          case 315: return lin.GetSyscallByName("ioprio_get");
+          case 316: return lin.GetSyscallByName("inotify_init");
+          case 317: return lin.GetSyscallByName("inotify_add_watch");
+          case 318: return lin.GetSyscallByName("inotify_rm_watch");
+          case 319: return lin.GetSyscallByName("mbind");
+          case 320: return lin.GetSyscallByName("get_mempolicy");
+          case 321: return lin.GetSyscallByName("set_mempolicy");
+          case 322: return lin.GetSyscallByName("openat");
+          case 323: return lin.GetSyscallByName("mkdirat");
+          case 324: return lin.GetSyscallByName("mknodat");
+          case 325: return lin.GetSyscallByName("fchownat");
+          case 326: return lin.GetSyscallByName("futimesat");
+          case 327: return lin.GetSyscallByName("fstatat64");
+          case 328: return lin.GetSyscallByName("unlinkat");
+          case 329: return lin.GetSyscallByName("renameat");
+          case 330: return lin.GetSyscallByName("linkat");
+          case 331: return lin.GetSyscallByName("symlinkat");
+          case 332: return lin.GetSyscallByName("readlinkat");
+          case 333: return lin.GetSyscallByName("fchmodat");
+          case 334: return lin.GetSyscallByName("faccessat");
+          case 335: return lin.GetSyscallByName("pselect6");
+          case 336: return lin.GetSyscallByName("ppoll");
+          case 337: return lin.GetSyscallByName("unshare");
+          case 338: return lin.GetSyscallByName("set_robust_list");
+          case 339: return lin.GetSyscallByName("get_robust_list");
+          case 340: return lin.GetSyscallByName("splice");
+          case 341: return lin.GetSyscallByName("sync_file_range2");
+          case 342: return lin.GetSyscallByName("tee");
+          case 343: return lin.GetSyscallByName("vmsplice");
+          case 344: return lin.GetSyscallByName("move_pages");
+          case 345: return lin.GetSyscallByName("getcpu");
+          case 346: return lin.GetSyscallByName("epoll_pwait");
+          case 347: return lin.GetSyscallByName("kexec_load");
+          case 348: return lin.GetSyscallByName("utimensat");
+          case 349: return lin.GetSyscallByName("signalfd");
+          case 350: return lin.GetSyscallByName("timerfd_create");
+          case 351: return lin.GetSyscallByName("eventfd");
+          case 352: return lin.GetSyscallByName("fallocate");
+          case 353: return lin.GetSyscallByName("timerfd_settime");
+          case 354: return lin.GetSyscallByName("timerfd_gettime");
+          case 355: return lin.GetSyscallByName("signalfd4");
+          case 356: return lin.GetSyscallByName("eventfd2");
+          case 357: return lin.GetSyscallByName("epoll_create1");
+          case 358: return lin.GetSyscallByName("dup3");
+          case 359: return lin.GetSyscallByName("pipe2");
+          case 360: return lin.GetSyscallByName("inotify_init1");
+          case 361: return lin.GetSyscallByName("preadv");
+          case 362: return lin.GetSyscallByName("pwritev");
+          case 363: return lin.GetSyscallByName("rt_tgsigqueueinfo");
+          case 364: return lin.GetSyscallByName("perf_event_open");
+          case 365: return lin.GetSyscallByName("recvmmsg");
+          case 366: return lin.GetSyscallByName("accept4");
+          case 367: return lin.GetSyscallByName("fanotify_init");
+          case 368: return lin.GetSyscallByName("fanotify_mark");
+          case 369: return lin.GetSyscallByName("prlimit64");
+          case 370: return lin.GetSyscallByName("name_to_handle_at");
+          case 371: return lin.GetSyscallByName("open_by_handle_at");
+          case 372: return lin.GetSyscallByName("clock_adjtime");
+          case 373: return lin.GetSyscallByName("syncfs");
+          case 374: return lin.GetSyscallByName("sendmmsg");
+          case 375: return lin.GetSyscallByName("setns");
+          case 376: return lin.GetSyscallByName("process_vm_readv");
+          case 377: return lin.GetSyscallByName("process_vm_writev");
+          // 378 is for kcmp
+	
+          // the following are private to the arm
+          case 43: /* ARM specific times syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "times"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret;
+                  ADDRESS_TYPE buf_addr;
+                  int32_t target_errno = 0;
+                  
+                  buf_addr = lin.target_system->GetSystemCallParam(0);
+                  
+                  struct arm_tms target_tms;
+                  ret = lin.Times(&target_tms);
+
+                  if(ret >= 0)
+                    {
+                      lin.WriteMem(buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
+                    }
+                  else
+                    {
+                      target_errno = lin.Host2LinuxErrno(errno);
+                    }
+                  
+                  if(unlikely(lin.verbose_))
+                      lin.logger_ << DebugInfo << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << EndDebugInfo;
+	
+                  lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+            
+          case 78: /* ARM specific gettimeofday syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "gettimeofday"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret = -1;
+                  ADDRESS_TYPE tv_addr;
+                  ADDRESS_TYPE tz_addr;
+                  int32_t target_errno = 0;
+                  tv_addr = lin.target_system->GetSystemCallParam(0);
+                  tz_addr = lin.target_system->GetSystemCallParam(1);
+
+                  struct arm_timeval target_tv;
+                  struct arm_timezone target_tz;
+
+                  ret = lin.GetTimeOfDay(tv_addr ? &target_tv : 0, tz_addr ? &target_tz : 0);
+                  if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+
+                  if(ret == 0)
+                    {
+                      if(tv_addr)
+                        {
+                          lin.WriteMem(tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
+                        }
+                      if(tz_addr)
+                        {
+                          lin.WriteMem(tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
+                        }
+                    }
+
+                  if(unlikely(lin.verbose_))
+                    {
+                      lin.logger_ << DebugInfo
+                                  << "gettimeofday(tv = 0x" << std::hex << tv_addr << std::dec
+                                  << ", tz = 0x" << std::hex << tz_addr << std::dec << ")"
+                                  << EndDebugInfo;
+                    }
+	
+                  lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+
+          case 108: /* ARM specific fstat syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "fstat"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret;
+                  int32_t target_fd;
+                  int host_fd;
+                  ADDRESS_TYPE buf_address;
+                  int32_t target_errno = 0;
+
+                  target_fd = lin.target_system->GetSystemCallParam(0);
+                  buf_address = lin.target_system->GetSystemCallParam(1);
+	
+                  host_fd = lin.Target2HostFileDescriptor(target_fd);
+
+                  if(host_fd == -1)
+                    {
+                      target_errno = LINUX_EBADF;
+                      ret = -1;
+                    }
+                  else
+                    {
+                      ret = -1;
+                      target_errno = LINUX_ENOSYS;
+                    }
+
+                  if(unlikely(lin.verbose_))
+                    {
+                      lin.logger_ << DebugInfo
+                                  << "fstat(fd=" << target_fd
+                                  << ", buf_addr=0x" << std::hex << buf_address << std::dec
+                                  << ")" << EndDebugInfo;
+                    }
+	
+                  lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+
+          case 122: /* ARM specific uname syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "uname"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret;
+                  int32_t target_errno = 0;
+                  ADDRESS_TYPE buf_addr = lin.target_system->GetSystemCallParam(0);
+                  ret = 0;
+	
+                  struct arm_utsname value;
+                  memset(&value, 0, sizeof(value));
+                  strncpy(value.sysname,  lin.utsname_sysname_.c_str(), sizeof(value.sysname) - 1);
+                  strncpy(value.nodename, lin.utsname_nodename_.c_str(), sizeof(value.nodename) - 1);
+                  strncpy(value.release,  lin.utsname_release_.c_str(), sizeof(value.release) - 1);
+                  strncpy(value.version,  lin.utsname_version_.c_str(), sizeof(value.version) - 1);
+                  strncpy(value.machine,  lin.utsname_machine_.c_str(), sizeof(value.machine));
+                  lin.WriteMem(buf_addr, (uint8_t *)&value, sizeof(value));
+	
+                  lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+
+          case 195: /* ARM specific stat64 syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "stat64"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret;
+                  ADDRESS_TYPE pathnameaddr;
+                  ADDRESS_TYPE buf_address;
+                  unsigned int pathnamelen;
+                  char *pathname;
+                  int32_t target_errno = 0;
+
+                  pathnameaddr = lin.target_system->GetSystemCallParam(0);
+                  buf_address = lin.target_system->GetSystemCallParam(1);
+                  pathnamelen = lin.StringLength(pathnameaddr);
+                  pathname = (char *) malloc(pathnamelen + 1);
+	
+                  if(pathname)
+                    {
+                      lin.ReadMem(pathnameaddr, (uint8_t *) pathname, pathnamelen + 1);
+		
+                      struct arm_stat64 target_stat;
+                      ret = lin.Stat64(pathname, &target_stat);
+                      lin.WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                      
+                      if(unlikely(lin.verbose_))
+                        {
+                          lin.logger_ << DebugInfo
+                                      << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
+                                      << EndDebugInfo;
+                        }
+		
+                      free(pathname);
+                    }
+                  else
+                    {
+                      ret = -1;
+                      target_errno = LINUX_ENOMEM;
+                    }
+	
+                  lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+
+          case 197: /* ARM specific fstat64 syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "fstat64"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret;
+                  ADDRESS_TYPE buf_address;
+                  int32_t target_fd;
+                  int host_fd;
+                  int32_t target_errno = 0;
+
+                  target_fd = lin.target_system->GetSystemCallParam(0);
+                  buf_address = lin.target_system->GetSystemCallParam(1);
+	
+                  host_fd = lin.Target2HostFileDescriptor(target_fd);
+	
+                  if(host_fd == -1)
+                    {
+                      target_errno = LINUX_EBADF;
+                      ret = -1;
+                    }
+                  else
+                    {
+                      struct arm_stat64 target_stat;
+                      ret = lin.Fstat64(host_fd, &target_stat);
+                      if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+			
+                      lin.WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                    }
+	
+                  if(unlikely(lin.verbose_))
+                    {
+                      lin.logger_ << DebugInfo
+                                  << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
+                                  << EndDebugInfo;
+                    }
+	
+                  lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+
+
+          case 983041: {
+            static struct : public SysCall {
+              char const* GetName() const { return "breakpoint"; }
+              void Execute( Linux& lin, int syscall_id ) const { lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true); }
+            } sc;
+            return &sc;
+          } break;
+            
+          case 983042: {
+            static struct : public SysCall {
+              char const* GetName() const { return "cacheflush"; }
+              void Execute( Linux& lin, int syscall_id ) const { lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true); }
+            } sc;
+            return &sc;
+          } break;
+            
+          case 983043: {
+            static struct : public SysCall {
+              char const* GetName() const { return "usr26"; }
+              void Execute( Linux& lin, int syscall_id ) const { lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true); }
+            } sc;
+            return &sc;
+          } break;
+            
+          case 983044: {
+            static struct : public SysCall {
+              char const* GetName() const { return "usr32"; }
+              void Execute( Linux& lin, int syscall_id ) const { lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true); }
+            } sc;
+            return &sc;
+          } break;
+            
+          case 983045: {
+            static struct : public SysCall {
+              char const* GetName() const { return "set_tls"; }
+              void Execute( Linux& lin, int syscall_id ) const
+              {
+                uint32_t r0 = Host2Target(lin.endianness_, lin.target_system->GetSystemCallParam(0));
+                lin.WriteMem(0xffff0ff0UL, (uint8_t *)&(r0), sizeof(r0));
+                lin.SetSystemCallStatus((PARAMETER_TYPE)0, false);
+              }
+            } sc;
+            return &sc;
+          } break;
+            
+          }
+          
+          return 0;
+        }
+        PARAMETER_TYPE GetSystemCallParam(int id) const
+        {
+          PARAMETER_TYPE val = 0;
+	
+          if(!lin.GetRegister(id, &val))
+            {
+              lin.logger_ << DebugWarning << "Can't read register #" << id << DebugWarning;
+              return val;
+            }
+	
+          return val;
+        }
+
+        bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const
+        {
+          typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
+          typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
+          std::string mach = lin.utsname_machine_;
+          if ((mach.compare("armv5") == 0) or (mach.compare("armv6") == 0) or (mach.compare("armv7") == 0))
+            {
+              if (blob == NULL) return false;
+              // TODO: Check that the program/stack is not in conflict with the
+              //   tls and cmpxchg interfaces
+              // Set the tls interface, this requires a write into the memory
+              //   system
+              // The following instructions need to be added to memory:
+              // 0xffff0fe0:  e59f0008   ldr r0, [pc, #(16 - 8)] @ TLS stored
+              //                                                 @ at 0xffff0ff0
+              // 0xffff0fe4:  e1a0f00e   mov pc, lr
+              // 0xffff0fe8:  0
+              // 0xffff0fec:  0
+              // 0xffff0ff0:  0
+              // 0xffff0ff4:  0
+              // 0xffff0ff8:  0
+              ADDRESS_TYPE tls_base_addr = 0xffff0fe0UL;
+              static const uint32_t tls_buf_length = 7;
+              static const uint32_t tls_buf[tls_buf_length] =
+                {0xe59f0008UL, 0xe1a0f00eUL, 0, 0, 0, 0, 0};
+              uint32_t *segment_tls_buf = (uint32_t *) malloc(sizeof(uint32_t) * tls_buf_length);
+              uint32_t *section_tls_buf = (uint32_t *) malloc(sizeof(uint32_t) * tls_buf_length);
+
+              for (unsigned int i = 0; i < tls_buf_length; ++i) {
+                segment_tls_buf[i] = unisim::util::endian::Host2Target(lin.endianness_, tls_buf[i]);
+                section_tls_buf[i] = unisim::util::endian::Host2Target(lin.endianness_, tls_buf[i]);
+              }
+              Segment *tls_if_segment =
+                new Segment(Segment::TY_LOADABLE, Segment::SA_X, 4, tls_base_addr,
+                            sizeof(tls_buf), sizeof(tls_buf), segment_tls_buf);
+              Section *tls_if_section =
+                new Section(Section::TY_UNKNOWN, Section::SA_A,
+                            ".unisim.linux_os.interface.tls", 4, 0, tls_base_addr,
+                            sizeof(tls_buf), section_tls_buf);
+
+              // Set the cmpxchg (atomic compare and exchange) interface, the
+              //   following instructions need to be added to memory:
+              // 0xffff0fc0:  e5923000   ldr r3, [r2]
+              // 0xffff0fc4:  e0533000   subs r3, r3, r0
+              // 0xffff0fc8:  05821000   streq r1, [r2]
+              // 0xffff0fcc:  e2730000   rsbs r0, r3, #0	; 0x0
+              // 0xffff0fd0:  e1a0f00e   mov pc, lr
+              ADDRESS_TYPE cmpxchg_base_addr = 0xffff0fc0UL;
+              static const uint32_t cmpxchg_buf_length = 5;
+              static const uint32_t cmpxchg_buf[cmpxchg_buf_length] = {
+                0xe5923000UL,
+                0xe0533000UL,
+                0x05821000UL,
+                0xe2730000UL,
+                0xe1a0f00eUL
+              };
+              uint32_t *segment_cmpxchg_buf = (uint32_t *) malloc(sizeof(uint32_t) * cmpxchg_buf_length);
+              uint32_t *section_cmpxchg_buf = (uint32_t *) malloc(sizeof(uint32_t) * cmpxchg_buf_length);
+
+              for (unsigned int i = 0; i < cmpxchg_buf_length; ++i) {
+                segment_cmpxchg_buf[i] = unisim::util::endian::Host2Target(lin.endianness_, cmpxchg_buf[i]);
+                section_cmpxchg_buf[i] = unisim::util::endian::Host2Target(lin.endianness_, cmpxchg_buf[i]);
+              }
+              Section* cmpxchg_if_section =
+                new Section(Section::TY_UNKNOWN, Section::SA_A,
+                            ".unisim.linux_os.interface.cmpxchg",
+                            4, 0, cmpxchg_base_addr,
+                            sizeof(cmpxchg_buf), segment_cmpxchg_buf);
+              Segment *cmpxchg_if_segment =
+                new Segment(Segment::TY_LOADABLE, Segment::SA_X,
+                            4, cmpxchg_base_addr,
+                            sizeof(cmpxchg_buf), sizeof(cmpxchg_buf), section_cmpxchg_buf);
+
+              blob->AddSegment(tls_if_segment);
+              blob->AddSegment(cmpxchg_if_segment);
+              blob->AddSection(tls_if_section);
+              blob->AddSection(cmpxchg_if_section);
+            }
+
+          return true;
+        }
+        };
+      delete target_system;
+      target_system = new ARMTS( system_type_name, *this );
+      return true;
+    }
+  
+  if (system_type_name.compare("ppc") == 0)
+    {
+      struct PPCTS : public TargetSystem
+      {
+        PPCTS( Linux& _lin ) : TargetSystem( "ppc", _lin ) {}
+        using TargetSystem::lin;
+        char const* GetRegisterName(unsigned id) const
+        {
+          switch(id) {
+          case unisim::util::os::linux_os::kPPC_r0: return "r0";
+          case unisim::util::os::linux_os::kPPC_r1: return "r1";
+          case unisim::util::os::linux_os::kPPC_r2: return "r2";
+          case unisim::util::os::linux_os::kPPC_r3: return "r3";
+          case unisim::util::os::linux_os::kPPC_r4: return "r4";
+          case unisim::util::os::linux_os::kPPC_r5: return "r5";
+          case unisim::util::os::linux_os::kPPC_r6: return "r6";
+          case unisim::util::os::linux_os::kPPC_r7: return "r7";
+          case unisim::util::os::linux_os::kPPC_r8: return "r8";
+          case unisim::util::os::linux_os::kPPC_r9: return "r9";
+          case unisim::util::os::linux_os::kPPC_r10: return "r10";
+          case unisim::util::os::linux_os::kPPC_r11: return "r11";
+          case unisim::util::os::linux_os::kPPC_r12: return "r12";
+          case unisim::util::os::linux_os::kPPC_r13: return "r13";
+          case unisim::util::os::linux_os::kPPC_r14: return "r14";
+          case unisim::util::os::linux_os::kPPC_r15: return "r15";
+          case unisim::util::os::linux_os::kPPC_r16: return "r16";
+          case unisim::util::os::linux_os::kPPC_r17: return "r17";
+          case unisim::util::os::linux_os::kPPC_r18: return "r18";
+          case unisim::util::os::linux_os::kPPC_r19: return "r19";
+          case unisim::util::os::linux_os::kPPC_r20: return "r20";
+          case unisim::util::os::linux_os::kPPC_r21: return "r21";
+          case unisim::util::os::linux_os::kPPC_r22: return "r22";
+          case unisim::util::os::linux_os::kPPC_r23: return "r23";
+          case unisim::util::os::linux_os::kPPC_r24: return "r24";
+          case unisim::util::os::linux_os::kPPC_r25: return "r25";
+          case unisim::util::os::linux_os::kPPC_r26: return "r26";
+          case unisim::util::os::linux_os::kPPC_r27: return "r27";
+          case unisim::util::os::linux_os::kPPC_r28: return "r28";
+          case unisim::util::os::linux_os::kPPC_r29: return "r29";
+          case unisim::util::os::linux_os::kPPC_r30: return "r30";
+          case unisim::util::os::linux_os::kPPC_r31: return "r31";
+          case unisim::util::os::linux_os::kPPC_cr: return "cr";
+          case unisim::util::os::linux_os::kPPC_cia: return "cia";
+          }
+          return 0;
+        }
+        bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const { return false; }
+        bool SetupTarget() const
+        {
+          bool success = true;
+          // Reset all the target registers
+          unsigned int reg_id = 0;
+          PARAMETER_TYPE null_param = 0;
+          for (reg_id = 0; success && (reg_id < kPPCNumRegs); reg_id++) {
+            success = lin.SetRegister(reg_id, null_param);
+          }
+          if (!success) {
+            lin.logger_ << DebugError
+                    << "Error while setting register '" << (reg_id - 1) << "'" << EndDebugError;
+            return false;
+          }
+          // Set PC to the program entry point
+          success = lin.SetRegister(kPPC_cia, lin.entry_point_);
+          if (!success) {
+            lin.logger_ << DebugError
+                    << "Error while setting cia register (" << kPPC_cia << ")" << EndDebugError;
+            return false;
+          }
+          // Set SP to the base of the created stack
+          unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
+            lin.blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
+          if (sp_section == NULL) {
+            lin.logger_ << DebugError
+                    << "Could not find the stack pointer section." << EndDebugError;
+            return false;
+          }
+          success = lin.SetRegister(kPPC_sp, sp_section->GetAddr());
+          if (!success) {
+            lin.logger_ << DebugError
+                    << "Error while setting sp register (" << kPPC_sp << ")" << DebugError;
+            return false;
+          }
+          ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
+          ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
+          PARAMETER_TYPE par1 = 0;
+          PARAMETER_TYPE par2 = 0;
+          success = lin.mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
+          success = lin.mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
+          lin.SetRegister(kPPC_r3, Target2Host(lin.endianness_, par1));
+          lin.SetRegister(kPPC_r4, Target2Host(lin.endianness_, par2));
+
+          return true;
+        }
+
+        void SetSystemCallStatus(int ret, bool error) const
+        {
+          PARAMETER_TYPE val;
+	
+          if(error)
+            {
+              if (not lin.GetRegister(kPPC_cr, &val))
+		{
+                  lin.logger_ << DebugWarning << "Can't read register #" << kPPC_cr << DebugWarning;
+                  return;
+		}
+		
+              val |= (1 << 28); // CR0[SO] <- 1
+		
+              if (not lin.SetRegister(kPPC_cr, val))
+		{
+                  lin.logger_ << DebugWarning << "Can't write register #" << kPPC_cr << DebugWarning;
+                  return;
+		}
+            }
+          else
+            {
+              if (not lin.GetRegister(kPPC_cr, &val))
+		{
+                  lin.logger_ << DebugWarning << "Can't read register #" << kPPC_cr << DebugWarning;
+                  return;
+		}
+		
+              val &= ~(1 << 28); // CR0[SO] <- 0
+		
+              if (not lin.SetRegister(kPPC_cr, val))
+		{
+                  lin.logger_ << DebugWarning << "Can't write register #" << kPPC_cr << DebugWarning;
+                  return;
+		}
+            }
+	
+          val = (PARAMETER_TYPE)ret;
+	
+          if (not lin.SetRegister(kPPC_r3, val))
+            {
+              lin.logger_ << DebugWarning << "Can't write register #" << kPPC_r3 << DebugWarning;
+              return;
+            }
+        }
+
+
+        SysCall* GetSystemCall( int& id ) const
+        {
+          // see either arch/powerpc/include/asm/unistd.h or arch/powerpc/include/uapi/asm/unistd.h in Linux source
+          switch (id) {
+          case 0: return lin.GetSyscallByName("restart_syscall");
+          case 1: return lin.GetSyscallByName("exit");
+          case 2: return lin.GetSyscallByName("fork");
+          case 3: return lin.GetSyscallByName("read");
+          case 4: return lin.GetSyscallByName("write");
+          case 5: return lin.GetSyscallByName("open");
+          case 6: return lin.GetSyscallByName("close");
+          case 7: return lin.GetSyscallByName("waitpid");
+          case 8: return lin.GetSyscallByName("creat");
+          case 9: return lin.GetSyscallByName("link");
+          case 10: return lin.GetSyscallByName("unlink");
+          case 11: return lin.GetSyscallByName("execve");
+          case 12: return lin.GetSyscallByName("chdir");
+          case 13: return lin.GetSyscallByName("time");
+          case 14: return lin.GetSyscallByName("mknod");
+          case 15: return lin.GetSyscallByName("chmod");
+          case 16: return lin.GetSyscallByName("lchown");
+          case 17: return lin.GetSyscallByName("break");
+          case 18: return lin.GetSyscallByName("oldstat");
+          case 19: return lin.GetSyscallByName("lseek");
+          case 20: return lin.GetSyscallByName("getpid");
+          case 21: return lin.GetSyscallByName("mount");
+          case 22: return lin.GetSyscallByName("umount");
+          case 23: return lin.GetSyscallByName("setuid");
+          case 24: return lin.GetSyscallByName("getuid");
+          case 25: return lin.GetSyscallByName("stime");
+          case 26: return lin.GetSyscallByName("ptrace");
+          case 27: return lin.GetSyscallByName("alarm");
+          case 28: return lin.GetSyscallByName("oldfstat");
+          case 29: return lin.GetSyscallByName("pause");
+          case 30: return lin.GetSyscallByName("utime");
+          case 31: return lin.GetSyscallByName("stty");
+          case 32: return lin.GetSyscallByName("gtty");
+          case 33: return lin.GetSyscallByName("access");
+          case 34: return lin.GetSyscallByName("nice");
+          case 35: return lin.GetSyscallByName("ftime");
+          case 36: return lin.GetSyscallByName("sync");
+          case 37: return lin.GetSyscallByName("kill");
+          case 38: return lin.GetSyscallByName("rename");
+          case 39: return lin.GetSyscallByName("mkdir");
+          case 40: return lin.GetSyscallByName("rmdir");
+          case 41: return lin.GetSyscallByName("dup");
+          case 42: return lin.GetSyscallByName("pipe");
+            // 43: times (see ppc specific)
+          case 44: return lin.GetSyscallByName("prof");
+          case 45: return lin.GetSyscallByName("brk");
+          case 46: return lin.GetSyscallByName("setgid");
+          case 47: return lin.GetSyscallByName("getgid");
+          case 48: return lin.GetSyscallByName("signal");
+          case 49: return lin.GetSyscallByName("geteuid");
+          case 50: return lin.GetSyscallByName("getegid");
+          case 51: return lin.GetSyscallByName("acct");
+          case 52: return lin.GetSyscallByName("umount2");
+          case 53: return lin.GetSyscallByName("lock");
+          case 54: return lin.GetSyscallByName("ioctl");
+          case 55: return lin.GetSyscallByName("fcntl");
+          case 56: return lin.GetSyscallByName("mpx");
+          case 57: return lin.GetSyscallByName("setpgid");
+          case 58: return lin.GetSyscallByName("ulimit");
+          case 59: return lin.GetSyscallByName("oldolduname");
+          case 60: return lin.GetSyscallByName("umask");
+          case 61: return lin.GetSyscallByName("chroot");
+          case 62: return lin.GetSyscallByName("ustat");
+          case 63: return lin.GetSyscallByName("dup2");
+          case 64: return lin.GetSyscallByName("getppid");
+          case 65: return lin.GetSyscallByName("getpgrp");
+          case 66: return lin.GetSyscallByName("setsid");
+          case 67: return lin.GetSyscallByName("sigaction");
+          case 68: return lin.GetSyscallByName("sgetmask");
+          case 69: return lin.GetSyscallByName("ssetmask");
+          case 70: return lin.GetSyscallByName("setreuid");
+          case 71: return lin.GetSyscallByName("setregid");
+          case 72: return lin.GetSyscallByName("sigsuspend");
+          case 73: return lin.GetSyscallByName("sigpending");
+          case 74: return lin.GetSyscallByName("sethostname");
+          case 75: return lin.GetSyscallByName("setrlimit");
+          case 76: return lin.GetSyscallByName("getrlimit");
+          case 77: return lin.GetSyscallByName("getrusage");
+            // 78: gettimeofday (see ppc specific)
+          case 79: return lin.GetSyscallByName("settimeofday");
+          case 80: return lin.GetSyscallByName("getgroups");
+          case 81: return lin.GetSyscallByName("setgroups");
+          case 82: return lin.GetSyscallByName("select");
+          case 83: return lin.GetSyscallByName("symlink");
+          case 84: return lin.GetSyscallByName("oldlstat");
+          case 85: return lin.GetSyscallByName("readlink");
+          case 86: return lin.GetSyscallByName("uselib");
+          case 87: return lin.GetSyscallByName("swapon");
+          case 88: return lin.GetSyscallByName("reboot");
+          case 89: return lin.GetSyscallByName("readdir");
+          case 90: return lin.GetSyscallByName("mmap");
+          case 91: return lin.GetSyscallByName("munmap");
+          case 92: return lin.GetSyscallByName("truncate");
+          case 93: return lin.GetSyscallByName("ftruncate");
+          case 94: return lin.GetSyscallByName("fchmod");
+          case 95: return lin.GetSyscallByName("fchown");
+          case 96: return lin.GetSyscallByName("getpriority");
+          case 97: return lin.GetSyscallByName("setpriority");
+          case 98: return lin.GetSyscallByName("profil");
+          case 99: return lin.GetSyscallByName("statfs");
+          case 100: return lin.GetSyscallByName("fstatfs");
+          case 101: return lin.GetSyscallByName("ioperm");
+          case 102: return lin.GetSyscallByName("socketcall");
+          case 103: return lin.GetSyscallByName("syslog");
+          case 104: return lin.GetSyscallByName("setitimer");
+          case 105: return lin.GetSyscallByName("getitimer");
+          case 106: return lin.GetSyscallByName("stat");
+          case 107: return lin.GetSyscallByName("lstat");
+            // 108: fstat (see ppc specific)
+          case 109: return lin.GetSyscallByName("olduname");
+          case 110: return lin.GetSyscallByName("iopl");
+          case 111: return lin.GetSyscallByName("vhangup");
+          case 112: return lin.GetSyscallByName("idle");
+          case 113: return lin.GetSyscallByName("vm86");
+          case 114: return lin.GetSyscallByName("wait4");
+          case 115: return lin.GetSyscallByName("swapoff");
+          case 116: return lin.GetSyscallByName("sysinfo");
+          case 117: return lin.GetSyscallByName("ipc");
+          case 118: return lin.GetSyscallByName("fsync");
+          case 119: return lin.GetSyscallByName("sigreturn");
+          case 120: return lin.GetSyscallByName("clone");
+          case 121: return lin.GetSyscallByName("setdomainname");
+            // 122: uname (see ppc specific)
+          case 123: return lin.GetSyscallByName("modify_ldt");
+          case 124: return lin.GetSyscallByName("adjtimex");
+          case 125: return lin.GetSyscallByName("mprotect");
+          case 126: return lin.GetSyscallByName("sigprocmask");
+          case 127: return lin.GetSyscallByName("create_module");
+          case 128: return lin.GetSyscallByName("init_module");
+          case 129: return lin.GetSyscallByName("delete_module");
+          case 130: return lin.GetSyscallByName("get_kernel_syms");
+          case 131: return lin.GetSyscallByName("quotactl");
+          case 132: return lin.GetSyscallByName("getpgid");
+          case 133: return lin.GetSyscallByName("fchdir");
+          case 134: return lin.GetSyscallByName("bdflush");
+          case 135: return lin.GetSyscallByName("sysfs");
+          case 136: return lin.GetSyscallByName("personality");
+          case 137: return lin.GetSyscallByName("afs_syscall");
+          case 138: return lin.GetSyscallByName("setfsuid");
+          case 139: return lin.GetSyscallByName("setfsgid");
+          case 140: return lin.GetSyscallByName("_llseek");
+          case 141: return lin.GetSyscallByName("getdents");
+          case 142: return lin.GetSyscallByName("_newselect");
+          case 143: return lin.GetSyscallByName("flock");
+          case 144: return lin.GetSyscallByName("msync");
+          case 145: return lin.GetSyscallByName("readv");
+          case 146: return lin.GetSyscallByName("writev");
+          case 147: return lin.GetSyscallByName("getsid");
+          case 148: return lin.GetSyscallByName("fdatasync");
+          case 149: return lin.GetSyscallByName("_sysctl");
+          case 150: return lin.GetSyscallByName("mlock");
+          case 151: return lin.GetSyscallByName("munlock");
+          case 152: return lin.GetSyscallByName("mlockall");
+          case 153: return lin.GetSyscallByName("munlockall");
+          case 154: return lin.GetSyscallByName("sched_setparam");
+          case 155: return lin.GetSyscallByName("sched_getparam");
+          case 159: return lin.GetSyscallByName("sched_get_priority_max");
+          case 160: return lin.GetSyscallByName("sched_set_priority_max");
+          case 161: return lin.GetSyscallByName("sched_rr_get_interval");
+          case 162: return lin.GetSyscallByName("nanosleep");
+          case 163: return lin.GetSyscallByName("mremap");
+          case 164: return lin.GetSyscallByName("setresuid");
+          case 165: return lin.GetSyscallByName("getresuid");
+          case 166: return lin.GetSyscallByName("query_module");
+          case 167: return lin.GetSyscallByName("poll");
+          case 168: return lin.GetSyscallByName("nfsservctl");
+          case 169: return lin.GetSyscallByName("setresgid");
+          case 170: return lin.GetSyscallByName("getresgid");
+          case 171: return lin.GetSyscallByName("prctl");
+          case 172: return lin.GetSyscallByName("rt_sigreturn");
+          case 173: return lin.GetSyscallByName("rt_sigaction");
+          case 174: return lin.GetSyscallByName("rt_sigprocmask");
+          case 175: return lin.GetSyscallByName("rt_sigpending");
+          case 176: return lin.GetSyscallByName("rt_sigtimedwait");
+          case 177: return lin.GetSyscallByName("rt_sigqueueinfo");
+          case 178: return lin.GetSyscallByName("ry_sigsuspend");
+          case 179: return lin.GetSyscallByName("pread64");
+          case 180: return lin.GetSyscallByName("pwrite64");
+          case 181: return lin.GetSyscallByName("chown");
+          case 182: return lin.GetSyscallByName("getcwd");
+          case 183: return lin.GetSyscallByName("capget");
+          case 184: return lin.GetSyscallByName("capset");
+          case 185: return lin.GetSyscallByName("sigaltstack");
+          case 186: return lin.GetSyscallByName("sendfile");
+          case 187: return lin.GetSyscallByName("getpmsg");
+          case 188: return lin.GetSyscallByName("putpmsg");
+          case 189: return lin.GetSyscallByName("vfork");
+          case 190: return lin.GetSyscallByName("ugetrlimit");
+          case 191: return lin.GetSyscallByName("readahead");
+          case 192: return lin.GetSyscallByName("mmap2");
+          case 193: return lin.GetSyscallByName("truncate64");
+          case 194: return lin.GetSyscallByName("ftruncate64");
+            // 195: stat64 (see ppc specific)
+          case 196: return lin.GetSyscallByName("lstat64");
+            // 197: fstat64 (see ppc specific)
+          case 198: return lin.GetSyscallByName("pciconfig_read");
+          case 199: return lin.GetSyscallByName("pciconfig_write");
+          case 200: return lin.GetSyscallByName("pciconfig_iobase");
+          case 201: return lin.GetSyscallByName("multiplexer");
+          case 202: return lin.GetSyscallByName("getdents64");
+          case 203: return lin.GetSyscallByName("pivot_root");
+          case 204: return lin.GetSyscallByName("fcntl64");
+          case 205: return lin.GetSyscallByName("madvise");
+          case 206: return lin.GetSyscallByName("mincore");
+          case 207: return lin.GetSyscallByName("getpid"); // in reality gettid: assuming that in a mono-thread environment pid=tid
+          case 208: return lin.GetSyscallByName("tkill");
+          case 209: return lin.GetSyscallByName("setxattr");
+          case 210: return lin.GetSyscallByName("lsetxattr");
+          case 211: return lin.GetSyscallByName("fsetxattr");
+          case 212: return lin.GetSyscallByName("getxattr");
+          case 213: return lin.GetSyscallByName("lgetxattr");
+          case 214: return lin.GetSyscallByName("fgetxattr");
+          case 215: return lin.GetSyscallByName("listxattr");
+          case 216: return lin.GetSyscallByName("llistxattr");
+          case 217: return lin.GetSyscallByName("flistxattr");
+          case 218: return lin.GetSyscallByName("removexattr");
+          case 219: return lin.GetSyscallByName("lremovexattr");
+          case 220: return lin.GetSyscallByName("fremovexattr");
+          case 221: return lin.GetSyscallByName("futex");
+          case 222: return lin.GetSyscallByName("sched_setaffinity");
+          case 223: return lin.GetSyscallByName("sched_getaffinity");
+          // 224 currently unused
+          case 225: return lin.GetSyscallByName("tuxcall");
+          case 226: return lin.GetSyscallByName("sendfile64");
+          case 227: return lin.GetSyscallByName("io_setup");
+          case 228: return lin.GetSyscallByName("io_destroy");
+          case 229: return lin.GetSyscallByName("io_getevents");
+          case 230: return lin.GetSyscallByName("io_submit");
+          case 231: return lin.GetSyscallByName("io_cancel");
+          case 232: return lin.GetSyscallByName("set_tid_address");
+          case 233: return lin.GetSyscallByName("fadvise64");
+          case 234: return lin.GetSyscallByName("exit_group");
+          case 235: return lin.GetSyscallByName("lookup_dcookie");
+          case 236: return lin.GetSyscallByName("epoll_create");
+          case 237: return lin.GetSyscallByName("epoll_ctl");
+          case 238: return lin.GetSyscallByName("epoll_wait");
+          case 239: return lin.GetSyscallByName("remap_file_pages");
+          case 240: return lin.GetSyscallByName("timer_create");
+          case 241: return lin.GetSyscallByName("timer_settime");
+          case 242: return lin.GetSyscallByName("timer_gettime");
+          case 243: return lin.GetSyscallByName("timer_getoverrun");
+          case 244: return lin.GetSyscallByName("timer_delete");
+          case 245: return lin.GetSyscallByName("clock_settime");
+          case 246: return lin.GetSyscallByName("clock_gettime");
+          case 247: return lin.GetSyscallByName("clock_getres");
+          case 248: return lin.GetSyscallByName("clock_nanosleep");
+          case 249: return lin.GetSyscallByName("swapcontext");
+          case 250: return lin.GetSyscallByName("tgkill");
+          case 251: return lin.GetSyscallByName("utimes");
+          case 252: return lin.GetSyscallByName("statfs64");
+          case 253: return lin.GetSyscallByName("fstatfs64");
+          case 254: return lin.GetSyscallByName("fadvise64_64");
+          case 255: return lin.GetSyscallByName("rtas");
+          case 256: return lin.GetSyscallByName("sys_debug_setcontext");
+          // 257 is reserved for vserver
+          case 258: return lin.GetSyscallByName("migrate_pages");
+          case 259: return lin.GetSyscallByName("mbind");
+          case 260: return lin.GetSyscallByName("get_mempolicy");
+          case 261: return lin.GetSyscallByName("set_mempolicy");
+          case 262: return lin.GetSyscallByName("mq_open");
+          case 263: return lin.GetSyscallByName("mq_unlink");
+          case 264: return lin.GetSyscallByName("mq_timedsend");
+          case 265: return lin.GetSyscallByName("mq_timedreceive");
+          case 266: return lin.GetSyscallByName("mq_notify");
+          case 267: return lin.GetSyscallByName("mq_getsetattr");
+          case 268: return lin.GetSyscallByName("kexec_load");
+          case 269: return lin.GetSyscallByName("add_key");
+          case 270: return lin.GetSyscallByName("request_key");
+          case 271: return lin.GetSyscallByName("keyctl");
+          case 272: return lin.GetSyscallByName("waitid");
+          case 273: return lin.GetSyscallByName("ioprio_set");
+          case 274: return lin.GetSyscallByName("ioprio_get");
+          case 275: return lin.GetSyscallByName("inotify_init");
+          case 276: return lin.GetSyscallByName("inotify_add_watch");
+          case 277: return lin.GetSyscallByName("inotify_rm_watch");
+          case 278: return lin.GetSyscallByName("spu_run");
+          case 279: return lin.GetSyscallByName("spu_create");
+          case 280: return lin.GetSyscallByName("pselect6");
+          case 281: return lin.GetSyscallByName("ppoll");
+          case 282: return lin.GetSyscallByName("unshare");
+          case 283: return lin.GetSyscallByName("splice");
+          case 284: return lin.GetSyscallByName("tee");
+          case 285: return lin.GetSyscallByName("vmsplice");
+          case 286: return lin.GetSyscallByName("openat");
+          case 287: return lin.GetSyscallByName("mkdirat");
+          case 288: return lin.GetSyscallByName("mknodat");
+          case 289: return lin.GetSyscallByName("fchownat");
+          case 290: return lin.GetSyscallByName("futimesat");
+          case 291: return lin.GetSyscallByName("fstatat64");
+          case 292: return lin.GetSyscallByName("unlinkat");
+          case 293: return lin.GetSyscallByName("renameat");
+          case 294: return lin.GetSyscallByName("linkat");
+          case 295: return lin.GetSyscallByName("symlinkat");
+          case 296: return lin.GetSyscallByName("readlinkat");
+          case 297: return lin.GetSyscallByName("fchmodat");
+          case 298: return lin.GetSyscallByName("faccessat");
+          case 299: return lin.GetSyscallByName("get_robust_list");
+          case 300: return lin.GetSyscallByName("set_robust_list");
+          case 301: return lin.GetSyscallByName("move_pages");
+          case 302: return lin.GetSyscallByName("getcpu");
+          case 303: return lin.GetSyscallByName("epoll_wait");
+          case 304: return lin.GetSyscallByName("utimensat");
+          case 305: return lin.GetSyscallByName("signalfd");
+          case 306: return lin.GetSyscallByName("timerfd_create");
+          case 307: return lin.GetSyscallByName("eventfd");
+          case 308: return lin.GetSyscallByName("sync_file_range2");
+          case 309: return lin.GetSyscallByName("fallocate");
+          case 310: return lin.GetSyscallByName("subpage_prot");
+          case 311: return lin.GetSyscallByName("timerfd_settime");
+          case 312: return lin.GetSyscallByName("timerfd_gettime");
+          case 313: return lin.GetSyscallByName("signalfd4");
+          case 314: return lin.GetSyscallByName("eventfd2");
+          case 315: return lin.GetSyscallByName("epoll_create1");
+          case 316: return lin.GetSyscallByName("dup3");
+          case 317: return lin.GetSyscallByName("pipe2");
+          case 318: return lin.GetSyscallByName("inotify_init1");
+          case 319: return lin.GetSyscallByName("perf_event_open");
+          case 320: return lin.GetSyscallByName("preadv");
+          case 321: return lin.GetSyscallByName("pwritev");
+          case 322: return lin.GetSyscallByName("rt_tsigqueueinfo");
+          case 323: return lin.GetSyscallByName("fanotify_init");
+          case 324: return lin.GetSyscallByName("fanotify_mark");
+          case 325: return lin.GetSyscallByName("prlimit64");
+          case 326: return lin.GetSyscallByName("socket");
+          case 327: return lin.GetSyscallByName("bind");
+          case 328: return lin.GetSyscallByName("connect");
+          case 329: return lin.GetSyscallByName("listen");
+          case 330: return lin.GetSyscallByName("accept");
+          case 331: return lin.GetSyscallByName("getsockname");
+          case 332: return lin.GetSyscallByName("getpeername");
+          case 333: return lin.GetSyscallByName("socketpair");
+          case 334: return lin.GetSyscallByName("send");
+          case 335: return lin.GetSyscallByName("sendto");
+          case 336: return lin.GetSyscallByName("recv");
+          case 337: return lin.GetSyscallByName("recvfrom");
+          case 338: return lin.GetSyscallByName("shutdown");
+          case 339: return lin.GetSyscallByName("setsockopt");
+          case 340: return lin.GetSyscallByName("getsockopt");
+          case 341: return lin.GetSyscallByName("sendmsg");
+          case 342: return lin.GetSyscallByName("recvmsg");
+          case 343: return lin.GetSyscallByName("recvmmsg");
+          case 344: return lin.GetSyscallByName("accept4");
+          case 345: return lin.GetSyscallByName("name_to_handle_at");
+          case 346: return lin.GetSyscallByName("open_by_handle_at");
+          case 347: return lin.GetSyscallByName("clock_adjtime");
+          case 348: return lin.GetSyscallByName("syncfs");
+          case 349: return lin.GetSyscallByName("sendmmsg");
+          case 350: return lin.GetSyscallByName("setns");
+          case 351: return lin.GetSyscallByName("process_vm_readv");
+          case 352: return lin.GetSyscallByName("process_vm_writev");
+            
+          // Following is specific to PowerPC
+          case 43: /* PowerPC specific times syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "times"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret;
+                  ADDRESS_TYPE buf_addr;
+                  int32_t target_errno = 0;
+	
+                  buf_addr = lin.target_system->GetSystemCallParam(0);
+
+                  struct powerpc_tms target_tms;
+                  ret = lin.Times(&target_tms);
+
+                  if(ret >= 0)
+                    lin.WriteMem(buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
+                  else
+                    target_errno = lin.Host2LinuxErrno(errno);
+
+                  if(unlikely(lin.verbose_))
+                    lin.logger_ << DebugInfo << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << EndDebugInfo;
+	
+                  lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            }
+
+          case 78: /* PowerPC specific gettimeofday syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "gettimeofday"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret = -1;
+                  ADDRESS_TYPE tv_addr;
+                  ADDRESS_TYPE tz_addr;
+                  int32_t target_errno = 0;
+                  tv_addr = lin.target_system->GetSystemCallParam(0);
+                  tz_addr = lin.target_system->GetSystemCallParam(1);
+
+                  struct powerpc_timeval target_tv;
+                  struct powerpc_timezone target_tz;
+
+                  ret = lin.GetTimeOfDay(tv_addr ? &target_tv : 0, tz_addr ? &target_tz : 0);
+                  if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+
+                  if(ret == 0)
+                    {
+                      if(tv_addr)
+                        {
+                          lin.WriteMem(tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
+                        }
+                      if(tz_addr)
+                        {
+                          lin.WriteMem(tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
+                        }
+                    }
+
+                  if(unlikely(lin.verbose_))
+                    {
+                      lin.logger_ << DebugInfo
+                                  << "gettimeofday(tv = 0x" << std::hex << tv_addr << std::dec
+                                  << ", tz = 0x" << std::hex << tz_addr << std::dec << ")"
+                                  << EndDebugInfo;
+                    }
+	
+                  lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+
+          case 108: /* PowerPC specific fstat syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "fstat"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret;
+                  int32_t target_fd;
+                  int host_fd;
+                  ADDRESS_TYPE buf_address;
+                  int32_t target_errno = 0;
+
+                  target_fd = lin.target_system->GetSystemCallParam(0);
+                  buf_address = lin.target_system->GetSystemCallParam(1);
+	
+                  host_fd = lin.Target2HostFileDescriptor(target_fd);
+
+                  if(host_fd == -1)
+                    {
+                      target_errno = LINUX_EBADF;
+                      ret = -1;
+                    }
+                  else
+                    {
+                      struct powerpc_stat target_stat;
+                      ret = lin.Stat(host_fd, &target_stat);
+                      if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+                      if(ret >= 0) lin.WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                    }
+
+                  if(unlikely(lin.verbose_))
+                    {
+                      lin.logger_ << DebugInfo
+                                  << "fstat(fd=" << target_fd
+                                  << ", buf_addr=0x" << std::hex << buf_address << std::dec
+                                  << ")" << EndDebugInfo;
+                    }
+	
+                  lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+
+          case 122: /* PowerPC specific uname syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "uname"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret;
+                  int32_t target_errno = 0;
+                  ADDRESS_TYPE buf_addr = lin.target_system->GetSystemCallParam(0);
+                  ret = 0;
+                  
+                  struct ppc_utsname value;
+                  memset(&value, 0, sizeof(value));
+                  strncpy(value.sysname,     lin.utsname_sysname_.c_str(), sizeof(value.sysname) - 1);
+                  strncpy(value.nodename,    lin.utsname_nodename_.c_str(), sizeof(value.nodename) - 1);
+                  strncpy(value.release,     lin.utsname_release_.c_str(), sizeof(value.release) - 1);
+                  strncpy(value.version,     lin.utsname_version_.c_str(), sizeof(value.version) - 1);
+                  strncpy(value.machine,     lin.utsname_machine_.c_str(), sizeof(value.machine) - 1);
+                  strncpy(value.domainname,  lin.utsname_domainname_.c_str(), sizeof(value.domainname) - 1);
+                  lin.WriteMem(buf_addr, (uint8_t *)&value, sizeof(value));
+	
+                  lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+
+          case 195: /* PowerPC specific stat64 syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "stat64"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret;
+                  ADDRESS_TYPE pathnameaddr;
+                  ADDRESS_TYPE buf_address;
+                  unsigned int pathnamelen;
+                  char *pathname;
+                  int32_t target_errno = 0;
+
+                  pathnameaddr = lin.target_system->GetSystemCallParam(0);
+                  buf_address = lin.target_system->GetSystemCallParam(1);
+                  pathnamelen = lin.StringLength(pathnameaddr);
+                  pathname = (char *) malloc(pathnamelen + 1);
+	
+                  if(pathname)
+                    {
+                      lin.ReadMem(pathnameaddr, (uint8_t *) pathname, pathnamelen + 1);
+		
+                      struct powerpc_stat64 target_stat;
+                      ret = lin.Stat64(pathname, &target_stat);
+                      lin.WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+		
+                      if(unlikely(lin.verbose_))
+                        {
+                          lin.logger_ << DebugInfo
+                                      << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
+                                      << EndDebugInfo;
+                        }
+		
+                      free(pathname);
+                    }
+                  else
+                    {
+                      ret = -1;
+                      target_errno = LINUX_ENOMEM;
+                    }
+	
+                  lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+
+          case 197: /* PowerPC specific fstat64 syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "fstat64"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  int ret;
+                  ADDRESS_TYPE buf_address;
+                  int32_t target_fd;
+                  int host_fd;
+                  int32_t target_errno = 0;
+
+                  target_fd = lin.target_system->GetSystemCallParam(0);
+                  buf_address = lin.target_system->GetSystemCallParam(1);
+	
+                  host_fd = lin.Target2HostFileDescriptor(target_fd);
+	
+                  if(host_fd == -1)
+                    {
+                      target_errno = LINUX_EBADF;
+                      ret = -1;
+                    }
+                  else
+                    {
+                      struct powerpc_stat64 target_stat;
+                      ret = lin.Fstat64(host_fd, &target_stat);
+                      if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+			
+                      lin.WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                    }
+	
+                  if(unlikely(lin.verbose_))
+                    {
+                      lin.logger_ << DebugInfo
+                                  << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
+                                  << EndDebugInfo;
+                    }
+	
+                  lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+          }
+          
+          return 0;
+        }
+        PARAMETER_TYPE GetSystemCallParam(int id) const
+        {
+          PARAMETER_TYPE val = 0;
+        
+          if(not lin.GetRegister(id+3, &val))
+            {
+              lin.logger_ << DebugWarning << "Can't read register #" << (id + 3) << DebugWarning;
+              return val;
+            }
+	
+          return val;
+        }
+
+        bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const { return true; }
+      };
+      delete target_system;
+      target_system = new PPCTS( *this );
+      return true;
+    }
+  
+  if (system_type_name.compare("i386") == 0)
+    {
+      struct I386TS : public TargetSystem
+      {
+        I386TS( Linux& _lin ) : TargetSystem( "i386", _lin ) {}
+        using TargetSystem::lin;
+        char const* GetRegisterName( unsigned id ) const
+        {
+          switch (id) {
+          case unisim::util::os::linux_os::kI386_eax: return "%eax";
+          case unisim::util::os::linux_os::kI386_ecx: return "%ecx";
+          case unisim::util::os::linux_os::kI386_edx: return "%edx";
+          case unisim::util::os::linux_os::kI386_ebx: return "%ebx";
+          case unisim::util::os::linux_os::kI386_esp: return "%esp";
+          case unisim::util::os::linux_os::kI386_ebp: return "%ebp";
+          case unisim::util::os::linux_os::kI386_esi: return "%esi";
+          case unisim::util::os::linux_os::kI386_edi: return "%edi";
+          case unisim::util::os::linux_os::kI386_eip: return "%eip";
+          }
+          return 0;
+        }
+        bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const { return false; }
+        bool SetupTarget() const
+        {
+          // // Reset all the target registers => USELESS
+          
+          bool success;
+          // Set EIP to the program entry point
+          success = lin.SetRegister(kI386_eip, lin.entry_point_);
+          if (!success) {
+            lin.logger_ << DebugError
+                    << "Error while setting eip register (" << kI386_eip << ")" << EndDebugError;
+            return false;
+          }
+          // Set ESP to the base of the created stack
+          unisim::util::debug::blob::Section<ADDRESS_TYPE> const * esp_section =
+            lin.blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
+          if (esp_section == NULL) {
+            lin.logger_ << DebugError
+                    << "Could not find the stack pointer section." << EndDebugError;
+            return false;
+          }
+          success = lin.SetRegister(kI386_esp, esp_section->GetAddr());
+          if (!success) {
+            lin.logger_ << DebugError
+                    << "Error while setting esp register (" << kI386_esp << ")" << EndDebugError;
+            return false;
+          }
+          // ADDRESS_TYPE par1_addr = esp_section->GetAddr() + 4;
+          // ADDRESS_TYPE par2_addr = esp_section->GetAddr() + 8;
+          // PARAMETER_TYPE par1 = 0;
+          // PARAMETER_TYPE par2 = 0;
+          // success = mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
+          // success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
+          // lin.SetRegister(kI386_r1, Target2Host(endianness_, par1));
+          // lin.SetRegister(kI386_r2, Target2Host(endianness_, par2));
+
+
+          return true;
+        }
+        
+        void SetSystemCallStatus(int ret, bool error) const
+        {
+          throw "TODO:";
+        }
+        
+        SysCall* GetSystemCall( int& id ) const
+        {
+          // TODO: fill syscall map
+          // see either arch/i386/include/asm/unistd.h or arch/i386/include/uapi/asm/unistd.h in Linux source
+          switch (id) {
+          case 0: return lin.GetSyscallByName("restart_syscall");
+          case 1: return lin.GetSyscallByName("exit");
+          case 2: return lin.GetSyscallByName("fork");
+          case 3: return lin.GetSyscallByName("read");
+          case 4: return lin.GetSyscallByName("write");
+          case 5: return lin.GetSyscallByName("open");
+          case 6: return lin.GetSyscallByName("close");
+          // // 7 was "waitpid"
+          // case 8: return lin.GetSyscallByName("creat");
+          // case 9: return lin.GetSyscallByName("link");
+          // case 10: return lin.GetSyscallByName("unlink");
+          // case 11: return lin.GetSyscallByName("execve");
+          // case 12: return lin.GetSyscallByName("chdir");
+          // case 13: return lin.GetSyscallByName("time");
+          // case 14: return lin.GetSyscallByName("mknod");
+          // case 15: return lin.GetSyscallByName("chmod");
+          // case 16: return lin.GetSyscallByName("lchown");
+          // // 17 was "break"
+          // // 18 was "stat"
+          // case 19: return lin.GetSyscallByName("lseek");
+          // case 20: return lin.GetSyscallByName("getpid");
+          // case 21: return lin.GetSyscallByName("mount");
+          // case 22: return lin.GetSyscallByName("umount");
+          // case 23: return lin.GetSyscallByName("setuid");
+          // case 24: return lin.GetSyscallByName("getuid");
+          // case 25: return lin.GetSyscallByName("stime");
+          // case 26: return lin.GetSyscallByName("ptrace");
+          // case 27: return lin.GetSyscallByName("alarm");
+          // // 28 was "fstat"
+          // case 29: return lin.GetSyscallByName("pause");
+          // case 30: return lin.GetSyscallByName("utime");
+          // // 31 was "stty"
+          // // 32 was "gtty"
+          // case 33: return lin.GetSyscallByName("access");
+          // case 34: return lin.GetSyscallByName("nice");
+          // // 35 was "ftime"
+          // case 36: return lin.GetSyscallByName("sync");
+          // case 37: return lin.GetSyscallByName("kill");
+          // case 38: return lin.GetSyscallByName("rename");
+          // case 39: return lin.GetSyscallByName("mkdir");
+          // case 40: return lin.GetSyscallByName("rmdir");
+          // case 41: return lin.GetSyscallByName("dup");
+          // case 42: return lin.GetSyscallByName("pipe");
+          // // 43: times (see i386 specific)
+          // // 44 was "prof"
+          // case 45: return lin.GetSyscallByName("brk");
+          // case 46: return lin.GetSyscallByName("setgid");
+          // case 47: return lin.GetSyscallByName("getgid");
+          // // 48 was "signal"
+          // case 49: return lin.GetSyscallByName("geteuid");
+          // case 50: return lin.GetSyscallByName("getegid");
+          // case 51: return lin.GetSyscallByName("acct");
+          // case 52: return lin.GetSyscallByName("umount2");
+          // // 53 was "lock"
+          // case 54: return lin.GetSyscallByName("ioctl");
+          // case 55: return lin.GetSyscallByName("fcntl");
+          // // 56 was "mpx"
+          // case 57: return lin.GetSyscallByName("setpgid");
+          // // 58 was "ulimit"
+          // // 59 was "olduname"
+          // case 60: return lin.GetSyscallByName("umask");
+          // case 61: return lin.GetSyscallByName("chroot");
+          // case 62: return lin.GetSyscallByName("ustat");
+          // case 63: return lin.GetSyscallByName("dup2");
+          // case 64: return lin.GetSyscallByName("getppid");
+          // case 65: return lin.GetSyscallByName("getpgrp");
+          // case 66: return lin.GetSyscallByName("setsid");
+          // case 67: return lin.GetSyscallByName("sigaction");
+          // // 68 was "sgetmask"
+          // // 69 was "ssetmask"
+          // case 70: return lin.GetSyscallByName("setreuid");
+          // case 71: return lin.GetSyscallByName("setregid");
+          // case 72: return lin.GetSyscallByName("sigsuspend");
+          // case 73: return lin.GetSyscallByName("sigpending");
+          // case 74: return lin.GetSyscallByName("sethostname");
+          // case 75: return lin.GetSyscallByName("setrlimit");
+          // case 76: return lin.GetSyscallByName("getrlimit");
+          // case 77: return lin.GetSyscallByName("getrusage");
+          // case 78: return lin.GetSyscallByName("gettimeofday");
+          // case 79: return lin.GetSyscallByName("settimeofday");
+          // case 80: return lin.GetSyscallByName("getgroups");
+          // case 81: return lin.GetSyscallByName("setgroups");
+          // case 82: return lin.GetSyscallByName("select");
+          // case 83: return lin.GetSyscallByName("symlink");
+          // // 84 was "lstat"
+          // case 85: return lin.GetSyscallByName("readlink");
+          // case 86: return lin.GetSyscallByName("uselib");
+          // case 87: return lin.GetSyscallByName("swapon");
+          // case 88: return lin.GetSyscallByName("reboot");
+          // case 89: return lin.GetSyscallByName("readdir");
+          // case 90: return lin.GetSyscallByName("mmap");
+          // case 91: return lin.GetSyscallByName("munmap");
+          // case 92: return lin.GetSyscallByName("truncate");
+          // case 93: return lin.GetSyscallByName("ftruncate");
+          // case 94: return lin.GetSyscallByName("fchmod");
+          // case 95: return lin.GetSyscallByName("fchown");
+          // case 96: return lin.GetSyscallByName("getpriority");
+          // case 97: return lin.GetSyscallByName("setpriority");
+          // // 98 was "profile"
+          // case 99: return lin.GetSyscallByName("statfs");
+          // case 100: return lin.GetSyscallByName("fstatfs");
+          // case 102: return lin.GetSyscallByName("socketcall");
+          // case 103: return lin.GetSyscallByName("syslog");
+          // case 104: return lin.GetSyscallByName("setitimer");
+          // case 105: return lin.GetSyscallByName("getitimer");
+          // case 106: return lin.GetSyscallByName("stat");
+          // case 107: return lin.GetSyscallByName("lstat");
+          // // 108: fstat (see i386 specific)
+          // // 109 was "uname"
+          // // 110 was "iopl"
+          // case 111: return lin.GetSyscallByName("vhangup");
+          // // 112 was "idle"
+          // case 113: return lin.GetSyscallByName("syscall");
+          // case 114: return lin.GetSyscallByName("wait4");
+          // case 115: return lin.GetSyscallByName("swapoff");
+          // case 116: return lin.GetSyscallByName("sysinfo");
+          // case 117: return lin.GetSyscallByName("ipc");
+          // case 118: return lin.GetSyscallByName("fsync");
+          // case 119: return lin.GetSyscallByName("sigreturn");
+          // case 120: return lin.GetSyscallByName("clone");
+          // case 121: return lin.GetSyscallByName("setdomainname");
+          // case 122: return lin.GetSyscallByName("uname");
+          // // 123 was "modify_ldt"
+          // case 124: return lin.GetSyscallByName("adjtimex");
+          // case 125: return lin.GetSyscallByName("mprotect");
+          // case 126: return lin.GetSyscallByName("sigprocmask");
+          // // 127 was "create_module"
+          // case 128: return lin.GetSyscallByName("init_module");
+          // case 129: return lin.GetSyscallByName("delete_module");
+          // // 130 was "get_kernel_syms"
+          // case 131: return lin.GetSyscallByName("quotactl");
+          // case 132: return lin.GetSyscallByName("getpgid");
+          // case 133: return lin.GetSyscallByName("fchdir");
+          // case 134: return lin.GetSyscallByName("bdflush");
+          // case 135: return lin.GetSyscallByName("sysfs");
+          // case 136: return lin.GetSyscallByName("personality");
+          // // 137 was "afs_syscall"
+          // case 138: return lin.GetSyscallByName("setfsuid");
+          // case 139: return lin.GetSyscallByName("setfsgid");
+          // case 140: return lin.GetSyscallByName("_llseek");
+          // case 141: return lin.GetSyscallByName("getdents");
+          // case 142: return lin.GetSyscallByName("_newselect");
+          // case 143: return lin.GetSyscallByName("flock");
+          // case 144: return lin.GetSyscallByName("msync");
+          // case 145: return lin.GetSyscallByName("readv");
+          // case 146: return lin.GetSyscallByName("writev");
+          // case 147: return lin.GetSyscallByName("getsid");
+          // case 148: return lin.GetSyscallByName("fdatasync");
+          // case 149: return lin.GetSyscallByName("_sysctl");
+          // case 150: return lin.GetSyscallByName("mlock");
+          // case 151: return lin.GetSyscallByName("munlock");
+          // case 152: return lin.GetSyscallByName("mlockall");
+          // case 153: return lin.GetSyscallByName("munlockall");
+          // case 154: return lin.GetSyscallByName("sched_setparam");
+          // case 155: return lin.GetSyscallByName("sched_getparam");
+          // case 156: return lin.GetSyscallByName("sched_setscheduler");
+          // case 157: return lin.GetSyscallByName("sched_getscheduler");
+          // case 158: return lin.GetSyscallByName("sched_yield");
+          // case 159: return lin.GetSyscallByName("sched_get_priority_max");
+          // case 160: return lin.GetSyscallByName("sched_get_priority_min");
+          // case 161: return lin.GetSyscallByName("sched_rr_get_interval");
+          // case 162: return lin.GetSyscallByName("nanosleep");
+          // case 163: return lin.GetSyscallByName("mremap");
+          // case 164: return lin.GetSyscallByName("setresuid");
+          // case 165: return lin.GetSyscallByName("getresuid");
+          // // 166 was "vm86"
+          // // 167 was "query_module"
+          // case 168: return lin.GetSyscallByName("poll");
+          // case 169: return lin.GetSyscallByName("nfsservctl");
+          // case 170: return lin.GetSyscallByName("setresgid");
+          // case 171: return lin.GetSyscallByName("getresgid");
+          // case 172: return lin.GetSyscallByName("prctl");
+          // case 173: return lin.GetSyscallByName("rt_sigreturn");
+          // case 174: return lin.GetSyscallByName("rt_sigaction");
+          // case 175: return lin.GetSyscallByName("rt_sigprocmask");
+          // case 176: return lin.GetSyscallByName("rt_sigpending");
+          // case 177: return lin.GetSyscallByName("rt_sigtimedwait");
+          // case 178: return lin.GetSyscallByName("rt_sigqueueinfo");
+          // case 179: return lin.GetSyscallByName("rt_sigsuspend");
+          // case 180: return lin.GetSyscallByName("pread64");
+          // case 181: return lin.GetSyscallByName("pwrite64");
+          // case 182: return lin.GetSyscallByName("chown");
+          // case 183: return lin.GetSyscallByName("getcwd");
+          // case 184: return lin.GetSyscallByName("capget");
+          // case 185: return lin.GetSyscallByName("capset");
+          // case 186: return lin.GetSyscallByName("sigaltstack");
+          // case 187: return lin.GetSyscallByName("sendfile");
+          // // 188 is reserved
+          // // 189 is reserved
+          // case 190: return lin.GetSyscallByName("vfork");
+          // case 191: return lin.GetSyscallByName("ugetrlimit");
+          // case 192: return lin.GetSyscallByName("mmap2");
+          // case 193: return lin.GetSyscallByName("truncate64");
+          // case 194: return lin.GetSyscallByName("ftruncate64");
+          // case 195: return lin.GetSyscallByName("stat64");
+          // case 196: return lin.GetSyscallByName("lstat64");
+          // case 197: return lin.GetSyscallByName("fstat64");
+          // case 198: return lin.GetSyscallByName("lchown32");
+          // case 199: return lin.GetSyscallByName("getuid32");
+          // case 200: return lin.GetSyscallByName("getgid32");
+          // case 201: return lin.GetSyscallByName("geteuid32");
+          // case 202: return lin.GetSyscallByName("getegid32");
+          // case 203: return lin.GetSyscallByName("setreuid32");
+          // case 204: return lin.GetSyscallByName("setregid32");
+          // case 205: return lin.GetSyscallByName("getgroups32");
+          // case 206: return lin.GetSyscallByName("setgroups32");
+          // case 207: return lin.GetSyscallByName("fchown32");
+          // case 208: return lin.GetSyscallByName("setresuid32");
+          // case 209: return lin.GetSyscallByName("getresuid32");
+          // case 210: return lin.GetSyscallByName("setresgid32");
+          // case 211: return lin.GetSyscallByName("getresgid32");
+          // case 212: return lin.GetSyscallByName("chown32");
+          // case 213: return lin.GetSyscallByName("setuid32");
+          // case 214: return lin.GetSyscallByName("setgid32");
+          // case 215: return lin.GetSyscallByName("setfsuid32");
+          // case 216: return lin.GetSyscallByName("setfsgid32");
+          // case 217: return lin.GetSyscallByName("getdents64");
+          // case 218: return lin.GetSyscallByName("pivot_root");
+          // case 219: return lin.GetSyscallByName("mincore");
+          // case 220: return lin.GetSyscallByName("madvise");
+          // case 221: return lin.GetSyscallByName("fcntl64");
+          // // 222 is for tux
+          // // 223 is unused
+          // case 224: return lin.GetSyscallByName("gettid");
+          // case 225: return lin.GetSyscallByName("readahead");
+          // case 226: return lin.GetSyscallByName("setxattr");
+          // case 227: return lin.GetSyscallByName("lsetxattr");
+          // case 228: return lin.GetSyscallByName("fsetxattr");
+          // case 229: return lin.GetSyscallByName("getxattr");
+          // case 230: return lin.GetSyscallByName("lgetxattr");
+          // case 231: return lin.GetSyscallByName("fgetxattr");
+          // case 232: return lin.GetSyscallByName("listxattr");
+          // case 233: return lin.GetSyscallByName("llistxattr");
+          // case 234: return lin.GetSyscallByName("flistxattr");
+          // case 235: return lin.GetSyscallByName("removexattr");
+          // case 236: return lin.GetSyscallByName("lremovexattr");
+          // case 237: return lin.GetSyscallByName("fremovexattr");
+          // case 238: return lin.GetSyscallByName("tkill");
+          // case 239: return lin.GetSyscallByName("sendfile64");
+          // case 240: return lin.GetSyscallByName("futex");
+          // case 241: return lin.GetSyscallByName("sched_setaffinity");
+          // case 242: return lin.GetSyscallByName("sched_getaffinity");
+          // case 243: return lin.GetSyscallByName("io_setup");
+          // case 244: return lin.GetSyscallByName("io_destroy");
+          // case 245: return lin.GetSyscallByName("io_getevents");
+          // case 246: return lin.GetSyscallByName("io_submit");
+          // case 247: return lin.GetSyscallByName("io_cancel");
+          // case 248: return lin.GetSyscallByName("exit_group");
+          // case 249: return lin.GetSyscallByName("lookup_dcookie");
+          // case 250: return lin.GetSyscallByName("epoll_create");
+          // case 251: return lin.GetSyscallByName("epoll_ctl");
+          // case 252: return lin.GetSyscallByName("epoll_wait");
+          // case 253: return lin.GetSyscallByName("remap_file_pages");
+          // // 254 is for set_thread_area
+          // // 255 is for get_thread_area
+          // case 256: return lin.GetSyscallByName("set_tid_address");
+          // case 257: return lin.GetSyscallByName("timer_create");
+          // case 258: return lin.GetSyscallByName("timer_settime");
+          // case 259: return lin.GetSyscallByName("timer_gettime");
+          // case 260: return lin.GetSyscallByName("timer_getoverrun");
+          // case 261: return lin.GetSyscallByName("timer_delete");
+          // case 262: return lin.GetSyscallByName("clock_settime");
+          // case 263: return lin.GetSyscallByName("clock_gettime");
+          // case 264: return lin.GetSyscallByName("clock_getres");
+          // case 265: return lin.GetSyscallByName("clock_nanosleep");
+          // case 266: return lin.GetSyscallByName("statfs64");
+          // case 267: return lin.GetSyscallByName("fstatfs64");
+          // case 268: return lin.GetSyscallByName("tgkill");
+          // case 269: return lin.GetSyscallByName("utimes");
+          // case 271: return lin.GetSyscallByName("pciconfig_iobase");
+          // case 272: return lin.GetSyscallByName("pciconfig_read");
+          // case 273: return lin.GetSyscallByName("pciconfig_write");
+          // case 274: return lin.GetSyscallByName("mq_open");
+          // case 275: return lin.GetSyscallByName("mq_unlink");
+          // case 276: return lin.GetSyscallByName("mq_timedsend");
+          // case 277: return lin.GetSyscallByName("mq_timedreceive");
+          // case 278: return lin.GetSyscallByName("mq_notify");
+          // case 279: return lin.GetSyscallByName("mq_getsetattr");
+          // case 280: return lin.GetSyscallByName("waitid");
+          // case 281: return lin.GetSyscallByName("socket");
+          // case 282: return lin.GetSyscallByName("bind");
+          // case 283: return lin.GetSyscallByName("connect");
+          // case 284: return lin.GetSyscallByName("listen");
+          // case 285: return lin.GetSyscallByName("accept");
+          // case 286: return lin.GetSyscallByName("getsockname");
+          // case 287: return lin.GetSyscallByName("getpeername");
+          // case 288: return lin.GetSyscallByName("socketpair");
+          // case 289: return lin.GetSyscallByName("send");
+          // case 290: return lin.GetSyscallByName("sendto");
+          // case 291: return lin.GetSyscallByName("recv");
+          // case 292: return lin.GetSyscallByName("recvfrom");
+          // case 293: return lin.GetSyscallByName("shutdown");
+          // case 294: return lin.GetSyscallByName("setsockopt");
+          // case 295: return lin.GetSyscallByName("getsockopt");
+          // case 296: return lin.GetSyscallByName("sendmsg");
+          // case 297: return lin.GetSyscallByName("recvmsg");
+          // case 298: return lin.GetSyscallByName("semop");
+          // case 299: return lin.GetSyscallByName("semget");
+          // case 300: return lin.GetSyscallByName("semctl");
+          // case 301: return lin.GetSyscallByName("msgsnd");
+          // case 302: return lin.GetSyscallByName("msgrcv");
+          // case 303: return lin.GetSyscallByName("msgget");
+          // case 304: return lin.GetSyscallByName("msgctl");
+          // case 305: return lin.GetSyscallByName("shmat");
+          // case 306: return lin.GetSyscallByName("shmdt");
+          // case 307: return lin.GetSyscallByName("shmget");
+          // case 308: return lin.GetSyscallByName("shmctl");
+          // case 309: return lin.GetSyscallByName("add_key");
+          // case 310: return lin.GetSyscallByName("request_key");
+          // case 311: return lin.GetSyscallByName("keyctl");
+          // case 312: return lin.GetSyscallByName("semtimedop");
+          // case 313: return lin.GetSyscallByName("vserver");
+          // case 314: return lin.GetSyscallByName("ioprio_set");
+          // case 315: return lin.GetSyscallByName("ioprio_get");
+          // case 316: return lin.GetSyscallByName("inotify_init");
+          // case 317: return lin.GetSyscallByName("inotify_add_watch");
+          // case 318: return lin.GetSyscallByName("inotify_rm_watch");
+          // case 319: return lin.GetSyscallByName("mbind");
+          // case 320: return lin.GetSyscallByName("get_mempolicy");
+          // case 321: return lin.GetSyscallByName("set_mempolicy");
+          // case 322: return lin.GetSyscallByName("openat");
+          // case 323: return lin.GetSyscallByName("mkdirat");
+          // case 324: return lin.GetSyscallByName("mknodat");
+          // case 325: return lin.GetSyscallByName("fchownat");
+          // case 326: return lin.GetSyscallByName("futimesat");
+          // case 327: return lin.GetSyscallByName("fstatat64");
+          // case 328: return lin.GetSyscallByName("unlinkat");
+          // case 329: return lin.GetSyscallByName("renameat");
+          // case 330: return lin.GetSyscallByName("linkat");
+          // case 331: return lin.GetSyscallByName("symlinkat");
+          // case 332: return lin.GetSyscallByName("readlinkat");
+          // case 333: return lin.GetSyscallByName("fchmodat");
+          // case 334: return lin.GetSyscallByName("faccessat");
+          // case 335: return lin.GetSyscallByName("pselect6");
+          // case 336: return lin.GetSyscallByName("ppoll");
+          // case 337: return lin.GetSyscallByName("unshare");
+          // case 338: return lin.GetSyscallByName("set_robust_list");
+          // case 339: return lin.GetSyscallByName("get_robust_list");
+          // case 340: return lin.GetSyscallByName("splice");
+          // case 341: return lin.GetSyscallByName("sync_file_range2");
+          // case 342: return lin.GetSyscallByName("tee");
+          // case 343: return lin.GetSyscallByName("vmsplice");
+          // case 344: return lin.GetSyscallByName("move_pages");
+          // case 345: return lin.GetSyscallByName("getcpu");
+          // case 346: return lin.GetSyscallByName("epoll_pwait");
+          // case 347: return lin.GetSyscallByName("kexec_load");
+          // case 348: return lin.GetSyscallByName("utimensat");
+          // case 349: return lin.GetSyscallByName("signalfd");
+          // case 350: return lin.GetSyscallByName("timerfd_create");
+          // case 351: return lin.GetSyscallByName("eventfd");
+          // case 352: return lin.GetSyscallByName("fallocate");
+          // case 353: return lin.GetSyscallByName("timerfd_settime");
+          // case 354: return lin.GetSyscallByName("timerfd_gettime");
+          // case 355: return lin.GetSyscallByName("signalfd4");
+          // case 356: return lin.GetSyscallByName("eventfd2");
+          // case 357: return lin.GetSyscallByName("epoll_create1");
+          // case 358: return lin.GetSyscallByName("dup3");
+          // case 359: return lin.GetSyscallByName("pipe2");
+          // case 360: return lin.GetSyscallByName("inotify_init1");
+          // case 361: return lin.GetSyscallByName("preadv");
+          // case 362: return lin.GetSyscallByName("pwritev");
+          // case 363: return lin.GetSyscallByName("rt_tgsigqueueinfo");
+          // case 364: return lin.GetSyscallByName("perf_event_open");
+          // case 365: return lin.GetSyscallByName("recvmmsg");
+          // case 366: return lin.GetSyscallByName("accept4");
+          // case 367: return lin.GetSyscallByName("fanotify_init");
+          // case 368: return lin.GetSyscallByName("fanotify_mark");
+          // case 369: return lin.GetSyscallByName("prlimit64");
+          // case 370: return lin.GetSyscallByName("name_to_handle_at");
+          // case 371: return lin.GetSyscallByName("open_by_handle_at");
+          // case 372: return lin.GetSyscallByName("clock_adjtime");
+          // case 373: return lin.GetSyscallByName("syncfs");
+          // case 374: return lin.GetSyscallByName("sendmmsg");
+          // case 375: return lin.GetSyscallByName("setns");
+          // case 376: return lin.GetSyscallByName("process_vm_readv");
+          // case 377: return lin.GetSyscallByName("process_vm_writev");
+          // // 378 is for kcmp
+          }
+          
+          return 0;
+        }
+        PARAMETER_TYPE GetSystemCallParam(int id) const { throw "TODO:"; return 0; }
+        bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const { return true; }
+        void SetSyscallNameMap() const {}
+      };
+      delete target_system;
+      target_system = new I386TS( *this );
+      return true;
+    }
+  
+  return false;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -777,90 +2900,22 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStderrPipeFilename(const char *file
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-unisim::util::debug::Register * Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegisterFromId(uint32_t id) {
-  if (!regs_if_) return NULL;
-  char const * reg_name = 0;
-  if ((system_type_.compare("arm") == 0) || (system_type_.compare("arm-eabi") == 0)) {
-    switch(id) {
-      case unisim::util::os::linux_os::kARM_r0: reg_name = "r0"; break;
-      case unisim::util::os::linux_os::kARM_r1: reg_name = "r1"; break;
-      case unisim::util::os::linux_os::kARM_r2: reg_name = "r2"; break;
-      case unisim::util::os::linux_os::kARM_r3: reg_name = "r3"; break;
-      case unisim::util::os::linux_os::kARM_r4: reg_name = "r4"; break;
-      case unisim::util::os::linux_os::kARM_r5: reg_name = "r5"; break;
-      case unisim::util::os::linux_os::kARM_r6: reg_name = "r6"; break;
-      case unisim::util::os::linux_os::kARM_r7: reg_name = "r7"; break;
-      case unisim::util::os::linux_os::kARM_r8: reg_name = "r8"; break;
-      case unisim::util::os::linux_os::kARM_r9: reg_name = "r9"; break;
-      case unisim::util::os::linux_os::kARM_r10: reg_name = "r10"; break;
-      case unisim::util::os::linux_os::kARM_r11: reg_name = "r11"; break;
-      case unisim::util::os::linux_os::kARM_r12: reg_name = "r12"; break;
-      case unisim::util::os::linux_os::kARM_sp: reg_name = "sp"; break;
-      case unisim::util::os::linux_os::kARM_lr: reg_name = "lr"; break;
-      case unisim::util::os::linux_os::kARM_pc: reg_name = "pc"; break;
-      default: return NULL;
+unisim::util::debug::Register * Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegisterFromId(uint32_t id)
+{
+  if (not regs_if_)
+    {
+      logger_ << DebugWarning << "No register interface is available" << DebugWarning;
+      return 0;
     }
-  } else if (system_type_.compare("ppc") == 0) {
-    switch(id) {
-      case unisim::util::os::linux_os::kPPC_r0: reg_name = "r0"; break;
-      case unisim::util::os::linux_os::kPPC_r1: reg_name = "r1"; break;
-      case unisim::util::os::linux_os::kPPC_r2: reg_name = "r2"; break;
-      case unisim::util::os::linux_os::kPPC_r3: reg_name = "r3"; break;
-      case unisim::util::os::linux_os::kPPC_r4: reg_name = "r4"; break;
-      case unisim::util::os::linux_os::kPPC_r5: reg_name = "r5"; break;
-      case unisim::util::os::linux_os::kPPC_r6: reg_name = "r6"; break;
-      case unisim::util::os::linux_os::kPPC_r7: reg_name = "r7"; break;
-      case unisim::util::os::linux_os::kPPC_r8: reg_name = "r8"; break;
-      case unisim::util::os::linux_os::kPPC_r9: reg_name = "r9"; break;
-      case unisim::util::os::linux_os::kPPC_r10: reg_name = "r10"; break;
-      case unisim::util::os::linux_os::kPPC_r11: reg_name = "r11"; break;
-      case unisim::util::os::linux_os::kPPC_r12: reg_name = "r12"; break;
-      case unisim::util::os::linux_os::kPPC_r13: reg_name = "r13"; break;
-      case unisim::util::os::linux_os::kPPC_r14: reg_name = "r14"; break;
-      case unisim::util::os::linux_os::kPPC_r15: reg_name = "r15"; break;
-      case unisim::util::os::linux_os::kPPC_r16: reg_name = "r16"; break;
-      case unisim::util::os::linux_os::kPPC_r17: reg_name = "r17"; break;
-      case unisim::util::os::linux_os::kPPC_r18: reg_name = "r18"; break;
-      case unisim::util::os::linux_os::kPPC_r19: reg_name = "r19"; break;
-      case unisim::util::os::linux_os::kPPC_r20: reg_name = "r20"; break;
-      case unisim::util::os::linux_os::kPPC_r21: reg_name = "r21"; break;
-      case unisim::util::os::linux_os::kPPC_r22: reg_name = "r22"; break;
-      case unisim::util::os::linux_os::kPPC_r23: reg_name = "r23"; break;
-      case unisim::util::os::linux_os::kPPC_r24: reg_name = "r24"; break;
-      case unisim::util::os::linux_os::kPPC_r25: reg_name = "r25"; break;
-      case unisim::util::os::linux_os::kPPC_r26: reg_name = "r26"; break;
-      case unisim::util::os::linux_os::kPPC_r27: reg_name = "r27"; break;
-      case unisim::util::os::linux_os::kPPC_r28: reg_name = "r28"; break;
-      case unisim::util::os::linux_os::kPPC_r29: reg_name = "r29"; break;
-      case unisim::util::os::linux_os::kPPC_r30: reg_name = "r30"; break;
-      case unisim::util::os::linux_os::kPPC_r31: reg_name = "r31"; break;
-      case unisim::util::os::linux_os::kPPC_cr: reg_name = "cr"; break;
-      case unisim::util::os::linux_os::kPPC_cia: reg_name = "cia"; break;
-      default: return NULL;
-    }
-  } else if (system_type_.compare("ia32") == 0) {
-    switch (id) {
-      case unisim::util::os::linux_os::kI386_eax: reg_name = "%eax"; break;
-      case unisim::util::os::linux_os::kI386_ecx: reg_name = "%ecx"; break;
-      case unisim::util::os::linux_os::kI386_edx: reg_name = "%edx"; break;
-      case unisim::util::os::linux_os::kI386_ebx: reg_name = "%ebx"; break;
-      case unisim::util::os::linux_os::kI386_esp: reg_name = "%esp"; break;
-      case unisim::util::os::linux_os::kI386_ebp: reg_name = "%ebp"; break;
-      case unisim::util::os::linux_os::kI386_esi: reg_name = "%esi"; break;
-      case unisim::util::os::linux_os::kI386_edi: reg_name = "%edi"; break;
-      case unisim::util::os::linux_os::kI386_eip: reg_name = "%eip"; break;
-      default: return NULL;
-    }
-  }
-  return regs_if_->GetRegister(reg_name);
+	
+  return regs_if_->GetRegister(target_system->GetRegisterName(id));
 }
 
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(uint32_t id,
-    PARAMETER_TYPE * const value) {
-  unisim::util::debug::Register *reg = 0;
-  reg = GetRegisterFromId(id);
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(uint32_t id, PARAMETER_TYPE * const value)
+{
+  unisim::util::debug::Register* reg = GetRegisterFromId(id);
   if (reg == NULL) return false;
   if (reg->GetSize() != sizeof(PARAMETER_TYPE)) return false;
   reg->GetValue(value);
@@ -868,8 +2923,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(uint32_t id,
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id,
-    PARAMETER_TYPE value) {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id, PARAMETER_TYPE value)
+{
   unisim::util::debug::Register *reg = 0;
   reg = GetRegisterFromId(id);
   if (reg == NULL) return false;
@@ -930,7 +2985,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 		logger_ << DebugInfo
 			<< "Setting the system blob." << EndDebugInfo;
 	}
-	if (!SetSystemBlob(blob))
+	if (not target_system->SetSystemBlob(blob))
 	{
 		// TODO
 		// Remove non finished state (i.e., unfinished blob, reset values, ...)
@@ -938,46 +2993,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 			<< "Could not set the system blob." << EndDebugError;
 		blob->Release();
 		return false;
-	}
-
-	// Set the linux calls maps
-	syscall_impl_assoc_map_.clear();
-	SetSyscallNameMap();
-	if ((system_type_.compare("arm") == 0) ||
-	    (system_type_.compare("arm-eabi") == 0))
-	{
-		if(!SetupLinuxOSARM())
-		{
-			logger_ << DebugError
-				<< "Error while trying to setup the linux os arm"
-				<< EndDebugError;
-			blob->Release();
-			return false;
-		}
-	}
-	
-	else if(system_type_.compare("ppc") == 0)
-	{
-		if(!SetupLinuxOSPPC())
-		{
-			logger_ << DebugError
-				<< "Error while trying to setup the linux os ppc"
-				<< EndDebugError;
-			blob->Release();
-			return false;
-		}
-	}
-
-	else if(system_type_.compare("i386") == 0)
-	{
-		if(!SetupLinuxOSI386())
-		{
-			logger_ << DebugError
-				<< "Error while trying to setup the linux os i386"
-				<< EndDebugError;
-			blob->Release();
-			return false;
-		}
 	}
 
 	// Set mmap_brk_point and brk_point
@@ -1069,264 +3084,47 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::IsLoad() {
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget() {
-  if (mem_if_ == NULL
-      || mem_inject_if_ == NULL
-      || regs_if_ == NULL) {
-    logger_ << DebugError
-        << "The linux system interfaces (memory/register) were not"
-        << " assigned" << EndDebugError;
-    return false;
-  }
-
-  if (blob_ == NULL) {
-    logger_ << DebugError
-        << "The linux system was not loaded." << EndDebugError;
-    return false;
-  }
-
-  if ((system_type_.compare("arm") == 0) || 
-      (system_type_.compare("arm-eabi") == 0))
-    return SetupARMTarget();
-  else if (system_type_.compare("ppc") == 0)
-    return SetupPPCTarget();
-  else if (system_type_.compare("i386") == 0)
-    return SetupI386Target();
-
-  logger_ << DebugError
-      << "Unknown system to setup (" << system_type_ << ")." << EndDebugError;
-  return false;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupARMTarget() {
-  typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
-  typedef std::vector<const Segment*> SegmentVector;
-  typedef typename SegmentVector::const_iterator SegmentVectorIterator;
-
-  bool success = true;
-  SegmentVector segments = blob_->GetSegments();
-  for (SegmentVectorIterator it = segments.begin();
-       success && (it != segments.end()); it++) {
-    if ((*it)->GetType() == Segment::TY_LOADABLE) {
-      uint8_t const * data = (uint8_t const *)(*it)->GetData();
-      ADDRESS_TYPE start, end;
-      (*it)->GetAddrRange(start, end);
-
-      if(verbose_) {
-        logger_ << DebugInfo << "--> writing memory segment start = 0x"
-            << std::hex << start << " end = 0x" << end << std::dec
-            << EndDebugInfo;
-      }
-
-      success = mem_if_->WriteMemory(start, data, end - start + 1);
-    }
-  }
-
-  if (!success) {
-    logger_ << DebugError
-        << "Error while writing the segments into the target memory."
-        << EndDebugError;
-    return false;
-  }
-
-  // Reset all the target registers
-  unsigned int reg_id = 0;
-  PARAMETER_TYPE null_param = 0;
-  for (reg_id = 0; success && (reg_id < kARMNumRegs); reg_id++) {
-    success = SetRegister(reg_id, null_param);
-  }
-  if (!success) {
-    logger_ << DebugError
-        << "Error while setting register '" << (reg_id - 1) << "'" << EndDebugError;
-    return false;
-  }
-  // Set PC to the program entry point
-  success = SetRegister(kARM_pc, entry_point_);
-  if (!success) {
-    logger_ << DebugError
-        << "Error while setting pc register (" << kARM_pc << ")" << EndDebugError;
-    return false;
-  }
-  // Set SP to the base of the created stack
-  unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
-      blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
-  if (sp_section == NULL) {
-    logger_ << DebugError
-        << "Could not find the stack pointer section." << EndDebugError;
-    return false;
-  }
-  success = SetRegister(kARM_sp, sp_section->GetAddr());
-  if (!success) {
-    logger_ << DebugError
-        << "Error while setting sp register (" << kARM_sp << ")" << EndDebugError;
-    return false;
-  }
-  ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
-  ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
-  PARAMETER_TYPE par1 = 0;
-  PARAMETER_TYPE par2 = 0;
-  success = mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
-  success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
-  SetRegister(kARM_r1, Target2Host(endianness_, par1));
-  SetRegister(kARM_r2, Target2Host(endianness_, par2));
-
-
-  return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupPPCTarget() {
-  typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
-  typedef std::vector<const Segment*> SegmentVector;
-  typedef typename SegmentVector::const_iterator SegmentVectorIterator;
-
-  bool success = true;
-  SegmentVector segments = blob_->GetSegments();
-  for (SegmentVectorIterator it = segments.begin();
-       success && (it != segments.end()); it++) {
-    if ((*it)->GetType() == Segment::TY_LOADABLE) {
-      uint8_t const * data = (uint8_t const *)(*it)->GetData();
-      ADDRESS_TYPE start, end;
-      (*it)->GetAddrRange(start, end);
-
-      if(verbose_) {
-         logger_ << DebugInfo << "--> writing memory segment start = 0x"
-            << std::hex << start << " end = 0x" << end << std::dec
-            << EndDebugInfo;
-      }
-
-      success = mem_if_->WriteMemory(start, data, end - start + 1);
-    }
-  }
-
-  if (!success) {
-    logger_ << DebugError
-        << "Error while writing the segments into the target memory."
-        << EndDebugError;
-    return false;
-  }
-
-  // Reset all the target registers
-  unsigned int reg_id = 0;
-  PARAMETER_TYPE null_param = 0;
-  for (reg_id = 0; success && (reg_id < kPPCNumRegs); reg_id++) {
-    success = SetRegister(reg_id, null_param);
-  }
-  if (!success) {
-    logger_ << DebugError
-        << "Error while setting register '" << (reg_id - 1) << "'" << EndDebugError;
-    return false;
-  }
-  // Set PC to the program entry point
-  success = SetRegister(kPPC_cia, entry_point_);
-  if (!success) {
-    logger_ << DebugError
-        << "Error while setting cia register (" << kPPC_cia << ")" << EndDebugError;
-    return false;
-  }
-  // Set SP to the base of the created stack
-  unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
-      blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
-  if (sp_section == NULL) {
-    logger_ << DebugError
-        << "Could not find the stack pointer section." << EndDebugError;
-    return false;
-  }
-  success = SetRegister(kPPC_sp, sp_section->GetAddr());
-  if (!success) {
-    logger_ << DebugError
-        << "Error while setting sp register (" << kPPC_sp << ")" << DebugError;
-    return false;
-  }
-  ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
-  ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
-  PARAMETER_TYPE par1 = 0;
-  PARAMETER_TYPE par2 = 0;
-  success = mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
-  success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
-  SetRegister(kPPC_r3, Target2Host(endianness_, par1));
-  SetRegister(kPPC_r4, Target2Host(endianness_, par2));
-
-  return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupI386Target()
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget()
 {
+  if ((mem_if_ == NULL) or (mem_inject_if_ == NULL) or (regs_if_ == NULL))
+    {
+      logger_ << DebugError << "The linux system interfaces (memory/register) were not assigned" << EndDebugError;
+      return false;
+    }
+
+  if (blob_ == NULL)
+    {
+      logger_ << DebugError << "The linux system was not loaded." << EndDebugError;
+      return false;
+    }
+  
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
   typedef std::vector<const Segment*> SegmentVector;
   typedef typename SegmentVector::const_iterator SegmentVectorIterator;
-
-  bool success = true;
+  
   SegmentVector segments = blob_->GetSegments();
-  for (SegmentVectorIterator it = segments.begin();
-       success && (it != segments.end()); it++) {
-    if ((*it)->GetType() == Segment::TY_LOADABLE) {
+  for (SegmentVectorIterator it = segments.begin(); (it != segments.end()); it++)
+    {
+      if ((*it)->GetType() != Segment::TY_LOADABLE) continue;
+      
       uint8_t const * data = (uint8_t const *)(*it)->GetData();
       ADDRESS_TYPE start, end;
       (*it)->GetAddrRange(start, end);
-
+      
       if(verbose_) {
         logger_ << DebugInfo << "--> writing memory segment start = 0x"
-            << std::hex << start << " end = 0x" << end << std::dec
-            << EndDebugInfo;
+                << std::hex << start << " end = 0x" << end << std::dec
+                << EndDebugInfo;
       }
-
-      success = mem_if_->WriteMemory(start, data, end - start + 1);
+      
+      if (not mem_if_->WriteMemory(start, data, end - start + 1))
+        {
+          logger_ << DebugError << "Error while writing the segments into the target memory." << EndDebugError;
+          return false;
+        }
     }
-  }
-
-  if (!success) {
-    logger_ << DebugError
-        << "Error while writing the segments into the target memory."
-        << EndDebugError;
-    return false;
-  }
-
-  // // Reset all the target registers
-  // unsigned int reg_id = 0;
-  // PARAMETER_TYPE null_param = 0;
-  // for (reg_id = 0; success && (reg_id < kI386NumRegs); reg_id++) {
-  //   success = SetRegister(reg_id, null_param);
-  // }
-  // if (!success) {
-  //   logger_ << DebugError
-  //       << "Error while setting register '" << (reg_id - 1) << "'" << EndDebugError;
-  //   return false;
-  // }
-  // Set EIP to the program entry point
-  success = SetRegister(kI386_eip, entry_point_);
-  if (!success) {
-    logger_ << DebugError
-        << "Error while setting eip register (" << kI386_eip << ")" << EndDebugError;
-    return false;
-  }
-  // Set ESP to the base of the created stack
-  unisim::util::debug::blob::Section<ADDRESS_TYPE> const * esp_section =
-      blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
-  if (esp_section == NULL) {
-    logger_ << DebugError
-        << "Could not find the stack pointer section." << EndDebugError;
-    return false;
-  }
-  success = SetRegister(kI386_esp, esp_section->GetAddr());
-  if (!success) {
-    logger_ << DebugError
-        << "Error while setting esp register (" << kI386_esp << ")" << EndDebugError;
-    return false;
-  }
-  // ADDRESS_TYPE par1_addr = esp_section->GetAddr() + 4;
-  // ADDRESS_TYPE par2_addr = esp_section->GetAddr() + 8;
-  // PARAMETER_TYPE par1 = 0;
-  // PARAMETER_TYPE par2 = 0;
-  // success = mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
-  // success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
-  // SetRegister(kI386_r1, Target2Host(endianness_, par1));
-  // SetRegister(kI386_r2, Target2Host(endianness_, par2));
-
-
-  return true;
+  
+  return target_system->SetupTarget();
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1334,46 +3132,51 @@ unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
     PARAMETER_TYPE>::GetBlob() const { return blob_; }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& terminated, int& return_status) {
-	if(!is_load_)
-	{
-		logger_
-			<< DebugError
-			<< "unisim::util::os::linux_os::Linux.ExecuteSystemCall: "
-			<< "Trying to execute system call with id " << id << " while the linux "
-			<< "emulation has not been correctly loaded."
-			<< EndDebugError;
-		return;
-	}
-
-	int translated_id = GetSyscallNumber(id);
-
-	current_syscall_id_ = translated_id;
-	current_syscall_name_ = GetSyscallName(translated_id);
-	
-	if(unlikely(verbose_))
-	{
-		logger_
-			<< DebugInfo
-			<< "Executing syscall(name = " << current_syscall_name_ << ";"
-			<< " id = " << translated_id << ";"
-			<< " unstranslated id = " << id << ")"
-			<< EndDebugInfo;
-	}
-	
-	syscall_t y = GetSyscallImpl(translated_id);
-	(this->*y)();
-
-	if(terminated_)
-	{
-		terminated = true;
-		return_status = return_status_;
-	}
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& terminated, int& return_status)
+{
+  if (not is_load_)
+    {
+      logger_
+        << DebugError
+        << "unisim::util::os::linux_os::Linux.ExecuteSystemCall: "
+        << "Trying to execute system call with id " << id << " while the linux "
+        << "emulation has not been correctly loaded."
+        << EndDebugError;
+      return;
+    }
+        
+  int translated_id = id;
+  
+  SysCall* sc = target_system->GetSystemCall( translated_id );
+  
+  if (not sc) {
+    logger_ << DebugError << "Unknown syscall(id = " << translated_id << ", untranslated id = " << id << ")" << EndDebugError;
+    // FIXME: shouldn't we end the simulation (terminated = true) ?
+    SetSystemCallStatus(-LINUX_ENOSYS, true);
+    return;
+  }
+        
+  if (unlikely(verbose_))
+    {
+      logger_
+        << DebugInfo
+        << "Executing syscall(name = " << sc->GetName() << ", "
+        << "id = " << translated_id << ", " << "unstranslated id = " << id << ")"
+        << EndDebugInfo;
+    }
+  
+  try {
+    sc->Execute( *this, translated_id );
+  } catch (LSCExit const scx) {
+    terminated = true;
+    return_status = scx.status;
+  }
+  sc->Release();
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles( unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob )
+{
   // Get the main executable blob
   // NOTE: current implementation of the linux os library only supports one
   // blob, the main executable blob
@@ -1821,101 +3624,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   aux_table_value = (ADDRESS_TYPE)getegid();
 #endif
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
-
-  if ((system_type_.compare("arm") == 0) ||
-        (system_type_.compare("arm-eabi") == 0)) {
-    uint32_t arm_hwcap = 0;
-    std::string hwcap_token;
-    std::stringstream sstr(hwcap_);
-    while(sstr >> hwcap_token)
-    {
-      if(hwcap_token.compare("swp") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_SWP;
-      }
-      else if(hwcap_token.compare("half") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_HALF;
-      }
-      else if(hwcap_token.compare("thumb") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_THUMB;
-      }
-      else if(hwcap_token.compare("26bit") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_26BIT;
-      }
-      else if(hwcap_token.compare("fastmult") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_FAST_MULT;
-      }
-      else if(hwcap_token.compare("fpa") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_FPA;
-      }
-      else if(hwcap_token.compare("vfp") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_VFP;
-      }
-      else if(hwcap_token.compare("edsp") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_EDSP;
-      }
-      else if(hwcap_token.compare("edsp") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_JAVA;
-      }
-      else if(hwcap_token.compare("java") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_JAVA;
-      }
-      else if(hwcap_token.compare("iwmmxt") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_IWMMXT;
-      }
-      else if(hwcap_token.compare("crunch") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_CRUNCH;
-      }
-      else if(hwcap_token.compare("thumbee") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_THUMBEE;
-      }
-      else if(hwcap_token.compare("neon") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_NEON;
-      }
-      else if(hwcap_token.compare("vfpv3") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_VFPv3;
-      }
-      else if(hwcap_token.compare("vfpv3d16") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_VFPv3D16;
-      }
-      else if(hwcap_token.compare("tls") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_TLS;
-      }
-      else if(hwcap_token.compare("vfpv4") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_VFPv4;
-      }
-      else if(hwcap_token.compare("idiva") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_IDIVA;
-      }
-      else if(hwcap_token.compare("idivt") == 0)
-      {
-        arm_hwcap |= ARM_HWCAP_ARM_IDIVT;
-      }
-      else
-      {
-        logger_ << DebugWarning << "unknown hardware capability \"" << hwcap_token << "\"" << EndDebugWarning;
-      }
-    }
+  
+  if (target_system->GetAT_HWCAP( aux_table_value ))
+    
+  {
     aux_table_symbol = AT_HWCAP;
-    aux_table_value = arm_hwcap;
     sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
   }
 
@@ -1929,9 +3642,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry(
-    uint8_t * stack_data, ADDRESS_TYPE sp,
-    ADDRESS_TYPE entry, ADDRESS_TYPE value) const {
+ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry( uint8_t * stack_data, ADDRESS_TYPE sp, ADDRESS_TYPE entry, ADDRESS_TYPE value) const
+{
   ADDRESS_TYPE target_entry = Host2Target(endianness_, entry);
   ADDRESS_TYPE target_value = Host2Target(endianness_, value);
   sp = sp - sizeof(target_value);
@@ -1946,1461 +3658,6 @@ ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry(
     memcpy(addr, &target_entry, sizeof(target_entry));
   }
   return sp;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemBlob(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
-  if ((system_type_.compare("arm") == 0) ||
-      (system_type_.compare("arm-eabi") == 0))
-    return SetArmBlob(blob);
-  else if (system_type_.compare("ppc") == 0)
-    return SetPPCBlob(blob);
-  else if (system_type_.compare("i386") == 0)
-    return SetI386Blob(blob);
-
-  logger_ << DebugError
-      << "Unknown system type (" << system_type_ << ")" << EndDebugError;
-  return false;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const
-{
-  typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
-  typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
-  if ((utsname_machine_.compare("armv5") == 0) or
-      (utsname_machine_.compare("armv6") == 0) or
-      (utsname_machine_.compare("armv7") == 0)) {
-    if (blob == NULL) return false;
-    // TODO: Check that the program/stack is not in conflict with the
-    //   tls and cmpxchg interfaces
-    // Set the tls interface, this requires a write into the memory
-    //   system
-    // The following instructions need to be added to memory:
-    // 0xffff0fe0:  e59f0008   ldr r0, [pc, #(16 - 8)] @ TLS stored
-    //                                                 @ at 0xffff0ff0
-    // 0xffff0fe4:  e1a0f00e   mov pc, lr
-    // 0xffff0fe8:  0
-    // 0xffff0fec:  0
-    // 0xffff0ff0:  0
-    // 0xffff0ff4:  0
-    // 0xffff0ff8:  0
-    ADDRESS_TYPE tls_base_addr = 0xffff0fe0UL;
-    static const uint32_t tls_buf_length = 7;
-    static const uint32_t tls_buf[tls_buf_length] =
-    {0xe59f0008UL, 0xe1a0f00eUL, 0, 0, 0, 0, 0};
-    uint32_t *segment_tls_buf = (uint32_t *) malloc(sizeof(uint32_t) * tls_buf_length);
-    uint32_t *section_tls_buf = (uint32_t *) malloc(sizeof(uint32_t) * tls_buf_length);
-
-    for (unsigned int i = 0; i < tls_buf_length; ++i) {
-      segment_tls_buf[i] = unisim::util::endian::Host2Target(endianness_, tls_buf[i]);
-      section_tls_buf[i] = unisim::util::endian::Host2Target(endianness_, tls_buf[i]);
-    }
-    Segment *tls_if_segment =
-        new Segment(Segment::TY_LOADABLE, Segment::SA_X, 4, tls_base_addr,
-                    sizeof(tls_buf), sizeof(tls_buf), segment_tls_buf);
-    Section *tls_if_section =
-        new Section(Section::TY_UNKNOWN, Section::SA_A,
-                    ".unisim.linux_os.interface.tls", 4, 0, tls_base_addr,
-                    sizeof(tls_buf), section_tls_buf);
-
-    // Set the cmpxchg (atomic compare and exchange) interface, the
-    //   following instructions need to be added to memory:
-    // 0xffff0fc0:  e5923000   ldr r3, [r2]
-    // 0xffff0fc4:  e0533000   subs r3, r3, r0
-    // 0xffff0fc8:  05821000   streq r1, [r2]
-    // 0xffff0fcc:  e2730000   rsbs r0, r3, #0	; 0x0
-    // 0xffff0fd0:  e1a0f00e   mov pc, lr
-    ADDRESS_TYPE cmpxchg_base_addr = 0xffff0fc0UL;
-    static const uint32_t cmpxchg_buf_length = 5;
-    static const uint32_t cmpxchg_buf[cmpxchg_buf_length] = {
-      0xe5923000UL,
-      0xe0533000UL,
-      0x05821000UL,
-      0xe2730000UL,
-      0xe1a0f00eUL
-    };
-    uint32_t *segment_cmpxchg_buf = (uint32_t *) malloc(sizeof(uint32_t) * cmpxchg_buf_length);
-    uint32_t *section_cmpxchg_buf = (uint32_t *) malloc(sizeof(uint32_t) * cmpxchg_buf_length);
-
-    for (unsigned int i = 0; i < cmpxchg_buf_length; ++i) {
-        segment_cmpxchg_buf[i] = unisim::util::endian::Host2Target(endianness_, cmpxchg_buf[i]);
-        section_cmpxchg_buf[i] = unisim::util::endian::Host2Target(endianness_, cmpxchg_buf[i]);
-    }
-    Section* cmpxchg_if_section =
-        new Section(Section::TY_UNKNOWN, Section::SA_A,
-                    ".unisim.linux_os.interface.cmpxchg",
-                    4, 0, cmpxchg_base_addr,
-                    sizeof(cmpxchg_buf), segment_cmpxchg_buf);
-    Segment *cmpxchg_if_segment =
-        new Segment(Segment::TY_LOADABLE, Segment::SA_X,
-                    4, cmpxchg_base_addr,
-                    sizeof(cmpxchg_buf), sizeof(cmpxchg_buf), section_cmpxchg_buf);
-
-    blob->AddSegment(tls_if_segment);
-    blob->AddSegment(cmpxchg_if_segment);
-    blob->AddSection(tls_if_section);
-    blob->AddSection(cmpxchg_if_section);
-  }
-
-  return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
-  // Nothing to do but that may change in the future if necessary
-  return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetI386Blob( unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob ) const
-{
-  // TODO: Need to setup Early TLS counter-measure
-  return true;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSARM() {
-	// see either arch/arm/include/asm/unistd.h or arch/arm/include/uapi/asm/unistd.h in Linux source
-	SetSyscallId("restart_syscall", 0);
-	SetSyscallId("exit", 1);
-	SetSyscallId("fork", 2);
-	SetSyscallId("read", 3);
-	SetSyscallId("write", 4);
-	SetSyscallId("open", 5);
-	SetSyscallId("close", 6);
-	// 7 was "waitpid"
-	SetSyscallId("creat", 8);
-	SetSyscallId("link", 9);
-	SetSyscallId("unlink", 10);
-	SetSyscallId("execve", 11);
-	SetSyscallId("chdir", 12);
-	SetSyscallId("time", 13);
-	SetSyscallId("mknod", 14);
-	SetSyscallId("chmod", 15);
-	SetSyscallId("lchown", 16);
-	// 17 was "break"
-	// 18 was "stat"
-	SetSyscallId("lseek", 19);
-	SetSyscallId("getpid", 20);
-	SetSyscallId("mount", 21);
-	SetSyscallId("umount", 22);
-	SetSyscallId("setuid", 23);
-	SetSyscallId("getuid", 24);
-	SetSyscallId("stime", 25);
-	SetSyscallId("ptrace", 26);
-	SetSyscallId("alarm", 27);
-	// 28 was "fstat"
-	SetSyscallId("pause", 29);
-	SetSyscallId("utime", 30);
-	// 31 was "stty"
-	// 32 was "gtty"
-	SetSyscallId("access", 33);
-	SetSyscallId("nice", 34);
-	// 35 was "ftime"
-	SetSyscallId("sync", 36);
-	SetSyscallId("kill", 37);
-	SetSyscallId("rename", 38);
-	SetSyscallId("mkdir", 39);
-	SetSyscallId("rmdir", 40);
-	SetSyscallId("dup", 41);
-	SetSyscallId("pipe", 42);
-	SetSyscallId("times", 43);
-	// 44 was "prof"
-	SetSyscallId("brk", 45);
-	SetSyscallId("setgid", 46);
-	SetSyscallId("getgid", 47);
-	// 48 was "signal"
-	SetSyscallId("geteuid", 49);
-	SetSyscallId("getegid", 50);
-	SetSyscallId("acct", 51);
-	SetSyscallId("umount2", 52);
-	// 53 was "lock"
-	SetSyscallId("ioctl", 54);
-	SetSyscallId("fcntl", 55);
-	// 56 was "mpx"
-	SetSyscallId("setpgid", 57);
-	// 58 was "ulimit"
-	// 59 was "olduname"
-	SetSyscallId("umask", 60);
-	SetSyscallId("chroot", 61);
-	SetSyscallId("ustat", 62);
-	SetSyscallId("dup2", 63);
-	SetSyscallId("getppid", 64);
-	SetSyscallId("getpgrp", 65);
-	SetSyscallId("setsid", 66);
-	SetSyscallId("sigaction", 67);
-	// 68 was "sgetmask"
-	// 69 was "ssetmask"
-	SetSyscallId("setreuid", 70);
-	SetSyscallId("setregid", 71);
-	SetSyscallId("sigsuspend", 72);
-	SetSyscallId("sigpending", 73);
-	SetSyscallId("sethostname", 74);
-	SetSyscallId("setrlimit", 75);
-	SetSyscallId("getrlimit", 76);
-	SetSyscallId("getrusage", 77);
-	SetSyscallId("gettimeofday", 78);
-	SetSyscallId("settimeofday", 79);
-	SetSyscallId("getgroups", 80);
-	SetSyscallId("setgroups", 81);
-	SetSyscallId("select", 82);
-	SetSyscallId("symlink", 83);
-	// 84 was "lstat"
-	SetSyscallId("readlink", 85);
-	SetSyscallId("uselib", 86);
-	SetSyscallId("swapon", 87);
-	SetSyscallId("reboot", 88);
-	SetSyscallId("readdir", 89);
-	SetSyscallId("mmap", 90);
-	SetSyscallId("munmap", 91);
-	SetSyscallId("truncate", 92);
-	SetSyscallId("ftruncate", 93);
-	SetSyscallId("fchmod", 94);
-	SetSyscallId("fchown", 95);
-	SetSyscallId("getpriority", 96);
-	SetSyscallId("setpriority", 97);
-	// 98 was "profile"
-	SetSyscallId("statfs", 99);
-	SetSyscallId("fstatfs", 100);
-	SetSyscallId("socketcall", 102);
-	SetSyscallId("syslog", 103);
-	SetSyscallId("setitimer", 104);
-	SetSyscallId("getitimer", 105);
-	SetSyscallId("stat", 106);
-	SetSyscallId("lstat", 107);
-	SetSyscallId("fstat", 108);
-	// 109 was "uname"
-	// 110 was "iopl"
-	SetSyscallId("vhangup", 111);
-	// 112 was "idle"
-	SetSyscallId("syscall", 113);
-	SetSyscallId("wait4", 114);
-	SetSyscallId("swapoff", 115);
-	SetSyscallId("sysinfo", 116);
-	SetSyscallId("ipc", 117);
-	SetSyscallId("fsync", 118);
-	SetSyscallId("sigreturn", 119);
-	SetSyscallId("clone", 120);
-	SetSyscallId("setdomainname", 121);
-	SetSyscallId("uname", 122);
-	// 123 was "modify_ldt"
-	SetSyscallId("adjtimex", 124);
-	SetSyscallId("mprotect", 125);
-	SetSyscallId("sigprocmask", 126);
-	// 127 was "create_module"
-	SetSyscallId("init_module", 128);
-	SetSyscallId("delete_module", 129);
-	// 130 was "get_kernel_syms"
-	SetSyscallId("quotactl", 131);
-	SetSyscallId("getpgid", 132);
-	SetSyscallId("fchdir", 133);
-	SetSyscallId("bdflush", 134);
-	SetSyscallId("sysfs", 135);
-	SetSyscallId("personality", 136);
-	// 137 was "afs_syscall"
-	SetSyscallId("setfsuid", 138);
-	SetSyscallId("setfsgid", 139);
-	SetSyscallId("_llseek", 140);
-	SetSyscallId("getdents", 141);
-	SetSyscallId("_newselect", 142);
-	SetSyscallId("flock", 143);
-	SetSyscallId("msync", 144);
-	SetSyscallId("readv", 145);
-	SetSyscallId("writev", 146);
-	SetSyscallId("getsid", 147);
-	SetSyscallId("fdatasync", 148);
-	SetSyscallId("_sysctl", 149);
-	SetSyscallId("mlock", 150);
-	SetSyscallId("munlock", 151);
-	SetSyscallId("mlockall", 152);
-	SetSyscallId("munlockall", 153);
-	SetSyscallId("sched_setparam", 154);
-	SetSyscallId("sched_getparam", 155);
-	SetSyscallId("sched_setscheduler", 156);
-	SetSyscallId("sched_getscheduler", 157);
-	SetSyscallId("sched_yield", 158);
-	SetSyscallId("sched_get_priority_max", 159);
-	SetSyscallId("sched_get_priority_min", 160);
-	SetSyscallId("sched_rr_get_interval", 161);
-	SetSyscallId("nanosleep", 162);
-	SetSyscallId("mremap", 163);
-	SetSyscallId("setresuid", 164);
-	SetSyscallId("getresuid", 165);
-	// 166 was "vm86"
-	// 167 was "query_module"
-	SetSyscallId("poll", 168);
-	SetSyscallId("nfsservctl", 169);
-	SetSyscallId("setresgid", 170);
-	SetSyscallId("getresgid", 171);
-	SetSyscallId("prctl", 172);
-	SetSyscallId("rt_sigreturn", 173);
-	SetSyscallId("rt_sigaction", 174);
-	SetSyscallId("rt_sigprocmask", 175);
-	SetSyscallId("rt_sigpending", 176);
-	SetSyscallId("rt_sigtimedwait", 177);
-	SetSyscallId("rt_sigqueueinfo", 178);
-	SetSyscallId("rt_sigsuspend", 179);
-	SetSyscallId("pread64", 180);
-	SetSyscallId("pwrite64", 181);
-	SetSyscallId("chown", 182);
-	SetSyscallId("getcwd", 183);
-	SetSyscallId("capget", 184);
-	SetSyscallId("capset", 185);
-	SetSyscallId("sigaltstack", 186);
-	SetSyscallId("sendfile", 187);
-	// 188 is reserved
-	// 189 is reserved
-	SetSyscallId("vfork", 190);
-	SetSyscallId("ugetrlimit", 191);
-	SetSyscallId("mmap2", 192);
-	SetSyscallId("truncate64", 193);
-	SetSyscallId("ftruncate64", 194);
-	SetSyscallId("stat64", 195);
-	SetSyscallId("lstat64", 196);
-	SetSyscallId("fstat64", 197);
-	SetSyscallId("lchown32", 198);
-	SetSyscallId("getuid32", 199);
-	SetSyscallId("getgid32", 200);
-	SetSyscallId("geteuid32", 201);
-	SetSyscallId("getegid32", 202);
-	SetSyscallId("setreuid32", 203);
-	SetSyscallId("setregid32", 204);
-	SetSyscallId("getgroups32", 205);
-	SetSyscallId("setgroups32", 206);
-	SetSyscallId("fchown32", 207);
-	SetSyscallId("setresuid32", 208);
-	SetSyscallId("getresuid32", 209);
-	SetSyscallId("setresgid32", 210);
-	SetSyscallId("getresgid32", 211);
-	SetSyscallId("chown32", 212);
-	SetSyscallId("setuid32", 213);
-	SetSyscallId("setgid32", 214);
-	SetSyscallId("setfsuid32", 215);
-	SetSyscallId("setfsgid32", 216);
-	SetSyscallId("getdents64", 217);
-	SetSyscallId("pivot_root", 218);
-	SetSyscallId("mincore", 219);
-	SetSyscallId("madvise", 220);
-	SetSyscallId("fcntl64", 221);
-	// 222 is for tux
-	// 223 is unused
-	SetSyscallId("gettid", 224);
-	SetSyscallId("readahead", 225);
-	SetSyscallId("setxattr", 226);
-	SetSyscallId("lsetxattr", 227);
-	SetSyscallId("fsetxattr", 228);
-	SetSyscallId("getxattr", 229);
-	SetSyscallId("lgetxattr", 230);
-	SetSyscallId("fgetxattr", 231);
-	SetSyscallId("listxattr", 232);
-	SetSyscallId("llistxattr", 233);
-	SetSyscallId("flistxattr", 234);
-	SetSyscallId("removexattr", 235);
-	SetSyscallId("lremovexattr", 236);
-	SetSyscallId("fremovexattr", 237);
-	SetSyscallId("tkill", 238);
-	SetSyscallId("sendfile64", 239);
-	SetSyscallId("futex", 240);
-	SetSyscallId("sched_setaffinity", 241);
-	SetSyscallId("sched_getaffinity", 242);
-	SetSyscallId("io_setup", 243);
-	SetSyscallId("io_destroy", 244);
-	SetSyscallId("io_getevents", 245);
-	SetSyscallId("io_submit", 246);
-	SetSyscallId("io_cancel", 247);
-	SetSyscallId("exit_group", 248);
-	SetSyscallId("lookup_dcookie", 249);
-	SetSyscallId("epoll_create", 250);
-	SetSyscallId("epoll_ctl", 251);
-	SetSyscallId("epoll_wait", 252);
-	SetSyscallId("remap_file_pages", 253);
-	// 254 is for set_thread_area
-	// 255 is for get_thread_area
-	SetSyscallId("set_tid_address", 256);
-	SetSyscallId("timer_create", 257);
-	SetSyscallId("timer_settime", 258);
-	SetSyscallId("timer_gettime", 259);
-	SetSyscallId("timer_getoverrun", 260);
-	SetSyscallId("timer_delete", 261);
-	SetSyscallId("clock_settime", 262);
-	SetSyscallId("clock_gettime", 263);
-	SetSyscallId("clock_getres", 264);
-	SetSyscallId("clock_nanosleep", 265);
-	SetSyscallId("statfs64", 266);
-	SetSyscallId("fstatfs64", 267);
-	SetSyscallId("tgkill", 268);
-	SetSyscallId("utimes", 269);
-	SetSyscallId("arm_fadvise64_64", 270);
-	SetSyscallId("pciconfig_iobase", 271);
-	SetSyscallId("pciconfig_read", 272);
-	SetSyscallId("pciconfig_write", 273);
-	SetSyscallId("mq_open", 274);
-	SetSyscallId("mq_unlink", 275);
-	SetSyscallId("mq_timedsend", 276);
-	SetSyscallId("mq_timedreceive", 277);
-	SetSyscallId("mq_notify", 278);
-	SetSyscallId("mq_getsetattr", 279);
-	SetSyscallId("waitid", 280);
-	SetSyscallId("socket", 281);
-	SetSyscallId("bind", 282);
-	SetSyscallId("connect", 283);
-	SetSyscallId("listen", 284);
-	SetSyscallId("accept", 285);
-	SetSyscallId("getsockname", 286);
-	SetSyscallId("getpeername", 287);
-	SetSyscallId("socketpair", 288);
-	SetSyscallId("send", 289);
-	SetSyscallId("sendto", 290);
-	SetSyscallId("recv", 291);
-	SetSyscallId("recvfrom", 292);
-	SetSyscallId("shutdown", 293);
-	SetSyscallId("setsockopt", 294);
-	SetSyscallId("getsockopt", 295);
-	SetSyscallId("sendmsg", 296);
-	SetSyscallId("recvmsg", 297);
-	SetSyscallId("semop", 298);
-	SetSyscallId("semget", 299);
-	SetSyscallId("semctl", 300);
-	SetSyscallId("msgsnd", 301);
-	SetSyscallId("msgrcv", 302);
-	SetSyscallId("msgget", 303);
-	SetSyscallId("msgctl", 304);
-	SetSyscallId("shmat", 305);
-	SetSyscallId("shmdt", 306);
-	SetSyscallId("shmget", 307);
-	SetSyscallId("shmctl", 308);
-	SetSyscallId("add_key", 309);
-	SetSyscallId("request_key", 310);
-	SetSyscallId("keyctl", 311);
-	SetSyscallId("semtimedop", 312);
-	SetSyscallId("vserver", 313);
-	SetSyscallId("ioprio_set", 314);
-	SetSyscallId("ioprio_get", 315);
-	SetSyscallId("inotify_init", 316);
-	SetSyscallId("inotify_add_watch", 317);
-	SetSyscallId("inotify_rm_watch", 318);
-	SetSyscallId("mbind", 319);
-	SetSyscallId("get_mempolicy", 320);
-	SetSyscallId("set_mempolicy", 321);
-	SetSyscallId("openat", 322);
-	SetSyscallId("mkdirat", 323);
-	SetSyscallId("mknodat", 324);
-	SetSyscallId("fchownat", 325);
-	SetSyscallId("futimesat", 326);
-	SetSyscallId("fstatat64", 327);
-	SetSyscallId("unlinkat", 328);
-	SetSyscallId("renameat", 329);
-	SetSyscallId("linkat", 330);
-	SetSyscallId("symlinkat", 331);
-	SetSyscallId("readlinkat", 332);
-	SetSyscallId("fchmodat", 333);
-	SetSyscallId("faccessat", 334);
-	SetSyscallId("pselect6", 335);
-	SetSyscallId("ppoll", 336);
-	SetSyscallId("unshare", 337);
-	SetSyscallId("set_robust_list", 338);
-	SetSyscallId("get_robust_list", 339);
-	SetSyscallId("splice", 340);
-	SetSyscallId("sync_file_range2", 341);
-	SetSyscallId("tee", 342);
-	SetSyscallId("vmsplice", 343);
-	SetSyscallId("move_pages", 344);
-	SetSyscallId("getcpu", 345);
-	SetSyscallId("epoll_pwait", 346);
-	SetSyscallId("kexec_load", 347);
-	SetSyscallId("utimensat", 348);
-	SetSyscallId("signalfd", 349);
-	SetSyscallId("timerfd_create", 350);
-	SetSyscallId("eventfd", 351);
-	SetSyscallId("fallocate", 352);
-	SetSyscallId("timerfd_settime", 353);
-	SetSyscallId("timerfd_gettime", 354);
-	SetSyscallId("signalfd4", 355);
-	SetSyscallId("eventfd2", 356);
-	SetSyscallId("epoll_create1", 357);
-	SetSyscallId("dup3", 358);
-	SetSyscallId("pipe2", 359);
-	SetSyscallId("inotify_init1", 360);
-	SetSyscallId("preadv", 361);
-	SetSyscallId("pwritev", 362);
-	SetSyscallId("rt_tgsigqueueinfo", 363);
-	SetSyscallId("perf_event_open", 364);
-	SetSyscallId("recvmmsg", 365);
-	SetSyscallId("accept4", 366);
-	SetSyscallId("fanotify_init", 367);
-	SetSyscallId("fanotify_mark", 368);
-	SetSyscallId("prlimit64", 369);
-	SetSyscallId("name_to_handle_at", 370);
-	SetSyscallId("open_by_handle_at", 371);
-	SetSyscallId("clock_adjtime", 372);
-	SetSyscallId("syncfs", 373);
-	SetSyscallId("sendmmsg", 374);
-	SetSyscallId("setns", 375);
-	SetSyscallId("process_vm_readv", 376);
-	SetSyscallId("process_vm_writev", 377);
-	// 378 is for kcmp
-	
-	// the following are private to the arm
-	SetSyscallId("breakpoint", 983041);
-	SetSyscallId("cacheflush", 983042);
-	SetSyscallId("usr26", 983043);
-	SetSyscallId("usr32", 983044);
-	SetSyscallId("set_tls", 983045);
-
-	return true;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSI386()
-{
-  // TODO: fill syscall map
-	// see either arch/i386/include/asm/unistd.h or arch/i386/include/uapi/asm/unistd.h in Linux source
-	// SetSyscallId("restart_syscall", 0);
-	// SetSyscallId("exit", 1);
-	// SetSyscallId("fork", 2);
-	// SetSyscallId("read", 3);
-	// SetSyscallId("write", 4);
-	// SetSyscallId("open", 5);
-	// SetSyscallId("close", 6);
-	// // 7 was "waitpid"
-	// SetSyscallId("creat", 8);
-	// SetSyscallId("link", 9);
-	// SetSyscallId("unlink", 10);
-	// SetSyscallId("execve", 11);
-	// SetSyscallId("chdir", 12);
-	// SetSyscallId("time", 13);
-	// SetSyscallId("mknod", 14);
-	// SetSyscallId("chmod", 15);
-	// SetSyscallId("lchown", 16);
-	// // 17 was "break"
-	// // 18 was "stat"
-	// SetSyscallId("lseek", 19);
-	// SetSyscallId("getpid", 20);
-	// SetSyscallId("mount", 21);
-	// SetSyscallId("umount", 22);
-	// SetSyscallId("setuid", 23);
-	// SetSyscallId("getuid", 24);
-	// SetSyscallId("stime", 25);
-	// SetSyscallId("ptrace", 26);
-	// SetSyscallId("alarm", 27);
-	// // 28 was "fstat"
-	// SetSyscallId("pause", 29);
-	// SetSyscallId("utime", 30);
-	// // 31 was "stty"
-	// // 32 was "gtty"
-	// SetSyscallId("access", 33);
-	// SetSyscallId("nice", 34);
-	// // 35 was "ftime"
-	// SetSyscallId("sync", 36);
-	// SetSyscallId("kill", 37);
-	// SetSyscallId("rename", 38);
-	// SetSyscallId("mkdir", 39);
-	// SetSyscallId("rmdir", 40);
-	// SetSyscallId("dup", 41);
-	// SetSyscallId("pipe", 42);
-	// SetSyscallId("times", 43);
-	// // 44 was "prof"
-	// SetSyscallId("brk", 45);
-	// SetSyscallId("setgid", 46);
-	// SetSyscallId("getgid", 47);
-	// // 48 was "signal"
-	// SetSyscallId("geteuid", 49);
-	// SetSyscallId("getegid", 50);
-	// SetSyscallId("acct", 51);
-	// SetSyscallId("umount2", 52);
-	// // 53 was "lock"
-	// SetSyscallId("ioctl", 54);
-	// SetSyscallId("fcntl", 55);
-	// // 56 was "mpx"
-	// SetSyscallId("setpgid", 57);
-	// // 58 was "ulimit"
-	// // 59 was "olduname"
-	// SetSyscallId("umask", 60);
-	// SetSyscallId("chroot", 61);
-	// SetSyscallId("ustat", 62);
-	// SetSyscallId("dup2", 63);
-	// SetSyscallId("getppid", 64);
-	// SetSyscallId("getpgrp", 65);
-	// SetSyscallId("setsid", 66);
-	// SetSyscallId("sigaction", 67);
-	// // 68 was "sgetmask"
-	// // 69 was "ssetmask"
-	// SetSyscallId("setreuid", 70);
-	// SetSyscallId("setregid", 71);
-	// SetSyscallId("sigsuspend", 72);
-	// SetSyscallId("sigpending", 73);
-	// SetSyscallId("sethostname", 74);
-	// SetSyscallId("setrlimit", 75);
-	// SetSyscallId("getrlimit", 76);
-	// SetSyscallId("getrusage", 77);
-	// SetSyscallId("gettimeofday", 78);
-	// SetSyscallId("settimeofday", 79);
-	// SetSyscallId("getgroups", 80);
-	// SetSyscallId("setgroups", 81);
-	// SetSyscallId("select", 82);
-	// SetSyscallId("symlink", 83);
-	// // 84 was "lstat"
-	// SetSyscallId("readlink", 85);
-	// SetSyscallId("uselib", 86);
-	// SetSyscallId("swapon", 87);
-	// SetSyscallId("reboot", 88);
-	// SetSyscallId("readdir", 89);
-	// SetSyscallId("mmap", 90);
-	// SetSyscallId("munmap", 91);
-	// SetSyscallId("truncate", 92);
-	// SetSyscallId("ftruncate", 93);
-	// SetSyscallId("fchmod", 94);
-	// SetSyscallId("fchown", 95);
-	// SetSyscallId("getpriority", 96);
-	// SetSyscallId("setpriority", 97);
-	// // 98 was "profile"
-	// SetSyscallId("statfs", 99);
-	// SetSyscallId("fstatfs", 100);
-	// SetSyscallId("socketcall", 102);
-	// SetSyscallId("syslog", 103);
-	// SetSyscallId("setitimer", 104);
-	// SetSyscallId("getitimer", 105);
-	// SetSyscallId("stat", 106);
-	// SetSyscallId("lstat", 107);
-	// SetSyscallId("fstat", 108);
-	// // 109 was "uname"
-	// // 110 was "iopl"
-	// SetSyscallId("vhangup", 111);
-	// // 112 was "idle"
-	// SetSyscallId("syscall", 113);
-	// SetSyscallId("wait4", 114);
-	// SetSyscallId("swapoff", 115);
-	// SetSyscallId("sysinfo", 116);
-	// SetSyscallId("ipc", 117);
-	// SetSyscallId("fsync", 118);
-	// SetSyscallId("sigreturn", 119);
-	// SetSyscallId("clone", 120);
-	// SetSyscallId("setdomainname", 121);
-	// SetSyscallId("uname", 122);
-	// // 123 was "modify_ldt"
-	// SetSyscallId("adjtimex", 124);
-	// SetSyscallId("mprotect", 125);
-	// SetSyscallId("sigprocmask", 126);
-	// // 127 was "create_module"
-	// SetSyscallId("init_module", 128);
-	// SetSyscallId("delete_module", 129);
-	// // 130 was "get_kernel_syms"
-	// SetSyscallId("quotactl", 131);
-	// SetSyscallId("getpgid", 132);
-	// SetSyscallId("fchdir", 133);
-	// SetSyscallId("bdflush", 134);
-	// SetSyscallId("sysfs", 135);
-	// SetSyscallId("personality", 136);
-	// // 137 was "afs_syscall"
-	// SetSyscallId("setfsuid", 138);
-	// SetSyscallId("setfsgid", 139);
-	// SetSyscallId("_llseek", 140);
-	// SetSyscallId("getdents", 141);
-	// SetSyscallId("_newselect", 142);
-	// SetSyscallId("flock", 143);
-	// SetSyscallId("msync", 144);
-	// SetSyscallId("readv", 145);
-	// SetSyscallId("writev", 146);
-	// SetSyscallId("getsid", 147);
-	// SetSyscallId("fdatasync", 148);
-	// SetSyscallId("_sysctl", 149);
-	// SetSyscallId("mlock", 150);
-	// SetSyscallId("munlock", 151);
-	// SetSyscallId("mlockall", 152);
-	// SetSyscallId("munlockall", 153);
-	// SetSyscallId("sched_setparam", 154);
-	// SetSyscallId("sched_getparam", 155);
-	// SetSyscallId("sched_setscheduler", 156);
-	// SetSyscallId("sched_getscheduler", 157);
-	// SetSyscallId("sched_yield", 158);
-	// SetSyscallId("sched_get_priority_max", 159);
-	// SetSyscallId("sched_get_priority_min", 160);
-	// SetSyscallId("sched_rr_get_interval", 161);
-	// SetSyscallId("nanosleep", 162);
-	// SetSyscallId("mremap", 163);
-	// SetSyscallId("setresuid", 164);
-	// SetSyscallId("getresuid", 165);
-	// // 166 was "vm86"
-	// // 167 was "query_module"
-	// SetSyscallId("poll", 168);
-	// SetSyscallId("nfsservctl", 169);
-	// SetSyscallId("setresgid", 170);
-	// SetSyscallId("getresgid", 171);
-	// SetSyscallId("prctl", 172);
-	// SetSyscallId("rt_sigreturn", 173);
-	// SetSyscallId("rt_sigaction", 174);
-	// SetSyscallId("rt_sigprocmask", 175);
-	// SetSyscallId("rt_sigpending", 176);
-	// SetSyscallId("rt_sigtimedwait", 177);
-	// SetSyscallId("rt_sigqueueinfo", 178);
-	// SetSyscallId("rt_sigsuspend", 179);
-	// SetSyscallId("pread64", 180);
-	// SetSyscallId("pwrite64", 181);
-	// SetSyscallId("chown", 182);
-	// SetSyscallId("getcwd", 183);
-	// SetSyscallId("capget", 184);
-	// SetSyscallId("capset", 185);
-	// SetSyscallId("sigaltstack", 186);
-	// SetSyscallId("sendfile", 187);
-	// // 188 is reserved
-	// // 189 is reserved
-	// SetSyscallId("vfork", 190);
-	// SetSyscallId("ugetrlimit", 191);
-	// SetSyscallId("mmap2", 192);
-	// SetSyscallId("truncate64", 193);
-	// SetSyscallId("ftruncate64", 194);
-	// SetSyscallId("stat64", 195);
-	// SetSyscallId("lstat64", 196);
-	// SetSyscallId("fstat64", 197);
-	// SetSyscallId("lchown32", 198);
-	// SetSyscallId("getuid32", 199);
-	// SetSyscallId("getgid32", 200);
-	// SetSyscallId("geteuid32", 201);
-	// SetSyscallId("getegid32", 202);
-	// SetSyscallId("setreuid32", 203);
-	// SetSyscallId("setregid32", 204);
-	// SetSyscallId("getgroups32", 205);
-	// SetSyscallId("setgroups32", 206);
-	// SetSyscallId("fchown32", 207);
-	// SetSyscallId("setresuid32", 208);
-	// SetSyscallId("getresuid32", 209);
-	// SetSyscallId("setresgid32", 210);
-	// SetSyscallId("getresgid32", 211);
-	// SetSyscallId("chown32", 212);
-	// SetSyscallId("setuid32", 213);
-	// SetSyscallId("setgid32", 214);
-	// SetSyscallId("setfsuid32", 215);
-	// SetSyscallId("setfsgid32", 216);
-	// SetSyscallId("getdents64", 217);
-	// SetSyscallId("pivot_root", 218);
-	// SetSyscallId("mincore", 219);
-	// SetSyscallId("madvise", 220);
-	// SetSyscallId("fcntl64", 221);
-	// // 222 is for tux
-	// // 223 is unused
-	// SetSyscallId("gettid", 224);
-	// SetSyscallId("readahead", 225);
-	// SetSyscallId("setxattr", 226);
-	// SetSyscallId("lsetxattr", 227);
-	// SetSyscallId("fsetxattr", 228);
-	// SetSyscallId("getxattr", 229);
-	// SetSyscallId("lgetxattr", 230);
-	// SetSyscallId("fgetxattr", 231);
-	// SetSyscallId("listxattr", 232);
-	// SetSyscallId("llistxattr", 233);
-	// SetSyscallId("flistxattr", 234);
-	// SetSyscallId("removexattr", 235);
-	// SetSyscallId("lremovexattr", 236);
-	// SetSyscallId("fremovexattr", 237);
-	// SetSyscallId("tkill", 238);
-	// SetSyscallId("sendfile64", 239);
-	// SetSyscallId("futex", 240);
-	// SetSyscallId("sched_setaffinity", 241);
-	// SetSyscallId("sched_getaffinity", 242);
-	// SetSyscallId("io_setup", 243);
-	// SetSyscallId("io_destroy", 244);
-	// SetSyscallId("io_getevents", 245);
-	// SetSyscallId("io_submit", 246);
-	// SetSyscallId("io_cancel", 247);
-	// SetSyscallId("exit_group", 248);
-	// SetSyscallId("lookup_dcookie", 249);
-	// SetSyscallId("epoll_create", 250);
-	// SetSyscallId("epoll_ctl", 251);
-	// SetSyscallId("epoll_wait", 252);
-	// SetSyscallId("remap_file_pages", 253);
-	// // 254 is for set_thread_area
-	// // 255 is for get_thread_area
-	// SetSyscallId("set_tid_address", 256);
-	// SetSyscallId("timer_create", 257);
-	// SetSyscallId("timer_settime", 258);
-	// SetSyscallId("timer_gettime", 259);
-	// SetSyscallId("timer_getoverrun", 260);
-	// SetSyscallId("timer_delete", 261);
-	// SetSyscallId("clock_settime", 262);
-	// SetSyscallId("clock_gettime", 263);
-	// SetSyscallId("clock_getres", 264);
-	// SetSyscallId("clock_nanosleep", 265);
-	// SetSyscallId("statfs64", 266);
-	// SetSyscallId("fstatfs64", 267);
-	// SetSyscallId("tgkill", 268);
-	// SetSyscallId("utimes", 269);
-	// SetSyscallId("pciconfig_iobase", 271);
-	// SetSyscallId("pciconfig_read", 272);
-	// SetSyscallId("pciconfig_write", 273);
-	// SetSyscallId("mq_open", 274);
-	// SetSyscallId("mq_unlink", 275);
-	// SetSyscallId("mq_timedsend", 276);
-	// SetSyscallId("mq_timedreceive", 277);
-	// SetSyscallId("mq_notify", 278);
-	// SetSyscallId("mq_getsetattr", 279);
-	// SetSyscallId("waitid", 280);
-	// SetSyscallId("socket", 281);
-	// SetSyscallId("bind", 282);
-	// SetSyscallId("connect", 283);
-	// SetSyscallId("listen", 284);
-	// SetSyscallId("accept", 285);
-	// SetSyscallId("getsockname", 286);
-	// SetSyscallId("getpeername", 287);
-	// SetSyscallId("socketpair", 288);
-	// SetSyscallId("send", 289);
-	// SetSyscallId("sendto", 290);
-	// SetSyscallId("recv", 291);
-	// SetSyscallId("recvfrom", 292);
-	// SetSyscallId("shutdown", 293);
-	// SetSyscallId("setsockopt", 294);
-	// SetSyscallId("getsockopt", 295);
-	// SetSyscallId("sendmsg", 296);
-	// SetSyscallId("recvmsg", 297);
-	// SetSyscallId("semop", 298);
-	// SetSyscallId("semget", 299);
-	// SetSyscallId("semctl", 300);
-	// SetSyscallId("msgsnd", 301);
-	// SetSyscallId("msgrcv", 302);
-	// SetSyscallId("msgget", 303);
-	// SetSyscallId("msgctl", 304);
-	// SetSyscallId("shmat", 305);
-	// SetSyscallId("shmdt", 306);
-	// SetSyscallId("shmget", 307);
-	// SetSyscallId("shmctl", 308);
-	// SetSyscallId("add_key", 309);
-	// SetSyscallId("request_key", 310);
-	// SetSyscallId("keyctl", 311);
-	// SetSyscallId("semtimedop", 312);
-	// SetSyscallId("vserver", 313);
-	// SetSyscallId("ioprio_set", 314);
-	// SetSyscallId("ioprio_get", 315);
-	// SetSyscallId("inotify_init", 316);
-	// SetSyscallId("inotify_add_watch", 317);
-	// SetSyscallId("inotify_rm_watch", 318);
-	// SetSyscallId("mbind", 319);
-	// SetSyscallId("get_mempolicy", 320);
-	// SetSyscallId("set_mempolicy", 321);
-	// SetSyscallId("openat", 322);
-	// SetSyscallId("mkdirat", 323);
-	// SetSyscallId("mknodat", 324);
-	// SetSyscallId("fchownat", 325);
-	// SetSyscallId("futimesat", 326);
-	// SetSyscallId("fstatat64", 327);
-	// SetSyscallId("unlinkat", 328);
-	// SetSyscallId("renameat", 329);
-	// SetSyscallId("linkat", 330);
-	// SetSyscallId("symlinkat", 331);
-	// SetSyscallId("readlinkat", 332);
-	// SetSyscallId("fchmodat", 333);
-	// SetSyscallId("faccessat", 334);
-	// SetSyscallId("pselect6", 335);
-	// SetSyscallId("ppoll", 336);
-	// SetSyscallId("unshare", 337);
-	// SetSyscallId("set_robust_list", 338);
-	// SetSyscallId("get_robust_list", 339);
-	// SetSyscallId("splice", 340);
-	// SetSyscallId("sync_file_range2", 341);
-	// SetSyscallId("tee", 342);
-	// SetSyscallId("vmsplice", 343);
-	// SetSyscallId("move_pages", 344);
-	// SetSyscallId("getcpu", 345);
-	// SetSyscallId("epoll_pwait", 346);
-	// SetSyscallId("kexec_load", 347);
-	// SetSyscallId("utimensat", 348);
-	// SetSyscallId("signalfd", 349);
-	// SetSyscallId("timerfd_create", 350);
-	// SetSyscallId("eventfd", 351);
-	// SetSyscallId("fallocate", 352);
-	// SetSyscallId("timerfd_settime", 353);
-	// SetSyscallId("timerfd_gettime", 354);
-	// SetSyscallId("signalfd4", 355);
-	// SetSyscallId("eventfd2", 356);
-	// SetSyscallId("epoll_create1", 357);
-	// SetSyscallId("dup3", 358);
-	// SetSyscallId("pipe2", 359);
-	// SetSyscallId("inotify_init1", 360);
-	// SetSyscallId("preadv", 361);
-	// SetSyscallId("pwritev", 362);
-	// SetSyscallId("rt_tgsigqueueinfo", 363);
-	// SetSyscallId("perf_event_open", 364);
-	// SetSyscallId("recvmmsg", 365);
-	// SetSyscallId("accept4", 366);
-	// SetSyscallId("fanotify_init", 367);
-	// SetSyscallId("fanotify_mark", 368);
-	// SetSyscallId("prlimit64", 369);
-	// SetSyscallId("name_to_handle_at", 370);
-	// SetSyscallId("open_by_handle_at", 371);
-	// SetSyscallId("clock_adjtime", 372);
-	// SetSyscallId("syncfs", 373);
-	// SetSyscallId("sendmmsg", 374);
-	// SetSyscallId("setns", 375);
-	// SetSyscallId("process_vm_readv", 376);
-	// SetSyscallId("process_vm_writev", 377);
-	// // 378 is for kcmp
-	
-	// // the following are private to the arm
-	// SetSyscallId("breakpoint", 983041);
-	// SetSyscallId("cacheflush", 983042);
-	// SetSyscallId("usr26", 983043);
-	// SetSyscallId("usr32", 983044);
-	// SetSyscallId("set_tls", 983045);
-
-	return true;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSPPC()
-{
-	// see either arch/powerpc/include/asm/unistd.h or arch/powerpc/include/uapi/asm/unistd.h in Linux source
-	SetSyscallId("restart_syscall", 0);
-	SetSyscallId("exit", 1);
-	SetSyscallId("fork", 2);
-	SetSyscallId("read", 3);
-	SetSyscallId("write", 4);
-	SetSyscallId("open", 5);
-	SetSyscallId("close", 6);
-	SetSyscallId("waitpid", 7);
-	SetSyscallId("creat", 8);
-	SetSyscallId("link", 9);
-	SetSyscallId("unlink", 10);
-	SetSyscallId("execve", 11);
-	SetSyscallId("chdir", 12);
-	SetSyscallId("time", 13);
-	SetSyscallId("mknod", 14);
-	SetSyscallId("chmod", 15);
-	SetSyscallId("lchown", 16);
-	SetSyscallId("break", 17);
-	SetSyscallId("oldstat", 18);
-	SetSyscallId("lseek", 19);
-	SetSyscallId("getpid", 20);
-	SetSyscallId("mount", 21);
-	SetSyscallId("umount", 22);
-	SetSyscallId("setuid", 23);
-	SetSyscallId("getuid", 24);
-	SetSyscallId("stime", 25);
-	SetSyscallId("ptrace", 26);
-	SetSyscallId("alarm", 27);
-	SetSyscallId("oldfstat", 28);
-	SetSyscallId("pause", 29);
-	SetSyscallId("utime", 30);
-	SetSyscallId("stty", 31);
-	SetSyscallId("gtty", 32);
-	SetSyscallId("access", 33);
-	SetSyscallId("nice", 34);
-	SetSyscallId("ftime", 35);
-	SetSyscallId("sync", 36);
-	SetSyscallId("kill", 37);
-	SetSyscallId("rename", 38);
-	SetSyscallId("mkdir", 39);
-	SetSyscallId("rmdir", 40);
-	SetSyscallId("dup", 41);
-	SetSyscallId("pipe", 42);
-	SetSyscallId("times", 43);
-	SetSyscallId("prof", 44);
-	SetSyscallId("brk", 45);
-	SetSyscallId("setgid", 46);
-	SetSyscallId("getgid", 47);
-	SetSyscallId("signal", 48);
-	SetSyscallId("geteuid", 49);
-	SetSyscallId("getegid", 50);
-	SetSyscallId("acct", 51);
-	SetSyscallId("umount2", 52);
-	SetSyscallId("lock", 53);
-	SetSyscallId("ioctl", 54);
-	SetSyscallId("fcntl", 55);
-	SetSyscallId("mpx", 56);
-	SetSyscallId("setpgid", 57);
-	SetSyscallId("ulimit", 58);
-	SetSyscallId("oldolduname", 59);
-	SetSyscallId("umask", 60);
-	SetSyscallId("chroot", 61);
-	SetSyscallId("ustat", 62);
-	SetSyscallId("dup2", 63);
-	SetSyscallId("getppid", 64);
-	SetSyscallId("getpgrp", 65);
-	SetSyscallId("setsid", 66);
-	SetSyscallId("sigaction", 67);
-	SetSyscallId("sgetmask", 68);
-	SetSyscallId("ssetmask", 69);
-	SetSyscallId("setreuid", 70);
-	SetSyscallId("setregid", 71);
-	SetSyscallId("sigsuspend", 72);
-	SetSyscallId("sigpending", 73);
-	SetSyscallId("sethostname", 74);
-	SetSyscallId("setrlimit", 75);
-	SetSyscallId("getrlimit", 76);
-	SetSyscallId("getrusage", 77);
-	SetSyscallId("gettimeofday", 78);
-	SetSyscallId("settimeofday", 79);
-	SetSyscallId("getgroups", 80);
-	SetSyscallId("setgroups", 81);
-	SetSyscallId("select", 82);
-	SetSyscallId("symlink", 83);
-	SetSyscallId("oldlstat", 84);
-	SetSyscallId("readlink", 85);
-	SetSyscallId("uselib", 86);
-	SetSyscallId("swapon", 87);
-	SetSyscallId("reboot", 88);
-	SetSyscallId("readdir", 89);
-	SetSyscallId("mmap", 90);
-	SetSyscallId("munmap", 91);
-	SetSyscallId("truncate", 92);
-	SetSyscallId("ftruncate", 93);
-	SetSyscallId("fchmod", 94);
-	SetSyscallId("fchown", 95);
-	SetSyscallId("getpriority", 96);
-	SetSyscallId("setpriority", 97);
-	SetSyscallId("profil", 98);
-	SetSyscallId("statfs", 99);
-	SetSyscallId("fstatfs", 100);
-	SetSyscallId("ioperm", 101);
-	SetSyscallId("socketcall", 102);
-	SetSyscallId("syslog", 103);
-	SetSyscallId("setitimer", 104);
-	SetSyscallId("getitimer", 105);
-	SetSyscallId("stat", 106);
-	SetSyscallId("lstat", 107);
-	SetSyscallId("fstat", 108);
-	SetSyscallId("olduname", 109);
-	SetSyscallId("iopl", 110);
-	SetSyscallId("vhangup", 111);
-	SetSyscallId("idle", 112);
-	SetSyscallId("vm86", 113);
-	SetSyscallId("wait4", 114);
-	SetSyscallId("swapoff", 115);
-	SetSyscallId("sysinfo", 116);
-	SetSyscallId("ipc", 117);
-	SetSyscallId("fsync", 118);
-	SetSyscallId("sigreturn", 119);
-	SetSyscallId("clone", 120);
-	SetSyscallId("setdomainname", 121);
-	SetSyscallId("uname", 122);
-	SetSyscallId("modify_ldt", 123);
-	SetSyscallId("adjtimex", 124);
-	SetSyscallId("mprotect", 125);
-	SetSyscallId("sigprocmask", 126);
-	SetSyscallId("create_module", 127);
-	SetSyscallId("init_module", 128);
-	SetSyscallId("delete_module", 129);
-	SetSyscallId("get_kernel_syms", 130);
-	SetSyscallId("quotactl", 131);
-	SetSyscallId("getpgid", 132);
-	SetSyscallId("fchdir", 133);
-	SetSyscallId("bdflush", 134);
-	SetSyscallId("sysfs", 135);
-	SetSyscallId("personality", 136);
-	SetSyscallId("afs_syscall", 137);
-	SetSyscallId("setfsuid", 138);
-	SetSyscallId("setfsgid", 139);
-	SetSyscallId("_llseek", 140);
-	SetSyscallId("getdents", 141);
-	SetSyscallId("_newselect", 142);
-	SetSyscallId("flock", 143);
-	SetSyscallId("msync", 144);
-	SetSyscallId("readv", 145);
-	SetSyscallId("writev", 146);
-	SetSyscallId("getsid", 147);
-	SetSyscallId("fdatasync", 148);
-	SetSyscallId("_sysctl", 149);
-	SetSyscallId("mlock", 150);
-	SetSyscallId("munlock", 151);
-	SetSyscallId("mlockall", 152);
-	SetSyscallId("munlockall", 153);
-	SetSyscallId("sched_setparam", 154);
-	SetSyscallId("sched_getparam", 155);
-	SetSyscallId("sched_get_priority_max", 159);
-	SetSyscallId("sched_set_priority_max", 160);
-	SetSyscallId("sched_rr_get_interval", 161);
-	SetSyscallId("nanosleep", 162);
-	SetSyscallId("mremap", 163);
-	SetSyscallId("setresuid", 164);
-	SetSyscallId("getresuid", 165);
-	SetSyscallId("query_module", 166);
-	SetSyscallId("poll", 167);
-	SetSyscallId("nfsservctl", 168);
-	SetSyscallId("setresgid", 169);
-	SetSyscallId("getresgid", 170);
-	SetSyscallId("prctl", 171);
-	SetSyscallId("rt_sigreturn", 172);
-	SetSyscallId("rt_sigaction", 173);
-	SetSyscallId("rt_sigprocmask", 174);
-	SetSyscallId("rt_sigpending", 175);
-	SetSyscallId("rt_sigtimedwait", 176);
-	SetSyscallId("rt_sigqueueinfo", 177);
-	SetSyscallId("ry_sigsuspend", 178);
-	SetSyscallId("pread64", 179);
-	SetSyscallId("pwrite64", 180);
-	SetSyscallId("chown", 181);
-	SetSyscallId("getcwd", 182);
-	SetSyscallId("capget", 183);
-	SetSyscallId("capset", 184);
-	SetSyscallId("sigaltstack", 185);
-	SetSyscallId("sendfile", 186);
-	SetSyscallId("getpmsg", 187);
-	SetSyscallId("putpmsg", 188);
-	SetSyscallId("vfork", 189);
-	SetSyscallId("ugetrlimit", 190);
-	SetSyscallId("readahead", 191);
-	SetSyscallId("mmap2", 192);
-	SetSyscallId("truncate64", 193);
-	SetSyscallId("ftruncate64", 194);
-	SetSyscallId("stat64", 195);
-	SetSyscallId("lstat64", 196);
-	SetSyscallId("fstat64", 197);
-	SetSyscallId("pciconfig_read", 198);
-	SetSyscallId("pciconfig_write", 199);
-	SetSyscallId("pciconfig_iobase", 200);
-	SetSyscallId("multiplexer", 201);
-	SetSyscallId("getdents64", 202);
-	SetSyscallId("pivot_root", 203);
-	SetSyscallId("fcntl64", 204);
-	SetSyscallId("madvise", 205);
-	SetSyscallId("mincore", 206);
-	SetSyscallId("getpid", 207); // in reality gettid: assuming that in a mono-thread environment pid=tid
-	SetSyscallId("tkill", 208);
-	SetSyscallId("setxattr", 209);
-	SetSyscallId("lsetxattr", 210);
-	SetSyscallId("fsetxattr", 211);
-	SetSyscallId("getxattr", 212);
-	SetSyscallId("lgetxattr", 213);
-	SetSyscallId("fgetxattr", 214);
-	SetSyscallId("listxattr", 215);
-	SetSyscallId("llistxattr", 216);
-	SetSyscallId("flistxattr", 217);
-	SetSyscallId("removexattr", 218);
-	SetSyscallId("lremovexattr", 219);
-	SetSyscallId("fremovexattr", 220);
-	SetSyscallId("futex", 221);
-	SetSyscallId("sched_setaffinity", 222);
-	SetSyscallId("sched_getaffinity", 223);
-	// 224 currently unused
-	SetSyscallId("tuxcall", 225);
-	SetSyscallId("sendfile64", 226);
-	SetSyscallId("io_setup", 227);
-	SetSyscallId("io_destroy", 228);
-	SetSyscallId("io_getevents", 229);
-	SetSyscallId("io_submit", 230);
-	SetSyscallId("io_cancel", 231);
-	SetSyscallId("set_tid_address", 232);
-	SetSyscallId("fadvise64", 233);
-	SetSyscallId("exit_group", 234);
-	SetSyscallId("lookup_dcookie", 235);
-	SetSyscallId("epoll_create", 236);
-	SetSyscallId("epoll_ctl", 237);
-	SetSyscallId("epoll_wait", 238);
-	SetSyscallId("remap_file_pages", 239);
-	SetSyscallId("timer_create", 240);
-	SetSyscallId("timer_settime", 241);
-	SetSyscallId("timer_gettime", 242);
-	SetSyscallId("timer_getoverrun", 243);
-	SetSyscallId("timer_delete", 244);
-	SetSyscallId("clock_settime", 245);
-	SetSyscallId("clock_gettime", 246);
-	SetSyscallId("clock_getres", 247);
-	SetSyscallId("clock_nanosleep", 248);
-	SetSyscallId("swapcontext", 249);
-	SetSyscallId("tgkill", 250);
-	SetSyscallId("utimes", 251);
-	SetSyscallId("statfs64", 252);
-	SetSyscallId("fstatfs64", 253);
-	SetSyscallId("fadvise64_64", 254);
-	SetSyscallId("rtas", 255);
-	SetSyscallId("sys_debug_setcontext", 256);
-	// 257 is reserved for vserver
-	SetSyscallId("migrate_pages", 258);
-	SetSyscallId("mbind", 259);
-	SetSyscallId("get_mempolicy", 260);
-	SetSyscallId("set_mempolicy", 261);
-	SetSyscallId("mq_open", 262);
-	SetSyscallId("mq_unlink", 263);
-	SetSyscallId("mq_timedsend", 264);
-	SetSyscallId("mq_timedreceive", 265);
-	SetSyscallId("mq_notify", 266);
-	SetSyscallId("mq_getsetattr", 267);
-	SetSyscallId("kexec_load", 268);
-	SetSyscallId("add_key", 269);
-	SetSyscallId("request_key", 270);
-	SetSyscallId("keyctl", 271);
-	SetSyscallId("waitid", 272);
-	SetSyscallId("ioprio_set", 273);
-	SetSyscallId("ioprio_get", 274);
-	SetSyscallId("inotify_init", 275);
-	SetSyscallId("inotify_add_watch", 276);
-	SetSyscallId("inotify_rm_watch", 277);
-	SetSyscallId("spu_run", 278);
-	SetSyscallId("spu_create", 279);
-	SetSyscallId("pselect6", 280);
-	SetSyscallId("ppoll", 281);
-	SetSyscallId("unshare", 282);
-	SetSyscallId("splice", 283);
-	SetSyscallId("tee", 284);
-	SetSyscallId("vmsplice", 285);
-	SetSyscallId("openat", 286);
-	SetSyscallId("mkdirat", 287);
-	SetSyscallId("mknodat", 288);
-	SetSyscallId("fchownat", 289);
-	SetSyscallId("futimesat", 290);
-	SetSyscallId("fstatat64", 291);
-	SetSyscallId("unlinkat", 292);
-	SetSyscallId("renameat", 293);
-	SetSyscallId("linkat", 294);
-	SetSyscallId("symlinkat", 295);
-	SetSyscallId("readlinkat", 296);
-	SetSyscallId("fchmodat", 297);
-	SetSyscallId("faccessat", 298);
-	SetSyscallId("get_robust_list", 299);
-	SetSyscallId("set_robust_list", 300);
-	SetSyscallId("move_pages", 301);
-	SetSyscallId("getcpu", 302);
-	SetSyscallId("epoll_wait", 303);
-	SetSyscallId("utimensat", 304);
-	SetSyscallId("signalfd", 305);
-	SetSyscallId("timerfd_create", 306);
-	SetSyscallId("eventfd", 307);
-	SetSyscallId("sync_file_range2", 308);
-	SetSyscallId("fallocate", 309);
-	SetSyscallId("subpage_prot", 310);
-	SetSyscallId("timerfd_settime", 311);
-	SetSyscallId("timerfd_gettime", 312);
-	SetSyscallId("signalfd4", 313);
-	SetSyscallId("eventfd2", 314);
-	SetSyscallId("epoll_create1", 315);
-	SetSyscallId("dup3", 316);
-	SetSyscallId("pipe2", 317);
-	SetSyscallId("inotify_init1", 318);
-	SetSyscallId("perf_event_open", 319);
-	SetSyscallId("preadv", 320);
-	SetSyscallId("pwritev", 321);
-	SetSyscallId("rt_tsigqueueinfo", 322);
-	SetSyscallId("fanotify_init", 323);
-	SetSyscallId("fanotify_mark", 324);
-	SetSyscallId("prlimit64", 325);
-	SetSyscallId("socket", 326);
-	SetSyscallId("bind", 327);
-	SetSyscallId("connect", 328);
-	SetSyscallId("listen", 329);
-	SetSyscallId("accept", 330);
-	SetSyscallId("getsockname", 331);
-	SetSyscallId("getpeername", 332);
-	SetSyscallId("socketpair", 333);
-	SetSyscallId("send", 334);
-	SetSyscallId("sendto", 335);
-	SetSyscallId("recv", 336);
-	SetSyscallId("recvfrom", 337);
-	SetSyscallId("shutdown", 338);
-	SetSyscallId("setsockopt", 339);
-	SetSyscallId("getsockopt", 340);
-	SetSyscallId("sendmsg", 341);
-	SetSyscallId("recvmsg", 342);
-	SetSyscallId("recvmmsg", 343);
-	SetSyscallId("accept4", 344);
-	SetSyscallId("name_to_handle_at", 345);
-	SetSyscallId("open_by_handle_at", 346);
-	SetSyscallId("clock_adjtime", 347);
-	SetSyscallId("syncfs", 348);
-	SetSyscallId("sendmmsg", 349);
-	SetSyscallId("setns", 350);
-	SetSyscallId("process_vm_readv", 351);
-	SetSyscallId("process_vm_writev", 352);
-
-  return true;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallId(
-    const char *syscall_name, int syscall_id)
-{
-	if(unlikely(verbose_))
-	logger_
-		<< DebugInfo
-		<< "Associating syscall_name \"" << syscall_name << "\""
-		<< "to syscall_id number " << syscall_id
-		<< EndDebugInfo;
-		
-	if(HasSyscall(syscall_id))
-	{
-		std::stringstream s;
-		s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << std::endl;
-		s << "syscall_id already associated to syscall \""
-			<< syscall_name_assoc_map_[syscall_id] << "\"" << std::endl;
-		s << "  you wanted to associate it to " << syscall_name << std::endl;
-		throw std::runtime_error(s.str().c_str());
-	}
-
-	syscall_name_assoc_map_[syscall_id] = syscall_name;
-	syscall_impl_assoc_map_[syscall_id] = GetSyscallImpl(syscall_name);
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap()
-{
-	syscall_name_map_["exit"] = &thistype::LSC_exit;
-	syscall_name_map_["read"] = &thistype::LSC_read;
-	syscall_name_map_["write"] = &thistype::LSC_write;
-	syscall_name_map_["open"] = &thistype::LSC_open;
-	syscall_name_map_["close"] = &thistype::LSC_close;
-	syscall_name_map_["lseek"] = &thistype::LSC_lseek;
-	syscall_name_map_["getpid"] = &thistype::LSC_getpid;
-	syscall_name_map_["gettid"] = &thistype::LSC_gettid;
-	syscall_name_map_["getuid"] = &thistype::LSC_getuid;
-	syscall_name_map_["access"] = &thistype::LSC_access;
-	syscall_name_map_["times"] = &thistype::LSC_times;
-	syscall_name_map_["brk"] = &thistype::LSC_brk;
-	syscall_name_map_["getgid"] = &thistype::LSC_getgid;
-	syscall_name_map_["geteuid"] = &thistype::LSC_geteuid;
-	syscall_name_map_["getegid"] = &thistype::LSC_getegid;
-	syscall_name_map_["munmap"] = &thistype::LSC_munmap;
-	syscall_name_map_["stat"] = &thistype::LSC_stat;
-	syscall_name_map_["fstat"] = &thistype::LSC_fstat;
-	syscall_name_map_["uname"] = &thistype::LSC_uname;
-	syscall_name_map_["_llseek"] = &thistype::LSC__llseek;
-	syscall_name_map_["writev"] = &thistype::LSC_writev;
-	syscall_name_map_["mmap"] = &thistype::LSC_mmap;
-	syscall_name_map_["mmap2"] = &thistype::LSC_mmap2;
-	syscall_name_map_["stat64"] = &thistype::LSC_stat64;
-	syscall_name_map_["fstat64"] = &thistype::LSC_fstat64;
-	syscall_name_map_["getuid32"] = &thistype::LSC_getuid32;
-	syscall_name_map_["getgid32"] = &thistype::LSC_getgid32;
-	syscall_name_map_["geteuid32"] = &thistype::LSC_geteuid32;
-	syscall_name_map_["getegid32"] = &thistype::LSC_getegid32;
-	syscall_name_map_["fcntl64"] = &thistype::LSC_fcntl64;
-	syscall_name_map_["flistxattr"] = &thistype::LSC_flistxattr;
-	syscall_name_map_["exit_group"] = &thistype::LSC_exit_group;
-	syscall_name_map_["fcntl"] = &thistype::LSC_fcntl;
-	syscall_name_map_["dup"] = &thistype::LSC_dup;
-	syscall_name_map_["ioctl"] = &thistype::LSC_ioctl;
-	syscall_name_map_["ugetrlimit"] = &thistype::LSC_ugetrlimit;
-	syscall_name_map_["getrlimit"] = &thistype::LSC_getrlimit;
-	syscall_name_map_["setrlimit"] = &thistype::LSC_setrlimit;
-	syscall_name_map_["rt_sigaction"] = &thistype::LSC_rt_sigaction;
-	syscall_name_map_["getrusage"] = &thistype::LSC_getrusage;
-	syscall_name_map_["unlink"] = &thistype::LSC_unlink;
-	syscall_name_map_["rename"] = &thistype::LSC_rename;
-	syscall_name_map_["time"] = &thistype::LSC_time;
-	syscall_name_map_["socketcall"] = &thistype::LSC_socketcall;
-	syscall_name_map_["rt_sigprocmask"] = &thistype::LSC_rt_sigprocmask;
-	syscall_name_map_["kill"] = &thistype::LSC_kill;
-	syscall_name_map_["tkill"] = &thistype::LSC_tkill;
-	syscall_name_map_["tgkill"] = &thistype::LSC_tgkill;
-	syscall_name_map_["ftruncate"] = &thistype::LSC_ftruncate;
-	syscall_name_map_["umask"] = &thistype::LSC_umask;
-	syscall_name_map_["gettimeofday"] = &thistype::LSC_gettimeofday;
-	syscall_name_map_["statfs"] = &thistype::LSC_statfs;
-	
-	// the following are arm private system calls
-	if ((system_type_.compare("arm") == 0) || (system_type_.compare("arm-eabi") == 0))
-	{
-		syscall_name_map_["breakpoint"] = &thistype::LSC_arm_breakpoint;
-		syscall_name_map_["cacheflush"] = &thistype::LSC_arm_cacheflush;
-		syscall_name_map_["usr26"] = &thistype::LSC_arm_usr26;
-		syscall_name_map_["usr32"] = &thistype::LSC_arm_usr32;
-		syscall_name_map_["set_tls"] = &thistype::LSC_arm_set_tls;
-	}
-	// the following are i386 private system calls
-	else if ((system_type_.compare("i386") == 0))
-	{
-		syscall_name_map_["breakpoint"] = &thistype::LSC_arm_breakpoint;
-		syscall_name_map_["cacheflush"] = &thistype::LSC_arm_cacheflush;
-		syscall_name_map_["usr26"] = &thistype::LSC_arm_usr26;
-		syscall_name_map_["usr32"] = &thistype::LSC_arm_usr32;
-		syscall_name_map_["set_tls"] = &thistype::LSC_arm_set_tls;
-	}
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(const char *syscall_name)
-{
-	return syscall_name_map_.find(syscall_name) != syscall_name_map_.end();
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(int syscall_id)
-{
-	return syscall_impl_assoc_map_.find(syscall_id) != 
-	  syscall_impl_assoc_map_.end();
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-typename Linux<ADDRESS_TYPE, PARAMETER_TYPE>::syscall_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallImpl(const char *syscall_name)
-{
-	typename std::map<std::string, syscall_t>::const_iterator it = syscall_name_map_.find(syscall_name);
-	return (it != syscall_name_map_.end()) ? (*it).second : &thistype::LSC_unimplemented;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-typename Linux<ADDRESS_TYPE, PARAMETER_TYPE>::syscall_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallImpl(int syscall_id)
-{
-	typename std::map<int, syscall_t>::const_iterator it = syscall_impl_assoc_map_.find(syscall_id);
-	return (it != syscall_impl_assoc_map_.end()) ? (*it).second : &thistype::LSC_unknown;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-const char *Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallName(int syscall_id)
-{
-	std::map<int, std::string>::const_iterator it = syscall_name_assoc_map_.find(syscall_id);
-	return (it != syscall_name_assoc_map_.end()) ? (*it).second.c_str() : "unknown";
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallNumber(int id)
-{
-	if ( system_type_.compare("arm") == 0 )
-		return ARMGetSyscallNumber(id);
-	else if ( system_type_.compare("arm-eabi") == 0 )
-		return ARMEABIGetSyscallNumber(id);
-	else if ( system_type_.compare("ppc") == 0 )
-		return PPCGetSyscallNumber(id);
-	else if ( system_type_.compare("i386") == 0 )
-		return I386GetSyscallNumber(id);
-
-	logger_ << DebugError
-		<< "Could not translate syscall number "
-		<< id << " (" << std::hex << id << std::dec << ") for system \""
-		<< system_type_ << "\". Returning untranslated id."
-		<< EndDebugError;
-
-	return id;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMGetSyscallNumber(int id)
-{
-	int translated_id = id - 0x0900000;
-	return translated_id;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id)
-{
-	// the arm eabi ignores the given id and uses register 7
-	//   as the id and translated id
-	PARAMETER_TYPE translated_id = 0;
-	if (regs_if_ == NULL)
-	{
-		logger_ << DebugError
-			<< "no register interface available." << EndDebugError;
-		return 0;
-	}
-
-	if (GetRegister(kARMEABISyscallNumberReg,
-	                &translated_id))
-	{
-		return (int)translated_id;
-	}
-	
-	return 0;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id)
-{
-	return id;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::I386GetSyscallNumber(int id)
-{
-	return id;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -3466,8 +3723,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::UnmapTargetToHostFileDescriptor(int32_
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem(
-    ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size)
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem( ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size )
 {
 	if (mem_inject_if_ == NULL) return false;
 	
@@ -3505,8 +3761,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMem(
-    ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size)
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMem( ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size)
 {
 	if (mem_inject_if_ == NULL) return false;
 	
