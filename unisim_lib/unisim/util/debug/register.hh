@@ -39,14 +39,20 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-class Register
+struct Register
 {
-public:
 	virtual ~Register() {} // destructor seems to avoid memory leak
 	virtual const char *GetName() const = 0;
 	virtual void GetValue(void *buffer) const = 0;
 	virtual void SetValue(const void *buffer) = 0;
+	virtual void Clear() { int size = GetSize(); char zeros[size]; while (--size>=0) zeros[size] = 0; SetValue(&zeros[0]); }
 	virtual int GetSize() const = 0;
+};
+
+struct RegisterScanner
+{
+  virtual ~RegisterScanner() {}
+  virtual void Append( Register* reg ) = 0;
 };
 
 } // end of namespace debug

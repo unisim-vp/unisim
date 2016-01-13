@@ -38,6 +38,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/debug/simple_register.hh>
 #include <unisim/kernel/logger/logger_server.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <linuxsystem.hh>
@@ -52,6 +53,7 @@ struct Arch
   , public unisim::service::interfaces::Registers
 
 {
+  typedef unisim::component::cxx::processor::intel::Arch::f64_t f64_t;
   
   Arch()
     : unisim::component::cxx::processor::intel::Arch()
@@ -59,14 +61,52 @@ struct Arch
     , unisim::service::interfaces::Memory<uint32_t>()
     , unisim::service::interfaces::Registers()
   {
+    for (int idx = 0; idx < 8; ++idx) {
+      std::ostringstream regname;
+      regname << unisim::component::cxx::processor::intel::DisasmRq(idx);
+      regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(regname.str(), &m_regs[idx]);
+    }
+    regmap["%eip"] = new unisim::util::debug::SimpleRegister<uint32_t>("%eip", &m_EIP);
+    struct X87Register : public unisim::util::debug::Register
+    {
+      X87Register( std::string _name, Arch& _arch, unsigned _idx ) : name(_name), arch(_arch), idx(_idx) {}
+      char const* GetName() const { return name.c_str(); }
+      void GetValue(void *buffer) const { *((f64_t*)buffer) = arch.fread( idx ); }
+      void SetValue(const void *buffer) { arch.fwrite( idx, *((f64_t*)buffer) ); }
+      int GetSize() const { return 8; }
+      std::string name;
+      Arch& arch;
+      unsigned idx;
+    };
+    for (int idx = 0; idx < 8; ++idx) {
+      std::ostringstream regname;
+      regname << unisim::component::cxx::processor::intel::DisasmFPR(idx);
+      regmap[regname.str()] = new X87Register( regname.str(), *this, idx );
+    }
   }
+  ~Arch()
+  {
+    for (auto reg : regmap)
+      delete reg.second;
+  }
+  
+  std::map<std::string,unisim::util::debug::Register*> regmap;
   
   // unisim::service::interfaces::Memory<uint32_t>
   void Reset() {}
   bool ReadMemory(uint32_t addr, void* buffer, uint32_t size ) { throw 0; return false; }
   bool WriteMemory(uint32_t addr, void const* buffer, uint32_t size) { throw 0; return false; }
   // unisim::service::interfaces::Registers
-  unisim::util::debug::Register* GetRegister(char const* name) { throw 0; return 0; }
+  unisim::util::debug::Register* GetRegister(char const* name)
+  {
+    auto reg = regmap.find( name );
+    return (reg == regmap.end()) ? 0 : reg->second;
+  }
+  void ScanRegisters(unisim::util::debug::RegisterScanner& scanner)
+  {
+    for (auto reg : regmap)
+      scanner.Append( reg.second );
+  }
   // unisim::service::interfaces::MemoryInjection<ADDRESS>
   bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { throw 0; return false; }
   bool InjectWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { throw 0; return false; }

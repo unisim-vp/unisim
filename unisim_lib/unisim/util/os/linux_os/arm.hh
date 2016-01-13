@@ -42,31 +42,17 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-static const uint32_t kARMNumRegs = 16;
-static const uint32_t kARMNumSysRegs = 0;
-// registers indexes
-static const uint32_t kARM_r0 = 0;
-static const uint32_t kARM_r1 = 1;
-static const uint32_t kARM_r2 = 2;
-static const uint32_t kARM_r3 = 3;
-static const uint32_t kARM_r4 = 4;
-static const uint32_t kARM_r5 = 5;
-static const uint32_t kARM_r6 = 6;
-static const uint32_t kARM_r7 = 7;
-static const uint32_t kARM_r8 = 8;
-static const uint32_t kARM_r9 = 9;
-static const uint32_t kARM_r10 = 10;
-static const uint32_t kARM_r11 = 11;
-static const uint32_t kARM_r12 = 12;
-static const uint32_t kARM_r13 = 13;
-static const uint32_t kARM_r14 = 14;
-static const uint32_t kARM_r15 = 15;
-static const uint32_t kARM_sp  = 13;
-static const uint32_t kARM_lr  = 14;
-static const uint32_t kARM_pc  = 15;
-static const uint32_t kARMSyscallStatusReg = 0;
-static const uint32_t kARMEABISyscallStatusReg = 0;
-static const uint32_t kARMEABISyscallNumberReg = 7;
+// Register names
+static char const* const kARM_r0  = "r0"; /* syscall arg#1 */
+static char const* const kARM_r1  = "r1"; /* syscall arg#2, argc */
+static char const* const kARM_r2  = "r2"; /* syscall arg#3, argv */
+static char const* const kARM_r3  = "r3"; /* syscall arg#4 */
+static char const* const kARM_r4  = "r4"; /* syscall arg#5 */
+static char const* const kARM_r5  = "r5"; /* syscall arg#6 */
+static char const* const kARM_r6  = "r6"; /* syscall arg#7 */
+static char const* const kARM_r7  = "r7"; /* syscall NR */
+static char const* const kARM_sp  = "sp"; /* stack pointer */
+static char const* const kARM_pc  = "pc"; /* programm counter */
 
 // this structure supposes that the timespec was needed (__timespec_defined)
 // original structure

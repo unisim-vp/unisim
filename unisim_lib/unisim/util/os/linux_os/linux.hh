@@ -179,7 +179,6 @@ private:
 		Linux& lin;
 		TargetSystem( std::string _name, Linux& _lin ) : name( _name ), lin( _lin ) {}
 		virtual ~TargetSystem() {}
-		virtual char const* GetRegisterName( unsigned id ) const = 0;
 		virtual bool SetupTarget() const = 0;
 		virtual bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const = 0;
 		virtual bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const = 0;
@@ -277,10 +276,9 @@ private:
 
 	// Maps the registers depending on the system
 	// Returns true on success
-	bool MapRegisters();
-	unisim::util::debug::Register *GetRegisterFromId(uint32_t id);
-	bool GetRegister(uint32_t id, PARAMETER_TYPE * const value);
-	bool SetRegister(uint32_t id, PARAMETER_TYPE value);
+	unisim::util::debug::Register* GetRegisterFromName( char const* regname );
+	bool GetRegister( char const* regname, PARAMETER_TYPE * const value );
+	bool SetRegister( char const* regname, PARAMETER_TYPE value );
 
 	// Load the files set by the user into the given blob. Returns true on sucess,
 	// false otherwise.

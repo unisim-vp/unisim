@@ -143,7 +143,7 @@ namespace intel {
     todel::LinuxSystem         m_linux_system; ///< System support
     
     // PROCESSOR STATE
-  private:
+  protected:
     uint32_t                    m_EIP;
     
   public:
@@ -154,7 +154,7 @@ namespace intel {
     // INTEGER STATE
     // EFLAGS
     // bool m_ID, m_VIP, m_VIF, m_AC, m_VM, m_RF, m_NT, m_IOPL, m_IF, m_TF;
-  private:
+  protected:
     bool                        m_flags[intel::flag_upperbound];
     
   public:
@@ -164,7 +164,7 @@ namespace intel {
     { m_flags[flag] = fval; }
     
     // Registers
-  private:
+  protected:
     uint32_t                    m_regs[8]; ///< extended reg
     
   public:
@@ -238,7 +238,7 @@ namespace intel {
     uint16_t                    segregread( unsigned num ) { throw 0; }
     
     // Memory content
-  private:
+  protected:
     struct ClearMemSet {
       void operator() ( uint8_t* base, uintptr_t size ) const {
         for (uintptr_t idx = 0; idx < size; ++idx) base[idx] = 0;
@@ -597,7 +597,7 @@ namespace intel {
     void                        lla_memwrite32( uint32_t _addr, uint32_t _val ) { lla_memwrite<uint32_t>( _addr, _val ); }
 
     // FLOATING POINT STATE
-    //private:
+  protected:
     double                      m_fregs[8];
     uint32_t                    m_ftop;
     uint16_t                    m_fcw;
@@ -712,7 +712,7 @@ namespace intel {
     // }
     
     // Debug methods
-  private:
+  protected:
     uint32_t                    m_dirtfregs;
     
   public:

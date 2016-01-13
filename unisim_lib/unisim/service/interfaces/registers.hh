@@ -42,10 +42,10 @@ namespace unisim {
 namespace service {
 namespace interfaces {
 
-class Registers : public unisim::kernel::service::ServiceInterface
+struct Registers : public unisim::kernel::service::ServiceInterface
 {
-public:
 	virtual unisim::util::debug::Register *GetRegister(const char *name) = 0;
+	virtual void ScanRegisters( unisim::util::debug::RegisterScanner& scanner ) = 0;
 };
 
 } // end of namespace interfaces

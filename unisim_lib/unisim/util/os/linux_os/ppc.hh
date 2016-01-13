@@ -42,44 +42,15 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-static const uint32_t kPPCNumRegs = 31;
-static const uint32_t kPPCNumSysRegs = 2;
-// registers indexes
-static const uint32_t kPPC_r0  = 0;
-static const uint32_t kPPC_r1  = 1;
-static const uint32_t kPPC_r2  = 2;
-static const uint32_t kPPC_r3  = 3;
-static const uint32_t kPPC_r4  = 4;
-static const uint32_t kPPC_r5  = 5;
-static const uint32_t kPPC_r6  = 6;
-static const uint32_t kPPC_r7  = 7;
-static const uint32_t kPPC_r8  = 8;
-static const uint32_t kPPC_r9  = 9;
-static const uint32_t kPPC_r10 = 10;
-static const uint32_t kPPC_r11 = 11;
-static const uint32_t kPPC_r12 = 12;
-static const uint32_t kPPC_r13 = 13;
-static const uint32_t kPPC_r14 = 14;
-static const uint32_t kPPC_r15 = 15;
-static const uint32_t kPPC_r16 = 16;
-static const uint32_t kPPC_r17 = 17;
-static const uint32_t kPPC_r18 = 18;
-static const uint32_t kPPC_r19 = 19;
-static const uint32_t kPPC_r20 = 20;
-static const uint32_t kPPC_r21 = 21;
-static const uint32_t kPPC_r22 = 22;
-static const uint32_t kPPC_r23 = 23;
-static const uint32_t kPPC_r24 = 24;
-static const uint32_t kPPC_r25 = 25;
-static const uint32_t kPPC_r26 = 26;
-static const uint32_t kPPC_r27 = 27;
-static const uint32_t kPPC_r28 = 28;
-static const uint32_t kPPC_r29 = 29;
-static const uint32_t kPPC_r30 = 30;
-static const uint32_t kPPC_r31 = 31;
-static const uint32_t kPPC_sp  = 1;
-static const uint32_t kPPC_cr  = 32;
-static const uint32_t kPPC_cia = 33;
+// Register names
+static char const* const kPPC_r3  = "r3";
+static char const* const kPPC_r4  = "r4";
+static char const* const kPPC_r5  = "r5";
+static char const* const kPPC_r6  = "r6";
+static char const* const kPPC_r7  = "r7";
+static char const* const kPPC_sp  = "r1";
+static char const* const kPPC_cr  = "cr";
+static char const* const kPPC_cia = "cia";
 
 // this structure supposes that the timespec was needed (__timespec_defined)
 // original structure

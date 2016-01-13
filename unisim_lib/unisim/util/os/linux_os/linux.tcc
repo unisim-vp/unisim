@@ -724,28 +724,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
       {
         ARMTS( std::string _name, Linux& _lin ) : TargetSystem( _name, _lin ) {}
         using TargetSystem::lin;
-        char const* GetRegisterName( unsigned id ) const
-        {
-          switch(id) {
-          case unisim::util::os::linux_os::kARM_r0: return "r0";
-          case unisim::util::os::linux_os::kARM_r1: return "r1";
-          case unisim::util::os::linux_os::kARM_r2: return "r2";
-          case unisim::util::os::linux_os::kARM_r3: return "r3";
-          case unisim::util::os::linux_os::kARM_r4: return "r4";
-          case unisim::util::os::linux_os::kARM_r5: return "r5";
-          case unisim::util::os::linux_os::kARM_r6: return "r6";
-          case unisim::util::os::linux_os::kARM_r7: return "r7";
-          case unisim::util::os::linux_os::kARM_r8: return "r8";
-          case unisim::util::os::linux_os::kARM_r9: return "r9";
-          case unisim::util::os::linux_os::kARM_r10: return "r10";
-          case unisim::util::os::linux_os::kARM_r11: return "r11";
-          case unisim::util::os::linux_os::kARM_r12: return "r12";
-          case unisim::util::os::linux_os::kARM_sp: return "sp";
-          case unisim::util::os::linux_os::kARM_lr: return "lr";
-          case unisim::util::os::linux_os::kARM_pc: return "pc";
-          }
-          return 0;
-        }
         bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const
         {
           uint32_t arm_hwcap = 0;
@@ -780,59 +758,32 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
         }
         bool SetupTarget() const
         {
-          bool success = true;
-          // Reset all the target registers
-          unsigned int reg_id = 0;
-          PARAMETER_TYPE null_param = 0;
-          for (reg_id = 0; success && (reg_id < kARMNumRegs); reg_id++) {
-            success = lin.SetRegister(reg_id, null_param);
-          }
-          if (!success) {
-            lin.logger_ << DebugError
-                    << "Error while setting register '" << (reg_id - 1) << "'" << EndDebugError;
-            return false;
-          }
           // Set PC to the program entry point
-          success = lin.SetRegister(kARM_pc, lin.entry_point_);
-          if (!success) {
-            lin.logger_ << DebugError
-                    << "Error while setting pc register (" << kARM_pc << ")" << EndDebugError;
+          if (not lin.SetRegister(kARM_pc, lin.entry_point_))
             return false;
-          }
           // Set SP to the base of the created stack
           unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
             lin.blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
           if (sp_section == NULL) {
-            lin.logger_ << DebugError
-                    << "Could not find the stack pointer section." << EndDebugError;
+            lin.logger_ << DebugError << "Could not find the stack pointer section." << EndDebugError;
             return false;
           }
-          success = lin.SetRegister(kARM_sp, sp_section->GetAddr());
-          if (!success) {
-            lin.logger_ << DebugError
-                    << "Error while setting sp register (" << kARM_sp << ")" << EndDebugError;
+          if (not lin.SetRegister(kARM_sp, sp_section->GetAddr()))
             return false;
-          }
           ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
           ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
           PARAMETER_TYPE par1 = 0;
           PARAMETER_TYPE par2 = 0;
-          success = lin.mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
-          success = lin.mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
-          lin.SetRegister(kARM_r1, Target2Host(lin.endianness_, par1));
-          lin.SetRegister(kARM_r2, Target2Host(lin.endianness_, par2));
+          if (not lin.mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
+              not lin.mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
+              not lin.SetRegister(kARM_r1, Target2Host(lin.endianness_, par1)) or
+              not lin.SetRegister(kARM_r2, Target2Host(lin.endianness_, par2)))
+            return false;
           
           return true;
         }
 
-        void SetSystemCallStatus(int ret, bool error) const
-        {
-          if (not lin.SetRegister(kARMSyscallStatusReg, (PARAMETER_TYPE) ret))
-            {
-              lin.logger_ << DebugWarning << "Can't write register #" << kARMSyscallStatusReg << DebugWarning;
-              return;
-            }
-        }
+        void SetSystemCallStatus(int ret, bool error) const { lin.SetRegister(kARM_r0, (PARAMETER_TYPE) ret); }
         
         SysCall* GetSystemCall( int& id ) const
         {
@@ -840,11 +791,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
             {
               // The arm eabi ignores the supplied id and uses register 7
               PARAMETER_TYPE id_from_reg;
-              if (not lin.GetRegister(kARMEABISyscallNumberReg, &id_from_reg))
-                {
-                  lin.logger_ << DebugError << "Can't access register 7 (syscall id)." << EndDebugError;
-                  return 0;
-                }
+              if (not lin.GetRegister(kARM_r7, &id_from_reg))
+                return 0;
               id = int(id_from_reg);
             }
           else if (TargetSystem::name.compare("arm") == 0)
@@ -1524,13 +1472,20 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
         PARAMETER_TYPE GetSystemCallParam(int id) const
         {
           PARAMETER_TYPE val = 0;
-	
-          if(!lin.GetRegister(id, &val))
-            {
-              lin.logger_ << DebugWarning << "Can't read register #" << id << DebugWarning;
-              return val;
-            }
-	
+          
+          switch (id) {
+          case 0: lin.GetRegister(kARM_r0, &val); break;
+          case 1: lin.GetRegister(kARM_r1, &val); break;
+          case 2: lin.GetRegister(kARM_r2, &val); break;
+          case 3: lin.GetRegister(kARM_r3, &val); break;
+          case 4: lin.GetRegister(kARM_r4, &val); break;
+          case 5: lin.GetRegister(kARM_r5, &val); break;
+          case 6: lin.GetRegister(kARM_r6, &val); break;
+          default:
+            lin.logger_ << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
+            break;
+          }
+          
           return val;
         }
 
@@ -1627,90 +1582,33 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
       {
         PPCTS( Linux& _lin ) : TargetSystem( "ppc", _lin ) {}
         using TargetSystem::lin;
-        char const* GetRegisterName(unsigned id) const
-        {
-          switch(id) {
-          case unisim::util::os::linux_os::kPPC_r0: return "r0";
-          case unisim::util::os::linux_os::kPPC_r1: return "r1";
-          case unisim::util::os::linux_os::kPPC_r2: return "r2";
-          case unisim::util::os::linux_os::kPPC_r3: return "r3";
-          case unisim::util::os::linux_os::kPPC_r4: return "r4";
-          case unisim::util::os::linux_os::kPPC_r5: return "r5";
-          case unisim::util::os::linux_os::kPPC_r6: return "r6";
-          case unisim::util::os::linux_os::kPPC_r7: return "r7";
-          case unisim::util::os::linux_os::kPPC_r8: return "r8";
-          case unisim::util::os::linux_os::kPPC_r9: return "r9";
-          case unisim::util::os::linux_os::kPPC_r10: return "r10";
-          case unisim::util::os::linux_os::kPPC_r11: return "r11";
-          case unisim::util::os::linux_os::kPPC_r12: return "r12";
-          case unisim::util::os::linux_os::kPPC_r13: return "r13";
-          case unisim::util::os::linux_os::kPPC_r14: return "r14";
-          case unisim::util::os::linux_os::kPPC_r15: return "r15";
-          case unisim::util::os::linux_os::kPPC_r16: return "r16";
-          case unisim::util::os::linux_os::kPPC_r17: return "r17";
-          case unisim::util::os::linux_os::kPPC_r18: return "r18";
-          case unisim::util::os::linux_os::kPPC_r19: return "r19";
-          case unisim::util::os::linux_os::kPPC_r20: return "r20";
-          case unisim::util::os::linux_os::kPPC_r21: return "r21";
-          case unisim::util::os::linux_os::kPPC_r22: return "r22";
-          case unisim::util::os::linux_os::kPPC_r23: return "r23";
-          case unisim::util::os::linux_os::kPPC_r24: return "r24";
-          case unisim::util::os::linux_os::kPPC_r25: return "r25";
-          case unisim::util::os::linux_os::kPPC_r26: return "r26";
-          case unisim::util::os::linux_os::kPPC_r27: return "r27";
-          case unisim::util::os::linux_os::kPPC_r28: return "r28";
-          case unisim::util::os::linux_os::kPPC_r29: return "r29";
-          case unisim::util::os::linux_os::kPPC_r30: return "r30";
-          case unisim::util::os::linux_os::kPPC_r31: return "r31";
-          case unisim::util::os::linux_os::kPPC_cr: return "cr";
-          case unisim::util::os::linux_os::kPPC_cia: return "cia";
-          }
-          return 0;
-        }
+        
         bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const { return false; }
+        
         bool SetupTarget() const
         {
-          bool success = true;
-          // Reset all the target registers
-          unsigned int reg_id = 0;
-          PARAMETER_TYPE null_param = 0;
-          for (reg_id = 0; success && (reg_id < kPPCNumRegs); reg_id++) {
-            success = lin.SetRegister(reg_id, null_param);
-          }
-          if (!success) {
-            lin.logger_ << DebugError
-                    << "Error while setting register '" << (reg_id - 1) << "'" << EndDebugError;
-            return false;
-          }
           // Set PC to the program entry point
-          success = lin.SetRegister(kPPC_cia, lin.entry_point_);
-          if (!success) {
-            lin.logger_ << DebugError
-                    << "Error while setting cia register (" << kPPC_cia << ")" << EndDebugError;
+          if (not lin.SetRegister(kPPC_cia, lin.entry_point_))
             return false;
-          }
           // Set SP to the base of the created stack
           unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
             lin.blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
-          if (sp_section == NULL) {
-            lin.logger_ << DebugError
-                    << "Could not find the stack pointer section." << EndDebugError;
+          if (sp_section == NULL)
+            {
+              lin.logger_ << DebugError << "Could not find the stack pointer section." << EndDebugError;
+              return false;
+            }
+          if (not lin.SetRegister(kPPC_sp, sp_section->GetAddr()))
             return false;
-          }
-          success = lin.SetRegister(kPPC_sp, sp_section->GetAddr());
-          if (!success) {
-            lin.logger_ << DebugError
-                    << "Error while setting sp register (" << kPPC_sp << ")" << DebugError;
-            return false;
-          }
           ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
           ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
           PARAMETER_TYPE par1 = 0;
           PARAMETER_TYPE par2 = 0;
-          success = lin.mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
-          success = lin.mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
-          lin.SetRegister(kPPC_r3, Target2Host(lin.endianness_, par1));
-          lin.SetRegister(kPPC_r4, Target2Host(lin.endianness_, par2));
+          if (not lin.mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
+              not lin.mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
+              not lin.SetRegister(kPPC_r3, Target2Host(lin.endianness_, par1)) or
+              not lin.SetRegister(kPPC_r4, Target2Host(lin.endianness_, par2)))
+            return false;
 
           return true;
         }
@@ -1722,43 +1620,28 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
           if(error)
             {
               if (not lin.GetRegister(kPPC_cr, &val))
-		{
-                  lin.logger_ << DebugWarning << "Can't read register #" << kPPC_cr << DebugWarning;
-                  return;
-		}
+                return;
 		
               val |= (1 << 28); // CR0[SO] <- 1
 		
               if (not lin.SetRegister(kPPC_cr, val))
-		{
-                  lin.logger_ << DebugWarning << "Can't write register #" << kPPC_cr << DebugWarning;
-                  return;
-		}
+                return;
             }
           else
             {
               if (not lin.GetRegister(kPPC_cr, &val))
-		{
-                  lin.logger_ << DebugWarning << "Can't read register #" << kPPC_cr << DebugWarning;
-                  return;
-		}
+                return;
 		
               val &= ~(1 << 28); // CR0[SO] <- 0
 		
               if (not lin.SetRegister(kPPC_cr, val))
-		{
-                  lin.logger_ << DebugWarning << "Can't write register #" << kPPC_cr << DebugWarning;
-                  return;
-		}
+                return;
             }
 	
           val = (PARAMETER_TYPE)ret;
 	
           if (not lin.SetRegister(kPPC_r3, val))
-            {
-              lin.logger_ << DebugWarning << "Can't write register #" << kPPC_r3 << DebugWarning;
-              return;
-            }
+            return;
         }
 
 
@@ -2360,13 +2243,18 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
         PARAMETER_TYPE GetSystemCallParam(int id) const
         {
           PARAMETER_TYPE val = 0;
-        
-          if(not lin.GetRegister(id+3, &val))
-            {
-              lin.logger_ << DebugWarning << "Can't read register #" << (id + 3) << DebugWarning;
-              return val;
-            }
-	
+          
+          switch (id) {
+          case 0: lin.GetRegister(kPPC_r3, &val); break;
+          case 1: lin.GetRegister(kPPC_r4, &val); break;
+          case 2: lin.GetRegister(kPPC_r5, &val); break;
+          case 3: lin.GetRegister(kPPC_r6, &val); break;
+          case 4: lin.GetRegister(kPPC_r7, &val); break;
+          default:
+            lin.logger_ << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
+            break;
+          }
+          
           return val;
         }
 
@@ -2383,57 +2271,33 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
       {
         I386TS( Linux& _lin ) : TargetSystem( "i386", _lin ) {}
         using TargetSystem::lin;
-        char const* GetRegisterName( unsigned id ) const
-        {
-          switch (id) {
-          case unisim::util::os::linux_os::kI386_eax: return "%eax";
-          case unisim::util::os::linux_os::kI386_ecx: return "%ecx";
-          case unisim::util::os::linux_os::kI386_edx: return "%edx";
-          case unisim::util::os::linux_os::kI386_ebx: return "%ebx";
-          case unisim::util::os::linux_os::kI386_esp: return "%esp";
-          case unisim::util::os::linux_os::kI386_ebp: return "%ebp";
-          case unisim::util::os::linux_os::kI386_esi: return "%esi";
-          case unisim::util::os::linux_os::kI386_edi: return "%edi";
-          case unisim::util::os::linux_os::kI386_eip: return "%eip";
-          }
-          return 0;
-        }
+        
         bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const { return false; }
+        
         bool SetupTarget() const
         {
-          // // Reset all the target registers => USELESS
-          
-          bool success;
           // Set EIP to the program entry point
-          success = lin.SetRegister(kI386_eip, lin.entry_point_);
-          if (!success) {
-            lin.logger_ << DebugError
-                    << "Error while setting eip register (" << kI386_eip << ")" << EndDebugError;
+          if (not lin.SetRegister(kI386_eip, lin.entry_point_))
             return false;
-          }
           // Set ESP to the base of the created stack
           unisim::util::debug::blob::Section<ADDRESS_TYPE> const * esp_section =
             lin.blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
-          if (esp_section == NULL) {
-            lin.logger_ << DebugError
-                    << "Could not find the stack pointer section." << EndDebugError;
+          if (esp_section == NULL)
+            {
+              lin.logger_ << DebugError << "Could not find the stack pointer section." << EndDebugError;
+              return false;
+            }
+          if (not lin.SetRegister(kI386_esp, esp_section->GetAddr()))
             return false;
-          }
-          success = lin.SetRegister(kI386_esp, esp_section->GetAddr());
-          if (!success) {
-            lin.logger_ << DebugError
-                    << "Error while setting esp register (" << kI386_esp << ")" << EndDebugError;
-            return false;
-          }
           // ADDRESS_TYPE par1_addr = esp_section->GetAddr() + 4;
           // ADDRESS_TYPE par2_addr = esp_section->GetAddr() + 8;
           // PARAMETER_TYPE par1 = 0;
           // PARAMETER_TYPE par2 = 0;
-          // success = mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
-          // success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
-          // lin.SetRegister(kI386_r1, Target2Host(endianness_, par1));
-          // lin.SetRegister(kI386_r2, Target2Host(endianness_, par2));
-
+          // if (not lin.mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
+          //     not lin.mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
+          //     not lin.SetRegister(kI386_r1, Target2Host(endianness_, par1)) or
+          //     not lin.SetRegister(kI386_r2, Target2Host(endianness_, par2)))
+          //   return false;
 
           return true;
         }
@@ -2829,9 +2693,29 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
           
           return 0;
         }
-        PARAMETER_TYPE GetSystemCallParam(int id) const { throw "TODO:"; return 0; }
-        bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const { return true; }
-        void SetSyscallNameMap() const {}
+        PARAMETER_TYPE GetSystemCallParam(int id) const
+        {
+          PARAMETER_TYPE val = 0;
+          
+          switch (id) {
+          case 0: lin.GetRegister(kI386_ebx, &val); break;
+          case 1: lin.GetRegister(kI386_ecx, &val); break;
+          case 2: lin.GetRegister(kI386_edx, &val); break;
+          case 3: lin.GetRegister(kI386_esi, &val); break;
+          case 4: lin.GetRegister(kI386_edi, &val); break;
+          case 5: lin.GetRegister(kI386_ebp, &val); break;
+          default:
+            lin.logger_ << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
+            break;
+          }
+          
+          return val;
+        }
+        bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const
+        {
+          throw "TODO:";
+          return true;
+        }
       };
       delete target_system;
       target_system = new I386TS( *this );
@@ -2900,37 +2784,49 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStderrPipeFilename(const char *file
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-unisim::util::debug::Register * Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegisterFromId(uint32_t id)
+unisim::util::debug::Register*
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegisterFromName( char const* regname )
 {
-  if (not regs_if_)
-    {
-      logger_ << DebugWarning << "No register interface is available" << DebugWarning;
-      return 0;
-    }
-	
-  return regs_if_->GetRegister(target_system->GetRegisterName(id));
+  if (not regname) return 0;
+  
+  if (not regs_if_) {
+    logger_ << DebugError << "No register interface is available" << EndDebugError;
+    return 0;
+  }
+  
+  unisim::util::debug::Register* reg = regs_if_->GetRegister(regname);
+  if (not reg) {
+    logger_ << DebugError << "Can't access register " << regname << EndDebugError;
+    return 0;
+  }
+  
+  if (reg->GetSize() != sizeof(PARAMETER_TYPE)) {
+    logger_ << DebugError << "Bad register size for " << regname << EndDebugError;
+    return 0;
+  }
+  
+  return reg;
 }
 
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(uint32_t id, PARAMETER_TYPE * const value)
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(char const* regname, PARAMETER_TYPE * const value )
 {
-  unisim::util::debug::Register* reg = GetRegisterFromId(id);
-  if (reg == NULL) return false;
-  if (reg->GetSize() != sizeof(PARAMETER_TYPE)) return false;
-  reg->GetValue(value);
-  return true;
+  if (unisim::util::debug::Register* reg = GetRegisterFromName(regname)) {
+    reg->GetValue(value);
+    return true;
+  }
+  return false;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id, PARAMETER_TYPE value)
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister( char const* regname, PARAMETER_TYPE value )
 {
-  unisim::util::debug::Register *reg = 0;
-  reg = GetRegisterFromId(id);
-  if (reg == NULL) return false;
-  if (reg->GetSize() != sizeof(PARAMETER_TYPE)) return false;
-  reg->SetValue(&value);
-  return true;
+  if (unisim::util::debug::Register* reg = GetRegisterFromName(regname)) {
+    reg->SetValue(&value);
+    return true;
+  }
+  return false;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -3123,6 +3019,14 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget()
           return false;
         }
     }
+
+  // Reset all target registers
+  {
+    struct : public unisim::util::debug::RegisterScanner {
+      void Append( unisim::util::debug::Register* reg ) { reg->Clear(); }
+    } clear_regs;
+    regs_if_->ScanRegisters( clear_regs );
+  }
   
   return target_system->SetupTarget();
 }

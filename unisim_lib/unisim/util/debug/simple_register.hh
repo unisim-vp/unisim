@@ -44,7 +44,7 @@ namespace debug {
 
 using std::string;
 
-template <class REGISTER_TYPE>
+template <typename REGISTER_TYPE>
 class SimpleRegister : public Register
 {
 public:
@@ -60,45 +60,45 @@ private:
 	REGISTER_TYPE *value;
 };
 
-template <class REGISTER_TYPE>
+template <typename REGISTER_TYPE>
 SimpleRegister<REGISTER_TYPE>::SimpleRegister(const char *_name, REGISTER_TYPE *_value) :
 	name(_name),
 	value(_value)
 {
 }
 
-template <class REGISTER_TYPE>
+template <typename REGISTER_TYPE>
 SimpleRegister<REGISTER_TYPE>::SimpleRegister(std::string _name, REGISTER_TYPE *_value) :
 	name(_name),
 	value(_value)
 {
 }
 
-template <class REGISTER_TYPE>
+template <typename REGISTER_TYPE>
 SimpleRegister<REGISTER_TYPE>::~SimpleRegister()
 {
 }
 
-template <class REGISTER_TYPE>
+template <typename REGISTER_TYPE>
 const char *SimpleRegister<REGISTER_TYPE>::GetName() const
 {
 	return name.c_str();
 }
 
-template <class REGISTER_TYPE>
+template <typename REGISTER_TYPE>
 void SimpleRegister<REGISTER_TYPE>::GetValue(void *buffer) const
 {
 	*(REGISTER_TYPE *) buffer = *value;
 }
 
 
-template <class REGISTER_TYPE>
+template <typename REGISTER_TYPE>
 void SimpleRegister<REGISTER_TYPE>::SetValue(const void *buffer)
 {
 	*value = *(REGISTER_TYPE *) buffer;
 }
 
-template <class REGISTER_TYPE>
+template <typename REGISTER_TYPE>
 int SimpleRegister<REGISTER_TYPE>::GetSize() const
 {
 	return sizeof(REGISTER_TYPE);

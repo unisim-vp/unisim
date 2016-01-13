@@ -41,18 +41,16 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-static const uint32_t kI386NumRegs = 9;
-static const uint32_t kI386NumSysRegs = 0;
-// registers indexes
-static const uint32_t kI386_eax = 0;
-static const uint32_t kI386_ecx = 1;
-static const uint32_t kI386_edx = 2;
-static const uint32_t kI386_ebx = 3;
-static const uint32_t kI386_esp = 4;
-static const uint32_t kI386_ebp = 5;
-static const uint32_t kI386_esi = 6;
-static const uint32_t kI386_edi = 7;
-static const uint32_t kI386_eip = 8;
+// Register names
+// static char const* const kI386_eax = "%eax";
+static char const* const kI386_ecx = "%ecx";
+static char const* const kI386_edx = "%edx";
+static char const* const kI386_ebx = "%ebx";
+static char const* const kI386_esp = "%esp";
+static char const* const kI386_ebp = "%ebp";
+static char const* const kI386_esi = "%esi";
+static char const* const kI386_edi = "%edi";
+static char const* const kI386_eip = "%eip";
 
 // this structure supposes that the timespec was needed (__timespec_defined)
 // original structure
