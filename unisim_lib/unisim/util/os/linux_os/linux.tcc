@@ -758,6 +758,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
         }
         bool SetupTarget() const
         {
+          // Reset all target registers
+          {
+            struct : public unisim::util::debug::RegisterScanner {
+              void Append( unisim::util::debug::Register* reg ) { reg->Clear(); }
+            } clear_regs;
+            lin.regs_if_->ScanRegisters( clear_regs );
+          }
           // Set PC to the program entry point
           if (not lin.SetRegister(kARM_pc, lin.entry_point_))
             return false;
@@ -1587,6 +1594,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
         
         bool SetupTarget() const
         {
+          // Reset all target registers
+          {
+            struct : public unisim::util::debug::RegisterScanner {
+              void Append( unisim::util::debug::Register* reg ) { reg->Clear(); }
+            } clear_regs;
+            lin.regs_if_->ScanRegisters( clear_regs );
+          }
           // Set PC to the program entry point
           if (not lin.SetRegister(kPPC_cia, lin.entry_point_))
             return false;
@@ -2276,6 +2290,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
         
         bool SetupTarget() const
         {
+          // Reset all target registers
+          {
+            struct : public unisim::util::debug::RegisterScanner {
+              void Append( unisim::util::debug::Register* reg ) { reg->Clear(); }
+            } clear_regs;
+            lin.regs_if_->ScanRegisters( clear_regs );
+          }
           // Set EIP to the program entry point
           if (not lin.SetRegister(kI386_eip, lin.entry_point_))
             return false;
@@ -3020,14 +3041,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget()
         }
     }
 
-  // Reset all target registers
-  {
-    struct : public unisim::util::debug::RegisterScanner {
-      void Append( unisim::util::debug::Register* reg ) { reg->Clear(); }
-    } clear_regs;
-    regs_if_->ScanRegisters( clear_regs );
-  }
-  
   return target_system->SetupTarget();
 }
 

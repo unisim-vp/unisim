@@ -115,8 +115,8 @@ Simulator::Simulator(int argc, char **argv)
   timer_reset = false;
   
   cpu.master_socket( *router.targ_socket[0] );
-  cpu.nirq( nirq_signal );
-  cpu.nfiq( nfiq_signal );
+  cpu.nIRQm( nirq_signal );
+  cpu.nFIQm( nfiq_signal );
 
   // (*router.init_socket[0])( memory.slave_sock );
   (*router.init_socket[0])( memory.slave_sock );

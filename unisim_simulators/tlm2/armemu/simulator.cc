@@ -138,13 +138,16 @@ Simulator::Simulator(int argc, char **argv)
   
   nfiq_signal = true; 
   nirq_signal = true; 
+  nrst_signal = true;
   
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
 
   cpu->master_socket(memory->slave_sock);
-  cpu->nirq( nirq_signal );
-  cpu->nfiq( nfiq_signal );
+  cpu->nIRQm( nirq_signal );
+  cpu->nFIQm( nfiq_signal );
+  cpu->nRESETm( nrst_signal );
+
 
   // Connect debugger to CPU
   cpu->debug_control_import >> debugger->debug_control_export;

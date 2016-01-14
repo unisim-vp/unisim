@@ -340,6 +340,7 @@ ARMEMU::Run()
   /* Dismiss any interrupt that could have started before simulation (initialization artifacts) */
   raised_irqs = 0;
   raised_fiqs = 0;
+  raised_rsts = 0;
 
   /* compute the average time of each instruction */
   sc_time time_per_instruction = cpu_cycle_time * ipc;

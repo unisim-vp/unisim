@@ -358,6 +358,7 @@ unisim/util/os/linux_os/arm.hh \
 unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
+unisim/util/os/linux_os/i386.hh \
 unisim/util/os/linux_os/linux.hh \
 unisim/util/os/linux_os/ppc.hh \
 unisim/util/os/linux_os/errno.hh \

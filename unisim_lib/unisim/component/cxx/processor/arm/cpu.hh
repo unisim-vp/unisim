@@ -431,6 +431,7 @@ public:
 public:
 
   virtual unisim::util::debug::Register* GetRegister( const char* name );
+  virtual void ScanRegisters( unisim::util::debug::RegisterScanner& scanner );
 		
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
   

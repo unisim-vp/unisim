@@ -44,6 +44,6 @@
 		<register dw_reg_num="162" arch_reg="r13_und"/>
 		<register dw_reg_num="163" arch_reg="r14_und"/>
 		<register dw_reg_num="164" arch_reg="r13_svc"/>
-		<register dw_reg_num="165" arch_reg="r14_scv"/>
+		<register dw_reg_num="165" arch_reg="r14_svc"/>
 	</architecture>
 </dw_reg_num_mapping>

@@ -107,6 +107,7 @@ class Simulator
 
   sc_signal<bool>              nirq_signal;
   sc_signal<bool>              nfiq_signal;
+  sc_signal<bool>              nrst_signal;
   
   double simulation_spent_time;
 

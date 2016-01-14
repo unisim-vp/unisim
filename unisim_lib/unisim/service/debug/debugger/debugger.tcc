@@ -349,6 +349,14 @@ unisim::util::debug::Register *Debugger<ADDRESS>::GetRegister(const char *name)
 }
 
 template <class ADDRESS>
+void Debugger<ADDRESS>::ScanRegisters(unisim::util::debug::RegisterScanner& scanner)
+{
+	if (not registers_import)
+		return;
+	registers_import->ScanRegisters( scanner );
+}
+
+template <class ADDRESS>
 void Debugger<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))

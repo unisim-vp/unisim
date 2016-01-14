@@ -210,6 +210,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.next_pc; }
       virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
       virtual int  GetSize() const { return 4; }
+      virtual void Clear() { /* Clear is meaning less for PC */ }
       CPU&        cpu;
     };
 
@@ -284,6 +285,36 @@ CPU<CONFIG>::GetRegister(const char *name)
   else
     return 0;
 }
+
+/** Scan available registers for the Registers interface
+ * 
+ *  Allows clients of the Registers interface to scan available
+ * register by providing a suitable RegisterScanner interface.
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::ScanRegisters( unisim::util::debug::RegisterScanner& scanner )
+{
+  scanner.Append( this->GetRegister( "r0" ) );
+  scanner.Append( this->GetRegister( "r1" ) );
+  scanner.Append( this->GetRegister( "r2" ) );
+  scanner.Append( this->GetRegister( "r3" ) );
+  scanner.Append( this->GetRegister( "r4" ) );
+  scanner.Append( this->GetRegister( "r5" ) );
+  scanner.Append( this->GetRegister( "r6" ) );
+  scanner.Append( this->GetRegister( "r7" ) );
+  scanner.Append( this->GetRegister( "r8" ) );
+  scanner.Append( this->GetRegister( "r9" ) );
+  scanner.Append( this->GetRegister( "r10" ) );
+  scanner.Append( this->GetRegister( "r11" ) );
+  scanner.Append( this->GetRegister( "r12" ) );
+  scanner.Append( this->GetRegister( "sp" ) );
+  scanner.Append( this->GetRegister( "lr" ) );
+  scanner.Append( this->GetRegister( "pc" ) );
+  // TODO: should expose CPSR and SCTLR
+  // scanner.Append( this->GetRegister( "cpsr" ) );
+}
+
 
 /** Software Interrupt
  *  This method is called by SWI instructions to handle software interrupts.
