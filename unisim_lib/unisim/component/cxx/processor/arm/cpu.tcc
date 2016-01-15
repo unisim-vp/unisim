@@ -311,7 +311,7 @@ CPU<CONFIG>::ScanRegisters( unisim::util::debug::RegisterScanner& scanner )
   scanner.Append( this->GetRegister( "sp" ) );
   scanner.Append( this->GetRegister( "lr" ) );
   scanner.Append( this->GetRegister( "pc" ) );
-  // TODO: should expose CPSR and SCTLR
+  // TODO: should expose CPSR (and most probably the APSR view)
   // scanner.Append( this->GetRegister( "cpsr" ) );
 }
 
