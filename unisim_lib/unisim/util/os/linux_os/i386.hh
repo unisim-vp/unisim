@@ -52,6 +52,14 @@ static char const* const kI386_esi = "%esi";
 static char const* const kI386_edi = "%edi";
 static char const* const kI386_eip = "%eip";
 
+static char const* const kI386_es = "%es";
+static char const* const kI386_cs = "%cs";
+static char const* const kI386_ss = "%ss";
+static char const* const kI386_ds = "%ds";
+static char const* const kI386_fs = "%fs";
+static char const* const kI386_gs = "%gs";
+
+
 // this structure supposes that the timespec was needed (__timespec_defined)
 // original structure
 // struct timespec

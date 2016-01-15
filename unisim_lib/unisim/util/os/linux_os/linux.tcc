@@ -2288,6 +2288,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
         
         bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const { return false; }
         
+        void WriteSegmentSelector( char const* segname, uint16_t value ) const
+        {
+          lin.regs_if_->GetRegister(segname)->SetValue(&value);
+        }
+        
         bool SetupTarget() const
         {
           // Reset all target registers
@@ -2310,16 +2315,26 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
             }
           if (not lin.SetRegister(kI386_esp, esp_section->GetAddr()))
             return false;
-          // ADDRESS_TYPE par1_addr = esp_section->GetAddr() + 4;
-          // ADDRESS_TYPE par2_addr = esp_section->GetAddr() + 8;
-          // PARAMETER_TYPE par1 = 0;
-          // PARAMETER_TYPE par2 = 0;
-          // if (not lin.mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
-          //     not lin.mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
-          //     not lin.SetRegister(kI386_r1, Target2Host(endianness_, par1)) or
-          //     not lin.SetRegister(kI386_r2, Target2Host(endianness_, par2)))
-          //   return false;
-
+          
+          // Pseudo GDT initialization  (flat memory + early TLS)
+          lin.SetRegister("@gdt[1].base", 0 ); // For code segment
+          lin.SetRegister("@gdt[2].base", 0 ); // For data segments
+          unisim::util::debug::blob::Section<ADDRESS_TYPE> const* etls_section =
+            lin.blob_->FindSection(".unisim.linux_os.etls.middle_pointer");
+          if (not etls_section)
+            {
+              lin.logger_ << DebugError << "Could not find the early TLS section." << EndDebugError;
+              return false;
+            }
+          lin.SetRegister("@gdt[3].base", etls_section->GetAddr() ); // for early TLS kludge
+          
+          this->WriteSegmentSelector(kI386_cs,(1<<3) | (0<<2) | 3); // code
+          this->WriteSegmentSelector(kI386_ss,(2<<3) | (0<<2) | 3); // data
+          this->WriteSegmentSelector(kI386_ds,(2<<3) | (0<<2) | 3); // data
+          this->WriteSegmentSelector(kI386_es,(2<<3) | (0<<2) | 3); // data
+          this->WriteSegmentSelector(kI386_fs,(2<<3) | (0<<2) | 3); // data
+          this->WriteSegmentSelector(kI386_gs,(3<<3) | (0<<2) | 3); // tls
+          
           return true;
         }
         
@@ -2734,7 +2749,38 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
         }
         bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const
         {
-          throw "TODO:";
+          typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
+          typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
+          
+          // The following code is clearly a hack since linux doesn't
+          // allocate any TLS. Allocating the TLS is the libc's
+          // responsability. Nevertheless, because syscalls emulation
+          // is incomplete, errno (located in TLS) may be used before
+          // any libc attempt to initialize it.  Thus, we need to
+          // introduce a pseudo TLS are for these early accesses to
+          // errno. 
+          if (not blob) return false;
+          
+          // TODO: Check that the existing segments/sections are not
+          //   in conflict with the early TLS area. Once libc have
+          //   initialized TLS this area becomes useless. We
+          //   additionnaly need to ensure that early mallocs won't
+          //   come in the way. 
+          //
+          // In practice a [0xf0000000-0xf0000fff] zero-filled area seems safe...
+          ADDRESS_TYPE const etls_addr = 0xf0000000UL;
+          ADDRESS_TYPE const etls_size = 0x00001000UL;
+          uint8_t* etls_seg_data = (uint8_t*)calloc(1,etls_size);
+          // uint8_t* etls_sec_data = (uint8_t*)calloc(1,etls_size);
+          
+          Segment* etls_segment =
+            new Segment(Segment::TY_LOADABLE, Segment::SA_RW, etls_size, etls_addr, etls_size, etls_size, etls_seg_data);
+          // Section* etls_section =
+          //   new Section(Section::TY_UNKNOWN, Section::SA_A, ".unisim.linux_os.interface.etls", etls_size, 0, etls_addr, etls_size, etls_sec_data);
+
+          blob->AddSegment(etls_segment);
+          blob->AddSection(new Section(Section::TY_NULL, Section::SA_NULL,".unisim.linux_os.etls.middle_pointer", 0, 0, (etls_addr + (etls_size/2)), 0, NULL));
+
           return true;
         }
       };
@@ -2747,31 +2793,36 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEndianness(
-    unisim::util::endian::endian_type endianness) {
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEndianness(unisim::util::endian::endian_type endianness)
+{
   endianness_ = endianness;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStackBase(
-    ADDRESS_TYPE stack_base) {
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStackBase(ADDRESS_TYPE stack_base)
+{
   stack_base_ = stack_base;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMemoryPageSize(
-    ADDRESS_TYPE memory_page_size) {
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMemoryPageSize(ADDRESS_TYPE memory_page_size)
+{
   memory_page_size_ = memory_page_size;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetUname(
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetUname(
     char const * const utsname_sysname,
     char const * const utsname_nodename,
     char const * const utsname_release,
     char const * const utsname_version,
     char const * const utsname_machine,
-    char const * const utsname_domainname) {
+    char const * const utsname_domainname)
+{
   utsname_sysname_    = utsname_sysname;
   utsname_nodename_   = utsname_nodename;
   utsname_release_    = utsname_release;
@@ -2781,32 +2832,36 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetUname(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetHWCap(const char *hwcap)
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetHWCap(const char *hwcap)
 {
   hwcap_ = hwcap;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStdinPipeFilename(const char *filename)
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStdinPipeFilename(const char *filename)
 {
-	stdin_pipe_filename = filename;
+  stdin_pipe_filename = filename;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStdoutPipeFilename(const char *filename)
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStdoutPipeFilename(const char *filename)
 {
-	stdout_pipe_filename = filename;
+  stdout_pipe_filename = filename;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStderrPipeFilename(const char *filename)
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStderrPipeFilename(const char *filename)
 {
-	stderr_pipe_filename = filename;
+  stderr_pipe_filename = filename;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 unisim::util::debug::Register*
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegisterFromName( char const* regname )
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname )
 {
   if (not regname) return 0;
   
@@ -2833,7 +2888,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegisterFromName( char const* regname )
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(char const* regname, PARAMETER_TYPE * const value )
 {
-  if (unisim::util::debug::Register* reg = GetRegisterFromName(regname)) {
+  if (unisim::util::debug::Register* reg = GetDebugRegister(regname)) {
     reg->GetValue(value);
     return true;
   }
@@ -2843,7 +2898,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(char const* regname, PARAM
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister( char const* regname, PARAMETER_TYPE value )
 {
-  if (unisim::util::debug::Register* reg = GetRegisterFromName(regname)) {
+  if (unisim::util::debug::Register* reg = GetDebugRegister(regname)) {
     reg->SetValue(&value);
     return true;
   }
@@ -2904,8 +2959,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	}
 	if (not target_system->SetSystemBlob(blob))
 	{
-		// TODO
-		// Remove non finished state (i.e., unfinished blob, reset values, ...)
+		// TODO: Remove non finished state (i.e., unfinished
+		//       blob, reset values, ...)
 		logger_ << DebugError
 			<< "Could not set the system blob." << EndDebugError;
 		blob->Release();
@@ -2916,14 +2971,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	mmap_brk_point_ = mmap_base_;
 
 	ADDRESS_TYPE top_addr = stack_base_ + stack_size - 1;
-	if(verbose_)
+	if (verbose_)
 	{
 		logger_ << DebugInfo << "=== top_addr = 0x" << std::hex << top_addr << std::dec
 		<< EndDebugInfo;
 	}
 
-	brk_point_ = top_addr +
-	(memory_page_size_ - (top_addr % memory_page_size_));
+	brk_point_ = top_addr +	(memory_page_size_ - (top_addr % memory_page_size_));
 
 	if(verbose_)
 	{
@@ -2936,7 +2990,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 			<< std::dec << memory_page_size_ << ")" << EndDebugInfo;
 	}
 
-	if(blob_) blob_->Release();
+	if (blob_) blob_->Release();
 	blob_ = blob;
 	is_load_ = true;
 
@@ -3242,8 +3296,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob, uint64_t& stack_size) const {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob, uint64_t& stack_size) const
+{
   typedef std::vector<ADDRESS_TYPE> AddressVector;
   typedef typename AddressVector::iterator AddressVectorIterator;
   typedef typename AddressVector::reverse_iterator AddressVectorReverseIterator;

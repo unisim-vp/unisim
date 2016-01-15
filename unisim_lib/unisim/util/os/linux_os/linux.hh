@@ -276,7 +276,7 @@ private:
 
 	// Maps the registers depending on the system
 	// Returns true on success
-	unisim::util::debug::Register* GetRegisterFromName( char const* regname );
+	unisim::util::debug::Register* GetDebugRegister( char const* regname );
 	bool GetRegister( char const* regname, PARAMETER_TYPE * const value );
 	bool SetRegister( char const* regname, PARAMETER_TYPE value );
 
