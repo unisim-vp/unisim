@@ -2290,7 +2290,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
         
         void WriteSegmentSelector( char const* segname, uint16_t value ) const
         {
-          lin.regs_if_->GetRegister(segname)->SetValue(&value);
+          if (not lin.regs_if_)
+            throw 0;
+          if (unisim::util::debug::Register* reg = lin.regs_if_->GetRegister(segname))
+            reg->SetValue(&value);
+          else
+            throw 0;
         }
         
         bool SetupTarget() const

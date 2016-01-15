@@ -42,6 +42,7 @@
 #include <unisim/component/cxx/processor/intel/fwd.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
+#include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
@@ -102,37 +103,15 @@ namespace intel {
 
     Operation*                  fetch();
     
-    struct SysTarget : public dtlib::Target
-    {
-      Arch& m_arch;
-      SysTarget( Arch& arch ) : m_arch( arch ) {}
-      
-      void       write( uint32_t addr, uint8_t const* buffer, uint32_t size ) { m_arch.lla_memcpy( addr, buffer, size ); }
-      void       write32( uint32_t addr, uint32_t value ) { m_arch.lla_memwrite32( addr, value ); }
-      void       read( uint8_t* buffer, uint32_t addr, uint32_t size ) { m_arch.lla_memcpy( buffer, addr, size ); }
-      uint32_t   read32( uint32_t addr ) { return m_arch.lla_memread32( addr ); }
-      void       clear( uint32_t addr, uint32_t size ) { m_arch.lla_bzero( addr, size ); }
-      void       segregwrite( uint32_t num, uint16_t value ) { m_arch.segregwrite( num, u16_t( value ) ); }
-      void       settls( uint32_t addr ) {};
-      void       dynamic_image() { m_arch.m_linux_system.dynamic_image(); };
-      uint32_t   firstfreepage() { return m_arch.mem_upperbound(); };
-      uint32_t   regread32( uint32_t num ) { return m_arch.lla_regread32( num ); };
-      void       regwrite32( uint32_t num, uint32_t value ) { m_arch.lla_regwrite32( num, value ); }
-      void       setesp( uint32_t esp ) { m_arch.regwrite32( 4, u32_t( esp ) ); }
-      void       seteip( uint32_t eip ) { m_arch.seteip( u32_t( eip ) ); }
-      uint32_t   geteip() { return m_arch.geteip(); }
-      void       stop() { m_arch.stop(); }
-    };
-    
-    SysTarget    m_target;
-    SysTarget&   target() { return m_target; }
+    virtual unisim::service::interfaces::LinuxOS* GetLinuxOS() { return 0; };
     
     void                        interrupt( uint8_t _exc )
     {
       switch (_exc) {
-      case 0x80: { // Linux syscall
-        SysTarget target( *this );
-        m_linux_system.syscall( int( m_regs[0] ), target );
+      case 0x80: {
+        unisim::service::interfaces::LinuxOS* linux_os = GetLinuxOS();
+        if (not linux_os) throw 0;
+        linux_os->ExecuteSystemCall( int( m_regs[0] ) );
       } break;
       default:
         std::cerr << "Unhandled interruption (0x" << std::hex << uint32_t( _exc ) << ").\n";

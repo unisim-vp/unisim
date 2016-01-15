@@ -46,8 +46,8 @@ namespace intel {
 
   Arch::Arch()
     : m_running( true ), m_instcount( 0 ), m_disasm( false ), m_latest_insn( 0 )
-    , m_target( *this ), m_EIP( 0 ), m_ftop( 0 ), m_fcw( 0x23f ),
-      m_dirtfregs( 0 )
+    , m_EIP( 0 ), m_ftop( 0 ), m_fcw( 0x23f )
+    , m_dirtfregs( 0 )
   {
     std::memset( static_cast<void*>( &m_flags[0] ), 0, sizeof (m_flags) );
     std::memset( static_cast<void*>( &m_regs[0] ), 0, sizeof (m_regs) );

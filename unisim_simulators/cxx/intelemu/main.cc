@@ -46,6 +46,75 @@
 #include <dtlib/misc.hh>
 #include <iostream>
 
+struct LinuxOS
+  : public unisim::service::interfaces::LinuxOS
+{
+  unisim::kernel::logger::Logger logger;
+  unisim::util::os::linux_os::Linux<uint32_t, uint32_t> linux_impl;
+  
+  bool exited;
+  int app_ret_status;
+  LinuxOS( unisim::service::interfaces::Registers *regs_if,
+           unisim::service::interfaces::Memory<uint32_t> *mem_if,
+           unisim::service::interfaces::MemoryInjection<uint32_t> *mem_inject_if
+           )
+    : unisim::service::interfaces::LinuxOS()
+    , logger( "linux32" )
+    , linux_impl( logger, regs_if, mem_if, mem_inject_if )
+    , exited( false )
+    , app_ret_status( -1 )
+  {}
+  
+  void Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
+  {
+    // Set up the different linuxlib parameters
+    linux_impl.SetVerbose(true);
+  
+    if (not linux_impl.SetCommandLine(simargs))
+      throw 0;
+    
+    // Set the linuxlib option to set the target environment with the
+    // host environment
+    linux_impl.SetApplyHostEnvironment(false);
+    linux_impl.SetEnvironment(envs);
+    
+    // Set the binary that will be simulated in the target simulator
+    if (not linux_impl.AddLoadFile( simargs[0].c_str() ))
+      throw 0;
+  
+    // Set the system type of the target simulator (should be the same than the
+    // binary)
+    if (not linux_impl.SetSystemType("i386"))
+      throw 0;
+  
+    linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
+    linux_impl.SetStackBase( 0x40000000UL );
+    linux_impl.SetMemoryPageSize( 0x1000UL );
+  
+    linux_impl.SetUname("Linux" /* sysname */,
+                     "localhost" /* nodename */,
+                     "2.6.27.35" /* release */,
+                     "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
+                     "i386" /* machine */,
+                     "localhost" /* domainname */);
+    // linux_impl.SetStdinPipeFilename(stdin_pipe_filename.c_str());
+    // linux_impl.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
+    // linux_impl.SetStderrPipeFilename(stderr_pipe_filename.c_str());
+
+    // now it is time to try to run the initialization of the linuxlib
+    if (not linux_impl.Load())
+      throw 0;
+  
+    if (!linux_impl.SetupTarget())
+      throw 0;
+  
+  }
+  void ExecuteSystemCall( int id )
+  {
+    linux_impl.ExecuteSystemCall( id, exited, app_ret_status );
+  }
+};
+
 struct Arch
   : public unisim::component::cxx::processor::intel::Arch
   , public unisim::service::interfaces::MemoryInjection<uint32_t>
@@ -60,10 +129,11 @@ struct Arch
     , unisim::service::interfaces::MemoryInjection<uint32_t>()
     , unisim::service::interfaces::Memory<uint32_t>()
     , unisim::service::interfaces::Registers()
+    , linux_os(0)
   {
     for (int idx = 0; idx < 8; ++idx) {
       std::ostringstream regname;
-      regname << unisim::component::cxx::processor::intel::DisasmRq(idx);
+      regname << unisim::component::cxx::processor::intel::DisasmRd(idx);
       regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(regname.str(), &m_regs[idx]);
     }
     regmap["%eip"] = new unisim::util::debug::SimpleRegister<uint32_t>("%eip", &m_EIP);
@@ -90,12 +160,16 @@ struct Arch
       delete reg.second;
   }
   
+  void SetLinuxOS( unisim::service::interfaces::LinuxOS* _linux_os ) { linux_os = _linux_os; }
+  
+  unisim::service::interfaces::LinuxOS* linux_os;
   std::map<std::string,unisim::util::debug::Register*> regmap;
   
+  using unisim::component::cxx::processor::intel::Arch::m_mem;
   // unisim::service::interfaces::Memory<uint32_t>
   void Reset() {}
-  bool ReadMemory(uint32_t addr, void* buffer, uint32_t size ) { throw 0; return false; }
-  bool WriteMemory(uint32_t addr, void const* buffer, uint32_t size) { throw 0; return false; }
+  bool ReadMemory(uint32_t addr, void* buffer, uint32_t size ) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
+  bool WriteMemory(uint32_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
   // unisim::service::interfaces::Registers
   unisim::util::debug::Register* GetRegister(char const* name)
   {
@@ -108,10 +182,11 @@ struct Arch
       scanner.Append( reg.second );
   }
   // unisim::service::interfaces::MemoryInjection<ADDRESS>
-  bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { throw 0; return false; }
-  bool InjectWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { throw 0; return false; }
+  bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
+  bool InjectWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
   
 };
+
 
 int
 main( int argc, char *argv[] )
@@ -134,15 +209,6 @@ main( int argc, char *argv[] )
   // Simulator simulator( argc, argv );
   unisim::kernel::logger::Logger::StaticServerInstance()->opt_std_err_color_ = true;
 
-  Arch cpu;
-  
-  unisim::kernel::logger::Logger logger("linux32");
-  unisim::util::os::linux_os::Linux<uint32_t, uint32_t> linux32(logger, &cpu, &cpu, &cpu);
-  
-  
-  // Set up the different linuxlib parameters
-  linux32.SetVerbose(true);
-  
   uintptr_t simargs_idx = 1;
   std::vector<std::string> simargs(&argv[simargs_idx], &argv[argc]);
   
@@ -158,44 +224,15 @@ main( int argc, char *argv[] )
     std::cerr << "Simulation command line empty." << std::endl;
     return 1;
   }
-  
-  if (not linux32.SetCommandLine(simargs))
-    throw 0;
-  
-  // Set the linuxlib option to set the target environment with the
-  // host environment
-  linux32.SetApplyHostEnvironment(false);
 
-  // Set the binary that will be simulated in the target simulator
-  if (not linux32.AddLoadFile( simargs[0].c_str() ))
-    throw 0;
+  std::vector<std::string> envs;
+  envs.push_back( "LANG=C" );
   
-  // Set the system type of the target simulator (should be the same than the
-  // binary)
-  if (not linux32.SetSystemType("i386"))
-    throw 0;
+  Arch cpu;
+  LinuxOS linux32( &cpu, &cpu, &cpu );
+  cpu.SetLinuxOS( &linux32 );
   
-  linux32.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
-  linux32.SetStackBase( 0x40000000UL );
-  linux32.SetMemoryPageSize( 0x1000UL );
-  
-  // linux32.SetUname("Linux" /* sysname */,
-  //                     "localhost" /* nodename */,
-  //                     "2.6.27.35" /* release */,
-  //                     "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
-  //                     "i386" /* machine */,
-  //                     "localhost" /* domainname */);
-  // linux32.SetHWCap("swp half fastmult");
-  // linux32.SetStdinPipeFilename(stdin_pipe_filename.c_str());
-  // linux32.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
-  // linux32.SetStderrPipeFilename(stderr_pipe_filename.c_str());
-
-  // now it is time to try to run the initialization of the linuxlib
-  // if (not linux32.Load())
-  //   throw 0;
-  
-  // if (!linux32.SetupTarget())
-  //   throw 0;
+  linux32.Setup( simargs, envs );
   
   // switch (simulator.Setup())
   //   {
@@ -214,48 +251,31 @@ main( int argc, char *argv[] )
   //     break;
   //   }
   
-  cpu.m_linux_system.m_sink.redirect( std::cerr );
-  cpu.m_linux_system.m_verbose = false;
   cpu.m_events.redirect( std::cerr );
   cpu.m_disasm = false;
   
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
   
-  {
-    dtlib::ELF::Image elfimage( simargs[0].c_str() );
-    
-    elfimage.m_verbose = true;
-    
-    // uint32_t loadedbytes = 
-    elfimage.load( cpu.target() );
-    elfimage.ia32chk();
-
-    // uintptr_t envcount = 0;
-    // for (envcount = 0; envp[envcount]; ++envcount);
-    // std::vector<std::string> envs( &envp[0], &envp[envcount] );
-    std::vector<std::string> envs;
-    envs.push_back( "LANG=C" );
-    dtlib::ELF::Root eiroot = elfimage.getroot();
-    assert( eiroot.object_file_type() == dtlib::ELF::Root::etexec );
-    cpu.m_linux_system.static_setup( cpu.target(), eiroot, simargs, envs );
-  }
-  
   typedef unisim::component::cxx::processor::intel::Operation Operation;
   std::cerr << "\n*** Run ***" << std::endl;
-  while (cpu.m_running) {
-    Operation* op = cpu.fetch();
-    // op->disasm( std::cerr );
-    // std::cerr << std::endl;
-    asm volatile ("operation_execute:");
-    op->execute( cpu );
-    //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
-      
-    // if ((cpu.m_instcount % 0x1000000) == 0)
-    //   { std::cerr << "Executed instructions: " << std::dec << cpu.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
-  }
   
-  dtlib::osprintf( std::cerr, "Executed instructions: %lld\n", cpu.m_instcount );
+  while (not linux32.exited)
+    {
+      Operation* op = cpu.fetch();
+      // op->disasm( std::cerr );
+      // std::cerr << std::endl;
+      asm volatile ("operation_execute:");
+      op->execute( cpu );
+      //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
+      
+      // if ((cpu.m_instcount % 0x1000000) == 0)
+      //   { std::cerr << "Executed instructions: " << std::dec << cpu.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
+    }
+  
+  std::cerr << "Program exited with status:" << linux32.app_ret_status << std::endl;
+  //  dtlib::osprintf( std::cerr, "Executed instructions: %lld\n", cpu.m_instcount );
+  
   
   return 0;
 }
