@@ -119,8 +119,6 @@ namespace intel {
       }
     }
     
-    todel::LinuxSystem         m_linux_system; ///< System support
-    
     // PROCESSOR STATE
   protected:
     uint32_t                    m_EIP;
@@ -204,14 +202,18 @@ namespace intel {
     // Segment Registers
     intel::SegmentReg            m_srs[8];
     
-    void                        segregwrite( uint32_t _num, uint16_t _value )
+    uint32_t m_gdt_bases[4]; // fake GDT registers used under Linux OS emulation
+    
+    void                        segregwrite( uint32_t idx, uint16_t _value )
     {
       uint32_t id = (_value >> 3) & 0x1fff; // entry number
       uint32_t ti = (_value >> 2) & 0x0001; // global or local
-      uint32_t pl = (_value >> 0) & 0x0003; // privilege level
-      todel::LinuxSystem::GDTEntry_t& gdtentry = m_linux_system.gdtentry( id );
-      assert( _num < 6 and ti == 0 and pl == 3 );
-      m_srs[_num].update( id, ti, pl, gdtentry.m_baseaddr );
+      uint32_t pl = (_value >> 0) & 0x0003; // requested privilege level
+      
+      if (not GetLinuxOS()) throw 0;
+      if ((idx >= 6) or (id == 0) or (id >= 4) or (ti != 0) or (pl != 3)) throw 0;
+      
+      m_srs[idx].update( id, ti, pl, m_gdt_bases[id] );
     }
     
     uint16_t                    segregread( unsigned num ) { throw 0; }

@@ -52,6 +52,7 @@ namespace intel {
     std::memset( static_cast<void*>( &m_flags[0] ), 0, sizeof (m_flags) );
     std::memset( static_cast<void*>( &m_regs[0] ), 0, sizeof (m_regs) );
     std::memset( static_cast<void*>( &m_fregs[0] ), 0, sizeof (m_fregs) );
+    std::memset( static_cast<void*>( &m_gdt_bases[0] ), 0, sizeof (m_gdt_bases) );
   }
   
   template <typename DECODER>
