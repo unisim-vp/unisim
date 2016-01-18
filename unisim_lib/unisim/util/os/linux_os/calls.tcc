@@ -514,290 +514,6 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct pow
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct arm_stat64 *target_stat)
-{
-	int ret;
-#if defined(WIN32) || defined(WIN64)
-	struct _stati64 host_stat;
-	ret = _fstati64(fd, &host_stat);
-#elif defined(linux) || defined(__linux) || defined(__linux__)
-	struct stat64 host_stat;
-	ret = fstat64(fd, &host_stat);
-#elif defined(__APPLE_CC__)
-	struct stat host_stat;
-	ret = fstat(fd, &host_stat);
-#endif
-	if(ret < 0) return ret;
-
-	memset(target_stat, 0, sizeof(struct arm_stat64));
-	
-#if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
-	// 64-bit host
-	target_stat->st_dev = Host2Target(endianness_, (uint64_t) host_stat.st_dev);
-	target_stat->__st_ino = Host2Target(endianness_, (uint32_t) host_stat.st_ino);
-	target_stat->st_ino = Host2Target(endianness_, (uint64_t) host_stat.st_ino);
-	target_stat->st_mode = Host2Target(endianness_, (uint32_t) host_stat.st_mode);
-	target_stat->st_nlink = Host2Target(endianness_, (uint64_t) host_stat.st_nlink);
-	target_stat->st_uid = Host2Target(endianness_, (uint32_t) host_stat.st_uid);
-	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
-	target_stat->st_rdev = Host2Target(endianness_, (uint64_t) host_stat.st_rdev);
-	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
-	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
-	target_stat->st_blocks =
-		Host2Target(endianness_, (uint64_t)((host_stat.st_size + 511) / 512));
-	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atime);
-	target_stat->st_atim.tv_nsec = 0;
-	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtime);
-	target_stat->st_mtim.tv_nsec = 0;
-	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctime);
-	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
-	target_stat->st_blksize =
-		Host2Target(endianness_, (uint32_t) host_stat.st_blksize);
-	target_stat->st_blocks =
-		Host2Target(endianness_, (uint64_t) host_stat.st_blocks);
-	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atim.tv_sec);
-	target_stat->st_atim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atim.tv_nsec);
-	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtim.tv_sec);
-	target_stat->st_mtim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtim.tv_nsec);
-	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctim.tv_sec);
-	target_stat->st_ctim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctim.tv_nsec);
-#elif defined(__APPLE_CC__) // darwin PPC64/x86_64
-	target_stat->st_blksize =
-		Host2Target(endianness_, (uint32_t) host_stat.st_blksize);
-	target_stat->st_blocks =
-		Host2Target(endianness_, (int64_t) host_stat.st_blocks);
-	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atimespec.tv_sec);
-	target_stat->st_atim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atimespec.tv_nsec);
-	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtimespec.tv_sec);
-	target_stat->st_mtim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtimespec.tv_nsec);
-	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctimespec.tv_sec);
-	target_stat->st_ctim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctimespec.tv_nsec);
-#endif
-
-#else
-	// 32-bit host
-	target_stat->st_dev = Host2Target(endianness_, (uint64_t) host_stat.st_dev);
-	target_stat->__st_ino = Host2Target(endianness_, (uint32_t) host_stat.st_ino);
-	target_stat->st_ino = Host2Target(endianness_, (uint64_t) host_stat.st_ino);
-	target_stat->st_mode = Host2Target(endianness_, (uint32_t) host_stat.st_mode);
-	target_stat->st_nlink = Host2Target(endianness_, (uint32_t) host_stat.st_nlink);
-	target_stat->st_uid = Host2Target(endianness_, (uint32_t) host_stat.st_uid);
-	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
-	target_stat->st_rdev = Host2Target(endianness_, (uint64_t) host_stat.st_rdev);
-	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
-	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
-	target_stat->st_blocks =
-		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
-	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (int32_t) host_stat.st_atime);
-	target_stat->st_atim.tv_nsec = 0;
-	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (int32_t) host_stat.st_mtime);
-	target_stat->st_mtim.tv_nsec = 0;
-	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (int32_t) host_stat.st_ctime);
-	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
-	target_stat->st_blksize = Host2Target(endianness_, (uint32_t)
-											host_stat.st_blksize);
-	target_stat->st_blocks = Host2Target(endianness_, (uint64_t)
-										host_stat.st_blocks);
-	target_stat->st_atim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_atim.tv_sec);
-	target_stat->st_atim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_atim.tv_nsec);
-	target_stat->st_mtim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_mtim.tv_sec);
-	target_stat->st_mtim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_mtim.tv_nsec);
-	target_stat->st_ctim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_ctim.tv_sec);
-	target_stat->st_ctim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_ctim.tv_nsec);
-#elif defined(__APPLE_CC__) // Darwin PPC32/x86
-	target_stat->st_blksize = Host2Target(endianness_, (uint32_t)
-											host_stat.st_blksize);
-	target_stat->st_blocks = Host2Target(endianness_, (uint64_t)
-										host_stat.st_blocks);
-	target_stat->st_atim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_atimespec.tv_sec);
-	target_stat->st_atim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_atimespec.tv_nsec);
-	target_stat->st_mtim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_mtimespec.tv_sec);
-	target_stat->st_mtim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_mtimespec.tv_nsec);
-	target_stat->st_ctim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_ctimespec.tv_sec);
-	target_stat->st_ctim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_ctimespec.tv_nsec);
-#endif
-
-#endif
-	return ret;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct arm_stat64 *target_stat)
-{
-	int ret;
-#if defined(WIN32) || defined(WIN64)
-	struct _stati64 host_stat;
-	ret = _stati64(pathname, &host_stat);
-#elif defined(linux) || defined(__linux) || defined(__linux__)
-	struct stat64 host_stat;
-	ret = stat64(pathname, &host_stat);
-#elif defined(__APPLE_CC__)
-	struct stat host_stat;
-	ret = stat(pathname, &host_stat);
-#endif
-	if(ret < 0) return ret;
-
-	memset(target_stat, 0, sizeof(struct arm_stat64));
-	
-#if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
-	// 64-bit host
-	target_stat->st_dev = Host2Target(endianness_, (uint64_t) host_stat.st_dev);
-	target_stat->__st_ino = Host2Target(endianness_, (uint32_t) host_stat.st_ino);
-	target_stat->st_ino = Host2Target(endianness_, (uint64_t) host_stat.st_ino);
-	target_stat->st_mode = Host2Target(endianness_, (uint32_t) host_stat.st_mode);
-	target_stat->st_nlink = Host2Target(endianness_, (uint64_t) host_stat.st_nlink);
-	target_stat->st_uid = Host2Target(endianness_, (uint32_t) host_stat.st_uid);
-	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
-	target_stat->st_rdev = Host2Target(endianness_, (uint64_t) host_stat.st_rdev);
-	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
-	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
-	target_stat->st_blocks =
-		Host2Target(endianness_, (uint64_t)((host_stat.st_size + 511) / 512));
-	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atime);
-	target_stat->st_atim.tv_nsec = 0;
-	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtime);
-	target_stat->st_mtim.tv_nsec = 0;
-	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctime);
-	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
-	target_stat->st_blksize =
-		Host2Target(endianness_, (uint32_t) host_stat.st_blksize);
-	target_stat->st_blocks =
-		Host2Target(endianness_, (uint64_t) host_stat.st_blocks);
-	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atim.tv_sec);
-	target_stat->st_atim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atim.tv_nsec);
-	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtim.tv_sec);
-	target_stat->st_mtim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtim.tv_nsec);
-	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctim.tv_sec);
-	target_stat->st_ctim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctim.tv_nsec);
-#elif defined(__APPLE_CC__) // darwin PPC64/x86_64
-	target_stat->st_blksize =
-		Host2Target(endianness_, (uint32_t) host_stat.st_blksize);
-	target_stat->st_blocks =
-		Host2Target(endianness_, (int64_t) host_stat.st_blocks);
-	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atimespec.tv_sec);
-	target_stat->st_atim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_atimespec.tv_nsec);
-	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtimespec.tv_sec);
-	target_stat->st_mtim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_mtimespec.tv_nsec);
-	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctimespec.tv_sec);
-	target_stat->st_ctim.tv_nsec =
-		Host2Target(endianness_, (uint32_t) host_stat.st_ctimespec.tv_nsec);
-#endif
-
-#else
-	// 32-bit host
-	target_stat->st_dev = Host2Target(endianness_, (uint64_t) host_stat.st_dev);
-	target_stat->__st_ino = Host2Target(endianness_, (uint32_t) host_stat.st_ino);
-	target_stat->st_ino = Host2Target(endianness_, (uint64_t) host_stat.st_ino);
-	target_stat->st_mode = Host2Target(endianness_, (uint32_t) host_stat.st_mode);
-	target_stat->st_nlink = Host2Target(endianness_, (uint32_t) host_stat.st_nlink);
-	target_stat->st_uid = Host2Target(endianness_, (uint32_t) host_stat.st_uid);
-	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
-	target_stat->st_rdev = Host2Target(endianness_, (uint64_t) host_stat.st_rdev);
-	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
-	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
-	target_stat->st_blocks =
-		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
-	target_stat->st_atim.tv_sec =
-		Host2Target(endianness_, (int32_t) host_stat.st_atime);
-	target_stat->st_atim.tv_nsec = 0;
-	target_stat->st_mtim.tv_sec =
-		Host2Target(endianness_, (int32_t) host_stat.st_mtime);
-	target_stat->st_mtim.tv_nsec = 0;
-	target_stat->st_ctim.tv_sec =
-		Host2Target(endianness_, (int32_t) host_stat.st_ctime);
-	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
-	target_stat->st_blksize = Host2Target(endianness_, (uint32_t)
-											host_stat.st_blksize);
-	target_stat->st_blocks = Host2Target(endianness_, (uint64_t)
-										host_stat.st_blocks);
-	target_stat->st_atim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_atim.tv_sec);
-	target_stat->st_atim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_atim.tv_nsec);
-	target_stat->st_mtim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_mtim.tv_sec);
-	target_stat->st_mtim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_mtim.tv_nsec);
-	target_stat->st_ctim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_ctim.tv_sec);
-	target_stat->st_ctim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_ctim.tv_nsec);
-#elif defined(__APPLE_CC__) // Darwin PPC32/x86
-	target_stat->st_blksize = Host2Target(endianness_, (uint32_t)
-											host_stat.st_blksize);
-	target_stat->st_blocks = Host2Target(endianness_, (uint64_t)
-										host_stat.st_blocks);
-	target_stat->st_atim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_atimespec.tv_sec);
-	target_stat->st_atim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_atimespec.tv_nsec);
-	target_stat->st_mtim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_mtimespec.tv_sec);
-	target_stat->st_mtim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_mtimespec.tv_nsec);
-	target_stat->st_ctim.tv_sec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_ctimespec.tv_sec);
-	target_stat->st_ctim.tv_nsec = Host2Target(endianness_, (uint32_t)
-												host_stat.st_ctimespec.tv_nsec);
-#endif
-
-#endif
-  return ret;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(struct powerpc_tms *target_tms)
 {
 	int ret;
@@ -855,67 +571,6 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTimeOfDay(struct powerpc_timeval *ta
 	return ret;
 }
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(struct arm_tms *target_tms)
-{
-	int ret;
-#if defined(WIN32) || defined(WIN64)
-	FILETIME ftCreationTime;
-	FILETIME ftExitTime;
-	FILETIME ftKernelTime;
-	FILETIME ftUserTime;
-
-	if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime,
-						&ftKernelTime, &ftUserTime)) return -1;
-
-	target_tms->tms_utime = Host2Target(endianness_, (uint32_t)
-										ftUserTime.dwLowDateTime);
-	target_tms->tms_stime = Host2Target(endianness_, (uint32_t)
-										ftKernelTime.dwLowDateTime);
-	target_tms->tms_cutime = 0;   // User CPU time of dead children
-	target_tms->tms_cstime = 0;   // System CPU time of dead children
-#else
-	struct tms host_tms;
-
-	ret = (int) times(&host_tms);
-	target_tms->tms_utime = Host2Target(endianness_, (int32_t) host_tms.tms_utime);
-	target_tms->tms_stime = Host2Target(endianness_, (int32_t) host_tms.tms_stime);
-	target_tms->tms_cutime = Host2Target(endianness_, (int32_t)
-										host_tms.tms_cutime);
-	target_tms->tms_cstime = Host2Target(endianness_, (int32_t)
-										host_tms.tms_cstime);
-#endif
-	return ret;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTimeOfDay(struct arm_timeval *target_timeval, struct arm_timezone *target_timezone)
-{
-	int ret;
-	struct timeval host_tv;
-	struct timezone host_tz;
-
-	ret = gettimeofday(&host_tv, &host_tz);
-
-	if(ret == 0)
-	{
-		if(target_timeval)
-		{
-			target_timeval->tv_sec = Host2Target(endianness_, (int32_t) host_tv.tv_sec);
-			target_timeval->tv_usec = Host2Target(endianness_, (int32_t) host_tv.tv_usec);
-		}
-		if(target_timezone)
-		{
-			target_timezone->tz_minuteswest = Host2Target(endianness_, (int32_t) host_tz.tz_minuteswest);
-			target_timezone->tz_dsttime = Host2Target(endianness_, (int32_t) host_tz.tz_dsttime);
-		}
-	}
-	
-	return ret;
-}
-
-
-
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetMmapBase() const
 {
@@ -962,18 +617,34 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemCallStatus(int ret, bool erro
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::StringLength(ADDRESS_TYPE addr)
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMemString(Linux& lin, ADDRESS_TYPE addr, std::string& str)
 {
-	int len = 0;
-	char buffer;
+  // Two pass string retrieval
+  int len = 0;
+  for (ADDRESS_TYPE tail = addr; ; len += 1, tail += 1)
+    {
+      if (len >= 0x100000) {
+        lin.Logger() << DebugError << "Huge string: bailing out" << EndDebugError;
+        return false;
+      }
+      uint8_t buffer;
+      if (not ReadMem(lin, addr, &buffer, 1)) return false;
+    }
+  
+  str.resize( len, '*' );
+  
+  return ReadMem(lin, addr, (uint8_t*)&str[0], len);
+}
 
-	while(1)
-	{
-		ReadMem(addr, (uint8_t *) &buffer, 1);
-		if(buffer == 0) return len;
-		len++;
-		addr += 1;
-	}
+namespace {
+  template <uintptr_t N>
+  bool
+  SubPathOf( std::string str, char const (&ref)[N] )
+  {
+    for (uintptr_t idx = 0; idx < (N-1); ++idx)
+      if (ref[idx] != str[idx]) return false;
+    return (str[N-1] == '\0') or (str[N-1] == '/');
+  }
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1013,7 +684,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         buf_addr = (ADDRESS_TYPE) lin.target_system->GetSystemCallParam(1);
         count = (size_t) lin.target_system->GetSystemCallParam(2);
 
-        host_fd = lin.Target2HostFileDescriptor(target_fd);
+        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 	
         if(host_fd == -1)
           {
@@ -1027,8 +698,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             if(buf)
               {
                 ret = read(host_fd, buf, count);
-                if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
-                if(ret > 0) lin.WriteMem(buf_addr, (uint8_t *)buf, ret);
+                if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
+                if(ret > 0) this->WriteMem(lin, buf_addr, (uint8_t *)buf, ret);
                 free(buf);
               }
             else
@@ -1066,7 +737,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         buf_addr = lin.target_system->GetSystemCallParam(1);
         count = (size_t)lin.target_system->GetSystemCallParam(2);
 	
-        host_fd = lin.Target2HostFileDescriptor(target_fd);
+        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 	
         if(host_fd == -1)
           {
@@ -1079,9 +750,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 
             if(buf)
               {
-                lin.ReadMem(buf_addr, (uint8_t *)buf, count);
+                this->ReadMem(lin, buf_addr, (uint8_t *)buf, count);
                 ret = write(host_fd, buf, count);
-                if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+                if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
                 if(unlikely(lin.verbose_))
                   {
                     lin.logger_ << DebugInfo
@@ -1115,28 +786,18 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "open"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        ADDRESS_TYPE addr;
-        int pathnamelen;
-        char *pathname;
-        int flags;
         int64_t ret;
-        mode_t mode;
         int32_t target_errno = 0;
         int32_t target_fd = -1;
 
-        addr = lin.target_system->GetSystemCallParam(0);
-        pathnamelen = lin.StringLength(addr);
-        pathname = (char *) malloc(pathnamelen + 1);
-	
-        if(pathname)
+        ADDRESS_TYPE addr = lin.target_system->GetSystemCallParam(0);
+        std::string pathname;
+        if (this->ReadMemString(lin, addr, pathname))
           {
-            lin.ReadMem(addr, (uint8_t *)pathname, pathnamelen + 1);
-            flags = lin.target_system->GetSystemCallParam(1);
-            mode = lin.target_system->GetSystemCallParam(2);
-            if(((strncmp(pathname, "/dev", 4) == 0) && ((pathname[4] == 0))) ||
-               ((strncmp(pathname, "/proc", 5) == 0) && ((pathname[5] == 0) || (pathname[5] == '/'))) ||
-               ((strncmp(pathname, "/sys", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))) ||
-               ((strncmp(pathname, "/var", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))))
+            int flags = lin.target_system->GetSystemCallParam(1);
+            mode_t mode = lin.target_system->GetSystemCallParam(2);
+            if (SubPathOf(pathname, "/dev") or SubPathOf(pathname, "/proc") or
+                SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
               {
                 // deny access to /dev, /proc, /sys, /var
                 ret = -1;
@@ -1145,7 +806,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             else
               {
 #if defined(linux) || defined(__linux) || defined(__linux__)
-                ret = open(pathname, flags, mode);
+                ret = open(pathname.c_str(), flags, mode);
 #else
                 int host_flags = 0;
                 int host_mode = 0;
@@ -1163,9 +824,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 #else
                 host_mode = mode; // other UNIX systems should have the same bit encoding for protection
 #endif
-                ret = open(pathname, host_flags, host_mode);
+                ret = open(pathname.c_str(), host_flags, host_mode);
 #endif
-                if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+                if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
               }
 		
             if(ret != -1)
@@ -1184,7 +845,6 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                         << EndDebugInfo;
               }
 
-            free(pathname);
           }
         else
           {
@@ -1211,7 +871,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 
         target_fd = lin.target_system->GetSystemCallParam(0);
 	
-        host_fd = lin.Target2HostFileDescriptor(target_fd);
+        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 	
         if(host_fd == -1)
           {
@@ -1238,7 +898,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                   }
               }
 		
-            if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+            if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
           }
 
         if(unlikely(lin.verbose_))
@@ -1267,7 +927,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         offset = lin.target_system->GetSystemCallParam(1);
         whence = lin.target_system->GetSystemCallParam(2);
 	
-        host_fd = lin.Target2HostFileDescriptor(target_fd);
+        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 	
         if(host_fd == -1)
           {
@@ -1277,7 +937,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         else
           {
             ret = lseek(host_fd, offset, whence);
-            if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+            if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
           }
 	
         if(unlikely(lin.verbose_))
@@ -1352,24 +1012,16 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "access"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        ADDRESS_TYPE addr;
-        int pathnamelen;
-        char *pathname;
-        mode_t mode;
         int ret;
         int32_t target_errno = 0;
 
-        addr = lin.target_system->GetSystemCallParam(0);
-        pathnamelen = lin.StringLength(addr);
-        pathname = (char *) malloc(pathnamelen + 1);
-        if(pathname)
+        ADDRESS_TYPE addr = lin.target_system->GetSystemCallParam(0);
+        std::string pathname;
+        if (this->ReadMemString(lin, addr, pathname))
           {
-            lin.ReadMem(addr, (uint8_t *)pathname, pathnamelen + 1);
-            mode = lin.target_system->GetSystemCallParam(1);
-            if(((strncmp(pathname, "/dev", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))) ||
-               ((strncmp(pathname, "/proc", 5) == 0) && ((pathname[5] == 0) || (pathname[5] == '/'))) ||
-               ((strncmp(pathname, "/sys", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))) ||
-               ((strncmp(pathname, "/var", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))))
+            mode_t mode = lin.target_system->GetSystemCallParam(1);
+            if (SubPathOf(pathname, "/dev") or SubPathOf(pathname, "/proc") or
+                SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
               {
                 // deny access to /dev, /proc, /sys, /var
                 ret = -1;
@@ -1380,11 +1032,11 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 #if defined(WIN32) || defined(WIN64)
                 int win_mode = 0;
                 win_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
-                ret = access(pathname, win_mode);
+                ret = access(pathname.c_str(), win_mode);
 #else
-                ret = access(pathname, mode);
+                ret = access(pathname.c_str(), mode);
 #endif
-                if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+                if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
               }
             if(unlikely(lin.verbose_))
               {
@@ -1393,7 +1045,6 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                         << "\", mode=0x" << std::hex << mode << std::dec << ")"
                         << EndDebugInfo;
               }
-            free(pathname);
           }
         else
           {
@@ -1569,7 +1220,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         result_addr = lin.target_system->GetSystemCallParam(3);
         whence = lin.target_system->GetSystemCallParam(4);
 	
-        host_fd = lin.Target2HostFileDescriptor(target_fd);
+        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 
         if(host_fd == -1)
           {
@@ -1582,12 +1233,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 			
             if(lseek_ret == -1)
               {
-                target_errno = lin.Host2LinuxErrno(errno);
+                target_errno = this->Host2LinuxErrno(lin, errno);
               }
             else
               {
                 lseek_result64 = unisim::util::endian::Host2Target(lin.endianness_, (uint64_t) lseek_ret);
-                lin.WriteMem(result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
+                this->WriteMem(lin, result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
               }
           }
 
@@ -1619,16 +1270,16 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
     
         for (int step = count; (--step) >= 0; iovecaddr += 8) {
           uint32_t iov_base, iov_len;
-          lin.ReadMem( iovecaddr + 0, (uint8_t*)&iov_base, 4 );
-          lin.ReadMem( iovecaddr + 4, (uint8_t*)&iov_len, 4 );
+          this->ReadMem( lin, iovecaddr + 0, (uint8_t*)&iov_base, 4 );
+          this->ReadMem( lin, iovecaddr + 4, (uint8_t*)&iov_len, 4 );
           iov_base = unisim::util::endian::Target2Host( lin.endianness_, iov_base );
           iov_len  = unisim::util::endian::Target2Host( lin.endianness_, iov_len );
           assert( iov_len < 0x100000 );
           uint8_t buffer[iov_len];
-          lin.ReadMem( iov_base, &buffer[0], iov_len );
+          this->ReadMem( lin, iov_base, &buffer[0], iov_len );
           int ret = ::write( target_fd, &buffer[0], iov_len );
           if (ret < 0) {
-            int32_t target_errno = lin.Host2LinuxErrno( errno );
+            int32_t target_errno = this->Host2LinuxErrno(lin,  errno );
             lin.SetSystemCallStatus( -target_errno, true );
             return;
           }
@@ -1857,7 +1508,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         cmd = lin.target_system->GetSystemCallParam(1);
         arg = (size_t)lin.target_system->GetSystemCallParam(2);
 	
-        host_fd = lin.Target2HostFileDescriptor(target_fd);
+        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 	
         if(host_fd == -1)
           {
@@ -1871,7 +1522,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             lin.SetSystemCallStatus((PARAMETER_TYPE) -LINUX_ENOSYS, true);
 #else
             ret = fcntl(host_fd, cmd, arg);
-            if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+            if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
 #endif
           }
 	
@@ -1898,7 +1549,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         target_fd = lin.target_system->GetSystemCallParam(0);
         cmd = lin.target_system->GetSystemCallParam(1);
 	
-        host_fd = lin.Target2HostFileDescriptor(target_fd);
+        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 	
         if(host_fd == -1)
           {
@@ -1920,7 +1571,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
               case F_GETFL:
               case F_SETFL:
                 ret = fcntl(host_fd, cmd);
-                if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+                if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
                 break;
               case F_GETLK:
               case F_SETLK:
@@ -1960,7 +1611,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 	
         target_oldfd = lin.target_system->GetSystemCallParam(0);
 
-        host_oldfd = lin.Target2HostFileDescriptor(target_oldfd);
+        host_oldfd = SysCall::Target2HostFileDescriptor(lin, target_oldfd);
 	
         if(host_oldfd == -1)
           {
@@ -1972,7 +1623,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             ret = dup(host_oldfd);
             if(ret == -1)
               {
-                target_errno = lin.Host2LinuxErrno(errno);
+                target_errno = this->Host2LinuxErrno(lin, errno);
               }
             else
               {
@@ -2067,21 +1718,15 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "unlink"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        ADDRESS_TYPE pathnameaddr;
-        int pathnamelen;
-        char *pathname;
         int ret;
         int32_t target_errno = 0;
 
-        pathnameaddr = lin.target_system->GetSystemCallParam(0);
-        pathnamelen = lin.StringLength(pathnameaddr);
-        pathname = (char *) malloc(pathnamelen + 1);
-	
-        if(pathname)
+        ADDRESS_TYPE pathnameaddr = lin.target_system->GetSystemCallParam(0);
+        std::string pathname;
+        if (this->ReadMemString(lin, pathnameaddr, pathname))
           {
-            lin.ReadMem(pathnameaddr, (uint8_t *) pathname, pathnamelen + 1);
-            ret = unlink(pathname);
-            if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+            ret = unlink(pathname.c_str());
+            if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
 		
             if(unlikely(lin.verbose_))
               {
@@ -2089,8 +1734,6 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                         << "unlink(pathname=\"" << pathname << "\")" << std::endl
                         << EndDebugInfo;
               }
-
-            free(pathname);
           }
         else
           {
@@ -2109,48 +1752,22 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "rename"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        ADDRESS_TYPE oldpathaddr;
-        ADDRESS_TYPE newpathaddr;
-        int oldpathlen;
-        int newpathlen;
-        char *oldpath;
-        char *newpath;
         int ret;
         int32_t target_errno = 0;
 
-        oldpathaddr = lin.target_system->GetSystemCallParam(0);
-        newpathaddr = lin.target_system->GetSystemCallParam(1);
-        oldpathlen = lin.StringLength(oldpathaddr);
-        newpathlen = lin.StringLength(newpathaddr);
-        oldpath = (char *) malloc(oldpathlen + 1);
-	
-        if(oldpath)
+        ADDRESS_TYPE oldpathaddr = lin.target_system->GetSystemCallParam(0);
+        ADDRESS_TYPE newpathaddr = lin.target_system->GetSystemCallParam(1);
+        std::string oldpath, newpath;
+        if (this->ReadMemString(lin, oldpathaddr, oldpath) and this->ReadMemString(lin, newpathaddr, newpath))
           {
-            newpath = (char *) malloc(newpathlen + 1);
-		
-            if(newpath)
+            ret = rename(oldpath.c_str(), newpath.c_str());
+			
+            if (unlikely(lin.verbose_))
               {
-                lin.ReadMem(oldpathaddr, (uint8_t *) oldpath, oldpathlen + 1);
-                lin.ReadMem(newpathaddr, (uint8_t *) newpath, newpathlen + 1);
-			
-                ret = rename(oldpath, newpath);
-			
-                if(unlikely(lin.verbose_))
-                  {
-                    lin.logger_ << DebugInfo
+                lin.logger_ << DebugInfo
                             << "rename(oldpath=\"" << oldpath << "\", newpath=\"" << newpath << "\")" << std::endl
                             << EndDebugInfo;
-                  }
-
-                free(newpath);
               }
-            else
-              {
-                ret = -1;
-                target_errno = LINUX_ENOMEM;
-              }
-		
-            free(oldpath);
           }
         else
           {
@@ -2244,7 +1861,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         target_fd = lin.target_system->GetSystemCallParam(0);
         length = lin.target_system->GetSystemCallParam(1);
 	
-        host_fd = lin.Target2HostFileDescriptor(target_fd);
+        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 	
         if(host_fd == -1)
           {
@@ -2254,7 +1871,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         else
           {
             ret = ftruncate(host_fd, length);
-            if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+            if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
           }
 	
         lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));

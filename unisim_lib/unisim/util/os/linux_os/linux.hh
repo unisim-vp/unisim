@@ -54,13 +54,17 @@ namespace os {
 namespace linux_os {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-class Linux
+struct Linux
 {
-public:
+	typedef ADDRESS_TYPE address_type;
+	typedef PARAMETER_TYPE parameter_type;
+	typedef Linux<ADDRESS_TYPE, PARAMETER_TYPE> this_type;
+	
 	Linux(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if, unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if);
 	~Linux();
 
 	void  SetVerbose(bool verbose);
+	bool  GetVerbose() const { return verbose_; };
 
 	void  SetParseDWARF(bool parse_dwarf);
 
@@ -90,6 +94,8 @@ public:
 	// Note that if the loaded files endianness is different from the set
 	// endianness the Load() method will fail.
 	void SetEndianness(unisim::util::endian::endian_type endianness);
+	// Gets the system endianness
+	unisim::util::endian::endian_type GetEndianness() const { return endianness_; }
 
 	// Sets the stack base address that will be used for the application stack.
 	// Combined with SetStackSize the memory addresses from stack base to
@@ -152,25 +158,44 @@ public:
 	// Gets the memory footprint of the application as a blob.
 	// Returns: a blob describing the memory footprint of the application. NULL
 	//          if the system has not been successfully loaded.
-	unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const;
+	unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const { return blob_; }
+	
+	// Gets the supplied logger
+	unisim::kernel::logger::Logger& Logger() { return logger_; }
+  
+	// Gets the entry_point_ of the loaded program
+	ADDRESS_TYPE GetEntryPoint() const { return entry_point_; }
 
 	// Executes the given system call id depending on the architecture the linux
 	// emulation is working on.
 	void ExecuteSystemCall(int id, bool& terminated, int& return_status);
 
-private:
-	bool is_load_; // true if a program has been successfully loaded, false
-	               // otherwise
-	
 	struct SysCall
 	{
 		virtual ~SysCall() {}
 		virtual void Execute( Linux& lin, int syscall_id ) const = 0;
 		virtual char const* GetName() const = 0;
 		virtual void Release() {}
+		// SysCall Friend accessing methods
+        protected:
+		static bool ReadMem(Linux& lin, ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
+		static bool WriteMem(Linux& lin, ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
+		static bool ReadMemString(Linux& lin, ADDRESS_TYPE addr, std::string& str);
+		static int32_t Host2LinuxErrno(Linux& lin, int host_errno); //< Errno conversion
+		static int Target2HostFileDescriptor( Linux& lin, int32_t fd );
 	};
 	
 	struct LSCExit { LSCExit( int _status ) : status( _status ) {} int status; };
+	
+	struct UTSName
+	{
+		std::string sysname;
+		std::string nodename;
+		std::string release;
+		std::string version;
+		std::string machine;
+		std::string domainname;
+	};
 	
 	// Target System Specific interface
 	struct TargetSystem
@@ -185,7 +210,21 @@ private:
 		virtual SysCall* GetSystemCall(int& id) const = 0;
 		virtual PARAMETER_TYPE GetSystemCallParam(int id) const = 0;
 		virtual void SetSystemCallStatus(int ret, bool error) const = 0;
+		// TargetSystem Friend accessing methods
+		unisim::service::interfaces::Registers& RegsIF() const { return *lin.regs_if_; }
+		unisim::service::interfaces::Memory<ADDRESS_TYPE>& MemIF() const { return *lin.mem_if_; }
+		std::string GetHWCAP() const { return lin.hwcap_; }
+		SysCall* GetSyscallByName( std::string name ) const { return lin.GetSyscallByName( name ); }
+	protected:
+		static bool GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value );
+		static bool SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value );
 	};
+
+	UTSName const& GetUTSName() const { return utsname; }
+	
+private:
+	bool is_load_; // true if a program has been successfully loaded, false
+	               // otherwise
 	
 	TargetSystem* target_system;
 	
@@ -221,13 +260,7 @@ private:
 	std::vector<std::string> target_envp_;
 
 	// utsname values
-	std::string utsname_sysname_;
-	std::string utsname_nodename_;
-	std::string utsname_release_;
-	std::string utsname_version_;
-	std::string utsname_machine_;
-	std::string utsname_domainname_;
-
+	UTSName utsname;
 	// HWCAP
 	std::string hwcap_;
 
@@ -277,9 +310,9 @@ private:
 	// Maps the registers depending on the system
 	// Returns true on success
 	unisim::util::debug::Register* GetDebugRegister( char const* regname );
-	bool GetRegister( char const* regname, PARAMETER_TYPE * const value );
-	bool SetRegister( char const* regname, PARAMETER_TYPE value );
-
+	// bool GetRegister( char const* regname, PARAMETER_TYPE * const value );
+	// bool SetRegister( char const* regname, PARAMETER_TYPE value );
+	
 	// Load the files set by the user into the given blob. Returns true on sucess,
 	// false otherwise.
 	bool LoadFiles(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob);
@@ -308,17 +341,8 @@ private:
 	// Set the contents of an aux table entry
 	ADDRESS_TYPE SetAuxTableEntry(uint8_t * stack_data, ADDRESS_TYPE sp,
 								ADDRESS_TYPE entry, ADDRESS_TYPE value) const;
-
-	// helper methods to read/write from/into the system memory for performing
-	// system calls or loading the initial memory image
-	bool ReadMem(ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
-	bool WriteMem(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
-
-	// Errno conversion
-	int32_t Host2LinuxErrno(int host_errno) const;
 	
 	// File descriptors mapping
-	int Target2HostFileDescriptor(int32_t fd);
 	int32_t AllocateFileDescriptor();
 	void FreeFileDescriptor(int32_t fd);
 	void MapTargetToHostFileDescriptor(int32_t target_fd, int host_fd);
@@ -332,17 +356,13 @@ private:
 	int Stat(int fd, struct powerpc_stat *target_stat);
 	int Fstat64(int fd, struct powerpc_stat64 *target_stat);
 	int Stat64(const char *pathname, struct powerpc_stat64 *target_stat);
-	int Fstat64(int fd, struct arm_stat64 *target_stat);
-	int Stat64(const char *pathname, struct arm_stat64 *target_stat);
 	int Fstat64(int fd, struct i386_stat64 *target_stat);
 	int Stat64(const char *pathname, struct i386_stat64 *target_stat);
 	// system call 'times' helper methods
 	int Times(struct powerpc_tms *target_tms);
-	int Times(struct arm_tms *target_tms);
 	int Times(struct i386_tms *target_tms);
 	// system call 'gettimeofday' helper methods
 	int GetTimeOfDay(struct powerpc_timeval *target_timeval, struct powerpc_timezone *target_timezone);
-	int GetTimeOfDay(struct arm_timeval *target_timeval, struct arm_timezone *target_timezone);
 	int GetTimeOfDay(struct i386_timeval *target_timeval, struct i386_timezone *target_timezone);
 	// handling the mmap base address
 	ADDRESS_TYPE GetMmapBase() const;
@@ -355,8 +375,6 @@ private:
 	void SetBrkPoint(ADDRESS_TYPE brk_point);
 	// writing system call status
 	void SetSystemCallStatus(int ret, bool error);
-	// compute the length of a buffer string
-	int StringLength(ADDRESS_TYPE addr);
 };
 
 } // end of linux namespace

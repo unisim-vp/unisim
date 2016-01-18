@@ -109,12 +109,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(unisim::kernel::logger::Logger& logge
 	, envp_()
 	, apply_host_environnement_(false)
 	, target_envp_()
-	, utsname_sysname_()
-	, utsname_nodename_()
-	, utsname_release_()
-	, utsname_version_()
-	, utsname_machine_()
-	, utsname_domainname_()
+	, utsname()
 	, blob_(NULL)
 	, regs_if_(regs_if)
 	, mem_if_(mem_if)
@@ -720,866 +715,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
   
   if ((system_type_name.compare( "arm" ) == 0) or (system_type_name.compare( "arm-eabi" ) == 0))
     {
-      struct ARMTS : public TargetSystem
-      {
-        ARMTS( std::string _name, Linux& _lin ) : TargetSystem( _name, _lin ) {}
-        using TargetSystem::lin;
-        bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const
-        {
-          uint32_t arm_hwcap = 0;
-          std::string hwcap_token;
-          std::stringstream sstr(lin.hwcap_);
-          while(sstr >> hwcap_token)
-            {
-              if(hwcap_token.compare("swp") == 0)             { arm_hwcap |= ARM_HWCAP_ARM_SWP; }
-              else if(hwcap_token.compare("half") == 0)       { arm_hwcap |= ARM_HWCAP_ARM_HALF; }
-              else if(hwcap_token.compare("thumb") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_THUMB; }
-              else if(hwcap_token.compare("26bit") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_26BIT; }
-              else if(hwcap_token.compare("fastmult") == 0)   { arm_hwcap |= ARM_HWCAP_ARM_FAST_MULT; }
-              else if(hwcap_token.compare("fpa") == 0)        { arm_hwcap |= ARM_HWCAP_ARM_FPA; }
-              else if(hwcap_token.compare("vfp") == 0)        { arm_hwcap |= ARM_HWCAP_ARM_VFP; }
-              else if(hwcap_token.compare("edsp") == 0)       { arm_hwcap |= ARM_HWCAP_ARM_EDSP; }
-              else if(hwcap_token.compare("edsp") == 0)       { arm_hwcap |= ARM_HWCAP_ARM_JAVA; }
-              else if(hwcap_token.compare("java") == 0)       { arm_hwcap |= ARM_HWCAP_ARM_JAVA; }
-              else if(hwcap_token.compare("iwmmxt") == 0)     { arm_hwcap |= ARM_HWCAP_ARM_IWMMXT; }
-              else if(hwcap_token.compare("crunch") == 0)     { arm_hwcap |= ARM_HWCAP_ARM_CRUNCH; }
-              else if(hwcap_token.compare("thumbee") == 0)    { arm_hwcap |= ARM_HWCAP_ARM_THUMBEE; }
-              else if(hwcap_token.compare("neon") == 0)       { arm_hwcap |= ARM_HWCAP_ARM_NEON; }
-              else if(hwcap_token.compare("vfpv3") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_VFPv3; }
-              else if(hwcap_token.compare("vfpv3d16") == 0)   { arm_hwcap |= ARM_HWCAP_ARM_VFPv3D16; }
-              else if(hwcap_token.compare("tls") == 0)        { arm_hwcap |= ARM_HWCAP_ARM_TLS; }
-              else if(hwcap_token.compare("vfpv4") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_VFPv4; }
-              else if(hwcap_token.compare("idiva") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_IDIVA; }
-              else if(hwcap_token.compare("idivt") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_IDIVT; }
-              else { lin.logger_ << DebugWarning << "unknown hardware capability \"" << hwcap_token << "\"" << EndDebugWarning; }
-            }
-          hwcap = arm_hwcap;
-          return true;
-        }
-        bool SetupTarget() const
-        {
-          // Reset all target registers
-          {
-            struct : public unisim::util::debug::RegisterScanner {
-              void Append( unisim::util::debug::Register* reg ) { reg->Clear(); }
-            } clear_regs;
-            lin.regs_if_->ScanRegisters( clear_regs );
-          }
-          // Set PC to the program entry point
-          if (not lin.SetRegister(kARM_pc, lin.entry_point_))
-            return false;
-          // Set SP to the base of the created stack
-          unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
-            lin.blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
-          if (sp_section == NULL) {
-            lin.logger_ << DebugError << "Could not find the stack pointer section." << EndDebugError;
-            return false;
-          }
-          if (not lin.SetRegister(kARM_sp, sp_section->GetAddr()))
-            return false;
-          ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
-          ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
-          PARAMETER_TYPE par1 = 0;
-          PARAMETER_TYPE par2 = 0;
-          if (not lin.mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
-              not lin.mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
-              not lin.SetRegister(kARM_r1, Target2Host(lin.endianness_, par1)) or
-              not lin.SetRegister(kARM_r2, Target2Host(lin.endianness_, par2)))
-            return false;
-          
-          return true;
-        }
-
-        void SetSystemCallStatus(int ret, bool error) const { lin.SetRegister(kARM_r0, (PARAMETER_TYPE) ret); }
-        
-        SysCall* GetSystemCall( int& id ) const
-        {
-          if (TargetSystem::name.compare("arm-eabi") == 0)
-            {
-              // The arm eabi ignores the supplied id and uses register 7
-              PARAMETER_TYPE id_from_reg;
-              if (not lin.GetRegister(kARM_r7, &id_from_reg))
-                return 0;
-              id = int(id_from_reg);
-            }
-          else if (TargetSystem::name.compare("arm") == 0)
-            {
-              id -= 0x0900000; // Offset translation
-            }
-          
-          // see either arch/arm/include/asm/unistd.h or arch/arm/include/uapi/asm/unistd.h in Linux source
-          switch (id) {
-          case 0: return lin.GetSyscallByName("restart_syscall");
-          case 1: return lin.GetSyscallByName("exit");
-          case 2: return lin.GetSyscallByName("fork");
-          case 3: return lin.GetSyscallByName("read");
-          case 4: return lin.GetSyscallByName("write");
-          case 5: return lin.GetSyscallByName("open");
-          case 6: return lin.GetSyscallByName("close");
-          // 7 was "waitpid"
-          case 8: return lin.GetSyscallByName("creat");
-          case 9: return lin.GetSyscallByName("link");
-          case 10: return lin.GetSyscallByName("unlink");
-          case 11: return lin.GetSyscallByName("execve");
-          case 12: return lin.GetSyscallByName("chdir");
-          case 13: return lin.GetSyscallByName("time");
-          case 14: return lin.GetSyscallByName("mknod");
-          case 15: return lin.GetSyscallByName("chmod");
-          case 16: return lin.GetSyscallByName("lchown");
-          // 17 was "break"
-          // 18 was "stat"
-          case 19: return lin.GetSyscallByName("lseek");
-          case 20: return lin.GetSyscallByName("getpid");
-          case 21: return lin.GetSyscallByName("mount");
-          case 22: return lin.GetSyscallByName("umount");
-          case 23: return lin.GetSyscallByName("setuid");
-          case 24: return lin.GetSyscallByName("getuid");
-          case 25: return lin.GetSyscallByName("stime");
-          case 26: return lin.GetSyscallByName("ptrace");
-          case 27: return lin.GetSyscallByName("alarm");
-          // 28 was "fstat"
-          case 29: return lin.GetSyscallByName("pause");
-          case 30: return lin.GetSyscallByName("utime");
-          // 31 was "stty"
-          // 32 was "gtty"
-          case 33: return lin.GetSyscallByName("access");
-          case 34: return lin.GetSyscallByName("nice");
-          // 35 was "ftime"
-          case 36: return lin.GetSyscallByName("sync");
-          case 37: return lin.GetSyscallByName("kill");
-          case 38: return lin.GetSyscallByName("rename");
-          case 39: return lin.GetSyscallByName("mkdir");
-          case 40: return lin.GetSyscallByName("rmdir");
-          case 41: return lin.GetSyscallByName("dup");
-          case 42: return lin.GetSyscallByName("pipe");
-          // 43: times (see arm specific)
-          // 44 was "prof"
-          case 45: return lin.GetSyscallByName("brk");
-          case 46: return lin.GetSyscallByName("setgid");
-          case 47: return lin.GetSyscallByName("getgid");
-          // 48 was "signal"
-          case 49: return lin.GetSyscallByName("geteuid");
-          case 50: return lin.GetSyscallByName("getegid");
-          case 51: return lin.GetSyscallByName("acct");
-          case 52: return lin.GetSyscallByName("umount2");
-          // 53 was "lock"
-          case 54: return lin.GetSyscallByName("ioctl");
-          case 55: return lin.GetSyscallByName("fcntl");
-          // 56 was "mpx"
-          case 57: return lin.GetSyscallByName("setpgid");
-          // 58 was "ulimit"
-          // 59 was "olduname"
-          case 60: return lin.GetSyscallByName("umask");
-          case 61: return lin.GetSyscallByName("chroot");
-          case 62: return lin.GetSyscallByName("ustat");
-          case 63: return lin.GetSyscallByName("dup2");
-          case 64: return lin.GetSyscallByName("getppid");
-          case 65: return lin.GetSyscallByName("getpgrp");
-          case 66: return lin.GetSyscallByName("setsid");
-          case 67: return lin.GetSyscallByName("sigaction");
-          // 68 was "sgetmask"
-          // 69 was "ssetmask"
-          case 70: return lin.GetSyscallByName("setreuid");
-          case 71: return lin.GetSyscallByName("setregid");
-          case 72: return lin.GetSyscallByName("sigsuspend");
-          case 73: return lin.GetSyscallByName("sigpending");
-          case 74: return lin.GetSyscallByName("sethostname");
-          case 75: return lin.GetSyscallByName("setrlimit");
-          case 76: return lin.GetSyscallByName("getrlimit");
-          case 77: return lin.GetSyscallByName("getrusage");
-            // 78: gettimeofday (see arm specific)
-          case 79: return lin.GetSyscallByName("settimeofday");
-          case 80: return lin.GetSyscallByName("getgroups");
-          case 81: return lin.GetSyscallByName("setgroups");
-          case 82: return lin.GetSyscallByName("select");
-          case 83: return lin.GetSyscallByName("symlink");
-          // 84 was "lstat"
-          case 85: return lin.GetSyscallByName("readlink");
-          case 86: return lin.GetSyscallByName("uselib");
-          case 87: return lin.GetSyscallByName("swapon");
-          case 88: return lin.GetSyscallByName("reboot");
-          case 89: return lin.GetSyscallByName("readdir");
-          case 90: return lin.GetSyscallByName("mmap");
-          case 91: return lin.GetSyscallByName("munmap");
-          case 92: return lin.GetSyscallByName("truncate");
-          case 93: return lin.GetSyscallByName("ftruncate");
-          case 94: return lin.GetSyscallByName("fchmod");
-          case 95: return lin.GetSyscallByName("fchown");
-          case 96: return lin.GetSyscallByName("getpriority");
-          case 97: return lin.GetSyscallByName("setpriority");
-          // 98 was "profile"
-          case 99: return lin.GetSyscallByName("statfs");
-          case 100: return lin.GetSyscallByName("fstatfs");
-          case 102: return lin.GetSyscallByName("socketcall");
-          case 103: return lin.GetSyscallByName("syslog");
-          case 104: return lin.GetSyscallByName("setitimer");
-          case 105: return lin.GetSyscallByName("getitimer");
-          case 106: return lin.GetSyscallByName("stat");
-          case 107: return lin.GetSyscallByName("lstat");
-          // 108: fstat (see arm specific)
-          // 109 was "uname"
-          // 110 was "iopl"
-          case 111: return lin.GetSyscallByName("vhangup");
-          // 112 was "idle"
-          case 113: return lin.GetSyscallByName("syscall");
-          case 114: return lin.GetSyscallByName("wait4");
-          case 115: return lin.GetSyscallByName("swapoff");
-          case 116: return lin.GetSyscallByName("sysinfo");
-          case 117: return lin.GetSyscallByName("ipc");
-          case 118: return lin.GetSyscallByName("fsync");
-          case 119: return lin.GetSyscallByName("sigreturn");
-          case 120: return lin.GetSyscallByName("clone");
-          case 121: return lin.GetSyscallByName("setdomainname");
-            // 122: uname (see arm specific)
-          // 123 was "modify_ldt"
-          case 124: return lin.GetSyscallByName("adjtimex");
-          case 125: return lin.GetSyscallByName("mprotect");
-          case 126: return lin.GetSyscallByName("sigprocmask");
-          // 127 was "create_module"
-          case 128: return lin.GetSyscallByName("init_module");
-          case 129: return lin.GetSyscallByName("delete_module");
-          // 130 was "get_kernel_syms"
-          case 131: return lin.GetSyscallByName("quotactl");
-          case 132: return lin.GetSyscallByName("getpgid");
-          case 133: return lin.GetSyscallByName("fchdir");
-          case 134: return lin.GetSyscallByName("bdflush");
-          case 135: return lin.GetSyscallByName("sysfs");
-          case 136: return lin.GetSyscallByName("personality");
-          // 137 was "afs_syscall"
-          case 138: return lin.GetSyscallByName("setfsuid");
-          case 139: return lin.GetSyscallByName("setfsgid");
-          case 140: return lin.GetSyscallByName("_llseek");
-          case 141: return lin.GetSyscallByName("getdents");
-          case 142: return lin.GetSyscallByName("_newselect");
-          case 143: return lin.GetSyscallByName("flock");
-          case 144: return lin.GetSyscallByName("msync");
-          case 145: return lin.GetSyscallByName("readv");
-          case 146: return lin.GetSyscallByName("writev");
-          case 147: return lin.GetSyscallByName("getsid");
-          case 148: return lin.GetSyscallByName("fdatasync");
-          case 149: return lin.GetSyscallByName("_sysctl");
-          case 150: return lin.GetSyscallByName("mlock");
-          case 151: return lin.GetSyscallByName("munlock");
-          case 152: return lin.GetSyscallByName("mlockall");
-          case 153: return lin.GetSyscallByName("munlockall");
-          case 154: return lin.GetSyscallByName("sched_setparam");
-          case 155: return lin.GetSyscallByName("sched_getparam");
-          case 156: return lin.GetSyscallByName("sched_setscheduler");
-          case 157: return lin.GetSyscallByName("sched_getscheduler");
-          case 158: return lin.GetSyscallByName("sched_yield");
-          case 159: return lin.GetSyscallByName("sched_get_priority_max");
-          case 160: return lin.GetSyscallByName("sched_get_priority_min");
-          case 161: return lin.GetSyscallByName("sched_rr_get_interval");
-          case 162: return lin.GetSyscallByName("nanosleep");
-          case 163: return lin.GetSyscallByName("mremap");
-          case 164: return lin.GetSyscallByName("setresuid");
-          case 165: return lin.GetSyscallByName("getresuid");
-          // 166 was "vm86"
-          // 167 was "query_module"
-          case 168: return lin.GetSyscallByName("poll");
-          case 169: return lin.GetSyscallByName("nfsservctl");
-          case 170: return lin.GetSyscallByName("setresgid");
-          case 171: return lin.GetSyscallByName("getresgid");
-          case 172: return lin.GetSyscallByName("prctl");
-          case 173: return lin.GetSyscallByName("rt_sigreturn");
-          case 174: return lin.GetSyscallByName("rt_sigaction");
-          case 175: return lin.GetSyscallByName("rt_sigprocmask");
-          case 176: return lin.GetSyscallByName("rt_sigpending");
-          case 177: return lin.GetSyscallByName("rt_sigtimedwait");
-          case 178: return lin.GetSyscallByName("rt_sigqueueinfo");
-          case 179: return lin.GetSyscallByName("rt_sigsuspend");
-          case 180: return lin.GetSyscallByName("pread64");
-          case 181: return lin.GetSyscallByName("pwrite64");
-          case 182: return lin.GetSyscallByName("chown");
-          case 183: return lin.GetSyscallByName("getcwd");
-          case 184: return lin.GetSyscallByName("capget");
-          case 185: return lin.GetSyscallByName("capset");
-          case 186: return lin.GetSyscallByName("sigaltstack");
-          case 187: return lin.GetSyscallByName("sendfile");
-          // 188 is reserved
-          // 189 is reserved
-          case 190: return lin.GetSyscallByName("vfork");
-          case 191: return lin.GetSyscallByName("ugetrlimit");
-          case 192: return lin.GetSyscallByName("mmap2");
-          case 193: return lin.GetSyscallByName("truncate64");
-          case 194: return lin.GetSyscallByName("ftruncate64");
-            // 195: stat64 (see arm specific)
-          case 196: return lin.GetSyscallByName("lstat64");
-            // 197: fstat64 (see arm specific)  
-          case 198: return lin.GetSyscallByName("lchown32");
-          case 199: return lin.GetSyscallByName("getuid32");
-          case 200: return lin.GetSyscallByName("getgid32");
-          case 201: return lin.GetSyscallByName("geteuid32");
-          case 202: return lin.GetSyscallByName("getegid32");
-          case 203: return lin.GetSyscallByName("setreuid32");
-          case 204: return lin.GetSyscallByName("setregid32");
-          case 205: return lin.GetSyscallByName("getgroups32");
-          case 206: return lin.GetSyscallByName("setgroups32");
-          case 207: return lin.GetSyscallByName("fchown32");
-          case 208: return lin.GetSyscallByName("setresuid32");
-          case 209: return lin.GetSyscallByName("getresuid32");
-          case 210: return lin.GetSyscallByName("setresgid32");
-          case 211: return lin.GetSyscallByName("getresgid32");
-          case 212: return lin.GetSyscallByName("chown32");
-          case 213: return lin.GetSyscallByName("setuid32");
-          case 214: return lin.GetSyscallByName("setgid32");
-          case 215: return lin.GetSyscallByName("setfsuid32");
-          case 216: return lin.GetSyscallByName("setfsgid32");
-          case 217: return lin.GetSyscallByName("getdents64");
-          case 218: return lin.GetSyscallByName("pivot_root");
-          case 219: return lin.GetSyscallByName("mincore");
-          case 220: return lin.GetSyscallByName("madvise");
-          case 221: return lin.GetSyscallByName("fcntl64");
-          // 222 is for tux
-          // 223 is unused
-          case 224: return lin.GetSyscallByName("gettid");
-          case 225: return lin.GetSyscallByName("readahead");
-          case 226: return lin.GetSyscallByName("setxattr");
-          case 227: return lin.GetSyscallByName("lsetxattr");
-          case 228: return lin.GetSyscallByName("fsetxattr");
-          case 229: return lin.GetSyscallByName("getxattr");
-          case 230: return lin.GetSyscallByName("lgetxattr");
-          case 231: return lin.GetSyscallByName("fgetxattr");
-          case 232: return lin.GetSyscallByName("listxattr");
-          case 233: return lin.GetSyscallByName("llistxattr");
-          case 234: return lin.GetSyscallByName("flistxattr");
-          case 235: return lin.GetSyscallByName("removexattr");
-          case 236: return lin.GetSyscallByName("lremovexattr");
-          case 237: return lin.GetSyscallByName("fremovexattr");
-          case 238: return lin.GetSyscallByName("tkill");
-          case 239: return lin.GetSyscallByName("sendfile64");
-          case 240: return lin.GetSyscallByName("futex");
-          case 241: return lin.GetSyscallByName("sched_setaffinity");
-          case 242: return lin.GetSyscallByName("sched_getaffinity");
-          case 243: return lin.GetSyscallByName("io_setup");
-          case 244: return lin.GetSyscallByName("io_destroy");
-          case 245: return lin.GetSyscallByName("io_getevents");
-          case 246: return lin.GetSyscallByName("io_submit");
-          case 247: return lin.GetSyscallByName("io_cancel");
-          case 248: return lin.GetSyscallByName("exit_group");
-          case 249: return lin.GetSyscallByName("lookup_dcookie");
-          case 250: return lin.GetSyscallByName("epoll_create");
-          case 251: return lin.GetSyscallByName("epoll_ctl");
-          case 252: return lin.GetSyscallByName("epoll_wait");
-          case 253: return lin.GetSyscallByName("remap_file_pages");
-          // 254 is for set_thread_area
-          // 255 is for get_thread_area
-          case 256: return lin.GetSyscallByName("set_tid_address");
-          case 257: return lin.GetSyscallByName("timer_create");
-          case 258: return lin.GetSyscallByName("timer_settime");
-          case 259: return lin.GetSyscallByName("timer_gettime");
-          case 260: return lin.GetSyscallByName("timer_getoverrun");
-          case 261: return lin.GetSyscallByName("timer_delete");
-          case 262: return lin.GetSyscallByName("clock_settime");
-          case 263: return lin.GetSyscallByName("clock_gettime");
-          case 264: return lin.GetSyscallByName("clock_getres");
-          case 265: return lin.GetSyscallByName("clock_nanosleep");
-          case 266: return lin.GetSyscallByName("statfs64");
-          case 267: return lin.GetSyscallByName("fstatfs64");
-          case 268: return lin.GetSyscallByName("tgkill");
-          case 269: return lin.GetSyscallByName("utimes");
-          case 270: return lin.GetSyscallByName("arm_fadvise64_64");
-          case 271: return lin.GetSyscallByName("pciconfig_iobase");
-          case 272: return lin.GetSyscallByName("pciconfig_read");
-          case 273: return lin.GetSyscallByName("pciconfig_write");
-          case 274: return lin.GetSyscallByName("mq_open");
-          case 275: return lin.GetSyscallByName("mq_unlink");
-          case 276: return lin.GetSyscallByName("mq_timedsend");
-          case 277: return lin.GetSyscallByName("mq_timedreceive");
-          case 278: return lin.GetSyscallByName("mq_notify");
-          case 279: return lin.GetSyscallByName("mq_getsetattr");
-          case 280: return lin.GetSyscallByName("waitid");
-          case 281: return lin.GetSyscallByName("socket");
-          case 282: return lin.GetSyscallByName("bind");
-          case 283: return lin.GetSyscallByName("connect");
-          case 284: return lin.GetSyscallByName("listen");
-          case 285: return lin.GetSyscallByName("accept");
-          case 286: return lin.GetSyscallByName("getsockname");
-          case 287: return lin.GetSyscallByName("getpeername");
-          case 288: return lin.GetSyscallByName("socketpair");
-          case 289: return lin.GetSyscallByName("send");
-          case 290: return lin.GetSyscallByName("sendto");
-          case 291: return lin.GetSyscallByName("recv");
-          case 292: return lin.GetSyscallByName("recvfrom");
-          case 293: return lin.GetSyscallByName("shutdown");
-          case 294: return lin.GetSyscallByName("setsockopt");
-          case 295: return lin.GetSyscallByName("getsockopt");
-          case 296: return lin.GetSyscallByName("sendmsg");
-          case 297: return lin.GetSyscallByName("recvmsg");
-          case 298: return lin.GetSyscallByName("semop");
-          case 299: return lin.GetSyscallByName("semget");
-          case 300: return lin.GetSyscallByName("semctl");
-          case 301: return lin.GetSyscallByName("msgsnd");
-          case 302: return lin.GetSyscallByName("msgrcv");
-          case 303: return lin.GetSyscallByName("msgget");
-          case 304: return lin.GetSyscallByName("msgctl");
-          case 305: return lin.GetSyscallByName("shmat");
-          case 306: return lin.GetSyscallByName("shmdt");
-          case 307: return lin.GetSyscallByName("shmget");
-          case 308: return lin.GetSyscallByName("shmctl");
-          case 309: return lin.GetSyscallByName("add_key");
-          case 310: return lin.GetSyscallByName("request_key");
-          case 311: return lin.GetSyscallByName("keyctl");
-          case 312: return lin.GetSyscallByName("semtimedop");
-          case 313: return lin.GetSyscallByName("vserver");
-          case 314: return lin.GetSyscallByName("ioprio_set");
-          case 315: return lin.GetSyscallByName("ioprio_get");
-          case 316: return lin.GetSyscallByName("inotify_init");
-          case 317: return lin.GetSyscallByName("inotify_add_watch");
-          case 318: return lin.GetSyscallByName("inotify_rm_watch");
-          case 319: return lin.GetSyscallByName("mbind");
-          case 320: return lin.GetSyscallByName("get_mempolicy");
-          case 321: return lin.GetSyscallByName("set_mempolicy");
-          case 322: return lin.GetSyscallByName("openat");
-          case 323: return lin.GetSyscallByName("mkdirat");
-          case 324: return lin.GetSyscallByName("mknodat");
-          case 325: return lin.GetSyscallByName("fchownat");
-          case 326: return lin.GetSyscallByName("futimesat");
-          case 327: return lin.GetSyscallByName("fstatat64");
-          case 328: return lin.GetSyscallByName("unlinkat");
-          case 329: return lin.GetSyscallByName("renameat");
-          case 330: return lin.GetSyscallByName("linkat");
-          case 331: return lin.GetSyscallByName("symlinkat");
-          case 332: return lin.GetSyscallByName("readlinkat");
-          case 333: return lin.GetSyscallByName("fchmodat");
-          case 334: return lin.GetSyscallByName("faccessat");
-          case 335: return lin.GetSyscallByName("pselect6");
-          case 336: return lin.GetSyscallByName("ppoll");
-          case 337: return lin.GetSyscallByName("unshare");
-          case 338: return lin.GetSyscallByName("set_robust_list");
-          case 339: return lin.GetSyscallByName("get_robust_list");
-          case 340: return lin.GetSyscallByName("splice");
-          case 341: return lin.GetSyscallByName("sync_file_range2");
-          case 342: return lin.GetSyscallByName("tee");
-          case 343: return lin.GetSyscallByName("vmsplice");
-          case 344: return lin.GetSyscallByName("move_pages");
-          case 345: return lin.GetSyscallByName("getcpu");
-          case 346: return lin.GetSyscallByName("epoll_pwait");
-          case 347: return lin.GetSyscallByName("kexec_load");
-          case 348: return lin.GetSyscallByName("utimensat");
-          case 349: return lin.GetSyscallByName("signalfd");
-          case 350: return lin.GetSyscallByName("timerfd_create");
-          case 351: return lin.GetSyscallByName("eventfd");
-          case 352: return lin.GetSyscallByName("fallocate");
-          case 353: return lin.GetSyscallByName("timerfd_settime");
-          case 354: return lin.GetSyscallByName("timerfd_gettime");
-          case 355: return lin.GetSyscallByName("signalfd4");
-          case 356: return lin.GetSyscallByName("eventfd2");
-          case 357: return lin.GetSyscallByName("epoll_create1");
-          case 358: return lin.GetSyscallByName("dup3");
-          case 359: return lin.GetSyscallByName("pipe2");
-          case 360: return lin.GetSyscallByName("inotify_init1");
-          case 361: return lin.GetSyscallByName("preadv");
-          case 362: return lin.GetSyscallByName("pwritev");
-          case 363: return lin.GetSyscallByName("rt_tgsigqueueinfo");
-          case 364: return lin.GetSyscallByName("perf_event_open");
-          case 365: return lin.GetSyscallByName("recvmmsg");
-          case 366: return lin.GetSyscallByName("accept4");
-          case 367: return lin.GetSyscallByName("fanotify_init");
-          case 368: return lin.GetSyscallByName("fanotify_mark");
-          case 369: return lin.GetSyscallByName("prlimit64");
-          case 370: return lin.GetSyscallByName("name_to_handle_at");
-          case 371: return lin.GetSyscallByName("open_by_handle_at");
-          case 372: return lin.GetSyscallByName("clock_adjtime");
-          case 373: return lin.GetSyscallByName("syncfs");
-          case 374: return lin.GetSyscallByName("sendmmsg");
-          case 375: return lin.GetSyscallByName("setns");
-          case 376: return lin.GetSyscallByName("process_vm_readv");
-          case 377: return lin.GetSyscallByName("process_vm_writev");
-          // 378 is for kcmp
-	
-          // the following are private to the arm
-          case 43: /* ARM specific times syscall */
-            {
-              static struct : public SysCall {
-                char const* GetName() const { return "times"; }
-                void Execute( Linux& lin, int syscall_id ) const
-                {
-                  int ret;
-                  ADDRESS_TYPE buf_addr;
-                  int32_t target_errno = 0;
-                  
-                  buf_addr = lin.target_system->GetSystemCallParam(0);
-                  
-                  struct arm_tms target_tms;
-                  ret = lin.Times(&target_tms);
-
-                  if(ret >= 0)
-                    {
-                      lin.WriteMem(buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
-                    }
-                  else
-                    {
-                      target_errno = lin.Host2LinuxErrno(errno);
-                    }
-                  
-                  if(unlikely(lin.verbose_))
-                      lin.logger_ << DebugInfo << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << EndDebugInfo;
-	
-                  lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
-                }
-              } sc;
-              return &sc;
-            } break;
-            
-          case 78: /* ARM specific gettimeofday syscall */
-            {
-              static struct : public SysCall {
-                char const* GetName() const { return "gettimeofday"; }
-                void Execute( Linux& lin, int syscall_id ) const
-                {
-                  int ret = -1;
-                  ADDRESS_TYPE tv_addr;
-                  ADDRESS_TYPE tz_addr;
-                  int32_t target_errno = 0;
-                  tv_addr = lin.target_system->GetSystemCallParam(0);
-                  tz_addr = lin.target_system->GetSystemCallParam(1);
-
-                  struct arm_timeval target_tv;
-                  struct arm_timezone target_tz;
-
-                  ret = lin.GetTimeOfDay(tv_addr ? &target_tv : 0, tz_addr ? &target_tz : 0);
-                  if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
-
-                  if(ret == 0)
-                    {
-                      if(tv_addr)
-                        {
-                          lin.WriteMem(tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
-                        }
-                      if(tz_addr)
-                        {
-                          lin.WriteMem(tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
-                        }
-                    }
-
-                  if(unlikely(lin.verbose_))
-                    {
-                      lin.logger_ << DebugInfo
-                                  << "gettimeofday(tv = 0x" << std::hex << tv_addr << std::dec
-                                  << ", tz = 0x" << std::hex << tz_addr << std::dec << ")"
-                                  << EndDebugInfo;
-                    }
-	
-                  lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
-                }
-              } sc;
-              return &sc;
-            } break;
-
-          case 108: /* ARM specific fstat syscall */
-            {
-              static struct : public SysCall {
-                char const* GetName() const { return "fstat"; }
-                void Execute( Linux& lin, int syscall_id ) const
-                {
-                  int ret;
-                  int32_t target_fd;
-                  int host_fd;
-                  ADDRESS_TYPE buf_address;
-                  int32_t target_errno = 0;
-
-                  target_fd = lin.target_system->GetSystemCallParam(0);
-                  buf_address = lin.target_system->GetSystemCallParam(1);
-	
-                  host_fd = lin.Target2HostFileDescriptor(target_fd);
-
-                  if(host_fd == -1)
-                    {
-                      target_errno = LINUX_EBADF;
-                      ret = -1;
-                    }
-                  else
-                    {
-                      ret = -1;
-                      target_errno = LINUX_ENOSYS;
-                    }
-
-                  if(unlikely(lin.verbose_))
-                    {
-                      lin.logger_ << DebugInfo
-                                  << "fstat(fd=" << target_fd
-                                  << ", buf_addr=0x" << std::hex << buf_address << std::dec
-                                  << ")" << EndDebugInfo;
-                    }
-	
-                  lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
-                }
-              } sc;
-              return &sc;
-            } break;
-
-          case 122: /* ARM specific uname syscall */
-            {
-              static struct : public SysCall {
-                char const* GetName() const { return "uname"; }
-                void Execute( Linux& lin, int syscall_id ) const
-                {
-                  int ret;
-                  int32_t target_errno = 0;
-                  ADDRESS_TYPE buf_addr = lin.target_system->GetSystemCallParam(0);
-                  ret = 0;
-	
-                  struct arm_utsname value;
-                  memset(&value, 0, sizeof(value));
-                  strncpy(value.sysname,  lin.utsname_sysname_.c_str(), sizeof(value.sysname) - 1);
-                  strncpy(value.nodename, lin.utsname_nodename_.c_str(), sizeof(value.nodename) - 1);
-                  strncpy(value.release,  lin.utsname_release_.c_str(), sizeof(value.release) - 1);
-                  strncpy(value.version,  lin.utsname_version_.c_str(), sizeof(value.version) - 1);
-                  strncpy(value.machine,  lin.utsname_machine_.c_str(), sizeof(value.machine));
-                  lin.WriteMem(buf_addr, (uint8_t *)&value, sizeof(value));
-	
-                  lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
-                }
-              } sc;
-              return &sc;
-            } break;
-
-          case 195: /* ARM specific stat64 syscall */
-            {
-              static struct : public SysCall {
-                char const* GetName() const { return "stat64"; }
-                void Execute( Linux& lin, int syscall_id ) const
-                {
-                  int ret;
-                  ADDRESS_TYPE pathnameaddr;
-                  ADDRESS_TYPE buf_address;
-                  unsigned int pathnamelen;
-                  char *pathname;
-                  int32_t target_errno = 0;
-
-                  pathnameaddr = lin.target_system->GetSystemCallParam(0);
-                  buf_address = lin.target_system->GetSystemCallParam(1);
-                  pathnamelen = lin.StringLength(pathnameaddr);
-                  pathname = (char *) malloc(pathnamelen + 1);
-	
-                  if(pathname)
-                    {
-                      lin.ReadMem(pathnameaddr, (uint8_t *) pathname, pathnamelen + 1);
-		
-                      struct arm_stat64 target_stat;
-                      ret = lin.Stat64(pathname, &target_stat);
-                      lin.WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
-                      
-                      if(unlikely(lin.verbose_))
-                        {
-                          lin.logger_ << DebugInfo
-                                      << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
-                                      << EndDebugInfo;
-                        }
-		
-                      free(pathname);
-                    }
-                  else
-                    {
-                      ret = -1;
-                      target_errno = LINUX_ENOMEM;
-                    }
-	
-                  lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
-                }
-              } sc;
-              return &sc;
-            } break;
-
-          case 197: /* ARM specific fstat64 syscall */
-            {
-              static struct : public SysCall {
-                char const* GetName() const { return "fstat64"; }
-                void Execute( Linux& lin, int syscall_id ) const
-                {
-                  int ret;
-                  ADDRESS_TYPE buf_address;
-                  int32_t target_fd;
-                  int host_fd;
-                  int32_t target_errno = 0;
-
-                  target_fd = lin.target_system->GetSystemCallParam(0);
-                  buf_address = lin.target_system->GetSystemCallParam(1);
-	
-                  host_fd = lin.Target2HostFileDescriptor(target_fd);
-	
-                  if(host_fd == -1)
-                    {
-                      target_errno = LINUX_EBADF;
-                      ret = -1;
-                    }
-                  else
-                    {
-                      struct arm_stat64 target_stat;
-                      ret = lin.Fstat64(host_fd, &target_stat);
-                      if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
-			
-                      lin.WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
-                    }
-	
-                  if(unlikely(lin.verbose_))
-                    {
-                      lin.logger_ << DebugInfo
-                                  << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
-                                  << EndDebugInfo;
-                    }
-	
-                  lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
-                }
-              } sc;
-              return &sc;
-            } break;
-
-
-          case 983041: {
-            static struct : public SysCall {
-              char const* GetName() const { return "breakpoint"; }
-              void Execute( Linux& lin, int syscall_id ) const { lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true); }
-            } sc;
-            return &sc;
-          } break;
-            
-          case 983042: {
-            static struct : public SysCall {
-              char const* GetName() const { return "cacheflush"; }
-              void Execute( Linux& lin, int syscall_id ) const { lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true); }
-            } sc;
-            return &sc;
-          } break;
-            
-          case 983043: {
-            static struct : public SysCall {
-              char const* GetName() const { return "usr26"; }
-              void Execute( Linux& lin, int syscall_id ) const { lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true); }
-            } sc;
-            return &sc;
-          } break;
-            
-          case 983044: {
-            static struct : public SysCall {
-              char const* GetName() const { return "usr32"; }
-              void Execute( Linux& lin, int syscall_id ) const { lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true); }
-            } sc;
-            return &sc;
-          } break;
-            
-          case 983045: {
-            static struct : public SysCall {
-              char const* GetName() const { return "set_tls"; }
-              void Execute( Linux& lin, int syscall_id ) const
-              {
-                uint32_t r0 = Host2Target(lin.endianness_, lin.target_system->GetSystemCallParam(0));
-                lin.WriteMem(0xffff0ff0UL, (uint8_t *)&(r0), sizeof(r0));
-                lin.SetSystemCallStatus((PARAMETER_TYPE)0, false);
-              }
-            } sc;
-            return &sc;
-          } break;
-            
-          }
-          
-          return 0;
-        }
-        PARAMETER_TYPE GetSystemCallParam(int id) const
-        {
-          PARAMETER_TYPE val = 0;
-          
-          switch (id) {
-          case 0: lin.GetRegister(kARM_r0, &val); break;
-          case 1: lin.GetRegister(kARM_r1, &val); break;
-          case 2: lin.GetRegister(kARM_r2, &val); break;
-          case 3: lin.GetRegister(kARM_r3, &val); break;
-          case 4: lin.GetRegister(kARM_r4, &val); break;
-          case 5: lin.GetRegister(kARM_r5, &val); break;
-          case 6: lin.GetRegister(kARM_r6, &val); break;
-          default:
-            lin.logger_ << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
-            break;
-          }
-          
-          return val;
-        }
-
-        bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const
-        {
-          typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
-          typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
-          std::string mach = lin.utsname_machine_;
-          if ((mach.compare("armv5") == 0) or (mach.compare("armv6") == 0) or (mach.compare("armv7") == 0))
-            {
-              if (blob == NULL) return false;
-              // TODO: Check that the program/stack is not in conflict with the
-              //   tls and cmpxchg interfaces
-              // Set the tls interface, this requires a write into the memory
-              //   system
-              // The following instructions need to be added to memory:
-              // 0xffff0fe0:  e59f0008   ldr r0, [pc, #(16 - 8)] @ TLS stored
-              //                                                 @ at 0xffff0ff0
-              // 0xffff0fe4:  e1a0f00e   mov pc, lr
-              // 0xffff0fe8:  0
-              // 0xffff0fec:  0
-              // 0xffff0ff0:  0
-              // 0xffff0ff4:  0
-              // 0xffff0ff8:  0
-              ADDRESS_TYPE tls_base_addr = 0xffff0fe0UL;
-              static const uint32_t tls_buf_length = 7;
-              static const uint32_t tls_buf[tls_buf_length] =
-                {0xe59f0008UL, 0xe1a0f00eUL, 0, 0, 0, 0, 0};
-              uint32_t *segment_tls_buf = (uint32_t *) malloc(sizeof(uint32_t) * tls_buf_length);
-              uint32_t *section_tls_buf = (uint32_t *) malloc(sizeof(uint32_t) * tls_buf_length);
-
-              for (unsigned int i = 0; i < tls_buf_length; ++i) {
-                segment_tls_buf[i] = unisim::util::endian::Host2Target(lin.endianness_, tls_buf[i]);
-                section_tls_buf[i] = unisim::util::endian::Host2Target(lin.endianness_, tls_buf[i]);
-              }
-              Segment *tls_if_segment =
-                new Segment(Segment::TY_LOADABLE, Segment::SA_X, 4, tls_base_addr,
-                            sizeof(tls_buf), sizeof(tls_buf), segment_tls_buf);
-              Section *tls_if_section =
-                new Section(Section::TY_UNKNOWN, Section::SA_A,
-                            ".unisim.linux_os.interface.tls", 4, 0, tls_base_addr,
-                            sizeof(tls_buf), section_tls_buf);
-
-              // Set the cmpxchg (atomic compare and exchange) interface, the
-              //   following instructions need to be added to memory:
-              // 0xffff0fc0:  e5923000   ldr r3, [r2]
-              // 0xffff0fc4:  e0533000   subs r3, r3, r0
-              // 0xffff0fc8:  05821000   streq r1, [r2]
-              // 0xffff0fcc:  e2730000   rsbs r0, r3, #0	; 0x0
-              // 0xffff0fd0:  e1a0f00e   mov pc, lr
-              ADDRESS_TYPE cmpxchg_base_addr = 0xffff0fc0UL;
-              static const uint32_t cmpxchg_buf_length = 5;
-              static const uint32_t cmpxchg_buf[cmpxchg_buf_length] = {
-                0xe5923000UL,
-                0xe0533000UL,
-                0x05821000UL,
-                0xe2730000UL,
-                0xe1a0f00eUL
-              };
-              uint32_t *segment_cmpxchg_buf = (uint32_t *) malloc(sizeof(uint32_t) * cmpxchg_buf_length);
-              uint32_t *section_cmpxchg_buf = (uint32_t *) malloc(sizeof(uint32_t) * cmpxchg_buf_length);
-
-              for (unsigned int i = 0; i < cmpxchg_buf_length; ++i) {
-                segment_cmpxchg_buf[i] = unisim::util::endian::Host2Target(lin.endianness_, cmpxchg_buf[i]);
-                section_cmpxchg_buf[i] = unisim::util::endian::Host2Target(lin.endianness_, cmpxchg_buf[i]);
-              }
-              Section* cmpxchg_if_section =
-                new Section(Section::TY_UNKNOWN, Section::SA_A,
-                            ".unisim.linux_os.interface.cmpxchg",
-                            4, 0, cmpxchg_base_addr,
-                            sizeof(cmpxchg_buf), segment_cmpxchg_buf);
-              Segment *cmpxchg_if_segment =
-                new Segment(Segment::TY_LOADABLE, Segment::SA_X,
-                            4, cmpxchg_base_addr,
-                            sizeof(cmpxchg_buf), sizeof(cmpxchg_buf), section_cmpxchg_buf);
-
-              blob->AddSegment(tls_if_segment);
-              blob->AddSegment(cmpxchg_if_segment);
-              blob->AddSection(tls_if_section);
-              blob->AddSection(cmpxchg_if_section);
-            }
-
-          return true;
-        }
-        };
       delete target_system;
-      target_system = new ARMTS( system_type_name, *this );
+      target_system = new ARMTS<this_type>( system_type_name, *this );
       return true;
     }
   
@@ -1602,7 +739,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
             lin.regs_if_->ScanRegisters( clear_regs );
           }
           // Set PC to the program entry point
-          if (not lin.SetRegister(kPPC_cia, lin.entry_point_))
+          if (not TargetSystem::SetRegister(lin, kPPC_cia, lin.entry_point_))
             return false;
           // Set SP to the base of the created stack
           unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
@@ -1612,7 +749,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
               lin.logger_ << DebugError << "Could not find the stack pointer section." << EndDebugError;
               return false;
             }
-          if (not lin.SetRegister(kPPC_sp, sp_section->GetAddr()))
+          if (not TargetSystem::SetRegister(lin, kPPC_sp, sp_section->GetAddr()))
             return false;
           ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
           ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
@@ -1620,8 +757,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
           PARAMETER_TYPE par2 = 0;
           if (not lin.mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
               not lin.mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
-              not lin.SetRegister(kPPC_r3, Target2Host(lin.endianness_, par1)) or
-              not lin.SetRegister(kPPC_r4, Target2Host(lin.endianness_, par2)))
+              not TargetSystem::SetRegister(lin, kPPC_r3, Target2Host(lin.endianness_, par1)) or
+              not TargetSystem::SetRegister(lin, kPPC_r4, Target2Host(lin.endianness_, par2)))
             return false;
 
           return true;
@@ -1633,28 +770,28 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
 	
           if(error)
             {
-              if (not lin.GetRegister(kPPC_cr, &val))
+              if (not TargetSystem::GetRegister(lin, kPPC_cr, &val))
                 return;
 		
               val |= (1 << 28); // CR0[SO] <- 1
 		
-              if (not lin.SetRegister(kPPC_cr, val))
+              if (not TargetSystem::SetRegister(lin, kPPC_cr, val))
                 return;
             }
           else
             {
-              if (not lin.GetRegister(kPPC_cr, &val))
+              if (not TargetSystem::GetRegister(lin, kPPC_cr, &val))
                 return;
 		
               val &= ~(1 << 28); // CR0[SO] <- 0
 		
-              if (not lin.SetRegister(kPPC_cr, val))
+              if (not TargetSystem::SetRegister(lin, kPPC_cr, val))
                 return;
             }
 	
           val = (PARAMETER_TYPE)ret;
 	
-          if (not lin.SetRegister(kPPC_r3, val))
+          if (not TargetSystem::SetRegister(lin, kPPC_r3, val))
             return;
         }
 
@@ -2030,12 +1167,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                   struct powerpc_tms target_tms;
                   ret = lin.Times(&target_tms);
 
-                  if(ret >= 0)
-                    lin.WriteMem(buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
+                  if (ret >= 0)
+                    this->WriteMem(lin, buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
                   else
-                    target_errno = lin.Host2LinuxErrno(errno);
+                    target_errno = this->Host2LinuxErrno(lin, errno);
 
-                  if(unlikely(lin.verbose_))
+                  if (unlikely(lin.verbose_))
                     lin.logger_ << DebugInfo << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << EndDebugInfo;
 	
                   lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
@@ -2061,17 +1198,17 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                   struct powerpc_timezone target_tz;
 
                   ret = lin.GetTimeOfDay(tv_addr ? &target_tv : 0, tz_addr ? &target_tz : 0);
-                  if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+                  if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
 
                   if(ret == 0)
                     {
                       if(tv_addr)
                         {
-                          lin.WriteMem(tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
+                          this->WriteMem( lin, tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
                         }
                       if(tz_addr)
                         {
-                          lin.WriteMem(tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
+                          this->WriteMem( lin, tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
                         }
                     }
 
@@ -2104,7 +1241,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                   target_fd = lin.target_system->GetSystemCallParam(0);
                   buf_address = lin.target_system->GetSystemCallParam(1);
 	
-                  host_fd = lin.Target2HostFileDescriptor(target_fd);
+                  host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 
                   if(host_fd == -1)
                     {
@@ -2115,8 +1252,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                     {
                       struct powerpc_stat target_stat;
                       ret = lin.Stat(host_fd, &target_stat);
-                      if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
-                      if(ret >= 0) lin.WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                      if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
+                      if(ret >= 0) this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
                     }
 
                   if(unlikely(lin.verbose_))
@@ -2146,13 +1283,14 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                   
                   struct ppc_utsname value;
                   memset(&value, 0, sizeof(value));
-                  strncpy(value.sysname,     lin.utsname_sysname_.c_str(), sizeof(value.sysname) - 1);
-                  strncpy(value.nodename,    lin.utsname_nodename_.c_str(), sizeof(value.nodename) - 1);
-                  strncpy(value.release,     lin.utsname_release_.c_str(), sizeof(value.release) - 1);
-                  strncpy(value.version,     lin.utsname_version_.c_str(), sizeof(value.version) - 1);
-                  strncpy(value.machine,     lin.utsname_machine_.c_str(), sizeof(value.machine) - 1);
-                  strncpy(value.domainname,  lin.utsname_domainname_.c_str(), sizeof(value.domainname) - 1);
-                  lin.WriteMem(buf_addr, (uint8_t *)&value, sizeof(value));
+                  Linux::UTSName const& utsname = lin.GetUTSName();
+                  strncpy(value.sysname,     utsname.sysname.c_str(), sizeof(value.sysname) - 1);
+                  strncpy(value.nodename,    utsname.nodename.c_str(), sizeof(value.nodename) - 1);
+                  strncpy(value.release,     utsname.release.c_str(), sizeof(value.release) - 1);
+                  strncpy(value.version,     utsname.version.c_str(), sizeof(value.version) - 1);
+                  strncpy(value.machine,     utsname.machine.c_str(), sizeof(value.machine) - 1);
+                  strncpy(value.domainname,  utsname.domainname.c_str(), sizeof(value.domainname) - 1);
+                  this->WriteMem( lin, buf_addr, (uint8_t *)&value, sizeof(value));
 	
                   lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
                 }
@@ -2167,24 +1305,16 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                 void Execute( Linux& lin, int syscall_id ) const
                 {
                   int ret;
-                  ADDRESS_TYPE pathnameaddr;
-                  ADDRESS_TYPE buf_address;
-                  unsigned int pathnamelen;
-                  char *pathname;
+                  ADDRESS_TYPE pathnameaddr = lin.target_system->GetSystemCallParam(0);
+                  ADDRESS_TYPE buf_address = lin.target_system->GetSystemCallParam(1);
                   int32_t target_errno = 0;
 
-                  pathnameaddr = lin.target_system->GetSystemCallParam(0);
-                  buf_address = lin.target_system->GetSystemCallParam(1);
-                  pathnamelen = lin.StringLength(pathnameaddr);
-                  pathname = (char *) malloc(pathnamelen + 1);
-	
-                  if(pathname)
+                  std::string pathname;
+                  if (this->ReadMemString(lin, pathnameaddr, pathname))
                     {
-                      lin.ReadMem(pathnameaddr, (uint8_t *) pathname, pathnamelen + 1);
-		
                       struct powerpc_stat64 target_stat;
-                      ret = lin.Stat64(pathname, &target_stat);
-                      lin.WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                      ret = lin.Stat64(pathname.c_str(), &target_stat);
+                      this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
 		
                       if(unlikely(lin.verbose_))
                         {
@@ -2192,8 +1322,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                                       << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
                                       << EndDebugInfo;
                         }
-		
-                      free(pathname);
                     }
                   else
                     {
@@ -2222,7 +1350,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                   target_fd = lin.target_system->GetSystemCallParam(0);
                   buf_address = lin.target_system->GetSystemCallParam(1);
 	
-                  host_fd = lin.Target2HostFileDescriptor(target_fd);
+                  host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 	
                   if(host_fd == -1)
                     {
@@ -2233,9 +1361,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                     {
                       struct powerpc_stat64 target_stat;
                       ret = lin.Fstat64(host_fd, &target_stat);
-                      if(ret == -1) target_errno = lin.Host2LinuxErrno(errno);
+                      if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
 			
-                      lin.WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                      this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
                     }
 	
                   if(unlikely(lin.verbose_))
@@ -2259,11 +1387,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
           PARAMETER_TYPE val = 0;
           
           switch (id) {
-          case 0: lin.GetRegister(kPPC_r3, &val); break;
-          case 1: lin.GetRegister(kPPC_r4, &val); break;
-          case 2: lin.GetRegister(kPPC_r5, &val); break;
-          case 3: lin.GetRegister(kPPC_r6, &val); break;
-          case 4: lin.GetRegister(kPPC_r7, &val); break;
+          case 0: TargetSystem::GetRegister(lin, kPPC_r3, &val); break;
+          case 1: TargetSystem::GetRegister(lin, kPPC_r4, &val); break;
+          case 2: TargetSystem::GetRegister(lin, kPPC_r5, &val); break;
+          case 3: TargetSystem::GetRegister(lin, kPPC_r6, &val); break;
+          case 4: TargetSystem::GetRegister(lin, kPPC_r7, &val); break;
           default:
             lin.logger_ << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
             break;
@@ -2308,7 +1436,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
             lin.regs_if_->ScanRegisters( clear_regs );
           }
           // Set EIP to the program entry point
-          if (not lin.SetRegister(kI386_eip, lin.entry_point_))
+          if (not TargetSystem::SetRegister(lin, kI386_eip, lin.entry_point_))
             return false;
           // Set ESP to the base of the created stack
           unisim::util::debug::blob::Section<ADDRESS_TYPE> const * esp_section =
@@ -2318,12 +1446,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
               lin.logger_ << DebugError << "Could not find the stack pointer section." << EndDebugError;
               return false;
             }
-          if (not lin.SetRegister(kI386_esp, esp_section->GetAddr()))
+          if (not TargetSystem::SetRegister(lin, kI386_esp, esp_section->GetAddr()))
             return false;
           
           // Pseudo GDT initialization  (flat memory + early TLS)
-          lin.SetRegister("@gdt[1].base", 0 ); // For code segment
-          lin.SetRegister("@gdt[2].base", 0 ); // For data segments
+          TargetSystem::SetRegister(lin, "@gdt[1].base", 0 ); // For code segment
+          TargetSystem::SetRegister(lin, "@gdt[2].base", 0 ); // For data segments
           unisim::util::debug::blob::Section<ADDRESS_TYPE> const* etls_section =
             lin.blob_->FindSection(".unisim.linux_os.etls.middle_pointer");
           if (not etls_section)
@@ -2331,7 +1459,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
               lin.logger_ << DebugError << "Could not find the early TLS section." << EndDebugError;
               return false;
             }
-          lin.SetRegister("@gdt[3].base", etls_section->GetAddr() ); // for early TLS kludge
+          TargetSystem::SetRegister(lin, "@gdt[3].base", etls_section->GetAddr() ); // for early TLS kludge
           
           this->WriteSegmentSelector(kI386_cs,(1<<3) | (0<<2) | 3); // code
           this->WriteSegmentSelector(kI386_ss,(2<<3) | (0<<2) | 3); // data
@@ -2343,7 +1471,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
           return true;
         }
         
-        void SetSystemCallStatus(int ret, bool error) const { lin.SetRegister(kI386_eax, (PARAMETER_TYPE) ret); }
+        static void set_tls_base( Linux& lin, ADDRESS_TYPE base )
+        {
+          TargetSystem::SetRegister( lin, "@gdt[3].base", base ); // pseudo allocation of a tls descriptor
+        }
+
+        void SetSystemCallStatus(int ret, bool error) const { TargetSystem::SetRegister(lin, kI386_eax, (PARAMETER_TYPE) ret); }
         
         SysCall* GetSystemCall( int& id ) const
         {
@@ -2713,13 +1846,14 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
 	
                   struct i386_utsname value;
                   memset(&value, 0, sizeof(value));
-                  strncpy(&value.sysname[0],    lin.utsname_sysname_.c_str(), sizeof(value.sysname) - 1);
-                  strncpy(&value.nodename[0],   lin.utsname_nodename_.c_str(), sizeof(value.nodename) - 1);
-                  strncpy(&value.release[0],    lin.utsname_release_.c_str(), sizeof(value.release) - 1);
-                  strncpy(&value.version[0],    lin.utsname_version_.c_str(), sizeof(value.version) - 1);
-                  strncpy(&value.machine[0],    lin.utsname_machine_.c_str(), sizeof(value.machine));
-                  strncpy(&value.domainname[0], lin.utsname_domainname_.c_str(), sizeof(value.domainname) - 1);
-                  lin.WriteMem(buf_addr, (uint8_t *)&value, sizeof(value));
+                  Linux::UTSName const& utsname = lin.GetUTSName();
+                  strncpy(&value.sysname[0],    utsname.sysname.c_str(), sizeof(value.sysname) - 1);
+                  strncpy(&value.nodename[0],   utsname.nodename.c_str(), sizeof(value.nodename) - 1);
+                  strncpy(&value.release[0],    utsname.release.c_str(), sizeof(value.release) - 1);
+                  strncpy(&value.version[0],    utsname.version.c_str(), sizeof(value.version) - 1);
+                  strncpy(&value.machine[0],    utsname.machine.c_str(), sizeof(value.machine));
+                  strncpy(&value.domainname[0], utsname.domainname.c_str(), sizeof(value.domainname) - 1);
+                  this->WriteMem( lin, buf_addr, (uint8_t *)&value, sizeof(value));
 	
                   lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
                 }
@@ -2737,10 +1871,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                   
                   int32_t  entry_number;
                   uint32_t base_addr, limit, attributes;
-                  lin.ReadMem( user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
-                  lin.ReadMem( user_desc_ptr + 0x4, (uint8_t*)&base_addr, 4 );
-                  lin.ReadMem( user_desc_ptr + 0x8, (uint8_t*)&limit, 4 );
-                  lin.ReadMem( user_desc_ptr + 0xc, (uint8_t*)&attributes, 4 );
+                  this->ReadMem( lin, user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
+                  this->ReadMem( lin, user_desc_ptr + 0x4, (uint8_t*)&base_addr, 4 );
+                  this->ReadMem( lin, user_desc_ptr + 0x8, (uint8_t*)&limit, 4 );
+                  this->ReadMem( lin, user_desc_ptr + 0xc, (uint8_t*)&attributes, 4 );
                   entry_number = unisim::util::endian::Target2Host( lin.endianness_, entry_number );
                   base_addr    = unisim::util::endian::Target2Host( lin.endianness_, base_addr );
                   limit        = unisim::util::endian::Target2Host( lin.endianness_, limit );
@@ -2749,11 +1883,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                   if (entry_number != -1)
                     throw 0;
                   
-                  lin.SetRegister("@gdt[3].base", base_addr ); // pseudo allocation of a tls descriptor
+                  set_tls_base( lin, base_addr );
                   
                   entry_number = 3;
                   entry_number = unisim::util::endian::Host2Target( lin.endianness_, entry_number );
-                  lin.WriteMem( user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
+                  this->WriteMem( lin, user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
 
                   lin.SetSystemCallStatus( 0, false );
                 }
@@ -2770,12 +1904,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
           PARAMETER_TYPE val = 0;
           
           switch (id) {
-          case 0: lin.GetRegister(kI386_ebx, &val); break;
-          case 1: lin.GetRegister(kI386_ecx, &val); break;
-          case 2: lin.GetRegister(kI386_edx, &val); break;
-          case 3: lin.GetRegister(kI386_esi, &val); break;
-          case 4: lin.GetRegister(kI386_edi, &val); break;
-          case 5: lin.GetRegister(kI386_ebp, &val); break;
+          case 0: TargetSystem::GetRegister(lin, kI386_ebx, &val); break;
+          case 1: TargetSystem::GetRegister(lin, kI386_ecx, &val); break;
+          case 2: TargetSystem::GetRegister(lin, kI386_edx, &val); break;
+          case 3: TargetSystem::GetRegister(lin, kI386_esi, &val); break;
+          case 4: TargetSystem::GetRegister(lin, kI386_edi, &val); break;
+          case 5: TargetSystem::GetRegister(lin, kI386_ebp, &val); break;
           default:
             lin.logger_ << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
             break;
@@ -2859,12 +1993,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetUname(
     char const * const utsname_machine,
     char const * const utsname_domainname)
 {
-  utsname_sysname_    = utsname_sysname;
-  utsname_nodename_   = utsname_nodename;
-  utsname_release_    = utsname_release;
-  utsname_version_    = utsname_version;
-  utsname_machine_    = utsname_machine;
-  utsname_domainname_ = utsname_domainname;
+  utsname.sysname    = utsname_sysname;
+  utsname.nodename   = utsname_nodename;
+  utsname.release    = utsname_release;
+  utsname.version    = utsname_version;
+  utsname.machine    = utsname_machine;
+  utsname.domainname = utsname_domainname;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -2922,9 +2056,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname )
 
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(char const* regname, PARAMETER_TYPE * const value )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value )
 {
-  if (unisim::util::debug::Register* reg = GetDebugRegister(regname)) {
+  if (unisim::util::debug::Register* reg = lin.GetDebugRegister(regname)) {
     reg->GetValue(value);
     return true;
   }
@@ -2932,9 +2066,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(char const* regname, PARAM
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister( char const* regname, PARAMETER_TYPE value )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value )
 {
-  if (unisim::util::debug::Register* reg = GetDebugRegister(regname)) {
+  if (unisim::util::debug::Register* reg = lin.GetDebugRegister(regname)) {
     reg->SetValue(&value);
     return true;
   }
@@ -3133,10 +2267,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget()
 
   return target_system->SetupTarget();
 }
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
-    PARAMETER_TYPE>::GetBlob() const { return blob_; }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& terminated, int& return_status)
@@ -3668,19 +2798,19 @@ ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry( uint8_t * st
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Host2LinuxErrno(int host_errno) const
+int32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::Host2LinuxErrno(Linux& lin, int host_errno)
 {
-	typename std::map<int, int32_t>::const_iterator it = host2linux_errno.find(host_errno);
+	typename std::map<int, int32_t>::const_iterator it = lin.host2linux_errno.find(host_errno);
 	
-	return (it != host2linux_errno.end()) ? (*it).second : LINUX_EINVAL;
+	return (it != lin.host2linux_errno.end()) ? (*it).second : LINUX_EINVAL;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Target2HostFileDescriptor(int32_t fd)
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::Target2HostFileDescriptor(Linux& lin, int32_t fd)
 {
 	// Return an error if file descriptor does not exist
-	typename std::map<int32_t, int>::iterator iter = target_to_host_fildes.find(fd);
-	if(iter == target_to_host_fildes.end()) return -1;
+	typename std::map<int32_t, int>::iterator iter = lin.target_to_host_fildes.find(fd);
+	if(iter == lin.target_to_host_fildes.end()) return -1;
 
 	// Translate the target file descriptor to an host file descriptor
 	return (*iter).second;
@@ -3730,65 +2860,63 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::UnmapTargetToHostFileDescriptor(int32_
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem( ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMem( Linux& lin, ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size )
 {
-	if (mem_inject_if_ == NULL) return false;
+  if (lin.mem_inject_if_ == NULL) return false;
 	
-	if (mem_inject_if_->InjectReadMemory(addr, buffer, size))
-	{
-		if (unlikely(verbose_))
-		{
-			logger_
-				<< DebugInfo
-				<< "OS read memory:" << std::endl
-				<< "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-				<< "\tsize = " << size << std::endl
-				<< "\tdata =" << std::hex;
+  if (lin.mem_inject_if_->InjectReadMemory(addr, buffer, size))
+    {
+      if (unlikely(lin.verbose_))
+        {
+          lin.logger_
+            << DebugInfo
+            << "OS read memory:" << std::endl
+            << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+            << "\tsize = " << size << std::endl
+            << "\tdata =" << std::hex;
 				
-			for (unsigned int i = 0; i < size; i++)
-			{
-				logger_ << " " << (unsigned int)buffer[i];
-			}
+          for (unsigned int i = 0; i < size; i++)
+            {
+              lin.logger_ << " " << (unsigned int)buffer[i];
+            }
 			
-			logger_ << std::dec
-					<< EndDebugInfo;
-		}
-		return true;
-	}
-	else
-	{
-		logger_
-			<< DebugWarning
-			<< "failed OS read memory:" << std::endl
-			<< "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-			<< "\tsize = " << size
-			<< EndDebugWarning;
-		return false;
-	}
+          lin.logger_ << std::dec << EndDebugInfo;
+        }
+      return true;
+    }
+  else
+    {
+      lin.logger_
+        << DebugWarning
+        << "failed OS read memory:" << std::endl
+        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+        << "\tsize = " << size
+        << EndDebugWarning;
+      return false;
+    }
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMem( ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size)
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::WriteMem( Linux& lin, ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size)
 {
-	if (mem_inject_if_ == NULL) return false;
+  if (lin.mem_inject_if_ == NULL) return false;
 	
-	if (unlikely(verbose_))
-	{
-		logger_ << DebugInfo
-		        << "OS write memory:" << std::endl
-		        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-		        << "\tsize = " << size << std::endl
-		        << "\tdata =" << std::hex;
+  if (unlikely(lin.verbose_))
+    {
+      lin.logger_ << DebugInfo
+                  << "OS write memory:" << std::endl
+                  << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+                  << "\tsize = " << size << std::endl
+                  << "\tdata =" << std::hex;
 			
-		for (unsigned int i = 0; i < size; i++)
-		{
-			logger_ << " " << (unsigned int)buffer[i];
-		}
+      for (unsigned int i = 0; i < size; i++)
+        {
+          lin.logger_ << " " << (unsigned int)buffer[i];
+        }
 		
-		logger_ << std::dec
-		        << EndDebugInfo;
-	}
-	return mem_inject_if_->InjectWriteMemory(addr, buffer, size);
+      lin.logger_ << std::dec << EndDebugInfo;
+    }
+  return lin.mem_inject_if_->InjectWriteMemory(addr, buffer, size);
 }
 
 } // end of namespace linux
