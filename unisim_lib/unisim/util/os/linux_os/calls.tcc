@@ -1133,7 +1133,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             lin.ReadMem(addr, (uint8_t *)pathname, pathnamelen + 1);
             flags = lin.target_system->GetSystemCallParam(1);
             mode = lin.target_system->GetSystemCallParam(2);
-            if(((strncmp(pathname, "/dev", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))) ||
+            if(((strncmp(pathname, "/dev", 4) == 0) && ((pathname[4] == 0))) ||
                ((strncmp(pathname, "/proc", 5) == 0) && ((pathname[5] == 0) || (pathname[5] == '/'))) ||
                ((strncmp(pathname, "/sys", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))) ||
                ((strncmp(pathname, "/var", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))))
@@ -1612,10 +1612,30 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "writev"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << "writev" << EndDebugInfo;
-	
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-LINUX_EINVAL),true);
+        int32_t target_fd = lin.target_system->GetSystemCallParam(0);
+        uint32_t iovecaddr = lin.target_system->GetSystemCallParam(1);
+        int32_t count = lin.target_system->GetSystemCallParam(2);
+        int32_t sum = 0;
+    
+        for (int step = count; (--step) >= 0; iovecaddr += 8) {
+          uint32_t iov_base, iov_len;
+          lin.ReadMem( iovecaddr + 0, (uint8_t*)&iov_base, 4 );
+          lin.ReadMem( iovecaddr + 4, (uint8_t*)&iov_len, 4 );
+          iov_base = unisim::util::endian::Target2Host( lin.endianness_, iov_base );
+          iov_len  = unisim::util::endian::Target2Host( lin.endianness_, iov_len );
+          assert( iov_len < 0x100000 );
+          uint8_t buffer[iov_len];
+          lin.ReadMem( iov_base, &buffer[0], iov_len );
+          int ret = ::write( target_fd, &buffer[0], iov_len );
+          if (ret < 0) {
+            int32_t target_errno = lin.Host2LinuxErrno( errno );
+            lin.SetSystemCallStatus( -target_errno, true );
+            return;
+          }
+          sum += ret;
+        }
+
+        lin.SetSystemCallStatus( sum, false );
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;

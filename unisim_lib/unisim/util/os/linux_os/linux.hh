@@ -355,10 +355,6 @@ private:
 	void SetBrkPoint(ADDRESS_TYPE brk_point);
 	// writing system call status
 	void SetSystemCallStatus(int ret, bool error);
-	void ARMSetSystemCallStatus(int ret, bool error);
-	void ARMEABISetSystemCallStatus(int ret, bool error);
-	void PPCSetSystemCallStatus(int ret, bool error);
-	void I386SetSystemCallStatus(int ret, bool error);
 	// compute the length of a buffer string
 	int StringLength(ADDRESS_TYPE addr);
 };

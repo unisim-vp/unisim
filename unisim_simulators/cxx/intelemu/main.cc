@@ -68,7 +68,7 @@ struct LinuxOS
   void Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
   {
     // Set up the different linuxlib parameters
-    linux_impl.SetVerbose(true);
+    linux_impl.SetVerbose(false);
   
     if (not linux_impl.SetCommandLine(simargs))
       throw 0;
@@ -90,11 +90,10 @@ struct LinuxOS
     linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
     linux_impl.SetStackBase( 0x40000000UL );
     linux_impl.SetMemoryPageSize( 0x1000UL );
-  
     linux_impl.SetUname("Linux" /* sysname */,
                      "localhost" /* nodename */,
-                     "2.6.27.35" /* release */,
-                     "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
+                     "3.14.43-unisim" /* release */,
+                     "#1 SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
                      "i386" /* machine */,
                      "localhost" /* domainname */);
     // linux_impl.SetStdinPipeFilename(stdin_pipe_filename.c_str());

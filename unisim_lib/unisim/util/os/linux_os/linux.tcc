@@ -2343,10 +2343,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
           return true;
         }
         
-        void SetSystemCallStatus(int ret, bool error) const
-        {
-          throw "TODO:";
-        }
+        void SetSystemCallStatus(int ret, bool error) const { lin.SetRegister(kI386_eax, (PARAMETER_TYPE) ret); }
         
         SysCall* GetSystemCall( int& id ) const
         {
@@ -2594,7 +2591,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
           case 240: return lin.GetSyscallByName("futex");
           case 241: return lin.GetSyscallByName("sched_setaffinity");
           case 242: return lin.GetSyscallByName("sched_getaffinity");
-          case 243: return lin.GetSyscallByName("set_thread_area");
+            // 243: set_thread_area (see i386 specific)
           case 244: return lin.GetSyscallByName("get_thread_area");
           case 245: return lin.GetSyscallByName("io_setup");
           case 246: return lin.GetSyscallByName("io_destroy");
@@ -2725,6 +2722,40 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_
                   lin.WriteMem(buf_addr, (uint8_t *)&value, sizeof(value));
 	
                   lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+                }
+              } sc;
+              return &sc;
+            } break;
+            
+          case 243: /* i386 specific set_thread_area syscall */
+            {
+              static struct : public SysCall {
+                char const* GetName() const { return "set_thread_area"; }
+                void Execute( Linux& lin, int syscall_id ) const
+                {
+                  uint32_t user_desc_ptr = lin.target_system->GetSystemCallParam(0);
+                  
+                  int32_t  entry_number;
+                  uint32_t base_addr, limit, attributes;
+                  lin.ReadMem( user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
+                  lin.ReadMem( user_desc_ptr + 0x4, (uint8_t*)&base_addr, 4 );
+                  lin.ReadMem( user_desc_ptr + 0x8, (uint8_t*)&limit, 4 );
+                  lin.ReadMem( user_desc_ptr + 0xc, (uint8_t*)&attributes, 4 );
+                  entry_number = unisim::util::endian::Target2Host( lin.endianness_, entry_number );
+                  base_addr    = unisim::util::endian::Target2Host( lin.endianness_, base_addr );
+                  limit        = unisim::util::endian::Target2Host( lin.endianness_, limit );
+                  attributes   = unisim::util::endian::Target2Host( lin.endianness_, attributes );
+                  
+                  if (entry_number != -1)
+                    throw 0;
+                  
+                  lin.SetRegister("@gdt[3].base", base_addr ); // pseudo allocation of a tls descriptor
+                  
+                  entry_number = 3;
+                  entry_number = unisim::util::endian::Host2Target( lin.endianness_, entry_number );
+                  lin.WriteMem( user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
+
+                  lin.SetSystemCallStatus( 0, false );
                 }
               } sc;
               return &sc;

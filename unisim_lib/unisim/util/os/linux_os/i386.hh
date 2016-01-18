@@ -42,7 +42,7 @@ namespace os {
 namespace linux_os {
 
 // Register names
-// static char const* const kI386_eax = "%eax";
+static char const* const kI386_eax = "%eax";
 static char const* const kI386_ecx = "%ecx";
 static char const* const kI386_edx = "%edx";
 static char const* const kI386_ebx = "%ebx";

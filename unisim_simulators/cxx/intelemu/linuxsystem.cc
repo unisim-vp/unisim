@@ -354,7 +354,7 @@ namespace todel
     // this->screturn( 0, _target );
     
     // A systematic error forces glibc to inspect "/proc/sys/kernel/osrelease"
-    this->scerror( -EINVAL, _target );
+    this->scerror( EINVAL, _target );
   }
 
   void
