@@ -351,19 +351,7 @@ private:
 	// The generic linux system call factories
         SysCall* GetSyscallByName( std::string _name );
 	SysCall* GetUnknownSystemCall();
-
-	// system call 'stat' helper methods
-	int Stat(int fd, struct powerpc_stat *target_stat);
-	int Fstat64(int fd, struct powerpc_stat64 *target_stat);
-	int Stat64(const char *pathname, struct powerpc_stat64 *target_stat);
-	int Fstat64(int fd, struct i386_stat64 *target_stat);
-	int Stat64(const char *pathname, struct i386_stat64 *target_stat);
-	// system call 'times' helper methods
-	int Times(struct powerpc_tms *target_tms);
-	int Times(struct i386_tms *target_tms);
-	// system call 'gettimeofday' helper methods
-	int GetTimeOfDay(struct powerpc_timeval *target_timeval, struct powerpc_timezone *target_timezone);
-	int GetTimeOfDay(struct i386_timeval *target_timeval, struct i386_timezone *target_timezone);
+	
 	// handling the mmap base address
 	ADDRESS_TYPE GetMmapBase() const;
 	void SetMmapBase(ADDRESS_TYPE base);

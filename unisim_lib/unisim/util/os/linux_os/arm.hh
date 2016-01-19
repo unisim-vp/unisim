@@ -104,7 +104,7 @@ using unisim::kernel::logger::EndDebugError;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
-    // ARM structs
+    // ARM linux structs
     struct arm_timespec {
       uint32_t tv_sec;  /* Seconds.      (__time_t) */
       uint32_t tv_nsec; /* Nanoseconds.  (long int) */
