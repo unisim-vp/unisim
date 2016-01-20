@@ -55,10 +55,6 @@
 #include <cassert>
 #include <inttypes.h>
 
-/* Following should finally disapear*/
-#include <linuxsystem.hh>
-#include <dtlib/target.hh>
-
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -94,7 +90,6 @@ namespace intel {
     bool                        m_running;      ///< Processors on/off
     int64_t                     m_instcount;    ///< Instruction count from the start
     bool                        m_disasm;       ///< Instruction disassembly on/off
-    dtlib::Sink                 m_events;       ///< Debug channel for the processor
     Operation*                  m_latest_insn;  ///< latest (current) instruction
     
     void                        stop() { m_running = false; }

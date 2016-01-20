@@ -35,7 +35,7 @@
 #include <unisim/component/cxx/processor/intel/arch.hh>
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
 #include <unisim/component/cxx/processor/intel/math.hh>
-#include <dtlib/misc.hh>
+#include <iomanip>
 #include <cmath>
 
 namespace unisim {
@@ -159,9 +159,14 @@ namespace intel {
     m_EIP = eip + operation->length;
     
     if (m_disasm) {
-      dtlib::osprintf( m_events(), "%#010x: ", eip );
-      operation->disasm( m_events() );
-      m_events() << " (" << DisasmBytes( &decbuf[0], operation->length ) << ")" << std::endl;
+      std::ios fmt(NULL);
+      fmt.copyfmt(std::cerr);
+      std::cerr << "#0x" << std::setfill('0') << std::setw(8) << std::hex << eip;
+      std::cerr.copyfmt(fmt);
+      operation->disasm( std::cerr );
+      std::cerr.copyfmt(fmt);
+      std::cerr << " (" << DisasmBytes( &decbuf[0], operation->length ) << ")" << std::endl;
+      std::cerr.copyfmt(fmt);
     }
     
     ++m_instcount;

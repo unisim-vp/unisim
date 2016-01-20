@@ -42,9 +42,6 @@
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/kernel/logger/logger_server.hh>
 #include <unisim/kernel/logger/logger.hh>
-#include <linuxsystem.hh>
-#include <dtlib/loader.hh>
-#include <dtlib/misc.hh>
 #include <iostream>
 
 struct LinuxOS
@@ -303,7 +300,6 @@ main( int argc, char *argv[] )
   //     break;
   //   }
   
-  cpu.m_events.redirect( std::cerr );
   cpu.m_disasm = false;
   
   // Loading image
