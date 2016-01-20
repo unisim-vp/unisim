@@ -38,6 +38,7 @@
 #include <unisim/util/likely/likely.hh>
 
 #include <unisim/util/os/linux_os/errno.hh>
+#include <errno.h>
 
 #if defined(WIN32) || defined(WIN64)
 #include <process.h>
