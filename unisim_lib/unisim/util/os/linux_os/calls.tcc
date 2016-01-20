@@ -55,8 +55,6 @@
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/os/linux_os/linux.hh"
 #include "unisim/util/os/linux_os/files_flags.hh"
-#include "unisim/util/os/linux_os/arm.hh"
-#include "unisim/util/os/linux_os/ppc.hh"
 
 namespace unisim {
 namespace util {
@@ -136,12 +134,12 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetBrkPoint(ADDRESS_TYPE brk_point)
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemCallStatus(int ret, bool error)
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::SetStatus(Linux& lin, int ret, bool error)
 {
-  if (unlikely(verbose_))
-    logger_ << DebugInfo << (error ? "err" : "ret") << " = 0x" << std::hex << ret << std::dec << EndDebugInfo;
+  if (unlikely(lin.verbose_))
+    lin.logger_ << DebugInfo << (error ? "err" : "ret") << " = 0x" << std::hex << ret << std::dec << EndDebugInfo;
   
-  target_system->SetSystemCallStatus(ret, error);
+  lin.target_system->SetSystemCallStatus(ret, error);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -302,7 +300,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
           lin.logger_ << DebugInfo << "read(fd=" << target_fd << ", buf=0x" << std::hex << buf_addr << std::dec
                   << ", count=" << count << ")" << EndDebugInfo;
 
-        lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -363,7 +361,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
               }
           }
 
-        lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -441,7 +439,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
           }
 	
-        lin.SetSystemCallStatus((ret == -1) ? -target_errno : target_fd, (ret == -1));
+        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : target_fd, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -493,7 +491,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
           lin.logger_ << DebugInfo
                   << "close(fd=" << target_fd << ")"
                   << EndDebugInfo;
-        lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -536,7 +534,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                     << EndDebugInfo;
           }
 
-        lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -552,7 +550,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         ret = (pid_t) getpid();
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "getpid()" << EndDebugInfo;
-        lin.SetSystemCallStatus(ret, false);
+        SysCall::SetStatus(lin, ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -569,7 +567,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         ret = (pid_t) getpid();
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "gettid()" << EndDebugInfo;
-        lin.SetSystemCallStatus(ret, false);
+        SysCall::SetStatus(lin, ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -589,7 +587,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 #endif
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "getuid()" << EndDebugInfo;
-        lin.SetSystemCallStatus(ret, false);
+        SysCall::SetStatus(lin, ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -640,7 +638,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             target_errno = LINUX_ENOMEM;
             lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
           }
-        lin.SetSystemCallStatus((ret == -1) ? -target_errno : ret, (ret == -1));
+        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -663,7 +661,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         if(unlikely(lin.verbose_))
             lin.logger_ << DebugInfo << "brk(new_brk_point=0x" << std::hex << new_brk_point << ")" << EndDebugInfo;
 	
-        lin.SetSystemCallStatus(lin.GetBrkPoint(), false);
+        SysCall::SetStatus(lin, lin.GetBrkPoint(), false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -684,7 +682,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "getgid()" << EndDebugInfo;
         
-        lin.SetSystemCallStatus(ret, false);
+        SysCall::SetStatus(lin, ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -705,7 +703,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "geteuid()" << EndDebugInfo;
 	
-        lin.SetSystemCallStatus(ret, false);
+        SysCall::SetStatus(lin, ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -726,7 +724,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "getegid()" << EndDebugInfo;
 	
-        lin.SetSystemCallStatus(ret, false);
+        SysCall::SetStatus(lin, ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -738,13 +736,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         // Note: currently disabled
-        lin.SetSystemCallStatus(-LINUX_ENOSYS, false); return;
+        SysCall::SetStatus(lin, -LINUX_ENOSYS, false); return;
 	
         size_t u = (size_t)(lin.target_system->GetSystemCallParam(1));
 
         if(lin.GetMmapBrkPoint() - u > lin.GetMmapBrkPoint())
           {
-            lin.SetSystemCallStatus((PARAMETER_TYPE)(-LINUX_EINVAL), true);
+            SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL), true);
             if(unlikely(lin.verbose_))
               lin.logger_ << DebugInfo << "size = " << u << EndDebugInfo;
             return;
@@ -755,13 +753,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 
         if(lin.GetMmapBrkPoint() - u >= lin.GetMmapBrkPoint())
           {
-            lin.SetSystemCallStatus((PARAMETER_TYPE)(-LINUX_EINVAL), true);
+            SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL), true);
             if(unlikely(lin.verbose_))
               lin.logger_ << DebugInfo << "size = " << u << EndDebugInfo;
             return;
           }
 
-        lin.SetSystemCallStatus((PARAMETER_TYPE) 0, false);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
 	
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "size = " << u << EndDebugInfo;
@@ -779,7 +777,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       {
         // TODO write LSC_stat
         lin.logger_ << DebugWarning << "TODO LSC_stat" << EndDebugWarning;
-        lin.SetSystemCallStatus(-LINUX_ENOSYS, true);
+        SysCall::SetStatus(lin, -LINUX_ENOSYS, true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -840,7 +838,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                     << ", whence=" << whence << ")" << EndDebugInfo;
           }
 	
-        lin.SetSystemCallStatus((PARAMETER_TYPE) (lseek_ret == -1) ? -target_errno : lseek_ret, (lseek_ret == -1));
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) (lseek_ret == -1) ? -target_errno : lseek_ret, (lseek_ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -868,13 +866,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
           int ret = ::write( target_fd, &buffer[0], iov_len );
           if (ret < 0) {
             int32_t target_errno = this->Host2LinuxErrno(lin,  errno );
-            lin.SetSystemCallStatus( -target_errno, true );
+            SysCall::SetStatus(lin,  -target_errno, true );
             return;
           }
           sum += ret;
         }
 
-        lin.SetSystemCallStatus( sum, false );
+        SysCall::SetStatus(lin,  sum, false );
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -886,12 +884,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         // Note: currently disabled
-        lin.SetSystemCallStatus(-LINUX_ENOSYS,true); return;
+        SysCall::SetStatus(lin, -LINUX_ENOSYS,true); return;
 	
         if(lin.target_system->GetSystemCallParam(3) == 0x32)
           {
             /* MAP_PRIVATE | MAP_ANONYMOUS */
-            lin.SetSystemCallStatus(lin.target_system->GetSystemCallParam(0),false);
+            SysCall::SetStatus(lin, lin.target_system->GetSystemCallParam(0),false);
             if(unlikely(lin.verbose_))
               {
                 lin.logger_  << DebugInfo << "map_type = 0x" << std::hex << lin.target_system->GetSystemCallParam(3)
@@ -904,7 +902,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         if((lin.target_system->GetSystemCallParam(3)&0xFF) != 0x22)
           {
             /* MAP_PRIVATE | MAP_ANONYMOUS */
-            lin.SetSystemCallStatus((PARAMETER_TYPE)(-LINUX_EINVAL),true);
+            SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL),true);
             if(unlikely(lin.verbose_))
               {
                 lin.logger_ << DebugInfo
@@ -915,7 +913,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             return;
           }
 	
-        lin.SetSystemCallStatus(lin.GetMmapBrkPoint(),false);
+        SysCall::SetStatus(lin, lin.GetMmapBrkPoint(),false);
 	
         if(unlikely(lin.verbose_))
           {
@@ -937,12 +935,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         // Note: currently disabled
-        lin.SetSystemCallStatus(-LINUX_ENOSYS,true); return;
+        SysCall::SetStatus(lin, -LINUX_ENOSYS,true); return;
 
         if(lin.target_system->GetSystemCallParam(3) != 0x22)
           {
             /* MAP_PRIVATE | MAP_ANONYMOUS */
-            lin.SetSystemCallStatus((PARAMETER_TYPE)(-LINUX_EINVAL),true);
+            SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL),true);
             if(unlikely(lin.verbose_))
               lin.logger_ << DebugInfo
                       << "map_type = 0x" << std::hex << lin.target_system->GetSystemCallParam(3) << std::dec
@@ -953,7 +951,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 
         if(lin.GetMmapBrkPoint() + lin.target_system->GetSystemCallParam(1) > lin.target_system->GetSystemCallParam(1))
           {
-            lin.SetSystemCallStatus(lin.GetMmapBrkPoint(),false);
+            SysCall::SetStatus(lin, lin.GetMmapBrkPoint(),false);
 		
             if(unlikely(lin.verbose_))
               {
@@ -975,7 +973,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                         << EndDebugInfo;
               }
 		
-            lin.SetSystemCallStatus((PARAMETER_TYPE)(-LINUX_EINVAL),true);
+            SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL),true);
           }
       }
     } sc;
@@ -994,7 +992,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 
         ret = getuid();
 #endif
-        lin.SetSystemCallStatus((PARAMETER_TYPE) ret, false);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1012,7 +1010,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 
         ret = getgid();
 #endif
-        lin.SetSystemCallStatus((PARAMETER_TYPE) ret, false);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1030,7 +1028,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 
         ret = geteuid();
 #endif
-        lin.SetSystemCallStatus((PARAMETER_TYPE) ret, false);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1048,7 +1046,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 
         ret = getegid();
 #endif
-        lin.SetSystemCallStatus((PARAMETER_TYPE) ret, false);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1063,7 +1061,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         lin.logger_ << DebugWarning
                 << "TODO LSC_flistxattr"
                 << EndDebugWarning;
-        lin.SetSystemCallStatus(-LINUX_ENOSYS, true);
+        SysCall::SetStatus(lin, -LINUX_ENOSYS, true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1074,7 +1072,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "exit_group"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-LINUX_EINVAL),true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL),true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1107,7 +1105,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
           {
 #if defined(WIN32) || defined(WIN64)
             ret = -1;
-            lin.SetSystemCallStatus((PARAMETER_TYPE) -LINUX_ENOSYS, true);
+            SysCall::SetStatus(lin, (PARAMETER_TYPE) -LINUX_ENOSYS, true);
 #else
             ret = fcntl(host_fd, cmd, arg);
             if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
@@ -1117,7 +1115,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "fd=" << target_fd << ",cmd=" << cmd << ",arg=" << arg << EndDebugInfo;
 	
-        lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1175,11 +1173,11 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 	
         if(ret == -1)
           {
-            lin.SetSystemCallStatus((PARAMETER_TYPE) -target_errno, true);
+            SysCall::SetStatus(lin, (PARAMETER_TYPE) -target_errno, true);
           }
         else
           {
-            lin.SetSystemCallStatus((PARAMETER_TYPE) ret, false);
+            SysCall::SetStatus(lin, (PARAMETER_TYPE) ret, false);
           }
       }
     } sc;
@@ -1229,7 +1227,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                     << EndDebugInfo;
           }
 	
-        lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : target_newfd, (ret == -1));
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : target_newfd, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1240,7 +1238,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "ioctl"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1251,7 +1249,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "ugetrlimit"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1262,7 +1260,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "getrlimit"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1273,7 +1271,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "setrlimit"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1284,7 +1282,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "rt_sigaction"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1295,7 +1293,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "getrusage"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1329,7 +1327,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             target_errno = LINUX_ENOMEM;
           }
 	
-        lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1363,7 +1361,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             target_errno = LINUX_ENOMEM;
           }
 	
-        lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1374,7 +1372,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "time"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL), true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1385,7 +1383,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "socketcall"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL), true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1396,7 +1394,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "rt_sigprocmask"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL), true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1407,7 +1405,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "kill"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE) 0, false);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1418,7 +1416,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "tkill"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE) 0, false);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1429,7 +1427,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "tgkill"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE) 0, false);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1462,7 +1460,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
           }
 	
-        lin.SetSystemCallStatus((PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+        SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1485,7 +1483,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                     << EndDebugInfo;
           }
 
-        lin.SetSystemCallStatus(ret, false);
+        SysCall::SetStatus(lin, ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1496,7 +1494,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "statfs"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        lin.SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
+        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL), true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1511,7 +1509,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       {
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "Unimplemented system call '" << name << "', #" << syscall_id << EndDebugInfo;
-        lin.SetSystemCallStatus(-LINUX_ENOSYS, true);
+        SysCall::SetStatus(lin, -LINUX_ENOSYS, true);
       }
       void Release() { delete this; }
     };

@@ -35,18 +35,17 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_LINUX_HH__
 #define __UNISIM_UTIL_OS_LINUX_LINUX_HH__
 
+#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
+#include <sstream>
 #include <map>
 #include <string>
 #include <vector>
 // #include <iostream>
-#include <sstream>
-
-#include "unisim/util/endian/endian.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/registers.hh"
-#include "unisim/service/interfaces/memory_injection.hh"
-#include "unisim/util/debug/blob/blob.hh"
 
 namespace unisim {
 namespace util {
@@ -60,6 +59,57 @@ struct Linux
 	typedef PARAMETER_TYPE parameter_type;
 	typedef Linux<ADDRESS_TYPE, PARAMETER_TYPE> this_type;
 	
+	struct SysCall
+	{
+		virtual ~SysCall() {}
+		virtual void Execute( Linux& lin, int syscall_id ) const = 0;
+		virtual char const* GetName() const = 0;
+		virtual void Release() {}
+		// SysCall Friend accessing methods
+        protected:
+		static bool ReadMem(Linux& lin, ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
+		static bool WriteMem(Linux& lin, ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
+		static bool ReadMemString(Linux& lin, ADDRESS_TYPE addr, std::string& str);
+		static int32_t Host2LinuxErrno(Linux& lin, int host_errno); //< Errno conversion
+		static int Target2HostFileDescriptor( Linux& lin, int32_t fd );
+		static void SetStatus(Linux& lin, int ret, bool error); // <writing system call status
+	};
+	
+	struct LSCExit { LSCExit( int _status ) : status( _status ) {} int status; };
+	
+	struct UTSName
+	{
+		std::string sysname;
+		std::string nodename;
+		std::string release;
+		std::string version;
+		std::string machine;
+		std::string domainname;
+	};
+	
+	// Target System Specific interface
+	struct TargetSystem
+	{
+		std::string name;
+		Linux& lin;
+		TargetSystem( std::string _name, Linux& _lin ) : name( _name ), lin( _lin ) {}
+		virtual ~TargetSystem() {}
+		virtual bool SetupTarget() const = 0;
+		virtual bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const = 0;
+		virtual bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const = 0;
+		virtual SysCall* GetSystemCall(int& id) const = 0;
+		virtual PARAMETER_TYPE GetSystemCallParam(int id) const = 0;
+		virtual void SetSystemCallStatus(int ret, bool error) const = 0;
+		// TargetSystem Friend accessing methods
+		unisim::service::interfaces::Registers& RegsIF() const { return *lin.regs_if_; }
+		unisim::service::interfaces::Memory<ADDRESS_TYPE>& MemIF() const { return *lin.mem_if_; }
+		std::string GetHWCAP() const { return lin.hwcap_; }
+		SysCall* GetSyscallByName( std::string name ) const { return lin.GetSyscallByName( name ); }
+	protected:
+		static bool GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value );
+		static bool SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value );
+	};
+
 	Linux(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if, unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if);
 	~Linux();
 
@@ -88,20 +138,21 @@ struct Linux
 
 	bool AddLoadFile(char const * const file);
 
-	bool SetSystemType(std::string _system_type_name);
-
-	// Sets the endianness of the system.
+	// Sets and gets the target specific system interface
+	void SetTargetSystem(TargetSystem* _target_system) { target_system = _target_system; }
+	TargetSystem* GetTargetSystem() { return target_system; }
+	
+	// Sets and gets the endianness of the system.
 	// Note that if the loaded files endianness is different from the set
 	// endianness the Load() method will fail.
-	void SetEndianness(unisim::util::endian::endian_type endianness);
-	// Gets the system endianness
+	void SetEndianness(unisim::util::endian::endian_type endianness) { endianness_ = endianness; }
 	unisim::util::endian::endian_type GetEndianness() const { return endianness_; }
-
+	
 	// Sets the stack base address that will be used for the application stack.
 	// Combined with SetStackSize the memory addresses from stack base to
 	// (stack base + stack size) will be reserved for the stack.
 	void SetStackBase(ADDRESS_TYPE stack_base);
-
+	
 	// Sets the memory page size in bytes that will be used by the linux os
 	// emulator
 	void SetMemoryPageSize(ADDRESS_TYPE memory_page_size);
@@ -130,8 +181,9 @@ struct Linux
 	// Loads all the defined files using the user settings.
 	// Basic usage:
 	//   linux_os = new Linux<X,Y>(false);
+	//   arm_target = new ARMTS<Linux<X,Y> >("arm-eabi", linux_os);
 	//   // set options (for simplicity we assume successful calls)
-	//   linux_os->SetSystemType("arm-eabi");
+	//   linux_os->SetTargetSystem(arm_target);
 	//   linux_os->AddLoadFile("my_fabulous_elf_file");
 	//   ...
 	//   // actually load the system
@@ -169,56 +221,6 @@ struct Linux
 	// Executes the given system call id depending on the architecture the linux
 	// emulation is working on.
 	void ExecuteSystemCall(int id, bool& terminated, int& return_status);
-
-	struct SysCall
-	{
-		virtual ~SysCall() {}
-		virtual void Execute( Linux& lin, int syscall_id ) const = 0;
-		virtual char const* GetName() const = 0;
-		virtual void Release() {}
-		// SysCall Friend accessing methods
-        protected:
-		static bool ReadMem(Linux& lin, ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
-		static bool WriteMem(Linux& lin, ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
-		static bool ReadMemString(Linux& lin, ADDRESS_TYPE addr, std::string& str);
-		static int32_t Host2LinuxErrno(Linux& lin, int host_errno); //< Errno conversion
-		static int Target2HostFileDescriptor( Linux& lin, int32_t fd );
-	};
-	
-	struct LSCExit { LSCExit( int _status ) : status( _status ) {} int status; };
-	
-	struct UTSName
-	{
-		std::string sysname;
-		std::string nodename;
-		std::string release;
-		std::string version;
-		std::string machine;
-		std::string domainname;
-	};
-	
-	// Target System Specific interface
-	struct TargetSystem
-	{
-		std::string name;
-		Linux& lin;
-		TargetSystem( std::string _name, Linux& _lin ) : name( _name ), lin( _lin ) {}
-		virtual ~TargetSystem() {}
-		virtual bool SetupTarget() const = 0;
-		virtual bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const = 0;
-		virtual bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const = 0;
-		virtual SysCall* GetSystemCall(int& id) const = 0;
-		virtual PARAMETER_TYPE GetSystemCallParam(int id) const = 0;
-		virtual void SetSystemCallStatus(int ret, bool error) const = 0;
-		// TargetSystem Friend accessing methods
-		unisim::service::interfaces::Registers& RegsIF() const { return *lin.regs_if_; }
-		unisim::service::interfaces::Memory<ADDRESS_TYPE>& MemIF() const { return *lin.mem_if_; }
-		std::string GetHWCAP() const { return lin.hwcap_; }
-		SysCall* GetSyscallByName( std::string name ) const { return lin.GetSyscallByName( name ); }
-	protected:
-		static bool GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value );
-		static bool SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value );
-	};
 
 	UTSName const& GetUTSName() const { return utsname; }
 	
@@ -361,8 +363,6 @@ private:
 	// handling the brkpoint address
 	ADDRESS_TYPE GetBrkPoint() const;
 	void SetBrkPoint(ADDRESS_TYPE brk_point);
-	// writing system call status
-	void SetSystemCallStatus(int ret, bool error);
 };
 
 } // end of linux namespace

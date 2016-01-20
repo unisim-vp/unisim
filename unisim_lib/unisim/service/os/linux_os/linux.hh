@@ -121,7 +121,8 @@ class Linux :
   unisim::kernel::service::Parameter<std::string> param_stderr_pipe_filename;
   
   /* the linux library */
-  unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE> *linuxlib_;
+  unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE>* linuxlib_;
+  typename unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem* target_system_;
 
   std::string system_;
   unisim::kernel::service::Parameter<std::string> param_system_;

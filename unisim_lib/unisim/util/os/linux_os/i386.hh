@@ -34,6 +34,19 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_I386_HH__
 #define __UNISIM_UTIL_OS_LINUX_I386_HH__
 
+#include <unisim/util/os/linux_os/errno.hh>
+
+#if defined(WIN32) || defined(WIN64)
+#include <process.h>
+#include <windows.h>
+#else
+#include <sys/times.h>
+#include <sys/time.h>
+#endif
+
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <inttypes.h>
 
 namespace unisim {
@@ -41,23 +54,30 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-// Register names
-static char const* const kI386_eax = "%eax";
-static char const* const kI386_ecx = "%ecx";
-static char const* const kI386_edx = "%edx";
-static char const* const kI386_ebx = "%ebx";
-static char const* const kI386_esp = "%esp";
-static char const* const kI386_ebp = "%ebp";
-static char const* const kI386_esi = "%esi";
-static char const* const kI386_edi = "%edi";
-static char const* const kI386_eip = "%eip";
+  using unisim::kernel::logger::DebugInfo;
+  using unisim::kernel::logger::DebugWarning;
+  using unisim::kernel::logger::DebugError;
+  using unisim::kernel::logger::EndDebugInfo;
+  using unisim::kernel::logger::EndDebugWarning;
+  using unisim::kernel::logger::EndDebugError;
 
-static char const* const kI386_es = "%es";
-static char const* const kI386_cs = "%cs";
-static char const* const kI386_ss = "%ss";
-static char const* const kI386_ds = "%ds";
-static char const* const kI386_fs = "%fs";
-static char const* const kI386_gs = "%gs";
+  // Register names
+  static char const* const kI386_eax = "%eax";
+  static char const* const kI386_ecx = "%ecx";
+  static char const* const kI386_edx = "%edx";
+  static char const* const kI386_ebx = "%ebx";
+  static char const* const kI386_esp = "%esp";
+  static char const* const kI386_ebp = "%ebp";
+  static char const* const kI386_esi = "%esi";
+  static char const* const kI386_edi = "%edi";
+  static char const* const kI386_eip = "%eip";
+
+  static char const* const kI386_es = "%es";
+  static char const* const kI386_cs = "%cs";
+  static char const* const kI386_ss = "%ss";
+  static char const* const kI386_ds = "%ds";
+  static char const* const kI386_fs = "%fs";
+  static char const* const kI386_gs = "%gs";
 
   template <class LINUX>
   struct I386TS : public LINUX::TargetSystem
@@ -195,9 +215,9 @@ static char const* const kI386_gs = "%gs";
       SetRegister( lin, "@gdt[3].base", base ); // pseudo allocation of a tls descriptor
     }
 
-    static void SetSystemCallStatus(LINUX& lin, int ret, bool error) { SetRegister(lin, kI386_eax, (parameter_type) ret); }
-    void SetSystemCallStatus(int ret, bool error) const { SetRegister(lin, kI386_eax, (parameter_type) ret); }
-        
+    static void SetI386SystemCallStatus(LINUX& lin, int ret, bool error) { SetRegister(lin, kI386_eax, (parameter_type) ret); }
+    void SetSystemCallStatus(int ret, bool error) const { SetI386SystemCallStatus( lin, ret, error ); }
+    
     static parameter_type GetSystemCallParam(LINUX& lin, int id)
     {
       parameter_type val = 0;
@@ -602,7 +622,7 @@ static char const* const kI386_gs = "%gs";
               strncpy(&value.domainname[0], utsname.domainname.c_str(), sizeof(value.domainname) - 1);
               this->WriteMem( lin, buf_addr, (uint8_t *)&value, sizeof(value));
   
-              SetSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetI386SystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -636,7 +656,7 @@ static char const* const kI386_gs = "%gs";
               entry_number = unisim::util::endian::Host2Target( lin.GetEndianness(), entry_number );
               this->WriteMem( lin, user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
 
-              SetSystemCallStatus( lin, 0, false );
+              SetI386SystemCallStatus( lin, 0, false );
             }
           } sc;
           return &sc;

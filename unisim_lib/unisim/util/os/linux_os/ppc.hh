@@ -35,6 +35,19 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_PPC_HH__
 #define __UNISIM_UTIL_OS_LINUX_PPC_HH__
 
+#include <unisim/util/os/linux_os/errno.hh>
+
+#if defined(WIN32) || defined(WIN64)
+#include <process.h>
+#include <windows.h>
+#else
+#include <sys/times.h>
+#include <sys/time.h>
+#endif
+
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <inttypes.h>
 
 namespace unisim {
@@ -42,15 +55,22 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-// Register names
-static char const* const kPPC_r3  = "r3";
-static char const* const kPPC_r4  = "r4";
-static char const* const kPPC_r5  = "r5";
-static char const* const kPPC_r6  = "r6";
-static char const* const kPPC_r7  = "r7";
-static char const* const kPPC_sp  = "r1";
-static char const* const kPPC_cr  = "cr";
-static char const* const kPPC_cia = "cia";
+  using unisim::kernel::logger::DebugInfo;
+  using unisim::kernel::logger::DebugWarning;
+  using unisim::kernel::logger::DebugError;
+  using unisim::kernel::logger::EndDebugInfo;
+  using unisim::kernel::logger::EndDebugWarning;
+  using unisim::kernel::logger::EndDebugError;
+
+  // Register names
+  static char const* const kPPC_r3  = "r3";
+  static char const* const kPPC_r4  = "r4";
+  static char const* const kPPC_r5  = "r5";
+  static char const* const kPPC_r6  = "r6";
+  static char const* const kPPC_r7  = "r7";
+  static char const* const kPPC_sp  = "r1";
+  static char const* const kPPC_cr  = "cr";
+  static char const* const kPPC_cia = "cia";
 
   template <class LINUX>
   struct PPCTS : public LINUX::TargetSystem
@@ -522,7 +542,7 @@ static char const* const kPPC_cia = "cia";
       return ret;
     }
 
-    static void SetSystemCallStatus(LINUX& _lin, int ret, bool error)
+    static void SetPPCSystemCallStatus(LINUX& _lin, int ret, bool error)
     {
       parameter_type val;
   
@@ -548,7 +568,7 @@ static char const* const kPPC_cia = "cia";
       if (not SetRegister(_lin, kPPC_r3, val)) return;
     }
     
-    void SetSystemCallStatus(int ret, bool error) const { SetSystemCallStatus(lin, ret, error); }
+    void SetSystemCallStatus(int ret, bool error) const { SetPPCSystemCallStatus(lin, ret, error); }
 
     static parameter_type GetSystemCallParam(LINUX& lin, int id)
     {
@@ -956,7 +976,7 @@ static char const* const kPPC_cia = "cia";
               if (unlikely(lin.GetVerbose()))
                 lin.Logger() << DebugInfo << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << EndDebugInfo;
   
-              SetSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetPPCSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -1001,7 +1021,7 @@ static char const* const kPPC_cia = "cia";
                               << EndDebugInfo;
                 }
   
-              SetSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetPPCSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -1045,7 +1065,7 @@ static char const* const kPPC_cia = "cia";
                               << ")" << EndDebugInfo;
                 }
   
-              SetSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetPPCSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -1073,7 +1093,7 @@ static char const* const kPPC_cia = "cia";
               strncpy(value.domainname,  utsname.domainname.c_str(), sizeof(value.domainname) - 1);
               this->WriteMem( lin, buf_addr, (uint8_t *)&value, sizeof(value));
   
-              SetSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetPPCSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -1110,7 +1130,7 @@ static char const* const kPPC_cia = "cia";
                   target_errno = LINUX_ENOMEM;
                 }
   
-              SetSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetPPCSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -1154,7 +1174,7 @@ static char const* const kPPC_cia = "cia";
                               << EndDebugInfo;
                 }
   
-              SetSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetPPCSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;

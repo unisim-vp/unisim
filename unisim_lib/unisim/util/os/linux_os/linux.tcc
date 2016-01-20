@@ -47,8 +47,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
 
@@ -61,9 +59,6 @@
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/loader/elf_loader/elf32_loader.hh"
 
-#include "unisim/util/os/linux_os/arm.hh"
-#include "unisim/util/os/linux_os/ppc.hh"
-#include "unisim/util/os/linux_os/i386.hh"
 #include "unisim/util/os/linux_os/environment.hh"
 #include "unisim/util/os/linux_os/aux_table.hh"
 #include "unisim/util/os/linux_os/errno.hh"
@@ -540,8 +535,6 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(unisim::kernel::logger::Logger& logge
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
 {
-	delete target_system;
-	
 	typename std::map<std::string, unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>::const_iterator it;
 	for(it = load_files_.begin(); it != load_files_.end(); it++)
 	{
@@ -689,40 +682,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(char const * const filenam
   load_files_[filename_str] = blob;
   delete loader;
   return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(std::string system_type_name)
-{
-  if ((system_type_name.compare( "arm" ) == 0) or (system_type_name.compare( "arm-eabi" ) == 0))
-    {
-      delete target_system;
-      target_system = new ARMTS<this_type>( system_type_name, *this );
-      return true;
-    }
-  
-  if (system_type_name.compare("ppc") == 0)
-    {
-      delete target_system;
-      target_system = new PPCTS<this_type>( *this );
-      return true;
-    }
-  
-  if (system_type_name.compare("i386") == 0)
-    {
-      delete target_system;
-      target_system = new I386TS<this_type>( *this );
-      return true;
-    }
-  
-  return false;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEndianness(unisim::util::endian::endian_type endianness)
-{
-  endianness_ = endianness;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1027,17 +986,17 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget()
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& terminated, int& return_status)
 {
-  if (not is_load_)
+  if (not is_load_ or not target_system)
     {
       logger_
         << DebugError
         << "unisim::util::os::linux_os::Linux.ExecuteSystemCall: "
         << "Trying to execute system call with id " << id << " while the linux "
-        << "emulation has not been correctly loaded."
+        << "emulation has not been correctly configured."
         << EndDebugError;
       return;
     }
-        
+  
   int translated_id = id;
   
   SysCall* sc = target_system->GetSystemCall( translated_id );
@@ -1045,10 +1004,10 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& termin
   if (not sc) {
     logger_ << DebugError << "Unknown syscall(id = " << translated_id << ", untranslated id = " << id << ")" << EndDebugError;
     // FIXME: shouldn't we end the simulation (terminated = true) ?
-    SetSystemCallStatus(-LINUX_ENOSYS, true);
+    target_system->SetSystemCallStatus(-LINUX_ENOSYS, true);
     return;
   }
-        
+  
   if (unlikely(verbose_))
     {
       logger_

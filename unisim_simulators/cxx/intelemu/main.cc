@@ -38,6 +38,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/os/linux_os/i386.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/kernel/logger/logger_server.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -84,9 +85,9 @@ struct LinuxOS
   
     // Set the system type of the target simulator (should be the same than the
     // binary)
-    if (not linux_impl.SetSystemType("i386"))
-      throw 0;
-  
+    auto i386_target = new unisim::util::os::linux_os::I386TS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> >( linux_impl );
+    linux_impl.SetTargetSystem(i386_target);
+    
     linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
     linux_impl.SetStackBase( 0x40000000UL );
     linux_impl.SetMemoryPageSize( 0x1000UL );

@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_ARM_HH__
 #define __UNISIM_UTIL_OS_LINUX_ARM_HH__
 
+#include <unisim/util/os/linux_os/errno.hh>
+
 #if defined(WIN32) || defined(WIN64)
 #include <process.h>
 #include <windows.h>
@@ -43,7 +45,9 @@
 #include <sys/time.h>
 #endif
 
-#include <unisim/util/os/linux_os/errno.hh>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <inttypes.h>
 
 namespace unisim {
@@ -51,12 +55,12 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugError;
+  using unisim::kernel::logger::DebugInfo;
+  using unisim::kernel::logger::DebugWarning;
+  using unisim::kernel::logger::DebugError;
+  using unisim::kernel::logger::EndDebugInfo;
+  using unisim::kernel::logger::EndDebugWarning;
+  using unisim::kernel::logger::EndDebugError;
 
   // Register names
   static char const* const kARM_r0  = "r0"; /* syscall arg#1 */
@@ -226,9 +230,9 @@ using unisim::kernel::logger::EndDebugError;
       return true;
     }
     
-    static void SetSystemCallStatus(LINUX& _lin, int ret, bool error) { SetRegister(_lin, kARM_r0, (parameter_type) ret); }
+    static void SetARMSystemCallStatus(LINUX& _lin, int ret, bool error) { SetRegister(_lin, kARM_r0, (parameter_type) ret); }
     
-    void SetSystemCallStatus(int ret, bool error) const { SetRegister(lin, kARM_r0, (parameter_type) ret); }
+    void SetSystemCallStatus(int ret, bool error) const { SetARMSystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam( LINUX& _lin, int id )
     {
@@ -939,7 +943,7 @@ using unisim::kernel::logger::EndDebugError;
               if(unlikely(lin.GetVerbose()))
                 lin.Logger() << DebugInfo << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << EndDebugInfo;
 	
-              SetSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetARMSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -984,7 +988,7 @@ using unisim::kernel::logger::EndDebugError;
                                << EndDebugInfo;
                 }
 	
-              SetSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetARMSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -1026,7 +1030,7 @@ using unisim::kernel::logger::EndDebugError;
                                << ")" << EndDebugInfo;
                 }
 	
-              SetSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetARMSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -1054,7 +1058,7 @@ using unisim::kernel::logger::EndDebugError;
               strncpy(value.machine,  utsname.machine.c_str(), sizeof(value.machine));
               this->WriteMem(lin, buf_addr, (uint8_t *)&value, sizeof(value));
 	
-              SetSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetARMSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -1091,7 +1095,7 @@ using unisim::kernel::logger::EndDebugError;
                   target_errno = LINUX_ENOMEM;
                 }
               
-              SetSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetARMSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -1135,7 +1139,7 @@ using unisim::kernel::logger::EndDebugError;
                                << EndDebugInfo;
                 }
 	
-              SetSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
+              SetARMSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
             }
           } sc;
           return &sc;
@@ -1145,7 +1149,7 @@ using unisim::kernel::logger::EndDebugError;
       case 983041: {
         static struct : public SysCall {
           char const* GetName() const { return "breakpoint"; }
-          void Execute( LINUX& lin, int syscall_id ) const { SetSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
+          void Execute( LINUX& lin, int syscall_id ) const { SetARMSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
         } sc;
         return &sc;
       } break;
@@ -1153,7 +1157,7 @@ using unisim::kernel::logger::EndDebugError;
       case 983042: {
         static struct : public SysCall {
           char const* GetName() const { return "cacheflush"; }
-          void Execute( LINUX& lin, int syscall_id ) const { SetSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
+          void Execute( LINUX& lin, int syscall_id ) const { SetARMSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
         } sc;
         return &sc;
       } break;
@@ -1161,7 +1165,7 @@ using unisim::kernel::logger::EndDebugError;
       case 983043: {
         static struct : public SysCall {
           char const* GetName() const { return "usr26"; }
-          void Execute( LINUX& lin, int syscall_id ) const { SetSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
+          void Execute( LINUX& lin, int syscall_id ) const { SetARMSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
         } sc;
         return &sc;
       } break;
@@ -1169,7 +1173,7 @@ using unisim::kernel::logger::EndDebugError;
       case 983044: {
         static struct : public SysCall {
           char const* GetName() const { return "usr32"; }
-          void Execute( LINUX& lin, int syscall_id ) const { SetSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
+          void Execute( LINUX& lin, int syscall_id ) const { SetARMSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
         } sc;
         return &sc;
       } break;
@@ -1181,7 +1185,7 @@ using unisim::kernel::logger::EndDebugError;
           {
             uint32_t r0 = Host2Target(lin.GetEndianness(), GetSystemCallParam(lin, 0));
             this->WriteMem(lin, 0xffff0ff0UL, (uint8_t *)&(r0), sizeof(r0));
-            SetSystemCallStatus(lin, (parameter_type)0, false);
+            SetARMSystemCallStatus(lin, (parameter_type)0, false);
           }
         } sc;
         return &sc;
