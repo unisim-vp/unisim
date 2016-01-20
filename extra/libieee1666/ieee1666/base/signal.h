@@ -122,6 +122,8 @@ private:
 	// Disabled
 	sc_signal( const sc_signal<bool,WRITER_POLICY>& );
 	
+	virtual void is_reset(const sc_process_reset& process_reset);
+	
 	sc_port_base *registered_inout_port;
 	sc_object *writer;
 	sc_event signal_value_changed_event;
@@ -130,6 +132,8 @@ private:
 	sc_dt::uint64 signal_value_changed_delta_cycle;
 	sc_dt::uint64 negedge_delta_cycle;
 	bool value[2];
+	std::vector<sc_process_reset> process_resets;
+	
 	
 	friend std::ostream& operator << <bool, WRITER_POLICY>( std::ostream&, const sc_signal<bool,WRITER_POLICY>& );
 
@@ -417,6 +421,7 @@ sc_signal<bool, WRITER_POLICY>::sc_signal()
 	, signal_negedge_event(IEEE1666_KERNEL_PREFIX "_signal_negedge_event")
 	, signal_value_changed_delta_cycle(0x7fffffffffffffffULL)
 	, value()
+	, process_resets()
 {
 }
 
@@ -430,6 +435,7 @@ sc_signal<bool, WRITER_POLICY>::sc_signal(const char *_name)
 	, signal_negedge_event(IEEE1666_KERNEL_PREFIX "_signal_negedge_event")
 	, signal_value_changed_delta_cycle(0x7fffffffffffffffULL)
 	, value()
+	, process_resets()
 {
 }
 
@@ -590,6 +596,18 @@ void sc_signal<bool, WRITER_POLICY>::update()
 		{
 			signal_negedge_event.notify(SC_ZERO_TIME);
 		}
+		
+		unsigned int num_process_resets = process_resets.size();
+		if(num_process_resets)
+		{
+			unsigned int i;
+			for(i = 0; i < num_process_resets; i++)
+			{
+				const sc_process_reset& process_reset = process_resets[i];
+				
+				process_reset.reset_signal_value_changed(current_value());
+			}
+		}
 	}
 }
 
@@ -597,6 +615,12 @@ void sc_signal<bool, WRITER_POLICY>::update()
 template <sc_writer_policy WRITER_POLICY>
 sc_signal<bool, WRITER_POLICY>::sc_signal( const sc_signal<bool,WRITER_POLICY>& )
 {
+}
+
+template <sc_writer_policy WRITER_POLICY>
+void sc_signal<bool, WRITER_POLICY>::is_reset(const sc_process_reset& process_reset)
+{
+	process_resets.push_back(process_reset);
 }
 
 template <sc_writer_policy WRITER_POLICY>

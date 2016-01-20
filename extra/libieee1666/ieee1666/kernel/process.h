@@ -37,6 +37,11 @@
 
 #include <ieee1666/kernel/fwd.h>
 #include <ieee1666/kernel/object.h>
+#include <ieee1666/kernel/reset.h>
+#include <ieee1666/base/in.h>
+#include <ieee1666/base/out.h>
+#include <ieee1666/base/inout.h>
+#include <ieee1666/base/signal_if.h>
 #include <list>
 
 namespace sc_core {
@@ -89,8 +94,17 @@ public:
 	virtual void disable() = 0;
 	virtual void enable() = 0;
 	virtual void kill() = 0;
-	virtual void reset() = 0;
+	virtual void reset(bool async) = 0;
 	virtual void throw_it(const sc_user_exception& user_exception) = 0;
+
+	void reset_signal_is(const sc_in<bool>&, bool);
+	void reset_signal_is(const sc_inout<bool>&, bool);
+	void reset_signal_is(const sc_out<bool>&, bool);
+	void reset_signal_is(const sc_signal_in_if<bool>&, bool);
+	void async_reset_signal_is(const sc_in<bool>&, bool);
+	void async_reset_signal_is(const sc_inout<bool>&, bool);
+	void async_reset_signal_is(const sc_out<bool>&, bool);
+	void async_reset_signal_is(const sc_signal_in_if<bool>&, bool);
 	
 	void acquire();
 	void release();
@@ -100,6 +114,10 @@ public:
 	void make_statically_sensitive(const sc_port_base& port);
 	void make_statically_sensitive(const sc_export_base& exp);
 	void make_statically_sensitive(const sc_event_finder& event_finder);
+	
+	void finalize_elaboration();
+	
+	void reset_signal_value_changed(bool reset_signal_value, bool async, bool active_level);
 	
 private:
 	friend class sc_kernel;
@@ -111,6 +129,7 @@ private:
 	bool flag_dont_initialize;
 	bool automatic_process_owner;
 	bool trigger_requested;
+	std::vector<sc_process_reset_bind_info> process_reset_bind_infos;
 
 	unsigned int ref_count;
 

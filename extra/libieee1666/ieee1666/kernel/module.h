@@ -44,10 +44,21 @@
 
 namespace sc_core {
 
-// class sc_bind_proxy
-// {
-// };
-//const sc_bind_proxy SC_BIND_PROXY_NIL;
+class sc_bind_proxy
+{
+public:
+	sc_bind_proxy();
+	sc_bind_proxy(sc_interface&);
+	sc_bind_proxy(sc_port_base&);
+	
+	bool nil() const;
+	void bind(sc_port_base&) const;
+private:
+	sc_interface *bound_interface;
+	sc_port_base *outer_port;
+};
+
+extern const sc_bind_proxy SC_BIND_PROXY_NIL;
 
 class sc_module
 	: public sc_object
@@ -56,23 +67,81 @@ class sc_module
 public:
 	virtual ~sc_module();
 	virtual const char* kind() const;
-// 	void operator() ( const sc_bind_proxy& p001,
-// 	const sc_bind_proxy& p002 = SC_BIND_PROXY_NIL,
-// 	const sc_bind_proxy& p003 = SC_BIND_PROXY_NIL,
-// 	...
-// 	const sc_bind_proxy& p063 = SC_BIND_PROXY_NIL,
-// 	const sc_bind_proxy& p064 = SC_BIND_PROXY_NIL );
+	void operator() (const sc_bind_proxy& p001,
+	                 const sc_bind_proxy& p002 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p003 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p004 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p005 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p006 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p007 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p008 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p009 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p010 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p011 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p012 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p013 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p014 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p015 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p016 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p017 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p018 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p019 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p020 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p021 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p022 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p023 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p024 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p025 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p026 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p027 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p028 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p029 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p030 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p031 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p032 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p033 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p034 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p035 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p036 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p037 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p038 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p039 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p040 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p041 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p042 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p043 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p044 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p045 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p046 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p047 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p048 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p049 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p050 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p051 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p052 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p053 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p054 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p055 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p056 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p057 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p058 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p059 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p060 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p061 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p062 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p063 = SC_BIND_PROXY_NIL,
+	                 const sc_bind_proxy& p064 = SC_BIND_PROXY_NIL);
 protected:
 	sc_module( const sc_module_name& );
 	sc_module();
-	void reset_signal_is( const sc_in<bool>& , bool );
-	void reset_signal_is( const sc_inout<bool>& , bool );
-	void reset_signal_is( const sc_out<bool>& , bool );
-	void reset_signal_is( const sc_signal_in_if<bool>& , bool );
-	void async_reset_signal_is( const sc_in<bool>& , bool );
-	void async_reset_signal_is( const sc_inout<bool>& , bool );
-	void async_reset_signal_is( const sc_out<bool>& , bool );
-	void async_reset_signal_is( const sc_signal_in_if<bool>& , bool );
+	void reset_signal_is(const sc_in<bool>&, bool);
+	void reset_signal_is(const sc_inout<bool>&, bool);
+	void reset_signal_is(const sc_out<bool>&, bool);
+	void reset_signal_is(const sc_signal_in_if<bool>&, bool);
+	void async_reset_signal_is(const sc_in<bool>&, bool);
+	void async_reset_signal_is(const sc_inout<bool>&, bool);
+	void async_reset_signal_is(const sc_out<bool>&, bool);
+	void async_reset_signal_is(const sc_signal_in_if<bool>&, bool);
 	sc_sensitive sensitive;
 	void dont_initialize();
 	void set_stack_size( size_t );
@@ -118,9 +187,12 @@ protected:
 	sc_spawn_options spawn_options;
 	
 	void end_module();
+	void add_port(sc_port_base *port);
 	
 private:
 	void init();
+	
+	std::vector<sc_port_base *> ports;
 };
 
 #define SC_MODULE(name) struct name : public ::sc_core::sc_module

@@ -397,7 +397,7 @@ void sc_method_process::kill()
 	kernel->terminate_method_process(this);
 }
 
-void sc_method_process::reset()
+void sc_method_process::reset(bool async)
 {
 	next_trigger_type = NEXT_TRIGGER_DEFAULT; // restore static sensitivity
 

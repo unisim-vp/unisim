@@ -141,6 +141,7 @@ class sc_event_or_expr;
 class sc_event_finder;
 class sc_interface;
 class sc_kernel;
+class sc_bind_proxy;
 class sc_module;
 class sc_module_name;
 class sc_object;

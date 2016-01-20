@@ -33,6 +33,7 @@ ieee1666/kernel/kernel_event.h \
 ieee1666/kernel/allocator.h \
 ieee1666/kernel/spawn.h \
 ieee1666/kernel/features.h \
+ieee1666/kernel/reset.h \
 ieee1666/base/fifo_in.h \
 ieee1666/base/clock.h \
 ieee1666/base/fifo_if.h \
@@ -102,6 +103,7 @@ ieee1666/kernel/thread_process.cc \
 ieee1666/kernel/cthread_process.cc \
 ieee1666/kernel/method_process.cc \
 ieee1666/kernel/spawn.cc \
+ieee1666/kernel/reset.cc \
 ieee1666/base/buffer.cc \
 ieee1666/base/clock.cc \
 ieee1666/base/event_queue.cc \

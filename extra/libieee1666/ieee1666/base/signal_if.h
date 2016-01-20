@@ -37,6 +37,7 @@
 
 #include <ieee1666/kernel/interface.h>
 #include <ieee1666/kernel/event.h>
+#include <ieee1666/kernel/reset.h>
 #include <ieee1666/base/fwd.h>
 
 namespace sc_core {
@@ -73,6 +74,9 @@ private:
 	// Disabled
 	sc_signal_in_if( const sc_signal_in_if<bool>& );
 	sc_signal_in_if<bool>& operator= ( const sc_signal_in_if<bool>& );
+	
+	friend class sc_process;
+	virtual void is_reset(const sc_process_reset& process_reset) {}
 };
 
 // template <>

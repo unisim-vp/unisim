@@ -65,10 +65,12 @@ public:
 	
 	static sc_kernel *get_kernel();
 	
-	void begin_module(sc_object *object);
+	void begin_module(sc_module *module);
 	void end_module();
+	sc_module *get_current_module() const;
 	sc_object *get_current_object() const;
 	sc_object *get_current_writer() const;
+	sc_process *get_current_process() const;
 	sc_method_process *get_current_method_process() const;
 	sc_thread_process *get_current_thread_process() const;
 
@@ -181,7 +183,7 @@ private:
 	
 	// elaboration
 	std::stack<sc_module_name *> module_name_stack;
-	std::stack<sc_object *> object_stack;
+	std::stack<sc_module *> module_stack;
 
 	// unique name map: name_#
 	mutable std::map<std::string, unsigned int> unique_name_map;

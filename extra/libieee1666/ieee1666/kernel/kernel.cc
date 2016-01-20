@@ -58,7 +58,7 @@ static const char *time_unit_strings[SC_SEC + 1] = { "fs", "ps", "ns", "us", "ms
 
 sc_kernel::sc_kernel()
 	: module_name_stack()
-	, object_stack()
+	, module_stack()
 	, unique_name_map()
 	, top_level_objects()
 	, top_level_events()
@@ -181,14 +181,19 @@ sc_module_name *sc_kernel::get_top_of_module_name_stack() const
 	return module_name;
 }
 
-void sc_kernel::begin_module(sc_object *object)
+void sc_kernel::begin_module(sc_module *module)
 {
-	object_stack.push(object);
+	module_stack.push(module);
 }
 
 void sc_kernel::end_module()
 {
-	object_stack.pop();
+	module_stack.pop();
+}
+
+sc_module *sc_kernel::get_current_module() const
+{
+	return module_stack.empty() ? 0 : module_stack.top();
 }
 
 sc_object *sc_kernel::get_current_object() const
@@ -199,13 +204,18 @@ sc_object *sc_kernel::get_current_object() const
 	}
 	else
 	{
-		return object_stack.empty() ? 0 : object_stack.top();
+		return module_stack.empty() ? 0 : module_stack.top();
 	}
 }
 
 sc_object *sc_kernel::get_current_writer() const
 {
 	return current_writer;
+}
+
+sc_process *sc_kernel::get_current_process() const
+{
+	return current_method_process ? (sc_process *) current_method_process : (sc_process *) current_thread_process;
 }
 
 sc_method_process *sc_kernel::get_current_method_process() const
@@ -361,6 +371,20 @@ void sc_kernel::initialize()
 		module->end_of_elaboration();
 	}
 
+	unsigned int num_thread_processes = thread_process_table.size();
+	for(i = 0; i < num_thread_processes; i++)
+	{
+		sc_thread_process *thread_process = thread_process_table[i];
+		thread_process->finalize_elaboration();
+	}
+
+	unsigned int num_method_processes = method_process_table.size();
+	for(i = 0; i < num_method_processes; i++)
+	{
+		sc_method_process *method_process = method_process_table[i];
+		method_process->finalize_elaboration();
+	}
+
 	// time resolution can no longer change
 	time_resolution_fixed = true;
 
@@ -368,8 +392,7 @@ void sc_kernel::initialize()
 	report_start_of_simulation();
 
 	// start thread processes in suspend state
-	unsigned int num_thread_processes = thread_process_table.size();
-	
+	num_thread_processes = thread_process_table.size();
 	for(i = 0; i < num_thread_processes; i++)
 	{
 		sc_thread_process *thread_process = thread_process_table[i];
@@ -378,7 +401,7 @@ void sc_kernel::initialize()
 	}
 	
 	// initial wake-up of all SC_METHOD processes
-	unsigned int num_method_processes = method_process_table.size();
+	num_method_processes = method_process_table.size();
 	for(i = 0; i < num_method_processes; i++)
 	{
 		sc_method_process *method_process = method_process_table[i];
@@ -667,6 +690,11 @@ void sc_kernel::register_port(sc_port_base *port)
 {
 	if(status > SC_END_OF_ELABORATION) throw std::runtime_error("sc_port instantiation is not allowed after the end of elaboration");
 	port_table.push_back(port);
+	sc_module *cur_module = get_current_module();
+	if(cur_module)
+	{
+		cur_module->add_port(port);
+	}
 }
 
 void sc_kernel::register_export(sc_export_base *exp)

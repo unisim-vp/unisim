@@ -266,7 +266,7 @@ void sc_process::reset(sc_descendant_inclusion_info include_descendants)
 		}
 	}
 	
-	reset();
+	reset(true);
 }
 
 void sc_process::throw_it(const sc_user_exception& user_defined_exception, sc_descendant_inclusion_info include_descendants)
@@ -292,6 +292,46 @@ void sc_process::throw_it(const sc_user_exception& user_defined_exception, sc_de
 	}
 	
 	throw_it(user_defined_exception);
+}
+
+void sc_process::reset_signal_is(const sc_in<bool>& in, bool active_level)
+{
+	process_reset_bind_infos.push_back(sc_process_reset_bind_info(this, false, in, active_level));
+}
+
+void sc_process::reset_signal_is(const sc_inout<bool>& inout, bool active_level)
+{
+	process_reset_bind_infos.push_back(sc_process_reset_bind_info(this, false, inout, active_level));
+}
+
+void sc_process::reset_signal_is(const sc_out<bool>& out, bool active_level)
+{
+	process_reset_bind_infos.push_back(sc_process_reset_bind_info(this, false, out, active_level));
+}
+
+void sc_process::reset_signal_is(const sc_signal_in_if<bool>& signal_in_if, bool active_level)
+{
+	process_reset_bind_infos.push_back(sc_process_reset_bind_info(this, false, signal_in_if, active_level));
+}
+
+void sc_process::async_reset_signal_is(const sc_in<bool>& in, bool active_level)
+{
+	process_reset_bind_infos.push_back(sc_process_reset_bind_info(this, true, in, active_level));
+}
+
+void sc_process::async_reset_signal_is(const sc_inout<bool>& inout, bool active_level)
+{
+	process_reset_bind_infos.push_back(sc_process_reset_bind_info(this, true, inout, active_level));
+}
+
+void sc_process::async_reset_signal_is(const sc_out<bool>& out, bool active_level)
+{
+	process_reset_bind_infos.push_back(sc_process_reset_bind_info(this, true, out, active_level));
+}
+
+void sc_process::async_reset_signal_is(const sc_signal_in_if<bool>& signal_in_if, bool active_level)
+{
+	process_reset_bind_infos.push_back(sc_process_reset_bind_info(this, true, signal_in_if, active_level));
 }
 
 void sc_process::make_statically_sensitive(const sc_event& event)
@@ -368,6 +408,43 @@ void sc_process::make_statically_sensitive(const sc_spawn_options *spawn_options
 	for(i = 0; i <num_sensitive_event_finders; i++)
 	{
 		make_statically_sensitive(*sensitive_event_finders[i]);
+	}
+}
+
+void sc_process::finalize_elaboration()
+{
+	unsigned int num_process_reset_bind_infos = process_reset_bind_infos.size();
+	unsigned int i;
+	
+	for(i = 0; i < num_process_reset_bind_infos; i++)
+	{
+		const sc_process_reset_bind_info& process_reset_bind_info = process_reset_bind_infos[i];
+		
+		sc_signal_in_if<bool> *signal_in_if = 0;
+		
+		if(process_reset_bind_info.in) signal_in_if = const_cast<sc_signal_in_if<bool> *>(dynamic_cast<const sc_signal_in_if<bool> *>(process_reset_bind_info.in->get_interface()));
+		else if(process_reset_bind_info.inout) signal_in_if = const_cast<sc_signal_in_if<bool> *>(dynamic_cast<const sc_signal_in_if<bool> *>(process_reset_bind_info.inout->get_interface()));
+		else if(process_reset_bind_info.out) signal_in_if = const_cast<sc_signal_in_if<bool> *>(dynamic_cast<const sc_signal_in_if<bool> *>(process_reset_bind_info.out->get_interface()));
+		else if(process_reset_bind_info.signal_in_if) signal_in_if = const_cast<sc_signal_in_if<bool> *>(dynamic_cast<const sc_signal_in_if<bool> *>(process_reset_bind_info.signal_in_if));
+		
+		if(signal_in_if)
+		{
+			signal_in_if->is_reset(sc_process_reset(this, process_reset_bind_info.async, process_reset_bind_info.active_level));
+		}
+	}
+}
+
+void sc_process::reset_signal_value_changed(bool reset_signal_value, bool async, bool active_level)
+{
+	if(reset_signal_value == active_level)
+	{
+		if(async)
+		{
+			reset(async);
+		}
+	}
+	else
+	{
 	}
 }
 

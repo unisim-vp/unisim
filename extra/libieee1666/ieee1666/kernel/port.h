@@ -100,6 +100,7 @@ protected:
 private:
 	friend class sc_kernel;
 	friend class sc_process;
+	friend class sc_bind_proxy;
 
 //	std::vector<sc_interface *> interfaces;                     // interfaces as of simulation time
 

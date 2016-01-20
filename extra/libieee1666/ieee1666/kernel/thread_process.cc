@@ -572,7 +572,7 @@ void sc_thread_process::kill()
 	}
 }
 
-void sc_thread_process::reset()
+void sc_thread_process::reset(bool async)
 {
 	wait_type = WAIT_DEFAULT; // restore static sensitivity
 	
