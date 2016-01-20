@@ -35,6 +35,14 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
 #define __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
 
+#include <unisim/util/os/linux_os/environment.hh>
+#include <unisim/util/os/linux_os/aux_table.hh>
+#include <unisim/util/os/linux_os/errno.hh>
+#include <unisim/util/likely/likely.hh>
+#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/loader/elf_loader/elf32_loader.hh>
+
 #if !defined(linux) && !defined(__linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(WIN64)
 #error "Unsupported host machine for Linux system call translation !"
 #endif
@@ -53,15 +61,6 @@
 #if defined(WIN32) || defined(WIN64)
 #include <stdlib.h>
 #endif
-
-#include "unisim/util/likely/likely.hh"
-#include "unisim/util/debug/blob/blob.hh"
-#include "unisim/util/endian/endian.hh"
-#include "unisim/util/loader/elf_loader/elf32_loader.hh"
-
-#include "unisim/util/os/linux_os/environment.hh"
-#include "unisim/util/os/linux_os/aux_table.hh"
-#include "unisim/util/os/linux_os/errno.hh"
 
 namespace unisim {
 namespace util {

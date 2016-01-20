@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_PPC_HH__
 #define __UNISIM_UTIL_OS_LINUX_PPC_HH__
 
+#include <unisim/util/likely/likely.hh>
+
 #include <unisim/util/os/linux_os/errno.hh>
 
 #if defined(WIN32) || defined(WIN64)

@@ -35,6 +35,10 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_CALLS_TCC__
 #define __UNISIM_UTIL_OS_LINUX_CALLS_TCC__
 
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/os/linux_os/files_flags.hh>
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -51,10 +55,6 @@
 #include <string.h>
 #include <fstream>
 #include <stdexcept>
-
-#include "unisim/util/endian/endian.hh"
-#include "unisim/util/os/linux_os/linux.hh"
-#include "unisim/util/os/linux_os/files_flags.hh"
 
 namespace unisim {
 namespace util {
