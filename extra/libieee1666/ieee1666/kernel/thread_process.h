@@ -99,7 +99,7 @@ public:
 	virtual void disable();
 	virtual void enable();
 	virtual void kill();
-	virtual void reset();
+	virtual void reset(bool async);
 	virtual void throw_it(const sc_user_exception& user_exception);
 	
 	virtual const char *kind() const;
