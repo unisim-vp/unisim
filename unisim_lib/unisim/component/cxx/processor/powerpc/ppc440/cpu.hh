@@ -928,6 +928,7 @@ public:
 	//=====================================================================
 
 	virtual unisim::util::debug::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::util::debug::RegisterScanner& scanner);
 	virtual string Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t& next_addr);
 	virtual const char *GetArchitectureName() const;
 	string GetObjectFriendlyName(typename CONFIG::address_t addr);

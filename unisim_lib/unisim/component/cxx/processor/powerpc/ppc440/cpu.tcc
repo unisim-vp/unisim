@@ -2220,6 +2220,12 @@ unisim::util::debug::Register *CPU<CONFIG>::GetRegister(const char *name)
 }
 
 template <class CONFIG>
+void ScanRegisters(unisim::util::debug::RegisterScanner& scanner)
+{
+     
+}
+
+template <class CONFIG>
 const char *CPU<CONFIG>::GetArchitectureName() const
 {
 	return "powerpc";
