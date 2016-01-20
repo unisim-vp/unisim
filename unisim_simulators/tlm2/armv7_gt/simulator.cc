@@ -75,6 +75,7 @@ Simulator::Simulator(int argc, char **argv)
   , timer_enable("ENABLE")
   , nirq_signal("nIRQm")
   , nfiq_signal("nFIQm")
+  , nrst_signal("nRESETm")
   , time("time")
   , host_time("host-time")
   // , linux_os(0)
@@ -111,12 +112,14 @@ Simulator::Simulator(int argc, char **argv)
 
   nfiq_signal = true; 
   nirq_signal = true; 
+  nrst_signal = true;
   timer_enable = true;
   timer_reset = false;
   
   cpu.master_socket( *router.targ_socket[0] );
   cpu.nIRQm( nirq_signal );
   cpu.nFIQm( nfiq_signal );
+  cpu.nRESETm( nrst_signal );
 
   // (*router.init_socket[0])( memory.slave_sock );
   (*router.init_socket[0])( memory.slave_sock );
