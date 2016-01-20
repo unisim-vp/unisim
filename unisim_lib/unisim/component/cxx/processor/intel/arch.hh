@@ -40,8 +40,6 @@
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
 #include <unisim/component/cxx/processor/intel/fwd.hh>
-#include <unisim/service/interfaces/memory_access_reporting.hh>
-#include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
