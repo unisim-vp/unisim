@@ -903,7 +903,7 @@ private:
 class ServiceInterface
 {
 public:
-	virtual ~ServiceInterface();
+	virtual ~ServiceInterface() {}
 };
 
 //=============================================================================
