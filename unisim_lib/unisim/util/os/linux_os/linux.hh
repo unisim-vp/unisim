@@ -65,14 +65,15 @@ struct Linux
 		virtual void Execute( Linux& lin, int syscall_id ) const = 0;
 		virtual char const* GetName() const = 0;
 		virtual void Release() {}
-		// SysCall Friend accessing methods
         protected:
+		// SysCall Friend accessing methods
 		static bool ReadMem(Linux& lin, ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
 		static bool WriteMem(Linux& lin, ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
 		static bool ReadMemString(Linux& lin, ADDRESS_TYPE addr, std::string& str);
-		static int32_t Host2LinuxErrno(Linux& lin, int host_errno); //< Errno conversion
+		static int32_t HostToLinuxErrno(int host_errno); //< Errno conversion
 		static int Target2HostFileDescriptor( Linux& lin, int32_t fd );
 		static void SetStatus(Linux& lin, int ret, bool error); // <writing system call status
+		static PARAMETER_TYPE GetParam(Linux& lin, int id); // <writing system call status
 	};
 	
 	struct LSCExit { LSCExit( int _status ) : status( _status ) {} int status; };
@@ -90,8 +91,6 @@ struct Linux
 	// Target System Specific interface
 	struct TargetSystem
 	{
-		std::string name;
-		Linux& lin;
 		TargetSystem( std::string _name, Linux& _lin ) : name( _name ), lin( _lin ) {}
 		virtual ~TargetSystem() {}
 		virtual bool SetupTarget() const = 0;
@@ -100,14 +99,16 @@ struct Linux
 		virtual SysCall* GetSystemCall(int& id) const = 0;
 		virtual PARAMETER_TYPE GetSystemCallParam(int id) const = 0;
 		virtual void SetSystemCallStatus(int ret, bool error) const = 0;
+	protected:
 		// TargetSystem Friend accessing methods
 		unisim::service::interfaces::Registers& RegsIF() const { return *lin.regs_if_; }
 		unisim::service::interfaces::Memory<ADDRESS_TYPE>& MemIF() const { return *lin.mem_if_; }
 		std::string GetHWCAP() const { return lin.hwcap_; }
-		SysCall* GetSyscallByName( std::string name ) const { return lin.GetSyscallByName( name ); }
-	protected:
+		SysCall* GetSysCall( std::string name ) const { return lin.GetSysCall( name ); }
 		static bool GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value );
 		static bool SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value );
+		std::string name;
+		Linux& lin;
 	};
 
 	Linux(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if, unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if);
@@ -248,8 +249,6 @@ private:
 	int num_segments_;
 	ADDRESS_TYPE stack_base_;
 	uint64_t memory_page_size_;
-	ADDRESS_TYPE mmap_base_;
-	ADDRESS_TYPE mmap_brk_point_;
 	ADDRESS_TYPE brk_point_;
 
 
@@ -273,13 +272,6 @@ private:
 	unisim::service::interfaces::Registers *regs_if_;
 	unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if_;
 	unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if_;
-
-	// errno conversion
-	std::map<int, int32_t> host2linux_errno;
-
-	// current syscall information
-	int current_syscall_id_;
-	std::string current_syscall_name_;
 
 	// activate the verbose
 	bool verbose_;
@@ -321,8 +313,7 @@ private:
 
 	// Gets the main executable blob, that is the blob that represents the
 	// executable file, not the maybe used dynamic libraries
-	unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const
-		GetMainBlob() const;
+	unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const GetMainBlob() const;
 
 	// From the given blob computes the initial addresses and values that will be
 	// used to initialize internal structures and the target processor
@@ -351,18 +342,9 @@ private:
 	void UnmapTargetToHostFileDescriptor(int32_t target_fd);
 	
 	// The generic linux system call factories
-        SysCall* GetSyscallByName( std::string _name );
-	SysCall* GetUnknownSystemCall();
+        SysCall* GetSysCall( std::string _name );
 	
-	// handling the mmap base address
-	ADDRESS_TYPE GetMmapBase() const;
-	void SetMmapBase(ADDRESS_TYPE base);
-	// handling the mmapbrkpoint address
-	ADDRESS_TYPE GetMmapBrkPoint() const;
-	void SetMmapBrkPoint(ADDRESS_TYPE brk_point);
-	// handling the brkpoint address
-	ADDRESS_TYPE GetBrkPoint() const;
-	void SetBrkPoint(ADDRESS_TYPE brk_point);
+	// handling the brkpoint address (heap end)
 };
 
 } // end of linux namespace

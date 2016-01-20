@@ -98,39 +98,427 @@ using unisim::util::endian::Host2Target;
 using unisim::util::endian::Target2Host;
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetMmapBase() const
+int32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::HostToLinuxErrno(int host_errno)
 {
-	return mmap_base_;
+  switch (host_errno)
+    {
+    default: return LINUX_EINVAL;
+#ifdef EPERM
+    case EPERM: return LINUX_EPERM;
+#endif
+#ifdef ENOENT
+    case ENOENT: return LINUX_ENOENT;
+#endif
+#ifdef ESRCH
+    case ESRCH: return LINUX_ESRCH;
+#endif
+#ifdef EINTR
+    case EINTR: return LINUX_EINTR;
+#endif
+#ifdef EIO
+    case EIO: return LINUX_EIO;
+#endif
+#ifdef ENXIO
+    case ENXIO: return LINUX_ENXIO;
+#endif
+#ifdef E2BIG
+    case E2BIG: return LINUX_E2BIG;
+#endif
+#ifdef ENOEXEC
+    case ENOEXEC: return LINUX_ENOEXEC;
+#endif
+#ifdef EBADF
+    case EBADF: return LINUX_EBADF;
+#endif
+#ifdef ECHILD
+    case ECHILD: return LINUX_ECHILD;
+#endif
+#ifdef EAGAIN
+    case EAGAIN: return LINUX_EAGAIN;
+#endif
+#ifdef ENOMEM
+    case ENOMEM: return LINUX_ENOMEM;
+#endif
+#ifdef EACCES
+    case EACCES: return LINUX_EACCES;
+#endif
+#ifdef EFAULT
+    case EFAULT: return LINUX_EFAULT;
+#endif
+#ifdef ENOTBLK
+    case ENOTBLK: return LINUX_ENOTBLK;
+#endif
+#ifdef EBUSY
+    case EBUSY: return LINUX_EBUSY;
+#endif
+#ifdef EEXIST
+    case EEXIST: return LINUX_EEXIST;
+#endif
+#ifdef EXDEV
+    case EXDEV: return LINUX_EXDEV;
+#endif
+#ifdef ENODEV
+    case ENODEV: return LINUX_ENODEV;
+#endif
+#ifdef ENOTDIR
+    case ENOTDIR: return LINUX_ENOTDIR;
+#endif
+#ifdef EISDIR
+    case EISDIR: return LINUX_EISDIR;
+#endif
+#ifdef EINVAL
+    case EINVAL: return LINUX_EINVAL;
+#endif
+#ifdef ENFILE
+    case ENFILE: return LINUX_ENFILE;
+#endif
+#ifdef EMFILE
+    case EMFILE: return LINUX_EMFILE;
+#endif
+#ifdef ENOTTY
+    case ENOTTY: return LINUX_ENOTTY;
+#endif
+#ifdef ETXTBSY
+    case ETXTBSY: return LINUX_ETXTBSY;
+#endif
+#ifdef EFBIG
+    case EFBIG: return LINUX_EFBIG;
+#endif
+#ifdef ENOSPC
+    case ENOSPC: return LINUX_ENOSPC;
+#endif
+#ifdef ESPIPE
+    case ESPIPE: return LINUX_ESPIPE;
+#endif
+#ifdef EROFS
+    case EROFS: return LINUX_EROFS;
+#endif
+#ifdef EMLINK
+    case EMLINK: return LINUX_EMLINK;
+#endif
+#ifdef EPIPE
+    case EPIPE: return LINUX_EPIPE;
+#endif
+#ifdef EDOM
+    case EDOM: return LINUX_EDOM;
+#endif
+#ifdef ERANGE
+    case ERANGE: return LINUX_ERANGE;
+#endif
+#ifdef EDEADLK
+    case EDEADLK: return LINUX_EDEADLK;
+#endif
+#ifdef ENAMETOOLONG
+    case ENAMETOOLONG: return LINUX_ENAMETOOLONG;
+#endif
+#ifdef ENOLCK
+    case ENOLCK: return LINUX_ENOLCK;
+#endif
+#ifdef ENOSYS
+    case ENOSYS: return LINUX_ENOSYS;
+#endif
+#ifdef ENOTEMPTY
+    case ENOTEMPTY: return LINUX_ENOTEMPTY;
+#endif
+#ifdef ELOOP
+    case ELOOP: return LINUX_ELOOP;
+#endif
+#if defined(EWOULDBLOCK)
+# if !defined(EAGAIN) || (EAGAIN != EWOULDBLOCK)
+    case EWOULDBLOCK: return LINUX_EWOULDBLOCK;
+# endif
+#endif
+#ifdef ENOMSG
+    case ENOMSG: return LINUX_ENOMSG;
+#endif
+#ifdef EIDRM
+    case EIDRM: return LINUX_EIDRM;
+#endif
+#ifdef ECHRNG
+    case ECHRNG: return LINUX_ECHRNG;
+#endif
+#ifdef EL2NSYNC
+    case EL2NSYNC: return LINUX_EL2NSYNC;
+#endif
+#ifdef EL3HLT
+    case EL3HLT: return LINUX_EL3HLT;
+#endif
+#ifdef EL3RST
+    case EL3RST: return LINUX_EL3RST;
+#endif
+#ifdef ELNRNG
+    case ELNRNG: return LINUX_ELNRNG;
+#endif
+#ifdef EUNATCH
+    case EUNATCH: return LINUX_EUNATCH;
+#endif
+#ifdef ENOCSI
+    case ENOCSI: return LINUX_ENOCSI;
+#endif
+#ifdef EL2HLT
+    case EL2HLT: return LINUX_EL2HLT;
+#endif
+#ifdef EBADE
+    case EBADE: return LINUX_EBADE;
+#endif
+#ifdef EBADR
+    case EBADR: return LINUX_EBADR;
+#endif
+#ifdef EXFULL
+    case EXFULL: return LINUX_EXFULL;
+#endif
+#ifdef ENOANO
+    case ENOANO: return LINUX_ENOANO;
+#endif
+#ifdef EBADRQC
+    case EBADRQC: return LINUX_EBADRQC;
+#endif
+#ifdef EBADSLT
+    case EBADSLT: return LINUX_EBADSLT;
+#endif
+#if defined(EDEADLOCK)
+# if !defined(EDEADLK) || (EDEADLK != EDEADLOCK)
+    case EDEADLOCK: return LINUX_EDEADLOCK;
+# endif
+#endif
+#ifdef EBFONT
+    case EBFONT: return LINUX_EBFONT;
+#endif
+#ifdef ENOSTR
+    case ENOSTR: return LINUX_ENOSTR;
+#endif
+#ifdef ENODATA
+    case ENODATA: return LINUX_ENODATA;
+#endif
+#ifdef ETIME
+    case ETIME: return LINUX_ETIME;
+#endif
+#ifdef ENOSR
+    case ENOSR: return LINUX_ENOSR;
+#endif
+#ifdef ENONET
+    case ENONET: return LINUX_ENONET;
+#endif
+#ifdef ENOPKG
+    case ENOPKG: return LINUX_ENOPKG;
+#endif
+#ifdef EREMOTE
+    case EREMOTE: return LINUX_EREMOTE;
+#endif
+#ifdef ENOLINK
+    case ENOLINK: return LINUX_ENOLINK;
+#endif
+#ifdef EADV
+    case EADV: return LINUX_EADV;
+#endif
+#ifdef ESRMNT
+    case ESRMNT: return LINUX_ESRMNT;
+#endif
+#ifdef ECOMM
+    case ECOMM: return LINUX_ECOMM;
+#endif
+#ifdef EPROTO
+    case EPROTO: return LINUX_EPROTO;
+#endif
+#ifdef EMULTIHOP
+    case EMULTIHOP: return LINUX_EMULTIHOP;
+#endif
+#ifdef EDOTDOT
+    case EDOTDOT: return LINUX_EDOTDOT;
+#endif
+#ifdef EBADMSG
+    case EBADMSG: return LINUX_EBADMSG;
+#endif
+#ifdef EOVERFLOW
+    case EOVERFLOW: return LINUX_EOVERFLOW;
+#endif
+#ifdef ENOTUNIQ
+    case ENOTUNIQ: return LINUX_ENOTUNIQ;
+#endif
+#ifdef EBADFD
+    case EBADFD: return LINUX_EBADFD;
+#endif
+#ifdef EREMCHG
+    case EREMCHG: return LINUX_EREMCHG;
+#endif
+#ifdef ELIBACC
+    case ELIBACC: return LINUX_ELIBACC;
+#endif
+#ifdef ELIBBAD
+    case ELIBBAD: return LINUX_ELIBBAD;
+#endif
+#ifdef ELIBSCN
+    case ELIBSCN: return LINUX_ELIBSCN;
+#endif
+#ifdef ELIBMAX
+    case ELIBMAX: return LINUX_ELIBMAX;
+#endif
+#ifdef ELIBEXEC
+    case ELIBEXEC: return LINUX_ELIBEXEC;
+#endif
+#ifdef EILSEQ
+    case EILSEQ: return LINUX_EILSEQ;
+#endif
+#ifdef ERESTART
+    case ERESTART: return LINUX_ERESTART;
+#endif
+#ifdef ESTRPIPE
+    case ESTRPIPE: return LINUX_ESTRPIPE;
+#endif
+#ifdef EUSERS
+    case EUSERS: return LINUX_EUSERS;
+#endif
+#ifdef ENOTSOCK
+    case ENOTSOCK: return LINUX_ENOTSOCK;
+#endif
+#ifdef EDESTADDRREQ
+    case EDESTADDRREQ: return LINUX_EDESTADDRREQ;
+#endif
+#ifdef EMSGSIZE
+    case EMSGSIZE: return LINUX_EMSGSIZE;
+#endif
+#ifdef EPROTOTYPE
+    case EPROTOTYPE: return LINUX_EPROTOTYPE;
+#endif
+#ifdef ENOPROTOOPT
+    case ENOPROTOOPT: return LINUX_ENOPROTOOPT;
+#endif
+#ifdef EPROTONOSUPPORT
+    case EPROTONOSUPPORT: return LINUX_EPROTONOSUPPORT;
+#endif
+#ifdef ESOCKTNOSUPPORT
+    case ESOCKTNOSUPPORT: return LINUX_ESOCKTNOSUPPORT;
+#endif
+#ifdef EOPNOTSUPP
+    case EOPNOTSUPP: return LINUX_EOPNOTSUPP;
+#endif
+#ifdef EPFNOSUPPORT
+    case EPFNOSUPPORT: return LINUX_EPFNOSUPPORT;
+#endif
+#ifdef EAFNOSUPPORT
+    case EAFNOSUPPORT: return LINUX_EAFNOSUPPORT;
+#endif
+#ifdef EADDRINUSE
+    case EADDRINUSE: return LINUX_EADDRINUSE;
+#endif
+#ifdef EADDRNOTAVAIL
+    case EADDRNOTAVAIL: return LINUX_EADDRNOTAVAIL;
+#endif
+#ifdef ENETDOWN
+    case ENETDOWN: return LINUX_ENETDOWN;
+#endif
+#ifdef ENETUNREACH
+    case ENETUNREACH: return LINUX_ENETUNREACH;
+#endif
+#ifdef ENETRESET
+    case ENETRESET: return LINUX_ENETRESET;
+#endif
+#ifdef ECONNABORTED
+    case ECONNABORTED: return LINUX_ECONNABORTED;
+#endif
+#ifdef ECONNRESET
+    case ECONNRESET: return LINUX_ECONNRESET;
+#endif
+#ifdef ENOBUFS
+    case ENOBUFS: return LINUX_ENOBUFS;
+#endif
+#ifdef EISCONN
+    case EISCONN: return LINUX_EISCONN;
+#endif
+#ifdef ENOTCONN
+    case ENOTCONN: return LINUX_ENOTCONN;
+#endif
+#ifdef ESHUTDOWN
+    case ESHUTDOWN: return LINUX_ESHUTDOWN;
+#endif
+#ifdef ETOOMANYREFS
+    case ETOOMANYREFS: return LINUX_ETOOMANYREFS;
+#endif
+#ifdef ETIMEDOUT
+    case ETIMEDOUT: return LINUX_ETIMEDOUT;
+#endif
+#ifdef ECONNREFUSED
+    case ECONNREFUSED: return LINUX_ECONNREFUSED;
+#endif
+#ifdef EHOSTDOWN
+    case EHOSTDOWN: return LINUX_EHOSTDOWN;
+#endif
+#ifdef EHOSTUNREACH
+    case EHOSTUNREACH: return LINUX_EHOSTUNREACH;
+#endif
+#ifdef EALREADY
+    case EALREADY: return LINUX_EALREADY;
+#endif
+#ifdef EINPROGRESS
+    case EINPROGRESS: return LINUX_EINPROGRESS;
+#endif
+#ifdef ESTALE
+    case ESTALE: return LINUX_ESTALE;
+#endif
+#ifdef EUCLEAN
+    case EUCLEAN: return LINUX_EUCLEAN;
+#endif
+#ifdef ENOTNAM
+    case ENOTNAM: return LINUX_ENOTNAM;
+#endif
+#ifdef ENAVAIL
+    case ENAVAIL: return LINUX_ENAVAIL;
+#endif
+#ifdef EISNAM
+    case EISNAM: return LINUX_EISNAM;
+#endif
+#ifdef EREMOTEIO
+    case EREMOTEIO: return LINUX_EREMOTEIO;
+#endif
+#ifdef EDQUOT
+    case EDQUOT: return LINUX_EDQUOT;
+#endif
+#ifdef ENOMEDIUM
+    case ENOMEDIUM: return LINUX_ENOMEDIUM;
+#endif
+#ifdef EMEDIUMTYPE
+    case EMEDIUMTYPE: return LINUX_EMEDIUMTYPE;
+#endif
+#ifdef ECANCELED
+    case ECANCELED: return LINUX_ECANCELED;
+#endif
+#ifdef ENOKEY
+    case ENOKEY: return LINUX_ENOKEY;
+#endif
+#ifdef EKEYEXPIRED
+    case EKEYEXPIRED: return LINUX_EKEYEXPIRED;
+#endif
+#ifdef EKEYREVOKED
+    case EKEYREVOKED: return LINUX_EKEYREVOKED;
+#endif
+#ifdef EKEYREJECTED
+    case EKEYREJECTED: return LINUX_EKEYREJECTED;
+#endif
+#ifdef EOWNERDEAD
+    case EOWNERDEAD: return LINUX_EOWNERDEAD;
+#endif
+#ifdef ENOTRECOVERABLE
+    case ENOTRECOVERABLE: return LINUX_ENOTRECOVERABLE;
+#endif
+#ifdef ERFKILL
+    case ERFKILL: return LINUX_ERFKILL;
+#endif
+#ifdef EHWPOISON
+    case EHWPOISON: return LINUX_EHWPOISON;
+#endif
+    }
+    return LINUX_EINVAL;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMmapBase(ADDRESS_TYPE base)
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::Target2HostFileDescriptor(Linux& lin, int32_t fd)
 {
-	mmap_base_ = base;
-}
+  // Return an error if file descriptor does not exist
+  typename std::map<int32_t, int>::iterator iter = lin.target_to_host_fildes.find(fd);
+  if(iter == lin.target_to_host_fildes.end()) return -1;
 
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetMmapBrkPoint() const
-{
-	return mmap_brk_point_;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMmapBrkPoint(ADDRESS_TYPE brk_point)
-{
-	mmap_brk_point_ = brk_point;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBrkPoint() const
-{
-	return brk_point_;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetBrkPoint(ADDRESS_TYPE brk_point)
-{
-	brk_point_ = brk_point;
+  // Translate the target file descriptor to an host file descriptor
+  return (*iter).second;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -140,6 +528,12 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::SetStatus(Linux& lin, int ret
     lin.logger_ << DebugInfo << (error ? "err" : "ret") << " = 0x" << std::hex << ret << std::dec << EndDebugInfo;
   
   lin.target_system->SetSystemCallStatus(ret, error);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::GetParam(Linux& lin, int id)
+{
+  return lin.target_system->GetSystemCallParam(id);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -235,7 +629,7 @@ namespace {
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 typename Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall*
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
 {
   {
     static struct : public SysCall {
@@ -244,7 +638,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       {
         int status;
 
-        status = lin.target_system->GetSystemCallParam(0);
+        status = SysCall::GetParam(lin, 0);
         if (unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "exit(status=" << status << EndDebugInfo;
         throw LSCExit( status );
@@ -266,12 +660,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         ssize_t ret;
         int32_t target_errno = 0;
 
-        target_fd = lin.target_system->GetSystemCallParam(0);
-        buf_addr = (ADDRESS_TYPE) lin.target_system->GetSystemCallParam(1);
-        count = (size_t) lin.target_system->GetSystemCallParam(2);
+        target_fd = SysCall::GetParam(lin, 0);
+        buf_addr = (ADDRESS_TYPE) SysCall::GetParam(lin, 1);
+        count = (size_t) SysCall::GetParam(lin, 2);
 
         host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-	
+  
         if(host_fd == -1)
           {
             target_errno = LINUX_EBADF;
@@ -284,8 +678,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             if(buf)
               {
                 ret = read(host_fd, buf, count);
-                if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
-                if(ret > 0) this->WriteMem(lin, buf_addr, (uint8_t *)buf, ret);
+                if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
+                if(ret > 0) SysCall::WriteMem(lin, buf_addr, (uint8_t *)buf, ret);
                 free(buf);
               }
             else
@@ -298,7 +692,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "read(fd=" << target_fd << ", buf=0x" << std::hex << buf_addr << std::dec
-                  << ", count=" << count << ")" << EndDebugInfo;
+                      << ", count=" << count << ")" << EndDebugInfo;
 
         SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
       }
@@ -319,12 +713,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         ssize_t ret;
         int32_t target_errno = 0;
 
-        target_fd = lin.target_system->GetSystemCallParam(0);
-        buf_addr = lin.target_system->GetSystemCallParam(1);
-        count = (size_t)lin.target_system->GetSystemCallParam(2);
-	
+        target_fd = SysCall::GetParam(lin, 0);
+        buf_addr = SysCall::GetParam(lin, 1);
+        count = (size_t)SysCall::GetParam(lin, 2);
+  
         host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-	
+  
         if(host_fd == -1)
           {
             target_errno = LINUX_EBADF;
@@ -336,15 +730,15 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 
             if(buf)
               {
-                this->ReadMem(lin, buf_addr, (uint8_t *)buf, count);
+                SysCall::ReadMem(lin, buf_addr, (uint8_t *)buf, count);
                 ret = write(host_fd, buf, count);
-                if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
+                if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
                 if(unlikely(lin.verbose_))
                   {
                     lin.logger_ << DebugInfo
-                            << "write(fd=" << target_fd << ", buf=0x" << std::hex << buf_addr << std::dec
-                            << ", count=" << count << ")" << std::endl
-                            << "buffer =";
+                                << "write(fd=" << target_fd << ", buf=0x" << std::hex << buf_addr << std::dec
+                                << ", count=" << count << ")" << std::endl
+                                << "buffer =";
                     for (size_t i = 0; i < count; i++)
                       {
                         lin.logger_ << " " << std::hex << (unsigned int)((uint8_t *)buf)[i] << std::dec;
@@ -376,12 +770,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         int32_t target_errno = 0;
         int32_t target_fd = -1;
 
-        ADDRESS_TYPE addr = lin.target_system->GetSystemCallParam(0);
+        ADDRESS_TYPE addr = SysCall::GetParam(lin, 0);
         std::string pathname;
-        if (this->ReadMemString(lin, addr, pathname))
+        if (SysCall::ReadMemString(lin, addr, pathname))
           {
-            int flags = lin.target_system->GetSystemCallParam(1);
-            mode_t mode = lin.target_system->GetSystemCallParam(2);
+            int flags = SysCall::GetParam(lin, 1);
+            mode_t mode = SysCall::GetParam(lin, 2);
             if (SubPathOf(pathname, "/dev") or SubPathOf(pathname, "/proc") or
                 SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
               {
@@ -412,9 +806,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 #endif
                 ret = open(pathname.c_str(), host_flags, host_mode);
 #endif
-                if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
+                if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
               }
-		
+    
             if(ret != -1)
               {
                 int host_fd = ret;
@@ -422,13 +816,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                 // keep relation between the target file descriptor and the host file descriptor
                 lin.MapTargetToHostFileDescriptor(target_fd, host_fd);
               }
-		
+    
             if(unlikely(lin.verbose_))
               {
                 lin.logger_ << DebugInfo
-                        << "open(pathname=\"" << pathname << "\", flags=0x" << std::hex << flags
-                        << ", mode=0x" << mode << std::dec << ")"
-                        << EndDebugInfo;
+                            << "open(pathname=\"" << pathname << "\", flags=0x" << std::hex << flags
+                            << ", mode=0x" << mode << std::dec << ")"
+                            << EndDebugInfo;
               }
 
           }
@@ -438,7 +832,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             target_errno = LINUX_ENOMEM;
             lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
           }
-	
+  
         SysCall::SetStatus(lin, (ret == -1) ? -target_errno : target_fd, (ret == -1));
       }
     } sc;
@@ -455,10 +849,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         int ret;
         int32_t target_errno = 0;
 
-        target_fd = lin.target_system->GetSystemCallParam(0);
-	
+        target_fd = SysCall::GetParam(lin, 0);
+  
         host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-	
+  
         if(host_fd == -1)
           {
             target_errno = LINUX_EBADF;
@@ -483,14 +877,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                     lin.FreeFileDescriptor(target_fd);
                   }
               }
-		
-            if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
+    
+            if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
           }
 
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo
-                  << "close(fd=" << target_fd << ")"
-                  << EndDebugInfo;
+                      << "close(fd=" << target_fd << ")"
+                      << EndDebugInfo;
         SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
@@ -509,12 +903,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         off_t ret;
         int32_t target_errno = 0;
 
-        target_fd = lin.target_system->GetSystemCallParam(0);
-        offset = lin.target_system->GetSystemCallParam(1);
-        whence = lin.target_system->GetSystemCallParam(2);
-	
+        target_fd = SysCall::GetParam(lin, 0);
+        offset = SysCall::GetParam(lin, 1);
+        whence = SysCall::GetParam(lin, 2);
+  
         host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-	
+  
         if(host_fd == -1)
           {
             target_errno = LINUX_EBADF;
@@ -523,15 +917,15 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         else
           {
             ret = lseek(host_fd, offset, whence);
-            if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
+            if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
           }
-	
+  
         if(unlikely(lin.verbose_))
           {
             lin.logger_ << DebugInfo
-                    << "lseek(fildes=" << target_fd << ", offset=" << offset
-                    << ", whence=" << whence << ")"
-                    << EndDebugInfo;
+                        << "lseek(fildes=" << target_fd << ", offset=" << offset
+                        << ", whence=" << whence << ")"
+                        << EndDebugInfo;
           }
 
         SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
@@ -601,11 +995,11 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         int ret;
         int32_t target_errno = 0;
 
-        ADDRESS_TYPE addr = lin.target_system->GetSystemCallParam(0);
+        ADDRESS_TYPE addr = SysCall::GetParam(lin, 0);
         std::string pathname;
-        if (this->ReadMemString(lin, addr, pathname))
+        if (SysCall::ReadMemString(lin, addr, pathname))
           {
-            mode_t mode = lin.target_system->GetSystemCallParam(1);
+            mode_t mode = SysCall::GetParam(lin, 1);
             if (SubPathOf(pathname, "/dev") or SubPathOf(pathname, "/proc") or
                 SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
               {
@@ -622,14 +1016,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 #else
                 ret = access(pathname.c_str(), mode);
 #endif
-                if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
+                if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
               }
             if(unlikely(lin.verbose_))
               {
                 lin.logger_ << DebugInfo
-                        << "access(pathname=\"" << pathname
-                        << "\", mode=0x" << std::hex << mode << std::dec << ")"
-                        << EndDebugInfo;
+                            << "access(pathname=\"" << pathname
+                            << "\", mode=0x" << std::hex << mode << std::dec << ")"
+                            << EndDebugInfo;
               }
           }
         else
@@ -651,17 +1045,17 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       {
         ADDRESS_TYPE new_brk_point;
 
-        new_brk_point = lin.target_system->GetSystemCallParam(0);
+        new_brk_point = SysCall::GetParam(lin, 0);
 
-        if(new_brk_point > lin.GetBrkPoint())
+        if(new_brk_point > lin.brk_point_)
           {
-            lin.SetBrkPoint(new_brk_point);
+            lin.brk_point_ = new_brk_point;
           }
 
         if(unlikely(lin.verbose_))
-            lin.logger_ << DebugInfo << "brk(new_brk_point=0x" << std::hex << new_brk_point << ")" << EndDebugInfo;
-	
-        SysCall::SetStatus(lin, lin.GetBrkPoint(), false);
+          lin.logger_ << DebugInfo << "brk(new_brk_point=0x" << std::hex << new_brk_point << ")" << EndDebugInfo;
+  
+        SysCall::SetStatus(lin, new_brk_point, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -702,7 +1096,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 #endif
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "geteuid()" << EndDebugInfo;
-	
+  
         SysCall::SetStatus(lin, ret, false);
       }
     } sc;
@@ -723,7 +1117,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
 #endif
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "getegid()" << EndDebugInfo;
-	
+  
         SysCall::SetStatus(lin, ret, false);
       }
     } sc;
@@ -736,35 +1130,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         // Note: currently disabled
-        SysCall::SetStatus(lin, -LINUX_ENOSYS, false); return;
-	
-        size_t u = (size_t)(lin.target_system->GetSystemCallParam(1));
-
-        if(lin.GetMmapBrkPoint() - u > lin.GetMmapBrkPoint())
-          {
-            SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL), true);
-            if(unlikely(lin.verbose_))
-              lin.logger_ << DebugInfo << "size = " << u << EndDebugInfo;
-            return;
-          }
-
-        if(lin.GetMmapBrkPoint() - u < lin.GetMmapBase())
-          u = (size_t)(lin.GetMmapBrkPoint() - lin.GetMmapBase());
-
-        if(lin.GetMmapBrkPoint() - u >= lin.GetMmapBrkPoint())
-          {
-            SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL), true);
-            if(unlikely(lin.verbose_))
-              lin.logger_ << DebugInfo << "size = " << u << EndDebugInfo;
-            return;
-          }
-
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
-	
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << "size = " << u << EndDebugInfo;
-	
-        lin.SetMmapBrkPoint(lin.GetMmapBrkPoint() - u);
+        SysCall::SetStatus(lin, -LINUX_ENOSYS,true); return;
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -799,13 +1165,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         int whence;
         int32_t target_errno = 0;
 
-        target_fd = lin.target_system->GetSystemCallParam(0);
-        offset_high = lin.target_system->GetSystemCallParam(1);
-        offset_low = lin.target_system->GetSystemCallParam(2);
+        target_fd = SysCall::GetParam(lin, 0);
+        offset_high = SysCall::GetParam(lin, 1);
+        offset_low = SysCall::GetParam(lin, 2);
         offset = ((uint64_t) offset_high << 32) | (uint64_t) offset_low;
-        result_addr = lin.target_system->GetSystemCallParam(3);
-        whence = lin.target_system->GetSystemCallParam(4);
-	
+        result_addr = SysCall::GetParam(lin, 3);
+        whence = SysCall::GetParam(lin, 4);
+  
         host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 
         if(host_fd == -1)
@@ -816,28 +1182,28 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         else
           {
             lseek_ret = lseek64(host_fd, offset, whence);
-			
+      
             if(lseek_ret == -1)
               {
-                target_errno = this->Host2LinuxErrno(lin, errno);
+                target_errno = SysCall::HostToLinuxErrno(errno);
               }
             else
               {
                 lseek_result64 = unisim::util::endian::Host2Target(lin.endianness_, (uint64_t) lseek_ret);
-                this->WriteMem(lin, result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
+                SysCall::WriteMem(lin, result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
               }
           }
 
         if(unlikely(lin.verbose_))
           {
             lin.logger_ << DebugInfo
-                    << "_llseek(fd=" << target_fd
-                    << ", offset_high=" << offset_high
-                    << ", offset_low=" << offset_low
-                    << ", result_addr=0x" << std::hex << result_addr << std::dec
-                    << ", whence=" << whence << ")" << EndDebugInfo;
+                        << "_llseek(fd=" << target_fd
+                        << ", offset_high=" << offset_high
+                        << ", offset_low=" << offset_low
+                        << ", result_addr=0x" << std::hex << result_addr << std::dec
+                        << ", whence=" << whence << ")" << EndDebugInfo;
           }
-	
+  
         SysCall::SetStatus(lin, (PARAMETER_TYPE) (lseek_ret == -1) ? -target_errno : lseek_ret, (lseek_ret == -1));
       }
     } sc;
@@ -849,23 +1215,23 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       char const* GetName() const { return "writev"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int32_t target_fd = lin.target_system->GetSystemCallParam(0);
-        uint32_t iovecaddr = lin.target_system->GetSystemCallParam(1);
-        int32_t count = lin.target_system->GetSystemCallParam(2);
+        int32_t target_fd = SysCall::GetParam(lin, 0);
+        uint32_t iovecaddr = SysCall::GetParam(lin, 1);
+        int32_t count = SysCall::GetParam(lin, 2);
         int32_t sum = 0;
     
         for (int step = count; (--step) >= 0; iovecaddr += 8) {
           uint32_t iov_base, iov_len;
-          this->ReadMem( lin, iovecaddr + 0, (uint8_t*)&iov_base, 4 );
-          this->ReadMem( lin, iovecaddr + 4, (uint8_t*)&iov_len, 4 );
+          SysCall::ReadMem( lin, iovecaddr + 0, (uint8_t*)&iov_base, 4 );
+          SysCall::ReadMem( lin, iovecaddr + 4, (uint8_t*)&iov_len, 4 );
           iov_base = unisim::util::endian::Target2Host( lin.endianness_, iov_base );
           iov_len  = unisim::util::endian::Target2Host( lin.endianness_, iov_len );
           assert( iov_len < 0x100000 );
           uint8_t buffer[iov_len];
-          this->ReadMem( lin, iov_base, &buffer[0], iov_len );
+          SysCall::ReadMem( lin, iov_base, &buffer[0], iov_len );
           int ret = ::write( target_fd, &buffer[0], iov_len );
           if (ret < 0) {
-            int32_t target_errno = this->Host2LinuxErrno(lin,  errno );
+            int32_t target_errno = SysCall::HostToLinuxErrno( errno );
             SysCall::SetStatus(lin,  -target_errno, true );
             return;
           }
@@ -885,45 +1251,6 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       {
         // Note: currently disabled
         SysCall::SetStatus(lin, -LINUX_ENOSYS,true); return;
-	
-        if(lin.target_system->GetSystemCallParam(3) == 0x32)
-          {
-            /* MAP_PRIVATE | MAP_ANONYMOUS */
-            SysCall::SetStatus(lin, lin.target_system->GetSystemCallParam(0),false);
-            if(unlikely(lin.verbose_))
-              {
-                lin.logger_  << DebugInfo << "map_type = 0x" << std::hex << lin.target_system->GetSystemCallParam(3)
-                         << std::dec << ", size = " << lin.target_system->GetSystemCallParam(1)
-                         << EndDebugInfo;
-              }
-            return;
-          }
-
-        if((lin.target_system->GetSystemCallParam(3)&0xFF) != 0x22)
-          {
-            /* MAP_PRIVATE | MAP_ANONYMOUS */
-            SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL),true);
-            if(unlikely(lin.verbose_))
-              {
-                lin.logger_ << DebugInfo
-                        << "map_type = 0x" << std::hex << lin.target_system->GetSystemCallParam(3) << std::dec
-                        << ", size = " << lin.target_system->GetSystemCallParam(1)
-                        << EndDebugInfo;
-              }
-            return;
-          }
-	
-        SysCall::SetStatus(lin, lin.GetMmapBrkPoint(),false);
-	
-        if(unlikely(lin.verbose_))
-          {
-            lin.logger_ << DebugInfo
-                    << "map_type = 0x" << std::hex << lin.target_system->GetSystemCallParam(3) << std::dec
-                    << ", size = " << lin.target_system->GetSystemCallParam(1)
-                    << EndDebugInfo;
-          }
-	
-        lin.SetMmapBrkPoint(lin.GetMmapBrkPoint() + lin.target_system->GetSystemCallParam(1));
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -936,45 +1263,6 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       {
         // Note: currently disabled
         SysCall::SetStatus(lin, -LINUX_ENOSYS,true); return;
-
-        if(lin.target_system->GetSystemCallParam(3) != 0x22)
-          {
-            /* MAP_PRIVATE | MAP_ANONYMOUS */
-            SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL),true);
-            if(unlikely(lin.verbose_))
-              lin.logger_ << DebugInfo
-                      << "map_type = 0x" << std::hex << lin.target_system->GetSystemCallParam(3) << std::dec
-                      << ", size = " << lin.target_system->GetSystemCallParam(1)
-                      << EndDebugInfo;
-            return;
-          }
-
-        if(lin.GetMmapBrkPoint() + lin.target_system->GetSystemCallParam(1) > lin.target_system->GetSystemCallParam(1))
-          {
-            SysCall::SetStatus(lin, lin.GetMmapBrkPoint(),false);
-		
-            if(unlikely(lin.verbose_))
-              {
-                lin.logger_ << DebugInfo
-                        << "map_type = 0x" << std::hex << lin.target_system->GetSystemCallParam(3) << std::dec
-                        << ", size = " << lin.target_system->GetSystemCallParam(1)
-                        << EndDebugInfo;
-              }
-		
-            lin.SetMmapBrkPoint(lin.GetMmapBrkPoint() + lin.target_system->GetSystemCallParam(1));
-          }
-        else
-          {
-            if(unlikely(lin.verbose_))
-              {
-                lin.logger_ << DebugInfo
-                        << "map_type = 0x" << std::hex << lin.target_system->GetSystemCallParam(3) << std::dec
-                        << ", size = " << lin.target_system->GetSystemCallParam(1)
-                        << EndDebugInfo;
-              }
-		
-            SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL),true);
-          }
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1059,8 +1347,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
       {
         // TODO implement LSC_flistxattr
         lin.logger_ << DebugWarning
-                << "TODO LSC_flistxattr"
-                << EndDebugWarning;
+                    << "TODO LSC_flistxattr"
+                    << EndDebugWarning;
         SysCall::SetStatus(lin, -LINUX_ENOSYS, true);
       }
     } sc;
@@ -1090,12 +1378,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         int64_t ret;
         int32_t target_errno = 0;
 
-        target_fd = lin.target_system->GetSystemCallParam(0);
-        cmd = lin.target_system->GetSystemCallParam(1);
-        arg = (size_t)lin.target_system->GetSystemCallParam(2);
-	
+        target_fd = SysCall::GetParam(lin, 0);
+        cmd = SysCall::GetParam(lin, 1);
+        arg = (size_t)SysCall::GetParam(lin, 2);
+  
         host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-	
+  
         if(host_fd == -1)
           {
             target_errno = LINUX_EBADF;
@@ -1108,13 +1396,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             SysCall::SetStatus(lin, (PARAMETER_TYPE) -LINUX_ENOSYS, true);
 #else
             ret = fcntl(host_fd, cmd, arg);
-            if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
+            if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
 #endif
           }
-	
+  
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "fd=" << target_fd << ",cmd=" << cmd << ",arg=" << arg << EndDebugInfo;
-	
+  
         SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
@@ -1132,11 +1420,11 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         int64_t ret;
         int32_t target_errno = 0;
 
-        target_fd = lin.target_system->GetSystemCallParam(0);
-        cmd = lin.target_system->GetSystemCallParam(1);
-	
+        target_fd = SysCall::GetParam(lin, 0);
+        cmd = SysCall::GetParam(lin, 1);
+  
         host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-	
+  
         if(host_fd == -1)
           {
             target_errno = LINUX_EBADF;
@@ -1157,7 +1445,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
               case F_GETFL:
               case F_SETFL:
                 ret = fcntl(host_fd, cmd);
-                if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
+                if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
                 break;
               case F_GETLK:
               case F_SETLK:
@@ -1167,10 +1455,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                 target_errno = LINUX_EINVAL;
                 break;
               }
-		
+    
 #endif
           }
-	
+  
         if(ret == -1)
           {
             SysCall::SetStatus(lin, (PARAMETER_TYPE) -target_errno, true);
@@ -1194,11 +1482,11 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         int32_t target_newfd = -1;
         int ret;
         int32_t target_errno = 0;
-	
-        target_oldfd = lin.target_system->GetSystemCallParam(0);
+  
+        target_oldfd = SysCall::GetParam(lin, 0);
 
         host_oldfd = SysCall::Target2HostFileDescriptor(lin, target_oldfd);
-	
+  
         if(host_oldfd == -1)
           {
             target_errno = LINUX_EBADF;
@@ -1209,7 +1497,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             ret = dup(host_oldfd);
             if(ret == -1)
               {
-                target_errno = this->Host2LinuxErrno(lin, errno);
+                target_errno = SysCall::HostToLinuxErrno(errno);
               }
             else
               {
@@ -1219,14 +1507,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
                 lin.MapTargetToHostFileDescriptor(target_newfd, host_newfd);
               }
           }
-	
+  
         if(unlikely(lin.verbose_))
           {
             lin.logger_ << DebugInfo
-                    << "oldfd = " << target_oldfd << ", new fd = " << ((PARAMETER_TYPE)target_newfd)
-                    << EndDebugInfo;
+                        << "oldfd = " << target_oldfd << ", new fd = " << ((PARAMETER_TYPE)target_newfd)
+                        << EndDebugInfo;
           }
-	
+  
         SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : target_newfd, (ret == -1));
       }
     } sc;
@@ -1307,18 +1595,18 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         int ret;
         int32_t target_errno = 0;
 
-        ADDRESS_TYPE pathnameaddr = lin.target_system->GetSystemCallParam(0);
+        ADDRESS_TYPE pathnameaddr = SysCall::GetParam(lin, 0);
         std::string pathname;
-        if (this->ReadMemString(lin, pathnameaddr, pathname))
+        if (SysCall::ReadMemString(lin, pathnameaddr, pathname))
           {
             ret = unlink(pathname.c_str());
-            if (ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
-		
+            if (ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
+    
             if(unlikely(lin.verbose_))
               {
                 lin.logger_ << DebugInfo
-                        << "unlink(pathname=\"" << pathname << "\")" << std::endl
-                        << EndDebugInfo;
+                            << "unlink(pathname=\"" << pathname << "\")" << std::endl
+                            << EndDebugInfo;
               }
           }
         else
@@ -1326,7 +1614,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             ret = -1;
             target_errno = LINUX_ENOMEM;
           }
-	
+  
         SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
@@ -1341,13 +1629,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         int ret;
         int32_t target_errno = 0;
 
-        ADDRESS_TYPE oldpathaddr = lin.target_system->GetSystemCallParam(0);
-        ADDRESS_TYPE newpathaddr = lin.target_system->GetSystemCallParam(1);
+        ADDRESS_TYPE oldpathaddr = SysCall::GetParam(lin, 0);
+        ADDRESS_TYPE newpathaddr = SysCall::GetParam(lin, 1);
         std::string oldpath, newpath;
-        if (this->ReadMemString(lin, oldpathaddr, oldpath) and this->ReadMemString(lin, newpathaddr, newpath))
+        if (SysCall::ReadMemString(lin, oldpathaddr, oldpath) and SysCall::ReadMemString(lin, newpathaddr, newpath))
           {
             ret = rename(oldpath.c_str(), newpath.c_str());
-			
+      
             if (unlikely(lin.verbose_))
               {
                 lin.logger_ << DebugInfo
@@ -1360,7 +1648,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
             ret = -1;
             target_errno = LINUX_ENOMEM;
           }
-	
+  
         SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
@@ -1444,11 +1732,11 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         int ret;
         int32_t target_errno = 0;
 
-        target_fd = lin.target_system->GetSystemCallParam(0);
-        length = lin.target_system->GetSystemCallParam(1);
-	
+        target_fd = SysCall::GetParam(lin, 0);
+        length = SysCall::GetParam(lin, 1);
+  
         host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-	
+  
         if(host_fd == -1)
           {
             target_errno = LINUX_EBADF;
@@ -1457,9 +1745,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         else
           {
             ret = ftruncate(host_fd, length);
-            if(ret == -1) target_errno = this->Host2LinuxErrno(lin, errno);
+            if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
           }
-	
+  
         SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
       }
     } sc;
@@ -1474,13 +1762,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallByName( std::string _name )
         mode_t mask;
         int ret;
 
-        mask = lin.target_system->GetSystemCallParam(0);
+        mask = SysCall::GetParam(lin, 0);
         ret = umask(mask);
         if(unlikely(lin.verbose_))
           {
             lin.logger_ << DebugInfo
-                    << "umask(mask=0" << std::oct << mask << std::dec << ")"
-                    << EndDebugInfo;
+                        << "umask(mask=0" << std::oct << mask << std::dec << ")"
+                        << EndDebugInfo;
           }
 
         SysCall::SetStatus(lin, ret, false);
