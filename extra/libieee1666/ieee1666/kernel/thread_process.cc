@@ -36,7 +36,6 @@
 #include <ieee1666/kernel/kernel.h>
 #include <ieee1666/kernel/spawn.h>
 #include <ieee1666/kernel/event.h>
-#include <ieee1666/util/backtrace.h>
 #include <stdexcept>
 
 namespace sc_core {
@@ -76,6 +75,7 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, flag_is_unwinding(false)
 	, flag_throw_it(false)
 	, thread_process_terminated(false)
+	, freed(false)
 	, thread_process_terminated_event(IEEE1666_KERNEL_PREFIX "_terminated_event")
 	, thread_process_reset_event(IEEE1666_KERNEL_PREFIX "_reset_event")
 	, wait_type(WAIT_DEFAULT)
@@ -96,10 +96,7 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 
 sc_thread_process::~sc_thread_process()
 {
-	if(started)
-	{
-		kill();
-	}
+	kill();
 
 	kernel->unregister_thread_process(this);
 
@@ -539,12 +536,13 @@ void sc_thread_process::enable()
 void sc_thread_process::kill()
 {
 	enabled = false;
-	flag_killed = true;
 	
 	if(started)
 	{
 		if(!thread_process_terminated)
 		{
+			flag_killed = true;
+			
 			if(kernel->get_current_thread_process() == this)
 			{
 				// suicide
@@ -553,23 +551,32 @@ void sc_thread_process::kill()
 			}
 			else
 			{
-				// kill requested by another process
+				// kill requested by another process or kernel
 				
 				switch_to(); // switch to thread being killed and let thread die (throw)
 			}
 		}
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-		pthread_join(thrd, NULL);		
-#else
-		if(coro)
-		{
-			delete coro;
-			coro = 0;
-		}
-#endif
-
 		started = false;
 	}
+	
+	if(!kernel->get_current_process())
+	{
+		// killed by kernel
+		if(!freed)
+		{
+#if SC_THREAD_PROCESSES_USE_PTHREADS
+			pthread_join(thrd, NULL);
+#else
+			if(coro)
+			{
+				delete coro;
+				coro = 0;
+			}
+#endif
+			freed = true;
+		}
+	}
+	
 }
 
 void sc_thread_process::reset(bool async)

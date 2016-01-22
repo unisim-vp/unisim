@@ -103,12 +103,27 @@ sc_kernel::sc_kernel()
 
 sc_kernel::~sc_kernel()
 {
+	if(process_handle_table.size())
+	{
+		do
+		{
+			std::set<sc_process_handle>::iterator it = process_handle_table.begin();
+			sc_process_handle process_handle = *it;
+			process_handle_table.erase(it);
+			
+			process_handle.kill();
+		}
+		while(process_handle_table.size());
+	}
+	
 	if(delta_events.size())
 	{
 		do
 		{
 			std::unordered_set<sc_kernel_event *>::iterator it = delta_events.begin();
-			sc_kernel_event *kernel_event = *it++;
+			sc_kernel_event *kernel_event = *it;
+			delta_events.erase(it);
+			
 			kernel_events_allocator.free(kernel_event);
 		}
 		while(delta_events.size());
@@ -134,21 +149,6 @@ sc_kernel::~sc_kernel()
 		sc_event *top_level_event = top_level_events[i];
 		unregister_event(top_level_event);
 		top_level_event->kernel = 0;
-	}
-	
-	unsigned int num_method_processes = method_process_table.size();
-	for(i = 0; i < num_method_processes; i++)
-	{
-		sc_method_process *method_process = method_process_table[i];
-		
-		delete method_process;
-	}
-
-	unsigned int num_thread_processes = thread_process_table.size();
-	for(i = 0; i < num_thread_processes; i++)
-	{
-		sc_thread_process *thread_process = thread_process_table[i];
-		delete thread_process;
 	}
 }
 

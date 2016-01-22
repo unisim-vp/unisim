@@ -39,7 +39,6 @@
 #include <ieee1666/kernel/interface.h>
 #include <ieee1666/kernel/port.h>
 #include <ieee1666/kernel/event_finder.h>
-
 namespace sc_core {
 
 sc_process_owner::sc_process_owner(bool _automatic)
@@ -113,7 +112,8 @@ void sc_process::acquire()
 
 void sc_process::release()
 {
-	if(--ref_count == 0)
+	ref_count--;
+	if(ref_count == 0)
 	{
 		delete this;
 	}
