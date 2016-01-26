@@ -402,10 +402,9 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 /** Performs a read access.
  * @param addr the address of the memory read access
  * @param size the size of the memory read access
- * @param _signed the nature of the memory read access (signed or unsigned)
  */
 uint32_t
-CPU::PerformReadAccess(	uint32_t addr, uint32_t size, bool _signed )
+CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 {
   uint32_t read_addr = addr & ~(uint32_t)(size - 1);
   uint8_t data[4];

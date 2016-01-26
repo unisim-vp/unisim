@@ -186,7 +186,7 @@ ldrsh_imm12.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t addr = cpu.GetGPR( rn ) + imm;
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( addr ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int16_t( cpu.MemRead16( addr ) ) ) ) );
 };
 
 op ldrsh_imm( 0b111110010011[12]: rn[4]:> <: rt[4]: 0b1[1]: p[1]: u[1]: w[1]: offset[8] );
@@ -202,7 +202,7 @@ ldrsh_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
   if (w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int16_t( cpu.MemRead16( p?oaddr:addr ) ) ) ) );
 };
 
 op ldrsh_lit( 0b11111001[8]: u[1]: 0b011[3]: 0b1111[4]:> <: rt[4]: offset[12] );
@@ -216,7 +216,7 @@ ldrsh_lit.disasm = {
 ldrsh_lit.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( (cpu.GetGPR( 15 ) & -4) - imm ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int16_t( cpu.MemRead16( (cpu.GetGPR( 15 ) & -4) - imm ) ) ) ) );
 };
 
 op ldrsh_reg( 0b111110010011[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
@@ -230,7 +230,7 @@ ldrsh_reg.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), 0, imm );
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( cpu.GetGPR( rn ) + isval ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int16_t( cpu.MemRead16( cpu.GetGPR( rn ) + isval ) ) ) ) );
 };
 
 /*
@@ -318,7 +318,7 @@ ldrsb_imm12.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t addr = cpu.GetGPR( rn ) + imm;
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( addr ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int8_t( cpu.MemRead8( addr ) ) ) ) );
 };
 
 op ldrsb_imm( 0b11111[5]: 0b00[2]: 0b1[1]: 0b0[1]: 0b00[2]: 0b1[1]: rn[4]:> <: rt[4]: 0b1[1]: p[1]: u[1]: w[1]: offset[8] );
@@ -334,7 +334,7 @@ ldrsb_imm.execute = {
   
   uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
   if (w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int8_t( cpu.MemRead8( p?oaddr:addr ) ) ) ) );
 };
 
 op ldrsb_lit( 0b11111[5]: 0b00[2]: 0b1[1]: u[1]: 0b00[2]: 0b1[1]: 0b1111[4]:> <: rt[4]: offset[12] );
@@ -348,7 +348,7 @@ ldrsb_lit.disasm = {
 ldrsb_lit.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( (cpu.GetGPR( 15 ) & -4) + imm ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int8_t( cpu.MemRead8( (cpu.GetGPR( 15 ) & -4) + imm ) ) ) ) );
 };
 
 op ldrsb_reg( 0b111110010001[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );
@@ -362,7 +362,7 @@ ldrsb_reg.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), 0, imm );
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( cpu.GetGPR( rn ) + isval ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int8_t( cpu.MemRead8( cpu.GetGPR( rn ) + isval ) ) ) ) );
 };
 
 /*
@@ -654,7 +654,7 @@ ldrsht.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t addr = cpu.GetGPR( rn ) + imm;
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( addr ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int16_t( cpu.MemRead16( addr ) ) ) ) );
 };
 
 /*
@@ -676,7 +676,7 @@ ldrbt.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t addr = cpu.GetGPR( rn ) + imm;
-  cpu.SetGPR_mem( rt, cpu.MemRead8( addr ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int8_t( cpu.MemRead8( addr ) ) ) ) );
 };
 
 /*
@@ -698,7 +698,7 @@ ldrsbt.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t addr = cpu.GetGPR( rn ) + imm;
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( addr ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int8_t( cpu.MemRead8( addr ) ) ) ) );
 };
 
 /*

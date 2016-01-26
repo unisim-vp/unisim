@@ -214,7 +214,7 @@ ldrsb.disasm = {
 ldrsb.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int8_t( cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) ) ) ) );
 };
 
 /*
@@ -234,7 +234,7 @@ ldrsh.disasm = {
 ldrsh.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) );
+  cpu.SetGPR_mem( rt, uint32_t( int32_t( int16_t( cpu.MemRead16( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) ) ) ) );
 };
 
 /*

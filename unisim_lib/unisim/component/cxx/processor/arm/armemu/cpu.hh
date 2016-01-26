@@ -176,18 +176,16 @@ struct CPU
   virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
   virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
   
-  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4, false ); }
-  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2, false ); }
-  uint32_t MemReadS16( uint32_t address ) { return PerformReadAccess( address, 2, true ); }
-  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1, false ); }
-  uint32_t MemReadS8( uint32_t address ) { return PerformReadAccess( address, 1, true ); }
+  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }
+  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2 ); }
+  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1 ); }
   void     MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
   void     MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
   void     MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
 
   void     PerformPrefetchAccess( uint32_t addr );
   void     PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
-  uint32_t PerformReadAccess( uint32_t addr, uint32_t size, bool _signed );
+  uint32_t PerformReadAccess( uint32_t addr, uint32_t size );
   
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
   {
