@@ -548,6 +548,33 @@ template <> Operation* decode<MOVDQU>( CodeBase const& cb )
 // 
 // movsd_wdq_vdq.disasm = { _sink << "movsd " << DisasmRdq( gn ) << ',' << DisasmWdq( rmop ); };
 // 
+struct Movsd : public Operation
+{
+  Movsd( OpBase const& opbase, MOp* _dst, MOp* _src ) : Operation( opbase ), dst( _dst ), src( _src ) {} RMOp dst; RMOp src;
+  void disasm( std::ostream& sink ) const { sink << "movsd " << DisasmWdq( src ) << ',' << DisasmWdq( dst ); }
+  void execute( Arch& arch ) const
+  {
+    arch.xmm_uwrite<64>( dst, 0,  arch.xmm_uread<64>( src, 0 ) );
+    if (not dst.is_memory_operand())
+      arch.xmm_uwrite<64>( dst, 1, 0 );
+  }
+};
+
+template <> Operation* decode<VMOVSD>( CodeBase const& cb )
+{
+  if (cb.f0()) return 0;
+  
+  if (auto _ = match( cb, RPF2() & opcode( "\x0f\x10" ) & RM() ))
+    
+    return new Movsd( _.opbase(), RM::MkReg( _.greg() ), _.rmop() );
+  
+  if (auto _ = match( cb, RPF2() & opcode( "\x0f\x11" ) & RM() ))
+    
+    return new Movsd( _.opbase(), _.rmop(), RM::MkReg( _.greg() ) );
+  
+  return 0;
+}
+
 // /* MOVSHDUP -- Move Packed Single-FP High and Duplicate */
 // op movshdup_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x16[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
