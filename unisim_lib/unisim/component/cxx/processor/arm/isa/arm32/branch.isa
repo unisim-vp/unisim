@@ -51,7 +51,8 @@ b.disasm = {
 b.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  cpu.Branch( cpu.GetGPR( 15 ) + imm );
+  typedef typename ARCH::U32 U32;
+  cpu.Branch( cpu.GetGPR( 15 ) + U32(imm) );
 };
 
 /*
@@ -71,8 +72,9 @@ bl.disasm = {
 bl.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
+  typedef typename ARCH::U32 U32;
   cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
-  cpu.Branch( cpu.GetGPR( 15 ) + imm );
+  cpu.Branch( cpu.GetGPR( 15 ) + U32(imm) );
 };
 
 /*
@@ -135,8 +137,9 @@ blx_pcrel.disasm = {
 };
 
 blx_pcrel.execute = {
+  typedef typename ARCH::U32 U32;
   cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
-  cpu.BranchExchange( (cpu.GetGPR( 15 ) + imm) | 1 );
+  cpu.BranchExchange( (cpu.GetGPR( 15 ) + U32(imm)) | U32(1) );
 };
 
 { ARCH::Config::insns5T }: \
@@ -149,7 +152,8 @@ blx_reg.disasm = {
 blx_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t rm_value = cpu.GetGPR(rm);
+  typedef typename ARCH::U32 U32;
+  U32 rm_value = cpu.GetGPR(rm);
   cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
   cpu.BranchExchange( rm_value );
 };

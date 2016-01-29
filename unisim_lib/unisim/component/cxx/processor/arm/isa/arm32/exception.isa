@@ -207,7 +207,8 @@ subspc_imm.disasm = {
 subspc_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2;
   
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
   
@@ -222,10 +223,11 @@ subspc_imm_shift.disasm = {
 
 subspc_imm_shift.execute = {
   if (not CheckCondition(cpu, cond)) return;
-
-  uint32_t rmval = cpu.GetGPR( rm ),
-           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 - op2;
+  
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ),
+      op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+      res = op1 - op2;
 
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
   

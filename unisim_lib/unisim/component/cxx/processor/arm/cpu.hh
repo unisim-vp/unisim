@@ -81,6 +81,7 @@ struct CPU
   typedef int16_t  S16;
   typedef int32_t  S32;
   typedef int64_t  S64;
+  typedef bool     BOOL;
   
   /*
    * ARM architecture constants
@@ -332,6 +333,7 @@ struct CPU
 
 public:
   void     UnpredictableInsnBehaviour();
+  void     Assert( bool condition ) { if (not condition) UnpredictableInsnBehaviour(); }
   void     CallSupervisor( uint16_t imm );
   
 protected:

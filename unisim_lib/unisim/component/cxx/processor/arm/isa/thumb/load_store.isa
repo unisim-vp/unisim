@@ -52,7 +52,8 @@ ldr_1.disasm = {
 ldr_1.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR(rn) + imm ) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR(rn) + U32(imm) ) );
 };
 
 /*
@@ -92,7 +93,8 @@ ldr_3.disasm = {
 ldr_3.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead32( (cpu.GetGPR( 15 ) & -4) + imm ) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR_mem( rt, cpu.MemRead32( (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm) ) );
 };
 
 /*
@@ -112,7 +114,8 @@ ldr_4.disasm = {
 ldr_4.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR( 13 ) + imm ) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR( 13 ) + U32(imm) ) );
 };
 
 /*
@@ -133,7 +136,8 @@ ldrb_1.disasm = {
 ldrb_1.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR(rn) + imm ) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR(rn) + U32(imm) ) );
 };
 
 /*
@@ -174,7 +178,8 @@ ldrh_1.disasm = {
 ldrh_1.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead16( cpu.GetGPR(rn) + imm ) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR_mem( rt, cpu.MemRead16( cpu.GetGPR(rn) + U32(imm) ) );
 };
 
 /*
@@ -214,7 +219,10 @@ ldrsb.disasm = {
 ldrsb.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, uint32_t( int32_t( int8_t( cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) ) ) ) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S8  S8;
+  cpu.SetGPR_mem( rt, U32( S32( S8( cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) ) ) ) );
 };
 
 /*
@@ -234,7 +242,10 @@ ldrsh.disasm = {
 ldrsh.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, uint32_t( int32_t( int16_t( cpu.MemRead16( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) ) ) ) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemRead16( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) ) ) ) );
 };
 
 /*
@@ -255,7 +266,8 @@ str_1.disasm = {
 str_1.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.MemWrite32(cpu.GetGPR(rn) + imm, cpu.GetGPR(rt));
+  typedef typename ARCH::U32 U32;
+  cpu.MemWrite32(cpu.GetGPR(rn) + U32(imm), cpu.GetGPR(rt));
 };
 
 /*
@@ -295,7 +307,8 @@ str_3.disasm = {
 str_3.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.MemWrite32(cpu.GetGPR(cpu.SP_reg) + imm, cpu.GetGPR(rt));
+  typedef typename ARCH::U32 U32;
+  cpu.MemWrite32(cpu.GetGPR(cpu.SP_reg) + U32(imm), cpu.GetGPR(rt));
 };
 
 /*
@@ -316,7 +329,9 @@ strb_1.disasm = {
 strb_1.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.MemWrite8(cpu.GetGPR(rn) + imm, cpu.GetGPR(rt));
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8  U8;
+  cpu.MemWrite8( cpu.GetGPR(rn) + U32(imm), U8(cpu.GetGPR(rt)) );
 };
 
 /*
@@ -336,7 +351,8 @@ strb_2.disasm = {
 strb_2.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.MemWrite8(cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rt));
+  typedef typename ARCH::U8  U8;
+  cpu.MemWrite8( cpu.GetGPR(rn) + cpu.GetGPR(rm), U8(cpu.GetGPR(rt)) );
 };
 
 /*
@@ -357,7 +373,9 @@ strh_1.disasm = {
 strh_1.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.MemWrite16(cpu.GetGPR(rn) + imm, cpu.GetGPR(rt));
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  cpu.MemWrite16( cpu.GetGPR(rn) + U32(imm), U16(cpu.GetGPR(rt)) );
 };
 
 /*
@@ -377,7 +395,8 @@ strh_2.disasm = {
 strh_2.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.MemWrite16(cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rt));
+  typedef typename ARCH::U16 U16;
+  cpu.MemWrite16( cpu.GetGPR(rn) + cpu.GetGPR(rm), U16(cpu.GetGPR(rt)) );
 };
 
 /*
@@ -406,13 +425,15 @@ ldmia.disasm = {
 ldmia.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( rn );
+  LSMIter itr(LSMIter::IA, reglist);
   while (itr.next()) {
-    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
+    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
   }
   
   bool overwritten = (reglist >> rn) & 1;
-  if (not overwritten) cpu.SetGPR( rn, itr.addr() );
+  if (not overwritten) cpu.SetGPR( rn, base + U32(itr.offset()) );
 };
 
 /*
@@ -433,13 +454,15 @@ pop.disasm = {
 pop.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( cpu.SP_reg ));
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( cpu.SP_reg );
+  LSMIter itr(LSMIter::IA, reglist);
   while (itr.next()) {
-    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
+    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
   }
   
   bool overwritten = (reglist >> cpu.SP_reg) & 1;
-  if (not overwritten) cpu.SetGPR( cpu.SP_reg, itr.addr() );
+  if (not overwritten) cpu.SetGPR( cpu.SP_reg, base + U32(itr.offset()) );
 };
 
 /*
@@ -460,12 +483,14 @@ push.disasm = {
 push.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  LSMIter itr(LSMIter::DB, reglist, cpu.GetGPR( cpu.SP_reg ));
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( cpu.SP_reg );
+  LSMIter itr(LSMIter::DB, reglist);
   while (itr.next()) {
-    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
+    cpu.MemWrite32( base + U32(itr.offset()), cpu.GetGPR( itr.reg() ) );
   }
   
-  cpu.SetGPR( cpu.SP_reg, itr.addr() );
+  cpu.SetGPR( cpu.SP_reg, base + U32(itr.offset()) );
 };
 
 /*
@@ -485,12 +510,14 @@ stmia.disasm = {
 stmia.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( rn );
+  LSMIter itr(LSMIter::IA, reglist);
   while (itr.next()) {
-    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
+    cpu.MemWrite32( base + U32(itr.offset()), cpu.GetGPR( itr.reg() ) );
   }
   
-  cpu.SetGPR( rn, itr.addr() );
+  cpu.SetGPR( rn, base + U32(itr.offset()) );
 };
 
 /*

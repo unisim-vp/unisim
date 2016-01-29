@@ -52,20 +52,15 @@ mla.disasm = {
 
 mla.execute = {
   if (not CheckCondition(cpu, cond)) return;
-
-  uint32_t res;
-  uint32_t rm_value = cpu.GetGPR(rm);
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rs_value = cpu.GetGPR(rs);
   
-  res = rm_value * rs_value;
-  res += rn_value;
-  cpu.SetGPR(rd, res);
+  typedef typename ARCH::U32 U32;
+  U32 res = cpu.GetGPR(rm) * cpu.GetGPR(rs) + cpu.GetGPR(rn);
+  cpu.SetGPR( rd, res );
   
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & 1 );
-      cpu.CPSR().Set( Z, res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
     }
 };
 
@@ -111,18 +106,15 @@ mul.disasm = {
 
 mul.execute = {
   if (not CheckCondition(cpu, cond)) return;
-
-  uint32_t res;
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rm_value = cpu.GetGPR(rm);
   
-  res = rn_value * rm_value;
+  typedef typename ARCH::U32 U32;
+  U32 res = cpu.GetGPR(rn) * cpu.GetGPR(rm);
   cpu.SetGPR(rd, res);
   
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & 1 );
-      cpu.CPSR().Set( Z, res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
     }
 };
 
@@ -149,24 +141,21 @@ smlal.disasm = {
 smlal.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint64_t res;
-  uint64_t res_lo, res_hi;
-  uint32_t rdhi_value = cpu.GetGPR(rdhi);
-  uint32_t rdlo_value = cpu.GetGPR(rdlo);
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rm_value = cpu.GetGPR(rm);
-
-  res = rdlo_value + (((uint64_t)rdhi_value) << 32);
-  res = (int64_t)res + ((int64_t)(int32_t)rn_value) * ((int64_t)(int32_t)rm_value);
-  res_lo = res & (uint64_t)(~(uint32_t)0);
-  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-  cpu.SetGPR(rdhi, (uint32_t)res_hi);
-  cpu.SetGPR(rdlo, (uint32_t)res_lo);
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  S64 op1 = S64( S32( cpu.GetGPR(rn) ) );
+  S64 op2 = S64( S32( cpu.GetGPR(rm) ) );
+  S64 res = ((S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) )) + (op1 * op2);
+  
+  cpu.SetGPR( rdlo, U32( res >> 0 ) );
+  cpu.SetGPR( rdhi, U32( res >> 32 ) );
 
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 63) & 1 );
-      cpu.CPSR().Set( Z, res == 0 );
+      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == S64(0)) );
     }
 };
 
@@ -232,21 +221,17 @@ smull.disasm = {
 smull.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint64_t res;
-  uint64_t res_lo, res_hi;
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rm_value = cpu.GetGPR(rm);
-
-  res = ((int64_t)(int32_t)rn_value) * ((int64_t)(int32_t)rm_value);
-  res_lo = res & (uint64_t)(~(uint32_t)0);
-  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-  cpu.SetGPR(rdhi, (uint32_t)res_hi);
-  cpu.SetGPR(rdlo, (uint32_t)res_lo);
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  S64 res = S64( S32( cpu.GetGPR( rn ) ) ) * S64( S32( cpu.GetGPR( rm ) ) );
+  cpu.SetGPR( rdlo, U32( res >> 0 ) );
+  cpu.SetGPR( rdhi, U32( res >> 32 ) );
   
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 63) & 1 );
-      cpu.CPSR().Set( Z, res == 0 );
+      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == S64(0)) );
     }
 };
 
@@ -272,24 +257,18 @@ umlal.disasm = {
 umlal.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint64_t res;
-  uint64_t res_lo, res_hi;
-  uint32_t rdhi_value = cpu.GetGPR(rdhi);
-  uint32_t rdlo_value = cpu.GetGPR(rdlo);
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rm_value = cpu.GetGPR(rm);
-
-  res = rdlo_value + (((uint64_t)rdhi_value) << 32);
-  res += ((int64_t)rn_value) * ((int64_t)rm_value);
-  res_lo = res & (uint64_t)(~(uint32_t)0);
-  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-  cpu.SetGPR(rdhi, (uint32_t)res_hi);
-  cpu.SetGPR(rdlo, (uint32_t)res_lo);
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::U32 U32;
+  U64 res = ((U64(cpu.GetGPR( rdlo ))) <<  0) | ((U64(cpu.GetGPR( rdhi ))) << 32);
+  res += U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ));
+  
+  cpu.SetGPR( rdlo, U32(res >> 0) );
+  cpu.SetGPR( rdhi, U32(res >> 32) );
 
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 63) & 1 );
-      cpu.CPSR().Set( Z, res == 0 );
+      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U64(0)) );
     }
 };
 
@@ -316,10 +295,11 @@ umaal.disasm = {
 umaal.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint64_t res = ((uint64_t)cpu.GetGPR( rn ) * (uint64_t)cpu.GetGPR( rm )) +
-                 cpu.GetGPR( rdlo ) + cpu.GetGPR( rdhi );
-  cpu.SetGPR( rdlo, res >> 0 );
-  cpu.SetGPR( rdhi, res >> 32 );
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::U32 U32;
+  U64 res = (U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ))) + U64(cpu.GetGPR( rdlo ) + cpu.GetGPR( rdhi ));
+  cpu.SetGPR( rdlo, U32(res >> 0) );
+  cpu.SetGPR( rdhi, U32(res >> 32) );
 };
 
 /*
@@ -347,21 +327,16 @@ umull.disasm = {
 umull.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint64_t res;
-  uint64_t res_lo, res_hi;
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rm_value = cpu.GetGPR(rm);
-  
-  res = ((int64_t)rn_value) * ((int64_t)rm_value);
-  res_lo = res & (uint64_t)(~(uint32_t)0);
-  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-  cpu.SetGPR(rdhi, (uint32_t)res_hi);
-  cpu.SetGPR(rdlo, (uint32_t)res_lo);
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::U32 U32;
+  U64 res = U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ));
+  cpu.SetGPR( rdlo, U32(res >> 0) );
+  cpu.SetGPR( rdhi, U32(res >> 32) );
 
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 63) & 1 );
-      cpu.CPSR().Set( Z, res == 0 );
+      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U64(0)) );
     }
 };
 
@@ -374,11 +349,11 @@ umull.execute = {
  */
 
 { ARCH::Config::insns5E }:                                                     \
-op smlaxy( cond[4]: 0b00010000[8]: rd[4]: ra[4]: rm[4]: 0b1[1]: y[1]: x[1]: 0b0[1]: rn[4] );
+op smlaxy( cond[4]: 0b00010000[8]: rd[4]: ra[4]: rm[4]: 0b1[1]: m[1]: n[1]: 0b0[1]: rn[4] );
 smlaxy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (ra == 15) or (rm == 15)};
 
 smlaxy.disasm = {
-  buffer << "smla" << (x?"t":"b") << (y?"t":"b") << DisasmCondition(cond) << '\t'
+  buffer << "smla" << (n?"t":"b") << (m?"t":"b") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << ", " << DisasmRegister(ra);
 };
@@ -386,46 +361,27 @@ smlaxy.disasm = {
 smlaxy.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  int32_t op1;
-  int32_t op2;
-  uint32_t val_rn;
-  uint32_t val_rm;
-  uint32_t val_ra;
-  uint32_t val_rd;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
   
-  val_rn = cpu.GetGPR(rn);
-  val_rm = cpu.GetGPR(rm);
-  val_ra = cpu.GetGPR(ra);
+  U32 rnval = cpu.GetGPR(rn);
+  if (n) rnval >>= 16;
+  S32 mop1 = S32(S16(rnval));
   
-  if (x)
-    val_rn = val_rn >> 16;
-  if (val_rn & (uint32_t)0x00008000ULL) {
-    val_rn = val_rn | (uint32_t)0xffff0000ULL;
-    op1 = (int32_t)val_rn;
-  } else {
-    val_rn = val_rn & (uint32_t)0x0000ffffULL;
-    op1 = (int32_t)val_rn;
-  }
+  U32 rmval = cpu.GetGPR(rm);
+  if (m) rmval >>= 16;
+  S32 mop2 = S32(S16(rmval));
   
-  if (y)
-    val_rm = val_rm >> 16;
-  if (val_rm & (uint32_t)0x00008000ULL) {
-    val_rm = val_rm | (uint32_t)0xffff0000ULL;
-    op2 = (int32_t)val_rm;
-  } else {
-    val_rm = val_rm & (uint32_t)0x0000ffffULL;
-    op2 = (int32_t)val_rm;
-  }
+  // Compute operands and result of signed addition
+  U32 op1 = U32(mop1 * mop2),
+      op2 = cpu.GetGPR(ra),
+      res = op1 + op2;
   
-  uint32_t mul_res = (uint32_t)(op1 * op2);
-  //val_rd = op1 + val_ra;
-  uint8_t carry_out, overflow_out, sign;
-  unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, mul_res, val_ra, 0);
-  //if (op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
-  if (overflow_out) {
-    cpu.CPSR().Set( Q, 1 );
-  }
-  cpu.SetGPR(rd, val_rd);
+  U32 overflow = ((op1 & op2 & (~res)) | ((~op1) & (~op2) & res)) >> 31;
+  cpu.CPSR().Set( Q, overflow | cpu.CPSR().Get( Q ) );
+  
+  cpu.SetGPR( rd, res );
 };
 
 /*
@@ -568,12 +524,16 @@ smlalxy.disasm = {
 smlalxy.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint64_t val_rd = (uint64_t( cpu.GetGPR(rdhi) ) << 32) | uint64_t( cpu.GetGPR(rdlo) );
-  int32_t op1 = int32_t( int16_t(cpu.GetGPR(rn) >> (n*16)) );
-  int32_t op2 = int32_t( int16_t(cpu.GetGPR(rm) >> (m*16)) );
-  val_rd += int64_t( op1 * op2 );
-  cpu.SetGPR( rdlo, uint32_t( val_rd ) );
-  cpu.SetGPR( rdhi, uint32_t( val_rd >> 32 ) );
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S16 S16;
+  
+  S64 op1 = S64( S16(cpu.GetGPR(rn) >> (n ? 16 : 0)) );
+  S64 op2 = S64( S16(cpu.GetGPR(rm) >> (m ? 16 : 0)) );
+  S64 res = ((S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) )) + (op1 * op2);
+  
+  cpu.SetGPR( rdlo, U32( res >> 0 ) );
+  cpu.SetGPR( rdhi, U32( res >> 32 ) );
 };
 
 /*
@@ -585,50 +545,35 @@ smlalxy.execute = {
  */
 
 { ARCH::Config::insns5E }:                                                     \
-op smlawy( cond[4]: 0b00010010[8]: rd[4]: rn[4]: rs[4]: 0b1[1]: y[1]: 0b00[2]: rm[4] );
-smlawy.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15) or (rs == 15)};
+op smlawy( cond[4]: 0b00010010[8]: rd[4]: ra[4]: rm[4]: 0b1[1]: m[1]: 0b00[2]: rn[4] );
+smlawy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (ra == 15) or (rm == 15)};
 
 smlawy.disasm = {
-  buffer << "smlaw" << (y?"t":"b") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs) << ", " << DisasmRegister(rn);
+  buffer << "smlaw" << (m?"t":"b") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
 };
 
 smlawy.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  int32_t op;
-  uint32_t val_rm;
-  uint32_t val_rs;
-  uint32_t val_rn;
-  uint32_t val_rd;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S32 S16;
   
-  val_rm = cpu.GetGPR(rm);
-  val_rs = cpu.GetGPR(rs);
-  val_rn = cpu.GetGPR(rn);
+  S64 mop1 = S64( S32( cpu.GetGPR(rn) ) );
   
-  if (y)
-    val_rs = val_rs >> 16;
-  if (val_rs & (uint32_t)0x00008000ULL) {
-    val_rs = val_rs | (uint32_t)0xffff0000ULL;
-    op = (int32_t)val_rs;
-  } else {
-    val_rs = val_rs & (uint32_t)0x0000ffffULL;
-    op = (int32_t)val_rs;
-  }
+  U32 rmval = cpu.GetGPR(rm);
+  if (m) rmval >>= 16;
+  S64 mop2 = S64( S16(rmval) );
   
-  int64_t op64;
-  op64 = (int32_t)val_rm;
-  op64 = op64 * op;
-  op64 = op64 >> 16;
-  op64 = op64 & (uint64_t)0xffffffffULL;
-  uint32_t op_tmp = op64;
+  U32 op1 = U32( (mop1 * mop2) >> 16 ),
+      op2 = cpu.GetGPR(ra),
+      res = op1 + op2;
   
-  uint8_t carry_out, overflow_out, sign;
-  unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, op_tmp, val_rn, 0);
+  U32 overflow = ((op1 & op2 & (~res)) | ((~op1) & (~op2) & res)) >> 31;
+  cpu.CPSR().Set( Q, overflow | cpu.CPSR().Get( Q ) );
   
-  if (overflow_out)
-    cpu.CPSR().Set( Q, 1 );
-  
-  cpu.SetGPR(rd, val_rd);
+  cpu.SetGPR( rd, res );
 };
 
 /*
@@ -640,49 +585,28 @@ smlawy.execute = {
  */
 
 { ARCH::Config::insns5E }:                                                     \
-op smulxy( cond[4]: 0b00010110[8]: rd[4]: 0b0000[4]: rs[4]: 0b1[1]: y[1]: x[1]: 0b0[1]: rm[4] );
-smulxy.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rs == 15)};
+op smulxy( cond[4]: 0b00010110[8]: rd[4]: 0b0000[4]: rm[4]: 0b1[1]: m[1]: n[1]: 0b0[1]: rn[4] );
+smulxy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 smulxy.disasm = {
-  buffer << "smul" << (x?"t":"b") << (y?"t":"b") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+  buffer << "smul" << (n?"t":"b") << (m?"t":"b") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 smulxy.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  int32_t op1;
-  int32_t op2;
-  uint32_t val_rm;
-  uint32_t val_rs;
-  uint32_t val_rd;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  U32 rnval = cpu.GetGPR(rn);
+  if (n) rnval >>= 16;
+  S32 op1 = S32( S16(rnval) );
+  U32 rmval = cpu.GetGPR(rm);
+  if (m) rmval >>= 16;
+  S32 op2 = S32( S16(rmval) );
   
-  val_rm = cpu.GetGPR(rm);
-  val_rs = cpu.GetGPR(rs);
-  
-  if (x)
-    val_rm = val_rm >> 16;
-  if (val_rm & (uint32_t)0x00008000ULL) {
-    val_rm = val_rm | (uint32_t)0xffff0000ULL;
-    op1 = (int32_t)val_rm;
-  } else {
-    val_rm = val_rm & (uint32_t)0x0000ffffULL;
-    op1 = (int32_t)val_rm;
-  }
-  
-  if (y)
-    val_rs = val_rs >> 16;
-  if (val_rs & (uint32_t)0x00008000ULL) {
-    val_rs = val_rs | (uint32_t)0xffff0000ULL;
-    op2 = (int32_t)val_rs;
-  } else {
-    val_rs = val_rs & (uint32_t)0x0000ffffULL;
-    op2 = (int32_t)val_rs;
-  }
-  
-  op1 = op1 * op2;
-  val_rd = (uint32_t)op1;
-  cpu.SetGPR(rd, val_rd);
+  cpu.SetGPR( rd, U32(op1 * op2) );
 };
 
 /*
@@ -694,40 +618,27 @@ smulxy.execute = {
  */
 
 { ARCH::Config::insns5E }:                                                     \
-op smulwy( cond[4]: 0b00010010[8]: rd[4]: 0b0000[4]: rs[4]: 0b1[1]: y[1]: 0b10[2]: rm[4] );
-smulwy.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rs == 15)};
+op smulwy( cond[4]: 0b00010010[8]: rd[4]: 0b0000[4]: rm[4]: 0b1[1]: m[1]: 0b10[2]: rn[4] );
+smulwy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 smulwy.disasm = {
-  buffer << "smulw" << (y?"t":"b") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+  buffer << "smulw" << (m?"t":"b") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 smulwy.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  int32_t op1;
-  int32_t op2;
-  uint32_t val_rm;
-  uint32_t val_rs;
-  uint32_t val_rd;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
   
-  val_rm = cpu.GetGPR(rm);
-  val_rs = cpu.GetGPR(rs);
+  U32 rmval = cpu.GetGPR(rm);
+  if (m) rmval >>= 16;
   
-  if (y)
-    val_rs = val_rs >> 16;
-  if (val_rs & (uint32_t)0x00008000ULL) {
-    val_rs = val_rs | (uint32_t)0xffff0000ULL;
-    op2 = (int32_t)val_rs;
-  } else {
-    val_rs = val_rs & (uint32_t)0x0000ffffULL;
-    op2 = (int32_t)val_rs;
-  }
-  
-  op1 = (int32_t)val_rm;
-  int64_t op64 = (int64_t)op1 * (int64_t)op2;
-  val_rd = (uint32_t)((uint64_t)(op64 >> 16) & (uint64_t)0xffffffffULL);
-  cpu.SetGPR(rd, val_rd);
+  S64 res64 = S64(S32(cpu.GetGPR(rn))) * S64(S16(rmval));
+  cpu.SetGPR( rd, U32((res64 >> 16) & S64(0xffffffffULL)) );
 };
 
 /*

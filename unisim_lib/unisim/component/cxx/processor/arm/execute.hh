@@ -73,7 +73,7 @@ namespace arm {
   CheckCondition( coreT& core, uint32_t cond )
   {
     using CondTruthTable::N; using CondTruthTable::Z; using CondTruthTable::C; using CondTruthTable::V;
-    uint32_t nzcv = core.CPSR().Get( NZCV );
+    uint32_t nzcv = GetNativeValue( core.CPSR().Get( NZCV ) );
     uint16_t const condition_truth_tables[] = {
       uint16_t(                      Z::tt ), // eq; equal
       uint16_t(                     ~Z::tt ), // ne; not equal
@@ -97,96 +97,111 @@ namespace arm {
   }
   
   template <typename coreT>
-  uint32_t
-  ComputeImmShift( coreT& core, uint32_t shift_lhs, uint32_t shift, uint32_t shift_rhs )
+  typename coreT::U32
+  ComputeImmShift( coreT& core, typename coreT::U32 const& shift_lhs, unsigned shift, unsigned shift_rhs )
   {
+    typedef typename coreT::S32 S32;
+    typedef typename coreT::U32 U32;
     if (shift_rhs) {
       switch (shift) {
       case 0: return shift_lhs << shift_rhs;
       case 1: return shift_lhs >> shift_rhs;
-      case 2: return ((int32_t)shift_lhs) >> shift_rhs;
+      case 2: return U32(S32(shift_lhs) >> shift_rhs);
       case 3: return (shift_lhs >> shift_rhs) | (shift_lhs << (32 - shift_rhs));
       }
     } else {
       switch (shift) {
       case 0: return shift_lhs;
-      case 1: return 0;
-      case 2: return ((int32_t)shift_lhs) >> 31;
+      case 1: return U32(0);
+      case 2: return U32(S32(shift_lhs) >> 31);
       case 3: return ((core.CPSR().Get( C ) << 31) | (shift_lhs >> 1));
       }
     }
-
+    
     assert( false );
-    return 0;
+    return U32(0);
   }
   
   template <typename coreT>
   void
-  UpdateStatusImmShift( coreT& core, uint32_t res, uint32_t shift_lhs, uint32_t shift, uint32_t shift_rhs )
+  UpdateStatusImmShift( coreT& core, typename coreT::U32 const& res, typename coreT::U32 const& shift_lhs, unsigned shift, unsigned shift_rhs )
   {
-    uint32_t carry = 0;
+    typedef typename coreT::U32 U32;
+    U32 carry(0);
 
     if      ((shift_rhs == 0) and (shift == 0)) /* MOVS */
       carry = core.CPSR().Get( C );
     else if ((shift_rhs == 0) and (shift == 3)) /* RRX */
-      carry = (shift_lhs & 1);
+      carry = (shift_lhs & U32(1));
     else if (shift == 0)                        /* LSL */
-      carry = (shift_lhs >> (32 - shift_rhs)) & 1;
+      carry = (shift_lhs >> (32 - shift_rhs)) & U32(1);
     else                                        /* LSR, ASR, ROR */
-      carry = (shift_lhs >> ((shift_rhs - 1) & 0x1f)) & 1;
+      carry = (shift_lhs >> ((shift_rhs - 1) & 0x1f)) & U32(1);
 
-    core.CPSR().Set( N, (res >> 31) & 1 );
-    core.CPSR().Set( Z, res == 0 );
+    core.CPSR().Set( N, (res >> 31) & U32(1) );
+    core.CPSR().Set( Z, U32(res == U32(0)) );
     core.CPSR().Set( C, carry );
     /* CPSR.V unaltered */
   }
 
   template <typename coreT>
-  uint32_t
-  ComputeRegShift( coreT& core, uint32_t value, uint32_t shift, uint32_t shift_val )
+  typename coreT::U32
+  ComputeRegShift( coreT& core, typename coreT::U32 const& value, unsigned shift, typename coreT::U32 const& shift_val )
   {
-    shift_val &= 0xff;
-
+    typedef typename coreT::U32 U32;
+    typedef typename coreT::S32 S32;
+    U32 shift8 = shift_val & U32(0xff);
+    U32 shift5 = shift_val & U32(0x1f);
+    // shift overflow mask: all ones if shift is valid, all zeros otherwise
+    U32 shof_mask = ~(U32( (S32(shift8 | (U32(31) - shift8)) >> 31) ));
+    
     switch (shift) {
-    case 0: return (shift_val < 32) ? (value << shift_val) : 0;
-    case 1: return (shift_val < 32) ? (value >> shift_val) : 0;
-    case 2: return (shift_val < 32) ? (((int32_t)value) >> shift_val) : (((int32_t)value) >> 31);
-    case 3: return (value >> (shift_val & 0x1f)) | (value << (32 - (shift_val & 0x1f)));
+    case 0: return (value << shift5) & shof_mask;
+    case 1: return (value >> shift5) & shof_mask;
+    case 2: return (U32(S32(value) >> shift5) & shof_mask) | (U32(S32(value) >> 31) & ~shof_mask);
+    case 3: return RotateRight(value, shift5);
     }
-
-    return 0;
+    
+    return U32(0);
   }
   
   template <typename coreT>
   void
-  UpdateStatusRegShift( coreT& core, uint32_t res, uint32_t value, uint32_t shift, uint32_t shift_val )
+  UpdateStatusRegShift( coreT& core, typename coreT::U32 const& res, typename coreT::U32 const& value, unsigned shift, typename coreT::U32 const& shift_val )
   {
-    shift_val &= 0xff;
-    uint32_t carry = 0;
-
-    if (shift_val == 0) carry = core.CPSR().Get( C );
-    else {
-      switch (shift) {
-      case 0: carry =  (shift_val <= 32) ? (value >> (32 - shift_val)) & 1 : 0; break;
-      case 1: carry =  (shift_val <= 32) ? (value >> (shift_val - 1)) & 1 : 0; break;
-      case 2: carry =  (shift_val <= 32) ? (value >> (shift_val - 1)) & 1 : (value >> 31) & 1; break;
-      case 3: carry =  (value >> ((shift_val - 1) & 0x1f)) & 1; break;
-      default: assert( false );
-      }
+    typedef typename coreT::U32 U32;
+    typedef typename coreT::S32 S32;
+    U32 shift8 = shift_val & U32(0xff);
+    // Wether output carry is input carry
+    U32 select_carry = U32(shift8 == U32(0));
+    U32 shvalm1 = shift8 - U32(1);
+    // Wether output carry comes from a bit of input value
+    U32 select_bit = U32((shvalm1 >> 5) == U32(0));
+    
+    U32 carry(0);
+    switch (shift) {
+    case 0: carry = (value >> (U32(32) - shift8)) & select_bit; break;
+    case 1: carry = (value >> shvalm1) & select_bit; break;
+    case 2: carry = ((value >> shvalm1) & select_bit) | (U32(S32(value) >> 31) & (select_bit ^ U32(1))); break;
+    case 3: carry = (value >> (shvalm1 & U32(0x1f))) & U32(1); break;
+    default: assert( false );
     }
+    
+    carry = (carry & ~select_carry) | (core.CPSR().Get( C ) & select_carry);
 
-    core.CPSR().Set( N, (res >> 31) & 1 );
-    core.CPSR().Set( Z, res == 0 );
+    core.CPSR().Set( N, (res >> 31) & U32(1) );
+    core.CPSR().Set( Z, U32(res == U32(0)) );
     core.CPSR().Set( C, carry );
     /* CPSR.V unaltered */
   }
   
   template <typename coreT>
   void
-  UpdateStatusAdd( coreT& core, uint32_t res, uint32_t lhs, uint32_t rhs )
+  UpdateStatusAdd( coreT& core, typename coreT::U32 const& res, typename coreT::U32 const& lhs, typename coreT::U32 const& rhs )
   {
-    core.CPSR().Set( N, (res >> 31) & 1 );
-    core.CPSR().Set( Z, res == 0 );
+    typedef typename coreT::U32 U32;
+    core.CPSR().Set( N, (res >> 31) & U32(1) );
+    core.CPSR().Set( Z, U32(res == U32(0)) );
     core.CPSR().Set( C, ((lhs & rhs) | ((~res) & (lhs | rhs))) >> 31 );
     core.CPSR().Set( V, ((lhs & rhs & (~res)) | ((~lhs) & (~rhs) & res)) >> 31 );
   }
@@ -196,33 +211,63 @@ namespace arm {
    */
   template <typename coreT>
   void
-  UpdateStatusSub( coreT& core, uint32_t res, uint32_t lhs, uint32_t rhs )
+  UpdateStatusSub( coreT& core, typename coreT::U32 const& res, typename coreT::U32 const& lhs, typename coreT::U32 const& rhs )
   {
-    core.CPSR().Set( N, (res >> 31) & 1 );
-    core.CPSR().Set( Z, res == 0 );
+    typedef typename coreT::U32 U32;
+    core.CPSR().Set( N, (res >> 31) & U32(1) );
+    core.CPSR().Set( Z, U32(res == U32(0)) );
     core.CPSR().Set( C, ((lhs & (~rhs)) | ((~res) & (lhs | (~rhs)))) >> 31 );
     core.CPSR().Set( V, ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
   }
   
   template <typename coreT>
-  void
-  CPSRWriteByInstr( coreT& core, uint32_t value, uint8_t mask, bool is_excpt_return )
+  typename coreT::U32
+  SignedSat(coreT const& core, typename coreT::S32& res, typename coreT::S32 const& overflow, int bits )
   {
-    uint32_t write_mask =
-      ((mask & 1 ? 0xff : 0) <<  0) |
-      ((mask & 2 ? 0xff : 0) <<  8) |
-      ((mask & 4 ? 0xff : 0) << 16) |
-      ((mask & 8 ? 0xff : 0) << 24);
+    // In the following we saturate (if needed) the signed value by
+    // arithmetic and logic means. Three masks are used; (1) an overflow
+    // mask with all bits set according to overflow, (2) a saturation
+    // mask same as overflow mask with msb cleared, and (3) a sign mask
+    // with all bit set if untruncated result is negative. The caller
+    // provides an overflow value that should have the msb set in case
+    // of overflow (msb being bits-1). In the case the overflow msb is
+    // cleared, this function only sign extends the result to full
+    // precision of native type.
     
-    if (value & write_mask & core.PSR_UNALLOC_MASK) core.UnpredictableInsnBehaviour();
+    typedef typename coreT::S32 S32;
+    typedef typename coreT::U32 U32;
     
-    bool const is_secure = true; // IsSecure()
-    bool const nmfi = false; // Non Maskable FIQ (SCTLR.NMFI == '1');
-    bool const scr_aw = false; // prevents Non-secure masking of asynchronous aborts that are taken to Monitor mode
-    bool const scr_fw = false; // prevents Non-secure masking of FIQs that are taken to Monitor mode
-    bool const have_virt_ext = false; // HaveVirtExt()
+    unsigned const shift = (32 - bits); // bits to align intended MSB with native MSB.
+    S32 tmp( res << shift );
+    S32 overflow_mask( (overflow << shift) >> 31 );
+    tmp ^= overflow_mask; // bit inversion in case of overflow
+    S32 saturation_mask = overflow_mask & S32(0x7fffffff);
+    S32 sign_mask = tmp >> 31;
+    // Saturate, in case of overflow, and sign extend
+    res = (((tmp^sign_mask) | saturation_mask) ^ sign_mask) >> shift;
+    return U32(overflow_mask) & U32(1);
+  }
 
-    bool privileged = (core.CPSR().Get(M) != core.USER_MODE);
+  template <typename coreT>
+  void
+  CPSRWriteByInstr( coreT& core, typename coreT::U32 const& value, uint8_t mask, bool is_excpt_return )
+  {
+    typedef typename coreT::U32 U32;
+    typedef typename coreT::BOOL BOOL;
+    U32 write_mask(((mask & 1 ? 0xff : 0) <<  0) |
+                   ((mask & 2 ? 0xff : 0) <<  8) |
+                   ((mask & 4 ? 0xff : 0) << 16) |
+                   ((mask & 8 ? 0xff : 0) << 24));
+    
+    core.Assert( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) == U32(0) );
+    
+    BOOL const is_secure( true ); // IsSecure()
+    BOOL const nmfi( false ); // Non Maskable FIQ (SCTLR.NMFI == '1');
+    BOOL const scr_aw( false ); // prevents Non-secure masking of asynchronous aborts that are taken to Monitor mode
+    BOOL const scr_fw( false ); // prevents Non-secure masking of FIQs that are taken to Monitor mode
+    BOOL const have_virt_ext( false ); // HaveVirtExt()
+
+    BOOL privileged = core.CPSR().Get(M) != U32(core.USER_MODE);
     
     // ITSTATE, ISETSTATE are only written when returning from exception
     if (not is_excpt_return) {
@@ -232,14 +277,14 @@ namespace arm {
       T.Set( write_mask, 0 );
     }
     
-    if (not    (privileged and (is_secure or  scr_aw or have_virt_ext)))
-      A.Set( write_mask, 0 );
-    if (not    (privileged))
-      I.Set( write_mask, 0 );
-    if (not    (privileged and (not nmfi or not F.Get( value )) and (is_secure or scr_fw or have_virt_ext)))
-      F.Set( write_mask, 0 );
-    if (not    (privileged))
-      M.Set( write_mask, 0 );
+    BOOL writeA = BOOL(A.Get( write_mask )) and (privileged and (is_secure or  scr_aw or have_virt_ext));
+    A.Set( write_mask, U32(writeA) );
+    BOOL writeI = BOOL(I.Get( write_mask )) and (privileged);
+    I.Set( write_mask, U32(writeI) );
+    BOOL writeF = BOOL(F.Get( write_mask )) and (privileged and (not nmfi or not BOOL(F.Get( value ))) and (is_secure or scr_fw or have_virt_ext));
+    F.Set( write_mask, U32(writeF) );
+    BOOL writeM = BOOL(M.Get( write_mask )) and (privileged);
+    M.Set( write_mask, -U32(writeM) );
     
     // TODO: Check for attempts to enter modes only permitted in
     // Secure state from Non-secure state. These are Monitor mode
@@ -247,23 +292,23 @@ namespace arm {
     // have reserved it. The definition of UNPREDICTABLE does not
     // permit the resulting behavior to be a security hole.
 
-    uint32_t new_cpsr = (core.CPSR().Get( ALL32 ) & ~write_mask) | (value & write_mask);
+    U32 new_cpsr = (core.CPSR().Get( ALL32 ) & ~write_mask) | (value & write_mask);
     
     core.CurrentMode().Swap(core); // OUT
     core.CPSR().Set( ALL32, new_cpsr );
     core.CurrentMode().Swap(core); // IN
   }
-
+  
   template <typename coreT>
   void
-  SPSRWriteByInstr( coreT& core, uint32_t value, uint8_t mask )
+  SPSRWriteByInstr( coreT& core, typename coreT::U32 const& value, uint8_t mask )
   {
-    uint32_t write_mask =
-      ((mask & 1 ? 0xff : 0) <<  0) |
-      ((mask & 2 ? 0xff : 0) <<  8) |
-      ((mask & 4 ? 0xff : 0) << 16) |
-      ((mask & 8 ? 0xff : 0) << 24);
-    uint32_t spsr = core.CurrentMode().GetSPSR();
+    typedef typename coreT::U32 U32;
+    U32 write_mask(((mask & 1 ? 0xff : 0) <<  0) |
+                   ((mask & 2 ? 0xff : 0) <<  8) |
+                   ((mask & 4 ? 0xff : 0) << 16) |
+                   ((mask & 8 ? 0xff : 0) << 24));
+    U32 spsr = core.CurrentMode().GetSPSR();
     spsr = (spsr & ~write_mask) | (value & write_mask);
     core.CurrentMode().SetSPSR( spsr );
   }
@@ -271,12 +316,12 @@ namespace arm {
   struct LSMIter
   {
     enum mode_t { DA=0, IA=1, DB=2, IB=3 };
-    LSMIter( uint32_t mode, uint32_t reglist, uint32_t addr )
-      : m_reglist( reglist ), m_addr( addr )
+    LSMIter( uint32_t mode, uint32_t reglist )
+      : m_reglist( reglist ), m_offset( 0 )
     {
       switch (mode_t( mode )) {
-      case DA: m_dir = -1; m_reg = 16; m_incb =  0; m_inca = -4; m_addr += 4; break;
-      case IA: m_dir = +1; m_reg = -1; m_incb =  0; m_inca = +4; m_addr -= 4; break;
+      case DA: m_dir = -1; m_reg = 16; m_incb =  0; m_inca = -4; m_offset += 4; break;
+      case IA: m_dir = +1; m_reg = -1; m_incb =  0; m_inca = +4; m_offset -= 4; break;
       case DB: m_dir = -1; m_reg = 16; m_incb = -4; m_inca =  0; break;
       case IB: m_dir = +1; m_reg = -1; m_incb = +4; m_inca =  0; break;
       default: assert( false );
@@ -285,16 +330,16 @@ namespace arm {
     }
     bool
     next() {
-      m_addr += m_inca;
+      m_offset += m_inca;
       do    { m_reg += m_dir; if (m_reg & -16) return false; }
       while (((m_reglist >> m_reg) & 1) == 0);
-      m_addr += m_incb;
+      m_offset += m_incb;
       return true;
     }
-    uint32_t addr() const { return m_addr; }
+    uint32_t offset() const { return m_offset; }
     uint32_t reg() const { return m_reg; }
 
-    uint32_t m_reglist, m_addr, m_inca, m_incb;
+    uint32_t m_reglist, m_offset, m_inca, m_incb;
     int32_t  m_dir, m_reg;
   };
   
