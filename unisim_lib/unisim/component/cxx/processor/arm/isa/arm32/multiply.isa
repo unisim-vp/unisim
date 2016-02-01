@@ -297,7 +297,7 @@ umaal.execute = {
   
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::U32 U32;
-  U64 res = (U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ))) + U64(cpu.GetGPR( rdlo ) + cpu.GetGPR( rdhi ));
+  U64 res = (U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ))) + U64(cpu.GetGPR( rdlo )) + U64(cpu.GetGPR( rdhi ));
   cpu.SetGPR( rdlo, U32(res >> 0) );
   cpu.SetGPR( rdhi, U32(res >> 32) );
 };
@@ -558,7 +558,7 @@ smlawy.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S32 S16;
+  typedef typename ARCH::S16 S16;
   
   S64 mop1 = S64( S32( cpu.GetGPR(rn) ) );
   
