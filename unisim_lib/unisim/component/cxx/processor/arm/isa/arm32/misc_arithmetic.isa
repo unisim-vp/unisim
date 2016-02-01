@@ -662,8 +662,8 @@ uxtb.execute = {
  */
 
 op uxtah( cond[4]: 0b01101111[8]: rn[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
-uxtah.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 uxtah.var ror : {uint8_t} = {8*rotate};
+uxtah.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 uxtah.disasm = {
   buffer << "uxtah" << DisasmCondition(cond) << '\t'
@@ -689,8 +689,8 @@ uxtah.execute = {
  */
 
 op uxth( cond[4]: 0b01101111[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]: rm[4] );
-uxth.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 uxth.var ror : {uint8_t} = {8*rotate};
+uxth.var reject : {Reject} = {(rd == 15) or (rm == 15)};
 
 uxth.disasm = {
   buffer << "uxth" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", "
@@ -784,9 +784,9 @@ sbfx.execute = {
  */
 
 op bfi( cond[4]: 0b0111110[7]: msb[5]: rd[4]: lsb[5]: 0b001[3]: rn[4] );
-bfi.var reject : {Reject} = {msb < lsb};
 bfi.var width : {uint32_t} = {msb-lsb+1};
 bfi.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+bfi.var reject : {Reject} = {msb < lsb};
 
 bfi.disasm = {
   buffer << "bfi"  << DisasmCondition(cond) << '\t'
@@ -814,9 +814,9 @@ bfi.execute = {
  */
 
 op bfc( cond[4]: 0b0111110[7]: msb[5]: rd[4]: lsb[5]: 0b001[3]: 0b1111[4] );
-bfc.var reject : {Reject} = {msb < lsb};
 bfc.var width : {uint32_t} = {msb-lsb+1};
 bfc.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+bfc.var reject : {Reject} = {msb < lsb};
 
 bfc.disasm = {
   buffer << "bfc"  << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
@@ -843,8 +843,8 @@ bfc.execute = {
  */
 
 op ubfx( cond[4]: 0b01111[5]: 0b1[1]: 0b1[1]: widthm1[5]: rd[4]: lsb[5]: 0b101[3]: rn[4] );
-ubfx.var reject : {Reject} = {(lsb + widthm1) > 31};
 ubfx.var width : {uint32_t} = {widthm1+1};
+ubfx.var reject : {Reject} = {(lsb + widthm1) > 31};
 
 ubfx.disasm = {
   buffer << "ubfx" << DisasmCondition(cond) << '\t'

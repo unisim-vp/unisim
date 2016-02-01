@@ -890,8 +890,8 @@ uxtab.execute = {
  *******************************************************************/
 
 op uxtah( 0b111110100001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
-uxtah.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 uxtah.var ror : {uint8_t} = {8*rotate};
+uxtah.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 uxtah.disasm = {
   buffer << "uxtah\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
@@ -956,8 +956,8 @@ uxtb_w.execute = {
 };
 
 op uxth_w( 0b1111101000011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
-uxth_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 uxth_w.var ror : {uint8_t} = {8*rotate};
+uxth_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 uxth_w.disasm = {
   buffer << "uxth.w\t" << DisasmRegister(rd) << ", "
@@ -1173,8 +1173,8 @@ sxth_w.execute = {
 /* UBFX instructions */
 
 op ubfx( 0b111100111100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: widthm1[5] );
-ubfx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or ((lsb + widthm1) > 31)};
 ubfx.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {widthm1+1};
+ubfx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or ((lsb + widthm1) > 31)};
 
 ubfx.disasm = {
   buffer << "ubfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
@@ -1215,10 +1215,10 @@ sbfx.execute = {
  */
 
 op bfi( 0b111100110110[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
-bfi.var reject : {Reject} = {msb < lsb};
 bfi.var lsb : {uint8_t} = {lsb1|lsb0};
 bfi.var width : {uint32_t} = {msb-lsb+1};
 bfi.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+bfi.var reject : {Reject} = {msb < lsb};
 
 bfi.disasm = {
   buffer << "bfi\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
@@ -1245,9 +1245,9 @@ bfi.execute = {
 
 op bfc( 0b111100110110[12]: 0b1111[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
 bfc.var lsb : {uint32_t} = {lsb1|lsb0};
-bfc.var reject : {Reject} = {msb < lsb};
 bfc.var width : {uint32_t} = {msb-lsb+1};
 bfc.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+bfc.var reject : {Reject} = {msb < lsb};
 
 bfc.disasm = {
   buffer << "bfc\t" << DisasmRegister(rd) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
