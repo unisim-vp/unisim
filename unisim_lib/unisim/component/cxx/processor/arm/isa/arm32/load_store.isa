@@ -895,6 +895,7 @@ pli_reg.execute = { /*ignore for now*/ };
  */
 
 op ldm( cond[4]: 0b100[3]: mod[2]: 0b0[1]: w[1]: 0b1[1]: rn[4]: reglist[16] );
+ldm.var reject : {Reject} = {(rn == 15) or (reglist == 0)};
 
 ldm.disasm = {
   buffer << "ldm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")
@@ -904,7 +905,6 @@ ldm.disasm = {
 ldm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typedef typename ARCH::U32 U32;
   typedef typename ARCH::U32 U32;
   U32 base = cpu.GetGPR( rn );
   LSMIter itr(mod, reglist);
@@ -929,6 +929,7 @@ ldm.execute = {
  */
 
 op stm( cond[4]: 0b100[3]: mod[2]: 0b0[1]: w[1]: 0b0[1]: rn[4]: reglist[16] );
+stm.var reject : {Reject} = {(rn == 15) or (reglist == 0)};
 
 stm.disasm = {
   buffer << "stm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")
@@ -1045,6 +1046,7 @@ ldm_rfe.execute = {
  */
 
 op stm_usr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: w[1]: 0b0[1]: rn[4]: reglist[16] );
+stm_usr.var reject : {Reject} = {(rn == 15) or (reglist == 0)};
 
 stm_usr.disasm = {
   buffer << "stm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")

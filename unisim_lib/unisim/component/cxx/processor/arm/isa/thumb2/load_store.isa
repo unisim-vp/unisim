@@ -944,6 +944,7 @@ pli_reg.disasm = {
  */
 
 op ldmdb( 0b1110100100[10]: w[1]: 0b1[1]: rn[4]:> <: reglist[16] );
+ldmdb.var reject : {Reject} = {(rn == 15) or ((reglist & (reglist-1))==0) or ((reglist >> 13) & 1) or ((reglist >> 15) & (reglist >> 14) & 1)};
 
 ldmdb.disasm = { 
   buffer << "ldmdb\t" << DisasmRegister(rn) << (w?"!":"") << ", {" << DisasmRegList(reglist) << "}";
@@ -964,6 +965,7 @@ ldmdb.execute = {
 };
 
 op ldmia_w( 0b1110100010[10]: w[1]: 0b1[1]: rn[4]:> <: reglist[16] );
+ldmia_w.var reject : {Reject} = {(rn == 15) or ((reglist & (reglist-1))==0) or ((reglist >> 13) & 1) or ((reglist >> 15) & (reglist >> 14) & 1)};
 
 ldmia_w.disasm = {
   buffer << "ldmia.w\t" << DisasmRegister(rn) << (w?"!":"") << ", {" << DisasmRegList(reglist) << "}";
@@ -996,6 +998,7 @@ ldmia_w.execute = {
  */
 
 op stmdb( 0b1110100100[10]: w[1]: 0b0[1]: rn[4]:> <: reglist[16] );
+stmdb.var reject : {Reject} = {(rn == 15) or ((reglist & (reglist-1))==0) or ((reglist >> 13) & 1) or ((reglist >> 15) & 1)};
 
 stmdb.disasm = {
   buffer << "stmdb\t" << DisasmRegister(rn) << (w?"!":"") << ", {" << DisasmRegList(reglist) << "}";
@@ -1015,6 +1018,7 @@ stmdb.execute = {
 };
 
 op stmia_w( 0b11101000[8]: 0b10[2]: w[1]: 0b0[1]: rn[4]:> <: reglist[16] );
+stmia_w.var reject : {Reject} = {(rn == 15) or ((reglist & (reglist-1))==0) or ((reglist >> 13) & 1) or ((reglist >> 15) & 1)};
 
 stmia_w.disasm = {
   buffer << "stmia.w\t" << DisasmRegister(rn) << (w?"!":"") << ", {" << DisasmRegList(reglist) << "}";

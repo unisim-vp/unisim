@@ -414,6 +414,7 @@ strh_2.execute = {
  */
 
 op ldmia( 0b11001[5]: rn[3]: <32> reglist[8] );
+ldmia.var reject : {Reject} = {(reglist == 0)};
 
 ldmia.disasm = {
   if ((reglist >> rn) & 1)
@@ -446,6 +447,7 @@ ldmia.execute = {
 
 op pop( 0b1011110[7]: shl<15> reglist1[1]: reglist0[8] );
 pop.var reglist : {uint32_t} = {reglist1|reglist0};
+pop.var reject : {Reject} = {(reglist == 0)};
 
 pop.disasm = {
   buffer << "pop\t{" << DisasmRegList(reglist) << "}";
@@ -475,6 +477,7 @@ pop.execute = {
 
 op push( 0b1011010[7]: shl<14> reglist1[1]: reglist0[8] );
 push.var reglist : {uint32_t} = {reglist1|reglist0};
+push.var reject : {Reject} = {(reglist == 0)};
 
 push.disasm = {
   buffer << "push\t{" << DisasmRegList(reglist) << "}";
@@ -502,6 +505,7 @@ push.execute = {
  */
 
 op stmia( 0b11000[5]: rn[3]: reglist[8] );
+stmia.var reject : {Reject} = {(reglist == 0)};
 
 stmia.disasm = {
   buffer << "stmia\t" << DisasmRegister(rn) << "!, {" << DisasmRegList(reglist) << "}";
