@@ -44,7 +44,7 @@
 
 op ldr_imm( cond[4]: 0b010[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: offset[12] );
 ldr_imm.var imm : {int32_t} = {u?offset:-offset};
-ldr_imm.var reject : {Reject} = {(rn == 15) and ((not p) or w)};
+ldr_imm.var reject : {Reject} = {(not p and w) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 ldr_imm.disasm = {
   buffer << "ldr" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -60,6 +60,8 @@ ldr_imm.execute = {
 };
 
 op ldr_reg( cond[4]: 0b011[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+ldr_reg.var reject : {Reject} = {(not p and w) or (rm == 15) or
+                                 ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldr_reg.disasm = {
   buffer << "ldr" << DisasmCondition(cond) << '\t'
@@ -87,7 +89,7 @@ ldr_reg.execute = {
 
 op ldrh_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1011[4]: im0[4] );
 ldrh_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
-ldrh_imm.var reject : {Reject} = {(rn == 15) and ((not p) or w)};
+ldrh_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 ldrh_imm.disasm = {
   buffer << "ldrh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -103,6 +105,8 @@ ldrh_imm.execute = {
 };
 
 op ldrh_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: 0b0000[4]: 0b1011[4]: rm[4] );
+ldrh_reg.var reject : {Reject} = {(not p and w) or (rm == 15) or (rt == 15) or
+                                 ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldrh_reg.disasm = {
   buffer << "ldrh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
@@ -128,7 +132,7 @@ ldrh_reg.execute = {
 
 op ldrsh_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1111[4]: im0[4] );
 ldrsh_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
-ldrsh_imm.var reject : {Reject} = {(rn == 15) and ((not p) or w)};
+ldrsh_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 ldrsh_imm.disasm = {
   buffer << "ldrsh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -146,6 +150,8 @@ ldrsh_imm.execute = {
 };
 
 op ldrsh_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: 0b0000[4]: 0b1111[4]: rm[4] );
+ldrsh_reg.var reject : {Reject} = {(not p and w) or (rm == 15) or (rt == 15) or
+                                   ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldrsh_reg.disasm = {
   buffer << "ldrsh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
@@ -173,7 +179,7 @@ ldrsh_reg.execute = {
 
 op ldrb_imm( cond[4]: 0b010[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]: rt[4]: offset[12] );
 ldrb_imm.var imm : {int32_t} = {u?offset:-offset};
-ldrb_imm.var reject : {Reject} = {(rn == 15) and ((not p) or w)};
+ldrb_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 ldrb_imm.disasm = {
   buffer << "ldrb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -189,6 +195,8 @@ ldrb_imm.execute = {
 };
 
 op ldrb_reg( cond[4]: 0b011[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+ldrb_reg.var reject : {Reject} = {(not p and w) or (rm == 15) or (rt == 15) or
+                                  ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldrb_reg.disasm = {
   buffer << "ldrb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
@@ -215,7 +223,7 @@ ldrb_reg.execute = {
 
 op ldrsb_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1101[4]: im0[4] );
 ldrsb_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
-ldrsb_imm.var reject : {Reject} = {(rn == 15) and ((not p) or w)};
+ldrsb_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 ldrsb_imm.disasm = {
   buffer << "ldrsb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -233,6 +241,8 @@ ldrsb_imm.execute = {
 };
 
 op ldrsb_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: 0b0000[4]: 0b1101[4]: rm[4] );
+ldrsb_reg.var reject : {Reject} = {(not p and w) or (rm == 15) or (rt == 15) or
+                                  ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldrsb_reg.disasm = {
   buffer << "ldrsb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
@@ -261,7 +271,8 @@ ldrsb_reg.execute = {
 { ARCH::Config::insns5E }: \
 op ldrd_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1101[4]: im0[4] );
 ldrd_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
-ldrd_imm.var reject : {Reject} = {(rn == 15) and ((not p) or w)};
+ldrd_imm.var reject : {Reject} = {(not p and w) or (rt & 1) or (rt == 14) or
+                                  ((not p or w) and ((rn == 15) or ((rn & 0xe) == rt)))};
 
 ldrd_imm.disasm = {
   buffer << "ldrd" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -279,6 +290,8 @@ ldrd_imm.execute = {
 
 { ARCH::Config::insns5E }: \
 op ldrd_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: 0b0000[4]: 0b1101[4]: rm[4] );
+ldrd_reg.var reject : {Reject} = {(not p and w) or (rt & 1) or (rt == 14) or (rm == 15) or ((rm & 0xe) == rt) or
+                                  ((not p or w) and ((rn == 15) or ((rn & 0xe) == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldrd_reg.disasm = {
   buffer << "ldrd" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
@@ -305,6 +318,7 @@ ldrd_reg.execute = {
 
 op str_imm( cond[4]: 0b010[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: offset[12] );
 str_imm.var imm : {int32_t} = {u?offset:-offset};
+str_imm.var reject : {Reject} = {(not p and w) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 str_imm.disasm = {
   buffer << "str" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -320,6 +334,9 @@ str_imm.execute = {
 };
 
 op str_reg( cond[4]: 0b011[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+str_reg.var reject : {Reject} = {(not p and w)or (rm == 15) or
+                                 ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
+
 
 str_reg.disasm = {
   buffer << "str" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
@@ -346,6 +363,7 @@ str_reg.execute = {
 
 op strh_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1011[4]: im0[4] );
 strh_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+strh_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 strh_imm.disasm = {
   buffer << "strh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -362,7 +380,9 @@ strh_imm.execute = {
 };
 
 op strh_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: 0b0000[4]: 0b1011[4]: rm[4] );
- 
+strh_reg.var reject : {Reject} = {(not p and w)or (rm == 15) or (rt == 15) or
+                                  ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
+
 strh_reg.disasm = {
   buffer << "strh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
 };
@@ -388,6 +408,7 @@ strh_reg.execute = {
 
 op strb_imm( cond[4]: 0b010[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: offset[12] );
 strb_imm.var imm : {int32_t} = {u?offset:-offset};
+strb_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 strb_imm.disasm = {
   buffer << "strb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -404,6 +425,8 @@ strb_imm.execute = {
 };
 
 op strb_reg( cond[4]: 0b011[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+strb_reg.var reject : {Reject} = {(not p and w)or (rm == 15) or (rt == 15) or
+                                  ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 strb_reg.disasm = {
   buffer << "strb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
@@ -432,8 +455,7 @@ strb_reg.execute = {
 { ARCH::Config::insns5E }: \
 op strd_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1111[4]: im0[4] );
 strd_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
-strd_imm.var reject : {Reject} = {(not p and w) or
-                                  (rt & 1) or (rt == 14) or
+strd_imm.var reject : {Reject} = {(not p and w) or (rt & 1) or (rt == 14) or
                                   ((not p or w) and ((rn == 15) or ((rn & 0xe) == rt)))};
 
 strd_imm.disasm = {
@@ -452,8 +474,7 @@ strd_imm.execute = {
 
 { ARCH::Config::insns5E }: \
 op strd_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: 0b0000[4]: 0b1111[4]: rm[4] );
-strd_reg.var reject : {Reject} = {(not p and w) or
-                                  (rt & 1) or (rt == 14) or (rm == 15) or
+strd_reg.var reject : {Reject} = {(not p and w) or (rt & 1) or (rt == 14) or (rm == 15) or
                                   ((not p or w) and ((rn == 15) or ((rn & 0xe) == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 strd_reg.disasm = {
