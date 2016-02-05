@@ -505,7 +505,7 @@ push.execute = {
  */
 
 op stmia( 0b11000[5]: rn[3]: reglist[8] );
-stmia.var reject : {Reject} = {(reglist == 0)};
+stmia.var reject : {Reject} = {(reglist == 0) or (((reglist & (reglist-1)) >> rn) & 1)};
 
 stmia.disasm = {
   buffer << "stmia\t" << DisasmRegister(rn) << "!, {" << DisasmRegList(reglist) << "}";
