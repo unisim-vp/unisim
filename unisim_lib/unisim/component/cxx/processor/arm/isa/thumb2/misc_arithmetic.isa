@@ -343,6 +343,12 @@ qasx.disasm = { buffer << "qasx\t" << DisasmRegister(rd) << ", " << DisasmRegist
 op qsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
 qsax.disasm = { buffer << "qsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
+/*******************************************************************
+ * rev (Byte-Reverse Word) instruction
+ *
+ * REV reverses the byte order in a 32-bit register.
+ */
+
 op rev_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm_[4] );
 rev_w.var reject : {Reject} = {(rm != rm_)};
 
@@ -357,18 +363,40 @@ rev_w.execute = {
   cpu.SetGPR( rd, rdval );
 };
 
+/*
+ * end of rev instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * revsh (Byte-Reverse Signed Halfword) instruction
+ *
+ * REVSH reverses the byte order in the lower 16-bit halfword of a
+ * 32-bit register, and sign-extends the result to 32 bits.
+ */
+
+{ ARCH::Config::insns6 }:                               \
 op revsh_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm_[4] );
-revsh_w.var reject : {Reject} = {(rm != rm_)};
+revsh_w.var reject : {Reject} = {(rm != rm_) or (rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 revsh_w.disasm = {
   buffer << "revsh.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 };
 
-op sadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
-sadd8.disasm = { buffer << "sadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+revsh_w.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+  
+  U16 src( cpu.GetGPR(rm) );
+  cpu.SetGPR( rd, U32(S32(S16((src >> 8) | (src << 8)))) );
+};
 
-op sadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
-sadd16.disasm = { buffer << "sadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+/*
+ * end of revsh instruction
+ *******************************************************************/
 
 op sasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
 sasx.disasm = { buffer << "sasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
@@ -408,7 +436,7 @@ sel.execute = {
   U32 res = (rnval & ~word_mask) | (rmval & word_mask);
   
   cpu.SetGPR( rd, res );
-}
+};
 
 /*
  * end of sel instruction
@@ -449,12 +477,6 @@ ssat16_rir.disasm = {
 op ssax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
 ssax.disasm = { buffer << "ssax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op ssub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
-ssub8.disasm = { buffer << "ssub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op ssub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
-ssub16.disasm = { buffer << "ssub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
 /*******************************************************************
  * uadd16 (Unsigned Add 16) instruction
  * 
@@ -481,11 +503,11 @@ uadd16.execute = {
   
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs)),
-      cv = ((op1 & op2) | (~res & (op1 | op2))) & U32(msbs); //< Carries vector
+      gev = ((op1 & op2) | (~res & (op1 | op2))) & U32(msbs); //< GE vector
   
   cpu.SetGPR( rd, res );
-  cpu.CPSR().Set( GE, ((cv>>15)|(cv>>14)|(cv>>29)|(cv>>28)) & U32(0xf) );
-}
+  cpu.CPSR().Set( GE, ((gev>>15)|(gev>>14)|(gev>>29)|(gev>>28)) & U32(0xf) );
+};
 
 /*
  * end of uadd16 instruction
@@ -516,11 +538,11 @@ uadd8.execute = {
   
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs)),
-      cv = ((op1 & op2) | (~res & (op1 | op2))) & U32(msbs); //< Carries vector
+      gev = ((op1 & op2) | (~res & (op1 | op2))) & U32(msbs); //< GE vector
   
   cpu.SetGPR( rd, res );
-  cpu.CPSR().Set( GE, ((cv>>7)|(cv>>14)|(cv>>21)|(cv>>28)) & U32(0xf) );
-}
+  cpu.CPSR().Set( GE, ((gev>>7)|(gev>>14)|(gev>>21)|(gev>>28)) & U32(0xf) );
+};
 
 /*
  * end of uadd8 instruction
@@ -551,10 +573,10 @@ usub16.execute = {
   
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs)),
-      cv = ((op1 & ~op2) | (~res & (op1 | ~op2))) & U32(msbs); //< Carries vector
+      gev = ((op1 & ~op2) | (~res & (op1 | ~op2))) & U32(msbs); //< GE vector
   
   cpu.SetGPR( rd, U32(res) );
-  cpu.CPSR().Set( GE, ((cv>>15)|(cv>>14)|(cv>>29)|(cv>>28)) & U32(0xf) );
+  cpu.CPSR().Set( GE, ((gev>>15)|(gev>>14)|(gev>>29)|(gev>>28)) & U32(0xf) );
 };
 
 /*
@@ -586,14 +608,154 @@ usub8.execute = {
   
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs)),
-      cv = ((op1 & ~op2) | (~res & (op1 | ~op2))) & U32(msbs); //< Carries vector
+      gev = ((op1 & ~op2) | (~res & (op1 | ~op2))) & U32(msbs); //< GE vector
   
   cpu.SetGPR( rd, U32(res) );
-  cpu.CPSR().Set( GE, ((cv>>7)|(cv>>14)|(cv>>21)|(cv>>28)) & U32(0xf) );
-}
+  cpu.CPSR().Set( GE, ((gev>>7)|(gev>>14)|(gev>>21)|(gev>>28)) & U32(0xf) );
+};
 
 /*
  * end of usub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sadd16 (Signed Add 16) instruction
+ *
+ * SADD16 performs two 16-bit signed integer additions, and writes the
+ * results to the destination register. It sets the APSR.GE bits
+ * according to the results of the additions.
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op sadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+sadd16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+sadd16.disasm = {
+  buffer << "sadd16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+sadd16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs)),
+      gev = (((op1 & op2 & ~res) | (~op1 & ~op2 & res)) ^ ~res) & U32(msbs); //< GE vector
+  
+  cpu.SetGPR( rd, res );
+  cpu.CPSR().Set( GE, ((gev>>15)|(gev>>14)|(gev>>29)|(gev>>28)) & U32(0xf) );
+};
+
+/*
+ * end of sadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sadd8 (Signed Add 8) instruction
+ *
+ * SADD8 performs four 8-bit signed integer additions, and writes the
+ * results to the destination register. It sets the APSR.GE bits
+ * according to the results of the additions
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op sadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+sadd8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+sadd8.disasm = {
+  buffer << "sadd8\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+sadd8.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs)),
+      gev = (((op1 & op2 & ~res) | (~op1 & ~op2 & res)) ^ ~res) & U32(msbs); //< GE vector
+  
+  cpu.SetGPR( rd, res );
+  cpu.CPSR().Set( GE, ((gev>>7)|(gev>>14)|(gev>>21)|(gev>>28)) & U32(0xf) );
+};
+
+/*
+ * end of sadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ssub16 (Signed Substract 16) instruction
+ *
+ * SSUB16 performs two 16-bit signed integer subtract ions, and writes
+ * the results to the destination register.  It sets the APSR.GE bits
+ * according to the results of the subtractions.
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op ssub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+ssub16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+ssub16.disasm = {
+  buffer << "ssub16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+ssub16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs)),
+      gev = (((op1 & ~op2 & ~res) | (~op1 & op2 & res)) ^ ~res) & U32(msbs); //< GE vector
+  
+  cpu.SetGPR( rd, U32(res) );
+  cpu.CPSR().Set( GE, ((gev>>15)|(gev>>14)|(gev>>29)|(gev>>28)) & U32(0xf) );
+};
+
+/*
+ * end of ssub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ssub8 (Signed Substract 8) instruction
+ *
+ * SSUB8 performs four 8-bit signed integer subtractions, and writes
+ * the results to the destination register.  It sets the APSR.GE bits
+ * according to the results of the subtractions.
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op ssub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+ssub8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+ssub8.disasm = {
+  buffer << "ssub8\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+ssub8.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs)),
+      gev = (((op1 & ~op2 & ~res) | (~op1 & op2 & res)) ^ ~res) & U32(msbs); //< GE vector
+  
+  cpu.SetGPR( rd, U32(res) );
+  cpu.CPSR().Set( GE, ((gev>>7)|(gev>>14)|(gev>>21)|(gev>>28)) & U32(0xf) );
+};
+
+/*
+ * end of ssub8 instruction
  *******************************************************************/
 
 op uasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
@@ -662,7 +824,7 @@ uqsub8.execute = {
     }
   
   cpu.SetGPR( rd, res );
-}
+};
 
 /*
  * end of uqsub8 instruction

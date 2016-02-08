@@ -1129,9 +1129,10 @@ rev.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * revsh (Byte-Reverse Word) instruction
+ * revsh (Byte-Reverse Signed Halfword) instruction
  *
- * REVSH reverses the byte order in a 32-bit register.
+ * REVSH reverses the byte order in the lower 16-bit halfword of a
+ * 32-bit register, and sign-extends the result to 32 bits.
  */
 
 { ARCH::Config::insns6 }:                                       \
@@ -1140,6 +1141,18 @@ op revsh( cond[4]: 0b01101[5]: 0b1[1]: 0b11[2]: 0b1111[4]: rd[4]: 0b1111[4]: 0b1
 revsh.disasm = {
   buffer << "revsh" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
+
+revsh.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+  
+  U16 src( cpu.GetGPR(rm) );
+  cpu.SetGPR( rd, U32(S32(S16((src >> 8) | (src << 8)))) );
 };
 
 /*
