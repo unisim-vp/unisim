@@ -254,6 +254,44 @@ namespace arm {
     return U32T((overflow | underflow) != U32T(0));
   }
   
+  template <typename U32T, typename SWPT>
+  U32T
+  UnsignedPSat(U32T& res, U32T const& overflow, SWPT const& )
+  {
+    // In the following we saturate (if needed) the packed res value
+    // by arithmetic and logic means. BIC masks represent bits that
+    // should be cleared, and BIS masks represent bits that should be
+    // set. The caller provides overflow (respectively underflow)
+    // value that should have its packed MSB set in case of overflow
+    // (respectively underflow).
+    
+    U32T of_bis = overflow & U32T(SWPT::msbmask);
+    of_bis |= (((of_bis ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | of_bis) - U32T(SWPT::lsbmask);
+    
+    res |= of_bis;
+    
+    return U32T(of_bis != U32T(0));
+  }
+  
+  template <typename U32T, typename SWPT>
+  U32T
+  UnsignedNSat(U32T& res, U32T const& no_uflow, SWPT const& )
+  {
+    // In the following we saturate (if needed) the packed res value
+    // by arithmetic and logic means. BIC masks represent bits that
+    // should be cleared, and BIS masks represent bits that should be
+    // set. The caller provides overflow (respectively underflow)
+    // value that should have its packed MSB set in case of overflow
+    // (respectively underflow).
+    
+    U32T uf_bic = no_uflow & U32T(SWPT::msbmask);
+    uf_bic |= (((uf_bic ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | uf_bic) - U32T(SWPT::lsbmask);
+    
+    res &= uf_bic;
+    
+    return U32T(uf_bic != U32T(-1));
+  }
+  
   template <typename coreT>
   void
   CPSRWriteByInstr( coreT& core, typename coreT::U32 const& value, uint8_t mask, bool is_excpt_return )

@@ -1476,22 +1476,6 @@ qsax.disasm = {
  *******************************************************************/
 
 /*******************************************************************
- * uqadd16 instruction
- */
-
-{ ARCH::Config::insns6 }:                                       \
-op uqadd16( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
-
-uqadd16.disasm = {
-  buffer << "uqadd16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of uqadd16 instruction
- *******************************************************************/
-
-/*******************************************************************
  * uqasx instruction
  */
 
@@ -1524,35 +1508,108 @@ uqsax.disasm = {
  *******************************************************************/
 
 /*******************************************************************
- * uqsub16 instruction
+ * uqadd16 (Unsigned Saturating Add 16) instruction
+ * 
+ * UQADD16 performs two unsigned 16-bit integer additions, saturates
+ * the results to the 16-bit unsigned integer range 0 <= x <= 2^16-1,
+ * and writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op uqadd16( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
+uqadd16.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+uqadd16.disasm = {
+  buffer << "uqadd16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+uqadd16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs));
+  
+  UnsignedPSat( res, ((op1 & op2) | (~res & (op1 | op2))), SWP<16>() );
+  
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of uqadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqadd8 (Unsigned Saturating Add 8) instruction
+ * 
+ * UQADD8 performs four unsigned 8-bit integer additions, satura tes
+ * the results to the 8-bit unsigned integer range 0 <= x <= 2^8-1,
+ * and writes the results to the destination register
+ */
+
+{ ARCH::Config::insns6 }: \
+op uqadd8( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
+uqadd8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+uqadd8.disasm = {
+  buffer << "uqadd8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+uqadd8.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs));
+  
+  UnsignedPSat( res, ((op1 & op2) | (~res & (op1 | op2))), SWP<8>() );
+  
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of uqadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqsub16 (Unsigned Saturating Subtract 16) instruction
+ * 
+ * UQSUB16 performs two unsigned 16-bit integer subtractions,
+ * saturates the results to the 16-bit unsigned integer range 0 <= x
+ * <= 2^16-1, and writes the results to the destination register.
  */
 
 { ARCH::Config::insns6 }: \
 op uqsub16( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
+uqsub16.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 uqsub16.disasm = {
   buffer << "uqsub16" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
-/*
- * end of uqsub16 instruction
- *******************************************************************/
-
-/*******************************************************************
- * uqadd8 instruction
- */
-
-{ ARCH::Config::insns6 }: \
-op uqadd8( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
-
-uqadd8.disasm = {
-  buffer << "uqadd8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+uqsub16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs));
+  
+  UnsignedNSat( res, ((op1 & ~op2) | (~res & (op1 | ~op2))), SWP<16>() );
+  
+  cpu.SetGPR( rd, U32(res) );
 };
 
 /*
- * end of uqadd8 instruction
+ * end of uqsub16 instruction
  *******************************************************************/
 
 /*******************************************************************
@@ -1566,6 +1623,7 @@ uqadd8.disasm = {
 
 { ARCH::Config::insns6 }: \
 op uqsub8( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
+uqsub8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 uqsub8.disasm = {
   buffer << "uqsub8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
@@ -1573,21 +1631,17 @@ uqsub8.disasm = {
 };
 
 uqsub8.execute = {
-  if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
   
   typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask);
   
-  U32 rnval = cpu.GetGPR(rn), rmval = cpu.GetGPR(rm), res(0), flags(0);
-  U32 const low_byte(0xff);
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs));
   
-  for(unsigned int byte_index = 0; byte_index < 4; byte_index++, rnval >>= 8, rmval >>= 8)
-    {
-      U32 lhb(rnval & low_byte), rhb(rmval & low_byte), sum = lhb - rhb;
-      sum = (sum & ~(sum >> 8)) & low_byte; // saturate/truncate
-      res |= sum << (8*byte_index);
-    }
+  UnsignedNSat( res, ((op1 & ~op2) | (~res & (op1 | ~op2))), SWP<8>() );
   
-  cpu.SetGPR( rd, res );
+  cpu.SetGPR( rd, U32(res) );
 };
 
 /*
