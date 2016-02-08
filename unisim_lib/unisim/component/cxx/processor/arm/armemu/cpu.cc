@@ -336,11 +336,22 @@ CPU::PerformPrefetchAccess( uint32_t addr )
 void
 CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
-  uint32_t write_addr = addr;
+  uint32_t const lo_mask = size - 1;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  uint32_t misalignment = addr & lo_mask;
+  
+  if (unlikely(misalignment)) {
+    // TODO: check if misaligned memory accesses are allowed
+    // TODO: how does endianness affects that ? 
+    for (uint32_t byte = 0; byte < size; ++ byte)
+      PerformWriteAccess( addr + byte, 1, (value >> (8*byte)) & 0xff );
+    return;
+  }
+  
+  uint32_t write_addr = addr & ~lo_mask;
+  
   uint8_t data[4];
   bool cache_access = dcache.GetSize() and SCTLR::C.Get( this->sctlr );
-
-  if (size > 4) throw 0; // should never happen
 
   if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
     // fix the write address according to request size when big endian
@@ -406,12 +417,23 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 uint32_t
 CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 {
-  uint32_t read_addr = addr & ~(uint32_t)(size - 1);
+  uint32_t const lo_mask = size - 1;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  uint32_t misalignment = addr & lo_mask;
+  
+  if (unlikely(misalignment)) {
+    // TODO: check if misaligned memory accesses are allowed
+    // TODO: how does endianness affects that ? 
+    uint32_t result = 0;
+    for (uint32_t byte = size; --byte < size; )
+      result = (result << 8) | PerformReadAccess( addr + byte, 1 );
+    return result;
+  }
+  
+  uint32_t read_addr = addr & ~lo_mask;
+  
   uint8_t data[4];
   bool cache_access = dcache.GetSize() and SCTLR::C.Get( this->sctlr );
-
-  if (size > 4) throw 0;
-  //uint32_t misalignment = addr & (size-1);
 
   // fix the read address depending on the request size and endianess
   if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {

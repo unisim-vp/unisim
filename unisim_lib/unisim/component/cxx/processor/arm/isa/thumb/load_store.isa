@@ -84,13 +84,13 @@ ldr_2.execute = {
  * ldr(3) (load word pc-relative) instruction
  */
 
-op ldr_lit( 0b01001[5]: rt[3]: shl<2> imm[8] );
+op ldr_lit_s( 0b01001[5]: rt[3]: shl<2> imm[8] );
 
-ldr_lit.disasm = {
+ldr_lit_s.disasm = {
   buffer << "ldr\t" << DisasmRegister(rt) << ", [pc, " << DisasmI(imm) << "]";
 };
 
-ldr_lit.execute = {
+ldr_lit_s.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   typedef typename ARCH::U32 U32;
