@@ -425,7 +425,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
     // TODO: check if misaligned memory accesses are allowed
     // TODO: how does endianness affects that ? 
     uint32_t result = 0;
-    for (uint32_t byte = size; --byte < size; )
+    for (uint32_t byte = size; --byte < size;)
       result = (result << 8) | PerformReadAccess( addr + byte, 1 );
     return result;
   }

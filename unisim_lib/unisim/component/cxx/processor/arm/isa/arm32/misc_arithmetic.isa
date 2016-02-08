@@ -55,13 +55,10 @@ qadd.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
   
-  S32 op1 = S32(cpu.GetGPR(rn)), op2 = S32(cpu.GetGPR(rm)),
-      res = op1 + op2;
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res = op1 + op2;
   
-  S32 overflow = (op1 & op2 & (~res)) | ((~op1) & (~op2) & res);
-  U32 saturation = SignedSat( cpu, res, overflow, 32 );
+  U32 saturation = SignedSat( res, ~op1 & ~op2 & res, op1 & op2 & ~res, SWP<32>() );
   
   cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
   
@@ -89,13 +86,10 @@ qsub.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
   
-  S32 op1 = S32(cpu.GetGPR(rm)), op2 = S32(cpu.GetGPR(rn)),
-      res = op1 - op2;
+  U32 op1 = cpu.GetGPR(rm), op2 = cpu.GetGPR(rn), res = op1 - op2;
   
-  S32 overflow = (op1 & (~op2) & (~res)) | ((~op1) & op2 & res);
-  U32 saturation = SignedSat( cpu, res, overflow, 32 );
+  U32 saturation = SignedSat( res, ~op1 & op2 & res, op1 & ~op2 & ~res, SWP<32>() );
   
   cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
   
@@ -123,16 +117,14 @@ qdadd.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
   
   U32 saturation = cpu.CPSR().Get( Q );
   
-  S32 op1 = S32(cpu.GetGPR(rn)), tmp = op1 + op1;
-  saturation |= SignedSat( cpu, tmp, (op1 ^ tmp), 32 );
+  U32 op1 = cpu.GetGPR(rn), tmp = op1 + op1;
+  saturation |= SignedSat( tmp, ~op1 & tmp, op1 & ~tmp, SWP<32>() );
   
-  S32 op2 = S32(cpu.GetGPR(rm)), res = op2 + tmp;
-  S32 overflow = (op2 & tmp & (~res)) | ((~op2) & (~tmp) & res);
-  saturation |= SignedSat( cpu, res, overflow, 32 );
+  U32 op2 = U32(cpu.GetGPR(rm)), res = op2 + tmp;
+  saturation |= SignedSat( res, ~op2 & ~tmp & res, op2 & tmp & ~res, SWP<32>() );
   
   cpu.CPSR().Set( Q, saturation );
   
@@ -160,16 +152,14 @@ qdsub.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
   
   U32 saturation = cpu.CPSR().Get( Q );
   
-  S32 op1 = S32(cpu.GetGPR(rn)), tmp = op1 + op1;
-  saturation |= SignedSat( cpu, tmp, (op1 ^ tmp), 32 );
+  U32 op1 = cpu.GetGPR(rn), tmp = op1 + op1;
+  saturation |= SignedSat( tmp, ~op1 & tmp, op1 & ~tmp, SWP<32>() );
   
-  S32 op2 = S32(cpu.GetGPR(rm)), res = op2 - tmp;
-  S32 overflow = (op2 & (~tmp) & (~res)) | ((~op2) & tmp & res);
-  saturation |= SignedSat( cpu, res, overflow, 32 );
+  U32 op2 = cpu.GetGPR(rm), res = op2 - tmp;
+  saturation |= SignedSat( res, ~op2 & tmp & res, op2 & ~tmp & ~res, SWP<32>() );
   
   cpu.CPSR().Set( Q, saturation );
   

@@ -220,34 +220,40 @@ namespace arm {
     core.CPSR().Set( V, ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
   }
   
-  template <typename coreT>
-  typename coreT::U32
-  SignedSat(coreT const& core, typename coreT::S32& res, typename coreT::S32 const& overflow, int bits )
+  template <unsigned SIZE> struct _SWP_MSB { static uint32_t const mask = (_SWP_MSB<SIZE*2>::mask >> SIZE) | _SWP_MSB<SIZE*2>::mask; };
+  template <> struct _SWP_MSB<32u> { static uint32_t const mask = 0x80000000; };
+  
+  template <unsigned SIZE>
+  struct SWP
   {
-    // In the following we saturate (if needed) the signed value by
-    // arithmetic and logic means. Three masks are used; (1) an overflow
-    // mask with all bits set according to overflow, (2) a saturation
-    // mask same as overflow mask with msb cleared, and (3) a sign mask
-    // with all bit set if untruncated result is negative. The caller
-    // provides an overflow value that should have the msb set in case
-    // of overflow (msb being bits-1). In the case the overflow msb is
-    // cleared, this function only sign extends the result to full
-    // precision of native type.
-    
-    typedef typename coreT::S32 S32;
-    typedef typename coreT::U32 U32;
-    
-    unsigned const shift = (32 - bits); // bits to align intended MSB with native MSB.
-    S32 tmp( res << shift );
-    S32 overflow_mask( (overflow << shift) >> 31 );
-    tmp ^= overflow_mask; // bit inversion in case of overflow
-    S32 saturation_mask = overflow_mask & S32(0x7fffffff);
-    S32 sign_mask = tmp >> 31;
-    // Saturate, in case of overflow, and sign extend
-    res = (((tmp^sign_mask) | saturation_mask) ^ sign_mask) >> shift;
-    return U32(overflow_mask) & U32(1);
-  }
+    static unsigned const size = SIZE;
+    static unsigned const msb2lsb = SIZE-1;
+    static uint32_t const msbmask = _SWP_MSB<SIZE>::mask;
+    static uint32_t const lsbmask = msbmask >> msb2lsb;
+  };
 
+  template <typename U32T, typename SWPT>
+  U32T
+  SignedSat(U32T& res, U32T const& overflow, U32T const& underflow, SWPT const& )
+  {
+    // In the following we saturate (if needed) the packed res value
+    // by arithmetic and logic means. BIC masks represent bits that
+    // should be cleared, and BIS masks represent bits that should be
+    // set. The caller provides overflow (respectively underflow)
+    // value that should have its packed MSB set in case of overflow
+    // (respectively underflow).
+    
+    U32T of_bic = overflow & U32T(SWPT::msbmask);
+    U32T of_bis = (((of_bic ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | of_bic) - U32T(SWPT::lsbmask);
+    
+    U32T uf_bis = underflow & U32T(SWPT::msbmask);
+    U32T uf_bic = (((uf_bis ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | uf_bis) - U32T(SWPT::lsbmask);
+    
+    res = (res | (of_bis | uf_bis)) & ~(of_bic | uf_bic);
+    
+    return U32T((overflow | underflow) != U32T(0));
+  }
+  
   template <typename coreT>
   void
   CPSRWriteByInstr( coreT& core, typename coreT::U32 const& value, uint8_t mask, bool is_excpt_return )
