@@ -866,8 +866,7 @@ op pld_imm( 0b1111[4]: 0b01[2]: 0b0[1]: 0b1[1]: u[1]: r[1]: 0b0[1]: 0b1[1]: rn[4
 pld_imm.var imm : {int32_t} = {u?offset:-offset};
 
 pld_imm.disasm = {
-  buffer << "pld" << (r?"":"w") << "\t"
-         << DisasmMemoryRI(rn,imm,true,false);
+  buffer << "pld" << (r?"":"w") << "\t" << DisasmMemoryRI(rn,imm,true,false);
 };
 
 pld_imm.execute = { /*ignore for now*/ };

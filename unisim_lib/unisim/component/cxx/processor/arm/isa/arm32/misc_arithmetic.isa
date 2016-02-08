@@ -39,7 +39,12 @@
 **********************************************/
 
 /*******************************************************************
- * qadd instruction
+ * qadd (Saturating Add) instruction
+ *
+ * QADD adds two register values, saturates the result to the 32-bit
+ * signed integer range -2^31 to 2^31-1, and writes the result to the
+ * destination register. If saturation occurs, it sets the Q flag in
+ * the APSR.
  */
 
 { ARCH::Config::insns5E }: \
@@ -70,7 +75,81 @@ qadd.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * qsub instruction
+ * qadd16 (Saturating Add 16) instruction
+ * 
+ * QADD16 performs two 16-bit integer additions, saturates the results
+ * to the 16-bit signed integer range -2^15 <= x <= 2^15-1, and writes
+ * the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op qadd16( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
+
+qadd16.disasm = {
+  buffer << "qadd16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+qadd16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & msbs);
+  
+  SignedSat( res, ~op1 & ~op2 & res, op1 & op2 & ~res, SWP<16>() );
+  
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of qadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qadd8 (Saturating Add 8) instruction
+ *
+ * QADD8 performs four 8-bit integer additions, saturates the results
+ * to the 8-bit signed integer range -2^7 <= x <= 2^7-1, and writes
+ * the results to the destination register.
+
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op qadd8( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
+
+qadd8.disasm = {
+  buffer << "qadd8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+qadd8.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & msbs);
+  
+  SignedSat( res, ~op1 & ~op2 & res, op1 & op2 & ~res, SWP<8>() );
+  
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of qadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsub (Saturating Subtract) instruction
+ * 
+ * QSUB subtracts one register value from another register value,
+ * saturates the result to the 32-bit signed integer range -2^31 <= x
+ * <= 2^31-1, and writes the result to the destination register. If
+ * saturation occurs, it sets the Q flag in the APSR.
  */
 
 { ARCH::Config::insns5E }: \
@@ -98,6 +177,78 @@ qsub.execute = {
 
 /*
  * end of qsub instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsub16 (Saturating Subtract 16) instruction
+ *
+ * QSUB16 performs two 16-bit integer subtractions, saturates the
+ * results to the 16-bit signed integer range -2^15 <= x <= 2^15-1, and
+ * writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op qsub16( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
+
+qsub16.disasm = {
+  buffer << "qsub16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+qsub16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rm), op2 = cpu.GetGPR(rn),
+      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & msbs);
+
+  U32 saturation = SignedSat( res, ~op1 & op2 & res, op1 & ~op2 & ~res, SWP<16>() );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of qsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsub8 (Saturating Subtract 8) instruction
+ *
+ * QSUB8 performs four 8-bit integer subtractions, saturates the
+ * results to the 8-bit signed integer range -2^7 <= x <= 2^7-1, and
+ * writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op qsub8( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
+
+qsub8.disasm = {
+  buffer << "qsub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+qsub8.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rm), op2 = cpu.GetGPR(rn),
+      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & msbs);
+
+  U32 saturation = SignedSat( res, ~op1 & op2 & res, op1 & ~op2 & ~res, SWP<8>() );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of qsub8 instruction
  *******************************************************************/
 
 /*******************************************************************
@@ -1189,22 +1340,6 @@ usub8.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * qadd16 instruction
- */
-
-{ ARCH::Config::insns6 }:                                       \
-op qadd16( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
-
-qadd16.disasm = {
-  buffer << "qadd16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of qadd16 instruction
- *******************************************************************/
-
-/*******************************************************************
  * qasx instruction
  */
 
@@ -1234,54 +1369,6 @@ qsax.disasm = {
 
 /*
  * end of qsax instruction
- *******************************************************************/
-
-/*******************************************************************
- * qsub16 instruction
- */
-
-{ ARCH::Config::insns6 }:                                       \
-op qsub16( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
-
-qsub16.disasm = {
-  buffer << "qsub16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of qsub16 instruction
- *******************************************************************/
-
-/*******************************************************************
- * qadd8 instruction
- */
-
-{ ARCH::Config::insns6 }:                                       \
-op qadd8( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
-
-qadd8.disasm = {
-  buffer << "qadd8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of qadd8 instruction
- *******************************************************************/
-
-/*******************************************************************
- * qsub8 instruction
- */
-
-{ ARCH::Config::insns6 }:                                       \
-op qsub8( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
-
-qsub8.disasm = {
-  buffer << "qsub8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of qsub8 instruction
  *******************************************************************/
 
 /*******************************************************************
