@@ -84,6 +84,7 @@ qadd.execute = {
 
 { ARCH::Config::insns6 }:                                       \
 op qadd16( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
+qadd16.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 qadd16.disasm = {
   buffer << "qadd16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
@@ -97,7 +98,7 @@ qadd16.execute = {
   uint32_t const msbs(SWP<16>::msbmask);
   
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
-      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & msbs);
+      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs));
   
   SignedSat( res, ~op1 & ~op2 & res, op1 & op2 & ~res, SWP<16>() );
   
@@ -119,6 +120,7 @@ qadd16.execute = {
 
 { ARCH::Config::insns6 }:                                       \
 op qadd8( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
+qadd8.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 qadd8.disasm = {
   buffer << "qadd8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
@@ -132,7 +134,7 @@ qadd8.execute = {
   uint32_t const msbs(SWP<8>::msbmask);
   
   U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
-      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & msbs);
+      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs));
   
   SignedSat( res, ~op1 & ~op2 & res, op1 & op2 & ~res, SWP<8>() );
   
@@ -189,6 +191,7 @@ qsub.execute = {
 
 { ARCH::Config::insns6 }:                                       \
 op qsub16( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
+qsub16.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 qsub16.disasm = {
   buffer << "qsub16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
@@ -202,7 +205,7 @@ qsub16.execute = {
   uint32_t const msbs(SWP<16>::msbmask);
   
   U32 op1 = cpu.GetGPR(rm), op2 = cpu.GetGPR(rn),
-      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & msbs);
+      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs));
 
   U32 saturation = SignedSat( res, ~op1 & op2 & res, op1 & ~op2 & ~res, SWP<16>() );
   
@@ -225,6 +228,7 @@ qsub16.execute = {
 
 { ARCH::Config::insns6 }:                                       \
 op qsub8( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
+qsub8.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 qsub8.disasm = {
   buffer << "qsub8" << DisasmCondition(cond) << '\t'
@@ -238,7 +242,7 @@ qsub8.execute = {
   uint32_t const msbs(SWP<8>::msbmask);
   
   U32 op1 = cpu.GetGPR(rm), op2 = cpu.GetGPR(rn),
-      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & msbs);
+      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs));
 
   U32 saturation = SignedSat( res, ~op1 & op2 & res, op1 & ~op2 & ~res, SWP<8>() );
   

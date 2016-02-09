@@ -947,7 +947,8 @@ pli_reg.disasm = {
  */
 
 op ldmdb( 0b1110100100[10]: w[1]: 0b1[1]: rn[4]:> <: reglist[16] );
-ldmdb.var reject : {Reject} = {(rn == 15) or ((reglist & (reglist-1))==0) or ((reglist >> 13) & 1) or ((reglist >> 15) & (reglist >> 14) & 1)};
+ldmdb.var reject : {Reject} = {(rn == 15) or ((reglist & (reglist-1))==0) or ((reglist >> 13) & 1) or
+                               ((reglist >> 15) & (reglist >> 14) & 1) or (w and ((reglist >> rn) & 1))};
 
 ldmdb.disasm = { 
   buffer << "ldmdb\t" << DisasmRegister(rn) << (w?"!":"") << ", {" << DisasmRegList(reglist) << "}";
@@ -968,7 +969,8 @@ ldmdb.execute = {
 };
 
 op ldmia_w( 0b1110100010[10]: w[1]: 0b1[1]: rn[4]:> <: reglist[16] );
-ldmia_w.var reject : {Reject} = {(rn == 15) or ((reglist & (reglist-1))==0) or ((reglist >> 13) & 1) or ((reglist >> 15) & (reglist >> 14) & 1)};
+ldmia_w.var reject : {Reject} = {(rn == 15) or ((reglist & (reglist-1))==0) or ((reglist >> 13) & 1) or
+                                 ((reglist >> 15) & (reglist >> 14) & 1) or (w and ((reglist >> rn) & 1))};
 
 ldmia_w.disasm = {
   buffer << "ldmia.w\t" << DisasmRegister(rn) << (w?"!":"") << ", {" << DisasmRegList(reglist) << "}";
