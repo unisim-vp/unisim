@@ -456,6 +456,42 @@ op ssub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
 ssub16.disasm = { buffer << "ssub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 /*******************************************************************
+ * uadd16 (Unsigned Add 16) instruction
+ * 
+ * UADD16 performs two 16-bit unsigned integer additions, and writes
+ * the results to the dest ination register.  It sets the APSR.GE bits
+ * according to the results of the additions.
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op uadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+uadd16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uadd16.disasm = {
+  buffer << "uadd16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+
+uadd16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs)),
+      cv = ((op1 & op2) | (~res & (op1 | op2))) & U32(msbs); //< Carries vector
+  
+  cpu.SetGPR( rd, res );
+  cpu.CPSR().Set( GE, ((cv>>15)|(cv>>14)|(cv>>29)|(cv>>28)) & U32(0xf) );
+}
+
+/*
+ * end of uadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
  * uadd8 (unsigned add 8) instruction
  * 
  * UADD8 performs four unsigned 8-bit integer additions, and writes
@@ -476,27 +512,89 @@ uadd8.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask);
   
-  U32 rnval = cpu.GetGPR(rn), rmval = cpu.GetGPR(rm), res(0), flags(0);
-  U32 const low_byte(0xff), low_bit(0x1);
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 & U32(~msbs)) + (op2 & U32(~msbs))) ^ ((op1 ^ op2) & U32(msbs)),
+      cv = ((op1 & op2) | (~res & (op1 | op2))) & U32(msbs); //< Carries vector
   
-  for(unsigned int byte_index = 0; byte_index < 4; byte_index++, rnval >>= 8, rmval >>= 8)
-    {
-      U32 sum = (rnval & low_byte) + (rmval & low_byte);
-      res |= (sum & low_byte) << (8*byte_index);
-      flags |= ((sum >> 8) & low_bit) << byte_index;
-    }    
-	
   cpu.SetGPR( rd, res );
-  cpu.CPSR().Set( GE, flags );
+  cpu.CPSR().Set( GE, ((cv>>7)|(cv>>14)|(cv>>21)|(cv>>28)) & U32(0xf) );
 }
 
 /*
  * end of uadd8 instruction
  *******************************************************************/
 
-op uadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
-uadd16.disasm = { buffer << "uadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
+/*******************************************************************
+ * usub16 (Unsigned Subtract 16) instruction
+ * 
+ * USUB16 performs two 16-bit unsigned integer subtractions, and
+ * writes the results to the destination register. It sets the APSR.GE
+ * bits according to the results of the subtractions.
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op usub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+usub16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+usub16.disasm = {
+  buffer << "usub16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+usub16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs)),
+      cv = ((op1 & ~op2) | (~res & (op1 | ~op2))) & U32(msbs); //< Carries vector
+  
+  cpu.SetGPR( rd, U32(res) );
+  cpu.CPSR().Set( GE, ((cv>>15)|(cv>>14)|(cv>>29)|(cv>>28)) & U32(0xf) );
+};
+
+/*
+ * end of usub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * usub8 (Unsigned Subtract 8) instruction
+ *
+ * USUB8 performs four 8-bit unsigned integer subtractions, and writes
+ * the results to the destination register. It sets the APSR.GE bits
+ * according to the results of the subtractions.
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op usub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+usub8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+usub8.disasm = {
+  buffer << "usub8\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+usub8.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs)),
+      cv = ((op1 & ~op2) | (~res & (op1 | ~op2))) & U32(msbs); //< Carries vector
+  
+  cpu.SetGPR( rd, U32(res) );
+  cpu.CPSR().Set( GE, ((cv>>7)|(cv>>14)|(cv>>21)|(cv>>28)) & U32(0xf) );
+}
+
+/*
+ * end of usub8 instruction
+ *******************************************************************/
 
 op uasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
 uasx.disasm = { buffer << "uasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
@@ -595,47 +693,4 @@ usat16_rir.disasm = {
 
 op usax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
 usax.disasm = { buffer << "usax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-/*******************************************************************
- * usub8 (Unsigned Subtract 8) instruction
- *
- * USUB8 performs four 8-bit unsigned integer subtractions, and writes
- * the results to the destination register. It sets the APSR.GE bits
- * according to the results of the subtractions.
- */
-
-{ ARCH::Config::insns6 }:                                       \
-op usub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
-usub8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
-
-usub8.disasm = {
-  buffer << "usub8\t" << DisasmRegister(rd)
-         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-usub8.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
-  
-  typedef typename ARCH::U32 U32;
-  
-  U32 rnval = cpu.GetGPR(rn), rmval = cpu.GetGPR(rm), res(0), flags(0);
-  U32 const low_byte(0xff), low_bit(0x1);
-  
-  for(unsigned int byte_index = 0; byte_index < 4; byte_index++, rnval >>= 8, rmval >>= 8)
-    {
-      U32 dif = (rnval & low_byte) - (rmval & low_byte);
-      res |= (dif & low_byte) << (8*byte_index);
-      flags |= ((~dif >> 8) & low_bit) << byte_index;
-    }    
-	
-  cpu.SetGPR( rd, res );
-  cpu.CPSR().Set( GE, flags );
-}
-
-/*
- * end of usub8 instruction
- *******************************************************************/
-
-op usub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
-usub16.disasm = { buffer << "usub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
