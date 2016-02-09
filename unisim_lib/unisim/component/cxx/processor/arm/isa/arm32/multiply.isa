@@ -528,6 +528,7 @@ udiv.disasm = {
 
 { ARCH::Config::insns6 }:                                                      \
 op smlad( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: swap[1]: 0b1[1]: rn[4] );
+smlad.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
 
 smlad.disasm = {
   buffer << "smlad" << (swap?"x":"") << DisasmCondition(cond) << '\t'
@@ -575,6 +576,7 @@ smlad.execute = {
 
 { ARCH::Config::insns6 }:                                                      \
 op smlald( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b00[2]: swap[1]: 0b1[1]: rn[4] );
+smlald.var reject : {Reject} = {(rdlo == 15) or (rdhi == 15) or (rn == 15) or (rm == 15) or (rdhi == rdlo)};
 
 smlald.disasm = {
   buffer << "smlald" << (swap?"x":"") << DisasmCondition(cond) << '\t'
@@ -620,6 +622,7 @@ smlald.execute = {
 
 { ARCH::Config::insns6 }:                                                      \
 op smlsd( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b01[2]: swap[1]: 0b1[1]: rn[4] );
+smlsd.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
 
 smlsd.disasm = {
   buffer << "smlsd" << (swap?"x":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
@@ -666,6 +669,7 @@ smlsd.execute = {
 
 { ARCH::Config::insns6 }:                                                      \
 op smlsld( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b01[2]: swap[1]: 0b1[1]: rn[4] );
+smlsld.var reject : {Reject} = {(rdlo == 15) or (rdhi == 15) or (rn == 15) or (rm == 15) or (rdlo == rdhi)};
 
 smlsld.disasm = {
   buffer << "smlsld" << (swap?"x":"") << DisasmCondition(cond) << '\t'
@@ -709,6 +713,7 @@ smlsld.execute = {
 
 { ARCH::Config::insns6 }:                                                      \
 op smmla( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: round[1]: 0b1[1]: rn[4] );
+smmla.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
 
 smmla.disasm = {
   buffer << "smmla" << (round?"r":"") << DisasmCondition(cond) << '\t'
@@ -722,7 +727,6 @@ smmla.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S16 S16;
   
   S64 a(S32(cpu.GetGPR(ra))), n(S32(cpu.GetGPR(rn))), m(S32(cpu.GetGPR(rm)));
   S64 res = (a<<32) + n*m + (S64(round)<<31);
@@ -745,6 +749,7 @@ smmla.execute = {
 
 { ARCH::Config::insns6 }:                                                      \
 op smmls( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b11[2]: round[1]: 0b1[1]: rn[4] );
+smmls.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
 
 smmls.disasm = {
   buffer << "smmls" << (round?"r":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
@@ -757,7 +762,6 @@ smmls.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S16 S16;
   
   S64 a(S32(cpu.GetGPR(ra))), n(S32(cpu.GetGPR(rn))), m(S32(cpu.GetGPR(rm)));
   S64 res = (a<<32) - n*m + (S64(round)<<31);
@@ -782,6 +786,7 @@ smmls.execute = {
 
 { ARCH::Config::insns6 }:                                                      \
 op smmul( cond[4]: 0b01110101[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: round[1]: 0b1[1]: rn[4] );
+smmul.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 smmul.disasm = {
   buffer << "smmul" << (round?"r":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
@@ -794,7 +799,6 @@ smmul.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S16 S16;
   
   S64 n(S32(cpu.GetGPR(rn))), m(S32(cpu.GetGPR(rm)));
   S64 res = n*m + (S64(round)<<31);
@@ -820,6 +824,7 @@ smmul.execute = {
 
 { ARCH::Config::insns6 }:                                                      \
 op smuad( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: swap[1]: 0b1[1]: rn[4] );
+smuad.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 smuad.disasm = {
   buffer << "smuad" << (swap?"x":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
@@ -865,6 +870,7 @@ smuad.execute = {
 
 { ARCH::Config::insns6 }:                                                      \
 op smusd( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b01[2]: swap[1]: 0b1[1]: rn[4] );
+smusd.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 smusd.disasm = {
   buffer << "smusd" << (swap?"x":"") << DisasmCondition(cond) << '\t'
@@ -875,7 +881,6 @@ smusd.disasm = {
 smusd.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
