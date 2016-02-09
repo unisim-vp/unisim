@@ -204,12 +204,10 @@ qsub16.execute = {
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
   
-  U32 op1 = cpu.GetGPR(rm), op2 = cpu.GetGPR(rn),
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs));
 
   U32 saturation = SignedSat( res, ~op1 & op2 & res, op1 & ~op2 & ~res, SWP<16>() );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
   
   cpu.SetGPR( rd, U32(res) );
 };
@@ -241,12 +239,10 @@ qsub8.execute = {
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
   
-  U32 op1 = cpu.GetGPR(rm), op2 = cpu.GetGPR(rn),
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
       res = ((op1 | U32(msbs)) - (op2 & U32(~msbs))) ^ ((op1 ^ ~op2) & U32(msbs));
 
   U32 saturation = SignedSat( res, ~op1 & op2 & res, op1 & ~op2 & ~res, SWP<8>() );
-  
-  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
   
   cpu.SetGPR( rd, U32(res) );
 };
