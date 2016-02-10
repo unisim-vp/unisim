@@ -460,19 +460,169 @@ shsub8.disasm = { buffer << "shsub8\t" << DisasmRegister(rd) << ", " << DisasmRe
 op shsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
 shsub16.disasm = { buffer << "shsub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op ssat_rir( 0b1111001100[10]: sht[1]: 0b0[1]: rn[4]:> <: 0b0[1]: shl<2> shv1[3]: rd[4]: shv0[2]: 0b0[1]: imm[5] );
-ssat_rir.var shv : {uint32_t} = {shv1|shv0};
+/*******************************************************************
+ * ssat (Signed Saturate) instruction
+ * 
+ * SSAT saturates an optionally-shifted signed value to a selectable
+ * signed range.  The Q flag is set if the operation saturates.
+ */
 
-ssat_rir.disasm = {
-  buffer << "ssat\t" << DisasmRegister(rd) << ", " << DisasmI(imm) << ", " << DisasmRegister(rn);
-  if (shv) buffer << ", " << (sht?"asr":"lsl") << " " << DisasmI(shv);
+op ssat( 0b1111001100[10]: shl<1> sh[1]: 0b0[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: 0b0[1]: sat_imm[5] );
+ssat.var imm : {uint32_t} = {imm1|imm0};
+ssat.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
+
+ssat.disasm = {
+  buffer << "ssat\t" << DisasmRegister(rd) << ", " << DisasmI(sat_imm)
+         << ", " << DisasmRegister(rn) << DisasmShImm( sh, imm );
 };
 
-op ssat16_rir( 0b1111001100[10]: 0b1[1]: 0b0[1]: rn[4]:> <: 0b0[1]: 0b000[3]: rd[4]: 0b00[2]: 0b0[1]: imm[5] );
-
-ssat16_rir.disasm = {
-  buffer << "ssat16\t" << DisasmRegister(rd) << ", " << DisasmI(imm) << ", " << DisasmRegister(rn);
+ssat.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  unsigned const ra = (31-sat_imm); // Right alignment
+  
+  U32 src = ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ),
+      res = src << ra;
+  
+  S32 const bound = S32(-1 << sat_imm);
+  U32 of = U32(S32(src) > ~bound) << 31, uf = U32(S32(src) < bound) << 31;
+  
+  U32 saturation = SignedSat( res, of, uf, SWP<32>() );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  
+  cpu.SetGPR( rd, U32(S32(res) >> ra) );
 };
+
+/*
+ * end of ssat instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ssat16 (Signed Saturate 16) instruction
+ * 
+ * SSAT16 saturates two signed 16- bit values to a selected signed
+ * range.  The Q flag is set if the operation saturates.
+ */
+
+op ssat16( 0b1111001100[10]: 0b1[1]: 0b0[1]: rn[4]:> <: 0b0[1]: 0b000[3]: rd[4]: 0b00[2]: 0b0[1]: sat_imm[5] );
+ssat16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
+
+ssat16.disasm = {
+  buffer << "ssat16\t" << DisasmRegister(rd) << ", " << DisasmI(sat_imm) << ", " << DisasmRegister(rn);
+};
+
+ssat16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::S16 S16;
+  unsigned const ra = (15-sat_imm); // Right alignment
+  
+  U32 src = cpu.GetGPR(rn), res = src << ra;
+  
+  S16 const bound = S16(-1 << sat_imm);
+  U32 of = (U32(S16(src) > ~bound) << 15) | (U32(S16(src >> 16) > ~bound) << 31),
+      uf = (U32(S16(src) < bound) << 15) | (U32(S16(src >> 16) < bound) << 31);
+  
+  U32 saturation = SignedSat( res, of, uf, SWP<16>() );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  
+  // undo right aligment and signed extend both halfword
+  cpu.SetGPR( rd, (U32(U16(S16(res>>16) >> ra)) << 16) | U32(U16(S16(res) >> ra)) );
+};
+
+/*
+ * end of ssat16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * usat (Unsigned Saturate) instruction
+ * 
+ * USAT saturates an optionally-shifted unsigned value to a selectable
+ * unsigned range.  The Q flag is set if the operation saturates.
+ */
+
+op usat( 0b1111001110[10]: shl<1> sh[1]: 0b0[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: 0b0[1]: sat_imm[5] );
+usat.var imm : {uint32_t} = {imm1|imm0};
+usat.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
+
+usat.disasm = {
+  buffer << "usat\t" << DisasmRegister(rd) << ", " << DisasmI(sat_imm)
+         << ", " << DisasmRegister(rn) << DisasmShImm(sh,imm);
+};
+
+usat.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  unsigned const ra = (32-sat_imm); // Right alignment
+  
+  U32 src = ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ),
+      res = src << ra;
+  
+  S32 const bound = S32(~(-1 << sat_imm));
+  U32 of = U32(S32(src) > bound) << 31, uf = U32(S32(src) < S32(0)) << 31;
+  
+  U32 saturation = cpu.CPSR().Get( Q );
+  saturation |= UnsignedPSat( res, of, SWP<32>() );
+  saturation |= UnsignedNSat( res, uf, SWP<32>() );
+  
+  cpu.CPSR().Set( Q, saturation );
+  
+  cpu.SetGPR( rd, res >> ra );
+};
+
+/*
+ * end of usat instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * usat16 (Unsigned Saturate 16) instruction
+ * 
+ * USAT16 saturates two signed 16- bit values to a selected unsigned
+ * range.  The Q flag is set if the operation saturates.
+ */
+
+op usat16( 0b1111001110[10]: 0b1[1]: 0b0[1]: rn[4]:> <: 0b0[1]: 0b000[3]: rd[4]: 0b00[2]: 0b0[1]: sat_imm[5] );
+usat16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
+
+usat16.disasm = {
+  buffer << "usat16\t" << DisasmRegister(rd) << ", " << DisasmI(sat_imm) << ", " << DisasmRegister(rn);
+};
+
+usat16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::S16 S16;
+  unsigned const ra = (16-sat_imm); // Right alignment
+  
+  U32 src = cpu.GetGPR(rn), res = src << ra;
+  
+  S16 const bound = S16(~(-1 << sat_imm));
+  U32 of = (U32(S16(src) > bound) << 15) | (U32(S16(src >> 16) > bound) << 31),
+      uf = (U32(S16(src) < S16(0)) << 15) | (U32(S16(src >> 16) < S16(0)) << 31);
+  
+  U32 saturation = cpu.CPSR().Get( Q );
+  saturation |= UnsignedPSat( res, of, SWP<16>() );
+  saturation |= UnsignedNSat( res, uf, SWP<16>() );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  
+  // undo right aligment and zero extend both halfword
+  cpu.SetGPR( rd, (U32(U16(res >> (16+ra))) << 16) | U32(U16(res >> ra)) );
+};
+
+/*
+ * end of usat16 instruction
+ *******************************************************************/
 
 op ssax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
 ssax.disasm = { buffer << "ssax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
@@ -493,7 +643,6 @@ uadd16.disasm = {
   buffer << "uadd16\t" << DisasmRegister(rd)
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
-
 
 uadd16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
@@ -931,20 +1080,6 @@ usad8.disasm = { buffer << "usad8\t" << DisasmRegister(rd) << ", " << DisasmRegi
 
 op usada8( 0b111110110111[12]: rn[4]:> <: ra[4]: rd[4]: 0b0000[4]: rm[4] );
 usada8.disasm = { buffer << "usada8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra); };
-
-op usat_rir( 0b1111001110[10]: sht[1]: 0b0[1]: rn[4]:> <: 0b0[1]: shl<2> shv1[3]: rd[4]: shv0[2]: 0b0[1]: imm[5] );
-usat_rir.var shv : {uint32_t} = {shv1|shv0};
-
-usat_rir.disasm = {
-  buffer << "usat\t" << DisasmRegister(rd) << ", " << DisasmI(imm) << ", " << DisasmRegister(rn);
-  if (shv) buffer << ", " << (sht?"asr":"lsl") << " " << DisasmI(shv);
-};
-
-op usat16_rir( 0b1111001110[10]: 0b1[1]: 0b0[1]: rn[4]:> <: 0b0[1]: 0b000[3]: rd[4]: 0b00[2]: 0b0[1]: imm[5] );
-
-usat16_rir.disasm = {
-  buffer << "usat16\t" << DisasmRegister(rd) << ", " << DisasmI(imm) << ", " << DisasmRegister(rn);
-};
 
 op usax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
 usax.disasm = { buffer << "usax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };

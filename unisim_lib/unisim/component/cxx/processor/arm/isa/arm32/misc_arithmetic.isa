@@ -535,12 +535,32 @@ sel.execute = {
  * signed range.  The Q flag is set if the operation saturates.
  */
 
-op ssat( cond[4]: 0b0110101[7]: sat_imm[5]: rd[4]: imm[5]: sh[1]: 0b01[2]: rm[4] );
+op ssat( cond[4]: 0b0110101[7]: sat_imm[5]: rd[4]: imm[5]: shl<1> sh[1]: 0b01[2]: rn[4] );
+ssat.var reject : {Reject} = {(rd == 15) or (rn == 15)};
 
 ssat.disasm = {
-  buffer << "ssat" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmI(sat_imm+1) << ", "
-         << DisasmRegister(rm) << DisasmShImm(sh?2:0,imm);
+  buffer << "ssat" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmI(sat_imm+1)
+         << ", " << DisasmRegister(rn) << DisasmShImm(sh,imm);
+};
+
+ssat.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  unsigned const ra = (31-sat_imm); // Right alignment
+  
+  U32 src = ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ),
+      res = src << ra;
+  
+  S32 const bound = S32(-1 << sat_imm);
+  U32 of = U32(S32(src) > ~bound) << 31, uf = U32(S32(src) < bound) << 31;
+  
+  U32 saturation = SignedSat( res, of, uf, SWP<32>() );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  
+  cpu.SetGPR( rd, U32(S32(res) >> ra) );
 };
 
 /*
@@ -554,11 +574,34 @@ ssat.disasm = {
  * range.  The Q flag is set if the operation saturates.
  */
 
-op ssat16( cond[4]: 0b01101010[8]: sat_imm[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
+op ssat16( cond[4]: 0b01101010[8]: sat_imm[4]: rd[4]: 0b1111[4]: 0b0011[4]: rn[4] );
+ssat16.var reject : {Reject} = {(rd == 15) or (rn == 15)};
 
 ssat16.disasm = {
   buffer << "ssat16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmI(sat_imm+1) << ", " << DisasmRegister(rm);
+         << DisasmRegister(rd) << ", " << DisasmI(sat_imm+1) << ", " << DisasmRegister(rn);
+};
+
+ssat16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::S16 S16;
+  unsigned const ra = (15-sat_imm); // Right alignment
+  
+  U32 src = cpu.GetGPR(rn), res = src << ra;
+  
+  S16 const bound = S16(-1 << sat_imm);
+  U32 of = (U32(S16(src) > ~bound) << 15) | (U32(S16(src >> 16) > ~bound) << 31),
+      uf = (U32(S16(src) < bound) << 15) | (U32(S16(src >> 16) < bound) << 31);
+  
+  U32 saturation = SignedSat( res, of, uf, SWP<16>() );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  
+  // undo right aligment and signed extend both halfword
+  cpu.SetGPR( rd, (U32(U16(S16(res>>16) >> ra)) << 16) | U32(U16(S16(res) >> ra)) );
 };
 
 /*
@@ -572,12 +615,34 @@ ssat16.disasm = {
  * unsigned range.  The Q flag is set if the operation saturates.
  */
 
-op usat( cond[4]: 0b0110111[7]: sat_imm[5]: rd[4]: imm[5]: sh[1]: 0b01[2]: rm[4] );
+op usat( cond[4]: 0b0110111[7]: sat_imm[5]: rd[4]: imm[5]: shl<1> sh[1]: 0b01[2]: rn[4] );
+usat.var reject : {Reject} = {(rd == 15) or (rn == 15)};
 
 usat.disasm = {
-  buffer << "usat" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmI(sat_imm) << ", "
-         << DisasmRegister(rm) << DisasmShImm(sh?2:0,imm);
+  buffer << "usat" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmI(sat_imm)
+         << ", " << DisasmRegister(rn) << DisasmShImm(sh,imm);
+};
+
+usat.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  unsigned const ra = (32-sat_imm); // Right alignment
+  
+  U32 src = ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ),
+      res = src << ra;
+  
+  S32 const bound = S32(~(-1 << sat_imm));
+  U32 of = U32(S32(src) > bound) << 31, uf = U32(S32(src) < S32(0)) << 31;
+  
+  U32 saturation = cpu.CPSR().Get( Q );
+  saturation |= UnsignedPSat( res, of, SWP<32>() );
+  saturation |= UnsignedNSat( res, uf, SWP<32>() );
+  
+  cpu.CPSR().Set( Q, saturation );
+  
+  cpu.SetGPR( rd, res >> ra );
 };
 
 /*
@@ -591,11 +656,36 @@ usat.disasm = {
  * range.  The Q flag is set if the operation saturates.
  */
 
-op usat16( cond[4]: 0b01101110[8]: sat_imm[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
+op usat16( cond[4]: 0b01101110[8]: sat_imm[4]: rd[4]: 0b1111[4]: 0b0011[4]: rn[4] );
+usat16.var reject : {Reject} = {(rd == 15) or (rn == 15)};
 
 usat16.disasm = {
   buffer << "usat16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmI(sat_imm) << ", " << DisasmRegister(rm);
+         << DisasmRegister(rd) << ", " << DisasmI(sat_imm) << ", " << DisasmRegister(rn);
+};
+
+usat16.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::S16 S16;
+  unsigned const ra = (16-sat_imm); // Right alignment
+  
+  U32 src = cpu.GetGPR(rn), res = src << ra;
+  
+  S16 const bound = S16(~(-1 << sat_imm));
+  U32 of = (U32(S16(src) > bound) << 15) | (U32(S16(src >> 16) > bound) << 31),
+      uf = (U32(S16(src) < S16(0)) << 15) | (U32(S16(src >> 16) < S16(0)) << 31);
+  
+  U32 saturation = cpu.CPSR().Get( Q );
+  saturation |= UnsignedPSat( res, of, SWP<16>() );
+  saturation |= UnsignedNSat( res, uf, SWP<16>() );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  
+  // undo right aligment and zero extend both halfword
+  cpu.SetGPR( rd, (U32(U16(res >> (16+ra))) << 16) | U32(U16(res >> ra)) );
 };
 
 /*
