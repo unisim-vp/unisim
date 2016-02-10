@@ -838,7 +838,14 @@ uint16_t CPU::getRegY() { return (regY); }
 void CPU::setRegSP(uint16_t val) { regSP = val; }
 uint16_t CPU::getRegSP() { return (regSP); }
 
-void CPU::setRegPC(uint16_t val) { regPC = val; }
+void CPU::setRegPC(uint16_t val) {
+	if (val == 0) {
+		reportTrap("Try to set PC to 0x0000");
+	} else {
+		regPC = val;
+	}
+
+}
 uint16_t CPU::getRegPC() { return (regPC); }
 
 void CPU::setRegTMP(unsigned int index, uint16_t val) { regTMP[index] = val; }

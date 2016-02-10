@@ -74,6 +74,7 @@
 
 #include <xml_atd_pwm_stub.hh>
 #include <can_stub.hh>
+#include <tle8264_2e.hh>
 
 #ifdef HAVE_RTBCOB
 #include "rtb_unisim.hh"
@@ -237,6 +238,24 @@ public:
 		return (t.to_seconds());
 	}
 
+	double Inject_CANArray(CAN_DATATYPE_ARRAY msg)
+	{
+		can_stub->Inject_CANArray(msg);
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	}
+
+    double getCANArray(CAN_DATATYPE_ARRAY *msg)
+    {
+    	can_stub->getCANArray(msg);
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
 private:
 
 private:
@@ -318,6 +337,7 @@ private:
 #endif
 
 	CAN_STUB *can_stub;
+	TLE8264_2E *tranceiver0, *tranceiver1,*tranceiver2,*tranceiver3,*tranceiver4;
 
 	//=========================================================================
 	//===                         Service instantiations                    ===

@@ -58,6 +58,7 @@
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
+#include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
 
 #include <unisim/kernel/service/service.hh>
@@ -170,6 +171,9 @@ public:
 	tlm_utils::simple_target_socket<S12SPI> slave_socket;
 	tlm_utils::simple_target_socket<S12SPI> bus_clock_socket;
 
+	tlm_utils::simple_initiator_socket<S12SPI> tx_socket;
+	tlm_utils::simple_target_socket<S12SPI> rx_socket;
+
 	S12SPI(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12SPI();
 
@@ -188,6 +192,8 @@ public:
     virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
     void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+
+	virtual void rx_b_transport(tlm::tlm_generic_payload&, sc_core::sc_time& t);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -238,6 +244,8 @@ private:
 
 	XINT_Payload *xint_payload;
 
+	PayloadFabric<tlm::tlm_generic_payload> spi_payload_fabric;
+
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
@@ -272,9 +280,6 @@ private:
 	bool spisr_read;
 	bool validFrameWaiting;
 
-	bool txd_pin_enable;
-	Parameter<bool> param_txd_pin_enable;
-
 	bool mosi;
 	unisim::kernel::service::Signal<bool> mosi_pin;
 
@@ -295,9 +300,11 @@ private:
 	uint8_t spicr2_register;	// 1 byte
 	uint8_t spibr_register; // 1 byte
 	uint8_t spisr_register; // 1 byte
+
 	uint8_t spidr_register; // 1 bytes
 
 	uint8_t /*spidr_tx_buffer,*/ spidr_rx_buffer;;
+	sc_event rx_buffer_event;
 
 	inline void ComputeBaudRate();
 
@@ -354,6 +361,8 @@ private:
 	}
 
 	inline bool isLSBFirst() { return ((spicr1_register & 0x01) != 0); }
+
+
 	inline bool isOutputBufferEnabled() { return ((spicr2_register & 0x08) != 0); }
 	inline bool isClkStopInWait() { return ((spicr2_register & 0x02) != 0); }
 
@@ -443,6 +452,7 @@ private:
 		}
 	}
 
+	inline void setSSLow(bool val) {  ss = val; }
 	inline bool isSSLow() { return (!ss); }
 
 	inline void startTransmission() {

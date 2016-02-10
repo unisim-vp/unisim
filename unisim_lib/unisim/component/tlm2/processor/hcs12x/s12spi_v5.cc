@@ -95,7 +95,6 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 
 	rx_socket.register_b_transport(this, &S12SPI::rx_b_transport);
 
-
 	SC_HAS_PROCESS(S12SPI);
 
 	SC_THREAD(TxRun);

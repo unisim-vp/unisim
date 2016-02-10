@@ -89,9 +89,9 @@ class CAN_STUB :
 
 {
 public:
-	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_rx_sock;  // binded to RX pin of the CAN (master)
+	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_tx_sock;  // binded to RX pin of the CAN (master)
 
-	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_tx_sock;  // binded to TX pin of the CAN (slave)
+	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_CAN_ProtocolTypes, 0> can_rx_sock;  // binded to TX pin of the CAN (slave)
 
 	CAN_STUB(const sc_module_name& name, Object *parent = 0);
 	~CAN_STUB();
@@ -124,8 +124,8 @@ public:
 	virtual void Inject_CANArray(CAN_DATATYPE_ARRAY msg);
 	virtual void getCANArray(CAN_DATATYPE_ARRAY *msg);
 
-	void processCANRX();
-	void processCANTX();
+	void processCAN_Inject();
+	void processCAN_Observe();
 	void watchdog();
 
 	int RandomizeData(std::vector<CAN_DATATYPE* > &vect);
@@ -134,8 +134,6 @@ public:
 
 
 protected:
-	double	can_rx_stimulus_period;
-	sc_time *can_rx_stimulus_period_sc;
 
 	int bw_inject_count;
 	sc_event can_bw_event;
@@ -160,24 +158,26 @@ private:
 
 	peq_with_get<CAN_Payload > input_payload_queue;
 
-	PayloadFabric<CAN_Payload > can_rx_payload_fabric;
+	PayloadFabric<CAN_Payload > can_inject_payload_fabric;
 
-	Parameter<double>	param_can_rx_stimulus_period;
+	double	can_inject_stimulus_period;
+	Parameter<double>	param_can_inject_stimulus_period;
+	sc_time *can_inject_stimulus_period_sc;
 
-	string can_rx_stimulus_file;
-	Parameter<string>	param_can_rx_stimulus_file;
+	string can_inject_stimulus_file;
+	Parameter<string>	param_can_inject_stimulus_file;
 
 	bool broadcast_enabled;
 	Parameter<bool>	param_broadcast_enabled;
 
-	ofstream can_rx_output_file;
-	ofstream can_tx_output_file;
+	ofstream can_inject_output_file;
+	ofstream can_observe_output_file;
 
 	bool terminated;
 
 
-	std::vector<CAN_DATATYPE* > can_rx_vect;
-	std::vector<CAN_DATATYPE* > can_tx_vect;
+	std::vector<CAN_DATATYPE* > can_inject_vect;
+	std::vector<CAN_DATATYPE* > can_observe_vect;
 };
 
 #endif /* CAN_STUB_HH_ */

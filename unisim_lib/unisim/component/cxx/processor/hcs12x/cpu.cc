@@ -491,12 +491,24 @@ unsigned int CPU::step()
 		}
 
 	}
-	catch (AsynchronousException& exc) { handleException(exc); }
-	catch (NonMaskableAccessErrorInterrupt& exc) { handleException(exc); }
-	catch (NonMaskableSWIInterrupt& exc) { handleException(exc); }
-	catch (TrapException& exc) { handleException(exc); }
-	catch (SysCallInterrupt& exc) { handleException(exc); }
-	catch (SpuriousInterrupt& exc) { handleException(exc); }
+	catch (AsynchronousException& exc) {
+		handleException(exc);
+	}
+	catch (NonMaskableAccessErrorInterrupt& exc) {
+		handleException(exc);
+	}
+	catch (NonMaskableSWIInterrupt& exc) {
+		handleException(exc);
+	}
+	catch (TrapException& exc) {
+		handleException(exc);
+	}
+	catch (SysCallInterrupt& exc) {
+		handleException(exc);
+	}
+	catch (SpuriousInterrupt& exc) {
+		handleException(exc);
+	}
 	catch(Exception& e)
 	{
 		if(debug_enabled && verbose_step)
