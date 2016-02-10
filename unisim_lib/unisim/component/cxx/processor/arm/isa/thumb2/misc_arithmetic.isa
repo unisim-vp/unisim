@@ -571,7 +571,7 @@ usat.execute = {
   
   U32 saturation = cpu.CPSR().Get( Q );
   saturation |= UnsignedPSat( res, of, SWP<32>() );
-  saturation |= UnsignedNSat( res, uf, SWP<32>() );
+  saturation |= UnsignedNSat( res, ~uf, SWP<32>() );
   
   cpu.CPSR().Set( Q, saturation );
   
@@ -612,7 +612,7 @@ usat16.execute = {
   
   U32 saturation = cpu.CPSR().Get( Q );
   saturation |= UnsignedPSat( res, of, SWP<16>() );
-  saturation |= UnsignedNSat( res, uf, SWP<16>() );
+  saturation |= UnsignedNSat( res, ~uf, SWP<16>() );
   
   cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
   
