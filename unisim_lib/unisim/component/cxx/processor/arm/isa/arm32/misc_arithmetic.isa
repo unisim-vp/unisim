@@ -536,7 +536,7 @@ sel.execute = {
  */
 
 op ssat( cond[4]: 0b0110101[7]: sat_imm[5]: rd[4]: imm[5]: shl<1> sh[1]: 0b01[2]: rn[4] );
-ssat.var reject : {Reject} = {(rd == 15) or (rn == 15)};
+ssat.var reject : {Reject} = {(rd == 15) or (rn == 15) or (sh and not imm)};
 
 ssat.disasm = {
   buffer << "ssat" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmI(sat_imm+1)
@@ -963,7 +963,7 @@ usad8.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
 
-  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res = 0;
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res(0);
   
   for (unsigned byte = 0; byte < 4; byte++) {
     U32 a = (op1 >> (8*byte)) & U32(0xff), b = (op2 >> (8*byte)) & U32(0xff), d = a - b;
