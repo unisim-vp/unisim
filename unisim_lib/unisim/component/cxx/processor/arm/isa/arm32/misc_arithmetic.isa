@@ -638,7 +638,7 @@ usat.execute = {
   
   U32 saturation = cpu.CPSR().Get( Q );
   saturation |= UnsignedPSat( res, of, SWP<32>() );
-  saturation |= UnsignedNSat( res, uf, SWP<32>() );
+  saturation |= UnsignedNSat( res, ~uf, SWP<32>() );
   
   cpu.CPSR().Set( Q, saturation );
   
@@ -680,7 +680,7 @@ usat16.execute = {
   
   U32 saturation = cpu.CPSR().Get( Q );
   saturation |= UnsignedPSat( res, of, SWP<16>() );
-  saturation |= UnsignedNSat( res, uf, SWP<16>() );
+  saturation |= UnsignedNSat( res, ~uf, SWP<16>() );
   
   cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
   
@@ -948,11 +948,31 @@ uxth.execute = {
  * absolute values of the differences together.
  */
 
+{ ARCH::Config::insns6 }: \
 op usad8( cond[4]: 0b01111000[8]: rd[4]: 0b1111[4]: rm[4]: 0b0001[4]: rn[4] );
+usad8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 usad8.disasm = {
   buffer << "usad8" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+usad8.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+	
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res = 0;
+  
+  for (unsigned byte = 0; byte < 4; byte++) {
+    U32 a = (op1 >> (8*byte)) & U32(0xff), b = (op2 >> (8*byte)) & U32(0xff), d = a - b;
+    // Compute abs by arithetic means
+    U32 neg( S32(d) >> 8 );
+    res += ((d ^ neg) + (neg & U32(1)));
+  }
+  
+  cpu.SetGPR( rd, res );
 };
 
 /*
@@ -962,14 +982,36 @@ usad8.disasm = {
 /*******************************************************************
  * usada8 (Unsigned Sum of Absolute Differences and Accumulate) instruction
  *
+ * USADA8 performs four unsigned 8-bit subtractions, and adds the
+ * absolute values of the differences to a 32-bit accumulate operand.
  */
 
+{ ARCH::Config::insns6 }: \
 op usada8( cond[4]: 0b01111000[8]: rd[4]: ra[4]: rm[4]: 0b0001[4]: rn[4] );
+usada8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 usada8.disasm = {
   buffer << "usada8" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn)
          << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+usada8.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+	
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm), res = cpu.GetGPR(ra);
+  
+  for (unsigned byte = 0; byte < 4; byte++) {
+    U32 a = (op1 >> (8*byte)) & U32(0xff), b = (op2 >> (8*byte)) & U32(0xff), d = a - b;
+    // Compute abs by arithetic means
+    U32 neg( S32(d) >> 8 );
+    res += ((d ^ neg) + (neg & U32(1)));
+  }
+  
+  cpu.SetGPR( rd, res );
 };
 
 /*
