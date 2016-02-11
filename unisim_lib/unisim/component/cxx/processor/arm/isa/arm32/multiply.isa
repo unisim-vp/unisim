@@ -365,13 +365,8 @@ smlaxy.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
   
-  U32 rnval = cpu.GetGPR(rn);
-  if (n) rnval >>= 16;
-  S32 mop1 = S32(S16(rnval));
-  
-  U32 rmval = cpu.GetGPR(rm);
-  if (m) rmval >>= 16;
-  S32 mop2 = S32(S16(rmval));
+  S32 mop1 = S32(S16(cpu.GetGPR(rn) >> (16*n)));
+  S32 mop2 = S32(S16(cpu.GetGPR(rm) >> (16*m)));
   
   // Compute operands and result of signed addition
   U32 op1 = U32(mop1 * mop2),
@@ -528,8 +523,8 @@ smlalxy.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S16 S16;
   
-  S64 op1 = S64( S16(cpu.GetGPR(rn) >> (n ? 16 : 0)) );
-  S64 op2 = S64( S16(cpu.GetGPR(rm) >> (m ? 16 : 0)) );
+  S64 op1 = S64( S16(cpu.GetGPR(rn) >> (16*n)) );
+  S64 op2 = S64( S16(cpu.GetGPR(rm) >> (16*m)) );
   S64 res = ((S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) )) + (op1 * op2);
   
   cpu.SetGPR( rdlo, U32( res >> 0 ) );
@@ -560,11 +555,8 @@ smlawy.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
   
-  S64 mop1 = S64( S32( cpu.GetGPR(rn) ) );
-  
-  U32 rmval = cpu.GetGPR(rm);
-  if (m) rmval >>= 16;
-  S64 mop2 = S64( S16(rmval) );
+  S64 mop1 = S64( S32(cpu.GetGPR(rn)) );
+  S64 mop2 = S64( S16(cpu.GetGPR(rm) >> (16*m)) );
   
   U32 op1 = U32( (mop1 * mop2) >> 16 ),
       op2 = cpu.GetGPR(ra),
@@ -599,12 +591,8 @@ smulxy.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  U32 rnval = cpu.GetGPR(rn);
-  if (n) rnval >>= 16;
-  S32 op1 = S32( S16(rnval) );
-  U32 rmval = cpu.GetGPR(rm);
-  if (m) rmval >>= 16;
-  S32 op2 = S32( S16(rmval) );
+  S32 op1 = S32( S16(cpu.GetGPR(rn) >> (16*n)) );
+  S32 op2 = S32( S16(cpu.GetGPR(rm) >> (16*m)) );
   
   cpu.SetGPR( rd, U32(op1 * op2) );
 };
@@ -634,8 +622,7 @@ smulwy.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
   
-  U32 rmval = cpu.GetGPR(rm);
-  if (m) rmval >>= 16;
+  U32 rmval = cpu.GetGPR(rm) >> (16*m);
   
   S64 res64 = S64(S32(cpu.GetGPR(rn))) * S64(S16(rmval));
   cpu.SetGPR( rd, U32((res64 >> 16) & S64(0xffffffffULL)) );

@@ -229,8 +229,8 @@ op qsub8( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
 qsub8.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 qsub8.disasm = {
-  buffer << "qsub8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "qsub8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 qsub8.execute = {
@@ -260,8 +260,8 @@ op qdadd( cond[4]: 0b00010100[8]: rn[4]: rd[4]: 0b0000[4]: 0b0101[4]: rm[4] );
 qdadd.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 qdadd.disasm = {
-  buffer << "qdadd" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+  buffer << "qdadd" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 };
 
 qdadd.execute = {
@@ -295,8 +295,8 @@ op qdsub( cond[4]: 0b00010110[8]: rn[4]: rd[4]: 0b0000[4]: 0b0101[4]: rm[4] );
 qdsub.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 qdsub.disasm = {
-  buffer << "qdsub" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+  buffer << "qdsub" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 };
 
 qdsub.execute = {
@@ -334,12 +334,27 @@ qdsub.execute = {
  * halfword of its shifted second operand.
  */
 
+{ ARCH::Config::insns6 }: \
 op pkh( cond[4]: 0b01101000[8]: rn[4]: rd[4]: imm[5]: shl<1> tb[1]: 0b01[2]: rm[4] );
+pkh.var reject : {Reject} = {(rd == 15) or (rm == 15) or (rn == 15)};
 
 pkh.disasm = {
   buffer << "pkh" << (tb?"tb":"bt") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << DisasmShImm( tb, imm );
+};
+
+pkh.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1 = cpu.GetGPR(rm), op2 = ComputeImmShift( cpu, cpu.GetGPR(rm), tb, imm ), res(0);
+  
+  if (tb) res = (op1 & U32(0xffff0000)) | (op2 & U32(0x0000ffff));
+  else    res = (op2 & U32(0xffff0000)) | (op1 & U32(0x0000ffff));
+  
+  cpu.SetGPR( rd, res );
 };
 
 /*
@@ -578,8 +593,8 @@ op ssat16( cond[4]: 0b01101010[8]: sat_imm[4]: rd[4]: 0b1111[4]: 0b0011[4]: rn[4
 ssat16.var reject : {Reject} = {(rd == 15) or (rn == 15)};
 
 ssat16.disasm = {
-  buffer << "ssat16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmI(sat_imm+1) << ", " << DisasmRegister(rn);
+  buffer << "ssat16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmI(sat_imm+1) << ", " << DisasmRegister(rn);
 };
 
 ssat16.execute = {
@@ -628,10 +643,12 @@ usat.execute = {
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  unsigned const ra = (32-sat_imm); // Right alignment
+  // ra is Right alignment minus one (because shifts by 32 are
+  // unpredictable)
+  unsigned const ra = (31-sat_imm);
   
   U32 src = ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ),
-      res = src << ra;
+      res = (src << ra) << 1;
   
   S32 const bound = S32(~(-1 << sat_imm));
   U32 of = U32(S32(src) > bound) << 31, uf = U32(S32(src) < S32(0)) << 31;
@@ -642,7 +659,7 @@ usat.execute = {
   
   cpu.CPSR().Set( Q, saturation );
   
-  cpu.SetGPR( rd, res >> ra );
+  cpu.SetGPR( rd, (res >> 1) >> ra );
 };
 
 /*
@@ -660,8 +677,8 @@ op usat16( cond[4]: 0b01101110[8]: sat_imm[4]: rd[4]: 0b1111[4]: 0b0011[4]: rn[4
 usat16.var reject : {Reject} = {(rd == 15) or (rn == 15)};
 
 usat16.disasm = {
-  buffer << "usat16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmI(sat_imm) << ", " << DisasmRegister(rn);
+  buffer << "usat16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmI(sat_imm) << ", " << DisasmRegister(rn);
 };
 
 usat16.execute = {
@@ -865,8 +882,8 @@ op uxtb( cond[4]: 0b01101110[8]: 0b1111[4]: rd[4]: rotate[2]: 0b00[2]: 0b0111[4]
 uxtb.var ror : {uint32_t} = {rotate<<3};
 
 uxtb.disasm = {
-  buffer << "uxtb" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( (ror ? 3 : 0), ror );
+  buffer << "uxtb" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( (ror ? 3 : 0), ror );
 };
 
 uxtb.execute = {
@@ -953,8 +970,8 @@ op usad8( cond[4]: 0b01111000[8]: rd[4]: 0b1111[4]: rm[4]: 0b0001[4]: rn[4] );
 usad8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 usad8.disasm = {
-  buffer << "usad8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "usad8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 usad8.execute = {
@@ -991,9 +1008,8 @@ op usada8( cond[4]: 0b01111000[8]: rd[4]: ra[4]: rm[4]: 0b0001[4]: rn[4] );
 usada8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 usada8.disasm = {
-  buffer << "usada8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn)
-         << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+  buffer << "usada8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
 };
 
 usada8.execute = {
@@ -1133,102 +1149,6 @@ ubfx.execute = {
 
 /*
  * end of ubfx instruction
- *******************************************************************/
-
-/*******************************************************************
- * sasx instruction
- */
-
-{ ARCH::Config::insns6 }:                                              \
-op sasx( cond[4]: 0b01100001[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
-
-sasx.disasm = {
-  buffer << "sasx" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of sasx instruction
- *******************************************************************/
-
-/*******************************************************************
- * ssax instruction
- */
-
-{ ARCH::Config::insns6 }:                                              \
-op ssax( cond[4]: 0b01100001[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
-
-ssax.disasm = {
-  buffer << "ssax" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of ssax instruction
- *******************************************************************/
-
-/*******************************************************************
- * shasx instruction
- */
-
-{ ARCH::Config::insns6 }:                                              \
-op shasx( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
-
-shasx.disasm = {
-  buffer << "shasx" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of shasx instruction
- *******************************************************************/
-
-/*******************************************************************
- * shsax instruction
- */
-
-{ ARCH::Config::insns6 }:                                              \
-op shsax( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
-
-shsax.disasm = {
-  buffer << "shsax" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of shsax instruction
- *******************************************************************/
-
-/*******************************************************************
- * uasx instruction
- */
-
-{ ARCH::Config::insns6 }:                                              \
-op uasx( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
-
-uasx.disasm = {
-  buffer << "uasx" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of uasx instruction
- *******************************************************************/
-
-/*******************************************************************
- * usax instruction
- */
-
-{ ARCH::Config::insns6 }:                                              \
-op usax( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
-
-usax.disasm = {
-  buffer << "usax" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of usax instruction
  *******************************************************************/
 
 /*******************************************************************
@@ -1512,70 +1432,6 @@ ssub8.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * qasx instruction
- */
-
-{ ARCH::Config::insns6 }:                                       \
-op qasx( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
-
-qasx.disasm = {
-  buffer << "qasx" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of qasx instruction
- *******************************************************************/
-
-/*******************************************************************
- * qsax instruction
- */
-
-{ ARCH::Config::insns6 }:                                       \
-op qsax( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
-
-qsax.disasm = {
-  buffer << "qsax" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of qsax instruction
- *******************************************************************/
-
-/*******************************************************************
- * uqasx instruction
- */
-
-{ ARCH::Config::insns6 }:                                       \
-op uqasx( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
-
-uqasx.disasm = {
-  buffer << "uqasx" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of uqasx instruction
- *******************************************************************/
-
-/*******************************************************************
- * uqsax instruction
- */
-
-{ ARCH::Config::insns6 }: \
-op uqsax( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
-
-uqsax.disasm = {
-  buffer << "uqsax" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of uqsax instruction
- *******************************************************************/
-
-/*******************************************************************
  * uqadd16 (Unsigned Saturating Add 16) instruction
  * 
  * UQADD16 performs two unsigned 16-bit integer additions, saturates
@@ -1658,8 +1514,8 @@ op uqsub16( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
 uqsub16.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 uqsub16.disasm = {
-  buffer << "uqsub16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "uqsub16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 uqsub16.execute = {
@@ -1717,38 +1573,6 @@ uqsub8.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * uhasx instruction
- */
-
-{ ARCH::Config::insns6 }: \
-op uhasx( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
-
-uhasx.disasm = {
-  buffer << "uhasx" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of uhasx instruction
- *******************************************************************/
-
-/*******************************************************************
- * uhsax instruction
- */
-
-{ ARCH::Config::insns6 }: \
-op uhsax( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
-
-uhsax.disasm = {
-  buffer << "uhsax" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of uhsax instruction
- *******************************************************************/
-
-/*******************************************************************
  * uhadd16 (Unsigned Halving Add 16) instruction
  * 
  * UHADD16 erforms two unsigned 16-bit integer additions, halves the
@@ -1760,8 +1584,8 @@ op uhadd16( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
 uhadd16.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 uhadd16.disasm = {
-  buffer << "uhadd16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "uhadd16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 uhadd16.execute = {
@@ -1792,8 +1616,8 @@ op uhadd8( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
 uhadd8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 uhadd8.disasm = {
-  buffer << "uhadd8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "uhadd8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 uhadd8.execute = {
@@ -1824,8 +1648,8 @@ op shadd16( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b0001[4]: rm[4] );
 shadd16.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 shadd16.disasm = {
-  buffer << "shadd16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "shadd16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 shadd16.execute = {
@@ -1856,8 +1680,8 @@ op shadd8( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rm[4] );
 shadd8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 shadd8.disasm = {
-  buffer << "shadd8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "shadd8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 shadd8.execute = {
@@ -1888,8 +1712,8 @@ op uhsub16( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
 uhsub16.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 uhsub16.disasm = {
-  buffer << "uhsub16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "uhsub16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 uhsub16.execute = {
@@ -1920,8 +1744,8 @@ op uhsub8( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
 uhsub8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 uhsub8.disasm = {
-  buffer << "uhsub8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "uhsub8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 uhsub8.execute = {
@@ -1952,8 +1776,8 @@ op shsub16( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b0111[4]: rm[4] );
 shsub16.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 shsub16.disasm = {
-  buffer << "shsub16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "shsub16" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 shsub16.execute = {
@@ -1984,8 +1808,8 @@ op shsub8( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b1111[4]: rm[4] );
 shsub8.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 shsub8.disasm = {
-  buffer << "shsub8" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << "shsub8" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 shsub8.execute = {
@@ -2002,5 +1826,238 @@ shsub8.execute = {
 
 /*
  * end of shsub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qasx (Saturating Add and Subtract with Exchange) instruction
+ * 
+ * QASX exchanges the two halfwords of the second operand, performs
+ * one 16-bit integer addition and one 16-bit subtraction, saturates
+ * the results to the 16-bit signed integer range -2^15 <= x <=
+ * 2^15-1, and writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op qasx( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
+qasx.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+qasx.disasm = {
+  buffer << "qasx" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+qasx.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 diff = S32(S16(op1    )) - S32(S16(op2>>16));
+  S32 sum  = S32(S16(op1>>16)) + S32(S16(op2    ));
+  
+  S32 const bound( -1 << 15 );
+  U32 uf = (U32(sum <  bound) << 16) | (U32(diff <  bound) << 0);
+  U32 of = (U32(sum > ~bound) << 16) | (U32(diff > ~bound) << 0);
+  
+  U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
+  
+  SignedSat( res, of, uf, SWP<16>() );
+  
+  cpu.SetGPR( rd, res );
+};
+
+/*
+ * end of qasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsax instruction
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op qsax( cond[4]: 0b01100010[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
+qsax.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+qsax.disasm = {
+  buffer << "qsax" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqasx instruction
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op uqasx( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
+uqasx.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+uqasx.disasm = {
+  buffer << "uqasx" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqsax instruction
+ */
+
+{ ARCH::Config::insns6 }: \
+op uqsax( cond[4]: 0b01100110[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
+uqsax.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+uqsax.disasm = {
+  buffer << "uqsax" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sasx instruction
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op sasx( cond[4]: 0b01100001[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
+sasx.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+sasx.disasm = {
+  buffer << "sasx" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of sasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ssax instruction
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op ssax( cond[4]: 0b01100001[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
+ssax.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+ssax.disasm = {
+  buffer << "ssax" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of ssax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uasx instruction
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op uasx( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
+uasx.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+uasx.disasm = {
+  buffer << "uasx" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * usax instruction
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op usax( cond[4]: 0b01100101[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
+usax.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+usax.disasm = {
+  buffer << "usax" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of usax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shasx instruction
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op shasx( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
+shasx.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+shasx.disasm = {
+  buffer << "shasx" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shsax instruction
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op shsax( cond[4]: 0b01100011[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
+shsax.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+shsax.disasm = {
+  buffer << "shsax" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhasx instruction
+ */
+
+{ ARCH::Config::insns6 }: \
+op uhasx( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b0011[4]: rm[4] );
+uhasx.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+uhasx.disasm = {
+  buffer << "uhasx" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhsax instruction
+ */
+
+{ ARCH::Config::insns6 }: \
+op uhsax( cond[4]: 0b01100111[8]: rn[4]: rd[4]: 0b1111[4]: 0b0101[4]: rm[4] );
+uhsax.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+uhsax.disasm = {
+  buffer << "uhsax" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhsax instruction
  *******************************************************************/
 

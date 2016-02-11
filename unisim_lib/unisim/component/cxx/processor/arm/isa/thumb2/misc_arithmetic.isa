@@ -324,6 +324,7 @@ qdsub.execute = {
  * halfword of its shifted second operand.
  */
 
+{ ARCH::Config::insns6 }: \
 op pkh( 0b111010101100[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shl<1> tb[1]: 0b0[1]: rm[4] );
 pkh.var imm : {uint32_t} = {imm1|imm0}
 
@@ -333,15 +334,22 @@ pkh.disasm = {
          << DisasmRegister(rm) << DisasmShImm( tb, imm );
 };
 
+pkh.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1 = cpu.GetGPR(rm), op2 = ComputeImmShift( cpu, cpu.GetGPR(rm), tb, imm ), res(0);
+  
+  if (tb) res = (op1 & U32(0xffff0000)) | (op2 & U32(0x0000ffff));
+  else    res = (op2 & U32(0xffff0000)) | (op1 & U32(0x0000ffff));
+  
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of pkh instruction
  *******************************************************************/
-
-op qasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
-qasx.disasm = { buffer << "qasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op qsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
-qsax.disasm = { buffer << "qsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 /*******************************************************************
  * rev (Byte-Reverse Word) instruction
@@ -398,9 +406,6 @@ revsh_w.execute = {
  * end of revsh instruction
  *******************************************************************/
 
-op sasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
-sasx.disasm = { buffer << "sasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
 /*******************************************************************
  * sel (Select Bytes) instruction
  *
@@ -441,12 +446,6 @@ sel.execute = {
 /*
  * end of sel instruction
  *******************************************************************/
-
-op shasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
-shasx.disasm = { buffer << "shasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op shsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
-shsax.disasm = { buffer << "shsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 /*******************************************************************
  * ssat (Signed Saturate) instruction
@@ -549,10 +548,12 @@ usat.execute = {
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
-  unsigned const ra = (32-sat_imm); // Right alignment
+  // ra is Right alignment minus one (because shifts by 32 are
+  // unpredictable)
+  unsigned const ra = (31-sat_imm); 
   
   U32 src = ComputeImmShift( cpu, cpu.GetGPR(rn), sh, imm ),
-      res = src << ra;
+      res = (src << ra) << 1;
   
   S32 const bound = S32(~(-1 << sat_imm));
   U32 of = U32(S32(src) > bound) << 31, uf = U32(S32(src) < S32(0)) << 31;
@@ -563,7 +564,7 @@ usat.execute = {
   
   cpu.CPSR().Set( Q, saturation );
   
-  cpu.SetGPR( rd, res >> ra );
+  cpu.SetGPR( rd, (res >> 1) >> ra );
 };
 
 /*
@@ -611,9 +612,6 @@ usat16.execute = {
 /*
  * end of usat16 instruction
  *******************************************************************/
-
-op ssax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
-ssax.disasm = { buffer << "ssax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 /*******************************************************************
  * uadd16 (Unsigned Add 16) instruction
@@ -895,21 +893,6 @@ ssub8.execute = {
  * end of ssub8 instruction
  *******************************************************************/
 
-op uasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
-uasx.disasm = { buffer << "uasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op uhasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
-uhasx.disasm = { buffer << "uhasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op uhsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
-uhsax.disasm = { buffer << "uhsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op uqasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
-uqasx.disasm = { buffer << "uqasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op uqsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
-uqsax.disasm = { buffer << "uqsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
 /*******************************************************************
  * uqadd16 (Unsigned Saturating Add 16) instruction
  * 
@@ -1050,9 +1033,6 @@ uqsub8.execute = {
 /*
  * end of uqsub8 instruction
  *******************************************************************/
-
-op usax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
-usax.disasm = { buffer << "usax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 /*******************************************************************
  * usad8 (Unsigned Sum of Absolute Differences) instruction
@@ -1384,4 +1364,100 @@ shsub8.execute = {
 /*
  * end of shsub8 instruction
  *******************************************************************/
+
+op qasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
+qasx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+qasx.disasm = {
+  buffer << "qasx\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op qsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0001[4]: rm[4] );
+qsax.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+qsax.disasm = {
+  buffer << "qsax\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op uqasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
+uqasx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uqasx.disasm = {
+  buffer << "uqasx\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op uqsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
+uqsax.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uqsax.disasm = {
+  buffer << "uqsax\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op sasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+sasx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+sasx.disasm = {
+  buffer << "sasx\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op ssax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+ssax.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+ssax.disasm = {
+  buffer << "ssax\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op uasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+uasx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uasx.disasm = {
+  buffer << "uasx\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op usax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
+usax.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+usax.disasm = {
+  buffer << "usax\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op shasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shasx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+shasx.disasm = {
+  buffer << "shasx\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op shsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shsax.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+shsax.disasm = {
+  buffer << "shsax\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op uhasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhasx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uhasx.disasm = {
+  buffer << "uhasx\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+op uhsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhsax.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uhsax.disasm = {
+  buffer << "uhsax\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
