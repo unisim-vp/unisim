@@ -617,7 +617,7 @@ usat16.execute = {
   cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
   
   // undo right aligment and zero extend both halfword
-  cpu.SetGPR( rd, (U32(U16(res >> (16+ra))) << 16) | U32(U16(res >> ra)) );
+  cpu.SetGPR( rd, (U32(U16(res >> 16) >> ra) << 16) | U32(U16(res) >> ra) );
 };
 
 /*
