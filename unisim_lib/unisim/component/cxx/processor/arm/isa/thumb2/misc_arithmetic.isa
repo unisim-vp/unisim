@@ -442,23 +442,11 @@ sel.execute = {
  * end of sel instruction
  *******************************************************************/
 
-op shadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
-shadd8.disasm = { buffer << "shadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op shadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
-shadd16.disasm = { buffer << "shadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
 op shasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
 shasx.disasm = { buffer << "shasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 op shsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
 shsax.disasm = { buffer << "shsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op shsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
-shsub8.disasm = { buffer << "shsub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op shsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
-shsub16.disasm = { buffer << "shsub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 /*******************************************************************
  * ssat (Signed Saturate) instruction
@@ -910,23 +898,11 @@ ssub8.execute = {
 op uasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0100[4]: rm[4] );
 uasx.disasm = { buffer << "uasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
-op uhadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
-uhadd8.disasm = { buffer << "uhadd8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op uhadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
-uhadd16.disasm = { buffer << "uhadd16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
 op uhasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
 uhasx.disasm = { buffer << "uhasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 op uhsax( 0b111110101110[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
 uhsax.disasm = { buffer << "uhsax\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op uhsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
-uhsub8.disasm = { buffer << "uhsub8\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
-
-op uhsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
-uhsub16.disasm = { buffer << "uhsub16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
 
 op uqasx( 0b111110101010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0101[4]: rm[4] );
 uqasx.disasm = { buffer << "uqasx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm); };
@@ -1152,3 +1128,260 @@ usada8.execute = {
 /*
  * end of usada8 instruction
  *******************************************************************/
+
+/*******************************************************************
+ * uhadd16 (Unsigned Halving Add 16) instruction
+ * 
+ * UHADD16 erforms two unsigned 16-bit integer additions, halves the
+ * results, and writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }: \
+op uhadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhadd16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uhadd16.disasm = {
+  buffer << "uhadd16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+uhadd16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = (((op1 >> 1) & U32(~msbs)) + ((op2 >> 1) & U32(~msbs))) + (op1&op2&U32(lsbs));
+  
+  cpu.SetGPR( rd, res );
+};
+
+/*
+ * end of uhadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhadd8 (Unsigned Halving Add 8) instruction
+ * 
+ * UHADD8 performs four un signed 8-bit integer additions, halves the
+ * results, and writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }: \
+op uhadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhadd8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uhadd8.disasm = {
+  buffer << "uhadd8\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+uhadd8.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = (((op1 >> 1) & U32(~msbs)) + ((op2 >> 1) & U32(~msbs))) + (op1&op2&U32(lsbs));
+  
+  cpu.SetGPR( rd, res );
+};
+
+/*
+ * end of uhadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shadd16 (Signed Halving Add 16) instruction
+ *
+ * SHADD16 performs two signed 16-bit integer additions, halves the
+ * results, and writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op shadd16( 0b111110101001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shadd16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+shadd16.disasm = {
+  buffer << "shadd16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+shadd16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((((op1 >> 1) & U32(~msbs)) + ((op2 >> 1) & U32(~msbs))) + (op1&op2&U32(lsbs))) ^ ((op1 ^ op2) & U32(msbs));
+  
+  cpu.SetGPR( rd, res );
+};
+
+/*
+ * end of shadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shadd8 (Signed Halving Add 8) instruction
+ *
+ * SHADD8 performs four signed 8-bit integer a dditions, halves the
+ * results, and writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op shadd8( 0b111110101000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shadd8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+shadd8.disasm = {
+  buffer << "shadd8\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+shadd8.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((((op1 >> 1) & U32(~msbs)) + ((op2 >> 1) & U32(~msbs))) + (op1&op2&U32(lsbs))) ^ ((op1 ^ op2) & U32(msbs));
+  
+  cpu.SetGPR( rd, res );
+};
+
+/*
+ * end of shadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhsub16 (Unsigned Halving Subtract 16) instruction
+ *
+ * UHSUB16 performs two unsigned 16-bit integer subtractions, halves
+ * the results, and writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }: \
+op uhsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhsub16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uhsub16.disasm = {
+  buffer << "uhsub16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+uhsub16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((((op1 >> 1) | U32(msbs)) - ((op2 >> 1) & U32(~msbs))) - (~op1&op2&U32(lsbs))) ^ U32(msbs);
+  
+  cpu.SetGPR( rd, res );
+};
+
+/*
+ * end of uhsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhsub8 (Unsigned Halving Subtract 8) instruction
+ *
+ * UHSUB8 performs four unsigned 8-bit integer subtractions, halves
+ * the results, and writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }: \
+op uhsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0110[4]: rm[4] );
+uhsub8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+uhsub8.disasm = {
+  buffer << "uhsub8\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+uhsub8.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((((op1 >> 1) | U32(msbs)) - ((op2 >> 1) & U32(~msbs))) - (~op1&op2&U32(lsbs))) ^ U32(msbs);
+  
+  cpu.SetGPR( rd, res );
+};
+
+/*
+ * end of uhsub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shsub16 (Signed Halving Subtract 16) instruction
+ *
+ * SHSUB16 performs two signed 16-bit integer subtractions, halves the
+ * results, and writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op shsub16( 0b111110101101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shsub16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+shsub16.disasm = {
+  buffer << "shsub16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+shsub16.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = (((((op1 >> 1) | U32(msbs)) - ((op2 >> 1) & U32(~msbs))) - (~op1&op2&U32(lsbs)))) ^ ((~op1 ^ op2) & U32(msbs));
+  
+  cpu.SetGPR( rd, res );
+};
+
+/*
+ * end of shsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shsub8 (Signed Halving Subtract 8) instruction
+ *
+ * SHSUB8 performs four signed 8-bit integer subtractions, halves the
+ * results, and writes the results to the destination register.
+ */
+
+{ ARCH::Config::insns6 }:                                              \
+op shsub8( 0b111110101100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0010[4]: rm[4] );
+shsub8.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+
+shsub8.disasm = {
+  buffer << "shsub8\t" << DisasmRegister(rd)
+  << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+shsub8.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm),
+      res = ((((op1 >> 1) | U32(msbs)) - ((op2 >> 1) & U32(~msbs))) - (~op1&op2&U32(lsbs))) ^ ((~op1 ^ op2) & U32(msbs));
+  
+  cpu.SetGPR( rd, res );
+};
+
+/*
+ * end of shsub8 instruction
+ *******************************************************************/
+
