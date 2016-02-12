@@ -164,46 +164,6 @@ smlal.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * smlald (Signed Multiply Accumulate Long Dual) instruction
- *
- * SMLALD performs two signed 16 * 16-bit multiplications. It adds the
- * products to a 64-bit accumulate operand.
- */
-
-{ ARCH::Config::insns6 }:                                                      \
-op smlald( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b00[2]: m[1]: 0b1[1]: rn[4] );
-
-smlald.disasm = {
-  buffer << "smlald" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
-         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of smlald instruction
- *******************************************************************/
-
-/*******************************************************************
- * smlsld (Signed Multiply Accumulate Long Dual) instruction
- *
- * SMLSLD performs two signed 16 * 16-bit multiplications. It adds the
- * products to a 64-bit accumulate operand.
- */
-
-{ ARCH::Config::insns6 }:                                                      \
-op smlsld( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b01[2]: m[1]: 0b1[1]: rn[4] );
-
-smlsld.disasm = {
-  buffer << "smlsld" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
-         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of smlsld instruction
- *******************************************************************/
-
-/*******************************************************************
  * smull instruction
  */
 
@@ -384,125 +344,6 @@ smlaxy.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * smlad instruction
- */
-
-{ ARCH::Config::insns6 }:                                                      \
-op smlad( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: m[1]: 0b1[1]: rn[4] );
-
-smlad.disasm = {
-  buffer << "smlad" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
-};
-
-/*
- * end of smlad instruction
- *******************************************************************/
-
-/*******************************************************************
- * smuad instruction
- */
-
-{ ARCH::Config::insns6 }:                                                      \
-op smuad( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: m[1]: 0b1[1]: rn[4] );
-
-smuad.disasm = {
-  buffer << "smuad" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm);
-};
-
-/*
- * end of smuad instruction
- *******************************************************************/
-
-/*******************************************************************
- * smlsd instruction
- */
-
-{ ARCH::Config::insns6 }:                                                      \
-op smlsd( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b01[2]: m[1]: 0b1[1]: rn[4] );
-
-smlsd.disasm = {
-  buffer << "smlsd" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
-};
-
-/*
- * end of smlsd instruction
- *******************************************************************/
-
-/*******************************************************************
- * smusd instruction
- */
-
-{ ARCH::Config::insns6 }:                                                      \
-op smusd( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b01[2]: m[1]: 0b1[1]: rn[4] );
-
-smusd.disasm = {
-  buffer << "smusd" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm);
-};
-
-/*
- * end of smusd instruction
- *******************************************************************/
-
-/*******************************************************************
- * smmla instruction
- */
-
-{ ARCH::Config::insns6 }:                                                      \
-op smmla( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: r[1]: 0b1[1]: rn[4] );
-
-smmla.disasm = {
-  buffer << "smmla" << (r?"r":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
-};
-
-/*
- * end of smmla instruction
- *******************************************************************/
-
-/*******************************************************************
- * smmul instruction
- */
-
-{ ARCH::Config::insns6 }:                                                      \
-op smmul( cond[4]: 0b01110101[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: r[1]: 0b1[1]: rn[4] );
-
-smmul.disasm = {
-  buffer << "smmul" << (r?"r":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm);
-};
-
-/*
- * end of smmul instruction
- *******************************************************************/
-
-/*******************************************************************
- * smmls instruction
- */
-
-{ ARCH::Config::insns6 }:                                                      \
-op smmls( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b11[2]: r[1]: 0b1[1]: rn[4] );
-
-smmls.disasm = {
-  buffer << "smmls" << (r?"r":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
-};
-
-/*
- * end of smmls instruction
- *******************************************************************/
-
-/*******************************************************************
  * smlalxy instruction
  */
 
@@ -672,3 +513,278 @@ udiv.disasm = {
 /*
  * end of udiv instruction
  *******************************************************************/
+
+/*******************************************************************
+ * smlad (Signed Multiply Accumulate Dual) instruction
+ *
+ * SMLAD performs two signed 16 × 16-bit multiplications.  It adds the
+ * products to a 32-bit accumulate operand.  Optionally, the
+ * instruction can exchange the halfwords of the second operand before
+ * performing the arithmetic. This produces top*bottom and bottom*top
+ * multiplications.  This instruction sets the Q flag if the
+ * accumulate operation overflow s. Overflow cannot occur during the
+ * multiplications.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smlad( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: swap[1]: 0b1[1]: rn[4] );
+
+smlad.disasm = {
+  buffer << "smlad" << (swap?"x":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+smlad.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  if (swap) op2 = RotateRight(op2,16);
+  
+  S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
+  S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
+  S64 res = S64(product1) + S64(product2) + S64(S32(cpu.GetGPR(ra)));
+  
+  U32 saturation( res != S64(S32(res)) );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of smlad instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smlald (Signed Multiply Accumulate Long Dual) instruction
+ *
+ * SMLALD performs two signed 16 × 16-bit multiplications. It adds the
+ * products to a 64-bit accumulate operand.  Optionally, the
+ * instruction can exchange the halfwords of the second operand before
+ * performing the arithmetic. This produces top*bottom and bottom*top
+ * multiplication.  Overflow is possible during this instruction, but
+ * only as a result of the 64-bit addition. This overflow is not
+ * detected if it occurs. Instead, the result wraps around modulo
+ * 2^64.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smlald( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b00[2]: swap[1]: 0b1[1]: rn[4] );
+
+smlald.disasm = {
+  buffer << "smlald" << (swap?"x":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+smlald.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  if (swap) op2 = RotateRight(op2,16);
+  
+  S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
+  S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
+  S64 addend = (S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) );
+  S64 res = S64(product1) + S64(product2) + addend;
+  
+  cpu.SetGPR( rdlo, U32(res      ) );
+  cpu.SetGPR( rdhi, U32(res >> 32) );
+};
+
+/*
+ * end of smlald instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smlsd (Signed Multiply Subtract Dual) instruction
+ *
+ * SMLSD performs two signed 16-bit multiplications.  It adds the
+ * difference of the products to a 32-bit accumulate operand.
+ * Optionally, the instruction can exchange the halfwords of the
+ * second opera nd before performing the arithmetic. This produces
+ * top*bottom and bottom*top multiplications.  This instruction sets
+ * the Q flag if the accumulate operation overflows. Overflow cannot
+ * occur during the multiplications or subtraction.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smlsd( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b01[2]: swap[1]: 0b1[1]: rn[4] );
+
+smlsd.disasm = {
+  buffer << "smlsd" << (swap?"x":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+smlsd.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  if (swap) op2 = RotateRight(op2,16);
+  
+  S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
+  S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
+  S64 res = S64(product1) + S64(product2) + S64(S32(cpu.GetGPR(ra)));
+  
+  U32 saturation( res != S64(S32(res)) );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of smlsd instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smlsld (Signed Multiply Accumulate Long Dual) instruction
+ *
+ * SMLSLD performs two signed 16*16-bit multiplications. It adds the
+ * difference of the products to a 64-bit accumulate operand.
+ * Optionally, the instruction can exchange the halfwords of the
+ * second operand before performing the arithmetic. This produces
+ * top*bottom and bottom*top multiplications.  Overflow is possible
+ * during this instruction, but only as a result of the 64-bit
+ * addition. This overflow is not detected if it occurs. Instead, the
+ * result wraps around modulo 2^64.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smlsld( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b01[2]: swap[1]: 0b1[1]: rn[4] );
+
+smlsld.disasm = {
+  buffer << "smlsld" << (swap?"x":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+smlsld.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  if (swap) op2 = RotateRight(op2,16);
+  
+  S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
+  S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
+  S64 addend = (S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) );
+  S64 res = S64(product1) - S64(product2) + addend;
+  
+  cpu.SetGPR( rdlo, U32(res      ) );
+  cpu.SetGPR( rdhi, U32(res >> 32) );
+};
+
+/*
+ * end of smlsld instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smmla (Signed Most Significant Word Multiply Accumulate) instruction
+ *
+ * SMMLA multiplies two signed 32-bit values, extracts the most
+ * significant 32 bits of the result, and adds an accumulate value.
+ * Optionally, the instruction can specify that the result is rounded
+ * instead of being truncated.  In this case, the constant 0x80000000
+ * is added to the product before the high word is extracted.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smmla( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: round[1]: 0b1[1]: rn[4] );
+
+smmla.disasm = {
+  buffer << "smmla" << (round?"r":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+/*
+ * end of smmla instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smmls instruction
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smmls( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b11[2]: r[1]: 0b1[1]: rn[4] );
+
+smmls.disasm = {
+  buffer << "smmls" << (r?"r":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+/*
+ * end of smmls instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smmul instruction
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smmul( cond[4]: 0b01110101[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: r[1]: 0b1[1]: rn[4] );
+
+smmul.disasm = {
+  buffer << "smmul" << (r?"r":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm);
+};
+
+/*
+ * end of smmul instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smuad instruction
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smuad( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: swap[1]: 0b1[1]: rn[4] );
+
+smuad.disasm = {
+  buffer << "smuad" << (swap?"x":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm);
+};
+
+/*
+ * end of smuad instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smusd instruction
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smusd( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b01[2]: swap[1]: 0b1[1]: rn[4] );
+
+smusd.disasm = {
+  buffer << "smusd" << (swap?"x":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm);
+};
+
+/*
+ * end of smusd instruction
+ *******************************************************************/
+
