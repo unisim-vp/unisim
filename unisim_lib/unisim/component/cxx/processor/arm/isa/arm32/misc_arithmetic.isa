@@ -1860,8 +1860,8 @@ qasx.execute = {
   S32 sum  = S32(S16(op1>>16)) + S32(S16(op2    ));
   
   S32 const bound( -1 << 15 );
-  U32 uf = (U32(sum <  bound) << 16) | (U32(diff <  bound) << 0);
-  U32 of = (U32(sum > ~bound) << 16) | (U32(diff > ~bound) << 0);
+  U32 uf = (U32(sum <  bound) << 31) | (U32(diff <  bound) << 15);
+  U32 of = (U32(sum > ~bound) << 31) | (U32(diff > ~bound) << 15);
   
   U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
   
