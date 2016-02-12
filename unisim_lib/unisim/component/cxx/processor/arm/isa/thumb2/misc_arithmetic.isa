@@ -1489,7 +1489,7 @@ uqasx.execute = {
   S32 sum  = S32(U16(op1>>16)) + S32(U16(op2    ));
   
   S32 const bound( ~(-1 << 16) );
-  U32 nuf = (U32(sum >= 0) << 31) | (U32(diff >= 0) << 15);
+  U32 nuf = (U32(sum >= S32(0)) << 31) | (U32(diff >= S32(0)) << 15);
   U32 of =  (U32(sum > bound) << 31) | (U32(diff > bound) << 15);
   
   U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
@@ -1536,7 +1536,7 @@ uqsax.execute = {
   S32 diff = S32(U16(op1>>16)) - S32(U16(op2    ));
   
   S32 const bound( ~(-1 << 16) );
-  U32 nuf = (U32(diff >= 0) << 31) | (U32(sum >= 0) << 15);
+  U32 nuf = (U32(diff >= S32(0)) << 31) | (U32(sum >= S32(0)) << 15);
   U32 of =  (U32(diff > bound) << 31) | (U32(sum > bound) << 15);
   
   U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
@@ -1582,7 +1582,7 @@ sasx.execute = {
   S32 diff = S32(S16(op1    )) - S32(S16(op2>>16));
   S32 sum  = S32(S16(op1>>16)) + S32(S16(op2    ));
   
-  U32 gev = (U32(sum >= 0) * 0xc) | (U32(diff >= 0) * 0x3);
+  U32 gev = (U32(sum >= S32(0)) * U32(0xc)) | (U32(diff >= S32(0)) * U32(0x3));
   U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
   
   cpu.CPSR().Set( GE, gev );
@@ -1624,7 +1624,7 @@ ssax.execute = {
   S32 sum  = S32(S16(op1    )) + S32(S16(op2>>16));
   S32 diff = S32(S16(op1>>16)) - S32(S16(op2    ));
   
-  U32 gev = (U32(diff >= 0) * 0xc) | (U32(sum >= 0) * 0x3);
+  U32 gev = (U32(diff >= S32(0)) * U32(0xc)) | (U32(sum >= S32(0)) * U32(0x3));
   U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
   
   cpu.CPSR().Set( GE, gev );
@@ -1665,7 +1665,7 @@ uasx.execute = {
   S32 diff = S32(U16(op1    )) - S32(U16(op2>>16));
   S32 sum  = S32(U16(op1>>16)) + S32(U16(op2    ));
   
-  U32 gev = (U32(sum >= 0x10000) * 0xc) | (U32(diff >= 0) * 0x3);
+  U32 gev = (U32(sum >= S32(0x10000)) * U32(0xc)) | (U32(diff >= S32(0)) * U32(0x3));
   U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
   
   cpu.CPSR().Set( GE, gev );
@@ -1706,7 +1706,7 @@ usax.execute = {
   S32 sum  = S32(U16(op1    )) + S32(U16(op2>>16));
   S32 diff = S32(U16(op1>>16)) - S32(U16(op2    ));
   
-  U32 gev = (U32(diff >= 0) * 0xc) | (U32(sum >= 0x10000) * 0x3);
+  U32 gev = (U32(diff >= S32(0)) * U32(0xc)) | (U32(sum >= S32(0x10000)) * U32(0x3));
   U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
   
   cpu.CPSR().Set( GE, gev );
