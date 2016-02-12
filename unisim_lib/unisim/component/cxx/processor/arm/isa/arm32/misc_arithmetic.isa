@@ -1875,7 +1875,12 @@ qasx.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * qsax instruction
+ * qsax (Saturating Subtract and Add with Exchange) instruction
+ * 
+ * QSAX exchanges the two halfwords of the second operand, performs
+ * one 16-bit integer subtraction and one 16- bit addition, saturates
+ * the results to the 16-bit signed integer range -2^15 <= x <=
+ * 2^15-1, and writes the results to the destination register.
  */
 
 { ARCH::Config::insns6 }:                                       \
@@ -1887,12 +1892,42 @@ qsax.disasm = {
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+qsax.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 sum  = S32(S16(op1    )) + S32(S16(op2>>16));
+  S32 diff = S32(S16(op1>>16)) - S32(S16(op2    ));
+  
+  S32 const bound( -1 << 15 );
+  U32 uf = (U32(diff <  bound) << 31) | (U32(sum <  bound) << 15);
+  U32 of = (U32(diff > ~bound) << 31) | (U32(sum > ~bound) << 15);
+  
+  U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
+  
+  SignedSat( res, of, uf, SWP<16>() );
+  
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of qsax instruction
  *******************************************************************/
 
 /*******************************************************************
- * uqasx instruction
+ * uqasx (Unsigned Saturating Add and Subtract with Exchange) instruction
+ * 
+ * UQASX exchanges the two halfwords of the second operand, performs
+ * one unsigned 16-bit integer addi tion and one unsigned 16-bit
+ * subtraction, saturates the results to the 16-bit unsigned integer
+ * range 0 <= x <= 2^16-1, and writes the results to the destination
+ * register.
  */
 
 { ARCH::Config::insns6 }:                                       \
@@ -1904,12 +1939,42 @@ uqasx.disasm = {
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+uqasx.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 diff = S32(U16(op1    )) - S32(U16(op2>>16));
+  S32 sum  = S32(U16(op1>>16)) + S32(U16(op2    ));
+  
+  S32 const bound( ~(-1 << 16) );
+  U32 nuf = (U32(sum >= 0) << 31) | (U32(diff >= 0) << 15);
+  U32 of =  (U32(sum > bound) << 31) | (U32(diff > bound) << 15);
+  
+  U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
+  
+  UnsignedPSat( res, of, SWP<16>() );
+  UnsignedNSat( res, nuf, SWP<16>() );
+  
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of uqasx instruction
  *******************************************************************/
 
 /*******************************************************************
- * uqsax instruction
+ * uqsax (Unsigned Saturating Subtract and Add with Exchange) instruction
+ * 
+ * UQSAX exchanges the two halfwords of the second operand, performs
+ * one unsigned 16-bit integer subt raction and one unsigned 16- bit
+ * addition, saturates the results to the 16-bit unsigned integer
+ * range 0 <= x <= 2^16-1, and writes the results to the destination
+ * register.
  */
 
 { ARCH::Config::insns6 }: \
@@ -1921,12 +1986,41 @@ uqsax.disasm = {
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+uqsax.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 sum  = S32(U16(op1    )) + S32(U16(op2>>16));
+  S32 diff = S32(U16(op1>>16)) - S32(U16(op2    ));
+  
+  S32 const bound( ~(-1 << 16) );
+  U32 nuf = (U32(diff >= 0) << 31) | (U32(sum >= 0) << 15);
+  U32 of =  (U32(diff > bound) << 31) | (U32(sum > bound) << 15);
+  
+  U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
+  
+  UnsignedPSat( res, of, SWP<16>() );
+  UnsignedNSat( res, nuf, SWP<16>() );
+  
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of uqsax instruction
  *******************************************************************/
 
 /*******************************************************************
- * sasx instruction
+ * sasx (Signed Add and Subtract with Exchange) instruction
+ * 
+ * SASX exchanges the tw o halfwords of the second operand, performs
+ * one 16-bit integer addition and one 16-bit subtraction, and writes
+ * the results to the destination register.  It sets the APSR.GE bits
+ * according to the results.
  */
 
 { ARCH::Config::insns6 }:                                              \
@@ -1938,12 +2032,37 @@ sasx.disasm = {
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+sasx.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 diff = S32(S16(op1    )) - S32(S16(op2>>16));
+  S32 sum  = S32(S16(op1>>16)) + S32(S16(op2    ));
+  
+  U32 gev = (U32(sum >= 0) * 0xc) | (U32(diff >= 0) * 0x3);
+  U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
+  
+  cpu.CPSR().Set( GE, gev );
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of sasx instruction
  *******************************************************************/
 
 /*******************************************************************
- * ssax instruction
+ * ssax (Signed Subtract and Add with Exchange) instruction
+ *
+ * SSAX exchanges the two halfwords of the second operand, performs
+ * one 16-bit integer subtraction and one 16-bit addition, and writes
+ * the results to the destination register.  It sets the APSR.GE bits
+ * according to the results.
  */
 
 { ARCH::Config::insns6 }:                                              \
@@ -1955,12 +2074,37 @@ ssax.disasm = {
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+ssax.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 sum  = S32(S16(op1    )) + S32(S16(op2>>16));
+  S32 diff = S32(S16(op1>>16)) - S32(S16(op2    ));
+  
+  U32 gev = (U32(diff >= 0) * 0xc) | (U32(sum >= 0) * 0x3);
+  U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
+  
+  cpu.CPSR().Set( GE, gev );
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of ssax instruction
  *******************************************************************/
 
 /*******************************************************************
- * uasx instruction
+ * uasx (Unsigned Add and Subtract with Exchange) instruction
+ *
+ * UASX exchanges the two halfwords of the second operand, performs
+ * one unsigned 16-bit integer addition and one unsigned 16-bit
+ * subtraction, and writes the results to the destination register.
+ * It sets the APSR.GE bits according to the results.
  */
 
 { ARCH::Config::insns6 }:                                              \
@@ -1972,12 +2116,36 @@ uasx.disasm = {
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+uasx.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 diff = S32(U16(op1    )) - S32(U16(op2>>16));
+  S32 sum  = S32(U16(op1>>16)) + S32(U16(op2    ));
+  
+  U32 gev = (U32(sum >= 0x10000) * 0xc) | (U32(diff >= 0) * 0x3);
+  U32 res = (U32(U16(sum)) << 16) | U32(U16(diff));
+  
+  cpu.CPSR().Set( GE, gev );
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of uasx instruction
  *******************************************************************/
 
 /*******************************************************************
- * usax instruction
+ * usax (Unsigned Subtract and Add with Exchange) instruction
+ *
+ * USAX exchanges the two halfwords of the second operand, performs
+ * one unsigned 16-bit integer subtraction and one unsigned 16-bit
+ * addition, and writes the results to the destination register.  It
+ * sets the APSR.GE bits according to the results.
  */
 
 { ARCH::Config::insns6 }:                                              \
@@ -1989,12 +2157,36 @@ usax.disasm = {
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+usax.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 sum  = S32(U16(op1    )) + S32(U16(op2>>16));
+  S32 diff = S32(U16(op1>>16)) - S32(U16(op2    ));
+  
+  U32 gev = (U32(diff >= 0) * 0xc) | (U32(sum >= 0x10000) * 0x3);
+  U32 res = (U32(U16(diff)) << 16) | U32(U16(sum));
+  
+  cpu.CPSR().Set( GE, gev );
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of usax instruction
  *******************************************************************/
 
 /*******************************************************************
- * shasx instruction
+ * shasx (Signed Halving Add and Subtract with Exchange) instruction
+ * 
+ * SHASX exchanges the two halfwords of the second operand, performs
+ * one signed 16-bit integer addition and one signed 16-bit
+ * subtraction, halves the results, and writes the results to the
+ * destination register.
  */
 
 { ARCH::Config::insns6 }:                                              \
@@ -2006,12 +2198,35 @@ shasx.disasm = {
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+shasx.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 diff = S32(S16(op1    )) - S32(S16(op2>>16));
+  S32 sum  = S32(S16(op1>>16)) + S32(S16(op2    ));
+  
+  U32 res = (U32(U16(sum >> 1)) << 16) | U32(U16(diff >> 1));
+  
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of shasx instruction
  *******************************************************************/
 
 /*******************************************************************
- * shsax instruction
+ * shsax (Signed Halving Subtract and Add with Exchange) instruction
+ *
+ * SHSAX exchanges the two halfwords of the second operand, performs
+ * one signed 16-bit integer subtraction and one signed 16-bit
+ * addition, halves the results, and writes the results to the
+ * destination register.
  */
 
 { ARCH::Config::insns6 }:                                              \
@@ -2023,12 +2238,35 @@ shsax.disasm = {
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+shsax.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 sum  = S32(S16(op1    )) + S32(S16(op2>>16));
+  S32 diff = S32(S16(op1>>16)) - S32(S16(op2    ));
+  
+  U32 res = (U32(U16(diff >> 1)) << 16) | U32(U16(sum >> 1));
+  
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of shsax instruction
  *******************************************************************/
 
 /*******************************************************************
- * uhasx instruction
+ * uhasx (Unsigned Halving Add and Subtract with Exchange) instruction
+ *
+ * UHASX exchanges the two halfwords of the second operand, performs
+ * one unsigned 16-bit integer addition and one unsigned 16-bit
+ * subtraction, halves the results, and writes the results to the
+ * destination register.
  */
 
 { ARCH::Config::insns6 }: \
@@ -2040,12 +2278,34 @@ uhasx.disasm = {
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+uhasx.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 diff = S32(U16(op1    )) - S32(U16(op2>>16));
+  S32 sum  = S32(U16(op1>>16)) + S32(U16(op2    ));
+  
+  U32 res = (U32(U16(sum >> 1)) << 16) | U32(U16(diff >> 1));
+  
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of uhasx instruction
  *******************************************************************/
 
 /*******************************************************************
- * uhsax instruction
+ * uhsax (Unsigned Halving Subtract and Add with Exchange) instruction
+ *
+ * UHSAX exchanges the two halfwords of the second operand, performs
+ * one unsigned 16-bit integer subtraction and one unsigned 16-bit
+ * addition, halves the result s, and writes the results to the
+ * destination register.
  */
 
 { ARCH::Config::insns6 }: \
@@ -2055,6 +2315,23 @@ uhsax.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 uhsax.disasm = {
   buffer << "uhsax" << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
          << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+uhsax.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U16 U16;
+
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  
+  S32 sum  = S32(U16(op1    )) + S32(U16(op2>>16));
+  S32 diff = S32(U16(op1>>16)) - S32(U16(op2    ));
+  
+  U32 res = (U32(U16(diff >> 1)) << 16) | U32(U16(sum >> 1));
+  
+  cpu.SetGPR( rd, res );
 };
 
 /*
