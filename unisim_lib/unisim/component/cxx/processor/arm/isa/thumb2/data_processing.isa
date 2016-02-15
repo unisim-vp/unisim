@@ -76,7 +76,7 @@ ThumbExpandImm( uint32_t code ) /* code: i:imm3:abcdefgh*/
 /* MOV instructions */
 
 op mov_wri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b010[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-mov_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+mov_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
 mov_wri.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
 mov_wri.disasm = { buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
@@ -91,6 +91,8 @@ mov_wri.execute = {
     {
       cpu.CPSR().Set( N, (res >> 31) & U32(1) );
       cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -158,7 +160,7 @@ mvn_w.execute = {
 };
 
 op mvn_wri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b011[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-mvn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+mvn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
 mvn_wri.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
 mvn_wri.disasm = { buffer << "mvn" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
@@ -173,6 +175,8 @@ mvn_wri.execute = {
     {
       cpu.CPSR().Set( N, (res >> 31) & U32(1) );
       cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -467,7 +471,7 @@ eor_w.execute = {
 };
 
 op eor_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b100[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-eor_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+eor_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
 eor_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 eor_wrri.disasm = { buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
@@ -482,6 +486,8 @@ eor_wrri.execute = {
     {
       cpu.CPSR().Set( N, (res >> 31) & U32(1) );
       cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -509,7 +515,7 @@ orn.execute = {
 };
 
 op orn_rri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-orn_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+orn_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
 orn_rri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 orn_rri.disasm = { buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
@@ -524,6 +530,8 @@ orn_rri.execute = {
     {
       cpu.CPSR().Set( N, (res >> 31) & U32( 1 ) );
       cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -552,7 +560,7 @@ orr_w.execute = {
 };
 
 op orr_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-orr_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+orr_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
 orr_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 orr_wrri.disasm = {
@@ -569,6 +577,8 @@ orr_wrri.execute = {
     {
       cpu.CPSR().Set( N, (res >> 31) & U32( 1 ) );
       cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -597,7 +607,7 @@ bic_w.execute = {
 };
 
 op bic_wrri( 0b11110[5]: shl <11> imm2[1]: 0b0[1]: 0b0001[4]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-bic_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+bic_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
 bic_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 bic_wrri.disasm = {
@@ -614,6 +624,8 @@ bic_wrri.execute = {
     {
       cpu.CPSR().Set( N, (res >> 31) & U32(1) );
       cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -640,7 +652,7 @@ and_w.execute = {
 };
 
 op and_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-and_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+and_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
 and_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 and_wrri.disasm = {
@@ -657,6 +669,8 @@ and_wrri.execute = {
     {
       cpu.CPSR().Set( N, (res >> 31) & U32(1) );
       cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -734,7 +748,13 @@ cmn_wri.execute = {
   UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
-/* TEQ instruction */
+/*******************************************************************
+ * teq (Test Equivalence) instruction
+ *
+ * TEQ performs a bitwise exclusive OR operation on two operands.  It
+ * updates the condition flags based on the result, and discards the
+ * result.
+ */
 
 op teq( 0b111010101001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 teq.var imm : {uint32_t} = {imm1|imm0}
@@ -755,7 +775,7 @@ teq.execute = {
 };
 
 op teq_wri( 0b11110[5]: shl <11> imm2[1]: 0b001001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
-teq_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+teq_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
 teq_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
 
 teq_wri.disasm = { buffer << "teq\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
@@ -767,9 +787,20 @@ teq_wri.execute = {
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 ^ op2;
   cpu.CPSR().Set( N, (res >> 31) & U32(1) );
   cpu.CPSR().Set( Z, U32(res == U32(0)) );
+  if (cfim)
+    cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
 };
 
-/* TST instructions */
+/*
+ * end of teq instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * tst (Test) instruction
+ *
+ * TST performs a bitwise AND operation on two operands.  It updates
+ * the condition flags based on the result, and discards the result.
+ */
 
 op tst_w( 0b111010100001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 tst_w.var imm : {uint32_t} = {imm1|imm0}
@@ -792,7 +823,7 @@ tst_w.execute = {
 };
 
 op tst_wri( 0b11110[5]: shl <11> imm2[1]: 0b000001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
-tst_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+tst_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
 tst_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
 
 tst_wri.disasm = { buffer << "tst.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
@@ -804,7 +835,13 @@ tst_wri.execute = {
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & op2;
   cpu.CPSR().Set( N, (res >> 31) & U32(1) );
   cpu.CPSR().Set( Z, U32(res == U32(0)) );
+  if (cfim)
+    cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
 };
+
+/*
+ * end of tst instruction
+ *******************************************************************/
 
 /* CLZ instructions */
 
