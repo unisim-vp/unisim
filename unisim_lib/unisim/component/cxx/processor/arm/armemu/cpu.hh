@@ -182,10 +182,14 @@ struct CPU
   void     MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
   void     MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
   void     MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
-
+  
   void     PerformPrefetchAccess( uint32_t addr );
   void     PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
   uint32_t PerformReadAccess( uint32_t addr, uint32_t size );
+  
+  void     SetExclusiveMonitors( uint32_t addr, unsigned size ) { /*TODO: MP support*/ }
+  bool     ExclusiveMonitorsPass( uint32_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
+  void     ClearExclusiveLocal() {}
   
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
   {

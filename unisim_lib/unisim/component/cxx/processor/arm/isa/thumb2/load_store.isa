@@ -1110,7 +1110,10 @@ ldrex.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   typedef typename ARCH::U32 U32;
-  cpu.SetGPR_mem( rt , cpu.MemRead32( cpu.GetGPR( rn ) + U32( imm ) ) );
+  U32 addr = cpu.GetGPR( rn ) + U32( imm );
+  
+  cpu.SetExclusiveMonitors( addr, 4 );
+  cpu.SetGPR_mem( rt, cpu.MemRead32( addr ) );
 };
 
 /*
@@ -1131,7 +1134,10 @@ ldrexh.disasm = {
 ldrexh.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead16( cpu.GetGPR( rn ) ) );
+  typename ARCH::U32 addr = cpu.GetGPR( rn );
+  
+  cpu.SetExclusiveMonitors( addr, 2 );
+  cpu.SetGPR_mem( rt, cpu.MemRead16( addr ) );
 };
 
 /*******************************************************************
@@ -1148,7 +1154,10 @@ ldrexb.disasm = {
 ldrexb.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR( rn ) ) );
+  typename ARCH::U32 addr = cpu.GetGPR( rn );
+  
+  cpu.SetExclusiveMonitors( addr, 1 );
+  cpu.SetGPR_mem( rt, cpu.MemRead8( addr ) );
 };
 
 /*
@@ -1171,6 +1180,8 @@ ldrexd.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
+  
+  cpu.SetExclusiveMonitors( addr, 8 );
   cpu.SetGPR_mem( rt1, cpu.MemRead32( addr + U32(0) ) );
   cpu.SetGPR_mem( rt2, cpu.MemRead32( addr + U32(4) ) );
 };
@@ -1200,8 +1211,14 @@ strex.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   typedef typename ARCH::U32 U32;
-  cpu.MemWrite32( cpu.GetGPR( rn ), cpu.GetGPR( rt ) );
-  cpu.SetGPR( rd, U32(0) );
+  U32 addr = cpu.GetGPR( rn ) + U32(imm);
+  
+  if (cpu.ExclusiveMonitorsPass(addr, 4)) {
+    cpu.MemWrite32( addr, cpu.GetGPR( rt ) );
+    cpu.SetGPR( rd, U32(0) );
+  } else {
+    cpu.SetGPR( rd, U32(1) );
+  }
 };
 
 /*
@@ -1224,9 +1241,14 @@ strexh.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U16 U16;
-  cpu.MemWrite16( cpu.GetGPR( rn ), U16( cpu.GetGPR( rt ) ) );
-  cpu.SetGPR( rd, U32(0) );
+  U32 addr = cpu.GetGPR( rn );
+  
+  if (cpu.ExclusiveMonitorsPass(addr, 2)) {
+    cpu.MemWrite16( addr, typename ARCH::U16(cpu.GetGPR( rt )) );
+    cpu.SetGPR( rd, U32(0) );
+  } else {
+    cpu.SetGPR( rd, U32(1) );
+  }
 };
 
 /*
@@ -1249,9 +1271,14 @@ strexb.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U8  U8;
-  cpu.MemWrite8( cpu.GetGPR( rn ), U8( cpu.GetGPR( rt ) ) );
-  cpu.SetGPR( rd, U32(0) );
+  U32 addr = cpu.GetGPR( rn );
+  
+  if (cpu.ExclusiveMonitorsPass(addr, 1)) {
+    cpu.MemWrite8( addr, typename ARCH::U8(cpu.GetGPR( rt )) );
+    cpu.SetGPR( rd, U32(0) );
+  } else {
+    cpu.SetGPR( rd, U32(1) );
+  }
 };
 
 /*
@@ -1276,9 +1303,14 @@ strexd.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
-  cpu.MemWrite32( addr + U32(0), cpu.GetGPR( rt1 ) );
-  cpu.MemWrite32( addr + U32(4), cpu.GetGPR( rt2 ) );
-  cpu.SetGPR( rd, U32(0) );
+  
+  if (cpu.ExclusiveMonitorsPass(addr, 8)) {
+    cpu.MemWrite32( addr + U32(0), cpu.GetGPR( rt1 ) );
+    cpu.MemWrite32( addr + U32(4), cpu.GetGPR( rt2 ) );
+    cpu.SetGPR( rd, U32(0) );
+  } else {
+    cpu.SetGPR( rd, U32(1) );
+  }
 };
 
 /*
@@ -1287,11 +1319,22 @@ strexd.execute = {
 
 /*******************************************************************
  * clrex (Clear Exclusive) instruction
+ *
+ * CLREX clears the local record of the executing processor that an
+ * address has had a request for an exclusive access.
  */
 
 op clrex( 0b11110[5]: 0b0[1]: 0b111[3]: 0b01[2]: 0b1[1]: 0b1111[4]:> <: 0b10[2]: 0b0[1]: 0b0[1]: 0b1111[4]: 0b0010[4]: 0b1111[4] );
 
-clrex.disasm = { buffer << "clrex"; };
+clrex.disasm = {
+  buffer << "clrex";
+};
+
+clrex.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.ClearExclusiveLocal();
+};
 
 /*
  * end of strexd instruction
