@@ -642,7 +642,7 @@ smlsd.execute = {
   
   S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
   S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
-  S64 res = S64(product1) + S64(product2) + S64(S32(cpu.GetGPR(ra)));
+  S64 res = S64(product1) - S64(product2) + S64(S32(cpu.GetGPR(ra)));
   
   U32 saturation( res != S64(S32(res)) );
   
