@@ -284,12 +284,12 @@ namespace arm {
     // value that should have its packed MSB set in case of overflow
     // (respectively underflow).
     
-    U32T uf_bic = no_uflow & U32T(SWPT::msbmask);
-    uf_bic |= (((uf_bic ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | uf_bic) - U32T(SWPT::lsbmask);
+    U32T uf_bam = no_uflow & U32T(SWPT::msbmask);
+    uf_bam |= (((uf_bam ^ U32T(SWPT::msbmask)) >> SWPT::msb2lsb) | uf_bam) - U32T(SWPT::lsbmask);
     
-    res &= uf_bic;
+    res &= uf_bam;
     
-    return U32T(uf_bic != U32T(-1));
+    return U32T(uf_bam != U32T(-1));
   }
   
   template <typename coreT>
