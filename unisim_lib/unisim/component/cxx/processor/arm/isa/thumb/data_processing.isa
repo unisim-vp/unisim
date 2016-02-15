@@ -355,6 +355,7 @@ cmp_1.execute = {
 op cmp_2( 0b010000[6]: 0b1010[4]: rm[3]: rn[3] );
 op cmp_3( 0b01000101[8]: shl<3> rn1[1]: rm[4]: rn0[3] );
 cmp_3.var rn : {uint8_t} = {rn1|rn0};
+cmp_3.var reject : {Reject} = {((rn < 8) and (rm < 8)) or (rn == 15) or (rm == 15)};
 group cmp_rr( cmp_2, cmp_3 );
 
 cmp_rr.disasm = {

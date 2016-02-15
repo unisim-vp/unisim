@@ -664,11 +664,10 @@ and_wrri.execute = {
 
 op cmp_w( 0b111010111011[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 cmp_w.var imm : {uint32_t} = {imm1|imm0}
-cmp_w.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+cmp_w.var reject : {Reject} = {(rn == 15) or (rm == 13) or (rm == 15)};
 
 cmp_w.disasm = {
-  buffer << "cmp.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "cmp.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 cmp_w.execute = {
@@ -684,7 +683,7 @@ cmp_w.execute = {
 
 op cmp_wri( 0b11110[5]: shl <11> imm2[1]: 0b011011[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 cmp_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
-cmp_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
+cmp_wri.var reject : {Reject} = {(rn == 15)};
 
 cmp_wri.disasm = {
   buffer << "cmp.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -702,7 +701,7 @@ cmp_wri.execute = {
 
 op cmn_w( 0b111010110001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 cmn_w.var imm : {uint32_t} = {imm1|imm0}
-cmn_w.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+cmn_w.var reject : {Reject} = {(rn == 15) or (rm == 13) or (rm == 15)};
 
 cmn_w.disasm = {
   buffer << "cmn.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
@@ -721,7 +720,7 @@ cmn_w.execute = {
 
 op cmn_wri( 0b11110[5]: shl <11> imm2[1]: 0b010001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 cmn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
-cmn_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
+cmn_wri.var reject : {Reject} = {(rn == 15)};
 
 cmn_wri.disasm = {
   buffer << "cmn.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm);

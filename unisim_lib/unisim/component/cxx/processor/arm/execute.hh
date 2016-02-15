@@ -251,7 +251,7 @@ namespace arm {
     
     res = (res | (of_bis | uf_bis)) & ~(of_bic | uf_bic);
     
-    return U32T((overflow | underflow) != U32T(0));
+    return U32T((of_bic | uf_bis) != U32T(0));
   }
   
   template <typename U32T, typename SWPT>

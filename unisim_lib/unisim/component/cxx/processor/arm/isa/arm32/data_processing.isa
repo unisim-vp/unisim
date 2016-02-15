@@ -841,6 +841,7 @@ cmp_imm_shift.execute = {
 };
 
 op cmp_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1010[4]: 0b1[1]: rn[4]: 0b0000[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+cmp_reg_shift.var reject : {Reject} = {(rn == 15) or (rm == 15) or (rs == 15)};
 
 cmp_reg_shift.disasm = {
   buffer << "cmp" << DisasmCondition(cond) << '\t'
@@ -869,8 +870,7 @@ op cmn_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b1011[4]: 0b1[1]: rn[4]: 0b0000[4]: shl
 cmn_32imm.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 
 cmn_32imm.disasm = {
-  buffer << "cmn" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rn) << ", " << DisasmI(imm);
+  buffer << "cmn" << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 cmn_32imm.execute = {
@@ -899,6 +899,7 @@ cmn_imm_shift.execute = {
 };
 
 op cmn_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1011[4]: 0b1[1]: rn[4]: 0b0000[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+cmn_reg_shift.var reject : {Reject} = {(rn == 15) or (rm == 15) or (rs == 15)};
 
 cmn_reg_shift.disasm = {
   buffer << "cmn" << DisasmCondition(cond) << '\t'
