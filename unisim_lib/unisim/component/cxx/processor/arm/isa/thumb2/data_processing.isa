@@ -814,12 +814,10 @@ tst_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   typedef typename ARCH::U32 U32;
-  U32
-    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
-    op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-    res = op1 & op2;
-  cpu.CPSR().Set( N, (res >> 31) & U32(1) );
-  cpu.CPSR().Set( Z, U32(res == U32(0)) );
+  U32 op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
+      op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+      res = op1 & op2;
+  UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op tst_wri( 0b11110[5]: shl <11> imm2[1]: 0b000001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
