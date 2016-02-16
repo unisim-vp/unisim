@@ -684,7 +684,10 @@ bic_reg_shift.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * tst instruction
+ * tst (Test) instruction
+ *
+ * TST performs a bitwise AND operation on two operands.  It updates
+ * the condition flags based on the result, and discards the result.
  */
 
 op tst_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b1000[4]: 0b1[1]: rn[4]: 0b0000[4]: shl<1> imr[4]: imb[8] );
@@ -716,13 +719,14 @@ tst_imm_shift.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
   typedef typename ARCH::U32 U32;
-  U32 rmval = cpu.GetGPR( rm ),
-           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 & op2;
+  U32 op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
+      op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+      res = op1 & op2;
   UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op tst_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1000[4]: 0b1[1]: rn[4]: 0b0000[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+tst_reg_shift.var reject : {Reject} = {(rn == 15) or (rm == 15) or (rs == 15)};
 
 tst_reg_shift.disasm = {
   buffer << "tst" << DisasmCondition(cond) << '\t'
@@ -744,7 +748,11 @@ tst_reg_shift.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * teq instruction
+ * teq (Test Equivalence) instruction
+ *
+ * TEQ performs a bitwise exclusive OR operation on two operands.  It
+ * updates the condition flags based on the result, and discards the
+ * result.
  */
 
 op teq_32imm( cond[4]: 0b00[2]: 0b1[1]: 0b1001[4]: 0b1[1]: rn[4]: 0b0000[4]: shl<1> imr[4]: imb[8] );
@@ -783,6 +791,7 @@ teq_imm_shift.execute = {
 };
 
 op teq_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b1001[4]: 0b1[1]: rn[4]: 0b0000[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
+teq_reg_shift.var reject : {Reject} = {(rn == 15) or (rm == 15) or (rs == 15)};
 
 teq_reg_shift.disasm = {
   buffer << "teq" << DisasmCondition(cond) << '\t'
