@@ -195,11 +195,14 @@ shift_w.execute = {
   if (s) UpdateStatusRegShift( cpu, res, rnval, shift, rmval );
 };
 
-/* SUB instructions */
+/*******************************************************************
+ * sub (Subtract) instruction
+ */
 
+/* The following encoding covers "register" and "sp minus register" forms */
 op sub_w( 0b11101011[8]: 0b101[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 sub_w.var imm : {uint32_t} = {imm1|imm0}
-sub_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+sub_w.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 13) or (rm == 15) or ((rd == 13) and (rn != 13))};
 
 sub_w.disasm = {
   buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -218,9 +221,10 @@ sub_w.execute = {
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
+/* The following encoding covers "immediate" and "sp minus immediate" forms */
 op sub_wrri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b101[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 sub_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
-sub_wrri.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
+sub_wrri.var reject : {Reject} = {(rd == 15) or (rn == 15) or ((rd == 13) and (rn != 13))};
 
 sub_wrri.disasm = { buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
@@ -233,9 +237,10 @@ sub_wrri.execute = {
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
+/* The following encoding covers "immediate" and "sp minus immediate" forms */
 op subw( 0b11110[5]: shl<11> imm2[1]: 0b101010[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 subw.var imm : {uint32_t} = {imm2|imm1|imm0};
-subw.var reject : {Reject} = {(rn == 15) or (rd == 13) or (rd == 15)};
+subw.var reject : {Reject} = {(rd == 15) or (rn == 15) or ((rd == 13) and (rn != 13))};
 
 subw.disasm = {
   buffer << "subw\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -262,6 +267,10 @@ adr_subw.execute = {
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( rd, (cpu.GetGPR( 15 ) & U32(-4)) - U32(imm) );
 };
+
+/*
+ * end of sub instruction
+ *******************************************************************/
 
 /* SBC instructions */
 
@@ -340,15 +349,18 @@ rsb_rri.execute = {
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-/* ADD instructions */
+/*******************************************************************
+ * add (Add) instruction
+ */
 
+/* The following encoding covers "register" and "sp plus register" forms */
 op add_w( 0b11101011[8]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 add_w.var imm : {uint32_t} = {imm1|imm0}
-add_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
+add_w.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 13) or (rm == 15) or ((rd == 13) and (rn != 13))};
 
 add_w.disasm = {
-  buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 add_w.execute = {
@@ -363,9 +375,10 @@ add_w.execute = {
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
+/* The following encoding covers "immediate" and "sp plus immediate" forms */
 op add_wrri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 add_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
-add_wrri.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rd == 13) or (rd == 15)};
+add_wrri.var reject : {Reject} = {(rd == 15) or (rn == 15) or ((rd == 13) and (rn != 13))};
 
 add_wrri.disasm = { buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
@@ -378,9 +391,10 @@ add_wrri.execute = {
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
+/* The following encoding covers "immediate" and "sp plus immediate" forms */
 op addw( 0b11110[5]: shl<11> imm2[1]: 0b100000[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 addw.var imm : {uint32_t} = {imm2|imm1|imm0};
-addw.var reject : {Reject} = {(rn == 15) or (rd == 13) or (rd == 15)};
+addw.var reject : {Reject} = {(rd == 15) or (rn == 15) or ((rd == 13) and (rn != 13))};
 
 addw.disasm = {
   buffer << "addw\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -407,6 +421,10 @@ adr_addw.execute = {
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( rd, (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm) );
 };
+
+/*
+ * end of add instruction
+ *******************************************************************/
 
 /* ADC instructions */
 
@@ -1283,6 +1301,30 @@ rbit.execute = {
 }
 
 /*******************************************************************
+ * rev (Byte-Reverse Word) instruction
+ *
+ * REV reverses the byte order in a 32-bit register.
+ */
+
+op rev_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm_[4] );
+rev_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rm != rm_)};
+
+rev_w.disasm = { buffer << "rev.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
+
+rev_w.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ), rdval = ByteSwap( rmval );
+	
+  cpu.SetGPR( rd, rdval );
+};
+
+/*
+ * end of rev instruction
+ *******************************************************************/
+
+/*******************************************************************
  * rev16 (Byte-Reverse Packed Halfword) instruction
  *
  * REV16 reverses the byte order in each16-bit halfword of a 32-bit
@@ -1291,7 +1333,7 @@ rbit.execute = {
 
 { ARCH::Config::insns6 }:                                       \
 op rev16_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1001[4]: rm_[4] );
-rev16_w.var reject : {Reject} = {(rm != rm_)};
+rev16_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rm != rm_)};
 
 rev16_w.disasm = {
   buffer << "rev16.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -1307,5 +1349,36 @@ rev16_w.execute = {
 
 /*
  * end of rev16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * revsh (Byte-Reverse Signed Halfword) instruction
+ *
+ * REVSH reverses the byte order in the lower 16-bit halfword of a
+ * 32-bit register, and sign-extends the result to 32 bits.
+ */
+
+{ ARCH::Config::insns6 }:                               \
+op revsh_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm_[4] );
+revsh_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rm != rm_)};
+
+revsh_w.disasm = {
+  buffer << "revsh.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
+
+revsh_w.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+  
+  U16 src( cpu.GetGPR(rm) );
+  cpu.SetGPR( rd, U32(S32(S16((src >> 8) | (src << 8)))) );
+};
+
+/*
+ * end of revsh instruction
  *******************************************************************/
 

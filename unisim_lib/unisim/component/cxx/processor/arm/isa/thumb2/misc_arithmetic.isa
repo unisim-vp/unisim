@@ -326,12 +326,12 @@ qdsub.execute = {
 
 { ARCH::Config::insns6 }: \
 op pkh( 0b111010101100[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shl<1> tb[1]: 0b0[1]: rm[4] );
-pkh.var imm : {uint32_t} = {imm1|imm0}
+pkh.var imm : {uint32_t} = {imm1|imm0};
+pkh.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 pkh.disasm = {
-  buffer << "pkh" << (tb?"tb":"bt") << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << DisasmShImm( tb, imm );
+  buffer << "pkh" << (tb?"tb":"bt") << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( tb, imm );
 };
 
 pkh.execute = {
@@ -349,61 +349,6 @@ pkh.execute = {
 
 /*
  * end of pkh instruction
- *******************************************************************/
-
-/*******************************************************************
- * rev (Byte-Reverse Word) instruction
- *
- * REV reverses the byte order in a 32-bit register.
- */
-
-op rev_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm_[4] );
-rev_w.var reject : {Reject} = {(rm != rm_)};
-
-rev_w.disasm = { buffer << "rev.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
-
-rev_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
-  
-  typedef typename ARCH::U32 U32;
-  U32 rmval = cpu.GetGPR( rm ), rdval = ByteSwap( rmval );
-	
-  cpu.SetGPR( rd, rdval );
-};
-
-/*
- * end of rev instruction
- *******************************************************************/
-
-/*******************************************************************
- * revsh (Byte-Reverse Signed Halfword) instruction
- *
- * REVSH reverses the byte order in the lower 16-bit halfword of a
- * 32-bit register, and sign-extends the result to 32 bits.
- */
-
-{ ARCH::Config::insns6 }:                               \
-op revsh_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm_[4] );
-revsh_w.var reject : {Reject} = {(rm != rm_) or (rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
-
-revsh_w.disasm = {
-  buffer << "revsh.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-};
-
-revsh_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
-  
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
-  typedef typename ARCH::S16 S16;
-  typedef typename ARCH::U16 U16;
-  
-  U16 src( cpu.GetGPR(rm) );
-  cpu.SetGPR( rd, U32(S32(S16((src >> 8) | (src << 8)))) );
-};
-
-/*
- * end of revsh instruction
  *******************************************************************/
 
 /*******************************************************************
