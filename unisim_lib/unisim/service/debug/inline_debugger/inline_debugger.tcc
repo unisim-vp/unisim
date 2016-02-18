@@ -3230,7 +3230,7 @@ bool InlineDebugger<ADDRESS>::IsBlankLine(const std::string& line) const
 	unsigned int i;
 	for(i = 0; i < n; i++)
 	{
-		if(line[i] != ' ') return false;
+		if ((line[i] != ' ') && (line[i] != '\t') && (line[i] != '\n') && (line[i] != '\r')) return false;
 	}
 	return true;
 }
