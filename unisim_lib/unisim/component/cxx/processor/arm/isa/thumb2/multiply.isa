@@ -168,6 +168,7 @@ sdiv.disasm = {
 sdiv.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
+  typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   S32 op1( cpu.GetGPR(rn) ), op2( cpu.GetGPR(rm) ),
       res(0); // An untrapped division by zero result in 0.
@@ -176,7 +177,7 @@ sdiv.execute = {
     res = op1 / op2;
   }
   
-  cpu.SetGPR( rd, res );
+  cpu.SetGPR( rd, U32(res) );
 };
 
 /*

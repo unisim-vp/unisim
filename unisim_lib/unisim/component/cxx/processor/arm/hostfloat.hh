@@ -62,10 +62,10 @@ namespace hostfloat {
   void FloatAbs( float& res, float op, fpscrT& fpscr ) { res = fabsf( op ); }
   
   template <typename operT, typename fpscrT>
-  bool FloatIsSNaN( operT op, fpscrT const& fpscr ) { return issignaling( op ); }
+  bool FloatIsSNaN( operT op, fpscrT const& fpscr ) { return isnan( op ) and issignaling( op ); }
   
   template <typename operT, typename fpscrT>
-  bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return isnan( op ); }
+  bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return isnan( op ) and not issignaling( op ); }
   
   template <typename operT, typename fpscrT>
   void FloatSetQuietBit( operT& op, fpscrT const& fpscr ) {}
