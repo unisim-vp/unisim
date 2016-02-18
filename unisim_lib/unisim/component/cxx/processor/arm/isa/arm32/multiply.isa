@@ -490,6 +490,20 @@ sdiv.disasm = {
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+sdiv.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S32 S32;
+  S32 op1( cpu.GetGPR(rn) ), op2( cpu.GetGPR(rm) ),
+      res(0); // An untrapped division by zero result in 0.
+  
+  if (not cpu.IntegerZeroDivide( op2 == S32(0) )) {
+    res = op1 / op2;
+  }
+  
+  cpu.SetGPR( rd, res );
+};
+
 /*
  * end of sdiv instruction
  *******************************************************************/
@@ -509,6 +523,20 @@ udiv.disasm = {
   buffer << "udiv" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
+
+udiv.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGPR(rn) ), op2( cpu.GetGPR(rm) ),
+      res(0); // An untrapped division by zero result in 0.
+  
+  if (not cpu.IntegerZeroDivide( op2 == U32(0) )) {
+    res = op1 / op2;
+  }
+  
+  cpu.SetGPR( rd, res );
+}
 
 /*
  * end of udiv instruction

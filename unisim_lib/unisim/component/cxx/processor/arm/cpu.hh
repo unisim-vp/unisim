@@ -335,6 +335,7 @@ public:
   void     UnpredictableInsnBehaviour();
   void     Assert( bool condition ) { if (not condition) UnpredictableInsnBehaviour(); }
   void     CallSupervisor( uint16_t imm );
+  bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   
 protected:
   void     HandleSynchronousException();
