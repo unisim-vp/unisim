@@ -1261,10 +1261,14 @@ movt.execute = {
  */
 
 { ARCH::Config::insns6 }:                               \
-op setend( 0b1111[4]: 0b00010000[8]: 0b0001[4]: 0b000000[6]: end[1]: 0b0[1]: 0b0000[4]: 0b0000[4] );
+op setend( 0b1111[4]: 0b00010000[8]: 0b0001[4]: 0b000000[6]: endianness[1]: 0b0[1]: 0b0000[4]: 0b0000[4] );
 
 setend.disasm = {
-  buffer << "setend\t" << (end ? "be":"le");
+  buffer << "setend\t" << (endianness ? "be":"le");
+};
+
+setend.execute = {
+  cpu.CPSR().Set( E, typename ARCH::U32(endianness) );
 };
 
 /*

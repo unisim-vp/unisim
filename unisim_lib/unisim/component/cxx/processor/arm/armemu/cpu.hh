@@ -71,7 +71,7 @@ struct ARMv7emu
   static bool const     insns5J = true;
   static bool const     insns5T = true;
   static bool const     insns6  = true;
-  static bool const     insnsRM = false;
+  static bool const     insnsRM = true;
   static bool const     insnsT2 = true;
   static bool const     insns7  = true;
   static bool const     hasVFP  = true;
@@ -176,16 +176,22 @@ struct CPU
   virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
   virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
   
+  uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }
   uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }
+  uint32_t MemURead16( uint32_t address ) { return PerformUReadAccess( address, 2 ); }
   uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2 ); }
   uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1 ); }
+  void     MemUWrite32( uint32_t address, uint32_t value ) { PerformUWriteAccess( address, 4, value ); }
   void     MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
+  void     MemUWrite16( uint32_t address, uint16_t value ) { PerformUWriteAccess( address, 2, value ); }
   void     MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
   void     MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
   
   void     PerformPrefetchAccess( uint32_t addr );
   void     PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
   uint32_t PerformReadAccess( uint32_t addr, uint32_t size );
+  void     PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
+  uint32_t PerformUReadAccess( uint32_t addr, uint32_t size );
   
   void     SetExclusiveMonitors( uint32_t addr, unsigned size ) { /*TODO: MP support*/ }
   bool     ExclusiveMonitorsPass( uint32_t addr, unsigned size ) { /*TODO: MP support*/ return true; }

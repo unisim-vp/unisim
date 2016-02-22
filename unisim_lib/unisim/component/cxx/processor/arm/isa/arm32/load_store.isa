@@ -56,7 +56,7 @@ ldr_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead32( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead32( p?oaddr:addr ) );
 };
 
 op ldr_reg( cond[4]: 0b011[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
@@ -76,7 +76,7 @@ ldr_reg.execute = {
   U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead32( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead32( p?oaddr:addr ) );
 };
 
 /*
@@ -101,7 +101,7 @@ ldrh_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead16( p?oaddr:addr ) );
 };
 
 op ldrh_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: 0b0000[4]: 0b1011[4]: rm[4] );
@@ -118,7 +118,7 @@ ldrh_reg.execute = {
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead16( p?oaddr:addr ) );
 };
 
 /*
@@ -145,7 +145,7 @@ ldrsh_imm.execute = {
   typedef typename ARCH::S16 S16;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemRead16( p?oaddr:addr ) ) ) ) );
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( p?oaddr:addr ) ) ) ) );
 };
 
 op ldrsh_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: 0b0000[4]: 0b1111[4]: rm[4] );
@@ -165,7 +165,7 @@ ldrsh_reg.execute = {
   U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemRead16( p?oaddr:addr ) ) ) ) );
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( p?oaddr:addr ) ) ) ) );
 };
 
 /*
@@ -329,7 +329,7 @@ str_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite32( p?oaddr:addr, cpu.GetGPR( rt ) );
+  cpu.MemUWrite32( p?oaddr:addr, cpu.GetGPR( rt ) );
 };
 
 op str_reg( cond[4]: 0b011[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
@@ -349,7 +349,7 @@ str_reg.execute = {
   U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite32( p?oaddr:addr, cpu.GetGPR( rt ) );
+  cpu.MemUWrite32( p?oaddr:addr, cpu.GetGPR( rt ) );
 };
 
 /*
@@ -375,7 +375,7 @@ strh_imm.execute = {
   typedef typename ARCH::U16 U16;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr + U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite16( p?oaddr:addr, U16(cpu.GetGPR( rt )) );
+  cpu.MemUWrite16( p?oaddr:addr, U16(cpu.GetGPR( rt )) );
 };
 
 op strh_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: 0b0000[4]: 0b1011[4]: rm[4] );
@@ -394,7 +394,7 @@ strh_reg.execute = {
   U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite16( p?oaddr:addr, U16(cpu.GetGPR( rt )) );
+  cpu.MemUWrite16( p?oaddr:addr, U16(cpu.GetGPR( rt )) );
 };
 
 /*
@@ -514,7 +514,7 @@ ldrt_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
   cpu.SetGPR( rn, addr+ U32(imm) );
-  cpu.SetGPR_mem( rt, cpu.MemRead32( addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead32( addr ) );
 };
 
 op ldrt_reg( cond[4]: 0b0110[4]: u[1]: 0b011[3]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
@@ -531,7 +531,7 @@ ldrt_reg.execute = {
   U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead32( addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead32( addr ) );
 };
 
 /*
@@ -557,7 +557,7 @@ ldrht_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
   cpu.SetGPR( rn, addr+ U32(imm) );
-  cpu.SetGPR_mem( rt, cpu.MemRead16( addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead16( addr ) );
 };
 
 op ldrht_reg( cond[4]: 0b0000[4]: u[1]: 0b011[3]: rn[4]: rt[4]: 0b0000[4]: 0b1011[4]: rm[4] );
@@ -573,7 +573,7 @@ ldrht_reg.execute = {
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead16( addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead16( addr ) );
 };
 
 /*
@@ -601,7 +601,7 @@ ldrsht_imm.execute = {
   typedef typename ARCH::S16 S16;
   U32 addr = cpu.GetGPR( rn );
   cpu.SetGPR( rn, addr+ U32(imm) );
-  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemRead16( addr ) ) ) ) );
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( addr ) ) ) ) );
 };
 
 op ldrsht_reg( cond[4]: 0b0000[4]: u[1]: 0b011[3]: rn[4]: rt[4]: 0b0000[4]: 0b1111[4]: rm[4] );
@@ -620,7 +620,7 @@ ldrsht_reg.execute = {
   U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemRead16( addr ) ) ) ) );
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( addr ) ) ) ) );
 };
 
 /*
@@ -736,7 +736,7 @@ strt_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
   cpu.SetGPR( rn, addr+ U32(imm) );
-  cpu.MemWrite32( addr, cpu.GetGPR( rt ) );
+  cpu.MemUWrite32( addr, cpu.GetGPR( rt ) );
 };
 
 op strt_reg( cond[4]: 0b011[3]: 0b0[1]: u[1]: 0b0[1]: 0b1[1]: 0b0[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
@@ -753,7 +753,7 @@ strt_reg.execute = {
   U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite32( addr, cpu.GetGPR( rt ) );
+  cpu.MemUWrite32( addr, cpu.GetGPR( rt ) );
 };
 
 /*
@@ -780,7 +780,7 @@ strht_imm.execute = {
   typedef typename ARCH::U16 U16;
   U32 addr = cpu.GetGPR( rn );
   cpu.SetGPR( rn, addr+ U32(imm) );
-  cpu.MemWrite16( addr, U16(cpu.GetGPR( rt )) );
+  cpu.MemUWrite16( addr, U16(cpu.GetGPR( rt )) );
 };
 
 op strht_reg( cond[4]: 0b0000[4]: u[1]: 0b010[3]: rn[4]: rt[4]: 0b0000[4]: 0b1011[4]: rm[4] );
@@ -798,7 +798,7 @@ strht_reg.execute = {
   U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite16( addr, U16(cpu.GetGPR( rt )) );
+  cpu.MemUWrite16( addr, U16(cpu.GetGPR( rt )) );
 };
 
 /*

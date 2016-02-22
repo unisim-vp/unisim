@@ -328,7 +328,33 @@ CPU::PerformPrefetchAccess( uint32_t addr )
   /* CHECK: should we report a memory access for a prefetch???? */
 }
 
-/** Performs a write access.
+/** Performs an unaligned write access.
+ * @param addr the address of the memory write access
+ * @param size the size of the memory write access
+ * @param value the value of the memory write access
+ */
+void
+CPU::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
+{
+  uint32_t const lo_mask = size - 1;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  uint32_t misalignment = addr & lo_mask;
+  
+  if (unlikely(misalignment and not SCTLR::A.Get( this->sctlr ))) {
+    uint8_t eaddr = addr;
+    if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
+      for (unsigned byte = size; --byte < size; ++eaddr)
+        PerformWriteAccess( eaddr, 1, (value >> (8*byte)) & 0xff );
+    } else {
+      for (unsigned byte = 0; byte < size; ++byte, ++eaddr)
+        PerformWriteAccess( eaddr, 1, (value >> (8*byte)) & 0xff );
+    }
+    return;
+  } else
+    PerformWriteAccess( addr, size, value );
+}
+
+/** Performs an aligned write access.
  * @param addr the address of the memory write access
  * @param size the size of the memory write access
  * @param value the value of the memory write access
@@ -341,11 +367,8 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
-    // TODO: check if misaligned memory accesses are allowed
-    // TODO: how does endianness affects that ? 
-    for (uint32_t byte = 0; byte < size; ++ byte)
-      PerformWriteAccess( addr + byte, 1, (value >> (8*byte)) & 0xff );
-    return;
+    // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
+    throw unisim::component::cxx::processor::arm::exception::DataAbortException(); 
   }
   
   uint32_t write_addr = addr & ~lo_mask;
@@ -353,10 +376,10 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   uint8_t data[4];
   bool cache_access = dcache.GetSize() and SCTLR::C.Get( this->sctlr );
 
+  // In armv7 no address mungling is performed
+  // In armv5, fix the write address according to request size when big endian
+  // write_addr ^= ((-size) & 3);
   if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
-    // fix the write address according to request size when big endian
-    write_addr ^= ((-size) & 3);
-    // TODO: need to check that because it seems astonishingly incorrect
     uint32_t shifter = value;
     for (int byte = size; --byte >= 0;)
       { data[byte] = shifter; shifter >>= 8; }
@@ -410,7 +433,33 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
 }
 
-/** Performs a read access.
+/** Performs an unaligned read access.
+ * @param addr the address of the memory read access
+ * @param size the size of the memory read access
+ */
+uint32_t
+CPU::PerformUReadAccess( uint32_t addr, uint32_t size )
+{
+  uint32_t const lo_mask = size - 1;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  uint32_t misalignment = addr & lo_mask;
+  
+  if (unlikely(misalignment and not SCTLR::A.Get( this->sctlr ))) {
+    uint8_t eaddr = addr;
+    uint32_t result = 0;
+    if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
+      for (unsigned byte = 0; byte < size; ++byte, ++eaddr)
+        result = (result << 8) | PerformReadAccess( eaddr, 1 );
+    } else {
+      for (unsigned byte = size; --byte < size; ++eaddr)
+        result = (result << 8) | PerformReadAccess( eaddr, 1 );
+    }
+    return result;
+  } else
+    return PerformReadAccess( addr, size );
+}
+
+/** Performs an aligned read access.
  * @param addr the address of the memory read access
  * @param size the size of the memory read access
  */
@@ -422,12 +471,8 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
-    // TODO: check if misaligned memory accesses are allowed
-    // TODO: how does endianness affects that ? 
-    uint32_t result = 0;
-    for (uint32_t byte = size; --byte < size;)
-      result = (result << 8) | PerformReadAccess( addr + byte, 1 );
-    return result;
+    // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
+    throw unisim::component::cxx::processor::arm::exception::DataAbortException(); 
   }
   
   uint32_t read_addr = addr & ~lo_mask;
@@ -435,12 +480,11 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   uint8_t data[4];
   bool cache_access = dcache.GetSize() and SCTLR::C.Get( this->sctlr );
 
-  // fix the read address depending on the request size and endianess
-  if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
-    // TODO: need to check that because it seems astonishingly
-    // incorrect to perform address masking and endianness conversion
-    read_addr ^= ((-size) & 3);
-  }
+  // In armv7 no address mungling is performed
+  // In armv5, fix the read address depending on the request size and endianess
+  // if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
+  //   read_addr ^= ((-size) & 3);
+  // }
 
   if (likely(cache_access))
     {
@@ -1083,7 +1127,8 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
   
   uint32_t word;
   memcpy( &word, &ipb_bytes[buffer_index], 4 );
-  insn = Target2Host(GetEndianness(), word);
+  // In ARMv7, instruction fetch ignores "Endianness execution state bit"
+  insn = Target2Host(unisim::util::endian::E_LITTLE_ENDIAN, word);
 }
 
 /** Reads THUMB instructions from the memory system
@@ -1105,7 +1150,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
       RefillInsnPrefetchBuffer( base_address );
     }
   
-  // Instruction fetch ignores "Endianness execution state bit"
+  // In ARMv7, instruction fetch ignores "Endianness execution state bit"
   insn.str[0] = ipb_bytes[buffer_index+0];
   insn.str[1] = ipb_bytes[buffer_index+1];
   if (unlikely((buffer_index+2) >= Cache::LINE_SIZE)) {

@@ -158,5 +158,5 @@ tbh.disasm = {
 tbh.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.Branch( cpu.GetGPR( 15 ) + (cpu.MemRead16( cpu.GetGPR( rn ) + (cpu.GetGPR( rm ) << 1) ) << 1) );
+  cpu.Branch( cpu.GetGPR( 15 ) + (cpu.MemURead16( cpu.GetGPR( rn ) + (cpu.GetGPR( rm ) << 1) ) << 1) );
 }

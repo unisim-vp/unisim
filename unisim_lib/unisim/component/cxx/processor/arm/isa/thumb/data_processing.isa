@@ -857,10 +857,17 @@ revsh.execute = {
  */
 
 { ARCH::Config::insns6 }:                               \
-op setend( 0b101101100101[12]: end[1]: 0b000[3] );
+op setend( 0b101101100101[12]: endianness[1]: 0b000[3] );
 
 setend.disasm = {
-  buffer << "setend\t" << (end ? "be":"le");
+  buffer << "setend\t" << (endianness ? "be":"le");
+};
+
+setend.execute = {
+  // if (not CheckCondition(cpu, cpu.itcond())) return;
+  // TODO:  Not permitted in IT block
+  
+  cpu.CPSR().Set( E, typename ARCH::U32(endianness) );
 };
 
 /*
