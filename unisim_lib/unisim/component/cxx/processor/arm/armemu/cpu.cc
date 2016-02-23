@@ -341,7 +341,7 @@ CPU::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not SCTLR::A.Get( this->sctlr ))) {
-    uint8_t eaddr = addr;
+    uint32_t eaddr = addr;
     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
       for (unsigned byte = size; --byte < size; ++eaddr)
         PerformWriteAccess( eaddr, 1, (value >> (8*byte)) & 0xff );
@@ -445,14 +445,13 @@ CPU::PerformUReadAccess( uint32_t addr, uint32_t size )
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not SCTLR::A.Get( this->sctlr ))) {
-    uint8_t eaddr = addr;
     uint32_t result = 0;
     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
-      for (unsigned byte = 0; byte < size; ++byte, ++eaddr)
-        result = (result << 8) | PerformReadAccess( eaddr, 1 );
+      for (unsigned byte = 0; byte < size; ++byte)
+        result = (result << 8) | PerformReadAccess( addr + byte, 1 );
     } else {
-      for (unsigned byte = size; --byte < size; ++eaddr)
-        result = (result << 8) | PerformReadAccess( eaddr, 1 );
+      for (unsigned byte = size; --byte < size;)
+        result = (result << 8) | PerformReadAccess( addr + byte, 1 );
     }
     return result;
   } else

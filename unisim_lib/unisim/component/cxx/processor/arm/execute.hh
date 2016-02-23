@@ -488,11 +488,12 @@ namespace arm {
   { return __FPProcessNaN__<operT, fpscrT>( res, fpscr ); }
 
   template <typename operT, typename fpscrT>
-  void FPAdd( operT& result, operT const& op1, operT const& op2, fpscrT& fpscr )
+  void FPAdd( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      FloatFlushToZero( op1, fpscr );
-      FloatFlushToZero( op2, fpscr );
+      if (FloatFlushToZero( op1, fpscr ) or
+          FloatFlushToZero( op2, fpscr ))
+        FPProcessException( InputDenorm, fpscr );
     }
     if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
     
@@ -500,11 +501,12 @@ namespace arm {
   }
   
   template <typename operT, typename fpscrT>
-  void FPSub( operT& result, operT const& op1, operT const& op2, fpscrT& fpscr )
+  void FPSub( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      FloatFlushToZero( op1, fpscr );
-      FloatFlushToZero( op2, fpscr );
+      if (FloatFlushToZero( op1, fpscr ) or
+          FloatFlushToZero( op2, fpscr ))
+        FPProcessException( InputDenorm, fpscr );
     }
     if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
     
@@ -512,11 +514,12 @@ namespace arm {
   }
 
   template <typename operT, typename fpscrT>
-  void FPDiv( operT& result, operT const& op1, operT const& op2, fpscrT& fpscr )
+  void FPDiv( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      FloatFlushToZero( op1, fpscr );
-      FloatFlushToZero( op2, fpscr );
+      if (FloatFlushToZero( op1, fpscr ) or
+          FloatFlushToZero( op2, fpscr ))
+        FPProcessException( InputDenorm, fpscr );
     }
     if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
     
@@ -524,11 +527,12 @@ namespace arm {
   }
   
   template <typename operT, typename fpscrT>
-  void FPMul( operT& result, operT const& op1, operT const& op2, fpscrT& fpscr )
+  void FPMul( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      FloatFlushToZero( op1, fpscr );
-      FloatFlushToZero( op2, fpscr );
+      if (FloatFlushToZero( op1, fpscr ) or
+          FloatFlushToZero( op2, fpscr ))
+        FPProcessException( InputDenorm, fpscr );
     }
     if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
     
@@ -536,12 +540,13 @@ namespace arm {
   }
   
   template <typename operT, typename fpscrT>
-  void FPMulAdd( operT& acc, operT const& op1, operT const& op2, fpscrT& fpscr )
+  void FPMulAdd( operT& acc, operT& op1, operT& op2, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      FloatFlushToZero( op1, fpscr );
-      FloatFlushToZero( op2, fpscr );
-      FloatFlushToZero( acc, fpscr );
+      if (FloatFlushToZero( op1, fpscr ) or
+          FloatFlushToZero( op2, fpscr ) or
+          FloatFlushToZero( acc, fpscr ))
+        FPProcessException( InputDenorm, fpscr );
     }
     if (FPProcessNaN( acc, fpscr ) << acc << op1 << op2) return;
     
@@ -550,10 +555,11 @@ namespace arm {
   }
   
   template <typename operT, typename fpscrT>
-  void FPSqrt( operT& result, operT const& op, fpscrT& fpscr )
+  void FPSqrt( operT& result, operT& op, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      FloatFlushToZero( op, fpscr );
+      if (FloatFlushToZero( op, fpscr ))
+        FPProcessException( InputDenorm, fpscr );
     }
     if (FPProcessNaN( result, fpscr ) << op) return;
     
@@ -561,11 +567,12 @@ namespace arm {
   }
   
   template <typename operT, typename fpscrT>
-  void FPCompare( operT const& op1, operT const& op2, bool quiet_nan_exc, fpscrT& fpscr )
+  void FPCompare( operT& op1, operT& op2, bool quiet_nan_exc, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      FloatFlushToZero( op1, fpscr );
-      FloatFlushToZero( op2, fpscr );
+      if (FloatFlushToZero( op1, fpscr ) or 
+          FloatFlushToZero( op2, fpscr ))
+        FPProcessException( InputDenorm, fpscr );
     }
     bool hasSNaN = FloatIsSNaN( op1, fpscr ) or FloatIsSNaN( op2, fpscr );
     bool hasQNaN = FloatIsQNaN( op1, fpscr ) or FloatIsQNaN( op2, fpscr );

@@ -24,9 +24,14 @@ namespace hostfloat {
   };
   
   template <typename operT, typename fpscrT>
-  void
+  bool
   FloatFlushToZero( operT& op, fpscrT& fpscr )
-  {}
+  {
+    int fptype = std::fpclassify(op);
+    if ((fptype != FP_SUBNORMAL) or (fptype == FP_ZERO)) return false;
+    op = 0.0;
+    return true;
+  }
   
   template <typename operT, typename fpscrT>
   void FloatAdd( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 + op2; }
