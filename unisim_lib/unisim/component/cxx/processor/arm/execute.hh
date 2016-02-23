@@ -488,12 +488,19 @@ namespace arm {
   { return __FPProcessNaN__<operT, fpscrT>( res, fpscr ); }
 
   template <typename operT, typename fpscrT>
+  void
+  FPFlushToZero( operT& op, fpscrT& fpscr )
+  {
+    if (FloatFlushToZero( op, fpscr ))
+      FPProcessException( InputDenorm, fpscr );
+  }
+
+  template <typename operT, typename fpscrT>
   void FPAdd( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      if (FloatFlushToZero( op1, fpscr ) or
-          FloatFlushToZero( op2, fpscr ))
-        FPProcessException( InputDenorm, fpscr );
+      FPFlushToZero( op1, fpscr );
+      FPFlushToZero( op2, fpscr );
     }
     if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
     
@@ -504,9 +511,8 @@ namespace arm {
   void FPSub( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      if (FloatFlushToZero( op1, fpscr ) or
-          FloatFlushToZero( op2, fpscr ))
-        FPProcessException( InputDenorm, fpscr );
+      FPFlushToZero( op1, fpscr );
+      FPFlushToZero( op2, fpscr );
     }
     if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
     
@@ -517,9 +523,8 @@ namespace arm {
   void FPDiv( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      if (FloatFlushToZero( op1, fpscr ) or
-          FloatFlushToZero( op2, fpscr ))
-        FPProcessException( InputDenorm, fpscr );
+      FPFlushToZero( op1, fpscr );
+      FPFlushToZero( op2, fpscr );
     }
     if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
     
@@ -530,9 +535,8 @@ namespace arm {
   void FPMul( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      if (FloatFlushToZero( op1, fpscr ) or
-          FloatFlushToZero( op2, fpscr ))
-        FPProcessException( InputDenorm, fpscr );
+      FPFlushToZero( op1, fpscr );
+      FPFlushToZero( op2, fpscr );
     }
     if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
     
@@ -543,10 +547,9 @@ namespace arm {
   void FPMulAdd( operT& acc, operT& op1, operT& op2, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      if (FloatFlushToZero( op1, fpscr ) or
-          FloatFlushToZero( op2, fpscr ) or
-          FloatFlushToZero( acc, fpscr ))
-        FPProcessException( InputDenorm, fpscr );
+      FPFlushToZero( op1, fpscr );
+      FPFlushToZero( op2, fpscr );
+      FPFlushToZero( acc, fpscr );
     }
     if (FPProcessNaN( acc, fpscr ) << acc << op1 << op2) return;
     
@@ -558,21 +561,20 @@ namespace arm {
   void FPSqrt( operT& result, operT& op, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      if (FloatFlushToZero( op, fpscr ))
-        FPProcessException( InputDenorm, fpscr );
+      FPFlushToZero( op, fpscr );
     }
     if (FPProcessNaN( result, fpscr ) << op) return;
     
     FloatSqrt( result, op, fpscr );
   }
   
+  
   template <typename operT, typename fpscrT>
   void FPCompare( operT& op1, operT& op2, bool quiet_nan_exc, fpscrT& fpscr )
   {
     if (fpscr.Get( FZ )) {
-      if (FloatFlushToZero( op1, fpscr ) or 
-          FloatFlushToZero( op2, fpscr ))
-        FPProcessException( InputDenorm, fpscr );
+      FPFlushToZero( op1, fpscr );
+      FPFlushToZero( op2, fpscr );
     }
     bool hasSNaN = FloatIsSNaN( op1, fpscr ) or FloatIsSNaN( op2, fpscr );
     bool hasQNaN = FloatIsQNaN( op1, fpscr ) or FloatIsQNaN( op2, fpscr );

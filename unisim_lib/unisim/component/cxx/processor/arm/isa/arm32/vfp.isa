@@ -163,7 +163,7 @@ vcmp_f32i.disasm = {
 vcmp_f32i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename ARCH::F32 op1 = cpu.GetVSR( vd ), op2 = VFPExpandImm( 0, 7, 0 ); /* ZERO */
+  typename ARCH::F32 op1 = cpu.GetVSR( vd ), op2( 0 );
   
   FPCompare( op1, op2, e, cpu.FPSCR() );
 };
@@ -178,7 +178,7 @@ vcmp_f64i.disasm = {
 vcmp_f64i.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename ARCH::F64 op1 = cpu.GetVDR( vd ), op2 = VFPExpandImm( 0, 7, 0 ); /* ZERO */
+  typename ARCH::F64 op1 = cpu.GetVDR( vd ), op2( 0 );
   
   FPCompare( op1, op2, e, cpu.FPSCR() );
 }
