@@ -72,8 +72,23 @@ namespace hostfloat {
   template <typename operT, typename fpscrT>
   bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return isnan( op ) and not issignaling( op ); }
   
-  template <typename operT, typename fpscrT>
-  void FloatSetQuietBit( operT& op, fpscrT const& fpscr ) {}
+  template <typename fpscrT>
+  void FloatSetQuietBit( double& op, fpscrT const& fpscr )
+  {
+    ieee754_double ud;
+    ud.d = op;
+    ud.ieee_nan.quiet_nan = 1;
+    op = ud.d;
+  }
+  
+  template <typename fpscrT>
+  void FloatSetQuietBit( float& op, fpscrT const& fpscr )
+  {
+    ieee754_float uf;
+    uf.f = op;
+    uf.ieee_nan.quiet_nan = 1;
+    op = uf.f;
+  }
   
   template <typename fpscrT>
   void FloatSetDefaultNan( double& result, fpscrT const& fpscr )

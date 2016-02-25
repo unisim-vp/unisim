@@ -231,7 +231,7 @@ ldrsh_lit.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::S16 S16;
-  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( (cpu.GetGPR( 15 ) & U32( -4 )) - U32( imm ) ) ) ) ) );
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( (cpu.GetGPR( 15 ) & U32( -4 )) + U32( imm ) ) ) ) ) );
 };
 
 op ldrsh_reg( 0b111110010011[12]: rn[4]:> <: rt[4]: 0b0[1]: 0b00000[5]: imm[2]: rm[4] );

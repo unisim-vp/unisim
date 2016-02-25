@@ -350,8 +350,10 @@ CPU::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
         PerformWriteAccess( eaddr, 1, (value >> (8*byte)) & 0xff );
     }
     return;
-  } else
+  } else {
     PerformWriteAccess( addr, size, value );
+    return;
+  }
 }
 
 /** Performs an aligned write access.
@@ -367,8 +369,15 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
-    // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-    throw unisim::component::cxx::processor::arm::exception::DataAbortException(); 
+    if (this->linux_os_import) {
+      // we are executing on linux emulation mode, handle all misalignemnt as if implemented
+      PerformUWriteAccess( addr, size, value );
+      return;
+    }
+    else {
+      // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
+      throw unisim::component::cxx::processor::arm::exception::DataAbortException(); 
+    }
   }
   
   uint32_t write_addr = addr & ~lo_mask;
@@ -470,8 +479,14 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
-    // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-    throw unisim::component::cxx::processor::arm::exception::DataAbortException(); 
+    if (this->linux_os_import) {
+      // we are executing on linux emulation mode, handle all misalignemnt as if implemented
+      return PerformUReadAccess( addr, size );
+    }
+    else {
+      // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
+      throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+    }
   }
   
   uint32_t read_addr = addr & ~lo_mask;

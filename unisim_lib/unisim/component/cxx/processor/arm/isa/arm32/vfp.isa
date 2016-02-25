@@ -1057,8 +1057,7 @@ op vldr_32( cond[4]: 0b1101[4]: u[1]: vd0[1]: 0b01[2]: rn[4]: shl<1> vd1[4]: 0b1
 vldr_32.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
 
 vldr_32.disasm = {
-  buffer << "vldr" << DisasmCondition(cond) << "\ts" << vd << ", "
-         << DisasmMemoryRI(rn,imm,true,false);
+  buffer << "vldr" << DisasmCondition(cond) << "\ts" << vd << ", " << DisasmMemoryRI(rn,imm,true,false);
 };
 
 vldr_32.execute = {
@@ -1073,8 +1072,7 @@ op vldr_64( cond[4]: 0b1101[4]: u[1]: shl<4> vd1[1]: 0b01[2]: rn[4]: vd0[4]: 0b1
 vldr_64.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
 
 vldr_64.disasm = {
-  buffer << "vldr" << DisasmCondition(cond) << "\td" << vd << ", "
-         << DisasmMemoryRI(rn,imm,true,false);
+  buffer << "vldr" << DisasmCondition(cond) << "\td" << vd << ", " << DisasmMemoryRI(rn,imm,true,false);
 };
 
 vldr_64.execute = {
@@ -1739,8 +1737,7 @@ op vstr_32( cond[4]: 0b1101[4]: u[1]: vn0[1]: 0b00[2]: rn[4]: shl<1> vn1[4]: 0b1
 vstr_32.var vn : {uint32_t} = {vn1|vn0}, imm : {int32_t} = {u?offset:-offset};
 
 vstr_32.disasm = {
-  buffer << "vstr" << DisasmCondition(cond) << "\ts" << vn << ", "
-         << DisasmMemoryRI(rn,imm,true,false);
+  buffer << "vstr" << DisasmCondition(cond) << "\ts" << vn << ", " << DisasmMemoryRI(rn,imm,true,false);
 };
 
 vstr_32.execute = {
@@ -1754,8 +1751,7 @@ op vstr_64( cond[4]: 0b1101[4]: u[1]: shl<4> vn1[1]: 0b00[2]: rn[4]: vn0[4]: 0b1
 vstr_64.var vn : {uint32_t} = {vn1|vn0}, imm : {int32_t} = {u?offset:-offset};
 
 vstr_64.disasm = {
-  buffer << "vstr" << DisasmCondition(cond) << "\td" << vn << ", "
-         << DisasmMemoryRI(rn,imm,true,false);
+  buffer << "vstr" << DisasmCondition(cond) << "\td" << vn << ", " << DisasmMemoryRI(rn,imm,true,false);
 };
 
 vstr_64.execute = {
