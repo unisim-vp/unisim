@@ -1053,6 +1053,7 @@ vldmia_f64.execute = {
 
 op vldr_32( 0b11101101[8]: u[1]: vd0[1]: 0b01[2]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: shl<2> offset[8] );
 vldr_32.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
+vldr_32.var reject : {Reject} = {rn == 15};
 
 vldr_32.disasm = {
   buffer << "vldr\ts" << vd << ", " << DisasmMemoryRI(rn,imm,true,false);
@@ -1066,8 +1067,25 @@ vldr_32.execute = {
   cpu.SetVU32( vd, cpu.MemRead32( addr ) );
 };
 
+op vldr_literal_32( 0b11101101[8]: u[1]: vd0[1]: 0b01[2]: 0b1111[4]:> <: shl<1> vd1[4]: 0b1010[4]: shl<2> offset[8] );
+vldr_literal_32.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
+
+vldr_literal_32.disasm = {
+  buffer << "vldr\ts" << vd << ", [pc, " << DisasmI(imm) << "]";
+};
+
+vldr_literal_32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 addr = (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm);
+  
+  cpu.SetVU32( vd, cpu.MemRead32( addr ) );
+};
+
 op vldr_64( 0b11101101[8]: u[1]: shl<4> vd1[1]: 0b01[2]: rn[4]:> <: vd0[4]: 0b1011[4]: shl<2> offset[8] );
 vldr_64.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
+vldr_64.var reject : {Reject} = {rn == 15};
 
 vldr_64.disasm = {
   buffer << "vldr\td" << vd << ", " << DisasmMemoryRI(rn,imm,true,false);
@@ -1077,6 +1095,23 @@ vldr_64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t addr = cpu.GetGPR( rn ) + imm;
+  cpu.SetVU32( 2*vd+0, cpu.MemRead32( addr + 0 ) );
+  cpu.SetVU32( 2*vd+1, cpu.MemRead32( addr + 4 ) );
+};
+
+op vldr_literal_64( 0b11101101[8]: u[1]: shl<4> vd1[1]: 0b01[2]: 0b1111[4]:> <: vd0[4]: 0b1011[4]: shl<2> offset[8] );
+vldr_literal_64.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
+
+vldr_literal_64.disasm = {
+  buffer << "vldr\td" << vd << ", [pc, " << DisasmI(imm) << "]";
+};
+
+vldr_literal_64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 addr = (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm);
+  
   cpu.SetVU32( 2*vd+0, cpu.MemRead32( addr + 0 ) );
   cpu.SetVU32( 2*vd+1, cpu.MemRead32( addr + 4 ) );
 };
