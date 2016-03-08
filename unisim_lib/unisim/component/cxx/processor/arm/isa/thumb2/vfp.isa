@@ -551,12 +551,12 @@ vcvt_f64u32i.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   typename ARCH::U32 op = typename ARCH::U32( cpu.GetVU32( 2*vd ) );
-  typename ARCH::F32 res;
+  typename ARCH::F64 res;
   
   // TODO: Rounding
   FloatItoF( res, op, imm, cpu.FPSCR() );
   
-  cpu.SetVSR( vd, res );
+  cpu.SetVDR( vd, res );
 };
 
 op vcvt_s16f32i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1110[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b01[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
@@ -746,7 +746,7 @@ vcvt_f32f64.execute = {
   
   FloatFtoF( res, op, cpu.FPSCR() );
   
-  cpu.SetVSR( vd, typename ARCH::U32( res ) );
+  cpu.SetVSR( vd, res );
 };
 
 /* VDIV */
@@ -817,12 +817,12 @@ vfma_f64.disasm = {
 vfma_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 
-  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
   typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMulAdd( acc, op1, op2, fpscr );
   
-  cpu.SetVSR( vd, acc );
+  cpu.SetVDR( vd, acc );
 };
 
 op vfms_f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b10[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -854,13 +854,13 @@ vfms_f64.disasm = {
 vfms_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 
-  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
   typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( op1, op1, fpscr );
   FPMulAdd( acc, op1, op2, fpscr );
   
-  cpu.SetVSR( vd, acc );
+  cpu.SetVDR( vd, acc );
 };
 
 /* VFNMA, VFNMS; Vector Fused Negate Multiply Accumulate, Vector Fused Negate Multiply Substract */
@@ -894,13 +894,13 @@ vfnma_f64.disasm = {
 vfnma_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 
-  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
   typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( acc, acc, fpscr );
   FPMulAdd( acc, op1, op2, fpscr );
   
-  cpu.SetVSR( vd, acc );
+  cpu.SetVDR( vd, acc );
 };
 
 op vfnms_f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b01[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b0[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -933,14 +933,14 @@ vfnms_f64.disasm = {
 vfnms_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 
-  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
   typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FloatNeg( acc, acc, fpscr );
   FloatNeg( op1, op1, fpscr );
   FPMulAdd( acc, op1, op2, fpscr );
   
-  cpu.SetVSR( vd, acc );
+  cpu.SetVDR( vd, acc );
 };
 
 /* VLDM; Vector Load Multiple loads multiple extension registers from
@@ -1150,13 +1150,13 @@ vmla_f64.disasm = {
 vmla_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 
-  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
   typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FPAdd( acc, acc, product, fpscr );
   
-  cpu.SetVSR( vd, acc );
+  cpu.SetVDR( vd, acc );
 };
 
 op vmls_f32( 0b11101110[8]: 0b0[1]: vd0[1]: 0b00[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -1189,14 +1189,14 @@ vmls_f64.disasm = {
 vmls_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 
-  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
   typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FloatNeg( product, product, fpscr );
   FPAdd( acc, acc, product, fpscr );
   
-  cpu.SetVSR( vd, acc );
+  cpu.SetVDR( vd, acc );
 };
 
 /* VNMLA; Multiplies together two floating-point register values, adds
@@ -1236,7 +1236,7 @@ vnmla_f64.disasm = {
 vnmla_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 
-  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
   typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
@@ -1244,7 +1244,7 @@ vnmla_f64.execute = {
   FloatNeg( acc, acc, fpscr );
   FPAdd( acc, acc, product, fpscr );
   
-  cpu.SetVSR( vd, acc );
+  cpu.SetVDR( vd, acc );
 };
 
 /* VNMLS; multiplies together two floating-point register values, adds
@@ -1283,14 +1283,14 @@ vnmls_f64.disasm = {
 vnmls_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
 
-  typename ARCH::F64 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
   typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
   
   FPMul( product, op1, op2, fpscr );
   FloatNeg( acc, acc, fpscr );
   FPAdd( acc, acc, product, fpscr );
   
-  cpu.SetVSR( vd, acc );
+  cpu.SetVDR( vd, acc );
 };
 
 /* VMOV; Move immediate */
