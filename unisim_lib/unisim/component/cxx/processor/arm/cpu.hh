@@ -284,6 +284,8 @@ struct CPU
     return *(itr->second);
   }
   
+  unsigned GetPL() const;
+  
   Mode& CurrentMode() { return GetMode(cpsr.Get(M)); }
   
   /** Get the value contained by a banked register GPR.
@@ -393,6 +395,7 @@ protected:
   
   // /** CP15 */
   // CP15 cp15;
+  uint32_t midr; /*< MIDR, Main ID Register */
   uint32_t sctlr; 
   uint32_t ttbr0; /*< Translation Table Base Register 0 */
 

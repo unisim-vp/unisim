@@ -35,7 +35,6 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
-#include <GenericTimer.hh>
 #include <unisim/component/tlm2/processor/arm/armemu/armemu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
@@ -68,20 +67,23 @@
 #include "config.h"
 #endif
 
-struct RouterCFG
+struct ZynqRouterConfig
 {
   typedef uint32_t ADDRESS;
+  static unsigned const OUTPUT_PORTS = 2;
   static unsigned const INPUT_SOCKETS = 1;
-  static unsigned const OUTPUT_SOCKETS = 2;
-  static unsigned const MAX_NUM_MAPPINGS = 2;
+  static unsigned const OUTPUT_SOCKETS = OUTPUT_PORTS;
+  static unsigned const MAX_NUM_MAPPINGS = OUTPUT_PORTS;
   static unsigned const BUSWIDTH = 32;
   typedef tlm::tlm_base_protocol_types TYPES;
   static const bool VERBOSE = false;
 };
 
-struct Router : public unisim::component::tlm2::interconnect::generic_router::Router<RouterCFG>
+struct ZynqRouter : public unisim::component::tlm2::interconnect::generic_router::Router<ZynqRouterConfig>
 {
-  Router( char const* name, unisim::kernel::service::Object* parent = 0 );
+  ZynqRouter( char const* name, unisim::kernel::service::Object* parent = 0 );
+  void set_abs_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end );
+  void set_rel_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end );
 };
 
 struct Simulator : public unisim::kernel::service::Simulator
@@ -101,10 +103,12 @@ struct Simulator : public unisim::kernel::service::Simulator
  private:
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::armemu::ARMEMU CPU;
-  typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
+  typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MAIN_RAM;
+  typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> BOOT_ROM;
+  
   //typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
-	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<uint32_t> LOADER;
-
+  typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<uint32_t> LOADER;
+  
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
   typedef unisim::service::debug::debugger::Debugger<uint32_t> DEBUGGER;
@@ -113,13 +117,10 @@ struct Simulator : public unisim::kernel::service::Simulator
   typedef unisim::service::time::sc_time::ScTime ScTime;
   typedef unisim::service::time::host_time::HostTime HostTime;
   
-  scml_clock                   clock;
   CPU                          cpu;
-  Router                       router;
-  MEMORY                       memory;
-  GenericTimer<>               timer;
-  sc_signal<bool>              timer_reset;
-  sc_signal<bool>              timer_enable;
+  ZynqRouter                   router;
+  MAIN_RAM                     main_ram;
+  BOOT_ROM                     boot_rom;
   sc_signal<bool>              nirq_signal;
   sc_signal<bool>              nfiq_signal;
   sc_signal<bool>              nrst_signal;

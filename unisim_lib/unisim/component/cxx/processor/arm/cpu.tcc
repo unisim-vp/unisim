@@ -111,6 +111,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , Service<Registers>(name, parent)
   , logger(*this)
   , verbose(false)
+  , midr(0x414fc090)
   , sctlr(0)
   , ttbr0(0)
   , registers_export("registers-export", this)
@@ -284,6 +285,33 @@ CPU<CONFIG>::GetRegister(const char *name)
     return itr->second;
   else
     return 0;
+}
+
+/** Get current privilege level
+ *
+ * returns the current privilege level according to the running mode.
+ */
+template <class CONFIG>
+unsigned
+CPU<CONFIG>::GetPL() const
+{
+  /* NOTE: in non-secure mode (TrustZone), there are more privilege levels. */
+  switch (cpsr.Get(M))
+    {
+    case USER_MODE:
+      return 0;
+    case FIQ_MODE:
+    case IRQ_MODE:
+    case SUPERVISOR_MODE:
+    case MONITOR_MODE:
+    case ABORT_MODE:
+    case HYPERVISOR_MODE:
+    case UNDEFINED_MODE:
+    case SYSTEM_MODE:
+      return 1;
+    default:
+      throw 0;
+    }
 }
 
 /** Scan available registers for the Registers interface
@@ -634,6 +662,21 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
 
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
     {
+    case CP15ENCODE( 0, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "MIDR, Main ID Register"; }
+          void Write( CPU& cpu, uint32_t value ) { throw 0; }
+          uint32_t Read( CPU& cpu )
+          {
+            if (cpu.GetPL() < 1) { /* Only accessible from PL1 or higher. */ throw 0; }
+            return cpu.midr;
+          }
+        } x;
+        return x;
+      } break;
+      
     case CP15ENCODE( 1, 0, 0, 0 ):
       {
         static struct : public CP15Reg
@@ -675,7 +718,12 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
       
     }
 
-  logger << DebugError << "Unknown CP15 instruction: crn=" << crn << ", opc1=" << opcode1 << ", crm=" << crm << ", opc2=" << opcode2 << EndDebugError;
+  logger << DebugError << "Unknown CP15 instruction"
+         << ": CRn=" << unsigned(crn)
+         << ", opc1=" << unsigned(opcode1)
+         << ", CRm=" << unsigned(crm)
+         << ", opc2=" << unsigned(opcode2)
+         << EndDebugError;
   this->Stop( -1 );
   
   static struct CP15Error : public CP15Reg {

@@ -262,6 +262,8 @@ protected:
   /* UNISIM parameters, statistics                    START */
   /**********************************************************/
   
+  /** UNISIM Parameter to set the MIDR register. */
+  unisim::kernel::service::Parameter<uint32_t> param_midr;
   uint32_t sctlr_rstval;
   /** UNISIM Parameter to set the reset value of SCTLR. */
   unisim::kernel::service::Parameter<uint32_t> param_sctlr_rstval;

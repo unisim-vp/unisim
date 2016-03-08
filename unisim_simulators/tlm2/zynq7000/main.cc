@@ -41,19 +41,23 @@ using namespace std;
 int
 main(int argc, char *argv[])
 {
-  int ret = 0;
-
 #ifdef WIN32
-  // Loads the winsock2 dll
-  WORD wVersionRequested = MAKEWORD( 2, 2 );
-  WSADATA wsaData;
-  if(WSAStartup(wVersionRequested, &wsaData) != 0)
+  struct { // Loads/Unloads the winsock2 dll                                                                                                                  
+    WSADATA wsaData;
+    WSAEnv()
     {
-      cerr << "WSAStartup failed" << endl;
-      return -1;
+      WORD wVersionRequested = MAKEWORD( 2, 2 );
+      if(WSAStartup(wVersionRequested, &wsaData) == 0)
+        return;
+      std::cerr << "WSAStartup failed" << std::endl;
+      throw 0;
     }
+    ~WSAEnv() { WSACleanup(); }
+  } wsa_env;
 #endif
   
+  int ret = 0;
+
   Simulator simulator( argc, argv );
 
   switch (simulator.Setup())
@@ -79,9 +83,5 @@ main(int argc, char *argv[])
       break;
     }
 
-#ifdef WIN32
-  //releases the winsock2 resources
-  WSACleanup();
-#endif
   return ret;
 }
