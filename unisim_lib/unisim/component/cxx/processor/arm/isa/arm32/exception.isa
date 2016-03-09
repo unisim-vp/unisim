@@ -150,10 +150,11 @@ cps.execute = {
   if (GetNativeValue(cpu.CPSR().Get(M)) != cpu.USER_MODE)
     return;
   typename ARCH::psr_type cpsr_val = cpu.CPSR();
-  if (a)     cpsr_val.Set( A, dis );
-  if (i)     cpsr_val.Set( I, dis );
-  if (f)     cpsr_val.Set( F, dis );
-  if (chmod) cpsr_val.Set( M, mode );
+  typedef typename ARCH::U32 U32;
+  if (a)     cpsr_val.Set( A, U32(dis) );
+  if (i)     cpsr_val.Set( I, U32(dis) );
+  if (f)     cpsr_val.Set( F, U32(dis) );
+  if (chmod) cpsr_val.Set( M, U32(mode) );
   
   // CPSRWriteByInstr() checks for illegal mode changes
   CPSRWriteByInstr( cpu, cpsr_val.bits(), 0b1111, false );
