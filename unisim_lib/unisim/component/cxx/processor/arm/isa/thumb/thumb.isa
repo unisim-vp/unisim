@@ -55,11 +55,11 @@ decl {
 } // end of decl
 
 action {void} execute({ARCH &} {cpu}) {
-  throw unisim::component::cxx::processor::arm::exception::UndefInstrException();
+  cpu.UndefinedInstruction( this );
 }
 
 action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {
-  buffer << "Unknown instruction (thumb)";
+  buffer << "; Unknown THUMB instruction";
 }
 
 impl {

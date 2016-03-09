@@ -49,11 +49,11 @@ decl {
 } // end of decl
 
 action {void} execute({ARCH &} {cpu}) {
-  throw unisim::component::cxx::processor::arm::exception::UndefInstrException();
+  cpu.UndefinedInstruction( this );
 }
 
 action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer}) {
-  buffer << "Unknown instruction (arm32)";
+  buffer << "; Unknown ARM instruction";
 }
 
 impl {

@@ -1006,7 +1006,7 @@ ldm_usr.execute = {
   uint8_t running_mode = GetNativeValue(cpu.CPSR().Get(M));
   switch (running_mode) {
   case ARCH::HYPERVISOR_MODE:
-    throw unisim::component::cxx::processor::arm::exception::UndefInstrException();
+    cpu.UndefinedInstruction( this );
     return;
   case ARCH::USER_MODE:
   case ARCH::SYSTEM_MODE:
@@ -1043,7 +1043,7 @@ ldm_rfe.execute = {
   uint8_t running_mode = GetNativeValue(cpu.CPSR().Get(M));
   switch (running_mode) {
   case ARCH::HYPERVISOR_MODE:
-    throw unisim::component::cxx::processor::arm::exception::UndefInstrException();
+    cpu.UndefinedInstruction( this );
     return;
   case ARCH::USER_MODE:
   case ARCH::SYSTEM_MODE:

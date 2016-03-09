@@ -292,14 +292,16 @@ CPU<CONFIG>::GetRegister(const char *name)
  * returns the current privilege level according to the running mode.
  */
 template <class CONFIG>
-unsigned
-CPU<CONFIG>::GetPL() const
+void
+CPU<CONFIG>::RequiresPL(unsigned rpl)
 {
   /* NOTE: in non-secure mode (TrustZone), there are more privilege levels. */
+  unsigned cpl = 0;
   switch (cpsr.Get(M))
     {
     case USER_MODE:
-      return 0;
+      cpl = 0;
+      break;
     case FIQ_MODE:
     case IRQ_MODE:
     case SUPERVISOR_MODE:
@@ -308,10 +310,13 @@ CPU<CONFIG>::GetPL() const
     case HYPERVISOR_MODE:
     case UNDEFINED_MODE:
     case SYSTEM_MODE:
-      return 1;
+      cpl = 1;
+      break;
     default:
       throw 0;
     }
+  if (cpl < rpl)
+    UnpredictableInsnBehaviour();
 }
 
 /** Scan available registers for the Registers interface
@@ -670,7 +675,7 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
           void Write( CPU& cpu, uint32_t value ) { throw 0; }
           uint32_t Read( CPU& cpu )
           {
-            if (cpu.GetPL() < 1) { /* Only accessible from PL1 or higher. */ throw 0; }
+            cpu.RequiresPL(1); /* Only accessible from PL1 or higher. */
             return cpu.midr;
           }
         } x;
@@ -718,18 +723,18 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
       
     }
 
-  logger << DebugError << "Unknown CP15 instruction"
+  logger << DebugError << "Unknown CP15 register"
          << ": CRn=" << unsigned(crn)
          << ", opc1=" << unsigned(opcode1)
          << ", CRm=" << unsigned(crm)
          << ", opc2=" << unsigned(opcode2)
+         << ", pc=" << std::hex << current_pc << std::dec
          << EndDebugError;
-  this->Stop( -1 );
   
   static struct CP15Error : public CP15Reg {
     char const* Describe() { return "Unknown CP15 register"; }
-    void Write( CPU&, uint32_t ) {}
-    uint32_t Read( CPU& ) { return 0; }
+    void Write( CPU& cpu, uint32_t ) { cpu.UnpredictableInsnBehaviour(); }
+    uint32_t Read( CPU& cpu ) { cpu.UnpredictableInsnBehaviour(); return 0; }
   } err;
   return err;
 }

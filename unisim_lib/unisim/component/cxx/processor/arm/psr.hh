@@ -118,6 +118,11 @@ namespace arm {
       RegisterField<10,2>().Set( m_value, (mask >> 2) & 3 );
       RegisterField<25,2>().Set( m_value, (mask >> 0) & 3 );
     }
+    
+    uint32_t ITGetState() const
+    {
+      return (RegisterField<10,6>().Get( m_value ) << 2) | RegisterField<25,2>().Get( m_value );
+    }
   
     bool InITBlock() const
     { return RegisterField<10,2>().Get( m_value ) or RegisterField<25,2>().Get( m_value ); }

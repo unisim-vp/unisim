@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
@@ -218,15 +219,17 @@ struct CPU
 	
   void CallSupervisor( uint16_t imm );
   void BKPT( uint32_t imm );
+  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU>* insn );
+  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb2::Operation<CPU>* insn );
 	
   /**************************************************/
   /* Software Exceptions                      END   */
   /**************************************************/
   
-  /** Instruction cache */
-  Cache icache;
-  /** Data cache */
-  Cache dcache;
+  // /** Instruction cache */
+  // Cache icache;
+  // /** Data cache */
+  // Cache dcache;
   
 protected:
   /** Decoder for the ARM32 instruction set. */
@@ -237,6 +240,8 @@ protected:
   /**************************/
   /* CP15 Interface   START */
   /**************************/
+  
+  uint32_t csselr; /*< CSSELR, Cache Size Selection Register */
 
   virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   virtual void     CP15ResetRegisters();
