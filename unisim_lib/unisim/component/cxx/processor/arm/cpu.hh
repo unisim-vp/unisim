@@ -365,6 +365,7 @@ protected:
   struct CP15Reg
   {
     virtual            ~CP15Reg() {}
+    virtual unsigned    RequiredPL() { return 1; }
     virtual void        Write( CPU& cpu, uint32_t value ) = 0;
     virtual uint32_t    Read( CPU& cpu ) = 0;
     virtual char const* Describe() = 0;
@@ -397,7 +398,6 @@ protected:
   // CP15 cp15;
   uint32_t midr; /*< MIDR, Main ID Register */
   uint32_t sctlr; 
-  uint32_t ttbr0; /*< Translation Table Base Register 0 */
 
 public:
   // VFP/NEON registers

@@ -33,6 +33,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 #include <unisim/component/cxx/processor/arm/armemu/cpu.hh>
+#include <unisim/component/cxx/processor/arm/armemu/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
 #include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/memory_op.hh>
@@ -108,6 +109,8 @@ CPU::CPU(const char *name, Object *parent)
   // , dcache("dcache", this)
   , arm32_decoder()
   , thumb_decoder()
+  , csselr(0)
+  , mmu()
   , instruction_counter(0)
   , voltage(0)
   , trap_on_instruction_counter(0)
@@ -381,7 +384,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
     }
   }
   
-  uint32_t write_addr = addr & ~lo_mask;
+  uint32_t write_addr = TranslateAddress( addr & ~lo_mask, false, true, size );
   
   uint8_t data[4];
 
@@ -490,7 +493,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
     }
   }
   
-  uint32_t read_addr = addr & ~lo_mask;
+  uint32_t read_addr = TranslateAddress( addr & ~lo_mask, false, false, size );
   
   uint8_t data[4];
 
@@ -1071,15 +1074,15 @@ CPU::PerformExit(int ret)
  * system, that is, it tries to read from the pertinent caches and if
  * failed from the external memory system.
  * 
- * @param address the address of the requiered instruction that the
- *                prefetch instruction buffer should encompass, once
- *                the refill is complete.
+ * @param base_address the (physical) address of the required
+ *     instruction that the prefetch instruction buffer should
+ *     encompass, once the refill is complete.
  */
 void 
 CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 {
   this->ipb_base_address = base_address;
-
+  
   // bool cache_access = SCTLR::I.Get( this->sctlr ) and icache.GetSize();
   // if (likely(cache_access))
   //   {
@@ -1141,7 +1144,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 void 
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
-  uint32_t base_address = address & -(Cache::LINE_SIZE);
+  uint32_t base_address = TranslateAddress( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
   uint32_t buffer_index = address % (Cache::LINE_SIZE);
   
   if (unlikely(ipb_base_address != base_address))
@@ -1166,7 +1169,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
 void
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
 {
-  uint32_t base_address = address & -(Cache::LINE_SIZE);
+  uint32_t base_address = TranslateAddress( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
   intptr_t buffer_index = address % (Cache::LINE_SIZE);
     
   if (unlikely(ipb_base_address != base_address))
@@ -1247,6 +1250,186 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
   throw exception::UndefInstrException();
 }
 
+CPU::TLB::TLB()
+ : entry_count(0)
+{
+  for (unsigned idx = 0; idx < ENTRY_CAPACITY; ++idx)
+    {
+      keys[idx] = (idx << 5);
+    }
+}
+
+bool
+CPU::TLB::GetTranslation( TransAddrDesc& tad, uint32_t mva )
+{
+  unsigned lsb, hit;
+  uint32_t key;
+  for (hit = 0; hit < entry_count; ++hit)
+    {
+      key = keys[hit];
+      lsb = key & 31;
+      if (((mva ^ key) >> lsb) == 0)
+        break;
+    }
+  if (hit >= entry_count)
+    return false; // TLB miss
+  // TLB hit
+  
+  // MRU sort
+  for (unsigned idx = hit; idx > 0; idx -= 1)
+    keys[idx] = keys[idx-1];
+  keys[0] = key;
+  
+  // Address translation and attributes
+  tad = vals[(key >> 5) & 127];
+  uint32_t himask = uint32_t(-1) << lsb;
+  tad.pa = (tad.pa & himask) | (mva & ~himask);
+  return true;
+}
+
+void
+CPU::TLB::AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad )
+{
+  if (entry_count >= ENTRY_CAPACITY)
+    entry_count = ENTRY_CAPACITY - 1; // Erase LRU
+  
+  // Generate new key
+  uint32_t key = ((mva >> lsb) << lsb) | (keys[entry_count] & 0xfe0) | (lsb & 31);
+  
+  // MRU sort
+  for (unsigned idx = entry_count; idx > 0; idx -= 1)
+    keys[idx] = keys[idx-1];
+  keys[0] = key;
+
+  entry_count += 1;
+  
+  vals[(key >> 5) & 127] = tad;
+}
+
+void
+CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
+{
+  //  // this is only called when the MMU is enabled
+  //  TLBRecord result;
+  //  AddressDescriptor l1descaddr;
+  //  AddressDescriptor l2descaddr;
+  // // variables for DAbort function
+  // taketohypmode = FALSE;
+  // IA = bits(40) UNKNOWN;
+  // ipavalid = FALSE;
+  // stage2 = FALSE;
+  // LDFSRformat = FALSE;
+  // s2fs1walk = FALSE;
+  // // default setting of the domain
+  // domain = bits(4) UNKNOWN;
+  // // Determine correct Translation Table Base Register to use.
+  
+  struct EndianReader
+  {
+    uint8_t b[4]; bool be;
+    typedef uint32_t w;
+    uint32_t Get() const
+    {
+      if (be) return (w(b[0]) << 24) | (w(b[1]) << 16) | (w(b[2]) <<  8) | (w(b[3]) <<  0);
+      else    return (w(b[0]) <<  0) | (w(b[1]) <<  8) | (w(b[2]) << 16) | (w(b[3]) << 24);
+    }
+    uint8_t* data() { return &b[0]; }
+    EndianReader( bool _be ) : be( _be ) {}
+  } erd( SCTLR::EE.Get( sctlr ) );
+  
+  uint32_t lsb = 0;
+  //bool     nG;
+  
+  uint32_t n = TTBCR::N.Get( mmu.ttbcr ), ttbr;
+  if ((mva >> 1) >> (n^31)) {
+    ttbr = mmu.ttbr1;
+    n = 0;
+  } else {
+    ttbr = mmu.ttbr0;
+  }
+  
+  // Obtain First level descriptor.
+  uint32_t l1descaddr = (((ttbr >> (14-n)) << (14-n)) | ((mva << n) >> (n+18))) & -4;
+  PrRead( l1descaddr, erd.data(), 4 );
+  uint32_t l1desc = erd.Get();
+  switch (l1desc&3) {
+  case 0: {
+    // Fault, Reserved
+    // TODO: Full DAbort_Translation 
+    throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+  } break;
+    
+  case 1: {
+    // Large page or Small page
+    // Obtain Second level descriptor.
+    uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
+    PrRead( l2descaddr, erd.data(), 4 );
+    uint32_t l2desc = erd.Get();
+    // Process Second level descriptor.
+    if ((l2desc&3) == 0) {
+      // TODO: Full DAbort_Translation 
+      throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+    }
+    //nG = (l2desc >> 11) & 1;
+    if (l2desc & 2) {
+      // Large page (64kB)
+      tad.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
+      lsb = 16;
+    }
+    else {
+      // Small page (4kB)
+      lsb = 12;
+      tad.pa = (l2desc & 0xfffff000) | (mva & 0x00000fff);
+    }
+  } break;
+    
+  case 2: case 3: {
+    // Section or Supersection
+    //nG = (l1desc >> 17) & 1;
+    
+    if ((l1desc >> 18) & 1) {
+      // Supersection (16MB)
+      lsb = 24;
+      if (RegisterField<20,4>().Get( l1desc ) or RegisterField<5,4>().Get( l1desc ))
+        throw 0; /* Large 40-bit extended address */
+      tad.pa = (l1desc & 0xff000000) | (mva & 0x00ffffff);
+    }
+    else {
+      // Section (1MB)
+      lsb = 20;
+      tad.pa = (l1desc & 0xfff00000) | (mva & 0x000fffff);
+    }
+  } break;
+    
+  }
+  
+  // Try to add entry to TLB
+  tlb.AddTranslation( lsb, mva, tad );
+}
+
+uint32_t
+CPU::TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size )
+{
+  // bits(32) mva;
+  // bits(40) ia_in;
+  // AddressDescriptor result;
+  uint32_t mva = va; /* No FCSE translation in this model*/
+  TransAddrDesc tad;
+  
+  // FirstStageTranslation
+  if (SCTLR::M.Get( this->sctlr )) {
+    // Stage 1 MMU enabled
+    if (not tlb.GetTranslation( tad, mva ))
+      TranslationTableWalk( tad, mva );
+  } else {
+    tad.pa = mva;
+  }
+  // TODO: Check permissions here
+  
+ return tad.pa;
+}
+
+
 /** Get the Internal representation of the CP15 Register
  * 
  * @param crn     the "crn" field of the instruction code
@@ -1268,7 +1451,6 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( BaseCpu& _cpu, uint32_t value ) { _cpu.UnpredictableInsnBehaviour(); }
           uint32_t Read( BaseCpu& _cpu ) {
             CPU& cpu = dynamic_cast<CPU&>( _cpu );
-            cpu.RequiresPL(1); /* Only accessible from PL1 or higher. */
             switch (cpu.csselr) {
               /*              LNSZ      ASSOC       NUMSETS        POLICY      */
             case 0:  return (1 << 0) | (3 << 3) | ( 255 << 13) | (0b0110 << 28); /* L1 dcache */
@@ -1281,34 +1463,6 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
-    case CP15ENCODE( 7, 0, 14, 2 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "DCCISW, Clean and invalidate [d|u]cache line by set/way"; }
-          void Write( BaseCpu& cpu, uint32_t value ) {
-            /* No cache, basically nothing to do */
-            cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
-          }
-          uint32_t Read( BaseCpu& _cpu ) { _cpu.UnpredictableInsnBehaviour(); return 0; }
-        } x;
-        return x;
-      } break;
-      
-    case CP15ENCODE( 7, 0, 5, 0 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
-          void Write( BaseCpu& cpu, uint32_t value ) {
-            /* No cache, basically nothing to do */
-            cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
-          }
-          uint32_t Read( BaseCpu& _cpu ) { _cpu.UnpredictableInsnBehaviour(); return 0; }
-        } x;
-        return x;
-      } break;
-      
     case CP15ENCODE( 0, 1, 0, 1 ):
       {
         static struct : public CP15Reg
@@ -1317,7 +1471,6 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( BaseCpu& _cpu, uint32_t value ) { _cpu.UnpredictableInsnBehaviour(); }
           uint32_t Read( BaseCpu& _cpu ) {
             CPU& cpu = dynamic_cast<CPU&>( _cpu );
-            cpu.RequiresPL(1); /* Only accessible from PL1 or higher. */
             uint32_t
               LoUU =   0b010, /* Level of Unification Uniprocessor  */
               LoC =    0b010, /* Level of Coherency */
@@ -1330,16 +1483,153 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
+    case CP15ENCODE( 0, 0, 1, 4 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ID_MMFR0, Memory Model Feature Register 0"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { _cpu.UnpredictableInsnBehaviour(); }
+          uint32_t Read( BaseCpu& _cpu ) { return 0x3; /* vmsav7 */ }
+        } x;
+        return x;
+      } break;
+      
     case CP15ENCODE( 0, 2, 0, 0 ):
       {
         static struct : public CP15Reg
         {
           char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
-            _cpu.RequiresPL(1); /* Only accessible from PL1 or higher. */
             dynamic_cast<CPU&>( _cpu ).csselr = value;
           }
           uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).csselr; }
+        } x;
+        return x;
+      } break;
+      
+      /*******************************************
+       * Memory protection and control registers *
+       *******************************************/
+    case CP15ENCODE( 2, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
+          /* TODO: handle SBZ(DGP=0x00003fffUL)... */
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr0 = value; }
+          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr0; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 2, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TTBR1, Translation Table Base Register 1"; }
+          /* TODO: handle SBZ(DGP=0x00003fffUL)... */
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr1 = value; }
+          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr1; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 2, 0, 0, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TTBCR, Translation Table Base Control Register"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbcr = value; }
+          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbcr; }
+        } x;
+        return x;
+      } break;
+
+      
+    case CP15ENCODE( 3, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DACR, Domain Access Control Register"; }
+          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.dacr; }
+          void Write( BaseCpu& _cpu, uint32_t value ) {
+            dynamic_cast<CPU&>( _cpu ).mmu.dacr = value;
+            _cpu.logger << DebugInfo << "DACR <- " << std::hex << value << std::dec << EndDebugInfo;
+          }
+        } x;
+        return x;
+      } break;
+      
+      /***************************************************************
+       * Cache maintenance, address translation, and other functions *
+       ***************************************************************/
+    case CP15ENCODE( 7, 0, 5, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) {
+            /* No cache, basically nothing to do */
+            _cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
+          }
+          uint32_t Read( BaseCpu& _cpu ) { _cpu.UnpredictableInsnBehaviour(); return 0; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 14, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DCCISW, Clean and invalidate [d|u]cache line by set/way"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) {
+            /* No cache, basically nothing to do */
+            _cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
+          }
+          uint32_t Read( BaseCpu& _cpu ) { _cpu.UnpredictableInsnBehaviour(); return 0; }
+        } x;
+        return x;
+      } break;
+      
+      /******************************
+       * TLB maintenance operations *
+       ******************************/
+    case CP15ENCODE( 8, 0, 7, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) {
+            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
+            cpu.tlb.Invalidate();
+          }
+          uint32_t Read( BaseCpu& _cpu ) { _cpu.UnpredictableInsnBehaviour(); return 0; }
+        } x;
+        return x;
+      } break;
+      
+      /**********************************************
+       * Memory remapping and TLB control registers *
+       **********************************************/
+    case CP15ENCODE( 10, 0, 2, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "PRRR, Primary Region Remap Register"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.prrr = value; }
+          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.prrr; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 10, 0, 2, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "NMRR, Normal Memory Remap Register"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.nmrr = value; }
+          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.nmrr; }
         } x;
         return x;
       } break;
@@ -1349,7 +1639,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "TPIDRURO, Thread Id Privileged Read Write Only Register"; }
-          void Write( BaseCpu& cpu, uint32_t value ) { throw 0; }
+          unsigned RequiredPL() { return 0; /* Doesn't requires priviledges */ }
+          void Write( BaseCpu& _cpu, uint32_t value ) { _cpu.UnpredictableInsnBehaviour(); }
           uint32_t Read( BaseCpu& _cpu ) {
             CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
             /* TODO: the following only works in linux os

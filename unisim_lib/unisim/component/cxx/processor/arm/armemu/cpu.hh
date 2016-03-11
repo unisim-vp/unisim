@@ -226,28 +226,82 @@ struct CPU
   /* Software Exceptions                      END   */
   /**************************************************/
   
-  // /** Instruction cache */
-  // Cache icache;
-  // /** Data cache */
-  // Cache dcache;
-  
 protected:
   /** Decoder for the ARM32 instruction set. */
   unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
   /** Decoder for the THUMB instruction set. */
   unisim::component::cxx::processor::arm::isa::thumb2::Decoder<CPU> thumb_decoder;
+  
+  /***************************
+   * Cache Interface   START *
+   ***************************/
+
+  uint32_t csselr;
+  // /** Instruction cache */
+  // Cache icache;
+  // /** Data cache */
+  // Cache dcache;
+  
+  /***************************
+   * Cache Interface    END  *
+   ***************************/
+  
+  /*************************/
+  /* MMU Interface   START */
+  /*************************/
+  
+  struct MMU
+  {
+    MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() {}
+    uint32_t ttbcr; /*< Translation Table Base Control Register */
+    uint32_t ttbr0; /*< Translation Table Base Register 0 */
+    uint32_t ttbr1; /*< Translation Table Base Register 1 */
+    uint32_t prrr;  /*< PRRR, Primary Region Remap Register */
+    uint32_t nmrr;  /*< NMRR, Normal Memory Remap Register */
+    uint32_t dacr;
+    
+  } mmu;
+  
+  struct TransAddrDesc
+  {
+    uint32_t   pa;
+  };
+  
+  struct TLB
+  {
+    static unsigned const ENTRY_CAPACITY = 128;
+    /* KEY:
+     * 31 .. 12: tag
+     * 11 ..  5: idx
+     *  4 ..  0: lsb
+     */
+    unsigned      entry_count;
+    uint32_t      keys[ENTRY_CAPACITY];
+    TransAddrDesc vals[ENTRY_CAPACITY];
+    TLB();
+    bool GetTranslation( TransAddrDesc& tad, uint32_t mva );
+    void AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad );
+    void Invalidate() { entry_count = 0; }
+  } tlb;
+  
+  void      TranslationTableWalk( TransAddrDesc& tad, uint32_t mva );
+  uint32_t  TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size );
+    
+  
+  /*************************/
+  /* MMU Interface    END  */
+  /*************************/
+
 
   /**************************/
   /* CP15 Interface   START */
   /**************************/
   
-  uint32_t csselr; /*< CSSELR, Cache Size Selection Register */
-
   virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   virtual void     CP15ResetRegisters();
     
   /**************************/
-  /* CP15 Interface    END */
+  /* CP15 Interface    END  */
   /**************************/
 
   /** Instruction counter */
