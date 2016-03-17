@@ -269,6 +269,8 @@ CPU::EndSetup()
   return true;
 }
 
+struct SoftMemAcc { static bool const updateTLB=true; };
+
 /** Performs a prefetch access.
  *
  * @param addr the address of the memory prefetch access
@@ -384,7 +386,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
     }
   }
   
-  uint32_t write_addr = TranslateAddress( addr & ~lo_mask, false, true, size );
+  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, true, size );
   
   uint8_t data[4];
 
@@ -493,7 +495,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
     }
   }
   
-  uint32_t read_addr = TranslateAddress( addr & ~lo_mask, false, false, size );
+  uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, false, size );
   
   uint8_t data[4];
 
@@ -851,6 +853,11 @@ CPU::RequiresMemoryAccessReporting( bool report )
   requires_memory_access_reporting = report;
 }
 
+struct DebugMemAcc
+{
+  static bool const updateTLB = false;
+};
+
 /** Perform a non intrusive read access.
  * This method performs a normal read, but it does not change the state
  *   of the caches. It calls ExternalReadMemory if data not in cache.
@@ -907,7 +914,12 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
       // No data cache, just send request to the memory subsystem
       while ((size != 0) and status)
         {
-          ef_addr = base_addr + index;
+          try {
+            ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, false, 1 );
+          } catch (unisim::component::cxx::processor::arm::exception::DataAbortException const& x) {
+            status = false;
+            break;
+          }
           status &= ExternalReadMemory( ef_addr, &rbuffer[index], 1 );
           index++;
           size--;
@@ -974,7 +986,12 @@ CPU::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
       // No data cache, just send request to the memory subsystem
       while ((size != 0) and status)
         {
-          ef_addr = base_addr + index;
+          try {
+            ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, true, 1 );
+          } catch (unisim::component::cxx::processor::arm::exception::DataAbortException const& x) {
+            status = false;
+            break;
+          }
           status &= ExternalWriteMemory( ef_addr, &wbuffer[index], 1 );
           index++;
           size--;
@@ -1144,7 +1161,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 void 
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
+  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
   uint32_t buffer_index = address % (Cache::LINE_SIZE);
   
   if (unlikely(ipb_base_address != base_address))
@@ -1169,7 +1186,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
 void
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
+  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
   intptr_t buffer_index = address % (Cache::LINE_SIZE);
     
   if (unlikely(ipb_base_address != base_address))
@@ -1259,6 +1276,7 @@ CPU::TLB::TLB()
     }
 }
 
+template <class POLICY>
 bool
 CPU::TLB::GetTranslation( TransAddrDesc& tad, uint32_t mva )
 {
@@ -1274,11 +1292,13 @@ CPU::TLB::GetTranslation( TransAddrDesc& tad, uint32_t mva )
   if (hit >= entry_count)
     return false; // TLB miss
   // TLB hit
-  
-  // MRU sort
-  for (unsigned idx = hit; idx > 0; idx -= 1)
-    keys[idx] = keys[idx-1];
-  keys[0] = key;
+
+  if (POLICY::updateTLB) {
+    // MRU sort
+    for (unsigned idx = hit; idx > 0; idx -= 1)
+      keys[idx] = keys[idx-1];
+    keys[0] = key;
+  }
   
   // Address translation and attributes
   tad = vals[(key >> 5) & 127];
@@ -1306,6 +1326,7 @@ CPU::TLB::AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad )
   vals[(key >> 5) & 127] = tad;
 }
 
+template <class POLICY>
 void
 CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
 {
@@ -1372,14 +1393,14 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
     }
     //nG = (l2desc >> 11) & 1;
     if (l2desc & 2) {
-      // Large page (64kB)
-      tad.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
-      lsb = 16;
-    }
-    else {
       // Small page (4kB)
       lsb = 12;
       tad.pa = (l2desc & 0xfffff000) | (mva & 0x00000fff);
+    }
+    else {
+      // Large page (64kB)
+      tad.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
+      lsb = 16;
     }
   } break;
     
@@ -1404,9 +1425,11 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
   }
   
   // Try to add entry to TLB
-  tlb.AddTranslation( lsb, mva, tad );
+  if (POLICY::updateTLB)
+    tlb.AddTranslation( lsb, mva, tad );
 }
 
+template <class POLICY>
 uint32_t
 CPU::TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size )
 {
@@ -1419,8 +1442,8 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size )
   // FirstStageTranslation
   if (SCTLR::M.Get( this->sctlr )) {
     // Stage 1 MMU enabled
-    if (not tlb.GetTranslation( tad, mva ))
-      TranslationTableWalk( tad, mva );
+    if (not tlb.GetTranslation<POLICY>( tad, mva ))
+      TranslationTableWalk<POLICY>( tad, mva );
   } else {
     tad.pa = mva;
   }
@@ -1443,12 +1466,21 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
 {
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
     {
+    case CP15ENCODE( 0, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CTR, Cache Type Register"; }
+          uint32_t Read( BaseCpu& _cpu ) { return 0x8403c003; }
+        } x;
+        return x;
+      } break;
+      
     case CP15ENCODE( 0, 1, 0, 0 ):
       {
         static struct : public CP15Reg
         {
           char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) { _cpu.UnpredictableInsnBehaviour(); }
           uint32_t Read( BaseCpu& _cpu ) {
             CPU& cpu = dynamic_cast<CPU&>( _cpu );
             switch (cpu.csselr) {
@@ -1468,7 +1500,6 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CLIDR, Cache Level ID Register"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) { _cpu.UnpredictableInsnBehaviour(); }
           uint32_t Read( BaseCpu& _cpu ) {
             CPU& cpu = dynamic_cast<CPU&>( _cpu );
             uint32_t
@@ -1488,7 +1519,6 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "ID_MMFR0, Memory Model Feature Register 0"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) { _cpu.UnpredictableInsnBehaviour(); }
           uint32_t Read( BaseCpu& _cpu ) { return 0x3; /* vmsav7 */ }
         } x;
         return x;
@@ -1572,7 +1602,71 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             /* No cache, basically nothing to do */
             _cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
-          uint32_t Read( BaseCpu& _cpu ) { _cpu.UnpredictableInsnBehaviour(); return 0; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 5, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ICIMVAU, Clean data* cache line by MVA to PoU"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) {
+            /* No cache, basically nothing to do */
+            _cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 5, 6 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "BPIALL, Invalidate all branch predictors"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) {
+            /* No branc predictor, basically nothing to do */
+            _cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 10, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DCCMVAC, Clean data* cache line by MVA to PoC"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) {
+            /* No cache, basically nothing to do */
+            _cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 11, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DCCMVAU, Clean data* cache line by MVA to PoU"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) {
+            /* No cache, basically nothing to do */
+            _cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 7, 0, 14, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
+          void Write( BaseCpu& _cpu, uint32_t value ) {
+            /* No cache, basically nothing to do */
+            _cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+          }
         } x;
         return x;
       } break;
@@ -1586,7 +1680,6 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             /* No cache, basically nothing to do */
             _cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
           }
-          uint32_t Read( BaseCpu& _cpu ) { _cpu.UnpredictableInsnBehaviour(); return 0; }
         } x;
         return x;
       } break;
@@ -1604,7 +1697,6 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
             cpu.tlb.Invalidate();
           }
-          uint32_t Read( BaseCpu& _cpu ) { _cpu.UnpredictableInsnBehaviour(); return 0; }
         } x;
         return x;
       } break;
@@ -1640,7 +1732,6 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "TPIDRURO, Thread Id Privileged Read Write Only Register"; }
           unsigned RequiredPL() { return 0; /* Doesn't requires priviledges */ }
-          void Write( BaseCpu& _cpu, uint32_t value ) { _cpu.UnpredictableInsnBehaviour(); }
           uint32_t Read( BaseCpu& _cpu ) {
             CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
             /* TODO: the following only works in linux os

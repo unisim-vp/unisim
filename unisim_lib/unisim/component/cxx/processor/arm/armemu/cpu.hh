@@ -279,12 +279,15 @@ protected:
     uint32_t      keys[ENTRY_CAPACITY];
     TransAddrDesc vals[ENTRY_CAPACITY];
     TLB();
+    template <class POLICY>
     bool GetTranslation( TransAddrDesc& tad, uint32_t mva );
     void AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad );
     void Invalidate() { entry_count = 0; }
   } tlb;
   
+  template <class POLICY>
   void      TranslationTableWalk( TransAddrDesc& tad, uint32_t mva );
+  template <class POLICY>
   uint32_t  TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size );
     
   

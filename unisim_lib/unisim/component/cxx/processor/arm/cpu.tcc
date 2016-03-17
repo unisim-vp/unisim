@@ -675,7 +675,6 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
         static struct : public CP15Reg
         {
           char const* Describe() { return "MIDR, Main ID Register"; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.UnpredictableInsnBehaviour(); }
           uint32_t Read( CPU& cpu ) { return cpu.midr; }
         } x;
         return x;
@@ -686,7 +685,6 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
         static struct : public CP15Reg
         {
           char const* Describe() { return "ID_PFR0, Processor Feature Register 0"; }
-          void Write( CPU& cpu, uint32_t value ) { cpu.UnpredictableInsnBehaviour(); }
           uint32_t Read( CPU& cpu ) {
             /*        ARM              Thumb2         Jazelle         ThumbEE   */
             return (0b0001 << 0) | (0b0011 << 4) | (0b0000 << 8) | (0b0000 << 12);
@@ -733,8 +731,6 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
   
   static struct CP15Error : public CP15Reg {
     char const* Describe() { return "Unknown CP15 register"; }
-    void Write( CPU& cpu, uint32_t ) { cpu.UnpredictableInsnBehaviour(); }
-    uint32_t Read( CPU& cpu ) { cpu.UnpredictableInsnBehaviour(); return 0; }
   } err;
   return err;
 }

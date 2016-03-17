@@ -64,12 +64,168 @@ ZynqRouter::ZynqRouter(const char* name, unisim::kernel::service::Object* parent
 {
   this->set_abs_mapping( 0, 0x00000000, 0x3fffffff ); /* Main OCM RAM */
   this->set_abs_mapping( 1, 0xffff0000, 0xffffffff ); /* Boot OCM ROM */
+  this->set_rel_mapping( 2, 0xf8f01000, 0xf8f01fff ); /* GIC */
+}
+
+/**
+ * Constructor.
+ * 
+ * @param name the name of the module
+ * @param parent the parent service
+ */
+GIC::GIC(const sc_module_name& name, unisim::kernel::service::Object* parent)
+  : unisim::kernel::service::Object( name, parent )
+  , sc_module(name)
+  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
+  , dist_sock("dist_sock")
+  , trap_reporting_import("trap-reporting-import", this)
+{
+  dist_sock( *this );
+}
+
+unsigned int GIC::transport_dbg(tlm::tlm_generic_payload& payload) { throw 0; return 0; }
+
+tlm::tlm_sync_enum
+GIC::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+  if (phase != tlm::BEGIN_REQ) { throw 0; }
+  
+  this->b_transport(payload, t);
+  
+  return tlm::TLM_COMPLETED;
+}
+
+
+GIC::Reg const&
+GIC::GetRegister( uint32_t addr, unsigned size )
+{
+  static Reg error_reg;
+  
+  if ((addr|size) & (size-1)) return error_reg;
+  
+  if (size == 4) {
+    switch (addr) {
+    case 4: {
+      static struct : public Reg { bool Read( GIC&, Data const& d ) const { d.Write( uint32_t( 0x7 ) ); return true; } } x;
+      return x;
+    } break;
+    }
+  }
+  
+  return error_reg;
+}
+
+void
+GIC::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+{
+  payload.set_dmi_allowed( false );
+  
+  uint32_t addr = payload.get_address();
+  uint8_t* data_ptr = payload.get_data_ptr();
+  unsigned data_length = payload.get_data_length();
+  
+  if (uint8_t* byte_enable_ptr = payload.get_byte_enable_ptr())
+    {
+      for (int idx = int(payload.get_byte_enable_length()); --idx >= 0; )
+        if (not byte_enable_ptr[idx])
+          throw 0;
+    }
+  // unsigned int streaming_width = payload.get_streaming_width();
+  bool status = true;
+  
+  switch (payload.get_command())
+    {
+    case tlm::TLM_READ_COMMAND:  status = GetRegister( addr, data_length ) .Read( *this, Data( data_ptr ) ); break;
+    case tlm::TLM_WRITE_COMMAND: status = GetRegister( addr, data_length ).Write( *this, Data( data_ptr ) ); break;
+    case tlm::TLM_IGNORE_COMMAND: break;
+    default: throw 0;
+    }
+  
+  tlm::tlm_response_status resp_status = status ? tlm::TLM_OK_RESPONSE : tlm::TLM_ADDRESS_ERROR_RESPONSE;
+  payload.set_response_status( resp_status );
+}
+
+PERIPH::PERIPH(const sc_module_name& name, unisim::kernel::service::Object* parent)
+  : unisim::kernel::service::Object( name, parent )
+  , sc_module(name)
+  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
+  , slave_sock("slave_sock")
+  , trap_reporting_import("trap-reporting-import", this)
+{
+  slave_sock(*this);
+}
+
+bool
+PERIPH::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
+{
+  throw 0;
+  return false;
+}
+
+unsigned int
+PERIPH::transport_dbg(tlm::tlm_generic_payload& payload)
+{
+  throw 0;
+  return 0;
+}
+
+tlm::tlm_sync_enum
+PERIPH::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+  if (phase != tlm::BEGIN_REQ) { throw 0; }
+  
+  this->b_transport(payload, t);
+  
+  return tlm::TLM_COMPLETED;
+}
+
+void
+PERIPH::Read( uint32_t addr, uint8_t* data, unsigned size )
+{
+  if (trap_reporting_import)
+    trap_reporting_import->ReportTrap( *this );
+}
+void
+PERIPH::Write( uint32_t addr, uint8_t const* data, unsigned size )
+{
+  if (trap_reporting_import)
+    trap_reporting_import->ReportTrap( *this );
+}
+
+void
+PERIPH::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+{
+  payload.set_dmi_allowed( false );
+  
+  uint32_t addr = payload.get_address();
+  uint8_t* data_ptr = payload.get_data_ptr();
+  unsigned data_length = payload.get_data_length();
+  
+  if (uint8_t* byte_enable_ptr = payload.get_byte_enable_ptr())
+    {
+      for (int idx = int(payload.get_byte_enable_length()); --idx >= 0; )
+        if (not byte_enable_ptr[idx])
+          throw 0;
+    }
+  // unsigned int streaming_width = payload.get_streaming_width();
+  // bool status = false;
+  
+  switch (payload.get_command())
+    {
+    case tlm::TLM_READ_COMMAND: Read( addr, data_ptr, data_length ); break;
+    case tlm::TLM_WRITE_COMMAND: Write( addr, data_ptr, data_length ); break;
+    case tlm::TLM_IGNORE_COMMAND: break;
+    default: throw 0;
+    }
+  
+  payload.set_response_status(tlm::TLM_OK_RESPONSE);
 }
 
 Simulator::Simulator(int argc, char **argv)
   : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
   , cpu( "cpu" )
   , router( "router" )
+  , gic( "gic" )
   , main_ram( "main_ram" )
   , boot_rom( "boot_rom" )
   , nirq_signal("nIRQm")
@@ -120,10 +276,12 @@ Simulator::Simulator(int argc, char **argv)
 
   (*router.init_socket[0])( main_ram.slave_sock );
   (*router.init_socket[1])( boot_rom.slave_sock );
+  (*router.init_socket[2])( gic.dist_sock );
   
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;
   cpu.instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
+  gic.trap_reporting_import >> debugger->trap_reporting_export;
   //cpu.symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 	cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   debugger->disasm_import >> cpu.disasm_export;
