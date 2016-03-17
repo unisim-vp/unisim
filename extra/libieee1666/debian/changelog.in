@@ -1,0 +1,5 @@
+libieee1666 (@PACKAGE_VERSION@) UNRELEASED; urgency=low
+
+  * Upstream release.
+
+ -- Gilles Mouchard <gilles.mouchard@cea.fr>  @PACKAGE_DATE@

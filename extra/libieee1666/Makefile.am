@@ -1,3 +1,4 @@
+PACKAGE_RELEASE=1
 pkgconfig_DATA = libieee1666.pc systemc.pc tlm.pc
 ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/ieee1666 -I$(top_builddir)/ieee1666
@@ -132,6 +133,8 @@ ieee1666/tlm2/payload/generic_payload.cc \
 ieee1666/tlm2/global_quantum/global_quantum.cc \
 ieee1666/tlm_utils/tlm_quantumkeeper.cc
 
+libieee1666_la_LDFLAGS = -release $(PACKAGE_VERSION)
+
 libieee1666_la_LIBADD=$(BOOST_COROUTINE_LIB) $(BOOST_CONTEXT_LIB) $(BOOST_SYSTEM_LIB) $(PTHREAD_LIBS) $(LIBS)
 
 nobase_dist_share_DATA = \
@@ -144,18 +147,19 @@ m4/sc_thread_process_backend.m4 \
 libieee1666.pc.in \
 systemc.pc.in \
 tlm.pc.in \
-libieee1666.spec \
-libieee1666.dsc \
-debian/changelog \
+libieee1666.spec.in \
+debian/changelog.in \
 debian/compat \
 debian/copyright \
 debian/rules \
-debian/control \
+debian/control.in \
 debian/$(PACKAGE_NAME).install \
 debian/$(PACKAGE_NAME)-dev.install \
-debian/$(PACKAGE_NAME)-static-dev.install
+debian/$(PACKAGE_NAME)-static-dev.install \
+debian/source/format
 
 ieee1666/core/features.h: Makefile
+	@echo "Generating $@"; \
 	echo "// Do not modify: this file is generated while building process." > $@; \
 	echo "#ifndef __IEEE1666_CORE_FEATURES_H__" >> $@; \
 	echo "#define __IEEE1666_CORE_FEATURES_H__" >> $@; \
@@ -167,7 +171,20 @@ ieee1666/core/features.h: Makefile
 	fi; \
 	echo "#define SC_THREAD_PROCESSES_USE_PTHREADS $(SC_THREAD_PROCESSES_USE_PTHREADS)" >> $@; \
 	echo "#endif" >> $@; \
+	echo "#define PACKAGE_VERSION_MAJOR $(PACKAGE_VERSION_MAJOR)" >> $@; \
+	echo "#define PACKAGE_VERSION_MINOR $(PACKAGE_VERSION_MINOR)" >> $@; \
+	echo "#define PACKAGE_VERSION_PATCH $(PACKAGE_VERSION_PATCH)" >> $@; \
+	echo "#define PACKAGE_VERSION \"$(PACKAGE_VERSION)\"" >> $@; \
 	echo "#endif" >> $@
+
+$(PACKAGE_NAME).spec: $(PACKAGE_NAME).spec.in
+	sed -e "s/\@PACKAGE_VERSION\@/$(PACKAGE_VERSION)/g" -e "s/\@PACKAGE_RELEASE\@/$(PACKAGE_RELEASE)/g" -e "s/\@PACKAGE_DATE\@/$$(date +'%a %b %d %Y')/g" $< > $@
+
+debian/control: debian/control.in
+	sed -e "s/\@PACKAGE_VERSION\@/$(PACKAGE_VERSION)/g" -e "s/\@PACKAGE_RELEASE\@/$(PACKAGE_RELEASE)/g" $< > $@
+
+debian/changelog: debian/changelog.in
+	sed -e "s/\@PACKAGE_VERSION\@/$(PACKAGE_VERSION)/g" -e "s/\@PACKAGE_DATE\@/$$(date +'%a, %d %b %Y %T %z')/g" $< > $@
 
 rpm-source: $(PACKAGE_NAME).spec dist-gzip
 	mkdir -p $(HOME)/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
@@ -175,18 +192,15 @@ rpm-source: $(PACKAGE_NAME).spec dist-gzip
 	rpmbuild -bs $(PACKAGE_NAME).spec
 
 rpm-binary: rpm-source
-	rpmbuild --rebuild $(HOME)/rpmbuild/SRPMS/$(PACKAGE_NAME)-$(PACKAGE_VERSION)-1.*.rpm
+	rpmbuild --rebuild $(HOME)/rpmbuild/SRPMS/$(PACKAGE_NAME)-$(PACKAGE_VERSION)-${PACKAGE_RELEASE}.src.rpm
 
-deb-source: $(PACKAGE_NAME)_$(PACKAGE_VERSION).orig.tar.gz $(PACKAGE_NAME)_$(PACKAGE_VERSION)-1.debian.tar.gz
+deb-source: debian/control debian/changelog
+	dpkg-source -b .
 
+# First try debuild without signing the source package nor the .changes file.
+# If debuild is not available, then try dpkg-buildpackage
 deb-binary: deb-source
-	debuild -us -uc
-
-$(PACKAGE_NAME)_$(VERSION).orig.tar.gz: dist-gzip
-	cp -f $(PACKAGE_NAME)-${PACKAGE_VERSION}.tar.gz $@
-
-$(PACKAGE_NAME)_$(VERSION)-1.debian.tar.gz: debian/control
-	tar zcvf $@ debian
+	debuild -us -uc || dpkg-buildpackage 
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

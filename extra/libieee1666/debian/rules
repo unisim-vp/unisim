@@ -6,3 +6,5 @@
 override_dh_auto_configure:
 	dh_auto_configure -- --enable-pthreads
 
+override_dh_strip:
+	dh_strip --dbg-package=libieee1666-dbg

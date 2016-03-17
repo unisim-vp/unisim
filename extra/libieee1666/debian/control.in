@@ -1,0 +1,45 @@
+Source: libieee1666
+Priority: optional
+Section: libs
+Maintainer: Gilles Mouchard <gilles.mouchard@cea.fr>
+Standards-Version: 3.9.7
+Build-Depends: debhelper (>= 9), dh-autoreconf, autotools-dev, pkg-config, libboost-coroutine-dev
+Homepage: http://unisim-vp.org
+
+Package: libieee1666
+Priority: standard
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libboost-coroutine
+Description: Free implementation of IEEE 1666-2011.
+ This library implements Standard for Standard SystemC(R) Language Reference
+ Manual (IEEE 1666-2011). It is necessary to run SystemC simulators.
+
+Package: libieee1666-dbg
+Priority: extra
+Section: debug
+Architecture: any
+Depends: ${misc:Depends}, libieee1666 (= ${binary:Version})
+Description: Debugging information for simulators linked with libieee1666.
+
+Package: libieee1666-dbgsym
+Priority: extra
+Section: debug
+Architecture: any
+Depends: ${misc:Depends}, libieee1666 (= ${binary:Version})
+Description: Debugging symbols for simulators linked with libieee1666.
+
+Package: libieee1666-dev
+Priority: standard
+Architecture: any
+Section: libdevel
+Depends: ${misc:Depends}, libieee1666 (= ${binary:Version})
+Description: Dynamic libraries, include files to develop SystemC modules and simulators.
+ It is necessary to compile SystemC modules and simulators.
+
+Package: libieee1666-static-dev
+Priority: standard
+Architecture: any
+Section: libdevel
+Depends: ${misc:Depends}, libieee1666-dev (= ${binary:Version})
+Description: static Libraries you can use to develop SystemC modules and simulators.
+ This library is necessary to statically link a simulator.

@@ -36,19 +36,20 @@
 #define __IEEE1666_UTILITIES_VERSION_H__
 
 #include <string>
+#include <ieee1666/core/features.h>
 
 namespace sc_core {
 
 #define IEEE_1666_SYSTEMC 201101L
-#define SC_VERSION_MAJOR 0                  // implementation-defined_number
-#define SC_VERSION_MINOR 0                  // implementation-defined_number
-#define SC_VERSION_PATCH 0                  // implementation-defined_number
-#define SC_VERSION_ORIGINATOR "CEA"         // implementation-defined_string
-#define SC_VERSION_RELEASE_DATE "20150410"  // implementation-defined_date
-#define SC_VERSION_PRERELEASE "alpha"       // implementation-defined_string
-#define SC_IS_PRERELEASE 1                  // implementation-defined_bool
-#define SC_VERSION "0.0.0_alpha-CEA"        // implementation-defined_string
-#define SC_COPYRIGHT "Copyright (c) 2014,\nCommissariat a l'Energie Atomique (CEA)\nAll rights reserved\n"   // implementation-defined_string
+#define SC_VERSION_MAJOR PACKAGE_VERSION_MAJOR  // implementation-defined_number
+#define SC_VERSION_MINOR PACKAGE_VERSION_MINOR  // implementation-defined_number
+#define SC_VERSION_PATCH PACKAGE_VERSION_PATCH  // implementation-defined_number
+#define SC_VERSION_ORIGINATOR "CEA"             // implementation-defined_string
+#define SC_VERSION_RELEASE_DATE "20160317"      // implementation-defined_date
+#define SC_VERSION_PRERELEASE "alpha"           // implementation-defined_string
+#define SC_IS_PRERELEASE 1                      // implementation-defined_bool
+#define SC_VERSION PACKAGE_VERSION SC_VERSION_PRERELEASE "-" SC_VERSION_ORIGINATOR        // implementation-defined_string
+#define SC_COPYRIGHT "Copyright (c) 2014-2016,\nCommissariat a l'Energie Atomique (CEA)\nAll rights reserved\n"   // implementation-defined_string
 	
 extern const unsigned int sc_version_major;
 extern const unsigned int sc_version_minor;
