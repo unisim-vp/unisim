@@ -1,4 +1,5 @@
 PACKAGE_RELEASE=1
+pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libieee1666.pc systemc.pc tlm.pc
 ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/ieee1666 -I$(top_builddir)/ieee1666
