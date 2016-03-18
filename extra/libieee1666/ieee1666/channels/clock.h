@@ -35,11 +35,11 @@
 #ifndef __IEEE1666_CHANNELS_CLOCK_H__
 #define __IEEE1666_CHANNELS_CLOCK_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/channels/fwd.h>
-#include <ieee1666/core/time.h>
-#include <ieee1666/channels/signal.h>
-#include <ieee1666/channels/in.h>
+#include "core/fwd.h"
+#include "channels/fwd.h"
+#include "core/time.h"
+#include "channels/signal.h"
+#include "channels/in.h"
 
 namespace sc_core {
 

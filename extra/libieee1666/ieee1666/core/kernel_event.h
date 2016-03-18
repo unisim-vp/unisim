@@ -35,8 +35,8 @@
 #ifndef __IEEE1666_CORE_KERNEL_EVENT_H__
 #define __IEEE1666_CORE_KERNEL_EVENT_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/time.h>
+#include "core/fwd.h"
+#include "core/time.h"
 
 namespace sc_core {
 

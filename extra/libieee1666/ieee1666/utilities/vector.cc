@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/utilities/vector.h>
+#include "utilities/vector.h"
 
 namespace sc_core {
 

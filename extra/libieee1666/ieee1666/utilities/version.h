@@ -36,7 +36,7 @@
 #define __IEEE1666_UTILITIES_VERSION_H__
 
 #include <string>
-#include <ieee1666/core/features.h>
+#include "core/features.h"
 
 namespace sc_core {
 

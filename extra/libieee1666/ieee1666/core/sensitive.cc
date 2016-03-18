@@ -32,12 +32,12 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/sensitive.h>
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/interface.h>
-#include <ieee1666/core/port.h>
-#include <ieee1666/core/event_finder.h>
-#include <ieee1666/core/process.h>
+#include "core/sensitive.h"
+#include "core/event.h"
+#include "core/interface.h"
+#include "core/port.h"
+#include "core/event_finder.h"
+#include "core/process.h"
 
 namespace sc_core {
 

@@ -36,7 +36,7 @@
 #define __IEEE1666_CORE_FWD_H__
 
 #include <inttypes.h>
-#include <ieee1666/core/features.h>
+#include "core/features.h"
 
 #if defined(ALWAYS_INLINE)
 #undef ALWAYS_INLINE

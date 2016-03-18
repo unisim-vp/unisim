@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/channels/semaphore.h>
+#include "channels/semaphore.h"
 
 namespace sc_core {
 

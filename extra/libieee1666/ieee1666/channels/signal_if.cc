@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/channels/signal_if.h>
+#include "channels/signal_if.h"
 
 namespace sc_core {
 

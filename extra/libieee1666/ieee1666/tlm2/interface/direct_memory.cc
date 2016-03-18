@@ -1,5 +1,5 @@
 #include <tlm>
-#include <ieee1666/tlm2/interface/direct_memory.h>
+#include "tlm2/interface/direct_memory.h"
 
 namespace tlm {
 

@@ -3,9 +3,7 @@ pkgconfig_DATA = libieee1666.pc systemc.pc tlm.pc
 ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/ieee1666 -I$(top_builddir)/ieee1666
 AM_CXXFLAGS = -fPIC
-includedir = $(prefix)/include
 sharedir = $(prefix)/share/libieee1666
-libdir= $(prefix)/lib
 nobase_include_HEADERS = \
 ieee1666/systemc \
 ieee1666/systemc.h \

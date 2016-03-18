@@ -35,13 +35,13 @@
 #ifndef __IEEE1666_CORE_PROCESS_H__
 #define __IEEE1666_CORE_PROCESS_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/object.h>
-#include <ieee1666/core/reset.h>
-#include <ieee1666/channels/in.h>
-#include <ieee1666/channels/out.h>
-#include <ieee1666/channels/inout.h>
-#include <ieee1666/channels/signal_if.h>
+#include "core/fwd.h"
+#include "core/object.h"
+#include "core/reset.h"
+#include "channels/in.h"
+#include "channels/out.h"
+#include "channels/inout.h"
+#include "channels/signal_if.h"
 #include <list>
 
 namespace sc_core {

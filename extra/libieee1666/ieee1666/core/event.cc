@@ -32,14 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/kernel.h>
-#include <ieee1666/core/object.h>
-#include <ieee1666/core/time.h>
-#include <ieee1666/core/kernel_event.h>
-#include <ieee1666/core/thread_process.h>
-#include <ieee1666/core/method_process.h>
-#include <ieee1666/utilities/backtrace.h>
+#include "core/event.h"
+#include "core/kernel.h"
+#include "core/object.h"
+#include "core/time.h"
+#include "core/kernel_event.h"
+#include "core/thread_process.h"
+#include "core/method_process.h"
+#include "utilities/backtrace.h"
 #include <string.h>
 
 namespace sc_core {

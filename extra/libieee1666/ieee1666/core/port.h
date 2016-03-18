@@ -35,9 +35,9 @@
 #ifndef __IEEE1666_CORE_PORT_H__
 #define __IEEE1666_CORE_PORT_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/object.h>
-#include <ieee1666/core/interface.h>
+#include "core/fwd.h"
+#include "core/object.h"
+#include "core/interface.h"
 #include <list>
 #include <typeinfo>
 

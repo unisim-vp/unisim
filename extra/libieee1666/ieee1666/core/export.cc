@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/export.h>
-#include <ieee1666/core/kernel.h>
+#include "core/export.h"
+#include "core/kernel.h"
 
 namespace sc_core {
 

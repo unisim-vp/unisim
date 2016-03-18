@@ -35,13 +35,13 @@
 #ifndef __IEEE1666_CHANNELS_EVENT_QUEUE_H__
 #define __IEEE1666_CHANNELS_EVENT_QUEUE_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/module.h>
-#include <ieee1666/core/module_name.h>
-#include <ieee1666/core/time.h>
-#include <ieee1666/core/event.h>
-#include <ieee1666/channels/event_queue_if.h>
-#include <ieee1666/core/kernel.h>
+#include "core/fwd.h"
+#include "core/module.h"
+#include "core/module_name.h"
+#include "core/time.h"
+#include "core/event.h"
+#include "channels/event_queue_if.h"
+#include "core/kernel.h"
 
 namespace sc_core {
 

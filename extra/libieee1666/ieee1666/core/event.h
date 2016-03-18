@@ -35,7 +35,7 @@
 #ifndef __IEEE1666_CORE_EVENT_H__
 #define __IEEE1666_CORE_EVENT_H__
 
-#include <ieee1666/core/fwd.h>
+#include "core/fwd.h"
 #include <vector>
 #include <string>
 #include <deque>

@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/utilities/report.h>
+#include "utilities/report.h"
 
 namespace sc_core {
 

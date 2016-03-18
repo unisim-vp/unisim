@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/utilities/version.h>
+#include "utilities/version.h"
 
 namespace sc_core {
 

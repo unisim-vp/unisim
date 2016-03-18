@@ -32,15 +32,15 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/spawn.h>
-#include <ieee1666/core/kernel.h>
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/interface.h>
-#include <ieee1666/core/port.h>
-#include <ieee1666/core/export.h>
-#include <ieee1666/channels/in.h>
-#include <ieee1666/channels/out.h>
-#include <ieee1666/channels/inout.h>
+#include "core/spawn.h"
+#include "core/kernel.h"
+#include "core/event.h"
+#include "core/interface.h"
+#include "core/port.h"
+#include "core/export.h"
+#include "channels/in.h"
+#include "channels/out.h"
+#include "channels/inout.h"
 
 namespace sc_core {
 

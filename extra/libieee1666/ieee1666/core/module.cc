@@ -32,17 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/module.h>
-#include <ieee1666/core/kernel.h>
-#include <ieee1666/core/thread_process.h>
-#include <ieee1666/core/object.h>
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/time.h>
-#include <ieee1666/core/module_name.h>
-#include <ieee1666/channels/in.h>
-#include <ieee1666/channels/out.h>
-#include <ieee1666/channels/inout.h>
-#include <ieee1666/channels/signal_if.h>
+#include "core/module.h"
+#include "core/kernel.h"
+#include "core/thread_process.h"
+#include "core/object.h"
+#include "core/event.h"
+#include "core/time.h"
+#include "core/module_name.h"
+#include "channels/in.h"
+#include "channels/out.h"
+#include "channels/inout.h"
+#include "channels/signal_if.h"
 
 namespace sc_core {
 

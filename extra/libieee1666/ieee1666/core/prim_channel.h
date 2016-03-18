@@ -35,10 +35,10 @@
 #ifndef __IEEE1666_CORE_PRIM_CHANNEL_H__
 #define __IEEE1666_CORE_PRIM_CHANNEL_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/object.h>
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/time.h>
+#include "core/fwd.h"
+#include "core/object.h"
+#include "core/event.h"
+#include "core/time.h"
 
 namespace sc_core {
 

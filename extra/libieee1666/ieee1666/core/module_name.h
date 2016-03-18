@@ -35,8 +35,8 @@
 #ifndef __IEEE1666_CORE_MODULE_NAME_H__
 #define __IEEE1666_CORE_MODULE_NAME_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/module.h>
+#include "core/fwd.h"
+#include "core/module.h"
 #include <string>
 
 namespace sc_core {

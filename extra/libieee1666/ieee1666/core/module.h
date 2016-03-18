@@ -35,11 +35,11 @@
 #ifndef __IEEE1666_CORE_MODULE_H__
 #define __IEEE1666_CORE_MODULE_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/channels/fwd.h>
-#include <ieee1666/core/sensitive.h>
-#include <ieee1666/core/process.h>
-#include <ieee1666/core/spawn.h>
+#include "core/fwd.h"
+#include "channels/fwd.h"
+#include "core/sensitive.h"
+#include "core/process.h"
+#include "core/spawn.h"
 #include <vector>
 
 namespace sc_core {

@@ -35,10 +35,10 @@
 #ifndef __IEEE1666_CHANNELS_SIGNAL_IF_H__
 #define __IEEE1666_CHANNELS_SIGNAL_IF_H__
 
-#include <ieee1666/core/interface.h>
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/reset.h>
-#include <ieee1666/channels/fwd.h>
+#include "core/interface.h"
+#include "core/event.h"
+#include "core/reset.h"
+#include "channels/fwd.h"
 
 namespace sc_core {
 

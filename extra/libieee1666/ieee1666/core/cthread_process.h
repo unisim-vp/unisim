@@ -35,7 +35,7 @@
 #ifndef __IEEE1666_CORE_CTHREAD_PROCESS_H__
 #define __IEEE1666_CORE_CTHREAD_PROCESS_H__
 
-#include <ieee1666/core/thread_process.h>
+#include "core/thread_process.h"
 
 namespace sc_core {
 

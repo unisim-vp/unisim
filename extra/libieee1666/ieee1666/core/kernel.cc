@@ -32,15 +32,15 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/kernel.h>
-#include <ieee1666/core/module.h>
-#include <ieee1666/core/port.h>
-#include <ieee1666/core/export.h>
-#include <ieee1666/core/module_name.h>
-#include <ieee1666/core/cthread_process.h>
-#include <ieee1666/core/process_handle.h>
-#include <ieee1666/core/time.h>
-#include <ieee1666/core/event_finder.h>
+#include "core/kernel.h"
+#include "core/module.h"
+#include "core/port.h"
+#include "core/export.h"
+#include "core/module_name.h"
+#include "core/cthread_process.h"
+#include "core/process_handle.h"
+#include "core/time.h"
+#include "core/event_finder.h"
 #include <math.h>
 #include <string.h>
 #include <limits>

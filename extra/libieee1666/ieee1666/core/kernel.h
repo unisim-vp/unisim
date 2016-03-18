@@ -35,9 +35,9 @@
 #ifndef __IEEE1666_CORE_KERNEL_H__
 #define __IEEE1666_CORE_KERNEL_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/time.h>
-#include <ieee1666/core/allocator.h>
+#include "core/fwd.h"
+#include "core/time.h"
+#include "core/allocator.h"
 #include <stack>
 #include <vector>
 #include <iosfwd>
@@ -45,11 +45,11 @@
 #include <deque>
 #include <unordered_set>
 #include <set>
-#include <ieee1666/core/kernel_event.h>
-#include <ieee1666/core/thread_process.h>
-#include <ieee1666/core/method_process.h>
-#include <ieee1666/core/prim_channel.h>
-#include <ieee1666/core/process_handle.h>
+#include "core/kernel_event.h"
+#include "core/thread_process.h"
+#include "core/method_process.h"
+#include "core/prim_channel.h"
+#include "core/process_handle.h"
 
 namespace sc_core {
 

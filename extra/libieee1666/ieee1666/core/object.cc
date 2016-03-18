@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/object.h>
-#include <ieee1666/core/kernel.h>
+#include "core/object.h"
+#include "core/kernel.h"
 #include <string.h>
 
 namespace sc_core {

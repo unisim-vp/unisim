@@ -35,8 +35,8 @@
 #ifndef __IEEE1666_CORE_RESET_H__
 #define __IEEE1666_CORE_RESET_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/channels/fwd.h>
+#include "core/fwd.h"
+#include "channels/fwd.h"
 
 namespace sc_core {
 

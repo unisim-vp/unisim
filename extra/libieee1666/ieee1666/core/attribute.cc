@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/attribute.h>
+#include "core/attribute.h"
 
 namespace sc_core {
 

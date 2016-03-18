@@ -35,7 +35,7 @@
 #ifndef __IEEE1666_TLM2_INTEROPERABILITY_LAYER_FWD_H__
 #define __IEEE1666_TLM2_INTEROPERABILITY_LAYER_FWD_H__
 
-#include <ieee1666/core/fwd.h>
+#include "core/fwd.h"
 
 namespace tlm {
 

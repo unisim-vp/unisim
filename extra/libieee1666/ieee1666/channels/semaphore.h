@@ -35,9 +35,9 @@
 #ifndef __IEEE1666_CHANNELS_SEMAPHORE_H__
 #define __IEEE1666_CHANNELS_SEMAPHORE_H__
 
-#include <ieee1666/core/object.h>
-#include <ieee1666/channels/fwd.h>
-#include <ieee1666/channels/semaphore_if.h>
+#include "core/object.h"
+#include "channels/fwd.h"
+#include "channels/semaphore_if.h"
 
 namespace sc_core {
 

@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/channels/mutex_if.h>
+#include "channels/mutex_if.h"
 
 namespace sc_core {
 

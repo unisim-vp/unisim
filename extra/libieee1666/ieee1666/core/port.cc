@@ -32,10 +32,10 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/port.h>
-#include <ieee1666/core/kernel.h>
-#include <ieee1666/core/process.h>
-#include <ieee1666/core/event_finder.h>
+#include "core/port.h"
+#include "core/kernel.h"
+#include "core/process.h"
+#include "core/event_finder.h"
 
 namespace sc_core {
 

@@ -35,8 +35,8 @@
 #ifndef __IEEE1666_CORE_SENSITIVE_H__
 #define __IEEE1666_CORE_SENSITIVE_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/process_handle.h>
+#include "core/fwd.h"
+#include "core/process_handle.h"
 
 namespace sc_core {
 

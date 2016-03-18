@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/event_finder.h>
+#include "core/event_finder.h"
 
 namespace sc_core {
 

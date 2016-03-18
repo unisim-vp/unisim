@@ -32,10 +32,10 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/thread_process.h>
-#include <ieee1666/core/kernel.h>
-#include <ieee1666/core/spawn.h>
-#include <ieee1666/core/event.h>
+#include "core/thread_process.h"
+#include "core/kernel.h"
+#include "core/spawn.h"
+#include "core/event.h"
 #include <stdexcept>
 
 namespace sc_core {

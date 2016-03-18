@@ -35,9 +35,9 @@
 #ifndef __IEEE1666_CORE_OBJECT_H__
 #define __IEEE1666_CORE_OBJECT_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/attribute.h>
+#include "core/fwd.h"
+#include "core/event.h"
+#include "core/attribute.h"
 #include <iostream>
 #include <string>
 #include <vector>

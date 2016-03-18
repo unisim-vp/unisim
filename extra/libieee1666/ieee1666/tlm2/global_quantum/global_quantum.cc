@@ -1,4 +1,4 @@
-#include <ieee1666/tlm2/global_quantum/global_quantum.h>
+#include "tlm2/global_quantum/global_quantum.h"
 
 namespace tlm {
 

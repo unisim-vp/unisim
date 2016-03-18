@@ -35,9 +35,9 @@
 #ifndef __IEEE1666_CORE_EVENT_FINDER_H__
 #define __IEEE1666_CORE_EVENT_FINDER_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/port.h>
-#include <ieee1666/core/event.h>
+#include "core/fwd.h"
+#include "core/port.h"
+#include "core/event.h"
 #include <stdexcept>
 
 namespace sc_core {

@@ -35,9 +35,9 @@
 #ifndef __IEEE1666_CHANNELS_EVENT_QUEUE_IF_H__
 #define __IEEE1666_CHANNELS_EVENT_QUEUE_IF_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/interface.h>
-#include <ieee1666/core/time.h>
+#include "core/fwd.h"
+#include "core/interface.h"
+#include "core/time.h"
 
 namespace sc_core {
 

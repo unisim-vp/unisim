@@ -35,9 +35,9 @@
 #ifndef __IEEE1666_CHANNELS_BUFFER_H__
 #define __IEEE1666_CHANNELS_BUFFER_H__
 
-#include <ieee1666/channels/fwd.h>
-#include <ieee1666/channels/signal.h>
-#include <ieee1666/channels/buffer.h>
+#include "channels/fwd.h"
+#include "channels/signal.h"
+#include "channels/buffer.h"
 
 namespace sc_core {
 

@@ -35,8 +35,8 @@
 #ifndef __IEEE1666_TLM2_INTEROPERABILITY_LAYER_PROTOCOL_BASE_PROTOCOL_H__
 #define __IEEE1666_TLM2_INTEROPERABILITY_LAYER_PROTOCOL_BASE_PROTOCOL_H__
 
-#include <ieee1666/tlm2/payload/generic_payload.h>
-#include <ieee1666/tlm2/phase/base_phase.h>
+#include "tlm2/payload/generic_payload.h"
+#include "tlm2/phase/base_phase.h"
 
 namespace tlm {
 

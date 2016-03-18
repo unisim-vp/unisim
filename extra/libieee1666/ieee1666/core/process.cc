@@ -32,13 +32,13 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/process.h>
-#include <ieee1666/core/spawn.h>
-#include <ieee1666/core/kernel.h>
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/interface.h>
-#include <ieee1666/core/port.h>
-#include <ieee1666/core/event_finder.h>
+#include "core/process.h"
+#include "core/spawn.h"
+#include "core/kernel.h"
+#include "core/event.h"
+#include "core/interface.h"
+#include "core/port.h"
+#include "core/event_finder.h"
 namespace sc_core {
 
 sc_process_owner::sc_process_owner(bool _automatic)

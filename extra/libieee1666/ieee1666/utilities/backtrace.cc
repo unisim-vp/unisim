@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/utilities/backtrace.h>
+#include "utilities/backtrace.h"
 #include <stdlib.h>
 #include <iostream>
 

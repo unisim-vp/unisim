@@ -35,8 +35,8 @@
 #ifndef __IEEE1666_UTILITIES_REPORT_HANDLER_H__
 #define __IEEE1666_UTILITIES_REPORT_HANDLER_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/utilities/fwd.h>
+#include "core/fwd.h"
+#include "utilities/fwd.h"
 #include <stdexcept>
 
 namespace sc_core {

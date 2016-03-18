@@ -35,13 +35,13 @@
 #ifndef __IEEE1666_CHANNELS_SIGNAL_H__
 #define __IEEE1666_CHANNELS_SIGNAL_H__
 
-#include <ieee1666/core/prim_channel.h>
-#include <ieee1666/core/port.h>
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/kernel.h>
-#include <ieee1666/channels/fwd.h>
-#include <ieee1666/channels/signal_if.h>
-#include <ieee1666/channels/signal.h>
+#include "core/prim_channel.h"
+#include "core/port.h"
+#include "core/event.h"
+#include "core/kernel.h"
+#include "channels/fwd.h"
+#include "channels/signal_if.h"
+#include "channels/signal.h"
 #include <iostream>
 
 namespace sc_core {

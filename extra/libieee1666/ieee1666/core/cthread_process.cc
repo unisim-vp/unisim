@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/cthread_process.h>
+#include "core/cthread_process.h"
 
 namespace sc_core {
 

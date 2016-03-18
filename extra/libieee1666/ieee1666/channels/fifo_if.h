@@ -35,8 +35,8 @@
 #ifndef __IEEE1666_CHANNELS_FIFO_IF_H__
 #define __IEEE1666_CHANNELS_FIFO_IF_H__
 
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/interface.h>
+#include "core/event.h"
+#include "core/interface.h"
 
 namespace sc_core {
 

@@ -35,7 +35,7 @@
 #ifndef __IEEE1666_TLM2_INTEROPERABILITY_LAYER_SOCKET_INITIATOR_SOCKET_H__
 #define __IEEE1666_TLM2_INTEROPERABILITY_LAYER_SOCKET_INITIATOR_SOCKET_H__
 
-#include <ieee1666/tlm2/fwd.h>
+#include "tlm2/fwd.h"
 
 namespace tlm {
 

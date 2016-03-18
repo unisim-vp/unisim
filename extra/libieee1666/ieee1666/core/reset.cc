@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/reset.h>
-#include <ieee1666/core/process.h>
+#include "core/reset.h"
+#include "core/process.h"
 
 namespace sc_core {
 

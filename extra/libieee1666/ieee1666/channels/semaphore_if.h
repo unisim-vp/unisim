@@ -35,7 +35,7 @@
 #ifndef __IEEE1666_CHANNELS_SEMAPHORE_IF_H__
 #define __IEEE1666_CHANNELS_SEMAPHORE_IF_H__
 
-#include <ieee1666/core/interface.h>
+#include "core/interface.h"
 
 namespace sc_core {
 

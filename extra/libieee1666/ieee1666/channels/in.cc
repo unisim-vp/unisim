@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/channels/in.h>
+#include "channels/in.h"
 
 namespace sc_core {
 

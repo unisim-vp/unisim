@@ -35,11 +35,11 @@
 #ifndef __IEEE1666_CORE_SPAWN_H__
 #define __IEEE1666_CORE_SPAWN_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/channels/fwd.h>
-#include <ieee1666/core/process_handle.h>
-#include <ieee1666/core/process.h>
-#include <ieee1666/core/kernel.h>
+#include "core/fwd.h"
+#include "channels/fwd.h"
+#include "core/process_handle.h"
+#include "core/process.h"
+#include "core/kernel.h"
 #include <vector>
 #include <boost/bind.hpp>
 

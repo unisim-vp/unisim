@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/prim_channel.h>
-#include <ieee1666/core/kernel.h>
+#include "core/prim_channel.h"
+#include "core/kernel.h"
 
 namespace sc_core {
 

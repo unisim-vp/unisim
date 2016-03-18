@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/method_process.h>
-#include <ieee1666/core/kernel.h>
+#include "core/method_process.h"
+#include "core/kernel.h"
 
 namespace sc_core {
 

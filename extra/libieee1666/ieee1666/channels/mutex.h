@@ -35,9 +35,9 @@
 #ifndef __IEEE1666_CHANNELS_MUTEX_H__
 #define __IEEE1666_CHANNELS_MUTEX_H__
 
-#include <ieee1666/core/object.h>
-#include <ieee1666/channels/fwd.h>
-#include <ieee1666/channels/mutex_if.h>
+#include "core/object.h"
+#include "channels/fwd.h"
+#include "channels/mutex_if.h"
 
 namespace sc_core {
 

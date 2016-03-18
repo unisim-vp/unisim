@@ -35,10 +35,10 @@
 #ifndef __IEEE1666_CORE_METHOD_PROCESS_H__
 #define __IEEE1666_CORE_METHOD_PROCESS_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/object.h>
-#include <ieee1666/core/process.h>
-#include <ieee1666/core/time.h>
+#include "core/fwd.h"
+#include "core/object.h"
+#include "core/process.h"
+#include "core/time.h"
 
 namespace sc_core {
 

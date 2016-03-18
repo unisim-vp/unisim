@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/interface.h>
+#include "core/interface.h"
 
 namespace sc_core {
 

@@ -35,10 +35,10 @@
 #ifndef __IEEE1666_CORE_PROCESS_HANDLE_H__
 #define __IEEE1666_CORE_PROCESS_HANDLE_H__
 
-#include <ieee1666/core/fwd.h>
-#include <ieee1666/core/object.h>
-#include <ieee1666/core/event.h>
-#include <ieee1666/core/process.h>
+#include "core/fwd.h"
+#include "core/object.h"
+#include "core/event.h"
+#include "core/process.h"
 #include <stdexcept>
 
 namespace sc_core {

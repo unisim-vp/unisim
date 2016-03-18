@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/channels/event_queue.h>
+#include "channels/event_queue.h"
 
 namespace sc_core {
 

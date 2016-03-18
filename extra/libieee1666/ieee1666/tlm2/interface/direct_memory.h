@@ -35,7 +35,7 @@
 #ifndef __IEEE1666_TLM2_INTEROPERABILITY_LAYER_INTERFACE_DIRECT_MEMORY_H__
 #define __IEEE1666_TLM2_INTEROPERABILITY_LAYER_INTERFACE_DIRECT_MEMORY_H__
 
-#include <ieee1666/tlm2/fwd.h>
+#include "tlm2/fwd.h"
 #include <systemc>
 
 namespace tlm {

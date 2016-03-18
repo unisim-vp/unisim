@@ -32,20 +32,20 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __TLM__
-#define __TLM__
+#ifndef __IEEE1666_TLM__
+#define __IEEE1666_TLM__
 
-#include <ieee1666/tlm2/fwd.h>
-#include <ieee1666/tlm2/interface/blocking_transport.h>
-#include <ieee1666/tlm2/interface/non_blocking_transport.h>
-#include <ieee1666/tlm2/interface/debug_transport.h>
-#include <ieee1666/tlm2/interface/direct_memory.h>
-#include <ieee1666/tlm2/interface/combined.h>
-#include <ieee1666/tlm2/socket/initiator_socket.h>
-#include <ieee1666/tlm2/socket/target_socket.h>
-#include <ieee1666/tlm2/protocol/base_protocol.h>
-#include <ieee1666/tlm2/phase/base_phase.h>
-#include <ieee1666/tlm2/payload/generic_payload.h>
-#include <ieee1666/tlm2/global_quantum/global_quantum.h>
+#include "tlm2/fwd.h"
+#include "tlm2/interface/blocking_transport.h"
+#include "tlm2/interface/non_blocking_transport.h"
+#include "tlm2/interface/debug_transport.h"
+#include "tlm2/interface/direct_memory.h"
+#include "tlm2/interface/combined.h"
+#include "tlm2/socket/initiator_socket.h"
+#include "tlm2/socket/target_socket.h"
+#include "tlm2/protocol/base_protocol.h"
+#include "tlm2/phase/base_phase.h"
+#include "tlm2/payload/generic_payload.h"
+#include "tlm2/global_quantum/global_quantum.h"
 
 #endif

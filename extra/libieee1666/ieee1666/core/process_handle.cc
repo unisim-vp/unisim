@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/process_handle.h>
-#include <ieee1666/core/process.h>
+#include "core/process_handle.h"
+#include "core/process.h"
 
 namespace sc_core {
 

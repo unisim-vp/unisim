@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/channels/clock.h>
-#include <ieee1666/core/spawn.h>
+#include "channels/clock.h"
+#include "core/spawn.h"
 #include <stdexcept>
 
 namespace sc_core {

@@ -35,10 +35,10 @@
 #ifndef __IEEE1666_CHANNELS_OUT_H__
 #define __IEEE1666_CHANNELS_OUT_H__
 
-#include <ieee1666/core/port.h>
-#include <ieee1666/channels/fwd.h>
-#include <ieee1666/channels/inout.h>
-#include <ieee1666/channels/signal_if.h>
+#include "core/port.h"
+#include "channels/fwd.h"
+#include "channels/inout.h"
+#include "channels/signal_if.h"
 
 namespace sc_core {
 

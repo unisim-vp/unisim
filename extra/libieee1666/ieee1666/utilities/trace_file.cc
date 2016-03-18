@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/utilities/trace_file.h>
+#include "utilities/trace_file.h"
 
 namespace sc_core {
 

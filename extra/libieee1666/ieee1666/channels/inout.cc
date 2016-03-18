@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/channels/inout.h>
+#include "channels/inout.h"
 
 namespace sc_core {
 

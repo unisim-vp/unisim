@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <ieee1666/core/time.h>
-#include <ieee1666/core/kernel.h>
+#include "core/time.h"
+#include "core/kernel.h"
 #include <sstream>
 
 namespace sc_core {
