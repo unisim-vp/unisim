@@ -93,6 +93,8 @@ struct GIC
 {
   //typedef tlm::tlm_base_protocol_types TYPES;
   static unsigned const BUSWIDTH = 32;
+  static unsigned const ITLinesNumber = 7;
+  static unsigned const ITLinesCount = 32*(ITLinesNumber+1);
   tlm::tlm_target_socket<BUSWIDTH> dist_sock;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
   
@@ -108,19 +110,27 @@ struct GIC
   {
     Data( uint8_t* _ptr ) : ptr( _ptr ) {} uint8_t* ptr;
     template <typename T>
-    T Read() const { T val(); for (int idx = sizeof(T); --idx >= 0;) val = (val << 8) | T(ptr[idx]); return val; }
+    void operator >> ( T& val ) const { T tmp(0); for (int idx = sizeof(T); --idx >= 0;) val = (val << 8) | T(ptr[idx]); val = tmp; }
     template <typename T>
-    void Write( T val ) const { for (int idx = 0, end = sizeof(T); idx < end; ++ idx, val >>= 8) ptr[idx] = val; }
+    void operator << ( T val ) const { for (int idx = 0, end = sizeof(T); idx < end; ++ idx, val >>= 8) ptr[idx] = val; }
   };
   
   struct Reg
   {
     virtual ~Reg() {}
-    virtual bool Read( GIC&, Data const& ) const { return false; }
-    virtual bool Write( GIC&, Data const& ) const { return false; }
+    virtual bool Read( GIC&, uint32_t, Data const& ) { return false; }
+    virtual bool Write( GIC&, uint32_t, Data const& ) { return false; }
   };
   
-  Reg const& GetRegister( uint32_t addr, unsigned size );
+  Reg& GetRegister( uint32_t addr, unsigned size );
+  
+  enum { GICD_CTLR = 0, r32count };
+  uint32_t r32[r32count];
+  
+  static unsigned const gicd_icfgr_count = 2*(ITLinesNumber+1);
+  uint32_t d_icfgr[ITLinesCount/16];
+  uint8_t  d_ipriorityr[ITLinesCount];
+ 
 };
 
 struct PERIPH

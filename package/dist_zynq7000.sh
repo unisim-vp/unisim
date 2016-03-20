@@ -420,6 +420,7 @@ unisim/component/cxx/processor/arm/cpu.hh \
 unisim/component/cxx/processor/arm/armemu/cpu.hh \
 unisim/component/cxx/processor/arm/cache.hh \
 unisim/component/cxx/processor/arm/cp15.hh \
+unisim/component/cxx/processor/arm/armemu/cp15.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \

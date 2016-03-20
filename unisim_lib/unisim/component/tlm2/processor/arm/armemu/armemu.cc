@@ -704,8 +704,7 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
   // 3 - send the transaction and check response status
   master_socket->b_transport(*trans, quantum_time);
   if (not trans->is_response_ok()) {
-    // TODO: asynchronous abort
-    throw "smells bad...";
+    throw "TODO: asynchronous abort (read)...";
   }
   
   // cpu_time = sc_time_stamp() + quantum_time;
@@ -795,8 +794,7 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   // 3 - send the transaction and check response status
   master_socket->b_transport(*trans, quantum_time);
   if (not trans->is_response_ok()) {
-    // TODO: asynchronous abort
-    throw "smells bad...";
+    throw "TODO: asynchronous abort (write)...";
   }
   
   if (quantum_time > nice_time)

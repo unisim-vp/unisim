@@ -96,22 +96,64 @@ GIC::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, s
 }
 
 
-GIC::Reg const&
+GIC::Reg&
 GIC::GetRegister( uint32_t addr, unsigned size )
 {
-  static Reg error_reg;
+  static struct : public Reg
+  {
+    bool Read( GIC&, Data const& d ) { d << uint32_t(0); return true; }
+    bool Write( GIC&, Data const& d ) { return true; }
+  } RAZ_WI;
   
-  if ((addr|size) & (size-1)) return error_reg;
+  if (((addr|size) & (size-1)) == 0) {
+    if (size == 4) {
+      if      ((addr & -0x400) == 0x800) {
+        // GICD_ITARGETSRn
+        return RAZ_WI;
+      }
+      
+      if ((addr & -0x100) == 0xc00) {
+        static struct : public Reg {
+          uint32_t& RV( GIC& gic, uint32_t addr ) const {
+            unsigned idx = ((addr & 0xff) >> 2);
+            if (idx < gicd_icfgr_count) return gic.d_icfgr[idx];
+            static uint32_t RAZ_RI;
+            return RAZ_RI = 0;
+          }
+          bool  Read( GIC& gic, uint32_t addr, Data const& d ) { d << RV(gic,addr); return true; }
+          bool Write( GIC& gic, uint32_t addr, Data const& d ) { d >> RV(gic,addr); return true; }
+        } d32_icfgr;
+        return d32_icfgr;
+      }
+      
+      struct : public Reg
+      {
+        static int regidx(uint32_t addr) {
+          switch (addr) {
+          case 0: return GICD_CTLR; 
+          }
+          return -1;
+        }
+        bool  Read( GIC& gic, uint32_t addr, Data const& d ) { d << (gic.r32[regidx(addr)]); return true; }
+        bool Write( GIC& gic, uint32_t addr, Data const& d ) { d >> (gic.r32[regidx(addr)]); return true; }
+      } r32_access;
+      
+      if (r32_access.regidx(addr) >= 0)
+        return r32_access;
   
-  if (size == 4) {
-    switch (addr) {
-    case 4: {
-      static struct : public Reg { bool Read( GIC&, Data const& d ) const { d.Write( uint32_t( 0x7 ) ); return true; } } x;
-      return x;
-    } break;
+      switch (addr) {
+      case 4: {
+        static struct : public Reg {
+          bool Read( GIC& gic, Data const& d ) { d << uint32_t( gic.ITLinesNumber ); return true; }
+        } GICD_TYPER;
+        return GICD_TYPER;
+      } break;
+      }
     }
   }
   
+  std::cerr << "Illegal GIC register address: [" << std::hex << addr << "," << std::dec << size << "].\n";
+  static Reg error_reg;
   return error_reg;
 }
 
@@ -135,8 +177,8 @@ GIC::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
   
   switch (payload.get_command())
     {
-    case tlm::TLM_READ_COMMAND:  status = GetRegister( addr, data_length ) .Read( *this, Data( data_ptr ) ); break;
-    case tlm::TLM_WRITE_COMMAND: status = GetRegister( addr, data_length ).Write( *this, Data( data_ptr ) ); break;
+    case tlm::TLM_READ_COMMAND:  status = GetRegister( addr, data_length ) .Read( *this, addr, Data( data_ptr ) ); break;
+    case tlm::TLM_WRITE_COMMAND: status = GetRegister( addr, data_length ).Write( *this, addr, Data( data_ptr ) ); break;
     case tlm::TLM_IGNORE_COMMAND: break;
     default: throw 0;
     }
@@ -210,7 +252,8 @@ PERIPH::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
   // unsigned int streaming_width = payload.get_streaming_width();
   // bool status = false;
   
-  switch (payload.get_command())
+  tlm::tlm_command cmd = payload.get_command();
+  switch (cmd)
     {
     case tlm::TLM_READ_COMMAND: Read( addr, data_ptr, data_length ); break;
     case tlm::TLM_WRITE_COMMAND: Write( addr, data_ptr, data_length ); break;
