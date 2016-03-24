@@ -46,7 +46,9 @@
 #include <limits>
 #include <sstream>
 
+#ifndef DLL_EXPORT
 extern int sc_main(int argc, char *argv[]);
+#endif
 
 namespace sc_core {
 
@@ -967,7 +969,7 @@ void sc_kernel::set_time_resolution(double v, sc_time_unit tu, bool user)
 
 	time_resolution_scale_factors_table_base_index = static_cast<int>(log10_v) + (3 * tu);
 
-	double time_resolution_sec = (v * pow10(-3 * (SC_SEC - tu)));
+	double time_resolution_sec = (v * pow(10.0, -3 * (SC_SEC - tu)));
 	if(time_resolution_sec < 1e-15)
 	{
 		throw std::runtime_error("time resolution is less than 1 fs");
@@ -1266,13 +1268,22 @@ void sc_kernel::dump_hierarchy(std::ostream& os) const
 	}
 }
 
+static int (*sc_main_cb)(int, char **) = 0;
+
+void sc_register_sc_main(int (*_sc_main_cb)(int, char **))
+{
+	sc_main_cb = _sc_main_cb;
+}
 
 int sc_elab_and_sim(int _argc, char* _argv[])
 {
 	argc = _argc;
 	argv = _argv;
 	
-	int status = sc_main(argc, argv);
+#ifndef DLL_EXPORT
+	sc_main_cb = sc_main;
+#endif
+	int status = sc_main_cb(argc, argv);
 	
 	if(sc_kernel::kernel) delete sc_kernel::kernel;
 	return status;

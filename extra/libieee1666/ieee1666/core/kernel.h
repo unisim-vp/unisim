@@ -243,6 +243,7 @@ private:
 	sc_object *find_object(sc_object *parent_object, const char* name);	
 };
 
+void sc_register_sc_main(int (*)(int, char **)); // Note: this is not part of standard. This for a windows host when SystemC is in a DLL.
 int sc_elab_and_sim(int argc, char* argv[]);
 int sc_argc();
 const char* const* sc_argv();

@@ -58,6 +58,6 @@ find %{buildroot} -name "*.la" -delete
 %{_libdir}/*.a
 
 %changelog
-* @PACKAGE_DATE@ Gilles Mouchard <gilles.mouchard@cea.fr> @PACKAGE_VERSION@-@PACKAGE_RELEASE@
+* @RPM_PACKAGE_DATE@ Gilles Mouchard <gilles.mouchard@cea.fr> @PACKAGE_VERSION@-@PACKAGE_RELEASE@
 upstream release
 

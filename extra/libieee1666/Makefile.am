@@ -1,8 +1,7 @@
-PACKAGE_RELEASE=1
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libieee1666.pc systemc.pc tlm.pc
 ACLOCAL_AMFLAGS=-I m4
-AM_CPPFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/ieee1666 -I$(top_builddir)/ieee1666
+AM_CPPFLAGS=-I$(top_srcdir)/ieee1666 -I$(top_builddir)/ieee1666
 AM_CXXFLAGS = -fPIC
 sharedir = $(prefix)/share/libieee1666
 nobase_include_HEADERS = \
@@ -80,7 +79,8 @@ ieee1666/tlm_utils/tlm_quantumkeeper.h
 
 BUILT_SOURCES = ieee1666/core/features.h
 
-CLEANFILES = ieee1666/core/features.h
+CLEANFILES = \
+$(top_builddir)/ieee1666/core/features.h
 
 lib_LTLIBRARIES = libieee1666.la
 libieee1666_la_SOURCES = \
@@ -134,8 +134,6 @@ ieee1666/tlm_utils/tlm_quantumkeeper.cc
 
 libieee1666_la_LDFLAGS = -release $(PACKAGE_VERSION)
 
-libieee1666_la_LIBADD=$(BOOST_COROUTINE_LIB) $(BOOST_CONTEXT_LIB) $(BOOST_SYSTEM_LIB) $(PTHREAD_LIBS) $(LIBS)
-
 nobase_dist_share_DATA = \
 COPYING
 
@@ -143,19 +141,19 @@ EXTRA_DIST = \
 m4/cxxabi.m4 \
 m4/check_lib.m4 \
 m4/sc_thread_process_backend.m4 \
-libieee1666.pc.in \
-systemc.pc.in \
-tlm.pc.in \
-libieee1666.spec.in \
-debian/changelog.in \
-debian/compat \
-debian/copyright \
-debian/rules \
-debian/control.in \
-debian/$(PACKAGE_NAME).install \
-debian/$(PACKAGE_NAME)-dev.install \
-debian/$(PACKAGE_NAME)-static-dev.install \
-debian/source/format
+pkg/pkgconfig/libieee1666.pc.in \
+pkg/pkgconfig/systemc.pc.in \
+pkg/pkgconfig/tlm.pc.in \
+pkg/rpm/libieee1666.spec.in \
+pkg/deb/changelog.in \
+pkg/deb/compat.in \
+pkg/deb/copyright.in \
+pkg/deb/rules.in \
+pkg/deb/control.in \
+pkg/deb/libieee1666.install.in \
+pkg/deb/libieee1666-dev.install.in \
+pkg/deb/libieee1666-static-dev.install.in \
+pkg/deb/source/format.in
 
 ieee1666/core/features.h: Makefile
 	@echo "Generating $@"; \
@@ -176,19 +174,10 @@ ieee1666/core/features.h: Makefile
 	echo "#define PACKAGE_VERSION \"$(PACKAGE_VERSION)\"" >> $@; \
 	echo "#endif" >> $@
 
-$(PACKAGE_NAME).spec: $(PACKAGE_NAME).spec.in
-	sed -e "s/\@PACKAGE_VERSION\@/$(PACKAGE_VERSION)/g" -e "s/\@PACKAGE_RELEASE\@/$(PACKAGE_RELEASE)/g" -e "s/\@PACKAGE_DATE\@/$$(date +'%a %b %d %Y')/g" $< > $@
-
-debian/control: debian/control.in
-	sed -e "s/\@PACKAGE_VERSION\@/$(PACKAGE_VERSION)/g" -e "s/\@PACKAGE_RELEASE\@/$(PACKAGE_RELEASE)/g" $< > $@
-
-debian/changelog: debian/changelog.in
-	sed -e "s/\@PACKAGE_VERSION\@/$(PACKAGE_VERSION)/g" -e "s/\@PACKAGE_DATE\@/$$(date +'%a, %d %b %Y %T %z')/g" $< > $@
-
-rpm-source: $(PACKAGE_NAME).spec dist-gzip
+rpm-source: $(top_builddir)/$(PACKAGE_NAME).spec dist-gzip
 	mkdir -p $(HOME)/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-	cp -f $(PACKAGE_NAME)-$(PACKAGE_VERSION).tar.gz $(HOME)/rpmbuild/SOURCES
-	rpmbuild -bs $(PACKAGE_NAME).spec
+	cp -f $(top_builddir)/$(PACKAGE_NAME)-$(PACKAGE_VERSION).tar.gz $(HOME)/rpmbuild/SOURCES
+	rpmbuild -bs $(top_builddir)/$(PACKAGE_NAME).spec
 
 rpm-binary: rpm-source
 	rpmbuild --rebuild $(HOME)/rpmbuild/SRPMS/$(PACKAGE_NAME)-$(PACKAGE_VERSION)-${PACKAGE_RELEASE}.src.rpm
