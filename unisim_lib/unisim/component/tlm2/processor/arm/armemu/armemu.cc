@@ -718,6 +718,8 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
     if(likely(not dmi_region and trans->is_dmi_allowed()))
     {
       tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+      trans->set_address(addr);
+      trans->set_data_length(size);
       unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
       
       dmi_region_cache.Insert(dmi_grant, dmi_data);
@@ -808,6 +810,8 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
     if (likely(not dmi_region and trans->is_dmi_allowed()))
     {
       tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+      trans->set_address(addr);
+      trans->set_data_length(size);
       unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
       
       dmi_region_cache.Insert(dmi_grant, dmi_data);

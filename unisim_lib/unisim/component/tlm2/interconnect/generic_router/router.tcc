@@ -966,9 +966,9 @@ T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tlm::tlm_dmi &dmi) {
 	
 	// do reverse translation on DMI
 	dmi_start_address -= mapping[mapping_id].translation;
-	dmi_start_address += mapping[mapping_id].range_start;
+	//dmi_start_address += mapping[mapping_id].range_start;
 	dmi_end_address -= mapping[mapping_id].translation;
-	dmi_end_address += mapping[mapping_id].range_start;
+	//dmi_end_address += mapping[mapping_id].range_start;
 
 	// restrict address range of DMI
 	sc_dt::uint64 start_range = mapping[mapping_id].range_start;
