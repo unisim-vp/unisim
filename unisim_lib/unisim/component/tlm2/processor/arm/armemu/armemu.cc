@@ -252,7 +252,7 @@ ARMEMU::Sync()
   cpu_time = sc_time_stamp();
   quantum_time = SC_ZERO_TIME;
   
-  if (verbose)
+  if (unlikely(verbose_tlm))
     inherited::logger << DebugInfo
                       << "Resuming after wait" << std::endl
                       << " - cpu_time     = " << cpu_time << std::endl

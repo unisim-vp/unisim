@@ -77,6 +77,7 @@ struct ARMv7emu
   static bool const     insns7  = true;
   static bool const     hasVFP  = true;
   static bool const     hasAdvSIMD = false;
+  static bool const     LINUX_PRINTK_SNOOPING = true;
 };
 
 struct CPU
@@ -89,6 +90,7 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint32_t> >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint32_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
+  , public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<uint32_t> >
 {
   typedef CPU this_type;
   typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> BaseCpu;
@@ -163,13 +165,13 @@ struct CPU
   //=====================================================================
 
   virtual std::string Disasm(uint32_t addr, uint32_t& next_addr);
-		
+  
   //=====================================================================
   //=                   LinuxOSInterface methods                        =
   //=====================================================================
 	
   virtual void PerformExit(int ret);
-	
+  
   /**************************************************************/
   /* Memory access methods       START                          */
   /**************************************************************/
@@ -350,6 +352,14 @@ protected:
   
   uint8_t ipb_bytes[Cache::LINE_SIZE];                       //!< The instruction prefetch buffer
   uint32_t ipb_base_address;                                 //!< base address of IPB content (cache line size aligned if valid)
+  
+  /*************************
+   * LINUX PRINTK SNOOPING *
+   *************************/
+  uint32_t linux_printk_buf_addr;
+  uint32_t linux_printk_buf_size;
+  bool     linux_printk_snooping;
+
 };
 
 } // end of namespace armemu

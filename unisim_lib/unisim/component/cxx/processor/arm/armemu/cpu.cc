@@ -65,6 +65,7 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::LinuxOS;
+using unisim::service::interfaces::SymbolTableLookup;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
@@ -93,6 +94,7 @@ CPU::CPU(const char *name, Object *parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
   , Client<LinuxOS>(name, parent)
+  , Client<SymbolTableLookup<uint32_t> >(name, parent)
   , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
   , memory_access_reporting_import("memory-access-reporting-import", this)
   , disasm_export("disasm-export", this)
@@ -124,6 +126,9 @@ CPU::CPU(const char *name, Object *parent)
                                       "Produce a trap when the given instruction count is reached.")
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
   , ipb_base_address( -1 )
+  , linux_printk_buf_addr( 0 )
+  , linux_printk_buf_size( 0 )
+  , linux_printk_snooping( false )
 {
   // Set the right format for various of the variables
   param_cpu_cycle_time_ps.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -265,6 +270,34 @@ CPU::EndSetup()
     requires_memory_access_reporting = false;
     requires_finished_instruction_reporting = false;
   }
+
+
+  if(ARMv7emu::LINUX_PRINTK_SNOOPING)
+    {
+      if (verbose)
+        logger << DebugInfo << "Linux printk snooping enabled" << EndDebugInfo;
+      
+      typedef unisim::util::debug::Symbol<uint32_t> Symbol;
+      Symbol const* symbol = 0;
+      
+      if (symbol_table_lookup_import)
+        symbol = symbol_table_lookup_import->FindSymbolByName("__log_buf", Symbol::SYM_OBJECT);
+      
+      if (symbol)
+        {
+          linux_printk_buf_addr = symbol->GetAddress();
+          linux_printk_buf_size = symbol->GetSize();
+          linux_printk_snooping = true;
+          
+          if(verbose)
+              logger << DebugInfo << "Found Linux printk buffer @["
+                     << std::hex << linux_printk_buf_addr << ','
+                     << std::dec << linux_printk_buf_size << "]" << EndDebugInfo;
+        }
+      else
+        logger << DebugWarning << "Linux printk buffer not found. Linux printk snooping will not work properly." << EndDebugWarning;
+    }
+  
   
   return true;
 }
@@ -385,14 +418,9 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
       throw unisim::component::cxx::processor::arm::exception::DataAbortException(); 
     }
   }
-  
-  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, true, size );
-  
+
   uint8_t data[4];
 
-  // In armv7 no address mungling is performed
-  // In armv5, fix the write address according to request size when big endian
-  // write_addr ^= ((-size) & 3);
   if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
     uint32_t shifter = value;
     for (int byte = size; --byte >= 0;)
@@ -402,7 +430,35 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
     for (int byte = 0; byte < int( size ); ++byte)
       { data[byte] = shifter; shifter >>= 8; }
   }
-
+  
+  if (unlikely(ARMv7emu::LINUX_PRINTK_SNOOPING and linux_printk_snooping))
+    {
+      if (uint32_t(addr - linux_printk_buf_addr) < linux_printk_buf_size)
+        {
+          //cout << "\033[31m";
+          for (unsigned idx = 0; idx < size; ++idx)
+            {
+              char c = data[idx];
+              static bool new_line_inserted = true;
+              if      (isgraph(c) or isspace(c)) {
+                std::cout << c;
+                new_line_inserted = (c == '\n');
+              }
+              else if (not new_line_inserted) {
+                std::cout << '\n';
+                new_line_inserted = true;
+              }
+            }
+          //cout << "\033[37m";
+        }
+    }
+  
+  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, true, size );
+  
+  // In armv7 no address mungling is performed
+  // In armv5, fix the write address according to request size when big endian
+  // write_addr ^= ((-size) & 3);
+  
   // bool cache_access = dcache.GetSize() and SCTLR::C.Get( this->sctlr );
   // if (likely(cache_access))
   //   {
