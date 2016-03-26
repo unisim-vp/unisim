@@ -48,6 +48,10 @@ nop.disasm = {
   buffer << "nop" << DisasmCondition(cond) << "\t{" << idx << "}";
 };
 
+nop.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+};
+
 /*
  * end of nop instruction
  *******************************************************************/

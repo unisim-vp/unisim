@@ -49,6 +49,10 @@ nopw.disasm = {
   else     buffer << "nop.w";
 };
 
+nopw.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+};
+
 /*
  * end of nop instruction
  *******************************************************************/
