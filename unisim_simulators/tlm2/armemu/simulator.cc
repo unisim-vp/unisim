@@ -208,17 +208,17 @@ Simulator::Simulator(int argc, char **argv)
   linux_os->memory_import_ >> cpu->memory_export;
   linux_os->memory_injection_import_ >> cpu->memory_injection_export;
   linux_os->registers_import_ >> cpu->registers_export;
-  // connecting power estimator
-  if ( enable_power_estimation )
-  {
-    cpu->icache.power_estimator_import >> il1_power_estimator->power_estimator_export;
-    cpu->icache.power_mode_import >> il1_power_estimator->power_mode_export;
-    cpu->dcache.power_estimator_import >> dl1_power_estimator->power_estimator_export;
-    cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
+  // // connecting power estimator
+  // if ( enable_power_estimation )
+  // {
+  //   cpu->icache.power_estimator_import >> il1_power_estimator->power_estimator_export;
+  //   cpu->icache.power_mode_import >> il1_power_estimator->power_mode_export;
+  //   cpu->dcache.power_estimator_import >> dl1_power_estimator->power_estimator_export;
+  //   cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
 
-    il1_power_estimator->time_import >> time->time_export;
-    dl1_power_estimator->time_import >> time->time_export;
-  }
+  //   il1_power_estimator->time_import >> time->time_export;
+  //   dl1_power_estimator->time_import >> time->time_export;
+  // }
 }
 
 Simulator::~Simulator()
