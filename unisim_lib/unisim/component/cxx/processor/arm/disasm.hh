@@ -187,6 +187,11 @@ namespace arm {
     uint32_t m_mask;
   };
   
+  struct PSR;
+  
+  std::ostream& operator << ( std::ostream& sink, PSR const& dobj );
+  
+  
   enum controltype_t { ctNormal, ctBranch, ctCondBranch, ctCall, ctLeave };
   
 } // end of namespace arm

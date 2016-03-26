@@ -60,7 +60,7 @@ namespace intel {
                      PUSH, PUSHA, PUSHF, POP, POPA, POPF, MOV, MOVZX, MOVSX, STD, ARPL, CMPXCHG,
                      CMPXCHG8B, XCHG, XADD, CMOVCC, BT, BTC, BTR, BTS, BSWAP, MOVNTI, LFP,
                      MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, 
-                     PXOR, MOVDQU, PCMPEQ, PMOVMSKB, 
+                     PXOR, MOVDQU, PCMPEQ, PMOVMSKB, VMOVSD,
                      operation_count };
   
   template <operation_t operation> Operation* decode( CodeBase const& cb ) { return 0; }

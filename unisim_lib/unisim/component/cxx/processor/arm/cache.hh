@@ -245,6 +245,8 @@ private:
 
 public:
   static const uint32_t LINE_SIZE = m_line_size_;
+  static const uint32_t NUM_SETS = m_sets_;
+  static const uint32_t ASSOCIATIVITY = m_associativity_;
 };
 
 } // end of namespace arm

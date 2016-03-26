@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
@@ -71,7 +72,7 @@ struct ARMv7emu
   static bool const     insns5J = true;
   static bool const     insns5T = true;
   static bool const     insns6  = true;
-  static bool const     insnsRM = false;
+  static bool const     insnsRM = true;
   static bool const     insnsT2 = true;
   static bool const     insns7  = true;
   static bool const     hasVFP  = true;
@@ -176,18 +177,26 @@ struct CPU
   virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
   virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
   
-  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4, false ); }
-  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2, false ); }
-  uint32_t MemReadS16( uint32_t address ) { return PerformReadAccess( address, 2, true ); }
-  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1, false ); }
-  uint32_t MemReadS8( uint32_t address ) { return PerformReadAccess( address, 1, true ); }
+  uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }
+  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }
+  uint32_t MemURead16( uint32_t address ) { return PerformUReadAccess( address, 2 ); }
+  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2 ); }
+  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1 ); }
+  void     MemUWrite32( uint32_t address, uint32_t value ) { PerformUWriteAccess( address, 4, value ); }
   void     MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
+  void     MemUWrite16( uint32_t address, uint16_t value ) { PerformUWriteAccess( address, 2, value ); }
   void     MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
   void     MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
-
+  
   void     PerformPrefetchAccess( uint32_t addr );
   void     PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
-  uint32_t PerformReadAccess( uint32_t addr, uint32_t size, bool _signed );
+  uint32_t PerformReadAccess( uint32_t addr, uint32_t size );
+  void     PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
+  uint32_t PerformUReadAccess( uint32_t addr, uint32_t size );
+  
+  void     SetExclusiveMonitors( uint32_t addr, unsigned size ) { /*TODO: MP support*/ }
+  bool     ExclusiveMonitorsPass( uint32_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
+  void     ClearExclusiveLocal() {}
   
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
   {
@@ -210,31 +219,92 @@ struct CPU
 	
   void CallSupervisor( uint16_t imm );
   void BKPT( uint32_t imm );
+  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU>* insn );
+  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb2::Operation<CPU>* insn );
 	
   /**************************************************/
   /* Software Exceptions                      END   */
   /**************************************************/
-  
-  /** Instruction cache */
-  Cache icache;
-  /** Data cache */
-  Cache dcache;
   
 protected:
   /** Decoder for the ARM32 instruction set. */
   unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
   /** Decoder for the THUMB instruction set. */
   unisim::component::cxx::processor::arm::isa::thumb2::Decoder<CPU> thumb_decoder;
+  
+  /***************************
+   * Cache Interface   START *
+   ***************************/
+
+  uint32_t csselr;
+  // /** Instruction cache */
+  // Cache icache;
+  // /** Data cache */
+  // Cache dcache;
+  
+  /***************************
+   * Cache Interface    END  *
+   ***************************/
+  
+  /*************************/
+  /* MMU Interface   START */
+  /*************************/
+  
+  struct MMU
+  {
+    MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() {}
+    uint32_t ttbcr; /*< Translation Table Base Control Register */
+    uint32_t ttbr0; /*< Translation Table Base Register 0 */
+    uint32_t ttbr1; /*< Translation Table Base Register 1 */
+    uint32_t prrr;  /*< PRRR, Primary Region Remap Register */
+    uint32_t nmrr;  /*< NMRR, Normal Memory Remap Register */
+    uint32_t dacr;
+    
+  } mmu;
+  
+  struct TransAddrDesc
+  {
+    uint32_t   pa;
+  };
+  
+  struct TLB
+  {
+    static unsigned const ENTRY_CAPACITY = 128;
+    /* KEY:
+     * 31 .. 12: tag
+     * 11 ..  5: idx
+     *  4 ..  0: lsb
+     */
+    unsigned      entry_count;
+    uint32_t      keys[ENTRY_CAPACITY];
+    TransAddrDesc vals[ENTRY_CAPACITY];
+    TLB();
+    template <class POLICY>
+    bool GetTranslation( TransAddrDesc& tad, uint32_t mva );
+    void AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad );
+    void Invalidate() { entry_count = 0; }
+  } tlb;
+  
+  template <class POLICY>
+  void      TranslationTableWalk( TransAddrDesc& tad, uint32_t mva );
+  template <class POLICY>
+  uint32_t  TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size );
+    
+  
+  /*************************/
+  /* MMU Interface    END  */
+  /*************************/
+
 
   /**************************/
   /* CP15 Interface   START */
   /**************************/
-
+  
   virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   virtual void     CP15ResetRegisters();
     
   /**************************/
-  /* CP15 Interface    END */
+  /* CP15 Interface    END  */
   /**************************/
 
   /** Instruction counter */
@@ -254,6 +324,8 @@ protected:
   /* UNISIM parameters, statistics                    START */
   /**********************************************************/
   
+  /** UNISIM Parameter to set the MIDR register. */
+  unisim::kernel::service::Parameter<uint32_t> param_midr;
   uint32_t sctlr_rstval;
   /** UNISIM Parameter to set the reset value of SCTLR. */
   unisim::kernel::service::Parameter<uint32_t> param_sctlr_rstval;

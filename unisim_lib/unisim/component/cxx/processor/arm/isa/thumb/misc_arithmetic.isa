@@ -48,7 +48,10 @@ sxtb.disasm = {
 sxtb.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (int32_t)((int8_t)cpu.GetGPR( rm )) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S8  S8;
+  cpu.SetGPR( rd, U32( S32( S8( cpu.GetGPR( rm ) ) ) ) );
 };
 
 /*
@@ -71,7 +74,10 @@ sxth.disasm = {
 sxth.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (int32_t)((int16_t)cpu.GetGPR( rm )) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  cpu.SetGPR( rd, U32( S32( S16( cpu.GetGPR( rm ) ) ) ) );
 };
 
 /*
@@ -94,7 +100,9 @@ uxtb.disasm = {
 uxtb.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (uint32_t)((uint8_t)cpu.GetGPR( rm )) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8  U8;
+  cpu.SetGPR( rd, U32( U8( cpu.GetGPR( rm ) ) ) );
 };
 
 /*
@@ -117,7 +125,9 @@ uxth.disasm = {
 uxth.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (uint32_t)((uint16_t)cpu.GetGPR( rm )) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  cpu.SetGPR( rd, U32( U16( cpu.GetGPR( rm ) ) ) );
 };
 
 /*

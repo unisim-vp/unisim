@@ -111,8 +111,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , Service<Registers>(name, parent)
   , logger(*this)
   , verbose(false)
+  , midr(0x414fc090)
   , sctlr(0)
-  , ttbr0(0)
   , registers_export("registers-export", this)
 {
   // Initialize general purpose registers
@@ -284,6 +284,38 @@ CPU<CONFIG>::GetRegister(const char *name)
     return itr->second;
   else
     return 0;
+}
+
+/** Get current privilege level
+ *
+ * returns the current privilege level according to the running mode.
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::RequiresPL(unsigned rpl)
+{
+  /* NOTE: in non-secure mode (TrustZone), there are more privilege levels. */
+  unsigned cpl = 0;
+  switch (cpsr.Get(M))
+    {
+    case USER_MODE:
+      cpl = 0;
+      break;
+    case FIQ_MODE:
+    case IRQ_MODE:
+    case SUPERVISOR_MODE:
+    case MONITOR_MODE:
+    case ABORT_MODE:
+    case HYPERVISOR_MODE:
+    case UNDEFINED_MODE:
+    case SYSTEM_MODE:
+      cpl = 1;
+      break;
+    default:
+      throw 0;
+    }
+  if (cpl < rpl)
+    UnpredictableInsnBehaviour();
 }
 
 /** Scan available registers for the Registers interface
@@ -586,7 +618,9 @@ template <class CONFIG>
 uint32_t
 CPU<CONFIG>::CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
-  return CP15GetRegister( crn, opcode1, crm, opcode2 ).Read( *this );
+  CP15Reg& reg = CP15GetRegister( crn, opcode1, crm, opcode2 );
+  RequiresPL(reg.RequiredPL());
+  return reg.Read( *this );
 }
 
 /** Write a value in a CP15 coprocessor register
@@ -601,7 +635,9 @@ template <class CONFIG>
 void
 CPU<CONFIG>::CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, uint32_t value )
 {
-  return CP15GetRegister( crn, opcode1, crm, opcode2 ).Write( *this, value );
+  CP15Reg& reg = CP15GetRegister( crn, opcode1, crm, opcode2 ); 
+  RequiresPL(reg.RequiredPL());
+  reg.Write( *this, value );
 }
 
 /** Describe the nature of a CP15 coprocessor register
@@ -634,6 +670,32 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
 
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
     {
+    case CP15ENCODE( 0, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "MIDR, Main ID Register"; }
+          uint32_t Read( CPU& cpu ) { return cpu.midr; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 0, 0, 1, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ID_PFR0, Processor Feature Register 0"; }
+          uint32_t Read( CPU& cpu ) {
+            /*        ARM              Thumb2         Jazelle         ThumbEE   */
+            return (0b0001 << 0) | (0b0011 << 4) | (0b0000 << 8) | (0b0000 << 12);
+          }
+        } x;
+        return x;
+      } break;
+      
+      /****************************
+       * System control registers *
+       ****************************/
     case CP15ENCODE( 1, 0, 0, 0 ):
       {
         static struct : public CP15Reg
@@ -642,46 +704,33 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
           /* TODO: handle SBO(DGP=0x00050078UL) and SBZ(DGP=0xfffa0c00UL)... */
           uint32_t Read( CPU& cpu ) { return cpu.sctlr; }
           void Write( CPU& cpu, uint32_t value ) {
+            uint32_t old_ctlr = cpu.sctlr;
             cpu.sctlr = value;
-            if (SCTLR::C.Get( value ) and cpu.verbose)
-              cpu.logger << DebugInfo << "Dcache Enabled !!!!!!!!" << EndDebugInfo;
+            uint32_t diff = old_ctlr ^ value;
+            if (cpu.verbose) {
+              if      (SCTLR::C.Get( diff ))
+                cpu.logger << DebugInfo << "DCache " << (SCTLR::C.Get( value ) ? "enabled" : "disabled") << EndDebugInfo;
+              if (SCTLR::M.Get( diff )) {
+                cpu.logger << DebugInfo << "MMU " << (SCTLR::M.Get( value ) ? "enabled" : "disabled") << EndDebugInfo;
+              }
+            }
           }
-        } x;
-        return x;
-      } break;
-      
-    case CP15ENCODE( 2, 0, 0, 0 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
-          /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write( CPU& cpu, uint32_t value ) { cpu.ttbr0 = value; }
-          uint32_t Read( CPU& cpu ) { return cpu.ttbr0; }
-        } x;
-        return x;
-      } break;
-      
-    case CP15ENCODE( 3, 0, 0, 0 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "DACR, Domain Access Control Register"; }
-          uint32_t Read( CPU& cpu ) { throw 0; return 0 /* cpu.dacr */; }
-          void Write( CPU& cpu, uint32_t value ) { throw 0; /*cpu.dacr = value;*/ }
         } x;
         return x;
       } break;
       
     }
 
-  logger << DebugError << "Unknown CP15 instruction: crn=" << crn << ", opc1=" << opcode1 << ", crm=" << crm << ", opc2=" << opcode2 << EndDebugError;
-  this->Stop( -1 );
+  logger << DebugError << "Unknown CP15 register"
+         << ": CRn=" << unsigned(crn)
+         << ", opc1=" << unsigned(opcode1)
+         << ", CRm=" << unsigned(crm)
+         << ", opc2=" << unsigned(opcode2)
+         << ", pc=" << std::hex << current_pc << std::dec
+         << EndDebugError;
   
   static struct CP15Error : public CP15Reg {
     char const* Describe() { return "Unknown CP15 register"; }
-    void Write( CPU&, uint32_t ) {}
-    uint32_t Read( CPU& ) { return 0; }
   } err;
   return err;
 }

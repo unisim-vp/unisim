@@ -35,7 +35,6 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
-#include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/extregbank.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
@@ -71,6 +70,7 @@ struct CPU
 {
   typedef CONFIG Config;
   typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR fpscr_type;
+  typedef unisim::component::cxx::processor::arm::PSR psr_type;
   typedef double   F64;
   typedef float    F32;
   typedef uint8_t  U8;
@@ -81,6 +81,7 @@ struct CPU
   typedef int16_t  S16;
   typedef int32_t  S32;
   typedef int64_t  S64;
+  typedef bool     BOOL;
   
   /*
    * ARM architecture constants
@@ -283,6 +284,8 @@ struct CPU
     return *(itr->second);
   }
   
+  void RequiresPL(unsigned rpl);
+  
   Mode& CurrentMode() { return GetMode(cpsr.Get(M)); }
   
   /** Get the value contained by a banked register GPR.
@@ -332,7 +335,9 @@ struct CPU
 
 public:
   void     UnpredictableInsnBehaviour();
+  void     Assert( bool condition ) { if (not condition) UnpredictableInsnBehaviour(); }
   void     CallSupervisor( uint16_t imm );
+  bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   
 protected:
   void     HandleSynchronousException();
@@ -360,8 +365,9 @@ protected:
   struct CP15Reg
   {
     virtual            ~CP15Reg() {}
-    virtual void        Write( CPU& cpu, uint32_t value ) = 0;
-    virtual uint32_t    Read( CPU& cpu ) = 0;
+    virtual unsigned    RequiredPL() { return 1; }
+    virtual void        Write( CPU& cpu, uint32_t value ) { cpu.UnpredictableInsnBehaviour(); }
+    virtual uint32_t    Read( CPU& cpu ) { cpu.UnpredictableInsnBehaviour(); return 0; }
     virtual char const* Describe() = 0;
   };
   
@@ -390,8 +396,8 @@ protected:
   
   // /** CP15 */
   // CP15 cp15;
+  uint32_t midr; /*< MIDR, Main ID Register */
   uint32_t sctlr; 
-  uint32_t ttbr0; /*< Translation Table Base Register 0 */
 
 public:
   // VFP/NEON registers

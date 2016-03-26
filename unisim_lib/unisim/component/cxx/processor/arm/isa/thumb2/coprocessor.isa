@@ -345,8 +345,9 @@ cp15_mrc.disasm = {
 
 cp15_mrc.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
-
-  uint32_t value = cpu.CP15ReadRegister( crn, opc1, crm, opc2 );
+  
+  typedef typename ARCH::U32 U32;
+  U32 value = cpu.CP15ReadRegister( crn, opc1, crm, opc2 );
   if (rt != 15)
     cpu.SetGPR( rt, value );
   else

@@ -129,27 +129,35 @@ eret.disasm = {
  * and the CPSR.M mode field, without changing the other CPSR bits.
  */ 
 
-op cps_chmod( 0b1111[4]: 0b00010000[8]: 0b00[2]: 0b1[1]: 0b0[1]: 0b0000000[7]: aif[3]: 0b0[1]: mode[5] );
+op cps( 0b1111[4]: 0b00010000[8]: chitm[1]: dis[1]: chmod[1]: 0b00000000[8]: a[1]: i[1]: f[1]: 0b0[1]: mode[5] );
+cps.var reject : {Reject} = {(not chmod and (mode != 0)) or
+                             (chitm xor (a or i or f)) or
+                             (not (chmod or chitm)) or
+                             (not chitm and dis)};
 
-cps_chmod.disasm = {
-  buffer << "cps\t" << DisasmI( mode );
+cps.disasm = {
+  buffer << "cps";
+  char const* sep = "\t";
+  if (chitm) {
+    buffer << (dis?"id":"ie") << '\t' << (a?"a":"") << (i?"i":"") << (f?"f":"");
+    sep = ", ";
+  }
+  if (chmod)
+    buffer << sep << DisasmI( mode );
 };
 
-op cps_chint( 0b1111[4]: 0b00010000[8]: 0b1[1]: dis[1]: 0b0[1]: 0b0[1]: 0b0000000[7]: aif[3]: 0b0[1]: 0b00000[5] );
-
-cps_chint.disasm = {
-  buffer << "cpsi" << (dis?'d':'e') << (aif ? "\t" : "");
-  for (int bit = 3; --bit >= 0;)
-    if ((aif >> bit) & 1) buffer << ("fia"[bit]);
-};
-
-op cps_chintmod( 0b1111[4]: 0b00010000[8]: 0b1[1]: dis[1]: 0b1[1]: 0b0[1]: 0b0000000[7]: aif[3]: 0b0[1]: mode[5] );
-
-cps_chintmod.disasm = {
-  buffer << "cpsi" << (dis?'d':'e') << '\t';
-  for (int bit = 3; --bit >= 0;)
-    if ((aif >> bit) & 1) buffer << ("fia"[bit]);
-  buffer << "," << DisasmI( mode );
+cps.execute = {
+  if (GetNativeValue(cpu.CPSR().Get(M)) != cpu.USER_MODE)
+    return;
+  typename ARCH::psr_type cpsr_val = cpu.CPSR();
+  typedef typename ARCH::U32 U32;
+  if (a)     cpsr_val.Set( A, U32(dis) );
+  if (i)     cpsr_val.Set( I, U32(dis) );
+  if (f)     cpsr_val.Set( F, U32(dis) );
+  if (chmod) cpsr_val.Set( M, U32(mode) );
+  
+  // CPSRWriteByInstr() checks for illegal mode changes
+  CPSRWriteByInstr( cpu, cpsr_val.bits(), 0b1111, false );
 };
 
 /*
@@ -207,7 +215,8 @@ subspc_imm.disasm = {
 subspc_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2;
   
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
   
@@ -222,10 +231,11 @@ subspc_imm_shift.disasm = {
 
 subspc_imm_shift.execute = {
   if (not CheckCondition(cpu, cond)) return;
-
-  uint32_t rmval = cpu.GetGPR( rm ),
-           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 - op2;
+  
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ),
+      op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+      res = op1 - op2;
 
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
   

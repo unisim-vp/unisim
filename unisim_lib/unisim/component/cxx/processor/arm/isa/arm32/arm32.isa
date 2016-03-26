@@ -48,23 +48,40 @@ decl {
 #include <stdint.h>
 } // end of decl
 
-impl {
-#include "unisim/component/cxx/processor/arm/models.hh"
-#include "unisim/component/cxx/processor/arm/disasm.hh"
-#include "unisim/component/cxx/processor/arm/execute.hh"
-#include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/util/arithmetic/arithmetic.hh"
-#include <iostream>
-#include <iomanip>
-} // end of impl
-
 action {void} execute({ARCH &} {cpu}) {
-  throw unisim::component::cxx::processor::arm::exception::UndefInstrException();
+  cpu.UndefinedInstruction( this );
 }
 
 action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer}) {
-  buffer << "Unknown instruction (arm32)";
+  buffer << "; Unknown ARM instruction";
 }
+
+impl {
+#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/endian/endian.hh>
+#include <iostream>
+#include <iomanip>
+
+// TODO: this should really goes in a <types.hh> header
+template <typename VALTYPE> VALTYPE GetNativeValue( VALTYPE x ) { return x; }
+
+using unisim::util::arithmetic::CountLeadingZeros;
+using unisim::util::endian::ByteSwap;
+using unisim::util::arithmetic::RotateRight;
+// using unisim::util::arithmetic::UnsignedAdd8;
+// using unisim::util::arithmetic::SignedSatAdd32;
+// using unisim::util::arithmetic::SignedSatSub32;
+// using unisim::util::arithmetic::SignExtend;
+// using unisim::util::arithmetic::UnsignedSatSub8;
+// using unisim::util::arithmetic::RotateRight;
+// using unisim::util::arithmetic::UnsignedSub8;
+
+#include <unisim/component/cxx/processor/arm/execute.hh>
+
+} // end of impl
 
 include "data_processing.isa"
 include "load_store.isa"

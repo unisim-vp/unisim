@@ -24,9 +24,14 @@ namespace hostfloat {
   };
   
   template <typename operT, typename fpscrT>
-  void
+  bool
   FloatFlushToZero( operT& op, fpscrT& fpscr )
-  {}
+  {
+    int fptype = std::fpclassify(op);
+    if ((fptype != FP_SUBNORMAL) or (fptype == FP_ZERO)) return false;
+    op = 0.0;
+    return true;
+  }
   
   template <typename operT, typename fpscrT>
   void FloatAdd( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 + op2; }
@@ -62,13 +67,28 @@ namespace hostfloat {
   void FloatAbs( float& res, float op, fpscrT& fpscr ) { res = fabsf( op ); }
   
   template <typename operT, typename fpscrT>
-  bool FloatIsSNaN( operT op, fpscrT const& fpscr ) { return false; }
+  bool FloatIsSNaN( operT op, fpscrT const& fpscr ) { return isnan( op ) and issignaling( op ); }
   
   template <typename operT, typename fpscrT>
-  bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return false; }
+  bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return isnan( op ) and not issignaling( op ); }
   
-  template <typename operT, typename fpscrT>
-  void FloatSetQuietBit( operT& op, fpscrT const& fpscr ) {}
+  template <typename fpscrT>
+  void FloatSetQuietBit( double& op, fpscrT const& fpscr )
+  {
+    ieee754_double ud;
+    ud.d = op;
+    ud.ieee_nan.quiet_nan = 1;
+    op = ud.d;
+  }
+  
+  template <typename fpscrT>
+  void FloatSetQuietBit( float& op, fpscrT const& fpscr )
+  {
+    ieee754_float uf;
+    uf.f = op;
+    uf.ieee_nan.quiet_nan = 1;
+    op = uf.f;
+  }
   
   template <typename fpscrT>
   void FloatSetDefaultNan( double& result, fpscrT const& fpscr )

@@ -48,8 +48,9 @@ bl_w.disasm = {
 bl_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( 14, cpu.GetNPC() | typename ARCH::U32(1) );
-  cpu.Branch( cpu.GetGPR( 15 ) + imm );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( 14, cpu.GetNPC() | U32(1) );
+  cpu.Branch( cpu.GetGPR( 15 ) + U32(imm) );
 };
 
 op blx_w( 0b11110[5]: shl<12> sext<32> imm1[11]:> <: 0b11[2]: shl<23> j1[1]: 0b0[1]: shl<22> j2[1]: shl<2> imm0[10]: 0b0[1] );
@@ -62,8 +63,9 @@ blx_w.disasm = {
 blx_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( 14, cpu.GetNPC() | typename ARCH::U32(1) );
-  cpu.BranchExchange( (cpu.GetGPR( 15 ) + imm) & -4 );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( 14, cpu.GetNPC() | U32(1) );
+  cpu.BranchExchange( (cpu.GetGPR( 15 ) + U32(imm)) & U32(-4) );
 };
 
 op cbnz( 0b1011[4]: nz[1]: 0b0[1]: shl<6> imm1[1]: 0b1[1]: shl<1> imm0[5]: rn[3] );
@@ -74,7 +76,11 @@ cbnz.disasm = {
 };
 
 cbnz.execute = {
-  if ((cpu.GetGPR( rn ) == 0) xor nz) cpu.Branch( cpu.GetGPR( 15 ) + imm );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::BOOL BOOL;
+  
+  if (GetNativeValue((cpu.GetGPR( rn ) == U32(0)) xor BOOL(nz)))
+    cpu.Branch( cpu.GetGPR( 15 ) + U32(imm) );
 };
 
 op bcc_w( 0b11110[5]: shl<20> sext<32> imm4[1]: cond[4]: shl<12> imm1[6]:> <: 0b10[2]: shl<18> imm2[1]: 0b0[1]: shl<19> imm3[1]: shl<1> imm0[11] );
@@ -87,7 +93,9 @@ bcc_w.disasm = {
 
 bcc_w.execute = {
   // Note: according to specification, if InITBlock() then UNPREDICTABLE;
-  if (CheckCondition(cpu, cond)) cpu.Branch( cpu.GetGPR( 15 ) + imm );
+  typedef typename ARCH::U32 U32;
+  if (CheckCondition(cpu, cond))
+    cpu.Branch( cpu.GetGPR( 15 ) + U32( imm ) );
 };
 
 op b_w( 0b1111[4]: 0b0[1]: shl<22> sext<32> imm4[1]: shl<12> imm1[10]:> <: 0b10[2]: shl<23> imm3[1]: 0b1[1]: shl<22> imm2[1]: shl<1> imm0[11] );
@@ -100,7 +108,8 @@ b_w.disasm = {
 b_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.Branch( cpu.GetGPR( 15 ) + imm );
+  typedef typename ARCH::U32 U32;
+  cpu.Branch( cpu.GetGPR( 15 ) + U32(imm) );
 };
 
 op bxj( 0b111100111100[12]: ra[4]:> <: 0b1000111100000000[16] );
@@ -149,5 +158,5 @@ tbh.disasm = {
 tbh.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.Branch( cpu.GetGPR( 15 ) + (cpu.MemRead16( cpu.GetGPR( rn ) + (cpu.GetGPR( rm ) << 1) ) << 1) );
+  cpu.Branch( cpu.GetGPR( 15 ) + (cpu.MemURead16( cpu.GetGPR( rn ) + (cpu.GetGPR( rm ) << 1) ) << 1) );
 }

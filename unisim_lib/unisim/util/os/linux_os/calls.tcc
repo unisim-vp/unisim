@@ -608,7 +608,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMemString(Linux& lin, ADD
         return false;
       }
       uint8_t buffer;
-      if (not ReadMem(lin, addr, &buffer, 1)) return false;
+      if (not ReadMem(lin, tail, &buffer, 1)) return false;
+      if (buffer == '\0') break;
     }
   
   str.resize( len, '*' );
@@ -1055,7 +1056,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         if(unlikely(lin.verbose_))
           lin.logger_ << DebugInfo << "brk(new_brk_point=0x" << std::hex << new_brk_point << ")" << EndDebugInfo;
   
-        SysCall::SetStatus(lin, new_brk_point, false);
+        SysCall::SetStatus(lin, lin.brk_point_, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;

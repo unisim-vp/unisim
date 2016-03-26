@@ -37,9 +37,6 @@
 
 
 #include <unisim/component/cxx/processor/arm/register_field.hh>
-#include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/logger/logger.hh>
-#include <unisim/util/endian/endian.hh>
 #include <inttypes.h>
 
 namespace unisim {
