@@ -70,7 +70,7 @@
 struct ZynqRouterConfig
 {
   typedef uint32_t ADDRESS;
-  static unsigned const OUTPUT_PORTS = 3;
+  static unsigned const OUTPUT_PORTS = 4;
   static unsigned const INPUT_SOCKETS = 1;
   static unsigned const OUTPUT_SOCKETS = OUTPUT_PORTS;
   static unsigned const MAX_NUM_MAPPINGS = OUTPUT_PORTS;
@@ -83,77 +83,77 @@ struct ZynqRouter : public unisim::component::tlm2::interconnect::generic_router
 {
   ZynqRouter( char const* name, unisim::kernel::service::Object* parent = 0 );
   void set_abs_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end );
-  void set_rel_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end );
+  void set_rel_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, uint64_t offset = 0 );
 };
 
 struct GIC
   : public sc_module
-  , public tlm::tlm_fw_transport_if<>
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
 {
   //typedef tlm::tlm_base_protocol_types TYPES;
   static unsigned const BUSWIDTH = 32;
   static unsigned const ITLinesNumber = 7;
   static unsigned const ITLinesCount = 32*(ITLinesNumber+1);
-  tlm::tlm_target_socket<BUSWIDTH> dist_sock;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
   
   GIC(const sc_module_name& name, unisim::kernel::service::Object* parent = 0);
-  
-  /*** TLM2 Slave methods ***/
-  virtual bool               get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data) { return false; }
-  virtual unsigned int       transport_dbg(tlm::tlm_generic_payload& payload);
-  virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
-  virtual void               b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
   
   struct Data
   {
     Data( uint8_t* _ptr ) : ptr( _ptr ) {} uint8_t* ptr;
     template <typename T>
-    void operator >> ( T& val ) const { T tmp(0); for (int idx = sizeof(T); --idx >= 0;) val = (val << 8) | T(ptr[idx]); val = tmp; }
-    template <typename T>
-    void operator << ( T val ) const { for (int idx = 0, end = sizeof(T); idx < end; ++ idx, val >>= 8) ptr[idx] = val; }
+    void Access( bool wnr, T& val ) const
+    {
+      T tmp(val);
+      if (wnr)
+        { for (int idx = 0, end = sizeof(T); idx < end; ++ idx, tmp >>= 8) ptr[idx] = tmp; }
+      else
+        { for (int idx = sizeof(T); --idx >= 0;) tmp = (tmp << 8) | T(ptr[idx]); val = tmp; }
+    }
+    void Access( bool wnr, uint8_t* bytes, unsigned size ) const
+    {
+      if (wnr)
+        for (unsigned idx = 0; idx < size; ++idx) ptr[idx] = bytes[idx];
+      else
+        for (unsigned idx = 0; idx < size; ++idx) bytes[idx] = ptr[idx];
+    }
   };
   
-  struct Reg
+  struct IF
+    : public tlm::tlm_fw_transport_if<>
   {
-    virtual ~Reg() {}
-    virtual bool Read( GIC&, uint32_t, Data const& ) { return false; }
-    virtual bool Write( GIC&, uint32_t, Data const& ) { return false; }
+    GIC& gic;
+    tlm::tlm_target_socket<BUSWIDTH> socket;
+    IF( GIC&, char const* );
+    
+    /*** TLM2 Slave methods ***/
+    bool               get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data) { return false; }
+    unsigned int       transport_dbg(tlm::tlm_generic_payload& payload);
+    tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
+    void               b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
+    virtual bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d ) = 0;
   };
   
-  Reg& GetRegister( uint32_t addr, unsigned size );
-  
-  enum { GICD_CTLR = 0, r32count };
-  uint32_t r32[r32count];
-  
-  static unsigned const gicd_icfgr_count = 2*(ITLinesNumber+1);
-  uint32_t d_icfgr[ITLinesCount/16];
-  uint8_t  d_ipriorityr[ITLinesCount];
- 
-};
+  struct DistIF : public IF
+  {
+    DistIF( GIC& );
 
-struct PERIPH
-  : public sc_module
-  , public tlm::tlm_fw_transport_if<>
-  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
-{
-  //typedef tlm::tlm_base_protocol_types TYPES;
-  static unsigned const BUSWIDTH = 32;
-  tlm::tlm_target_socket<BUSWIDTH> slave_sock;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
+    uint32_t CTLR;
+    static unsigned const icfgr_count = 2*(ITLinesNumber+1);
+    uint32_t ICFGR[ITLinesCount/16];
+    uint8_t  IPRIORITYR[ITLinesCount];
+    static unsigned const ien_count = (ITLinesNumber+1);
+    uint32_t IENABLER[ien_count];
+    
+    bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
+  } d;
   
-  PERIPH(const sc_module_name& name, unisim::kernel::service::Object* parent = 0);
-  virtual ~PERIPH() {}
-  
-  /*** TLM2 Slave methods ***/
-  virtual bool               get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data);
-  virtual unsigned int       transport_dbg(tlm::tlm_generic_payload& payload);
-  virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
-  virtual void               b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
-  
-  void Read( uint32_t addr, uint8_t* data, unsigned size );
-  void Write( uint32_t addr, uint8_t const* data, unsigned size );
+  struct CpuIF : public IF
+  {
+    CpuIF( GIC& );
+
+    bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
+  } c;
 };
 
 struct Simulator : public unisim::kernel::service::Simulator

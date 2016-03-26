@@ -49,13 +49,13 @@ ZynqRouter::set_abs_mapping( unsigned output_port, uint64_t range_start, uint64_
 }
 
 void
-ZynqRouter::set_rel_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end )
+ZynqRouter::set_rel_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, uint64_t offset )
 {
   this->mapping[output_port].used = true;
   this->mapping[output_port].range_start = range_start;
   this->mapping[output_port].range_end =   range_end;
   this->mapping[output_port].output_port = output_port;
-  this->mapping[output_port].translation = 0;
+  this->mapping[output_port].translation = offset;
 }
 
 ZynqRouter::ZynqRouter(const char* name, unisim::kernel::service::Object* parent)
@@ -65,6 +65,7 @@ ZynqRouter::ZynqRouter(const char* name, unisim::kernel::service::Object* parent
   this->set_abs_mapping( 0, 0x00000000, 0x3fffffff ); /* Main OCM RAM */
   this->set_abs_mapping( 1, 0xffff0000, 0xffffffff ); /* Boot OCM ROM */
   this->set_rel_mapping( 2, 0xf8f01000, 0xf8f01fff ); /* GIC */
+  this->set_rel_mapping( 3, 0xf8f00100, 0xf8f001ff ); /* GIC */
 }
 
 /**
@@ -77,16 +78,23 @@ GIC::GIC(const sc_module_name& name, unisim::kernel::service::Object* parent)
   : unisim::kernel::service::Object( name, parent )
   , sc_module(name)
   , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
-  , dist_sock("dist_sock")
   , trap_reporting_import("trap-reporting-import", this)
+  , d( *this )
+  , c( *this )
 {
-  dist_sock( *this );
 }
 
-unsigned int GIC::transport_dbg(tlm::tlm_generic_payload& payload) { throw 0; return 0; }
+GIC::IF::IF( GIC& _gic, char const* socket_name )
+  : gic( _gic )
+  , socket( socket_name )
+{
+  socket( *this );
+}
+
+unsigned int GIC::IF::transport_dbg(tlm::tlm_generic_payload& payload) { throw 0; return 0; }
 
 tlm::tlm_sync_enum
-GIC::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+GIC::IF::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
   if (phase != tlm::BEGIN_REQ) { throw 0; }
   
@@ -95,76 +103,10 @@ GIC::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, s
   return tlm::TLM_COMPLETED;
 }
 
-
-GIC::Reg&
-GIC::GetRegister( uint32_t addr, unsigned size )
-{
-  static struct : public Reg
-  {
-    bool Read( GIC&, Data const& d ) { d << uint32_t(0); return true; }
-    bool Write( GIC&, Data const& d ) { return true; }
-  } RAZ_WI;
-  
-  if (((addr|size) & (size-1)) == 0) {
-    if (size == 4) {
-      if      ((addr & -0x400) == 0x800) {
-        // GICD_ITARGETSRn
-        return RAZ_WI;
-      }
-      
-      if ((addr & -0x100) == 0xc00) {
-        static struct : public Reg {
-          uint32_t& RV( GIC& gic, uint32_t addr ) const {
-            unsigned idx = ((addr & 0xff) >> 2);
-            if (idx < gicd_icfgr_count) return gic.d_icfgr[idx];
-            static uint32_t RAZ_RI;
-            return RAZ_RI = 0;
-          }
-          bool  Read( GIC& gic, uint32_t addr, Data const& d ) { d << RV(gic,addr); return true; }
-          bool Write( GIC& gic, uint32_t addr, Data const& d ) { d >> RV(gic,addr); return true; }
-        } d32_icfgr;
-        return d32_icfgr;
-      }
-      
-      struct : public Reg
-      {
-        static int regidx(uint32_t addr) {
-          switch (addr) {
-          case 0: return GICD_CTLR; 
-          }
-          return -1;
-        }
-        bool  Read( GIC& gic, uint32_t addr, Data const& d ) { d << (gic.r32[regidx(addr)]); return true; }
-        bool Write( GIC& gic, uint32_t addr, Data const& d ) { d >> (gic.r32[regidx(addr)]); return true; }
-      } r32_access;
-      
-      if (r32_access.regidx(addr) >= 0)
-        return r32_access;
-  
-      switch (addr) {
-      case 4: {
-        static struct : public Reg {
-          bool Read( GIC& gic, Data const& d ) { d << uint32_t( gic.ITLinesNumber ); return true; }
-        } GICD_TYPER;
-        return GICD_TYPER;
-      } break;
-      }
-    }
-  }
-  
-  std::cerr << "Illegal GIC register address: [" << std::hex << addr << "," << std::dec << size << "].\n";
-  static Reg error_reg;
-  return error_reg;
-}
-
 void
-GIC::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+GIC::IF::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
   payload.set_dmi_allowed( false );
-  
-  uint32_t addr = payload.get_address();
-  uint8_t* data_ptr = payload.get_data_ptr();
-  unsigned data_length = payload.get_data_length();
   
   if (uint8_t* byte_enable_ptr = payload.get_byte_enable_ptr())
     {
@@ -172,96 +114,129 @@ GIC::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
         if (not byte_enable_ptr[idx])
           throw 0;
     }
-  // unsigned int streaming_width = payload.get_streaming_width();
-  bool status = true;
   
-  switch (payload.get_command())
+  // unsigned int streaming_width = payload.get_streaming_width();
+  bool status = false;
+  
+  tlm::tlm_command cmd = payload.get_command();
+  switch (cmd)
     {
-    case tlm::TLM_READ_COMMAND:  status = GetRegister( addr, data_length ) .Read( *this, addr, Data( data_ptr ) ); break;
-    case tlm::TLM_WRITE_COMMAND: status = GetRegister( addr, data_length ).Write( *this, addr, Data( data_ptr ) ); break;
-    case tlm::TLM_IGNORE_COMMAND: break;
-    default: throw 0;
+    case tlm::TLM_READ_COMMAND:
+    case tlm::TLM_WRITE_COMMAND: {
+      uint32_t addr = payload.get_address(), size = payload.get_data_length();
+      
+      if ((addr|size) & (size-1))
+        std::cerr << "Malformed GIC register address: [" << std::hex << addr << "," << std::dec << size << "].\n";
+      else
+        status = AccessRegister( cmd == tlm::TLM_WRITE_COMMAND, addr, size, Data( payload.get_data_ptr() ) );
+    } break;
+    case tlm::TLM_IGNORE_COMMAND:
+      break;
+    default:
+      throw 0;
     }
   
   tlm::tlm_response_status resp_status = status ? tlm::TLM_OK_RESPONSE : tlm::TLM_ADDRESS_ERROR_RESPONSE;
   payload.set_response_status( resp_status );
 }
 
-PERIPH::PERIPH(const sc_module_name& name, unisim::kernel::service::Object* parent)
-  : unisim::kernel::service::Object( name, parent )
-  , sc_module(name)
-  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
-  , slave_sock("slave_sock")
-  , trap_reporting_import("trap-reporting-import", this)
+GIC::DistIF::DistIF( GIC& _gic )
+  : IF( _gic, "dist_socket" )
 {
-  slave_sock(*this);
+  CTLR = 0;
+  memset( &ICFGR[0], 0, sizeof (ICFGR) );
+  memset( &IPRIORITYR[0], 0, sizeof (IPRIORITYR) );
+  memset( &IENABLER[0], 0, sizeof (IENABLER) );
+}
+
+namespace {
+  template <uint32_t BITS, uint32_t MASK>
+  struct Match {
+    Match( uint32_t value ) : ok( ((value ^ BITS) & MASK) == 0 ), var( value & ~MASK ) {} bool ok; uint32_t var;
+    operator bool () const { return ok; }
+  };
 }
 
 bool
-PERIPH::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
+GIC::DistIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
 {
-  throw 0;
+  std::cerr << "GICD register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n"; 
+  
+  if (size == 4) {
+    uint32_t RAZ_WI(0);
+    
+    if (Match<0x100,-0x80> m = addr) /* GICD_ISENABLER */ {
+      unsigned idx = m.var >> 2;
+      if (idx > ien_count)
+        d.Access( wnr, RAZ_WI );
+      else {
+        uint32_t value = IENABLER[idx];
+        d.Access( wnr, value );
+        if (wnr) IENABLER[idx] |= value;
+      }
+      return true;
+    }
+    
+    if (Match<0x180,-0x80> m = addr) /* GICD_ICENABLER */ {
+      unsigned idx = m.var >> 2;
+      if (idx > ien_count)
+        d.Access( wnr, RAZ_WI );
+      else {
+        uint32_t value = IENABLER[idx];
+        d.Access( wnr, value );
+        if (wnr) IENABLER[idx] &= ~value;
+      }
+      return true;
+    }
+    
+    if (Match<0x400,-0x400> m = addr) /* GICD_IPRIORITYR */ {
+      unsigned idx = m.var;
+      if (idx < GIC::ITLinesCount)
+        d.Access( wnr, &IPRIORITYR[idx], 4 );
+      else
+        d.Access( wnr, RAZ_WI );
+      return true;
+    }
+    
+    if (Match<0x800,-0x400> m = addr) /* GICD_ITARGETSR */ {
+      d.Access( wnr, RAZ_WI );
+      return true;
+    }
+    
+    if (Match<0xc00,-0x100> m = addr) /* GICD_ICFGR */ {
+      unsigned idx = m.var >> 2;
+      d.Access( wnr, (idx < icfgr_count) ? ICFGR[idx] : RAZ_WI );
+      return true;
+    }
+    
+    switch (addr) {
+    case 0:
+      d.Access( wnr, CTLR );
+      return true;
+      
+    case 4:
+      if (wnr) return false;
+      uint32_t result = ITLinesNumber;
+      d.Access( false, result );
+      return true;
+    }
+  }
+  
+  std::cerr << "Unknown GICD register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
   return false;
 }
 
-unsigned int
-PERIPH::transport_dbg(tlm::tlm_generic_payload& payload)
+GIC::CpuIF::CpuIF( GIC& _gic )
+  : IF( _gic, "cpu_socket" )
 {
-  throw 0;
-  return 0;
+  
 }
 
-tlm::tlm_sync_enum
-PERIPH::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+bool
+GIC::CpuIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
 {
-  if (phase != tlm::BEGIN_REQ) { throw 0; }
-  
-  this->b_transport(payload, t);
-  
-  return tlm::TLM_COMPLETED;
-}
-
-void
-PERIPH::Read( uint32_t addr, uint8_t* data, unsigned size )
-{
-  if (trap_reporting_import)
-    trap_reporting_import->ReportTrap( *this );
-}
-void
-PERIPH::Write( uint32_t addr, uint8_t const* data, unsigned size )
-{
-  if (trap_reporting_import)
-    trap_reporting_import->ReportTrap( *this );
-}
-
-void
-PERIPH::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
-{
-  payload.set_dmi_allowed( false );
-  
-  uint32_t addr = payload.get_address();
-  uint8_t* data_ptr = payload.get_data_ptr();
-  unsigned data_length = payload.get_data_length();
-  
-  if (uint8_t* byte_enable_ptr = payload.get_byte_enable_ptr())
-    {
-      for (int idx = int(payload.get_byte_enable_length()); --idx >= 0; )
-        if (not byte_enable_ptr[idx])
-          throw 0;
-    }
-  // unsigned int streaming_width = payload.get_streaming_width();
-  // bool status = false;
-  
-  tlm::tlm_command cmd = payload.get_command();
-  switch (cmd)
-    {
-    case tlm::TLM_READ_COMMAND: Read( addr, data_ptr, data_length ); break;
-    case tlm::TLM_WRITE_COMMAND: Write( addr, data_ptr, data_length ); break;
-    case tlm::TLM_IGNORE_COMMAND: break;
-    default: throw 0;
-    }
-  
-  payload.set_response_status(tlm::TLM_OK_RESPONSE);
+  std::cerr << "Unknown GICC register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
+  return false;
 }
 
 Simulator::Simulator(int argc, char **argv)
@@ -319,14 +294,15 @@ Simulator::Simulator(int argc, char **argv)
 
   (*router.init_socket[0])( main_ram.slave_sock );
   (*router.init_socket[1])( boot_rom.slave_sock );
-  (*router.init_socket[2])( gic.dist_sock );
+  (*router.init_socket[2])( gic.d.socket );
+  (*router.init_socket[3])( gic.c.socket );
   
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;
   cpu.instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
   gic.trap_reporting_import >> debugger->trap_reporting_export;
   //cpu.symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-	cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
+  cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   debugger->disasm_import >> cpu.disasm_export;
   debugger->memory_import >> cpu.memory_export;
   *loader.memory_import[0] >> main_ram.memory_export;
