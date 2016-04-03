@@ -77,11 +77,6 @@ ieee1666/tlm_utils/peq_with_get.h \
 ieee1666/tlm_utils/peq_with_cb_and_phase.h \
 ieee1666/tlm_utils/tlm_quantumkeeper.h
 
-BUILT_SOURCES = ieee1666/core/features.h
-
-CLEANFILES = \
-$(top_builddir)/ieee1666/core/features.h
-
 lib_LTLIBRARIES = libieee1666.la
 libieee1666_la_SOURCES = \
 ieee1666/core/attribute.cc \
@@ -154,25 +149,6 @@ pkg/deb/libieee1666.install.in \
 pkg/deb/libieee1666-dev.install.in \
 pkg/deb/libieee1666-static-dev.install.in \
 pkg/deb/source/format.in
-
-ieee1666/core/features.h: Makefile
-	@echo "Generating $@"; \
-	echo "// Do not modify: this file is generated while building process." > $@; \
-	echo "#ifndef __IEEE1666_CORE_FEATURES_H__" >> $@; \
-	echo "#define __IEEE1666_CORE_FEATURES_H__" >> $@; \
-	echo "#ifndef SC_THREAD_PROCESSES_USE_PTHREADS" >> $@; \
-	if test ${SC_THREAD_PROCESSES_USE_PTHREADS} -ne 0; then \
-		echo "// using POSIX threads for SystemC thread processes" >> $@; \
-	else \
-		echo "// using boost coroutine for SystemC thread processes" >> $@; \
-	fi; \
-	echo "#define SC_THREAD_PROCESSES_USE_PTHREADS $(SC_THREAD_PROCESSES_USE_PTHREADS)" >> $@; \
-	echo "#endif" >> $@; \
-	echo "#define PACKAGE_VERSION_MAJOR $(PACKAGE_VERSION_MAJOR)" >> $@; \
-	echo "#define PACKAGE_VERSION_MINOR $(PACKAGE_VERSION_MINOR)" >> $@; \
-	echo "#define PACKAGE_VERSION_PATCH $(PACKAGE_VERSION_PATCH)" >> $@; \
-	echo "#define PACKAGE_VERSION \"$(PACKAGE_VERSION)\"" >> $@; \
-	echo "#endif" >> $@
 
 rpm-source: $(top_builddir)/$(PACKAGE_NAME).spec dist-gzip
 	mkdir -p $(HOME)/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}

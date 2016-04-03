@@ -87,7 +87,7 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	, param_bytesize("bytesize", this, bytesize, "memory size in bytes")
 	, stat_memory_usage("memory-usage", this, memory_usage, (std::string("target memory usage in bytes (page granularity of ") + u32toa(PAGE_SIZE) + " bytes)").c_str())
 	, initial_byte_value(0x00)
-	, param_initial_byte_value("initial-byte-value", this, initial_byte_value)
+	, param_initial_byte_value("initial-byte-value", this, initial_byte_value, "initial value for all bytes of memory")
 
 {
 	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);

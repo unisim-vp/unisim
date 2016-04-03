@@ -41,14 +41,14 @@
 namespace sc_core {
 
 #define IEEE_1666_SYSTEMC 201101L
-#define SC_VERSION_MAJOR PACKAGE_VERSION_MAJOR  // implementation-defined_number
-#define SC_VERSION_MINOR PACKAGE_VERSION_MINOR  // implementation-defined_number
-#define SC_VERSION_PATCH PACKAGE_VERSION_PATCH  // implementation-defined_number
+#define SC_VERSION_MAJOR LIBIEEE1666_PACKAGE_VERSION_MAJOR  // implementation-defined_number
+#define SC_VERSION_MINOR LIBIEEE1666_PACKAGE_VERSION_MINOR  // implementation-defined_number
+#define SC_VERSION_PATCH LIBIEEE1666_PACKAGE_VERSION_PATCH  // implementation-defined_number
 #define SC_VERSION_ORIGINATOR "CEA"             // implementation-defined_string
 #define SC_VERSION_RELEASE_DATE "20160317"      // implementation-defined_date
 #define SC_VERSION_PRERELEASE "alpha"           // implementation-defined_string
 #define SC_IS_PRERELEASE 1                      // implementation-defined_bool
-#define SC_VERSION PACKAGE_VERSION SC_VERSION_PRERELEASE "-" SC_VERSION_ORIGINATOR        // implementation-defined_string
+#define SC_VERSION LIBIEEE1666_PACKAGE_VERSION SC_VERSION_PRERELEASE "-" SC_VERSION_ORIGINATOR        // implementation-defined_string
 #define SC_COPYRIGHT "Copyright (c) 2014-2016,\nCommissariat a l'Energie Atomique (CEA)\nAll rights reserved\n"   // implementation-defined_string
 	
 extern const unsigned int sc_version_major;

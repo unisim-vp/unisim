@@ -46,8 +46,9 @@
 #include <limits>
 #include <sstream>
 
-#ifndef DLL_EXPORT
-extern int sc_main(int argc, char *argv[]);
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#include <windows.h>
+typedef int (*sc_main_type)(int, char **);
 #endif
 
 namespace sc_core {
@@ -1268,22 +1269,20 @@ void sc_kernel::dump_hierarchy(std::ostream& os) const
 	}
 }
 
-static int (*sc_main_cb)(int, char **) = 0;
-
-void sc_register_sc_main(int (*_sc_main_cb)(int, char **))
-{
-	sc_main_cb = _sc_main_cb;
-}
-
 int sc_elab_and_sim(int _argc, char* _argv[])
 {
 	argc = _argc;
 	argv = _argv;
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	sc_main_type sc_main = (sc_main_type) GetProcAddress(NULL, "sc_main");
 	
-#ifndef DLL_EXPORT
-	sc_main_cb = sc_main;
-#endif
-	int status = sc_main_cb(argc, argv);
+	if(!sc_main)
+	{
+		throw std::runtime_error("sc_main not available");
+	}
+#endif	
+	int status = sc_main(argc, argv);
 	
 	if(sc_kernel::kernel) delete sc_kernel::kernel;
 	return status;

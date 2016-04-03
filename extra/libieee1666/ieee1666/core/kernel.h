@@ -51,7 +51,19 @@
 #include "core/prim_channel.h"
 #include "core/process_handle.h"
 
+#if !defined(DLL_EXPORT) && (defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64))
+#define ___LIBIEEE1666_DLL_EXPORT__ __declspec(dllexport)
+#else
+#define ___LIBIEEE1666_DLL_EXPORT__
+#endif
+
+extern "C" int ___LIBIEEE1666_DLL_EXPORT__ sc_main(int argc, char *argv[]);
+
 namespace sc_core {
+
+extern "C" int sc_elab_and_sim(int argc, char* argv[]);
+extern "C" int sc_argc();
+extern "C" const char* const* sc_argv();
 
 class sc_kernel
 {
@@ -242,11 +254,6 @@ private:
 
 	sc_object *find_object(sc_object *parent_object, const char* name);	
 };
-
-void sc_register_sc_main(int (*)(int, char **)); // Note: this is not part of standard. This for a windows host when SystemC is in a DLL.
-int sc_elab_and_sim(int argc, char* argv[]);
-int sc_argc();
-const char* const* sc_argv();
 
 void sc_start();
 void sc_start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);

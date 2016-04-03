@@ -41,7 +41,7 @@
 #include <string.h>
 #include <sys/types.h>
 
-#if defined(WIN32) || defined(WIN64) /* Windows 32 */
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64) /* Windows 32 or 64 */
 
 #include <winsock2.h>
 
@@ -151,7 +151,7 @@ bool NetStub<ADDRESS>::Initialize()
 		cerr << "NETSTUB: Starting as server" << endl;
 #endif
 		struct sockaddr_in addr;
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		struct sockaddr_un addr_un;
 #endif
 		int server_sock;
@@ -174,7 +174,7 @@ bool NetStub<ADDRESS>::Initialize()
 		}
 		
 		memset(&addr, 0, sizeof(addr));
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		memset(&addr_un, 0, sizeof(addr_un));
 		if(protocol == protocol_af_inet)
 		{
@@ -184,7 +184,7 @@ bool NetStub<ADDRESS>::Initialize()
 			addr.sin_addr.s_addr = INADDR_ANY;
 			bind_failed =
 				(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0);
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		}
 		else
 		{
@@ -199,7 +199,7 @@ bool NetStub<ADDRESS>::Initialize()
 #ifdef DEBUG_NETSTUB
 			cerr << "NETSTUB: bind failed" << endl;
 #endif
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			closesocket(server_sock);
 #else
 			close(server_sock);
@@ -212,7 +212,7 @@ bool NetStub<ADDRESS>::Initialize()
 #ifdef DEBUG_NETSTUB
 			cerr << "NETSTUB: listen failed" << endl;
 #endif
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			closesocket(sock);
 #else
 			close(server_sock);
@@ -220,19 +220,19 @@ bool NetStub<ADDRESS>::Initialize()
 			return false;
 		}
 	
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		int addr_len;
 #else
 		socklen_t addr_len;
 #endif
 
 #ifdef DEBUG_NETSTUB
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		if(protocol == protocol_af_inet)
 		{
 #endif
 			cerr << "NETSTUB: Waiting for client connection on TCP port " << tcp_port << endl;
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		}
 		else
 		{
@@ -241,13 +241,13 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 #endif
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		if(protocol == protocol_af_inet) 
 		{
 #endif
 			addr_len = sizeof(addr);
 			sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		}
 		else
 		{
@@ -261,7 +261,7 @@ bool NetStub<ADDRESS>::Initialize()
 #ifdef DEBUG_NETSTUB
 			cerr << "NETSTUB: accept failed" << endl;
 #endif
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			closesocket(server_sock);
 #else
 			close(server_sock);
@@ -269,7 +269,7 @@ bool NetStub<ADDRESS>::Initialize()
 			return false;
 		}
 		
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -282,14 +282,14 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 		bool connected = false;
 		struct sockaddr_in sonadr;
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		struct sockaddr_un sonadr_un;
 		
 		if(protocol == protocol_af_inet)
 		{
 #endif
 			sock = socket(PF_INET, SOCK_STREAM, 0);
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		}
 		else
 		{
@@ -300,13 +300,13 @@ bool NetStub<ADDRESS>::Initialize()
 		if(sock < 0)
 		{
 #ifdef DEBUG_NETSTUB
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 			if(protocol == protocol_af_inet)
 			{
 #endif
 				cerr << "NETSTUB: Can't create socket for connection to " << server_name
 					<< ":" << tcp_port << endl;
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 			}
 			else
 			{
@@ -318,7 +318,7 @@ bool NetStub<ADDRESS>::Initialize()
 			return false;
 		}
 		memset((char *) &sonadr, 0, sizeof(sonadr));
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		memset((char *) &sonadr_un, 0, sizeof(sonadr_un));
 
 		if(protocol == protocol_af_inet) {
@@ -326,7 +326,7 @@ bool NetStub<ADDRESS>::Initialize()
 			sonadr.sin_family = AF_INET;
 			sonadr.sin_port = htons(tcp_port);
 			sonadr.sin_addr.s_addr = inet_addr(server_name.c_str());
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		}
 		else
 		{
@@ -336,12 +336,12 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 
 #ifdef DEBUG_NETSTUB
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		if(protocol == protocol_af_inet)
 		{
 #endif
 			cerr << "NETSTUB: Trying to connect to " << server_name << endl;
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		}
 		else
 		{
@@ -350,11 +350,11 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 #endif
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		if(protocol == protocol_af_inet)
 		{
 #endif
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			u_long addr_none = INADDR_NONE;
 #else
 			in_addr_t addr_none = INADDR_NONE;
@@ -388,7 +388,7 @@ bool NetStub<ADDRESS>::Initialize()
 					}
 				}
 			}
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 		}
 		else
 		{
@@ -397,7 +397,7 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 		if(!connected)
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			closesocket(sock);
 #else
 			close(sock);
@@ -433,7 +433,7 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 		}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		u_long NonBlock = 1;
 		if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
 		{
@@ -444,7 +444,7 @@ bool NetStub<ADDRESS>::Initialize()
 			sock = -1;
 			return false;
 		}
-#else // if defined(WIN32)
+#else // if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		int socket_flag = fcntl(sock, F_GETFL, 0);
 		
 		if(socket_flag < 0)
@@ -467,7 +467,7 @@ bool NetStub<ADDRESS>::Initialize()
 			sock = -1;
 			return false;
 		}
-#endif // if defined(WIN32)
+#endif // if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	
 		return true;
 	}
@@ -485,7 +485,7 @@ NetStub<ADDRESS>::~NetStub()
 
 	if(sock >= 0)
 	{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(sock);
 #else
 		close(sock);
@@ -523,7 +523,7 @@ bool NetStub<ADDRESS>::GetChar(char& c, bool blocking)
 	{
 		do
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int r = recv(sock, input_buffer, sizeof(input_buffer), 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -531,7 +531,7 @@ bool NetStub<ADDRESS>::GetChar(char& c, bool blocking)
 			if(r <= 0)
 #endif
 			{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
 #else
 				if(r < 0 && errno == EAGAIN)
@@ -539,7 +539,7 @@ bool NetStub<ADDRESS>::GetChar(char& c, bool blocking)
 				{
 					if(blocking)
 					{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 						Sleep(1); // sleep for 10ms
 #else
 						usleep(1000); // sleep for 10ms
@@ -577,7 +577,7 @@ bool NetStub<ADDRESS>::FlushOutput()
 		unsigned int index = 0;
 		do
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int r = send(sock, output_buffer + index, output_buffer_size, 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else

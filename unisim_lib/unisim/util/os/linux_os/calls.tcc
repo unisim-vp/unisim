@@ -40,7 +40,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <process.h>
 #include <windows.h>
 #else
@@ -63,7 +63,7 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 // see http://mathieuturcotte.ca/textes/windows-gettimeofday
 struct timezone {
   int tz_minuteswest;     /* minutes west of Greenwich */
@@ -281,7 +281,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_open()
 			if(flags & LINUX_O_EXCL) host_flags |= O_EXCL;
 			if(flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
 			if(flags & LINUX_O_APPEND) host_flags |= O_APPEND;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			host_flags |= O_BINARY; // Linux opens file as binary files
 			host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 #else
@@ -439,7 +439,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_gettid()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid()
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -483,7 +483,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_access()
 		}
 		else
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int win_mode = 0;
 			win_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 			ret = access(pathname, win_mode);
@@ -590,7 +590,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_brk()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid()
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -609,7 +609,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid()
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -628,7 +628,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getegid()
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -722,7 +722,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat(int fd, struct powerpc_stat *targe
 	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianness_, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(WIN64) || defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
 		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
@@ -781,7 +781,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat(int fd, struct powerpc_stat *targe
 	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianness_, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(WIN32) || defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
 		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
@@ -838,7 +838,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct powerpc_stat64 *target_stat)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
@@ -863,7 +863,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct powerpc_stat64 *
 	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianness_, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(WIN64) || defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
 		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
@@ -922,7 +922,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct powerpc_stat64 *
 	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianness_, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(WIN32) || defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
 		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
@@ -979,7 +979,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct powerpc_stat64 *target_stat)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	struct _stati64 host_stat;
 	ret = _stati64(pathname, &host_stat);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
@@ -1004,7 +1004,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct pow
 	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianness_, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(WIN64) || defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
 		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
@@ -1063,7 +1063,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct pow
 	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianness_, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(WIN32) || defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
 		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
@@ -1120,7 +1120,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct arm_stat64 *target_stat)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
@@ -1145,7 +1145,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct arm_stat64 *targ
 	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianness_, (uint64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(WIN64) || defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
 		Host2Target(endianness_, (uint64_t)((host_stat.st_size + 511) / 512));
@@ -1205,7 +1205,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Fstat64(int fd, struct arm_stat64 *targ
 	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianness_, (uint64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(WIN32) || defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
 		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
@@ -1262,7 +1262,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct arm_stat64 *target_stat)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	struct _stati64 host_stat;
 	ret = _stati64(pathname, &host_stat);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
@@ -1287,7 +1287,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct arm
 	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianness_, (uint64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(WIN64) || defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
 		Host2Target(endianness_, (uint64_t)((host_stat.st_size + 511) / 512));
@@ -1347,7 +1347,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(const char *pathname, struct arm
 	target_stat->st_gid = Host2Target(endianness_, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianness_, (uint64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianness_, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(WIN32) || defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianness_, (int32_t) 512);
 	target_stat->st_blocks =
 		Host2Target(endianness_, (int64_t)((host_stat.st_size + 511) / 512));
@@ -1404,7 +1404,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(struct powerpc_tms *target_tms)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;
@@ -1462,7 +1462,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(struct arm_tms *target_tms)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;
@@ -1905,7 +1905,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat64()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid32()
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -1925,7 +1925,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid32()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid32()
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -1945,7 +1945,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid32()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid32()
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -1965,13 +1965,13 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid32()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getegid32()
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
 
 	ret = getegid();
-	#endif
+#endif
 	if(unlikely(verbose_))
 	{
 		logger_ << DebugInfo
@@ -2027,7 +2027,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl()
 	}
 	else
 	{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		ret = -1;
 		SetSystemCallStatus((PARAMETER_TYPE) -LINUX_ENOSYS, true);
 #else
@@ -2067,7 +2067,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl64()
 	}
 	else
 	{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		ret = -1;
 		target_errno = LINUX_ENOSYS;
 #else
