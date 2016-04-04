@@ -966,33 +966,43 @@ T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tlm::tlm_dmi &dmi) {
 	
 	// do reverse translation on DMI
 	dmi_start_address -= mapping[mapping_id].translation;
-	//dmi_start_address += mapping[mapping_id].range_start;
+	dmi_start_address += mapping[mapping_id].range_start;
 	dmi_end_address -= mapping[mapping_id].translation;
-	//dmi_end_address += mapping[mapping_id].range_start;
+	dmi_end_address += mapping[mapping_id].range_start;
 
 	// restrict address range of DMI
 	sc_dt::uint64 start_range = mapping[mapping_id].range_start;
 	sc_dt::uint64 end_range = mapping[mapping_id].range_end;
-	
-	if(dmi_start_address < start_range)
+
+	if(dmi_end_address >= dmi_start_address) // prevent us from crazy targets behavior
 	{
-		// cut lower region
-		dmi.set_dmi_ptr(dmi.get_dmi_ptr() + (start_range - dmi_start_address));
+		if(dmi_start_address < start_range)
+		{
+			// cut lower region
+			dmi.set_dmi_ptr(dmi.get_dmi_ptr() + (start_range - dmi_start_address));
+			dmi.set_start_address(start_range);
+		}
+		else
+		{
+			dmi.set_start_address(dmi_start_address);
+		}
+			
+		if(dmi_end_address > end_range)
+		{
+			// cut upper region
+			dmi.set_end_address(end_range);
+		}
+		else
+		{
+			dmi.set_end_address(dmi_end_address);
+		}
+	}
+	else
+	{
+		// deny all crazy target address space
 		dmi.set_start_address(start_range);
-	}
-	else
-	{
-		dmi.set_start_address(dmi_start_address);
-	}
-		
-	if(dmi_end_address > end_range)
-	{
-		// cut upper region
-		dmi.set_end_address(end_range);
-	}
-	else
-	{
-		dmi.set_end_address(dmi_end_address);
+		dmi.set_start_address(end_range);
+		dmi_status = false;
 	}
 
 	// add router latency per byte

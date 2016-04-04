@@ -949,15 +949,29 @@ inline DMIRegion *DMIRegionCache::Lookup(sc_dt::uint64 addr, sc_dt::uint64 size)
 
 inline void DMIRegionCache::Insert(DMIGrant dmi_grant, tlm::tlm_dmi *dmi_data)
 {
-	DMIRegion *dmi_region = new DMIRegion(dmi_grant, dmi_data);
-	dmi_region->next = mru_dmi_region;
-	mru_dmi_region = dmi_region;
+	if(dmi_data->get_end_address() >= dmi_data->get_start_address()) // prevent us from crazy targets behavior
+	{
+		DMIRegion *dmi_region = new DMIRegion(dmi_grant, dmi_data);
+		dmi_region->next = mru_dmi_region;
+		mru_dmi_region = dmi_region;
+	}
+	else
+	{
+		delete dmi_data;
+	}
 }
 
 inline void DMIRegionCache::Insert(DMIRegion *dmi_region)
 {
-	dmi_region->next = mru_dmi_region;
-	mru_dmi_region = dmi_region;
+	if(dmi_region->GetDMI()->get_end_address() >= dmi_region->GetDMI()->get_start_address()) // prevent us from crazy targets behavior
+	{
+		dmi_region->next = mru_dmi_region;
+		mru_dmi_region = dmi_region;
+	}
+	else
+	{
+		delete dmi_region;
+	}
 }
 
 inline void DMIRegionCache::Remove(DMIRegion *dmi_region)

@@ -514,7 +514,7 @@ void VariableBase::NotifyListeners()
 }
 
 VariableBase::operator bool () const { return false; }
-VariableBase::operator char () const { return (long long) *this; }
+VariableBase::operator signed char () const { return (long long) *this; }
 VariableBase::operator short () const { return (long long) *this; }
 VariableBase::operator int () const { return (long long) *this; }
 VariableBase::operator long () const { return (long long) *this; }
@@ -1166,16 +1166,16 @@ const char *Variable<bool>::GetDataTypeName() const
 }
 
 template <>
-Variable<char>::Variable(const char *_name, Object *_owner, char& _storage, Type type, const char *_description) :
+Variable<signed char>::Variable(const char *_name, Object *_owner, signed char& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
 	Simulator::simulator->Initialize(this);
 }
 
 template <>
-const char *Variable<char>::GetDataTypeName() const
+const char *Variable<signed char>::GetDataTypeName() const
 {
-	return GetSignedDataTypeName<char>(); //"char";
+	return GetSignedDataTypeName<signed char>(); //"char";
 }
 
 template <>
@@ -1418,7 +1418,7 @@ template <> VariableBase& Variable<bool>::operator = (const char *value)
 	NotifyListeners();
 	return *this;
 }
-template <> VariableBase& Variable<char>::operator = (const char *value)
+template <> VariableBase& Variable<signed char>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		char tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
@@ -1658,9 +1658,9 @@ const char *Formula<bool>::GetDataTypeName() const
 }
 
 template <>
-const char *Formula<char>::GetDataTypeName() const
+const char *Formula<signed char>::GetDataTypeName() const
 {
-	return GetSignedDataTypeName<char>();
+	return GetSignedDataTypeName<signed char>();
 }
 
 template <>
@@ -1734,7 +1734,7 @@ const char *Formula<double>::GetDataTypeName() const
 //=============================================================================
 
 template class Variable<bool>;
-template class Variable<char>;
+template class Variable<signed char>;
 template class Variable<short>;
 template class Variable<int>;
 template class Variable<long>;
@@ -1749,7 +1749,7 @@ template class Variable<double>;
 template class Variable<string>;
 
 template class VariableArray<bool>;
-template class VariableArray<char>;
+template class VariableArray<signed char>;
 template class VariableArray<short>;
 template class VariableArray<int>;
 template class VariableArray<long>;
@@ -1764,7 +1764,7 @@ template class VariableArray<double>;
 template class VariableArray<string>;
 
 template class Formula<bool>;
-template class Formula<char>;
+template class Formula<signed char>;
 template class Formula<short>;
 template class Formula<int>;
 template class Formula<long>;
@@ -2127,7 +2127,7 @@ int Simulator::CommandLineOption::operator == (const char *arg) const
 	return 0;
 }
 
-Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *))
+Simulator::Simulator(int argc, const char **argv, void (*LoadBuiltInConfig)(Simulator *))
 	: void_variable(0)
 	, shared_data_dir()
 	, set_vars()
@@ -2230,7 +2230,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	// parse command line arguments (first pass)
 	int state = 0;
 	int arg_num;
-	char **arg;
+	const char **arg;
 	for(arg = argv + 1, arg_num = 1; (arg_num < argc) && state != -1;)
 	{
 		switch(state)
@@ -2475,14 +2475,14 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 				{
 					string variable_name;
 					
-					char *p;
+					const char *p;
 					for(p = *arg; *p != 0 && *p != '='; p++)
 					{
 						variable_name += *p;
 					}
 					if(*p == '=')
 					{
-						char *variable_value = ++p;
+						const char *variable_value = ++p;
 						
 						SetVariable(variable_name.c_str(), variable_value);
 					}
@@ -3549,7 +3549,7 @@ T Simulator::GetVariable(const char *variable_name, const T *t) const
 }
 
 template bool Simulator::GetVariable(const char *, const bool *) const;
-template char Simulator::GetVariable(const char *, const char *) const;
+template signed char Simulator::GetVariable(const char *, const signed char *) const;
 template short Simulator::GetVariable(const char *, const short *) const;
 template int Simulator::GetVariable(const char *, const int *) const;
 template long Simulator::GetVariable(const char *, const long *) const;

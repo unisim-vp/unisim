@@ -171,7 +171,7 @@ public:
 	bool IsVoid() const;
 
 	virtual operator bool () const;
-	operator char () const;
+	operator signed char () const;
 	operator short () const;
 	operator int () const;
 	operator long () const;
@@ -255,7 +255,7 @@ public:
 	static Simulator *simulator;
 	VariableBase *void_variable;
 
-	Simulator(int argc, char **argv,
+	Simulator(int argc, const char **argv,
 			void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
 	virtual ~Simulator();
 	virtual SetupStatus Setup();
