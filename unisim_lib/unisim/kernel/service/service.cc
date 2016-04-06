@@ -60,7 +60,7 @@
 #include <dlfcn.h>
 #endif
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windows.h>
 #endif
 
@@ -77,7 +77,7 @@
 #include "unisim/kernel/debug/debug.hh"
 #include "unisim/util/likely/likely.hh"
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <fcntl.h>
 //Note: this is to force opening console and files in binary mode on Windows as on UNIX
 int _CRT_fmode = _O_BINARY;
@@ -265,7 +265,7 @@ bool ResolvePath(const std::string& prefix_dir,
 		out_dir = resolved_dir_buf;
 		return true;
 	}
-#elif defined(WIN32)
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	DWORD length = GetFullPathName(unresolved_dir.c_str(), 
 			PATH_MAX + 1, 
 			resolved_dir_buf, 
@@ -3407,7 +3407,7 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 			return true;
 		}
 	}
-#elif defined(WIN32)
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	char bin_path_buf[PATH_MAX + 1];
 	DWORD bin_path_length;
 	bin_path_length = GetModuleFileName(NULL, bin_path_buf, sizeof(bin_path_buf));
@@ -3471,7 +3471,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	const char *start = executable_path.c_str();
 	const char *end = start + executable_path.length() - 1;
 	while(end != (start - 1) && 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	      (*end != '\\') &&
 #endif
 	      (*end != '/'))

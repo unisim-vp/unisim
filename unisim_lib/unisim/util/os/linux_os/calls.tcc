@@ -44,7 +44,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
 #include <process.h>
 #include <windows.h>
 #else
@@ -60,39 +60,6 @@ namespace unisim {
 namespace util {
 namespace os {
 namespace linux_os {
-
-#if defined(WIN32) || defined(WIN64)
-// see http://mathieuturcotte.ca/textes/windows-gettimeofday
-struct timezone {
-  int tz_minuteswest;     /* minutes west of Greenwich */
-  int tz_dsttime;         /* type of DST correction */
-};
-int gettimeofday(struct timeval* p, struct timezone* tz) {
-  ULARGE_INTEGER ul; // As specified on MSDN.
-  FILETIME ft;
-
-  // Returns a 64-bit value representing the number of
-  // 100-nanosecond intervals since January 1, 1601 (UTC).
-  GetSystemTimeAsFileTime(&ft);
-
-  // Fill ULARGE_INTEGER low and high parts.
-  ul.LowPart = ft.dwLowDateTime;
-  ul.HighPart = ft.dwHighDateTime;
-  // Convert to microseconds.
-  ul.QuadPart /= 10ULL;
-  // Remove Windows to UNIX Epoch delta.
-  ul.QuadPart -= 11644473600000000ULL;
-  // Modulo to retrieve the microseconds.
-  p->tv_usec = (long) (ul.QuadPart % 1000000LL);
-  // Divide to retrieve the seconds.
-  p->tv_sec = (long) (ul.QuadPart / 1000000LL);
-
-  tz->tz_minuteswest = 0;
-  tz->tz_dsttime = 0;
-
-  return 0;
-}
-#endif
 
 using unisim::util::endian::Host2Target;
 using unisim::util::endian::Target2Host;
@@ -799,7 +766,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
                 if(flags & LINUX_O_EXCL) host_flags |= O_EXCL;
                 if(flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
                 if(flags & LINUX_O_APPEND) host_flags |= O_APPEND;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
                 host_flags |= O_BINARY; // Linux opens file as binary files
                 host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 #else
@@ -973,7 +940,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "getuid"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         uint32_t ret = 0;
 #else
         uid_t ret;
@@ -1010,7 +977,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
               }
             else
               {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
                 int win_mode = 0;
                 win_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
                 ret = access(pathname.c_str(), win_mode);
@@ -1067,7 +1034,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "getgid"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         uint32_t ret = 0;
 #else
         gid_t ret;
@@ -1088,7 +1055,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "geteuid"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         uint32_t ret = 0;
 #else
         uid_t ret;
@@ -1109,7 +1076,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "getegid"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         uint32_t ret = 0;
 #else
         gid_t ret;
@@ -1274,7 +1241,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "getuid32"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         uint32_t ret = 0;
 #else
         uid_t ret;
@@ -1292,7 +1259,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "getgid32"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         uint32_t ret = 0;
 #else
         gid_t ret;
@@ -1310,7 +1277,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "geteuid32"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         uint32_t ret = 0;
 #else
         uid_t ret;
@@ -1328,7 +1295,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "getegid32"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         uint32_t ret = 0;
 #else
         gid_t ret;
@@ -1392,7 +1359,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           }
         else
           {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
             ret = -1;
             SysCall::SetStatus(lin, (PARAMETER_TYPE) -LINUX_ENOSYS, true);
 #else
@@ -1433,7 +1400,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           }
         else
           {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
             ret = -1;
             target_errno = LINUX_ENOSYS;
 #else

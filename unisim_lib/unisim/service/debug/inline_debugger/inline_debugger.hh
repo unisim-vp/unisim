@@ -68,7 +68,7 @@
 #include <list>
 #include <stack>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windef.h>
 #endif
 
@@ -133,7 +133,7 @@ private:
 	static void (*prev_sig_int_handler)(int);
 #endif
 	static int alive_instances;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
 #else
 	static void SigIntHandler(int signum);

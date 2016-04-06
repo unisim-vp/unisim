@@ -40,7 +40,7 @@
 #include <unisim/util/os/linux_os/errno.hh>
 #include <errno.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
 #include <process.h>
 #include <windows.h>
 #else
@@ -221,7 +221,7 @@ namespace linux_os {
       target_stat->st_gid = Host2Target(endianness, (uint32_t) host_stat.st_gid);
       target_stat->st_rdev = Host2Target(endianness, (int64_t) host_stat.st_rdev);
       target_stat->st_size = Host2Target(endianness, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(WIN64) || defined(_WIN64) // Windows x64
       target_stat->st_blksize = Host2Target(endianness, (int32_t) 512);
       target_stat->st_blocks = Host2Target(endianness, (int64_t)((host_stat.st_size + 511) / 512));
       target_stat->st_atim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_atime);
@@ -260,7 +260,7 @@ namespace linux_os {
       target_stat->st_gid = Host2Target(endianness, (uint32_t) host_stat.st_gid);
       target_stat->st_rdev = Host2Target(endianness, (int64_t) host_stat.st_rdev);
       target_stat->st_size = Host2Target(endianness, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(WIN32) || defined(_WIN32) // Windows 32
       target_stat->st_blksize = Host2Target(endianness, (int32_t) 512);
       target_stat->st_blocks = Host2Target(endianness, (int64_t)((host_stat.st_size + 511) / 512));
       target_stat->st_atim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_atime);
@@ -296,7 +296,7 @@ namespace linux_os {
     static int Fstat64(int fd, struct powerpc_stat64 *target_stat, unisim::util::endian::endian_type endianness)
     {
       int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
       struct _stati64 host_stat;
       ret = _fstati64(fd, &host_stat);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
@@ -321,7 +321,7 @@ namespace linux_os {
       target_stat->st_gid = Host2Target(endianness, (uint32_t) host_stat.st_gid);
       target_stat->st_rdev = Host2Target(endianness, (int64_t) host_stat.st_rdev);
       target_stat->st_size = Host2Target(endianness, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(WIN64) || defined(_WIN64) // Windows x64
       target_stat->st_blksize = Host2Target(endianness, (int32_t) 512);
       target_stat->st_blocks = Host2Target(endianness, (int64_t)((host_stat.st_size + 511) / 512));
       target_stat->st_atim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_atime);
@@ -360,7 +360,7 @@ namespace linux_os {
       target_stat->st_gid = Host2Target(endianness, (uint32_t) host_stat.st_gid);
       target_stat->st_rdev = Host2Target(endianness, (int64_t) host_stat.st_rdev);
       target_stat->st_size = Host2Target(endianness, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(WIN32) || defined(_WIN32) // Windows 32
       target_stat->st_blksize = Host2Target(endianness, (int32_t) 512);
       target_stat->st_blocks = Host2Target(endianness, (int64_t)((host_stat.st_size + 511) / 512));
       target_stat->st_atim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_atime);
@@ -396,7 +396,7 @@ namespace linux_os {
     static int Stat64(const char *pathname, struct powerpc_stat64 *target_stat, unisim::util::endian::endian_type endianness)
     {
       int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
       struct _stati64 host_stat;
       ret = _stati64(pathname, &host_stat);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
@@ -421,7 +421,7 @@ namespace linux_os {
       target_stat->st_gid = Host2Target(endianness, (uint32_t) host_stat.st_gid);
       target_stat->st_rdev = Host2Target(endianness, (int64_t) host_stat.st_rdev);
       target_stat->st_size = Host2Target(endianness, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(WIN64) || defined(_WIN64) // Windows x64
       target_stat->st_blksize = Host2Target(endianness, (int32_t) 512);
       target_stat->st_blocks = Host2Target(endianness, (int64_t)((host_stat.st_size + 511) / 512));
       target_stat->st_atim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_atime);
@@ -460,7 +460,7 @@ namespace linux_os {
       target_stat->st_gid = Host2Target(endianness, (uint32_t) host_stat.st_gid);
       target_stat->st_rdev = Host2Target(endianness, (int64_t) host_stat.st_rdev);
       target_stat->st_size = Host2Target(endianness, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(WIN32) || defined(_WIN32) // Windows 32
       target_stat->st_blksize = Host2Target(endianness, (int32_t) 512);
       target_stat->st_blocks = Host2Target(endianness, (int64_t)((host_stat.st_size + 511) / 512));
       target_stat->st_atim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_atime);
@@ -496,7 +496,7 @@ namespace linux_os {
     static int Times(struct powerpc_tms* target_tms, unisim::util::endian::endian_type endianness)
     {
       int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
       FILETIME ftCreationTime;
       FILETIME ftExitTime;
       FILETIME ftKernelTime;

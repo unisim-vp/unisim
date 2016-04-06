@@ -43,7 +43,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/loader/elf_loader/elf32_loader.hh>
 
-#if !defined(linux) && !defined(__linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(WIN64)
+#if !defined(linux) && !defined(__linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 #error "Unsupported host machine for Linux system call translation !"
 #endif
 
@@ -58,8 +58,9 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
 #include <stdlib.h>
+#include <sys/stat.h>
 #endif
 
 namespace unisim {
@@ -122,7 +123,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(unisim::kernel::logger::Logger& logge
 	, stderr_pipe_fd(-1)
 {
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
 	_setmode(0, _O_BINARY); // force binary mode for the standard input file descriptor (0)
 	_setmode(1, _O_BINARY); // force binary mode for the standard output file descriptor (1)
 	_setmode(2, _O_BINARY); // force binary mode for the standard error file descriptor (2)
@@ -476,7 +477,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	if(!stdin_pipe_filename.empty())
 	{
 		int stdin_pipe_flags = O_RDONLY;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
 		stdin_pipe_flags |= O_BINARY;
 #endif
 		stdin_pipe_fd = open(stdin_pipe_filename.c_str(), stdin_pipe_flags);
@@ -491,7 +492,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	{
 		int stdout_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
 		mode_t stdout_pipe_mode = S_IRWXU;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
 		stdout_pipe_flags |= O_BINARY;
 #else
 		stdout_pipe_mode |= S_IRWXG | S_IRWXO;
@@ -508,7 +509,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	{
 		int stderr_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
 		mode_t stderr_pipe_mode = S_IRWXU;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
 		stderr_pipe_flags |= O_BINARY;
 #else
 		stderr_pipe_mode |= S_IRWXG | S_IRWXO;
@@ -1040,7 +1041,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_UID;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)getuid();
@@ -1048,7 +1049,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_EUID;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)geteuid();
@@ -1056,7 +1057,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_GID;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)getgid();
@@ -1064,7 +1065,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_EGID;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
   aux_table_value = (ADDRESS_TYPE) 1000;
 #else
   aux_table_value = (ADDRESS_TYPE)getegid();
@@ -1079,7 +1080,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   }
 
   aux_table_symbol = AT_CLKTCK;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
   aux_table_value = (ADDRESS_TYPE) 250;
 #else
   aux_table_value = (ADDRESS_TYPE)sysconf(_SC_CLK_TCK);

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_OS_LINUX_OS_LINUX_OS_TCC__
 #define __UNISIM_SERVICE_OS_LINUX_OS_LINUX_OS_TCC__
 
-#if !defined(linux) && !defined(__linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(WIN64)
+#if !defined(linux) && !defined(__linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(_WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 #error "Unsupported host machine for Linux system call translation !"
 #endif
 
@@ -53,7 +53,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #include <process.h>
 #else
 #include <sys/times.h>
@@ -1444,7 +1444,7 @@ LSC_open()
 	if (flags & LINUX_O_EXCL) host_flags |= O_EXCL;
 	if (flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
 	if (flags & LINUX_O_APPEND) host_flags |= O_APPEND;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 #else
 	host_mode = mode; // other UNIX systems should have the same bit encoding for protection
@@ -1542,7 +1542,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getuid() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -1573,7 +1573,7 @@ LSC_access()
 	pathname = (char *) malloc(pathnamelen + 1);
 	ReadMem(addr, pathname, pathnamelen + 1);
 	mode = GetSystemCallParam(1);
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	int win_mode = 0;
 	win_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 	ret = access(pathname, win_mode);
@@ -1656,7 +1656,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getgid() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -1676,7 +1676,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_geteuid() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -1696,7 +1696,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getegid() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -1787,7 +1787,7 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target((int32_t) 512);
 	target_stat->st_blocks = Host2Target((int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim);
@@ -1826,7 +1826,7 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atime);
@@ -1868,7 +1868,7 @@ int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Stat64(int fd, struct powerpc_stat64_t *target_stat)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
@@ -1891,7 +1891,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim);
@@ -1930,7 +1930,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atime);
@@ -1971,7 +1971,7 @@ int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Stat64(int fd, arm_stat64_t *target_stat)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
@@ -1994,7 +1994,7 @@ Stat64(int fd, arm_stat64_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim);
@@ -2034,7 +2034,7 @@ Stat64(int fd, arm_stat64_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atime);
@@ -2074,7 +2074,7 @@ int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Times(struct powerpc_tms_t *target_tms)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;
@@ -2103,7 +2103,7 @@ int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Times(struct arm_tms_t *target_tms)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;
@@ -2491,7 +2491,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getuid32() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -2510,7 +2510,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getgid32() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -2529,7 +2529,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_geteuid32() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -2548,7 +2548,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getegid32() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -2591,7 +2591,7 @@ LSC_fcntl()
 { 
 	int64_t ret;
     
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	ret = -1;
 #else
 	ret = fcntl(GetSystemCallParam(0),
@@ -3067,7 +3067,7 @@ PPCGetSyscallNumber(int id)
 //         res->st_rdev = Host2Target(endianess, (int64_t)s->st_rdev);
 //         res->__pad2 = 0;
 //         res->st_size = Host2Target(endianess, (int64_t)s->st_size);
-// #if defined(WIN32) || defined(WIN64)
+// #if defined(_WIN32) || defined(_WIN64)
 //         res->st_blksize = 512;
 //         res->st_blocks = s->st_size / 512;
 // #else

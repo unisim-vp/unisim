@@ -41,7 +41,7 @@ typedef Simulator<SIM_CONFIG> SIMULATOR;
 
 int sc_main(int argc, char *argv[])
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	// Loads the winsock2 dll
 	WORD wVersionRequested = MAKEWORD( 2, 2 );
 	WSADATA wsaData;
@@ -69,10 +69,10 @@ int sc_main(int argc, char *argv[])
 
 	int exit_status = simulator->GetExitStatus();
 	if(simulator) delete simulator;
-#if defined(WIN32) || defined(WIN64)
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	// releases the winsock2 resources
 	WSACleanup();
 #endif
-
 	return exit_status;
 }

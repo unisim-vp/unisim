@@ -60,7 +60,7 @@
 #include <fstream>
 #include <iostream>
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windows.h>
 #include <io.h>     // for function access()
 #else

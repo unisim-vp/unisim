@@ -66,7 +66,15 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 	AS_HELP_STRING([--with-systemc=<path>], [Overrides search path to SystemC library]))
     if test -n "$with_systemc"; then
 		AC_MSG_NOTICE([using SystemC at $with_systemc])
-		export PKG_CONFIG_PATH="${with_systemc}/lib-${SYSTEMC_TARGET_ARCH}/pkgconfig"
+		
+		sep=':'
+
+		case "${build}" in
+			*mingw*)
+				sep=';'
+				;;
+		esac
+		export PKG_CONFIG_PATH="${with_systemc}/lib-${SYSTEMC_TARGET_ARCH}/pkgconfig${sep}${with_systemc}/lib/pkgconfig${sep}${PKG_CONFIG_PATH}"
     fi
 
 	PKG_CHECK_MODULES(SystemC, systemc, AC_MSG_NOTICE([SystemC found]), AC_MSG_ERROR([SystemC not found]))

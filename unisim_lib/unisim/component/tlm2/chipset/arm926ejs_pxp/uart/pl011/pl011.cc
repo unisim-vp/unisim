@@ -38,7 +38,7 @@
 #include <inttypes.h>
 #include <assert.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
 #include <winsock2.h>
 
@@ -132,7 +132,7 @@ PL011 ::
 	{
 		std::string packet("Closing connection. Bye!");
 		TelnetPutPacket(packet);
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(sock);
 #else
 		close(sock);
@@ -145,7 +145,7 @@ bool
 PL011 ::
 TelnetPutChar(uint8_t ch)
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	int r = send(sock, &ch, 1, 0);
 	if ( r == 0 || r == SOCKET_ERROR )
 #else
@@ -230,7 +230,7 @@ EndSetup()
 		if ( bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0 )
 		{
 			logger << DebugError << "Bind failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			closesocket(server_sock);
 #else
 			close(server_sock);
@@ -241,7 +241,7 @@ EndSetup()
 		if ( listen(server_sock, 1) )
 		{
 			logger << DebugError << "listen failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			closesocket(server_sock);
 #else
 			close(server_sock);
@@ -249,7 +249,7 @@ EndSetup()
 			return false;
 		}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		int addr_len;
 #else
 		socklen_t addr_len;
@@ -263,7 +263,7 @@ EndSetup()
 		if ( sock < 0 )
 		{
 			logger << DebugError << "accept failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			closesocket(server_sock);
 #else
 			close(server_sock);
@@ -285,7 +285,7 @@ EndSetup()
 		}
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		u_long NonBlock = 1;
 		if ( ioctlsocket(sock, FIONBIO, &NonBlock) != 0 )
 		{
@@ -318,7 +318,7 @@ EndSetup()
 		}
 #endif
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);

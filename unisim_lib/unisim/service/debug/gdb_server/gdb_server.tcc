@@ -49,7 +49,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
 #include <winsock2.h>
 
@@ -130,6 +130,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
 	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_memory_atom_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	counter = period;
 }
@@ -141,7 +142,7 @@ GDBServer<ADDRESS>::~GDBServer()
 	{
 		string packet("W00");
 		PutPacket(packet);
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(sock);
 #else
 		close(sock);
@@ -443,7 +444,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
 	{
 		logger << DebugError << "Bind failed. TCP Port #" << tcp_port << " may be already in use. Please specify another port in " << param_tcp_port.GetName() << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -454,7 +455,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(listen(server_sock, 1))
 	{
 		logger << DebugError << "Listen failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -462,7 +463,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 		return false;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		int addr_len;
 #else
 		socklen_t addr_len;
@@ -475,7 +476,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(sock < 0)
 	{
 		logger << DebugError << "accept failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -499,7 +500,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	}
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	u_long NonBlock = 1;
 	if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
 	{
@@ -532,7 +533,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	}
 #endif
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	closesocket(server_sock);
 #else
 	close(server_sock);
@@ -877,7 +878,7 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 	{
 		do
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int r = recv(sock, input_buffer, sizeof(input_buffer), 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -885,7 +886,7 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 			if(r <= 0)
 #endif
 			{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
 #else
 				if(r < 0 && errno == EAGAIN)
@@ -893,7 +894,7 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 				{
 					if(blocking)
 					{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 						Sleep(1); // sleep for 10ms
 #else
 						usleep(1000); // sleep for 10ms
@@ -929,7 +930,7 @@ bool GDBServer<ADDRESS>::FlushOutput()
 		unsigned int index = 0;
 		do
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int r = send(sock, output_buffer + index, output_buffer_size, 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -1234,7 +1235,7 @@ void GDBServer<ADDRESS>::Kill()
 {
 	if(sock >= 0)
 	{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(sock);
 #else
 		close(sock);

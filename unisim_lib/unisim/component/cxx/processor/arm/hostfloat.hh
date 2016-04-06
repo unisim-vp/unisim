@@ -1,8 +1,27 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_HOSTFLOAT_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_HOSTFLOAT_HH__
 
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 #include <ieee754.h>
+#endif
+
 #include <cmath>
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+inline int issignaling(double d)
+{
+	uint64_t i;
+	memcpy(&i, &d, 8);
+	return ((i & ((1ULL << 51) - 1)) != 0) && (i & (1ULL << 51) == 0);
+}
+
+inline int issignaling(float f)
+{
+	uint32_t i;
+	memcpy(&i, &f, 4);
+	return ((i & ((1UL << 22) - 1)) != 0) && (i & (1ULL << 22) == 0);
+}
+#endif
 
 namespace unisim {
 namespace component {
@@ -67,27 +86,41 @@ namespace hostfloat {
   void FloatAbs( float& res, float op, fpscrT& fpscr ) { res = fabsf( op ); }
   
   template <typename operT, typename fpscrT>
-  bool FloatIsSNaN( operT op, fpscrT const& fpscr ) { return isnan( op ) and issignaling( op ); }
+  bool FloatIsSNaN( operT op, fpscrT const& fpscr ) { return std::isnan( op ) and issignaling( op ); }
   
   template <typename operT, typename fpscrT>
-  bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return isnan( op ) and not issignaling( op ); }
+  bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return std::isnan( op ) and not issignaling( op ); }
   
   template <typename fpscrT>
   void FloatSetQuietBit( double& op, fpscrT const& fpscr )
   {
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+    uint64_t d;
+	memcpy(&d, &op, 8);
+	d = d | (1ULL << 51);
+	memcpy(&op, &d, 8);
+#else
     ieee754_double ud;
     ud.d = op;
     ud.ieee_nan.quiet_nan = 1;
     op = ud.d;
+#endif
   }
   
   template <typename fpscrT>
   void FloatSetQuietBit( float& op, fpscrT const& fpscr )
   {
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+    uint32_t f;
+	memcpy(&f, &op, 4);
+	f = f | (1UL << 22);
+	memcpy(&op, &f, 4);
+#else
     ieee754_float uf;
     uf.f = op;
     uf.ieee_nan.quiet_nan = 1;
     op = uf.f;
+#endif
   }
   
   template <typename fpscrT>
