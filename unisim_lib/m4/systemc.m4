@@ -64,14 +64,14 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
     # Check if SystemC path has been overloaded
     AC_ARG_WITH(systemc,
 	AS_HELP_STRING([--with-systemc=<path>], [Overrides search path to SystemC library]))
-    if test -n "$with_systemc"; then
+    if test -n "${with_systemc}"; then
 		AC_MSG_NOTICE([using SystemC at $with_systemc])
 		
 		sep=':'
 
 		case "${build}" in
 			*mingw*)
-				sep=';'
+				sep=';'    # separator on a windows build machine is ';', not ':'
 				;;
 		esac
 		export PKG_CONFIG_PATH="${with_systemc}/lib-${SYSTEMC_TARGET_ARCH}/pkgconfig${sep}${with_systemc}/lib/pkgconfig${sep}${PKG_CONFIG_PATH}"

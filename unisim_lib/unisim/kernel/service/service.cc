@@ -2127,7 +2127,7 @@ int Simulator::CommandLineOption::operator == (const char *arg) const
 	return 0;
 }
 
-Simulator::Simulator(int argc, const char **argv, void (*LoadBuiltInConfig)(Simulator *))
+Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *))
 	: void_variable(0)
 	, shared_data_dir()
 	, set_vars()
@@ -2230,7 +2230,7 @@ Simulator::Simulator(int argc, const char **argv, void (*LoadBuiltInConfig)(Simu
 	// parse command line arguments (first pass)
 	int state = 0;
 	int arg_num;
-	const char **arg;
+	char **arg;
 	for(arg = argv + 1, arg_num = 1; (arg_num < argc) && state != -1;)
 	{
 		switch(state)
@@ -2475,7 +2475,7 @@ Simulator::Simulator(int argc, const char **argv, void (*LoadBuiltInConfig)(Simu
 				{
 					string variable_name;
 					
-					const char *p;
+					char *p;
 					for(p = *arg; *p != 0 && *p != '='; p++)
 					{
 						variable_name += *p;

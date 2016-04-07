@@ -1275,7 +1275,7 @@ int sc_elab_and_sim(int _argc, char* _argv[])
 	argv = _argv;
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	sc_main_type sc_main = (sc_main_type) GetProcAddress(NULL, "sc_main");
+	sc_main_type sc_main = (sc_main_type) GetProcAddress(GetModuleHandle(NULL), "sc_main");
 	
 	if(!sc_main)
 	{
