@@ -155,7 +155,7 @@ void sc_port_base::finalize_elaboration()
 {
 	if(elaboration_finalized) return;
 	
-	unsigned int i, j;
+	int i, j;
 	
 	std::list<sc_port_binding *>::iterator it;
 	
@@ -169,7 +169,7 @@ void sc_port_base::finalize_elaboration()
 				{
 					sc_port_base *outer_port = port_binding->bound_outer_port;
 					outer_port->finalize_elaboration();
-					unsigned int num_inherited_interfaces = outer_port->get_size();
+					int num_inherited_interfaces = outer_port->get_size();
 					for(i = 0; i < num_inherited_interfaces; i++)
 					{
 						add_interface(outer_port->get_interface(i));
@@ -188,7 +188,7 @@ void sc_port_base::finalize_elaboration()
 
 	if(terminal_inner_port)
 	{
-		unsigned int num_interfaces = get_size();
+		int num_interfaces = get_size();
 		for(i = 0; i < num_interfaces; i++)
 		{
 			sc_interface *itf = get_interface(i);
@@ -197,23 +197,23 @@ void sc_port_base::finalize_elaboration()
 		}
 	}
 
-	unsigned int num_interfaces = get_size();
+	int num_interfaces = get_size();
 	
 	switch(port_policy)
 	{
-		SC_ONE_OR_MORE_BOUND:
+		case SC_ONE_OR_MORE_BOUND:
 			if(num_interfaces < 1) throw std::runtime_error("port is unbound");
 			if(max_bindings && (num_interfaces > max_bindings)) throw std::runtime_error("too many bindings");
 			break;
-		SC_ZERO_OR_MORE_BOUND:
+		case SC_ZERO_OR_MORE_BOUND:
 			if(max_bindings && (num_interfaces > max_bindings)) throw std::runtime_error("too many bindings");
 			break;
-		SC_ALL_BOUND:
+		case SC_ALL_BOUND:
 			if(num_interfaces < (max_bindings ? max_bindings : 1)) throw std::runtime_error("too few bindings");
 			break;
 	}
 	
-	unsigned int num_process_static_sensitivity = processes_static_sensitivity.size();
+	int num_process_static_sensitivity = processes_static_sensitivity.size();
 
 	for(i = 0; i < num_interfaces; i++)
 	{

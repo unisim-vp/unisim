@@ -63,14 +63,15 @@ namespace exception {
   /** SynchronousAbort the class used to abort normal execution of an
    *  instruction (using a throw).
    */
-  struct UndefInstrException { UndefInstrException() {} };
-  struct HypTrapException { HypTrapException() {} };
-  struct SVCException { SVCException() {} };
-  struct SMCException { SMCException() {} };
-  struct HVCException { HVCException() {} };
-  struct PrefetchAbortException { PrefetchAbortException() {} };
-  struct DataAbortException { DataAbortException() {} };
-  struct VirtualAbortException { VirtualAbortException() {} };
+  struct Exception : public std::exception { Exception() {} virtual const char* what() const throw() { return "Exception"; } };
+  struct UndefInstrException : Exception { UndefInstrException() {} virtual const char* what() const throw() { return "UndefInstrException"; } };
+  struct HypTrapException : Exception { HypTrapException() {} virtual const char* what() const throw() { return "HypTrapException"; } };
+  struct SVCException : Exception  { SVCException() {} virtual const char* what() const throw() { return "SVCException"; } };
+  struct SMCException : Exception  { SMCException() {} virtual const char* what() const throw() { return "SMCException"; } };
+  struct HVCException : Exception  { HVCException() {} virtual const char* what() const throw() { return "HVCException"; } };
+  struct PrefetchAbortException : Exception { PrefetchAbortException() {} virtual const char* what() const throw() { return "PrefetchAbortException"; } };
+  struct DataAbortException : Exception { DataAbortException() {} virtual const char* what() const throw() { return "DataAbortException"; } };
+  struct VirtualAbortException : Exception { VirtualAbortException() {} virtual const char* what() const throw() { return "VirtualAbortException"; } };
   
 } // end of namespace exception
 } // end of namespace arm

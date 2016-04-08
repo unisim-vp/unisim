@@ -89,6 +89,7 @@ struct CPU
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
   , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint32_t> >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint32_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint32_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
   , public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<uint32_t> >
 {
@@ -105,6 +106,7 @@ struct CPU
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint32_t> > disasm_export;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint32_t> > memory_injection_export;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint32_t> > memory_export;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint32_t> > memory_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint32_t> > debug_control_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint32_t> > symbol_table_lookup_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> exception_trap_reporting_import;

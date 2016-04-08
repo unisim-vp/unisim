@@ -93,6 +93,7 @@ CPU::CPU(const char *name, Object *parent)
   , Client<TrapReporting>(name, parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
+  , Client< Memory<uint32_t> >(name, parent)
   , Client<LinuxOS>(name, parent)
   , Client<SymbolTableLookup<uint32_t> >(name, parent)
   , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
@@ -100,6 +101,7 @@ CPU::CPU(const char *name, Object *parent)
   , disasm_export("disasm-export", this)
   , memory_injection_export("memory-injection-export", this)
   , memory_export("memory-export", this)
+  , memory_import("memory-import", this)
   , debug_control_import("debug-control-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
   , exception_trap_reporting_import("exception-trap-reporting-import", this)
@@ -1274,7 +1276,7 @@ CPU::CallSupervisor( uint16_t imm )
     try {
       this->linux_os_import->ExecuteSystemCall(imm);
     }
-    catch (std::exception const& e)
+    catch (exception::Exception const& e)
       {
         std::cerr << e.what() << std::endl;
         this->Stop( -1 );

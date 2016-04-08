@@ -59,25 +59,25 @@
                     "UNINITIALIZED_PHASE"))))
 #define TRANS(L,X) \
 { \
-  (L) << " - trans = " << &(X) << endl \
-    << "   - " << ((X).is_read()?"read":"write") << endl \
-    << "   - address = 0x" << hex << (X).get_address() << dec << endl \
+  (L) << " - trans = " << &(X) << std::endl \
+    << "   - " << ((X).is_read()?"read":"write") << std::endl \
+    << "   - address = 0x" << std::hex << (X).get_address() << std::dec << std::endl \
     << "   - data_length = " << (X).get_data_length(); \
   if((X).is_write()) { \
-    (L) << endl; \
+    (L) << std::endl; \
     (L) << "   - data ="; \
     for(unsigned int _trans_i = 0; _trans_i < (X).get_data_length(); _trans_i++) { \
-      (L) << " " << hex << (unsigned int)((X).get_data_ptr()[_trans_i]) << dec; \
+      (L) << " " << std::hex << (unsigned int)((X).get_data_ptr()[_trans_i]) << std::dec; \
     } \
   } \
 }
 
 #define ETRANS(L,X) \
 { \
-  (L) << " - trans = " << &(X) << endl \
-    << "   - " << ((X).is_read()?"read":"write") << endl \
-    << "   - address = 0x" << hex << (X).get_address() << dec << endl \
-    << "   - data_length = " << (X).get_data_length() << endl \
+  (L) << " - trans = " << &(X) << std::endl \
+    << "   - " << ((X).is_read()?"read":"write") << std::endl \
+    << "   - address = 0x" << std::hex << (X).get_address() << std::dec << std::endl \
+    << "   - data_length = " << (X).get_data_length() << std::endl \
       << "   - response_status = "; \
   switch((X).get_response_status()) { \
   case tlm::TLM_OK_RESPONSE: \
@@ -103,13 +103,13 @@
     break; \
   } \
   if((X).get_response_status() == tlm::TLM_OK_RESPONSE) { \
-    (L) << endl; \
+    (L) << std::endl; \
     (L) << "   - data ="; \
     for(unsigned int _trans_i = 0; \
         _trans_i < (X).get_data_length(); \
         _trans_i++) { \
-      (L) << " " << hex << (unsigned int)((X).get_data_ptr()[_trans_i]) \
-        << dec; \
+      (L) << " " << std::hex << (unsigned int)((X).get_data_ptr()[_trans_i]) \
+        << std::dec; \
     } \
   } \
 }
@@ -199,7 +199,7 @@ ARMEMU::EndSetup()
   if (not inherited::EndSetup())
   {
     inherited::logger << DebugError
-      << "Error while trying to set up the ARM cpu" << endl
+      << "Error while trying to set up the ARM cpu" << std::endl
       << LOCATION
       << EndDebugError;
     return false;
@@ -212,11 +212,11 @@ ARMEMU::EndSetup()
   {
     inherited::logger << DebugInfo
       << "Setting CPU cycle time to " 
-      << cpu_cycle_time.to_string() << endl
+      << cpu_cycle_time.to_string() << std::endl
       << "Setting Bus cycle time to " 
-      << bus_cycle_time.to_string() << endl
-      << "Setting nice time to " << nice_time.to_string() << endl
-      << "Setting IPC to " << ipc << endl
+      << bus_cycle_time.to_string() << std::endl
+      << "Setting nice time to " << nice_time.to_string() << std::endl
+      << "Setting IPC to " << ipc << std::endl
       << EndDebugInfo;
   }
   
@@ -422,9 +422,9 @@ ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc
   {
     inherited::logger << DebugWarning << "Received nb_transport_bw on master socket" 
       << ", with an ignore, which the cpu doesn't know how to handle" 
-      << endl
-      << TIME(time) << endl
-      << PHASE(phase) << endl;
+      << std::endl
+      << TIME(time) << std::endl
+      << PHASE(phase) << std::endl;
     TRANS(inherited::logger, trans);
     inherited::logger << EndDebug;
     return ret;
@@ -438,10 +438,10 @@ ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc
        * generates cpu requests), neither END_RESP (as it is the cpu which
        * ends responses) */
       inherited::logger << DebugError << "Received nb_transport_bw on master_socket" 
-        << ", with unexpected phase" << endl
-        << LOCATION << endl
-        << TIME(time) << endl
-        << PHASE(phase) << endl;
+        << ", with unexpected phase" << std::endl
+        << LOCATION << std::endl
+        << TIME(time) << std::endl
+        << PHASE(phase) << std::endl;
       TRANS(inherited::logger, trans);
       inherited::logger << EndDebug;
       sc_stop();
@@ -472,10 +472,10 @@ ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc
       trans.acquire();
       if (trans.is_write())
       {
-        inherited::logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction" << endl
-          << LOCATION << endl
-          << TIME(time) << endl 
-          << PHASE(phase) << endl;
+        inherited::logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction" << std::endl
+          << LOCATION << std::endl
+          << TIME(time) << std::endl 
+          << PHASE(phase) << std::endl;
         TRANS(inherited::logger, trans);
         inherited::logger << EndDebug;
         sc_stop();
@@ -494,10 +494,10 @@ ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc
   /* this code should never be executed, if you are here something is wrong 
    *   above :( */
   inherited::logger << DebugError 
-    << "Reached end of nb_transport_bw, THIS SHOULD NEVER HAPPEN" << endl
-    << LOCATION << endl
-    << TIME(time) << endl
-    << PHASE(phase) << endl;
+    << "Reached end of nb_transport_bw, THIS SHOULD NEVER HAPPEN" << std::endl
+    << LOCATION << std::endl
+    << TIME(time) << std::endl
+    << PHASE(phase) << std::endl;
   TRANS(inherited::logger, trans);
   inherited::logger << EndDebug;
   sc_stop();
@@ -576,6 +576,14 @@ ARMEMU::ResetHandler()
 bool 
 ARMEMU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 {
+  if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
+  {
+    // operator -> of ports is not legal before end of elaboration because
+    // an implementation of SystemC can defer complete binding just before end of elaboration
+    // Using memory service interface instead
+    return inherited::memory_import->ReadMemory(addr, buffer, size);
+  }
+
   transaction_type *trans;
   unsigned int read_size;
 
@@ -610,6 +618,14 @@ ARMEMU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 bool 
 ARMEMU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 {
+  if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
+  {
+    // operator -> of ports is not legal before end of elaboration because
+    // an implementation of SystemC can defer complete binding just before end of elaboration
+    // Using memory service interface instead
+    return inherited::memory_import->WriteMemory(addr, buffer, size);
+  }
+
   transaction_type *trans;
   unsigned int write_size;
 

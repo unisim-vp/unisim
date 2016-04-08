@@ -80,6 +80,7 @@ sc_kernel::sc_kernel()
 	, time_resolution_scale_factors_table()
 	, max_time()
 	, current_object(0)
+  , current_writer(0)
 	, current_thread_process(0)
 	, current_method_process(0)
 	, current_time_stamp()
@@ -347,12 +348,6 @@ void sc_kernel::initialize()
 {
 	unsigned int i;
 	
-	unsigned int num_ports = port_table.size();
-	for(i = 0; i < num_ports; i++)
-	{
-		port_table[i]->finalize_elaboration();
-	}
-	
 	status = SC_BEFORE_END_OF_ELABORATION;
 	report_before_end_of_elaboration();
 	
@@ -364,14 +359,10 @@ void sc_kernel::initialize()
 		module->before_end_of_elaboration();
 	}
 	
-	status = SC_END_OF_ELABORATION;
-	report_end_of_elaboration();
-	
-	for(i = 0; i < num_modules; i++)
+	unsigned int num_ports = port_table.size();
+	for(i = 0; i < num_ports; i++)
 	{
-		sc_module *module =	module_table[i];
-		
-		module->end_of_elaboration();
+		port_table[i]->finalize_elaboration();
 	}
 
 	unsigned int num_thread_processes = thread_process_table.size();
@@ -386,6 +377,16 @@ void sc_kernel::initialize()
 	{
 		sc_method_process *method_process = method_process_table[i];
 		method_process->finalize_elaboration();
+	}
+
+	status = SC_END_OF_ELABORATION;
+	report_end_of_elaboration();
+	
+	for(i = 0; i < num_modules; i++)
+	{
+		sc_module *module =	module_table[i];
+		
+		module->end_of_elaboration();
 	}
 
 	// time resolution can no longer change

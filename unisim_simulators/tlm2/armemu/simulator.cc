@@ -153,6 +153,7 @@ Simulator::Simulator(int argc, char **argv)
   cpu->debug_control_import >> debugger->debug_control_export;
   cpu->instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
   cpu->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+  cpu->memory_import >> memory->memory_export;
   debugger->disasm_import >> cpu->disasm_export;
   debugger->memory_import >> cpu->memory_export;
   debugger->registers_import >> cpu->registers_export;
@@ -434,11 +435,12 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 	sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_process_handle h = sc_get_current_process_handle();
+		switch(h.proc_kind())
 		{
 			case SC_THREAD_PROC_: 
 			case SC_CTHREAD_PROC_:
-				wait();
+				sc_core::wait();
 				break;
 			default:
 				break;
