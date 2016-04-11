@@ -201,7 +201,7 @@ bool DWARF_Frame<MEMORY_ADDR>::LoadArchRegs()
 	for(iter = reg_num_set.begin(); iter != reg_num_set.end(); iter++)
 	{
 		unsigned int dw_reg_num = *iter;
-		const unisim::util::debug::Register *arch_reg = reg_num_mapping->GetArchReg(dw_reg_num);
+		const unisim::service::interfaces::Register *arch_reg = reg_num_mapping->GetArchReg(dw_reg_num);
 		
 		if(!arch_reg)
 		{

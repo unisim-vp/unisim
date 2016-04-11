@@ -344,7 +344,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStderrPipeFilename(const char *filename)
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-unisim::util::debug::Register*
+unisim::service::interfaces::Register*
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname )
 {
   if (not regname) return 0;
@@ -354,7 +354,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname )
     return 0;
   }
   
-  unisim::util::debug::Register* reg = regs_if_->GetRegister(regname);
+  unisim::service::interfaces::Register* reg = regs_if_->GetRegister(regname);
   if (not reg) {
     logger_ << DebugError << "Can't access register " << regname << EndDebugError;
     return 0;
@@ -372,7 +372,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname )
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value )
 {
-  if (unisim::util::debug::Register* reg = lin.GetDebugRegister(regname)) {
+  if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
     reg->GetValue(value);
     return true;
   }
@@ -382,7 +382,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::GetRegister( Linux& lin,
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value )
 {
-  if (unisim::util::debug::Register* reg = lin.GetDebugRegister(regname)) {
+  if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
     reg->SetValue(&value);
     return true;
   }

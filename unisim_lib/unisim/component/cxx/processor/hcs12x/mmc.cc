@@ -104,7 +104,7 @@ MMC::MMC(const char *name, S12MPU_IF *_mpu, Object *parent):
 MMC::~MMC() {
 
 	// Release registers_registry
-	std::map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	std::map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{

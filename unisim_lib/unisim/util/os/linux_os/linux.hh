@@ -213,7 +213,7 @@ struct Linux
 
 	// TODO: Remove
 	// // Sets the registers to be used
-	// void SetRegisters(std::vector<unisim::util::debug::Register *> &registers);
+	// void SetRegisters(std::vector<unisim::service::interfaces::Register *> &registers);
 	// END TODO
 
 	// Loads all the defined files using the user settings.
@@ -340,7 +340,7 @@ private:
 
 	// Maps the registers depending on the system
 	// Returns true on success
-	unisim::util::debug::Register* GetDebugRegister( char const* regname );
+	unisim::service::interfaces::Register* GetDebugRegister( char const* regname );
 	// bool GetRegister( char const* regname, PARAMETER_TYPE * const value );
 	// bool SetRegister( char const* regname, PARAMETER_TYPE value );
 	

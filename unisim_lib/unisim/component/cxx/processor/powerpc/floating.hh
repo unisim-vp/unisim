@@ -37,7 +37,7 @@
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/simfloat/floating.hh>
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 
 #include <inttypes.h>
 #include <string>
@@ -306,7 +306,7 @@ inline
 SoftFloat::SoftFloat(const SoftDouble& sdDouble, Flags& rpParams)
    { assign(sdDouble, rpParams); }
 
-class FloatingPointRegisterInterface : public unisim::util::debug::Register
+class FloatingPointRegisterInterface : public unisim::service::interfaces::Register
 {
 public:
 	FloatingPointRegisterInterface(const char *name, SoftDouble *value);

@@ -161,7 +161,7 @@ namespace linux_os {
         
     void WriteSegmentSelector( char const* segname, uint16_t value ) const
     {
-      if (unisim::util::debug::Register* reg = this->RegsIF().GetRegister(segname))
+      if (unisim::service::interfaces::Register* reg = this->RegsIF().GetRegister(segname))
         reg->SetValue(&value);
       else
         throw 0;
@@ -171,8 +171,8 @@ namespace linux_os {
     {
       // Reset all target registers
       {
-        struct : public unisim::util::debug::RegisterScanner {
-          void Append( unisim::util::debug::Register* reg ) { reg->Clear(); }
+        struct : public unisim::service::interfaces::RegisterScanner {
+          void Append( unisim::service::interfaces::Register* reg ) { reg->Clear(); }
         } clear_regs;
         this->RegsIF().ScanRegisters( clear_regs );
       }

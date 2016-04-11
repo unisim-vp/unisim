@@ -48,7 +48,7 @@
 #include "unisim/service/interfaces/registers.hh"
 // #include "unisim/service/os/linux_os/linux_os_exception.hh"
 #include "unisim/util/endian/endian.hh"
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/likely/likely.hh"
 
 #include "unisim/service/os/linux_os/linux.hh"

@@ -54,7 +54,7 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -87,7 +87,7 @@ using unisim::kernel::service::SignalArray;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;

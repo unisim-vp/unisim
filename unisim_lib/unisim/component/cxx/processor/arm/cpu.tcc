@@ -148,11 +148,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   /*************************************/
   
   {
-    unisim::util::debug::Register* dbg_reg = 0;
+    unisim::service::interfaces::Register* dbg_reg = 0;
     unisim::kernel::service::Register<uint32_t>* var_reg = 0;
   
     /** Specific Banked Register Debugging Accessor */
-    struct BankedRegister : public unisim::util::debug::Register
+    struct BankedRegister : public unisim::service::interfaces::Register
     {
       BankedRegister(CPU& _cpu, std::string _name, uint8_t _mode, uint8_t _idx ) : cpu(_cpu), name(_name), mode(_mode), idx(_idx) {}
       virtual const char *GetName() const { return name.c_str(); }
@@ -203,7 +203,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     }
   
     /** Specific Program Counter Register Debugging Accessor */
-    struct ProgramCounterRegister : public unisim::util::debug::Register
+    struct ProgramCounterRegister : public unisim::service::interfaces::Register
     {
       ProgramCounterRegister( CPU& _cpu ) : cpu(_cpu) {}
       virtual const char *GetName() const { return "pc"; }
@@ -228,7 +228,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     variable_register_pool.insert( var_reg );
     
     /** Specific SPSR */
-    struct SavedProgramStatusRegister : public unisim::util::debug::Register
+    struct SavedProgramStatusRegister : public unisim::service::interfaces::Register
     {
       SavedProgramStatusRegister( CPU& _cpu, std::string _name, uint8_t _mode ) : cpu(_cpu), name(_name), mode(_mode) {}
       virtual ~SavedProgramStatusRegister() {}
@@ -276,7 +276,7 @@ CPU<CONFIG>::~CPU()
  * @return a pointer to the RegisterInterface corresponding to name
  */
 template <class CONFIG>
-unisim::util::debug::Register*
+unisim::service::interfaces::Register*
 CPU<CONFIG>::GetRegister(const char *name)
 {
   RegistersRegistry::iterator itr = registers_registry.find( name );
@@ -325,7 +325,7 @@ CPU<CONFIG>::RequiresPL(unsigned rpl)
  */
 template <class CONFIG>
 void
-CPU<CONFIG>::ScanRegisters( unisim::util::debug::RegisterScanner& scanner )
+CPU<CONFIG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
 {
   scanner.Append( this->GetRegister( "r0" ) );
   scanner.Append( this->GetRegister( "r1" ) );

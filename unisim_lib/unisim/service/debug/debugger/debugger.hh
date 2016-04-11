@@ -157,8 +157,8 @@ public:
 	virtual void Reset();
 	virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size);
-	virtual unisim::util::debug::Register *GetRegister(const char *name);
-	virtual void ScanRegisters(unisim::util::debug::RegisterScanner& scanner);
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 	
 	virtual void ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);

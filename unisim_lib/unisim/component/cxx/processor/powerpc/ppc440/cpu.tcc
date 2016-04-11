@@ -499,7 +499,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -2208,9 +2208,9 @@ string CPU<CONFIG>::GetFunctionFriendlyName(typename CONFIG::address_t addr)
 }
 
 template <class CONFIG>
-unisim::util::debug::Register *CPU<CONFIG>::GetRegister(const char *name)
+unisim::service::interfaces::Register *CPU<CONFIG>::GetRegister(const char *name)
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
 	if(reg_iter != registers_registry.end())
 	{
 		return (*reg_iter).second;
@@ -2220,7 +2220,7 @@ unisim::util::debug::Register *CPU<CONFIG>::GetRegister(const char *name)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ScanRegisters(unisim::util::debug::RegisterScanner& scanner)
+void CPU<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
 {
   scanner.Append(this->GetRegister("r0"));
   scanner.Append(this->GetRegister("r1"));

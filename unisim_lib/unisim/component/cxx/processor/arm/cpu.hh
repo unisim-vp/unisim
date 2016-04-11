@@ -45,7 +45,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/registers.hh>
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <map>
 #include <set>
 #include <inttypes.h>
@@ -436,17 +436,17 @@ public:
   
 public:
 
-  virtual unisim::util::debug::Register* GetRegister( const char* name );
-  virtual void ScanRegisters( unisim::util::debug::RegisterScanner& scanner );
+  virtual unisim::service::interfaces::Register* GetRegister( const char* name );
+  virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
 		
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
   
 protected:
   /** The registers interface for debugging purpose */
-  typedef std::map<std::string, unisim::util::debug::Register*> RegistersRegistry;
+  typedef std::map<std::string, unisim::service::interfaces::Register*> RegistersRegistry;
   RegistersRegistry registers_registry;
   
-  typedef std::set<unisim::util::debug::Register*> DebugRegisterPool;
+  typedef std::set<unisim::service::interfaces::Register*> DebugRegisterPool;
   DebugRegisterPool debug_register_pool;
   typedef std::set<unisim::kernel::service::VariableBase*> VariableRegisterPool;
   VariableRegisterPool variable_register_pool;

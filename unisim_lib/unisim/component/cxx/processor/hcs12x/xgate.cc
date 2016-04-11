@@ -180,7 +180,7 @@ XGATE::XGATE(const char *name, Object *parent):
 XGATE::~XGATE()
 {
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{

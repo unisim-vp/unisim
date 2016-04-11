@@ -33,7 +33,7 @@
  */
 
 #include "unisim/service/interfaces/registers.hh"
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include <unisim/kernel/service/service.hh>
 #include <stdint.h>
 
@@ -44,7 +44,7 @@ namespace registers {
 
 
 using unisim::service::interfaces::Registers;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;

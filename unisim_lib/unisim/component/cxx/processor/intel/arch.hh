@@ -45,7 +45,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/registers.hh>
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <iostream>
 #include <vector>
 #include <map>

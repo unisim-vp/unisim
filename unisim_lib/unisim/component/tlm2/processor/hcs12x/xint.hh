@@ -58,7 +58,7 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
@@ -90,7 +90,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::component::tlm2::processor::hcs12x::XINT_REQ_ProtocolTypes;
 using unisim::component::tlm2::processor::hcs12x::XINT_Payload;

@@ -46,7 +46,7 @@
 #include "unisim/service/interfaces/registers.hh"
 
 #include "unisim/util/debug/simple_register.hh"
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/singleton/singleton.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
@@ -73,7 +73,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
 using unisim::util::debug::SimpleRegister;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::Singleton;
 
 using unisim::component::cxx::processor::hcs12x::S12MPU_IF;

@@ -171,8 +171,8 @@ namespace linux_os {
     {
       // Reset all target registers
       {
-        struct : public unisim::util::debug::RegisterScanner {
-          void Append( unisim::util::debug::Register* reg ) { reg->Clear(); }
+        struct : public unisim::service::interfaces::RegisterScanner {
+          void Append( unisim::service::interfaces::Register* reg ) { reg->Clear(); }
         } clear_regs;
         this->RegsIF().ScanRegisters( clear_regs );
       }

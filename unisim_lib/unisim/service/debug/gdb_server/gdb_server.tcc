@@ -295,7 +295,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 						bool cpu_has_reg = true;
 						bool cpu_has_right_reg_bitsize = true;
 
-						unisim::util::debug::Register *reg = 0;
+						unisim::service::interfaces::Register *reg = 0;
 						
 						if(!reg_name.empty())
 						{

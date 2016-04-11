@@ -1682,7 +1682,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_bas
 						case DW_LOC_SIMPLE_REGISTER:
 							{
 								unsigned int dw_reg_num = frame_base_loc.GetRegisterNumber();
-								unisim::util::debug::Register *arch_reg = dw_cu->GetHandler()->GetRegisterNumberMapping()->GetArchReg(dw_reg_num);
+								unisim::service::interfaces::Register *arch_reg = dw_cu->GetHandler()->GetRegisterNumberMapping()->GetArchReg(dw_reg_num);
 								MEMORY_ADDR reg_value = 0;
 								switch(arch_reg->GetSize())
 								{

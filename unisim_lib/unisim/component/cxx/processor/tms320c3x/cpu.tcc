@@ -224,7 +224,7 @@ template<class CONFIG, bool DEBUG>
 CPU<CONFIG, DEBUG> ::
 ~CPU() 
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -476,11 +476,11 @@ InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t 
  * @return        A pointer to the RegisterInterface corresponding to name.
  */
 template<class CONFIG, bool DEBUG>
-unisim::util::debug::Register *
+unisim::service::interfaces::Register *
 CPU<CONFIG, DEBUG> ::
 GetRegister(const char *name)
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
 	return (reg_iter != registers_registry.end()) ? (*reg_iter).second : 0;
 }
 

@@ -395,11 +395,12 @@ void Simulator<CONFIG>::Stop(Object *object, int _exit_status, bool asynchronous
 	sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_process_handle h = sc_get_current_process_handle();
+		switch(h.proc_kind())
 		{
 			case SC_THREAD_PROC_: 
 			case SC_CTHREAD_PROC_:
-				wait();
+				sc_core::wait();
 				break;
 			default:
 				break;

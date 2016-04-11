@@ -35,7 +35,7 @@
 #ifndef __UNISIM_UTIL_DEBUG_SIMPLE_REGISTER_HH__
 #define __UNISIM_UTIL_DEBUG_SIMPLE_REGISTER_HH__
 
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <string>
 
 namespace unisim {
@@ -45,7 +45,7 @@ namespace debug {
 using std::string;
 
 template <typename REGISTER_TYPE>
-class SimpleRegister : public Register
+class SimpleRegister : public unisim::service::interfaces::Register
 {
 public:
 	SimpleRegister(const char *name, REGISTER_TYPE *value);

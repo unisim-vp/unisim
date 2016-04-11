@@ -343,7 +343,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				break;
 			case 1:
 				{
-					unisim::util::debug::Register *reg = registers_import->GetRegister(parm[0].c_str());
+					unisim::service::interfaces::Register *reg = registers_import->GetRegister(parm[0].c_str());
 
 					if(reg)
 					{

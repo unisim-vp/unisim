@@ -57,7 +57,7 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -95,7 +95,7 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::kernel::tlm2::PayloadFabric;
 
