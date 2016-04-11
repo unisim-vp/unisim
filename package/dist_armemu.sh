@@ -284,6 +284,7 @@ unisim/service/interfaces/os.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/loader.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
@@ -334,7 +335,6 @@ unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/breakpoint_registry.hh \
-unisim/util/debug/register.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/breakpoint.hh \
