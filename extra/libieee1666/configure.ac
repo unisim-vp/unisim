@@ -69,6 +69,6 @@ AC_CONFIG_FILES([debian/libieee1666-${PACKAGE_VERSION}.install:pkg/deb/libieee16
 AC_CONFIG_FILES([debian/libieee1666-static-dev.install:pkg/deb/libieee1666-static-dev.install.in])
 AC_CONFIG_FILES([debian/rules:pkg/deb/rules.in],[chmod +x debian/rules])
 AC_CONFIG_FILES([debian/source/format:pkg/deb/source/format.in])
-AC_CONFIG_FILES([ieee1666/core/features.h])
+AC_CONFIG_FILES([libieee1666/core/features.h])
 
 AC_OUTPUT
