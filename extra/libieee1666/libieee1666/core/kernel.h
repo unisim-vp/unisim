@@ -50,6 +50,7 @@
 #include "core/method_process.h"
 #include "core/prim_channel.h"
 #include "core/process_handle.h"
+#include "core/coroutine.h"
 
 #if !defined(DLL_EXPORT) && (defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64))
 #define ___LIBIEEE1666_DLL_EXPORT__ __declspec(dllexport)
@@ -187,6 +188,9 @@ public:
 	bool hierarchical_name_exists(const char *name) const;
 	const char* gen_unique_name( const char* seed ) const;
 	
+	sc_coroutine_system *get_coroutine_system();
+	inline sc_coroutine *get_next_coroutine() ALWAYS_INLINE;
+
 	// debug stuff
 	void dump_hierarchy(std::ostream& os) const;
 protected:
@@ -213,6 +217,10 @@ private:
 	std::vector<sc_method_process *> method_process_table;
 	std::set<sc_process_handle> process_handle_table;
 
+	// coroutine
+	sc_coroutine_system *coroutine_system;
+	sc_coroutine *main_coroutine;
+	
 	// time resolution management
 	bool time_resolution_fixed_by_user;
 	mutable bool time_resolution_fixed;
@@ -313,6 +321,20 @@ void wait( const sc_time& , const sc_event_and_list & );
 void wait( double , sc_time_unit , const sc_event_and_list & );
 
 /////////////////////////////// sc_kernel ////////////////////////////////
+
+inline sc_coroutine *sc_kernel::get_next_coroutine()
+{
+	if(runnable_thread_processes.empty() || (user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE))) return main_coroutine;
+
+	std::unordered_set<sc_thread_process *>::iterator it = runnable_thread_processes.begin();
+	sc_thread_process *thread_process = *it;
+	runnable_thread_processes.erase(it);
+	current_object = thread_process;
+	current_writer = thread_process;
+	current_thread_process = thread_process;
+	
+	return thread_process->coroutine;
+}
 
 inline sc_kernel_event *sc_kernel::notify(sc_event *e)
 {

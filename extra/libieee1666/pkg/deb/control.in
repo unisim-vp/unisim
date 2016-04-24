@@ -3,13 +3,13 @@ Priority: optional
 Section: libs
 Maintainer: Gilles Mouchard <gilles.mouchard@cea.fr>
 Standards-Version: 3.9.7
-Build-Depends: debhelper (>= 9), dh-autoreconf, autotools-dev, pkg-config, libboost-coroutine-dev
+Build-Depends: debhelper (>= 9), dh-autoreconf, autotools-dev, pkg-config, libboost-context-dev
 Homepage: http://unisim-vp.org
 
 Package: libieee1666-@PACKAGE_VERSION@
 Priority: standard
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libboost-coroutine
+Depends: ${shlibs:Depends}, ${misc:Depends}, libboost-context
 Description: Free implementation of IEEE 1666-2011.
  This library implements Standard for Standard SystemC(R) Language Reference
  Manual (IEEE 1666-2011). It is necessary to run SystemC simulators.

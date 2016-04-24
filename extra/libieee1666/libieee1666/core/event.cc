@@ -39,7 +39,6 @@
 #include "core/kernel_event.h"
 #include "core/thread_process.h"
 #include "core/method_process.h"
-#include "utilities/backtrace.h"
 #include <string.h>
 
 namespace sc_core {

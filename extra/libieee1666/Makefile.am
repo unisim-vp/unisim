@@ -4,6 +4,7 @@ ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I$(top_srcdir)/libieee1666 -I$(top_builddir)/libieee1666
 AM_CXXFLAGS = -fPIC
 sharedir = $(prefix)/share/libieee1666
+
 nobase_include_HEADERS = \
 libieee1666/systemc \
 libieee1666/systemc.h \
@@ -33,6 +34,7 @@ libieee1666/core/allocator.h \
 libieee1666/core/spawn.h \
 libieee1666/core/features.h \
 libieee1666/core/reset.h \
+libieee1666/core/coroutine.h \
 libieee1666/channels/fifo_in.h \
 libieee1666/channels/clock.h \
 libieee1666/channels/fifo_if.h \
@@ -56,7 +58,6 @@ libieee1666/utilities/trace_file.h \
 libieee1666/utilities/report.h \
 libieee1666/utilities/report_handler.h \
 libieee1666/utilities/version.h \
-libieee1666/utilities/backtrace.h \
 libieee1666/utilities/vector.h \
 libieee1666/tlm2/fwd.h \
 libieee1666/tlm2/interface/blocking_transport.h \
@@ -76,6 +77,12 @@ libieee1666/tlm_utils/passthrough_target_socket.h \
 libieee1666/tlm_utils/peq_with_get.h \
 libieee1666/tlm_utils/peq_with_cb_and_phase.h \
 libieee1666/tlm_utils/tlm_quantumkeeper.h
+
+noinst_HEADERS = \
+libieee1666/core/sysdep/fcontext_coroutine.h \
+libieee1666/core/sysdep/pthread_coroutine.h \
+libieee1666/utilities/backtrace.h \
+libieee1666/utilities/sysdep/backtrace.h
 
 lib_LTLIBRARIES = libieee1666.la
 libieee1666_la_SOURCES = \
@@ -120,12 +127,19 @@ libieee1666/utilities/trace_file.cc \
 libieee1666/utilities/report.cc \
 libieee1666/utilities/report_handler.cc \
 libieee1666/utilities/version.cc \
-libieee1666/utilities/backtrace.cc \
 libieee1666/tlm2/interface/direct_memory.cc \
 libieee1666/tlm2/phase/base_phase.cc \
 libieee1666/tlm2/payload/generic_payload.cc \
 libieee1666/tlm2/global_quantum/global_quantum.cc \
 libieee1666/tlm_utils/tlm_quantumkeeper.cc
+
+EXTRA_libieee1666_la_SOURCES = \
+libieee1666/core/sysdep/fcontext_coroutine.cc \
+libieee1666/core/sysdep/pthread_coroutine.cc \
+libieee1666/utilities/sysdep/backtrace.cc
+
+libieee1666_la_LIBADD = $(LIBIEEE1666_SYSDEPS)
+libieee1666_la_DEPENDENCIES = $(LIBIEEE1666_SYSDEPS)
 
 libieee1666_la_LDFLAGS = -release $(PACKAGE_VERSION)
 
@@ -133,9 +147,14 @@ nobase_dist_share_DATA = \
 COPYING
 
 EXTRA_DIST = \
-m4/cxxabi.m4 \
-m4/check_lib.m4 \
-m4/sc_thread_process_backend.m4 \
+bootstrap.sh \
+m4/libtool.m4 \
+m4/lt~obsolete.m4 \
+m4/ltoptions.m4 \
+m4/ltsugar.m4 \
+m4/ltversion.m4 \
+m4/ax_boost_base.m4 \
+m4/ax_boost_context.m4 \
 pkg/pkgconfig/libieee1666.pc.in \
 pkg/pkgconfig/systemc.pc.in \
 pkg/pkgconfig/tlm.pc.in \

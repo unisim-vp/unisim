@@ -39,49 +39,9 @@
 #include "core/object.h"
 #include "core/process.h"
 #include "core/time.h"
-
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-#include <pthread.h>
-#else
-#include <boost/version.hpp>
-#if BOOST_VERSION < 105600 // boost version < 1.56.0
-#ifndef BOOST_COROUTINES_V1
-#define BOOST_COROUTINES_V1 // ask for boost coroutine v1
-#endif
-#ifdef BOOST_COROUTINES_UNIDIRECT
-#undef BOOST_COROUTINES_UNIDIRECT  // force boost coroutine v1
-#endif
-#endif
-#include <boost/coroutine/coroutine.hpp>
-
-#endif
+#include "core/coroutine.h"
 
 namespace sc_core {
-
-#if !SC_THREAD_PROCESSES_USE_PTHREADS
-#if BOOST_VERSION >= 105600 // boost version >= 1.56.0
-// boost coroutines v2
-typedef boost::coroutines::asymmetric_coroutine<void>::pull_type sc_coroutine;
-typedef boost::coroutines::asymmetric_coroutine<void>::push_type yield_type;
-#else
-// boost coroutines v1
-typedef boost::coroutines::coroutine<void()> sc_coroutine;
-typedef sc_coroutine::caller_type yield_type;
-#endif
-typedef boost::coroutines::attributes sc_coroutine_attributes;
-
-class sc_thread_process_helper
-{
-public:
-	sc_thread_process_helper(sc_thread_process *thread_process, yield_type& yield);
-	~sc_thread_process_helper();
-private:
-	friend class sc_thread_process;
-	
-	sc_thread_process *thread_process;
-	yield_type& yield;
-};
-#endif
 
 class sc_thread_process : public sc_process
 {
@@ -121,21 +81,9 @@ public:
 	
 	virtual const char *kind() const;
 private:
-#if !SC_THREAD_PROCESSES_USE_PTHREADS
-	friend class sc_thread_process_helper;
-#endif
 	friend class sc_kernel;
-	
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_t thrd;
-	pthread_mutex_t callee_mutex;
-	pthread_mutex_t caller_mutex;
-	pthread_cond_t cond_callee;
-	pthread_cond_t cond_caller;
-#else
-	sc_coroutine *coro;
-	sc_thread_process_helper *thread_process_helper;
-#endif
+
+	sc_coroutine *coroutine;
 	int stack_size;
 	bool started;
 	bool flag_killed;
@@ -168,13 +116,10 @@ private:
 	sc_time wait_time_out;
 	sc_event wait_time_out_event;
 
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-	static void *thread_work(void *);
-#else
-	void coroutine_work(yield_type& yield);
-#endif
+	static void coroutine_work(intptr_t self);
+	void yield(sc_coroutine *next_coroutine);
+	void yield(sc_thread_process *next_thread_process);
 	void yield();
-	void switch_to();
 	
 	void terminate();
 };

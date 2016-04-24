@@ -41,6 +41,15 @@
 #include "core/process_handle.h"
 #include "core/time.h"
 #include "core/event_finder.h"
+
+#if __LIBIEEE1666_FCONTEXT__
+#include "core/sysdep/fcontext_coroutine.h"
+#endif
+
+#if __LIBIEEE1666_PTHREAD__
+#include "core/sysdep/pthread_coroutine.h"
+#endif
+
 #include <math.h>
 #include <string.h>
 #include <limits>
@@ -74,13 +83,15 @@ sc_kernel::sc_kernel()
 	, thread_process_table()
 	, method_process_table()
 	, process_handle_table()
+	, coroutine_system(0)
+	, main_coroutine(0)
 	, time_resolution_fixed_by_user(false)
 	, time_resolution_fixed(false)
 	, time_resolution_scale_factors_table_base_index(0)
 	, time_resolution_scale_factors_table()
 	, max_time()
 	, current_object(0)
-  , current_writer(0)
+	, current_writer(0)
 	, current_thread_process(0)
 	, current_method_process(0)
 	, current_time_stamp()
@@ -102,6 +113,38 @@ sc_kernel::sc_kernel()
 	, start_of_simulation_invoked(false)
 	, delta_count(0)
 {
+	char *libieee1666_coroutine_system = getenv("LIBIEEE1666_COROUTINE_SYSTEM");
+	
+	do
+	{
+#if __LIBIEEE1666_FCONTEXT__
+		if(strcmp(libieee1666_coroutine_system, "FCONTEXT") == 0)
+		{
+			coroutine_system = new sc_fcontext_coroutine_system();
+			break;
+		}
+#endif
+#if __LIBIEEE1666_PTHREAD__
+		if(strcmp(libieee1666_coroutine_system, "PTHREAD") == 0)
+		{
+			coroutine_system = new sc_pthread_coroutine_system();
+			break;
+		}
+#endif
+#if __LIBIEEE1666_FCONTEXT__
+		coroutine_system = new sc_fcontext_coroutine_system();
+#elif __LIBIEEE1666_PTHREAD__
+		coroutine_system = new sc_pthread_coroutine_system();
+#endif
+		throw std::runtime_error("Internal error! no coroutine system available");
+	}
+	while(0);
+	
+	if(coroutine_system)
+	{
+		main_coroutine = coroutine_system->get_main_coroutine();
+	}
+	
 	set_time_resolution(1.0, SC_PS, false);
 }
 
@@ -154,6 +197,8 @@ sc_kernel::~sc_kernel()
 		unregister_event(top_level_event);
 		top_level_event->kernel = 0;
 	}
+	
+	delete main_coroutine;
 }
 
 sc_kernel *sc_kernel::get_kernel()
@@ -243,7 +288,6 @@ sc_process_handle sc_kernel::create_thread_process(const char *name, sc_process_
 	if(status >= SC_START_OF_SIMULATION)
 	{
 		thread_process->start(); // start thread process in suspend state
-		
 		if(!spawn_options || !spawn_options->get_flag_dont_initialize())
 		{
 			trigger(thread_process);
@@ -283,6 +327,11 @@ sc_process_handle sc_kernel::create_method_process(const char *name, sc_process_
 	}
 
 	return method_process_handle;
+}
+
+sc_coroutine_system *sc_kernel::get_coroutine_system()
+{
+	return coroutine_system;
 }
 
 void sc_kernel::report_before_end_of_elaboration()
@@ -395,16 +444,6 @@ void sc_kernel::initialize()
 	status = SC_START_OF_SIMULATION;
 	report_start_of_simulation();
 
-	// start thread processes in suspend state
-	num_thread_processes = thread_process_table.size();
-	for(i = 0; i < num_thread_processes; i++)
-	{
-		sc_thread_process *thread_process = thread_process_table[i];
-		
-		thread_process->start(); // at this point, process is suspended before call to sc_process_owner method
-	}
-	
-	// initial wake-up of all SC_METHOD processes
 	num_method_processes = method_process_table.size();
 	for(i = 0; i < num_method_processes; i++)
 	{
@@ -412,13 +451,50 @@ void sc_kernel::initialize()
 		
 		if(!method_process->dont_initialize())
 		{
+			runnable_method_processes.insert(method_process);
+		}
+	}
+
+	// start thread processes in suspend state
+	num_thread_processes = thread_process_table.size();
+	for(i = 0; i < num_thread_processes; i++)
+	{
+		sc_thread_process *thread_process = thread_process_table[i];
+		
+		thread_process->start(); // at this point, process is suspended before call to sc_process_owner method
+		
+		if(!thread_process->dont_initialize())
+		{
+			runnable_thread_processes.insert(thread_process);
+		}
+	}
+	
+	// initial wake-up of all SC_METHOD processes
+	if(runnable_method_processes.size())
+	{
+		std::unordered_set<sc_method_process *>::iterator it = runnable_method_processes.begin();
+
+		bool stop_immediate = false;
+		
+		do
+		{
+			sc_method_process *method_process = *it;
+			it = runnable_method_processes.erase(it);
+			method_process->trigger_requested = false;
+			
 			current_object = method_process;
 			current_writer = method_process;
 			current_method_process = method_process;
-// 			std::cerr << current_time_stamp << ": init /\\/ " << method_process->name() << std::endl;
+// 					std::cerr << current_time_stamp << ": /\\/ " << method_process->name() << std::endl;
 			method_process->run();
 			method_process->commit_next_trigger();
+			stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
 		}
+		while(!stop_immediate && (it != runnable_method_processes.end()));
+		current_object = 0;
+		current_writer = 0;
+		current_method_process = 0;
+		if(stop_immediate) return;
 	}
 	current_object = 0;
 	current_writer = 0;
@@ -426,23 +502,25 @@ void sc_kernel::initialize()
 	
 
 	// initial wake-up of all SC_THREAD/SC_CTHREAD processes
-	for(i = 0; i < num_thread_processes; i++)
+	if(runnable_thread_processes.size())
 	{
-		sc_thread_process *thread_process = thread_process_table[i];
-		
-		if(!thread_process->dont_initialize())
-		{
-			current_object = thread_process;
-			current_writer = thread_process;
-			current_thread_process = thread_process;
-//			std::cerr << current_time_stamp << ": init /\\/ " << thread_process->name() << std::endl;
-			thread_process->switch_to();
-		}
+		std::unordered_set<sc_thread_process *>::iterator it = runnable_thread_processes.begin();
+		sc_thread_process *thread_process = *it;
+		runnable_thread_processes.erase(it);
+		thread_process->trigger_requested = false;
+		current_object = thread_process;
+		current_writer = thread_process;
+		current_thread_process = thread_process;
+//		std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
+		main_coroutine->yield(thread_process->coroutine);
 	}
 	current_object = 0;
 	current_writer = 0;
 	current_thread_process = 0;
 	
+	release_terminated_method_processes();
+	release_terminated_thread_processes();
+
 	initialized = true;
 }
 
@@ -487,35 +565,27 @@ void sc_kernel::do_delta_steps(bool once)
 			// wake up SC_THREAD/SC_CTHREAD processes
 			if(runnable_thread_processes.size())
 			{
+				eval_flag = 1;
 				std::unordered_set<sc_thread_process *>::iterator it = runnable_thread_processes.begin();
-
-				bool stop_immediate = false;
-				
-				do
-				{
-					sc_thread_process *thread_process = *it;
-					it = runnable_thread_processes.erase(it);
-					thread_process->trigger_requested = false;
-					
-					current_object = thread_process;
-					current_writer = thread_process;
-					current_thread_process = thread_process;
-					eval_flag = 1;
-// 					std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
-					thread_process->switch_to();
-					stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
-				}
-				while(!stop_immediate &&  (it != runnable_thread_processes.end()));
+				sc_thread_process *thread_process = *it;
+				runnable_thread_processes.erase(it);
+				thread_process->trigger_requested = false;
+				current_object = thread_process;
+				current_writer = thread_process;
+				current_thread_process = thread_process;
+//				std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
+				main_coroutine->yield(thread_process->coroutine);
 				current_object = 0;
 				current_writer = 0;
 				current_thread_process = 0;
-				if(stop_immediate) return;
 			}
 		}
 		while(runnable_thread_processes.size() || runnable_method_processes.size());
 
 		release_terminated_method_processes();
 		release_terminated_thread_processes();
+
+		if(user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE)) return;
 		
 		delta_count += eval_flag;
 

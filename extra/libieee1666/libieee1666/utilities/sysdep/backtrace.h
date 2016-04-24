@@ -32,48 +32,29 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __LIBIEEE1666_UTILITIES_BACKTRACE_H__
-#define __LIBIEEE1666_UTILITIES_BACKTRACE_H__
+#ifndef __LIBIEEE1666_UTILITIES_SYSDEP_BACKTRACE_H__
+#define __LIBIEEE1666_UTILITIES_SYSDEP_BACKTRACE_H__
 
 #include <iosfwd>
-
-#if __LIBIEEE1666_BACKTRACE__
-
-#include "utilities/sysdep/backtrace.h"
-
-#else
 
 namespace sc_core {
 
 class sc_backtrace;
 
-inline std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace);
+std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace);
 
 class sc_backtrace
 {
 public:
-	inline sc_backtrace(unsigned int max_depth = 32)
-	inline ~sc_backtrace()
+	sc_backtrace(unsigned int max_depth = 32);
+	~sc_backtrace();
 
 	friend std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace);
 private:
+	int stack_depth;
+	void **stack_addrs;
 };
 
-inline sc_backtrace::sc_backtrace(unsigned int max_depth)
-{
-}
-
-inline sc_backtrace::~sc_backtrace()
-{
-}
-
-inline std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace)
-{
-	return os << "no backtrace available";
-}
-
 } // end of namespace sc_core
-
-#endif
 
 #endif

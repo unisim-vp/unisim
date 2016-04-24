@@ -8,5 +8,5 @@ Description: A free implementation (BSD license) of IEEE Standard for Standard S
 URL: @PACKAGE_URL@
 Version: @VERSION@
 Requires:
-Libs: -L${libdir} -lieee1666 @BOOST_COROUTINE_LIB@ @BOOST_CONTEXT_LIB@ @BOOST_SYSTEM_LIB@ @PTHREAD_LIBS@ @LIBS@
-Cflags: -I${includedir}/libieee1666 @LIBIEEE1666_PKG_CONFIG_CXXFLAGS@ @PTHREAD_CFLAGS@
+Libs: -L${libdir} -lieee1666 @LIBS@
+Cflags: -I${includedir}/libieee1666 @LIBIEEE1666_PKG_CONFIG_CXXFLAGS@

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,49 +31,33 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __LIBIEEE1666_UTILITIES_BACKTRACE_H__
-#define __LIBIEEE1666_UTILITIES_BACKTRACE_H__
 
-#include <iosfwd>
+#ifndef __LIBIEEE1666_CORE_COROUTINE_H__
+#define __LIBIEEE1666_CORE_COROUTINE_H__
 
-#if __LIBIEEE1666_BACKTRACE__
-
-#include "utilities/sysdep/backtrace.h"
-
-#else
+#include <stdint.h>
+#include <cstddef>
 
 namespace sc_core {
 
-class sc_backtrace;
-
-inline std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace);
-
-class sc_backtrace
+class sc_coroutine
 {
 public:
-	inline sc_backtrace(unsigned int max_depth = 32)
-	inline ~sc_backtrace()
-
-	friend std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace);
-private:
+	virtual void start() = 0;
+	virtual void yield(sc_coroutine *next_coroutine) = 0;
+	virtual void abort(sc_coroutine *next_coroutine) = 0;
 };
 
-inline sc_backtrace::sc_backtrace(unsigned int max_depth)
+class sc_coroutine_system
 {
-}
+public:
+	virtual ~sc_coroutine_system() {}
+	
+	virtual sc_coroutine *get_main_coroutine() = 0;
+	virtual sc_coroutine *create_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg) = 0;
+};
 
-inline sc_backtrace::~sc_backtrace()
-{
-}
-
-inline std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace)
-{
-	return os << "no backtrace available";
-}
 
 } // end of namespace sc_core
-
-#endif
 
 #endif

@@ -40,34 +40,9 @@
 
 namespace sc_core {
 
-#if !SC_THREAD_PROCESSES_USE_PTHREADS
-sc_thread_process_helper::sc_thread_process_helper(sc_thread_process *_thread_process, yield_type& _yield)
-	: thread_process(_thread_process)
-	, yield(_yield)
-{
-	thread_process->thread_process_helper = this;
-	yield();
-	thread_process->call_process_owner_method();
-}
-
-sc_thread_process_helper::~sc_thread_process_helper()
-{
-	thread_process->thread_process_helper = 0;
-}
-#endif
-
 sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, bool clocked, const sc_spawn_options *spawn_options)
 	: sc_process(_name, _process_owner, _process_owner_method_ptr, clocked ? SC_CTHREAD_PROC_ : SC_THREAD_PROC_, spawn_options)
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-	, thrd()
-	, callee_mutex()
-	, caller_mutex()
-	, cond_callee()
-	, cond_caller()
-#else
-	, coro(0)
-	, thread_process_helper(0)
-#endif
+	, coroutine(0)
 	, stack_size(spawn_options ? spawn_options->get_stack_size() : 0)
 	, started(false)
 	, flag_killed(false)
@@ -85,28 +60,16 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, wait_and_event_list_remaining_count(0)
 	, wait_time_out_event(__LIBIEEE1666_KERNEL_PREFIX__ "_wait_time_out_event")
 {
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_mutex_init(&callee_mutex, NULL);
-	pthread_mutex_init(&caller_mutex, NULL);
-	pthread_cond_init(&cond_callee, NULL);
-	pthread_cond_init(&cond_caller, NULL);
-#endif
+	coroutine = kernel->get_coroutine_system()->create_coroutine(stack_size, &sc_thread_process::coroutine_work, reinterpret_cast<intptr_t>(this));
 	kernel->register_thread_process(this);
 }
 
 sc_thread_process::~sc_thread_process()
 {
 	kill();
+	delete coroutine;
 
 	kernel->unregister_thread_process(this);
-
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_mutex_destroy(&callee_mutex);
-	pthread_mutex_destroy(&caller_mutex);
-	pthread_cond_destroy(&cond_callee);
-	pthread_cond_destroy(&cond_caller);
-#endif
-	
 }
 
 void sc_thread_process::set_stack_size(int _stack_size)
@@ -116,53 +79,13 @@ void sc_thread_process::set_stack_size(int _stack_size)
 
 void sc_thread_process::start()
 {
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_mutex_lock(&caller_mutex);
-
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	if(stack_size)
-	{
-		pthread_attr_setstacksize(&attr, stack_size);
-	}
-	pthread_create(&thrd, &attr, &sc_thread_process::thread_work, this);
-
+	coroutine->start();
 	started = true;
-// 	std::cerr << "kernel waits " << name() << std::endl;
-	pthread_cond_wait(&cond_caller, &caller_mutex);
-// 	std::cerr << "kernel wakes up" << std::endl;
-	pthread_mutex_unlock(&caller_mutex);
-
-#else
-	if(stack_size)
-	{
-		sc_coroutine_attributes coro_attributes = sc_coroutine_attributes(stack_size);
-		coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1), coro_attributes);
-	}
-	else
-	{
-		coro = new sc_coroutine(boost::bind( &sc_thread_process::coroutine_work, this, _1));
-	}
-	started = true;
-#endif
 }
 
-void sc_thread_process::yield()
+void sc_thread_process::yield(sc_coroutine *next_coroutine)
 {
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_mutex_lock(&caller_mutex);
-// 	std::cerr << name() << " signals kernel" << std::endl;
-	pthread_cond_signal(&cond_caller);
-	pthread_mutex_lock(&callee_mutex);
-	pthread_mutex_unlock(&caller_mutex);
-// 	std::cerr << name() << " waits kernel" << std::endl;
-	pthread_cond_wait(&cond_callee, &callee_mutex);
-// 	std::cerr << name() << " wakes up" << std::endl;
-	pthread_mutex_unlock(&callee_mutex);
-#else
-	assert(thread_process_helper != 0);
-	thread_process_helper->yield(); // yield to kernel
-#endif
+	coroutine->yield(next_coroutine);
 	if(flag_killed)
 	{
 		flag_killed = false;
@@ -180,6 +103,16 @@ void sc_thread_process::yield()
 		flag_throw_it = false;
 		user_exception->throw_it();
 	}
+}
+
+void sc_thread_process::yield(sc_thread_process *next_thread_process)
+{
+	yield(next_thread_process->coroutine);
+}
+
+void sc_thread_process::yield()
+{
+	yield(kernel->get_next_coroutine());
 }
 
 void sc_thread_process::trigger_statically()
@@ -401,90 +334,39 @@ void sc_thread_process::wait(const sc_time& t, const sc_event_or_list& el)
 	yield();
 }
 
-void sc_thread_process::switch_to()
-{
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_mutex_lock(&callee_mutex);
-// 	std::cerr << "kernel signals " << name() << std::endl;
-	pthread_cond_signal(&cond_callee);
-	pthread_mutex_lock(&caller_mutex);
-	pthread_mutex_unlock(&callee_mutex);
-// 	std::cerr << "kernel waits " << name() << std::endl;
-	pthread_cond_wait(&cond_caller, &caller_mutex);
-// 	std::cerr << "kernel wakes up" << std::endl;
-	pthread_mutex_unlock(&caller_mutex);
-#else
-	if(*coro)
-	{
-		(*coro)(); // yield to thread
-	}
-#endif
-}
-
 void sc_thread_process::terminate()
 {
-//	std::cerr << sc_time_stamp() << ":" << name() << ".terminate()" << std::endl;
 	thread_process_terminated = true;
 	thread_process_terminated_event.notify();
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-	pthread_mutex_lock(&caller_mutex);
-// 	std::cerr << name() << "signals kernel" << std::endl;
-	pthread_cond_signal(&cond_caller);
-	pthread_mutex_unlock(&caller_mutex);
-	
-	pthread_exit(NULL);
-#endif
 	started = false;
 	
 	kernel->terminate_thread_process(this);
+	
+	coroutine->abort(kernel->get_next_coroutine());
 }
 
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-void *sc_thread_process::thread_work(void *arg)
+void sc_thread_process::coroutine_work(intptr_t _self)
 {
-	sc_thread_process *thread_process = static_cast<sc_thread_process *>(arg);
+	sc_thread_process *self = reinterpret_cast<sc_thread_process *>(_self);
 	
 	// SC_THREAD/SC_CTHREAD process method is run once unless process is reset
 	while(true)
 	{
 		try
 		{
-			thread_process->yield();
-			thread_process->call_process_owner_method();
+			self->call_process_owner_method();
 		}
 		catch(sc_unwind_exception& exc)
 		{
-			thread_process->flag_is_unwinding = false;
-			if(exc.is_reset()) continue;
-		}
-		
-		break;
-	}
-	
-	thread_process->terminate();
-}
-#else
-void sc_thread_process::coroutine_work(yield_type& yield)
-{
-	// SC_THREAD/SC_CTHREAD process method is run once unless process is reset
-	while(true)
-	{
-		try
-		{
-			sc_thread_process_helper(this, yield);
-		}
-		catch(sc_unwind_exception& exc)
-		{
-			flag_is_unwinding = false;
+			self->flag_is_unwinding = false;
 			if(exc.is_reset()) continue;
 		}
 		
 		break;
 	}
 
-	terminate();
+	self->terminate();
 }
-#endif
 
 bool sc_thread_process::terminated() const
 {
@@ -543,40 +425,27 @@ void sc_thread_process::kill()
 		{
 			flag_killed = true;
 			
-			if(kernel->get_current_thread_process() == this)
+			sc_thread_process *current_thread_process = kernel->get_current_thread_process();
+			
+			if(current_thread_process == this)
 			{
 				// suicide
 				flag_is_unwinding = true;
 				throw sc_unwind_exception(false);
 			}
+			else if(current_thread_process)
+			{
+				// kill requested by another thread process
+				current_thread_process->yield(this); // switch to thread being killed and let thread die (throw)
+			}
 			else
 			{
-				// kill requested by another process or kernel
-				
-				switch_to(); // switch to thread being killed and let thread die (throw)
+				// kill requested by another method process or kernel
+				kernel->get_coroutine_system()->get_main_coroutine()->yield(coroutine);  // switch to thread being killed and let thread die (throw)
 			}
 		}
 		started = false;
 	}
-	
-	if(!kernel->get_current_process())
-	{
-		// killed by kernel
-		if(!freed)
-		{
-#if SC_THREAD_PROCESSES_USE_PTHREADS
-			pthread_join(thrd, NULL);
-#else
-			if(coro)
-			{
-				delete coro;
-				coro = 0;
-			}
-#endif
-			freed = true;
-		}
-	}
-	
 }
 
 void sc_thread_process::reset(bool async)
@@ -589,17 +458,23 @@ void sc_thread_process::reset(bool async)
 	{
 		if(!thread_process_terminated)
 		{
-			if(kernel->get_current_thread_process() == this)
+			sc_thread_process *current_thread_process = kernel->get_current_thread_process();
+			
+			if(current_thread_process == this)
 			{
 				// self reset
 				flag_is_unwinding = true;
 				throw sc_unwind_exception(true);
 			}
+			else if(current_thread_process)
+			{
+				// reset requested by another thread process
+				current_thread_process->yield(this); // switch to thread being reset and let thread reset (throw)
+			}
 			else
 			{
-				// reset requested by another process
-				
-				switch_to(); // switch to thread being reset and let thread reset (throw) itself
+				// reset requested by another method process or kernel
+				kernel->get_coroutine_system()->get_main_coroutine()->yield(coroutine);  // switch to thread being reset and let thread reset (throw)
 			}
 		}
 	}
@@ -614,19 +489,27 @@ void sc_thread_process::throw_it(const sc_user_exception& user_exception)
 	{
 		if(!thread_process_terminated)
 		{
-			if(kernel->get_current_thread_process() == this)
+			sc_thread_process *current_thread_process = kernel->get_current_thread_process();
+			
+			if(current_thread_process == this)
 			{
 				// self throw
 				user_exception.throw_it(); 
 			}
+			else if(current_thread_process)
+			{
+				// throw requested by another thread process
+				this->user_exception = &user_exception;
+				current_thread_process->yield(this); // switch to thread being thrown and let thread throw itself
+			}
 			else
 			{
+				// reset requested by another method process or kernel
 				this->user_exception = &user_exception;
-				switch_to(); // switch to thread being reset and let thread throw itself
+				kernel->get_coroutine_system()->get_main_coroutine()->yield(coroutine);  // switch to thread being thrown and let thread throw itself
 			}
 		}
 	}
-	
 }
 
 const char *sc_thread_process::kind() const

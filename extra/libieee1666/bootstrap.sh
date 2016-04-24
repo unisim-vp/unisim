@@ -1,7 +1,11 @@
-#!/bin/bash
+#!/bin/sh
+#
+# This script is intended for building configure
+#
+
 mkdir -p config
-libtoolize
-aclocal -I m4
+libtoolize -c -f
+aclocal -Im4
 autoheader
 autoconf
 automake -ac

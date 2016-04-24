@@ -32,18 +32,11 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include "utilities/backtrace.h"
+#include "utilities/sysdep/backtrace.h"
 #include <stdlib.h>
 #include <iostream>
-
-#if defined(HAVE_CONFIG_H)
-#include <config.h>
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(HAVE_CXXABI)
 #include <execinfo.h>
 #include <cxxabi.h>
-#endif
 
 namespace sc_core {
 
@@ -51,11 +44,9 @@ sc_backtrace::sc_backtrace(unsigned int max_depth) :
 	stack_depth(0),
 	stack_addrs(0)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(HAVE_CXXABI)
 	stack_addrs = (void **) malloc((max_depth + 1) * sizeof(void *));
 	stack_depth = backtrace(stack_addrs, max_depth + 1);
 	stack_addrs = (void **) realloc(stack_addrs, stack_depth * sizeof(void *));
-#endif
 }
 
 sc_backtrace::~sc_backtrace()
@@ -65,7 +56,6 @@ sc_backtrace::~sc_backtrace()
 
 std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(HAVE_CXXABI)
 	char **stack_strings;
 	stack_strings = backtrace_symbols(backtrace.stack_addrs, backtrace.stack_depth);
 
@@ -187,7 +177,6 @@ std::ostream& operator << (std::ostream& os, const sc_backtrace& backtrace)
 
 	free(stack_strings); // malloc()ed by backtrace_symbols
 
-#endif
 	return os;
 }
 
