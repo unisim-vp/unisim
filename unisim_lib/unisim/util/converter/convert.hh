@@ -19,6 +19,8 @@
 #include <stdexcept>
 #include <map>
 
+#include <unisim/util/endian/endian.hh>
+
 class BadConversion : public std::runtime_error {
 public:
 	BadConversion(std::string const& s)	: std::runtime_error(s) { }
