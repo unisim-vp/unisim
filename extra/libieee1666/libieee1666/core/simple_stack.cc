@@ -32,59 +32,38 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __LIBIEEE1666_CORE_SYSDEP_FCONTEXT_COROUTINE_H__
-#define __LIBIEEE1666_CORE_SYSDEP_FCONTEXT_COROUTINE_H__
+#include "core/simple_stack.h"
 
-#include "core/coroutine.h"
-#include <boost/version.hpp>
-#include <boost/context/all.hpp>
-#include "core/stack.h"
+#include <stdlib.h>
+#include <stdexcept>
 
 namespace sc_core {
 
-class sc_fcontext_coroutine_system;
-
-class sc_fcontext_coroutine : public sc_coroutine
+sc_simple_stack::sc_simple_stack(std::size_t _stack_size)
+	: stack_size(_stack_size)
+	, buffer(0)
 {
-public:
-	sc_fcontext_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
-	virtual ~sc_fcontext_coroutine();
+	buffer = ::calloc(stack_size, sizeof(char));
 	
-	virtual void start();
-	virtual void yield(sc_coroutine *next_coroutine);
-	virtual void abort(sc_coroutine *next_coroutine);
-private:
-	explicit sc_fcontext_coroutine(); // reserved for main coroutine
+	if(!buffer) throw std::bad_alloc();
+}
 
-	friend class sc_fcontext_coroutine_system;
-	
-#if BOOST_VERSION >= 105600 // boost version >= 1.56.0
-	boost::context::fcontext_t fc;
-	boost::context::fcontext_t fcm;
-#else
-	boost::context::fcontext_t *fc;
-	boost::context::fcontext_t fcm;
-#endif
-	void *sp;
-	void (*fn)(intptr_t);
-	intptr_t arg;
-	sc_stack *stack;
-	
-	static void entry_point(intptr_t self);
-};
-
-class sc_fcontext_coroutine_system : public sc_coroutine_system
+sc_simple_stack::~sc_simple_stack()
 {
-public:
-	sc_fcontext_coroutine_system();
-	virtual ~sc_fcontext_coroutine_system();
-	
-	virtual sc_coroutine *get_main_coroutine();
-	virtual sc_coroutine *create_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
-private:
-	sc_fcontext_coroutine *main_coroutine;
-};
+	if(buffer)
+	{
+		free(buffer);
+	}
+}
+
+void *sc_simple_stack::get_top_of_the_stack() const
+{
+	return reinterpret_cast<void *>(reinterpret_cast<char *>(buffer) + stack_size);
+}
+
+sc_stack *sc_simple_stack_system::create_stack(std::size_t stack_size)
+{
+	return new sc_simple_stack(stack_size);
+}
 
 } // end of namespace sc_core
-
-#endif

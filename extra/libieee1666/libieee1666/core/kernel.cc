@@ -42,6 +42,13 @@
 #include "core/time.h"
 #include "core/event_finder.h"
 
+#include "core/stack.h"
+#include "core/simple_stack.h"
+
+#if __LIBIEEE1666_POSIX_GUARDED_STACK__
+#include "core/sysdep/posix_guarded_stack.h"
+#endif
+
 #if __LIBIEEE1666_FCONTEXT__
 #include "core/sysdep/fcontext_coroutine.h"
 #endif
@@ -84,6 +91,7 @@ sc_kernel::sc_kernel()
 	, method_process_table()
 	, process_handle_table()
 	, coroutine_system(0)
+	, stack_system(0)
 	, main_coroutine(0)
 	, time_resolution_fixed_by_user(false)
 	, time_resolution_fixed(false)
@@ -113,28 +121,60 @@ sc_kernel::sc_kernel()
 	, start_of_simulation_invoked(false)
 	, delta_count(0)
 {
+	char *libieee1666_stack_system = getenv("LIBIEEE1666_STACK_SYSTEM");
+	
+	do
+	{
+		if(libieee1666_stack_system)
+		{
+#if __LIBIEEE1666_POSIX_GUARDED_STACK__
+			if(strcmp(libieee1666_stack_system, "POSIX_GUARDED") == 0)
+			{
+				stack_system = new sc_posix_guarded_stack_system();
+				break;
+			}
+			if(strcmp(libieee1666_stack_system, "SIMPLE") == 0)
+			{
+				stack_system = new sc_simple_stack_system();
+				break;
+			}
+		}
+#endif
+#if __LIBIEEE1666_POSIX_GUARDED_STACK__
+		stack_system = new sc_posix_guarded_stack_system();
+#else
+		stack_system = new sc_simple_stack_system();
+#endif
+	}
+	while(0);
+
 	char *libieee1666_coroutine_system = getenv("LIBIEEE1666_COROUTINE_SYSTEM");
 	
 	do
 	{
-#if __LIBIEEE1666_FCONTEXT__
-		if(strcmp(libieee1666_coroutine_system, "FCONTEXT") == 0)
+		if(libieee1666_coroutine_system)
 		{
-			coroutine_system = new sc_fcontext_coroutine_system();
-			break;
-		}
+#if __LIBIEEE1666_FCONTEXT__
+			if(strcmp(libieee1666_coroutine_system, "FCONTEXT") == 0)
+			{
+				coroutine_system = new sc_fcontext_coroutine_system();
+				break;
+			}
 #endif
 #if __LIBIEEE1666_PTHREAD__
-		if(strcmp(libieee1666_coroutine_system, "PTHREAD") == 0)
-		{
-			coroutine_system = new sc_pthread_coroutine_system();
-			break;
-		}
+			if(strcmp(libieee1666_coroutine_system, "PTHREAD") == 0)
+			{
+				coroutine_system = new sc_pthread_coroutine_system();
+				break;
+			}
 #endif
+		}
 #if __LIBIEEE1666_FCONTEXT__
 		coroutine_system = new sc_fcontext_coroutine_system();
+		break;
 #elif __LIBIEEE1666_PTHREAD__
 		coroutine_system = new sc_pthread_coroutine_system();
+		break;
 #endif
 		throw std::runtime_error("Internal error! no coroutine system available");
 	}
@@ -327,6 +367,11 @@ sc_process_handle sc_kernel::create_method_process(const char *name, sc_process_
 	}
 
 	return method_process_handle;
+}
+
+sc_stack_system *sc_kernel::get_stack_system()
+{
+	return stack_system;
 }
 
 sc_coroutine_system *sc_kernel::get_coroutine_system()

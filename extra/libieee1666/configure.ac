@@ -27,6 +27,32 @@ PKG_PROG_PKG_CONFIG
 
 AC_SUBST(VERSION)
 
+############################## Check for POSIX.1-2001 compliance ######################################
+
+AC_MSG_CHECKING([POSIX.1-2001 compliance]) 
+
+AC_EGREP_CPP(conftest,
+     [#define _POSIX_C_SOURCE 200112L
+      #include <unistd.h>
+      #ifdef _POSIX_VERSION
+      #if _POSIX_VERSION >= 200112L
+      success
+      #endif
+      #endif
+     ],
+     [LIBIEEE1666_POSIX=1],
+     [LIBIEEE1666_POSIX=0])
+
+if test ${LIBIEEE1666_POSIX} -eq 1; then
+	AC_MSG_RESULT([yes])
+else
+	AC_MSG_RESULT([no])
+fi
+
+LIBIEEE1666_POSIX_GUARDED_STACK=${LIBIEEE1666_POSIX}
+
+AC_SUBST(LIBIEEE1666_POSIX_GUARDED_STACK)
+
 ######################################### check boost ####################################
 
 AX_BOOST_BASE([1.0.0], AC_MSG_NOTICE([boost found]), AC_MSG_ERROR([boost not found]))
@@ -151,6 +177,10 @@ if test ${LIBIEEE1666_PTHREAD} -eq 1; then
 	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/pthread_coroutine.$(OBJEXT)'
 fi
 
+if test ${LIBIEEE1666_POSIX_GUARDED_STACK} -eq 1; then
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/posix_guarded_stack.$(OBJEXT)'
+fi
+
 if test ${LIBIEEE1666_BACKTRACE} -eq 1; then
 	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/utilities/sysdep/backtrace.$(OBJEXT)'
 fi
@@ -168,7 +198,7 @@ AC_MSG_NOTICE([                Configuration summary of ${PACKAGE}              
 AC_MSG_NOTICE([-------------------------------------------------------------------])
 AC_MSG_NOTICE([Building system: ${build}])
 AC_MSG_NOTICE([Target system: ${host}])
-
+!
 if test ${LIBIEEE1666_PTHREAD} -eq 1; then
 	AC_MSG_NOTICE([POSIX thread coroutine system support: yes])
 else
@@ -179,6 +209,12 @@ if test ${LIBIEEE1666_FCONTEXT} -eq 1; then
 	AC_MSG_NOTICE([Boost::Context (fcontext) coroutine system support: yes])
 else
 	AC_MSG_NOTICE([Boost::Context (fcontext) coroutine system support: no])
+fi
+
+if test ${LIBIEEE1666_POSIX_GUARDED_STACK} -eq 1; then
+	AC_MSG_NOTICE([guarded stack support for POSIX: yes])
+else
+	AC_MSG_NOTICE([guarded stack support for POSIX: no])
 fi
 
 if test ${LIBIEEE1666_BACKTRACE} -eq 1; then

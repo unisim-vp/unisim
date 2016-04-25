@@ -43,6 +43,7 @@ namespace sc_core {
 class sc_coroutine
 {
 public:
+	virtual ~sc_coroutine() {}
 	virtual void start() = 0;
 	virtual void yield(sc_coroutine *next_coroutine) = 0;
 	virtual void abort(sc_coroutine *next_coroutine) = 0;

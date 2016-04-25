@@ -35,6 +35,8 @@ libieee1666/core/spawn.h \
 libieee1666/core/features.h \
 libieee1666/core/reset.h \
 libieee1666/core/coroutine.h \
+libieee1666/core/stack.h \
+libieee1666/core/simple_stack.h \
 libieee1666/channels/fifo_in.h \
 libieee1666/channels/clock.h \
 libieee1666/channels/fifo_if.h \
@@ -81,6 +83,7 @@ libieee1666/tlm_utils/tlm_quantumkeeper.h
 noinst_HEADERS = \
 libieee1666/core/sysdep/fcontext_coroutine.h \
 libieee1666/core/sysdep/pthread_coroutine.h \
+libieee1666/core/sysdep/posix_guarded_stack.h \
 libieee1666/utilities/backtrace.h \
 libieee1666/utilities/sysdep/backtrace.h
 
@@ -106,6 +109,7 @@ libieee1666/core/cthread_process.cc \
 libieee1666/core/method_process.cc \
 libieee1666/core/spawn.cc \
 libieee1666/core/reset.cc \
+libieee1666/core/simple_stack.cc \
 libieee1666/channels/buffer.cc \
 libieee1666/channels/clock.cc \
 libieee1666/channels/event_queue.cc \
@@ -136,6 +140,7 @@ libieee1666/tlm_utils/tlm_quantumkeeper.cc
 EXTRA_libieee1666_la_SOURCES = \
 libieee1666/core/sysdep/fcontext_coroutine.cc \
 libieee1666/core/sysdep/pthread_coroutine.cc \
+libieee1666/core/sysdep/posix_guarded_stack.cc \
 libieee1666/utilities/sysdep/backtrace.cc
 
 libieee1666_la_LIBADD = $(LIBIEEE1666_SYSDEPS)

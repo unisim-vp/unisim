@@ -33,6 +33,7 @@
  */
 
 #include "core/sysdep/fcontext_coroutine.h"
+#include "core/kernel.h"
 
 #include <iostream>
 
@@ -48,6 +49,7 @@ sc_fcontext_coroutine::sc_fcontext_coroutine()
 	, sp(0)
 	, fn(0)
 	, arg(0)
+	, stack(0)
 {
 #if BOOST_VERSION < 105600 // boost version < 1.56.0
 	fc = &fcm;
@@ -60,22 +62,19 @@ sc_fcontext_coroutine::sc_fcontext_coroutine(std::size_t stack_size, void (*_fn)
 	, sp(0)
 	, fn(_fn)
 	, arg(_arg)
+	, stack(0)
 {
 	if(!stack_size) stack_size = DEFAULT_FCONTEXT_STACK_SIZE;
-#if BOOST_VERSION >= 105600 // boost version >= 1.56.0
-	sp = malloc(stack_size);
-#else
-	sp = malloc(stack_size);
-	sp = (char *) sp + stack_size;
-#endif
+	stack = sc_kernel::get_kernel()->get_stack_system()->create_stack(stack_size);
+	sp = stack->get_top_of_the_stack();
 	fc = boost::context::make_fcontext(sp, stack_size, &sc_fcontext_coroutine::entry_point);
 }
 
 sc_fcontext_coroutine::~sc_fcontext_coroutine()
 {
-	if(sp)
+	if(stack)
 	{
-		free(sp);
+		delete stack;
 	}
 }
 

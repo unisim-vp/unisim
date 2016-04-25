@@ -50,6 +50,7 @@
 #include "core/method_process.h"
 #include "core/prim_channel.h"
 #include "core/process_handle.h"
+#include "core/stack.h"
 #include "core/coroutine.h"
 
 #if !defined(DLL_EXPORT) && (defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64))
@@ -188,6 +189,7 @@ public:
 	bool hierarchical_name_exists(const char *name) const;
 	const char* gen_unique_name( const char* seed ) const;
 	
+	sc_stack_system *get_stack_system();
 	sc_coroutine_system *get_coroutine_system();
 	inline sc_coroutine *get_next_coroutine() ALWAYS_INLINE;
 
@@ -217,8 +219,9 @@ private:
 	std::vector<sc_method_process *> method_process_table;
 	std::set<sc_process_handle> process_handle_table;
 
-	// coroutine
+	// coroutine & stack
 	sc_coroutine_system *coroutine_system;
+	sc_stack_system *stack_system;
 	sc_coroutine *main_coroutine;
 	
 	// time resolution management
