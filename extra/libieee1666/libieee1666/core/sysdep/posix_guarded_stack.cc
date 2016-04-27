@@ -34,6 +34,10 @@
 
 #include "core/sysdep/posix_guarded_stack.h"
 
+#if __LIBIEEE1666_VALGRIND__
+#include <valgrind/valgrind.h>
+#endif
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -44,6 +48,11 @@
 namespace sc_core {
 
 sc_posix_guarded_stack::sc_posix_guarded_stack(std::size_t stack_size)
+	: mapped_area(0)
+	, mapped_area_length(0)
+#if __LIBIEEE1666_VALGRIND__
+	, valgrind_stack_id(0)
+#endif
 {
 	// get page size
 	long page_size = ::sysconf(_SC_PAGESIZE);
@@ -88,10 +97,17 @@ sc_posix_guarded_stack::sc_posix_guarded_stack(std::size_t stack_size)
 	
 	// disallow any access to first page
 	::mprotect(mapped_area, page_size, PROT_NONE);
+	
+#if __LIBIEEE1666_VALGRIND__
+	valgrind_stack_id = VALGRIND_STACK_REGISTER(reinterpret_cast<char *>(mapped_area) + page_size, reinterpret_cast<char *>(mapped_area) + mapped_area_length);
+#endif
 }
 
 sc_posix_guarded_stack::~sc_posix_guarded_stack()
 {
+#if __LIBIEEE1666_VALGRIND__
+	VALGRIND_STACK_DEREGISTER(valgrind_stack_id);
+#endif
 	if(mapped_area)
 	{
 		::munmap(mapped_area, mapped_area_length);

@@ -35,6 +35,7 @@
 #ifndef __LIBIEEE1666_CORE_SYSDEP_POSIX_GUARDED_STACK_H__
 #define __LIBIEEE1666_CORE_SYSDEP_POSIX_GUARDED_STACK_H__
 
+#include "core/features.h"
 #include "core/stack.h"
 
 namespace sc_core {
@@ -49,6 +50,9 @@ public:
 private:
 	void *mapped_area;
 	std::size_t mapped_area_length;
+#if __LIBIEEE1666_VALGRIND__
+	unsigned int valgrind_stack_id;
+#endif
 };
 
 class sc_posix_guarded_stack_system : public sc_stack_system

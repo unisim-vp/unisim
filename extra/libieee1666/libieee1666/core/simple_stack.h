@@ -35,6 +35,7 @@
 #ifndef __LIBIEEE1666_CORE_SIMPLE_STACK_H__
 #define __LIBIEEE1666_CORE_SIMPLE_STACK_H__
 
+#include "core/features.h"
 #include "core/stack.h"
 
 namespace sc_core {
@@ -50,6 +51,9 @@ public:
 private:
 	std::size_t stack_size;
 	void *buffer;
+#if __LIBIEEE1666_VALGRIND__
+	unsigned int valgrind_stack_id;
+#endif
 };
 
 class sc_simple_stack_system : public sc_stack_system

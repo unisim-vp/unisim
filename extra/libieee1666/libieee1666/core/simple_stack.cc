@@ -34,6 +34,10 @@
 
 #include "core/simple_stack.h"
 
+#if __LIBIEEE1666_VALGRIND__
+#include <valgrind/valgrind.h>
+#endif
+
 #include <stdlib.h>
 #include <stdexcept>
 
@@ -42,14 +46,24 @@ namespace sc_core {
 sc_simple_stack::sc_simple_stack(std::size_t _stack_size)
 	: stack_size(_stack_size)
 	, buffer(0)
+#if __LIBIEEE1666_VALGRIND__
+	, valgrind_stack_id(0)
+#endif
 {
 	buffer = ::calloc(stack_size, sizeof(char));
 	
 	if(!buffer) throw std::bad_alloc();
+	
+#if __LIBIEEE1666_VALGRIND__
+	valgrind_stack_id = VALGRIND_STACK_REGISTER(buffer, reinterpret_cast<char *>(buffer) + stack_size);
+#endif
 }
 
 sc_simple_stack::~sc_simple_stack()
 {
+#if __LIBIEEE1666_VALGRIND__
+	VALGRIND_STACK_DEREGISTER(valgrind_stack_id);
+#endif
 	if(buffer)
 	{
 		free(buffer);

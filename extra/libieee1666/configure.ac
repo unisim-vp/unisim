@@ -71,6 +71,7 @@ case "${host}" in
 		;;
 esac
 
+AC_SUBST(LIBIEEE1666_WINDOWS_GUARDED_STACK)
 
 ######################################### check boost ####################################
 
@@ -137,6 +138,12 @@ fi
 
 AC_SUBST(LIBIEEE1666_BACKTRACE)
 
+######################## Check for valgrind "client request mechanism" ##################################
+
+AC_CHECK_HEADER(valgrind/valgrind.h, LIBIEEE1666_VALGRIND=1, LIBIEEE1666_VALGRIND=0)
+
+AC_SUBST(LIBIEEE1666_VALGRIND)
+
 ################################## host specific stuff #######################################
 
 case "${host}" in
@@ -195,22 +202,22 @@ fi
 
 LIBIEEE1666_SYSDEPS=
 if test ${LIBIEEE1666_FCONTEXT} -eq 1; then
-	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/fcontext_coroutine.lo'
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/fcontext_coroutine.lo"
 fi
 if test ${LIBIEEE1666_PTHREAD} -eq 1; then
-	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/pthread_coroutine.lo'
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/pthread_coroutine.lo"
 fi
 
 if test ${LIBIEEE1666_POSIX_GUARDED_STACK} -eq 1; then
-	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/posix_guarded_stack.lo'
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/posix_guarded_stack.lo"
 fi
 
 if test ${LIBIEEE1666_WINDOWS_GUARDED_STACK} -eq 1; then
-	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/windows_guarded_stack.lo'
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/windows_guarded_stack.lo"
 fi
 
 if test ${LIBIEEE1666_BACKTRACE} -eq 1; then
-	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/utilities/sysdep/backtrace.lo'
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/utilities/sysdep/backtrace.lo"
 fi
 
 AC_SUBST(LIBIEEE1666_SYSDEPS)
@@ -255,6 +262,12 @@ if test ${LIBIEEE1666_BACKTRACE} -eq 1; then
 	AC_MSG_NOTICE([backtrace support (for hacking): yes])
 else
 	AC_MSG_NOTICE([backtrace support (for hacking): no])
+fi
+
+if test ${LIBIEEE1666_VALGRIND} -eq 1; then
+	AC_MSG_NOTICE([valgrind support: yes])
+else
+	AC_MSG_NOTICE([valgrind support: no])
 fi
 
 ##########################################################################

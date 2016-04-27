@@ -251,7 +251,8 @@ sc_kernel::~sc_kernel()
 		top_level_event->kernel = 0;
 	}
 	
-	delete main_coroutine;
+	delete coroutine_system;
+	delete stack_system;
 }
 
 sc_kernel *sc_kernel::get_kernel()

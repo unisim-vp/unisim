@@ -128,6 +128,7 @@ sc_pthread_coroutine_system::sc_pthread_coroutine_system()
 
 sc_pthread_coroutine_system::~sc_pthread_coroutine_system()
 {
+	delete main_coroutine;
 }
 
 sc_coroutine *sc_pthread_coroutine_system::get_main_coroutine()
