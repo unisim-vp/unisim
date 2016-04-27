@@ -1294,44 +1294,57 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 	{
 		case 0:
 		case 1:
-			for(i = 0; i < size; i++)
 			{
-				if(!debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return PutPacket("E00");
+				bool status = true;
+				for(i = 0; i < size; i++)
+				{
+					if(!debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr + i)))
+					{
+						logger << DebugWarning << "Can't listen breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << EndDebugWarning;
+						//return PutPacket("E00");
+					}
+				}
+				if(!status)
+				{
+					//return PutPacket("E00");
+				}
+				return PutPacket("OK");
+			}
+		case 2:
+			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+			{
+				logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+				//return PutPacket("E00");
 			}
 			return PutPacket("OK");
-		case 2:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return PutPacket("OK");
-			}
-			else
-			{
-				return PutPacket("E00");
-			}
 		case 3:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return PutPacket("OK");
-			}
-			else
-			{
-				return PutPacket("E00");
-			}
-
-		case 4:
 			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
-				return PutPacket("E00");
+				logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+				//return PutPacket("E00");
 			}
+			return PutPacket("OK");
+
+		case 4:
+			{
+				bool status = true;
+				if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+				{
+					status = false;
+					logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+				}
+				
+				if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+				{
+					status = false;
+					logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+				}
 			
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
-			{
+				if(!status)
+				{
+					//return PutPacket("E00");
+				}
 				return PutPacket("OK");
-			}
-			else
-			{
-				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size));
-				return PutPacket("E00");
 			}
 	}
 	return PutPacket("E00");
@@ -1351,43 +1364,56 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 	{
 		case 0:
 		case 1:
-			for(i = 0; i < size; i++)
 			{
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return PutPacket("E00");
+				bool status = true;
+				for(i = 0; i < size; i++)
+				{
+					if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr + i)))
+					{
+						status = false;
+						logger << DebugWarning << "Can't unlisten breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << EndDebugWarning;
+					}
+				}
+				
+				if(!status)
+				{
+					//return PutPacket("E00");
+				}
+				return PutPacket("OK");
 			}
-			return PutPacket("OK");
 
 		case 2:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+			if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 			{
-				return PutPacket("OK");
+				logger << DebugWarning << "Can't unlisten write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+				//return PutPacket("E00");
 			}
-			else
-			{
-				return PutPacket("E00");
-			}
+			return PutPacket("OK");
 		case 3:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+			if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
-				return PutPacket("OK");
+				logger << DebugWarning << "Can't unlisten read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+				//return PutPacket("E00");
 			}
-			else
-			{
-				return PutPacket("E00");
-			}
+			return PutPacket("OK");
 		case 4:
 			{
 				bool status = true;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))) status = false;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))) status = false;
-				if(status)
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 				{
-					return PutPacket("OK");
+					logger << DebugWarning << "Can't unlisten read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+					status = false;
 				}
-				else
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 				{
-					return PutPacket("E00");
+					logger << DebugWarning << "Can't unlisten write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+					status = false;
 				}
+				if(!status)
+				{
+					//return PutPacket("E00");
+				}
+				return PutPacket("OK");
 			}
 	}
 	return PutPacket("E00");

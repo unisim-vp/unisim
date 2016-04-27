@@ -95,8 +95,13 @@ public:
   sc_core::sc_in<bool> nRESETm;
   
 private:
+#if 0
   int raised_irqs;
   int raised_fiqs;
+#else
+  bool irq;
+  bool fiq;
+#endif
   int raised_rsts;
   
 	/** nIRQm port handler */
@@ -164,6 +169,7 @@ private:
 	sc_time nice_time;
 	double ipc;
 	bool enable_dmi;
+	sc_time time_per_instruction;
 	
   unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
   

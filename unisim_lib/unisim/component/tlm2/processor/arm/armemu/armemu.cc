@@ -130,11 +130,16 @@ ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
   , sc_module(name)
   , unisim::component::cxx::processor::arm::armemu::CPU(name, parent)
   , master_socket("master_socket")
-  , nIRQm("nIRQm_port")
-  , nFIQm("nFIQm_port")
-  , nRESETm("nRESETm_port")
+  , nIRQm("nIRQm")
+  , nFIQm("nFIQm")
+  , nRESETm("nRESETm")
+#if 0
   , raised_irqs()
   , raised_fiqs()
+#else
+  , irq(false)
+  , fiq(false)
+#endif
   , raised_rsts()
   , end_read_rsp_event()
   , payload_fabric()
@@ -220,6 +225,9 @@ ARMEMU::EndSetup()
       << EndDebugInfo;
   }
   
+  /* compute the average time of each instruction */
+  time_per_instruction = cpu_cycle_time * ipc;
+
   return true;
 }
 
@@ -270,12 +278,18 @@ ARMEMU::Sync()
   }
   
   uint32_t exceptions = 0;
+#if 0
   unisim::component::cxx::processor::arm::I.Set( exceptions, raised_irqs > 0 );
   unisim::component::cxx::processor::arm::F.Set( exceptions, raised_fiqs > 0 );
+#else
+  if(irq) unisim::component::cxx::processor::arm::I.Set( exceptions, true );
+  if(fiq) unisim::component::cxx::processor::arm::F.Set( exceptions, true );
+#endif
   
   if (not exceptions) return;
   exceptions = this->HandleAsynchronousException( exceptions );
   
+#if 0
   if      (unisim::component::cxx::processor::arm::I.Get( exceptions ))
     {
       if (--raised_irqs > 0) inherited::logger << DebugWarning << "Missed " << raised_irqs << " IRQs" << EndDebugWarning;
@@ -286,6 +300,7 @@ ARMEMU::Sync()
       if (--raised_fiqs > 0) inherited::logger << DebugWarning << "Missed " << raised_fiqs << " FIQs" << EndDebugWarning;
       raised_fiqs = 0; // Discard raised FIQ queue
     }
+#endif
 }
 
 /** Updates the cpu time to the next bus cycle.
@@ -311,9 +326,12 @@ ARMEMU::BusSynchronize()
   // quantum_time += 
   //   ((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
   //   (cpu_time + quantum_time);
-  while ( bus_time < (cpu_time + quantum_time) )
+  sc_time deadline(cpu_time);
+  deadline += quantum_time;
+  while ( bus_time < deadline )
     bus_time += bus_cycle_time;
-  quantum_time = bus_time - cpu_time;
+  quantum_time = bus_time;
+  quantum_time -= cpu_time;
   if (quantum_time > nice_time)
     Sync();
   if (unlikely(verbose_tlm))
@@ -338,13 +356,15 @@ void
 ARMEMU::Run()
 {
   /* Dismiss any interrupt that could have started before simulation (initialization artifacts) */
+#if 0
   raised_irqs = 0;
   raised_fiqs = 0;
+#else
+  irq = false;
+  fiq = false;
+#endif
   raised_rsts = 0;
 
-  /* compute the average time of each instruction */
-  sc_time time_per_instruction = cpu_cycle_time * ipc;
-  
   if ( unlikely(verbose) )
     {
       inherited::logger << DebugInfo
@@ -482,7 +502,8 @@ ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc
         wait();
         break;
       }
-      tmp_time = sc_time_stamp() + time;
+      tmp_time = sc_time_stamp();
+	  tmp_time += time;
       /* TODO: increase tmp_time depending on the size of the transaction. */
       end_read_rsp_event.notify(time);
       ret = tlm::TLM_COMPLETED;
@@ -525,12 +546,18 @@ ARMEMU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_r
 void
 ARMEMU::IRQHandler()
 {
+#if 0
   if (not nIRQm) raised_irqs += 1;
+#else
+  irq = not nIRQm;
+#endif
   if (verbose)
     inherited::logger << DebugInfo
                       << "IRQ level change:" << std::endl
                       << " - nIRQm = " << nIRQm << std::endl
+#if 0
                       << " - raised_irqs = " << raised_irqs << std::endl
+#endif
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
@@ -539,12 +566,18 @@ ARMEMU::IRQHandler()
 void 
 ARMEMU::FIQHandler()
 {
+#if 0
   if (not nFIQm) raised_fiqs += 1;
+#else
+  fiq = not nFIQm;
+#endif
   if (verbose)
     inherited::logger << DebugInfo
                       << "FIQ level change:" << std::endl
                       << " - nFIQm = " << nFIQm << std::endl
+#if 0
                       << " - raised_fiqs = " << raised_fiqs << std::endl
+#endif
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }

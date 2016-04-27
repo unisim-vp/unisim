@@ -750,9 +750,9 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;
-	sstr_loader_mapping << "ram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::RAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::RAM_BASE_ADDR + CONFIG::RAM_BYTE_SIZE - 1) << std::dec;
-	sstr_loader_mapping << ",bram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::BRAM_BASE_ADDR + CONFIG::BRAM_BYTE_SIZE - 1) << std::dec;
-	sstr_loader_mapping << ",flash-effective-to-physical-address-translator:0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::FLASH_BASE_ADDR + CONFIG::FLASH_BYTE_SIZE - 1) << std::dec;
+	sstr_loader_mapping << "ram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::RAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::RAM_BASE_ADDR + CONFIG::RAM_BYTE_SIZE - 1) << std::dec << ":+0x" << std::hex << CONFIG::RAM_BASE_ADDR << std::dec;
+	sstr_loader_mapping << ",bram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::BRAM_BASE_ADDR + CONFIG::BRAM_BYTE_SIZE - 1) << std::dec << ":+0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec;
+	sstr_loader_mapping << ",flash-effective-to-physical-address-translator:0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::FLASH_BASE_ADDR + CONFIG::FLASH_BYTE_SIZE - 1) << std::dec << ":+0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec;
 	simulator->SetVariable("loader.memory-mapper.mapping", sstr_loader_mapping.str().c_str()); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
 
 	//  - RAM
