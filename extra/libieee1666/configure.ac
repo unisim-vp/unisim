@@ -31,17 +31,24 @@ AC_SUBST(VERSION)
 
 AC_MSG_CHECKING([POSIX.1-2001 compliance]) 
 
-AC_EGREP_CPP(conftest,
-     [#define _POSIX_C_SOURCE 200112L
-      #include <unistd.h>
-      #ifdef _POSIX_VERSION
-      #if _POSIX_VERSION >= 200112L
-      success
-      #endif
-      #endif
-     ],
-     [LIBIEEE1666_POSIX=1],
-     [LIBIEEE1666_POSIX=0])
+case ${host} in
+	*mingw*)
+		LIBIEEE1666_POSIX=0
+		;;
+	*)
+		AC_EGREP_CPP(conftest,
+		     [#define _POSIX_C_SOURCE 200112L
+		      #include <unistd.h>
+		      #ifdef _POSIX_VERSION
+		      #if _POSIX_VERSION >= 200112L
+		      success
+		      #endif
+		      #endif
+		     ],
+		     [LIBIEEE1666_POSIX=1],
+		     [LIBIEEE1666_POSIX=0])
+		;;
+esac
 
 if test ${LIBIEEE1666_POSIX} -eq 1; then
 	AC_MSG_RESULT([yes])
@@ -52,6 +59,18 @@ fi
 LIBIEEE1666_POSIX_GUARDED_STACK=${LIBIEEE1666_POSIX}
 
 AC_SUBST(LIBIEEE1666_POSIX_GUARDED_STACK)
+
+############################## Check for Windows ######################################
+
+case "${host}" in
+	*mingw*) # windows host
+		LIBIEEE1666_WINDOWS_GUARDED_STACK=1
+		;;
+	*)
+		LIBIEEE1666_WINDOWS_GUARDED_STACK=0
+		;;
+esac
+
 
 ######################################### check boost ####################################
 
@@ -86,6 +105,11 @@ AX_PTHREAD(LIBIEEE1666_PTHREAD=1, LIBIEEE1666_PTHREAD=0)
 if test ${LIBIEEE1666_PTHREAD} -eq 1; then
 	AC_MSG_NOTICE([POSIX threads found])
 	LIBS="${PTHREAD_LIBS} ${LIBS}"
+	case ${host} in
+		*mingw*)
+			LIBS="-lpthread ${LIBS}"
+			;;
+	esac
 	CXXFLAGS="${CXXFLAGS} ${PTHREAD_CFLAGS}"
 else
 	AC_MSG_NOTICE([POSIX threads not found])
@@ -171,18 +195,22 @@ fi
 
 LIBIEEE1666_SYSDEPS=
 if test ${LIBIEEE1666_FCONTEXT} -eq 1; then
-	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/fcontext_coroutine.$(OBJEXT)'
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/fcontext_coroutine.lo'
 fi
 if test ${LIBIEEE1666_PTHREAD} -eq 1; then
-	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/pthread_coroutine.$(OBJEXT)'
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/pthread_coroutine.lo'
 fi
 
 if test ${LIBIEEE1666_POSIX_GUARDED_STACK} -eq 1; then
-	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/posix_guarded_stack.$(OBJEXT)'
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/posix_guarded_stack.lo'
+fi
+
+if test ${LIBIEEE1666_WINDOWS_GUARDED_STACK} -eq 1; then
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/core/sysdep/windows_guarded_stack.lo'
 fi
 
 if test ${LIBIEEE1666_BACKTRACE} -eq 1; then
-	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/utilities/sysdep/backtrace.$(OBJEXT)'
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS}"' libieee1666/utilities/sysdep/backtrace.lo'
 fi
 
 AC_SUBST(LIBIEEE1666_SYSDEPS)
@@ -215,6 +243,12 @@ if test ${LIBIEEE1666_POSIX_GUARDED_STACK} -eq 1; then
 	AC_MSG_NOTICE([guarded stack support for POSIX: yes])
 else
 	AC_MSG_NOTICE([guarded stack support for POSIX: no])
+fi
+
+if test ${LIBIEEE1666_WINDOWS_GUARDED_STACK} -eq 1; then
+	AC_MSG_NOTICE([guarded stack support for Windows: yes])
+else
+	AC_MSG_NOTICE([guarded stack support for Windows: no])
 fi
 
 if test ${LIBIEEE1666_BACKTRACE} -eq 1; then

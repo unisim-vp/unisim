@@ -49,6 +49,10 @@
 #include "core/sysdep/posix_guarded_stack.h"
 #endif
 
+#if __LIBIEEE1666_WINDOWS_GUARDED_STACK__
+#include "core/sysdep/windows_guarded_stack.h"
+#endif
+
 #if __LIBIEEE1666_FCONTEXT__
 #include "core/sysdep/fcontext_coroutine.h"
 #endif
@@ -133,15 +137,24 @@ sc_kernel::sc_kernel()
 				stack_system = new sc_posix_guarded_stack_system();
 				break;
 			}
+#endif
+#if __LIBIEEE1666_WINDOWS_GUARDED_STACK__
+			if(strcmp(libieee1666_stack_system, "WINDOWS_GUARDED") == 0)
+			{
+				stack_system = new sc_windows_guarded_stack_system();
+				break;
+			}
+#endif
 			if(strcmp(libieee1666_stack_system, "SIMPLE") == 0)
 			{
 				stack_system = new sc_simple_stack_system();
 				break;
 			}
 		}
-#endif
 #if __LIBIEEE1666_POSIX_GUARDED_STACK__
 		stack_system = new sc_posix_guarded_stack_system();
+#elif __LIBIEEE1666_WINDOWS_GUARDED_STACK__
+		stack_system = new sc_windows_guarded_stack_system();
 #else
 		stack_system = new sc_simple_stack_system();
 #endif
