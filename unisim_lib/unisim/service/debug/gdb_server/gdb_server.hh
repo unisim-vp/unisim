@@ -188,8 +188,10 @@ private:
 	bool WriteRegisters(const string& hex);
 	bool ReadRegister(unsigned int regnum);
 	bool WriteRegister(unsigned int regnum, const string& hex);
-	bool ReadMemory(ADDRESS addr, uint32_t size);
-	bool WriteMemory(ADDRESS addr, const string& hex, uint32_t size);
+	bool ReadMemoryHex(ADDRESS addr, uint32_t size);
+	bool WriteMemoryHex(ADDRESS addr, const string& hex, uint32_t size);
+	bool ReadMemoryBin(ADDRESS addr, uint32_t size);
+	bool WriteMemoryBin(ADDRESS addr, const string& bin, uint32_t size);
 	bool ReportProgramExit();
 	bool ReportSignal(unsigned int signum);
 	bool ReportTracePointTrap();
@@ -197,6 +199,12 @@ private:
 	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
 
 	void HandleQRcmd(string command);
+	void HandleQSupported(std::string features);
+	void SetGDBClientFeature(std::string gdb_client_feature);
+	void HandleQC();
+	void HandleQAttached(std::string command);
+	void HandleQTStatus();
+	void HandleQStartNoAckMode();
 
 	void Disasm(ADDRESS addr, unsigned int size);
 	
@@ -217,6 +225,18 @@ private:
 	bool extended_mode;
 	int32_t counter;
 	int32_t period;
+	bool gdb_client_feature_multiprocess;
+	bool gdb_client_feature_xmlregisters;
+	bool gdb_client_feature_qrelocinsn;
+	bool gdb_client_feature_swbreak;
+	bool gdb_client_feature_hwbreak;
+	bool gdb_client_feature_fork_events;
+	bool gdb_client_feature_vfork_events;
+	bool gdb_client_feature_exec_events;
+	bool gdb_client_feature_vcont;
+	unsigned int current_thread_id;
+	bool no_ack_mode;
+	
 
 	ADDRESS disasm_addr;
 

@@ -118,6 +118,17 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, extended_mode(false)
 	, counter(0)
 	, period(50)
+	, gdb_client_feature_multiprocess(false)
+	, gdb_client_feature_xmlregisters(false)
+	, gdb_client_feature_qrelocinsn(false)
+	, gdb_client_feature_swbreak(false)
+	, gdb_client_feature_hwbreak(false)
+	, gdb_client_feature_fork_events(false)
+	, gdb_client_feature_vfork_events(false)
+	, gdb_client_feature_exec_events(false)
+	, gdb_client_feature_vcont(false)
+	, current_thread_id(0)
+	, no_ack_mode(false)
 	, disasm_addr(0)
 	, input_buffer_size(0)
 	, input_buffer_index(0)
@@ -719,7 +730,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(pos != len) break;
-				if(!ReadMemory(addr * memory_atom_size, size))
+				if(!ReadMemoryHex(addr * memory_atom_size, size))
 				{
 					Object::Stop(0);
 					return DebugControl<ADDRESS>::DBG_KILL;
@@ -731,7 +742,19 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(packet[pos++] != ':') break;
-				if(!WriteMemory(addr * memory_atom_size, packet.substr(pos), size))
+				if(!WriteMemoryHex(addr * memory_atom_size, packet.substr(pos), size))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
+				break;
+				
+			case 'X':
+				if(!ParseHex(packet, pos, addr)) break;
+				if(packet[pos++] != ',') break;
+				if(!ParseHex(packet, pos, size)) break;
+				if(packet[pos++] != ':') break;
+				if(!WriteMemoryBin(addr * memory_atom_size, packet.substr(pos), size))
 				{
 					Object::Stop(0);
 					return DebugControl<ADDRESS>::DBG_KILL;
@@ -856,6 +879,26 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				{
 					HandleQRcmd(packet.substr(6));
 				}
+				else if(packet.substr(0, 11) == "qSupported:")
+				{
+					HandleQSupported(packet.substr(11));
+				}
+				else if(packet == "qC")
+				{
+					HandleQC();
+				}
+				else if(packet.substr(0, 9) == "qAttached")
+				{
+					HandleQAttached(packet.substr(9));
+				}
+				else if(packet.substr(0, 8) == "qTStatus")
+				{
+					HandleQTStatus();
+				}
+				else if(packet == "QStartNoAckMode")
+				{
+					HandleQStartNoAckMode();
+				}
 				else
 				{
 					if(verbose)
@@ -970,8 +1013,6 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 	uint8_t checksum;
 	uint8_t received_checksum;
 	char c;
-	char ch[2];
-	ch[1] = 0;
 	s.erase();
 
 	while(1)
@@ -996,8 +1037,7 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 
 			if(c == '#') break;
 			checksum = checksum + (uint8_t ) c;
-			ch[0] = c;
-			s += ch;
+			s.append(&c, 1); // Note: don't use += because null characters can't be appended this way to the string
 		}
 
 		if(c == '#')
@@ -1009,16 +1049,38 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 
 			if(verbose)
 			{
-				logger << DebugInfo << "receiving $" << s << "#" << Nibble2HexChar((received_checksum >> 4) & 0xf) << Nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
+				logger << DebugInfo << "receiving $";
+				// Note: packet may characters that can't be printed
+				std::size_t length = s.length();
+				std::size_t pos;
+				for(pos = 0; pos < length; pos++)
+				{
+					c = s[pos];
+					if((c >= 32) && (c != 127))
+					{
+						logger << c;
+					}
+					else
+					{
+						logger << ' ';
+					}
+				}
+				logger << "#" << Nibble2HexChar((received_checksum >> 4) & 0xf) << Nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
 			}
 			if(checksum != received_checksum)
 			{
-				if(!PutChar('-')) return false;
+				if(!no_ack_mode)
+				{
+					if(!PutChar('-')) return false;
+				}
 				if(!FlushOutput()) return false;
 			}
 			else
 			{
-				if(!PutChar('+')) return false;
+				if(!no_ack_mode)
+				{
+					if(!PutChar('+')) return false;
+				}
 				if(!FlushOutput()) return false;
 
 				if(s.length() >= 3 && s[2] == ':')
@@ -1062,10 +1124,26 @@ bool GDBServer<ADDRESS>::PutPacket(const string& s)
 		if(!PutChar(Nibble2HexChar(checksum & 0xf))) return false;
 		if(verbose)
 		{
-			logger << DebugInfo << "sending $" << s << "#" << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf) << EndDebugInfo;
+			logger << DebugInfo << "sending $";
+			// Note: packet may characters that can't be printed
+			std::size_t length = s.length();
+			std::size_t pos;
+			for(pos = 0; pos < length; pos++)
+			{
+				c = s[pos];
+				if((c >= 32) && (c != 127))
+				{
+					logger << c;
+				}
+				else
+				{
+					logger << ' ';
+				}
+			}
+			logger << "#" << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf) << EndDebugInfo;
 		}
 		if(!FlushOutput()) return false;
-	} while(GetChar(c, true) && c != '+');
+	} while(!no_ack_mode && GetChar(c, true) && (c != '+'));
 	return true;
 }
 
@@ -1154,7 +1232,7 @@ bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
+bool GDBServer<ADDRESS>::ReadMemoryHex(ADDRESS addr, uint32_t size)
 {
 	bool read_error = false;
 	bool overwrapping = false;
@@ -1195,7 +1273,7 @@ bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t size)
+bool GDBServer<ADDRESS>::WriteMemoryHex(ADDRESS addr, const string& hex, uint32_t size)
 {
 	bool write_error = false;
 	bool overwrapping = false;
@@ -1228,6 +1306,123 @@ bool GDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 	}
 
 	return write_error ? PutPacket("E00") :  PutPacket("OK");
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::ReadMemoryBin(ADDRESS addr, uint32_t size)
+{
+	bool read_error = false;
+	bool overwrapping = false;
+	string packet;
+	char ch[2];
+	ch[1] = 0;
+
+	if(size > 0)
+	{
+		do
+		{
+			char value = 0;
+			if(!overwrapping)
+			{
+				if(!memory_import->ReadMemory(addr, &value, 1))
+				{
+					read_error = true;
+					value = 0;
+				}
+			}
+			
+			switch(value)
+			{
+				case '#':
+				case '$':
+				case '}':
+				case '*':
+					packet += '}';   // escape
+					value = value ^ 0x20;
+					break;
+			}
+			
+			packet += value;
+			
+			if((addr + 1) == 0) overwrapping = true;
+		} while(++addr, --size);
+	}
+
+	if(read_error)
+	{
+		if(verbose)
+		{
+			logger << DebugWarning << memory_import.GetName() << "->ReadMemory has reported an error" << EndDebugWarning;
+		}
+	}
+
+	return /*read_error ? PutPacket("E00") : PutPacket(packet); */PutPacket(packet);
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::WriteMemoryBin(ADDRESS addr, const string& bin, uint32_t size)
+{
+	bool write_error = false;
+	bool malformed_binary_data = false;
+	bool overwrapping = false;
+	bool escape = false;
+	unsigned int repeat = 0;
+	unsigned int pos = 0;
+	int len = bin.length();
+
+	if(size > 0 && len > 0)
+	{
+		uint8_t value = 0;
+		char c = 0;
+		
+		do
+		{
+			if(repeat)
+			{
+				repeat--;
+			}
+			else
+			{
+				if(pos >= len)
+				{
+					malformed_binary_data = true;
+					break;
+				}
+				c = bin[pos++];
+		
+				if(c == '}')
+				{
+					if(pos >= len)
+					{
+						malformed_binary_data = true;
+						break;
+					}
+					c = bin[pos++];
+					value = (uint8_t) c ^ 0x20;
+				}
+				else
+				{
+					value = c;
+				}
+			}
+			
+			if(!overwrapping)
+			{
+				if(!memory_import->WriteMemory(addr, &value, 1))
+				{
+					write_error = true;
+				}
+			}
+		}
+		while(++addr, (--size));
+	}
+	
+	if(pos != len)
+	{
+		logger << DebugWarning << "X packet has extra data !" << EndDebugWarning;
+	}
+	
+	return (write_error || malformed_binary_data) ? PutPacket("E00") :  PutPacket("OK");
 }
 
 template <class ADDRESS>
@@ -1419,129 +1614,168 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 	return PutPacket("E00");
 }
 
-// *** Start ************ REDA ADDED CODE ****************
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQRcmd(string command)
+{
+	std::size_t pos = 0;
+	std::size_t len = command.length();
+	
+	char ch[2];
+	string variable_name;
+	string variable_value;
+	ch[1] = 0;
+	// skip white characters
+	do
+	{
+		ch[0] = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+		if(ch[0] != ' ') break;
+		pos += 2;
+	} while(pos < len);
+
+	if(pos < len)
+	{
+		unisim::kernel::service::VariableBase *variable = 0;
+
+		// fill-in parameter name
+		do
+		{
+			ch[0] = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+			pos += 2;
+			if(ch[0] == '=') break;
+			variable_name += ch;
+		} while(pos < len);
+
+		variable = Object::GetSimulator()->FindVariable(variable_name.c_str());
+		if(variable->IsVoid())
+		{
+			string msg("unknown variable\n");
+			OutputText(msg.c_str(), msg.length());
+			PutPacket("OK");
+			return;
+		}
+
+		if(pos >= len)
+		{
+			// it's a get!
+			string msg(variable_name + "=" + ((string) *variable) + "\n");
+			OutputText(msg.c_str(), msg.length());
+			PutPacket("OK");
+			return;
+		}
+
+		// fill-in parameter value and remove trailing space
+		while(pos < len)
+		{
+			ch[0] = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+			if(ch[0] == ' ') break;
+			pos += 2;
+			variable_value += ch;
+		}
+
+		string msg(variable_name + "<-" + variable_value + "\n");
+		OutputText(msg.c_str(), msg.length());
+		*variable = variable_value.c_str();
+		PutPacket("OK");
+		return;
+	}
+
+	PutPacket("E00");
+}
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQRcmd(string command) {
-
-	size_t separator_index = command.find_first_of(':');
-	string cmdPrefix;
-	if (separator_index == string::npos) {
-		cmdPrefix = command;
-	} else {
-		cmdPrefix = command.substr(0, separator_index);
+void GDBServer<ADDRESS>::SetGDBClientFeature(std::string gdb_client_feature)
+{
+	struct
+	{
+		const char *name;
+		bool *flag;
 	}
-
-	if (cmdPrefix.compare("symboles") == 0) {
-
-		/**
-		 * command: qRcmd, symboles
-		 * return "symbName:symbAddress:symbSize:symbType"
-		 *
-		 * with: symbType in {"FUNCTION", "VARIABLE"}
-		 */
-		if(symbol_table_lookup_import)
+	features[] = {
+		{ "multiprocess", &gdb_client_feature_multiprocess },
+		{ "xmlRegisters", &gdb_client_feature_xmlregisters },
+		{ "qRelocInsn", &gdb_client_feature_qrelocinsn },
+		{ "swbreak", &gdb_client_feature_swbreak },
+		{ "hwbreak", &gdb_client_feature_hwbreak },
+		{ "fork-events", &gdb_client_feature_fork_events },
+		{ "vfork-events", &gdb_client_feature_vfork_events },
+		{ "exec-events", &gdb_client_feature_exec_events },
+		{ "vContSupported", &gdb_client_feature_vcont }
+	};
+	
+	unsigned int n = sizeof(features) / sizeof(features[0]);
+	unsigned int i;
+	for(i = 0; i < n; i++)
+	{
+		int name_len = strlen(features[i].name);
+		if((gdb_client_feature.length() == (name_len + 1)) && gdb_client_feature.compare(0, name_len, features[i].name) == 0)
 		{
-			list<const Symbol<ADDRESS> *> func_symbols;
-			symbol_table_lookup_import->GetSymbols(func_symbols, Symbol<ADDRESS>::SYM_FUNC);
-
-			if (!func_symbols.empty()) {
-
-				typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
-				std::stringstream strstm;
-
-				for(symbol_iter = func_symbols.begin(); symbol_iter != func_symbols.end(); symbol_iter++)
+			if(gdb_client_feature[name_len] == '+')
+			{
+				if(verbose)
 				{
-					strstm << "O";
-					strstm << (*symbol_iter)->GetName();
-
-					strstm << ":" << std::hex;
-					strstm.width(8);
-					strstm << (*symbol_iter)->GetAddress();
-
-					strstm << ":" << std::dec << (*symbol_iter)->GetSize();
-
-					strstm << ":" << "FUNCTION";
-
-					PutPacket(strstm.str());
-
-					strstm.str(std::string());
+					logger << DebugInfo << "GDB client supports Feature \"" << features[i].name << "\": yes" << EndDebugInfo;
 				}
+				*features[i].flag = true;
 			}
-		
-			list<const Symbol<ADDRESS> *> obj_symbols;
-			symbol_table_lookup_import->GetSymbols(func_symbols, Symbol<ADDRESS>::SYM_OBJECT);
-		
-			if (!obj_symbols.empty()) {
-
-				typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
-				std::stringstream strstm;
-
-				for(symbol_iter = obj_symbols.begin(); symbol_iter != obj_symbols.end(); symbol_iter++)
+			else if(gdb_client_feature[name_len] == '-')
+			{
+				if(verbose)
 				{
-
-					strstm << "O";
-					strstm << (*symbol_iter)->GetName();
-
-					strstm << ":" << std::hex;
-					strstm.width(8);
-					strstm << (*symbol_iter)->GetAddress();
-
-					strstm << ":" << std::dec << (*symbol_iter)->GetSize();
-
-					strstm << ":" << "VARIABLE";
-
-					PutPacket(strstm.str());
-
-					strstm.str(std::string());
-
+					logger << DebugInfo << "GDB client supports Feature \"" << features[i].name << "\": no" << EndDebugInfo;
 				}
+				*features[i].flag = false;
 			}
-
-			PutPacket("T05");
-
-		} else {
-			PutPacket("E00");
+			return;
 		}
-
 	}
-	else if (cmdPrefix.compare("disasm") == 0) {
-		/**
-		 * command: qRcmd, disasm:address:size
-		 *
-		 * return "O<next_address>
-         *        "O<disassembled code>"
-         *        "T05"
-		 *
-		 */
+}
 
-		if (separator_index == string::npos) {
-			PutPacket("E00");
-		} else {
-			separator_index++;
-			ADDRESS symbol_address;
-			ADDRESS symbol_size = 0;
-			if(!ParseHex(command, separator_index, symbol_address)) {
-				PutPacket("E00");
-			} else if(command[separator_index++] != ':') {
-				PutPacket("E00");
-			} else if(!ParseHex(command, separator_index, symbol_size)) {
-				PutPacket("E00");
-			} else if(separator_index != command.length()) {
-				PutPacket("E00");
-			}
-
-			Disasm(symbol_address, symbol_size);
-
-			PutPacket("T05");
-
-		}
-
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQSupported(std::string gdb_client_features)
+{
+	std::size_t pos = 0;
+	std::size_t delim_pos = 0;
+	
+	do
+	{
+		delim_pos = gdb_client_features.find_first_of(';', pos);
+		
+		std::string gdb_client_feature((delim_pos != std::string::npos) ? gdb_client_features.substr(pos, delim_pos - pos) : gdb_client_features.substr(pos));
+		
+		SetGDBClientFeature(gdb_client_feature);
+		
+		pos = (delim_pos != std::string::npos) ? delim_pos + 1 : std::string::npos;
 	}
-	else {
-		PutPacket("E00");
-	}
+	while(pos != std::string::npos);
+	
+	PutPacket("vContSupported+;QStartNoAckMode+");
+}
 
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQC()
+{
+	std::stringstream sstr;
+	sstr << current_thread_id;
+	PutPacket(sstr.str());
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQTStatus()
+{
+	PutPacket("T0"); // there's no experiments running currently
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQAttached(std::string command)
+{
+	PutPacket("1"); // The remote server attached to an existing process
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQStartNoAckMode()
+{
+	PutPacket("OK");
+	no_ack_mode = true;
 }
 
 template <class ADDRESS>
