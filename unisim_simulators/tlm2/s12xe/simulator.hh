@@ -60,6 +60,12 @@
 #include <unisim/component/tlm2/processor/hcs12x/s12mpu.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xftmx.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12mscan.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xepim_v1.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xdbg_v3.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12iic_v3.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12vregl3v3_v1.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12tim16b8c_v2.hh>
+#include <unisim/component/tlm2/processor/hcs12x/reserved.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
@@ -105,6 +111,12 @@ using unisim::component::tlm2::processor::hcs12x::S12SCI;
 using unisim::component::tlm2::processor::hcs12x::S12SPI;
 using unisim::component::tlm2::processor::hcs12x::S12MPU;
 using unisim::component::tlm2::processor::hcs12x::S12MSCAN;
+using unisim::component::tlm2::processor::hcs12x::S12XEPIM;
+using unisim::component::tlm2::processor::hcs12x::S12XDBG;
+using unisim::component::tlm2::processor::hcs12x::S12IIC;
+using unisim::component::tlm2::processor::hcs12x::S12VREGL3V3;
+using unisim::component::tlm2::processor::hcs12x::S12TIM16B8C;
+using unisim::component::tlm2::processor::hcs12x::RESERVED;
 
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
@@ -276,14 +288,14 @@ private:
 
 	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
-	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
+	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD0;
 	typedef unisim::component::tlm2::processor::hcs12x::S12PIT24B<8> PIT;
 
 	// ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<CPU_ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
-	typedef unisim::service::tee::registers::RegistersTee<32> RegistersTee;
-	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 32> MemoryImportExportTee;
+	typedef unisim::service::tee::registers::RegistersTee<48> RegistersTee;
+	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 48> MemoryImportExportTee;
 	typedef unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> MemoryAccessReportingTee;
 
 	typedef unisim::service::tee::debug_event::DebugEventTee<CPU_ADDRESS_TYPE> EVENT_TEE;
@@ -314,6 +326,16 @@ private:
 	S12SPI *spi0, *spi1, *spi2;
 
 	MSCAN *can0, *can1, *can2, *can3, *can4;
+
+	S12XEPIM *pim;
+	S12XDBG *dbg;
+	S12IIC *iic0, *iic1;
+
+	S12VREGL3V3 *vreg;
+
+	S12TIM16B8C *tim;
+
+	RESERVED* reserved;
 
 	//  - Memories
 	RAM *global_ram;

@@ -34,6 +34,7 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>(name, parent)
 	, unisim::kernel::service::Service<Registers>(name, parent)
 
+	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
 	, registers_export("registers_export", this)
 
 	, bus_clock_socket("Bus-Clock")
@@ -896,7 +897,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 //=====================================================================
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(ADDRESS addr, void *buffer, uint32_t size)
 {
 	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
 		service_address_t offset = addr-baseAddress;
@@ -954,7 +955,7 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 //}
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(ADDRESS addr, const void *buffer, uint32_t size)
 {
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {

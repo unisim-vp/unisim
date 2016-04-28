@@ -37,37 +37,35 @@
 
 #include "xml_atd_pwm_stub.hh"
 
-XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
-ATD_PWM_STUB(name, parent),
+XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent)
+	: ATD_PWM_STUB(name, parent)
+	, atd0_anx_stimulus_file("")
+	, param_atd0_anx_stimulus_file("atd0-anx-stimulus-file", this, atd0_anx_stimulus_file)
+	, atd0_anx_start_channel(0)
+	, param_atd0_anx_start_channel("atd0-anx-start-channel", this, atd0_anx_start_channel)
+	, atd0_anx_wrap_around_channel(ATD0_SIZE -1)
+	, param_atd0_anx_wrap_around_channel("atd0-anx-wrap-around-channel", this, atd0_anx_wrap_around_channel)
+	, atd1_anx_stimulus_file("")
+	, param_atd1_anx_stimulus_file("atd1-anx-stimulus-file", this, atd1_anx_stimulus_file)
+	, atd1_anx_start_channel(0)
+	, param_atd1_anx_start_channel("atd1-anx-start-channel", this, atd1_anx_start_channel)
+	, atd1_anx_wrap_around_channel(ATD1_SIZE -1)
+	, param_atd1_anx_wrap_around_channel("atd1-anx-wrap-around-channel", this, atd1_anx_wrap_around_channel)
 
-atd0_anx_stimulus_file(""),
-param_atd0_anx_stimulus_file("atd0-anx-stimulus-file", this, atd0_anx_stimulus_file),
-atd0_anx_start_channel(0),
-param_atd0_anx_start_channel("atd0-anx-start-channel", this, atd0_anx_start_channel),
-atd0_anx_wrap_around_channel(ATD0_SIZE -1),
-param_atd0_anx_wrap_around_channel("atd0-anx-wrap-around-channel", this, atd0_anx_wrap_around_channel),
+	, cosim_enabled(false)
+	, param_cosim_enabled("cosim-enabled", this, cosim_enabled)
 
-atd1_anx_stimulus_file(""),
-param_atd1_anx_stimulus_file("atd1-anx-stimulus-file", this, atd1_anx_stimulus_file),
-atd1_anx_start_channel(0),
-param_atd1_anx_start_channel("atd1-anx-start-channel", this, atd1_anx_start_channel),
-atd1_anx_wrap_around_channel(ATD1_SIZE -1),
-param_atd1_anx_wrap_around_channel("atd1-anx-wrap-around-channel", this, atd1_anx_wrap_around_channel)
+	, atd0_xml_enabled(false)
+	, param_atd0_xml_enabled("atd0-xml-enabled", this, atd0_xml_enabled)
 
-, cosim_enabled(false)
-, param_cosim_enabled("cosim-enabled", this, cosim_enabled)
+	, atd1_xml_enabled(false)
+	, param_atd1_xml_enabled("atd1-xml-enabled", this, atd1_xml_enabled)
 
-, atd0_xml_enabled(false)
-, param_atd0_xml_enabled("atd0-xml-enabled", this, atd0_xml_enabled)
+	, atd0_rand_enabled(false)
+	, param_atd0_rand_enabled("atd0-rand-enabled", this, atd0_rand_enabled)
 
-, atd1_xml_enabled(false)
-, param_atd1_xml_enabled("atd1-xml-enabled", this, atd1_xml_enabled)
-
-, atd0_rand_enabled(false)
-, param_atd0_rand_enabled("atd0-rand-enabled", this, atd0_rand_enabled)
-
-, atd1_rand_enabled(false)
-, param_atd1_rand_enabled("atd1-rand-enabled", this, atd1_rand_enabled)
+	, atd1_rand_enabled(false)
+	, param_atd1_rand_enabled("atd1-rand-enabled", this, atd1_rand_enabled)
 
 {
 
@@ -258,7 +256,7 @@ bool XML_ATD_PWM_STUB::BeginSetup() {
 	return (inherited::BeginSetup());
 }
 
-void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[8])
+void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[ATD0_SIZE])
 {
 //	data_t<ATD0_SIZE>* data = new data_t<ATD0_SIZE>();
 //	atd0_vect.push_back(data);
@@ -272,7 +270,7 @@ void XML_ATD_PWM_STUB::Inject_ATD0(double anValue[8])
 
 }
 
-void XML_ATD_PWM_STUB::Inject_ATD1(double anValue[16])
+void XML_ATD_PWM_STUB::Inject_ATD1(double anValue[ATD1_SIZE])
 {
 //	data_t<ATD1_SIZE>* data = new data_t<ATD1_SIZE>();
 //	atd1_vect.push_back(data);

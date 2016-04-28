@@ -169,8 +169,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             EEPROM Registers Interface interface methods               =

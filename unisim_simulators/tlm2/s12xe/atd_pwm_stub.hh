@@ -78,7 +78,7 @@ using unisim::component::tlm2::processor::hcs12x::UNISIM_ATD_ProtocolTypes;
 using unisim::kernel::tlm2::PayloadFabric;
 
 #define ATD1_SIZE	16
-#define ATD0_SIZE	8
+#define ATD0_SIZE	16
 #define PWM_SIZE	8
 
 
@@ -89,10 +89,38 @@ class ATD_PWM_STUB :
 	public Object,
 	public sc_module,
 
-	virtual public tlm_fw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >,
-	virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD0_SIZE> >,
-	virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD1_SIZE> >
+	virtual public tlm_fw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >
+//	, virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD0_SIZE> >
+//	, virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD1_SIZE> >
 {
+public:
+	template <int ATD_SIZE>
+	class BW_IF : virtual public tlm_bw_transport_if<UNISIM_ATD_ProtocolTypes<ATD0_SIZE> >
+	{
+	public:
+		BW_IF(sc_event& event): bw_event(&event) {}
+		~BW_IF() {}
+
+		virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t)
+		{
+			if(phase == BEGIN_RESP)
+			{
+				// payload.release();
+				bw_event->notify();
+
+				return (TLM_COMPLETED);
+			}
+			return (TLM_ACCEPTED);
+		}
+		virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+		{
+		}
+	private:
+		sc_event* bw_event;
+	};
+	BW_IF<ATD0_SIZE> *atd0_bw;
+	BW_IF<ATD1_SIZE> *atd1_bw;
+
 public:
 	tlm_initiator_socket<RTB2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD1_SIZE> > atd1_master_sock;
 	tlm_initiator_socket<RTB2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD0_SIZE> > atd0_master_sock;
@@ -114,10 +142,12 @@ public:
 
 	virtual tlm_sync_enum nb_transport_fw( PWM_Payload<PWM_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
 	virtual void b_transport( PWM_Payload<PWM_SIZE>& payload, sc_core::sc_time& t);
+
 	// Master methods
-	virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD1_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
-	virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD0_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
-	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+//	virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD1_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
+//	virtual tlm_sync_enum nb_transport_bw( ATD_Payload<ATD0_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
+
+//	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
 	// Implementation
 //	void input(bool pwmValue[PWM_SIZE]);
@@ -172,5 +202,6 @@ private:
 	bool terminated;
 
 };
+
 
 #endif /* ATD_PWM_STUB_HH_ */

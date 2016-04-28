@@ -66,8 +66,8 @@ public:
 
 	virtual bool BeginSetup();
 
-	virtual void Inject_ATD0(double anValue[8]);
-	virtual void Inject_ATD1(double anValue[16]);
+	virtual void Inject_ATD0(double anValue[ATD0_SIZE]);
+	virtual void Inject_ATD1(double anValue[ATD1_SIZE]);
 	virtual void Get_PWM(bool (*pwmValue)[PWM_SIZE]);
 
 private:

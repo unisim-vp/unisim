@@ -61,9 +61,15 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	, terminated(false)
 
 {
-	atd1_master_sock(*this);
-	atd0_master_sock(*this);
+//	atd1_master_sock(*this);
+//	atd0_master_sock(*this);
 	slave_sock(*this);
+
+	atd0_bw = new BW_IF<ATD0_SIZE>(atd0_bw_event);
+	atd1_bw = new BW_IF<ATD1_SIZE>(atd1_bw_event);
+
+	atd1_master_sock(*(this->atd1_bw));
+	atd0_master_sock(*(this->atd0_bw));
 
 //	atd1_payload = atd1_payload_fabric.allocate();
 //	atd0_payload = atd0_payload_fabric.allocate();
@@ -73,6 +79,9 @@ ATD_PWM_STUB::~ATD_PWM_STUB() {
 
 //	atd1_payload->release();
 //	atd0_payload->release();
+
+	if (atd0_bw) { delete atd0_bw; atd0_bw = NULL; }
+	if (atd1_bw) { delete atd1_bw; atd1_bw = NULL; }
 
 	if (trace_enable) {
 		atd0_output_file.close();
@@ -147,32 +156,32 @@ void ATD_PWM_STUB::b_transport( PWM_Payload<PWM_SIZE>& payload, sc_core::sc_time
 }
 
 // Master methods
-tlm_sync_enum ATD_PWM_STUB::nb_transport_bw( ATD_Payload<ATD1_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t)
-{
-	if(phase == BEGIN_RESP)
-	{
-		// payload.release();
-		atd1_bw_event.notify();
-
-		return (TLM_COMPLETED);
-	}
-	return (TLM_ACCEPTED);
-}
-
-tlm_sync_enum ATD_PWM_STUB::nb_transport_bw( ATD_Payload<ATD0_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t)
-{
-	if(phase == BEGIN_RESP)
-	{
-		//payload.release();
-		atd0_bw_event.notify();
-		return (TLM_COMPLETED);
-	}
-	return (TLM_ACCEPTED);
-}
-
-void ATD_PWM_STUB::invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
-}
+//tlm_sync_enum ATD_PWM_STUB::nb_transport_bw( ATD_Payload<ATD1_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t)
+//{
+//	if(phase == BEGIN_RESP)
+//	{
+//		// payload.release();
+//		atd1_bw_event.notify();
+//
+//		return (TLM_COMPLETED);
+//	}
+//	return (TLM_ACCEPTED);
+//}
+//
+//tlm_sync_enum ATD_PWM_STUB::nb_transport_bw( ATD_Payload<ATD0_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t)
+//{
+//	if(phase == BEGIN_RESP)
+//	{
+//		//payload.release();
+//		atd0_bw_event.notify();
+//		return (TLM_COMPLETED);
+//	}
+//	return (TLM_ACCEPTED);
+//}
+//
+//void ATD_PWM_STUB::invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+//{
+//}
 
 // Implementation
 //void ATD_PWM_STUB::input(bool* pwmValue[PWM_SIZE])

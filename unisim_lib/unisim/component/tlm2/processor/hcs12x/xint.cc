@@ -704,31 +704,49 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 
 bool XINT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((address_t) addr == XINT_REGS_ADDRESSES[IVBR]) { *(uint8_t *) buffer = getIVBR(); return (true); }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_XGPRIO]) { *(uint8_t *) buffer = getINT_XGPRIO(); return (true); }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFADDR]) { *(uint8_t *) buffer = getINT_CFADDR(); return (true); }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA0]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 0]; return (true); }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA1]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 1]; return (true); }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA2]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 2]; return (true); }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA3]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 3]; return (true); }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA4]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 4]; return (true); }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA5]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 5]; return (true); }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA6]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 6]; return (true); }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA7]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 7]; return (true); }
+	if ((addr < baseAddress) || (addr >= baseAddress + 16))
+	{
+		return false;
+	}
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[IVBR]) { *(uint8_t *) buffer = getIVBR(); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_XGPRIO]) { *(uint8_t *) buffer = getINT_XGPRIO(); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFADDR]) { *(uint8_t *) buffer = getINT_CFADDR(); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA0]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 0]; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA1]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 1]; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA2]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 2]; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA3]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 3]; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA4]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 4]; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA5]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 5]; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA6]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 6]; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA7]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 7]; }
 
-	return (false);
+	return true;
 }
 
 bool XINT::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	for (uint8_t i=0; i<XINT_MEMMAP_SIZE; i++) {
-		if (XINT_REGS_ADDRESSES[i] == addr) {
-			write(addr, buffer, size);
-			return (true);
-		}
+	if ((addr < baseAddress) || (addr >= baseAddress + 16))
+	{
+		return false;
+	}
+	else {
+		uint8_t value = *((uint8_t *) buffer);
+
+		if (addr == XINT_REGS_ADDRESSES[IVBR]) setIVBR(value);
+		else if (addr == XINT_REGS_ADDRESSES[INT_XGPRIO]) setINT_XGPRIO(value);
+		else if (addr == XINT_REGS_ADDRESSES[INT_CFADDR]) setINT_CFADDR(value);
+		else if (addr == XINT_REGS_ADDRESSES[INT_CFDATA0]) write_INT_CFDATA(0, value);
+		else if (addr == XINT_REGS_ADDRESSES[INT_CFDATA1]) write_INT_CFDATA(1, value);
+		else if (addr == XINT_REGS_ADDRESSES[INT_CFDATA2]) write_INT_CFDATA(2, value);
+		else if (addr == XINT_REGS_ADDRESSES[INT_CFDATA3]) write_INT_CFDATA(3, value);
+		else if (addr == XINT_REGS_ADDRESSES[INT_CFDATA4]) write_INT_CFDATA(4, value);
+		else if (addr == XINT_REGS_ADDRESSES[INT_CFDATA5]) write_INT_CFDATA(5, value);
+		else if (addr == XINT_REGS_ADDRESSES[INT_CFDATA6]) write_INT_CFDATA(6, value);
+		else if (addr == XINT_REGS_ADDRESSES[INT_CFDATA7]) write_INT_CFDATA(7, value);
+
+		return (true);
 	}
 
-	return (false);
 }
 
 

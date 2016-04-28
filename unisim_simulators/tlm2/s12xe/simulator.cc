@@ -54,6 +54,13 @@ Simulator::Simulator(int argc, char **argv)
 	, spi0(0)
 	, spi1(0)
 	, spi2(0)
+	, pim(0)
+	, dbg(0)
+	, iic0(0)
+	, iic1(0)
+	, vreg(0)
+	, tim(0)
+	, reserved(0)
 	, global_ram(0)
 	, global_flash(0)
 	, s12xint(0)
@@ -189,6 +196,18 @@ Simulator::Simulator(int argc, char **argv)
 	spi0 = new S12SPI("SPI0");
 	spi1 = new S12SPI("SPI1");
 	spi2 = new S12SPI("SPI2");
+
+	pim  = new S12XEPIM("PIM");
+	dbg  = new S12XDBG("DBG");
+
+	iic0 = new S12IIC("IIC0");
+	iic1 = new S12IIC("IIC1");
+
+	vreg = new S12VREGL3V3("VREG");
+
+	tim = new S12TIM16B8C("TIM");
+
+	reserved = new RESERVED("RESERVED");
 
 	atd1 = new ATD1("ATD1");
 	atd0 = new ATD0("ATD0");
@@ -401,6 +420,13 @@ Simulator::Simulator(int argc, char **argv)
 	mmc->init_socket(xgate->target_socket);
 	mmc->init_socket(global_ram->slave_sock);
 	mmc->init_socket(global_flash->slave_sock);
+	mmc->init_socket(pim->slave_socket);
+	mmc->init_socket(dbg->slave_socket);
+	mmc->init_socket(iic0->slave_socket);
+	mmc->init_socket(iic1->slave_socket);
+	mmc->init_socket(vreg->slave_socket);
+	mmc->init_socket(tim->slave_socket);
+	mmc->init_socket(reserved->slave_socket);
 
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
@@ -433,6 +459,13 @@ Simulator::Simulator(int argc, char **argv)
 	crg->bus_clock_socket(spi0->bus_clock_socket);
 	crg->bus_clock_socket(spi1->bus_clock_socket);
 	crg->bus_clock_socket(spi2->bus_clock_socket);
+	crg->bus_clock_socket(pim->bus_clock_socket);
+	crg->bus_clock_socket(dbg->bus_clock_socket);
+	crg->bus_clock_socket(iic0->bus_clock_socket);
+	crg->bus_clock_socket(iic1->bus_clock_socket);
+	crg->bus_clock_socket(vreg->bus_clock_socket);
+	crg->bus_clock_socket(tim->bus_clock_socket);
+	crg->bus_clock_socket(reserved->bus_clock_socket);
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -467,6 +500,13 @@ Simulator::Simulator(int argc, char **argv)
 	*(memoryImportExportTee->memory_import[24]) >> spi1->memory_export;
 	*(memoryImportExportTee->memory_import[25]) >> spi2->memory_export;
 	*(memoryImportExportTee->memory_import[26]) >> mpu->memory_export;
+	*(memoryImportExportTee->memory_import[27]) >> pim->memory_export;
+	*(memoryImportExportTee->memory_import[28]) >> dbg->memory_export;
+	*(memoryImportExportTee->memory_import[29]) >> iic0->memory_export;
+	*(memoryImportExportTee->memory_import[30]) >> iic1->memory_export;
+	*(memoryImportExportTee->memory_import[31]) >> vreg->memory_export;
+	*(memoryImportExportTee->memory_import[32]) >> tim->memory_export;
+	*(memoryImportExportTee->memory_import[33]) >> reserved->memory_export;
 
 	mmc->memory_import >> memoryImportExportTee->memory_export;
 
@@ -501,6 +541,13 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[25]) >> spi1->registers_export;
 	*(registersTee->registers_import[26]) >> spi2->registers_export;
 	*(registersTee->registers_import[27]) >> mpu->registers_export;
+	*(registersTee->registers_import[28]) >> pim->registers_export;
+	*(registersTee->registers_import[29]) >> dbg->registers_export;
+	*(registersTee->registers_import[30]) >> iic0->registers_export;
+	*(registersTee->registers_import[31]) >> iic1->registers_export;
+	*(registersTee->registers_import[32]) >> vreg->registers_export;
+	*(registersTee->registers_import[33]) >> tim->registers_export;
+	*(registersTee->registers_import[34]) >> reserved->registers_export;
 
 // ***********************************************************
 	cpu->loader_import >> loader->loader_export;
@@ -750,6 +797,15 @@ Simulator::~Simulator()
 	if (spi0) { delete spi0; spi0 = NULL; }
 	if (spi1) { delete spi1; spi1 = NULL; }
 	if (spi2) { delete spi2; spi2 = NULL; }
+	if (pim)  { delete pim; pim = NULL; }
+	if (dbg)  { delete dbg; dbg = NULL; }
+	if (iic0) { delete iic0; iic0 = NULL; }
+	if (iic1) { delete iic1; iic1 = NULL; }
+
+	if (vreg) { delete vreg; vreg = NULL; }
+	if (tim) { delete tim; tim = NULL; }
+
+	if (reserved) { delete reserved; reserved = NULL; }
 
 	if(cpu) { delete cpu; cpu = NULL; }
 
@@ -1279,6 +1335,31 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("MMC.address-encoding", 0x0);
 	simulator->SetVariable("MMC.ppage-address", 0x15); // ppage address for S12XE is 0x15
 
+	simulator->SetVariable("PIM.debug-enabled", false);
+	simulator->SetVariable("PIM.bus-cycle-time", 250000);
+
+	simulator->SetVariable("DBG.debug-enabled", false);
+	simulator->SetVariable("DBG.bus-cycle-time", 250000);
+
+	simulator->SetVariable("IIC0.base-address", 0x00E0);
+	simulator->SetVariable("IIC0.debug-enabled", false);
+	simulator->SetVariable("IIC0.bus-cycle-time", 250000);
+
+	simulator->SetVariable("IIC1.base-address", 0x00B0);
+	simulator->SetVariable("IIC1.debug-enabled", false);
+	simulator->SetVariable("IIC1.bus-cycle-time", 250000);
+
+	simulator->SetVariable("VREG.base-address", 0x02F0);
+	simulator->SetVariable("VREG.debug-enabled", false);
+	simulator->SetVariable("VREG.bus-cycle-time", 250000);
+
+	simulator->SetVariable("TIM.base-address", 0x03D0);
+	simulator->SetVariable("TIM.debug-enabled", false);
+	simulator->SetVariable("TIM.bus-cycle-time", 250000);
+
+	simulator->SetVariable("RESERVED.debug-enabled", false);
+	simulator->SetVariable("RESERVED.bus-cycle-time", 250000);
+
 /*
 	simulator->SetVariable("MMC.memory-map",
 "0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;\
@@ -1287,6 +1368,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 18,0200,023F;19,0280,02BF;20,02C0,02EF;21,0300,0327;22,330,337;23,338,33F;\
 24,0340,0367;25,0380,03BF;26,0007FF,0FFFFF;27,100000,13FFFF;27,400000,7FFFFF");
 */
+
+/** VERRY IMPORTANT: The MMC memory map indexing (i.e. order) depend on the binding to "mmc->init_socket" **/
 
 	// index 27 reference two memory regions (EEPROM, FLASH). For S12XE, the eeprom is emulated by flash
 	simulator->SetVariable("MMC.memory-map",
@@ -1318,7 +1401,27 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 25,0380,03BF;\
 26,0007FF,0FFFFF;\
 27,100000,13FFFF;\
-27,400000,7FFFFF"
+27,400000,7FFFFF;\
+28,0000,0009;\
+28,000C,000D;\
+28,001C,001F;\
+28,0032,0033;\
+28,0240,027F;\
+28,0368,037F;\
+29,0020,002F;\
+30,00E0,00EF;\
+31,00B0,00BF;\
+32,02F0,02F7;\
+33,03D0,03FF;\
+34,0018,0019;\
+34,0030,0031;\
+34,00E8,00EF;\
+34,00E8,00EF;\
+34,02F8,02FF;\
+34,0328,032F;\
+34,03C0,03CF;\
+34,0400,07FF\
+"
 	);
 
 	simulator->SetVariable("MPU.debug-enabled", false);
@@ -1349,6 +1452,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SCI7.RXD", true);
 
 	simulator->SetVariable("XINT.debug-enabled", false);
+	simulator->SetVariable("XINT.base-address", 0x0120);
 
 	simulator->SetVariable("RAM.org", 0x000800);
 	simulator->SetVariable("RAM.bytesize", 1024*1024); // 1MByte
