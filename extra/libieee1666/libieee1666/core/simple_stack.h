@@ -47,6 +47,7 @@ public:
 	virtual ~sc_simple_stack();
 	
 	virtual void *get_top_of_the_stack() const;
+	virtual void *get_stack_base() const;
 
 private:
 	std::size_t stack_size;

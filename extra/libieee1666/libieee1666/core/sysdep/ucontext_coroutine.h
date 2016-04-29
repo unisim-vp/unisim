@@ -32,56 +32,50 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __LIBIEEE1666_CORE_SYSDEP_FCONTEXT_COROUTINE_H__
-#define __LIBIEEE1666_CORE_SYSDEP_FCONTEXT_COROUTINE_H__
+#ifndef __LIBIEEE1666_CORE_SYSDEP_UCONTEXT_COROUTINE_H__
+#define __LIBIEEE1666_CORE_SYSDEP_UCONTEXT_COROUTINE_H__
 
 #include "core/coroutine.h"
-#include <boost/version.hpp>
-#include <boost/context/all.hpp>
 #include "core/stack.h"
+#include <ucontext.h>
 
 namespace sc_core {
 
-class sc_fcontext_coroutine_system;
+class sc_ucontext_coroutine_system;
 
-class sc_fcontext_coroutine : public sc_coroutine
+class sc_ucontext_coroutine : public sc_coroutine
 {
 public:
-	sc_fcontext_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
-	virtual ~sc_fcontext_coroutine();
+	sc_ucontext_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
+	virtual ~sc_ucontext_coroutine();
 	
 	virtual void start();
 	virtual void yield(sc_coroutine *next_coroutine);
 	virtual void abort(sc_coroutine *next_coroutine);
 private:
-	explicit sc_fcontext_coroutine(); // reserved for main coroutine
+	explicit sc_ucontext_coroutine(); // reserved for main coroutine
 
-	friend class sc_fcontext_coroutine_system;
-	
-#if BOOST_VERSION >= 105600 // boost version >= 1.56.0
-	boost::context::fcontext_t fc;
-	boost::context::fcontext_t fcm;
-#else
-	boost::context::fcontext_t *fc;
-	boost::context::fcontext_t fcm;
-#endif
+	friend class sc_ucontext_coroutine_system;
+
+	ucontext_t uc;
+	ucontext_t ucm;
 	void (*fn)(intptr_t);
 	intptr_t arg;
 	sc_stack *stack;
 	
-	static void entry_point(intptr_t self);
+	static void entry_point(unsigned int arg0, unsigned int arg1);
 };
 
-class sc_fcontext_coroutine_system : public sc_coroutine_system
+class sc_ucontext_coroutine_system : public sc_coroutine_system
 {
 public:
-	sc_fcontext_coroutine_system();
-	virtual ~sc_fcontext_coroutine_system();
+	sc_ucontext_coroutine_system();
+	virtual ~sc_ucontext_coroutine_system();
 	
 	virtual sc_coroutine *get_main_coroutine();
 	virtual sc_coroutine *create_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
 private:
-	sc_fcontext_coroutine *main_coroutine;
+	sc_ucontext_coroutine *main_coroutine;
 };
 
 } // end of namespace sc_core

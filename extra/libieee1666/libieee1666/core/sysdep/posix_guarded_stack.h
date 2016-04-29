@@ -47,9 +47,11 @@ public:
 	virtual ~sc_posix_guarded_stack();
 	
 	virtual void *get_top_of_the_stack() const;
+	virtual void *get_stack_base() const;
 private:
 	void *mapped_area;
 	std::size_t mapped_area_length;
+	std::size_t page_size;
 #if __LIBIEEE1666_VALGRIND__
 	unsigned int valgrind_stack_id;
 #endif

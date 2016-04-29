@@ -45,6 +45,7 @@ public:
 	virtual ~sc_stack() {}
 	
 	virtual void *get_top_of_the_stack() const = 0;
+	virtual void *get_stack_base() const = 0;
 };
 
 class sc_stack_system

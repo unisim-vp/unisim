@@ -46,7 +46,6 @@ const std::size_t DEFAULT_FCONTEXT_STACK_SIZE = 128 * 1024; // 128 KB
 sc_fcontext_coroutine::sc_fcontext_coroutine()
 	: fc()
 	, fcm()
-	, sp(0)
 	, fn(0)
 	, arg(0)
 	, stack(0)
@@ -59,15 +58,13 @@ sc_fcontext_coroutine::sc_fcontext_coroutine()
 sc_fcontext_coroutine::sc_fcontext_coroutine(std::size_t stack_size, void (*_fn)(intptr_t), intptr_t _arg)
 	: fc()
 	, fcm()
-	, sp(0)
 	, fn(_fn)
 	, arg(_arg)
 	, stack(0)
 {
 	if(!stack_size) stack_size = DEFAULT_FCONTEXT_STACK_SIZE;
 	stack = sc_kernel::get_kernel()->get_stack_system()->create_stack(stack_size);
-	sp = stack->get_top_of_the_stack();
-	fc = boost::context::make_fcontext(sp, stack_size, &sc_fcontext_coroutine::entry_point);
+	fc = boost::context::make_fcontext(stack->get_top_of_the_stack(), stack_size, &sc_fcontext_coroutine::entry_point);
 }
 
 sc_fcontext_coroutine::~sc_fcontext_coroutine()

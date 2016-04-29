@@ -75,6 +75,11 @@ void *sc_simple_stack::get_top_of_the_stack() const
 	return reinterpret_cast<void *>(reinterpret_cast<char *>(buffer) + stack_size);
 }
 
+void *sc_simple_stack::get_stack_base() const
+{
+	return buffer;
+}
+
 sc_stack *sc_simple_stack_system::create_stack(std::size_t stack_size)
 {
 	return new sc_simple_stack(stack_size);

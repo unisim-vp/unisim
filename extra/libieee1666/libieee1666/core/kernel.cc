@@ -57,6 +57,10 @@
 #include "core/sysdep/fcontext_coroutine.h"
 #endif
 
+#if __LIBIEEE1666_UCONTEXT__
+#include "core/sysdep/ucontext_coroutine.h"
+#endif
+
 #if __LIBIEEE1666_PTHREAD__
 #include "core/sysdep/pthread_coroutine.h"
 #endif
@@ -174,6 +178,13 @@ sc_kernel::sc_kernel()
 				break;
 			}
 #endif
+#if __LIBIEEE1666_UCONTEXT__
+			if(strcmp(libieee1666_coroutine_system, "UCONTEXT") == 0)
+			{
+				coroutine_system = new sc_ucontext_coroutine_system();
+				break;
+			}
+#endif
 #if __LIBIEEE1666_PTHREAD__
 			if(strcmp(libieee1666_coroutine_system, "PTHREAD") == 0)
 			{
@@ -184,6 +195,9 @@ sc_kernel::sc_kernel()
 		}
 #if __LIBIEEE1666_FCONTEXT__
 		coroutine_system = new sc_fcontext_coroutine_system();
+		break;
+#elif __LIBIEEE1666_UCONTEXT__
+		coroutine_system = new sc_ucontext_coroutine_system();
 		break;
 #elif __LIBIEEE1666_PTHREAD__
 		coroutine_system = new sc_pthread_coroutine_system();

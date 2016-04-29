@@ -50,15 +50,16 @@ namespace sc_core {
 sc_posix_guarded_stack::sc_posix_guarded_stack(std::size_t stack_size)
 	: mapped_area(0)
 	, mapped_area_length(0)
+	, page_size(0)
 #if __LIBIEEE1666_VALGRIND__
 	, valgrind_stack_id(0)
 #endif
 {
 	// get page size
-	long page_size = ::sysconf(_SC_PAGESIZE);
+	page_size = ::sysconf(_SC_PAGESIZE);
 	
 	// compute page minimum page count that contains 'stack_size' bytes
-	long page_count = (stack_size + page_size) / page_size;
+	std::size_t page_count = (stack_size + page_size) / page_size;
 	
 	// account for one guard page
 	page_count++;
@@ -117,6 +118,11 @@ sc_posix_guarded_stack::~sc_posix_guarded_stack()
 void *sc_posix_guarded_stack::get_top_of_the_stack() const
 {
 	return reinterpret_cast<void *>(reinterpret_cast<char *>(mapped_area) + mapped_area_length);
+}
+
+void *sc_posix_guarded_stack::get_stack_base() const
+{
+	return reinterpret_cast<void *>(reinterpret_cast<char *>(mapped_area) + page_size);
 }
 
 sc_stack *sc_posix_guarded_stack_system::create_stack(std::size_t stack_size)

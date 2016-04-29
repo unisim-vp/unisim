@@ -43,6 +43,15 @@ else
 	LIBIEEE1666_ENABLE_FCONTEXT=0
 fi
 
+AC_ARG_ENABLE([ucontext],
+	AC_HELP_STRING([--enable-ucontext], [ucontext coroutine system support [default=no]]), , enable_ucontext=no)
+
+if test "x${enable_ucontext}" = "xyes"; then
+	LIBIEEE1666_ENABLE_UCONTEXT=1
+else
+	LIBIEEE1666_ENABLE_UCONTEXT=0
+fi
+
 AC_ARG_ENABLE([pthread],
 	AC_HELP_STRING([--enable-pthread], [POSIX thread coroutine system support [default=yes]]), , enable_pthread=yes)
 
@@ -225,6 +234,20 @@ else
 	AC_MSG_NOTICE([POSIX threads not found])
 fi
 
+################################# check for ucontext #######################################
+
+AC_CHECK_HEADER(ucontext.h, LIBIEEE1666_UCONTEXT_H=1, LIBIEEE1666_UCONTEXT_H=0)
+
+if test ${LIBIEEE1666_UCONTEXT_H} -eq 1; then
+	LIBIEEE1666_CHECK_FUN([getcontext], [#include <ucontext.h>], [getcontext(0)], [LIBIEEE1666_GETCONTEXT=1], [LIBIEEE1666_GETCONTEXT=0])
+	LIBIEEE1666_CHECK_FUN([makecontext], [#include <ucontext.h>], [makecontext(0, 0, 0)], [LIBIEEE1666_MAKECONTEXT=1], [LIBIEEE1666_MAKECONTEXT=0])
+	LIBIEEE1666_CHECK_FUN([swapcontext], [#include <ucontext.h>], [swapcontext(0, 0)], [LIBIEEE1666_SWAPCONTEXT=1], [LIBIEEE1666_SWAPCONTEXT=0])
+else
+	LIBIEEE1666_GETCONTEXT=0
+	LIBIEEE1666_MAKECONTEXT=0
+	LIBIEEE1666_SWAPCONTEXT=0
+fi
+
 ############################# Check for backtrace support ###################################
 
 AC_CHECK_HEADER(execinfo.h, LIBIEEE1666_EXECINFO_H=1, LIBIEEE1666_EXECINFO_H=0)
@@ -242,27 +265,6 @@ if test ${LIBIEEE1666_WINDOWS} -eq 1; then
 	LDFLAGS="-no-undefined ${LDFLAGS}"
 fi
 
-##################################### packaging stuff ########################################
-
-LIBIEEE1666_PKG_CONFIG_CXXFLAGS=$(echo "${CXXFLAGS}" | sed "s/${USER_CXXFLAGS}//g")  # remove user's CXX flags
-
-PACKAGE_VERSION_MAJOR=$(echo "${PACKAGE_VERSION}" | sed 's/^.*\([[0-9]]\+\)\.\([[0-9]]\+\)\.\([[0-9]]\+\).*$/\1/')
-PACKAGE_VERSION_MINOR=$(echo "${PACKAGE_VERSION}" | sed 's/^.*\([[0-9]]\+\)\.\([[0-9]]\+\)\.\([[0-9]]\+\).*$/\2/')
-PACKAGE_VERSION_PATCH=$(echo "${PACKAGE_VERSION}" | sed 's/^.*\([[0-9]]\+\)\.\([[0-9]]\+\)\.\([[0-9]]\+\).*$/\3/')
-PACKAGE_RELEASE=1
-
-RPM_PACKAGE_DATE=$(date +'%a %b %d %Y')
-DEB_PACKAGE_DATE=$(date +'%a, %d %b %Y %T %z')
-
-AC_SUBST(LIBIEEE1666_PKG_CONFIG_CXXFLAGS)
-AC_SUBST(PACKAGE_VERSION_MAJOR)
-AC_SUBST(PACKAGE_VERSION_MINOR)
-AC_SUBST(PACKAGE_VERSION_PATCH)
-AC_SUBST(PACKAGE_RELEASE)
-AC_SUBST(RPM_PACKAGE_DATE)
-AC_SUBST(DEB_PACKAGE_DATE)
-AC_SUBST(VERSION)
-
 ######################## activate system dependent features if enabled and available ##########################
 
 LIBIEEE1666_SYSDEPS=
@@ -279,6 +281,13 @@ if test ${LIBIEEE1666_ENABLE_FCONTEXT} -eq 1 && test ${LIBIEEE1666_BOOST_CONTEXT
 	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/fcontext_coroutine.lo"
 else
 	LIBIEEE1666_FCONTEXT=0
+fi
+
+if test ${LIBIEEE1666_ENABLE_UCONTEXT} -eq 1 && test ${LIBIEEE1666_GETCONTEXT} -eq 1 && test ${LIBIEEE1666_MAKECONTEXT} -eq 1 && test ${LIBIEEE1666_SWAPCONTEXT} -eq 1; then
+	LIBIEEE1666_UCONTEXT=1
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/ucontext_coroutine.lo"
+else
+	LIBIEEE1666_UCONTEXT=0
 fi
 
 if test ${LIBIEEE1666_ENABLE_PTHREAD} -eq 1 && test ${LIBIEEE1666_PTHREAD} -eq 1; then
@@ -322,6 +331,7 @@ fi
 
 AC_SUBST(LIBIEEE1666_POSIX_GUARDED_STACK)
 AC_SUBST(LIBIEEE1666_FCONTEXT)
+AC_SUBST(LIBIEEE1666_UCONTEXT)
 AC_SUBST(LIBIEEE1666_PTHREAD)
 AC_SUBST(LIBIEEE1666_WINDOWS_GUARDED_STACK)
 AC_SUBST(LIBIEEE1666_BACKTRACE)
@@ -330,9 +340,37 @@ AC_SUBST(LIBIEEE1666_SYSDEPS)
 
 ############################## Check configuration coherency ##############################
 
-if test ${LIBIEEE1666_FCONTEXT} -eq 0 && test ${LIBIEEE1666_PTHREAD} -eq 0; then
-	AC_MSG_ERROR([Boost::Context library or POSIX threads support must be available])
+if test ${LIBIEEE1666_FCONTEXT} -eq 0 && test ${LIBIEEE1666_PTHREAD} -eq 0 && test ${LIBIEEE1666_UCONTEXT} -eq 0; then
+	AC_MSG_ERROR([Boost::Context library, POSIX threads, or ucontext support must be available])
 fi
+
+##################################### packaging stuff ########################################
+
+LIBIEEE1666_PKG_CONFIG_CXXFLAGS=$(echo "${CXXFLAGS}" | sed "s/${USER_CXXFLAGS}//g")  # remove user's CXX flags
+
+PACKAGE_VERSION_MAJOR=$(echo "${PACKAGE_VERSION}" | sed 's/^.*\([[0-9]]\+\)\.\([[0-9]]\+\)\.\([[0-9]]\+\).*$/\1/')
+PACKAGE_VERSION_MINOR=$(echo "${PACKAGE_VERSION}" | sed 's/^.*\([[0-9]]\+\)\.\([[0-9]]\+\)\.\([[0-9]]\+\).*$/\2/')
+PACKAGE_VERSION_PATCH=$(echo "${PACKAGE_VERSION}" | sed 's/^.*\([[0-9]]\+\)\.\([[0-9]]\+\)\.\([[0-9]]\+\).*$/\3/')
+PACKAGE_RELEASE=1
+
+RPM_PACKAGE_DATE=$(date +'%a %b %d %Y')
+DEB_PACKAGE_DATE=$(date +'%a, %d %b %Y %T %z')
+
+if test ${LIBIEEE1666_FCONTEXT} -eq 1; then
+	PACKAGE_DEPENDENCY=libboost-context
+	PACKAGE_DEV_DEPENDENCY=libboost-context-dev
+fi
+
+AC_SUBST(LIBIEEE1666_PKG_CONFIG_CXXFLAGS)
+AC_SUBST(PACKAGE_VERSION_MAJOR)
+AC_SUBST(PACKAGE_VERSION_MINOR)
+AC_SUBST(PACKAGE_VERSION_PATCH)
+AC_SUBST(PACKAGE_RELEASE)
+AC_SUBST(RPM_PACKAGE_DATE)
+AC_SUBST(DEB_PACKAGE_DATE)
+AC_SUBST(VERSION)
+AC_SUBST(PACKAGE_DEPENDENCY)
+AC_SUBST(PACKAGE_DEV_DEPENDENCY)
 
 ############################## Generated files at configure time ##############################
 
@@ -374,6 +412,12 @@ if test ${LIBIEEE1666_FCONTEXT} -eq 1; then
 	AC_MSG_NOTICE([Boost::Context (fcontext) coroutine system support: yes])
 else
 	AC_MSG_NOTICE([Boost::Context (fcontext) coroutine system support: no])
+fi
+
+if test ${LIBIEEE1666_UCONTEXT} -eq 1; then
+	AC_MSG_NOTICE([ucontext coroutine system support: yes])
+else
+	AC_MSG_NOTICE([ucontext coroutine system support: no])
 fi
 
 if test ${LIBIEEE1666_POSIX_GUARDED_STACK} -eq 1; then
