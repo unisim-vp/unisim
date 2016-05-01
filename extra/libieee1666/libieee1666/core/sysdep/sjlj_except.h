@@ -32,57 +32,27 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __LIBIEEE1666_CORE_SYSDEP_UCONTEXT_COROUTINE_H__
-#define __LIBIEEE1666_CORE_SYSDEP_UCONTEXT_COROUTINE_H__
+#ifndef __LIBIEEE1666_CORE_SYSDEP_SJLJ_EXCEPT_H__
+#define __LIBIEEE1666_CORE_SYSDEP_SJLJ_EXCEPT_H__
 
-#include "core/coroutine.h"
-#include "core/stack.h"
-#include "core/sysdep/sjlj_except.h"
-#include <ucontext.h>
-
-namespace sc_core {
-
-class sc_ucontext_coroutine_system;
-
-class sc_ucontext_coroutine : public sc_coroutine
-{
-public:
-	sc_ucontext_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
-	virtual ~sc_ucontext_coroutine();
-	
-	virtual void start();
-	virtual void yield(sc_coroutine *next_coroutine);
-	virtual void abort(sc_coroutine *next_coroutine);
-private:
-	explicit sc_ucontext_coroutine(); // reserved for main coroutine
-
-	friend class sc_ucontext_coroutine_system;
-
-	ucontext_t uc;
-	ucontext_t ucm;
 #if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
-	struct SjLj_Function_Context sjlj_fc;
-	struct SjLj_Function_Context sjlj_fcm;
-#endif
-	void (*fn)(intptr_t);
-	intptr_t arg;
-	sc_stack *stack;
-	
-	static void entry_point(unsigned int arg0, unsigned int arg1);
-};
+// Note: There are three exeception handling mechanisms on mingw:
+//         - dw2 (DWARF 2 .debug_frame/.eh_frame)
+//         - sjlj (setjump/longjump)
+//         - SEH (structured Exception Handling)
+// sjlj needs additional instrumentation to work with coroutines
 
-class sc_ucontext_coroutine_system : public sc_coroutine_system
+#include <unwind.h>
+
+struct SjLj_Function_Context
 {
-public:
-	sc_ucontext_coroutine_system();
-	virtual ~sc_ucontext_coroutine_system();
+	/* This is the chain through all registered contexts.  It is
+	   filled in by _Unwind_SjLj_Register.  */
+	struct SjLj_Function_Context *prev;
 	
-	virtual sc_coroutine *get_main_coroutine();
-	virtual sc_coroutine *create_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
-private:
-	sc_ucontext_coroutine *main_coroutine;
+	/* other fields are unused on mingw */
+	/* ... */
 };
-
-} // end of namespace sc_core
+#endif
 
 #endif

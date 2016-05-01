@@ -61,6 +61,10 @@
 #include "core/sysdep/ucontext_coroutine.h"
 #endif
 
+#if __LIBIEEE1666_WINDOWS_FIBER__
+#include "core/sysdep/windows_fiber_coroutine.h"
+#endif
+
 #if __LIBIEEE1666_PTHREAD__
 #include "core/sysdep/pthread_coroutine.h"
 #endif
@@ -171,33 +175,55 @@ sc_kernel::sc_kernel()
 	{
 		if(libieee1666_coroutine_system)
 		{
-#if __LIBIEEE1666_FCONTEXT__
 			if(strcmp(libieee1666_coroutine_system, "FCONTEXT") == 0)
 			{
+#if __LIBIEEE1666_FCONTEXT__
+				std::cerr << "using Boost::Context (fcontext) coroutine system as requested by user" << std::endl;
 				coroutine_system = new sc_fcontext_coroutine_system();
 				break;
-			}
+#else
+				std::cerr << "Boost::Context (fcontext) coroutine system is not available" << std::endl;
 #endif
-#if __LIBIEEE1666_UCONTEXT__
-			if(strcmp(libieee1666_coroutine_system, "UCONTEXT") == 0)
+			}
+			else if(strcmp(libieee1666_coroutine_system, "UCONTEXT") == 0)
 			{
+#if __LIBIEEE1666_UCONTEXT__
+				std::cerr << "using ucontext coroutine system as requested by user" << std::endl;
 				coroutine_system = new sc_ucontext_coroutine_system();
 				break;
-			}
+#else
+				std::cerr << "ucontext coroutine system is not available" << std::endl;
 #endif
-#if __LIBIEEE1666_PTHREAD__
-			if(strcmp(libieee1666_coroutine_system, "PTHREAD") == 0)
+			}
+			else if(strcmp(libieee1666_coroutine_system, "WINDOWS_FIBER") == 0)
 			{
+#if __LIBIEEE1666_WINDOWS_FIBER__
+				std::cerr << "using Windows fiber coroutine system as requested by user" << std::endl;
+				coroutine_system = new sc_windows_fiber_coroutine_system();
+				break;
+#else
+				std::cerr << "using Windows fiber coroutine system as requested by user" << std::endl;
+#endif
+			}
+			else if(strcmp(libieee1666_coroutine_system, "PTHREAD") == 0)
+			{
+#if __LIBIEEE1666_PTHREAD__
+				std::cerr << "using POSIX thread coroutine system as requested by user" << std::endl;
 				coroutine_system = new sc_pthread_coroutine_system();
 				break;
-			}
+#else
+				std::cerr << "POSIX thread coroutine system is not available" << std::endl;
 #endif
+			}
 		}
 #if __LIBIEEE1666_FCONTEXT__
 		coroutine_system = new sc_fcontext_coroutine_system();
 		break;
 #elif __LIBIEEE1666_UCONTEXT__
 		coroutine_system = new sc_ucontext_coroutine_system();
+		break;
+#elif __LIBIEEE1666_WINDOWS_FIBER__
+		coroutine_system = new sc_windows_fiber_coroutine_system();
 		break;
 #elif __LIBIEEE1666_PTHREAD__
 		coroutine_system = new sc_pthread_coroutine_system();

@@ -32,135 +32,133 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include "core/sysdep/ucontext_coroutine.h"
-#include "core/kernel.h"
+#include "core/sysdep/windows_fiber_coroutine.h"
 
 #include <iostream>
+#include <stdexcept>
 
 namespace sc_core {
 
-const std::size_t DEFAULT_UCONTEXT_STACK_SIZE = 128 * 1024; // 128 KB
+const std::size_t DEFAULT_WINDOWS_FIBER_STACK_SIZE = 128 * 1024; // 128 KB
 
-union conv_int_ptr_t
-{
-	unsigned int i[2];
-	void *p;
-};
+/////////////////////////// sc_windows_fiber_coroutine //////////////////////////
 
-/////////////////////////// sc_ucontext_coroutine //////////////////////////
-
-sc_ucontext_coroutine::sc_ucontext_coroutine()
-	: uc()
-	, ucm()
+sc_windows_fiber_coroutine::sc_windows_fiber_coroutine()
+	: fc()
+	, fcm()
 #if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
 	, sjlj_fc()
 	, sjlj_fcm()
 #endif
+	, main_coroutine(this)
 	, fn(0)
 	, arg(0)
-	, stack(0)
+	, main_thread_was_fiber(false)
 {
+	fc = ::ConvertThreadToFiber(NULL);
+
+	if(!fc && (::GetLastError() == ERROR_ALREADY_FIBER))
+	{
+		// already a fiber
+		fc = ::GetCurrentFiber();
+		main_thread_was_fiber = true;
+	}
+	
+	if(!fc) throw std::runtime_error("Failed converting thread to fiber");
 }
 
-sc_ucontext_coroutine::sc_ucontext_coroutine(std::size_t stack_size, void (*_fn)(intptr_t), intptr_t _arg)
-	: uc()
-	, ucm()
+sc_windows_fiber_coroutine::sc_windows_fiber_coroutine(sc_windows_fiber_coroutine *_main_coroutine, std::size_t stack_size, void (*_fn)(intptr_t), intptr_t _arg)
+	: fc()
+	, fcm()
 #if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
 	, sjlj_fc()
 	, sjlj_fcm()
 #endif
+	, main_coroutine(_main_coroutine)
 	, fn(_fn)
 	, arg(_arg)
-	, stack(0)
+	, main_thread_was_fiber(false)
 {
-	if(!stack_size) stack_size = DEFAULT_UCONTEXT_STACK_SIZE;
-	stack = sc_kernel::get_kernel()->get_stack_system()->create_stack(stack_size);
+	if(!stack_size) stack_size = DEFAULT_WINDOWS_FIBER_STACK_SIZE;
 
-	getcontext(&uc);
-	uc.uc_link = 0;
-	uc.uc_stack.ss_size = stack_size;
-	uc.uc_stack.ss_sp = stack->get_stack_base();
-	
-	volatile conv_int_ptr_t conv;
-	conv.i[0] = 0;
-	conv.i[1] = 0;
-	conv.p = this;
-	
-	makecontext(&uc, reinterpret_cast<void (*)()>(&sc_ucontext_coroutine::entry_point), 2, conv.i[0], conv.i[1]);
+	fc = ::CreateFiber(stack_size, (LPFIBER_START_ROUTINE) &sc_windows_fiber_coroutine::entry_point, this);
 }
 
-sc_ucontext_coroutine::~sc_ucontext_coroutine()
+sc_windows_fiber_coroutine::~sc_windows_fiber_coroutine()
 {
-	if(stack)
+	if(this == main_coroutine)
 	{
-		delete stack;
+		if(!main_thread_was_fiber)
+		{
+			::ConvertFiberToThread();
+		}
+	}
+	else
+	{
+		::DeleteFiber(fc);
 	}
 }
 
-void sc_ucontext_coroutine::entry_point(unsigned int arg0, unsigned int arg1)
+void sc_windows_fiber_coroutine::entry_point(void *_self)
 {
-	volatile conv_int_ptr_t conv;
-	conv.p = 0;
-	conv.i[0] = arg0;
-	conv.i[1] = arg1;
-	
-	sc_ucontext_coroutine *self = reinterpret_cast<sc_ucontext_coroutine *>(conv.p);
+	sc_windows_fiber_coroutine *self = reinterpret_cast<sc_windows_fiber_coroutine *>(_self);
 #if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
 	_Unwind_SjLj_Register(&self->sjlj_fc);
 	_Unwind_SjLj_Unregister(&self->sjlj_fcm);
 #endif
-	swapcontext(&self->uc, &self->ucm);
+	SwitchToFiber(self->fcm);
 	(*self->fn)(self->arg);
 }
 
-void sc_ucontext_coroutine::start()
+void sc_windows_fiber_coroutine::start()
 {
 #if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
 	_Unwind_SjLj_Register(&sjlj_fcm);
 	_Unwind_SjLj_Unregister(&sjlj_fc);
 #endif
-	swapcontext(&ucm, &uc);
+	fcm = GetCurrentFiber();
+	SwitchToFiber(fc);
 }
 
-void sc_ucontext_coroutine::yield(sc_coroutine *next_coroutine)
+void sc_windows_fiber_coroutine::yield(sc_coroutine *next_coroutine)
 {
 #if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
 	_Unwind_SjLj_Register(&sjlj_fc);
-	_Unwind_SjLj_Unregister(&static_cast<sc_ucontext_coroutine *>(next_coroutine)->sjlj_fc);
+	_Unwind_SjLj_Unregister(&static_cast<sc_windows_fiber_coroutine *>(next_coroutine)->sjlj_fc);
 #endif
-	swapcontext(&uc, &static_cast<sc_ucontext_coroutine *>(next_coroutine)->uc);
+	SwitchToFiber(static_cast<sc_windows_fiber_coroutine *>(next_coroutine)->fc);
 }
 
-void sc_ucontext_coroutine::abort(sc_coroutine *next_coroutine)
+void sc_windows_fiber_coroutine::abort(sc_coroutine *next_coroutine)
 {
 #if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
 	_Unwind_SjLj_Register(&sjlj_fc);
-	_Unwind_SjLj_Unregister(&static_cast<sc_ucontext_coroutine *>(next_coroutine)->sjlj_fc);
+	_Unwind_SjLj_Unregister(&static_cast<sc_windows_fiber_coroutine *>(next_coroutine)->sjlj_fc);
 #endif
-	swapcontext(&uc, &static_cast<sc_ucontext_coroutine *>(next_coroutine)->uc);
+	SwitchToFiber(static_cast<sc_windows_fiber_coroutine *>(next_coroutine)->fc);
 }
 
-///////////////////////// sc_ucontext_coroutine_system /////////////////////
+///////////////////////// sc_windows_fiber_coroutine_system /////////////////////
 
-sc_ucontext_coroutine_system::sc_ucontext_coroutine_system()
+sc_windows_fiber_coroutine_system::sc_windows_fiber_coroutine_system()
 	: main_coroutine(0)
 {
-	main_coroutine = new sc_ucontext_coroutine();
+	main_coroutine = new sc_windows_fiber_coroutine();
 }
 
-sc_ucontext_coroutine_system::~sc_ucontext_coroutine_system()
+sc_windows_fiber_coroutine_system::~sc_windows_fiber_coroutine_system()
 {
 	delete main_coroutine;
 }
 
-sc_coroutine *sc_ucontext_coroutine_system::get_main_coroutine()
+sc_coroutine *sc_windows_fiber_coroutine_system::get_main_coroutine()
 {
 	return main_coroutine;
 }
 
-sc_coroutine *sc_ucontext_coroutine_system::create_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg)
+sc_coroutine *sc_windows_fiber_coroutine_system::create_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg)
 {
-	return new sc_ucontext_coroutine(stack_size, fn, arg);
+	return new sc_windows_fiber_coroutine(main_coroutine, stack_size, fn, arg);
 }
 
 } // end of namespace sc_core

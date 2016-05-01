@@ -46,9 +46,11 @@ public:
 	virtual ~sc_windows_guarded_stack();
 	
 	virtual void *get_top_of_the_stack() const;
+	virtual void *get_stack_base() const;
 private:
 	void *mapped_area;
 	std::size_t mapped_area_length;
+	std::size_t page_size;
 };
 
 class sc_windows_guarded_stack_system : public sc_stack_system

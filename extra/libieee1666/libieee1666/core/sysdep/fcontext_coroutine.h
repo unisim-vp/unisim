@@ -36,9 +36,10 @@
 #define __LIBIEEE1666_CORE_SYSDEP_FCONTEXT_COROUTINE_H__
 
 #include "core/coroutine.h"
+#include "core/stack.h"
+#include "core/sysdep/sjlj_except.h"
 #include <boost/version.hpp>
 #include <boost/context/all.hpp>
-#include "core/stack.h"
 
 namespace sc_core {
 
@@ -64,6 +65,10 @@ private:
 #else
 	boost::context::fcontext_t *fc;
 	boost::context::fcontext_t fcm;
+#endif
+#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+	struct SjLj_Function_Context sjlj_fc;
+	struct SjLj_Function_Context sjlj_fcm;
 #endif
 	void (*fn)(intptr_t);
 	intptr_t arg;

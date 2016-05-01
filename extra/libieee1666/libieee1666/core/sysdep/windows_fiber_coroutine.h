@@ -32,55 +32,55 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __LIBIEEE1666_CORE_SYSDEP_UCONTEXT_COROUTINE_H__
-#define __LIBIEEE1666_CORE_SYSDEP_UCONTEXT_COROUTINE_H__
+#ifndef __LIBIEEE1666_CORE_SYSDEP_WINDOWS_FIBER_COROUTINE_H__
+#define __LIBIEEE1666_CORE_SYSDEP_WINDOWS_FIBER_COROUTINE_H__
 
 #include "core/coroutine.h"
-#include "core/stack.h"
 #include "core/sysdep/sjlj_except.h"
-#include <ucontext.h>
+#include <windows.h>
 
 namespace sc_core {
 
-class sc_ucontext_coroutine_system;
+class sc_windows_fiber_coroutine_system;
 
-class sc_ucontext_coroutine : public sc_coroutine
+class sc_windows_fiber_coroutine : public sc_coroutine
 {
 public:
-	sc_ucontext_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
-	virtual ~sc_ucontext_coroutine();
+	sc_windows_fiber_coroutine(sc_windows_fiber_coroutine *main_coroutine, std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
+	virtual ~sc_windows_fiber_coroutine();
 	
 	virtual void start();
 	virtual void yield(sc_coroutine *next_coroutine);
 	virtual void abort(sc_coroutine *next_coroutine);
 private:
-	explicit sc_ucontext_coroutine(); // reserved for main coroutine
+	explicit sc_windows_fiber_coroutine(); // reserved for main coroutine
+	
+	friend class sc_windows_fiber_coroutine_system;
 
-	friend class sc_ucontext_coroutine_system;
-
-	ucontext_t uc;
-	ucontext_t ucm;
+	LPVOID fc;
+	LPVOID fcm;
 #if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
 	struct SjLj_Function_Context sjlj_fc;
 	struct SjLj_Function_Context sjlj_fcm;
 #endif
+	sc_windows_fiber_coroutine *main_coroutine;
 	void (*fn)(intptr_t);
 	intptr_t arg;
-	sc_stack *stack;
+	bool main_thread_was_fiber;
 	
-	static void entry_point(unsigned int arg0, unsigned int arg1);
+	static void entry_point(void *);
 };
 
-class sc_ucontext_coroutine_system : public sc_coroutine_system
+class sc_windows_fiber_coroutine_system : public sc_coroutine_system
 {
 public:
-	sc_ucontext_coroutine_system();
-	virtual ~sc_ucontext_coroutine_system();
+	sc_windows_fiber_coroutine_system();
+	virtual ~sc_windows_fiber_coroutine_system();
 	
 	virtual sc_coroutine *get_main_coroutine();
 	virtual sc_coroutine *create_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
 private:
-	sc_ucontext_coroutine *main_coroutine;
+	sc_windows_fiber_coroutine *main_coroutine;
 };
 
 } // end of namespace sc_core

@@ -46,6 +46,10 @@ const std::size_t DEFAULT_FCONTEXT_STACK_SIZE = 128 * 1024; // 128 KB
 sc_fcontext_coroutine::sc_fcontext_coroutine()
 	: fc()
 	, fcm()
+#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+	, sjlj_fc()
+	, sjlj_fcm()
+#endif
 	, fn(0)
 	, arg(0)
 	, stack(0)
@@ -58,6 +62,10 @@ sc_fcontext_coroutine::sc_fcontext_coroutine()
 sc_fcontext_coroutine::sc_fcontext_coroutine(std::size_t stack_size, void (*_fn)(intptr_t), intptr_t _arg)
 	: fc()
 	, fcm()
+#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+	, sjlj_fc()
+	, sjlj_fcm()
+#endif
 	, fn(_fn)
 	, arg(_arg)
 	, stack(0)
@@ -78,6 +86,10 @@ sc_fcontext_coroutine::~sc_fcontext_coroutine()
 void sc_fcontext_coroutine::entry_point(intptr_t _self)
 {
 	sc_fcontext_coroutine *self = reinterpret_cast<sc_fcontext_coroutine *>(_self);
+#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+	_Unwind_SjLj_Register(&self->sjlj_fc);
+	_Unwind_SjLj_Unregister(&self->sjlj_fcm);
+#endif
 	boost::context::jump_fcontext(
 #if BOOST_VERSION >= 105600 // boost version >= 1.56.0
 		&self->fc,
@@ -95,6 +107,10 @@ void sc_fcontext_coroutine::entry_point(intptr_t _self)
 
 void sc_fcontext_coroutine::start()
 {
+#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+	_Unwind_SjLj_Register(&sjlj_fcm);
+	_Unwind_SjLj_Unregister(&sjlj_fc);
+#endif
 	boost::context::jump_fcontext(
 		&fcm,
 		fc, reinterpret_cast<intptr_t>(this), true); 
@@ -102,6 +118,10 @@ void sc_fcontext_coroutine::start()
 
 void sc_fcontext_coroutine::yield(sc_coroutine *next_coroutine)
 {
+#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+	_Unwind_SjLj_Register(&sjlj_fc);
+	_Unwind_SjLj_Unregister(&static_cast<sc_fcontext_coroutine *>(next_coroutine)->sjlj_fc);
+#endif
 	boost::context::jump_fcontext(
 #if BOOST_VERSION >= 105600 // boost version >= 1.56.0
 		&fc,
@@ -114,6 +134,10 @@ void sc_fcontext_coroutine::yield(sc_coroutine *next_coroutine)
 
 void sc_fcontext_coroutine::abort(sc_coroutine *next_coroutine)
 {
+#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+	_Unwind_SjLj_Register(&sjlj_fc);
+	_Unwind_SjLj_Unregister(&static_cast<sc_fcontext_coroutine *>(next_coroutine)->sjlj_fc);
+#endif
 	boost::context::jump_fcontext(
 #if BOOST_VERSION >= 105600 // boost version >= 1.56.0
 		&fc,

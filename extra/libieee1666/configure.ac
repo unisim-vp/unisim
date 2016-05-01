@@ -44,12 +44,21 @@ else
 fi
 
 AC_ARG_ENABLE([ucontext],
-	AC_HELP_STRING([--enable-ucontext], [ucontext coroutine system support [default=no]]), , enable_ucontext=no)
+	AC_HELP_STRING([--enable-ucontext], [ucontext coroutine system support [default=yes]]), , enable_ucontext=yes)
 
 if test "x${enable_ucontext}" = "xyes"; then
 	LIBIEEE1666_ENABLE_UCONTEXT=1
 else
 	LIBIEEE1666_ENABLE_UCONTEXT=0
+fi
+
+AC_ARG_ENABLE([windows-fiber],
+	AC_HELP_STRING([--windows-fiber], [Windows Fiber coroutine system support [default=yes]]), , enable_windows_fiber=yes)
+
+if test "x${enable_windows_fiber}" = "xyes"; then
+	LIBIEEE1666_ENABLE_WINDOWS_FIBER=1
+else
+	LIBIEEE1666_ENABLE_WINDOWS_FIBER=0
 fi
 
 AC_ARG_ENABLE([pthread],
@@ -248,6 +257,22 @@ else
 	LIBIEEE1666_SWAPCONTEXT=0
 fi
 
+############################# check for windows fibers ######################################
+
+if test ${LIBIEEE1666_WINDOWS_H} -eq 1; then
+	LIBIEEE1666_CHECK_FUN([ConvertThreadToFiber], [#include <windows.h>], [::ConvertThreadToFiber(NULL)], [LIBIEEE1666_CONVERTTHREADTOFIBER=1], [LIBIEEE1666_CONVERTTHREADTOFIBER=0])
+	LIBIEEE1666_CHECK_FUN([GetCurrentFiber], [#include <windows.h>], [::GetCurrentFiber()], [LIBIEEE1666_GETCURRENTFIBER=1], [LIBIEEE1666_GETCURRENTFIBER=0])
+	LIBIEEE1666_CHECK_FUN([CreateFiber], [#include <windows.h>], [::CreateFiber(0, NULL, NULL)], [LIBIEEE1666_CREATEFIBER=1], [LIBIEEE1666_CREATEFIBER=0])
+	LIBIEEE1666_CHECK_FUN([SwitchToFiber], [#include <windows.h>], [SwitchToFiber(NULL)], [LIBIEEE1666_SWITCHTOFIBER=1], [LIBIEEE1666_SWITCHTOFIBER=0])
+	LIBIEEE1666_CHECK_FUN([DeleteFiber], [#include <windows.h>], [DeleteFiber(NULL)], [LIBIEEE1666_DELETEFIBER=1], [LIBIEEE1666_DELETEFIBER=0])
+else
+	LIBIEEE1666_CONVERTTHREADTOFIBER=0
+	LIBIEEE1666_GETCURRENTFIBER=0
+	LIBIEEE1666_CREATEFIBER=0
+	LIBIEEE1666_SWITCHTOFIBER=0
+	LIBIEEE1666_DELETEFIBER=0
+fi
+
 ############################# Check for backtrace support ###################################
 
 AC_CHECK_HEADER(execinfo.h, LIBIEEE1666_EXECINFO_H=1, LIBIEEE1666_EXECINFO_H=0)
@@ -288,6 +313,13 @@ if test ${LIBIEEE1666_ENABLE_UCONTEXT} -eq 1 && test ${LIBIEEE1666_GETCONTEXT} -
 	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/ucontext_coroutine.lo"
 else
 	LIBIEEE1666_UCONTEXT=0
+fi
+
+if test ${LIBIEEE1666_ENABLE_WINDOWS_FIBER} -eq 1 && test ${LIBIEEE1666_CONVERTTHREADTOFIBER} -eq 1 & test ${LIBIEEE1666_GETCURRENTFIBER} -eq 1 && test ${LIBIEEE1666_CREATEFIBER} -eq 1 && test ${LIBIEEE1666_SWITCHTOFIBER} -eq 1 && test ${LIBIEEE1666_DELETEFIBER} -eq 1; then
+	LIBIEEE1666_WINDOWS_FIBER=1
+	LIBIEEE1666_SYSDEPS="${LIBIEEE1666_SYSDEPS} libieee1666/core/sysdep/windows_fiber_coroutine.lo"
+else
+	LIBIEEE1666_WINDOWS_FIBER=0
 fi
 
 if test ${LIBIEEE1666_ENABLE_PTHREAD} -eq 1 && test ${LIBIEEE1666_PTHREAD} -eq 1; then
@@ -332,6 +364,7 @@ fi
 AC_SUBST(LIBIEEE1666_POSIX_GUARDED_STACK)
 AC_SUBST(LIBIEEE1666_FCONTEXT)
 AC_SUBST(LIBIEEE1666_UCONTEXT)
+AC_SUBST(LIBIEEE1666_WINDOWS_FIBER)
 AC_SUBST(LIBIEEE1666_PTHREAD)
 AC_SUBST(LIBIEEE1666_WINDOWS_GUARDED_STACK)
 AC_SUBST(LIBIEEE1666_BACKTRACE)
@@ -340,8 +373,8 @@ AC_SUBST(LIBIEEE1666_SYSDEPS)
 
 ############################## Check configuration coherency ##############################
 
-if test ${LIBIEEE1666_FCONTEXT} -eq 0 && test ${LIBIEEE1666_PTHREAD} -eq 0 && test ${LIBIEEE1666_UCONTEXT} -eq 0; then
-	AC_MSG_ERROR([Boost::Context library, POSIX threads, or ucontext support must be available])
+if test ${LIBIEEE1666_FCONTEXT} -eq 0 && test ${LIBIEEE1666_PTHREAD} -eq 0 && test ${LIBIEEE1666_UCONTEXT} -eq 0 && test ${LIBIEEE1666_WINDOWS_FIBER} -eq 0; then
+	AC_MSG_ERROR([Boost::Context library, POSIX threads, ucontext, or Windows Fiber support must be available])
 fi
 
 ##################################### packaging stuff ########################################
@@ -418,6 +451,12 @@ if test ${LIBIEEE1666_UCONTEXT} -eq 1; then
 	AC_MSG_NOTICE([ucontext coroutine system support: yes])
 else
 	AC_MSG_NOTICE([ucontext coroutine system support: no])
+fi
+
+if test ${LIBIEEE1666_WINDOWS_FIBER} -eq 1; then
+	AC_MSG_NOTICE([Windows Fiber coroutine system support: yes])
+else
+	AC_MSG_NOTICE([Windows Fiber coroutine system support: no])
 fi
 
 if test ${LIBIEEE1666_POSIX_GUARDED_STACK} -eq 1; then
