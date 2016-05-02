@@ -200,6 +200,11 @@ void ECT::runBuildinSignalGenerator() {
 
 				if (portt_pin[i] != signalValue) {
 					portt_pin_reg[i] = signalValue;
+
+					// if edge sharing is enabled then channels [4,7] have been respectively stimulated by channels [0,3].
+					if ((i < 4) && isSharingEdgeEnabled(1 << (i+4))) {
+						portt_pin_reg[i+4] = signalValue;
+					}
 				}
 			}
 
@@ -363,42 +368,43 @@ void ECT::runOutputCompare() {
 
 void ECT::assertInterrupt(unsigned int interrupt_offset) {
 
-	if ((interrupt_offset >= (offset_channel0_interrupt - 0xE)) && (interrupt_offset <= offset_channel0_interrupt ) && !isInputOutputInterruptEnabled((offset_channel0_interrupt - interrupt_offset)/2)) return;
-	if ((interrupt_offset == offset_timer_overflow_interrupt) && !isTimerOverflowinterruptEnabled()) return;
-	if ((interrupt_offset == pulse_accumulatorA_overflow_interrupt) && ((pactl_register & 0x02) == 0)) return;
-	if ((interrupt_offset == pulse_accumulatorB_overflow_interrupt) && ((pbctl_register & 0x02) == 0)) return;
-	if ((interrupt_offset == pulse_accumulatorA_input_edge_interrupt) && ((pactl_register & 0x01) == 0)) return;
-	if ((interrupt_offset == modulus_counter_interrupt) && (mcctl_register & 0x80) == 0) return;
-
-	tlm_phase phase = BEGIN_REQ;
-
-	xint_payload->acquire();
-
-	xint_payload->setInterruptOffset(interrupt_offset);
-
-	sc_time local_time = quantumkeeper.get_local_time();
-
-	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
-
-	xint_payload->release();
-
-	switch(ret)
+	if ( ((interrupt_offset >= (offset_channel0_interrupt - 0xE)) && (interrupt_offset <= offset_channel0_interrupt ) && isInputOutputInterruptEnabled((offset_channel0_interrupt - interrupt_offset)/2))
+		|| ((interrupt_offset == offset_timer_overflow_interrupt) && isTimerOverflowinterruptEnabled())
+		|| ((interrupt_offset == pulse_accumulatorA_overflow_interrupt) && ((pactl_register & 0x02) != 0))
+		|| ((interrupt_offset == pulse_accumulatorB_overflow_interrupt) && ((pbctl_register & 0x02) != 0))
+		|| ((interrupt_offset == pulse_accumulatorA_input_edge_interrupt) && ((pactl_register & 0x01) != 0))
+		|| ((interrupt_offset == modulus_counter_interrupt) && (mcctl_register & 0x80) != 0) )
 	{
-		case TLM_ACCEPTED:
-			// neither payload, nor phase and local_time have been modified by the callee
-			quantumkeeper.sync(); // synchronize to leave control to the callee
-			break;
-		case TLM_UPDATED:
-			// the callee may have modified 'payload', 'phase' and 'local_time'
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+		tlm_phase phase = BEGIN_REQ;
 
-			break;
-		case TLM_COMPLETED:
-			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-			break;
+		xint_payload->acquire();
+
+		xint_payload->setInterruptOffset(interrupt_offset);
+
+		sc_time local_time = quantumkeeper.get_local_time();
+
+		tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
+
+		xint_payload->release();
+
+		switch(ret)
+		{
+			case TLM_ACCEPTED:
+				// neither payload, nor phase and local_time have been modified by the callee
+				quantumkeeper.sync(); // synchronize to leave control to the callee
+				break;
+			case TLM_UPDATED:
+				// the callee may have modified 'payload', 'phase' and 'local_time'
+				quantumkeeper.set(local_time); // increase the time
+				if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+				break;
+			case TLM_COMPLETED:
+				// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+				quantumkeeper.set(local_time); // increase the time
+				if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+				break;
+		}
 	}
 
 }
@@ -1409,8 +1415,11 @@ void ECT::IOC_Channel_t::runInputCapture() {
 			if (!ectParent->isNoInputCaptureOverWrite(ioc_index) || (*tc_register_ptr == 0x0000)) {
 				*tc_register_ptr = ectParent->getMainTimerValue();
 				// set the TFLG1::CxF to show that input capture occurs
-				ectParent->setTimerInterruptFlag(ioc_index);
-				ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+				if (ectParent->isInputOutputInterruptEnabled(ioc_index)) {
+					std::cout << sc_time_stamp() << "  " << sc_object::name() << " runInputCapture (1) 0x" << std::hex << ectParent->getInterruptOffsetChannel0() - (ioc_index * 2) << std::endl;
+					ectParent->setTimerInterruptFlag(ioc_index);
+					ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+				}
 			}
 		}
 		else //  buffered IC Channels
@@ -1434,8 +1443,11 @@ void ECT::IOC_Channel_t::runInputCapture() {
 				 *                 when a valid input capture transition on the corresponding port pin occurs.
 				 *  ICSYS::LATQ=1  : If the queue mode is not engaged, the timer flags C3F–C0F are set the same way as for TFMOD = 0.
 				 */
-				ectParent->setTimerInterruptFlag(ioc_index);
-				ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+				if (ectParent->isInputOutputInterruptEnabled(ioc_index)) {
+					std::cout << sc_time_stamp() << "  " << sc_object::name() << " runInputCapture (2) 0x" << std::hex << ectParent->getInterruptOffsetChannel0() - (ioc_index * 2) <<  std::endl;
+					ectParent->setTimerInterruptFlag(ioc_index);
+					ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+				}
 
 			}
 			else // IC Queue Mode (ICSYS::LATQ=0)
@@ -1450,8 +1462,11 @@ void ECT::IOC_Channel_t::runInputCapture() {
 						 */
 
 						if (ectParent->isTimerFlagSettingModeSet() && (*tch_register_ptr != 0x0000)) {
-							ectParent->setTimerInterruptFlag(ioc_index);
-							ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+							if (ectParent->isInputOutputInterruptEnabled(ioc_index)) {
+								std::cout << sc_time_stamp() << "  " << sc_object::name() << " runInputCapture (3) 0x" << std::hex << ectParent->getInterruptOffsetChannel0() - (ioc_index * 2) <<  std::endl;
+								ectParent->setTimerInterruptFlag(ioc_index);
+								ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+							}
 						}
 					}
 					*tc_register_ptr = ectParent->getMainTimerValue();
@@ -1484,8 +1499,11 @@ void ECT::IOC_Channel_t::runOutputCompare() {
 	if (result) {
 		ectParent->runChannelOutputCompareAction(ioc_index);
 		// set the TFLG1::CxF to show that output compare is detected
-		ectParent->setTimerInterruptFlag(ioc_index);
-		ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+		if (ectParent->isInputOutputInterruptEnabled(ioc_index)) {
+			std::cout << sc_time_stamp() << "  " << sc_object::name() << " runOutputCompare (1) 0x" << std::hex << ectParent->getInterruptOffsetChannel0() - (ioc_index * 2) << std::endl;
+			ectParent->setTimerInterruptFlag(ioc_index);
+			ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+		}
 
 		/**
 		 * if TSCR2::TCRE=1, then the timer counter is reset by a successful channel 7 output compare.

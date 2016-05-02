@@ -92,6 +92,7 @@ public:
 	void setXGATE_shared_channel(bool isXGate = false) { xgate_shared_channel = isXGate; }
 	unsigned int getInterruptOffset() { return (interrupt_offset); }
 	bool    isXGATE_shared_channel() { return (xgate_shared_channel); }
+	void reset() { xgate_shared_channel = false; interrupt_offset = 0; }
 
 private:
 	unsigned int	interrupt_offset;

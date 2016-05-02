@@ -201,7 +201,7 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 
 	if (debug_enabled) {
-		std::cout << sc_time_stamp() << "  " << sc_object::name() << " Select Interrupt IPL= " << std::dec << (unsigned int) buffer.getPriority() << std::endl;
+		std::cout << sc_time_stamp() << "  " << sc_object::name() << " Select Interrupt current IPL= " << std::dec << (unsigned int) buffer.getPriority() << std::endl;
 	}
 
 	if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2].getState()) {
@@ -301,7 +301,7 @@ void XINT::run()
 
 	while (true) {
 
-		wait(input_payload_queue.get_event() | retry_event);
+		wait(input_payload_queue.get_event()  | retry_event);
 
 		trans->acquire();
 		trans->set_command( tlm::TLM_WRITE_COMMAND );
@@ -339,25 +339,37 @@ void XINT::run()
 		} while(payload);
 
 // ***************
-		// cpu
+		bool isCPU = false;
+		bool isXGATE = false;
 		for (int index=0x7F; index > 0x9; index--) {
 			if (interrupt_flags[index].getState()) {
 				if (interrupt_flags[index].getPayload().isXGATE_shared_channel())
 				{
-					toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+					if (!isCPU) {
+						toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+						isCPU = true;
+					}
+
 				} else {
 					if ((int_cfwdata[index] & 0x80) == 0)
 					{
-						toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+						if (!isCPU) {
+							toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+							isCPU = true;
+						}
 					}
 					else {
-						toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
+						if (!isXGATE) {
+							toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
+							isXGATE = true;
+						}
 					}
 				}
 				break;
 			}
 		}
-
+		isCPU = false;
+		isXGATE = false;
 // ***************
 
 		trans->release();
@@ -380,33 +392,15 @@ tlm_sync_enum XINT::cpu_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_pha
 		if (buffer->getPriority() > cpuIPL) {
 			interrupt_flags[buffer->getID()].setState(false);
 			interrupt_flags[buffer->getID()].releasePayload();
+
+			if (debug_enabled) {
+				std::cout << sc_time_stamp() << "  " << sc_object::name() << "::CPU12::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getVectorAddress() << std::endl;
+			}
 		}
 
-		if (debug_enabled) {
-			std::cout << sc_time_stamp() << "  " << sc_object::name() << "::CPU12::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getVectorAddress() << std::endl;
-		}
-
-		retry_event.notify();
+		retry_event.notify(SC_ZERO_TIME);
 
 	}
-
-//	// release all pending interrupts - This is a hack code to ceck behavior
-//	for (int index=0x7F; index > 0x9; index--) {
-//		if (interrupt_flags[index].getState()) {
-//			if (interrupt_flags[index].getPayload().isXGATE_shared_channel())
-//			{
-//				interrupt_flags[buffer->getID()].setState(false);
-//				interrupt_flags[buffer->getID()].releasePayload();
-//			} else {
-//				if ((int_cfwdata[index] & 0x80) == 0)
-//				{
-//					interrupt_flags[buffer->getID()].setState(false);
-//					interrupt_flags[buffer->getID()].releasePayload();
-//				}
-//			}
-//		}
-//	}
-//	// end hack code
 
 	trans.set_response_status(tlm::TLM_OK_RESPONSE);
 	return (TLM_ACCEPTED);
@@ -434,27 +428,6 @@ tlm_sync_enum XINT::xgate_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_p
 		retry_event.notify();
 
 	}
-
-//	// release all pending interrupts - This is a hack code to ceck behavior
-//	for (int index=0x7F; index > 0x9; index--) {
-//		if (interrupt_flags[index].getState()) {
-//			if (interrupt_flags[index].getPayload().isXGATE_shared_channel())
-//			{
-//				// nothing
-//			} else {
-//				if ((int_cfwdata[index] & 0x80) == 0)
-//				{
-//					// nothing
-//				}
-//				else {
-//					interrupt_flags[buffer->getID()].setState(false);
-//					interrupt_flags[buffer->getID()].releasePayload();
-//				}
-//			}
-//			break;
-//		}
-//	}
-//	// end hack code
 
 	trans.set_response_status(tlm::TLM_OK_RESPONSE);
 	return (TLM_ACCEPTED);
