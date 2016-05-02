@@ -39,7 +39,7 @@
 #include <vector>
 #include <string>
 #include <deque>
-#include <unordered_set>
+#include <set>
 
 namespace sc_core {
 
@@ -88,10 +88,10 @@ private:
 	sc_kernel_event *kernel_event;              // only used when state == DELTA_NOTIFIED, otherwise undefined
 	sc_timed_kernel_event *timed_kernel_event;  // only used when state == TIMED_NOTIFIED, otherwise undefined
 
-	mutable std::unordered_set<sc_thread_process *> dynamically_sensitive_thread_processes;
-	mutable std::unordered_set<sc_method_process *> dynamically_sensitive_method_processes;
-	mutable std::unordered_set<sc_thread_process *> statically_sensitive_thread_processes;
-	mutable std::unordered_set<sc_method_process *> statically_sensitive_method_processes;
+	mutable std::set<sc_thread_process *> dynamically_sensitive_thread_processes;
+	mutable std::set<sc_method_process *> dynamically_sensitive_method_processes;
+	mutable std::set<sc_thread_process *> statically_sensitive_thread_processes;
+	mutable std::set<sc_method_process *> statically_sensitive_method_processes;
 
 	void init();
 	std::string create_hierarchical_name(const char *_name) const;
@@ -144,7 +144,7 @@ private:
 	
 	sc_event_list_type_t type;
 	mutable bool auto_mm;
-	std::unordered_set<const sc_event *> events;
+	std::set<const sc_event *> events;
 	
 	void acquire() const;
 	void release() const;

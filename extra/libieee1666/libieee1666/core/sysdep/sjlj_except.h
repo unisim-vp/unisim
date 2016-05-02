@@ -35,7 +35,6 @@
 #ifndef __LIBIEEE1666_CORE_SYSDEP_SJLJ_EXCEPT_H__
 #define __LIBIEEE1666_CORE_SYSDEP_SJLJ_EXCEPT_H__
 
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
 // Note: There are three exeception handling mechanisms on mingw:
 //         - dw2 (DWARF 2 .debug_frame/.eh_frame)
 //         - sjlj (setjump/longjump)
@@ -53,6 +52,5 @@ struct SjLj_Function_Context
 	/* other fields are unused on mingw */
 	/* ... */
 };
-#endif
 
 #endif

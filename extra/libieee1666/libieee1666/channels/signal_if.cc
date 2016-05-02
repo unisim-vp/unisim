@@ -50,6 +50,7 @@ sc_signal_in_if<bool>::sc_signal_in_if( const sc_signal_in_if<bool>& )
 // Disabled
 sc_signal_in_if<bool>& sc_signal_in_if<bool>::operator= ( const sc_signal_in_if<bool>& )
 {
+	return *this;
 }
 
 } // end of namespace sc_core

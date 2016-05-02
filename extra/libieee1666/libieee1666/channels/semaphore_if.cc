@@ -42,12 +42,15 @@ sc_semaphore_if::sc_semaphore_if()
 {
 }
 
+// Disabled
 sc_semaphore_if::sc_semaphore_if( const sc_semaphore_if& )
 {
 }
 
+// Disabled
 sc_semaphore_if& sc_semaphore_if::operator= ( const sc_semaphore_if& )
 {
+	return *this;
 }
 
 } // end of namespace sc_core

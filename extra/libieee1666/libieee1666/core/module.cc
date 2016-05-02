@@ -313,6 +313,7 @@ sc_module::sc_module(const sc_module& module)
 sc_module& sc_module::operator = ( const sc_module& )
 {
 	// DISABLED
+	return *this;
 }
 
 void sc_module::end_module()

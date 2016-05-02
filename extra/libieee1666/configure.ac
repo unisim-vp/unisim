@@ -1,3 +1,4 @@
+AC_PREREQ([2.69])
 AC_INIT([libieee1666], [0.0.0], [Gilles Mouchard <gilles.mouchard@cea.fr>], [], [http://unisim-vp.org])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
@@ -9,11 +10,10 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([subdir-objects tar-pax])
 
 AC_PATH_PROGS(SH, sh)
-AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
-AC_LIBTOOL_WIN32_DLL # must be *before* AC_PROG_LIBTOOL
-AC_PROG_LIBTOOL
+LT_PREREQ([2.4])
+LT_INIT
 AC_ENABLE_SHARED
 AC_PROG_LN_S
 PKG_PROG_PKG_CONFIG
@@ -21,12 +21,11 @@ PKG_PROG_PKG_CONFIG
 USER_CXXFLAGS="${CXXFLAGS}"     # save user's CXXFLAGS
 
 AC_LANG([C++])
-AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
 
 ########################################### configure options  ###############################################
 
 AC_ARG_ENABLE([posix-guarded-stack],
-	AC_HELP_STRING([--enable-posix-guarded-stack], [guarded stack support for POSIX [default=yes]]), , enable_posix_guarded_stack=yes)
+	AS_HELP_STRING([--enable-posix-guarded-stack], [guarded stack support for POSIX [default=yes]]), , enable_posix_guarded_stack=yes)
 
 if test "x${enable_posix_guarded_stack}" = "xyes"; then
 	LIBIEEE1666_ENABLE_POSIX_GUARDED_STACK=1
@@ -35,7 +34,7 @@ else
 fi
 
 AC_ARG_ENABLE([fcontext],
-	AC_HELP_STRING([--enable-fcontext], [Boost::Context (fcontext) coroutine system support [default=yes]]), , enable_fcontext=yes)
+	AS_HELP_STRING([--enable-fcontext], [Boost::Context (fcontext) coroutine system support [default=yes]]), , enable_fcontext=yes)
 
 if test "x${enable_fcontext}" = "xyes"; then
 	LIBIEEE1666_ENABLE_FCONTEXT=1
@@ -44,7 +43,7 @@ else
 fi
 
 AC_ARG_ENABLE([ucontext],
-	AC_HELP_STRING([--enable-ucontext], [ucontext coroutine system support [default=yes]]), , enable_ucontext=yes)
+	AS_HELP_STRING([--enable-ucontext], [ucontext coroutine system support [default=yes]]), , enable_ucontext=yes)
 
 if test "x${enable_ucontext}" = "xyes"; then
 	LIBIEEE1666_ENABLE_UCONTEXT=1
@@ -53,7 +52,7 @@ else
 fi
 
 AC_ARG_ENABLE([windows-fiber],
-	AC_HELP_STRING([--windows-fiber], [Windows Fiber coroutine system support [default=yes]]), , enable_windows_fiber=yes)
+	AS_HELP_STRING([--windows-fiber], [Windows Fiber coroutine system support [default=yes]]), , enable_windows_fiber=yes)
 
 if test "x${enable_windows_fiber}" = "xyes"; then
 	LIBIEEE1666_ENABLE_WINDOWS_FIBER=1
@@ -62,7 +61,7 @@ else
 fi
 
 AC_ARG_ENABLE([pthread],
-	AC_HELP_STRING([--enable-pthread], [POSIX thread coroutine system support [default=yes]]), , enable_pthread=yes)
+	AS_HELP_STRING([--enable-pthread], [POSIX thread coroutine system support [default=yes]]), , enable_pthread=yes)
 
 if test "x${enable_pthread}" = "xyes"; then
 	LIBIEEE1666_ENABLE_PTHREAD=1
@@ -71,7 +70,7 @@ else
 fi
 
 AC_ARG_ENABLE([windows-guarded-stack],
-	AC_HELP_STRING([--enable-windows-guarded-stack], [guarded stack support for Windows [default=yes]]), , enable_windows_guarded_stack=yes)
+	AS_HELP_STRING([--enable-windows-guarded-stack], [guarded stack support for Windows [default=yes]]), , enable_windows_guarded_stack=yes)
 
 if test "x${enable_windows_guarded_stack}" = "xyes"; then
 	LIBIEEE1666_ENABLE_WINDOWS_GUARDED_STACK=1
@@ -80,7 +79,7 @@ else
 fi
 
 AC_ARG_ENABLE([backtrace],
-	AC_HELP_STRING([--enable-backtrace], [backtrace support (for hacking) [default=no]]), , enable_backtrace=no)
+	AS_HELP_STRING([--enable-backtrace], [backtrace support (for hacking) [default=no]]), , enable_backtrace=no)
 
 if test "x${enable_backtrace}" = "xyes"; then
 	LIBIEEE1666_ENABLE_BACKTRACE=1
@@ -89,7 +88,7 @@ else
 fi
 
 AC_ARG_ENABLE([valgrind],
-	AC_HELP_STRING([--enable-valgrind], [valgrind support [default=yes]]), , enable_valgrind=yes)
+	AS_HELP_STRING([--enable-valgrind], [valgrind support [default=yes]]), , enable_valgrind=yes)
 
 if test "x${enable_valgrind}" = "xyes"; then
 	LIBIEEE1666_ENABLE_VALGRIND=1
@@ -97,14 +96,28 @@ else
 	LIBIEEE1666_ENABLE_VALGRIND=0
 fi
 
+AC_ARG_ENABLE([unwind-sjlj],
+	AS_HELP_STRING([--enable-unwind-sjlj], [SJLJ unwind support [default=yes]]), , enable_unwind_sjlj=yes)
+
+if test "x${enable_unwind_sjlj}" = "xyes"; then
+	LIBIEEE1666_ENABLE_UNWIND_SJLJ=1
+else
+	LIBIEEE1666_ENABLE_UNWIND_SJLJ=0
+fi
+
 ####################################### helper macro for testing a function ###################################
 
 AC_DEFUN([LIBIEEE1666_CHECK_FUN], [
 	AC_MSG_CHECKING([for $1])
-	AC_LINK_IFELSE([AC_LANG_SOURCE([[
+	AC_LINK_IFELSE(
+		[AC_LANG_PROGRAM(
+			[[
 $2
-int main(int argc, char **argv) { $3; return 0; }
-		]])],
+			]],
+			[[
+$3;
+			]]
+		)],
 		$4; AC_MSG_RESULT([yes]),
 		$5; AC_MSG_RESULT([no])
 	)
@@ -118,8 +131,7 @@ if test ${LIBIEEE1666_UNISTD_H} -eq 1; then
 	AC_MSG_CHECKING([for POSIX.1-2001 compliance]) 
 	AC_EGREP_CPP(
 		yes,
-		[AC_LANG_SOURCE(
-			[[
+		[[
 #define _POSIX_C_SOURCE 200112L
 #include <unistd.h>
 #ifdef _POSIX_VERSION
@@ -127,8 +139,7 @@ if test ${LIBIEEE1666_UNISTD_H} -eq 1; then
 yes
 #endif
 #endif
-			]]
-		)],
+		]],
 		[LIBIEEE1666_POSIX=1],
 		[LIBIEEE1666_POSIX=0])
 else
@@ -145,13 +156,11 @@ fi
 
 AC_MSG_CHECKING([for Windows]) 
 AC_EGREP_CPP(yes,
-	[AC_LANG_SOURCE(
-		[[
+	[[
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 yes
 #endif
-		]]
-	)],
+	]],
 	LIBIEEE1666_WINDOWS=1,
 	LIBIEEE1666_WINDOWS=0)
 
@@ -280,6 +289,42 @@ AC_CHECK_HEADER(cxxabi.h, , LIBIEEE1666_CXXABI_H=1, LIBIEEE1666_CXXABI_H=0)
 AC_CHECK_LIB(c, backtrace, LIBIEEE1666_BACKTRACE_FUNCTION=1, LIBIEEE1666_BACKTRACE_FUNCTION=0)
 AC_CHECK_LIB(c, backtrace_symbols, LIBIEEE1666_BACKTRACE_SYMBOLS_FUNCTION=1, LIBIEEE1666_BACKTRACE_SYMBOLS_FUNCTION=0)
 
+######################## Check whether compiler is using SJLJ exceptions ####################################
+
+AC_MSG_CHECKING([whether compiler is using SJLJ exceptions]) 
+AC_EGREP_CPP(
+	yes,
+	[[
+#ifdef __USING_SJLJ_EXCEPTIONS__
+yes
+#endif
+	]],
+	[LIBIEEE1666_USING_SJLJ_EXCEPTIONS=1],
+	[LIBIEEE1666_USING_SJLJ_EXCEPTIONS=0])
+
+if test ${LIBIEEE1666_USING_SJLJ_EXCEPTIONS} -eq 1; then
+	AC_MSG_RESULT([yes])
+else
+	AC_MSG_RESULT([no])
+fi
+
+######################################### check for SJLJ unwind support ############################################
+
+if test ${LIBIEEE1666_USING_SJLJ_EXCEPTIONS} -eq 1; then
+	AC_CHECK_HEADER(unwind.h, LIBIEEE1666_UNWIND_H=1, LIBIEEE1666_UNWIND_H=0)
+
+	if test ${LIBIEEE1666_UNWIND_H} -eq 1; then
+		LIBIEEE1666_CHECK_FUN([_Unwind_SjLj_Register], [#include <unwind.h>], [::_Unwind_SjLj_Register(0)], [LIBIEEE1666_UNWIND_SJLJ_REGISTER=1], [LIBIEEE1666_UNWIND_SJLJ_REGISTER=0])
+		LIBIEEE1666_CHECK_FUN([_Unwind_SjLj_Unregister], [#include <unwind.h>], [::_Unwind_SjLj_Unregister(0)], [LIBIEEE1666_UNWIND_SJLJ_UNREGISTER=1], [LIBIEEE1666_UNWIND_SJLJ_UNREGISTER=0])
+	else
+		LIBIEEE1666_UNWIND_SJLJ_REGISTER=0
+		LIBIEEE1666_UNWIND_SJLJ_UNREGISTER=0
+	fi
+else
+	LIBIEEE1666_UNWIND_SJLJ_REGISTER=0
+	LIBIEEE1666_UNWIND_SJLJ_UNREGISTER=0
+fi
+
 ######################## Check for valgrind "client request mechanism" ##################################
 
 AC_CHECK_HEADER(valgrind/valgrind.h, LIBIEEE1666_VALGRIND_H=1, LIBIEEE1666_VALGRIND_H=0)
@@ -361,6 +406,13 @@ else
 	LIBIEEE1666_VALGRIND=0
 fi
 
+if test ${LIBIEEE1666_ENABLE_UNWIND_SJLJ} -eq 1 && test ${LIBIEEE1666_UNWIND_SJLJ_REGISTER} -eq 1 && test ${LIBIEEE1666_UNWIND_SJLJ_UNREGISTER} -eq 1; then
+	LIBIEEE1666_UNWIND_SJLJ=1
+else
+	LIBIEEE1666_UNWIND_SJLJ=0
+fi
+
+
 AC_SUBST(LIBIEEE1666_POSIX_GUARDED_STACK)
 AC_SUBST(LIBIEEE1666_FCONTEXT)
 AC_SUBST(LIBIEEE1666_UCONTEXT)
@@ -369,12 +421,17 @@ AC_SUBST(LIBIEEE1666_PTHREAD)
 AC_SUBST(LIBIEEE1666_WINDOWS_GUARDED_STACK)
 AC_SUBST(LIBIEEE1666_BACKTRACE)
 AC_SUBST(LIBIEEE1666_VALGRIND)
+AC_SUBST(LIBIEEE1666_UNWIND_SJLJ)
 AC_SUBST(LIBIEEE1666_SYSDEPS)
 
 ############################## Check configuration coherency ##############################
 
 if test ${LIBIEEE1666_FCONTEXT} -eq 0 && test ${LIBIEEE1666_PTHREAD} -eq 0 && test ${LIBIEEE1666_UCONTEXT} -eq 0 && test ${LIBIEEE1666_WINDOWS_FIBER} -eq 0; then
-	AC_MSG_ERROR([Boost::Context library, POSIX threads, ucontext, or Windows Fiber support must be available])
+	AC_MSG_ERROR([Boost::Context library, ucontext, Windows Fiber, or POSIX threads support must be available])
+fi
+
+if test ${LIBIEEE1666_USING_SJLJ_EXCEPTIONS} -eq 1 && test ${LIBIEEE1666_UNWIND_SJLJ} -eq 0; then
+	AC_MSG_ERROR([unwind SJLJ support must be available because compiler is using SJLJ exceptions])
 fi
 
 ##################################### packaging stuff ########################################
@@ -390,8 +447,7 @@ RPM_PACKAGE_DATE=$(date +'%a %b %d %Y')
 DEB_PACKAGE_DATE=$(date +'%a, %d %b %Y %T %z')
 
 if test ${LIBIEEE1666_FCONTEXT} -eq 1; then
-	PACKAGE_DEPENDENCY=libboost-context
-	PACKAGE_DEV_DEPENDENCY=libboost-context-dev
+	DEB_PACKAGE_DEV_DEPENDENCY=', libboost-context-dev (>= 1.51.0)'
 fi
 
 AC_SUBST(LIBIEEE1666_PKG_CONFIG_CXXFLAGS)
@@ -402,8 +458,7 @@ AC_SUBST(PACKAGE_RELEASE)
 AC_SUBST(RPM_PACKAGE_DATE)
 AC_SUBST(DEB_PACKAGE_DATE)
 AC_SUBST(VERSION)
-AC_SUBST(PACKAGE_DEPENDENCY)
-AC_SUBST(PACKAGE_DEV_DEPENDENCY)
+AC_SUBST(DEB_PACKAGE_DEV_DEPENDENCY)
 
 ############################## Generated files at configure time ##############################
 
@@ -481,6 +536,12 @@ if test ${LIBIEEE1666_VALGRIND} -eq 1; then
 	AC_MSG_NOTICE([valgrind support: yes])
 else
 	AC_MSG_NOTICE([valgrind support: no])
+fi
+
+if test ${LIBIEEE1666_UNWIND_SJLJ} -eq 1; then
+	AC_MSG_NOTICE([SJLJ unwind support: yes])
+else
+	AC_MSG_NOTICE([SJLJ unwind support: no])
 fi
 
 ##########################################################################

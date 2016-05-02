@@ -50,6 +50,9 @@ public:
 protected:
 	sc_interface();
 private:
+	static unsigned int num_instances;
+	static sc_event *null_event;
+	
 	// Disabled
 	sc_interface( const sc_interface& );
 	sc_interface& operator= ( const sc_interface& );

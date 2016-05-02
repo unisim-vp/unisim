@@ -32,16 +32,7 @@ sc_pthread_coroutine::sc_pthread_coroutine(std::size_t _stack_size, void (*_fn)(
 {
 	pthread_mutex_init(&thrd_mutex, NULL);
 	pthread_cond_init(&thrd_cond, NULL);
-}
 
-sc_pthread_coroutine::~sc_pthread_coroutine()
-{
-	pthread_mutex_destroy(&thrd_mutex);
-	pthread_cond_destroy(&thrd_cond);
-}
-
-void sc_pthread_coroutine::start()
-{
 	pthread_attr_t thrd_attr;
 	pthread_attr_init(&thrd_attr);
 	
@@ -71,6 +62,12 @@ void sc_pthread_coroutine::start()
 	pthread_attr_destroy(&thrd_attr);
 }
 
+sc_pthread_coroutine::~sc_pthread_coroutine()
+{
+	pthread_mutex_destroy(&thrd_mutex);
+	pthread_cond_destroy(&thrd_cond);
+}
+
 void *sc_pthread_coroutine::entry_point(void *_self)
 {
 	sc_pthread_coroutine *self = static_cast<sc_pthread_coroutine *>(_self);
@@ -88,6 +85,8 @@ void *sc_pthread_coroutine::entry_point(void *_self)
 	pthread_mutex_unlock(&self->thrd_mutex);
 	
 	(*self->fn)(self->arg);
+	
+	return 0;
 }
 
 void sc_pthread_coroutine::yield(sc_coroutine *next_coroutine)

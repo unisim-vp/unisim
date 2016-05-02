@@ -43,7 +43,6 @@
 #include <iosfwd>
 #include <map>
 #include <deque>
-#include <unordered_set>
 #include <set>
 #include "core/kernel_event.h"
 #include "core/thread_process.h"
@@ -217,7 +216,7 @@ private:
 	std::vector<sc_prim_channel *> prim_channel_table;
 	std::vector<sc_thread_process *> thread_process_table;
 	std::vector<sc_method_process *> method_process_table;
-	std::set<sc_process_handle> process_handle_table;
+	std::vector<sc_process_handle> process_handle_table;
 
 	// coroutine & stack
 	sc_coroutine_system *coroutine_system;
@@ -240,13 +239,13 @@ private:
 	sc_time current_time_stamp;                                        // current time stamp
 	sc_allocator<sc_kernel_event> kernel_events_allocator;             // kernel events (delta event) allocator
 	sc_allocator<sc_timed_kernel_event> timed_kernel_events_allocator; // timed kernel events (timed event) allocator	
-	std::unordered_set<sc_thread_process *> runnable_thread_processes;         // SC_THREAD/SC_CTHREAD processes to wake-up
-	std::unordered_set<sc_method_process *> runnable_method_processes;         // SC_METHOD processes to wake-up
-	std::unordered_set<sc_prim_channel *> updatable_prim_channels;             // primitive channels to update
-	std::unordered_set<sc_kernel_event *> delta_events;                        // notified delta events set 
+	std::vector<sc_thread_process *> runnable_thread_processes;         // SC_THREAD/SC_CTHREAD processes to wake-up
+	std::vector<sc_method_process *> runnable_method_processes;         // SC_METHOD processes to wake-up
+	std::vector<sc_prim_channel *> updatable_prim_channels;             // primitive channels to update
+	std::vector<sc_kernel_event *> delta_events;                        // notified delta events set 
 	std::multimap<sc_time, sc_timed_kernel_event *> schedule;          // notified timed events set
-	std::unordered_set<sc_thread_process *> terminated_thread_processes;
-	std::unordered_set<sc_method_process *> terminated_method_processes;
+	std::vector<sc_thread_process *> terminated_thread_processes;
+	std::vector<sc_method_process *> terminated_method_processes;
 	bool user_requested_stop;
 	bool user_requested_pause;
 	sc_stop_mode stop_mode;
@@ -329,9 +328,8 @@ inline sc_coroutine *sc_kernel::get_next_coroutine()
 {
 	if(runnable_thread_processes.empty() || (user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE))) return main_coroutine;
 
-	std::unordered_set<sc_thread_process *>::iterator it = runnable_thread_processes.begin();
-	sc_thread_process *thread_process = *it;
-	runnable_thread_processes.erase(it);
+	sc_thread_process *thread_process = runnable_thread_processes.back();
+	runnable_thread_processes.pop_back();
 	current_object = thread_process;
 	current_writer = thread_process;
 	current_thread_process = thread_process;
@@ -344,7 +342,7 @@ inline sc_kernel_event *sc_kernel::notify(sc_event *e)
 // 	std::cerr << "sc_kernel::notify(" << e->name() << ")" << std::endl;
 	sc_kernel_event *kernel_event = kernel_events_allocator.allocate();
 	kernel_event->initialize(e);
-	delta_events.insert(kernel_event);
+	delta_events.push_back(kernel_event);
 	return kernel_event;
 }
 
@@ -465,7 +463,7 @@ inline void sc_kernel::trigger(sc_thread_process *thread_process)
 {
 	if(!thread_process->trigger_requested)
 	{
-		runnable_thread_processes.insert(thread_process);
+		runnable_thread_processes.push_back(thread_process);
 		thread_process->trigger_requested = true;
 	}
 }
@@ -475,7 +473,7 @@ inline void sc_kernel::trigger(sc_method_process *method_process)
 // 	std::cerr << method_process->name() << " is runnable" << std::endl;
 	if(!method_process->trigger_requested)
 	{
-		runnable_method_processes.insert(method_process);
+		runnable_method_processes.push_back(method_process);
 		method_process->trigger_requested = true;
 	}
 }
@@ -484,7 +482,7 @@ inline void sc_kernel::request_update(sc_prim_channel *prim_channel)
 {
 	if(!prim_channel->update_requested)
 	{
-		updatable_prim_channels.insert(prim_channel);
+		updatable_prim_channels.push_back(prim_channel);
 		prim_channel->update_requested = true;
 	}
 }

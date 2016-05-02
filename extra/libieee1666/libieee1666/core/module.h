@@ -198,9 +198,9 @@ private:
 #define SC_MODULE(name) struct name : public ::sc_core::sc_module
 #define SC_CTOR(name) typedef name SC_CURRENT_USER_MODULE; name(const ::sc_core::sc_module_name&)
 #define SC_HAS_PROCESS(name) typedef name SC_CURRENT_USER_MODULE // implementation-defined
-#define SC_METHOD(name) sensitive.bind(::sc_core::sc_kernel::get_kernel()->create_method_process(#name, this, static_cast<::sc_core::sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name),&this->spawn_options)) // implementation-defined
-#define SC_THREAD(name) sensitive.bind(::sc_core::sc_kernel::get_kernel()->create_thread_process(#name, this, static_cast<::sc_core::sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name),&this->spawn_options)) // implementation-defined
-#define SC_CTHREAD(name,clk_edge_event_finder) ::sc_core::sc_kernel::get_kernel()->create_cthread_process(#name, this, static_cast<::sc_core::sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name),&this->spawn_options, clk_edge_event_finder) // implementation-defined
+#define SC_METHOD(name) ::sc_core::sc_module::sensitive.bind(::sc_core::sc_kernel::get_kernel()->create_method_process(#name, this, static_cast< ::sc_core::sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name),&this->spawn_options)) // implementation-defined
+#define SC_THREAD(name) ::sc_core::sc_module::sensitive.bind(::sc_core::sc_kernel::get_kernel()->create_thread_process(#name, this, static_cast< ::sc_core::sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name),&this->spawn_options)) // implementation-defined
+#define SC_CTHREAD(name,clk_edge_event_finder) ::sc_core::sc_kernel::get_kernel()->create_cthread_process(#name, this, static_cast< ::sc_core::sc_process_owner_method_ptr>(&SC_CURRENT_USER_MODULE::name),&this->spawn_options, clk_edge_event_finder) // implementation-defined
 typedef sc_module sc_behavior;
 typedef sc_module sc_channel;
 

@@ -104,7 +104,8 @@ private:
 	friend class sc_kernel;
 	
 	sc_process *process;
-	static sc_event null_event;
+	static unsigned int num_instances;
+	static sc_event *null_event;
 	static std::vector<sc_object*> no_child_objects;
 	static std::vector<sc_event*> no_child_events;
 	

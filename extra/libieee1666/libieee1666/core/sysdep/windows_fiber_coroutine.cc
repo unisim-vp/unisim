@@ -45,10 +45,8 @@ const std::size_t DEFAULT_WINDOWS_FIBER_STACK_SIZE = 128 * 1024; // 128 KB
 
 sc_windows_fiber_coroutine::sc_windows_fiber_coroutine()
 	: fc()
-	, fcm()
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	, sjlj_fc()
-	, sjlj_fcm()
 #endif
 	, main_coroutine(this)
 	, fn(0)
@@ -69,10 +67,8 @@ sc_windows_fiber_coroutine::sc_windows_fiber_coroutine()
 
 sc_windows_fiber_coroutine::sc_windows_fiber_coroutine(sc_windows_fiber_coroutine *_main_coroutine, std::size_t stack_size, void (*_fn)(intptr_t), intptr_t _arg)
 	: fc()
-	, fcm()
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	, sjlj_fc()
-	, sjlj_fcm()
 #endif
 	, main_coroutine(_main_coroutine)
 	, fn(_fn)
@@ -102,27 +98,12 @@ sc_windows_fiber_coroutine::~sc_windows_fiber_coroutine()
 void sc_windows_fiber_coroutine::entry_point(void *_self)
 {
 	sc_windows_fiber_coroutine *self = reinterpret_cast<sc_windows_fiber_coroutine *>(_self);
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
-	_Unwind_SjLj_Register(&self->sjlj_fc);
-	_Unwind_SjLj_Unregister(&self->sjlj_fcm);
-#endif
-	SwitchToFiber(self->fcm);
 	(*self->fn)(self->arg);
-}
-
-void sc_windows_fiber_coroutine::start()
-{
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
-	_Unwind_SjLj_Register(&sjlj_fcm);
-	_Unwind_SjLj_Unregister(&sjlj_fc);
-#endif
-	fcm = GetCurrentFiber();
-	SwitchToFiber(fc);
 }
 
 void sc_windows_fiber_coroutine::yield(sc_coroutine *next_coroutine)
 {
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	_Unwind_SjLj_Register(&sjlj_fc);
 	_Unwind_SjLj_Unregister(&static_cast<sc_windows_fiber_coroutine *>(next_coroutine)->sjlj_fc);
 #endif
@@ -131,7 +112,7 @@ void sc_windows_fiber_coroutine::yield(sc_coroutine *next_coroutine)
 
 void sc_windows_fiber_coroutine::abort(sc_coroutine *next_coroutine)
 {
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	_Unwind_SjLj_Register(&sjlj_fc);
 	_Unwind_SjLj_Unregister(&static_cast<sc_windows_fiber_coroutine *>(next_coroutine)->sjlj_fc);
 #endif

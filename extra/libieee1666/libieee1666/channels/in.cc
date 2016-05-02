@@ -172,6 +172,7 @@ sc_in<bool>::sc_in(const sc_in<bool>&)
 // Disabled
 sc_in<bool>& sc_in<bool>::operator= ( const sc_in<bool>& )
 {
+	return *this;
 }
 
 template <>

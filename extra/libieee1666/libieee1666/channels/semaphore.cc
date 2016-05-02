@@ -66,12 +66,15 @@ const char* sc_semaphore::kind() const
 {
 }
 
+// Disabled
 sc_semaphore::sc_semaphore( const sc_semaphore& )
 {
 }
 
+// Disabled
 sc_semaphore& sc_semaphore::operator= ( const sc_semaphore& )
 {
+	return *this;
 }
 
 } // end of namespace sc_core

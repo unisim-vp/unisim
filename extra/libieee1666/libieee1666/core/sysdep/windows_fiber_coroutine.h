@@ -36,7 +36,12 @@
 #define __LIBIEEE1666_CORE_SYSDEP_WINDOWS_FIBER_COROUTINE_H__
 
 #include "core/coroutine.h"
+#include "core/features.h"
+
+#if __LIBIEEE1666_UNWIND_SJLJ__
 #include "core/sysdep/sjlj_except.h"
+#endif
+
 #include <windows.h>
 
 namespace sc_core {
@@ -49,7 +54,6 @@ public:
 	sc_windows_fiber_coroutine(sc_windows_fiber_coroutine *main_coroutine, std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
 	virtual ~sc_windows_fiber_coroutine();
 	
-	virtual void start();
 	virtual void yield(sc_coroutine *next_coroutine);
 	virtual void abort(sc_coroutine *next_coroutine);
 private:
@@ -58,10 +62,8 @@ private:
 	friend class sc_windows_fiber_coroutine_system;
 
 	LPVOID fc;
-	LPVOID fcm;
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	struct SjLj_Function_Context sjlj_fc;
-	struct SjLj_Function_Context sjlj_fcm;
 #endif
 	sc_windows_fiber_coroutine *main_coroutine;
 	void (*fn)(intptr_t);

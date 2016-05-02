@@ -131,6 +131,7 @@ const char* sc_event::basename() const
 
 bool sc_event::in_hierarchy() const
 {
+	return !event_name.empty();
 }
 
 sc_object* sc_event::get_parent_object() const
@@ -222,7 +223,7 @@ void sc_event::trigger()
 //  	std::cerr << name() << ".trigger()" << std::endl;
 	if(statically_sensitive_method_processes.size())
 	{
-		std::unordered_set<sc_method_process *>::iterator it = statically_sensitive_method_processes.begin();
+		std::set<sc_method_process *>::iterator it = statically_sensitive_method_processes.begin();
 		
 		do
 		{
@@ -234,7 +235,7 @@ void sc_event::trigger()
 
 	if(statically_sensitive_thread_processes.size())
 	{
-		std::unordered_set<sc_thread_process *>::iterator it = statically_sensitive_thread_processes.begin();
+		std::set<sc_thread_process *>::iterator it = statically_sensitive_thread_processes.begin();
 		
 		do
 		{
@@ -249,7 +250,7 @@ void sc_event::trigger()
 
 	if(dynamically_sensitive_method_processes.size())
 	{
-		std::unordered_set<sc_method_process *>::iterator it = dynamically_sensitive_method_processes.begin();
+		std::set<sc_method_process *>::iterator it = dynamically_sensitive_method_processes.begin();
 		
 		do
 		{
@@ -266,7 +267,7 @@ void sc_event::trigger()
 
 	if(dynamically_sensitive_thread_processes.size())
 	{
-		std::unordered_set<sc_thread_process *>::iterator it = dynamically_sensitive_thread_processes.begin();
+		std::set<sc_thread_process *>::iterator it = dynamically_sensitive_thread_processes.begin();
 
 		do
 		{
@@ -322,12 +323,15 @@ sc_event_or_expr sc_event::operator | (const sc_event_or_list& el) const
 	return event_or_expr;
 }
 
+// Disabled
 sc_event::sc_event( const sc_event& )
 {
 }
 
+// Disabled
 sc_event& sc_event::operator= ( const sc_event& )
 {
+	return *this;
 }
 
 void sc_event::remove_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
@@ -406,6 +410,7 @@ sc_event_list::sc_event_list(sc_event_list_type_t _type, bool _auto_mm, const sc
 sc_event_list& sc_event_list::operator= (const sc_event_list& el)
 {
 	events = el.events;
+	return *this;
 }
 
 sc_event_list::~sc_event_list()
@@ -424,7 +429,7 @@ void sc_event_list::swap( sc_event_list& el)
 
 void sc_event_list::add_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
 {
-	std::unordered_set<const sc_event *>::const_iterator it;
+	std::set<const sc_event *>::const_iterator it;
 	for(it = events.begin(); it != events.end(); it++)
 	{
 		const sc_event *e = *it;
@@ -434,7 +439,7 @@ void sc_event_list::add_dynamically_sensitive_thread_process(sc_thread_process *
 
 void sc_event_list::add_dynamically_sensitive_method_process(sc_method_process *method_process) const
 {
-	std::unordered_set<const sc_event *>::const_iterator it;
+	std::set<const sc_event *>::const_iterator it;
 	for(it = events.begin(); it != events.end(); it++)
 	{
 		const sc_event *e = *it;
@@ -444,7 +449,7 @@ void sc_event_list::add_dynamically_sensitive_method_process(sc_method_process *
 
 void sc_event_list::remove_dynamically_sensitive_thread_process(sc_thread_process *thread_process) const
 {
-	std::unordered_set<const sc_event *>::const_iterator it;
+	std::set<const sc_event *>::const_iterator it;
 	for(it = events.begin(); it != events.end(); it++)
 	{
 		const sc_event *e = *it;
@@ -454,7 +459,7 @@ void sc_event_list::remove_dynamically_sensitive_thread_process(sc_thread_proces
 
 void sc_event_list::remove_dynamically_sensitive_method_process(sc_method_process *method_process) const
 {
-	std::unordered_set<const sc_event *>::const_iterator it;
+	std::set<const sc_event *>::const_iterator it;
 	for(it = events.begin(); it != events.end(); it++)
 	{
 		const sc_event *e = *it;
@@ -469,7 +474,7 @@ void sc_event_list::insert(const sc_event & e)
 
 void sc_event_list::insert(const sc_event_list& el)
 {
-	std::unordered_set<const sc_event *>::iterator it;
+	std::set<const sc_event *>::iterator it;
 	for(it = events.begin(); it != events.end(); it++)
 	{
 		const sc_event *e = *it;
@@ -541,6 +546,10 @@ sc_event_and_expr sc_event_and_list::operator & (const sc_event& e) const
 
 sc_event_and_expr sc_event_and_list::operator & (const sc_event_and_list& el) const
 {
+	sc_event_and_expr event_and_expr;
+	event_and_expr &= *this;
+	event_and_expr &= el;
+	return event_and_expr;
 }
 
 //////////////////////////// sc_event_or_list /////////////////////////////
@@ -592,6 +601,10 @@ sc_event_or_expr sc_event_or_list::operator | (const sc_event& e) const
 
 sc_event_or_expr sc_event_or_list::operator | (const sc_event_or_list& el) const
 {
+	sc_event_or_expr event_or_expr;
+	event_or_expr |= *this;
+	event_or_expr |= el;
+	return event_or_expr;
 }
 
 //////////////////////////// sc_event_and_expr /////////////////////////////

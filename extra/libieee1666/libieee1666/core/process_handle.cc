@@ -70,36 +70,65 @@ sc_unwind_exception::~sc_unwind_exception() throw()
 
 ///////////////////////////////// sc_process_handle ///////////////////////////////////////////
 
-sc_event sc_process_handle::null_event(__LIBIEEE1666_KERNEL_PREFIX__ "_null_event");
+unsigned int sc_process_handle::num_instances = 0;
+sc_event *sc_process_handle::null_event = 0;
 std::vector<sc_object*> sc_process_handle::no_child_objects;
 std::vector<sc_event*> sc_process_handle::no_child_events;
 
 sc_process_handle::sc_process_handle()
 	: process(0)
 {
+	if(!null_event)
+	{
+		null_event = new sc_event(__LIBIEEE1666_KERNEL_PREFIX__ "process_handle_null_event");
+	}
+	num_instances++;
 }
 
 sc_process_handle::sc_process_handle(const sc_process_handle& process_handle)
 	: process(process_handle.process)
 {
+	if(!null_event)
+	{
+		null_event = new sc_event(__LIBIEEE1666_KERNEL_PREFIX__ "process_handle_null_event");
+	}
+	num_instances++;
+
 	if(process) process->acquire();
 }
 
 sc_process_handle::sc_process_handle(sc_object* object)
 	: process((sc_process *) object)
 {
+	if(!null_event)
+	{
+		null_event = new sc_event(__LIBIEEE1666_KERNEL_PREFIX__ "process_handle_null_event");
+	}
+	num_instances++;
+
 	if(process) process->acquire();
 }
 
 sc_process_handle::sc_process_handle(sc_process *_process)
 	: process(_process)
 {
+	if(!null_event)
+	{
+		null_event = new sc_event(__LIBIEEE1666_KERNEL_PREFIX__ "process_handle_null_event");
+	}
+	num_instances++;
+
 	if(process) process->acquire();
 }
 
 sc_process_handle::~sc_process_handle()
 {
 	if(process) process->release();
+	
+	if((--num_instances == 0) && null_event)
+	{
+		delete null_event;
+	}
 }
 
 bool sc_process_handle::valid() const
@@ -179,7 +208,7 @@ bool sc_process_handle::terminated() const
 
 const sc_event& sc_process_handle::terminated_event() const
 {
-	return process ? process->terminated_event() : null_event;
+	return process ? process->terminated_event() : *null_event;
 }
 
 void sc_process_handle::suspend(sc_descendant_inclusion_info include_descendants)
@@ -214,11 +243,12 @@ void sc_process_handle::reset(sc_descendant_inclusion_info include_descendants)
 
 bool sc_process_handle::is_unwinding() const
 {
+	return process ? process->is_unwinding() : false;
 }
 
 const sc_event& sc_process_handle::reset_event() const
 {
-	return process ? process->reset_event() : null_event;
+	return process ? process->reset_event() : *null_event;
 }
 
 void sc_process_handle::sync_reset_on( sc_descendant_inclusion_info include_descendants)

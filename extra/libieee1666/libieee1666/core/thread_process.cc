@@ -61,6 +61,7 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, wait_time_out_event(__LIBIEEE1666_KERNEL_PREFIX__ "_wait_time_out_event")
 {
 	coroutine = kernel->get_coroutine_system()->create_coroutine(stack_size, &sc_thread_process::coroutine_work, reinterpret_cast<intptr_t>(this));
+	started = true;
 	kernel->register_thread_process(this);
 }
 
@@ -75,12 +76,6 @@ sc_thread_process::~sc_thread_process()
 void sc_thread_process::set_stack_size(int _stack_size)
 {
 	stack_size = _stack_size;
-}
-
-void sc_thread_process::start()
-{
-	coroutine->start();
-	started = true;
 }
 
 void sc_thread_process::yield(sc_coroutine *next_coroutine)

@@ -234,6 +234,7 @@ sc_prim_channel::sc_prim_channel( const sc_prim_channel& )
 // Disabled
 sc_prim_channel& sc_prim_channel::operator= ( const sc_prim_channel& )
 {
+	return *this;
 }
 
 } // end of namespace sc_core

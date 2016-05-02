@@ -36,28 +36,44 @@
 
 namespace sc_core {
 
+unsigned int sc_interface::num_instances = 0;
+sc_event *sc_interface::null_event = 0;
+
 void sc_interface::register_port( sc_port_base& , const char* )
 {
 }
 
 const sc_event& sc_interface::default_event() const
 {
+	return *null_event;
 }
 
 sc_interface::~sc_interface()
 {
+	if((--num_instances == 0) && null_event)
+	{
+		delete null_event;
+	}
 }
 
 sc_interface::sc_interface()
 {
+	if(!null_event)
+	{
+		null_event = new sc_event(__LIBIEEE1666_KERNEL_PREFIX__ "interface_null_event");
+	}
+	num_instances++;
 }
 
+// Disabled
 sc_interface::sc_interface( const sc_interface& )
 {
 }
 
+// Disabled
 sc_interface& sc_interface::operator= ( const sc_interface& )
 {
+	return *this;
 }
 
 } // end of namespace sc_core

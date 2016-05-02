@@ -284,6 +284,8 @@ void sc_method_process::cancel_next_trigger()
 			break;
 		case NEXT_TRIGGER_TIME_OUT:
 			break;
+		case NEXT_TRIGGER_TIME_OUT_OR_EVENT:
+			break;
 	}
 	
 	next_trigger_type = NEXT_TRIGGER_DEFAULT;

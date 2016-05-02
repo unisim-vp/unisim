@@ -7,5 +7,5 @@ mkdir -p config
 libtoolize -c -f
 aclocal -Im4
 autoheader
-autoconf
+autoconf -f -Wall
 automake -ac

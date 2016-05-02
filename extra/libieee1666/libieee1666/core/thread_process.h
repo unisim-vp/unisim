@@ -52,8 +52,6 @@ public:
 	
 	void set_stack_size(int stack_size);
 	
-	virtual void start();
-	
 	void trigger_dynamically(const sc_event *triggered_event);
 	void trigger_statically();
 	

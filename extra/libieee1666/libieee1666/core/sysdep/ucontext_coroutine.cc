@@ -51,10 +51,8 @@ union conv_int_ptr_t
 
 sc_ucontext_coroutine::sc_ucontext_coroutine()
 	: uc()
-	, ucm()
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	, sjlj_fc()
-	, sjlj_fcm()
 #endif
 	, fn(0)
 	, arg(0)
@@ -64,10 +62,8 @@ sc_ucontext_coroutine::sc_ucontext_coroutine()
 
 sc_ucontext_coroutine::sc_ucontext_coroutine(std::size_t stack_size, void (*_fn)(intptr_t), intptr_t _arg)
 	: uc()
-	, ucm()
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	, sjlj_fc()
-	, sjlj_fcm()
 #endif
 	, fn(_fn)
 	, arg(_arg)
@@ -105,26 +101,12 @@ void sc_ucontext_coroutine::entry_point(unsigned int arg0, unsigned int arg1)
 	conv.i[1] = arg1;
 	
 	sc_ucontext_coroutine *self = reinterpret_cast<sc_ucontext_coroutine *>(conv.p);
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
-	_Unwind_SjLj_Register(&self->sjlj_fc);
-	_Unwind_SjLj_Unregister(&self->sjlj_fcm);
-#endif
-	swapcontext(&self->uc, &self->ucm);
 	(*self->fn)(self->arg);
-}
-
-void sc_ucontext_coroutine::start()
-{
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
-	_Unwind_SjLj_Register(&sjlj_fcm);
-	_Unwind_SjLj_Unregister(&sjlj_fc);
-#endif
-	swapcontext(&ucm, &uc);
 }
 
 void sc_ucontext_coroutine::yield(sc_coroutine *next_coroutine)
 {
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	_Unwind_SjLj_Register(&sjlj_fc);
 	_Unwind_SjLj_Unregister(&static_cast<sc_ucontext_coroutine *>(next_coroutine)->sjlj_fc);
 #endif
@@ -133,7 +115,7 @@ void sc_ucontext_coroutine::yield(sc_coroutine *next_coroutine)
 
 void sc_ucontext_coroutine::abort(sc_coroutine *next_coroutine)
 {
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	_Unwind_SjLj_Register(&sjlj_fc);
 	_Unwind_SjLj_Unregister(&static_cast<sc_ucontext_coroutine *>(next_coroutine)->sjlj_fc);
 #endif

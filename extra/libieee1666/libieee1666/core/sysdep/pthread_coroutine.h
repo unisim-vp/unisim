@@ -13,7 +13,6 @@ public:
 	sc_pthread_coroutine(std::size_t stack_size, void (*fn)(intptr_t), intptr_t arg);
 	virtual ~sc_pthread_coroutine();
 	
-	virtual void start();
 	virtual void yield(sc_coroutine *next_coroutine);
 	virtual void abort(sc_coroutine *next_coroutine);
 private:

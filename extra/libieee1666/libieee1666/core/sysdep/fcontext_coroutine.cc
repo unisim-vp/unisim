@@ -43,12 +43,12 @@ const std::size_t DEFAULT_FCONTEXT_STACK_SIZE = 128 * 1024; // 128 KB
 
 /////////////////////////// sc_fcontext_coroutine //////////////////////////
 
+static boost::context::fcontext_t fcm;
+
 sc_fcontext_coroutine::sc_fcontext_coroutine()
 	: fc()
-	, fcm()
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	, sjlj_fc()
-	, sjlj_fcm()
 #endif
 	, fn(0)
 	, arg(0)
@@ -61,10 +61,8 @@ sc_fcontext_coroutine::sc_fcontext_coroutine()
 
 sc_fcontext_coroutine::sc_fcontext_coroutine(std::size_t stack_size, void (*_fn)(intptr_t), intptr_t _arg)
 	: fc()
-	, fcm()
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	, sjlj_fc()
-	, sjlj_fcm()
 #endif
 	, fn(_fn)
 	, arg(_arg)
@@ -86,39 +84,12 @@ sc_fcontext_coroutine::~sc_fcontext_coroutine()
 void sc_fcontext_coroutine::entry_point(intptr_t _self)
 {
 	sc_fcontext_coroutine *self = reinterpret_cast<sc_fcontext_coroutine *>(_self);
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
-	_Unwind_SjLj_Register(&self->sjlj_fc);
-	_Unwind_SjLj_Unregister(&self->sjlj_fcm);
-#endif
-	boost::context::jump_fcontext(
-#if BOOST_VERSION >= 105600 // boost version >= 1.56.0
-		&self->fc,
-#else
-		self->fc,
-#endif
-#if BOOST_VERSION >= 105600 // boost version >= 1.56.0
-		self->fcm,
-#else
-		&self->fcm,
-#endif
-		0, true);
 	(*self->fn)(self->arg);
-}
-
-void sc_fcontext_coroutine::start()
-{
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
-	_Unwind_SjLj_Register(&sjlj_fcm);
-	_Unwind_SjLj_Unregister(&sjlj_fc);
-#endif
-	boost::context::jump_fcontext(
-		&fcm,
-		fc, reinterpret_cast<intptr_t>(this), true); 
 }
 
 void sc_fcontext_coroutine::yield(sc_coroutine *next_coroutine)
 {
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	_Unwind_SjLj_Register(&sjlj_fc);
 	_Unwind_SjLj_Unregister(&static_cast<sc_fcontext_coroutine *>(next_coroutine)->sjlj_fc);
 #endif
@@ -129,12 +100,12 @@ void sc_fcontext_coroutine::yield(sc_coroutine *next_coroutine)
 		fc,
 #endif
 		static_cast<sc_fcontext_coroutine *>(next_coroutine)->fc,
-		0, true);
+		reinterpret_cast<intptr_t>(next_coroutine), true);
 }
 
 void sc_fcontext_coroutine::abort(sc_coroutine *next_coroutine)
 {
-#if defined(__GNUC__) && defined(__USING_SJLJ_EXCEPTIONS__)
+#if __LIBIEEE1666_UNWIND_SJLJ__
 	_Unwind_SjLj_Register(&sjlj_fc);
 	_Unwind_SjLj_Unregister(&static_cast<sc_fcontext_coroutine *>(next_coroutine)->sjlj_fc);
 #endif
@@ -145,7 +116,7 @@ void sc_fcontext_coroutine::abort(sc_coroutine *next_coroutine)
 		fc,
 #endif
 		static_cast<sc_fcontext_coroutine *>(next_coroutine)->fc,
-		0, true);
+		reinterpret_cast<intptr_t>(next_coroutine), true);
 }
 
 ///////////////////////// sc_fcontext_coroutine_system /////////////////////

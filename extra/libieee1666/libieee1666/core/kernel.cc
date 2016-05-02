@@ -243,32 +243,30 @@ sc_kernel::sc_kernel()
 
 sc_kernel::~sc_kernel()
 {
-	if(process_handle_table.size())
+	std::vector<sc_process_handle>::size_type num_process_handles = process_handle_table.size();
+	std::vector<sc_process_handle>::size_type process_handle_num;
+	
+	for(process_handle_num = 0; process_handle_num < num_process_handles; process_handle_num++)
 	{
-		do
-		{
-			std::set<sc_process_handle>::iterator it = process_handle_table.begin();
-			sc_process_handle process_handle = *it;
-			process_handle_table.erase(it);
+		sc_process_handle process_handle = process_handle_table[process_handle_num];
 			
-			process_handle.kill();
-		}
-		while(process_handle_table.size());
+		process_handle.kill();
 	}
 	
-	if(delta_events.size())
+	process_handle_table.clear();
+	
+	std::vector<sc_kernel_event *>::size_type num_delta_events = delta_events.size();
+	std::vector<sc_kernel_event *>::size_type delta_event_num;
+	
+	for(delta_event_num = 0; delta_event_num < num_delta_events; delta_event_num++)
 	{
-		do
-		{
-			std::unordered_set<sc_kernel_event *>::iterator it = delta_events.begin();
-			sc_kernel_event *kernel_event = *it;
-			delta_events.erase(it);
-			
-			kernel_events_allocator.free(kernel_event);
-		}
-		while(delta_events.size());
+		sc_kernel_event *kernel_event = delta_events[delta_event_num];
+		
+		kernel_events_allocator.free(kernel_event);
 	}
 
+	delta_events.clear();
+	
 	std::multimap<sc_time, sc_timed_kernel_event *>::iterator it = schedule.begin();
 
 	if(it != schedule.end())
@@ -377,11 +375,10 @@ sc_process_handle sc_kernel::create_thread_process(const char *name, sc_process_
 	sc_thread_process *thread_process = new sc_thread_process(name, process_owner, process_owner_method_ptr, clocked, spawn_options);
 
 	sc_process_handle thread_process_handle(thread_process);
-	process_handle_table.insert(thread_process_handle);
+	process_handle_table.push_back(thread_process_handle);
 	
 	if(status >= SC_START_OF_SIMULATION)
 	{
-		thread_process->start(); // start thread process in suspend state
 		if(!spawn_options || !spawn_options->get_flag_dont_initialize())
 		{
 			trigger(thread_process);
@@ -396,15 +393,9 @@ sc_process_handle sc_kernel::create_cthread_process(const char *name, sc_process
 	sc_cthread_process *cthread_process = new sc_cthread_process(name, process_owner, process_owner_method_ptr, spawn_options);
 	
 	sc_process_handle cthread_process_handle(cthread_process);
-	process_handle_table.insert(cthread_process_handle);
+	process_handle_table.push_back(cthread_process_handle);
 	
 	edge_event_finder.get_port().add_process_statically_sensitive_to_event_finder((sc_process *) cthread_process, edge_event_finder);
-	
-	if(status >= SC_START_OF_SIMULATION)
-	{
-		cthread_process->start();
-	}
-
 	return cthread_process_handle;
 }
 
@@ -413,7 +404,7 @@ sc_process_handle sc_kernel::create_method_process(const char *name, sc_process_
 	sc_method_process *method_process = new sc_method_process(name, process_owner, process_owner_method_ptr, spawn_options);
 	
 	sc_process_handle method_process_handle(method_process);
-	process_handle_table.insert(method_process_handle);
+	process_handle_table.push_back(method_process_handle);
 	
 	if((status >= SC_START_OF_SIMULATION) && (!spawn_options || !spawn_options->get_flag_dont_initialize()))
 	{
@@ -550,35 +541,31 @@ void sc_kernel::initialize()
 		
 		if(!method_process->dont_initialize())
 		{
-			runnable_method_processes.insert(method_process);
+			runnable_method_processes.push_back(method_process);
 		}
 	}
 
-	// start thread processes in suspend state
+	// initialize thread processes
 	num_thread_processes = thread_process_table.size();
 	for(i = 0; i < num_thread_processes; i++)
 	{
 		sc_thread_process *thread_process = thread_process_table[i];
-		
-		thread_process->start(); // at this point, process is suspended before call to sc_process_owner method
-		
+
 		if(!thread_process->dont_initialize())
 		{
-			runnable_thread_processes.insert(thread_process);
+			runnable_thread_processes.push_back(thread_process);
 		}
 	}
 	
 	// initial wake-up of all SC_METHOD processes
 	if(runnable_method_processes.size())
 	{
-		std::unordered_set<sc_method_process *>::iterator it = runnable_method_processes.begin();
-
 		bool stop_immediate = false;
 		
 		do
 		{
-			sc_method_process *method_process = *it;
-			it = runnable_method_processes.erase(it);
+			sc_method_process *method_process = runnable_method_processes.back();
+			runnable_method_processes.pop_back();
 			method_process->trigger_requested = false;
 			
 			current_object = method_process;
@@ -589,7 +576,7 @@ void sc_kernel::initialize()
 			method_process->commit_next_trigger();
 			stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
 		}
-		while(!stop_immediate && (it != runnable_method_processes.end()));
+		while(!stop_immediate && runnable_method_processes.size());
 		current_object = 0;
 		current_writer = 0;
 		current_method_process = 0;
@@ -603,9 +590,8 @@ void sc_kernel::initialize()
 	// initial wake-up of all SC_THREAD/SC_CTHREAD processes
 	if(runnable_thread_processes.size())
 	{
-		std::unordered_set<sc_thread_process *>::iterator it = runnable_thread_processes.begin();
-		sc_thread_process *thread_process = *it;
-		runnable_thread_processes.erase(it);
+		sc_thread_process *thread_process = runnable_thread_processes.back();
+		runnable_thread_processes.pop_back();
 		thread_process->trigger_requested = false;
 		current_object = thread_process;
 		current_writer = thread_process;
@@ -635,14 +621,12 @@ void sc_kernel::do_delta_steps(bool once)
 			// wake up SC_METHOD processes
 			if(runnable_method_processes.size())
 			{
-				std::unordered_set<sc_method_process *>::iterator it = runnable_method_processes.begin();
-
 				bool stop_immediate = false;
 				
 				do
 				{
-					sc_method_process *method_process = *it;
-					it = runnable_method_processes.erase(it);
+					sc_method_process *method_process = runnable_method_processes.back();
+					runnable_method_processes.pop_back();
 					method_process->trigger_requested = false;
 					
 					current_object = method_process;
@@ -654,7 +638,7 @@ void sc_kernel::do_delta_steps(bool once)
 					method_process->commit_next_trigger();
 					stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
 				}
-				while(!stop_immediate && (it != runnable_method_processes.end()));
+				while(!stop_immediate && runnable_method_processes.size());
 				current_object = 0;
 				current_writer = 0;
 				current_method_process = 0;
@@ -665,9 +649,8 @@ void sc_kernel::do_delta_steps(bool once)
 			if(runnable_thread_processes.size())
 			{
 				eval_flag = 1;
-				std::unordered_set<sc_thread_process *>::iterator it = runnable_thread_processes.begin();
-				sc_thread_process *thread_process = *it;
-				runnable_thread_processes.erase(it);
+				sc_thread_process *thread_process = runnable_thread_processes.back();
+				runnable_thread_processes.pop_back();
 				thread_process->trigger_requested = false;
 				current_object = thread_process;
 				current_writer = thread_process;
@@ -690,18 +673,17 @@ void sc_kernel::do_delta_steps(bool once)
 
 		// update phase
 		
-		if(updatable_prim_channels.size())
+		std::vector<sc_prim_channel *>::size_type num_updatable_prim_channels = updatable_prim_channels.size();
+		if(num_updatable_prim_channels)
 		{
-			std::unordered_set<sc_prim_channel *>::iterator it = updatable_prim_channels.begin();
-
-			do
+			std::vector<sc_prim_channel *>::size_type i;
+			for(i = 0; i < num_updatable_prim_channels; i++)
 			{
-				sc_prim_channel *prim_channel = *it++;
+				sc_prim_channel *prim_channel = updatable_prim_channels[i];
 				prim_channel->update_requested = false;
 				
 				prim_channel->update();
 			}
-			while(it != updatable_prim_channels.end());
 			
 			updatable_prim_channels.clear();
 		}
@@ -710,13 +692,13 @@ void sc_kernel::do_delta_steps(bool once)
 		
 		// delta notification phase
 		
-		if(delta_events.size())
+		std::vector<sc_kernel_event *>::size_type num_delta_events = delta_events.size();
+		if(num_delta_events)
 		{
-			std::unordered_set<sc_kernel_event *>::iterator it = delta_events.begin();
-			
-			do
+			std::vector<sc_kernel_event *>::size_type i;
+			for(i = 0; i < num_delta_events; i++)
 			{
-				sc_kernel_event *kernel_event = *it++;
+				sc_kernel_event *kernel_event = delta_events[i];
 				
 				sc_event *e = kernel_event->get_event();
 				
@@ -727,7 +709,6 @@ void sc_kernel::do_delta_steps(bool once)
 				
 				kernel_events_allocator.free(kernel_event);
 			}
-			while(it != delta_events.end());
 			
 			delta_events.clear();
 		}
@@ -963,7 +944,8 @@ void sc_kernel::unregister_module(sc_module *module)
 		if(module_table[i] == module)
 		{
 			module_table[i] = module_table[num_modules - 1];
-			module_table.resize(num_modules - 1);
+			module_table.pop_back();
+			break;
 		}
 	}
 }
@@ -978,7 +960,8 @@ void sc_kernel::unregister_port(sc_port_base *port)
 		if(port_table[i] == port)
 		{
 			port_table[i] = port_table[num_ports - 1];
-			port_table.resize(num_ports - 1);
+			port_table.pop_back();
+			break;
 		}
 	}
 }
@@ -993,7 +976,8 @@ void sc_kernel::unregister_export(sc_export_base *exp)
 		if(export_table[i] == exp)
 		{
 			export_table[i] = export_table[num_exports - 1];
-			export_table.resize(num_exports - 1);
+			export_table.pop_back();
+			break;
 		}
 	}
 }
@@ -1008,7 +992,8 @@ void sc_kernel::unregister_prim_channel(sc_prim_channel *prim_channel)
 		if(prim_channel_table[i] == prim_channel)
 		{
 			prim_channel_table[i] = prim_channel_table[num_prim_channels - 1];
-			prim_channel_table.resize(num_prim_channels - 1);
+			prim_channel_table.pop_back();
+			break;
 		}
 	}
 }
@@ -1023,7 +1008,8 @@ void sc_kernel::unregister_thread_process(sc_thread_process *thread_process)
 		if(thread_process_table[i] == thread_process)
 		{
 			thread_process_table[i] = thread_process_table[num_thread_processes - 1];
-			thread_process_table.resize(num_thread_processes - 1);
+			thread_process_table.pop_back();
+			break;
 		}
 	}
 }
@@ -1038,19 +1024,20 @@ void sc_kernel::unregister_method_process(sc_method_process *method_process)
 		if(method_process_table[i] == method_process)
 		{
 			method_process_table[i] = method_process_table[num_method_processes - 1];
-			method_process_table.resize(num_method_processes - 1);
+			method_process_table.pop_back();
+			break;
 		}
 	}
 }
 
 void sc_kernel::terminate_thread_process(sc_thread_process *thread_process)
 {
-	terminated_thread_processes.insert(thread_process);
+	terminated_thread_processes.push_back(thread_process);
 }
 
 void sc_kernel::terminate_method_process(sc_method_process *method_process)
 {
-	terminated_method_processes.insert(method_process);
+	terminated_method_processes.push_back(method_process);
 }
 
 void sc_kernel::disconnect_thread_process(sc_thread_process *thread_process)
@@ -1065,7 +1052,23 @@ void sc_kernel::disconnect_thread_process(sc_thread_process *thread_process)
 		event->remove_statically_sensitive_thread_process(thread_process);
 	}
 	
-	runnable_thread_processes.erase(thread_process);
+	std::vector<sc_thread_process *>::size_type num_runnable_thread_processes = runnable_thread_processes.size();
+	if(num_runnable_thread_processes > 1)
+	{
+		std::vector<sc_thread_process *>::size_type runnable_thread_process_num;
+		for(runnable_thread_process_num = 0; runnable_thread_process_num < num_runnable_thread_processes; runnable_thread_process_num++)
+		{
+			if(runnable_thread_processes[runnable_thread_process_num] == thread_process)
+			{
+				runnable_thread_processes[runnable_thread_process_num] = runnable_thread_processes[runnable_thread_processes.size() - 1];
+				break;
+			}
+		}
+	}
+	else
+	{
+		runnable_thread_processes.clear();
+	}
 }
 
 void sc_kernel::disconnect_method_process(sc_method_process *method_process)
@@ -1080,20 +1083,48 @@ void sc_kernel::disconnect_method_process(sc_method_process *method_process)
 		event->remove_statically_sensitive_method_process(method_process);
 	}
 	
-	runnable_method_processes.erase(method_process);
+	std::vector<sc_method_process *>::size_type num_runnable_method_processes = runnable_method_processes.size();
+	if(num_runnable_method_processes > 1)
+	{
+		std::vector<sc_method_process *>::size_type runnable_method_process_num;
+		for(runnable_method_process_num = 0; runnable_method_process_num < num_runnable_method_processes; runnable_method_process_num++)
+		{
+			if(runnable_method_processes[runnable_method_process_num] == method_process)
+			{
+				runnable_method_processes[runnable_method_process_num] = runnable_method_processes[runnable_method_processes.size() - 1];
+				break;
+			}
+		}
+	}
+	else
+	{
+		runnable_method_processes.clear();
+	}
 }
 
 void sc_kernel::release_terminated_thread_processes()
 {
-	std::unordered_set<sc_thread_process *>::iterator thread_process_it;
-	
-	for(thread_process_it = terminated_thread_processes.begin(); thread_process_it != terminated_thread_processes.end(); thread_process_it++)
+	std::vector<sc_thread_process *>::size_type num_terminated_thread_processes = terminated_thread_processes.size();
+	std::vector<sc_thread_process *>::size_type terminated_thread_process_num;
+	for(terminated_thread_process_num = 0; terminated_thread_process_num < num_terminated_thread_processes; terminated_thread_process_num++)
 	{
-		sc_thread_process *thread_process = *thread_process_it;
+		sc_thread_process *thread_process = terminated_thread_processes[terminated_thread_process_num];
 
 		disconnect_thread_process(thread_process);
 		
-		process_handle_table.erase(sc_process_handle(thread_process));
+		sc_process_handle process_handle(thread_process);
+
+		std::vector<sc_thread_process *>::size_type num_process_handles = process_handle_table.size();
+		std::vector<sc_thread_process *>::size_type process_handle_num;
+		for(process_handle_num = 0; process_handle_num < num_process_handles; process_handle_num++)
+		{
+			if(process_handle == process_handle_table[process_handle_num])
+			{
+				process_handle_table[process_handle_num] = process_handle_table[num_process_handles - 1];
+				process_handle_table.pop_back();
+				break;
+			}
+		}
 	}
 	
 	terminated_thread_processes.clear();
@@ -1101,15 +1132,27 @@ void sc_kernel::release_terminated_thread_processes()
 
 void sc_kernel::release_terminated_method_processes()
 {
-	std::unordered_set<sc_method_process *>::iterator method_process_it;
-	
-	for(method_process_it = terminated_method_processes.begin(); method_process_it != terminated_method_processes.end(); method_process_it++)
+	std::vector<sc_method_process *>::size_type num_terminated_method_processes = terminated_method_processes.size();
+	std::vector<sc_method_process *>::size_type terminated_method_process_num;
+	for(terminated_method_process_num = 0; terminated_method_process_num < num_terminated_method_processes; terminated_method_process_num++)
 	{
-		sc_method_process *method_process = *method_process_it;
-	
+		sc_method_process *method_process = terminated_method_processes[terminated_method_process_num];
+
 		disconnect_method_process(method_process);
 		
-		process_handle_table.erase(sc_process_handle(method_process));
+		sc_process_handle process_handle(method_process);
+
+		std::vector<sc_method_process *>::size_type num_process_handles = process_handle_table.size();
+		std::vector<sc_method_process *>::size_type process_handle_num;
+		for(process_handle_num = 0; process_handle_num < num_process_handles; process_handle_num++)
+		{
+			if(process_handle == process_handle_table[process_handle_num])
+			{
+				process_handle_table[process_handle_num] = process_handle_table[num_process_handles - 1];
+				process_handle_table.pop_back();
+				break;
+			}
+		}
 	}
 	
 	terminated_method_processes.clear();

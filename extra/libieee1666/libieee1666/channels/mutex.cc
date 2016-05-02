@@ -62,12 +62,15 @@ const char* sc_mutex::kind() const
 {
 }
 
+// Disabled
 sc_mutex::sc_mutex( const sc_mutex& )
 {
 }
 
+// Disabled
 sc_mutex& sc_mutex::operator= ( const sc_mutex& )
 {
+	return *this;
 }
 
 } // end of namespace sc_core

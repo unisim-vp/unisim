@@ -46,6 +46,7 @@ sc_mutex_if::sc_mutex_if( const sc_mutex_if& )
 
 sc_mutex_if& sc_mutex_if::operator= ( const sc_mutex_if& )
 {
+	return *this;
 }
 
 } // end of namespace sc_core
