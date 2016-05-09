@@ -367,7 +367,7 @@ unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/breakpoint_registry.hh \
-unisim/util/debug/register.hh \
+unisim/service/interfaces/register.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/breakpoint.hh \

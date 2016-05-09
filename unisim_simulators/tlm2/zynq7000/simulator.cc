@@ -39,33 +39,31 @@
 #include <inttypes.h>
 
 void
-ZynqRouter::set_abs_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end )
+ZynqRouter::relative_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock )
+{
+  this->mapping[output_port].used = true;
+  this->mapping[output_port].range_start = range_start;
+  this->mapping[output_port].range_end =   range_end;
+  this->mapping[output_port].output_port = output_port;
+  this->mapping[output_port].translation = 0;
+  (*init_socket[output_port])( sock );
+}
+
+void
+ZynqRouter::absolute_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock )
 {
   this->mapping[output_port].used = true;
   this->mapping[output_port].range_start = range_start;
   this->mapping[output_port].range_end =   range_end;
   this->mapping[output_port].output_port = output_port;
   this->mapping[output_port].translation = range_start;
-}
-
-void
-ZynqRouter::set_rel_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, uint64_t offset )
-{
-  this->mapping[output_port].used = true;
-  this->mapping[output_port].range_start = range_start;
-  this->mapping[output_port].range_end =   range_end;
-  this->mapping[output_port].output_port = output_port;
-  this->mapping[output_port].translation = offset;
+  (*init_socket[output_port])( sock );
 }
 
 ZynqRouter::ZynqRouter(const char* name, unisim::kernel::service::Object* parent)
   : unisim::kernel::service::Object( name, parent )
   , unisim::component::tlm2::interconnect::generic_router::Router<ZynqRouterConfig>( name, parent )
 {
-  this->set_abs_mapping( 0, 0x00000000, 0x3fffffff ); /* Main OCM RAM */
-  this->set_abs_mapping( 1, 0xffff0000, 0xffffffff ); /* Boot OCM ROM */
-  this->set_rel_mapping( 2, 0xf8f01000, 0xf8f01fff ); /* GIC */
-  this->set_rel_mapping( 3, 0xf8f00100, 0xf8f001ff ); /* GIC */
 }
 
 /**
@@ -84,17 +82,16 @@ GIC::GIC(const sc_module_name& name, unisim::kernel::service::Object* parent)
 {
 }
 
-GIC::IF::IF( GIC& _gic, char const* socket_name )
-  : gic( _gic )
-  , socket( socket_name )
+RegMap::RegMap( char const* socket_name )
+  : socket( socket_name )
 {
   socket( *this );
 }
 
-unsigned int GIC::IF::transport_dbg(tlm::tlm_generic_payload& payload) { throw 0; return 0; }
+unsigned int RegMap::transport_dbg(tlm::tlm_generic_payload& payload) { throw 0; return 0; }
 
 tlm::tlm_sync_enum
-GIC::IF::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+RegMap::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
   if (phase != tlm::BEGIN_REQ) { throw 0; }
   
@@ -104,7 +101,7 @@ GIC::IF::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phas
 }
 
 void
-GIC::IF::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+RegMap::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
   payload.set_dmi_allowed( false );
   
@@ -141,7 +138,7 @@ GIC::IF::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 }
 
 GIC::DistIF::DistIF( GIC& _gic )
-  : IF( _gic, "dist_socket" )
+  : RegMap( "dist_socket" ), gic( _gic )
 {
   CTLR = 0;
   memset( &ICFGR[0], 0, sizeof (ICFGR) );
@@ -155,12 +152,20 @@ namespace {
     Match( uint32_t value ) : ok( ((value ^ BITS) & MASK) == 0 ), var( value & ~MASK ) {} bool ok; uint32_t var;
     operator bool () const { return ok; }
   };
+  
+  void
+  dump_register_access( std::ostream& sink, bool wnr, uint32_t addr, unsigned size, RegMap::Data const& d )
+  {
+    sink << " register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "]";
+    if (wnr) sink << " := 0x" << std::hex << d.Value<uint32_t>() << std::dec;
+    sink << ".\n";
+  }
 }
 
 bool
 GIC::DistIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
 {
-  std::cerr << "GICD register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n"; 
+  dump_register_access( std::cerr << "GICD", wnr, addr, size, d );
   
   if (size == 4) {
     uint32_t RAZ_WI(0);
@@ -227,15 +232,115 @@ GIC::DistIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const&
 }
 
 GIC::CpuIF::CpuIF( GIC& _gic )
-  : IF( _gic, "cpu_socket" )
+  : RegMap( "cpu_socket" ), gic( _gic )
 {
   
 }
 
+
 bool
 GIC::CpuIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
 {
+  dump_register_access( std::cerr << "GICC", wnr, addr, size, d );
+  
+  if (size == 4) {
+    //uint32_t RAZ_WI(0);
+    
+    switch (addr) {
+    case 0:
+      d.Access( wnr, CTLR );
+      return true;
+    case 4:
+      d.Access( wnr, PMR );
+      return true;
+    }
+  }
+  
   std::cerr << "Unknown GICC register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
+  return false;
+}
+
+TTC::TTC( const sc_module_name& name, unisim::kernel::service::Object* parent )
+  : unisim::kernel::service::Object( name, parent )
+  , sc_module( name )
+  , RegMap("slcr_sock")
+  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
+  , Clock_Control_1(0)
+  , Clock_Control_2(0)
+  , Clock_Control_3(0)
+  , Counter_Control_1(0x21)
+  , Counter_Control_2(0x21)
+  , Counter_Control_3(0x21)
+  , Interval_Counter_1(0)
+  , Interval_Counter_2(0)
+  , Interval_Counter_3(0)
+  , Interrupt_Enable_1(0)
+  , Interrupt_Enable_2(0)
+  , Interrupt_Enable_3(0)
+{
+}
+
+bool
+TTC::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
+{
+  dump_register_access( std::cerr << "TCC", wnr, addr, size, d );
+  
+  if (size == 4) {
+    //uint32_t RAZ_WI(0);
+    
+    switch (addr) {
+    case 0x00: d.Access( wnr, Clock_Control_1 ); return true;
+    case 0x04: d.Access( wnr, Clock_Control_2 ); return true;
+    case 0x08: d.Access( wnr, Clock_Control_3 ); return true;
+    case 0x0c: d.Access( wnr, Counter_Control_1 ); return true;
+    case 0x10: d.Access( wnr, Counter_Control_2 ); return true;
+    case 0x14: d.Access( wnr, Counter_Control_3 ); return true;
+    case 0x24: d.Access( wnr, Interval_Counter_1 ); return true;
+    case 0x28: d.Access( wnr, Interval_Counter_2 ); return true;
+    case 0x2c: d.Access( wnr, Interval_Counter_3 ); return true;
+    case 0x60: d.Access( wnr, Interrupt_Enable_1 ); return true;
+    case 0x64: d.Access( wnr, Interrupt_Enable_2 ); return true;
+    case 0x68: d.Access( wnr, Interrupt_Enable_3 ); return true;
+    }
+  }
+  
+  std::cerr << "Unknown TCC register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
+  return false;
+}
+
+SLCR::SLCR(const sc_module_name& name, unisim::kernel::service::Object* parent)
+  : unisim::kernel::service::Object( name, parent )
+  , sc_module( name )
+  , RegMap("slcr_sock")
+  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
+  , ARM_PLL_CTRL(0x1a008)
+  , DDR_PLL_CTRL(0x1a008)
+  , IO_PLL_CTRL(0x1a008)
+  , ARM_CLK_CTRL(0x1f000400)
+  , CLK_621_TRUE(0x1)
+  , UART_CLK_CTRL(0x3f03)
+{
+}
+
+bool
+SLCR::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
+{
+  dump_register_access( std::cerr << "SLCR", wnr, addr, size, d );
+  
+  if (size == 4) {
+    //uint32_t RAZ_WI(0);
+    
+    switch (addr) {
+    case 0x100: d.Access( wnr,  ARM_PLL_CTRL ); return true;
+    case 0x104: d.Access( wnr,  DDR_PLL_CTRL ); return true;
+    case 0x108: d.Access( wnr,   IO_PLL_CTRL ); return true;
+    case 0x120: d.Access( wnr,  ARM_CLK_CTRL ); return true;
+    case 0x1c4: d.Access( wnr,  CLK_621_TRUE ); return true;
+    case 0x154: d.Access( wnr, UART_CLK_CTRL ); return true;
+    }
+  }
+  
+  std::cerr << "Unknown SLCR register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
   return false;
 }
 
@@ -246,6 +351,9 @@ Simulator::Simulator(int argc, char **argv)
   , gic( "gic" )
   , main_ram( "main_ram" )
   , boot_rom( "boot_rom" )
+  , slcr( "slcr" )
+  , ttc0( "ttc0" )
+  , ttc1( "ttc1" )
   , nirq_signal("nIRQm")
   , nfiq_signal("nFIQm")
   , nrst_signal("nRESETm")
@@ -291,11 +399,14 @@ Simulator::Simulator(int argc, char **argv)
   cpu.nIRQm( nirq_signal );
   cpu.nFIQm( nfiq_signal );
   cpu.nRESETm( nrst_signal );
-
-  (*router.init_socket[0])( main_ram.slave_sock );
-  (*router.init_socket[1])( boot_rom.slave_sock );
-  (*router.init_socket[2])( gic.d.socket );
-  (*router.init_socket[3])( gic.c.socket );
+  
+  router.relative_mapping( 0, 0x00000000, 0x3fffffff, main_ram.slave_sock ); /* Main OCM RAM */
+  router.absolute_mapping( 1, 0xffff0000, 0xffffffff, boot_rom.slave_sock ); /* Boot OCM ROM */
+  router.relative_mapping( 2, 0xf8f01000, 0xf8f01fff, gic.d.socket ); /* GIC Distributor IF */
+  router.relative_mapping( 3, 0xf8f00100, 0xf8f001ff, gic.c.socket ); /* GIC CPU IF */
+  router.relative_mapping( 4, 0xf8000000, 0xf8000fff, slcr.socket ); /* SLCR */
+  router.relative_mapping( 5, 0xf8001000, 0xf8001fff, ttc0.socket ); /* TTC0 */
+  router.relative_mapping( 6, 0xf8002000, 0xf8002fff, ttc1.socket ); /* TTC1 */
   
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;

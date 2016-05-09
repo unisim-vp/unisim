@@ -70,7 +70,7 @@
 struct ZynqRouterConfig
 {
   typedef uint32_t ADDRESS;
-  static unsigned const OUTPUT_PORTS = 4;
+  static unsigned const OUTPUT_PORTS = 7;
   static unsigned const INPUT_SOCKETS = 1;
   static unsigned const OUTPUT_SOCKETS = OUTPUT_PORTS;
   static unsigned const MAX_NUM_MAPPINGS = OUTPUT_PORTS;
@@ -82,22 +82,18 @@ struct ZynqRouterConfig
 struct ZynqRouter : public unisim::component::tlm2::interconnect::generic_router::Router<ZynqRouterConfig>
 {
   ZynqRouter( char const* name, unisim::kernel::service::Object* parent = 0 );
-  void set_abs_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end );
-  void set_rel_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, uint64_t offset = 0 );
+  void relative_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock );
+  void absolute_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock );
 };
 
-struct GIC
-  : public sc_module
-  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+struct RegMap
+  : public tlm::tlm_fw_transport_if<>
 {
-  //typedef tlm::tlm_base_protocol_types TYPES;
   static unsigned const BUSWIDTH = 32;
-  static unsigned const ITLinesNumber = 7;
-  static unsigned const ITLinesCount = 32*(ITLinesNumber+1);
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
-  
-  GIC(const sc_module_name& name, unisim::kernel::service::Object* parent = 0);
-  
+    
+  tlm::tlm_target_socket<BUSWIDTH> socket;
+  RegMap( char const* );
+    
   struct Data
   {
     Data( uint8_t* _ptr ) : ptr( _ptr ) {} uint8_t* ptr;
@@ -106,38 +102,52 @@ struct GIC
     {
       T tmp(val);
       if (wnr)
-        { for (int idx = 0, end = sizeof(T); idx < end; ++ idx, tmp >>= 8) ptr[idx] = tmp; }
-      else
         { for (int idx = sizeof(T); --idx >= 0;) tmp = (tmp << 8) | T(ptr[idx]); val = tmp; }
+      else
+        { for (int idx = 0, end = sizeof(T); idx < end; ++ idx, tmp >>= 8) ptr[idx] = tmp; }
     }
     void Access( bool wnr, uint8_t* bytes, unsigned size ) const
     {
       if (wnr)
-        for (unsigned idx = 0; idx < size; ++idx) ptr[idx] = bytes[idx];
-      else
         for (unsigned idx = 0; idx < size; ++idx) bytes[idx] = ptr[idx];
+      else
+        for (unsigned idx = 0; idx < size; ++idx) ptr[idx] = bytes[idx];
+    }
+    template <typename T>
+    T Value() const
+    {
+      T val(0);
+      Access( true, val );
+      return val;
     }
   };
   
-  struct IF
-    : public tlm::tlm_fw_transport_if<>
-  {
-    GIC& gic;
-    tlm::tlm_target_socket<BUSWIDTH> socket;
-    IF( GIC&, char const* );
-    
-    /*** TLM2 Slave methods ***/
-    bool               get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data) { return false; }
-    unsigned int       transport_dbg(tlm::tlm_generic_payload& payload);
-    tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
-    void               b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
-    virtual bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d ) = 0;
-  };
+  /*** TLM2 Slave methods ***/
+  bool               get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data) { return false; }
+  unsigned int       transport_dbg(tlm::tlm_generic_payload& payload);
+  tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
+  void               b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
+  virtual bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d ) = 0;
+
+};
+
+struct GIC
+  : public sc_module
+  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+{
+  //typedef tlm::tlm_base_protocol_types TYPES;
+  static unsigned const ITLinesNumber = 7;
+  static unsigned const ITLinesCount = 32*(ITLinesNumber+1);
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
   
-  struct DistIF : public IF
+  GIC(const sc_module_name& name, unisim::kernel::service::Object* parent = 0);
+  
+  struct DistIF : public RegMap
   {
     DistIF( GIC& );
 
+    GIC& gic;
+    
     uint32_t CTLR;
     static unsigned const icfgr_count = 2*(ITLinesNumber+1);
     uint32_t ICFGR[ITLinesCount/16];
@@ -148,12 +158,53 @@ struct GIC
     bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
   } d;
   
-  struct CpuIF : public IF
+  struct CpuIF : public RegMap
   {
     CpuIF( GIC& );
+    
+    GIC& gic;
+    
+    uint32_t CTLR;
+    uint32_t PMR;
 
     bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
   } c;
+};
+
+struct SLCR
+  : public sc_module
+  , public RegMap
+  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+{
+  SLCR( const sc_module_name& name, unisim::kernel::service::Object* parent = 0 );
+  
+  uint32_t ARM_PLL_CTRL, DDR_PLL_CTRL, IO_PLL_CTRL, ARM_CLK_CTRL, CLK_621_TRUE, UART_CLK_CTRL;
+  
+  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
+};
+
+struct TTC
+  : public sc_module
+  , public RegMap
+  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+{
+  TTC( const sc_module_name& name, unisim::kernel::service::Object* parent = 0 );
+  
+  uint32_t
+    Clock_Control_1,
+    Clock_Control_2,
+    Clock_Control_3,
+    Counter_Control_1,
+    Counter_Control_2,
+    Counter_Control_3,
+    Interval_Counter_1,
+    Interval_Counter_2,
+    Interval_Counter_3,
+    Interrupt_Enable_1,
+    Interrupt_Enable_2,
+    Interrupt_Enable_3;
+  
+  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
 };
 
 struct Simulator : public unisim::kernel::service::Simulator
@@ -192,6 +243,9 @@ struct Simulator : public unisim::kernel::service::Simulator
   GIC                          gic;
   MAIN_RAM                     main_ram;
   BOOT_ROM                     boot_rom;
+  SLCR                         slcr;
+  TTC                          ttc0;
+  TTC                          ttc1;
   sc_signal<bool>              nirq_signal;
   sc_signal<bool>              nfiq_signal;
   sc_signal<bool>              nrst_signal;
