@@ -1658,7 +1658,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1671,7 +1671,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "ICIMVAU, Clean data* cache line by MVA to PoU"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1683,8 +1683,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "BPIALL, Invalidate all branch predictors"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
-            /* No branc predictor, basically nothing to do */
-            _cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
+            /* No branch predictor, basically nothing to do */
+            //_cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1697,7 +1697,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "DCCMVAC, Clean data* cache line by MVA to PoC"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1710,7 +1710,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "DCCMVAU, Clean data* cache line by MVA to PoU"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1723,7 +1723,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1736,7 +1736,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "DCCISW, Clean and invalidate [d|u]cache line by set/way"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;

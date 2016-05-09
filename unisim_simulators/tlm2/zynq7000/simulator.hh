@@ -70,7 +70,7 @@
 struct ZynqRouterConfig
 {
   typedef uint32_t ADDRESS;
-  static unsigned const OUTPUT_PORTS = 7;
+  static unsigned const OUTPUT_PORTS = 6;
   static unsigned const INPUT_SOCKETS = 1;
   static unsigned const OUTPUT_SOCKETS = OUTPUT_PORTS;
   static unsigned const MAX_NUM_MAPPINGS = OUTPUT_PORTS;
@@ -131,8 +131,9 @@ struct RegMap
 
 };
 
-struct GIC
+struct MPCore
   : public sc_module
+  , public RegMap
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
 {
   //typedef tlm::tlm_base_protocol_types TYPES;
@@ -140,35 +141,19 @@ struct GIC
   static unsigned const ITLinesCount = 32*(ITLinesNumber+1);
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
   
-  GIC(const sc_module_name& name, unisim::kernel::service::Object* parent = 0);
-  
-  struct DistIF : public RegMap
-  {
-    DistIF( GIC& );
+  MPCore(const sc_module_name& name, unisim::kernel::service::Object* parent = 0);
 
-    GIC& gic;
-    
-    uint32_t CTLR;
-    static unsigned const icfgr_count = 2*(ITLinesNumber+1);
-    uint32_t ICFGR[ITLinesCount/16];
-    uint8_t  IPRIORITYR[ITLinesCount];
-    static unsigned const ien_count = (ITLinesNumber+1);
-    uint32_t IENABLER[ien_count];
-    
-    bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
-  } d;
-  
-  struct CpuIF : public RegMap
-  {
-    CpuIF( GIC& );
-    
-    GIC& gic;
-    
-    uint32_t CTLR;
-    uint32_t PMR;
+  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
 
-    bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
-  } c;
+  uint32_t ICCICR; /* CPU Interface Control Register */
+  uint32_t ICCPMR; /* Interrupt Priority Mask Register */
+  uint32_t ICDDCR; /* Distributor Control Register */
+  static unsigned const ien_count = (ITLinesNumber+1);
+  uint32_t IENABLER[ien_count];
+  uint8_t  IPRIORITYR[ITLinesCount];
+  uint32_t ICDIPTR[24];
+  static unsigned const icfgr_count = 2*(ITLinesNumber+1);
+  uint32_t ICDICFR[ITLinesCount/16];
 };
 
 struct SLCR
@@ -188,7 +173,9 @@ struct TTC
   , public RegMap
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
 {
-  TTC( const sc_module_name& name, unisim::kernel::service::Object* parent = 0 );
+  TTC( int id, const sc_module_name& name, unisim::kernel::service::Object* parent = 0 );
+  
+  int m_id;
   
   uint32_t
     Clock_Control_1,
@@ -240,7 +227,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   
   CPU                          cpu;
   ZynqRouter                   router;
-  GIC                          gic;
+  MPCore                       mpcore;
   MAIN_RAM                     main_ram;
   BOOT_ROM                     boot_rom;
   SLCR                         slcr;
