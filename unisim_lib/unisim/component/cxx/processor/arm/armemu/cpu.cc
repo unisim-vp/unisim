@@ -45,7 +45,7 @@
 #include <sstream>
 #include <string>
 #include <cstring>
-#include <cassert>
+#include <stdexcept>
 #include <inttypes.h>
 
 namespace unisim {
@@ -378,7 +378,7 @@ void
 CPU::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not SCTLR::A.Get( this->sctlr ))) {
@@ -406,7 +406,7 @@ void
 CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
@@ -514,7 +514,7 @@ uint32_t
 CPU::PerformUReadAccess( uint32_t addr, uint32_t size )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not SCTLR::A.Get( this->sctlr ))) {
@@ -539,7 +539,7 @@ uint32_t
 CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
@@ -697,7 +697,7 @@ CPU::StepInstruction()
       isa::thumb2::Operation<CPU>* op;
       op = thumb_decoder.Decode(insn_addr, insn);
       unsigned insn_length = op->GetLength();
-      if (insn_length % 16) throw 0;
+      if (insn_length % 16) throw std::logic_error("Bad T2 instruction length");
     
       /* update PC register value before execution */
       this->gpr[15] = this->next_pc + 4;
@@ -764,6 +764,14 @@ CPU::StepInstruction()
     this->Stop(-1);
   }
   
+  catch (exception::Exception const& exc) {
+    logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
+           << " pc: " << std::hex << current_pc << std::dec
+           << ", cpsr: " << std::hex << cpsr.bits() << std::dec
+           << " (" << cpsr << ")"
+           << EndDebugError;
+
+  }
 }
 
 /** Inject an intrusive read memory operation.
@@ -1094,7 +1102,7 @@ CPU::Disasm(uint32_t addr, uint32_t& next_addr)
     
       op = thumb_decoder.Decode(addr, insn);
       unsigned insn_length = op->GetLength();
-      if (insn_length % 16) throw 0;
+      if (insn_length % 16) throw std::logic_error("Bad T2 instruction size");
     
       buffer << "0x";
       buffer << op->GetEncoding() << " ";
@@ -1470,7 +1478,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
       // Supersection (16MB)
       lsb = 24;
       if (RegisterField<20,4>().Get( l1desc ) or RegisterField<5,4>().Get( l1desc ))
-        throw 0; /* Large 40-bit extended address */
+        throw std::logic_error("LPAE not implemented"); /* Large 40-bit extended address */
       tad.pa = (l1desc & 0xff000000) | (mva & 0x00ffffff);
     }
     else {
@@ -1658,7 +1666,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1671,7 +1679,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "ICIMVAU, Clean data* cache line by MVA to PoU"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1683,8 +1691,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "BPIALL, Invalidate all branch predictors"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
-            /* No branc predictor, basically nothing to do */
-            _cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
+            /* No branch predictor, basically nothing to do */
+            //_cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1697,7 +1705,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "DCCMVAC, Clean data* cache line by MVA to PoC"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1710,7 +1718,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "DCCMVAU, Clean data* cache line by MVA to PoU"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1723,7 +1731,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1736,7 +1744,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "DCCISW, Clean and invalidate [d|u]cache line by set/way"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;

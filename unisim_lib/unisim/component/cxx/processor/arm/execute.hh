@@ -41,7 +41,7 @@
 
 #include "unisim/component/cxx/processor/arm/psr.hh"
 #include <inttypes.h>
-#include <cassert>
+#include <stdexcept>
 
 namespace unisim {
 namespace component {
@@ -303,7 +303,7 @@ namespace arm {
                    ((mask & 4 ? 0xff : 0) << 16) |
                    ((mask & 8 ? 0xff : 0) << 24));
     
-    core.Assert( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) == U32(0) );
+    core.UnpredictableIf( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) == U32(0) );
     
     BOOL const is_secure( true ); // IsSecure()
     BOOL const nmfi( false ); // Non Maskable FIQ (SCTLR.NMFI == '1');
@@ -421,7 +421,7 @@ namespace arm {
         bits |= (uint64_t((e & 0x7ff) ^ 0x400) << 52); /* inserting exponent */
         bits |= uint64_t( s ) << 63;                   /* inserting sign */
         for (unsigned byte = 0, bit = 0; byte < bcT; byte += 1, bit += 8) bytes[byte] = bits >> bit;
-      } else throw 0;
+      } else throw std::logic_error("unexpected FP size");
     }
   };
   

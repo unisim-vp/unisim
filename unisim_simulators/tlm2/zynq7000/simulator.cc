@@ -39,62 +39,43 @@
 #include <inttypes.h>
 
 void
-ZynqRouter::set_abs_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end )
+ZynqRouter::relative_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock )
+{
+  this->mapping[output_port].used = true;
+  this->mapping[output_port].range_start = range_start;
+  this->mapping[output_port].range_end =   range_end;
+  this->mapping[output_port].output_port = output_port;
+  this->mapping[output_port].translation = 0;
+  (*init_socket[output_port])( sock );
+}
+
+void
+ZynqRouter::absolute_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock )
 {
   this->mapping[output_port].used = true;
   this->mapping[output_port].range_start = range_start;
   this->mapping[output_port].range_end =   range_end;
   this->mapping[output_port].output_port = output_port;
   this->mapping[output_port].translation = range_start;
-}
-
-void
-ZynqRouter::set_rel_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, uint64_t offset )
-{
-  this->mapping[output_port].used = true;
-  this->mapping[output_port].range_start = range_start;
-  this->mapping[output_port].range_end =   range_end;
-  this->mapping[output_port].output_port = output_port;
-  this->mapping[output_port].translation = offset;
+  (*init_socket[output_port])( sock );
 }
 
 ZynqRouter::ZynqRouter(const char* name, unisim::kernel::service::Object* parent)
   : unisim::kernel::service::Object( name, parent )
   , unisim::component::tlm2::interconnect::generic_router::Router<ZynqRouterConfig>( name, parent )
 {
-  this->set_abs_mapping( 0, 0x00000000, 0x3fffffff ); /* Main OCM RAM */
-  this->set_abs_mapping( 1, 0xffff0000, 0xffffffff ); /* Boot OCM ROM */
-  this->set_rel_mapping( 2, 0xf8f01000, 0xf8f01fff ); /* GIC */
-  this->set_rel_mapping( 3, 0xf8f00100, 0xf8f001ff ); /* GIC */
 }
 
-/**
- * Constructor.
- * 
- * @param name the name of the module
- * @param parent the parent service
- */
-GIC::GIC(const sc_module_name& name, unisim::kernel::service::Object* parent)
-  : unisim::kernel::service::Object( name, parent )
-  , sc_module(name)
-  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
-  , trap_reporting_import("trap-reporting-import", this)
-  , d( *this )
-  , c( *this )
-{
-}
-
-GIC::IF::IF( GIC& _gic, char const* socket_name )
-  : gic( _gic )
-  , socket( socket_name )
+RegMap::RegMap( char const* socket_name )
+  : socket( socket_name )
 {
   socket( *this );
 }
 
-unsigned int GIC::IF::transport_dbg(tlm::tlm_generic_payload& payload) { throw 0; return 0; }
+unsigned int RegMap::transport_dbg(tlm::tlm_generic_payload& payload) { throw 0; return 0; }
 
 tlm::tlm_sync_enum
-GIC::IF::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+RegMap::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
   if (phase != tlm::BEGIN_REQ) { throw 0; }
   
@@ -104,7 +85,7 @@ GIC::IF::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phas
 }
 
 void
-GIC::IF::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+RegMap::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
   payload.set_dmi_allowed( false );
   
@@ -126,7 +107,7 @@ GIC::IF::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
       uint32_t addr = payload.get_address(), size = payload.get_data_length();
       
       if ((addr|size) & (size-1))
-        std::cerr << "Malformed GIC register address: [" << std::hex << addr << "," << std::dec << size << "].\n";
+        std::cerr << "Malformed register address: [" << std::hex << addr << "," << std::dec << size << "].\n";
       else
         status = AccessRegister( cmd == tlm::TLM_WRITE_COMMAND, addr, size, Data( payload.get_data_ptr() ) );
     } break;
@@ -140,13 +121,26 @@ GIC::IF::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
   payload.set_response_status( resp_status );
 }
 
-GIC::DistIF::DistIF( GIC& _gic )
-  : IF( _gic, "dist_socket" )
+/**
+ * Constructor.
+ * 
+ * @param name the name of the module
+ * @param parent the parent service
+ */
+MPCore::MPCore(const sc_module_name& name, unisim::kernel::service::Object* parent)
+  : unisim::kernel::service::Object( name, parent )
+  , sc_module(name)
+  , RegMap( "mpcore_socket" )
+  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
+  , trap_reporting_import("trap-reporting-import", this)
+  , ICCICR(0)
+  , ICCPMR(0)
+  , ICDDCR(0)
 {
-  CTLR = 0;
-  memset( &ICFGR[0], 0, sizeof (ICFGR) );
-  memset( &IPRIORITYR[0], 0, sizeof (IPRIORITYR) );
   memset( &IENABLER[0], 0, sizeof (IENABLER) );
+  memset( &IPRIORITYR[0], 0, sizeof (IPRIORITYR) );
+  memset( &ICDIPTR[0], 0, sizeof (ICDIPTR) );
+  memset( &ICDICFR[0], 0, sizeof (ICDICFR) );
 }
 
 namespace {
@@ -155,17 +149,47 @@ namespace {
     Match( uint32_t value ) : ok( ((value ^ BITS) & MASK) == 0 ), var( value & ~MASK ) {} bool ok; uint32_t var;
     operator bool () const { return ok; }
   };
+  
+  void
+  dump_register_access( std::ostream& sink, bool wnr, uint32_t addr, unsigned size, RegMap::Data const& d )
+  {
+    sink << " register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "]";
+    if (wnr) sink << " := 0x" << std::hex << d.Value<uint32_t>() << std::dec;
+    sink << ".\n";
+  }
 }
 
 bool
-GIC::DistIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
+MPCore::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
 {
-  std::cerr << "GICD register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n"; 
+  dump_register_access( std::cerr << "MPCore", wnr, addr, size, d );
   
   if (size == 4) {
     uint32_t RAZ_WI(0);
     
-    if (Match<0x100,-0x80> m = addr) /* GICD_ISENABLER */ {
+    if (addr == 0x100) /* ICCICR: CPU Interface Control Register */ {
+      d.Access( wnr, ICCICR );
+      return true;
+    }
+    
+    if (addr == 0x104) /* ICCPMR: Interrupt Priority Mask Register */ {
+      d.Access( wnr, ICCPMR );
+      return true;
+    }
+    
+    if (addr == 0x1000) /* ICDDCR:  Distributor Control Register */ {
+      d.Access( wnr, ICDDCR );
+      return true;
+    }
+    
+    if (addr == 0x1004) /* ICDICTR:  Interrupt Controller Type Register */ {
+      if (wnr) return false;
+      uint32_t result = ITLinesNumber;
+      d.Access( false, result );
+      return true;
+    }
+    
+    if (Match<0x1100,-0x80> m = addr) /* ICDISER: Interrupt Set-enable Register  */ {
       unsigned idx = m.var >> 2;
       if (idx > ien_count)
         d.Access( wnr, RAZ_WI );
@@ -177,7 +201,7 @@ GIC::DistIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const&
       return true;
     }
     
-    if (Match<0x180,-0x80> m = addr) /* GICD_ICENABLER */ {
+    if (Match<0x1180,-0x80> m = addr) /* ICDICER: Interrupt Clear-Enable Register */ {
       unsigned idx = m.var >> 2;
       if (idx > ien_count)
         d.Access( wnr, RAZ_WI );
@@ -189,53 +213,123 @@ GIC::DistIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const&
       return true;
     }
     
-    if (Match<0x400,-0x400> m = addr) /* GICD_IPRIORITYR */ {
+    if (Match<0x1400,-0x400> m = addr) /* ICDIPR: Interrupt Priority Register */ {
       unsigned idx = m.var;
-      if (idx < GIC::ITLinesCount)
+      if (idx < ITLinesCount)
         d.Access( wnr, &IPRIORITYR[idx], 4 );
       else
         d.Access( wnr, RAZ_WI );
       return true;
     }
     
-    if (Match<0x800,-0x400> m = addr) /* GICD_ITARGETSR */ {
+    if (Match<0x1800,-0x400> m = addr) /* ICDIPTR: Interrupt Processor Targets Register */ {
+      unsigned idx = m.var >> 2;
+      if (idx < 4) {
+        uint32_t value = 0x01010101;
+        d.Access( wnr, value );
+        return true;
+      }
+      if ((6 <= idx) and (idx < 24)) {
+        d.Access( wnr, ICDIPTR[idx] );
+        return true;
+      }
       d.Access( wnr, RAZ_WI );
       return true;
     }
     
-    if (Match<0xc00,-0x100> m = addr) /* GICD_ICFGR */ {
+    if (Match<0x1c00,-0x100> m = addr) /* ICDICFR: Interrupt Configuration Register */ {
       unsigned idx = m.var >> 2;
-      d.Access( wnr, (idx < icfgr_count) ? ICFGR[idx] : RAZ_WI );
-      return true;
-    }
-    
-    switch (addr) {
-    case 0:
-      d.Access( wnr, CTLR );
-      return true;
-      
-    case 4:
-      if (wnr) return false;
-      uint32_t result = ITLinesNumber;
-      d.Access( false, result );
+      d.Access( wnr, (idx < icfgr_count) ? ICDICFR[idx] : RAZ_WI );
       return true;
     }
   }
   
-  std::cerr << "Unknown GICD register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
+  std::cerr << "Unknown MPCORE register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
   return false;
 }
 
-GIC::CpuIF::CpuIF( GIC& _gic )
-  : IF( _gic, "cpu_socket" )
+TTC::TTC( int id, const sc_module_name& name, unisim::kernel::service::Object* parent )
+  : unisim::kernel::service::Object( name, parent )
+  , sc_module( name )
+  , RegMap("ttc_sock")
+  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
+  , m_id( id )
+  , Clock_Control_1(0)
+  , Clock_Control_2(0)
+  , Clock_Control_3(0)
+  , Counter_Control_1(0x21)
+  , Counter_Control_2(0x21)
+  , Counter_Control_3(0x21)
+  , Interval_Counter_1(0)
+  , Interval_Counter_2(0)
+  , Interval_Counter_3(0)
+  , Interrupt_Enable_1(0)
+  , Interrupt_Enable_2(0)
+  , Interrupt_Enable_3(0)
 {
-  
 }
 
 bool
-GIC::CpuIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
+TTC::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
 {
-  std::cerr << "Unknown GICC register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
+  dump_register_access( std::cerr << this->GetName(), wnr, addr, size, d );
+  
+  if (size == 4) {
+    //uint32_t RAZ_WI(0);
+    
+    switch (addr) {
+    case 0x00: d.Access( wnr, Clock_Control_1 ); return true;
+    case 0x04: d.Access( wnr, Clock_Control_2 ); return true;
+    case 0x08: d.Access( wnr, Clock_Control_3 ); return true;
+    case 0x0c: d.Access( wnr, Counter_Control_1 ); return true;
+    case 0x10: d.Access( wnr, Counter_Control_2 ); return true;
+    case 0x14: d.Access( wnr, Counter_Control_3 ); return true;
+    case 0x24: d.Access( wnr, Interval_Counter_1 ); return true;
+    case 0x28: d.Access( wnr, Interval_Counter_2 ); return true;
+    case 0x2c: d.Access( wnr, Interval_Counter_3 ); return true;
+    case 0x60: d.Access( wnr, Interrupt_Enable_1 ); return true;
+    case 0x64: d.Access( wnr, Interrupt_Enable_2 ); return true;
+    case 0x68: d.Access( wnr, Interrupt_Enable_3 ); return true;
+    }
+  }
+  
+  std::cerr << "Unknown TCC register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
+  return false;
+}
+
+SLCR::SLCR(const sc_module_name& name, unisim::kernel::service::Object* parent)
+  : unisim::kernel::service::Object( name, parent )
+  , sc_module( name )
+  , RegMap("slcr_sock")
+  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
+  , ARM_PLL_CTRL(0x1a008)
+  , DDR_PLL_CTRL(0x1a008)
+  , IO_PLL_CTRL(0x1a008)
+  , ARM_CLK_CTRL(0x1f000400)
+  , CLK_621_TRUE(0x1)
+  , UART_CLK_CTRL(0x3f03)
+{
+}
+
+bool
+SLCR::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
+{
+  dump_register_access( std::cerr << "SLCR", wnr, addr, size, d );
+  
+  if (size == 4) {
+    //uint32_t RAZ_WI(0);
+    
+    switch (addr) {
+    case 0x100: d.Access( wnr,  ARM_PLL_CTRL ); return true;
+    case 0x104: d.Access( wnr,  DDR_PLL_CTRL ); return true;
+    case 0x108: d.Access( wnr,   IO_PLL_CTRL ); return true;
+    case 0x120: d.Access( wnr,  ARM_CLK_CTRL ); return true;
+    case 0x1c4: d.Access( wnr,  CLK_621_TRUE ); return true;
+    case 0x154: d.Access( wnr, UART_CLK_CTRL ); return true;
+    }
+  }
+  
+  std::cerr << "Unknown SLCR register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
   return false;
 }
 
@@ -243,9 +337,12 @@ Simulator::Simulator(int argc, char **argv)
   : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
   , cpu( "cpu" )
   , router( "router" )
-  , gic( "gic" )
+  , mpcore( "mpcore" )
   , main_ram( "main_ram" )
   , boot_rom( "boot_rom" )
+  , slcr( "slcr" )
+  , ttc0( 0, "ttc0" )
+  , ttc1( 1, "ttc1" )
   , nirq_signal("nIRQm")
   , nfiq_signal("nFIQm")
   , nrst_signal("nRESETm")
@@ -291,16 +388,18 @@ Simulator::Simulator(int argc, char **argv)
   cpu.nIRQm( nirq_signal );
   cpu.nFIQm( nfiq_signal );
   cpu.nRESETm( nrst_signal );
-
-  (*router.init_socket[0])( main_ram.slave_sock );
-  (*router.init_socket[1])( boot_rom.slave_sock );
-  (*router.init_socket[2])( gic.d.socket );
-  (*router.init_socket[3])( gic.c.socket );
+  
+  router.relative_mapping( 0, 0x00000000, 0x3fffffff, main_ram.slave_sock ); /* Main OCM RAM */
+  router.absolute_mapping( 1, 0xffff0000, 0xffffffff, boot_rom.slave_sock ); /* Boot OCM ROM */
+  router.relative_mapping( 2, 0xf8f00000, 0xf8f01fff, mpcore.socket ); /* Mpcore - SCU, Interrupt controller, Counters and Timers */
+  router.relative_mapping( 3, 0xf8000000, 0xf8000fff, slcr.socket ); /* SLCR */
+  router.relative_mapping( 4, 0xf8001000, 0xf8001fff, ttc0.socket ); /* TTC0 */
+  router.relative_mapping( 5, 0xf8002000, 0xf8002fff, ttc1.socket ); /* TTC1 */
   
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;
   cpu.instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
-  gic.trap_reporting_import >> debugger->trap_reporting_export;
+  mpcore.trap_reporting_import >> debugger->trap_reporting_export;
   //cpu.symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
   cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   debugger->disasm_import >> cpu.disasm_export;
@@ -613,7 +712,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "boot_rom.cycle-time",        "10 ns" );
   sim->SetVariable( "boot_rom.read-latency",      "10 ns" );
   sim->SetVariable( "boot_rom.write-latency",     "0 ps" );
-  sim->SetVariable( "loader.memory-mapper.mapping", "main_ram:0x00000000-0x3fffffff,boot_rom:0xffff0000-0xffffffff" );
+  sim->SetVariable( "loader.memory-mapper.mapping", "main_ram:0x00000000-0x3fffffff,boot_rom:0xffff0000-0xffffffff:+0xffff0000" );
   
   
   sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_arm_with_fpa.xml" ); // Current Cross-GDBs doesn't natively recognize armv7...
