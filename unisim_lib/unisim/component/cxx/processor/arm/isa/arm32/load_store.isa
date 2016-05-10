@@ -1015,17 +1015,11 @@ ldm_usr.execute = {
   }
   
   typedef typename ARCH::U32 U32;
-  typedef typename ARCH::U32 U32;
   U32 base = cpu.GetGPR( rn );
   LSMIter itr(mod, reglist);
-  // Now Register writes are in user mode
-  cpu.CurrentMode().Swap( cpu ); // OUT
-  cpu.GetMode(cpu.USER_MODE); // IN
   while (itr.next()) {
-    cpu.SetGPR(itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
+    cpu.SetBankedRegister( cpu.USER_MODE, itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
   }
-  cpu.GetMode(cpu.USER_MODE); // OUT
-  cpu.CurrentMode().Swap( cpu ); // IN
 };
 
 op ldm_rfe( cond[4]: 0b100[3]: mod[2]: 0b1[1]: w[1]: 0b1[1]: rn[4]: 0b1[1]: regnpclist[15] );
@@ -1079,17 +1073,27 @@ ldm_rfe.execute = {
  * stm ^ (Store Multiple User Registers) instruction 
  */
 
-op stm_usr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: w[1]: 0b0[1]: rn[4]: reglist[16] );
+op stm_usr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: 0b0[1]: 0b0[1]: rn[4]: reglist[16] );
 stm_usr.var reject : {Reject} = {(rn == 15) or (reglist == 0)};
 
 stm_usr.disasm = {
-  buffer << "stm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")
+  buffer << "stm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn)
          << ", {" << DisasmRegList(reglist) << "}^";
 };
 
 stm_usr.execute = {
   if (not CheckCondition(cpu, cond)) return;
-  assert( not "privileged" );
+
+  uint8_t running_mode = GetNativeValue(cpu.CPSR().Get(M));
+  switch (running_mode) {
+  case ARCH::HYPERVISOR_MODE:
+    cpu.UndefinedInstruction( this );
+    return;
+  case ARCH::USER_MODE:
+  case ARCH::SYSTEM_MODE:
+    cpu.UnpredictableInsnBehaviour();
+    return;
+  }
   
   typedef typename ARCH::U32 U32;
   U32 base = cpu.GetGPR( rn );
@@ -1097,8 +1101,6 @@ stm_usr.execute = {
   while (itr.next()) {
     cpu.MemWrite32( base + U32(itr.offset()), cpu.GetBankedRegister( cpu.USER_MODE, itr.reg() ) );
   }
-  
-  if (w) cpu.SetBankedRegister( cpu.USER_MODE, rn, base + U32(itr.offset()) );
 };
 
 /*

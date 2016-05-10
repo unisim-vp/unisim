@@ -404,6 +404,7 @@ public:
   // VFP/NEON registers
   fpscr_type fpscr;
   fpscr_type& FPSCR() { return fpscr; }
+  FieldRegister<uint32_t> FPEXC;
 
   struct ExtRegBank
   {

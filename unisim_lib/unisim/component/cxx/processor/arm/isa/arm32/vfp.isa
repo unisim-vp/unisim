@@ -1407,6 +1407,7 @@ vmov_drr.execute = {
 /* VMRS; Move to ARM core register from Advanced SIMD and Floating-point Extension System Register */
 
 op vmrs( cond[4]: 0b11101111[8]: spr[4]: rt[4]: 0b1010[4]: 0b0001[4]: 0b0000[4] );
+vmrs.var reject : {Reject} = {((rt == 15) and (spr != 1))};
 
 vmrs.disasm = {
   buffer << "vmrs" << DisasmCondition(cond) << "\t";
@@ -1415,47 +1416,54 @@ vmrs.disasm = {
   buffer << ", ";
   switch (spr) {
   default: buffer << "<undefined>"; return;
-  case 0:  buffer << "fpsid"; break;
-  case 1:  buffer << "fpscr"; break;
-  case 6:  buffer << "mvfr1"; break;
-  case 7:  buffer << "mvfrt"; break;
-  case 8:  buffer << "fpexc"; break;
-  case 9:  buffer << "fpinst @ Impl def"; break;
-  case 10: buffer << "fpinst2 @ Impl def"; break;
+  case 0b0000:  buffer << "fpsid"; break;
+  case 0b0001:  buffer << "fpscr"; break;
+  case 0b0110:  buffer << "mvfr1"; break;
+  case 0b0111:  buffer << "mvfr0"; break;
+  case 0b1000:  buffer << "fpexc"; break;
   }
 };
 
 vmrs.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  switch (spr) {
-  default:
-    cpu.UndefinedInstruction( this );
-    break;
-    
-  case 1: {
-    if (rt != 15) {
-      cpu.SetGPR( rt, cpu.FPSCR().Get( ALL32 ) );
-    } else {
+  if (spr == 1) {
+    // cpu.CheckVFPEnabled(TRUE); cpu.SerializeVFP(); cpu.VFPExcBarrier();
+    if (rt != 15)
+      cpu.SetGPR( rt, cpu.FPSCR().bits() );
+    else
       cpu.CPSR().Set( NZCV, cpu.FPSCR().Get( NZCV ) );
+  }
+  
+  else {
+    // cpu.CheckVFPEnabled(FALSE);
+    if (GetNativeValue(cpu.CPSR().Get(M) != typename ARCH::U32(cpu.USER_MODE)))
+      cpu.UndefinedInstruction( this );
+
+    switch (spr) {
+    default:
+      cpu.UndefinedInstruction( this );
+      break;
+ // case 0b0000: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.FPSID() ); break;
+ // case 0b0110: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.MVFR1() ); break;
+ // case 0b0111: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.MVFR0() ); break;
+    case 0b1000: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.FPEXC.bits() ); break;
     }
-  } break;
   }
 };
 
 op vmsr( cond[4]: 0b11101110[8]: spr[4]: rt[4]: 0b1010[4]: 0b0001[4]: 0b0000[4] );
+vmsr.var reject : {Reject} = {(rt == 15)};
 
 vmsr.disasm = {
   buffer << "vmsr" << DisasmCondition(cond) << "\t";
   switch (spr) {
   default: buffer << "<undefined>"; return;
-  case 0:  buffer << "fpsid"; break;
-  case 1:  buffer << "fpscr"; break;
-  case 6:  buffer << "mvfr1"; break;
-  case 7:  buffer << "mvfr0"; break;
-  case 8:  buffer << "fpexc"; break;
-  case 9:  buffer << "fpinst @ Impl def"; break;
-  case 10: buffer << "fpinst2 @ Impl def"; break;
+  case 0b0000:  buffer << "fpsid"; break;
+  case 0b0001:  buffer << "fpscr"; break;
+  case 0b0110:  buffer << "mvfr1"; break;
+  case 0b0111:  buffer << "mvfr0"; break;
+  case 0b1000:  buffer << "fpexc"; break;
   }
   buffer << ", " << DisasmRegister(rt);
 };
@@ -1463,14 +1471,26 @@ vmsr.disasm = {
 vmsr.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  switch (spr) {
-  default:
-    cpu.UndefinedInstruction( this );
-    break;
+  if (spr == 1) {
+    // cpu.CheckVFPEnabled(TRUE); cpu.SerializeVFP(); cpu.VFPExcBarrier();
+    cpu.FPSCR().bits() = cpu.GetGPR( rt );
+  }
+  
+  else {
+    // cpu.CheckVFPEnabled(FALSE);
+    if (GetNativeValue(cpu.CPSR().Get(M) != typename ARCH::U32(cpu.USER_MODE)))
+      cpu.UndefinedInstruction( this );
     
-  case 1: {
-    cpu.FPSCR().Set( ALL32, cpu.GetGPR( rt ) );
-  } break;
+    switch (spr) {
+    default:
+      cpu.UndefinedInstruction( this );
+      break;
+      
+ // case 0b0000: /* cpu.SerializeVFP(); */ /* FPSID is read-only */ break;
+ // case 0b0110: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.MVFR1() ); break;
+ // case 0b0111: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.MVFR0() ); break;
+    case 0b1000: /* cpu.SerializeVFP(); */ cpu.FPEXC.bits() = cpu.GetGPR( rt ); break;
+    }
   }
 };
 

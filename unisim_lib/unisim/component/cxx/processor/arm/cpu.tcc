@@ -312,7 +312,7 @@ CPU<CONFIG>::RequiresPL(unsigned rpl)
       cpl = 1;
       break;
     default:
-      throw std::logic_error("undefined mode ");
+      throw std::logic_error("undefined mode");
     }
   if (cpl < rpl)
     UnpredictableInsnBehaviour();

@@ -92,7 +92,7 @@ namespace arm {
       uint16_t(                     0xffff ), // al; always
       uint16_t(                     0x0000 ), // <und>; never (illegal)
     };
-    assert( cond < 15 );
+    if (cond >= 15) throw std::logic_error("invalid condition code");
     return ((condition_truth_tables[cond] >> nzcv) & 1);
   }
   
@@ -118,7 +118,7 @@ namespace arm {
       }
     }
     
-    assert( false );
+    throw std::logic_error("bad ComputeImmShift arguments");
     return U32(0);
   }
   
@@ -184,7 +184,7 @@ namespace arm {
     case 1: carry = (value >> shvalm1) & select_bit; break;
     case 2: carry = ((value >> shvalm1) & select_bit) | (U32(S32(value) >> 31) & (select_bit ^ U32(1))); break;
     case 3: carry = (value >> (shvalm1 & U32(0x1f))) & U32(1); break;
-    default: assert( false );
+    default: throw std::logic_error("bad UpdateStatusRegShift arguments");
     }
     
     carry = (carry & ~select_carry) | (core.CPSR().Get( C ) & select_carry);
@@ -368,7 +368,7 @@ namespace arm {
       case IA: m_dir = +1; m_reg = -1; m_incb =  0; m_inca = +4; m_offset -= 4; break;
       case DB: m_dir = -1; m_reg = 16; m_incb = -4; m_inca =  0; break;
       case IB: m_dir = +1; m_reg = -1; m_incb = +4; m_inca =  0; break;
-      default: assert( false );
+      default: throw std::logic_error("Bad LSM mode");
       }
     
     }
