@@ -235,6 +235,8 @@ private:
 	void Disasm(ADDRESS addr, unsigned int size);
 	
 	void Kill();
+	
+	std::string EscapeString(const std::string& s) const;
 
 	unisim::kernel::logger::Logger logger;
 

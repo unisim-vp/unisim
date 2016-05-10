@@ -1182,7 +1182,7 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 
 			if(c == '#') break;
 			checksum = checksum + (uint8_t ) c;
-			s.append(&c, 1); // Note: don't use += because null characters can't be appended this way to the string
+			s.append(1, c); // Note: don't use += because null characters can't be appended this way to the string
 		}
 
 		if(c == '#')
@@ -1323,7 +1323,10 @@ bool GDBServer<ADDRESS>::ReadRegisters()
 		{
 			string hex;
 			gdb_reg->GetValue(hex);
-			std::cerr << gdb_reg->GetName() << "=" << hex << std::endl;
+			if(verbose)
+			{
+				logger << DebugInfo << gdb_reg->GetName() << "=" << hex << EndDebugInfo;
+			}
 			packet += hex;
 		}
 	}
@@ -1934,7 +1937,7 @@ void GDBServer<ADDRESS>::HandleQSupported(std::string gdb_client_features)
 		while(pos != std::string::npos);
 	}
 	
-	PutPacket("PacketSize=0fff;vContSupported+;QStartNoAckMode+;qXfer:features:read+;xmlRegisters=arm");
+	PutPacket("PacketSize=0fff;vContSupported+;QStartNoAckMode+;qXfer:features:read+");
 }
 
 template <class ADDRESS>
@@ -2041,7 +2044,7 @@ void GDBServer<ADDRESS>::HandleQXferFeaturesRead(std::string command)
 	}
 	
 	std::string packet("l");
-	packet.append(sstr.str(), offset, length);
+	packet.append(EscapeString(sstr.str()), offset, length);
 	
 	PutPacket(packet);
 }
@@ -2059,41 +2062,31 @@ void GDBServer<ADDRESS>::HandleQsThreadInfo()
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_size)
+std::string GDBServer<ADDRESS>::EscapeString(const std::string& s) const
 {
-
-	ADDRESS current_address = symbol_address;
-	ADDRESS next_address = symbol_address;
-	ADDRESS disassembled_size = 0;
-	std::stringstream strstm;
-
-	while (disassembled_size < symbol_size) {
-
-		strstm.str(std::string());
-
-		std::string dis = disasm_import->Disasm(current_address, next_address);
-
-		if (current_address == next_address) {
-			break;
+	std::string r;
+	std::size_t pos;
+	std::size_t len = s.length();
+	
+	for(pos = 0; pos < len; pos++)
+	{
+		char c = s[pos];
+		switch(c)
+		{
+			case '#':
+			case '$':
+			case '}':
+			case '*':
+				r.append(1, '}');   // escape
+				c = c ^ 0x20;
+				break;
 		}
-
-		strstm << "O" << hex << current_address << ":";
-
-		strstm << hex;
-		strstm.width(8);
-		strstm << (current_address / memory_atom_size) << ":" << dec << dis << endl;
-		strstm.fill(' ');
-
-		PutPacket(strstm.str());
-
-		disassembled_size += next_address - current_address;
-		current_address = next_address;
-
+		
+		r.append(1, c);
 	}
-
+	
+	return r;
 }
-
-// *** End ************ REDA ADDED CODE ****************
 
 
 } // end of namespace gdb_server
