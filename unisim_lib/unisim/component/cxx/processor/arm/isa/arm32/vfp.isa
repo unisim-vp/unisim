@@ -1429,7 +1429,10 @@ vmrs.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   switch (spr) {
-  default: throw 0;
+  default:
+    cpu.UndefinedInstruction( this );
+    break;
+    
   case 1: {
     if (rt != 15) {
       cpu.SetGPR( rt, cpu.FPSCR().Get( ALL32 ) );
@@ -1461,7 +1464,10 @@ vmsr.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   switch (spr) {
-  default: throw 0;
+  default:
+    cpu.UndefinedInstruction( this );
+    break;
+    
   case 1: {
     cpu.FPSCR().Set( ALL32, cpu.GetGPR( rt ) );
   } break;

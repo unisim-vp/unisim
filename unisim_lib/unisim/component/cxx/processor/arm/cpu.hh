@@ -48,6 +48,7 @@
 #include <unisim/service/interfaces/register.hh>
 #include <map>
 #include <set>
+#include <stdexcept>
 #include <inttypes.h>
 
 namespace unisim {
@@ -137,8 +138,8 @@ struct CPU
     virtual ~Mode() {}
     virtual bool     HasBR( unsigned index ) { return false; }
     virtual bool     HasSPSR() { return false; }
-    virtual void     SetSPSR(uint32_t value ) { throw 0; };
-    virtual uint32_t GetSPSR() { throw 0; return 0; };
+    virtual void     SetSPSR(uint32_t value ) { throw std::logic_error("No SPSR for this mode"); };
+    virtual uint32_t GetSPSR() { throw std::logic_error("No SPSR for this mode"); return 0; };
     virtual void     Swap( CPU& cpu ) {};
   };
   
@@ -280,7 +281,7 @@ struct CPU
   Mode& GetMode(uint8_t mode)
   {
     typename ModeMap::iterator itr = modes.find(mode);
-    if (itr == modes.end()) throw 0;
+    if (itr == modes.end()) UnpredictableInsnBehaviour();
     return *(itr->second);
   }
   
@@ -335,7 +336,7 @@ struct CPU
 
 public:
   void     UnpredictableInsnBehaviour();
-  void     Assert( bool condition ) { if (not condition) UnpredictableInsnBehaviour(); }
+  void     UnpredictableIf( bool condition ) { if (not condition) UnpredictableInsnBehaviour(); }
   void     CallSupervisor( uint16_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   
