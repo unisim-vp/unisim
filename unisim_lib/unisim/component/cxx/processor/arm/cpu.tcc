@@ -210,7 +210,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.next_pc; }
       virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
       virtual int  GetSize() const { return 4; }
-      virtual void Clear() { /* Clear is meaning less for PC */ }
+      virtual void Clear() { /* Clear is meaningless for PC */ }
       CPU&        cpu;
     };
 
@@ -249,6 +249,27 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       registers_registry[name] = dbg_reg;
       debug_register_pool.insert( dbg_reg );
     }
+    // Advanced SIMD and VFP register
+    struct VFPDouble : public unisim::service::interfaces::Register
+    {
+      VFPDouble( CPU& _cpu, std::string _name, unsigned _reg ) : cpu(_cpu), name(_name), reg(_reg) {}
+      
+      virtual ~VFPDouble() {}
+      virtual const char *GetName() const { return name.c_str(); };
+      virtual void GetValue( void* buffer ) const { *((uint64_t*)buffer) = cpu.GetVU64( reg ); }
+      virtual void SetValue( void const* buffer ) { cpu.SetVU64( reg, *((uint64_t*)buffer) ); }
+      virtual int  GetSize() const { return 8; }
+
+      CPU& cpu; std::string name; unsigned reg;
+    };
+    
+    for (unsigned idx = 0; idx < 32; ++idx)
+      {
+        std::stringstream regname; regname << 'd' << idx;
+        dbg_reg = new VFPDouble( *this, regname.str(), idx );
+        registers_registry[name] = dbg_reg;
+        debug_register_pool.insert( dbg_reg );
+      }
   }
   
   this->CPU<CONFIG>::CP15ResetRegisters();
