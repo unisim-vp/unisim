@@ -246,6 +246,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
 	registers_registry["cia"] = new unisim::util::debug::SimpleRegister<uint32_t>("cia", &cia);
 	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("cia", this, cia, "Current Instruction Address"));
+	registers_registry["pc"] = new unisim::util::debug::SimpleRegister<uint32_t>("pc", &cia);
+	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("pc", this, cia, "Program Counter"));
 
 	registers_registry["cr"] = new unisim::util::debug::SimpleRegister<uint32_t>("cr", &cr);
 	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("cr", this, cr, "Condition Register"));

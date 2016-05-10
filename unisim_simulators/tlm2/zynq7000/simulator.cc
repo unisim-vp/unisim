@@ -616,7 +616,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "loader.memory-mapper.mapping", "main_ram:0x00000000-0x3fffffff,boot_rom:0xffff0000-0xffffffff" );
   
   
-  sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_armv5l.xml" ); // Current Cross-GDBs doesn't natively recognize armv7...
+  sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_arm_with_fpa.xml" ); // Current Cross-GDBs doesn't natively recognize armv7...
   sim->SetVariable( "debugger.parse-dwarf", false );
   sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml" );
 

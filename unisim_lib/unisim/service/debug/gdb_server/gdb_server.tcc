@@ -36,8 +36,6 @@
 #ifndef __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_TCC__
 #define __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_TCC__
 
-#include <unisim/util/xml/xml.hh>
-
 #include <iostream>
 #include <sstream>
 #include <list>
@@ -129,6 +127,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, gdb_client_feature_vcont(false)
 	, current_thread_id(0)
 	, no_ack_mode(false)
+	, arch_specific_breakpoint_kinds()
 	, disasm_addr(0)
 	, input_buffer_size(0)
 	, input_buffer_index(0)
@@ -160,6 +159,25 @@ GDBServer<ADDRESS>::~GDBServer()
 #endif
 		sock = -1;
 	}
+	
+	unsigned int i;
+	for(i = 0; i < gdb_registers.size(); i++)
+	{
+		GDBRegister *gdb_reg = gdb_registers[i];
+		if(gdb_reg)
+		{
+			delete gdb_reg;
+		}
+	}
+
+	for(i = 0; i < gdb_features.size(); i++)
+	{
+		GDBFeature *gdb_feature = gdb_features[i];
+		if(gdb_feature)
+		{
+			delete gdb_feature;
+		}
+	}
 }
 
 template <class ADDRESS>
@@ -181,6 +199,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 	input_buffer_index = 0;
 	output_buffer_size = 0;
 
+	gdb_arch_reg_num = 0;
+	
 	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
 	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
 
@@ -190,224 +210,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 	{
 		if(root_node->Name() == string("architecture"))
 		{
-			list<unisim::util::xml::Node *>::const_iterator xml_program_counter_node;
-
-			bool has_architecture_name = false;
-			bool has_architecture_endian = false;
-			GDBEndian endian = GDB_BIG_ENDIAN;
-
-			const list<unisim::util::xml::Property *> *root_node_properties = root_node->Properties();
-
-			list<unisim::util::xml::Property *>::const_iterator root_node_property;
-			for(root_node_property = root_node_properties->begin(); root_node_property != root_node_properties->end(); root_node_property++)
+			if(!VisitArchitecture(root_node))
 			{
-				if((*root_node_property)->Name() == string("name"))
-				{
-					/*
-					const string& architecture_name = (*root_node_property)->Value();
-					if(exp->GetArchitectureName() != architecture_name)
-					{
-						if(logger_import)
-						{
-							(*logger_import) << DebugError;
-							(*logger_import) << "CPU architecture (\"" << exp->GetArchitectureName() << "\") is not \"" << architecture_name << "\"" << Endl;
-							(*logger_import) << EndDebugError;
-						}
-						delete root_node;
-						return false;
-					}
-					*/
-					has_architecture_name = true;
-				}
-				else if((*root_node_property)->Name() == string("endian"))
-				{
-					const string& architecture_endian = (*root_node_property)->Value();
-					if(architecture_endian == "little")
-					{
-						endian = GDB_LITTLE_ENDIAN;
-						has_architecture_endian = true;
-					}
-					else if(architecture_endian == "big")
-					{
-						endian = GDB_BIG_ENDIAN;
-						has_architecture_endian = true;
-					}
-				}
-				else
-				{
-					logger << DebugWarning << (*root_node_property)->Filename() << ":" << (*root_node_property)->LineNo() << ":ignoring property '" << (*root_node_property)->Name() << "'" << EndDebugWarning;
-				}
-			}
-
-			if(!has_architecture_name)
-			{
-				logger << DebugWarning << root_node->Filename() << ":" << root_node->LineNo() << ":architecture has no property 'name'" << EndDebugWarning;
-				delete root_node;
-				return false;
-			}
-
-			if(!has_architecture_endian)
-			{
-				logger << DebugWarning << root_node->Filename() << ":" << root_node->LineNo() << ":assuming target architecture endian is big endian" << EndDebugWarning;
-			}
-
-			const list<unisim::util::xml::Node *> *xml_nodes = root_node->Childs();
-			list<unisim::util::xml::Node *>::const_iterator xml_node;
-			bool has_program_counter = false;
-			string program_counter_name;
-
-			unsigned reg_num = 0;
-			for(xml_node = xml_nodes->begin(); xml_node != xml_nodes->end(); xml_node++)
-			{
-				if((*xml_node)->Name() == string("register"))
-				{
-					string reg_name;
-					bool has_reg_name = false;
-					int reg_bitsize = 0;
-					bool has_reg_bitsize = false;
-
-					const list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
-
-					list<unisim::util::xml::Property *>::const_iterator xml_node_property;
-					for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
-					{
-						if((*xml_node_property)->Name() == string("name"))
-						{
-							reg_name = (*xml_node_property)->Value();
-							has_reg_name = true;
-						}
-						else
-						{
-							if((*xml_node_property)->Name() == string("bitsize"))
-							{
-								reg_bitsize = atoi((*xml_node_property)->Value().c_str());
-								has_reg_bitsize = true;
-								if(reg_bitsize == 0)
-								{
-									logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ": bitsize should not be 0" << EndDebugWarning;
-								}
-							}
-							else
-							{
-								if((*xml_node_property)->Name() == string("regnum"))
-								{
-									reg_num = atoi((*xml_node_property)->Value().c_str());
-								}
-								else
-								{
-									logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
-								}
-							}
-						}
-					}
-
-					if(has_reg_name && has_reg_bitsize)
-					{
-						bool cpu_has_reg = true;
-						bool cpu_has_right_reg_bitsize = true;
-
-						unisim::service::interfaces::Register *reg = 0;
-						
-						if(!reg_name.empty())
-						{
-							reg = registers_import->GetRegister(reg_name.c_str());
-
-							if(!reg)
-							{
-								cpu_has_reg = false;
-								if(verbose)
-								{
-									logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
-								}
-							}
-							else
-							{
-								if((8 * reg->GetSize()) != reg_bitsize)
-								{
-									cpu_has_right_reg_bitsize = false;
-									if(verbose)
-									{
-										logger << DebugWarning << ": register size (" << reg_bitsize << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
-									}
-								}
-							}
-						}
-
-						if(reg_num >= gdb_registers.size())
-						{
-							gdb_registers.resize(reg_num + 1);
-						}
-						
-						if(cpu_has_reg && cpu_has_right_reg_bitsize)
-						{
-							gdb_registers[reg_num] = GDBRegister(reg, endian, reg_num);
-						}
-						else
-						{
-							gdb_registers[reg_num] = GDBRegister(reg_name, reg_bitsize, endian, reg_num);
-						}
-					}
-					else
-					{
-						logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name() << "' has no 'name' or 'bitsize' property" << EndDebugWarning;
-					}
-					
-					reg_num++;
-				}
-				else
-				{
-					if((*xml_node)->Name() == string("program_counter"))
-					{
-						xml_program_counter_node = xml_node;
-						has_program_counter = true;
-						bool has_program_counter_name = false;
-						const list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
-
-						list<unisim::util::xml::Property *>::const_iterator xml_node_property;
-						for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
-						{
-							if((*xml_node_property)->Name() == string("name"))
-							{
-								program_counter_name = (*xml_node_property)->Value();
-								has_program_counter_name = true;
-							}
-						}
-
-						if(!has_program_counter_name)
-						{
-							logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name() << "' has no 'name'" << EndDebugWarning;
-							delete root_node;
-							return false;
-						}
-					}
-					else
-					{
-						logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":ignoring tag '" << (*xml_node)->Name() << "'" << EndDebugWarning;
-					}
-				}
-			}
-
-			if(!has_program_counter)
-			{
-				logger << DebugError << root_node->Filename() << ":" << root_node->LineNo() << ":architecture has no program counter" << EndDebugError;
-				delete root_node;
-				return false;
-			}
-
-			vector<GDBRegister>::iterator reg_iter;
-
-			for(reg_iter = gdb_registers.begin(); reg_iter != gdb_registers.end(); reg_iter++)
-			{
-				if(reg_iter->GetName() == program_counter_name)
-				{
-					gdb_pc = &(*reg_iter);
-					break;
-				}
-			}
-
-			if(!gdb_pc)
-			{
-				logger << DebugError << (*xml_program_counter_node)->Filename() << ":" << (*xml_program_counter_node)->LineNo() << ":program counter does not belong to registers" << EndDebugError;
 				delete root_node;
 				return false;
 			}
@@ -550,6 +354,330 @@ bool GDBServer<ADDRESS>::EndSetup()
 	close(server_sock);
 #endif
 
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::VisitArchitecture(unisim::util::xml::Node *xml_node)
+{
+	bool has_architecture_name = false;
+	bool has_architecture_endian = false;
+	std::string architecture_name;
+	endian = GDB_BIG_ENDIAN;
+
+	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+
+	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+	{
+		if((*xml_node_property)->Name() == string("name"))
+		{
+			architecture_name = (*xml_node_property)->Value();
+			has_architecture_name = true;
+		}
+		else if((*xml_node_property)->Name() == string("endian"))
+		{
+			const string& architecture_endian = (*xml_node_property)->Value();
+			if(architecture_endian == "little")
+			{
+				endian = GDB_LITTLE_ENDIAN;
+				has_architecture_endian = true;
+			}
+			else if(architecture_endian == "big")
+			{
+				endian = GDB_BIG_ENDIAN;
+				has_architecture_endian = true;
+			}
+		}
+		else
+		{
+			logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
+		}
+	}
+
+	if(!has_architecture_name)
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":architecture has no property 'name'" << EndDebugWarning;
+		return false;
+	}
+
+	if(!has_architecture_endian)
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":assuming target architecture endian is big endian" << EndDebugWarning;
+	}
+	
+	list<unisim::util::xml::Node *>::const_iterator xml_program_counter_node;
+	const list<unisim::util::xml::Node *> *xml_child_nodes = xml_node->Childs();
+	list<unisim::util::xml::Node *>::const_iterator xml_child_node;
+	bool has_program_counter = false;
+
+	unsigned reg_num = 0;
+	for(xml_child_node = xml_child_nodes->begin(); xml_child_node != xml_child_nodes->end(); xml_child_node++)
+	{
+		if((*xml_child_node)->Name() == std::string("feature"))
+		{
+			if(!VisitFeature(*xml_child_node)) return false;
+		}
+		else if((*xml_child_node)->Name() == std::string("program_counter"))
+		{
+			has_program_counter = true;
+			xml_program_counter_node = xml_child_node;
+			if(!VisitProgramCounter(*xml_child_node)) return false;
+		}
+		else if((*xml_child_node)->Name() == std::string("breakpoint_kind"))
+		{
+			if(!VisitBreakPointKind(*xml_child_node)) return false;
+		}
+		else
+		{
+			logger << DebugWarning << (*xml_child_node)->Filename() << ":" << (*xml_child_node)->LineNo() << ":ignoring tag '" << (*xml_child_node)->Name() << "'" << EndDebugWarning;
+		}
+	}
+	
+	if(!has_program_counter)
+	{
+		logger << DebugError << xml_node->Filename() << ":" << xml_node->LineNo() << ":architecture has no program counter" << EndDebugError;
+		return false;
+	}
+
+	vector<GDBRegister *>::iterator reg_iter;
+
+	for(reg_iter = gdb_registers.begin(); reg_iter != gdb_registers.end(); reg_iter++)
+	{
+		if((*reg_iter)->GetName() == program_counter_name)
+		{
+			gdb_pc = *reg_iter;
+			break;
+		}
+	}
+
+	if(!gdb_pc)
+	{
+		logger << DebugError << (*xml_program_counter_node)->Filename() << ":" << (*xml_program_counter_node)->LineNo() << ":program counter does not belong to registers" << EndDebugError;
+		return false;
+	}
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::VisitFeature(unisim::util::xml::Node *xml_node)
+{
+	std::string feature_name;
+	bool has_feature_name = false;
+	
+	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+
+	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+	{
+		if((*xml_node_property)->Name() == string("name"))
+		{
+			feature_name = (*xml_node_property)->Value();
+			has_feature_name = true;
+		}
+		else
+		{
+			logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
+		}
+	}
+	
+	GDBFeature *gdb_feature = new GDBFeature(feature_name, gdb_features.size());
+	gdb_features.push_back(gdb_feature);
+	
+	const list<unisim::util::xml::Node *> *xml_child_nodes = xml_node->Childs();
+	list<unisim::util::xml::Node *>::const_iterator xml_child_node;
+	for(xml_child_node = xml_child_nodes->begin(); xml_child_node != xml_child_nodes->end(); xml_child_node++)
+	{
+		if((*xml_child_node)->Name() == std::string("register"))
+		{
+			if(!VisitRegister(*xml_child_node, gdb_feature)) return false;
+		}
+	}
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::VisitBreakPointKind(unisim::util::xml::Node *xml_node)
+{
+	bool has_kind = false;
+	bool has_size = false;
+	uint32_t kind = 0;
+	uint32_t size = 0;
+	
+	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+	
+	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+	{
+		if((*xml_node_property)->Name() == string("kind"))
+		{
+			kind = atoi((*xml_node_property)->Value().c_str());
+			has_kind = true;
+		}
+		else if((*xml_node_property)->Name() == string("size"))
+		{
+			size = atoi((*xml_node_property)->Value().c_str());
+			has_size = true;
+		}
+	}
+	
+	if(!has_kind)
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":node '" << xml_node->Name() << "' has no 'kind'" << EndDebugWarning;
+		return false;
+	}
+	if(!has_size)
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":node '" << xml_node->Name() << "' has no 'size'" << EndDebugWarning;
+		return false;
+	}
+	
+	if(arch_specific_breakpoint_kinds.find(kind) != arch_specific_breakpoint_kinds.end())
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":'kind' in node '" << xml_node->Name() << "' is already declared in a previous node" << EndDebugWarning;
+		return false;
+	}
+	
+	arch_specific_breakpoint_kinds[kind] = size;
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::VisitRegister(unisim::util::xml::Node *xml_node, GDBFeature *gdb_feature)
+{
+	string reg_name;
+	bool has_reg_name = false;
+	int reg_bitsize = 0;
+	bool has_reg_bitsize = false;
+	std::string reg_type;
+	std::string reg_group;
+
+	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+
+	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+	{
+		if((*xml_node_property)->Name() == string("name"))
+		{
+			reg_name = (*xml_node_property)->Value();
+			has_reg_name = true;
+		}
+		else
+		{
+			if((*xml_node_property)->Name() == string("bitsize"))
+			{
+				reg_bitsize = atoi((*xml_node_property)->Value().c_str());
+				has_reg_bitsize = true;
+				if(reg_bitsize == 0)
+				{
+					logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ": bitsize should not be 0" << EndDebugWarning;
+				}
+			}
+			else
+			{
+				if((*xml_node_property)->Name() == string("regnum"))
+				{
+					gdb_arch_reg_num = atoi((*xml_node_property)->Value().c_str());
+				}
+				else if((*xml_node_property)->Name() == string("type"))
+				{
+					reg_type = (*xml_node_property)->Value().c_str();
+				}
+				else if((*xml_node_property)->Name() == string("group"))
+				{
+					reg_group = (*xml_node_property)->Value().c_str();
+				}
+				else
+				{
+					logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
+				}
+			}
+		}
+	}
+
+	if(has_reg_name && has_reg_bitsize)
+	{
+		bool cpu_has_reg = true;
+		bool cpu_has_right_reg_bitsize = true;
+
+		unisim::service::interfaces::Register *reg = 0;
+		
+		if(!reg_name.empty())
+		{
+			reg = registers_import->GetRegister(reg_name.c_str());
+
+			if(!reg)
+			{
+				cpu_has_reg = false;
+				if(verbose)
+				{
+					logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
+				}
+			}
+			else
+			{
+				if((8 * reg->GetSize()) != reg_bitsize)
+				{
+					cpu_has_right_reg_bitsize = false;
+					if(verbose)
+					{
+						logger << DebugWarning << ": register size (" << reg_bitsize << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
+					}
+				}
+			}
+		}
+
+		if(gdb_arch_reg_num >= gdb_registers.size())
+		{
+			gdb_registers.resize(gdb_arch_reg_num + 1);
+		}
+		
+		if(cpu_has_reg && cpu_has_right_reg_bitsize)
+		{
+			gdb_registers[gdb_arch_reg_num] = new GDBRegister(reg, reg_name, endian, gdb_arch_reg_num, reg_type, reg_group);
+		}
+		else
+		{
+			gdb_registers[gdb_arch_reg_num] = new GDBRegister(reg_name, reg_bitsize, endian, gdb_arch_reg_num, reg_type, reg_group);
+		}
+		
+		gdb_feature->AddRegister(gdb_registers[gdb_arch_reg_num]);
+	}
+	else
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":node '" << xml_node->Name() << "' has no 'name' or 'bitsize' property" << EndDebugWarning;
+	}
+	
+	gdb_arch_reg_num++;
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::VisitProgramCounter(unisim::util::xml::Node *xml_node)
+{
+	bool has_program_counter_name = false;
+	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+
+	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+	{
+		if((*xml_node_property)->Name() == string("name"))
+		{
+			program_counter_name = (*xml_node_property)->Value();
+			has_program_counter_name = true;
+		}
+	}
+
+	if(!has_program_counter_name)
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":node '" << xml_node->Name() << "' has no 'name'" << EndDebugWarning;
+		return false;
+	}
+	
 	return true;
 }
 
@@ -875,13 +1003,18 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					synched = false;
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
+				else if(packet.substr(0, 5) == "vKill")
+				{
+					Kill();
+					killed = true;
+				}
 				else if(packet.substr(0, 6) == "qRcmd,")
 				{
 					HandleQRcmd(packet.substr(6));
 				}
-				else if(packet.substr(0, 11) == "qSupported:")
+				else if(packet.substr(0, 10) == "qSupported")
 				{
-					HandleQSupported(packet.substr(11));
+					HandleQSupported(packet.substr(10));
 				}
 				else if(packet == "qC")
 				{
@@ -898,6 +1031,18 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				else if(packet == "QStartNoAckMode")
 				{
 					HandleQStartNoAckMode();
+				}
+				else if(packet.substr(0, 20) == "qXfer:features:read:")
+				{
+					HandleQXferFeaturesRead(packet.substr(20));
+				}
+				else if(packet == "qfThreadInfo")
+				{
+					HandleQfThreadInfo();
+				}
+				else if(packet == "qsThreadInfo")
+				{
+					HandleQsThreadInfo();
 				}
 				else
 				{
@@ -1169,14 +1314,18 @@ template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReadRegisters()
 {
 	string packet;
-	vector<GDBRegister>::const_iterator gdb_reg;
+	vector<GDBRegister *>::const_iterator gdb_reg_iter;
 
-	for(gdb_reg = gdb_registers.begin(); gdb_reg != gdb_registers.end(); gdb_reg++)
+	for(gdb_reg_iter = gdb_registers.begin(); gdb_reg_iter != gdb_registers.end(); gdb_reg_iter++)
 	{
-		string hex;
-		gdb_reg->GetValue(hex);
-		//std::cerr << gdb_reg->GetName() << "=" << hex << std::endl;
-		packet += hex;
+		GDBRegister *gdb_reg = *gdb_reg_iter;
+		if(gdb_reg) // there are some holes in the register map
+		{
+			string hex;
+			gdb_reg->GetValue(hex);
+			std::cerr << gdb_reg->GetName() << "=" << hex << std::endl;
+			packet += hex;
+		}
 	}
 	return PutPacket(packet);
 }
@@ -1185,15 +1334,20 @@ template <class ADDRESS>
 bool GDBServer<ADDRESS>::WriteRegisters(const string& hex)
 {
 	bool write_error = false;
-	vector<GDBRegister>::iterator gdb_reg;
+	vector<GDBRegister *>::iterator gdb_reg_iter;
 	unsigned int pos = 0;
 
-	for(gdb_reg = gdb_registers.begin(); gdb_reg != gdb_registers.end(); pos += gdb_reg->GetHexLength(), gdb_reg++)
+	for(gdb_reg_iter = gdb_registers.begin(); gdb_reg_iter != gdb_registers.end(); gdb_reg_iter++)
 	{
-		if(!gdb_reg->SetValue(hex.substr(pos, gdb_reg->GetHexLength())))
+		GDBRegister *gdb_reg = *gdb_reg_iter;
+		if(gdb_reg) // there are some holes in the register map
 		{
-			write_error = true;
-			break;
+			if(!gdb_reg->SetValue(hex.substr(pos, gdb_reg->GetHexLength())))
+			{
+				write_error = true;
+				break;
+			}
+			pos += gdb_reg->GetHexLength();
 		}
 	}
 
@@ -1208,7 +1362,7 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 		logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
 		return PutPacket("E00");
 	}
-	const GDBRegister& gdb_reg = gdb_registers[regnum];
+	const GDBRegister& gdb_reg = *gdb_registers[regnum];
 	string packet;
 	if(gdb_reg.IsEmpty())
 	{
@@ -1227,7 +1381,7 @@ bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 		logger << DebugError << "Register #" << regnum << " can't be written because it is unknown" << EndDebugError;
 		return PutPacket("E00");
 	}
-	GDBRegister& gdb_reg = gdb_registers[regnum];
+	GDBRegister& gdb_reg = *gdb_registers[regnum];
 	return gdb_reg.SetValue(hex) ? PutPacket("OK") : PutPacket("E00");
 }
 
@@ -1476,8 +1630,21 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
+bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind)
 {
+	uint32_t size = 0;
+	
+	std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
+	
+	if(arch_specific_breakpoint_kind != arch_specific_breakpoint_kinds.end())
+	{
+		size = (*arch_specific_breakpoint_kind).second;
+	}
+	else
+	{
+		size = kind;
+	}
+	
 	uint32_t i;
 
 // 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
@@ -1546,8 +1713,21 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
+bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind)
 {
+	uint32_t size = 0;
+	
+	std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
+	
+	if(arch_specific_breakpoint_kind != arch_specific_breakpoint_kinds.end())
+	{
+		size = (*arch_specific_breakpoint_kind).second;
+	}
+	else
+	{
+		size = kind;
+	}
+
 	uint32_t i;
 
 // 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
@@ -1734,21 +1914,27 @@ template <class ADDRESS>
 void GDBServer<ADDRESS>::HandleQSupported(std::string gdb_client_features)
 {
 	std::size_t pos = 0;
-	std::size_t delim_pos = 0;
-	
-	do
+
+	if((pos < gdb_client_features.length()) && (gdb_client_features[pos] == ':'))
 	{
-		delim_pos = gdb_client_features.find_first_of(';', pos);
-		
-		std::string gdb_client_feature((delim_pos != std::string::npos) ? gdb_client_features.substr(pos, delim_pos - pos) : gdb_client_features.substr(pos));
-		
-		SetGDBClientFeature(gdb_client_feature);
-		
-		pos = (delim_pos != std::string::npos) ? delim_pos + 1 : std::string::npos;
-	}
-	while(pos != std::string::npos);
+		pos++;
 	
-	PutPacket("vContSupported+;QStartNoAckMode+");
+		std::size_t delim_pos = 0;
+		
+		do
+		{
+			delim_pos = gdb_client_features.find_first_of(';', pos);
+			
+			std::string gdb_client_feature((delim_pos != std::string::npos) ? gdb_client_features.substr(pos, delim_pos - pos) : gdb_client_features.substr(pos));
+			
+			SetGDBClientFeature(gdb_client_feature);
+			
+			pos = (delim_pos != std::string::npos) ? delim_pos + 1 : std::string::npos;
+		}
+		while(pos != std::string::npos);
+	}
+	
+	PutPacket("PacketSize=0fff;vContSupported+;QStartNoAckMode+;qXfer:features:read+;xmlRegisters=arm");
 }
 
 template <class ADDRESS>
@@ -1776,6 +1962,100 @@ void GDBServer<ADDRESS>::HandleQStartNoAckMode()
 {
 	PutPacket("OK");
 	no_ack_mode = true;
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQXferFeaturesRead(std::string command)
+{
+	std::size_t pos = 0;
+	std::size_t delim_pos = command.find_first_of(':');
+	
+	if(delim_pos == std::string::npos)
+	{
+		logger << DebugWarning << "malformed qXfer:features:read request (expecting annex)" << EndDebugWarning;
+		PutPacket("E00");
+	}
+	
+	std::string annex(command.substr(pos, delim_pos - pos));
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "GDB client wants annex \"" << annex << "\"" << std::endl;
+	}
+	
+	pos = delim_pos + 1;
+	delim_pos = command.find_first_of(',', pos);
+	
+	if(delim_pos == std::string::npos)
+	{
+		logger << DebugWarning << "malformed qXfer:features:read request (expecting offset)" << EndDebugWarning;
+		PutPacket("E00");
+	}
+
+	std::stringstream offset_sstr(command.substr(pos, delim_pos - pos));
+	unsigned int offset;
+	offset_sstr >> std::hex >> offset;
+
+	if(verbose)
+	{
+		logger << DebugInfo << "GDB client wants annex from offset " << offset << std::endl;
+	}
+
+	pos = delim_pos + 1;
+
+	std::stringstream length_sstr(command.substr(pos));
+	unsigned int length;
+	length_sstr >> std::hex >> length;
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "GDB client wants at most " << length << " characters from annex" << std::endl;
+	}
+
+	std::stringstream sstr;
+	
+	sstr << "<?xml version=\"1.0\"?>";
+	
+	if(annex == "target.xml")
+	{
+		sstr << "<!DOCTYPE target SYSTEM \"gdb-target.dtd\">";
+		sstr << "<target version=\"1.0\">" ;
+		unsigned int n_features = gdb_features.size();
+		unsigned int i;
+		for(i = 0; i < n_features; i++)
+		{
+			GDBFeature *gdb_feature = gdb_features[i];
+			sstr << "<xi:include href=\"feature" << gdb_feature->GetId() << ".xml\"/>";
+		}
+		sstr << "</target>";
+	}
+	else
+	{
+		unsigned int n_features = gdb_features.size();
+		unsigned int i;
+		for(i = 0; i < n_features; i++)
+		{
+			GDBFeature *gdb_feature = gdb_features[i];
+			gdb_feature->ToXML(sstr, annex);
+		}
+	}
+	
+	std::string packet("l");
+	packet.append(sstr.str(), offset, length);
+	
+	PutPacket(packet);
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQfThreadInfo()
+{
+	PutPacket("m0"); // report one thread only
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQsThreadInfo()
+{
+	PutPacket("l"); // report end of list
 }
 
 template <class ADDRESS>

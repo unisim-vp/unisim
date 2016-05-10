@@ -1398,7 +1398,6 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ParseAddressTranslationOffset(cons
 	pos += n;
 	
 	translation = tok_addr_value;
-	std::cerr << "parsed translation = 0x" << std::hex << translation << std::dec << std::endl;
 	
 	return true;
 }

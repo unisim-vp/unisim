@@ -153,8 +153,8 @@ add_custom_target ( sim__share_gdb
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/gdb_server
 	COMMAND
 		${CMAKE_COMMAND} -E copy_if_different
-			${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv5l.xml
-			${SHARE_DIRECTORY}/gdb_server/gdb_armv5l.xml
+			${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml
+			${SHARE_DIRECTORY}/gdb_server/gdb_arm_with_fpa.xml
 	COMMENT
 		"Setting GDB resource files"
 	)
@@ -563,7 +563,7 @@ install (
 	)
 install ( 
 	FILES
-		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv5l.xml
+		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml
 	DESTINATION
 		${RELATIVE_SHARE_DIRECTORY}/gdb_server
 	)
