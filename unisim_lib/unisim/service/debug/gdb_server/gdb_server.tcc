@@ -411,7 +411,6 @@ bool GDBServer<ADDRESS>::VisitArchitecture(unisim::util::xml::Node *xml_node)
 	list<unisim::util::xml::Node *>::const_iterator xml_child_node;
 	bool has_program_counter = false;
 
-	unsigned reg_num = 0;
 	for(xml_child_node = xml_child_nodes->begin(); xml_child_node != xml_child_nodes->end(); xml_child_node++)
 	{
 		if((*xml_child_node)->Name() == std::string("feature"))
@@ -464,7 +463,6 @@ template <class ADDRESS>
 bool GDBServer<ADDRESS>::VisitFeature(unisim::util::xml::Node *xml_node)
 {
 	std::string feature_name;
-	bool has_feature_name = false;
 	
 	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
 
@@ -474,7 +472,6 @@ bool GDBServer<ADDRESS>::VisitFeature(unisim::util::xml::Node *xml_node)
 		if((*xml_node_property)->Name() == string("name"))
 		{
 			feature_name = (*xml_node_property)->Value();
-			has_feature_name = true;
 		}
 		else
 		{
@@ -1471,8 +1468,6 @@ bool GDBServer<ADDRESS>::ReadMemoryBin(ADDRESS addr, uint32_t size)
 	bool read_error = false;
 	bool overwrapping = false;
 	string packet;
-	char ch[2];
-	ch[1] = 0;
 
 	if(size > 0)
 	{
@@ -1522,10 +1517,9 @@ bool GDBServer<ADDRESS>::WriteMemoryBin(ADDRESS addr, const string& bin, uint32_
 	bool write_error = false;
 	bool malformed_binary_data = false;
 	bool overwrapping = false;
-	bool escape = false;
 	unsigned int repeat = 0;
-	unsigned int pos = 0;
-	int len = bin.length();
+	std::size_t pos = 0;
+	std::size_t len = bin.length();
 
 	if(size > 0 && len > 0)
 	{
@@ -1889,7 +1883,7 @@ void GDBServer<ADDRESS>::SetGDBClientFeature(std::string gdb_client_feature)
 	unsigned int i;
 	for(i = 0; i < n; i++)
 	{
-		int name_len = strlen(features[i].name);
+		std::size_t name_len = strlen(features[i].name);
 		if((gdb_client_feature.length() == (name_len + 1)) && gdb_client_feature.compare(0, name_len, features[i].name) == 0)
 		{
 			if(gdb_client_feature[name_len] == '+')
