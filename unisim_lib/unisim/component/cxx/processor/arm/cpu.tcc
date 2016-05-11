@@ -116,8 +116,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , registers_export("registers-export", this)
 {
   // Initialize general purpose registers
-  for(unsigned int i = 0; i < num_log_gprs; i++)
-    gpr[i] = 0;
+  for (unsigned idx = 0; idx < num_log_gprs; idx++)
+    gpr[idx] = 0;
   this->current_pc = 0;
   this->next_pc = 0;
   
@@ -142,6 +142,10 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   modes[0b11010] = new BankedMode<CPU,0b0110000000000000>( "hyp" ); // Hyp mode
   modes[0b11011] = new BankedMode<CPU,0b0110000000000000>( "und" ); // Undefined mode
   modes[0b11111] = new Mode( "sys" ); // System mode (No banked regs, using main regs)
+  
+  // Initialize NEON/VFP registers
+  for (unsigned idx = 0; idx < 32; ++idx)
+    SetVU64( idx, U64(0) );
 
   /*************************************/
   /* Registers Debug Accessors   START */
