@@ -271,7 +271,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       {
         std::stringstream regname; regname << 'd' << idx;
         dbg_reg = new VFPDouble( *this, regname.str(), idx );
-        registers_registry[name] = dbg_reg;
+        registers_registry[regname.str()] = dbg_reg;
         debug_register_pool.insert( dbg_reg );
       }
   }
