@@ -164,7 +164,7 @@ namespace linux_os {
       if (unisim::service::interfaces::Register* reg = this->RegsIF().GetRegister(segname))
         reg->SetValue(&value);
       else
-        throw 0;
+        throw std::logic_error("internal_error");
     }
         
     bool SetupTarget() const
@@ -336,7 +336,7 @@ namespace linux_os {
       case 3: GetRegister(lin, kI386_esi, &val); break;
       case 4: GetRegister(lin, kI386_edi, &val); break;
       case 5: GetRegister(lin, kI386_ebp, &val); break;
-      default: throw id;
+      default: throw std::logic_error("internal error");
       }
           
       return val;
@@ -796,7 +796,7 @@ namespace linux_os {
               attributes   = unisim::util::endian::Target2Host( lin.GetEndianness(), attributes );
                   
               if (entry_number != -1)
-                throw 0;
+                throw std::logic_error("internal error in i686 segment descriptors");
                   
               set_tls_base( lin, base_addr );
                   

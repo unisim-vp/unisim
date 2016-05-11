@@ -1306,7 +1306,7 @@ void
 CPU::BKPT( uint32_t imm )
 {
   // we are executing on linux emulation mode
-  throw "TODO: Generate a debug event: virtual BKPTInstrDebugEvent() method ?";
+  throw std::logic_error( "TODO: Generate a debug event: virtual BKPTInstrDebugEvent() method ?" );
 }
 
 void

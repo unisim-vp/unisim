@@ -36,10 +36,11 @@
 #define __UNISIM_UTIL_OS_LINUX_ARM_HH__
 
 #include <unisim/util/likely/likely.hh>
-
 #include <unisim/util/os/linux_os/errno.hh>
-#include <errno.h>
-#include <stdlib.h>
+
+#include <stdexcept>
+#include <cerrno>
+#include <cstdlib>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <process.h>
@@ -250,8 +251,7 @@ namespace linux_os {
       case 4: GetRegister(_lin, kARM_r4, &val); break;
       case 5: GetRegister(_lin, kARM_r5, &val); break;
       case 6: GetRegister(_lin, kARM_r6, &val); break;
-      default: throw id;
-        break;
+      default: throw std::logic_error("internal_error");
       }
           
       return val;

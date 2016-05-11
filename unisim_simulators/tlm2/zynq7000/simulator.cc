@@ -72,12 +72,12 @@ RegMap::RegMap( char const* socket_name )
   socket( *this );
 }
 
-unsigned int RegMap::transport_dbg(tlm::tlm_generic_payload& payload) { throw 0; return 0; }
+unsigned int RegMap::transport_dbg(tlm::tlm_generic_payload& payload) { throw std::runtime_error("Not implemented"); return 0; }
 
 tlm::tlm_sync_enum
 RegMap::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
-  if (phase != tlm::BEGIN_REQ) { throw 0; }
+  if (phase != tlm::BEGIN_REQ) { throw std::logic_error("internal error"); }
   
   this->b_transport(payload, t);
   
@@ -93,7 +93,7 @@ RegMap::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
     {
       for (int idx = int(payload.get_byte_enable_length()); --idx >= 0; )
         if (not byte_enable_ptr[idx])
-          throw 0;
+          throw std::logic_error("internal error");
     }
   
   // unsigned int streaming_width = payload.get_streaming_width();
@@ -114,7 +114,7 @@ RegMap::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
     case tlm::TLM_IGNORE_COMMAND:
       break;
     default:
-      throw 0;
+      throw std::logic_error("internal error");
     }
   
   tlm::tlm_response_status resp_status = status ? tlm::TLM_OK_RESPONSE : tlm::TLM_ADDRESS_ERROR_RESPONSE;

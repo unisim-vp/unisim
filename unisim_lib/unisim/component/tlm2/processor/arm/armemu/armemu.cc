@@ -753,7 +753,8 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
   // 3 - send the transaction and check response status
   master_socket->b_transport(*trans, quantum_time);
   if (not trans->is_response_ok()) {
-    throw "TODO: asynchronous abort (read)...";
+    // TODO: asynchronous abort arguments (read, nature, context)...;
+    throw cxx::processor::arm::exception::DataAbortException();
   }
   
   // cpu_time = sc_time_stamp() + quantum_time;
@@ -845,7 +846,8 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   // 3 - send the transaction and check response status
   master_socket->b_transport(*trans, quantum_time);
   if (not trans->is_response_ok()) {
-    throw "TODO: asynchronous abort (write)...";
+    // TODO: asynchronous abort arguments (write, nature, context)...";
+    throw cxx::processor::arm::exception::DataAbortException();
   }
   
   if (quantum_time > nice_time)

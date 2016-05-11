@@ -583,7 +583,7 @@ namespace linux_os {
       case 2: GetRegister(lin, kPPC_r5, &val); break;
       case 3: GetRegister(lin, kPPC_r6, &val); break;
       case 4: GetRegister(lin, kPPC_r7, &val); break;
-      default: throw id;
+      default: throw std::logic_error("internal error");
       }
           
       return val;
