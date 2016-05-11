@@ -77,7 +77,6 @@ struct ARMv7emu
   static bool const     insns7  = true;
   static bool const     hasVFP  = true;
   static bool const     hasAdvSIMD = false;
-  static bool const     LINUX_PRINTK_SNOOPING = true;
 };
 
 struct CPU
@@ -294,7 +293,6 @@ protected:
   template <class POLICY>
   uint32_t  TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size );
     
-  
   /*************************/
   /* MMU Interface    END  */
   /*************************/
@@ -323,7 +321,7 @@ protected:
 
   /** Trap when reaching the number of instructions indicated. */
   uint64_t trap_on_instruction_counter;
-	
+  
   /**********************************************************/
   /* UNISIM parameters, statistics                    START */
   /**********************************************************/
@@ -341,6 +339,8 @@ protected:
   unisim::kernel::service::Parameter<bool> param_verbose;
   /** UNISIM Parameter to set traps on instruction counter. */
   unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
+  /** UNISIM Printk snooping activation */
+  unisim::kernel::service::Parameter<bool> param_linux_printk_snooping;
   /** UNISIM Statistic of the number of instructions executed. */
   unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
 

@@ -126,6 +126,7 @@ CPU::CPU(const char *name, Object *parent)
   , param_verbose("verbose", this, this->BaseCpu::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
   , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
                                       "Produce a trap when the given instruction count is reached.")
+  , param_linux_printk_snooping( "linux_printk_snooping", this, linux_printk_snooping, "Activate the printk snooping" )
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
   , ipb_base_address( -1 )
   , linux_printk_buf_addr( 0 )
@@ -274,7 +275,7 @@ CPU::EndSetup()
   }
 
 
-  if(ARMv7emu::LINUX_PRINTK_SNOOPING)
+  if (linux_printk_snooping)
     {
       if (verbose)
         logger << DebugInfo << "Linux printk snooping enabled" << EndDebugInfo;
@@ -297,7 +298,10 @@ CPU::EndSetup()
                      << std::dec << linux_printk_buf_size << "]" << EndDebugInfo;
         }
       else
-        logger << DebugWarning << "Linux printk buffer not found. Linux printk snooping will not work properly." << EndDebugWarning;
+        {
+          logger << DebugWarning << "Linux printk buffer not found. Linux printk snooping will not work properly." << EndDebugWarning;
+          linux_printk_snooping = false;
+        }
     }
   
   
@@ -433,7 +437,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
       { data[byte] = shifter; shifter >>= 8; }
   }
   
-  if (unlikely(ARMv7emu::LINUX_PRINTK_SNOOPING and linux_printk_snooping))
+  if (unlikely(linux_printk_snooping))
     {
       if (uint32_t(addr - linux_printk_buf_addr) < linux_printk_buf_size)
         {

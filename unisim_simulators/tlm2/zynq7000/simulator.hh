@@ -137,14 +137,17 @@ struct MPCore
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
 {
   //typedef tlm::tlm_base_protocol_types TYPES;
-  static unsigned const ITLinesNumber = 7;
-  static unsigned const ITLinesCount = 32*(ITLinesNumber+1);
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
-  
   MPCore(const sc_module_name& name, unisim::kernel::service::Object* parent = 0);
 
   bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
 
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
+  
+  sc_core::sc_out<bool> nIRQ;
+  sc_core::sc_out<bool> nFIQ;
+  
+  static unsigned const ITLinesNumber = 7;
+  static unsigned const ITLinesCount = 32*(ITLinesNumber+1);
   uint32_t ICCICR; /* CPU Interface Control Register */
   uint32_t ICCPMR; /* Interrupt Priority Mask Register */
   uint32_t ICDDCR; /* Distributor Control Register */

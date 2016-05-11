@@ -133,6 +133,8 @@ MPCore::MPCore(const sc_module_name& name, unisim::kernel::service::Object* pare
   , RegMap( "mpcore_socket" )
   , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
   , trap_reporting_import("trap-reporting-import", this)
+  , nIRQ("nIRQ")
+  , nFIQ("nFIQ")
   , ICCICR(0)
   , ICCPMR(0)
   , ICDDCR(0)
@@ -395,6 +397,9 @@ Simulator::Simulator(int argc, char **argv)
   router.relative_mapping( 3, 0xf8000000, 0xf8000fff, slcr.socket ); /* SLCR */
   router.relative_mapping( 4, 0xf8001000, 0xf8001fff, ttc0.socket ); /* TTC0 */
   router.relative_mapping( 5, 0xf8002000, 0xf8002fff, ttc1.socket ); /* TTC1 */
+  
+  mpcore.nIRQ( nirq_signal );
+  mpcore.nFIQ( nfiq_signal );
   
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;
