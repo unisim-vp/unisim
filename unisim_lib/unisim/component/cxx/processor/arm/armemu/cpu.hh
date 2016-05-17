@@ -321,7 +321,21 @@ protected:
 
   /** Trap when reaching the number of instructions indicated. */
   uint64_t trap_on_instruction_counter;
+
+  //=====================================================================
+  //=               Instruction prefetch buffer                         =
+  //=====================================================================
   
+  uint8_t ipb_bytes[Cache::LINE_SIZE];                       //!< The instruction prefetch buffer
+  uint32_t ipb_base_address;                                 //!< base address of IPB content (cache line size aligned if valid)
+  
+  /*************************
+   * LINUX PRINTK SNOOPING *
+   *************************/
+  uint32_t linux_printk_buf_addr;
+  uint32_t linux_printk_buf_size;
+  bool     linux_printk_snooping;
+
   /**********************************************************/
   /* UNISIM parameters, statistics                    START */
   /**********************************************************/
@@ -347,21 +361,6 @@ protected:
   /**********************************************************/
   /* UNISIM parameters, statistics                      END */
   /**********************************************************/
-
-  //=====================================================================
-  //=               Instruction prefetch buffer                         =
-  //=====================================================================
-  
-  uint8_t ipb_bytes[Cache::LINE_SIZE];                       //!< The instruction prefetch buffer
-  uint32_t ipb_base_address;                                 //!< base address of IPB content (cache line size aligned if valid)
-  
-  /*************************
-   * LINUX PRINTK SNOOPING *
-   *************************/
-  uint32_t linux_printk_buf_addr;
-  uint32_t linux_printk_buf_size;
-  bool     linux_printk_snooping;
-
 };
 
 } // end of namespace armemu

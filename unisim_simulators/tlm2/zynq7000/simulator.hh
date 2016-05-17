@@ -127,7 +127,7 @@ struct RegMap
   unsigned int       transport_dbg(tlm::tlm_generic_payload& payload);
   tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
   void               b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
-  virtual bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d ) = 0;
+  virtual bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time ) = 0;
 
 };
 
@@ -139,24 +139,34 @@ struct MPCore
   //typedef tlm::tlm_base_protocol_types TYPES;
   MPCore(const sc_module_name& name, unisim::kernel::service::Object* parent = 0);
 
-  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
+  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
+  bool _AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
+  
+  void SendInterrupt( unsigned idx );
 
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
   
   sc_core::sc_out<bool> nIRQ;
   sc_core::sc_out<bool> nFIQ;
   
-  static unsigned const ITLinesNumber = 7;
+  static unsigned const ITLinesNumber = 2;
   static unsigned const ITLinesCount = 32*(ITLinesNumber+1);
   uint32_t ICCICR; /* CPU Interface Control Register */
   uint32_t ICCPMR; /* Interrupt Priority Mask Register */
   uint32_t ICDDCR; /* Distributor Control Register */
-  static unsigned const ien_count = (ITLinesNumber+1);
-  uint32_t IENABLER[ien_count];
+  static unsigned const state32_count = (ITLinesNumber+1);
+  uint32_t IENABLE[state32_count];
+  uint32_t IPENDING[state32_count];
+  uint32_t IACTIVE[state32_count];
   uint8_t  IPRIORITYR[ITLinesCount];
-  uint32_t ICDIPTR[24];
+  uint8_t  ICDIPTR[ITLinesCount];
   static unsigned const icfgr_count = 2*(ITLinesNumber+1);
   uint32_t ICDICFR[ITLinesCount/16];
+  
+  sc_core::sc_event generate_exceptions_event;
+  void GenerateExceptionsProcess();
+  unsigned HighestPriorityPendingInterrupt( uint8_t required, uint8_t enough );
+  uint32_t ReadGICC_IAR();
 };
 
 struct SLCR
@@ -168,7 +178,7 @@ struct SLCR
   
   uint32_t ARM_PLL_CTRL, DDR_PLL_CTRL, IO_PLL_CTRL, ARM_CLK_CTRL, CLK_621_TRUE, UART_CLK_CTRL;
   
-  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
+  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
 };
 
 struct TTC
@@ -176,25 +186,29 @@ struct TTC
   , public RegMap
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
 {
-  TTC( int id, const sc_module_name& name, unisim::kernel::service::Object* parent = 0 );
+  TTC( const sc_module_name& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it );
   
-  int m_id;
+  MPCore& mpcore;
+  unsigned id, base_it;
   
   uint32_t
-    Clock_Control_1,
-    Clock_Control_2,
-    Clock_Control_3,
-    Counter_Control_1,
-    Counter_Control_2,
-    Counter_Control_3,
-    Interval_Counter_1,
-    Interval_Counter_2,
-    Interval_Counter_3,
-    Interrupt_Enable_1,
-    Interrupt_Enable_2,
-    Interrupt_Enable_3;
+    Clock_Control[3],
+    Counter_Control[3],
+    Counter_Value[3],
+    Interval_Counter[3],
+    Interrupt_Enable[3];
   
-  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d );
+  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
+  
+  sc_core::sc_event update_state_event;
+  sc_core::sc_time  clock_period;
+  sc_core::sc_time  last_state_update_time[3];
+  int               it_lines[3];
+  
+  void UpdateStateProcess();
+  void UpdateState( sc_core::sc_time const& update_time );
+  void UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time
+ );
 };
 
 struct Simulator : public unisim::kernel::service::Simulator

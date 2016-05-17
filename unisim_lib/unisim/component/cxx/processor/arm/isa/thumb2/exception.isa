@@ -117,7 +117,7 @@ cps_w.disasm = {
 };
 
 cps_w.execute = {
-  if (GetNativeValue(cpu.CPSR().Get(M)) != cpu.USER_MODE)
+  if (GetNativeValue(cpu.CPSR().Get(M)) == cpu.USER_MODE)
     return;
   typename ARCH::psr_type cpsr_val = cpu.CPSR();
   typedef typename ARCH::U32 U32;

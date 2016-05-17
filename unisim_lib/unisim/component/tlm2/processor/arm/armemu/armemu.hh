@@ -87,28 +87,20 @@ private:
 	 **************************************************************************/
 
 public:
+	bool check_external_events;
 	// Slave port for the nIRQm signal
 	sc_core::sc_in<bool> nIRQm;
 	// Slave port for the nFIQm signal
 	sc_core::sc_in<bool> nFIQm;
-  // Slave port for the nRESETm signal
-  sc_core::sc_in<bool> nRESETm;
+	// Slave port for the nRESETm signal
+	sc_core::sc_in<bool> nRESETm;
   
 private:
-#if 0
-  int raised_irqs;
-  int raised_fiqs;
-#else
-  bool irq;
-  bool fiq;
-#endif
-  int raised_rsts;
-  
 	/** nIRQm port handler */
 	void IRQHandler();
 	/** nFIQm port handler */
 	void FIQHandler();
-  /** nRESETm port hander */
+	/** nRESETm port hander */
 	void ResetHandler();
 	
 	/**************************************************************************
@@ -139,7 +131,8 @@ public:
 	//   the caches
 	virtual void PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size);
 	virtual void PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
-
+	
+	sc_core::sc_time const& GetCpuCycleTime() const { return cpu_cycle_time; };
 private:
 	virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size);
 	virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);

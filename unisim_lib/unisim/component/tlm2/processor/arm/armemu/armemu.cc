@@ -130,17 +130,10 @@ ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
   , sc_module(name)
   , unisim::component::cxx::processor::arm::armemu::CPU(name, parent)
   , master_socket("master_socket")
+  , check_external_events(false)
   , nIRQm("nIRQm")
   , nFIQm("nFIQm")
   , nRESETm("nRESETm")
-#if 0
-  , raised_irqs()
-  , raised_fiqs()
-#else
-  , irq(false)
-  , fiq(false)
-#endif
-  , raised_rsts()
   , end_read_rsp_event()
   , payload_fabric()
   , tmp_time()
@@ -266,41 +259,6 @@ ARMEMU::Sync()
                       << " - cpu_time     = " << cpu_time << std::endl
                       << " - nice_time     = " << nice_time << std::endl
                       << EndDebugInfo;
-  
-  /** Handling external signals at this point (they won't change until the next call to Sync) */
-  if (raised_rsts > 0) {
-    if (verbose)
-      logger << DebugInfo << "Received RESET!" << EndDebugInfo;
-    this->TakeReset();
-    if (--raised_rsts > 0) inherited::logger << DebugWarning << "Missed " << raised_rsts << " RESETs" << EndDebugWarning;
-    raised_rsts = 0; // Discard raised reset queue
-    return;
-  }
-  
-  uint32_t exceptions = 0;
-#if 0
-  unisim::component::cxx::processor::arm::I.Set( exceptions, raised_irqs > 0 );
-  unisim::component::cxx::processor::arm::F.Set( exceptions, raised_fiqs > 0 );
-#else
-  if(irq) unisim::component::cxx::processor::arm::I.Set( exceptions, true );
-  if(fiq) unisim::component::cxx::processor::arm::F.Set( exceptions, true );
-#endif
-  
-  if (not exceptions) return;
-  exceptions = this->HandleAsynchronousException( exceptions );
-  
-#if 0
-  if      (unisim::component::cxx::processor::arm::I.Get( exceptions ))
-    {
-      if (--raised_irqs > 0) inherited::logger << DebugWarning << "Missed " << raised_irqs << " IRQs" << EndDebugWarning;
-      raised_irqs = 0; // Discard raised IRQ queue
-    }
-  else if (unisim::component::cxx::processor::arm::F.Get( exceptions ))
-    {
-      if (--raised_fiqs > 0) inherited::logger << DebugWarning << "Missed " << raised_fiqs << " FIQs" << EndDebugWarning;
-      raised_fiqs = 0; // Discard raised FIQ queue
-    }
-#endif
 }
 
 /** Updates the cpu time to the next bus cycle.
@@ -355,16 +313,6 @@ ARMEMU::BusSynchronize()
 void
 ARMEMU::Run()
 {
-  /* Dismiss any interrupt that could have started before simulation (initialization artifacts) */
-#if 0
-  raised_irqs = 0;
-  raised_fiqs = 0;
-#else
-  irq = false;
-  fiq = false;
-#endif
-  raised_rsts = 0;
-
   if ( unlikely(verbose) )
     {
       inherited::logger << DebugInfo
@@ -377,7 +325,23 @@ ARMEMU::Run()
     
   for (;;)
   {
-    if ( unlikely(verbose_tlm) )
+    if (check_external_events) {
+      if (not nRESETm) {
+        do {
+          wait( nRESETm.value_changed_event() );
+        } while (not nRESETm);
+        this->TakeReset();
+      }
+      if (not nIRQm or not nFIQm) {
+        uint32_t exceptions = 0;
+        unisim::component::cxx::processor::arm::I.Set( exceptions, not nIRQm );
+        unisim::component::cxx::processor::arm::F.Set( exceptions, not nFIQm );
+        this->HandleAsynchronousException( exceptions );
+      }
+      check_external_events = false;
+    }
+  
+    if (unlikely(verbose_tlm))
     {
       inherited::logger << DebugInfo
         << "Starting instruction:" << std::endl
@@ -392,18 +356,6 @@ ARMEMU::Run()
     quantum_time += time_per_instruction;
     cpsr_cleared_bits &= ~(CPSR().bits());
     
-    if (unisim::component::cxx::processor::arm::I.Get( cpsr_cleared_bits ) or
-        unisim::component::cxx::processor::arm::F.Get( cpsr_cleared_bits ))
-      {
-        if (verbose)
-          inherited::logger << DebugInfo
-                            << "Syncing due to exception being unmasked" << std::endl
-                            << " - cpsr_cleared_bits = 0x" << std::hex << cpsr_cleared_bits << std::dec << std::endl
-                            << " - cpu_time     = " << cpu_time << std::endl
-                            << " - quantum_time = " << quantum_time
-                            << EndDebugInfo;
-        Sync();
-      }
     if ( unlikely(verbose_tlm) )
     {
       inherited::logger << DebugInfo
@@ -412,7 +364,23 @@ ARMEMU::Run()
         << " - quantum_time = " << quantum_time
         << EndDebugInfo;
     }
-    if ( quantum_time > nice_time )
+    
+    // Check if we need to sync
+    if (unisim::component::cxx::processor::arm::I.Get( cpsr_cleared_bits ) or
+        unisim::component::cxx::processor::arm::F.Get( cpsr_cleared_bits ))
+      {
+        this->check_external_events = true;
+        if (verbose)
+          inherited::logger << DebugInfo
+                            << "Syncing due to exception being unmasked" << std::endl
+                            << " - PC = 0x" << std::hex << current_pc << std::dec << std::endl
+                            << " - cpsr_cleared_bits = 0x" << std::hex << cpsr_cleared_bits << std::dec << std::endl
+                            << " - cpu_time     = " << cpu_time << std::endl
+                            << " - quantum_time = " << quantum_time
+                            << EndDebugInfo;
+        Sync();
+      }
+    else if ( quantum_time > nice_time )
       Sync();
   }
 }
@@ -546,18 +514,11 @@ ARMEMU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_r
 void
 ARMEMU::IRQHandler()
 {
-#if 0
-  if (not nIRQm) raised_irqs += 1;
-#else
-  irq = not nIRQm;
-#endif
+  this->check_external_events = true;
   if (verbose)
     inherited::logger << DebugInfo
                       << "IRQ level change:" << std::endl
                       << " - nIRQm = " << nIRQm << std::endl
-#if 0
-                      << " - raised_irqs = " << raised_irqs << std::endl
-#endif
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
@@ -566,18 +527,11 @@ ARMEMU::IRQHandler()
 void 
 ARMEMU::FIQHandler()
 {
-#if 0
-  if (not nFIQm) raised_fiqs += 1;
-#else
-  fiq = not nFIQm;
-#endif
+  this->check_external_events = true;
   if (verbose)
     inherited::logger << DebugInfo
                       << "FIQ level change:" << std::endl
                       << " - nFIQm = " << nFIQm << std::endl
-#if 0
-                      << " - raised_fiqs = " << raised_fiqs << std::endl
-#endif
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
@@ -586,12 +540,11 @@ ARMEMU::FIQHandler()
 void 
 ARMEMU::ResetHandler()
 {
-  if (not nRESETm) raised_rsts += 1;
+  this->check_external_events = true;
   if (verbose)
     inherited::logger << DebugInfo
                       << "RESET level change:" << std::endl
                       << " - nRESETm = " << nRESETm << std::endl
-                      << " - raised_rsts = " << raised_rsts << std::endl
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }

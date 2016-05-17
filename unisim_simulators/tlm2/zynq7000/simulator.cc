@@ -85,7 +85,7 @@ RegMap::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase
 }
 
 void
-RegMap::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+RegMap::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t )
 {
   payload.set_dmi_allowed( false );
   
@@ -109,7 +109,7 @@ RegMap::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
       if ((addr|size) & (size-1))
         std::cerr << "Malformed register address: [" << std::hex << addr << "," << std::dec << size << "].\n";
       else
-        status = AccessRegister( cmd == tlm::TLM_WRITE_COMMAND, addr, size, Data( payload.get_data_ptr() ) );
+        status = AccessRegister( cmd == tlm::TLM_WRITE_COMMAND, addr, size, Data( payload.get_data_ptr() ), sc_core::sc_time_stamp() + t );
     } break;
     case tlm::TLM_IGNORE_COMMAND:
       break;
@@ -138,11 +138,19 @@ MPCore::MPCore(const sc_module_name& name, unisim::kernel::service::Object* pare
   , ICCICR(0)
   , ICCPMR(0)
   , ICDDCR(0)
+  , generate_exceptions_event("generate_exceptions_event")
 {
-  memset( &IENABLER[0], 0, sizeof (IENABLER) );
+  std::fill_n(IENABLE, state32_count, 0);
+  std::fill_n(IPENDING, state32_count, 0);
+  std::fill_n(IACTIVE, state32_count, 0);
   memset( &IPRIORITYR[0], 0, sizeof (IPRIORITYR) );
   memset( &ICDIPTR[0], 0, sizeof (ICDIPTR) );
   memset( &ICDICFR[0], 0, sizeof (ICDICFR) );
+  
+  SC_HAS_PROCESS(MPCore);
+  
+  SC_METHOD(GenerateExceptionsProcess);
+  sc_core::sc_module::sensitive << generate_exceptions_event;
 }
 
 namespace {
@@ -162,10 +170,24 @@ namespace {
 }
 
 bool
-MPCore::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
+MPCore::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time )
 {
   dump_register_access( std::cerr << "MPCore", wnr, addr, size, d );
   
+  bool status = _AccessRegister( wnr, addr, size, d, update_time );
+  if (status) {
+    if (wnr)
+      generate_exceptions_event.notify(sc_core::SC_ZERO_TIME);
+  } else {
+    std::cerr << "Unknown MPCORE register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
+  }
+  
+  return status;
+}
+
+bool
+MPCore::_AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time )
+{
   if (size == 4) {
     uint32_t RAZ_WI(0);
     
@@ -176,6 +198,13 @@ MPCore::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
     
     if (addr == 0x104) /* ICCPMR: Interrupt Priority Mask Register */ {
       d.Access( wnr, ICCPMR );
+      return true;
+    }
+    
+    if (addr == 0x10c) /* ICCIAR: Interrupt Acknowledge Register */ {
+      if (wnr) return false;
+      uint32_t iar = ReadGICC_IAR();
+      d.Access( wnr, iar );
       return true;
     }
     
@@ -193,24 +222,24 @@ MPCore::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
     
     if (Match<0x1100,-0x80> m = addr) /* ICDISER: Interrupt Set-enable Register  */ {
       unsigned idx = m.var >> 2;
-      if (idx > ien_count)
+      if (idx > state32_count)
         d.Access( wnr, RAZ_WI );
       else {
-        uint32_t value = IENABLER[idx];
+        uint32_t value = IENABLE[idx];
         d.Access( wnr, value );
-        if (wnr) IENABLER[idx] |= value;
+        if (wnr) IENABLE[idx] |= value;
       }
       return true;
     }
     
     if (Match<0x1180,-0x80> m = addr) /* ICDICER: Interrupt Clear-Enable Register */ {
       unsigned idx = m.var >> 2;
-      if (idx > ien_count)
+      if (idx > state32_count)
         d.Access( wnr, RAZ_WI );
       else {
-        uint32_t value = IENABLER[idx];
+        uint32_t value = IENABLE[idx];
         d.Access( wnr, value );
-        if (wnr) IENABLER[idx] &= ~value;
+        if (wnr) IENABLE[idx] &= ~value;
       }
       return true;
     }
@@ -225,14 +254,14 @@ MPCore::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
     }
     
     if (Match<0x1800,-0x400> m = addr) /* ICDIPTR: Interrupt Processor Targets Register */ {
-      unsigned idx = m.var >> 2;
-      if (idx < 4) {
+      unsigned idx = m.var;
+      if (idx < 16) {
         uint32_t value = 0x01010101;
         d.Access( wnr, value );
         return true;
       }
-      if ((6 <= idx) and (idx < 24)) {
-        d.Access( wnr, ICDIPTR[idx] );
+      if ((24 <= idx) and (idx < ITLinesCount)) {
+        d.Access( wnr, &ICDIPTR[idx], 4 );
         return true;
       }
       d.Access( wnr, RAZ_WI );
@@ -246,57 +275,204 @@ MPCore::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
     }
   }
   
-  std::cerr << "Unknown MPCORE register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
   return false;
 }
 
-TTC::TTC( int id, const sc_module_name& name, unisim::kernel::service::Object* parent )
+void
+MPCore::SendInterrupt( unsigned idx )
+{
+  IPENDING[idx/32] |= (1ul << (idx%32));
+  generate_exceptions_event.notify(sc_core::SC_ZERO_TIME);
+}
+
+unsigned
+MPCore::HighestPriorityPendingInterrupt( uint8_t required, uint8_t enough )
+{
+  unsigned hppi = 1023;
+  
+  if ((ICCICR & ICDDCR & 1) == 0)
+    return hppi;
+  
+  // Preemption not supported                                                                                                                               
+  for (unsigned idx = 0; idx < state32_count; ++ idx)
+    if (IACTIVE[idx])
+      return hppi;
+  
+  for (unsigned int_id = 0; int_id < ITLinesCount; int_id += 1) {
+    unsigned word = int_id / 32;
+    uint32_t bit = 1u << (int_id % 32);
+    if (not (IPENDING[word] & IENABLE[word] & bit))
+      continue;
+    uint8_t priority = IPRIORITYR[int_id];
+    if (priority < enough)
+      return int_id;
+    if (priority < required) {
+      hppi = int_id;
+      required = priority;
+    }
+  }
+    
+  return hppi;
+}
+
+void
+MPCore::GenerateExceptionsProcess()
+{
+  nIRQ = not (HighestPriorityPendingInterrupt( ICCPMR, ICCPMR ) < ITLinesCount);
+}
+
+uint32_t
+MPCore::ReadGICC_IAR()
+{
+  unsigned int_id = HighestPriorityPendingInterrupt( ICCPMR, 0 );
+  if (int_id < 16)
+    throw std::logic_error("not implemented");
+  
+  // Acknowledging
+  unsigned word = int_id / 32;
+  uint32_t bit = 1u << (int_id % 32);
+  IPENDING[word] &= ~bit;
+  IACTIVE[word] |= bit;
+  
+  return int_id;
+}
+
+TTC::TTC( const sc_module_name& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it )
   : unisim::kernel::service::Object( name, parent )
-  , sc_module( name )
+  , sc_module(name)
   , RegMap("ttc_sock")
   , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
-  , m_id( id )
-  , Clock_Control_1(0)
-  , Clock_Control_2(0)
-  , Clock_Control_3(0)
-  , Counter_Control_1(0x21)
-  , Counter_Control_2(0x21)
-  , Counter_Control_3(0x21)
-  , Interval_Counter_1(0)
-  , Interval_Counter_2(0)
-  , Interval_Counter_3(0)
-  , Interrupt_Enable_1(0)
-  , Interrupt_Enable_2(0)
-  , Interrupt_Enable_3(0)
+  , mpcore(_mpcore)
+  , id(_id)
+  , base_it(_base_it)
+  , update_state_event("update_state_event")
+  , clock_period(sc_core::SC_ZERO_TIME)
 {
+  std::fill_n(Clock_Control, 3, 0);
+  std::fill_n(Counter_Control, 3, 0x21);
+  std::fill_n(Counter_Value, 3, 0);
+  std::fill_n(Interval_Counter, 3, 0);
+  std::fill_n(Interrupt_Enable, 3, 0);
+  std::fill_n(Interrupt_Enable, 3, 0);
+  std::fill_n(it_lines, 3, -1);
+  
+  SC_HAS_PROCESS(TTC);
+  
+  SC_METHOD(UpdateStateProcess);
+  sc_core::sc_module::sensitive << update_state_event;
+}
+
+void
+TTC::UpdateStateProcess()
+{
+  UpdateState( sc_core::sc_time_stamp() );
+}
+
+void
+TTC::UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time )
+{
+  if (Clock_Control[idx] & 0x28)
+    throw std::logic_error( "internal error" );
+  if (Counter_Control[idx] & 0x10) {
+    Counter_Value[idx] = 0;
+    Counter_Control[idx] &= ~0x10;
+  }
+  if (Counter_Control[idx] & 1) {
+    // Disabled
+    last_state_update_time[idx] = update_time;
+    return;
+  }
+  
+  // Computing counter ticks since last update
+  sc_dt::uint64 ticks;
+  sc_core::sc_time  tick_period( clock_period );
+  if (Clock_Control[idx] & 1) // Prescaling
+    tick_period *= sc_dt::uint64( 1 << (((Clock_Control[idx] >> 1) & 0xf) + 1) );
+  
+  ticks = (update_time - last_state_update_time[idx]) / tick_period;
+  last_state_update_time[idx] += ticks*tick_period;
+  
+  bool interval_mode = (Counter_Control[idx] & 2);
+  bool interrupt_enable = interval_mode ? (Interrupt_Enable[idx] & 0x01) : (Interrupt_Enable[idx] & 0x10);
+  sc_dt::uint64 interval = interval_mode ? Interval_Counter[idx] : 0x10000;
+  sc_dt::uint64 counter_value = Counter_Value[idx];
+  
+  // Computing ticks to next zero and updating the counter value to its current state
+  sc_dt::uint64 ticks_to_next_zero = 0;
+  if (Counter_Control[idx] & 4) {
+    // Decrement
+    ticks_to_next_zero = counter_value ? counter_value : interval;
+    if (ticks > counter_value) {
+      counter_value = interval - 1 - ((ticks - counter_value - 1) % interval);
+    } else {
+      counter_value = counter_value - ticks;
+    }
+  } else {
+    // Increment
+    if (interval > counter_value) {
+      ticks_to_next_zero = interval - counter_value;
+      counter_value = (counter_value + ticks) % interval;
+    } else {
+      ticks_to_next_zero = 1;
+      if (ticks > 0)
+        counter_value = (ticks - 1) % interval;
+    }
+  }
+  
+  if (interrupt_enable) {
+    if (ticks > ticks_to_next_zero)
+      throw std::logic_error("internal error");
+    else if (ticks == ticks_to_next_zero)
+      mpcore.SendInterrupt( base_it + idx );
+    else
+      update_state_event.notify( last_state_update_time[idx] + (ticks_to_next_zero - ticks)*tick_period - update_time );
+  }
+  
+  Counter_Value[idx] = counter_value;
+}
+
+void
+TTC::UpdateState( sc_core::sc_time const& update_time )
+{
+  for (unsigned idx = 0; idx < 3; ++idx)
+    UpdateCounterState( idx, update_time );
 }
 
 bool
-TTC::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
+TTC::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time )
 {
   dump_register_access( std::cerr << this->GetName(), wnr, addr, size, d );
+  
+  UpdateState( update_time );
+  int update_idx = -1;
   
   if (size == 4) {
     //uint32_t RAZ_WI(0);
     
     switch (addr) {
-    case 0x00: d.Access( wnr, Clock_Control_1 ); return true;
-    case 0x04: d.Access( wnr, Clock_Control_2 ); return true;
-    case 0x08: d.Access( wnr, Clock_Control_3 ); return true;
-    case 0x0c: d.Access( wnr, Counter_Control_1 ); return true;
-    case 0x10: d.Access( wnr, Counter_Control_2 ); return true;
-    case 0x14: d.Access( wnr, Counter_Control_3 ); return true;
-    case 0x24: d.Access( wnr, Interval_Counter_1 ); return true;
-    case 0x28: d.Access( wnr, Interval_Counter_2 ); return true;
-    case 0x2c: d.Access( wnr, Interval_Counter_3 ); return true;
-    case 0x60: d.Access( wnr, Interrupt_Enable_1 ); return true;
-    case 0x64: d.Access( wnr, Interrupt_Enable_2 ); return true;
-    case 0x68: d.Access( wnr, Interrupt_Enable_3 ); return true;
+    case 0x00: d.Access( wnr, Clock_Control[0] ); update_idx = 0; break;
+    case 0x04: d.Access( wnr, Clock_Control[1] ); update_idx = 1; break;
+    case 0x08: d.Access( wnr, Clock_Control[2] ); update_idx = 2; break;
+    case 0x0c: d.Access( wnr, Counter_Control[0] ); update_idx = 0; break;
+    case 0x10: d.Access( wnr, Counter_Control[1] ); update_idx = 1; break;
+    case 0x14: d.Access( wnr, Counter_Control[2] ); update_idx = 2; break;
+    case 0x24: d.Access( wnr, Interval_Counter[0] ); update_idx = 0; break;
+    case 0x28: d.Access( wnr, Interval_Counter[1] ); update_idx = 1; break;
+    case 0x2c: d.Access( wnr, Interval_Counter[2] ); update_idx = 2; break;
+    case 0x60: d.Access( wnr, Interrupt_Enable[0] ); update_idx = 0; break;
+    case 0x64: d.Access( wnr, Interrupt_Enable[1] ); update_idx = 1; break;
+    case 0x68: d.Access( wnr, Interrupt_Enable[2] ); update_idx = 2; break;
+    default:
+      std::cerr << "Unknown TCC register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
+      return false;
+      
     }
   }
   
-  std::cerr << "Unknown TCC register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
-  return false;
+  if (wnr and (update_idx >= 0))
+    UpdateCounterState( update_idx, update_time );
+  
+  return true;
 }
 
 SLCR::SLCR(const sc_module_name& name, unisim::kernel::service::Object* parent)
@@ -314,7 +490,7 @@ SLCR::SLCR(const sc_module_name& name, unisim::kernel::service::Object* parent)
 }
 
 bool
-SLCR::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
+SLCR::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time )
 {
   dump_register_access( std::cerr << "SLCR", wnr, addr, size, d );
   
@@ -326,8 +502,8 @@ SLCR::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
     case 0x104: d.Access( wnr,  DDR_PLL_CTRL ); return true;
     case 0x108: d.Access( wnr,   IO_PLL_CTRL ); return true;
     case 0x120: d.Access( wnr,  ARM_CLK_CTRL ); return true;
-    case 0x1c4: d.Access( wnr,  CLK_621_TRUE ); return true;
     case 0x154: d.Access( wnr, UART_CLK_CTRL ); return true;
+    case 0x1c4: d.Access( wnr,  CLK_621_TRUE ); return true;
     }
   }
   
@@ -343,8 +519,8 @@ Simulator::Simulator(int argc, char **argv)
   , main_ram( "main_ram" )
   , boot_rom( "boot_rom" )
   , slcr( "slcr" )
-  , ttc0( 0, "ttc0" )
-  , ttc1( 1, "ttc1" )
+  , ttc0( "ttc0", 0, mpcore, 0, 42 )
+  , ttc1( "ttc1", 0, mpcore, 1, 69 )
   , nirq_signal("nIRQm")
   , nfiq_signal("nFIQm")
   , nrst_signal("nRESETm")
@@ -635,6 +811,8 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
     }
 
   unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+  
+  ttc0.clock_period = ttc1.clock_period = cpu.GetCpuCycleTime();
   
   // inline-debugger and gdb-server are exclusive
   if(enable_inline_debugger && enable_gdb_server)
