@@ -55,14 +55,21 @@ group conditional (ldr_imm,ldr_reg,ldrh_imm,ldrh_reg,ldrsh_imm,ldrsh_reg,ldrb_im
                    smlsld,smull,umlal,umaal,umull,smlaxy,smlad,smuad,   \
                    smlsd,smusd,smmla,smmul,smmls,smlalxy,smlawy,smulxy, \
                    smulwy,sdiv,udiv,swi,hvc,smc,eret,mrs,               \
-                   msr_reg,msr_reg_psr,msr_imm_psr,and_32imm,and_imm_shift,and_reg_shift,eor_32imm,eor_imm_shift, \
-                   eor_reg_shift,sub_32imm,sub_imm_shift,sub_reg_shift,rsb_32imm,rsb_imm_shift,rsb_reg_shift,add_32imm, \
-                   add_imm_shift,add_reg_shift,adc_32imm,adc_imm_shift,adc_reg_shift,sbc_32imm,sbc_imm_shift,sbc_reg_shift, \
-                   rsc_32imm,rsc_imm_shift,rsc_reg_shift,orr_32imm,orr_imm_shift,orr_reg_shift,bic_32imm,bic_imm_shift, \
-                   bic_reg_shift,tst_32imm,tst_imm_shift,tst_reg_shift,teq_32imm,teq_imm_shift,teq_reg_shift,cmp_32imm, \
-                   cmp_imm_shift,cmp_reg_shift,cmn_32imm,cmn_imm_shift,cmn_reg_shift,mov_32imm,mov_imm_shift,mov_reg_shift, \
-                   mvn_32imm,mvn_imm_shift,mvn_reg_shift,               \
-                   subspc_imm, subspc_imm_shift,                        \
+                   msr_reg,msr_reg_psr,msr_imm_psr,                     \
+                   and_32imm,and_imm_shift,and_reg_shift,eor_32imm,eor_imm_shift,eor_reg_shift, \
+                   sub_32imm,sub_imm_shift,sub_reg_shift,rsb_32imm,rsb_imm_shift,rsb_reg_shift, \
+                   add_32imm,add_imm_shift,add_reg_shift,adc_32imm,adc_imm_shift,adc_reg_shift, \
+                   sbc_32imm,sbc_imm_shift,sbc_reg_shift,rsc_32imm,rsc_imm_shift,rsc_reg_shift, \
+                   orr_32imm,orr_imm_shift,orr_reg_shift,bic_32imm,bic_imm_shift,bic_reg_shift, \
+                   tst_32imm,tst_imm_shift,tst_reg_shift,teq_32imm,teq_imm_shift,teq_reg_shift, \
+                   cmp_32imm,cmp_imm_shift,cmp_reg_shift,cmn_32imm,cmn_imm_shift,cmn_reg_shift, \
+                   mov_32imm,mov_imm_shift,mov_reg_shift,mvn_32imm,mvn_imm_shift,mvn_reg_shift, \
+                   andspc_imm, andspc_imm_shift,eorspc_imm, eorspc_imm_shift, \
+                   subspc_imm, subspc_imm_shift,rsbspc_imm, rsbspc_imm_shift, \
+                   addspc_imm, addspc_imm_shift,adcspc_imm, adcspc_imm_shift, \
+                   sbcspc_imm, sbcspc_imm_shift,rscspc_imm, rscspc_imm_shift, \
+                   orrspc_imm, orrspc_imm_shift,movspc_imm, movspc_imm_shift, \
+                   bicspc_imm, bicspc_imm_shift,mvnspc_imm, mvnspc_imm_shift, \
                    clz,rbit,rev,revsh,rev16,                            \
                    movw,movt,                                           \
                    qadd,qsub,qdadd,qdsub,pkh,sxtab16,sxtb16,uxtab16,    \

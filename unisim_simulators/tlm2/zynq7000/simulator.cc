@@ -463,7 +463,7 @@ TTC::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_c
     case 0x64: d.Access( wnr, Interrupt_Enable[1] ); update_idx = 1; break;
     case 0x68: d.Access( wnr, Interrupt_Enable[2] ); update_idx = 2; break;
     default:
-      std::cerr << "Unknown TCC register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
+      std::cerr << "Unknown TTC register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
       return false;
       
     }

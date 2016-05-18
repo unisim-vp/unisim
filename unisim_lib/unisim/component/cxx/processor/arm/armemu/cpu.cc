@@ -774,7 +774,7 @@ CPU::StepInstruction()
            << ", cpsr: " << std::hex << cpsr.bits() << std::dec
            << " (" << cpsr << ")"
            << EndDebugError;
-
+    this->Stop(-1);
   }
 }
 
@@ -1514,6 +1514,13 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size )
     // Stage 1 MMU enabled
     if (not tlb.GetTranslation<POLICY>( tad, mva ))
       TranslationTableWalk<POLICY>( tad, mva );
+    // else {
+    //   // Check if hit is coherent
+    //   TransAddrDesc tad_chk;
+    //   TranslationTableWalk<DebugMemAcc>( tad_chk, mva );
+    //   if (tad_chk.pa != tad.pa)
+    //     exception_trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
+    // }
   } else {
     tad.pa = mva;
   }
