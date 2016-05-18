@@ -274,7 +274,29 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
         registers_registry[regname.str()] = dbg_reg;
         debug_register_pool.insert( dbg_reg );
       }
-  
+    
+    struct VFPSingle : public unisim::service::interfaces::Register
+    {
+      VFPSingle( CPU& _cpu, std::string _name, unsigned _reg ) : cpu(_cpu), name(_name), reg(_reg) {}
+
+      virtual ~VFPSingle() {}
+      virtual const char *GetName() const { return name.c_str(); };
+      virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.GetVU32( reg ); }
+      virtual void SetValue( void const* buffer ) { cpu.SetVU32( reg, *((uint32_t*)buffer) ); }
+      virtual int  GetSize() const { return 8; }
+
+      CPU& cpu; std::string name; unsigned reg;
+    };
+
+    for (unsigned idx = 0; idx < 32; ++idx)
+      {
+        std::stringstream regname; regname << 's' << idx;
+        dbg_reg = new VFPSingle( *this, regname.str(), idx );
+        registers_registry[regname.str()] = dbg_reg;
+        debug_register_pool.insert( dbg_reg );
+      }
+
+    
     // Handling the FPSCR register
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpscr", &fpscr.m_value );
     registers_registry["fpscr"] = dbg_reg;
