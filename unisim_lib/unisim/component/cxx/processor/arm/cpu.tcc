@@ -274,8 +274,15 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
         registers_registry[regname.str()] = dbg_reg;
         debug_register_pool.insert( dbg_reg );
       }
-  }
   
+    // Handling the FPSCR register
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpscr", &fpscr.m_value );
+    registers_registry["fpscr"] = dbg_reg;
+    debug_register_pool.insert( dbg_reg );
+    var_reg = new unisim::kernel::service::Register<uint32_t>( "fpscr", this, this->fpscr.m_value, "Current Program Status Register" );
+    variable_register_pool.insert( var_reg );
+  }
+    
   this->CPU<CONFIG>::CP15ResetRegisters();
 }
 

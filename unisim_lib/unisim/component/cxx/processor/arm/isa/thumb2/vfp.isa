@@ -1470,7 +1470,7 @@ vmrs.execute = {
   
   else {
     // cpu.CheckVFPEnabled(FALSE);
-    if (GetNativeValue(cpu.CPSR().Get(M) != typename ARCH::U32(cpu.USER_MODE)))
+    if (GetNativeValue(cpu.CPSR().Get(M) == typename ARCH::U32(cpu.USER_MODE)))
       cpu.UndefinedInstruction( this );
 
     switch (spr) {
@@ -1511,7 +1511,7 @@ vmsr.execute = {
   
   else {
     // cpu.CheckVFPEnabled(FALSE);
-    if (GetNativeValue(cpu.CPSR().Get(M) != typename ARCH::U32(cpu.USER_MODE)))
+    if (GetNativeValue(cpu.CPSR().Get(M) == typename ARCH::U32(cpu.USER_MODE)))
       cpu.UndefinedInstruction( this );
     
     switch (spr) {

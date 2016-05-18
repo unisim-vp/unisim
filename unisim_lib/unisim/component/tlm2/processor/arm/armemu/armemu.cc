@@ -336,7 +336,10 @@ ARMEMU::Run()
         uint32_t exceptions = 0;
         unisim::component::cxx::processor::arm::I.Set( exceptions, not nIRQm );
         unisim::component::cxx::processor::arm::F.Set( exceptions, not nFIQm );
-        this->HandleAsynchronousException( exceptions );
+        
+        bool exception_taken = this->HandleAsynchronousException( exceptions ) != 0;
+        if (exception_taken and this->exception_trap_reporting_import)
+          this->exception_trap_reporting_import->ReportTrap(*this,"irq or fiq");
       }
       check_external_events = false;
     }

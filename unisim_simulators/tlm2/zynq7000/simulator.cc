@@ -580,6 +580,7 @@ Simulator::Simulator(int argc, char **argv)
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;
   cpu.instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
+  cpu.exception_trap_reporting_import >> debugger->trap_reporting_export;
   mpcore.trap_reporting_import >> debugger->trap_reporting_export;
   //cpu.symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
   cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
