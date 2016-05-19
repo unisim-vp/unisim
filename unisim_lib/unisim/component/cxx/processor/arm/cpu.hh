@@ -367,8 +367,15 @@ protected:
   {
     virtual            ~CP15Reg() {}
     virtual unsigned    RequiredPL() { return 1; }
-    virtual void        Write( CPU& cpu, uint32_t value ) { cpu.UnpredictableInsnBehaviour(); }
-    virtual uint32_t    Read( CPU& cpu ) { cpu.UnpredictableInsnBehaviour(); return 0; }
+    virtual void        Write( CPU& cpu, uint32_t value ) {
+      cpu.logger << unisim::kernel::logger::DebugWarning << "Writing " << Describe() << unisim::kernel::logger::EndDebugWarning;
+      cpu.UnpredictableInsnBehaviour();
+    }
+    virtual uint32_t    Read( CPU& cpu ) {
+      cpu.logger << unisim::kernel::logger::DebugWarning << "Reading " << Describe() << unisim::kernel::logger::EndDebugWarning;
+      cpu.UnpredictableInsnBehaviour();
+      return 0;
+    }
     virtual char const* Describe() = 0;
   };
   

@@ -86,6 +86,10 @@ op unconditional( 0b1111[4]: ?[28] );
 
 unconditional.disasm = {
   buffer << "unconditional group\t(" << std::hex << this->GetEncoding() << std::dec << ")";
-}
+};
+
+unconditional.execute = {
+  cpu.UndefinedInstruction( this );
+};
 
 unconditional.specialize( conditional );

@@ -262,7 +262,6 @@ protected:
     uint32_t prrr;  /*< PRRR, Primary Region Remap Register */
     uint32_t nmrr;  /*< NMRR, Normal Memory Remap Register */
     uint32_t dacr;
-    
   } mmu;
   
   struct TransAddrDesc
@@ -296,7 +295,17 @@ protected:
   /*************************/
   /* MMU Interface    END  */
   /*************************/
-
+  
+  /****************************************************/
+  /* Process, context and thread ID registers   START */
+  /****************************************************/
+  
+  uint32_t TPIDRURW; /*< User Read/Write Thread ID Register */
+  uint32_t TPIDRURO; /*< User Read-Only Thread ID Register */
+  
+  /****************************************************/
+  /* Process, context and thread ID registers    END  */
+  /****************************************************/
 
   /**************************/
   /* CP15 Interface   START */

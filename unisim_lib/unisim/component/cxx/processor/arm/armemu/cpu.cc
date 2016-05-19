@@ -115,6 +115,8 @@ CPU::CPU(const char *name, Object *parent)
   , thumb_decoder()
   , csselr(0)
   , mmu()
+  , TPIDRURW()
+  , TPIDRURO()
   , instruction_counter(0)
   , voltage(0)
   , trap_on_instruction_counter(0)
@@ -1660,8 +1662,10 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "DACR, Domain Access Control Register"; }
           uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.dacr; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
-            dynamic_cast<CPU&>( _cpu ).mmu.dacr = value;
-            _cpu.logger << DebugInfo << "DACR <- " << std::hex << value << std::dec << EndDebugInfo;
+            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            cpu.mmu.dacr = value;
+            if (cpu.verbose)
+              cpu.logger << DebugInfo << "DACR <- " << std::hex << value << std::dec << EndDebugInfo;
           }
         } x;
         return x;
@@ -1771,7 +1775,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
           void Write( BaseCpu& _cpu, uint32_t value ) {
             CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
-            cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
+            if (cpu.verbose)
+              cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
             cpu.tlb.Invalidate();
           }
         } x;
@@ -1803,18 +1808,35 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
+    case CP15ENCODE( 13, 0, 0, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TPIDRURW, User Read/Write Thread ID Register"; }
+          unsigned RequiredPL() { return 0; /* Doesn't requires priviledges */ }
+          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).TPIDRURW; }
+          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).TPIDRURW = value; }
+        } x;
+        return x;
+      } break;
+      
     case CP15ENCODE( 13, 0, 0, 3 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TPIDRURO, Thread Id Privileged Read Write Only Register"; }
-          unsigned RequiredPL() { return 0; /* Doesn't requires priviledges */ }
+          char const* Describe() { return "TPIDRURO, User Read-Only Thread ID Register"; }
+          unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
           uint32_t Read( BaseCpu& _cpu ) {
             CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
-            /* TODO: the following only works in linux os
-             * emulation. We should really access the TPIDRURO
-             * register. */
-            return cpu.MemRead32( 0xffff0ff0 );
+            if (cpu.linux_os_import) {
+              return cpu.MemRead32( 0xffff0ff0 );
+            }
+            return cpu.TPIDRURO;
+          }
+          void Write( BaseCpu& _cpu, uint32_t value ) {
+            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            cpu.RequiresPL(1);
+            cpu.TPIDRURO = value;
           }
         } x;
         return x;
