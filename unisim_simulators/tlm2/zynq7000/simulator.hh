@@ -70,7 +70,7 @@
 struct ZynqRouterConfig
 {
   typedef uint32_t ADDRESS;
-  static unsigned const OUTPUT_PORTS = 6;
+  static unsigned const OUTPUT_PORTS = 7;
   static unsigned const INPUT_SOCKETS = 1;
   static unsigned const OUTPUT_SOCKETS = OUTPUT_PORTS;
   static unsigned const MAX_NUM_MAPPINGS = OUTPUT_PORTS;
@@ -142,7 +142,7 @@ struct MPCore
   bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
   bool _AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
   
-  void SendInterrupt( unsigned idx );
+  void SendInterrupt( unsigned idx, sc_core::sc_time const& t );
 
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
   
@@ -196,6 +196,7 @@ struct TTC
     Counter_Control[3],
     Counter_Value[3],
     Interval_Counter[3],
+    Interrupt_Register[3],
     Interrupt_Enable[3];
   
   bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
@@ -207,8 +208,30 @@ struct TTC
   
   void UpdateStateProcess();
   void UpdateState( sc_core::sc_time const& update_time );
-  void UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time
- );
+  void UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time );
+};
+
+struct L2C
+  : public sc_module
+  , public RegMap
+  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+{
+  L2C( const sc_module_name& name, unisim::kernel::service::Object* parent );
+  
+  uint32_t reg1_control;
+  
+  typedef std::map<uint32_t,uint32_t> FastRegs;
+  FastRegs fastregs;
+  uint32_t& fastreg( uint32_t addr, uint32_t rval )
+  {
+    FastRegs::iterator itr = fastregs.lower_bound(addr);
+    // itr->first is greater than or equivalent to addr.                                                                                                   
+    if (itr == fastregs.end() or (addr != itr->first))
+      itr = fastregs.insert(itr, std::make_pair( addr, rval ));
+    return itr->second;
+  }
+  
+  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
 };
 
 struct Simulator : public unisim::kernel::service::Simulator
@@ -250,6 +273,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   SLCR                         slcr;
   TTC                          ttc0;
   TTC                          ttc1;
+  L2C                          l2c;
   sc_signal<bool>              nirq_signal;
   sc_signal<bool>              nfiq_signal;
   sc_signal<bool>              nrst_signal;

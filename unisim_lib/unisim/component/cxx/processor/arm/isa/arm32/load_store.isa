@@ -1024,7 +1024,7 @@ ldm_usr.execute = {
 
 op ldm_rfe( cond[4]: 0b100[3]: mod[2]: 0b1[1]: w[1]: 0b1[1]: rn[4]: 0b1[1]: regnpclist[15] );
 ldm_rfe.var reglist : {uint32_t} = {regnpclist | 0x8000};
-ldm_rfe.var reject : {Reject} = {(rn == 15) or ((reglist >> rn) & 1)};
+ldm_rfe.var reject : {Reject} = {(rn == 15) or ((reglist >> rn) & w)};
 
 ldm_rfe.disasm = {
   buffer << "ldm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")

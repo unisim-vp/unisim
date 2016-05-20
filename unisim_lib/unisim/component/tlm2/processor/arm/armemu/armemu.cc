@@ -373,7 +373,7 @@ ARMEMU::Run()
         unisim::component::cxx::processor::arm::F.Get( cpsr_cleared_bits ))
       {
         this->check_external_events = true;
-        if (verbose)
+        if (unlikely(verbose_tlm))
           inherited::logger << DebugInfo
                             << "Syncing due to exception being unmasked" << std::endl
                             << " - PC = 0x" << std::hex << current_pc << std::dec << std::endl
@@ -518,7 +518,7 @@ void
 ARMEMU::IRQHandler()
 {
   this->check_external_events = true;
-  if (verbose)
+  if (verbose_tlm)
     inherited::logger << DebugInfo
                       << "IRQ level change:" << std::endl
                       << " - nIRQm = " << nIRQm << std::endl
@@ -531,7 +531,7 @@ void
 ARMEMU::FIQHandler()
 {
   this->check_external_events = true;
-  if (verbose)
+  if (verbose_tlm)
     inherited::logger << DebugInfo
                       << "FIQ level change:" << std::endl
                       << " - nFIQm = " << nFIQm << std::endl
@@ -544,7 +544,7 @@ void
 ARMEMU::ResetHandler()
 {
   this->check_external_events = true;
-  if (verbose)
+  if (verbose_tlm)
     inherited::logger << DebugInfo
                       << "RESET level change:" << std::endl
                       << " - nRESETm = " << nRESETm << std::endl

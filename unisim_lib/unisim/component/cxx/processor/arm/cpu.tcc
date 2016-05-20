@@ -828,7 +828,12 @@ template <class CONFIG>
 void 
 CPU<CONFIG>::UnpredictableInsnBehaviour()
 {
-  logger << DebugWarning << "Trying to execute unpredictable behavior instruction" << EndDebugWarning;
+  logger << DebugWarning
+         << "Trying to execute unpredictable behavior instruction."
+         << " PC: " << std::hex << current_pc << std::dec
+         << ", CPSR: " << std::hex << cpsr.bits() << std::dec
+         << " (" << cpsr << ")"
+         << EndDebugWarning;
   this->Stop( -1 );
 }
 
