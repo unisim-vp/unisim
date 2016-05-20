@@ -1362,15 +1362,23 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 		logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
 		return PutPacket("E00");
 	}
-	const GDBRegister& gdb_reg = *gdb_registers[regnum];
-	string packet;
-	if(gdb_reg.IsEmpty())
+	const GDBRegister *gdb_reg = gdb_registers[regnum];
+	if(gdb_reg)
 	{
-		logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
-		return PutPacket("E00");
+		string packet;
+		if(gdb_reg->GetValue(packet))
+		{
+			logger << DebugError << "Failed to read Register #" << regnum << EndDebugError;
+			return PutPacket(packet);
+		}
+		else
+		{
+			return PutPacket("E00");
+		}
 	}
-	gdb_reg.GetValue(packet);
-	return PutPacket(packet);
+
+	logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
+	return PutPacket("E00");
 }
 
 template <class ADDRESS>
@@ -1381,8 +1389,23 @@ bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 		logger << DebugError << "Register #" << regnum << " can't be written because it is unknown" << EndDebugError;
 		return PutPacket("E00");
 	}
-	GDBRegister& gdb_reg = *gdb_registers[regnum];
-	return gdb_reg.SetValue(hex) ? PutPacket("OK") : PutPacket("E00");
+	GDBRegister *gdb_reg = gdb_registers[regnum];
+	
+	if(gdb_reg)
+	{
+		if(gdb_reg->SetValue(hex))
+		{
+			return PutPacket("OK");
+		}
+		else
+		{
+			logger << DebugError << "Failed to write Register #" << regnum << EndDebugError;
+			return PutPacket("E00");
+		}
+	}
+	
+	logger << DebugError << "Register #" << regnum << " can't be written because it is unknown" << EndDebugError;
+	return PutPacket("E00");
 }
 
 template <class ADDRESS>
@@ -1391,8 +1414,7 @@ bool GDBServer<ADDRESS>::ReadMemoryHex(ADDRESS addr, uint32_t size)
 	bool read_error = false;
 	bool overwrapping = false;
 	string packet;
-	char ch[2];
-	ch[1] = 0;
+	char c;
 
 	if(size > 0)
 	{
@@ -1407,10 +1429,10 @@ bool GDBServer<ADDRESS>::ReadMemoryHex(ADDRESS addr, uint32_t size)
 					value = 0;
 				}
 			}
-			ch[0] = Nibble2HexChar(value >> 4);
-			packet += ch;
-			ch[0] = Nibble2HexChar(value & 0xf);
-			packet += ch;
+			c = Nibble2HexChar(value >> 4);
+			packet.append(1, c);
+			c = Nibble2HexChar(value & 0xf);
+			packet.append(1, c);
 			if((addr + 1) == 0) overwrapping = true;
 		} while(++addr, --size);
 	}
@@ -1797,15 +1819,14 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command)
 	std::size_t pos = 0;
 	std::size_t len = command.length();
 	
-	char ch[2];
+	char c;
 	string variable_name;
 	string variable_value;
-	ch[1] = 0;
 	// skip white characters
 	do
 	{
-		ch[0] = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
-		if(ch[0] != ' ') break;
+		c = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+		if(c != ' ') break;
 		pos += 2;
 	} while(pos < len);
 
@@ -1816,10 +1837,10 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command)
 		// fill-in parameter name
 		do
 		{
-			ch[0] = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+			c = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
 			pos += 2;
-			if(ch[0] == '=') break;
-			variable_name += ch;
+			if(c == '=') break;
+			variable_name.append(1, c);
 		} while(pos < len);
 
 		variable = Object::GetSimulator()->FindVariable(variable_name.c_str());
@@ -1843,10 +1864,10 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command)
 		// fill-in parameter value and remove trailing space
 		while(pos < len)
 		{
-			ch[0] = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
-			if(ch[0] == ' ') break;
+			c = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+			if(c == ' ') break;
 			pos += 2;
-			variable_value += ch;
+			variable_value.append(1, c);
 		}
 
 		string msg(variable_name + "<-" + variable_value + "\n");
