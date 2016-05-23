@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_ARMEMU_ARMEMU_HH__
-#define __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_ARMEMU_ARMEMU_HH__
+#ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_A9_CPU_HH__
+#define __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_A9_CPU_HH__
 
 #include <systemc.h>
 #include <tlm.h>
@@ -46,9 +46,9 @@ namespace component {
 namespace tlm2 {
 namespace processor {
 namespace arm {
-namespace armemu {
+namespace cortex_a9 {
 
-class ARMEMU
+class CPU
 	: public sc_module
 	, public tlm::tlm_bw_transport_if<>
 	, public unisim::component::cxx::processor::arm::vmsav7::CPU
@@ -110,9 +110,9 @@ private:
    **************************************************************************/
 
 public:
-  SC_HAS_PROCESS(ARMEMU);
-  ARMEMU(const sc_module_name& name, Object *parent = 0);
-  virtual ~ARMEMU();
+  SC_HAS_PROCESS(CPU);
+  CPU(const sc_module_name& name, Object *parent = 0);
+  virtual ~CPU();
 
 private:
   virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
@@ -200,11 +200,11 @@ private:
   unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
 };
 
-} // end of namespace armemu
+} // end of namespace cortex_a9
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_ARMEMU_ARMEMU_HH__
+#endif // __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_A9_CPU_HH__

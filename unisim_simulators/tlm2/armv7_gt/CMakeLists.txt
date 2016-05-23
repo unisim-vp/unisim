@@ -594,10 +594,10 @@ set ( COMP_CXX_ARMEMU_SRCS
   ${COMP_CXX_ARMEMU_SRCS_PATH}/masks.hh
   ${COMP_CXX_ARMEMU_SRCS_PATH}/cpu.hh
   ${COMP_CXX_ARMEMU_SRCS_PATH}/cpu.cc
-  ${COMP_CXX_ARMEMU_SRCS_PATH}/armemu/cpu.hh
-  ${COMP_CXX_ARMEMU_SRCS_PATH}/armemu/cpu.cc
-  ${COMP_CXX_ARMEMU_SRCS_PATH}/armemu/cache.hh
-  ${COMP_CXX_ARMEMU_SRCS_PATH}/armemu/cache.cc
+  ${COMP_CXX_ARMEMU_SRCS_PATH}/vmsav7/cpu.hh
+  ${COMP_CXX_ARMEMU_SRCS_PATH}/vmsav7/cpu.cc
+  ${COMP_CXX_ARMEMU_SRCS_PATH}/vmsav7/cache.hh
+  ${COMP_CXX_ARMEMU_SRCS_PATH}/vmsav7/cache.cc
   ${COMP_CXX_ARMEMU_SRCS_PATH}/memory_op.cc
   ${COMP_CXX_ARMEMU_SRCS_PATH}/memory_op.hh
   ${COMP_CXX_ARMEMU_SRCS_PATH}/carry_overflow.hh
@@ -614,7 +614,7 @@ set ( COMP_CXX_ARMEMU_SRCS
   ${COMP_CXX_ARMEMU_SRCS_PATH}/decode_copro_load_store.cc
   ${COMP_CXX_ARMEMU_SRCS_PATH}/disasm.hh
   ${COMP_CXX_ARMEMU_SRCS_PATH}/disasm.cc
-  ${COMP_CXX_ARMEMU_SRCS_PATH}/armemu/isa_arm32.cc
+  ${COMP_CXX_ARMEMU_SRCS_PATH}/vmsav7/isa_arm32.cc
   ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
   ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
   )
@@ -649,7 +649,7 @@ set ( COMP_CXX_MEMORY_SRCS
 # Unisim tlm2 components configuration and sources                        START #
 
 set ( COMP_TLM2_ARMEMU_SRCS_PATH
-  ${UNISIM_LIB_PATH}/unisim/component/tlm2/processor/arm/armemu )
+  ${UNISIM_LIB_PATH}/unisim/component/tlm2/processor/arm/cortex_a9 )
 
 set ( COMP_TLM2_ARMEMU_SRCS
   ${COMP_TLM2_ARMEMU_SRCS_PATH}/armemu.hh
@@ -991,7 +991,7 @@ endif ( BUILD_ARMEMU_POWER_SUPPORT )
 
 #set ( armemu_subdirs
   #unisim/kernel
-  #unisim/component/tlm2/processor/arm/armemu
+  #unisim/component/tlm2/processor/arm/cortex_a9
   #unisim/component/tlm2/memory/ram
   #unisim/service/time/sc_time
   #unisim/service/time/host_time

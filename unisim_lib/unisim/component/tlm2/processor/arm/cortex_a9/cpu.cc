@@ -32,7 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include <unisim/component/tlm2/processor/arm/armemu/armemu.hh>
+#include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -45,7 +45,7 @@
 #define LOCATION \
   " - location = " \
   << __FUNCTION__ \
-  << ":unisim_lib/unisim/component/tlm2/processor/arm/armemu/armemu.cc:" \
+  << ":unisim_lib/unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc:" \
   << __LINE__
 #define TIME(X) \
   " - time = " \
@@ -121,11 +121,11 @@ namespace component {
 namespace tlm2 {
 namespace processor {
 namespace arm {
-namespace armemu {
+namespace cortex_a9 {
 
 using namespace unisim::kernel::logger;
 
-ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
+CPU::CPU( sc_module_name const& name, Object* parent )
   : unisim::kernel::service::Object(name, parent)
   , sc_module(name)
   , unisim::component::cxx::processor::arm::vmsav7::CPU(name, parent)
@@ -170,13 +170,13 @@ ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
   sensitive << nRESETm;
 }
 
-ARMEMU::~ARMEMU()
+CPU::~CPU()
 {
   param_cpu_cycle_time.RemoveListener(this);
 }
 
 void
-ARMEMU::VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
+CPU::VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
 {
   // no need to check the name, the only variable with notify
   //   activated is the cpu_cycle_time
@@ -192,7 +192,7 @@ ARMEMU::VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
  * @return  true if the initialization suceeds, false otherwise
  */
 bool 
-ARMEMU::EndSetup()
+CPU::EndSetup()
 {
   if (not PCPU::EndSetup())
   {
@@ -225,7 +225,7 @@ ARMEMU::EndSetup()
 }
 
 void 
-ARMEMU::Stop(int ret)
+CPU::Stop(int ret)
 {
   // Call BusSynchronize to account for the remaining time spent in the cpu 
   // core
@@ -239,7 +239,7 @@ ARMEMU::Stop(int ret)
  * implmentation) is the a synchronization demanded by the debugger.
  */
 void
-ARMEMU::Sync()
+CPU::Sync()
 {
   if ( unlikely(verbose_tlm) )
   {
@@ -266,7 +266,7 @@ ARMEMU::Sync()
  * quantum time and if necessary synchronizes with the global SystemC clock.
  */
 void 
-ARMEMU::BusSynchronize() 
+CPU::BusSynchronize() 
 {
   if ( unlikely(verbose_tlm) )
   {
@@ -311,12 +311,12 @@ ARMEMU::BusSynchronize()
  * global SystemC time is updated.
  */
 void
-ARMEMU::Run()
+CPU::Run()
 {
   if ( unlikely(verbose) )
     {
       PCPU::logger << DebugInfo
-                        << "Starting ARMEMU::Run loop" << std::endl
+                        << "Starting CPU::Run loop" << std::endl
                         << " - cpu_time     = " << cpu_time << std::endl
                         << " - nice_time = " << nice_time << std::endl
                         << " - time_per_instruction = " << time_per_instruction
@@ -389,7 +389,7 @@ ARMEMU::Run()
 }
 
 void 
-ARMEMU::Reset()
+CPU::Reset()
 {
 }
   
@@ -405,7 +405,7 @@ ARMEMU::Reset()
  * @return      the synchronization status
  */
 tlm::tlm_sync_enum 
-ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_time& time)
+CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_time& time)
 {
   sync_enum_type ret = tlm::TLM_ACCEPTED;
 
@@ -508,14 +508,14 @@ ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc
  * @param end_range   the end address of the memory range to remove
  */
 void 
-ARMEMU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
+CPU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
 {
   dmi_region_cache.Invalidate(start_range, end_range);
 }
 
 /** nIRQm port handler */
 void
-ARMEMU::IRQHandler()
+CPU::IRQHandler()
 {
   this->check_external_events = true;
   if (verbose_tlm)
@@ -528,7 +528,7 @@ ARMEMU::IRQHandler()
 
 /** nFIQm port handler */
 void 
-ARMEMU::FIQHandler()
+CPU::FIQHandler()
 {
   this->check_external_events = true;
   if (verbose_tlm)
@@ -541,7 +541,7 @@ ARMEMU::FIQHandler()
   
 /** nRESETm port handler */
 void 
-ARMEMU::ResetHandler()
+CPU::ResetHandler()
 {
   this->check_external_events = true;
   if (verbose_tlm)
@@ -563,7 +563,7 @@ ARMEMU::ResetHandler()
  */
 
 bool 
-ARMEMU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
+CPU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 {
   if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
   {
@@ -605,7 +605,7 @@ ARMEMU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
  * @param size    the size of the write
  */
 bool 
-ARMEMU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
+CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 {
   if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
   {
@@ -651,7 +651,7 @@ ARMEMU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
  * @param size    the size of the read
  */
 void 
-ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
+CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
@@ -745,7 +745,7 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 }
 
 void 
-ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
+CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
@@ -844,8 +844,8 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
  * @param opcode2 the "opcode2" field of the instruction code
  * @return        an internal CP15Reg
  */
-ARMEMU::CP15Reg&
-ARMEMU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+CPU::CP15Reg&
+CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
 {
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
     {
@@ -865,7 +865,7 @@ ARMEMU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opco
   return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
 }
 
-} // end of namespace armemu
+} // end of namespace cortex_a9
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace tlm2

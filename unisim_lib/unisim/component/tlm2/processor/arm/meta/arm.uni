@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <package>
 	<unit>
-		<name>unisim::component::tlm2::processor::arm::armemu</name>
+		<name>unisim::component::tlm2::processor::arm::cortex_a9</name>
 		<files>
-			<file>unisim/component/tlm2/processor/arm/armemu/armemu.hh</file>
-			<file>unisim/component/tlm2/processor/arm/armemu/armemu.cc</file>
-			<file>unisim/component/tlm2/processor/arm/armemu/CMakeLists.txt</file>
+			<file>unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh</file>
+			<file>unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc</file>
+			<file>unisim/component/tlm2/processor/arm/cortex_a9/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>osci_systemc</dep>

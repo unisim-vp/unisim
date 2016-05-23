@@ -36,7 +36,7 @@
 #define SIMULATOR_HH_
 
 #include <GenericTimer.hh>
-#include <unisim/component/tlm2/processor/arm/armemu/armemu.hh>
+#include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/service/time/sc_time/time.hh>
@@ -100,7 +100,7 @@ struct Simulator : public unisim::kernel::service::Simulator
 
  private:
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
-  typedef unisim::component::tlm2::processor::arm::armemu::ARMEMU CPU;
+  typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
   //typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<uint32_t> LOADER;
