@@ -352,7 +352,6 @@ protected:
   /* Exception handling                                               END */
   /************************************************************************/
 
-  
   /**************************/
   /* CP15 Interface   START */
   /**************************/
@@ -406,6 +405,17 @@ protected:
   // CP15 cp15;
   uint32_t midr; /*< MIDR, Main ID Register */
   uint32_t sctlr; 
+
+  /****************************************************/
+  /* Process, context and thread ID registers   START */
+  /****************************************************/
+  
+  uint32_t TPIDRURW; /*< User Read/Write Thread ID Register */
+  uint32_t TPIDRURO; /*< User Read-Only Thread ID Register */
+  
+  /****************************************************/
+  /* Process, context and thread ID registers    END  */
+  /****************************************************/
 
 public:
   // VFP/NEON registers

@@ -144,6 +144,7 @@ struct Linux
 		SysCall* GetSysCall( std::string name ) const { return lin.GetSysCall( name ); }
 		static bool GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value );
 		static bool SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value );
+		static bool ClearRegister( Linux& lin, char const* regname );
 		std::string name;
 		Linux& lin;
 	};

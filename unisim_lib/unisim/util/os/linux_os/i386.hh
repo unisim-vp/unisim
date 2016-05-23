@@ -91,6 +91,7 @@ namespace linux_os {
     typedef typename LINUX::UTSName UTSName;
     using LINUX::TargetSystem::SetRegister;
     using LINUX::TargetSystem::GetRegister;
+    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -171,10 +172,13 @@ namespace linux_os {
     {
       // Reset all target registers
       {
-        struct : public unisim::service::interfaces::RegisterScanner {
-          void Append( unisim::service::interfaces::Register* reg ) { reg->Clear(); }
-        } clear_regs;
-        this->RegsIF().ScanRegisters( clear_regs );
+        char const* clear_registers[] = {
+          "%eax", "%ecx", "%edx", "%ebx", "%ebp", "%esi", "%edi",
+          "%st", "%st(1)", "%st(2)", "%st(3)", "%st(4)", "%st(5)", "%st(6)", "%st(7)"
+        };
+        for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
+          if (not ClearRegister(lin, clear_registers[idx]))
+            return false;
       }
       // Set EIP to the program entry point
       if (not SetRegister(lin, kI386_eip, lin.GetEntryPoint()))

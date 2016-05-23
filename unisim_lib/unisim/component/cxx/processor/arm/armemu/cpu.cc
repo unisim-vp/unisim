@@ -115,8 +115,6 @@ CPU::CPU(const char *name, Object *parent)
   , thumb_decoder()
   , csselr(0)
   , mmu()
-  , TPIDRURW()
-  , TPIDRURO()
   , instruction_counter(0)
   , voltage(0)
   , trap_on_instruction_counter(0)
@@ -196,21 +194,6 @@ CPU::EndSetup()
     /* Linux OS has setup Memory and User Registers */
     if (verbose)
       logger << DebugInfo << "Linux OS connection present ==> using linux os emulation" << EndDebugInfo;
-    
-    // TODO: Following should be done by linux_os
-    /* We need to set System Registers as a standard linux would have
-     * done, we only affects flags that impact a Linux OS emulation
-     * (others are unaffected).
-     */
-    SCTLR::I.Set(       sctlr, 1 ); // Instruction Cache enable
-    SCTLR::C.Set(       sctlr, 1 ); // Cache enable
-    SCTLR::A.Set(       sctlr, 0 ); // Alignment check enable
-    /*** Program Status Register (PSR) ***/
-    cpsr.Set( J, 0 );
-    cpsr.ITSetState( 0b0000, 0b0000 );
-    cpsr.Set( E, 0 ); // TODO, should *REALLY* be done in LinuxOS
-    // Thumb execution state bit already set by LinuxOS, as a side-effect of PC assignment */
-    cpsr.Set( M, USER_MODE );
   }
   
   if (verbose)
@@ -649,16 +632,6 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   return value;
 }
 
-
-/** Object disconnect method.
- * This method is called when this UNISIM object is disconnected from other
- *   UNISIM objects.
- */
-void 
-CPU::OnDisconnect()
-{
-  /* TODO */
-}
 
 /** Execute one complete instruction.
  */
@@ -1808,17 +1781,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
-    case CP15ENCODE( 13, 0, 0, 2 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "TPIDRURW, User Read/Write Thread ID Register"; }
-          unsigned RequiredPL() { return 0; /* Doesn't requires priviledges */ }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).TPIDRURW; }
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).TPIDRURW = value; }
-        } x;
-        return x;
-      } break;
+      /***********************************/
+      /* Context and thread ID registers */
+      /***********************************/
       
     case CP15ENCODE( 13, 0, 0, 3 ):
       {
@@ -1826,20 +1791,12 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "TPIDRURO, User Read-Only Thread ID Register"; }
           unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
-          uint32_t Read( BaseCpu& _cpu ) {
-            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
-            if (cpu.linux_os_import) {
-              return cpu.MemRead32( 0xffff0ff0 );
-            }
-            return cpu.TPIDRURO;
-          }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
-            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
-            cpu.RequiresPL(1);
-            cpu.TPIDRURO = value;
-          }
+          uint32_t Read( BaseCpu& _cpu )
+          { return dynamic_cast<CPU&>( _cpu ).MemRead32( 0xffff0ff0 ); }
         } x;
-        return x;
+        /* When using linux os emulation, this register overrides the base one */
+        if (linux_os_import)
+          return x;
       } break;
       
     }

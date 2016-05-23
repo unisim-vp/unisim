@@ -85,6 +85,7 @@ namespace linux_os {
     typedef typename LINUX::UTSName UTSName;
     using LINUX::TargetSystem::SetRegister;
     using LINUX::TargetSystem::GetRegister;
+    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -171,10 +172,16 @@ namespace linux_os {
     {
       // Reset all target registers
       {
-        struct : public unisim::service::interfaces::RegisterScanner {
-          void Append( unisim::service::interfaces::Register* reg ) { reg->Clear(); }
-        } clear_regs;
-        this->RegsIF().ScanRegisters( clear_regs );
+        char const* clear_registers[] = {
+        "r0",  "r1",  "r2",  "r3",  "r4",  "r5",  "r6",  "r7",
+        "r8",  "r9",  "r10", "r11", "r12", "r13", "r14", "r15",
+        "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",
+        "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31",
+        "cr"
+        };
+        for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
+          if (not ClearRegister(lin, clear_registers[idx]))
+            return false;
       }
       // Set PC to the program entry point
       if (not SetRegister(lin, kPPC_cia, lin.GetEntryPoint()))

@@ -37,6 +37,7 @@
 
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/os/linux_os/errno.hh>
+#include <unisim/component/cxx/processor/arm/cp15.hh>
 
 #include <stdexcept>
 #include <cerrno>
@@ -110,6 +111,7 @@ namespace linux_os {
     typedef typename LINUX::UTSName UTSName;
     using LINUX::TargetSystem::SetRegister;
     using LINUX::TargetSystem::GetRegister;
+    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -205,11 +207,42 @@ namespace linux_os {
     {
       // Reset all target registers
       {
-        struct : public unisim::service::interfaces::RegisterScanner {
-          void Append( unisim::service::interfaces::Register* reg ) { reg->Clear(); }
-        } clear_regs;
-        this->RegsIF().ScanRegisters( clear_regs );
+        char const* clear_registers[] = {
+          "r0",  "r1", "r2", "r3", "r4", "r5", "r6", "r7",
+          "r8",  "r9", "sl", "fp", "ip", "sp", "lr"
+        };
+        for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
+          if (not ClearRegister(lin, clear_registers[idx]))
+            return false;
+      } 
+      
+      /*** Program Status Register (PSR) ***/
+      // NZCVQ <- 0
+      // J <- 0
+      // ITState <- 0
+      // GE <- 0
+      // E <- 0
+      // AIF <- 0
+      // T <- 0 (will be overwritten as a side effect of PC assignment, below)
+      // M <- 0b10000 /* USER_MODE */
+      if (not SetRegister(lin, "cpsr", 0x00000010))
+        return false;
+      
+      /* We need to set SCTLR as a standard linux would have done. We
+       * only affects flags that impact a Linux OS emulation (others
+       * are unaffected).
+       */
+      {
+        uint32_t sctlr;
+        if (not GetRegister(lin, "sctlr", &sctlr))
+          return false;
+        unisim::component::cxx::processor::arm::SCTLR::I.Set( sctlr, 1 ); // Instruction Cache enable
+        unisim::component::cxx::processor::arm::SCTLR::C.Set( sctlr, 1 ); // Cache enable
+        unisim::component::cxx::processor::arm::SCTLR::A.Set( sctlr, 0 ); // Alignment check enable
+        if (not SetRegister(lin, "sctlr", sctlr))
+          return false;
       }
+
       // Set PC to the program entry point
       if (not SetRegister(lin, kARM_pc, lin.GetEntryPoint()))
         return false;

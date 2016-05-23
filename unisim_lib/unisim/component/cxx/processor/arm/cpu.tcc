@@ -112,7 +112,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , logger(*this)
   , verbose(false)
   , midr(0x414fc090)
-  , sctlr(0)
+  , sctlr()
+  , TPIDRURW()
+  , TPIDRURO()
   , registers_export("registers-export", this)
 {
   // Initialize general purpose registers
@@ -253,6 +255,12 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       registers_registry[name] = dbg_reg;
       debug_register_pool.insert( dbg_reg );
     }
+    
+    /* SCTLR */
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "sctlr", &sctlr );
+    registers_registry["sctlr"] = dbg_reg;
+    debug_register_pool.insert( dbg_reg );
+    
     // Advanced SIMD and VFP register
     struct VFPDouble : public unisim::service::interfaces::Register
     {
@@ -769,6 +777,34 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
               }
             }
           }
+        } x;
+        return x;
+      } break;
+      
+      /***********************************/
+      /* Context and thread ID registers */
+      /***********************************/
+      
+    case CP15ENCODE( 13, 0, 0, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TPIDRURW, User Read/Write Thread ID Register"; }
+          unsigned RequiredPL() { return 0; /* Doesn't requires priviledges */ }
+          uint32_t Read( CPU& cpu ) { return cpu.TPIDRURW; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.TPIDRURW = value; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 13, 0, 0, 3 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TPIDRURO, User Read-Only Thread ID Register"; }
+          unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
+          uint32_t Read( CPU& cpu ) { return cpu.TPIDRURO; }
+          void Write( CPU& cpu, uint32_t val ) { cpu.RequiresPL(1); cpu.TPIDRURO = val; }
         } x;
         return x;
       } break;

@@ -360,11 +360,6 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname )
     return 0;
   }
   
-  if (reg->GetSize() != sizeof(PARAMETER_TYPE)) {
-    logger_ << DebugError << "Bad register size for " << regname << EndDebugError;
-    return 0;
-  }
-  
   return reg;
 }
 
@@ -373,6 +368,11 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value )
 {
   if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
+    if (reg->GetSize() != sizeof(PARAMETER_TYPE)) {
+      lin.logger_ << DebugError << "Bad register size for " << regname << EndDebugError;
+      return false;
+    }
+  
     reg->GetValue(value);
     return true;
   }
@@ -383,7 +383,22 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value )
 {
   if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
+    if (reg->GetSize() != sizeof(PARAMETER_TYPE)) {
+      lin.logger_ << DebugError << "Bad register size for " << regname << EndDebugError;
+      return false;
+    }
+    
     reg->SetValue(&value);
+    return true;
+  }
+  return false;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::ClearRegister( Linux& lin, char const* regname )
+{
+  if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
+    reg->Clear();
     return true;
   }
   return false;
