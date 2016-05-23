@@ -111,7 +111,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , Service<Registers>(name, parent)
   , logger(*this)
   , verbose(false)
-  , midr(0x414fc090)
   , sctlr()
   , TPIDRURW()
   , TPIDRURO()
@@ -732,16 +731,9 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
 
   switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
     {
-    case CP15ENCODE( 0, 0, 0, 0 ):
-      {
-        static struct : public CP15Reg
-        {
-          char const* Describe() { return "MIDR, Main ID Register"; }
-          uint32_t Read( CPU& cpu ) { return cpu.midr; }
-        } x;
-        return x;
-      } break;
-      
+      /****************************
+       * Identification registers *
+       ****************************/
     case CP15ENCODE( 0, 0, 1, 0 ):
       {
         static struct : public CP15Reg

@@ -91,8 +91,9 @@ struct CPU
   , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
 {
   typedef CPU this_type;
-  typedef unisim::component::cxx::processor::arm::CPU<ARM926ejs> BaseCpu;
-  typedef typename BaseCpu::CP15Reg CP15Reg;
+  typedef unisim::component::cxx::processor::arm::CPU<ARM926ejs> PCPU;
+  typedef unisim::component::cxx::processor::arm::CPU<ARM926ejs> CP15CPU;
+  typedef typename CP15CPU::CP15Reg CP15Reg;
   
   //=====================================================================
   //=                  public service imports/exports                   =

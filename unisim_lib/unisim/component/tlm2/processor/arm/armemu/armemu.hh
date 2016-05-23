@@ -37,8 +37,8 @@
 
 #include <systemc.h>
 #include <tlm.h>
-#include "unisim/component/cxx/processor/arm/vmsav7/cpu.hh"
-#include "unisim/kernel/tlm2/tlm.hh"
+#include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
+#include <unisim/kernel/tlm2/tlm.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -55,136 +55,149 @@ class ARMEMU
 	, public unisim::kernel::service::VariableBaseListener
 {
 public:
-	typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
-	typedef tlm::tlm_base_protocol_types::tlm_phase_type    phase_type;
-	typedef tlm::tlm_sync_enum     sync_enum_type;
+  typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
+  typedef tlm::tlm_base_protocol_types::tlm_phase_type    phase_type;
+  typedef tlm::tlm_sync_enum     sync_enum_type;
 	
-	typedef unisim::component::cxx::processor::arm::vmsav7::CPU inherited;
+  typedef unisim::component::cxx::processor::arm::vmsav7::CPU PCPU;
+  typedef PCPU::CP15Reg CP15Reg;
+  typedef PCPU::CP15CPU CP15CPU;
 
-	/**************************************************************************
-	 * Port to the bus and its virtual methods to handle                START *
-	 *   incomming calls.                                                     *
-	 **************************************************************************/
+  /**************************************************************************
+   * Port to the bus and its virtual methods to handle                START *
+   *   incomming calls.                                                     *
+   **************************************************************************/
 
-	// Master port to the bus port
-	tlm::tlm_initiator_socket<32> master_socket;
+  // Master port to the bus port
+  tlm::tlm_initiator_socket<32> master_socket;
 	
 private:
-	// virtual method implementation to handle backward path of
-	//   transactions sent through the master_port
-	virtual sync_enum_type nb_transport_bw(transaction_type &trans, phase_type &phase, sc_core::sc_time &time);
-	// virtual method implementation to handle backward path of the dmi
-	//   mechanism
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+  // virtual method implementation to handle backward path of
+  //   transactions sent through the master_port
+  virtual sync_enum_type nb_transport_bw(transaction_type &trans, phase_type &phase, sc_core::sc_time &time);
+  // virtual method implementation to handle backward path of the dmi
+  //   mechanism
+  virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
-	/**************************************************************************
-	 * Port to the bus and its virtual methods to handle                  END *
-	 *   incomming calls.                                                     *
-	 **************************************************************************/
+  /**************************************************************************
+   * Port to the bus and its virtual methods to handle                  END *
+   *   incomming calls.                                                     *
+   **************************************************************************/
 
-	/**************************************************************************
-	 * Interrupt ports and their handles                                START *
-	 **************************************************************************/
+  /**************************************************************************
+   * Interrupt ports and their handles                                START *
+   **************************************************************************/
 
 public:
-	bool check_external_events;
-	// Slave port for the nIRQm signal
-	sc_core::sc_in<bool> nIRQm;
-	// Slave port for the nFIQm signal
-	sc_core::sc_in<bool> nFIQm;
-	// Slave port for the nRESETm signal
-	sc_core::sc_in<bool> nRESETm;
+  bool check_external_events;
+  // Slave port for the nIRQm signal
+  sc_core::sc_in<bool> nIRQm;
+  // Slave port for the nFIQm signal
+  sc_core::sc_in<bool> nFIQm;
+  // Slave port for the nRESETm signal
+  sc_core::sc_in<bool> nRESETm;
   
 private:
-	/** nIRQm port handler */
-	void IRQHandler();
-	/** nFIQm port handler */
-	void FIQHandler();
-	/** nRESETm port hander */
-	void ResetHandler();
+  /** nIRQm port handler */
+  void IRQHandler();
+  /** nFIQm port handler */
+  void FIQHandler();
+  /** nRESETm port hander */
+  void ResetHandler();
 	
-	/**************************************************************************
-	 * Interrupt ports and their handles                                  END *
-	 **************************************************************************/
+  /**************************************************************************
+   * Interrupt ports and their handles                                  END *
+   **************************************************************************/
 
 public:
-	SC_HAS_PROCESS(ARMEMU);
-	ARMEMU(const sc_module_name& name, Object *parent = 0);
-	virtual ~ARMEMU();
+  SC_HAS_PROCESS(ARMEMU);
+  ARMEMU(const sc_module_name& name, Object *parent = 0);
+  virtual ~ARMEMU();
 
 private:
-	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
+  virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
 
 public:
-	virtual void Stop(int ret);
-	virtual void Sync();
+  virtual void Stop(int ret);
+  virtual void Sync();
 	
-	virtual bool EndSetup();
+  virtual bool EndSetup();
 
-	void BusSynchronize();
+  void BusSynchronize();
 	
-	void Run();
+  void Run();
 
-	virtual void Reset();
+  virtual void Reset();
 	
-	// cache interface implemented by the arm processor to get the request from 
-	//   the caches
-	virtual void PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size);
-	virtual void PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
+  // cache interface implemented by the arm processor to get the request from 
+  //   the caches
+  virtual void PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size);
+  virtual void PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
 	
-	sc_core::sc_time const& GetCpuCycleTime() const { return cpu_cycle_time; };
+  sc_core::sc_time const& GetCpuCycleTime() const { return cpu_cycle_time; };
+
+  /**************************/
+  /* CP15 Interface   START */
+  /**************************/
+  
+  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+    
+  /**************************/
+  /* CP15 Interface    END  */
+  /**************************/
+
 private:
-	virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size);
-	virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
+  virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size);
+  virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
 	
-	/** Event used to signalize the end of a read transaction.
-	 * Method PrRead waits for this event once the read transaction has been 
-	 *   sent, and the nb_transport_bw notifies on it when the read transaction 
-	 *   is finished. 
-	 */
-	sc_event end_read_rsp_event;
+  /** Event used to signalize the end of a read transaction.
+   * Method PrRead waits for this event once the read transaction has been 
+   *   sent, and the nb_transport_bw notifies on it when the read transaction 
+   *   is finished. 
+   */
+  sc_event end_read_rsp_event;
 	
-	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload>
-		payload_fabric;
+  unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload>
+  payload_fabric;
 
-	/** A temporary variable used anywhere in the code to compute a time.
-	 * A temporary variable that can be used anywhere in the code to compute a 
-	 *   time.
-	 *   Should be initialized everytime it is used.
-	 */
-	sc_time tmp_time;
+  /** A temporary variable used anywhere in the code to compute a time.
+   * A temporary variable that can be used anywhere in the code to compute a 
+   *   time.
+   *   Should be initialized everytime it is used.
+   */
+  sc_time tmp_time;
 	
-	sc_time cpu_time;
-	sc_time bus_time;
-	sc_time quantum_time;
-	sc_time cpu_cycle_time;
-	sc_time bus_cycle_time;
-	sc_time nice_time;
-	double ipc;
-	bool enable_dmi;
-	sc_time time_per_instruction;
+  sc_time cpu_time;
+  sc_time bus_time;
+  sc_time quantum_time;
+  sc_time cpu_cycle_time;
+  sc_time bus_cycle_time;
+  sc_time nice_time;
+  double ipc;
+  bool enable_dmi;
+  sc_time time_per_instruction;
 	
   unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
   
-	unisim::kernel::service::Parameter<sc_time> param_cpu_cycle_time;
-	unisim::kernel::service::Parameter<sc_time> param_bus_cycle_time;
-	unisim::kernel::service::Parameter<sc_time> param_nice_time;
-	unisim::kernel::service::Parameter<double> param_ipc;
-	unisim::kernel::service::Parameter<bool> param_enable_dmi;
+  unisim::kernel::service::Parameter<sc_time> param_cpu_cycle_time;
+  unisim::kernel::service::Parameter<sc_time> param_bus_cycle_time;
+  unisim::kernel::service::Parameter<sc_time> param_nice_time;
+  unisim::kernel::service::Parameter<double> param_ipc;
+  unisim::kernel::service::Parameter<bool> param_enable_dmi;
 	
-	/*************************************************************************
-	 * Logger, verbose and trap parameters/methods/ports               START *
-	 *************************************************************************/
+  /*************************************************************************
+   * Logger, verbose and trap parameters/methods/ports               START *
+   *************************************************************************/
 
-	bool verbose_tlm;
-	unisim::kernel::service::Parameter<bool> param_verbose_tlm;
-	inline bool VerboseTLM();
+  bool verbose_tlm;
+  unisim::kernel::service::Parameter<bool> param_verbose_tlm;
+  inline bool VerboseTLM();
 
-	/*************************************************************************
-	 * Logger, verbose and trap parameters/methods/ports                 END *
-	 *************************************************************************/
+  /*************************************************************************
+   * Logger, verbose and trap parameters/methods/ports                 END *
+   *************************************************************************/
 	
-	unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
+  unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
 };
 
 } // end of namespace armemu

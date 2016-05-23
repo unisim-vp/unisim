@@ -122,12 +122,11 @@ CPU::CPU(const char *name, Object *parent)
   , linux_printk_buf_addr( 0 )
   , linux_printk_buf_size( 0 )
   , linux_printk_snooping( false )
-  , param_midr( "MIDR", this, this->BaseCpu::midr, "Value of MIDR (Main ID Register)." )
-  , sctlr_rstval( this->BaseCpu::sctlr )
+  , sctlr_rstval( this->PCPU::sctlr )
   , param_sctlr_rstval("SCTLR", this, this->sctlr_rstval, "The processor reset value of the SCTLR register.")
   , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
   , param_voltage("voltage", this, this->voltage, "The processor voltage in mV.")
-  , param_verbose("verbose", this, this->BaseCpu::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
+  , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
   , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
                                       "Produce a trap when the given instruction count is reached.")
   , param_linux_printk_snooping( "linux_printk_snooping", this, linux_printk_snooping, "Activate the printk snooping" )
@@ -172,7 +171,7 @@ CPU::BeginSetup()
 void
 CPU::CP15ResetRegisters()
 {
-  this->BaseCpu::CP15ResetRegisters();
+  this->PCPU::CP15ResetRegisters();
   /* sctlr takes its reset value */
   sctlr = sctlr_rstval;
 }
@@ -1270,7 +1269,7 @@ CPU::CallSupervisor( uint16_t imm )
       }
   } else {
     // we are executing on full system mode
-    this->BaseCpu::CallSupervisor( imm );
+    this->PCPU::CallSupervisor( imm );
   }
 }
 
@@ -1523,7 +1522,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CTR, Cache Type Register"; }
-          uint32_t Read( BaseCpu& _cpu ) { return 0x8403c003; }
+          uint32_t Read( CP15CPU& _cpu ) { return 0x8403c003; }
         } x;
         return x;
       } break;
@@ -1533,7 +1532,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
-          uint32_t Read( BaseCpu& _cpu ) {
+          uint32_t Read( CP15CPU& _cpu ) {
             CPU& cpu = dynamic_cast<CPU&>( _cpu );
             switch (cpu.csselr) {
               /*              LNSZ      ASSOC       NUMSETS        POLICY      */
@@ -1552,7 +1551,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CLIDR, Cache Level ID Register"; }
-          uint32_t Read( BaseCpu& _cpu ) {
+          uint32_t Read( CP15CPU& _cpu ) {
             CPU& cpu = dynamic_cast<CPU&>( _cpu );
             uint32_t
               LoUU =   0b010, /* Level of Unification Uniprocessor  */
@@ -1571,7 +1570,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "ID_MMFR0, Memory Model Feature Register 0"; }
-          uint32_t Read( BaseCpu& _cpu ) { return 0x3; /* vmsav7 */ }
+          uint32_t Read( CP15CPU& _cpu ) { return 0x3; /* vmsav7 */ }
         } x;
         return x;
       } break;
@@ -1581,10 +1580,10 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             dynamic_cast<CPU&>( _cpu ).csselr = value;
           }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).csselr; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).csselr; }
         } x;
         return x;
       } break;
@@ -1598,8 +1597,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
           /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr0 = value; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr0; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr0 = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr0; }
         } x;
         return x;
       } break;
@@ -1610,8 +1609,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "TTBR1, Translation Table Base Register 1"; }
           /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr1 = value; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr1; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr1 = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr1; }
         } x;
         return x;
       } break;
@@ -1621,8 +1620,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "TTBCR, Translation Table Base Control Register"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbcr = value; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbcr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbcr = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbcr; }
         } x;
         return x;
       } break;
@@ -1633,8 +1632,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DACR, Domain Access Control Register"; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.dacr; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.dacr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
             cpu.mmu.dacr = value;
             if (cpu.verbose)
@@ -1652,7 +1651,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
             //_cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1665,7 +1664,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "ICIMVAU, Clean data* cache line by MVA to PoU"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
             //_cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1678,7 +1677,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "BPIALL, Invalidate all branch predictors"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No branch predictor, basically nothing to do */
             //_cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1691,7 +1690,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DCCMVAC, Clean data* cache line by MVA to PoC"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
             //_cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1704,7 +1703,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DCCMVAU, Clean data* cache line by MVA to PoU"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
             //_cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1717,7 +1716,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
             //_cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1730,7 +1729,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DCCISW, Clean and invalidate [d|u]cache line by set/way"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
             //_cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
           }
@@ -1746,7 +1745,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
             if (cpu.verbose)
               cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
@@ -1764,8 +1763,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "PRRR, Primary Region Remap Register"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.prrr = value; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.prrr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.prrr = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.prrr; }
         } x;
         return x;
       } break;
@@ -1775,8 +1774,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "NMRR, Normal Memory Remap Register"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.nmrr = value; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.nmrr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.nmrr = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.nmrr; }
         } x;
         return x;
       } break;
@@ -1791,7 +1790,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "TPIDRURO, User Read-Only Thread ID Register"; }
           unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
-          uint32_t Read( BaseCpu& _cpu )
+          uint32_t Read( CP15CPU& _cpu )
           { return dynamic_cast<CPU&>( _cpu ).MemRead32( 0xffff0ff0 ); }
         } x;
         /* When using linux os emulation, this register overrides the base one */
@@ -1801,8 +1800,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
       
     }
   
-  // Fall back to base cpu CP15 registers
-  return this->BaseCpu::CP15GetRegister( crn, opcode1, crm, opcode2 );
+  // Fall back to parent cpu CP15 registers
+  return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
 }
 
 } // end of namespace vmsav7

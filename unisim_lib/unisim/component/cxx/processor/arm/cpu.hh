@@ -403,7 +403,6 @@ protected:
   
   // /** CP15 */
   // CP15 cp15;
-  uint32_t midr; /*< MIDR, Main ID Register */
   uint32_t sctlr; 
 
   /****************************************************/
