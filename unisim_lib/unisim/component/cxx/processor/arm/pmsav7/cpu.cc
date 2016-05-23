@@ -775,7 +775,6 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
 void
 CPU::BKPT( uint32_t imm )
 {
-  // we are executing on linux emulation mode
   throw std::logic_error( "TODO: Generate a debug event: virtual BKPTInstrDebugEvent() method ?" );
 }
 
