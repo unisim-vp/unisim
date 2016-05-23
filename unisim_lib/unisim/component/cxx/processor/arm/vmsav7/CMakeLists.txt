@@ -1,4 +1,4 @@
-message ( STATUS "Checking unisim::component::cxx::processor::arm::armemu" )
+message ( STATUS "Checking unisim::component::cxx::processor::arm::vmsav7" )
 
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
@@ -88,10 +88,10 @@ set ( cxx_arm_srcs
 	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/config.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cpu.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cpu.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cache.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cache.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/vmsav7/cpu.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/vmsav7/cpu.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/vmsav7/cache.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/vmsav7/cache.cc
 	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.hh
 	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.step_instruction.tcc
 	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.tcc
@@ -128,7 +128,7 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/disasm.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/disasm.cc
 
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/isa_arm32.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/vmsav7/isa_arm32.cc
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
 	${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
 	)
@@ -161,11 +161,11 @@ include_directories (
 	${CMAKE_BINARY_DIR}
 	)
 
-add_library ( unisim__component__cxx__processor__arm__armemu
+add_library ( unisim__component__cxx__processor__arm__vmsav7
 		${cxx_arm_srcs}
 	)
 
-add_dependencies ( unisim__component__cxx__processor__arm__armemu
+add_dependencies ( unisim__component__cxx__processor__arm__vmsav7
 	unisim__component__cxx__processor__arm_generated_files
 	unisim__component__cxx__processor__arm__arm32_isa
 	unisim__kernel
@@ -188,16 +188,16 @@ add_dependencies ( unisim__component__cxx__processor__arm__armemu
 	genisslib
 	)
 	
-list ( APPEND armemu_link_libraries
+list ( APPEND vmsav7_link_libraries
 	unisim__kernel
 	unisim__util__endian
 	unisim__util__debug
 	unisim__util__random
 	) 
-target_link_libraries ( unisim__component__cxx__processor__arm__armemu
-	${armemu_link_libraries}
+target_link_libraries ( unisim__component__cxx__processor__arm__vmsav7
+	${vmsav7_link_libraries}
 	)
 	
-message ( STATUS "Checking unisim::component::cxx::processor::arm::armemu - done" )
+message ( STATUS "Checking unisim::component::cxx::processor::arm::vmsav7 - done" )
 
 

@@ -32,8 +32,8 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
-#include <unisim/component/cxx/processor/arm/armemu/cpu.hh>
-#include <unisim/component/cxx/processor/arm/armemu/cp15.hh>
+#include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
+#include <unisim/component/cxx/processor/arm/vmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
 #include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/memory_op.hh>
@@ -53,7 +53,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-namespace armemu {
+namespace vmsav7 {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
@@ -1805,9 +1805,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
   return this->BaseCpu::CP15GetRegister( crn, opcode1, crm, opcode2 );
 }
 
-} // end of namespace armemu
+} // end of namespace vmsav7
 
-template struct unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::armemu::ARMv7emu>;
+template struct unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::vmsav7::ARMv7emu>;
 
 } // end of namespace arm
 } // end of namespace processor

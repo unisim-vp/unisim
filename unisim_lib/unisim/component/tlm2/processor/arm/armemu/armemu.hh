@@ -37,7 +37,7 @@
 
 #include <systemc.h>
 #include <tlm.h>
-#include "unisim/component/cxx/processor/arm/armemu/cpu.hh"
+#include "unisim/component/cxx/processor/arm/vmsav7/cpu.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <inttypes.h>
 
@@ -51,7 +51,7 @@ namespace armemu {
 class ARMEMU
 	: public sc_module
 	, public tlm::tlm_bw_transport_if<>
-	, public unisim::component::cxx::processor::arm::armemu::CPU
+	, public unisim::component::cxx::processor::arm::vmsav7::CPU
 	, public unisim::kernel::service::VariableBaseListener
 {
 public:
@@ -59,7 +59,7 @@ public:
 	typedef tlm::tlm_base_protocol_types::tlm_phase_type    phase_type;
 	typedef tlm::tlm_sync_enum     sync_enum_type;
 	
-	typedef unisim::component::cxx::processor::arm::armemu::CPU inherited;
+	typedef unisim::component::cxx::processor::arm::vmsav7::CPU inherited;
 
 	/**************************************************************************
 	 * Port to the bus and its virtual methods to handle                START *

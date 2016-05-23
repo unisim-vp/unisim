@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CPU_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
 #include <unisim/component/cxx/processor/arm/cache.hh>
@@ -57,7 +57,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-namespace armemu {
+namespace vmsav7 {
 
 struct ARMv7emu
 {
@@ -66,7 +66,7 @@ struct ARMv7emu
   //=====================================================================
   
   // Following a standard armv7 configuration
-  static uint32_t const model = unisim::component::cxx::processor::arm::ARMEMU;
+  static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
   static bool const     insns4T = true;
   static bool const     insns5E = true;
   static bool const     insns5J = true;
@@ -361,11 +361,11 @@ protected:
   /**********************************************************/
 };
 
-} // end of namespace armemu
+} // end of namespace vmsav7
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CPU_HH__

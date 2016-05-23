@@ -30,13 +30,13 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  *  SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-#include "unisim/component/cxx/processor/arm/isa_arm32.hh"
-#include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
-#include "unisim/component/cxx/processor/arm/armemu/cpu.hh"
+#include "unisim/component/cxx/processor/arm/isa_thumb.hh"
+#include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
+#include "unisim/component/cxx/processor/arm/vmsav7/cpu.hh"
 
 using namespace unisim::component::cxx::processor;
 
-template struct arm::isa::arm32::Decoder<arm::armemu::CPU>;
+template struct arm::isa::thumb2::Decoder<arm::vmsav7::CPU>;

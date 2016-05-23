@@ -128,7 +128,7 @@ using namespace unisim::kernel::logger;
 ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
   : unisim::kernel::service::Object(name, parent)
   , sc_module(name)
-  , unisim::component::cxx::processor::arm::armemu::CPU(name, parent)
+  , unisim::component::cxx::processor::arm::vmsav7::CPU(name, parent)
   , master_socket("master_socket")
   , check_external_events(false)
   , nIRQm("nIRQm")

@@ -10,7 +10,7 @@
 		<depends>
 			<dep>osci_systemc</dep>
 			<dep>osci_tlm2</dep>
-			<dep>unisim::component::cxx::processor::arm::armemu</dep>
+			<dep>unisim::component::cxx::processor::arm::vmsav7</dep>
 			<dep>unisim::kernel::tlm2</dep>
 			<dep>unisim::kernel::service</dep>
 			<dep>unisim::kernel::logger</dep>

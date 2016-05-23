@@ -6,7 +6,7 @@ include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
 set ( tlm2_armemu_subdirs
 	unisim/kernel
-	unisim/component/cxx/processor/arm/armemu
+	unisim/component/cxx/processor/arm/vmsav7
 	)
 
 foreach ( dir ${tlm2_armemu_subdirs} )
