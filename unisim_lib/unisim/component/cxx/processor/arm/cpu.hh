@@ -401,16 +401,25 @@ protected:
   /** PSR registers */
   PSR      cpsr;
   
-  // /** CP15 */
-  // CP15 cp15;
-  uint32_t sctlr; 
+  /***********************************/
+  /* System control registers  START */
+  /***********************************/
 
+  uint32_t SCTLR; //< System Control Register
+  uint32_t CPACR; //< CPACR, Coprocessor Access Control Register
+  
+  /***********************************/
+  /* System control registers   END  */
+  /***********************************/
+  
   /****************************************************/
   /* Process, context and thread ID registers   START */
   /****************************************************/
   
-  uint32_t TPIDRURW; /*< User Read/Write Thread ID Register */
-  uint32_t TPIDRURO; /*< User Read-Only Thread ID Register */
+  uint32_t CONTEXTIDR; //< Context ID Register
+  uint32_t TPIDRURW; //< User Read/Write Thread ID Register
+  uint32_t TPIDRURO; //< User Read-Only Thread ID Register
+  uint32_t TPIDRPRW; //< PL1 only Thread ID Register
   
   /****************************************************/
   /* Process, context and thread ID registers    END  */

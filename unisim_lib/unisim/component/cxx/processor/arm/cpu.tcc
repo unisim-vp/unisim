@@ -111,7 +111,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , Service<Registers>(name, parent)
   , logger(*this)
   , verbose(false)
-  , sctlr()
+  , SCTLR()
+  , CPACR()
   , TPIDRURW()
   , TPIDRURO()
   , registers_export("registers-export", this)
@@ -256,8 +257,12 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     }
     
     /* SCTLR */
-    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "sctlr", &sctlr );
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "sctlr", &SCTLR );
     registers_registry["sctlr"] = dbg_reg;
+    debug_register_pool.insert( dbg_reg );
+    /* CPACR */
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "cpacr", &CPACR );
+    registers_registry["cpacr"] = dbg_reg;
     debug_register_pool.insert( dbg_reg );
     
     // Advanced SIMD and VFP register
@@ -529,14 +534,14 @@ CPU<CONFIG>::TakeReset()
   cpsr.Set( A, 1 );
   cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
   cpsr.Set( J, 0 );
-  cpsr.Set( T, SCTLR::TE.Get( sctlr ) );
-  cpsr.Set( E, SCTLR::EE.Get( sctlr ) );
+  cpsr.Set( T, sctlr::TE.Get( SCTLR ) );
+  cpsr.Set( E, sctlr::EE.Get( SCTLR ) );
   // All registers, bits and fields not reset by the above pseudocode or by the
   // BranchTo() call below are UNKNOWN bitstrings after reset. In particular, the
   // return information registers R14_svc and SPSR_svc have UNKNOWN values, so that
   // it is impossible to return from a reset in an architecturally defined way.
   // Branch to Reset vector.
-  uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
+  uint32_t exc_vector_base = sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
   Branch(exc_vector_base + 0);
 }
 
@@ -598,10 +603,10 @@ CPU<CONFIG>::TakeSVCException()
   cpsr.Set( I, 1 );
   cpsr.ITSetState( 0b0000, 0b0000 );
   cpsr.Set( J, 0 );
-  cpsr.Set( T, SCTLR::TE.Get( sctlr ) ); // TE=0: ARM, TE=1: Thumb
-  cpsr.Set( E, SCTLR::EE.Get( sctlr ) ); // EE=0: little-endian, EE=1: big-endian
+  cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
+  cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
   // Branch to SVC vector.
-  uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
+  uint32_t exc_vector_base = sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
   Branch(exc_vector_base + vect_offset);
 }
 
@@ -660,10 +665,10 @@ CPU<CONFIG>::TakePhysicalFIQorIRQException( bool isIRQ )
   cpsr.Set( A, 1 );
   cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
   cpsr.Set( J, 0 );
-  cpsr.Set( T, SCTLR::TE.Get( sctlr ) );
-  cpsr.Set( E, SCTLR::EE.Get( sctlr ) );
+  cpsr.Set( T, sctlr::TE.Get( SCTLR ) );
+  cpsr.Set( E, sctlr::EE.Get( SCTLR ) );
   // Branch to correct [IRQ|FIQ] vector ("implementation defined" if SCTLR.VE == '1').
-  uint32_t exc_vector_base = SCTLR::V.Get( sctlr ) ? 0xffff0000 : 0x00000000;
+  uint32_t exc_vector_base = sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
   Branch(exc_vector_base + vect_offset);
 }
 
@@ -755,19 +760,38 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
         static struct : public CP15Reg
         {
           char const* Describe() { return "SCTLR, System Control Register"; }
-          /* TODO: handle SBO(DGP=0x00050078UL) and SBZ(DGP=0xfffa0c00UL)... */
-          uint32_t Read( CPU& cpu ) { return cpu.sctlr; }
+          /* TODO: handle SBO(DGP=0x00050078U) and SBZ(DGP=0xfffa0c00U)... */
+          uint32_t Read( CPU& cpu ) { return cpu.SCTLR; }
           void Write( CPU& cpu, uint32_t value ) {
-            uint32_t old_ctlr = cpu.sctlr;
-            cpu.sctlr = value;
+            uint32_t old_ctlr = cpu.SCTLR;
+            cpu.SCTLR = value;
             uint32_t diff = old_ctlr ^ value;
             if (cpu.verbose) {
-              if      (SCTLR::C.Get( diff ))
-                cpu.logger << DebugInfo << "DCache " << (SCTLR::C.Get( value ) ? "enabled" : "disabled") << EndDebugInfo;
-              if (SCTLR::M.Get( diff )) {
-                cpu.logger << DebugInfo << "MMU " << (SCTLR::M.Get( value ) ? "enabled" : "disabled") << EndDebugInfo;
+              if      (sctlr::C.Get( diff ))
+                cpu.logger << DebugInfo << "DCache " << (sctlr::C.Get( value ) ? "enabled" : "disabled") << EndDebugInfo;
+              if (sctlr::M.Get( diff )) {
+                cpu.logger << DebugInfo << "MMU " << (sctlr::M.Get( value ) ? "enabled" : "disabled") << EndDebugInfo;
               }
             }
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 1, 0, 0, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CPACR, Coprocessor Access Control Register"; }
+          uint32_t Read( CPU& cpu ) { return cpu.CPACR; }
+          void Write( CPU& cpu, uint32_t value ) {
+            // bit 29 is Reserved, UNK/SBZP
+            // cp0-cp9 and cp12-cp13 are not implemented
+            value &= ~0x2f0fffffU;
+            uint32_t neon = ((value >> 20)) & 0b1111;
+            if ((neon != 0b0000) and (neon != 0b0101) and (neon != 0b1111))
+              cpu.UnpredictableInsnBehaviour();
+            cpu.CPACR = value;
           }
         } x;
         return x;
@@ -776,6 +800,17 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
       /***********************************/
       /* Context and thread ID registers */
       /***********************************/
+      
+    case CP15ENCODE( 13, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CONTEXTIDR, Context ID Register"; }
+          uint32_t Read( CPU& cpu ) { return cpu.CONTEXTIDR; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.CONTEXTIDR = value; }
+        } x;
+        return x;
+      } break;
       
     case CP15ENCODE( 13, 0, 0, 2 ):
       {
@@ -797,6 +832,17 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
           unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
           uint32_t Read( CPU& cpu ) { return cpu.TPIDRURO; }
           void Write( CPU& cpu, uint32_t val ) { cpu.RequiresPL(1); cpu.TPIDRURO = val; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 13, 0, 0, 4 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TPIDRPRW, PL1 only Thread ID Register"; }
+          uint32_t Read( CPU& cpu ) { return cpu.TPIDRPRW; }
+          void Write( CPU& cpu, uint32_t val ) { cpu.TPIDRPRW = val; }
         } x;
         return x;
       } break;
@@ -823,29 +869,32 @@ template <class CONFIG>
 void
 CPU<CONFIG>::CP15ResetRegisters()
 {
-  // Default value for sctlr (will be overwritten as needed by simulators)
-  sctlr = 0x00c50058; // SBO mask
-  SCTLR::TE.Set(      sctlr, 0 ); // Thumb Exception enable
-  SCTLR::AFE.Set(     sctlr, 0 ); // Access flag enable.
-  SCTLR::TRE.Set(     sctlr, 0 ); // TEX remap enable
-  SCTLR::NMFI.Set(    sctlr, 0 ); // Non-maskable FIQ (NMFI) support
-  SCTLR::EE.Set(      sctlr, 0 ); // Exception Endianness.
-  SCTLR::VE.Set(      sctlr, 0 ); // Interrupt Vectors Enable
-  SCTLR::U.Set(       sctlr, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
-  SCTLR::FI.Set(      sctlr, 0 ); // Fast interrupts configuration enable
-  SCTLR::UWXN.Set(    sctlr, 0 ); // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
-  SCTLR::WXN.Set(     sctlr, 0 ); // Write permission implies XN (Virtualization Extensions)
-  SCTLR::HA.Set(      sctlr, 0 ); // Hardware Access flag enable.
-  SCTLR::RR.Set(      sctlr, 0 ); // Round Robin select
-  SCTLR::V.Set(       sctlr, 0 ); // Vectors bit
-  SCTLR::I.Set(       sctlr, 0 ); // Instruction cache enable
-  SCTLR::Z.Set(       sctlr, 0 ); // Branch prediction enable.
-  SCTLR::SW.Set(      sctlr, 0 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
-  SCTLR::B.Set(       sctlr, 0 ); // Endianness model (up to ARMv6)
-  SCTLR::CP15BEN.Set( sctlr, 1 ); // CP15 barrier enable.
-  SCTLR::C.Set(       sctlr, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
-  SCTLR::A.Set(       sctlr, 0 ); // Alignment check enable
-  SCTLR::M.Set(       sctlr, 0 ); // MMU enable.
+  // Default value for SCTLR (will be overwritten as needed by simulators)
+  SCTLR = 0x00c50058; // SBO mask
+  sctlr::TE.Set(      SCTLR, 0 ); // Thumb Exception enable
+  sctlr::AFE.Set(     SCTLR, 0 ); // Access flag enable.
+  sctlr::TRE.Set(     SCTLR, 0 ); // TEX remap enable
+  sctlr::NMFI.Set(    SCTLR, 0 ); // Non-maskable FIQ (NMFI) support
+  sctlr::EE.Set(      SCTLR, 0 ); // Exception Endianness.
+  sctlr::VE.Set(      SCTLR, 0 ); // Interrupt Vectors Enable
+  sctlr::U.Set(       SCTLR, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
+  sctlr::FI.Set(      SCTLR, 0 ); // Fast interrupts configuration enable
+  sctlr::UWXN.Set(    SCTLR, 0 ); // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
+  sctlr::WXN.Set(     SCTLR, 0 ); // Write permission implies XN (Virtualization Extensions)
+  sctlr::HA.Set(      SCTLR, 0 ); // Hardware Access flag enable.
+  sctlr::RR.Set(      SCTLR, 0 ); // Round Robin select
+  sctlr::V.Set(       SCTLR, 0 ); // Vectors bit
+  sctlr::I.Set(       SCTLR, 0 ); // Instruction cache enable
+  sctlr::Z.Set(       SCTLR, 0 ); // Branch prediction enable.
+  sctlr::SW.Set(      SCTLR, 0 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
+  sctlr::B.Set(       SCTLR, 0 ); // Endianness model (up to ARMv6)
+  sctlr::CP15BEN.Set( SCTLR, 1 ); // CP15 barrier enable.
+  sctlr::C.Set(       SCTLR, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
+  sctlr::A.Set(       SCTLR, 0 ); // Alignment check enable
+  sctlr::M.Set(       SCTLR, 0 ); // MMU enable.
+  
+  CPACR = 0x0;
+  
 }
     
 /** Unpredictable Instruction Behaviour.

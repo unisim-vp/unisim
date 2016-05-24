@@ -54,7 +54,7 @@ namespace arm {
    * ARM processor implementation
    */
 
-  namespace SCTLR
+  namespace sctlr
   {
     RegisterField<31,1> const IE;      // Instruction Endianness
     RegisterField<30,1> const TE;      // Thumb Exception enable

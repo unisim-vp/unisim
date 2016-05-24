@@ -179,7 +179,7 @@ CPU::BeginSetup()
 
   /* Looking at endianness in SCTLR.B, Note: Configuring endianness
    * through SCTLR.B is obsolete in ARMv7 */
-  if (SCTLR::B.Get( sctlr )) {
+  if (sctlr::B.Get( sctlr )) {
     if (verbose)
       logger << DebugInfo << "Setting endianness to little endian" << EndDebugInfo;
     cpsr.Set( E, 0 );
@@ -191,7 +191,7 @@ CPU::BeginSetup()
   }
 
   /* setting initial pc by the cp15 vinithi parameter */
-  uint32_t init_pc = SCTLR::V.Get( sctlr ) ? 0xFFFF0000UL : 0;
+  uint32_t init_pc = sctlr::V.Get( sctlr ) ? 0xFFFF0000UL : 0;
   if (verbose)
     logger << DebugInfo << "Setting initial pc to 0x" << std::hex << init_pc << std::dec << EndDebugInfo;
   BranchExchange( init_pc );
@@ -478,7 +478,7 @@ CPU::InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
          << " - cache aligned mva = 0x" << mva << std::dec
          << EndDebugInfo;
 
-  if ( likely(// SCTLR::C.Get( sctlr ) &&
+  if ( likely(// sctlr::C.Get( sctlr ) &&
               icache.GetSize()) )
     {
       uint32_t cache_tag = icache.GetTag(mva);
@@ -737,7 +737,7 @@ CPU::InjectReadMemory(uint64_t addr,
   uint32_t base_addr = (uint32_t)addr;
   uint32_t ef_addr;
 
-  if ( likely(SCTLR::C.Get( sctlr ) && dcache.GetSize()) )
+  if ( likely(sctlr::C.Get( sctlr ) && dcache.GetSize()) )
     {
       while (size != 0)
         {
@@ -809,7 +809,7 @@ CPU::InjectWriteMemory(uint64_t addr,
   uint32_t base_addr = (uint32_t)addr;
   uint32_t ef_addr;
   
-  if ( likely((SCTLR::C.Get( sctlr )) && dcache.GetSize()) )
+  if ( likely((sctlr::C.Get( sctlr )) && dcache.GetSize()) )
     {
       // access memory while using the linux_os_import
       //   tcm is ignored
@@ -913,7 +913,7 @@ CPU::ReadMemory(uint64_t addr,
   uint32_t cacheable = 1;
   // uint32_t bufferable = 1;
 
-  if ( likely((SCTLR::C.Get( sctlr )) && dcache.GetSize()) )
+  if ( likely((sctlr::C.Get( sctlr )) && dcache.GetSize()) )
     {
       // non intrusive access with linux support
       while (size != 0 && status)
@@ -1012,7 +1012,7 @@ CPU::WriteMemory(uint64_t addr,
   uint32_t cacheable = 1;
   // uint32_t bufferable = 1;
 
-  if ( likely((SCTLR::C.Get( sctlr )) && dcache.GetSize()) )
+  if ( likely((sctlr::C.Get( sctlr )) && dcache.GetSize()) )
     {
       // non intrusive access with linux support
       while ( size != 0 && status )
@@ -1162,7 +1162,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
   //     }
 
 
-  if ( likely(SCTLR::I.Get( sctlr ) && icache.GetSize() && cacheable) )
+  if ( likely(sctlr::I.Get( sctlr ) && icache.GetSize() && cacheable) )
     {
       icache.read_accesses++;
       // check the instruction cache
@@ -1293,7 +1293,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
   //     }
 
 
-  if ( likely(SCTLR::I.Get( sctlr ) && icache.GetSize() && cacheable) )
+  if ( likely(sctlr::I.Get( sctlr ) && icache.GetSize() && cacheable) )
     {
       icache.read_accesses++;
       // check the instruction cache
@@ -2089,7 +2089,7 @@ CPU::PerformPrefetchAccess( uint32_t addr )
 			<< " - addr = 0x" << std::hex << va << std::dec 
 			<< EndDebugInfo;
 
-	if ( likely(SCTLR::M.Get( this->sctlr )) )
+	if ( likely(sctlr::M.Get( this->sctlr )) )
 		if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
 		{
 			if ( unlikely(verbose & 0x02) )
@@ -2102,7 +2102,7 @@ CPU::PerformPrefetchAccess( uint32_t addr )
 			return;
 		}
 
-	if ( likely(SCTLR::C.Get(this->sctlr) && dcache.GetSize() && cacheable) )
+	if ( likely(sctlr::C.Get(this->sctlr) && dcache.GetSize() && cacheable) )
 	{
 		dcache.prefetch_accesses++;
 		uint32_t cache_tag = dcache.GetTag(mva);
@@ -2147,7 +2147,7 @@ CPU::PerformPrefetchAccess( uint32_t addr )
 								cache_way);
 				uint32_t pa_cache_address = mva_cache_address;
 				// translate the address
-				if ( likely(SCTLR::M.Get( this->sctlr )) )
+				if ( likely(sctlr::M.Get( this->sctlr )) )
 					TranslateMVA(mva_cache_address,
 							pa_cache_address);
 				if ( unlikely(verbose & 0x02) )
@@ -2256,7 +2256,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 		break;
 	}
 
-	if ( likely(SCTLR::M.Get( this->sctlr )) )
+	if ( likely(sctlr::M.Get( this->sctlr )) )
 		if ( !TranslateVA(false, va, mva, pa, cacheable, bufferable) )
 		{
 			logger << DebugError
@@ -2280,7 +2280,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 			<< " " << (unsigned int)data[2]
 			<< " " << (unsigned int)data[3]
 			<< std::dec;
-		if ( SCTLR::C.Get( this->sctlr ) && dcache.GetSize() && cacheable )
+		if ( sctlr::C.Get( this->sctlr ) && dcache.GetSize() && cacheable )
 			logger << std::endl
 				<< " - line cacheable"
 				<< EndDebugInfo;
@@ -2288,7 +2288,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 			logger << EndDebugInfo;
 	}
 
-	if ( likely(SCTLR::C.Get( this->sctlr ) && dcache.GetSize() && cacheable) )
+	if ( likely(sctlr::C.Get( this->sctlr ) && dcache.GetSize() && cacheable) )
 	{
 		dcache.write_accesses++;
 		uint32_t cache_tag = dcache.GetTag(mva);
@@ -2366,7 +2366,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 					dcache.GetData(cache_set, cache_way, &rep_cache_data);
 					uint32_t pa_cache_address = mva_cache_address;
 					// translate the address
-					if ( likely(SCTLR::M.Get( this->sctlr )) )
+					if ( likely(sctlr::M.Get( this->sctlr )) )
 						TranslateMVA(mva_cache_address,
 								pa_cache_address);
 					if ( unlikely(verbose & 0x02) )
@@ -2491,7 +2491,7 @@ CPU::PerformReadAccess( uint32_t addr, uint32_t size, bool _signed )
 	uint32_t mva = va;
 	uint32_t pa = mva;
 
-	if ( likely(SCTLR::M.Get( this->sctlr )) )
+	if ( likely(sctlr::M.Get( this->sctlr )) )
 		if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
 		{
 			logger << DebugError
@@ -2515,7 +2515,7 @@ CPU::PerformReadAccess( uint32_t addr, uint32_t size, bool _signed )
 			<< " - bufferable = " << bufferable
 			<< EndDebugInfo;
 
-	if ( likely(SCTLR::C.Get(this->sctlr) && dcache.GetSize() && cacheable) )
+	if ( likely(sctlr::C.Get(this->sctlr) && dcache.GetSize() && cacheable) )
 	{
 		dcache.read_accesses++;
 		uint32_t cache_tag = dcache.GetTag(mva);
@@ -2559,7 +2559,7 @@ CPU::PerformReadAccess( uint32_t addr, uint32_t size, bool _signed )
 					dcache.GetBaseAddress(cache_set, cache_way);
 				uint32_t pa_cache_address = mva_cache_address;
 				// translate the address
-				if ( likely(SCTLR::M.Get( this->sctlr )) )
+				if ( likely(sctlr::M.Get( this->sctlr )) )
 					TranslateMVA(mva_cache_address,
 							pa_cache_address);
 				if ( unlikely(verbose & 0x02) )

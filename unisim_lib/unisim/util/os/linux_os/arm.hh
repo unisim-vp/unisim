@@ -228,7 +228,7 @@ namespace linux_os {
       if (not SetRegister(lin, "cpsr", 0x00000010))
         return false;
       
-      /* We need to set SCTLR as a standard linux would have done. We
+      /* We need to set SCTLR and CPACR as a standard linux would have done. We
        * only affects flags that impact a Linux OS emulation (others
        * are unaffected).
        */
@@ -236,13 +236,15 @@ namespace linux_os {
         uint32_t sctlr;
         if (not GetRegister(lin, "sctlr", &sctlr))
           return false;
-        unisim::component::cxx::processor::arm::SCTLR::I.Set( sctlr, 1 ); // Instruction Cache enable
-        unisim::component::cxx::processor::arm::SCTLR::C.Set( sctlr, 1 ); // Cache enable
-        unisim::component::cxx::processor::arm::SCTLR::A.Set( sctlr, 0 ); // Alignment check enable
+        unisim::component::cxx::processor::arm::sctlr::I.Set( sctlr, 1 ); // Instruction Cache enable
+        unisim::component::cxx::processor::arm::sctlr::C.Set( sctlr, 1 ); // Cache enable
+        unisim::component::cxx::processor::arm::sctlr::A.Set( sctlr, 0 ); // Alignment check enable
         if (not SetRegister(lin, "sctlr", sctlr))
           return false;
+        if (not SetRegister(lin, "cpacr", 0x00f00000))
+          return false;
       }
-
+      
       // Set PC to the program entry point
       if (not SetRegister(lin, kARM_pc, lin.GetEntryPoint()))
         return false;

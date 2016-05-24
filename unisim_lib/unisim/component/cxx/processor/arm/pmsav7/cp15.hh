@@ -45,22 +45,6 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-
-  /** TTBCR Manips
-   *
-   *  TTBCR, Translation Table Base Control Register
-   */
-
-  namespace TTBCR
-  {
-    
-    RegisterField<31,1> const EAE;   // Extended Address Enable
-    RegisterField< 5,1> const PD1;   // Translation table walk disable for TTBR1
-    RegisterField< 4,1> const PD0;   // Translation table walk disable for TTBR0
-    RegisterField< 0,3> const N;     // Bit considered for TTBR selection
-  };
-
-
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

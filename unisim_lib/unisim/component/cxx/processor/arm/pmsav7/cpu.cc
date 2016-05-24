@@ -111,7 +111,7 @@ CPU::CPU(const char *name, Object *parent)
   , instruction_counter(0)
   , trap_on_instruction_counter(0)
   , ipb_base_address( -1 )
-  , sctlr_rstval( this->PCPU::sctlr )
+  , sctlr_rstval( this->PCPU::SCTLR )
   , param_sctlr_rstval("SCTLR", this, this->sctlr_rstval, "The processor reset value of the SCTLR register.")
   , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
   , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
@@ -159,7 +159,7 @@ CPU::CP15ResetRegisters()
 {
   this->PCPU::CP15ResetRegisters();
   /* sctlr takes its reset value */
-  sctlr = sctlr_rstval;
+  this->SCTLR = sctlr_rstval;
 }
     
 /** Object setup method.
@@ -213,7 +213,7 @@ CPU::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
   uint32_t misalignment = addr & lo_mask;
   
-  if (unlikely(misalignment and not SCTLR::A.Get( this->sctlr ))) {
+  if (unlikely(misalignment and not sctlr::A.Get( this->SCTLR ))) {
     uint32_t eaddr = addr;
     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
       for (unsigned byte = size; --byte < size; ++eaddr)
@@ -280,7 +280,7 @@ CPU::PerformUReadAccess( uint32_t addr, uint32_t size )
   if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
   uint32_t misalignment = addr & lo_mask;
   
-  if (unlikely(misalignment and not SCTLR::A.Get( this->sctlr ))) {
+  if (unlikely(misalignment and not sctlr::A.Get( this->SCTLR ))) {
     uint32_t result = 0;
     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
       for (unsigned byte = 0; byte < size; ++byte)
