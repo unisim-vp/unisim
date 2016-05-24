@@ -241,6 +241,33 @@ protected:
   /* MPU Interface   START */
   /*************************/
   
+  uint32_t DFSR, IFSR, DFAR, IFAR;
+  
+  struct MPU
+  {
+    MPU() : RGNR(0) {}
+    static unsigned const IRegion = 0;
+    static unsigned const DRegion = 16;
+    static bool const Unified = true;
+    
+    struct Region {
+      Region() : size_enable(0), base_address(0), access_control(0) {}
+      uint32_t size_enable;
+      uint32_t base_address;
+      uint32_t access_control;
+    };
+    
+    Region DR[DRegion];
+    Region IR[DRegion];
+    uint32_t RGNR;
+    
+    bool GetAccessControl( uint32_t va, uint32_t& access_control );
+
+  } mpu;
+  
+  
+  void   CheckPermissions( uint32_t va, bool ispriv, bool iswrite, unsigned size );
+  
   /*************************/
   /* MPU Interface    END  */
   /*************************/

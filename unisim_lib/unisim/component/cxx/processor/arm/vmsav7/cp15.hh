@@ -44,7 +44,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-
+namespace vmsav7 {
 
   /** TTBCR Manips
    *
@@ -61,6 +61,7 @@ namespace arm {
   };
 
 
+} // end of namespace vmsav7
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

@@ -354,18 +354,17 @@ CPU<CONFIG>::GetRegister(const char *name)
 
 /** Get current privilege level
  *
- * returns the current privilege level according to the running mode.
+ * Returns the current privilege level according to the running mode.
  */
 template <class CONFIG>
-void
-CPU<CONFIG>::RequiresPL(unsigned rpl)
+unsigned
+CPU<CONFIG>::GetPL()
 {
   /* NOTE: in non-secure mode (TrustZone), there are more privilege levels. */
-  unsigned cpl = 0;
   switch (cpsr.Get(M))
     {
     case USER_MODE:
-      cpl = 0;
+      return 0;
       break;
     case FIQ_MODE:
     case IRQ_MODE:
@@ -375,12 +374,24 @@ CPU<CONFIG>::RequiresPL(unsigned rpl)
     case HYPERVISOR_MODE:
     case UNDEFINED_MODE:
     case SYSTEM_MODE:
-      cpl = 1;
+      return 1;
       break;
     default:
       throw std::logic_error("undefined mode");
     }
-  if (cpl < rpl)
+  return 0;
+}
+  
+/** Assert privilege level
+ *
+ * Throws if the current privilege level according to the running mode
+ * is not sufficient.
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::RequiresPL(unsigned rpl)
+{
+  if (GetPL() < rpl)
     UnpredictableInsnBehaviour();
 }
 

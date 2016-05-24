@@ -108,6 +108,11 @@ CPU::CPU(const char *name, Object *parent)
   , arm32_decoder()
   , thumb_decoder()
   , csselr(0)
+  , DFSR(0)
+  , IFSR(0)
+  , DFAR(0)
+  , IFAR(0)
+  , mpu()
   , instruction_counter(0)
   , trap_on_instruction_counter(0)
   , ipb_base_address( -1 )
@@ -806,6 +811,68 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
   throw exception::UndefInstrException();
 }
 
+bool
+CPU::MPU::GetAccessControl( uint32_t va, uint32_t& access_control )
+{
+  bool region_found = false;
+  for (unsigned idx = 0; idx < DRegion; ++idx) {
+    Region& region = DR[idx];
+    uint32_t size_enable = region.size_enable;
+    if (not (size_enable & 1))
+      continue; // Region disabled
+    unsigned lsbit = ((size_enable >> 1) & 0x1f) + 1;
+    uint32_t base_address = region.base_address;
+    if (uint64_t(va ^ base_address) >> lsbit)
+      continue; // Region doesn't match
+    if (lsbit >= 8) {
+      // can have subregions
+      unsigned subregion = (va >> (lsbit-3)) & 7;
+      if ((size_enable >> (8+subregion)) & 1)
+        continue; // Subregion doesn't match
+    }
+    access_control = region.access_control;
+    region_found = true;
+  }
+  return region_found;
+}
+
+void
+CPU::CheckPermissions( uint32_t va, bool ispriv, bool iswrite, unsigned size )
+{
+  if (not sctlr::M.Get( this->SCTLR ))
+    return; // MPU disabled
+  
+  // MPU enabled
+  uint32_t access_control;
+  if (not mpu.GetAccessControl( va, access_control )) {
+    if (sctlr::BR.Get( SCTLR ) and ispriv) {
+      access_control = 0x300 |
+        ((((va >> 28) == 0xf ? (not sctlr::V.Get( SCTLR )) : ((va >> 31) == 1))) ? 0x1000 : 0);
+    }
+    else {
+      access_control = 0;
+    }
+  }
+    
+  bool abort = false;
+  unsigned ap = (access_control >> 8) & 7;
+  switch (ap) {
+  case 0b000: abort = true; break;
+  case 0b001: abort = not ispriv; break;
+  case 0b010: abort = not ispriv and iswrite; break;
+  case 0b011: abort = false; break;
+  case 0b100: abort = true; break;
+  case 0b101: abort = not ispriv or iswrite; break;
+  case 0b110: abort = iswrite; break;
+  case 0b111: abort = true; break;
+  }
+  
+  if (abort) {
+    // TODO: Full DAbort_Translation 
+    throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+  }
+}
+
 /** Get the Internal representation of the CP15 Register
  * 
  * @param crn     the "crn" field of the instruction code
@@ -825,6 +892,17 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "CTR, Cache Type Register"; }
           uint32_t Read( CP15CPU& _cpu ) { return 0x8403c003; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 0, 0, 0, 4 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "MPUIR, MPU Type Register"; }
+          uint32_t Read( CP15CPU& _cpu )
+          { return ((MPU::IRegion << 16) | (MPU::DRegion << 8) | (MPU::Unified ? 0 : 1)); }
         } x;
         return x;
       } break;
@@ -888,6 +966,125 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).csselr; }
         } x;
         return x;
+      } break;
+      
+      /*********************************/
+      /* Memory system fault registers */
+      /*********************************/
+    case CP15ENCODE( 5, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DFSR, Data Fault Status Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).DFSR = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFSR; }
+        } x;
+
+      } break;
+
+    case CP15ENCODE( 5, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "IFSR, Instruction Fault Status Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).IFSR = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFSR; }
+        } x;
+
+      } break;
+
+    case CP15ENCODE( 6, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DFAR, Data Fault Address Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).DFAR = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFAR; }
+        } x;
+
+      } break;
+
+    case CP15ENCODE( 6, 0, 0, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "IFAR, Instruction Fault Address Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).IFAR = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFAR; }
+        } x;
+
+      } break;
+
+    case CP15ENCODE( 6, 0, 1, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DRBAR, Data Region Base Address Register"; }
+          uint32_t& reg( CPU& cpu ) { return cpu.mpu.DR[cpu.mpu.RGNR].base_address; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+        } x;
+
+      } break;
+      
+    case CP15ENCODE( 6, 0, 1, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "IRBAR, Instruction Region Base Address Register"; }
+          uint32_t& reg( CPU& cpu ) { return cpu.mpu.IR[cpu.mpu.RGNR].base_address; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+        } x;
+        
+      } break;
+      
+    case CP15ENCODE( 6, 0, 1, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DRSR, Data Region Size and Enable Register"; }
+          uint32_t& reg( CPU& cpu ) { return cpu.mpu.DR[cpu.mpu.RGNR].size_enable; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+        } x;
+
+      } break;
+      
+    case CP15ENCODE( 6, 0, 1, 3 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "IRSR, Instruction Region Size and Enable Register"; }
+          uint32_t& reg( CPU& cpu ) { return cpu.mpu.IR[cpu.mpu.RGNR].size_enable; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+        } x;
+        
+      } break;
+      
+    case CP15ENCODE( 6, 0, 1, 4 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DRACR, Data Region Access Control Register"; }
+          uint32_t& reg( CPU& cpu ) { return cpu.mpu.DR[cpu.mpu.RGNR].access_control; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+        } x;
+
+      } break;
+      
+    case CP15ENCODE( 6, 0, 1, 5 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "IRACR, Instruction Region Access Control Register"; }
+          uint32_t& reg( CPU& cpu ) { return cpu.mpu.IR[cpu.mpu.RGNR].access_control; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+        } x;
+        
       } break;
       
       /***************************************************************

@@ -285,6 +285,7 @@ struct CPU
     return *(itr->second);
   }
   
+  unsigned GetPL();
   void RequiresPL(unsigned rpl);
   
   Mode& CurrentMode() { return GetMode(cpsr.Get(M)); }

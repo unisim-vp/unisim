@@ -122,7 +122,7 @@ CPU::CPU(const char *name, Object *parent)
   , linux_printk_buf_addr( 0 )
   , linux_printk_buf_size( 0 )
   , linux_printk_snooping( false )
-  , sctlr_rstval( this->PCPU::sctlr )
+  , sctlr_rstval( this->PCPU::SCTLR )
   , param_sctlr_rstval("SCTLR", this, this->sctlr_rstval, "The processor reset value of the SCTLR register.")
   , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
   , param_voltage("voltage", this, this->voltage, "The processor voltage in mV.")
@@ -173,7 +173,7 @@ CPU::CP15ResetRegisters()
 {
   this->PCPU::CP15ResetRegisters();
   /* sctlr takes its reset value */
-  sctlr = sctlr_rstval;
+  this->SCTLR = sctlr_rstval;
 }
     
 /** Object setup method.
@@ -369,7 +369,7 @@ CPU::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
   uint32_t misalignment = addr & lo_mask;
   
-  if (unlikely(misalignment and not sctlr::A.Get( this->sctlr ))) {
+  if (unlikely(misalignment and not sctlr::A.Get( this->SCTLR ))) {
     uint32_t eaddr = addr;
     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
       for (unsigned byte = size; --byte < size; ++eaddr)
@@ -449,7 +449,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   // In armv5, fix the write address according to request size when big endian
   // write_addr ^= ((-size) & 3);
   
-  // bool cache_access = dcache.GetSize() and sctlr::C.Get( this->sctlr );
+  // bool cache_access = dcache.GetSize() and sctlr::C.Get( this->SCTLR );
   // if (likely(cache_access))
   //   {
   //     dcache.write_accesses++;
@@ -505,7 +505,7 @@ CPU::PerformUReadAccess( uint32_t addr, uint32_t size )
   if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
   uint32_t misalignment = addr & lo_mask;
   
-  if (unlikely(misalignment and not sctlr::A.Get( this->sctlr ))) {
+  if (unlikely(misalignment and not sctlr::A.Get( this->SCTLR ))) {
     uint32_t result = 0;
     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
       for (unsigned byte = 0; byte < size; ++byte)
@@ -551,7 +551,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   //   read_addr ^= ((-size) & 3);
   // }
 
-  // bool cache_access = dcache.GetSize() and sctlr::C.Get( this->sctlr );
+  // bool cache_access = dcache.GetSize() and sctlr::C.Get( this->SCTLR );
   // if (likely(cache_access))
   //   {
   //     dcache.read_accesses++;
@@ -922,7 +922,7 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
   uint32_t ef_addr;
   uint8_t* rbuffer = (uint8_t*)buffer;
 
-  // bool cache_access = sctlr::C.Get( this->sctlr ) and dcache.GetSize();
+  // bool cache_access = sctlr::C.Get( this->SCTLR ) and dcache.GetSize();
   // if (likely(cache_access))
   //   {
   //     while ((size != 0) and status)
@@ -993,7 +993,7 @@ CPU::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
   uint32_t ef_addr;
   uint8_t const* wbuffer = (uint8_t const*)buffer;
 
-  // bool cache_access = sctlr::C.Get( this->sctlr ) and dcache.GetSize();
+  // bool cache_access = sctlr::C.Get( this->SCTLR ) and dcache.GetSize();
   // if (cache_access)
   //   {
   //     while ((size != 0) and status)
@@ -1144,7 +1144,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 {
   this->ipb_base_address = base_address;
   
-  // bool cache_access = sctlr::I.Get( this->sctlr ) and icache.GetSize();
+  // bool cache_access = sctlr::I.Get( this->SCTLR ) and icache.GetSize();
   // if (likely(cache_access))
   //   {
   //     icache.read_accesses++;
@@ -1400,7 +1400,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
     }
     uint8_t* data() { return &b[0]; }
     EndianReader( bool _be ) : be( _be ) {}
-  } erd( sctlr::EE.Get( sctlr ) );
+  } erd( sctlr::EE.Get( SCTLR ) );
   
   uint32_t lsb = 0;
   //bool     nG;
@@ -1484,7 +1484,7 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size )
   TransAddrDesc tad;
   
   // FirstStageTranslation
-  if (sctlr::M.Get( this->sctlr )) {
+  if (sctlr::M.Get( this->SCTLR )) {
     // Stage 1 MMU enabled
     if (not tlb.GetTranslation<POLICY>( tad, mva ))
       TranslationTableWalk<POLICY>( tad, mva );
