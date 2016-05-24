@@ -854,7 +854,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "MIDR, Main ID Register"; }
-          uint32_t Read( CPU& cpu ) { return 0x411fc151; }
+          uint32_t Read( CP15CPU& cpu ) { return 0x411fc151; }
         } x;
         return x;
       } break;

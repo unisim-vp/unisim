@@ -60,6 +60,7 @@ namespace cortex_r5f {
     typedef tlm::tlm_sync_enum     sync_enum_type;
 	
     typedef unisim::component::cxx::processor::arm::pmsav7::CPU PCPU;
+    typedef PCPU::CP15CPU CP15CPU;
     typedef PCPU::CP15Reg CP15Reg;
 
     /**************************************************************************

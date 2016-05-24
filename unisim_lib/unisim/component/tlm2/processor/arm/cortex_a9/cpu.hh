@@ -60,8 +60,8 @@ public:
   typedef tlm::tlm_sync_enum     sync_enum_type;
 	
   typedef unisim::component::cxx::processor::arm::vmsav7::CPU PCPU;
-  typedef PCPU::CP15Reg CP15Reg;
   typedef PCPU::CP15CPU CP15CPU;
+  typedef PCPU::CP15Reg CP15Reg;
 
   /**************************************************************************
    * Port to the bus and its virtual methods to handle                START *
