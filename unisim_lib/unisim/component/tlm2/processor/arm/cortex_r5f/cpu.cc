@@ -158,6 +158,16 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , SACTLR()
   , ATCMRR()
   , BTCMRR()
+  , PMCR()
+  , PMCNTEN()
+  , PMSELR()
+  , PMCCNTR()
+  , PMUSERENR(0)
+  , PMINTEN(0)
+  , NVALIRQEN(0)
+  , NVALFIQEN(0)
+  , NVALRESETEN(0)
+  , VALEDBGRQEN(0)
 {
   PCPU::param_cpu_cycle_time_ps.SetVisible(false);
   param_cpu_cycle_time.AddListener(this);
@@ -899,6 +909,149 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
+    case CP15ENCODE( 9, 0, 12, 0 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "PMCR, Performance Monitor Control Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).PMCR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+      } break;
+      
+    case CP15ENCODE( 9, 0, 12, 1 ):
+    case CP15ENCODE( 9, 0, 12, 2 ):
+      {
+        struct PMCNTENR : CP15Reg
+        {
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).PMCNTEN; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        };
+        
+        static struct : PMCNTENR
+        {
+          char const* Describe() { return "PMCTENSET, Count Enable Set Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) |= value; }
+        } xset;
+        
+        static struct : PMCNTENR
+        { 
+          char const* Describe() { return "PMCTENCLR, Count Enable Clear Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) &= ~value; }
+        } xclr;
+        
+        if (opcode2 == 1) return xset; return xclr;
+      } break;
+    
+    case CP15ENCODE( 9, 0, 12, 3 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "PMOVSR, Overflow Flag Status Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) {}
+          uint32_t Read( CP15CPU& _cpu ) { return 0; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 9, 0, 12, 4 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "PMSWINC, Software Increment Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) {}
+          uint32_t Read( CP15CPU& _cpu ) { return 0; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 9, 0, 12, 5 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "PMSELR, Performance Counter Selection Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).PMSELR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 9, 0, 13, 0 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "PMCCNTR, Cycle Count Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).PMCCNTR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 9, 0, 13, 1 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "PMXEVTYPER, Event Type Selection Register"; }
+          uint32_t& reg( CP15CPU& _cpu )
+          { CPU& cpu( dynamic_cast<CPU&>( _cpu ) ); return cpu.PMXEVTYPER[cpu.PMSELR]; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 9, 0, 13, 2 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "PMXEVCNTR, Event Count Register"; }
+          uint32_t& reg( CP15CPU& _cpu )
+          { CPU& cpu( dynamic_cast<CPU&>( _cpu ) ); return cpu.PMXEVCNTR[cpu.PMSELR]; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 9, 0, 14, 0 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "PMUSERENR, User Enable Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).PMUSERENR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+
+    case CP15ENCODE( 9, 0, 14, 1 ):
+    case CP15ENCODE( 9, 0, 14, 2 ):
+      {
+        struct PMINTENR : CP15Reg
+        {
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).PMINTEN; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        };
+        
+        static struct : PMINTENR
+        {
+          char const* Describe() { return "PMINTENSET, Count Enable Set Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) |= value; }
+        } xset;
+        
+        static struct : PMINTENR
+        { 
+          char const* Describe() { return "PMINTENCLR, Count Enable Clear Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) &= ~value; }
+        } xclr;
+        
+        if (opcode2 == 1) return xset; return xclr;
+      } break;
+    
     case CP15ENCODE( 15, 0, 0, 0 ):
       {
         static struct : CP15Reg
@@ -911,6 +1064,102 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
+    case CP15ENCODE( 15, 0, 1, 0 ):
+    case CP15ENCODE( 15, 0, 1, 4 ):
+      {
+        struct NVALIRQENR : CP15Reg
+        {
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).NVALIRQEN; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        };
+        
+        static struct : NVALIRQENR
+        {
+          char const* Describe() { return "nVAL IRQ Enable Set Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) |= value; }
+        } xset;
+        
+        static struct : NVALIRQENR
+        { 
+          char const* Describe() { return "nVAL IRQ Enable Clear Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) &= ~value; }
+        } xclr;
+        
+        if (opcode2 == 0) return xset; return xclr;
+      } break;
+    
+    case CP15ENCODE( 15, 0, 1, 1 ):
+    case CP15ENCODE( 15, 0, 1, 5 ):
+      {
+        struct NVALFIQENR : CP15Reg
+        {
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).NVALFIQEN; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        };
+        
+        static struct : NVALFIQENR
+        {
+          char const* Describe() { return "nVAL FIQ Enable Set Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) |= value; }
+        } xset;
+        
+        static struct : NVALFIQENR
+        { 
+          char const* Describe() { return "nVAL FIQ Enable Clear Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) &= ~value; }
+        } xclr;
+        
+        if (opcode2 == 1) return xset; return xclr;
+      } break;
+    
+    case CP15ENCODE( 15, 0, 1, 2 ):
+    case CP15ENCODE( 15, 0, 1, 6 ):
+      {
+        struct NVALRESETENR : CP15Reg
+        {
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).NVALRESETEN; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        };
+        
+        static struct : NVALRESETENR
+        {
+          char const* Describe() { return "nVAL Reset Enable Set Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) |= value; }
+        } xset;
+        
+        static struct : NVALRESETENR
+        { 
+          char const* Describe() { return "nVAL Reset Enable Clear Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) &= ~value; }
+        } xclr;
+        
+        if (opcode2 == 2) return xset; return xclr;
+      } break;
+    
+    case CP15ENCODE( 15, 0, 1, 3 ):
+    case CP15ENCODE( 15, 0, 1, 7 ):
+      {
+        struct VALEDBGRQENR : CP15Reg
+        {
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).VALEDBGRQEN; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        };
+        
+        static struct : VALEDBGRQENR
+        {
+          char const* Describe() { return "VAL Debug Request Enable Set Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) |= value; }
+        } xset;
+        
+        static struct : VALEDBGRQENR
+        { 
+          char const* Describe() { return "VAL Debug Request Enable Clear Register"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) &= ~value; }
+        } xclr;
+        
+        if (opcode2 == 3) return xset; return xclr;
+      } break;
+    
     case CP15ENCODE( 15, 0, 3, 0 ):
       {
         static struct : public CP15Reg

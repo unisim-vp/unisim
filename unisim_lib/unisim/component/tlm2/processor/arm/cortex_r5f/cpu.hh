@@ -199,10 +199,22 @@ namespace cortex_r5f {
     
     unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
     
-    uint32_t ACTLR;   //< Auxiliary Control Register
-    uint32_t SACTLR;  //< Secondary Auxiliary Control Register
-    uint32_t ATCMRR;  //< ATCM Region Register
-    uint32_t BTCMRR;  //< BTCM Region Register
+    uint32_t ACTLR;         //< Auxiliary Control Register
+    uint32_t SACTLR;        //< Secondary Auxiliary Control Register
+    uint32_t ATCMRR;        //< ATCM Region Register
+    uint32_t BTCMRR;        //< BTCM Region Register
+    uint32_t PMCR;          //< Performance Monitor Control Register
+    uint32_t PMCNTEN;       //< Performance Monitor Count Enable
+    uint32_t PMSELR;        //< Performance Counter Selection Register
+    uint32_t PMCCNTR;       //< Cycle Count Register
+    uint32_t PMXEVTYPER[3]; //< Event Type Selection Registers
+    uint32_t PMXEVCNTR[3];  //< Event Count Registers
+    uint32_t PMUSERENR;     //< User Enable Register
+    uint32_t PMINTEN;       //< Interrupt Enable Register
+    uint32_t NVALIRQEN;     //< nVAL IRQ Enable Register
+    uint32_t NVALFIQEN;     //< nVAL FIQ Enable Register
+    uint32_t NVALRESETEN;   //< nVAL Reset Enable Register
+    uint32_t VALEDBGRQEN;   //< VAL Debug Request Enable Register
   };
   
 } // end of namespace cortex_r5f
