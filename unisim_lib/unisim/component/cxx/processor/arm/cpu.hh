@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/extregbank.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
@@ -348,6 +349,7 @@ protected:
   void     TakeReset();
   void     TakePhysicalFIQorIRQException( bool isIRQ );
   void     TakeSVCException();
+  void     TakeDataAbortException();
   
   /************************************************************************/
   /* Exception handling                                               END */

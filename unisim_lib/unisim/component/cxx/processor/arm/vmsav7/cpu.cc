@@ -114,6 +114,10 @@ CPU::CPU(const char *name, Object *parent)
   , arm32_decoder()
   , thumb_decoder()
   , csselr(0)
+  , DFSR()
+  , IFSR()
+  , DFAR()
+  , IFAR()
   , mmu()
   , instruction_counter(0)
   , voltage(0)
@@ -733,6 +737,15 @@ CPU::StepInstruction()
     this->TakeSVCException();
   }
   
+  catch (exception::DataAbortException const& daexc) {
+    /* Abort execution, and take processor to data abort handler */
+    
+    if (unlikely( exception_trap_reporting_import))
+      exception_trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+    
+    this->TakeDataAbortException();
+  }
+  
   catch (exception::UndefInstrException const& undexc) {
     logger << DebugError << "Undefined instruction"
            << " pc: " << std::hex << current_pc << std::dec
@@ -1310,6 +1323,110 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
   
   throw exception::UndefInstrException();
 }
+
+void
+CPU::DataAbort(uint32_t va, uint64_t ipa,
+               unsigned domain, int level, bool iswrite,
+               exception::DAbort type, bool taketohypmode, bool s2abort,
+               bool ipavalid, bool LDFSRformat, bool s2fs1walk)
+{
+  if (not taketohypmode) {
+    // DFSR = bits(32) UNKNOWN;
+    // DFAR = bits(32) UNKNOWN;
+
+    // Asynchronous abort don't update DFAR. Synchronous Watchpoint
+    // (DAbort_DebugEvent) update DFAR since debug v7.1.
+    switch (type) {
+    default: DFAR = va; break;
+    case exception::DAbort_AsyncParity: case exception::DAbort_AsyncExternal: break;
+    }
+    if (LDFSRformat) {
+      throw std::logic_error("Long descriptors format not supported");
+      // // new format
+      // DFSR<13> = TLBLookupCameFromCacheMaintenance();
+      // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal))
+      //   DFSR<12> = IMPLEMENTATION_DEFINED;
+      // else
+      //   DFSR<12> = '0';
+      // DFSR<11> = if iswrite then '1' else '0';
+      // DFSR<10> = bit UNKNOWN;
+      // DFSR<9> = '1';
+      // DFSR<8:6> = bits(3) UNKNOWN;
+      // DFSR<5:0> = EncodeLDFSR(type, level);
+    }
+    else { // Short descriptor format
+      // DFSR<13> = TLBLookupCameFromCacheMaintenance();
+      RegisterField<13,1>().Set( DFSR, 0 );
+      // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal)) DFSR<12> = IMPLEMENTATION_DEFINED;
+      // else                                                    DFSR<12> = '0';
+      RegisterField<12,1>().Set( DFSR, 0 );
+      RegisterField<11,1>().Set( DFSR, iswrite ? 1 : 0 );
+      RegisterField<9,1>().Set( DFSR, 0 );
+      // DFSR<8> = bit UNKNOWN;
+      RegisterField<8,1>().Set( DFSR, 0 );
+      // domain_valid = ((type == exception::DAbort_Domain) ||
+      //                 ((level == 2) &&
+      //                  (type IN {DAbort_Translation, DAbort_AccessFlag,
+      //                      DAbort_SyncExternalonWalk, DAbort_SyncParityonWalk})) ||
+      //                 (!HaveLPAE() && (type == DAbort_Permission)));
+      // if (domain_valid)   DFSR<7:4> = domain;
+      // else                DFSR<7:4> = bits(4) UNKNOWN;
+      struct FS {
+        FS( uint32_t& _dfsr ) : dfsr( _dfsr ) {} uint32_t& dfsr;
+        void Set( uint32_t value ) {
+          RegisterField<10,1>().Set( dfsr, value >> 4 );
+          RegisterField<0,4>() .Set( dfsr, value >> 0 );
+        }
+      } fault_status( DFSR );
+      switch (type) {
+      case exception::DAbort_AccessFlag:         fault_status.Set( level==1 ? 0b00011 : 0b00110 ); break;
+      case exception::DAbort_Alignment:          fault_status.Set( 0b00001 ); break;
+      case exception::DAbort_Permission:         fault_status.Set( 0b01101 | (level&2) ); break;
+      case exception::DAbort_Domain:             fault_status.Set( 0b01001 | (level&2) ); break;
+      case exception::DAbort_Translation:        fault_status.Set( 0b00101 | (level&2) ); break;
+      case exception::DAbort_SyncExternal:       fault_status.Set( 0b01000 ); break;
+      case exception::DAbort_SyncExternalonWalk: fault_status.Set( 0b01100 | (level&2) ); break;
+      case exception::DAbort_SyncParity:         fault_status.Set( 0b11001 ); break;
+      case exception::DAbort_SyncParityonWalk:   fault_status.Set( 0b11100 | (level&2) ); break;
+      case exception::DAbort_AsyncParity:        fault_status.Set( 0b11000 ); break;
+      case exception::DAbort_AsyncExternal:      fault_status.Set( 0b10110 ); break;
+      case exception::DAbort_DebugEvent:         fault_status.Set( 0b00010 ); break;
+      case exception::DAbort_TLBConflict:        fault_status.Set( 0b10000 ); break;
+      case exception::DAbort_Lockdown:           fault_status.Set( 0b10100 ); break;
+      case exception::DAbort_Coproc:             fault_status.Set( 0b11010 ); break;
+      case exception::DAbort_ICacheMaint:        fault_status.Set( 0b00100 ); break;
+      default: throw std::logic_error("Unhandled case");
+      }
+    }
+  }
+  else { // taketohypmode
+    throw std::logic_error("Hypervision not supported");
+    // bits(25) HSRString = Zeros(25);
+    // bits(6) ec;
+    // HDFAR = vaddress;
+    // if (ipavalid)
+    //   HPFAR<31:4> = ipaddress<39:12>;
+    // if (secondstageabort) {
+    //   ec = '100100';
+    //   HSRString<24:16> = LSInstructionSyndrome();
+    // } else {
+    //   ec = '100101';
+    //   HSRString<24> = '0'; // Instruction syndrome not valid
+    // }
+    // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal))
+    //   HSRString<9> = IMPLEMENTATION_DEFINED;
+    // else
+    //   HSRString<9> = '0';
+    // HSRString<8> = TLBLookupCameFromCacheMaintenance();
+    // HSRString<7> = if s2fs1walk then '1' else '0';
+    // HSRString<6> = if iswrite then '1' else '0';
+    // HSRString<5:0> = EncodeLDFSR(type, level);
+    // WriteHSR(ec, HSRString);
+  }
+  
+  throw exception::DataAbortException();
+}
+
 
 CPU::TLB::TLB()
  : entry_count(0)

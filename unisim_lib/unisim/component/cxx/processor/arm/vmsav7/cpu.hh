@@ -225,6 +225,10 @@ struct CPU
   void BKPT( uint32_t imm );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU>* insn );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb2::Operation<CPU>* insn );
+  void DataAbort(uint32_t va, uint64_t ipa,
+                 unsigned domain, int level, bool iswrite,
+                 exception::DAbort type, bool taketohypmode, bool s2abort,
+                 bool ipavalid, bool LDFSRformat, bool s2fs1walk);
 	
   /**************************************************/
   /* Software Exceptions                      END   */
@@ -253,6 +257,8 @@ protected:
   /*************************/
   /* MMU Interface   START */
   /*************************/
+  
+  uint32_t DFSR, IFSR, DFAR, IFAR;
   
   struct MMU
   {

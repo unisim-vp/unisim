@@ -47,8 +47,8 @@ namespace exception {
   
   /** struct Exception
    *  
-   * Base class used to abort normal execution of an instruction
-   * (using a throw).
+   * Base class used to abort normal execution of an instruction and
+   * take processor to related handler (using a throw).
    */
   struct Exception : public std::exception { Exception() {} virtual const char* what() const throw() { return "Exception"; } };
   
@@ -61,6 +61,27 @@ namespace exception {
   struct DataAbortException : Exception { DataAbortException() {} virtual const char* what() const throw() { return "DataAbortException"; } };
   struct VirtualAbortException : Exception { VirtualAbortException() {} virtual const char* what() const throw() { return "VirtualAbortException"; } };
   
+  // Data Abort Types
+  enum DAbort {
+    DAbort_AccessFlag,
+    DAbort_Alignment,
+    DAbort_Background,
+    DAbort_Domain,
+    DAbort_Permission,
+    DAbort_Translation,
+    DAbort_SyncExternal,
+    DAbort_SyncExternalonWalk,
+    DAbort_SyncParity,
+    DAbort_SyncParityonWalk,
+    DAbort_AsyncParity,
+    DAbort_AsyncExternal,
+    DAbort_DebugEvent,
+    DAbort_TLBConflict,
+    DAbort_Lockdown,
+    DAbort_Coproc,
+    DAbort_ICacheMaint
+  };
+
 } // end of namespace exception
 } // end of namespace arm
 } // end of namespace processor

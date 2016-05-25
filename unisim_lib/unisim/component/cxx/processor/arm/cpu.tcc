@@ -556,6 +556,87 @@ CPU<CONFIG>::TakeReset()
   Branch(exc_vector_base + 0);
 }
 
+/** Take Data Abort Exception
+ *
+ * Implementes how the processor takes the data abort exception
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::TakeDataAbortException()
+{
+  // Quote from the ARM doc:
+  //
+  //   Determine return information. SPSR is to be the current CPSR, and LR is to be the
+  // current PC plus 4 for Thumb or 0 for ARM, to change the PC offsets of 4 or 8
+  // respectively from the address of the current instruction into the required address
+  // of the current instruction plus 8. For an asynchronous abort, the PC and CPSR are
+  // considered to have already moved on to their values for the instruction following
+  // the instruction boundary at which the exception occurred.
+  // 
+  // Now what does that mean ?!?!?
+  //
+  //   Whatever the instruction set, the exception handler should
+  // return to LR-8 to resume the trapped instruction, in other words,
+  // LR should be the address of the trapped instruction plus 8.
+
+  uint32_t new_lr_value = GetGPR(15) + cpsr.Get( T ) ? 4 : 0;;
+  uint32_t new_spsr_value = cpsr.bits();
+  uint32_t vect_offset = 0x10;
+  
+  // preferred_exceptn_return = new_lr_value - 8;
+  // // Determine whether this is an external abort to be routed to Monitor mode.
+  // route_to_monitor = HaveSecurityExt() && SCR.EA == '1' && IsExternalAbort();
+  // // Check whether to take exception to Hyp mode
+  // // if in Hyp mode then stay in Hyp mode
+  // take_to_hyp = HaveVirtExt() && HaveSecurityExt() && SCR.NS == '1' && CPSR.M == '11010';
+  // // otherwise, check whether to take to Hyp mode through Hyp Trap vector
+  // route_to_hyp = (HaveVirtExt() && HaveSecurityExt() && !IsSecure() &&
+  //                 (SecondStageAbort() || (CPSR.M != '11010' &&
+  //                                         (IsExternalAbort() && IsAsyncAbort() && HCR.AMO == '1') ||
+  //                                         (DebugException() && HDCR.TDE == '1')) ||
+  //                  (CPSR.M == '10000' && HCR.TGE == '1' &&
+  //                   (IsAlignmentFault() || (IsExternalAbort() && !IsAsyncAbort())))));
+  // // if HCR.TGE == '1' and in a Non-secure PL1 mode, the effect is UNPREDICTABLE
+  // if (route_to_monitor) {
+  //   // Ensure Secure state if initially in Monitor mode. This affects the Banked
+  //   // versions of various registers accessed later in the code
+  //   if (CPSR.M == '10110') SCR.NS = '0';
+  //   EnterMonitorMode(new_spsr_value, new_lr_value, vect_offset);
+  // } else if (take_to_hyp) {
+  //   EnterHypMode(new_spsr_value, preferred_exceptn_return, vect_offset);
+  // } else if (route_to_hyp) {
+  //   EnterHypMode(new_spsr_value, preferred_exceptn_return, 20);
+  //   else
+      
+  // Handle in Abort mode. Ensure Secure state if initially in Monitor mode. This
+  // affects the Banked versions of various registers accessed later in the code
+  // if HaveSecurityExt() && CPSR.M == '10110' then SCR.NS = '0';
+  
+  CurrentMode().Swap( *this ); // OUT
+  cpsr.Set( M, ABORT_MODE ); // CPSR.M = '10111';
+  Mode& newmode = CurrentMode();
+  newmode.Swap( *this ); // IN
+  
+  // Abort mode
+  // Write return information to registers, and make further CPSR changes:
+  // IRQs disabled, other interrupts disabled if appropriate,
+  // IT state reset, instruction set and endianness set to SCTLR-configured values.
+  
+  newmode.SetSPSR( new_spsr_value );
+  SetGPR( 14, new_lr_value );
+
+  cpsr.Set( I, 1 );
+  // if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.AW == '1' then
+  //    CPSR.A = '1';
+  cpsr.ITSetState( 0b0000, 0b0000 );
+  cpsr.Set( J, 0 );
+  cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
+  cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
+  // Branch to SVC vector.
+  uint32_t exc_vector_base = sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
+  Branch(exc_vector_base + vect_offset);
+}
+
 /** Take Reset Exception
  */
 template <class CONFIG>
