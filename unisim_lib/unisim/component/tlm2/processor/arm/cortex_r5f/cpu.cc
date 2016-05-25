@@ -154,6 +154,10 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , verbose_tlm(false)
   , param_verbose_tlm("verbose-tlm", this, verbose_tlm, "Display TLM information")
   , dmi_region_cache()
+  , ACTLR()
+  , SACTLR()
+  , ATCMRR()
+  , BTCMRR()
 {
   PCPU::param_cpu_cycle_time_ps.SetVisible(false);
   param_cpu_cycle_time.AddListener(this);
@@ -855,6 +859,74 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "MIDR, Main ID Register"; }
           uint32_t Read( CP15CPU& cpu ) { return 0x411fc151; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 1, 0, 0, 0 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "ACTLR, Auxiliary Control Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).ACTLR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 9, 0, 1, 0 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "BTCMRR, BTCM Region Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).BTCMRR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 9, 0, 1, 1 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "ATCMRR, ATCM Region Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).ATCMRR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 15, 0, 0, 0 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "SACTLR, Secondary Auxiliary Control Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).SACTLR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 15, 0, 3, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "Correctable Fault Location Register"; }
+          uint32_t Read( CP15CPU& cpu ) { return 0; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 15, 0, 5, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "Invalidate all Data Cache Register"; }
+          void Write( CP15CPU& cpu, uint32_t value ) {}
         } x;
         return x;
       } break;

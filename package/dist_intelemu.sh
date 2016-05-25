@@ -74,6 +74,7 @@ unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/blob/blob.hh \
@@ -137,7 +138,6 @@ unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
-unisim/util/debug/register.hh \
 unisim/util/debug/simple_register.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/stmt.tcc \

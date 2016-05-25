@@ -198,6 +198,11 @@ namespace cortex_r5f {
      *************************************************************************/
     
     unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
+    
+    uint32_t ACTLR;   //< Auxiliary Control Register
+    uint32_t SACTLR;  //< Secondary Auxiliary Control Register
+    uint32_t ATCMRR;  //< ATCM Region Register
+    uint32_t BTCMRR;  //< BTCM Region Register
   };
   
 } // end of namespace cortex_r5f
