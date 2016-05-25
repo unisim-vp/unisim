@@ -215,6 +215,12 @@ namespace cortex_r5f {
     uint32_t NVALFIQEN;     //< nVAL FIQ Enable Register
     uint32_t NVALRESETEN;   //< nVAL Reset Enable Register
     uint32_t VALEDBGRQEN;   //< VAL Debug Request Enable Register
+    uint32_t SPCTLR;        //< Slave Port Control Register
+    uint32_t XPIR;          //< LLPP Normal AXI region register
+    uint32_t VXPIR;         //< LLPP Virtual AXI region register
+    uint32_t HPIR;          //< AHB peripheral interface region register
+    uint32_t ADFSR;         //< Auxiliary Data Fault Status Register
+    uint32_t AIFSR;         //< Auxiliary Instruction Fault Status Register
   };
   
 } // end of namespace cortex_r5f

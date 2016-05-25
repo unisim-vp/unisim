@@ -168,6 +168,12 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , NVALFIQEN(0)
   , NVALRESETEN(0)
   , VALEDBGRQEN(0)
+  , SPCTLR(0)
+  , XPIR(0)
+  , VXPIR(0)
+  , HPIR(0)
+  , ADFSR(0)
+  , AIFSR(0)
 {
   PCPU::param_cpu_cycle_time_ps.SetVisible(false);
   param_cpu_cycle_time.AddListener(this);
@@ -885,6 +891,30 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
+    case CP15ENCODE( 5, 0, 1, 0 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "ADFSR, Auxiliary Data Fault Status Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).ADFSR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+
+    case CP15ENCODE( 5, 0, 1, 1 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "AIFSR, Auxiliary Instruction Fault Status Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).AIFSR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+
     case CP15ENCODE( 9, 0, 1, 0 ):
       {
         static struct : CP15Reg
@@ -1052,12 +1082,60 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         if (opcode2 == 1) return xset; return xclr;
       } break;
     
+    case CP15ENCODE( 11, 0, 0, 0 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "Slave Port Control Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).SPCTLR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
     case CP15ENCODE( 15, 0, 0, 0 ):
       {
         static struct : CP15Reg
         {
           char const* Describe() { return "SACTLR, Secondary Auxiliary Control Register"; }
           uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).SACTLR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 15, 0, 0, 1 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "LLPP Normal AXI region register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).XPIR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 15, 0, 0, 2 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "LLPP Virtual AXI region register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).VXPIR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 15, 0, 0, 3 ):
+      {
+        static struct : CP15Reg
+        {
+          char const* Describe() { return "AHB peripheral interface region register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).HPIR; }
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
         } x;
