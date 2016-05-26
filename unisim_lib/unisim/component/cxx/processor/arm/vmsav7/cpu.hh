@@ -178,8 +178,8 @@ struct CPU
   /* Memory access methods       START                          */
   /**************************************************************/
 	
-  virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
-  virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
+  virtual bool PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
+  virtual bool PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
   
   uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }
   uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }
@@ -258,6 +258,8 @@ protected:
   /* MMU Interface   START */
   /*************************/
   
+  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
+  
   uint32_t DFSR, IFSR, DFAR, IFAR;
   
   struct MMU
@@ -295,9 +297,9 @@ protected:
   } tlb;
   
   template <class POLICY>
-  void      TranslationTableWalk( TransAddrDesc& tad, uint32_t mva );
+  void      TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat, unsigned size );
   template <class POLICY>
-  uint32_t  TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size );
+  uint32_t  TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size );
     
   /*************************/
   /* MMU Interface    END  */

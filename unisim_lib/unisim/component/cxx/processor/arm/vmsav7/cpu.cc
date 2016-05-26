@@ -305,60 +305,9 @@ struct SoftMemAcc { static bool const updateTLB=true; };
 void
 CPU::PerformPrefetchAccess( uint32_t addr )
 {
-  // bool cache_access = sctlr::C.Get( sctlr ) and dcache.GetSize();
+  /* it is just a cache prefetch, ignore the request if cache is not active */
   
-  // if (likely(cache_access))
-  //   {
-  //     dcache.prefetch_accesses++;
-  //     uint32_t cache_tag = dcache.GetTag(addr);
-  //     uint32_t cache_set = dcache.GetSet(addr);
-  //     uint32_t cache_way;
-  //     bool cache_hit =
-  //       dcache.GetWay(cache_tag, cache_set, &cache_way) and
-  //       dcache.GetValid(cache_set, cache_way);
-      
-  //     // If the access was a miss, data needs to be fetched from main
-  //     //   memory and placed into the cache
-  //     if (likely(not cache_hit))
-  //       {
-  //         // get a way to replace
-  //         cache_way = dcache.GetNewWay( cache_set );
-  //         // get the valid and dirty bits from the way to replace
-  //         bool cache_valid = dcache.GetValid( cache_set, cache_way );
-  //         bool cache_dirty = dcache.GetDirty( cache_set, cache_way );
-  //         if (cache_valid and cache_dirty)
-  //           {
-  //             // the cache line to replace is valid and dirty so it needs
-  //             //   to be sent to the main memory
-  //             uint8_t *rep_cache_data = 0;
-  //             uint32_t rep_cache_address = dcache.GetBaseAddress( cache_set, cache_way );
-  //             dcache.GetData( cache_set, cache_way, &rep_cache_data );
-  //             PrWrite( rep_cache_address, rep_cache_data, dcache.LINE_SIZE );
-  //           }
-  //         // the new data can be requested
-  //         uint8_t *cache_data = 0;
-  //         uint32_t cache_address = dcache.GetBaseAddressFromAddress(addr);
-  //         // When getting the data we get the pointer to the cache
-  //         //   line containing the data, so no need to write the cache
-  //         //   afterwards
-  //         uint32_t cache_line_size = dcache.GetData( cache_set, cache_way, &cache_data );
-  //         PrRead( cache_address, cache_data, cache_line_size );
-  //         dcache.SetTag( cache_set, cache_way, cache_tag );
-  //         dcache.SetValid( cache_set, cache_way, 1 );
-  //         dcache.SetDirty( cache_set, cache_way, 0 );
-  //       }
-  //     else
-  //       {
-  //         dcache.prefetch_hits++;
-  //       }
-  //     if (unlikely( dcache.power_estimator_import ))
-  //       dcache.power_estimator_import->ReportReadAccess();
-  //   }
-  // else
-    {
-      /* it is just a cache prefetch, ignore the request if cache is not active */
-    }
-  /* CHECK: should we report a memory access for a prefetch???? */
+  /* TODO: shouldn't we report a memory access for a prefetch???? */
 }
 
 /** Performs an unaligned write access.
@@ -447,53 +396,15 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
         }
     }
   
-  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, true, size );
+  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, mat_write, size );
   
-  // In armv7 no address mungling is performed
-  // In armv5, fix the write address according to request size when big endian
-  // write_addr ^= ((-size) & 3);
+  // There is no data cache or data should not be cached.
+  // Just send the request to the memory interface
+  if (not PrWrite( write_addr, data, size )) {
+    // TODO: full data abort
+    throw exception::DataAbortException();
+  }
   
-  // bool cache_access = dcache.GetSize() and sctlr::C.Get( this->SCTLR );
-  // if (likely(cache_access))
-  //   {
-  //     dcache.write_accesses++;
-  //     uint32_t cache_tag = dcache.GetTag(write_addr);
-  //     uint32_t cache_set = dcache.GetSet(write_addr);
-  //     uint32_t cache_way;
-  //     bool cache_hit = false;
-  //     if (dcache.GetWay( cache_tag, cache_set, &cache_way ))
-  //       {
-  //         if (dcache.GetValid( cache_set, cache_way))
-  //           {
-  //             // the access is a hit
-  //             cache_hit = true;
-  //           }
-  //       }
-  //     // if the access was a hit the data needs to be written into
-  //     //   the cache, if the access was a miss the data needs to be
-  //     //   written into memory, but the cache doesn't need to be updated
-  //     if (likely(cache_hit))
-  //       {
-  //         dcache.write_hits++;
-  //         uint32_t cache_index = dcache.GetIndex( write_addr );
-  //         dcache.SetData( cache_set, cache_way, cache_index, size, data );
-  //         dcache.SetDirty( cache_set, cache_way, 1 );
-  //       }
-  //     else
-  //       {
-  //         PrWrite( write_addr, data, size );
-  //       }
-
-  //     if (unlikely(dcache.power_estimator_import))
-  //       dcache.power_estimator_import->ReportWriteAccess();
-  //   }
-  // else
-    {
-      // There is no data cache or data should not be cached.
-      // Just send the request to the memory interface
-      PrWrite( write_addr, data, size );
-    }
-
   /* report read memory access if necessary */
   ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
 }
@@ -545,75 +456,15 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
     }
   }
   
-  uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, false, size );
+  uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, mat_read, size );
   
   uint8_t data[4];
 
-  // In armv7 no address mungling is performed
-  // In armv5, fix the read address depending on the request size and endianess
-  // if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
-  //   read_addr ^= ((-size) & 3);
-  // }
-
-  // bool cache_access = dcache.GetSize() and sctlr::C.Get( this->SCTLR );
-  // if (likely(cache_access))
-  //   {
-  //     dcache.read_accesses++;
-  //     uint32_t cache_tag = dcache.GetTag( read_addr );
-  //     uint32_t cache_set = dcache.GetSet( read_addr );
-  //     uint32_t cache_way;
-  //     bool cache_hit =
-  //       dcache.GetWay(cache_tag, cache_set, &cache_way) and
-  //       dcache.GetValid(cache_set, cache_way);
-  //     // If the access was a miss, data needs to be fetched from main
-  //     //   memory and placed into the cache
-  //     if (unlikely(not cache_hit))
-  //       {
-  //         // get a way to replace
-  //         cache_way = dcache.GetNewWay( cache_set );
-  //         // Check if the way to replace needs to be written back
-  //         if (dcache.GetValid( cache_set, cache_way ) and dcache.GetDirty( cache_set, cache_way ))
-  //           {
-  //             // The cache line to replace is valid and dirty so it
-  //             //   needs to be sent back
-  //             uint8_t* rep_cache_data = 0;
-  //             uint32_t rep_cache_address = dcache.GetBaseAddress( cache_set, cache_way );
-  //             dcache.GetData( cache_set, cache_way, &rep_cache_data );
-  //             PrWrite( rep_cache_address, rep_cache_data, dcache.LINE_SIZE );
-  //           }
-  //         // the new data can be requested
-  //         uint8_t* cache_data = 0;
-  //         uint32_t cache_address = dcache.GetBaseAddressFromAddress( read_addr );
-  //         // When getting the data we get the pointer to the cache
-  //         // line containing the data, so no need to write the cache
-  //         // afterwards
-  //         uint32_t cache_line_size = dcache.GetData( cache_set, cache_way, &cache_data );
-  //         PrRead( cache_address, cache_data, cache_line_size );
-  //         dcache.SetTag( cache_set, cache_way, cache_tag );
-  //         dcache.SetValid( cache_set, cache_way, 1 );
-  //         dcache.SetDirty( cache_set, cache_way, 0 );
-  //       }
-  //     else
-  //       {
-  //         // cache hit
-  //         dcache.read_hits++;
-  //       }
-
-  //     // at this point the data is in the cache, we can read it from the
-  //     //   cache
-  //     uint32_t cache_index = dcache.GetIndex(read_addr);
-  //     uint8_t* ptr;
-  //     (void)dcache.GetData(cache_set, cache_way, cache_index, size, &ptr);
-  //     memcpy( &data[0], ptr, size );
-      
-  //     if (unlikely(dcache.power_estimator_import))
-  //       dcache.power_estimator_import->ReportReadAccess();
-  //   }
-  // else // there is no data cache
-    {
-      // just read the data from the memory system
-      PrRead(read_addr, &data[0], size);
-    }
+  // just read the data from the memory system
+  if (not PrRead(read_addr, &data[0], size)) {
+    // TODO: full data abort
+    throw exception::DataAbortException();
+  }
 
   /* report read memory access if necessary */
   ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
@@ -782,46 +633,14 @@ CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
   uint32_t ef_addr;
   uint8_t* rbuffer = (uint8_t*)buffer;
 
-  // if (likely(dcache.GetSize()))
-  //   {
-  //     while (size != 0)
-  //       {
-  //         ef_addr = base_addr + index;
-
-  //         // Need to access the data cache before the memory subsystem
-  //         uint32_t cache_tag = dcache.GetTag( ef_addr );
-  //         uint32_t cache_set = dcache.GetSet( ef_addr );
-  //         uint32_t cache_way;
-  //         bool cache_hit =
-  //           dcache.GetWay(cache_tag, cache_set, &cache_way) and
-  //           dcache.GetValid(cache_set, cache_way);
-  //         if (cache_hit)
-  //           {
-  //             // Read data from the cache
-  //             uint32_t cache_index = dcache.GetIndex( ef_addr );
-  //             uint32_t read_data_size = dcache.GetDataCopy( cache_set, cache_way, cache_index, size, &rbuffer[index] );
-  //             index += read_data_size;
-  //             size -= read_data_size;
-  //           }
-  //         else
-  //           {
-  //             // Read data from memory subsystem
-  //             PrRead( ef_addr, &rbuffer[index], 1);
-  //             index++;
-  //             size--;
-  //           }
-  //       }
-  //   }
-  // else
+  // No data cache, just send request to the memory subsystem
+  while (size != 0)
     {
-      // No data cache, just send request to the memory subsystem
-      while (size != 0)
-        {
-          ef_addr = base_addr + index;
-          PrRead(ef_addr, &rbuffer[index], 1);
-          index++;
-          size--;
-        }
+      ef_addr = base_addr + index;
+      if (not PrRead(ef_addr, &rbuffer[index], 1))
+        return false;
+      index++;
+      size--;
     }
 
   return true;
@@ -843,46 +662,14 @@ CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
   uint32_t ef_addr;
   uint8_t const* wbuffer = (uint8_t const*)buffer;
   
-  // if (likely(dcache.GetSize()))
-  //   {
-  //     while (size != 0)
-  //       {
-  //         ef_addr = base_addr + index;
-
-  //         // Need to access the data cache before accessing the main memory
-  //         uint32_t cache_tag = dcache.GetTag(ef_addr);
-  //         uint32_t cache_set = dcache.GetSet(ef_addr);
-  //         uint32_t cache_way;
-  //         bool cache_hit =
-  //           dcache.GetWay( cache_tag, cache_set, &cache_way ) and
-  //           dcache.GetValid( cache_set, cache_way );
-  //         if (cache_hit)
-  //           {
-  //             // Write data in the cache
-  //             uint32_t cache_index = dcache.GetIndex( ef_addr );
-  //             uint32_t write_data_size = dcache.SetData( cache_set, cache_way, cache_index, size, &wbuffer[index] );
-  //             dcache.SetDirty( cache_set, cache_way, 1 );
-  //             index += write_data_size;
-  //             size -= write_data_size;
-  //           }
-  //         else
-  //           {
-  //             PrWrite( ef_addr, &wbuffer[index], 1 );
-  //             index++;
-  //             size--;
-  //           }
-  //       }
-  //   }
-  // else
+  // No data cache, just send the request to the memory subsystem
+  while (size != 0)
     {
-      // No data cache, just send the request to the memory subsystem
-      while (size != 0)
-        {
-          ef_addr = base_addr + index;
-          PrWrite( ef_addr, &wbuffer[index], 1 );
-          index++;
-          size--;
-        }
+      ef_addr = base_addr + index;
+      if (not PrWrite( ef_addr, &wbuffer[index], 1 ))
+        return false;
+      index++;
+      size--;
     }
 
   return true;
@@ -972,7 +759,7 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
       while ((size != 0) and status)
         {
           try {
-            ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, false, 1 );
+            ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, mat_read, 1 );
           } catch (unisim::component::cxx::processor::arm::exception::DataAbortException const& x) {
             status = false;
             break;
@@ -1044,7 +831,7 @@ CPU::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
       while ((size != 0) and status)
         {
           try {
-            ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, true, 1 );
+            ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, mat_write, 1 );
           } catch (unisim::component::cxx::processor::arm::exception::DataAbortException const& x) {
             status = false;
             break;
@@ -1157,51 +944,13 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 {
   this->ipb_base_address = base_address;
   
-  // bool cache_access = sctlr::I.Get( this->SCTLR ) and icache.GetSize();
-  // if (likely(cache_access))
-  //   {
-  //     icache.read_accesses++;
-  //     // check the instruction cache
-  //     uint32_t cache_tag = icache.GetTag(base_address);
-  //     uint32_t cache_set = icache.GetSet(base_address);
-  //     uint32_t cache_way;
-  //     // Check for a cache hit
-  //     bool cache_hit =
-  //       icache.GetWay(cache_tag, cache_set, &cache_way) and
-  //       icache.GetValid(cache_set, cache_way);
-      
-  //     if (likely(cache_hit))
-  //       {
-  //         // cache hit
-  //         icache.read_hits++;
-  //       }
-  //     else
-  //       {
-  //         // get a way to replace (no need to check valid and dirty
-  //         // bits, the new data can be requested immediately)
-  //         cache_way = icache.GetNewWay(cache_set);
-  //         uint8_t *cache_data = 0;
-  //         // when getting the physical data of the cache line
-  //         icache.GetData(cache_set, cache_way, &cache_data);
-  //         PrRead(base_address, cache_data, Cache::LINE_SIZE);
-  //         icache.SetTag(cache_set, cache_way, cache_tag);
-  //         icache.SetValid(cache_set, cache_way, 1);
-  //       }
-      
-  //     // At this point data is in the cache, so we can read it from it
-  //     uint32_t cache_index = icache.GetIndex(base_address);
-  //     icache.GetDataCopy(cache_set, cache_way, cache_index, Cache::LINE_SIZE, &this->ipb_bytes[0]);
-
-  //     if (unlikely(icache.power_estimator_import))
-  //       icache.power_estimator_import->ReportReadAccess();
-  //   }
-  // else
-    {
-      // No instruction cache present, just request the insn to the
-      // memory system.
-      PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE);
-    }
-
+  // No instruction cache present, just request the insn to the
+  // memory system.
+  if (not PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE)) {
+    // TODO: full prefetch abort
+    throw exception::PrefetchAbortException();
+  }
+  
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
     memory_access_reporting_import->
       ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, Cache::LINE_SIZE);
@@ -1218,7 +967,8 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 void 
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
+  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE),
+                                                        false, mat_exec, Cache::LINE_SIZE );
   uint32_t buffer_index = address % (Cache::LINE_SIZE);
   
   if (unlikely(ipb_base_address != base_address))
@@ -1243,7 +993,8 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
 void
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
+  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE),
+                                                        false, mat_exec, Cache::LINE_SIZE );
   intptr_t buffer_index = address % (Cache::LINE_SIZE);
     
   if (unlikely(ipb_base_address != base_address))
@@ -1489,7 +1240,7 @@ CPU::TLB::AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad )
 
 template <class POLICY>
 void
-CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
+CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat, unsigned size )
 {
   //  // this is only called when the MMU is enabled
   //  TLBRecord result;
@@ -1532,7 +1283,10 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
   
   // Obtain First level descriptor.
   uint32_t l1descaddr = (((ttbr >> (14-n)) << (14-n)) | ((mva << n) >> (n+18))) & -4;
-  PrRead( l1descaddr, erd.data(), 4 );
+  if (not PrRead( l1descaddr, erd.data(), 4 )) {
+    // TODO: full data abort
+    throw exception::DataAbortException();
+  }
   uint32_t l1desc = erd.Get();
   switch (l1desc&3) {
   case 0: {
@@ -1545,7 +1299,10 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
     // Large page or Small page
     // Obtain Second level descriptor.
     uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
-    PrRead( l2descaddr, erd.data(), 4 );
+    if (not PrRead( l2descaddr, erd.data(), 4 )) {
+      // TODO: full data abort
+      throw exception::DataAbortException();
+    }
     uint32_t l2desc = erd.Get();
     // Process Second level descriptor.
     if ((l2desc&3) == 0) {
@@ -1592,7 +1349,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
 
 template <class POLICY>
 uint32_t
-CPU::TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size )
+CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size )
 {
   // bits(32) mva;
   // bits(40) ia_in;
@@ -1604,7 +1361,7 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size )
   if (sctlr::M.Get( this->SCTLR )) {
     // Stage 1 MMU enabled
     if (not tlb.GetTranslation<POLICY>( tad, mva ))
-      TranslationTableWalk<POLICY>( tad, mva );
+      TranslationTableWalk<POLICY>( tad, mva, mat, size );
     // else {
     //   // Check if hit is coherent
     //   TransAddrDesc tad_chk;

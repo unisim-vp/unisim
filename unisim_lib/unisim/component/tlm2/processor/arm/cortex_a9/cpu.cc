@@ -573,26 +573,16 @@ CPU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
     return PCPU::memory_import->ReadMemory(addr, buffer, size);
   }
 
-  transaction_type *trans;
-  unsigned int read_size;
-
-  trans = payload_fabric.allocate();
+  Transaction trans( payload_fabric );
   trans->set_address(addr);
   trans->set_data_length(size);
   trans->set_data_ptr((uint8_t *)buffer);
   trans->set_read();
   trans->set_streaming_width(size);
 
-  read_size = master_socket->transport_dbg(*trans);
+  unsigned read_size = master_socket->transport_dbg(*trans);
 
-  if (trans->is_response_ok() and read_size == size)
-  {
-    trans->release();
-    return true;
-  }
-
-  trans->release();
-  return false;
+  return (trans->is_response_ok() and read_size == size);
 }
 
 /**
@@ -615,26 +605,16 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
     return PCPU::memory_import->WriteMemory(addr, buffer, size);
   }
 
-  transaction_type *trans;
-  unsigned int write_size;
-
-  trans = payload_fabric.allocate();
+  Transaction trans( payload_fabric );
   trans->set_address(addr);
   trans->set_data_length(size);
   trans->set_data_ptr((uint8_t *)buffer);
   trans->set_write();
   trans->set_streaming_width(size);
 
-  write_size = master_socket->transport_dbg(*trans);
+  unsigned write_size = master_socket->transport_dbg(*trans);
 
-  if (trans->is_response_ok() and (write_size == size))
-  {
-    trans->release();
-    return true;
-  }
-
-  trans->release();
-  return false;
+  return (trans->is_response_ok() and (write_size == size));
 }
 
 /**
@@ -650,7 +630,7 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
  * @param buffer  the buffer to copy the data to read
  * @param size    the size of the read
  */
-void 
+bool
 CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 {
   if ( unlikely(verbose_tlm) )
@@ -663,10 +643,11 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
   /* Use blocking transactions.
    * Steps:
    * 1 - check when the request can be send (synchronize with the bus)
-   * 2 - create the transaction
+   * 2 - create the (auto-released) transaction
    * 3 - send the transaction
-   * 4 - release the transaction
+   * 4 - update DMI region cache
    */
+  
   // 1 - synchronize with the bus
   BusSynchronize();
 
@@ -688,36 +669,35 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
           quantum_time += dmi_region->GetReadLatency(size);
           if (quantum_time > nice_time)
             Sync();
-          return;
+          return true;
         }
       }
     }
   }
 
-  // 2 - create the transaction
-  transaction_type *trans;
+  // 2 - create the (auto-released) transaction
+  Transaction trans( payload_fabric );
+  
   //uint32_t byte_enable = 0xffffffffUL;
-  trans = payload_fabric.allocate();
   trans->set_address(addr);
   trans->set_read();
   trans->set_data_ptr(buffer);
   trans->set_data_length(size);
   trans->set_streaming_width(size);
+  
   // trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
   // trans->set_byte_enable_length(size);
 
   // 3 - send the transaction and check response status
   master_socket->b_transport(*trans, quantum_time);
-  if (not trans->is_response_ok()) {
-    // TODO: asynchronous abort arguments (read, nature, context)...;
-    throw cxx::processor::arm::exception::DataAbortException();
-  }
+  if (not trans->is_response_ok())
+    return false;
   
   // cpu_time = sc_time_stamp() + quantum_time;
   if (quantum_time > nice_time)
     Sync();
 
-  // post3 - update DMI region cache
+  // 4 - update DMI region cache
   if(likely(enable_dmi))
   {
     if(likely(not dmi_region and trans->is_dmi_allowed()))
@@ -731,9 +711,6 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
     }
   }
 
-  // 4 - release the transaction
-  trans->release();
-
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
       << "Finished PrRead:" << std::endl
@@ -741,10 +718,10 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
 
-  return;
+  return true;
 }
 
-void 
+bool
 CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
 {
   if ( unlikely(verbose_tlm) )
@@ -757,7 +734,7 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   /* Use blocking transactions.
    * Steps:
    * 1 - check when the request can be send (synchronize with the bus)
-   * 2 - create the transaction
+   * 2 - create the (auto-released) transaction
    * 3 - send the transaction
    */
   // 1 - synchronize with the bus
@@ -781,16 +758,16 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
           quantum_time += dmi_region->GetWriteLatency(size);
           if (quantum_time > nice_time)
             Sync();
-          return;
+          return true;
         }
       }
     }
   }
   
-  // 2 - create the transaction
-  transaction_type *trans;
+  // 2 - create the (auto-released) transaction
+  Transaction trans( payload_fabric );
+  
   //uint32_t byte_enable = 0xffffffffUL;
-  trans = payload_fabric.allocate();
   trans->set_address(addr);
   trans->set_write();
   trans->set_data_ptr((unsigned char *)buffer);
@@ -801,10 +778,8 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
 
   // 3 - send the transaction and check response status
   master_socket->b_transport(*trans, quantum_time);
-  if (not trans->is_response_ok()) {
-    // TODO: asynchronous abort arguments (write, nature, context)...";
-    throw cxx::processor::arm::exception::DataAbortException();
-  }
+  if (not trans->is_response_ok())
+    return false;
   
   if (quantum_time > nice_time)
     Sync();
@@ -823,9 +798,6 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
     }
   }
 
-  // 4 - release the transaction
-  trans->release();
-
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
       << "Finished PrWrite:" << std::endl
@@ -833,7 +805,7 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
 
-  return;
+  return true;
 }
 
 /** Get the Internal representation of the CP15 Register
