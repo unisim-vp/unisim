@@ -403,7 +403,8 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
   if (not PrWrite( write_addr, data, size )) {
-    throw DataAbortException(); // TODO: full data abort
+    // TODO: domain assigned with a regular value ?
+    DataAbort(addr, write_addr, 0, 0, mat_write, DAbort_SyncExternal, false, false, true, false, false);
   }
   
   /* report read memory access if necessary */
@@ -465,7 +466,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 
   // just read the data from the memory system
   if (not PrRead(read_addr, &data[0], size)) {
-    throw DataAbortException(); // TODO: full data abort
+    DataAbort(addr, read_addr, 0, 0, mat_read, DAbort_SyncExternal, false, false, true, false, false);
   }
 
   /* report read memory access if necessary */
@@ -858,15 +859,14 @@ CPU::PerformExit(int ret)
  *     encompass, once the refill is complete.
  */
 void 
-CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
+CPU::RefillInsnPrefetchBuffer(uint32_t mva, uint32_t base_address)
 {
   this->ipb_base_address = base_address;
   
   // No instruction cache present, just request the insn to the
   // memory system.
   if (not PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE)) {
-    // TODO: full prefetch abort
-    throw PrefetchAbortException();
+    DataAbort(mva, base_address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
   }
   
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
@@ -890,7 +890,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
   
   if (unlikely(ipb_base_address != base_address))
     {
-      RefillInsnPrefetchBuffer( base_address );
+      RefillInsnPrefetchBuffer( address, base_address );
     }
   
   uint32_t word;
@@ -915,14 +915,14 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
     
   if (unlikely(ipb_base_address != base_address))
     {
-      RefillInsnPrefetchBuffer( base_address );
+      RefillInsnPrefetchBuffer( address, base_address );
     }
   
   // In ARMv7, instruction fetch ignores "Endianness execution state bit"
   insn.str[0] = ipb_bytes[buffer_index+0];
   insn.str[1] = ipb_bytes[buffer_index+1];
   if (unlikely((buffer_index+2) >= Cache::LINE_SIZE)) {
-    RefillInsnPrefetchBuffer( base_address + Cache::LINE_SIZE );
+    RefillInsnPrefetchBuffer( address+2, base_address + Cache::LINE_SIZE );
     buffer_index = intptr_t(-2);
   }
   insn.str[2] = ipb_bytes[buffer_index+2];
@@ -997,54 +997,57 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
                DAbort type, bool taketohypmode, bool s2abort,
                bool ipavalid, bool LDFSRformat, bool s2fs1walk)
 {
+  uint32_t& FSR = (mat == mat_exec) ? IFSR : DFSR;
+  uint32_t& FAR = (mat == mat_exec) ? IFAR : DFAR;
+  
   if (not taketohypmode) {
-    // DFSR = bits(32) UNKNOWN;
-    // DFAR = bits(32) UNKNOWN;
+    // FSR = bits(32) UNKNOWN;
+    // FAR = bits(32) UNKNOWN;
 
     // Asynchronous abort don't update DFAR. Synchronous Watchpoint
     // (DAbort_DebugEvent) update DFAR since debug v7.1.
     switch (type) {
-    default: DFAR = va; break;
+    default: FAR = va; break;
     case DAbort_AsyncParity: case DAbort_AsyncExternal: break;
     }
     if (LDFSRformat) {
       throw std::logic_error("Long descriptors format not supported");
       // // new format
-      // DFSR<13> = TLBLookupCameFromCacheMaintenance();
+      // FSR<13> = TLBLookupCameFromCacheMaintenance();
       // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal))
-      //   DFSR<12> = IMPLEMENTATION_DEFINED;
+      //   FSR<12> = IMPLEMENTATION_DEFINED;
       // else
-      //   DFSR<12> = '0';
-      // DFSR<11> = if (mat == mat_write) then '1' else '0';
-      // DFSR<10> = bit UNKNOWN;
-      // DFSR<9> = '1';
-      // DFSR<8:6> = bits(3) UNKNOWN;
-      // DFSR<5:0> = EncodeLDFSR(type, level);
+      //   FSR<12> = '0';
+      // FSR<11> = if (mat == mat_write) then '1' else '0';
+      // FSR<10> = bit UNKNOWN;
+      // FSR<9> = '1';
+      // FSR<8:6> = bits(3) UNKNOWN;
+      // FSR<5:0> = EncodeLDFSR(type, level);
     }
     else { // Short descriptor format
-      // DFSR<13> = TLBLookupCameFromCacheMaintenance();
-      RegisterField<13,1>().Set( DFSR, 0 );
-      // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal)) DFSR<12> = IMPLEMENTATION_DEFINED;
-      // else                                                    DFSR<12> = '0';
-      RegisterField<12,1>().Set( DFSR, 0 );
-      RegisterField<11,1>().Set( DFSR, mat_write ? 1 : 0 );
-      RegisterField<9,1>().Set( DFSR, 0 );
-      // DFSR<8> = bit UNKNOWN;
-      RegisterField<8,1>().Set( DFSR, 0 );
+      // FSR<13> = TLBLookupCameFromCacheMaintenance();
+      RegisterField<13,1>().Set( FSR, 0 );
+      if ((type != DAbort_SyncExternal) and (type != DAbort_AsyncExternal))
+        RegisterField<12,1>().Set( FSR, 0 );
+      RegisterField<11,1>().Set( FSR, mat_write ? 1 : 0 );
+      RegisterField<9,1>().Set( FSR, 0 );
+      // FSR<8> = bit UNKNOWN;
+      RegisterField<8,1>().Set( FSR, 0 );
       // domain_valid = ((type == DAbort_Domain) ||
       //                 ((level == 2) &&
       //                  (type IN {DAbort_Translation, DAbort_AccessFlag,
       //                      DAbort_SyncExternalonWalk, DAbort_SyncParityonWalk})) ||
       //                 (!HaveLPAE() && (type == DAbort_Permission)));
-      // if (domain_valid)   DFSR<7:4> = domain;
-      // else                DFSR<7:4> = bits(4) UNKNOWN;
+      // if (domain_valid)   FSR<7:4> = domain;
+      // else                FSR<7:4> = bits(4) UNKNOWN;
+      RegisterField<4,4>().Set( FSR, domain );
       struct FS {
         FS( uint32_t& _dfsr ) : dfsr( _dfsr ) {} uint32_t& dfsr;
         void Set( uint32_t value ) {
           RegisterField<10,1>().Set( dfsr, value >> 4 );
           RegisterField<0,4>() .Set( dfsr, value >> 0 );
         }
-      } fault_status( DFSR );
+      } fault_status( FSR );
       switch (type) {
       case DAbort_AccessFlag:         fault_status.Set( level==1 ? 0b00011 : 0b00110 ); break;
       case DAbort_Alignment:          fault_status.Set( 0b00001 ); break;
@@ -1171,7 +1174,6 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
   // s2fs1walk = FALSE;
   // // default setting of the domain
   // domain = bits(4) UNKNOWN;
-  // // Determine correct Translation Table Base Register to use.
   
   struct EndianReader
   {
@@ -1189,6 +1191,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
   uint32_t lsb = 0;
   //bool     nG;
   
+  // Determine correct Translation Table Base Register to use.
   uint32_t n = TTBCR::N.Get( mmu.ttbcr ), ttbr;
   if ((mva >> 1) >> (n^31)) {
     ttbr = mmu.ttbr1;
@@ -1200,26 +1203,27 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
   // Obtain First level descriptor.
   uint32_t l1descaddr = (((ttbr >> (14-n)) << (14-n)) | ((mva << n) >> (n+18))) & -4;
   if (not PrRead( l1descaddr, erd.data(), 4 )) {
-    throw DataAbortException(); // TODO: full data abort
+    DataAbort(l1descaddr, l1descaddr, 0, 0, mat_read, DAbort_SyncExternalonWalk, false, false, false, false, false);
   }
   uint32_t l1desc = erd.Get();
   switch (l1desc&3) {
   case 0: {
     // Fault, Reserved
-    throw DataAbortException(); // TODO: Full DAbort_Translation 
+    DataAbort(mva, 0, 0, 1, mat, DAbort_Translation, false, false, false, false, false);
   } break;
     
   case 1: {
     // Large page or Small page
     // Obtain Second level descriptor.
     uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
+    unsigned domain = RegisterField<5,4>().Get( l1desc );
     if (not PrRead( l2descaddr, erd.data(), 4 )) {
-      throw DataAbortException(); // TODO: full data abort
+      DataAbort(l2descaddr, 0, domain, 0, mat_read, DAbort_SyncExternalonWalk, false, false, false, false, false);
     }
     uint32_t l2desc = erd.Get();
     // Process Second level descriptor.
     if ((l2desc&3) == 0) {
-      throw DataAbortException(); // TODO: Full DAbort_Translation 
+      DataAbort(mva, 0, domain, 2, mat, DAbort_Translation, false, false, false, false, false);
     }
     //nG = (l2desc >> 11) & 1;
     if (l2desc & 2) {

@@ -211,7 +211,7 @@ struct CPU
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
   
-  void RefillInsnPrefetchBuffer( uint32_t base_address );
+  void RefillInsnPrefetchBuffer( uint32_t mva, uint32_t base_address );
   
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn );
