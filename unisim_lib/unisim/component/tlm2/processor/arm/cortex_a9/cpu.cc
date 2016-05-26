@@ -376,7 +376,7 @@ CPU::Run()
         if (unlikely(verbose_tlm))
           PCPU::logger << DebugInfo
                             << "Syncing due to exception being unmasked" << std::endl
-                            << " - PC = 0x" << std::hex << current_pc << std::dec << std::endl
+                            << " - PC = 0x" << std::hex << current_insn_addr << std::dec << std::endl
                             << " - cpsr_cleared_bits = 0x" << std::hex << cpsr_cleared_bits << std::dec << std::endl
                             << " - cpu_time     = " << cpu_time << std::endl
                             << " - quantum_time = " << quantum_time

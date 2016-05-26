@@ -120,8 +120,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   // Initialize general purpose registers
   for (unsigned idx = 0; idx < num_log_gprs; idx++)
     gpr[idx] = 0;
-  this->current_pc = 0;
-  this->next_pc = 0;
+  this->current_insn_addr = 0;
+  this->next_insn_addr = 0;
   
   /* ARM modes (Banked Registers)
    * At any given running mode only 16 registers are accessible.
@@ -213,7 +213,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     {
       ProgramCounterRegister( CPU& _cpu ) : cpu(_cpu) {}
       virtual const char *GetName() const { return "pc"; }
-      virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.next_pc; }
+      virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.next_insn_addr; }
       virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
       virtual int  GetSize() const { return 4; }
       virtual void Clear() { /* Clear is meaningless for PC */ }
@@ -223,7 +223,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     dbg_reg = new ProgramCounterRegister( *this );
     registers_registry["pc"] = registers_registry["r15"] = dbg_reg;
     debug_register_pool.insert( dbg_reg );
-    var_reg = new unisim::kernel::service::Register<uint32_t>( "pc", this, this->next_pc, "Logical Register #15: pc, r15" );
+    var_reg = new unisim::kernel::service::Register<uint32_t>( "pc", this, this->next_insn_addr, "Logical Register #15: pc, r15" );
     variable_register_pool.insert( var_reg );
     
     // Handling the CPSR register
@@ -439,8 +439,8 @@ CPU<CONFIG>::CallSupervisor( uint16_t imm )
  *
  * Processes pending asynchronous exceptions and returns true if an
  * exception were taken. Note 1: this function should be called just
- * before PC update; next_pc should point at the next instruction to
- * execute whereas current_pc should point ot the instruction that
+ * before PC update; next_insn_addr should point at the next instruction to
+ * execute whereas current_insn_addr should point ot the instruction that
  * triggered the synchronous exception.
  *
  * @return true if an exception were taken, false if not (exception masked)
@@ -476,8 +476,8 @@ CPU<CONFIG>::HandleSynchronousException()
  *
  * Processes pending asynchronous exceptions and return processed
  * exception (at most one). Note 1: this is designed to be called just
- * before PC update; next_pc should point at the next instruction to
- * execute whereas current_pc is ignored (but should point to a
+ * before PC update; next_insn_addr should point at the next instruction to
+ * execute whereas current_insn_addr is ignored (but should point to a
  * finished instruction, except PC update).
  *
  * @param exception the A|I|F exception vector (as in CPSR)
@@ -525,9 +525,11 @@ template <class CONFIG>
 void
 CPU<CONFIG>::TakeReset()
 {
-  // Enter Supervisor mode and (if relevant) Secure state, and reset CP15. This affects
-  // the Banked versions and values of various registers accessed later in the code.
-  // Also reset other system components.
+  //   Enter Supervisor mode and (if relevant) Secure state, and reset
+  // CP15.  This affects the Banked versions and values of various
+  // registers accessed later in the code.  Also reset other system
+  // components.
+  
   cpsr.Set( M, SUPERVISOR_MODE );
   //if HaveSecurityExt() then SCR.NS = '0';
   
@@ -562,26 +564,17 @@ CPU<CONFIG>::TakeReset()
  */
 template <class CONFIG>
 void
-CPU<CONFIG>::TakeDataAbortException()
+CPU<CONFIG>::TakeDataOrPrefetchAbortException( bool isdata )
 {
-  // Quote from the ARM doc:
-  //
-  //   Determine return information. SPSR is to be the current CPSR, and LR is to be the
-  // current PC plus 4 for Thumb or 0 for ARM, to change the PC offsets of 4 or 8
-  // respectively from the address of the current instruction into the required address
-  // of the current instruction plus 8. For an asynchronous abort, the PC and CPSR are
-  // considered to have already moved on to their values for the instruction following
-  // the instruction boundary at which the exception occurred.
-  // 
-  // Now what does that mean ?!?!?
-  //
-  //   Whatever the instruction set, the exception handler should
-  // return to LR-8 to resume the trapped instruction, in other words,
-  // LR should be the address of the trapped instruction plus 8.
+  //   Determine return information.  SPSR is to be the current CPSR,
+  // and LR is to be the current instruction address +8 for data abort
+  // or +4 for prefetch abort.  Thus exception should preferably
+  // return to LR-8 for data aborts or LR-4 for prefetch abort.
 
-  uint32_t new_lr_value = GetGPR(15) + cpsr.Get( T ) ? 4 : 0;;
+  uint32_t preferred_exceptn_return = GetCIA();
+  uint32_t new_lr_value = preferred_exceptn_return + (isdata ? 8 : 4);
   uint32_t new_spsr_value = cpsr.bits();
-  uint32_t vect_offset = 0x10;
+  uint32_t vect_offset = isdata ? 16 : 12;
   
   // preferred_exceptn_return = new_lr_value - 8;
   // // Determine whether this is an external abort to be routed to Monitor mode.
@@ -591,11 +584,12 @@ CPU<CONFIG>::TakeDataAbortException()
   // take_to_hyp = HaveVirtExt() && HaveSecurityExt() && SCR.NS == '1' && CPSR.M == '11010';
   // // otherwise, check whether to take to Hyp mode through Hyp Trap vector
   // route_to_hyp = (HaveVirtExt() && HaveSecurityExt() && !IsSecure() &&
-  //                 (SecondStageAbort() || (CPSR.M != '11010' &&
-  //                                         (IsExternalAbort() && IsAsyncAbort() && HCR.AMO == '1') ||
-  //                                         (DebugException() && HDCR.TDE == '1')) ||
-  //                  (CPSR.M == '10000' && HCR.TGE == '1' &&
-  //                   (IsAlignmentFault() || (IsExternalAbort() && !IsAsyncAbort())))));
+  //                 (SecondStageAbort() ||
+  //                  (CPSR.M != HYPERVISOR_MODE && DebugException() && HDCR.TDE == '1') ||
+  //                  (CPSR.M != HYPERVISOR_MODE && (IsExternalAbort() && IsAsyncAbort() && HCR.AMO == '1')) ||
+  //                  (CPSR.M == USER_MODE && HCR.TGE == '1' && ((IsExternalAbort() && !IsAsyncAbort()) || IsAlignmentFault()))
+  //                 )
+  //                );
   // // if HCR.TGE == '1' and in a Non-secure PL1 mode, the effect is UNPREDICTABLE
   // if (route_to_monitor) {
   //   // Ensure Secure state if initially in Monitor mode. This affects the Banked
@@ -643,24 +637,14 @@ template <class CONFIG>
 void
 CPU<CONFIG>::TakeSVCException()
 {
-  // Quote from the ARM doc:
-  //
-  //   Determine return information. SPSR is to be the current CPSR,
+  //   Determine return information.  SPSR is to be the current CPSR,
   // after changing the IT[] bits to give them the correct values for
-  // the following instruction, and LR is to be the current PC minus 2
-  // for Thumb or 4 for ARM, to change the PC offsets of 4 or 8
-  // respectively from the address of the current instruction into the
-  // required address of the next instruction, the SVC instruction
-  // having size 2bytes for Thumb or 4 bytes for ARM.
-  // 
-  // Now what does that mean ?!?!?
-  //
-  //   Whatever the instruction set, the exception handler should
-  // return to LR, in other words, LR should be next instruction.
+  // the following instruction, and LR is to be the next instruction
+  // address.  Thus exception should preferably return to LR.
   
   ITAdvance(); //< Finalize SVC instruction
   
-  uint32_t new_lr_value = GetNPC();
+  uint32_t new_lr_value = GetNIA();
   uint32_t new_spsr_value = cpsr.Get( ALL32 );
   uint32_t vect_offset = 0x8;
   
@@ -710,22 +694,11 @@ template <class CONFIG>
 void
 CPU<CONFIG>::TakePhysicalFIQorIRQException( bool isIRQ )
 {
-  // Quote from the ARM doc:
-  //
-  //   Determine return information. SPSR is to be the current
-  // CPSR, and LR is to be the current PC minus 0 for Thumb or 4
-  // for ARM, to change the PC offsets of 4 or 8 respectively from
-  // the address of the current instruction into the required
-  // address of the instruction boundary at which the interrupt
-  // occurred plus 4. For this purpose, the PC and CPSR are
-  // considered to have already moved on to their values for the
-  // instruction following that boundary.
-  //
-  // Now what does that mean ?!?!?
-  //
-  //   Whatever the instruction set, the exception handler should
-  // return to LR-4, in other words, LR should be next instruction +4.
-  uint32_t new_lr_value = GetNPC() + 4;
+  //   Determine return information.  SPSR is to be the current CPSR,
+  // and LR is to be the aborted instruction address + 4.  Thus
+  // exception should preferably return to LR-4.
+  
+  uint32_t new_lr_value = GetNIA() + 4;
   uint32_t new_spsr_value = cpsr.Get( ALL32 );
   uint32_t vect_offset = isIRQ ? 0x18 : 0x1C;
       
@@ -946,7 +919,7 @@ CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t
          << ", opc1=" << unsigned(opcode1)
          << ", CRm=" << unsigned(crm)
          << ", opc2=" << unsigned(opcode2)
-         << ", pc=" << std::hex << current_pc << std::dec
+         << ", pc=" << std::hex << current_insn_addr << std::dec
          << EndDebugError;
   
   static struct CP15Error : public CP15Reg {
@@ -999,7 +972,7 @@ CPU<CONFIG>::UnpredictableInsnBehaviour()
 {
   logger << DebugWarning
          << "Trying to execute unpredictable behavior instruction."
-         << " PC: " << std::hex << current_pc << std::dec
+         << " PC: " << std::hex << current_insn_addr << std::dec
          << ", CPSR: " << std::hex << cpsr.bits() << std::dec
          << " (" << cpsr << ")"
          << EndDebugWarning;

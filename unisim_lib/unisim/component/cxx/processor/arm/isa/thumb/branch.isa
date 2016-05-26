@@ -118,7 +118,7 @@ blx.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 address = cpu.GetGPR(rm);
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() | U32(1) );
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() | U32(1) );
   cpu.BranchExchange( address );
 };
 

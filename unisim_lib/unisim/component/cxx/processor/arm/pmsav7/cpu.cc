@@ -181,7 +181,7 @@ CPU::EndSetup()
   this->TakeReset();
   
   if (verbose)
-    logger << DebugInfo << "Initial pc set to 0x" << std::hex << GetNPC() << std::dec << EndDebugInfo;
+    logger << DebugInfo << "Initial pc set to 0x" << std::hex << GetNIA() << std::dec << EndDebugInfo;
   
   if (verbose)
     logger << DebugInfo << "Setting cpu cycle time to " << cpu_cycle_time_ps << " ps." << EndDebugInfo;
@@ -349,8 +349,8 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 void 
 CPU::StepInstruction()
 {
-  /* Instruction boundary next_pc becomes current_pc */
-  uint32_t insn_addr = this->current_pc = GetNPC();
+  /* Instruction boundary next_insn_addr becomes current_insn_addr */
+  uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
   
   if (debug_control_import)
     {
@@ -390,8 +390,8 @@ CPU::StepInstruction()
       if (insn_length % 16) throw std::logic_error("Bad T2 instruction length");
     
       /* update PC register value before execution */
-      this->gpr[15] = this->next_pc + 4;
-      this->next_pc += insn_length / 8;
+      this->gpr[15] = this->next_insn_addr + 4;
+      this->next_insn_addr += insn_length / 8;
     
       /* Execute instruction */
       asm volatile( "thumb2_operation_execute:" );
@@ -413,8 +413,8 @@ CPU::StepInstruction()
       op = arm32_decoder.Decode(insn_addr, insn);
     
       /* update PC register value before execution */
-      this->gpr[15] = this->next_pc + 8;
-      this->next_pc += 4;
+      this->gpr[15] = this->next_insn_addr + 8;
+      this->next_insn_addr += 4;
     
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
@@ -423,7 +423,7 @@ CPU::StepInstruction()
     }
     
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+      memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
     
     instruction_counter++;
     if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
@@ -436,7 +436,7 @@ CPU::StepInstruction()
      * requested from regular instructions. ITState will be updated by
      * TakeSVCException (as done in the ARM spec). */
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+      memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
 
     instruction_counter++;
     if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
@@ -447,7 +447,7 @@ CPU::StepInstruction()
   
   catch (exception::UndefInstrException const& undexc) {
     logger << DebugError << "Undefined instruction"
-           << " pc: " << std::hex << current_pc << std::dec
+           << " pc: " << std::hex << current_insn_addr << std::dec
            << ", cpsr: " << std::hex << cpsr.bits() << std::dec
            << " (" << cpsr << ")"
            << EndDebugError;
@@ -456,7 +456,7 @@ CPU::StepInstruction()
   
   catch (exception::Exception const& exc) {
     logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
-           << " pc: " << std::hex << current_pc << std::dec
+           << " pc: " << std::hex << current_insn_addr << std::dec
            << ", cpsr: " << std::hex << cpsr.bits() << std::dec
            << " (" << cpsr << ")"
            << EndDebugError;
@@ -790,7 +790,7 @@ CPU::UndefinedInstruction( isa::arm32::Operation<CPU>* insn )
   insn->disasm( *this, oss );
   
   logger << DebugWarning << "Undefined instruction"
-         << " @" << std::hex << current_pc << std::dec
+         << " @" << std::hex << current_insn_addr << std::dec
          << ": " << oss.str()
          << EndDebugWarning;
   
@@ -804,7 +804,7 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
   insn->disasm( *this, oss );
   
   logger << DebugWarning << "Undefined instruction"
-         << " @" << std::hex << current_pc << std::dec
+         << " @" << std::hex << current_insn_addr << std::dec
          << ": " << oss.str()
          << EndDebugWarning;
   

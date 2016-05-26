@@ -216,20 +216,26 @@ struct CPU
     this->Branch( target );
   }
 	
-  /** Sets the PC (and preserve mode)
+  /** Sets the PC (fixing alignment and preserving mode)
    *
    * @param val the value to set PC
    */
   void Branch(uint32_t target)
   {
-    this->next_pc = target & (this->cpsr.Get( T ) ? -2 : -4);
+    this->next_insn_addr = target & (this->cpsr.Get( T ) ? -2 : -4);
   }
 	
-  /** Gets the updated PC value (next PC as currently computed)
+  /** Gets the current instruction address
    *
    */
-  uint32_t GetNPC()
-  { return this->next_pc; }
+  uint32_t GetCIA()
+  { return this->current_insn_addr; }
+	
+  /** Gets the next instruction address (as currently computed)
+   *
+   */
+  uint32_t GetNIA()
+  { return this->next_insn_addr; }
 	
   /******************************************/
   /* Program Status Register access methods */
@@ -349,7 +355,7 @@ protected:
   void     TakeReset();
   void     TakePhysicalFIQorIRQException( bool isIRQ );
   void     TakeSVCException();
-  void     TakeDataAbortException();
+  void     TakeDataOrPrefetchAbortException( bool isdata );
   
   /************************************************************************/
   /* Exception handling                                               END */
@@ -399,7 +405,7 @@ protected:
   
   /** Storage for the logical registers */
   uint32_t gpr[num_log_gprs];
-  uint32_t current_pc, next_pc;
+  uint32_t current_insn_addr, next_insn_addr;
   
   /** PSR registers */
   PSR      cpsr;

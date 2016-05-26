@@ -200,7 +200,7 @@ CPU::EndSetup()
   }
   
   if (verbose)
-    logger << DebugInfo << "Initial pc set to 0x" << std::hex << GetNPC() << std::dec << EndDebugInfo;
+    logger << DebugInfo << "Initial pc set to 0x" << std::hex << GetNIA() << std::dec << EndDebugInfo;
   
   /* Initialize the caches and power support as required. */
   {
@@ -319,7 +319,7 @@ void
 CPU::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("Bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not sctlr::A.Get( this->SCTLR ))) {
@@ -347,7 +347,7 @@ void
 CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
@@ -396,7 +396,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
         }
     }
   
-  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, mat_write, size );
+  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, GetPL(), mat_write, size );
   
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
@@ -417,7 +417,7 @@ uint32_t
 CPU::PerformUReadAccess( uint32_t addr, uint32_t size )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not sctlr::A.Get( this->SCTLR ))) {
@@ -442,7 +442,7 @@ uint32_t
 CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
@@ -456,7 +456,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
     }
   }
   
-  uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, mat_read, size );
+  uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, GetPL(), mat_read, size );
   
   uint8_t data[4];
 
@@ -492,8 +492,8 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 void 
 CPU::StepInstruction()
 {
-  /* Instruction boundary next_pc becomes current_pc */
-  uint32_t insn_addr = this->current_pc = GetNPC();
+  /* Instruction boundary next_insn_addr becomes current_insn_addr */
+  uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
   
   if (debug_control_import)
     {
@@ -533,8 +533,8 @@ CPU::StepInstruction()
       if (insn_length % 16) throw std::logic_error("Bad T2 instruction length");
     
       /* update PC register value before execution */
-      this->gpr[15] = this->next_pc + 4;
-      this->next_pc += insn_length / 8;
+      this->gpr[15] = this->next_insn_addr + 4;
+      this->next_insn_addr += insn_length / 8;
     
       /* Execute instruction */
       asm volatile( "thumb2_operation_execute:" );
@@ -556,8 +556,8 @@ CPU::StepInstruction()
       op = arm32_decoder.Decode(insn_addr, insn);
     
       /* update PC register value before execution */
-      this->gpr[15] = this->next_pc + 8;
-      this->next_pc += 4;
+      this->gpr[15] = this->next_insn_addr + 8;
+      this->next_insn_addr += 4;
     
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
@@ -566,7 +566,7 @@ CPU::StepInstruction()
     }
     
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+      memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
     
     instruction_counter++;
     if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
@@ -579,7 +579,7 @@ CPU::StepInstruction()
      * requested from regular instructions. ITState will be updated by
      * TakeSVCException (as done in the ARM spec). */
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+      memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
 
     instruction_counter++;
     if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
@@ -594,12 +594,20 @@ CPU::StepInstruction()
     if (unlikely( exception_trap_reporting_import))
       exception_trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
     
-    this->TakeDataAbortException();
+    this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
+  }
+  catch (exception::PrefetchAbortException const& paexc) {
+    /* Abort execution, and take processor to prefetch abort handler */
+    
+    if (unlikely( exception_trap_reporting_import))
+      exception_trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
+    
+    this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
   }
   
   catch (exception::UndefInstrException const& undexc) {
     logger << DebugError << "Undefined instruction"
-           << " pc: " << std::hex << current_pc << std::dec
+           << " pc: " << std::hex << current_insn_addr << std::dec
            << ", cpsr: " << std::hex << cpsr.bits() << std::dec
            << " (" << cpsr << ")"
            << EndDebugError;
@@ -608,7 +616,7 @@ CPU::StepInstruction()
   
   catch (exception::Exception const& exc) {
     logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
-           << " pc: " << std::hex << current_pc << std::dec
+           << " pc: " << std::hex << current_insn_addr << std::dec
            << ", cpsr: " << std::hex << cpsr.bits() << std::dec
            << " (" << cpsr << ")"
            << EndDebugError;
@@ -967,8 +975,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 void 
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE),
-                                                        false, mat_exec, Cache::LINE_SIZE );
+  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE), GetPL(), mat_exec, Cache::LINE_SIZE );
   uint32_t buffer_index = address % (Cache::LINE_SIZE);
   
   if (unlikely(ipb_base_address != base_address))
@@ -993,8 +1000,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
 void
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE),
-                                                        false, mat_exec, Cache::LINE_SIZE );
+  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE), GetPL(), mat_exec, Cache::LINE_SIZE );
   intptr_t buffer_index = address % (Cache::LINE_SIZE);
     
   if (unlikely(ipb_base_address != base_address))
@@ -1054,7 +1060,7 @@ CPU::UndefinedInstruction( isa::arm32::Operation<CPU>* insn )
   insn->disasm( *this, oss );
   
   logger << DebugWarning << "Undefined instruction"
-         << " @" << std::hex << current_pc << std::dec
+         << " @" << std::hex << current_insn_addr << std::dec
          << ": " << oss.str()
          << EndDebugWarning;
   
@@ -1068,7 +1074,7 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
   insn->disasm( *this, oss );
   
   logger << DebugWarning << "Undefined instruction"
-         << " @" << std::hex << current_pc << std::dec
+         << " @" << std::hex << current_insn_addr << std::dec
          << ": " << oss.str()
          << EndDebugWarning;
   
