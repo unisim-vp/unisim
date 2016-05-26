@@ -357,8 +357,10 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
       return;
     }
     else {
-      // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-      throw unisim::component::cxx::processor::arm::exception::DataAbortException(); 
+      // TODO: provide correct alignment fault mva (va + FCSE
+      // translation) + provide correct LDFSRformat (see ARM Doc
+      // AlignmentFaultV)
+      DataAbort( addr, 0, 0, 0, mat_write, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
     }
   }
 
@@ -401,8 +403,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
   if (not PrWrite( write_addr, data, size )) {
-    // TODO: full data abort
-    throw exception::DataAbortException();
+    throw DataAbortException(); // TODO: full data abort
   }
   
   /* report read memory access if necessary */
@@ -451,8 +452,10 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
       return PerformUReadAccess( addr, size );
     }
     else {
-      // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-      throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+      // TODO: provide correct alignment fault mva (va + FCSE
+      // translation) + provide correct LDFSRformat (see ARM Doc
+      // AlignmentFaultV)
+      DataAbort( addr, 0, 0, 0, mat_read, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
     }
   }
   
@@ -462,8 +465,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 
   // just read the data from the memory system
   if (not PrRead(read_addr, &data[0], size)) {
-    // TODO: full data abort
-    throw exception::DataAbortException();
+    throw DataAbortException(); // TODO: full data abort
   }
 
   /* report read memory access if necessary */
@@ -574,7 +576,7 @@ CPU::StepInstruction()
   
   }
   
-  catch (exception::SVCException const& svexc) {
+  catch (SVCException const& svexc) {
     /* Resuming execution, since SVC exceptions are explicitly
      * requested from regular instructions. ITState will be updated by
      * TakeSVCException (as done in the ARM spec). */
@@ -588,7 +590,7 @@ CPU::StepInstruction()
     this->TakeSVCException();
   }
   
-  catch (exception::DataAbortException const& daexc) {
+  catch (DataAbortException const& daexc) {
     /* Abort execution, and take processor to data abort handler */
     
     if (unlikely( exception_trap_reporting_import))
@@ -596,7 +598,7 @@ CPU::StepInstruction()
     
     this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
   }
-  catch (exception::PrefetchAbortException const& paexc) {
+  catch (PrefetchAbortException const& paexc) {
     /* Abort execution, and take processor to prefetch abort handler */
     
     if (unlikely( exception_trap_reporting_import))
@@ -605,7 +607,7 @@ CPU::StepInstruction()
     this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
   }
   
-  catch (exception::UndefInstrException const& undexc) {
+  catch (UndefInstrException const& undexc) {
     logger << DebugError << "Undefined instruction"
            << " pc: " << std::hex << current_insn_addr << std::dec
            << ", cpsr: " << std::hex << cpsr.bits() << std::dec
@@ -614,7 +616,7 @@ CPU::StepInstruction()
     this->Stop(-1);
   }
   
-  catch (exception::Exception const& exc) {
+  catch (Exception const& exc) {
     logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
            << " pc: " << std::hex << current_insn_addr << std::dec
            << ", cpsr: " << std::hex << cpsr.bits() << std::dec
@@ -636,19 +638,14 @@ CPU::StepInstruction()
 bool 
 CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
 {
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t* rbuffer = (uint8_t*)buffer;
 
   // No data cache, just send request to the memory subsystem
-  while (size != 0)
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      ef_addr = base_addr + index;
+      uint32_t ef_addr = addr + index;
       if (not PrRead(ef_addr, &rbuffer[index], 1))
         return false;
-      index++;
-      size--;
     }
 
   return true;
@@ -665,19 +662,14 @@ CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
 bool 
 CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
 {
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t const* wbuffer = (uint8_t const*)buffer;
   
   // No data cache, just send the request to the memory subsystem
-  while (size != 0)
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      ef_addr = base_addr + index;
+      uint32_t ef_addr = addr + index;
       if (not PrWrite( ef_addr, &wbuffer[index], 1 ))
         return false;
-      index++;
-      size--;
     }
 
   return true;
@@ -721,64 +713,24 @@ struct DebugMemAcc
  *
  * @return true on success, false otherwise
  */
-bool 
+bool
 CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
 {
-  bool status = true;
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t* rbuffer = (uint8_t*)buffer;
 
-  // bool cache_access = sctlr::C.Get( this->SCTLR ) and dcache.GetSize();
-  // if (likely(cache_access))
-  //   {
-  //     while ((size != 0) and status)
-  //       {
-  //         ef_addr = base_addr + index;
-
-  //         // Need to access the data cache before memory subsystem
-  //         uint32_t cache_tag = dcache.GetTag(ef_addr);
-  //         uint32_t cache_set = dcache.GetSet(ef_addr);
-  //         uint32_t cache_way;
-  //         bool cache_hit =
-  //           dcache.GetWay( cache_tag, cache_set, &cache_way ) and
-  //           dcache.GetValid( cache_set, cache_way );
-  //         if (cache_hit)
-  //           {
-  //             // Read data from the cache
-  //             uint32_t cache_index = dcache.GetIndex(ef_addr);
-  //             uint32_t data_read_size = dcache.GetDataCopy( cache_set, cache_way, cache_index, size, &rbuffer[index] );
-  //             index += data_read_size;
-  //             size -= data_read_size;
-  //           }
-  //         else
-  //           {
-  //             // Read data from the memory subsystem
-  //             status &= ExternalReadMemory( ef_addr, &rbuffer[index], 1 );
-  //             index++;
-  //             size--;
-  //           }
-  //       }
-  //   }
-  // else
+  // No data cache, just send request to the memory subsystem
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      // No data cache, just send request to the memory subsystem
-      while ((size != 0) and status)
-        {
-          try {
-            ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, mat_read, 1 );
-          } catch (unisim::component::cxx::processor::arm::exception::DataAbortException const& x) {
-            status = false;
-            break;
-          }
-          status &= ExternalReadMemory( ef_addr, &rbuffer[index], 1 );
-          index++;
-          size--;
-        }
+      try {
+        uint32_t ef_addr = TranslateAddress<DebugMemAcc>( addr + index, true, mat_read, 1 );
+        if (not ExternalReadMemory( ef_addr, &rbuffer[index], 1 ))
+          return false;
+      }
+      catch (DataAbortException const& x)
+        { return false; }
     }
 
-  return status;
+  return true;
 }
 
 /** Perform a non intrusive write access.
@@ -792,65 +744,23 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
  *
  * @return true on success, false otherwise
  */
-bool 
+bool
 CPU::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
 {
-  bool status = true;
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t const* wbuffer = (uint8_t const*)buffer;
 
-  // bool cache_access = sctlr::C.Get( this->SCTLR ) and dcache.GetSize();
-  // if (cache_access)
-  //   {
-  //     while ((size != 0) and status)
-  //       {
-  //         ef_addr = base_addr + index;
-          
-  //         // Need to access the data cache before accessing the main memory
-  //         uint32_t cache_tag = dcache.GetTag( ef_addr );
-  //         uint32_t cache_set = dcache.GetSet( ef_addr );
-  //         uint32_t cache_way;
-  //         bool cache_hit =
-  //           dcache.GetWay( cache_tag, cache_set, &cache_way ) and
-  //           dcache.GetValid( cache_set, cache_way );
-  //         if (cache_hit)
-  //           {
-  //             // Write data to the cache
-  //             uint32_t cache_index = dcache.GetIndex( ef_addr );
-  //             uint32_t data_read_size = dcache.SetData( cache_set, cache_way, cache_index, size, &wbuffer[index] );
-  //             dcache.SetDirty( cache_set, cache_way, 1 );
-  //             index += data_read_size;
-  //             size -= data_read_size;
-  //           }
-  //         else
-  //           {
-  //             // Write data to the memory subsytem
-  //             status &= ExternalWriteMemory( ef_addr, &wbuffer[index], 1);
-  //             index++;
-  //             size--;
-  //           }
-  //       }
-  //   }
-  // else
+  // No data cache, just send request to the memory subsystem
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      // No data cache, just send request to the memory subsystem
-      while ((size != 0) and status)
-        {
-          try {
-            ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, mat_write, 1 );
-          } catch (unisim::component::cxx::processor::arm::exception::DataAbortException const& x) {
-            status = false;
-            break;
-          }
-          status &= ExternalWriteMemory( ef_addr, &wbuffer[index], 1 );
-          index++;
-          size--;
-        }
+      try {
+        uint32_t ef_addr = TranslateAddress<DebugMemAcc>( addr + index, true, mat_write, 1 );
+        if (not ExternalWriteMemory( ef_addr, &wbuffer[index], 1 ))
+          return false;
+      } catch (DataAbortException const& x)
+        { return false; }
     }
-
-  return status;
+  
+  return true;
 }
 
 /** Disasm an instruction address.
@@ -956,7 +866,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
   // memory system.
   if (not PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE)) {
     // TODO: full prefetch abort
-    throw exception::PrefetchAbortException();
+    throw PrefetchAbortException();
   }
   
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
@@ -1032,7 +942,7 @@ CPU::CallSupervisor( uint16_t imm )
     try {
       this->linux_os_import->ExecuteSystemCall(imm);
     }
-    catch (exception::Exception const& e)
+    catch (Exception const& e)
       {
         std::cerr << e.what() << std::endl;
         this->Stop( -1 );
@@ -1064,7 +974,7 @@ CPU::UndefinedInstruction( isa::arm32::Operation<CPU>* insn )
          << ": " << oss.str()
          << EndDebugWarning;
   
-  throw exception::UndefInstrException();
+  throw UndefInstrException();
 }
 
 void
@@ -1078,13 +988,13 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
          << ": " << oss.str()
          << EndDebugWarning;
   
-  throw exception::UndefInstrException();
+  throw UndefInstrException();
 }
 
 void
 CPU::DataAbort(uint32_t va, uint64_t ipa,
-               unsigned domain, int level, bool iswrite,
-               exception::DAbort type, bool taketohypmode, bool s2abort,
+               unsigned domain, int level, mem_acc_type_t mat,
+               DAbort type, bool taketohypmode, bool s2abort,
                bool ipavalid, bool LDFSRformat, bool s2fs1walk)
 {
   if (not taketohypmode) {
@@ -1095,7 +1005,7 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
     // (DAbort_DebugEvent) update DFAR since debug v7.1.
     switch (type) {
     default: DFAR = va; break;
-    case exception::DAbort_AsyncParity: case exception::DAbort_AsyncExternal: break;
+    case DAbort_AsyncParity: case DAbort_AsyncExternal: break;
     }
     if (LDFSRformat) {
       throw std::logic_error("Long descriptors format not supported");
@@ -1105,7 +1015,7 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
       //   DFSR<12> = IMPLEMENTATION_DEFINED;
       // else
       //   DFSR<12> = '0';
-      // DFSR<11> = if iswrite then '1' else '0';
+      // DFSR<11> = if (mat == mat_write) then '1' else '0';
       // DFSR<10> = bit UNKNOWN;
       // DFSR<9> = '1';
       // DFSR<8:6> = bits(3) UNKNOWN;
@@ -1117,11 +1027,11 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
       // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal)) DFSR<12> = IMPLEMENTATION_DEFINED;
       // else                                                    DFSR<12> = '0';
       RegisterField<12,1>().Set( DFSR, 0 );
-      RegisterField<11,1>().Set( DFSR, iswrite ? 1 : 0 );
+      RegisterField<11,1>().Set( DFSR, mat_write ? 1 : 0 );
       RegisterField<9,1>().Set( DFSR, 0 );
       // DFSR<8> = bit UNKNOWN;
       RegisterField<8,1>().Set( DFSR, 0 );
-      // domain_valid = ((type == exception::DAbort_Domain) ||
+      // domain_valid = ((type == DAbort_Domain) ||
       //                 ((level == 2) &&
       //                  (type IN {DAbort_Translation, DAbort_AccessFlag,
       //                      DAbort_SyncExternalonWalk, DAbort_SyncParityonWalk})) ||
@@ -1136,22 +1046,22 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
         }
       } fault_status( DFSR );
       switch (type) {
-      case exception::DAbort_AccessFlag:         fault_status.Set( level==1 ? 0b00011 : 0b00110 ); break;
-      case exception::DAbort_Alignment:          fault_status.Set( 0b00001 ); break;
-      case exception::DAbort_Permission:         fault_status.Set( 0b01101 | (level&2) ); break;
-      case exception::DAbort_Domain:             fault_status.Set( 0b01001 | (level&2) ); break;
-      case exception::DAbort_Translation:        fault_status.Set( 0b00101 | (level&2) ); break;
-      case exception::DAbort_SyncExternal:       fault_status.Set( 0b01000 ); break;
-      case exception::DAbort_SyncExternalonWalk: fault_status.Set( 0b01100 | (level&2) ); break;
-      case exception::DAbort_SyncParity:         fault_status.Set( 0b11001 ); break;
-      case exception::DAbort_SyncParityonWalk:   fault_status.Set( 0b11100 | (level&2) ); break;
-      case exception::DAbort_AsyncParity:        fault_status.Set( 0b11000 ); break;
-      case exception::DAbort_AsyncExternal:      fault_status.Set( 0b10110 ); break;
-      case exception::DAbort_DebugEvent:         fault_status.Set( 0b00010 ); break;
-      case exception::DAbort_TLBConflict:        fault_status.Set( 0b10000 ); break;
-      case exception::DAbort_Lockdown:           fault_status.Set( 0b10100 ); break;
-      case exception::DAbort_Coproc:             fault_status.Set( 0b11010 ); break;
-      case exception::DAbort_ICacheMaint:        fault_status.Set( 0b00100 ); break;
+      case DAbort_AccessFlag:         fault_status.Set( level==1 ? 0b00011 : 0b00110 ); break;
+      case DAbort_Alignment:          fault_status.Set( 0b00001 ); break;
+      case DAbort_Permission:         fault_status.Set( 0b01101 | (level&2) ); break;
+      case DAbort_Domain:             fault_status.Set( 0b01001 | (level&2) ); break;
+      case DAbort_Translation:        fault_status.Set( 0b00101 | (level&2) ); break;
+      case DAbort_SyncExternal:       fault_status.Set( 0b01000 ); break;
+      case DAbort_SyncExternalonWalk: fault_status.Set( 0b01100 | (level&2) ); break;
+      case DAbort_SyncParity:         fault_status.Set( 0b11001 ); break;
+      case DAbort_SyncParityonWalk:   fault_status.Set( 0b11100 | (level&2) ); break;
+      case DAbort_AsyncParity:        fault_status.Set( 0b11000 ); break;
+      case DAbort_AsyncExternal:      fault_status.Set( 0b10110 ); break;
+      case DAbort_DebugEvent:         fault_status.Set( 0b00010 ); break;
+      case DAbort_TLBConflict:        fault_status.Set( 0b10000 ); break;
+      case DAbort_Lockdown:           fault_status.Set( 0b10100 ); break;
+      case DAbort_Coproc:             fault_status.Set( 0b11010 ); break;
+      case DAbort_ICacheMaint:        fault_status.Set( 0b00100 ); break;
       default: throw std::logic_error("Unhandled case");
       }
     }
@@ -1176,12 +1086,12 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
     //   HSRString<9> = '0';
     // HSRString<8> = TLBLookupCameFromCacheMaintenance();
     // HSRString<7> = if s2fs1walk then '1' else '0';
-    // HSRString<6> = if iswrite then '1' else '0';
+    // HSRString<6> = if mat_write then '1' else '0';
     // HSRString<5:0> = EncodeLDFSR(type, level);
     // WriteHSR(ec, HSRString);
   }
   
-  throw exception::DataAbortException();
+  throw DataAbortException();
 }
 
 
@@ -1290,15 +1200,13 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
   // Obtain First level descriptor.
   uint32_t l1descaddr = (((ttbr >> (14-n)) << (14-n)) | ((mva << n) >> (n+18))) & -4;
   if (not PrRead( l1descaddr, erd.data(), 4 )) {
-    // TODO: full data abort
-    throw exception::DataAbortException();
+    throw DataAbortException(); // TODO: full data abort
   }
   uint32_t l1desc = erd.Get();
   switch (l1desc&3) {
   case 0: {
     // Fault, Reserved
-    // TODO: Full DAbort_Translation 
-    throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+    throw unisim::component::cxx::processor::arm::DataAbortException(); // TODO: Full DAbort_Translation 
   } break;
     
   case 1: {
@@ -1306,14 +1214,12 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     // Obtain Second level descriptor.
     uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
     if (not PrRead( l2descaddr, erd.data(), 4 )) {
-      // TODO: full data abort
-      throw exception::DataAbortException();
+      throw DataAbortException(); // TODO: full data abort
     }
     uint32_t l2desc = erd.Get();
     // Process Second level descriptor.
     if ((l2desc&3) == 0) {
-      // TODO: Full DAbort_Translation 
-      throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+      throw unisim::component::cxx::processor::arm::DataAbortException(); // TODO: Full DAbort_Translation 
     }
     //nG = (l2desc >> 11) & 1;
     if (l2desc & 2) {

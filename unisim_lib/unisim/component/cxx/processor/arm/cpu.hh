@@ -349,8 +349,6 @@ public:
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   
 protected:
-  void     HandleSynchronousException();
-
   uint32_t HandleAsynchronousException( uint32_t );
   void     TakeReset();
   void     TakePhysicalFIQorIRQException( bool isIRQ );

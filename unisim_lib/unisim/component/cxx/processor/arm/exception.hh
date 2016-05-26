@@ -43,7 +43,6 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-namespace exception {
   
   /** struct Exception
    *  
@@ -82,7 +81,6 @@ namespace exception {
     DAbort_ICacheMaint
   };
 
-} // end of namespace exception
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

@@ -166,8 +166,8 @@ struct CPU
   /* Memory access methods       START                          */
   /**************************************************************/
 	
-  virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
-  virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
+  virtual bool PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
+  virtual bool PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
   
   uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }
   uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }

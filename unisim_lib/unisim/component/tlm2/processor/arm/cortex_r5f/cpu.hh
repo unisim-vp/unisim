@@ -131,8 +131,8 @@ namespace cortex_r5f {
 	
     // cache interface implemented by the arm processor to get the request from 
     //   the caches
-    virtual void PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size);
-    virtual void PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
+    virtual bool PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size);
+    virtual bool PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
 	
     sc_core::sc_time const& GetCpuCycleTime() const { return cpu_cycle_time; };
 
@@ -157,9 +157,20 @@ namespace cortex_r5f {
      */
     sc_event end_read_rsp_event;
 	
-    unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload>
-    payload_fabric;
+    typedef unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> PayloadFabric;
+    PayloadFabric payload_fabric;
 
+    /** Transaction
+     * A transaction_type smart pointer with release() on destruction
+     */
+    struct Transaction {
+      Transaction( PayloadFabric& pf ) : t( pf.allocate() ) {}
+      ~Transaction() { t->release(); }
+      transaction_type* operator -> () { return t; }
+      transaction_type& operator * () { return *t; }
+      transaction_type* t;
+    };
+  
     /** A temporary variable used anywhere in the code to compute a time.
      * A temporary variable that can be used anywhere in the code to compute a 
      *   time.

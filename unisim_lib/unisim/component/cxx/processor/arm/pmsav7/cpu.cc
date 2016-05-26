@@ -215,7 +215,7 @@ void
 CPU::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not sctlr::A.Get( this->SCTLR ))) {
@@ -243,12 +243,12 @@ void
 CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
     // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-    throw unisim::component::cxx::processor::arm::exception::DataAbortException(); 
+    throw unisim::component::cxx::processor::arm::DataAbortException(); 
   }
 
   uint8_t data[4];
@@ -268,7 +268,9 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
-  PrWrite( write_addr, data, size );
+  if (not PrWrite( write_addr, data, size )) {
+    throw DataAbortException(); // TODO: full data abort
+  }
   
   /* report read memory access if necessary */
   ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
@@ -282,7 +284,7 @@ uint32_t
 CPU::PerformUReadAccess( uint32_t addr, uint32_t size )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment and not sctlr::A.Get( this->SCTLR ))) {
@@ -307,12 +309,12 @@ uint32_t
 CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw exception::DataAbortException();
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
     // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-    throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+    throw unisim::component::cxx::processor::arm::DataAbortException();
   }
   
   //uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, false, size );
@@ -321,7 +323,9 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   uint8_t data[4];
 
   // just read the data from the memory system
-  PrRead(read_addr, &data[0], size);
+  if (not PrRead(read_addr, &data[0], size)) {
+    throw DataAbortException(); // TODO: full data abort
+  }
   
   /* report read memory access if necessary */
   ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
@@ -431,7 +435,7 @@ CPU::StepInstruction()
   
   }
   
-  catch (exception::SVCException const& svexc) {
+  catch (SVCException const& svexc) {
     /* Resuming execution, since SVC exceptions are explicitly
      * requested from regular instructions. ITState will be updated by
      * TakeSVCException (as done in the ARM spec). */
@@ -445,7 +449,7 @@ CPU::StepInstruction()
     this->TakeSVCException();
   }
   
-  catch (exception::UndefInstrException const& undexc) {
+  catch (UndefInstrException const& undexc) {
     logger << DebugError << "Undefined instruction"
            << " pc: " << std::hex << current_insn_addr << std::dec
            << ", cpsr: " << std::hex << cpsr.bits() << std::dec
@@ -454,7 +458,7 @@ CPU::StepInstruction()
     this->Stop(-1);
   }
   
-  catch (exception::Exception const& exc) {
+  catch (Exception const& exc) {
     logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
            << " pc: " << std::hex << current_insn_addr << std::dec
            << ", cpsr: " << std::hex << cpsr.bits() << std::dec
@@ -476,18 +480,14 @@ CPU::StepInstruction()
 bool 
 CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
 {
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t* rbuffer = (uint8_t*)buffer;
 
   // No data cache, just send request to the memory subsystem
-  while (size != 0)
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      ef_addr = base_addr + index;
-      PrRead(ef_addr, &rbuffer[index], 1);
-      index++;
-      size--;
+      uint32_t ef_addr = addr + index;
+      if (not PrRead(ef_addr, &rbuffer[index], 1))
+        return false;
     }
   
   return true;
@@ -504,18 +504,14 @@ CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
 bool 
 CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
 {
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t const* wbuffer = (uint8_t const*)buffer;
   
   // No data cache, just send the request to the memory subsystem
-  while (size != 0)
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      ef_addr = base_addr + index;
-      PrWrite( ef_addr, &wbuffer[index], 1 );
-      index++;
-      size--;
+      uint32_t ef_addr = addr + index;
+      if (not PrWrite( ef_addr, &wbuffer[index], 1 ))
+        return false;
     }
 
   return true;
@@ -554,31 +550,25 @@ CPU::RequiresMemoryAccessReporting( bool report )
  *
  * @return true on success, false otherwise
  */
-bool 
+bool
 CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
 {
-  bool status = true;
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t* rbuffer = (uint8_t*)buffer;
 
   // No data cache, just send request to the memory subsystem
-  while ((size != 0) and status)
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
       try {
-        //ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, false, 1 );
-        ef_addr = base_addr + index;
-      } catch (unisim::component::cxx::processor::arm::exception::DataAbortException const& x) {
-        status = false;
-        break;
+        //ef_addr = TranslateAddress<DebugMemAcc>( addr + index, true, false, 1 );
+        uint32_t ef_addr = addr + index;
+        if (not ExternalReadMemory( ef_addr, &rbuffer[index], 1 ))
+          return false;
       }
-      status &= ExternalReadMemory( ef_addr, &rbuffer[index], 1 );
-      index++;
-      size--;
+      catch (unisim::component::cxx::processor::arm::DataAbortException const& x)
+        { return false; }
     }
   
-  return status;
+  return true;
 }
 
 /** Perform a non intrusive write access.
@@ -592,31 +582,24 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
  *
  * @return true on success, false otherwise
  */
-bool 
+bool
 CPU::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
 {
-  bool status = true;
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t const* wbuffer = (uint8_t const*)buffer;
   
   // No data cache, just send request to the memory subsystem
-  while ((size != 0) and status)
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
       try {
-        // ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, true, 1 );
-        ef_addr = base_addr + index;
-      } catch (unisim::component::cxx::processor::arm::exception::DataAbortException const& x) {
-        status = false;
-        break;
-      }
-      status &= ExternalWriteMemory( ef_addr, &wbuffer[index], 1 );
-      index++;
-      size--;
+        // ef_addr = TranslateAddress<DebugMemAcc>( addr + index, true, true, 1 );
+        uint32_t ef_addr = addr + index;
+        if (not ExternalWriteMemory( ef_addr, &wbuffer[index], 1 ))
+          return false;
+      } catch (unisim::component::cxx::processor::arm::DataAbortException const& x)
+        { return false; }
     }
 
-  return status;
+  return true;
 }
 
 /** Disasm an instruction address.
@@ -708,7 +691,10 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
   
   // No instruction cache present, just request the insn to the memory
   // system.
-  PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE);
+  if (not PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE)) {
+    // TODO: full prefetch abort
+    throw PrefetchAbortException();
+  }
 
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
     memory_access_reporting_import->
@@ -794,7 +780,7 @@ CPU::UndefinedInstruction( isa::arm32::Operation<CPU>* insn )
          << ": " << oss.str()
          << EndDebugWarning;
   
-  throw exception::UndefInstrException();
+  throw UndefInstrException();
 }
 
 void
@@ -808,7 +794,7 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
          << ": " << oss.str()
          << EndDebugWarning;
   
-  throw exception::UndefInstrException();
+  throw UndefInstrException();
 }
 
 bool
@@ -869,7 +855,7 @@ CPU::CheckPermissions( uint32_t va, bool ispriv, bool iswrite, unsigned size )
   
   if (abort) {
     // TODO: Full DAbort_Translation 
-    throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+    throw unisim::component::cxx::processor::arm::DataAbortException();
   }
 }
 

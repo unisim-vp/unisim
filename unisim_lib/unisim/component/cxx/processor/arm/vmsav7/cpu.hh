@@ -96,6 +96,9 @@ struct CPU
   typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> PCPU;
   typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> CP15CPU;
   typedef typename CP15CPU::CP15Reg CP15Reg;
+  
+  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
+  
 
   //=====================================================================
   //=                  public service imports/exports                   =
@@ -226,8 +229,8 @@ struct CPU
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU>* insn );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb2::Operation<CPU>* insn );
   void DataAbort(uint32_t va, uint64_t ipa,
-                 unsigned domain, int level, bool iswrite,
-                 exception::DAbort type, bool taketohypmode, bool s2abort,
+                 unsigned domain, int level, mem_acc_type_t mat,
+                 DAbort type, bool taketohypmode, bool s2abort,
                  bool ipavalid, bool LDFSRformat, bool s2fs1walk);
 	
   /**************************************************/
@@ -257,8 +260,6 @@ protected:
   /*************************/
   /* MMU Interface   START */
   /*************************/
-  
-  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
   
   uint32_t DFSR, IFSR, DFAR, IFAR;
   

@@ -416,7 +416,7 @@ CPU::StepInstruction()
 
   }
   
-  catch (exception::SVCException const& svexc) {
+  catch (SVCException const& svexc) {
     /* Resuming execution, since SVC exceptions are explicitly
      * requested from regular instructions. ITState will be updated by
      * TakeSVCException (as done in the ARM spec). */

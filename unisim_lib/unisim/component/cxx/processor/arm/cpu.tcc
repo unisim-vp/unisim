@@ -432,44 +432,7 @@ template <class CONFIG>
 void
 CPU<CONFIG>::CallSupervisor( uint16_t imm )
 {
-  throw exception::SVCException();
-}
-
-/** Process Synchronous Exceptions
- *
- * Processes pending asynchronous exceptions and returns true if an
- * exception were taken. Note 1: this function should be called just
- * before PC update; next_insn_addr should point at the next instruction to
- * execute whereas current_insn_addr should point ot the instruction that
- * triggered the synchronous exception.
- *
- * @return true if an exception were taken, false if not (exception masked)
- */
-template <class CONFIG>
-void
-CPU<CONFIG>::HandleSynchronousException()
-{
-  // if (unisim::component::cxx::processor::arm::exception::RESET.Get( masked_exception ))
-  //   {
-  //   }
-
-  // else if (unisim::component::cxx::processor::arm::exception::PABRT.Get( masked_exception ))
-  //   {
-  //   }
-  
-  // else if (unisim::component::cxx::processor::arm::exception::UNDEF.Get( masked_exception ))
-  //   {
-  //   }
-
-  // if (unisim::component::cxx::processor::arm::exception::DABRT.Get( masked_exception ))
-  //   {
-  //   }
-  
-  // else if (unisim::component::cxx::processor::arm::exception::SWI.Get( masked_exception ))
-  //   {
-  //   }
-
-  
+  throw SVCException();
 }
 
 /** Process Asynchronous Exceptions
