@@ -1206,7 +1206,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
   switch (l1desc&3) {
   case 0: {
     // Fault, Reserved
-    throw unisim::component::cxx::processor::arm::DataAbortException(); // TODO: Full DAbort_Translation 
+    throw DataAbortException(); // TODO: Full DAbort_Translation 
   } break;
     
   case 1: {
@@ -1219,7 +1219,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     uint32_t l2desc = erd.Get();
     // Process Second level descriptor.
     if ((l2desc&3) == 0) {
-      throw unisim::component::cxx::processor::arm::DataAbortException(); // TODO: Full DAbort_Translation 
+      throw DataAbortException(); // TODO: Full DAbort_Translation 
     }
     //nG = (l2desc >> 11) & 1;
     if (l2desc & 2) {

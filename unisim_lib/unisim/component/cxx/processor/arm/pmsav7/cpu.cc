@@ -248,7 +248,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   
   if (unlikely(misalignment)) {
     // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-    throw unisim::component::cxx::processor::arm::DataAbortException(); 
+    throw DataAbortException(); 
   }
 
   uint8_t data[4];
@@ -314,7 +314,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   
   if (unlikely(misalignment)) {
     // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-    throw unisim::component::cxx::processor::arm::DataAbortException();
+    throw DataAbortException();
   }
   
   //uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, false, size );
@@ -564,7 +564,7 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
         if (not ExternalReadMemory( ef_addr, &rbuffer[index], 1 ))
           return false;
       }
-      catch (unisim::component::cxx::processor::arm::DataAbortException const& x)
+      catch (DataAbortException const& x)
         { return false; }
     }
   
@@ -595,7 +595,7 @@ CPU::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
         uint32_t ef_addr = addr + index;
         if (not ExternalWriteMemory( ef_addr, &wbuffer[index], 1 ))
           return false;
-      } catch (unisim::component::cxx::processor::arm::DataAbortException const& x)
+      } catch (DataAbortException const& x)
         { return false; }
     }
 
@@ -855,7 +855,7 @@ CPU::CheckPermissions( uint32_t va, bool ispriv, bool iswrite, unsigned size )
   
   if (abort) {
     // TODO: Full DAbort_Translation 
-    throw unisim::component::cxx::processor::arm::DataAbortException();
+    throw DataAbortException();
   }
 }
 
