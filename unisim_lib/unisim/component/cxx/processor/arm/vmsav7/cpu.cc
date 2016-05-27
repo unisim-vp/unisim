@@ -1139,6 +1139,32 @@ CPU::TLB::GetTranslation( TransAddrDesc& tad, uint32_t mva )
 }
 
 void
+CPU::TLB::InvalidateByMVA( uint32_t mva )
+{
+  unsigned hit;
+  uint32_t key;
+  for (hit = 0; hit < entry_count; ++hit)
+    {
+      key = keys[hit];
+      unsigned lsb = key & 31;
+      if (((mva ^ key) >> lsb) == 0)
+        break;
+    }
+  if (hit >= entry_count)
+    return; // Not in TLB
+  
+  // Invalidating entry
+  entry_count -= 1;
+  for (; hit < entry_count; ++hit)
+    keys[hit] = keys[hit+1];
+  keys[hit] = key;
+  
+  // safety recursion to invalidate duplicates
+  InvalidateByMVA( mva );
+}
+
+
+void
 CPU::TLB::AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad )
 {
   if (entry_count >= ENTRY_CAPACITY)
@@ -1591,6 +1617,36 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
             if (cpu.verbose)
               cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
             cpu.tlb.Invalidate();
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 8, 0, 7, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TLBIMVA, invalidate unified TLB entry by MVA and ASID"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) {
+            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            if (cpu.verbose)
+              cpu.logger << DebugInfo << "TLBIMVA(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
+            cpu.tlb.InvalidateByMVA(value);
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 8, 0, 7, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TLBIASID,  invalidate unified TLB by ASID match"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) {
+            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            if (cpu.verbose)
+              cpu.logger << DebugInfo << "TLBIASID(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
+            cpu.tlb.InvalidateByASID(value);
           }
         } x;
         return x;

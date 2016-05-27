@@ -59,7 +59,7 @@ namespace util {
 namespace loader {
 namespace coff_loader {
 
-using namespace std;
+// using namespace std;
 using unisim::service::interfaces::Memory;
 using namespace unisim::util::endian;
 using unisim::util::debug::Symbol;
@@ -129,8 +129,8 @@ public:
 	virtual MEMORY_ADDR GetTextSize() const = 0;
 	virtual MEMORY_ADDR GetDataSize() const = 0;
 	virtual MEMORY_ADDR GetBssSize() const = 0;
-	virtual void DumpFileHeader(ostream& os) const = 0;
-	virtual void DumpAoutHeader(ostream& os) const = 0;
+	virtual void DumpFileHeader(std::ostream& os) const = 0;
+	virtual void DumpAoutHeader(std::ostream& os) const = 0;
 
 	virtual const SectionTable<MEMORY_ADDR> *GetSectionTable() const = 0;
 private:
@@ -147,7 +147,7 @@ public:
 	virtual MEMORY_ADDR GetPhysicalAddress() const = 0;
 	virtual MEMORY_ADDR GetSize() const = 0;
 	virtual long GetContentFilePtr() const = 0;
-	virtual void DumpHeader(ostream& os) const = 0;
+	virtual void DumpHeader(std::ostream& os) const = 0;
 	virtual Type GetType() const = 0;
 	virtual bool LoadSpecificContent(unisim::service::interfaces::Memory<MEMORY_ADDR> *output, const void *content, uint32_t size) const = 0;
 };
@@ -173,7 +173,7 @@ public:
 	virtual ~FileHandlerRegistry();
 	void Register(FileHandler<MEMORY_ADDR> *file_handler);
 	FileHandler<MEMORY_ADDR> *operator [] (uint16_t magic);
-	void DumpFileHandlers(ostream& os);
+	void DumpFileHandlers(std::ostream& os);
 	void Reset();
 private:
 	std::map<uint16_t, FileHandler<MEMORY_ADDR> *> file_handlers;
@@ -324,7 +324,7 @@ private:
 	unisim::kernel::logger::Logger& logger;
 	
 	// Run-time parameters
-	string filename;
+	std::string filename;
 	MEMORY_ADDR entry_point;
 	MEMORY_ADDR top_addr;
 	MEMORY_ADDR stack_base;

@@ -295,6 +295,8 @@ protected:
     bool GetTranslation( TransAddrDesc& tad, uint32_t mva );
     void AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad );
     void Invalidate() { entry_count = 0; }
+    void InvalidateByMVA( uint32_t mva );
+    void InvalidateByASID( uint32_t asid ) { /* TODO: support for ASIDs */ Invalidate(); }
   } tlb;
   
   template <class POLICY>

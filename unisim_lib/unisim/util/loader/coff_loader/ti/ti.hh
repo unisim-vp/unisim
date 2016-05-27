@@ -89,8 +89,8 @@ public:
 	virtual MEMORY_ADDR GetDataSize() const;
 	virtual MEMORY_ADDR GetBssSize() const;
 	virtual const SectionTable<MEMORY_ADDR> *GetSectionTable() const;
-	virtual void DumpFileHeader(ostream& os) const;
-	virtual void DumpAoutHeader(ostream& os) const;
+	virtual void DumpFileHeader(std::ostream& os) const;
+	virtual void DumpAoutHeader(std::ostream& os) const;
 private:
 	uint16_t magic;
 	endian_type header_endianness;
@@ -123,7 +123,7 @@ public:
 	virtual MEMORY_ADDR GetPhysicalAddress() const;
 	virtual MEMORY_ADDR GetSize() const;
 	virtual long GetContentFilePtr() const;
-	virtual void DumpHeader(ostream& os) const;
+	virtual void DumpHeader(std::ostream& os) const;
 	virtual typename unisim::util::loader::coff_loader::Section<MEMORY_ADDR>::Type GetType() const;
 	virtual bool LoadSpecificContent(unisim::service::interfaces::Memory<MEMORY_ADDR> *output, const void *content, uint32_t size) const;
 private:

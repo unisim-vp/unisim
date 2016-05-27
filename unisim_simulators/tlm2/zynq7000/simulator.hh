@@ -70,7 +70,7 @@
 struct ZynqRouterConfig
 {
   typedef uint32_t ADDRESS;
-  static unsigned const OUTPUT_PORTS = 7;
+  static unsigned const OUTPUT_PORTS = 9;
   static unsigned const INPUT_SOCKETS = 1;
   static unsigned const OUTPUT_SOCKETS = OUTPUT_PORTS;
   static unsigned const MAX_NUM_MAPPINGS = OUTPUT_PORTS;
@@ -86,19 +86,27 @@ struct ZynqRouter : public unisim::component::tlm2::interconnect::generic_router
   void absolute_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock );
 };
 
-struct RegMap
-  : public tlm::tlm_fw_transport_if<>
+struct MMDevice
+  : public sc_module
+  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+  , public tlm::tlm_fw_transport_if<>
 {
   static unsigned const BUSWIDTH = 32;
     
   tlm::tlm_target_socket<BUSWIDTH> socket;
-  RegMap( char const* );
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
+  bool verbose, hardfail;
+  
+  
+  MMDevice( sc_module_name const& name, unisim::kernel::service::Object* parent );
     
   struct Data
   {
-    Data( uint8_t* _ptr ) : ptr( _ptr ) {} uint8_t* ptr;
+    Data( uint8_t* _ptr, bool _wnr, unsigned _size )
+      : ptr( _ptr ), wnr( _wnr ), size( _size ) {}
+    uint8_t* ptr; bool wnr; unsigned size;
     template <typename T>
-    void Access( bool wnr, T& val ) const
+    void Access( T& val ) const
     {
       T tmp(val);
       if (wnr)
@@ -106,7 +114,7 @@ struct RegMap
       else
         { for (int idx = 0, end = sizeof(T); idx < end; ++ idx, tmp >>= 8) ptr[idx] = tmp; }
     }
-    void Access( bool wnr, uint8_t* bytes, unsigned size ) const
+    void Copy( uint8_t* bytes, unsigned size ) const
     {
       if (wnr)
         for (unsigned idx = 0; idx < size; ++idx) bytes[idx] = ptr[idx];
@@ -127,25 +135,21 @@ struct RegMap
   unsigned int       transport_dbg(tlm::tlm_generic_payload& payload);
   tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
   void               b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
-  virtual bool       AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time ) = 0;
+  /* MMDevice methods */
+  void               DumpRegisterAccess( std::ostream& sink, uint32_t addr, Data const& d );
+  virtual bool       AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time ) = 0;
 
 };
 
-struct MPCore
-  : public sc_module
-  , public RegMap
-  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+struct MPCore : public MMDevice
 {
   //typedef tlm::tlm_base_protocol_types TYPES;
-  MPCore(const sc_module_name& name, unisim::kernel::service::Object* parent = 0);
+  MPCore(sc_module_name const& name, unisim::kernel::service::Object* parent = 0);
 
-  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
-  bool _AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
+  bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
   
   void SendInterrupt( unsigned idx, sc_core::sc_time const& t );
 
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
-  
   sc_core::sc_out<bool> nIRQ;
   sc_core::sc_out<bool> nFIQ;
   
@@ -169,24 +173,18 @@ struct MPCore
   uint32_t ReadGICC_IAR();
 };
 
-struct SLCR
-  : public sc_module
-  , public RegMap
-  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+struct SLCR : public MMDevice
 {
-  SLCR( const sc_module_name& name, unisim::kernel::service::Object* parent = 0 );
+  SLCR( sc_module_name const& name, unisim::kernel::service::Object* parent = 0 );
   
   uint32_t ARM_PLL_CTRL, DDR_PLL_CTRL, IO_PLL_CTRL, ARM_CLK_CTRL, CLK_621_TRUE, UART_CLK_CTRL;
   
-  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
+  bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
 };
 
-struct TTC
-  : public sc_module
-  , public RegMap
-  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+struct TTC : public MMDevice
 {
-  TTC( const sc_module_name& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it );
+  TTC( sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it );
   
   MPCore& mpcore;
   unsigned id, base_it;
@@ -202,7 +200,7 @@ struct TTC
   uint64_t
     update_counters[3];
   
-  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
+  bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
   
   sc_core::sc_event update_state_event;
   sc_core::sc_time  clock_period;
@@ -214,12 +212,38 @@ struct TTC
   void UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time );
 };
 
-struct L2C
-  : public sc_module
-  , public RegMap
-  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+struct PS_UART : public MMDevice
 {
-  L2C( const sc_module_name& name, unisim::kernel::service::Object* parent );
+  PS_UART( sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line );
+  
+  bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
+
+  sc_core::sc_event update_state_event;
+  sc_core::sc_time  clock_period;
+  sc_core::sc_time  last_state_update_time;
+  MPCore&           mpcore;
+  int               it_line;
+  
+  struct FIFO {
+    static unsigned const CAPACITY=64;
+    FIFO() : head(0), size(0) {}
+    uint8_t items[CAPACITY];
+    unsigned head, size;
+    void Push( uint8_t item ) { head = (head + CAPACITY - 1) % CAPACITY; size +=1; items[head] = item; }
+    uint8_t Pull() { size -= 1; return items[(head+size-1)%CAPACITY]; }
+  };
+  
+  FIFO TxFIFO;
+  FIFO RxFIFO;
+  unsigned CR, MR, IMR, BAUDGEN, RXTOUT, BDIV, TTRIG, RTRIG, FDEL;
+  
+  void UpdateStateProcess();
+  void UpdateState( sc_core::sc_time const& update_time );
+};
+
+struct L2C : public MMDevice
+{
+  L2C( sc_module_name const& name, unisim::kernel::service::Object* parent );
   
   uint32_t reg1_control;
   
@@ -234,7 +258,7 @@ struct L2C
     return itr->second;
   }
   
-  bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
+  bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
 };
 
 struct Simulator : public unisim::kernel::service::Simulator
@@ -276,6 +300,8 @@ struct Simulator : public unisim::kernel::service::Simulator
   SLCR                         slcr;
   TTC                          ttc0;
   TTC                          ttc1;
+  PS_UART                      uart0;
+  PS_UART                      uart1;
   L2C                          l2c;
   sc_signal<bool>              nirq_signal;
   sc_signal<bool>              nfiq_signal;
