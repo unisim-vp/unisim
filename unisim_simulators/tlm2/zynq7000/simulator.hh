@@ -199,6 +199,9 @@ struct TTC
     Interrupt_Register[3],
     Interrupt_Enable[3];
   
+  uint64_t
+    update_counters[3];
+  
   bool AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d, sc_core::sc_time const& update_time );
   
   sc_core::sc_event update_state_event;

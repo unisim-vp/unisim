@@ -369,6 +369,7 @@ TTC::TTC( const sc_module_name& name, unisim::kernel::service::Object* parent, M
   std::fill_n(Interrupt_Register, 3, 0);
   std::fill_n(Interrupt_Enable, 3, 0);
   std::fill_n(it_lines, 3, -1);
+  std::fill_n(update_counters, 3, 0);
   
   SC_HAS_PROCESS(TTC);
   
@@ -385,6 +386,7 @@ TTC::UpdateStateProcess()
 void
 TTC::UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time )
 {
+  update_counters[idx] += 1;
   if (Clock_Control[idx] & 0x28)
     throw std::logic_error( "internal error" );
   if (Counter_Control[idx] & 0x10) {
@@ -449,12 +451,11 @@ TTC::UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time )
     
     sc_int -= sc_now;
     
-    if (ticks_to_next_zero > 0)
-      update_state_event.notify( sc_int );
-    else {
+    if (ticks_to_next_zero <= 0) {
       Interrupt_Register[idx] |= interrupt_vector;
       mpcore.SendInterrupt( base_it + idx, sc_int );
     }
+    update_state_event.notify( sc_int );
   }
   
   Counter_Value[idx] = counter_value;

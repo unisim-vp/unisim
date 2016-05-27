@@ -1432,6 +1432,57 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         } x;
         return x;
       } break;
+
+      /*********************************
+       * Memory system fault registers *
+       *********************************/
+    case CP15ENCODE( 5, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DFSR, Data Fault Status Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFSR; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 5, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "IFSR, Instruction Fault Status Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFSR; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 6, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DFAR, Data Fault Status Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFAR; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 6, 0, 0, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "IFAR, Instruction Fault Status Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFAR; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+        } x;
+        return x;
+      } break;
       
       /***************************************************************
        * Cache maintenance, address translation, and other functions *
