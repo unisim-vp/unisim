@@ -868,15 +868,15 @@ Run()
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  cerr << "Simulation run-time parameters:" << endl;
-  DumpParameters(cerr);
-  cerr << endl;
-  cerr << "Simulation formulas:" << endl;
-  DumpFormulas(cerr);
-  cerr << endl;
-  cerr << "Simulation statistics:" << endl;
-  DumpStatistics(cerr);
-  cerr << endl;
+  // cerr << "Simulation run-time parameters:" << endl;
+  // DumpParameters(cerr);
+  // cerr << endl;
+  // cerr << "Simulation formulas:" << endl;
+  // DumpFormulas(cerr);
+  // cerr << endl;
+  // cerr << "Simulation statistics:" << endl;
+  // DumpStatistics(cerr);
+  // cerr << endl;
 
   cerr << "simulation time: " << simulation_spent_time << " seconds" << endl;
   cerr << "simulated time: " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;

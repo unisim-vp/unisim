@@ -247,8 +247,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
-    // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-    throw DataAbortException(); 
+    DataAbort( addr, mat_write, DAbort_Alignment );
   }
 
   uint8_t data[4];
@@ -269,7 +268,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
   if (not PrWrite( write_addr, data, size )) {
-    throw DataAbortException(); // TODO: full data abort
+    DataAbort( addr, mat_write, DAbort_SyncExternal );
   }
   
   /* report read memory access if necessary */
@@ -313,8 +312,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
-    // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-    throw DataAbortException();
+    DataAbort( addr, mat_read, DAbort_Alignment );
   }
   
   //uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, false, size );
@@ -324,7 +322,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 
   // just read the data from the memory system
   if (not PrRead(read_addr, &data[0], size)) {
-    throw DataAbortException(); // TODO: full data abort
+    DataAbort( addr, mat_read, DAbort_SyncExternal );
   }
   
   /* report read memory access if necessary */
@@ -458,6 +456,24 @@ CPU::StepInstruction()
     this->Stop(-1);
   }
   
+  catch (DataAbortException const& daexc) {
+    /* Abort execution, and take processor to data abort handler */
+    
+    if (unlikely( exception_trap_reporting_import))
+      exception_trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+    
+    this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
+  }
+  
+  catch (PrefetchAbortException const& paexc) {
+    /* Abort execution, and take processor to prefetch abort handler */
+    
+    if (unlikely( exception_trap_reporting_import))
+      exception_trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
+    
+    this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
+  }
+  
   catch (Exception const& exc) {
     logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
            << " pc: " << std::hex << current_insn_addr << std::dec
@@ -558,14 +574,9 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
   // No data cache, just send request to the memory subsystem
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      try {
-        //ef_addr = TranslateAddress<DebugMemAcc>( addr + index, true, false, 1 );
-        uint32_t ef_addr = addr + index;
-        if (not ExternalReadMemory( ef_addr, &rbuffer[index], 1 ))
-          return false;
-      }
-      catch (DataAbortException const& x)
-        { return false; }
+      uint32_t ef_addr = addr + index;
+      if (not ExternalReadMemory( ef_addr, &rbuffer[index], 1 ))
+        return false;
     }
   
   return true;
@@ -590,13 +601,9 @@ CPU::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
   // No data cache, just send request to the memory subsystem
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      try {
-        // ef_addr = TranslateAddress<DebugMemAcc>( addr + index, true, true, 1 );
-        uint32_t ef_addr = addr + index;
-        if (not ExternalWriteMemory( ef_addr, &wbuffer[index], 1 ))
-          return false;
-      } catch (DataAbortException const& x)
-        { return false; }
+      uint32_t ef_addr = addr + index;
+      if (not ExternalWriteMemory( ef_addr, &wbuffer[index], 1 ))
+        return false;
     }
 
   return true;
@@ -689,11 +696,9 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 {
   this->ipb_base_address = base_address;
   
-  // No instruction cache present, just request the insn to the memory
-  // system.
+  // TODO: MPU check
   if (not PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE)) {
-    // TODO: full prefetch abort
-    throw PrefetchAbortException();
+    DataAbort( base_address, mat_exec, DAbort_SyncExternal );
   }
 
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
@@ -713,7 +718,6 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 void 
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
-  //uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
   uint32_t base_address = address & -(Cache::LINE_SIZE);
   uint32_t buffer_index = address % (Cache::LINE_SIZE);
   
@@ -739,9 +743,8 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
 void
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
 {
-  //uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
   uint32_t base_address = address & -(Cache::LINE_SIZE);
-  intptr_t buffer_index = address % (Cache::LINE_SIZE);
+  uint32_t buffer_index = address % (Cache::LINE_SIZE);
     
   if (unlikely(ipb_base_address != base_address))
     {
@@ -797,6 +800,51 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
   throw UndefInstrException();
 }
 
+void
+CPU::DataAbort( uint32_t va, mem_acc_type_t mat, DAbort type )
+{
+  uint32_t& FSR = (mat == mat_exec) ? IFSR : DFSR;
+  uint32_t& FAR = (mat == mat_exec) ? IFAR : DFAR;
+  
+  //DFSR = bits(32) UNKNOWN;
+  //DFAR = bits(32) UNKNOWN;
+  
+  switch (type) {
+  default: FAR = va; break;
+  case DAbort_AsyncParity: case DAbort_AsyncExternal: break;
+  }
+  
+  if ((type != DAbort_SyncExternal) and (type != DAbort_AsyncExternal))
+    RegisterField<12,1>().Set( FSR, 0 );
+  RegisterField<11,1>().Set( FSR, mat_write ? 1 : 0 );
+  
+  struct FS {
+    FS( uint32_t& _dfsr ) : dfsr( _dfsr ) {} uint32_t& dfsr;
+    void Set( uint32_t value ) {
+      RegisterField<10,1>().Set( dfsr, value >> 4 );
+      RegisterField<0,4>() .Set( dfsr, value >> 0 );
+    }
+  } fault_status( FSR );
+  switch (type) {
+  case DAbort_Alignment:          fault_status.Set( 0b00001 ); break;
+  case DAbort_Permission:         fault_status.Set( 0b01101 ); break;
+  case DAbort_SyncExternal:       fault_status.Set( 0b01000 ); break;
+  case DAbort_SyncParity:         fault_status.Set( 0b11001 ); break;
+  case DAbort_AsyncParity:        fault_status.Set( 0b11000 ); break;
+  case DAbort_AsyncExternal:      fault_status.Set( 0b10110 ); break;
+  case DAbort_DebugEvent:         fault_status.Set( 0b00010 ); break;
+  case DAbort_Background:         fault_status.Set( 0b00000 ); break;
+  case DAbort_Lockdown:           fault_status.Set( 0b10100 ); break;
+  case DAbort_Coproc:             fault_status.Set( 0b11010 ); break;
+  default: throw std::logic_error("Unhandled case");
+  }
+
+  if (mat == mat_exec)
+    throw PrefetchAbortException();
+  else
+    throw DataAbortException();
+}
+
 bool
 CPU::MPU::GetAccessControl( uint32_t va, uint32_t& access_control )
 {
@@ -823,7 +871,7 @@ CPU::MPU::GetAccessControl( uint32_t va, uint32_t& access_control )
 }
 
 void
-CPU::CheckPermissions( uint32_t va, bool ispriv, bool iswrite, unsigned size )
+CPU::CheckPermissions( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size )
 {
   if (not sctlr::M.Get( this->SCTLR ))
     return; // MPU disabled
@@ -845,17 +893,16 @@ CPU::CheckPermissions( uint32_t va, bool ispriv, bool iswrite, unsigned size )
   switch (ap) {
   case 0b000: abort = true; break;
   case 0b001: abort = not ispriv; break;
-  case 0b010: abort = not ispriv and iswrite; break;
+  case 0b010: abort = not ispriv and (mat == mat_write); break;
   case 0b011: abort = false; break;
   case 0b100: abort = true; break;
-  case 0b101: abort = not ispriv or iswrite; break;
-  case 0b110: abort = iswrite; break;
+  case 0b101: abort = not ispriv or (mat == mat_write); break;
+  case 0b110: abort = (mat == mat_write); break;
   case 0b111: abort = true; break;
   }
   
   if (abort) {
-    // TODO: Full DAbort_Translation 
-    throw DataAbortException();
+    DataAbort( va, mat, DAbort_Permission );
   }
 }
 

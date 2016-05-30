@@ -599,6 +599,7 @@ CPU::StepInstruction()
     
     this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
   }
+  
   catch (PrefetchAbortException const& paexc) {
     /* Abort execution, and take processor to prefetch abort handler */
     
@@ -1094,7 +1095,10 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
     // WriteHSR(ec, HSRString);
   }
   
-  throw DataAbortException();
+  if (mat == mat_exec)
+    throw PrefetchAbortException();
+  else
+    throw DataAbortException();
 }
 
 

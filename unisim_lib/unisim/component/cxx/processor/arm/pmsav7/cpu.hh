@@ -93,6 +93,8 @@ struct CPU
   typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> CP15CPU;
   typedef typename CP15CPU::CP15Reg CP15Reg;
 
+  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
+  
   //=====================================================================
   //=                  public service imports/exports                   =
   //=====================================================================
@@ -212,6 +214,7 @@ struct CPU
   void BKPT( uint32_t imm );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU>* insn );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb2::Operation<CPU>* insn );
+  void DataAbort(uint32_t va, mem_acc_type_t mat, DAbort type);
 	
   /**************************************************/
   /* Software Exceptions                      END   */
@@ -266,7 +269,7 @@ protected:
   } mpu;
   
   
-  void   CheckPermissions( uint32_t va, bool ispriv, bool iswrite, unsigned size );
+  void   CheckPermissions( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size );
   
   /*************************/
   /* MPU Interface    END  */
