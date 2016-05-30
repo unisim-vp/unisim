@@ -350,6 +350,7 @@ public:
   
 protected:
   uint32_t HandleAsynchronousException( uint32_t );
+  virtual uint32_t ExcVectorBase();
   void     TakeReset();
   void     TakePhysicalFIQorIRQException( bool isIRQ );
   void     TakeSVCException();

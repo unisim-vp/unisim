@@ -482,6 +482,13 @@ CPU<CONFIG>::HandleAsynchronousException( uint32_t exceptions )
   return 0;
 }
 
+template <class CONFIG>
+uint32_t
+CPU<CONFIG>::ExcVectorBase()
+{
+  return sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
+}
+
 /** Take Reset Exception
  */
 template <class CONFIG>
@@ -517,8 +524,7 @@ CPU<CONFIG>::TakeReset()
   // return information registers R14_svc and SPSR_svc have UNKNOWN values, so that
   // it is impossible to return from a reset in an architecturally defined way.
   // Branch to Reset vector.
-  uint32_t exc_vector_base = sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
-  Branch(exc_vector_base + 0);
+  Branch(ExcVectorBase() + 0);
 }
 
 /** Take Data Abort Exception
@@ -590,8 +596,7 @@ CPU<CONFIG>::TakeDataOrPrefetchAbortException( bool isdata )
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
   // Branch to SVC vector.
-  uint32_t exc_vector_base = sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
-  Branch(exc_vector_base + vect_offset);
+  Branch(ExcVectorBase() + vect_offset);
 }
 
 /** Take Reset Exception
@@ -645,8 +650,7 @@ CPU<CONFIG>::TakeSVCException()
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
   // Branch to SVC vector.
-  uint32_t exc_vector_base = sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
-  Branch(exc_vector_base + vect_offset);
+  Branch(ExcVectorBase() + vect_offset);
 }
 
 /** Take Physical FIQ or IRQ Exception
@@ -696,8 +700,7 @@ CPU<CONFIG>::TakePhysicalFIQorIRQException( bool isIRQ )
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) );
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) );
   // Branch to correct [IRQ|FIQ] vector ("implementation defined" if SCTLR.VE == '1').
-  uint32_t exc_vector_base = sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
-  Branch(exc_vector_base + vect_offset);
+  Branch(ExcVectorBase() + vect_offset);
 }
 
 /** Read the value of a CP15 coprocessor register

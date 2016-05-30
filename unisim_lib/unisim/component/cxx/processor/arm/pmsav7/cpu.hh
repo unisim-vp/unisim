@@ -249,8 +249,8 @@ protected:
   struct MPU
   {
     MPU() : RGNR(0) {}
-    static unsigned const IRegion = 0;
     static unsigned const DRegion = 16;
+    static unsigned const IRegion = 0;
     static bool const Unified = true;
     
     struct Region {
@@ -261,14 +261,14 @@ protected:
     };
     
     Region DR[DRegion];
-    Region IR[DRegion];
+    Region IR[IRegion];
     uint32_t RGNR;
     
-    bool GetAccessControl( uint32_t va, uint32_t& access_control );
+    bool GetAccessControl( uint32_t va, mem_acc_type_t mat, uint32_t& access_control );
 
   } mpu;
   
-  
+
   void   CheckPermissions( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size );
   
   /*************************/

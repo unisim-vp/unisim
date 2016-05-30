@@ -846,11 +846,16 @@ CPU::DataAbort( uint32_t va, mem_acc_type_t mat, DAbort type )
 }
 
 bool
-CPU::MPU::GetAccessControl( uint32_t va, uint32_t& access_control )
+CPU::MPU::GetAccessControl( uint32_t va, mem_acc_type_t mat, uint32_t& access_control )
 {
   bool region_found = false;
-  for (unsigned idx = 0; idx < DRegion; ++idx) {
-    Region& region = DR[idx];
+  Region* reg_table;
+  unsigned reg_size;
+  if (IRegion and (mat == mat_exec)) { reg_table = &IR[0]; reg_size = IRegion; }
+  else                               { reg_table = &DR[0]; reg_size = DRegion; }
+  
+  for (unsigned idx = 0; idx < reg_size; ++idx) {
+    Region& region = reg_table[idx];
     uint32_t size_enable = region.size_enable;
     if (not (size_enable & 1))
       continue; // Region disabled
@@ -867,6 +872,7 @@ CPU::MPU::GetAccessControl( uint32_t va, uint32_t& access_control )
     access_control = region.access_control;
     region_found = true;
   }
+  
   return region_found;
 }
 
@@ -877,19 +883,16 @@ CPU::CheckPermissions( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
     return; // MPU disabled
   
   // MPU enabled
-  uint32_t access_control;
-  if (not mpu.GetAccessControl( va, access_control )) {
+  uint32_t access_control = 0;
+  if (not mpu.GetAccessControl( va, mat, access_control )) {
     if (sctlr::BR.Get( SCTLR ) and ispriv) {
-      access_control = 0x300 |
-        ((((va >> 28) == 0xf ? (not sctlr::V.Get( SCTLR )) : ((va >> 31) == 1))) ? 0x1000 : 0);
-    }
-    else {
-      access_control = 0;
+      RegisterField<8,3>().Set( access_control, 0b011 );
+      RegisterField<12,1>().Set( access_control, (va >> 28) == 0xf ? not sctlr::V.Get( SCTLR ) : ((va >> 31) == 1) );
     }
   }
     
   bool abort = false;
-  unsigned ap = (access_control >> 8) & 7;
+  unsigned ap = RegisterField<8,3>().Get( access_control );
   switch (ap) {
   case 0b000: abort = true; break;
   case 0b001: abort = not ispriv; break;
@@ -900,6 +903,8 @@ CPU::CheckPermissions( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
   case 0b110: abort = (mat == mat_write); break;
   case 0b111: abort = true; break;
   }
+  if (mat_exec and RegisterField<12,1>().Get( access_control )) 
+    abort = true; // Execute Never
   
   if (abort) {
     DataAbort( va, mat, DAbort_Permission );
