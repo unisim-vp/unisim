@@ -277,6 +277,13 @@ protected:
   struct TransAddrDesc
   {
     uint32_t   pa;
+    uint32_t   nG : 1;
+    uint32_t   domain : 4;
+    uint32_t   level : 2;
+    uint32_t   ap : 3;
+    uint32_t   pxn : 1;
+    uint32_t   xn : 1;
+    uint32_t   asid : 8;
   };
   
   struct TLB

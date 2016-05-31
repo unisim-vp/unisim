@@ -903,7 +903,7 @@ CPU::CheckPermissions( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
   case 0b110: abort = (mat == mat_write); break;
   case 0b111: abort = true; break;
   }
-  if (mat_exec and RegisterField<12,1>().Get( access_control )) 
+  if ((mat == mat_exec) and RegisterField<12,1>().Get( access_control )) 
     abort = true; // Execute Never
   
   if (abort) {

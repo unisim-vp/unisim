@@ -1244,36 +1244,46 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     
   case 1: {
     // Large page or Small page
+    tad.domain = RegisterField<5,4>().Get( l1desc );
+    tad.level = 2;
+    tad.pxn = RegisterField<2,1>().Get( l1desc );
     // Obtain Second level descriptor.
     uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
-    unsigned domain = RegisterField<5,4>().Get( l1desc );
     if (not PrRead( l2descaddr, erd.data(), 4 )) {
-      DataAbort(l2descaddr, 0, domain, 0, mat_read, DAbort_SyncExternalonWalk, false, false, false, false, false);
+      DataAbort(l2descaddr, 0, tad.domain, 0, mat_read, DAbort_SyncExternalonWalk, false, false, false, false, false);
     }
     uint32_t l2desc = erd.Get();
     // Process Second level descriptor.
     if ((l2desc&3) == 0) {
-      DataAbort(mva, 0, domain, 2, mat, DAbort_Translation, false, false, false, false, false);
+      DataAbort(mva, 0, tad.domain, 2, mat, DAbort_Translation, false, false, false, false, false);
     }
-    //nG = (l2desc >> 11) & 1;
+    tad.ap = (RegisterField<9,1>().Get( l2desc ) << 2) | RegisterField<5,2>().Get( l2desc );
+    tad.nG = RegisterField<11,1>().Get( l2desc );
     if (l2desc & 2) {
       // Small page (4kB)
+      tad.xn = RegisterField<0,1>().Get( l2desc );
       lsb = 12;
       tad.pa = (l2desc & 0xfffff000) | (mva & 0x00000fff);
     }
     else {
       // Large page (64kB)
-      tad.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
+      tad.xn = RegisterField<15,1>().Get( l2desc );
       lsb = 16;
+      tad.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
     }
   } break;
     
   case 2: case 3: {
     // Section or Supersection
-    //nG = (l1desc >> 17) & 1;
+    tad.ap = (RegisterField<15,1>().Get( l1desc ) << 2) | RegisterField<10,2>().Get( l1desc );
+    tad.xn = RegisterField<4,1>().Get( l1desc );
+    tad.pxn = RegisterField<0,1>().Get( l1desc );
+    tad.nG = RegisterField<17,1>().Get( l1desc );
+    tad.level = 1;
     
     if ((l1desc >> 18) & 1) {
       // Supersection (16MB)
+      tad.domain = 0b0000;
       lsb = 24;
       if (RegisterField<20,4>().Get( l1desc ) or RegisterField<5,4>().Get( l1desc ))
         throw std::logic_error("LPAE not implemented"); /* Large 40-bit extended address */
@@ -1281,6 +1291,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     }
     else {
       // Section (1MB)
+      tad.domain = RegisterField<5,4>().Get( l1desc );
       lsb = 20;
       tad.pa = (l1desc & 0xfff00000) | (mva & 0x000fffff);
     }
@@ -1288,6 +1299,8 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     
   }
   
+  if (tad.nG) // Non Global entries refer to the current ASID
+    tad.asid = CONTEXTIDR & 0xff;
   // Try to add entry to TLB
   if (POLICY::updateTLB)
     tlb.AddTranslation( lsb, mva, tad );
@@ -1304,6 +1317,8 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
   TransAddrDesc tad;
   
   // FirstStageTranslation
+  bool ishyp = cpsr.Get(M) == HYPERVISOR_MODE;
+  
   if (sctlr::M.Get( this->SCTLR )) {
     // Stage 1 MMU enabled
     if (not tlb.GetTranslation<POLICY>( tad, mva ))
@@ -1315,10 +1330,39 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
     //   if (tad_chk.pa != tad.pa)
     //     exception_trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
     // }
+    
+    
+    // Checking permissions
+    unsigned dac = (mmu.dacr >> (tad.domain*2)) & 3;
+    if (dac & 1) {
+      if ((dac & 2) == 0) {
+        // TODO: Access Flag Enable
+        bool abort = false;
+        switch (tad.ap) {
+        case 0b000: abort = true; break;
+        case 0b001: abort = not ispriv; break;
+        case 0b010: abort = not ispriv and (mat == mat_write); break;
+        case 0b011: abort = false; break;
+        case 0b100: abort = true; break;
+        case 0b101: abort = not ispriv or (mat == mat_write); break;
+        case 0b110: abort = (mat == mat_write); break;
+        case 0b111: abort = (mat == mat_write); break;
+        }
+        if ((mat == mat_exec) and (tad.xn or (tad.pxn and (GetPL() == 1))))
+          abort = true; // Execute Never
+        
+        if (abort) {
+          DataAbort( mva, 0, tad.domain, tad.level, mat, DAbort_Permission,
+                     ishyp, false, false, /*LDFSRformat*/false, false );
+        }
+        
+      }
+    } else 
+      DataAbort( mva, 0, tad.domain, tad.level, mat, DAbort_Domain, false, false, false, false, false );
+    
   } else {
     tad.pa = mva;
   }
-  // TODO: Check permissions here
   
  return tad.pa;
 }

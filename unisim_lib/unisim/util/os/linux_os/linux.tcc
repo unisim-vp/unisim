@@ -1033,7 +1033,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_PHNUM;
-  aux_table_value = num_segments_;
+  aux_table_value = main_blob->GetELF_PHNUM(); // Number of program headers
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_PAGESZ;
