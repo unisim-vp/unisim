@@ -402,6 +402,7 @@ unisim/util/xml/xml.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/arithmetic/arithmetic.hh \
+unisim/util/truth_table/truth_table.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/queue/queue.hh \
