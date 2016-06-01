@@ -962,13 +962,14 @@ vldmdb_f32.disasm = {
 vldmdb_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 2 );
-  cpu.SetGPR( rn, address  );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 2 );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.SetVU32( vd + reg, cpu.MemRead32( address ) );
-    address += 4;
+    cpu.SetVU32( vd + reg, cpu.MemRead32( base_addr + U32(4*reg) ) );
   }
+
+  cpu.SetGPR( rn, base_addr );
 };
 
 op vldmdb_f64( cond[4]: 0b110[3]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: rn[4]: vd0[4]: 0b1011[4]: regs[7]: fldm[1] );
@@ -987,14 +988,15 @@ vldmdb_f64.disasm = {
 vldmdb_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 3 );
-  cpu.SetGPR( rn, address );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 3 );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( address + 0 ) );
-    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( address + 4 ) );
-    address += 8;
+    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( base_addr + U32(8*reg + 0) ) );
+    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( base_addr + U32(8*reg + 4) ) );
   }
+  
+  cpu.SetGPR( rn, base_addr );
 };
 
 op vldmia_f32( cond[4]: 0b110[3]: 0b0[1]: 0b1[1]: vd0[1]: w[1]: 0b1[1]: rn[4]: shl<1> vd1[4]: 0b1010[4]: regs[8] );
@@ -1013,13 +1015,14 @@ vldmia_f32.disasm = {
 vldmia_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 2 ) );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.SetVU32( vd + reg, cpu.MemRead32( address ) );
-    address += 4;
+    cpu.SetVU32( vd + reg, cpu.MemRead32( base_addr + U32(4*reg) ) );
   }
+
+  if (w) cpu.SetGPR( rn, base_addr + U32( regs << 2 ) );
 };
 
 op vldmia_f64( cond[4]: 0b110[3]: 0b0[1]: 0b1[1]: shl<4> vd1[1]: w[1]: 0b1[1]: rn[4]: vd0[4]: 0b1011[4]: regs[7]: fldm[1] );
@@ -1039,14 +1042,15 @@ vldmia_f64.disasm = {
 vldmia_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 3 ) );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( address + 0 ) );
-    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( address + 4 ) );
-    address += 8;
+    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( base_addr + U32(8*reg + 0) ) );
+    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( base_addr + U32(8*reg + 4) ) );
   }
+
+  if (w) cpu.SetGPR( rn, base_addr + U32( regs << 3 ) );
 };
 
 /* VLDR; loads an a single extension register from memory, using an
@@ -1669,13 +1673,14 @@ vstmdb_f32.disasm = {
 vstmdb_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 2 );
-  cpu.SetGPR( rn, address );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 2 );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.MemWrite32( address, cpu.GetVU32( vd + reg ) );
-    address += 4;
+    cpu.MemWrite32( base_addr + U32(4*reg), cpu.GetVU32( vd + reg ) );
   }
+  
+  cpu.SetGPR( rn, base_addr );
 };
 
 op vstmdb_f64( cond[4]: 0b110[3]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: rn[4]: vd0[4]: 0b1011[4]: regs[7]: fstm[1] );
@@ -1695,14 +1700,15 @@ vstmdb_f64.disasm = {
 vstmdb_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 3 );
-  cpu.SetGPR( rn, address );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 3 );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.MemWrite32( address + 0, cpu.GetVU32( 2*(vd+reg) + 0 ) );
-    cpu.MemWrite32( address + 4, cpu.GetVU32( 2*(vd+reg) + 1 ) );
-    address += 8;
+    cpu.MemWrite32( base_addr + U32(8*reg + 0), cpu.GetVU32( 2*(vd+reg) + 0 ) );
+    cpu.MemWrite32( base_addr + U32(8*reg + 4), cpu.GetVU32( 2*(vd+reg) + 1 ) );
   }
+  
+  cpu.SetGPR( rn, base_addr );
 };
 
 op vstmia_f32( cond[4]: 0b110[3]: 0b0[1]: 0b1[1]: vd0[1]: w[1]: 0b0[1]: rn[4]: shl<1> vd1[4]: 0b1010[4]: regs[8] );
@@ -1719,13 +1725,14 @@ vstmia_f32.disasm = {
 vstmia_f32.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 2 ) );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.MemWrite32( address, cpu.GetVU32( vd + reg ) );
-    address += 4;
+    cpu.MemWrite32( base_addr + U32(4*reg), cpu.GetVU32( vd + reg ) );
   }
+  
+  if (w) cpu.SetGPR( rn, base_addr + U32( regs << 2 ) );
 };
 
 op vstmia_f64( cond[4]: 0b110[3]: 0b0[1]: 0b1[1]: shl<4> vd1[1]: w[1]: 0b0[1]: rn[4]: vd0[4]: 0b1011[4]: regs[7]: fstm[1] );
@@ -1744,14 +1751,15 @@ vstmia_f64.disasm = {
 vstmia_f64.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 3 ) );
-                     
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn );
+  
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.MemWrite32( address + 0, cpu.GetVU32( 2*(vd+reg) + 0 ) );
-    cpu.MemWrite32( address + 4, cpu.GetVU32( 2*(vd+reg) + 1 ) );
-    address += 8;
+    cpu.MemWrite32( base_addr + U32(8*reg + 0), cpu.GetVU32( 2*(vd+reg) + 0 ) );
+    cpu.MemWrite32( base_addr + U32(8*reg + 4), cpu.GetVU32( 2*(vd+reg) + 1 ) );
   }
+  
+  if (w) cpu.SetGPR( rn, base_addr + U32( regs << 3 ) );
 };
 
 /* VSTR This instruction stores a single extension register to memory,

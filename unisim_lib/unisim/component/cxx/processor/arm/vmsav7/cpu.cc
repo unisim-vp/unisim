@@ -1115,8 +1115,8 @@ template <class POLICY>
 bool
 CPU::TLB::GetTranslation( TransAddrDesc& tad, uint32_t mva )
 {
-  unsigned lsb, hit;
-  uint32_t key;
+  unsigned lsb = 0, hit;
+  uint32_t key = 0;
   for (hit = 0; hit < entry_count; ++hit)
     {
       key = keys[hit];
@@ -1146,7 +1146,7 @@ void
 CPU::TLB::InvalidateByMVA( uint32_t mva )
 {
   unsigned hit;
-  uint32_t key;
+  uint32_t key = 0;
   for (hit = 0; hit < entry_count; ++hit)
     {
       key = keys[hit];
@@ -1257,7 +1257,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     if ((l2desc&3) == 0) {
       DataAbort(mva, 0, tad.domain, 2, mat, DAbort_Translation, false, false, false, false, false);
     }
-    tad.ap = (RegisterField<9,1>().Get( l2desc ) << 2) | RegisterField<5,2>().Get( l2desc );
+    tad.ap = (RegisterField<9,1>().Get( l2desc ) << 2) | RegisterField<4,2>().Get( l2desc );
     tad.nG = RegisterField<11,1>().Get( l2desc );
     if (l2desc & 2) {
       // Small page (4kB)
