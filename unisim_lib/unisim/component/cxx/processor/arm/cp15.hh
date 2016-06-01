@@ -58,18 +58,11 @@ namespace arm {
   {
     RegisterField<31,1> const IE;      // Instruction Endianness
     RegisterField<30,1> const TE;      // Thumb Exception enable
-    RegisterField<29,1> const AFE;     // Access flag enable (vmsa)
-    RegisterField<28,1> const TRE;     // TEX remap enable (vmsa)
     RegisterField<27,1> const NMFI;    // Non-maskable FIQ (NMFI) support
     RegisterField<25,1> const EE;      // Exception Endianness.
     RegisterField<24,1> const VE;      // Interrupt Vectors Enable
     RegisterField<22,1> const U;       // Alignment Model (up to ARMv6)
     RegisterField<21,1> const FI;      // Fast interrupts configuration enable
-    RegisterField<20,1> const UWXN;    // Unprivileged write permission implies PL1 XN (vmsa, Virtualization Extensions)
-    RegisterField<19,1> const WXN;     // Write permission implies XN (vmsa, Virtualization Extensions)
-    RegisterField<19,1> const DZ;      // Divide by Zero fault enable bit (pmsa)
-    RegisterField<17,1> const HA;      // Hardware Access flag enable (vmsa)
-    RegisterField<17,1> const BR;      // Background Region bit (pmsa)
     RegisterField<14,1> const RR;      // Round Robin select
     RegisterField<13,1> const V;       // Vectors bit
     RegisterField<12,1> const I;       // Instruction cache enable
@@ -79,7 +72,7 @@ namespace arm {
     RegisterField< 5,1> const CP15BEN; // CP15 barrier enable.
     RegisterField< 2,1> const C;       // Cache enable. This is a global enable bit for data and unified caches.
     RegisterField< 1,1> const A;       // Alignment check enable
-    RegisterField< 0,1> const M;       // MMU enable.
+    RegisterField< 0,1> const M;       // MMU/MPU enable.
   };
 
 

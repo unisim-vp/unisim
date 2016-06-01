@@ -190,7 +190,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
         if (not itr->second->HasBR( idx )) continue;
         is_banked = true;
         std::string br_name = name + '_' + itr->second->suffix;
-        std::string br_pretty_name = name + '_' + itr->second->suffix;
+        std::string br_pretty_name = pretty_name + '_' + itr->second->suffix;
         dbg_reg = new BankedRegister( *this, br_pretty_name, itr->first, idx );
         registers_registry[br_pretty_name] = dbg_reg;
         if (br_name != br_pretty_name)
@@ -199,7 +199,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       }
       if (is_banked) {
         std::string br_name = name + "_usr";
-        std::string br_pretty_name = name + "_usr";
+        std::string br_pretty_name = pretty_name + "_usr";
         dbg_reg = new BankedRegister( *this, br_pretty_name, USER_MODE, idx );
         registers_registry[br_pretty_name] = dbg_reg;
         if (br_name != br_pretty_name)
@@ -900,19 +900,14 @@ template <class CONFIG>
 void
 CPU<CONFIG>::CP15ResetRegisters()
 {
-  // Default value for SCTLR (will be overwritten as needed by simulators)
+  // Base default values for SCTLR (may be overwritten by memory architectures)
   SCTLR = 0x00c50058; // SBO mask
   sctlr::TE.Set(      SCTLR, 0 ); // Thumb Exception enable
-  sctlr::AFE.Set(     SCTLR, 0 ); // Access flag enable.
-  sctlr::TRE.Set(     SCTLR, 0 ); // TEX remap enable
   sctlr::NMFI.Set(    SCTLR, 0 ); // Non-maskable FIQ (NMFI) support
   sctlr::EE.Set(      SCTLR, 0 ); // Exception Endianness.
   sctlr::VE.Set(      SCTLR, 0 ); // Interrupt Vectors Enable
   sctlr::U.Set(       SCTLR, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
   sctlr::FI.Set(      SCTLR, 0 ); // Fast interrupts configuration enable
-  sctlr::UWXN.Set(    SCTLR, 0 ); // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
-  sctlr::WXN.Set(     SCTLR, 0 ); // Write permission implies XN (Virtualization Extensions)
-  sctlr::HA.Set(      SCTLR, 0 ); // Hardware Access flag enable.
   sctlr::RR.Set(      SCTLR, 0 ); // Round Robin select
   sctlr::V.Set(       SCTLR, 0 ); // Vectors bit
   sctlr::I.Set(       SCTLR, 0 ); // Instruction cache enable

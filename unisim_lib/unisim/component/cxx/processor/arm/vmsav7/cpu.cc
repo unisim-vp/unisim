@@ -127,8 +127,6 @@ CPU::CPU(const char *name, Object *parent)
   , linux_printk_buf_addr( 0 )
   , linux_printk_buf_size( 0 )
   , linux_printk_snooping( false )
-  , sctlr_rstval( this->PCPU::SCTLR )
-  , param_sctlr_rstval("SCTLR", this, this->sctlr_rstval, "The processor reset value of the SCTLR register.")
   , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
   , param_voltage("voltage", this, this->voltage, "The processor voltage in mV.")
   , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
@@ -177,8 +175,13 @@ void
 CPU::CP15ResetRegisters()
 {
   this->PCPU::CP15ResetRegisters();
-  /* sctlr takes its reset value */
-  this->SCTLR = sctlr_rstval;
+  
+  // VMSA default values for SCTLR (may be overwritten by implementations)
+  sctlr::AFE.Set(     SCTLR, 0 ); // Access flag enable.
+  sctlr::TRE.Set(     SCTLR, 0 ); // TEX remap enable
+  sctlr::UWXN.Set(    SCTLR, 0 ); // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
+  sctlr::WXN.Set(     SCTLR, 0 ); // Write permission implies XN (Virtualization Extensions)
+  sctlr::HA.Set(      SCTLR, 0 ); // Hardware Access flag enable.
 }
     
 /** Object setup method.
@@ -323,7 +326,7 @@ CPU::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("Bad size");
   uint32_t misalignment = addr & lo_mask;
   
-  if (unlikely(misalignment and not sctlr::A.Get( this->SCTLR ))) {
+  if (unlikely(misalignment and not arm::sctlr::A.Get( this->SCTLR ))) {
     uint32_t eaddr = addr;
     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
       for (unsigned byte = size; --byte < size; ++eaddr)
@@ -423,7 +426,7 @@ CPU::PerformUReadAccess( uint32_t addr, uint32_t size )
   if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
-  if (unlikely(misalignment and not sctlr::A.Get( this->SCTLR ))) {
+  if (unlikely(misalignment and not arm::sctlr::A.Get( this->SCTLR ))) {
     uint32_t result = 0;
     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
       for (unsigned byte = 0; byte < size; ++byte)
@@ -1217,7 +1220,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     }
     uint8_t* data() { return &b[0]; }
     EndianReader( bool _be ) : be( _be ) {}
-  } erd( sctlr::EE.Get( SCTLR ) );
+  } erd( arm::sctlr::EE.Get( SCTLR ) );
   
   uint32_t lsb = 0;
   //bool     nG;
@@ -1336,7 +1339,7 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
   
   // FirstStageTranslation
   
-  if (sctlr::M.Get( this->SCTLR )) {
+  if (arm::sctlr::M.Get( this->SCTLR )) {
     bool ishyp = cpsr.Get(M) == HYPERVISOR_MODE;
     TransAddrDesc tad;
     

@@ -46,7 +46,20 @@ namespace processor {
 namespace arm {
 namespace pmsav7 {
 
+  /** SCTLR Manips
+   *
+   * Base Register Fields to ease access to the SCTLR System Control
+   * Register.  This class factorizes all common SCTLR register
+   * fields, though some of them may not be present in a particular
+   * ARM processor implementation
+   */
 
+  namespace sctlr
+  {
+    RegisterField<19,1> const DZ;      // Divide by Zero fault enable bit
+    RegisterField<17,1> const BR;      // Background Region bit
+  }
+  
 } // end of namespace pmsav7
 } // end of namespace arm
 } // end of namespace processor
