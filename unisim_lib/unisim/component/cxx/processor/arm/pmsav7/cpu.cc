@@ -40,6 +40,7 @@
 #include <unisim/kernel/debug/debug.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/truth_table/truth_table.hh>
 #include <unisim/util/likely/likely.hh>
 
 #include <sstream>
@@ -876,6 +877,27 @@ CPU::MPU::GetAccessControl( uint32_t va, mem_acc_type_t mat, uint32_t& access_co
   return region_found;
 }
 
+namespace {
+  template <unsigned VAL, unsigned Tbits = 32>
+  struct Case
+  {
+    typedef Case<VAL, Tbits> this_type;
+    typedef uint32_t tt_type;
+
+    static unsigned const msb = (Tbits-1);
+    static tt_type const tt = (((msb >> 2) == VAL) ? (tt_type(1) << msb) : tt_type(0)) | Case<VAL,msb>::tt;
+
+    template <typename RHS> unisim::util::truth_table::LUT<tt_type,(tt&RHS::tt)>
+    operator && ( RHS const& ) const { return unisim::util::truth_table::LUT<tt_type,(tt&RHS::tt)>(); }
+    template <typename RHS> unisim::util::truth_table::LUT<tt_type,(tt|RHS::tt)>
+    operator || ( RHS const& ) const { return unisim::util::truth_table::LUT<tt_type,(tt|RHS::tt)>(); }
+    unisim::util::truth_table::LUT<tt_type,(~tt)>
+    operator ! () const { return unisim::util::truth_table::LUT<tt_type,(~tt)>(); }
+  };
+
+  template <unsigned VAL> struct Case<VAL,1> { static uint32_t const tt = 0; };
+}
+
 void
 CPU::CheckPermissions( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size )
 {
@@ -891,24 +913,25 @@ CPU::CheckPermissions( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
     }
   }
     
-  bool abort = false;
-  unsigned ap = RegisterField<8,3>().Get( access_control );
-  switch (ap) {
-  case 0b000: abort = true; break;
-  case 0b001: abort = not ispriv; break;
-  case 0b010: abort = not ispriv and (mat == mat_write); break;
-  case 0b011: abort = false; break;
-  case 0b100: abort = true; break;
-  case 0b101: abort = not ispriv or (mat == mat_write); break;
-  case 0b110: abort = (mat == mat_write); break;
-  case 0b111: abort = true; break;
-  }
-  if ((mat == mat_exec) and RegisterField<12,1>().Get( access_control )) 
-    abort = true; // Execute Never
+  unisim::util::truth_table::InBit<uint32_t,1> const P;
+  unisim::util::truth_table::InBit<uint32_t,0> const W;
   
-  if (abort) {
+  unsigned sel = (RegisterField<8,3>().Get( access_control ) << 2) | (unsigned(ispriv) << 1) | (unsigned(mat == mat_write) << 0);
+    
+  uint32_t const perm_table =
+    ((Case<0b000>()) or
+     (Case<0b001>() and not P) or
+     (Case<0b010>() and not P and W) or
+     /* Case<0b011>() */
+     (Case<0b100>()) or
+     (Case<0b101>() and (not P or W)) or
+     (Case<0b110>() and W) or
+     (Case<0b111>())).tt;
+  
+  uint32_t xabort = unsigned(mat == mat_exec) & RegisterField<12,1>().Get( access_control );
+  
+  if (unlikely(((perm_table >> sel) | xabort) & 1))
     DataAbort( va, mat, DAbort_Permission );
-  }
 }
 
 /** Get the Internal representation of the CP15 Register

@@ -284,12 +284,20 @@ CPU::BusSynchronize()
   // quantum_time += 
   //   ((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
   //   (cpu_time + quantum_time);
+  
+#if 0
   sc_time deadline(cpu_time);
   deadline += quantum_time;
   while ( bus_time < deadline )
     bus_time += bus_cycle_time;
   quantum_time = bus_time;
   quantum_time -= cpu_time;
+#else
+  quantum_time += 
+    ((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
+    (cpu_time + quantum_time);
+#endif
+  
   if (quantum_time > nice_time)
     Sync();
   if (unlikely(verbose_tlm))

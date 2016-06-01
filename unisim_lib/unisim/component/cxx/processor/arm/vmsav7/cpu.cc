@@ -40,6 +40,7 @@
 #include <unisim/kernel/debug/debug.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/truth_table/truth_table.hh>
 #include <unisim/util/likely/likely.hh>
 
 #include <sstream>
@@ -1306,22 +1307,41 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     tlb.AddTranslation( lsb, mva, tad );
 }
 
+namespace {
+  template <unsigned VAL, unsigned Tbits = 32>
+  struct Case
+  {
+    typedef Case<VAL, Tbits> this_type;
+    typedef uint32_t tt_type;
+
+    static unsigned const msb = (Tbits-1);
+    static tt_type const tt = (((msb >> 2) == VAL) ? (tt_type(1) << msb) : tt_type(0)) | Case<VAL,msb>::tt;
+
+    template <typename RHS> unisim::util::truth_table::LUT<tt_type,(tt&RHS::tt)>
+    operator && ( RHS const& ) const { return unisim::util::truth_table::LUT<tt_type,(tt&RHS::tt)>(); }
+    template <typename RHS> unisim::util::truth_table::LUT<tt_type,(tt|RHS::tt)>
+    operator || ( RHS const& ) const { return unisim::util::truth_table::LUT<tt_type,(tt|RHS::tt)>(); }
+    unisim::util::truth_table::LUT<tt_type,(~tt)>
+    operator ! () const { return unisim::util::truth_table::LUT<tt_type,(~tt)>(); }
+  };
+
+  template <unsigned VAL> struct Case<VAL,1> { static uint32_t const tt = 0; };
+}
+
 template <class POLICY>
 uint32_t
 CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size )
 {
-  // bits(32) mva;
-  // bits(40) ia_in;
-  // AddressDescriptor result;
   uint32_t mva = va; /* No FCSE translation in this model*/
-  TransAddrDesc tad;
   
   // FirstStageTranslation
-  bool ishyp = cpsr.Get(M) == HYPERVISOR_MODE;
   
   if (sctlr::M.Get( this->SCTLR )) {
+    bool ishyp = cpsr.Get(M) == HYPERVISOR_MODE;
+    TransAddrDesc tad;
+    
     // Stage 1 MMU enabled
-    if (not tlb.GetTranslation<POLICY>( tad, mva ))
+    if (unlikely(not tlb.GetTranslation<POLICY>( tad, mva )))
       TranslationTableWalk<POLICY>( tad, mva, mat, size );
     // else {
     //   // Check if hit is coherent
@@ -1334,37 +1354,35 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
     
     // Checking permissions
     unsigned dac = (mmu.dacr >> (tad.domain*2)) & 3;
-    if (dac & 1) {
-      if ((dac & 2) == 0) {
-        // TODO: Access Flag Enable
-        bool abort = false;
-        switch (tad.ap) {
-        case 0b000: abort = true; break;
-        case 0b001: abort = not ispriv; break;
-        case 0b010: abort = not ispriv and (mat == mat_write); break;
-        case 0b011: abort = false; break;
-        case 0b100: abort = true; break;
-        case 0b101: abort = not ispriv or (mat == mat_write); break;
-        case 0b110: abort = (mat == mat_write); break;
-        case 0b111: abort = (mat == mat_write); break;
-        }
-        if ((mat == mat_exec) and (tad.xn or (tad.pxn and (GetPL() == 1))))
-          abort = true; // Execute Never
-        
-        if (abort) {
-          DataAbort( mva, 0, tad.domain, tad.level, mat, DAbort_Permission,
-                     ishyp, false, false, /*LDFSRformat*/false, false );
-        }
-        
-      }
-    } else 
+    
+    if (unlikely((dac & 1) == 0))
       DataAbort( mva, 0, tad.domain, tad.level, mat, DAbort_Domain, false, false, false, false, false );
     
-  } else {
-    tad.pa = mva;
+    unisim::util::truth_table::InBit<uint32_t,1> const P;
+    unisim::util::truth_table::InBit<uint32_t,0> const W;
+
+    unsigned sel = (tad.ap << 2) | (unsigned(ispriv) << 1) | (unsigned(mat == mat_write) << 0);
+    
+    uint32_t const perm_table =
+      ((Case<0b000>()) or
+       (Case<0b001>() and not P) or
+       (Case<0b010>() and not P and W) or
+       /* Case<0b011>() */
+       (Case<0b100>()) or
+       (Case<0b101>() and (not P or W)) or
+       (Case<0b110>() and W) or
+       (Case<0b111>() and W)).tt;
+    
+    uint32_t xabort = unsigned(mat == mat_exec) & (tad.xn | (tad.pxn & unsigned(GetPL() == 1)));
+
+    /* TODO: Long descriptor format + Hardware flags */
+    if (unlikely((((dac >> 1) & (perm_table >> sel)) | xabort) & 1))
+      DataAbort( mva, 0, tad.domain, tad.level, mat, DAbort_Permission, ishyp, false, false, false, false );
+    
+    return tad.pa;
   }
   
- return tad.pa;
+  return mva;
 }
 
 
