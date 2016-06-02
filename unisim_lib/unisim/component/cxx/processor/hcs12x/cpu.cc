@@ -202,11 +202,11 @@ CPU::CPU(const char *name, Object *parent):
 	extended_registers_registry.push_back(ccr_var);
 	ccr_var->setCallBack(this, CCR, &CallBackObject::write, NULL);
 
-	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
+	unisim::service::interfaces::Register *ccrl = ccr->GetLowRegister();
 	registers_registry[ccrl->GetName()] = ccrl;
 	extended_registers_registry.push_back(new TimeBaseRegisterView(ccrl->GetName(), this, ccrReg, TimeBaseRegisterView::TB_LOW, "CCR LOW"));
 
-	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
+	unisim::service::interfaces::Register *ccrh = ccr->GetHighRegister();
 	registers_registry[ccrh->GetName()] = ccrh;
 	extended_registers_registry.push_back(new TimeBaseRegisterView(ccrh->GetName(), this, ccrReg, TimeBaseRegisterView::TB_HIGH, "CCR HIGH"));
 
@@ -219,7 +219,7 @@ CPU::~CPU()
 	//if (ccr) { delete ccr; ccr = NULL;}
 
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{

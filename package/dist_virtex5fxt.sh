@@ -285,7 +285,6 @@ unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/event.hh \
 unisim/util/debug/profile.hh \
-unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/simple_register.hh \
@@ -361,6 +360,7 @@ unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
 unisim/util/os/linux_os/linux.hh \
 unisim/util/os/linux_os/ppc.hh \
+unisim/util/os/linux_os/i386.hh \
 unisim/util/os/linux_os/errno.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
@@ -377,6 +377,7 @@ unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/profiling.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/cache_power_estimator.hh \
@@ -564,13 +565,11 @@ m4/endian.m4 \
 m4/cxxabi.m4 \
 m4/libxml2.m4 \
 m4/zlib.m4 \
-m4/boost_graph.m4 \
 m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
 m4/tlm20.m4 \
-m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
@@ -825,14 +824,11 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
-  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3 (http://www.systemc.org)
 
 Building instructions:
-  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
+  $ ./configure --with-systemc=<path-to-systemc-install-dir>
   $ make
-
-Note: Configure option '--with-tlm20' is no longer needed with SystemC >= 2.3
 
 Installing (optional):
   $ make install
@@ -897,7 +893,7 @@ if [ "${has_to_build_configure_cross}" = "yes" ]; then
 HERE=\$(pwd)
 MY_DIR=\$(cd \$(dirname \$0); pwd)
 
-# remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
+# remove --host, --with-systemc, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
 host=""
 help=""
 i=0
@@ -908,7 +904,7 @@ do
 		--host=*)
 			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
 			;;
-		--with-systemc=* | --with-tlm20=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
+		--with-systemc=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
 			;;
 		--help=* | --help)
 			help="yes"
@@ -1109,12 +1105,14 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "AC_PROG_RANLIB" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "PKG_PROG_PKG_CONFIG([0.26])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "CPPFLAGS=\"${CPPFLAGS} -D_LARGEFILE64_SOURCE\"" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${VIRTEX5FXT_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "case \"\${host}\" in" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	printf "\t*mingw*)\n" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	printf "\tCPPFLAGS=\"-U__STRICT_ANSI__ \${CPPFLAGS}\"\n" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	printf "\t;;\n" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	printf "\t*)\n" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${VIRTEX5FXT_CONFIGURE_AC}"
@@ -1131,10 +1129,10 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_CACTI(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "AX_BOOST_BASE([1.53.0], AC_MSG_NOTICE([boost >= 1.53.0 found.]), AC_MSG_ERROR([boost >= 1.53.0 not found.]))" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "CPPFLAGS=\"\${BOOST_CPPFLAGS} \${CPPFLAGS}\"" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "LDFLAGS=\"\${BOOST_LDFLAGS} \${LDFLAGS}\"" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}\"], [path of shared data relative to bin directory])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
@@ -1145,8 +1143,8 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "Generating virtex5fxt Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "libvirtex5fxt_${AM_VIRTEX5FXT_VERSION}_a_SOURCES = ${UNISIM_LIB_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "noinst_LIBRARIES = libunisim-virtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "libunisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_a_SOURCES = ${UNISIM_LIB_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "bin_PROGRAMS = unisim-virtex5fxt-wfpu-${VIRTEX5FXT_VERSION}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	if [ "${LIGHT_DIST}" != "yes" ]; then
 		echo " unisim-virtex5fxt-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wocache-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wocache-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-wocache-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-wocache-debug-${VIRTEX5FXT_VERSION}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
@@ -1154,7 +1152,7 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 		echo "" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	fi
 	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_LDADD = libunisim-virtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	if [ "${LIGHT_DIST}" != "yes" ]; then
 		echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_SOURCES = main.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 		echo "unisim_virtex5fxt_wocache_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wocache.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
@@ -1163,13 +1161,13 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 		echo "unisim_virtex5fxt_wocache_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wocache_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 		echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 		echo "unisim_virtex5fxt_wfpu_wocache_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu_wocache_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-		echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-		echo "unisim_virtex5fxt_wocache_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-		echo "unisim_virtex5fxt_wfpu_wocache_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-		echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-		echo "unisim_virtex5fxt_wocache_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-		echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-		echo "unisim_virtex5fxt_wfpu_wocache_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+		echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_LDADD = libunisim-virtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+		echo "unisim_virtex5fxt_wocache_${AM_VIRTEX5FXT_VERSION}_LDADD = libunisim-virtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+		echo "unisim_virtex5fxt_wfpu_wocache_${AM_VIRTEX5FXT_VERSION}_LDADD = libunisim-virtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+		echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libunisim-virtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+		echo "unisim_virtex5fxt_wocache_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libunisim-virtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+		echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libunisim-virtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+		echo "unisim_virtex5fxt_wfpu_wocache_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libunisim-virtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	fi
 
 	echo "noinst_HEADERS = ${UNISIM_LIB_VIRTEX5FXT_HEADER_FILES} ${UNISIM_LIB_VIRTEX5FXT_TEMPLATE_FILES} ${UNISIM_SIMULATORS_VIRTEX5FXT_HEADER_FILES} ${UNISIM_SIMULATORS_VIRTEX5FXT_TEMPLATE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"

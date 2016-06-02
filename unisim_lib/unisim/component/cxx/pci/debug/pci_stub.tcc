@@ -558,7 +558,7 @@ bool PCIStub<ADDRESS>::ServeWrite(ADDRESS addr, const void *buffer, uint32_t siz
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeReadRegister(const char *name, uint32_t& value)
 {
-	unisim::util::debug::Register *reg = registers_import->GetRegister(name);
+	unisim::service::interfaces::Register *reg = registers_import->GetRegister(name);
 	if(!reg) return false;
 	if(reg->GetSize() != sizeof(value)) return false;
 	reg->GetValue(&value);
@@ -568,7 +568,7 @@ bool PCIStub<ADDRESS>::ServeReadRegister(const char *name, uint32_t& value)
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeWriteRegister(const char *name, uint32_t value)
 {
-	unisim::util::debug::Register *reg = registers_import->GetRegister(name);
+	unisim::service::interfaces::Register *reg = registers_import->GetRegister(name);
 	if(!reg) return false;
 	if(reg->GetSize() != sizeof(value)) return false;
 	reg->SetValue(&value);

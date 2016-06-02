@@ -33,159 +33,170 @@
  */
 
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/kernel/logger/logger_server.hh"
 
 #include <iostream>
-
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger_server.hh"
 
 namespace unisim {
 namespace kernel {
 namespace logger {
 
-Logger::Logger(const unisim::kernel::service::Object &obj) 
-    : buffer_()
-    , obj_(obj)
-    , mode_(NO_MODE) {
-	server_ = LoggerServer::GetInstance(obj_);
+unisim::kernel::logger::LoggerServer*
+Logger::StaticServerInstance()
+{
+  static LoggerServer logger_server;
+  return &logger_server;
 }
 
-Logger::~Logger() {
-	LoggerServer::RemoveInstance(obj_);
+unisim::kernel::logger::LoggerServer*
+Logger::GetServerInstance()
+{
+  if (not server_) {
+    server_ = StaticServerInstance();
+    server_->AddClient( this );
+  }
+  return server_;
 }
 
-Logger& operator <<(Logger& logger, std::ostream& (*f)(std::ostream &)) {
-	if (logger.mode_ == Logger::NO_MODE) return logger;
-	logger.buffer_ << f;
-	return logger;
+Logger::~Logger()
+{
+  server_->RemoveClient( this );
 }
 
-Logger& operator <<(Logger& logger, std::ios_base& (*f)(std::ios_base &)) {
-	if (logger.mode_ == Logger::NO_MODE) return logger;
-	logger.buffer_ << f;
-	return logger;
+Logger& operator <<(Logger& logger, std::ostream& (*f)(std::ostream &))
+{
+  if (logger.mode_ == Logger::NO_MODE) return logger;
+  logger.buffer_ << f;
+  return logger;
 }
 
-Logger& operator <<(Logger& logger, Logger& (*f)(Logger &)) {
-	return f(logger);
+Logger& operator <<(Logger& logger, std::ios_base& (*f)(std::ios_base &))
+{
+  if (logger.mode_ == Logger::NO_MODE) return logger;
+  logger.buffer_ << f;
+  return logger;
 }
 
-std::ostream& Logger::GetStream() {
-  return buffer_;
+Logger& operator <<(Logger& logger, Logger& (*f)(Logger &))
+{
+  return f(logger);
 }
 
-void Logger::PrintMode() {
-  std::cerr << "Current mode (" << obj_.GetName() << "): ";
-	switch (mode_) {
-	case NO_MODE:
-    std::cerr << "NO_MODE";
-		break;
-	case INFO_MODE:
-    std::cerr << "INFO_MODE";
-		break;
-	case WARNING_MODE:
-    std::cerr << "WARNING_MODE";
-		break;
-	case ERROR_MODE:
-    std::cerr << "ERROR_MODE";
-		break;
-	}
+void Logger::PrintMode()
+{
+  std::cerr << "Current mode (" << name << "): ";
+  switch (mode_) {
+  default:           std::cerr << "?_MODE"; break;
+  case NO_MODE:      std::cerr << "NO_MODE"; break;
+  case INFO_MODE:    std::cerr << "INFO_MODE"; break;
+  case WARNING_MODE: std::cerr << "WARNING_MODE"; break;
+  case ERROR_MODE:   std::cerr << "ERROR_MODE"; break;
+  }
   std::cerr << std::endl;
 }
 
-void Logger::DebugInfo() {
-	if (mode_ != NO_MODE) {
-		return;
-	}
-	mode_ = INFO_MODE;
-	buffer_.clear();
-	buffer_.str("");
+void Logger::DebugInfo()
+{
+  if (mode_ != NO_MODE) return;
+  mode_ = INFO_MODE;
+  buffer_.clear();
+  buffer_.str("");
 }
 
 void Logger::EndDebugInfo() {
-	if (mode_ != INFO_MODE) {
-		return;
-	}
-	mode_ = NO_MODE;
-  	server_->DebugInfo(obj_, buffer_.str().c_str());
+  if (mode_ != INFO_MODE) return;
+  mode_ = NO_MODE;
+  server_->DebugInfo(name, buffer_.str().c_str());
 }
 
-void Logger::DebugWarning() {
-	if (mode_ != NO_MODE) return;
-	mode_ = WARNING_MODE;
-	buffer_.clear();
-	buffer_.str("");
+void Logger::DebugWarning()
+{
+  if (mode_ != NO_MODE) return;
+  mode_ = WARNING_MODE;
+  buffer_.clear();
+  buffer_.str("");
 }
 
-void Logger::EndDebugWarning() {
-	if (mode_ != WARNING_MODE) return;
-	mode_ = NO_MODE;
-  	server_->DebugWarning(obj_, buffer_.str().c_str());
+void Logger::EndDebugWarning()
+{
+  if (mode_ != WARNING_MODE) return;
+  mode_ = NO_MODE;
+  server_->DebugWarning(name, buffer_.str().c_str());
 }
 
-void Logger::DebugError() {
-	if (mode_ != NO_MODE) return;
-	mode_ = ERROR_MODE;
-	buffer_.clear();
-	buffer_.str("");
+void Logger::DebugError()
+{
+  if (mode_ != NO_MODE) return;
+  mode_ = ERROR_MODE;
+  buffer_.clear();
+  buffer_.str("");
 }
 
-void Logger::EndDebugError() {
-	if (mode_ != ERROR_MODE) return;
-	mode_ = NO_MODE;
-  	server_->DebugError(obj_, buffer_.str().c_str());
+void Logger::EndDebugError()
+{
+  if (mode_ != ERROR_MODE) return;
+  mode_ = NO_MODE;
+  server_->DebugError(name, buffer_.str().c_str());
 }
 
-void Logger::EndDebug() {
-	switch (mode_) {
-	case NO_MODE:
-		/* nothing to do */
-		break;
-	case INFO_MODE:
-		EndDebugInfo();
-		break;
-	case WARNING_MODE:
-		EndDebugWarning();
-		break;
-	case ERROR_MODE:
-		EndDebugError();
-		break;
-	}
+void Logger::EndDebug()
+{
+  switch (mode_) {
+  case NO_MODE:
+    /* nothing to do */
+    break;
+  case INFO_MODE:
+    EndDebugInfo();
+    break;
+  case WARNING_MODE:
+    EndDebugWarning();
+    break;
+  case ERROR_MODE:
+    EndDebugError();
+    break;
+  }
 }
 
-Logger& DebugInfo(Logger &l) {
-	l.DebugInfo();
-	return l;
+Logger& DebugInfo(Logger &l)
+{
+  l.DebugInfo();
+  return l;
 }
 
-Logger& EndDebugInfo(Logger &l) {
-	l.EndDebugInfo();
-	return l;
+Logger& EndDebugInfo(Logger &l)
+{
+  l.EndDebugInfo();
+  return l;
 }
 
-Logger& DebugWarning(Logger &l) {
-	l.DebugWarning();
-	return l;
+Logger& DebugWarning(Logger &l)
+{
+  l.DebugWarning();
+  return l;
 }
 
-Logger& EndDebugWarning(Logger &l) {
-	l.EndDebugWarning();
-	return l;
+Logger& EndDebugWarning(Logger &l)
+{
+  l.EndDebugWarning();
+  return l;
 }
 
-Logger& DebugError(Logger &l) {
-	l.DebugError();
-	return l;
+Logger& DebugError(Logger &l)
+{
+  l.DebugError();
+  return l;
 }
 
-Logger& EndDebugError(Logger &l) {
-	l.EndDebugError();
-	return l;
+Logger& EndDebugError(Logger &l)
+{
+  l.EndDebugError();
+  return l;
 }
 
-Logger& EndDebug(Logger &l) {
-	l.EndDebug();
-	return l;
+Logger& EndDebug(Logger &l)
+{
+  l.EndDebug();
+  return l;
 }
 
 } // end of namespace logger

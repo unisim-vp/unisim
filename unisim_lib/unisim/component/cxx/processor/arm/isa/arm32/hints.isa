@@ -48,6 +48,10 @@ nop.disasm = {
   buffer << "nop" << DisasmCondition(cond) << "\t{" << idx << "}";
 };
 
+nop.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+};
+
 /*
  * end of nop instruction
  *******************************************************************/
@@ -125,36 +129,33 @@ dbg.disasm = {
 /* DMB instruction */
 
 op dmb( 0b1111[4]: 0b01010111[8]: 0b1111[4]: 0b1111[4]: 0b0000[4]: 0b0101[4]: opt[4] );
+dmb.var reject : {Reject} = {(opt & 2) == 0};
 
 dmb.disasm = {
-  if (0x3333 >> opt) { buffer << "<undefined>"; return; }
   buffer << "dmb\t" << DisasmBarrierOption( opt );
 };
 
-dmb.execute = {
-};
+dmb.execute = {};
 
 /* DSB instruction */
 
 op dsb( 0b1111[4]: 0b01010111[8]: 0b1111[4]: 0b1111[4]: 0b0000[4]: 0b0100[4]: opt[4] );
+dsb.var reject : {Reject} = {(opt & 2) == 0};
 
 dsb.disasm = {
-  if (0x3333 >> opt) { buffer << "<undefined>"; return; }
   buffer << "dsb\t" << DisasmBarrierOption( opt );
 };
 
-dsb.execute = {
-};
+dsb.execute = {};
 
 /* ISB instruction */
 
 op isb( 0b1111[4]: 0b01010111[8]: 0b1111[4]: 0b1111[4]: 0b0000[4]: 0b0110[4]: opt[4] );
+isb.var reject : {Reject} = {opt != 15};
 
 isb.disasm = {
-  if (opt != 15) { buffer << "<undefined>"; return; }
   buffer << "isb\t" << DisasmBarrierOption( opt );
 };
 
-isb.execute = {
-};
+isb.execute = {};
 

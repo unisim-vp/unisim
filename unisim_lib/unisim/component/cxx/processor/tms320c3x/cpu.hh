@@ -228,7 +228,7 @@ public:
 	 * @param  name   The name of the requested register.
 	 * @return        A pointer to the RegisterInterface corresponding to name.
 	 */
-	virtual unisim::util::debug::Register *GetRegister(const char *name);
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
 
     //===============================================================
 	//= CPURegistersInterface interface methods                STOP =
@@ -463,7 +463,7 @@ public:
 
 private:
 	/** The registers interface for debugging purpose */
-	std::map<std::string, unisim::util::debug::Register *> registers_registry;
+	std::map<std::string, unisim::service::interfaces::Register *> registers_registry;
 	/** indicates if the memory accesses require to be reported */
 	bool requires_memory_access_reporting;
 	/** indicates if the finished instructions require to be reported */

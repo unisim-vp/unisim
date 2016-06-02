@@ -43,18 +43,40 @@
  * floating-point version only clears the sign bit.
  */
 
-op vabs_f32s( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b0000[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b11[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
-vabs_f32s.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
+op vabs_f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b0000[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b11[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
+vabs_f32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
 
-vabs_f32s.disasm = {
+vabs_f32.disasm = {
   buffer << "vabs.f32\ts" << vd << ", s" << vm;
 };
 
-op vabs_f64d( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b1011[4]: 0b11[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vabs_f64d.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
+vabs_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
 
-vabs_f64d.disasm = {
+  typename ARCH::F32 op = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FloatAbs( res, op, fpscr );
+  
+  cpu.SetVSR( vd, res );
+};
+
+op vabs_f64( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b1011[4]: 0b11[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vabs_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
+
+vabs_f64.disasm = {
   buffer << "vabs.f64\td" << vd << ", d" << vm;
+};
+
+vabs_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FloatAbs( res, op, fpscr );
+  
+  cpu.SetVDR( vd, res );
 };
 
 /* VADD; Vector Add adds corresponding elements in two vectors, and
@@ -68,11 +90,33 @@ vadd_f32.disasm = {
   buffer << "vadd.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vadd_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPAdd( res, op1, op2, fpscr );
+  
+  cpu.SetVSR( vd, res );
+};
+
 op vadd_f64( 0b11101110[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vadd_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
 
 vadd_f64.disasm = {
   buffer << "vadd.f64\td" << vd << ", d" << vn << ", d" << vm;
+};
+
+vadd_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPAdd( res, op1, op2, fpscr );
+  
+  cpu.SetVDR( vd, res );
 };
 
 /* VCMP, VCMPE; Compares two floating-point registers, or one floating-point register and zero. It writes the result to
@@ -86,12 +130,28 @@ vcmp_f32d.disasm = {
   buffer << "vcmp" << (e?"e":"") << ".f32\ts" << vd << ", s" << vm;
 };
 
+vcmp_f32d.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op1 = cpu.GetVSR( vd ), op2 = cpu.GetVSR( vm );
+  
+  FPCompare( op1, op2, e, cpu.FPSCR() );
+};
+
 op vcmp_f64d( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0100[4]:> <: vd0[4]: 0b1011[4]: e[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vcmp_f64d.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
 
 vcmp_f64d.disasm = {
   buffer << "vcmp" << (e?"e":"") << ".f64\td" << vd << ", d" << vm;
 };
+
+vcmp_f64d.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op1 = cpu.GetVDR( vd ), op2 = cpu.GetVDR( vm );
+  
+  FPCompare( op1, op2, e, cpu.FPSCR() );
+}
 
 op vcmp_f32i( 0b11101110[8]: 0b1[1]: vd1[1]: 0b11[2]: 0b0101[4]:> <: shl<1> vd0[4]: 0b1010[4]: e[1]: 0b100[3]: 0b0000[4] );
 vcmp_f32i.var vd : {uint32_t} = {vd1|vd0};
@@ -100,12 +160,28 @@ vcmp_f32i.disasm = {
   buffer << "vcmp" << (e?"e":"") << ".f32\ts" << vd << ", #0.0";
 };
 
+vcmp_f32i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op1 = cpu.GetVSR( vd ), op2( 0 );
+  
+  FPCompare( op1, op2, e, cpu.FPSCR() );
+};
+
 op vcmp_f64i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0101[4]:> <: vd0[4]: 0b1011[4]: e[1]: 0b100[3]: 0b0000[4] );
 vcmp_f64i.var vd : {uint32_t} = {vd1|vd0};
 
 vcmp_f64i.disasm = {
   buffer << "vcmp" << (e?"e":"") << ".f64\td" << vd << ", #0.0";
 };
+
+vcmp_f64i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op1 = cpu.GetVDR( vd ), op2( 0 );
+  
+  FPCompare( op1, op2, e, cpu.FPSCR() );
+}
 
 /* VCVT, VCVTR (Convert between floating-point and integer, Floating-point) */
 
@@ -116,11 +192,33 @@ vcvt_f32u32.disasm = {
   buffer << "vcvt.f32.u32\ts" << vd << ", s" << vm;
 };
 
+vcvt_f32u32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 op = cpu.GetVU32( vm );
+  typename ARCH::F32 res;
+  
+  FloatItoF( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVSR( vd, res );
+};
+
 op vcvt_f64u32( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b1011[4]: 0b01[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
 vcvt_f64u32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f64u32.disasm = {
   buffer << "vcvt.f64.u32\td" << vd << ", s" << vm;
+};
+
+vcvt_f64u32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 op = cpu.GetVU32( vm );
+  typename ARCH::F64 res;
+  
+  FloatItoF( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVDR( vd, res );
 };
 
 op vcvt_f32s32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1000[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b11[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -130,11 +228,33 @@ vcvt_f32s32.disasm = {
   buffer << "vcvt.f32.s32\ts" << vd << ", s" << vm;
 };
 
+vcvt_f32s32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( vm ) );
+  typename ARCH::F32 res;
+  
+  FloatItoF( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVSR( vd, res );
+};
+
 op vcvt_f64s32( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1000[4]:> <: vd0[4]: 0b1011[4]: 0b11[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
 vcvt_f64s32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f64s32.disasm = {
   buffer << "vcvt.f64.s32\td" << vd << ", s" << vm;
+};
+
+vcvt_f64s32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( vm ) );
+  typename ARCH::F64 res;
+  
+  FloatItoF( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVDR( vd, res );
 };
 
 op vcvt_u32f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1100[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b11[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -144,25 +264,15 @@ vcvt_u32f32.disasm = {
   buffer << "vcvt.u32.f32\ts" << vd << ", s" << vm;
 };
 
-op vcvt_u32f64( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1100[4]:> <: shl<1> vd1[4]: 0b1011[4]: 0b11[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vcvt_u32f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
-
-vcvt_u32f64.disasm = {
-  buffer << "vcvt.u32.f64\ts" << vd << ", d" << vm;
-};
-
-op vcvt_s32f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1101[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b11[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
-vcvt_s32f32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
-
-vcvt_s32f32.disasm = {
-  buffer << "vcvt.s32.f32\ts" << vd << ", s" << vm;
-};
-
-op vcvt_s32f64( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1101[4]:> <: shl<1> vd1[4]: 0b1011[4]: 0b11[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vcvt_s32f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
-
-vcvt_s32f64.disasm = {
-  buffer << "vcvt.s32.f64\ts" << vd << ", d" << vm;
+vcvt_u32f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op = cpu.GetVSR( vm );
+  typename ARCH::U32 res;
+  
+  FloatFtoI( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, res );
 };
 
 op vcvtr_u32f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1100[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b01[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -172,11 +282,71 @@ vcvtr_u32f32.disasm = {
   buffer << "vcvtr.u32.f32\ts" << vd << ", s" << vm;
 };
 
+vcvtr_u32f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op = cpu.GetVSR( vm );
+  typename ARCH::U32 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, res );
+};
+
+op vcvt_u32f64( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1100[4]:> <: shl<1> vd1[4]: 0b1011[4]: 0b11[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vcvt_u32f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
+
+vcvt_u32f64.disasm = {
+  buffer << "vcvt.u32.f64\ts" << vd << ", d" << vm;
+};
+
+vcvt_u32f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vm );
+  typename ARCH::U32 res;
+  
+  FloatFtoI( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, res );
+};
+
 op vcvtr_u32f64( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1100[4]:> <: shl<1> vd1[4]: 0b1011[4]: 0b01[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vcvtr_u32f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
 
 vcvtr_u32f64.disasm = {
   buffer << "vcvtr.u32.f64\ts" << vd << ", d" << vm;
+};
+
+vcvtr_u32f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vm );
+  typename ARCH::U32 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, res );
+};
+
+op vcvt_s32f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1101[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b11[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
+vcvt_s32f32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
+
+vcvt_s32f32.disasm = {
+  buffer << "vcvt.s32.f32\ts" << vd << ", s" << vm;
+};
+
+vcvt_s32f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op = cpu.GetVSR( vm );
+  typename ARCH::S32 res;
+  
+  FloatFtoI( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
 
 op vcvtr_s32f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1101[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b01[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -186,11 +356,53 @@ vcvtr_s32f32.disasm = {
   buffer << "vcvtr.s32.f32\ts" << vd << ", s" << vm;
 };
 
+vcvtr_s32f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op = cpu.GetVSR( vm );
+  typename ARCH::S32 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
+};
+
+op vcvt_s32f64( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1101[4]:> <: shl<1> vd1[4]: 0b1011[4]: 0b11[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vcvt_s32f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
+
+vcvt_s32f64.disasm = {
+  buffer << "vcvt.s32.f64\ts" << vd << ", d" << vm;
+};
+
+vcvt_s32f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vm );
+  typename ARCH::S32 res;
+  
+  FloatFtoI( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
+};
+
 op vcvtr_s32f64( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1101[4]:> <: shl<1> vd1[4]: 0b1011[4]: 0b01[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vcvtr_s32f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
 
 vcvtr_s32f64.disasm = {
   buffer << "vcvtr.s32.f64\ts" << vd << ", d" << vm;
+};
+
+vcvtr_s32f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vm );
+  typename ARCH::S32 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, 0, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
 
 /* VCVT (Convert between floating-point and fixed-point, Floating-point) */
@@ -199,112 +411,304 @@ op vcvt_f32s16i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1010[4]:> <: shl<1> v
 vcvt_f32s16i.var imm : {int32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f32s16i.disasm = {
-  buffer << "vcvt.f32.s16\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt.f32.s16\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_f32s16i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::S32 op = typename ARCH::S32( typename ARCH::S16( cpu.GetVU32( vd ) ) );
+  typename ARCH::F32 res;
+  
+  // TODO: Rounding
+  FloatItoF( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVSR( vd, res );
 };
 
 op vcvt_f32s32i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1010[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b11[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_f32s32i.var imm : {int32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f32s32i.disasm = {
-  buffer << "vcvt.f32.s32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt.f32.s32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_f32s32i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( vd ) );
+  typename ARCH::F32 res;
+  
+  // TODO: Rounding
+  FloatItoF( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVSR( vd, res );
 };
 
 op vcvt_f64s16i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b1011[4]: 0b01[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_f64s16i.var imm : {uint32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f64s16i.disasm = {
-  buffer << "vcvt.f64.s16\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt.f64.s16\td" << vd << ", d" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_f64s16i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::S32 op = typename ARCH::S32( typename ARCH::S16( cpu.GetVU32( 2*vd ) ) );
+  typename ARCH::F32 res;
+  
+  // TODO: Rounding
+  FloatItoF( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVDR( vd, res );
 };
 
 op vcvt_f64s32i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1010[4]:> <: vd0[4]: 0b1011[4]: 0b11[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_f64s32i.var imm : {uint32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f64s32i.disasm = {
-  buffer << "vcvt.f64.s32\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt.f64.s32\td" << vd << ", d" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_f64s32i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( 2*vd ) );
+  typename ARCH::F32 res;
+  
+  // TODO: Rounding
+  FloatItoF( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVSR( vd, res );
 };
 
 op vcvt_f32u16i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1011[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b01[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_f32u16i.var imm : {int32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f32u16i.disasm = {
-  buffer << "vcvt.f32.u16\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt.f32.u16\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_f32u16i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 op = typename ARCH::U32( typename ARCH::U16( cpu.GetVU32( vd ) ) );
+  typename ARCH::F32 res;
+  
+  // TODO: Rounding
+  FloatItoF( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVSR( vd, res );
 };
 
 op vcvt_f32u32i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1011[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b11[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_f32u32i.var imm : {int32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f32u32i.disasm = {
-  buffer << "vcvt.f32.u32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt.f32.u32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_f32u32i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 op = cpu.GetVU32( vd );
+  typename ARCH::F32 res;
+  
+  // TODO: Rounding
+  FloatItoF( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVSR( vd, res );
 };
 
 op vcvt_f64u16i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1011[4]:> <: vd0[4]: 0b1011[4]: 0b01[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_f64u16i.var imm : {uint32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f64u16i.disasm = {
-  buffer << "vcvt.f64.u16\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt.f64.u16\td" << vd << ", d" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_f64u16i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 op = typename ARCH::U32( typename ARCH::U16( cpu.GetVU32( 2*vd ) ) );
+  typename ARCH::F32 res;
+  
+  // TODO: Rounding
+  FloatItoF( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVDR( vd, res );
 };
 
 op vcvt_f64u32i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1011[4]:> <: vd0[4]: 0b1011[4]: 0b11[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_f64u32i.var imm : {uint32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_f64u32i.disasm = {
-  buffer << "vcvt.f64.u32\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt.f64.u32\td" << vd << ", d" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_f64u32i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 op = typename ARCH::U32( cpu.GetVU32( 2*vd ) );
+  typename ARCH::F64 res;
+  
+  // TODO: Rounding
+  FloatItoF( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVDR( vd, res );
 };
 
 op vcvt_s16f32i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1110[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b01[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_s16f32i.var imm : {int32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_s16f32i.disasm = {
-  buffer << "vcvt.s16.f32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt.s16.f32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_s16f32i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op = cpu.GetVSR( vd );
+  typename ARCH::S16 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, typename ARCH::U32( typename ARCH::S32( res ) ) );
 };
 
 op vcvt_s16f64i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1110[4]:> <: vd0[4]: 0b1011[4]: 0b01[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_s16f64i.var imm : {uint32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_s16f64i.disasm = {
-  buffer << "vcvt.s16.f64\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt.s16.f64\td" << vd << ", d" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_s16f64i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vd );
+  typename ARCH::S16 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVU64( vd, typename ARCH::U64( typename ARCH::S64( res ) ) );
 };
 
 op vcvt_s32f32i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1110[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b11[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_s32f32i.var imm : {int32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_s32f32i.disasm = {
-  buffer << "vcvt.s32.f32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt.s32.f32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_s32f32i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op = cpu.GetVSR( vd );
+  typename ARCH::S32 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
 
 op vcvt_s32f64i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1110[4]:> <: vd0[4]: 0b1011[4]: 0b11[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_s32f64i.var imm : {uint32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_s32f64i.disasm = {
-  buffer << "vcvt.s32.f64\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt.s32.f64\td" << vd << ", d" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_s32f64i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vd );
+  typename ARCH::S32 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, typename ARCH::U64( typename ARCH::S64( res ) ) );
 };
 
 op vcvt_u16f32i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1111[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b01[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_u16f32i.var imm : {int32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_u16f32i.disasm = {
-  buffer << "vcvt.u16.f32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt.u16.f32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_u16f32i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op = cpu.GetVSR( vd );
+  typename ARCH::U16 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
 
 op vcvt_u16f64i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1111[4]:> <: vd0[4]: 0b1011[4]: 0b01[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_u16f64i.var imm : {uint32_t} = {16-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_u16f64i.disasm = {
-  buffer << "vcvt.u16.f64\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt.u16.f64\td" << vd << ", d" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_u16f64i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vd );
+  typename ARCH::U16 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVU64( vd, typename ARCH::U64( res ) );
 };
 
 op vcvt_u32f32i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1111[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b11[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_u32f32i.var imm : {int32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_u32f32i.disasm = {
-  buffer << "vcvt.u32.f32\ts" << vd << ", s" << vd << ", #" << imm;
+  buffer << "vcvt.u32.f32\ts" << vd << ", s" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_u32f32i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op = cpu.GetVSR( vd );
+  typename ARCH::U32 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, res );
 };
 
 op vcvt_u32f64i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b1111[4]:> <: vd0[4]: 0b1011[4]: 0b11[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
 vcvt_u32f64i.var imm : {uint32_t} = {32-(imm1|imm0)}, vd : {uint32_t} = {vd1|vd0};
 
 vcvt_u32f64i.disasm = {
-  buffer << "vcvt.u32.f64\td" << vd << ", d" << vd << ", #" << imm;
+  buffer << "vcvt.u32.f64\td" << vd << ", d" << vd << ", " << DisasmI(imm);
+};
+
+vcvt_u32f64i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vd );
+  typename ARCH::U32 res;
+  
+  // TODO: Rounding
+  FloatFtoI( res, op, imm, cpu.FPSCR() );
+  
+  cpu.SetVU32( vd, typename ARCH::U64( res ) );
 };
 
 /* VCVT (Convert between double-precision and single-precision) */
@@ -316,6 +720,17 @@ vcvt_f64f32.disasm = {
   buffer << "vcvt.f64.f32\td" << vd << ", s" << vm;
 };
 
+vcvt_f64f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op = cpu.GetVSR( vm );
+  typename ARCH::F64 res;
+  
+  FloatFtoF( res, op, cpu.FPSCR() );
+  
+  cpu.SetVDR( vd, typename ARCH::U32( res ) );
+};
+
 op vcvt_f32f64( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b0111[4]:> <: shl<1> vd1[4]: 0b1011[4]: 0b11[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vcvt_f32f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
 
@@ -323,20 +738,15 @@ vcvt_f32f64.disasm = {
   buffer << "vcvt.f32.f64\ts" << vd << ", d" << vm;
 };
 
-/* VCVTB, VCVTT (Convert between halfword precision (Bottom or Top) and single precision) */
-
-op vcvtb_f16f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b0011[4]:> <: shl<1> vd1[4]: 0b1010[4]: t[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
-vcvtb_f16f32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
-
-vcvtb_f16f32.disasm = {
-  buffer << "vcvt" << (t?"t":"b") << ".f16.f32\ts" << vd << ", s" << vm;
-};
-
-op vcvtb_f32f16( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b0010[4]:> <: shl<1> vd1[4]: 0b1010[4]: t[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
-vcvtb_f32f16.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
-
-vcvtb_f32f16.disasm = {
-  buffer << "vcvt" << (t?"t":"b") << ".f32.f16\ts" << vd << ", s" << vm;
+vcvt_f32f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vm );
+  typename ARCH::F32 res;
+  
+  FloatFtoF( res, op, cpu.FPSCR() );
+  
+  cpu.SetVSR( vd, res );
 };
 
 /* VDIV */
@@ -348,11 +758,33 @@ vdiv_f32.disasm = {
   buffer << "vdiv.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vdiv_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPDiv( res, op1, op2, fpscr );
+
+  cpu.SetVSR( vd, res );
+};
+
 op vdiv_f64( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vdiv_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
 
 vdiv_f64.disasm = {
   buffer << "vdiv.f64\td" << vd << ", d" << vn << ", d" << vm;
+};
+
+vdiv_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPDiv( res, op1, op2, fpscr );
+  
+  cpu.SetVDR( vd, res );
 };
 
 /* VFMA, VFMS; Vector Fused Multiply Accumulate, Vector Fused Multiply Substract */
@@ -364,11 +796,33 @@ vfma_f32.disasm = {
   buffer << "vfma.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vfma_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMulAdd( acc, op1, op2, fpscr );
+  
+  cpu.SetVSR( vd, acc );
+};
+
 op vfma_f64( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vfma_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
 
 vfma_f64.disasm = {
   buffer << "vfma.f64\td" << vd << ", d" << vn << ", d" << vm;
+};
+
+vfma_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMulAdd( acc, op1, op2, fpscr );
+  
+  cpu.SetVDR( vd, acc );
 };
 
 op vfms_f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b10[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -378,11 +832,35 @@ vfms_f32.disasm = {
   buffer << "vfms.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vfms_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FloatNeg( op1, op1, fpscr );
+  FPMulAdd( acc, op1, op2, fpscr );
+  
+  cpu.SetVSR( vd, acc );
+};
+
 op vfms_f64( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vfms_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
 
 vfms_f64.disasm = {
   buffer << "vfms.f64\td" << vd << ", d" << vn << ", d" << vm;
+};
+
+vfms_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FloatNeg( op1, op1, fpscr );
+  FPMulAdd( acc, op1, op2, fpscr );
+  
+  cpu.SetVDR( vd, acc );
 };
 
 /* VFNMA, VFNMS; Vector Fused Negate Multiply Accumulate, Vector Fused Negate Multiply Substract */
@@ -394,11 +872,35 @@ vfnma_f32.disasm = {
   buffer << "vfnma.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vfnma_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FloatNeg( acc, acc, fpscr );
+  FPMulAdd( acc, op1, op2, fpscr );
+  
+  cpu.SetVSR( vd, acc );
+};
+
 op vfnma_f64( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vfnma_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
 
 vfnma_f64.disasm = {
   buffer << "vfnma.f64\td" << vd << ", d" << vn << ", d" << vm;
+};
+
+vfnma_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FloatNeg( acc, acc, fpscr );
+  FPMulAdd( acc, op1, op2, fpscr );
+  
+  cpu.SetVDR( vd, acc );
 };
 
 op vfnms_f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b01[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b0[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -408,6 +910,19 @@ vfnms_f32.disasm = {
   buffer << "vfnms.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vfnms_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FloatNeg( acc, acc, fpscr );
+  FloatNeg( op1, op1, fpscr );
+  FPMulAdd( acc, op1, op2, fpscr );
+  
+  cpu.SetVSR( vd, acc );
+};
+
 op vfnms_f64( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vfnms_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
 
@@ -415,94 +930,190 @@ vfnms_f64.disasm = {
   buffer << "vfnms.f64\td" << vd << ", d" << vn << ", d" << vm;
 };
 
+vfnms_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FloatNeg( acc, acc, fpscr );
+  FloatNeg( op1, op1, fpscr );
+  FPMulAdd( acc, op1, op2, fpscr );
+  
+  cpu.SetVDR( vd, acc );
+};
+
 /* VLDM; Vector Load Multiple loads multiple extension registers from
  * consecutive memory locations using an address from an ARM core
  * register.
  */
 
-op vldmdb_f32( 0b1110110[7]: 0b1[1]: 0b0[1]: vd0[1]: 0b11[2]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: soff[8] );
+op vldmdb_f32( 0b1110110[7]: 0b1[1]: 0b0[1]: vd0[1]: 0b11[2]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: regs[8] );
 vldmdb_f32.var vd : {uint32_t} = {vd1|vd0};
 
 vldmdb_f32.disasm = {
   buffer << "vldmdb\t" << DisasmRegister(rn) << "!, ";
-  int32_t send = ((int32_t)(vd + soff))-1;
-  if (soff == 1) buffer << "{s" << vd << "}";
-  else           buffer << "{s" << vd << "-s" << send << "}";
+  int32_t send = ((int32_t)(vd + regs))-1;
+  if      (regs == 0) buffer << "{}";
+  else if (regs == 1) buffer << "{d" << vd << "}";
+  else                buffer << "{d" << vd << "-d" << send << "}";
 };
 
-op vldmdb_f64( 0b1110110[7]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: rn[4]:> <: vd0[4]: 0b1011[4]: ?[1]: doff[6]: 0b0[1] );
+vldmdb_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 2 );
+  cpu.SetGPR( rn, address  );
+                     
+  for (unsigned reg = 0; reg < regs; ++reg) {
+    cpu.SetVU32( vd + reg, cpu.MemRead32( address ) );
+    address += 4;
+  }
+};
+
+op vldmdb_f64( 0b1110110[7]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: rn[4]:> <: vd0[4]: 0b1011[4]: regs[7]: fldm[1] );
 vldmdb_f64.var vd : {uint32_t} = {vd1|vd0};
 
 vldmdb_f64.disasm = {
-  buffer << "vldmdb\t" << DisasmRegister(rn) << "!, ";
-  int32_t dend = ((int32_t)(vd + doff))-1;
-  if (doff == 1)      buffer << "{d" << vd << "}";
-  else if (dend < 32) buffer << "{d" << vd << "-d" << dend << "}";
-  else                buffer << "{d" << vd << "-<overflow reg d" << dend << ">}";
+  if (not fldm) buffer << "vldmdb";
+  else          buffer << "fldmdbx";
+  buffer << "\t" << DisasmRegister(rn) << "!, ";
+  int32_t dend = ((int32_t)(vd + regs))-1;
+  if      (regs == 0) buffer << "{}";
+  else if (regs == 1) buffer << "{d" << vd << "}";
+  else                buffer << "{d" << vd << "-d" << dend << "}";
 };
 
-op fldmdbx( 0b1110110[7]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: rn[4]:> <: vd0[4]: 0b1011[4]: doff[7]: 0b1[1] );
-fldmdbx.var vd : {uint32_t} = {vd1|vd0};
-
-fldmdbx.disasm = {
-  int32_t dend = ((int32_t)(vd + doff))-1;
-  if (doff == 1) buffer << "fldmdbx\t" << DisasmRegister(rn) << "!, {d" << vd << "}";
-  else           buffer << "fldmdbx\t" << DisasmRegister(rn) << "!, {d" << vd << "-d" << dend << "}";
+vldmdb_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 3 );
+  cpu.SetGPR( rn, address );
+                     
+  for (unsigned reg = 0; reg < regs; ++reg) {
+    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( address + 0 ) );
+    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( address + 4 ) );
+    address += 8;
+  }
 };
 
-op vldmia_f32( 0b1110110[7]: 0b0[1]: 0b1[1]: vd0[1]: w[1]: 0b1[1]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: soff[8] );
+op vldmia_f32( 0b1110110[7]: 0b0[1]: 0b1[1]: vd0[1]: w[1]: 0b1[1]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: regs[8] );
 vldmia_f32.var vd : {uint32_t} = {vd1|vd0};
 
 vldmia_f32.disasm = {
-  if ((rn == 13) and w)
-    buffer << "vpop\t"; /* Syntaxic Sugar */
-  else
-    buffer << "vldmia\t" << DisasmRegister(rn) << (w?"!":"") << ", ";
-  int32_t send = ((int32_t)(vd + soff))-1;
-  if (soff == 1) buffer << "{s" << vd << "}";
-  else           buffer << "{s" << vd << "-s" << send << "}";
+  if ((rn == 13) and w)  buffer << "vpop\t"; /* Syntaxic Sugar */
+  else                   buffer << "vldmia\t" << DisasmRegister(rn) << (w?"!":"") << ", ";
+  int32_t send = ((int32_t)(vd + regs))-1;
+  if      (regs == 0) buffer << "{}";
+  else if (regs == 1) buffer << "{s" << vd << "}";
+  else                buffer << "{s" << vd << "-s" << send << "}";
 };
 
-op vldmia_f64( 0b1110110[7]: 0b0[1]: 0b1[1]: shl<4> vd1[1]: w[1]: 0b1[1]: rn[4]:> <: vd0[4]: 0b1011[4]: ?[1]: doff[6]: 0b0[1] );
+vldmia_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 address = cpu.GetGPR( rn );
+  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 2 ) );
+                     
+  for (unsigned reg = 0; reg < regs; ++reg) {
+    cpu.SetVU32( vd + reg, cpu.MemRead32( address ) );
+    address += 4;
+  }
+};
+
+op vldmia_f64( 0b1110110[7]: 0b0[1]: 0b1[1]: shl<4> vd1[1]: w[1]: 0b1[1]: rn[4]:> <: vd0[4]: 0b1011[4]: regs[7]: fldm[1] );
 vldmia_f64.var vd : {uint32_t} = {vd1|vd0};
 
 vldmia_f64.disasm = {
-  if ((rn == 13) and w)
-    buffer << "vpop\t";
-  else
-    buffer << "vldmia\t" << DisasmRegister(rn) << (w?"!":"") << ", ";
-  int32_t dend = ((int32_t)(vd + doff))-1;
-  if (doff == 1)      buffer << "{d" << vd << "}";
-  else if (dend < 32) buffer << "{d" << vd << "-d" << dend << "}";
-  else                buffer << "{d" << vd << "-<overflow reg d" << dend << ">}";
+  if (fldm)                   buffer << "fldmiax\t" << DisasmRegister(rn) << (w?"!":"") << ", ";
+  else if ((rn == 13) and w)  buffer << "vpop\t"; /* Syntaxic Sugar */
+  else                        buffer << "vldmia\t" << DisasmRegister(rn) << (w?"!":"") << ", ";
+  int32_t dend = ((int32_t)(vd + regs))-1;
+  if      (regs == 0) buffer << "{d" << vd << "}";
+  else if (regs == 1) buffer << "{d" << vd << "}";
+  else                buffer << "{d" << vd << "-d" << dend << "}";
 };
 
-op fldmiax( 0b1110110[7]: 0b0[1]: 0b1[1]: shl<4> vd1[1]: w[1]: 0b1[1]: rn[4]:> <: vd0[4]: 0b1011[4]: doff[7]: 0b1[1] );
-fldmiax.var vd : {uint32_t} = {vd1|vd0};
-
-fldmiax.disasm = {
-  buffer  << "fldmiax\t" << DisasmRegister(rn) << (w?"!":"") << ", ";
-  int32_t dend = ((int32_t)(vd + doff))-1;
-  if (doff == 1) buffer << "{d" << vd << "}";
-  else           buffer << "{d" << vd << "-d" << dend << "}";
+vldmia_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 address = cpu.GetGPR( rn );
+  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 3 ) );
+                     
+  for (unsigned reg = 0; reg < regs; ++reg) {
+    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( address + 0 ) );
+    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( address + 4 ) );
+    address += 8;
+  }
 };
 
 /* VLDR; loads an a single extension register from memory, using an
  * address from an ARM core register, with optional offset.
  */
 
-op vldr( 0b11101101[8]: u[1]: vd0[1]: 0b01[2]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: shl<2> offset[8] );
-vldr.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
+op vldr_32( 0b11101101[8]: u[1]: vd0[1]: 0b01[2]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: shl<2> offset[8] );
+vldr_32.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
+vldr_32.var reject : {Reject} = {rn == 15};
 
-vldr.disasm = {
+vldr_32.disasm = {
   buffer << "vldr\ts" << vd << ", " << DisasmMemoryRI(rn,imm,true,false);
 };
 
-op vldr_d( 0b11101101[8]: u[1]: shl<4> vd1[1]: 0b01[2]: rn[4]:> <: vd0[4]: 0b1011[4]: shl<2> offset[8] );
-vldr_d.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
+vldr_32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  
+  cpu.SetVU32( vd, cpu.MemRead32( addr ) );
+};
 
-vldr_d.disasm = {
+op vldr_literal_32( 0b11101101[8]: u[1]: vd0[1]: 0b01[2]: 0b1111[4]:> <: shl<1> vd1[4]: 0b1010[4]: shl<2> offset[8] );
+vldr_literal_32.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
+
+vldr_literal_32.disasm = {
+  buffer << "vldr\ts" << vd << ", [pc, " << DisasmI(imm) << "]";
+};
+
+vldr_literal_32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 addr = (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm);
+  
+  cpu.SetVU32( vd, cpu.MemRead32( addr ) );
+};
+
+op vldr_64( 0b11101101[8]: u[1]: shl<4> vd1[1]: 0b01[2]: rn[4]:> <: vd0[4]: 0b1011[4]: shl<2> offset[8] );
+vldr_64.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
+vldr_64.var reject : {Reject} = {rn == 15};
+
+vldr_64.disasm = {
   buffer << "vldr\td" << vd << ", " << DisasmMemoryRI(rn,imm,true,false);
+};
+
+vldr_64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  cpu.SetVU32( 2*vd+0, cpu.MemRead32( addr + 0 ) );
+  cpu.SetVU32( 2*vd+1, cpu.MemRead32( addr + 4 ) );
+};
+
+op vldr_literal_64( 0b11101101[8]: u[1]: shl<4> vd1[1]: 0b01[2]: 0b1111[4]:> <: vd0[4]: 0b1011[4]: shl<2> offset[8] );
+vldr_literal_64.var vd : {uint32_t} = {vd1|vd0}, imm : {int32_t} = {u?offset:-offset};
+
+vldr_literal_64.disasm = {
+  buffer << "vldr\td" << vd << ", [pc, " << DisasmI(imm) << "]";
+};
+
+vldr_literal_64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 addr = (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm);
+  
+  cpu.SetVU32( 2*vd+0, cpu.MemRead32( addr + 0 ) );
+  cpu.SetVU32( 2*vd+1, cpu.MemRead32( addr + 4 ) );
 };
 
 /* VMLA, VMLS; Multiplies corresponding elements in two vectors, and
@@ -517,11 +1128,35 @@ vmla_f32.disasm = {
   buffer << "vmla.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vmla_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( product, op1, op2, fpscr );
+  FPAdd( acc, acc, product, fpscr );
+  
+  cpu.SetVSR( vd, acc );
+};
+
 op vmla_f64( 0b11101110[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vmla_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd0|vd1}, vn : {uint32_t} = {vn1|vn0};
 
 vmla_f64.disasm = {
   buffer << "vmla.f64\td" << vd << ", d" << vn << ", d" << vm;
+};
+
+vmla_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( product, op1, op2, fpscr );
+  FPAdd( acc, acc, product, fpscr );
+  
+  cpu.SetVDR( vd, acc );
 };
 
 op vmls_f32( 0b11101110[8]: 0b0[1]: vd0[1]: 0b00[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -531,11 +1166,131 @@ vmls_f32.disasm = {
   buffer << "vmls.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vmls_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( product, op1, op2, fpscr );
+  FloatNeg( product, product, fpscr );
+  FPAdd( acc, acc, product, fpscr );
+  
+  cpu.SetVSR( vd, acc );
+};
+
 op vmls_f64( 0b11101110[8]: 0b0[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vmls_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd0|vd1}, vn : {uint32_t} = {vn1|vn0};
 
 vmls_f64.disasm = {
   buffer << "vmls.f64\td" << vd << ", d" << vn << ", d" << vm;
+};
+
+vmls_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( product, op1, op2, fpscr );
+  FloatNeg( product, product, fpscr );
+  FPAdd( acc, acc, product, fpscr );
+  
+  cpu.SetVDR( vd, acc );
+};
+
+/* VNMLA; Multiplies together two floating-point register values, adds
+ * the negation of the floating-point value in the destination
+ * register to the negation of the product, and writes the result back
+ * to the destination register.
+ */
+
+op vnmla_f32( 0b11101110[8]: 0b0[1]: vd0[1]: 0b01[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
+vnmla_f32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
+
+vnmla_f32.disasm = {
+  buffer << "vnmla.f32\ts" << vd << ", s" << vn << ", s" << vm;
+};
+
+vnmla_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( product, op1, op2, fpscr );
+  FloatNeg( product, product, fpscr );
+  FloatNeg( acc, acc, fpscr );
+  FPAdd( acc, acc, product, fpscr );
+  
+  cpu.SetVSR( vd, acc );
+};
+
+op vnmla_f64( 0b11101110[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vnmla_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
+
+vnmla_f64.disasm = {
+  buffer << "vnmla.f64\td" << vd << ", d" << vn << ", d" << vm;
+};
+
+vnmla_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( product, op1, op2, fpscr );
+  FloatNeg( product, product, fpscr );
+  FloatNeg( acc, acc, fpscr );
+  FPAdd( acc, acc, product, fpscr );
+  
+  cpu.SetVDR( vd, acc );
+};
+
+/* VNMLS; multiplies together two floating-point register values, adds
+ * the negation of the floating-point value in the destination
+ * register to the product, and writes the result back to the
+ * destination register.
+ */
+
+op vnmls_f32( 0b11101110[8]: 0b0[1]: vd0[1]: 0b01[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b0[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
+vnmls_f32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
+
+vnmls_f32.disasm = {
+  buffer << "vnmls.f32\ts" << vd << ", s" << vn << ", s" << vm;
+};
+
+vnmls_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( product, op1, op2, fpscr );
+  FloatNeg( acc, acc, fpscr );
+  FPAdd( acc, acc, product, fpscr );
+  
+  cpu.SetVSR( vd, acc );
+};
+
+op vnmls_f64( 0b11101110[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vnmls_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
+
+vnmls_f64.disasm = {
+  buffer << "vnmls.f64\td" << vd << ", d" << vn << ", d" << vm;
+};
+
+vnmls_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( product, op1, op2, fpscr );
+  FloatNeg( acc, acc, fpscr );
+  FPAdd( acc, acc, product, fpscr );
+  
+  cpu.SetVDR( vd, acc );
 };
 
 /* VMOV; Move immediate */
@@ -544,14 +1299,26 @@ op vmov_f32i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: n[1]: exp[3]:> <: shl<1> v
 vmov_f32i.var vd : {uint32_t} = {vd1|vd0}, fpimm : {float} = {(n?-1:1)*(float((0x10+man)<<(exp^4))/128)};
 
 vmov_f32i.disasm = {
-  buffer << "vmov.f32\ts" << vd << ", #" << uint32_t((n << 7) | (exp << 4) | man) << "; " << fpimm;
+  buffer << "vmov.f32\ts" << vd << ", " << DisasmI((n << 7) | (exp << 4) | man) << "; " << fpimm;
+};
+
+vmov_f32i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetVSR( vd, fpimm );
 };
 
 op vmov_f64i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: n[1]: exp[3]:> <: vd0[4]: 0b10110000[8]: man[4] );
 vmov_f64i.var vd : {uint32_t} = {vd1|vd0}, fpimm : {float} = {(n?-1:1)*(float((0x10+man)<<(exp^4))/128)};
 
 vmov_f64i.disasm = {
-  buffer << "vmov.f64\td" << vd << ", #" << uint32_t((n << 7) | (exp << 4) | man) << "; " << fpimm;
+  buffer << "vmov.f64\td" << vd << ", " << DisasmI((n << 7) | (exp << 4) | man) << "; " << fpimm;
+};
+
+vmov_f64i.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetVDR( vd, fpimm );
 };
 
 /* VMOV; move register */
@@ -563,6 +1330,12 @@ vmov_f32s.disasm = {
   buffer << "vmov.f32\ts" << vd << ", s" << vm;
 };
 
+vmov_f32s.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetVSR( vd, cpu.GetVSR( vm ) );
+};
+
 op vmov_f64d( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0000[4]:> <: vd0[4]: 0b1011[4]: 0b01[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vmov_f64d.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
 
@@ -570,70 +1343,10 @@ vmov_f64d.disasm = {
   buffer << "vmov.f64\td" << vd << ", d" << vm;
 };
 
-/* VMOV; move arm core to scalar register */
-
-op vmov32_dr( 0b11101110[8]: 0b00[2]: index[1]: 0b0[1]: vd0[4]:> <: rt[4]: 0b1011[4]: shl<4> vd1[1]: 0b001[3]: ?[4] );
-vmov32_dr.var vd : {uint32_t} = {vd1|vd0};
-
-vmov32_dr.disasm = {
-  buffer << "vmov.32\td" << vd << "[" << index << "], " << DisasmRegister(rt);
-};
-
-// { ARCH::neon }:                                                         
-op vmov16_dr( 0b11101110[8]: 0b00[2]: shl<1> index1[1]: 0b0[1]: vd0[4]:> <: rt[4]: 0b1011[4]: shl<4> vd1[1]: index0[1]: 0b11[2]: ?[4] );
-vmov16_dr.var vd : {uint32_t} = {vd1|vd0}, index : {uint32_t} = {index1|index0};
-
-vmov16_dr.disasm = {
-  buffer << "vmov.16\td" << vd << "[" << index << "], " << DisasmRegister(rt);
-};
-
-// { ARCH::neon }:                                                         
-op vmov8_dr( 0b11101110[8]: 0b01[2]: shl<2> index1[1]: 0b0[1]: vd0[4]:> <: rt[4]: 0b1011[4]: shl<4> vd1[1]: index0[2]: 0b1[1]: ?[4] );
-vmov8_dr.var vd : {uint32_t} = {vd1|vd0}, index : {uint32_t} = {index1|index0};
-
-vmov8_dr.disasm = {
-  buffer << "vmov.8\td" << vd << "[" << index << "], " << DisasmRegister(rt);
-};
-
-/* VMOV; move scalar to arm core register */
-
-op vmov_32rd( 0b11101110[8]: ?[1]: 0b0[1]: index[1]: 0b1[1]: vn0[4]:> <: rt[4]: 0b1011[4]: shl<4> vn1[1]: 0b001[3]: ?[4] );
-vmov_32rd.var vn : {uint32_t} = {vn1|vn0};
-
-vmov_32rd.disasm = {
-  buffer << "vmov.32\t" << DisasmRegister(rt) << ", d" << vn << "[" << index << "]";
-};
-
-// { ARCH::neon }:                                                         
-op vmov_s16rd( 0b11101110[8]: 0b00[2]: shl<1> index1[1]: 0b1[1]: vn0[4]:> <: rt[4]: 0b1011[4]: shl<4> vn1[1]: index0[1]: 0b11[2]: ?[4] );
-vmov_s16rd.var vn : {uint32_t} = {vn1|vn0}, index : {uint32_t} = {index1|index0};
-
-vmov_s16rd.disasm = {
-  buffer << "vmov.s16\t" << DisasmRegister(rt) << ", d" << vn << "[" << index << "]";
-};
-
-// { ARCH::neon }:                                                         
-op vmov_u16rd( 0b11101110[8]: 0b10[2]: shl<1> index1[1]: 0b1[1]: vn0[4]:> <: rt[4]: 0b1011[4]: shl<4> vn1[1]: index0[1]: 0b11[2]: ?[4] );
-vmov_u16rd.var vn : {uint32_t} = {vn1|vn0}, index : {uint32_t} = {index1|index0};
-
-vmov_u16rd.disasm = {
-  buffer << "vmov.u16\t" << DisasmRegister(rt) << ", d" << vn << "[" << index << "]";
-};
-
-// { ARCH::neon }:                                                         
-op vmov_s8rd( 0b11101110[8]: 0b01[2]: shl<2> index1[1]: 0b1[1]: vn0[4]:> <: rt[4]: 0b1011[4]: shl<4> vn1[1]: index0[2]: 0b1[1]: ?[4] );
-vmov_s8rd.var vn : {uint32_t} = {vn1|vn0}, index : {uint32_t} = {index1|index0};
-
-vmov_s8rd.disasm = {
-  buffer << "vmov.s8\t" << DisasmRegister(rt) << ", d" << vn << "[" << index << "]";
-};
-
-// { ARCH::neon }:                                                         
-op vmov_u8rd( 0b11101110[8]: 0b11[2]: shl<2> index1[1]: 0b1[1]: vn0[4]:> <: rt[4]: 0b1011[4]: shl<4> vn1[1]: index0[2]: 0b1[1]: ?[4] );
-vmov_u8rd.var vn : {uint32_t} = {vn1|vn0}, index : {uint32_t} = {index1|index0};
-
-vmov_u8rd.disasm = {
-  buffer << "vmov.u8\t" << DisasmRegister(rt) << ", d" << vn << "[" << index << "]";
+vmov_f64d.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetVDR( vd, cpu.GetVDR( vm ) );
 };
 
 /* VMOV; Move between arm core register and single precision register */
@@ -645,11 +1358,23 @@ vmov_rs.disasm = {
   buffer << "vmov\t" << DisasmRegister(rt) << ", s" << vn;
 };
 
+vmov_rs.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetGPR( rt, cpu.GetVU32( vn ) );
+};
+
 op vmov_sr( 0b11101110[8]: 0b0000[4]: shl<1> vn1[4]:> <: rt[4]: 0b1010[4]: vn0[1]: 0b001[3]: 0b0000[4] );
 vmov_sr.var vn : {uint32_t} = {vn1|vn0};
 
 vmov_sr.disasm = {
   buffer << "vmov\ts" << vn << ", " << DisasmRegister(rt);
+};
+
+vmov_sr.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetVU32( vn, cpu.GetGPR( rt ) );
 };
 
 /* VMOV; Move between arm core register pair and single precision register pair */
@@ -661,11 +1386,25 @@ vmov_ssrr.disasm = {
   buffer << "vmov\ts" << vm << ", s" << (vm+1) << ", " << DisasmRegister(rt) << ", " << DisasmRegister(rt2);
 };
 
+vmov_ssrr.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetVU32( vm+0, cpu.GetGPR( rt  ) );
+  cpu.SetVU32( vm+1, cpu.GetGPR( rt2 ) );
+};
+
 op vmov_rrss( 0b11101100[8]: 0b0101[4]: rt2[4]:> <: rt[4]: 0b1010[4]: 0b00[2]: vm0[1]: 0b1[1]: shl<1> vm1[4] );
 vmov_rrss.var vm : {uint32_t} = {vm1|vm0};
 
 vmov_rrss.disasm = {
   buffer << "vmov\t" << DisasmRegister(rt) << ", " << DisasmRegister(rt2) << ", s" << vm << ", s" << (vm+1);
+};
+
+vmov_rrss.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetGPR( rt,  cpu.GetVU32( vm+0 ) );
+  cpu.SetGPR( rt2, cpu.GetVU32( vm+1 ) );
 };
 
 /* VMOV; Move between arm core register pair and double precision register */
@@ -677,11 +1416,25 @@ vmov_rrd.disasm = {
   buffer << "vmov\t" << DisasmRegister(rt) << ", " << DisasmRegister(rt2) << ", d" << vm;
 };
 
+vmov_rrd.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetGPR( rt,  cpu.GetVU32( 2*vm+0 ) );
+  cpu.SetGPR( rt2, cpu.GetVU32( 2*vm+1 ) );
+};
+
 op vmov_drr( 0b11101100[8]: 0b0100[4]: rt2[4]:> <: rt[4]: 0b1011[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
 vmov_drr.var vm : {uint32_t} = {vm0|vm1}
 
 vmov_drr.disasm = {
   buffer << "vmov\td" << vm << ", " << DisasmRegister(rt) << ", " << DisasmRegister(rt2);
+};
+
+vmov_drr.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.SetVU32( 2*vm+0, cpu.GetGPR( rt  ) );
+  cpu.SetVU32( 2*vm+1, cpu.GetGPR( rt2 ) );
 };
 
 /* VMRS; Move to ARM core register from Advanced SIMD and Floating-point Extension System Register */
@@ -705,6 +1458,21 @@ vmrs.disasm = {
   }
 };
 
+vmrs.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  switch (spr) {
+  default: throw 0;
+  case 1: {
+    if (rt != 15) {
+      cpu.SetGPR( rt, cpu.FPSCR().Get( ALL32 ) );
+    } else {
+      cpu.CPSR().Set( NZCV, cpu.FPSCR().Get( NZCV ) );
+    }
+  } break;
+  }
+};
+
 op vmsr( 0b1110[4]: 0b11101110[8]: spr[4]:> <: rt[4]: 0b1010[4]: 0b0001[4]: 0b0000[4] );
 
 vmsr.disasm = {
@@ -722,6 +1490,17 @@ vmsr.disasm = {
   buffer << ", " << DisasmRegister(rt);
 };
 
+vmsr.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  switch (spr) {
+  default: throw 0;
+  case 1: {
+    cpu.FPSCR().Set( ALL32, cpu.GetGPR( rt ) );
+  } break;
+  }
+};
+
 /* VMUL; Multiplies corresponding elements in two vectors, and places the results in the destination vector. */
 
 op vmul_f32( 0b11101110[8]: 0b0[1]: vd0[1]: 0b10[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b0[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
@@ -731,6 +1510,17 @@ vmul_f32.disasm = {
   buffer << "vmul.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vmul_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( res, op1, op2, fpscr );
+  
+  cpu.SetVSR( vd, res );
+};
+
 op vmul_f64( 0b11101110[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vmul_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
 
@@ -738,60 +1528,15 @@ vmul_f64.disasm = {
   buffer << "vmul.f64\td" << vd << ", d" << vn << ", d" << vm;
 };
 
-/* VNEG; Negates each element in a vector, and places the results in a second vector. */
-
-op vneg_f32s( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b0001[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b01[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
-vneg_f32s.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
-
-vneg_f32s.disasm = {
-  buffer << "vneg.f32\ts" << vd << ", s" << vm;
-};
-
-op vneg_f64d( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0001[4]:> <: vd0[4]: 0b1011[4]: 0b01[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vneg_f64d.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
-
-vneg_f64d.disasm = {
-  buffer << "vneg.f64\td" << vd << ", d" << vm;
-};
-
-/* VNMLA; Multiplies together two floating-point register values, adds
- * the negation of the floating-point value in the destination
- * register to the negation of the product, and writes the result back
- * to the destination register.
- */
-
-op vnmla_f32( 0b11101110[8]: 0b0[1]: vd0[1]: 0b01[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b1[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
-vnmla_f32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
-
-vnmla_f32.disasm = {
-  buffer << "vnmla.f32\ts" << vd << ", s" << vn << ", s" << vm;
-};
-
-op vnmla_f64( 0b11101110[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vnmla_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
-
-vnmla_f64.disasm = {
-  buffer << "vnmla.f64\td" << vd << ", d" << vn << ", d" << vm;
-};
-
-/* VNMLS; multiplies together two floating-point register values, adds
- * the negation of the floating-point value in the destination
- * register to the product, and writes the result back to the
- * destination register.
- */
-
-op vnmls_f32( 0b11101110[8]: 0b0[1]: vd0[1]: 0b01[2]: shl<1> vn1[4]:> <: shl<1> vd1[4]: 0b1010[4]: vn0[1]: 0b0[1]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
-vnmls_f32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
-
-vnmls_f32.disasm = {
-  buffer << "vnmls.f32\ts" << vd << ", s" << vn << ", s" << vm;
-};
-
-op vnmls_f64( 0b11101110[8]: 0b0[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vnmls_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
-
-vnmls_f64.disasm = {
-  buffer << "vnmls.f64\td" << vd << ", d" << vn << ", d" << vm;
+vmul_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( res, op1, op2, fpscr );
+  
+  cpu.SetVDR( vd, res );
 };
 
 /* VNMUL multiplies together two floating-point register values, and
@@ -805,11 +1550,73 @@ vnmul_f32.disasm = {
   buffer << "vnmul.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vnmul_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( res, op1, op2, fpscr );
+  FloatNeg( res, res, fpscr );
+  
+  cpu.SetVSR( vd, res );
+};
+
 op vnmul_f64( 0b11101110[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vnmul_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
 
 vnmul_f64.disasm = {
   buffer << "vnmul.f64\td" << vd << ", d" << vn << ", d" << vm;
+};
+
+vnmul_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPMul( res, op1, op2, fpscr );
+  FloatNeg( res, res, fpscr );
+  
+  cpu.SetVDR( vd, res );
+};
+
+/* VNEG; Negates each element in a vector, and places the results in a second vector. */
+
+op vneg_f32( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b0001[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b01[2]: vm0[1]: 0b0[1]: shl<1> vm1[4] );
+vneg_f32.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
+
+vneg_f32.disasm = {
+  buffer << "vneg.f32\ts" << vd << ", s" << vm;
+};
+
+vneg_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FloatNeg( res, op, fpscr );
+  
+  cpu.SetVSR( vd, res );
+};
+
+op vneg_f64( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0001[4]:> <: vd0[4]: 0b1011[4]: 0b01[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
+vneg_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
+
+vneg_f64.disasm = {
+  buffer << "vneg.f64\td" << vd << ", d" << vm;
+};
+
+vneg_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FloatNeg( res, op, fpscr );
+  
+  cpu.SetVDR( vd, res );
 };
 
 /* VSQRT; Calculates the square root of a floating-point value. */
@@ -821,6 +1628,17 @@ vsqrt_f32s.disasm = {
   buffer << "vsqrt.f32\ts" << vd << ", s" << vm;
 };
 
+vsqrt_f32s.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPSqrt( res, op, fpscr );
+  
+  cpu.SetVSR( vd, res );
+};
+
 op vsqrt_f64d( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0001[4]:> <: vd0[4]: 0b1011[4]: 0b11[2]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vsqrt_f64d.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0};
 
@@ -828,70 +1646,117 @@ vsqrt_f64d.disasm = {
   buffer << "vsqrt.f64\td" << vd << ", d" << vm;
 };
 
+vsqrt_f64d.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPSqrt( res, op, fpscr );
+  
+  cpu.SetVDR( vd, res );
+};
+
 /* VSTM; Stores multiple extension registers to consecutive memory
  * locations using an address from an ARM core register.*/
 
-op vstmdb_f32( 0b1110110[7]: 0b1[1]: 0b0[1]: vd0[1]: 0b10[2]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: soff[8] );
+op vstmdb_f32( 0b1110110[7]: 0b1[1]: 0b0[1]: vd0[1]: 0b10[2]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: regs[8] );
 vstmdb_f32.var vd : {uint32_t} = {vd1|vd0};
 
 vstmdb_f32.disasm = {
   if (rn == 13) buffer << "vpush\t";
   else          buffer << "vstmdb\t" << DisasmRegister(rn) << "!, ";
-  int32_t send = ((int32_t)(vd + soff))-1;
-  if (soff == 1) buffer << "{s" << vd << "}";
-  else           buffer << "{s" << vd << "-s" << send << "}";
+  int32_t send = ((int32_t)(vd + regs))-1;
+  if      (regs == 0) buffer << "{}";
+  else if (regs == 1) buffer << "{s" << vd << "}";
+  else                buffer << "{s" << vd << "-s" << send << "}";
 };
 
-op vstmdb_f64( 0b1110110[7]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: rn[4]:> <: vd0[4]: 0b1011[4]: ?[1]: doff[6]: 0b0[1] );
+vstmdb_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 2 );
+  cpu.SetGPR( rn, address );
+                     
+  for (unsigned reg = 0; reg < regs; ++reg) {
+    cpu.MemWrite32( address, cpu.GetVU32( vd + reg ) );
+    address += 4;
+  }
+};
+
+op vstmdb_f64( 0b1110110[7]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: rn[4]:> <: vd0[4]: 0b1011[4]: regs[7]: fstm[1] );
 vstmdb_f64.var vd : {uint32_t} = {vd1|vd0};
 
 vstmdb_f64.disasm = {
-  if (rn == 13) buffer << "vpush\t";
-  else          buffer << "vstmdb\t" << DisasmRegister(rn) << "!, ";
-  int32_t dend = ((int32_t)(vd + doff))-1;
-  if (doff == 1)      buffer << "{d" << vd << "}";
-  else if (dend < 32) buffer << "{d" << vd << "-d" << dend << "}";
-  else                buffer << "{d" << vd << "-<overflow reg d" << dend << ">}";
+  if (fstm)          buffer << "fstmdbx\t" << DisasmRegister(rn) << "!, ";
+  else if (rn == 13) buffer << "vpush\t";
+  else               buffer << "vstmdb\t" << DisasmRegister(rn) << "!, ";
+  int32_t dend = ((int32_t)(vd + regs))-1;
+  if      (regs == 0) buffer << "{}";
+  else if (regs == 1) buffer << "{d" << vd << "}";
+  else                buffer << "{d" << vd << "-d" << dend << "}";
 };
 
-op fstmdbx( 0b1110110[7]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: r0[4]:> <: vd0[4]: 0b1011[4]: doff[7]: 0b1[1] );
-fstmdbx.var vd : {uint32_t} = {vd1|vd0};
-
-fstmdbx.disasm = {
-  int32_t dend = ((int32_t)(vd + doff))-1;
-  if (doff == 1) buffer << "fstmdbx\t" << DisasmRegister(r0) << "!, {d" << vd << "}";
-  else           buffer << "fstmdbx\t" << DisasmRegister(r0) << "!, {d" << vd << "-d" << dend << "}";
+vstmdb_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 3 );
+  cpu.SetGPR( rn, address );
+                     
+  for (unsigned reg = 0; reg < regs; ++reg) {
+    cpu.MemWrite32( address + 0, cpu.GetVU32( 2*(vd+reg) + 0 ) );
+    cpu.MemWrite32( address + 4, cpu.GetVU32( 2*(vd+reg) + 1 ) );
+    address += 8;
+  }
 };
 
-op vstmia_f32( 0b1110110[7]: 0b0[1]: 0b1[1]: vd0[1]: w[1]: 0b0[1]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: soff[8] );
+op vstmia_f32( 0b1110110[7]: 0b0[1]: 0b1[1]: vd0[1]: w[1]: 0b0[1]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: regs[8] );
 vstmia_f32.var vd : {uint32_t} = {vd1|vd0};
 
 vstmia_f32.disasm = {
   buffer << "vstmia\t" << DisasmRegister(rn) << (w?"!":"") << ", ";
-  int32_t send = ((int32_t)(vd + soff))-1;
-  if (soff == 1) buffer << "{s" << vd << "}";
-  else           buffer << "{s" << vd << "-s" << send << "}";
+  int32_t send = ((int32_t)(vd + regs))-1;
+  if      (regs == 0) buffer << "{}";
+  else if (regs == 1) buffer << "{s" << vd << "}";
+  else                buffer << "{s" << vd << "-s" << send << "}";
 };
 
-op vstmia_f64( 0b1110110[7]: 0b0[1]: 0b1[1]: shl<4> vd1[1]: w[1]: 0b0[1]: rn[4]:> <: vd0[4]: 0b1011[4]: ?[1]: doff[6]: 0b0[1] );
+vstmia_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 address = cpu.GetGPR( rn );
+  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 2 ) );
+                     
+  for (unsigned reg = 0; reg < regs; ++reg) {
+    cpu.MemWrite32( address, cpu.GetVU32( vd + reg ) );
+    address += 4;
+  }
+};
+
+op vstmia_f64( 0b1110110[7]: 0b0[1]: 0b1[1]: shl<4> vd1[1]: w[1]: 0b0[1]: rn[4]:> <: vd0[4]: 0b1011[4]: regs[7]: fstm[1] );
 vstmia_f64.var vd : {uint32_t} = {vd1|vd0};
 
 vstmia_f64.disasm = {
-  buffer << "vstmia\t" << DisasmRegister(rn) << (w?"!":"") << ", ";
-  int32_t dend = ((int32_t)(vd + doff))-1;
-  if (doff == 1)      buffer << "{d" << vd << "}";
-  else if (dend < 32) buffer << "{d" << vd << "-d" << dend << "}";
-  else                buffer << "{d" << vd << "-<overflow reg d" << dend << ">}";
+  if (fstm) buffer << "fstmiax";
+  else      buffer << "vstmia";
+  buffer << "\t" << DisasmRegister(rn) << (w?"!":"") << ", ";
+  int32_t dend = ((int32_t)(vd + regs))-1;
+  if      (regs == 0) buffer << "{}";
+  else if (regs == 1) buffer << "{d" << vd << "}";
+  else                buffer << "{d" << vd << "-d" << dend << "}";
 };
 
-op fstmiax( 0b1110110[7]: 0b0[1]: 0b1[1]: shl<4> vd1[1]: w[1]: 0b0[1]: rn[4]:> <: vd0[4]: 0b1011[4]: doff[7]: 0b1[1] );
-fstmiax.var vd : {uint32_t} = {vd1|vd0};
-
-fstmiax.disasm = {
-  buffer << "fstmiax\t" << DisasmRegister(rn) << (w?"!":"") << ", ";
-  int32_t dend = ((int32_t)(vd + doff))-1;
-  if (doff == 1) buffer << "{d" << vd << "}";
-  else           buffer << "{d" << vd << "-d" << dend << "}";
+vstmia_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::U32 address = cpu.GetGPR( rn );
+  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 3 ) );
+                     
+  for (unsigned reg = 0; reg < regs; ++reg) {
+    cpu.MemWrite32( address + 0, cpu.GetVU32( 2*(vd+reg) + 0 ) );
+    cpu.MemWrite32( address + 4, cpu.GetVU32( 2*(vd+reg) + 1 ) );
+    address += 8;
+  }
 };
 
 /* VSTR This instruction stores a single extension register to memory,
@@ -899,18 +1764,33 @@ fstmiax.disasm = {
  * offset.
  */
 
-op vstr( 0b11101101[8]: u[1]: vn0[1]: 0b00[2]: rn[4]:> <: shl<1> vn1[4]: 0b1010[4]: shl<2> offset[8] );
-vstr.var vn : {uint32_t} = {vn1|vn0}, imm : {int32_t} = {u?offset:-offset};
+op vstr_32( 0b11101101[8]: u[1]: vn0[1]: 0b00[2]: rn[4]:> <: shl<1> vn1[4]: 0b1010[4]: shl<2> offset[8] );
+vstr_32.var vn : {uint32_t} = {vn1|vn0}, imm : {int32_t} = {u?offset:-offset};
 
-vstr.disasm = {
+vstr_32.disasm = {
   buffer << "vstr\ts" << vn << ", " << DisasmMemoryRI(rn,imm,true,false);
 };
 
-op vstr_d( 0b11101101[8]: u[1]: shl<4> vn1[1]: 0b00[2]: rn[4]:> <: vn0[4]: 0b1011[4]: shl<2> offset[8] );
-vstr_d.var vn : {uint32_t} = {vn1|vn0}, imm : {int32_t} = {u?offset:-offset};
+vstr_32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  cpu.MemWrite32( addr, cpu.GetVU32( vn ) );
+};
 
-vstr_d.disasm = {
+op vstr_64( 0b11101101[8]: u[1]: shl<4> vn1[1]: 0b00[2]: rn[4]:> <: vn0[4]: 0b1011[4]: shl<2> offset[8] );
+vstr_64.var vn : {uint32_t} = {vn1|vn0}, imm : {int32_t} = {u?offset:-offset};
+
+vstr_64.disasm = {
   buffer << "vstr\td" << vn << ", " << DisasmMemoryRI(rn,imm,true,false);
+};
+
+vstr_64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  cpu.MemWrite32( addr + 0, cpu.GetVU32( 2*vn+0 ) );
+  cpu.MemWrite32( addr + 4, cpu.GetVU32( 2*vn+1 ) );
 };
 
 /* VSUB; Subtracts the elements of one vector from the corresponding
@@ -925,6 +1805,17 @@ vsub_f32.disasm = {
   buffer << "vsub.f32\ts" << vd << ", s" << vn << ", s" << vm;
 };
 
+vsub_f32.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPSub( res, op1, op2, fpscr );
+  
+  cpu.SetVSR( vd, res );
+};
+
 op vsub_f64( 0b11101110[8]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: vn0[4]:> <: vd0[4]: 0b1011[4]: shl<4> vn1[1]: 0b1[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
 vsub_f64.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
 
@@ -932,9 +1823,18 @@ vsub_f64.disasm = {
   buffer << "vsub.f64\td" << vd << ", d" << vn << ", d" << vm;
 };
 
+vsub_f64.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::fpscr_type& fpscr = cpu.FPSCR();
+  
+  FPSub( res, op1, op2, fpscr );
+  
+  cpu.SetVDR( vd, res );
+};
+
 vldmia_f32.specialize( ldc_unindexed )
 vldmia_f64.specialize( ldc_unindexed )
-fldmiax.specialize( ldc_unindexed )
 vstmia_f32.specialize( stc_unindexed )
 vstmia_f64.specialize( stc_unindexed )
-fstmiax.specialize( stc_unindexed )

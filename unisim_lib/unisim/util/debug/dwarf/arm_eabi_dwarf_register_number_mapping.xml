@@ -17,6 +17,33 @@
 		<register dw_reg_num="13" arch_reg="r13"/>
 		<register dw_reg_num="14" arch_reg="r14"/>
 		<register dw_reg_num="15" arch_reg="r15"/>
-		<register dw_reg_num="128" arch_reg="cpsr"/>
+		<register dw_reg_num="128" arch_reg="spsr"/>
+		<register dw_reg_num="129" arch_reg="spsr_fiq"/>
+		<register dw_reg_num="130" arch_reg="spsr_irq"/>
+		<register dw_reg_num="131" arch_reg="spsr_abt"/>
+		<register dw_reg_num="132" arch_reg="spsr_und"/>
+		<register dw_reg_num="133" arch_reg="spsr_svc"/>
+		<register dw_reg_num="144" arch_reg="r8_usr"/>
+		<register dw_reg_num="145" arch_reg="r9_usr"/>
+		<register dw_reg_num="146" arch_reg="r10_usr"/>
+		<register dw_reg_num="147" arch_reg="r11_usr"/>
+		<register dw_reg_num="148" arch_reg="r12_usr"/>
+		<register dw_reg_num="149" arch_reg="r13_usr"/>
+		<register dw_reg_num="150" arch_reg="r14_usr"/>
+		<register dw_reg_num="151" arch_reg="r8_fiq"/>
+		<register dw_reg_num="152" arch_reg="r9_fiq"/>
+		<register dw_reg_num="153" arch_reg="r10_fiq"/>
+		<register dw_reg_num="154" arch_reg="r11_fiq"/>
+		<register dw_reg_num="155" arch_reg="r12_fiq"/>
+		<register dw_reg_num="156" arch_reg="r13_fiq"/>
+		<register dw_reg_num="157" arch_reg="r14_fiq"/>
+		<register dw_reg_num="158" arch_reg="r13_irq"/>
+		<register dw_reg_num="159" arch_reg="r14_irq"/>
+		<register dw_reg_num="160" arch_reg="r13_abt"/>
+		<register dw_reg_num="161" arch_reg="r14_abt"/>
+		<register dw_reg_num="162" arch_reg="r13_und"/>
+		<register dw_reg_num="163" arch_reg="r14_und"/>
+		<register dw_reg_num="164" arch_reg="r13_svc"/>
+		<register dw_reg_num="165" arch_reg="r14_svc"/>
 	</architecture>
 </dw_reg_num_mapping>

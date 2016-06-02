@@ -21,5 +21,7 @@ Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
   $ make
 
+Note: Configure option '--with-tlm20' is no longer needed with SystemC >= 2.3
+
 Installing (optional):
   $ make install

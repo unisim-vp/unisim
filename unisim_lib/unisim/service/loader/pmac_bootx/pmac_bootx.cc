@@ -34,7 +34,7 @@
  
 #include <unisim/service/loader/pmac_bootx/pmac_bootx.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
@@ -47,7 +47,7 @@ namespace pmac_bootx {
 using namespace std;
 using namespace unisim::util::endian;
 using unisim::service::interfaces::Registers;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;
@@ -1018,7 +1018,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 		}
 	}
 
-	unisim::util::debug::Register *cia = registers_import->GetRegister("cia");
+	unisim::service::interfaces::Register *cia = registers_import->GetRegister("cia");
 	if(!cia)
 	{
 		logger << DebugError << "Register \"cia\" does not exist" << EndDebugError;
@@ -1026,7 +1026,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 	}
 	cia->SetValue(&entry_point);
 	
-	unisim::util::debug::Register *r1 = registers_import->GetRegister("r1");
+	unisim::service::interfaces::Register *r1 = registers_import->GetRegister("r1");
 	if(!r1)
 	{
 		logger << DebugError << "Register \"r1\" does not exist" << EndDebugError;
@@ -1034,7 +1034,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 	}
 	r1->SetValue(&r1_value);
 	
-	unisim::util::debug::Register *r3 = registers_import->GetRegister("r3");
+	unisim::service::interfaces::Register *r3 = registers_import->GetRegister("r3");
 	if(!r3)
 	{
 		logger << DebugError << "Register \"r3\" does not exist" << EndDebugError;
@@ -1042,7 +1042,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 	}
 	r3->SetValue(&r3_value);
 	
-	unisim::util::debug::Register *r4 = registers_import->GetRegister("r4");
+	unisim::service::interfaces::Register *r4 = registers_import->GetRegister("r4");
 	if(!r4)
 	{
 		logger << DebugError << "Register \"r4\" does not exist" << EndDebugError;
@@ -1050,7 +1050,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 	}
 	r4->SetValue(&r4_value);
 	
-	unisim::util::debug::Register *r5 = registers_import->GetRegister("r5");
+	unisim::service::interfaces::Register *r5 = registers_import->GetRegister("r5");
 	if(!r5)
 	{
 		logger << DebugError << "Register \"r5\" does not exist" << EndDebugError;

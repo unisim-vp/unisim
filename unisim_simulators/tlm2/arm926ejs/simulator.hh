@@ -51,11 +51,16 @@
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
-#include "unisim/service/loader/raw_loader/raw_loader.hh"
-#include "unisim/service/loader/elf_loader/elf_loader.hh"
-#include "unisim/service/loader/elf_loader/elf_loader.tcc"
+// #include "unisim/service/loader/raw_loader/raw_loader.hh"
+// #include "unisim/service/loader/elf_loader/elf_loader.hh"
+#include "unisim/service/loader/multiformat_loader/multiformat_loader.hh"
 #include "unisim/service/trap_handler/trap_handler.hh"
-#include "config.hh"
+#include "config.h"
+#if defined(SIM_GDB_SERVER_SUPPORT) || defined(SIM_INLINE_DEBUGGER_SUPPORT) || defined(SIM_SIM_DEBUGGER_SUPPORT)
+#include "unisim/service/debug/debugger/debugger.hh"
+#include "unisim/service/profiling/addr_profiler/profiler.hh"
+#include "unisim/service/tee/memory_access_reporting/tee.hh"
+#endif
 #ifdef SIM_GDB_SERVER_SUPPORT
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #endif // SIM_GDB_SERVER_SUPPORT
@@ -169,7 +174,7 @@ private:
 		};
 public:
 #endif // SIM_LIBRARY
-	virtual void Stop(unisim::kernel::service::Object *object, int exit_status);
+	virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous);
 
 protected:
 private:
@@ -178,9 +183,15 @@ private:
 	typedef unisim::component::tlm2::chipset::arm926ejs_pxp::PXP DEVCHIP;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> MEMORY;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> FLASH;
-	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
-	typedef unisim::service::loader::raw_loader::RawLoader64 RAW_LOADER;
+// 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
+// 	typedef unisim::service::loader::raw_loader::RawLoader64 RAW_LOADER;
+	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<uint64_t> LOADER;
 	typedef unisim::service::trap_handler::TrapHandler TRAP_HANDLER;
+#if defined(SIM_GDB_SERVER_SUPPORT) || defined(SIM_INLINE_DEBUGGER_SUPPORT) || defined(SIM_SIM_DEBUGGER_SUPPORT)
+	typedef unisim::service::debug::debugger::Debugger<uint64_t> DEBUGGER;
+	typedef unisim::service::profiling::addr_profiler::Profiler<uint64_t> PROFILER;
+	typedef unisim::service::tee::memory_access_reporting::Tee<uint64_t> TEE_MEMORY_ACCESS_REPORTING;
+#endif
 #ifdef SIM_GDB_SERVER_SUPPORT
 	typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
 #endif // SIM_GDB_SERVER_SUPPORT
@@ -201,13 +212,21 @@ private:
 	FLASH *nor_flash_1;
 	unisim::service::time::sc_time::ScTime *time;
 	unisim::service::time::host_time::HostTime *host_time;
-	ELF32_LOADER *elf32_loader;
-	RAW_LOADER *raw_kernel_loader;
-	RAW_LOADER *raw_fs_loader;
+// 	ELF32_LOADER *elf32_loader;
+// 	RAW_LOADER *raw_kernel_loader;
+// 	RAW_LOADER *raw_fs_loader;
+	LOADER *loader;
 	TRAP_HANDLER *trap_handler;
 
 	double simulation_spent_time;
 
+#if defined(SIM_GDB_SERVER_SUPPORT) || defined(SIM_INLINE_DEBUGGER_SUPPORT) || defined(SIM_SIM_DEBUGGER_SUPPORT)
+	DEBUGGER *debugger;
+	PROFILER *profiler;
+	TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
+	bool enable_debugger;
+	void EnableDebugger();
+#endif
 #ifdef SIM_GDB_SERVER_SUPPORT
 	GDB_SERVER *gdb_server;
 	bool enable_gdb_server;

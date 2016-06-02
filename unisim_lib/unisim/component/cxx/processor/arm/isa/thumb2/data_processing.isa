@@ -49,7 +49,7 @@ namespace thumb2 {
   /* decoding method for imm[1:3:8] */
 static
 uint32_t
-ThumbExpandImm( uint32_t code )
+ThumbExpandImm( uint32_t code ) /* code: i:imm3:abcdefgh*/
 {
   if        (code >= 0x400)
     return ((code & 0x7f) | 0x80) << ((32 - (code >> 7))  & 0x1f);
@@ -76,64 +76,74 @@ ThumbExpandImm( uint32_t code )
 /* MOV instructions */
 
 op mov_wri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b010[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-mov_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+mov_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
+mov_wri.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
-mov_wri.disasm = { buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", #" << imm; };
+mov_wri.disasm = { buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
 mov_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t res = imm;
+  typedef typename ARCH::U32 U32;
+  U32 res = U32(imm);
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
 op mov_w( 0b11101010[8]: 0b010[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
-mov_w.var imm : {uint32_t} = {imm1|imm0}
+mov_w.var imm : {uint32_t} = {imm1|imm0};
+mov_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 mov_w.disasm = {
-  buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 mov_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ), res = ComputeImmShift( cpu, rmval, shift, imm );
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ), res = ComputeImmShift( cpu, rmval, shift, imm );
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op movt( 0b11110[5]: shl <11> imm2[1]: 0b101100[6]: shl<12> imm3[4]:> <: 0b0[1]: shl<8> imm1[3]: rsd[4]: imm0[8] );
 movt.var imm : {uint32_t} = {imm3|imm2|imm1|imm0};
+movt.var reject : {Reject} = {(rsd == 13) or (rsd == 15)};
 
-movt.disasm = { buffer << "movt\t" << DisasmRegister(rsd) << ", #" << imm; };
+movt.disasm = { buffer << "movt\t" << DisasmRegister(rsd) << ", " << DisasmI(imm); };
 
 movt.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rsd, (cpu.GetGPR_npc( rsd ) & 0xffff) | (imm << 16) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( rsd, (cpu.GetGPR( rsd ) & U32(0xffff)) | (U32(imm << 16)) );
 };
 
 op movw( 0b11110[5]: shl <11> imm2[1]: 0b100100[6]: shl<12> imm3[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 movw.var imm : {uint32_t} = {imm3|imm2|imm1|imm0};
+movw.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
-movw.disasm = { buffer << "movw\t" << DisasmRegister(rd) << ", #" << imm; };
+movw.disasm = { buffer << "movw\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
 movw.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, imm );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( rd, U32(imm) );
 };
 
 /* MVN instructions */
 
 op mvn_w( 0b11101010[8]: 0b011[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
-mvn_w.var imm : {uint32_t} = {imm1|imm0}
+mvn_w.var imm : {uint32_t} = {imm1|imm0};
+mvn_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 mvn_w.disasm = {
   buffer << "mvn" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
@@ -143,49 +153,60 @@ mvn_w.disasm = {
 mvn_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ), res = ~(ComputeImmShift( cpu, rmval, shift, imm ));
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ), res = ~(ComputeImmShift( cpu, rmval, shift, imm ));
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op mvn_wri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b011[3]: s[1]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-mvn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+mvn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
+mvn_wri.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
-mvn_wri.disasm = { buffer << "mvn" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", #" << imm; };
+mvn_wri.disasm = { buffer << "mvn" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
 mvn_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t res = ~imm;
+  typedef typename ARCH::U32 U32;
+  U32 res = U32(~imm);
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
 /* LSL, LSR, ASR, ROR shift instructions */
 
 op shift_w( 0b11111010[8]: 0b0[1]: shift[2]: s[1]: rn[4]:> <: 0b1111[4]: rd[4]: 0b0000[4]: rm[4] );
+shift_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 shift_w.disasm = {
-  buffer << "" << DisasmShift(shift) << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+  buffer << DisasmShift(shift) << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 shift_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+  typedef typename ARCH::U32 U32;
+  U32 rnval = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
            res = ComputeRegShift( cpu, rnval, shift, rmval );
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusRegShift( cpu, res, rnval, shift, rmval );
 };
 
-/* SUB instructions */
+/*******************************************************************
+ * sub (Subtract) instruction
+ */
 
+/* The following encoding covers "register" and "sp minus register" forms */
 op sub_w( 0b11101011[8]: 0b101[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 sub_w.var imm : {uint32_t} = {imm1|imm0}
+sub_w.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 13) or (rm == 15) or ((rd == 13) and (rn != 13))};
 
 sub_w.disasm = {
   buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -195,41 +216,35 @@ sub_w.disasm = {
 sub_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+  typedef typename ARCH::U32 U32;
+  U32
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
+/* The following encoding covers "immediate" and "sp minus immediate" forms */
 op sub_wrri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b101[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 sub_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+sub_wrri.var reject : {Reject} = {(rd == 15) or (rn == 15) or ((rd == 13) and (rn != 13))};
 
-sub_wrri.disasm = { buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+sub_wrri.disasm = { buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 sub_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 - op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-op subs_pclri( 0b1111001111011110[16]:> <: 0b10001111[8]: imm[8] );
-subs_pclri.disasm = { buffer << "subs\tpc, lr, #" << imm; };
-
-subs_pclri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
-  
-  assert( not "sure" );
-  uint32_t op1 = cpu.GetGPR_npc( 14 ), op2 = imm, res = op1 - op2;
-  cpu.SetGPR( 15, res );
-  if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
-};
-
+/* The following encoding covers "immediate" and "sp minus immediate" forms */
 op subw( 0b11110[5]: shl<11> imm2[1]: 0b101010[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 subw.var imm : {uint32_t} = {imm2|imm1|imm0};
+subw.var reject : {Reject} = {(rd == 15) or (rn == 15) or ((rd == 13) and (rn != 13))};
 
 subw.disasm = {
   buffer << "subw\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -238,11 +253,13 @@ subw.disasm = {
 subw.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, cpu.GetGPR(rn) - imm );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( rd, cpu.GetGPR(rn) - U32(imm) );
 };
 
 op adr_subw( 0b11110[5]: shl<11> imm2[1]: 0b101010[6]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 adr_subw.var imm : {uint32_t} = {imm2|imm1|imm0};
+adr_subw.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
 adr_subw.disasm = {
   buffer << "subw\t" << DisasmRegister(rd) << ", pc, " << DisasmI(imm);
@@ -251,13 +268,19 @@ adr_subw.disasm = {
 adr_subw.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (cpu.GetGPR(cpu.PC_reg) & -4) - imm );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( rd, (cpu.GetGPR( 15 ) & U32(-4)) - U32(imm) );
 };
+
+/*
+ * end of sub instruction
+ *******************************************************************/
 
 /* SBC instructions */
 
 op sbc_w( 0b11101011[8]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 sbc_w.var imm : {uint32_t} = {imm1|imm0}
+sbc_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 sbc_w.disasm = {
   buffer << "sbc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -267,23 +290,26 @@ sbc_w.disasm = {
 sbc_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+  typedef typename ARCH::U32 U32;
+  U32
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-    res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
+    res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
 op sbc_wrri( 0b11110[5]: shl <11> imm2[1]: 0b01[2]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 sbc_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+sbc_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
-sbc_wrri.disasm = { buffer << "sbc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+sbc_wrri.disasm = { buffer << "sbc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 sbc_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 - op2 - (cpu.CPSR().C().Get() ^ 1);
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -292,6 +318,7 @@ sbc_wrri.execute = {
 
 op rsb( 0b11101011[8]: 0b110[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 rsb.var imm : {uint32_t} = {imm1|imm0}
+rsb.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 rsb.disasm = {
   buffer << "rsb" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -301,8 +328,9 @@ rsb.disasm = {
 rsb.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR_npc( rn ),
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ),
+           op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
            res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
@@ -310,55 +338,67 @@ rsb.execute = {
 
 op rsb_rri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b110[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 rsb_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+rsb_rri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 rsb_rri.disasm = {
-  buffer << "rsb" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "rsb" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 rsb_rri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = imm, op2 = cpu.GetGPR_npc( rn ), res = op1 - op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = U32(imm), op2 = cpu.GetGPR( rn ), res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-/* ADD instructions */
+/*******************************************************************
+ * add (Add) instruction
+ */
 
+/* The following encoding covers "register" and "sp plus register" forms */
 op add_w( 0b11101011[8]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 add_w.var imm : {uint32_t} = {imm1|imm0}
+add_w.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 13) or (rm == 15) or ((rd == 13) and (rn != 13))};
 
 add_w.disasm = {
-  buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 add_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+  typedef typename ARCH::U32 U32;
+  U32
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 + op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
+/* The following encoding covers "immediate" and "sp plus immediate" forms */
 op add_wrri( 0b1111[4]: 0b0[1]: shl <11> imm2[1]: 0b01[2]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 add_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+add_wrri.var reject : {Reject} = {(rd == 15) or (rn == 15) or ((rd == 13) and (rn != 13))};
 
-add_wrri.disasm = { buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+add_wrri.disasm = { buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 add_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 + op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
+/* The following encoding covers "immediate" and "sp plus immediate" forms */
 op addw( 0b11110[5]: shl<11> imm2[1]: 0b100000[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 addw.var imm : {uint32_t} = {imm2|imm1|imm0};
+addw.var reject : {Reject} = {(rd == 15) or (rn == 15) or ((rd == 13) and (rn != 13))};
 
 addw.disasm = {
   buffer << "addw\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -367,11 +407,13 @@ addw.disasm = {
 addw.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, cpu.GetGPR(rn) + imm );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( rd, cpu.GetGPR(rn) + U32(imm) );
 };
 
 op adr_addw( 0b11110[5]: shl<11> imm2[1]: 0b100000[6]: 0b1111[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 adr_addw.var imm : {uint32_t} = {imm2|imm1|imm0};
+adr_addw.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 
 adr_addw.disasm = {
   buffer << "addw\t" << DisasmRegister(rd) << ", pc, " << DisasmI(imm);
@@ -380,13 +422,19 @@ adr_addw.disasm = {
 adr_addw.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (cpu.GetGPR(cpu.PC_reg) & -4) + imm );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( rd, (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm) );
 };
+
+/*
+ * end of add instruction
+ *******************************************************************/
 
 /* ADC instructions */
 
 op adc_w( 0b11101011[8]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 adc_w.var imm : {uint32_t} = {imm1|imm0}
+adc_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 adc_w.disasm = {
   buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -396,22 +444,25 @@ adc_w.disasm = {
 adc_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 + op2 + cpu.CPSR().C().Get();
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 + op2 + cpu.CPSR().Get( C );
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
 op adc_wrri( 0b11110[5]: shl <11> imm2[1]: 0b01[2]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
 adc_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+adc_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
-adc_wrri.disasm = { buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+adc_wrri.disasm = { buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 adc_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 + op2 + cpu.CPSR().C().Get();
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2 + cpu.CPSR().Get( C );
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusAdd( cpu, res, op1, op2 );
 };
@@ -419,6 +470,7 @@ adc_wrri.execute = {
 /* EOR instructions */
 op eor_w( 0b11101010[8]: 0b100[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 eor_w.var imm : {uint32_t} = {imm1|imm0}
+eor_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 eor_w.disasm = {
   buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -428,27 +480,32 @@ eor_w.disasm = {
 eor_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 ^ op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op eor_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b100[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-eor_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+eor_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
+eor_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
-eor_wrri.disasm = { buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+eor_wrri.disasm = { buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 eor_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 ^ op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 ^ op2;
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -456,6 +513,7 @@ eor_wrri.execute = {
 
 op orn( 0b11101010[8]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 orn.var imm : {uint32_t} = {imm1|imm0}
+orn.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 orn.disasm = {
   buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -465,27 +523,33 @@ orn.disasm = {
 orn.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 | ~op2;
+  typedef typename ARCH::U32 U32;
+  U32
+    rmval = cpu.GetGPR( rm ),
+    op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+    res = op1 | ~op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op orn_rri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-orn_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+orn_rri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
+orn_rri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
-orn_rri.disasm = { buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm; };
+orn_rri.disasm = { buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 orn_rri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 | ~op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 | ~op2;
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32( 1 ) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -494,6 +558,7 @@ orn_rri.execute = {
 
 op orr_w( 0b11101010[8]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 orr_w.var  imm : {uint32_t} = {imm1|imm0}
+orr_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 orr_w.disasm = {
   buffer << "orr" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -503,29 +568,35 @@ orr_w.disasm = {
 orr_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 | op2;
+  typedef typename ARCH::U32 U32;
+  U32
+    rmval = cpu.GetGPR( rm ),
+    op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+    res = op1 | op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op orr_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-orr_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+orr_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
+orr_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 orr_wrri.disasm = {
-  buffer << "orr" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "orr" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 orr_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 | op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 | op2;
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32( 1 ) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -535,6 +606,7 @@ orr_wrri.execute = {
 
 op bic_w( 0b11101010[8]: 0b001[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
 bic_w.var imm : {uint32_t} = {imm1|imm0}
+bic_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 bic_w.disasm = {
   buffer << "bic" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -544,36 +616,42 @@ bic_w.disasm = {
 bic_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 & ~op2;
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ),
+      op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+      res = op1 & ~op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op bic_wrri( 0b11110[5]: shl <11> imm2[1]: 0b0[1]: 0b0001[4]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-bic_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+bic_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
+bic_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 bic_wrri.disasm = {
-  buffer << "bic" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "bic" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 bic_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 & ~op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & ~op2;
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
 /* AND instructions */
 
 op and_w( 0b11101010[8]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: rd[4]: imm0[2]: shift[2]: rm[4] );
-and_w.var imm : {uint32_t} = {imm1|imm0}
+and_w.var imm : {uint32_t} = {imm1|imm0};
+and_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 and_w.disasm = {
   buffer << "and" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
@@ -583,29 +661,34 @@ and_w.disasm = {
 and_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 & op2;
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ),
+      op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+      res = op1 & op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op and_wrri( 0b11110[5]: shl <11> imm2[1]: 0b00[2]: 0b000[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
-and_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+and_wrri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
+and_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15)};
 
 and_wrri.disasm = {
-  buffer << "and" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "and" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 and_wrri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 & op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & op2;
   cpu.SetGPR( rd, res );
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      if (cfim)
+        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
     }
 };
 
@@ -613,17 +696,18 @@ and_wrri.execute = {
 
 op cmp_w( 0b111010111011[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 cmp_w.var imm : {uint32_t} = {imm1|imm0}
+cmp_w.var reject : {Reject} = {(rn == 15) or (rm == 13) or (rm == 15)};
 
 cmp_w.disasm = {
-  buffer << "cmp.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "cmp.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 cmp_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+  typedef typename ARCH::U32 U32;
+  U32
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 - op2;
   UpdateStatusSub( cpu, res, op1, op2 );
@@ -631,6 +715,7 @@ cmp_w.execute = {
 
 op cmp_wri( 0b11110[5]: shl <11> imm2[1]: 0b011011[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 cmp_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+cmp_wri.var reject : {Reject} = {(rn == 15)};
 
 cmp_wri.disasm = {
   buffer << "cmp.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm);
@@ -639,7 +724,8 @@ cmp_wri.disasm = {
 cmp_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 - op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2;
   UpdateStatusSub( cpu, res, op1, op2 );
 };
 
@@ -647,17 +733,18 @@ cmp_wri.execute = {
 
 op cmn_w( 0b111010110001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 cmn_w.var imm : {uint32_t} = {imm1|imm0}
+cmn_w.var reject : {Reject} = {(rn == 15) or (rm == 13) or (rm == 15)};
 
 cmn_w.disasm = {
-  buffer << "cmn.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "cmn.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 cmn_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
+  typedef typename ARCH::U32 U32;
+  U32
+    op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
     res = op1 + op2;
   UpdateStatusAdd( cpu, res, op1, op2 );
@@ -665,361 +752,668 @@ cmn_w.execute = {
 
 op cmn_wri( 0b11110[5]: shl <11> imm2[1]: 0b010001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
 cmn_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+cmn_wri.var reject : {Reject} = {(rn == 15)};
 
-cmn_wri.disasm = { buffer << "cmn.w\t" << DisasmRegister(rn) << ", #" << imm; };
+cmn_wri.disasm = {
+  buffer << "cmn.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm);
+};
 
 cmn_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 + op2;
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2;
   UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
-/* TEQ instruction */
+/*******************************************************************
+ * teq (Test Equivalence) instruction
+ *
+ * TEQ performs a bitwise exclusive OR operation on two operands.  It
+ * updates the condition flags based on the result, and discards the
+ * result.
+ */
 
 op teq( 0b111010101001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 teq.var imm : {uint32_t} = {imm1|imm0}
+teq.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 teq.disasm = {
-  buffer << "teq\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "teq\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 teq.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm ),
-           op1 = cpu.GetGPR_npc( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 ^ op2;
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ),
+      op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+      res = op1 ^ op2;
   UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op teq_wri( 0b11110[5]: shl <11> imm2[1]: 0b001001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
-teq_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+teq_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
+teq_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
 
-teq_wri.disasm = { buffer << "teq\t" << DisasmRegister(rn) << ", #" << imm; };
+teq_wri.disasm = { buffer << "teq\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 teq_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 ^ op2;
-  cpu.CPSR().N().Set( (res >> 31) & 1 );
-  cpu.CPSR().Z().Set( res == 0 );
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 ^ op2;
+  cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+  cpu.CPSR().Set( Z, U32(res == U32(0)) );
+  if (cfim)
+    cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
 };
 
-/* TST instructions */
+/*
+ * end of teq instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * tst (Test) instruction
+ *
+ * TST performs a bitwise AND operation on two operands.  It updates
+ * the condition flags based on the result, and discards the result.
+ */
 
 op tst_w( 0b111010100001[12]: rn[4]:> <: 0b0[1]: shl<2> imm1[3]: 0b1111[4]: imm0[2]: shift[2]: rm[4] );
 tst_w.var imm : {uint32_t} = {imm1|imm0}
+tst_w.var reject : {Reject} = {(rn == 13) or (rn == 15) or (rm == 13) or (rm == 15)};
 
 tst_w.disasm = {
-  buffer << "tst.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  buffer << DisasmShImm( shift, imm );
+  buffer << "tst.w\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 tst_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t
-    op1 = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm ),
-    op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-    res = op1 & op2;
-  cpu.CPSR().N().Set( (res >> 31) & 1 );
-  cpu.CPSR().Z().Set( res == 0 );
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
+      op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+      res = op1 & op2;
+  UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
 op tst_wri( 0b11110[5]: shl <11> imm2[1]: 0b000001[6]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: 0b1111[4]: imm0[8] );
-tst_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )};
+tst_wri.var imm : {uint32_t} = {ThumbExpandImm( imm2|imm1|imm0 )}, cfim : {bool} = {(imm2|imm1) >= 0x400};
+tst_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
 
-tst_wri.disasm = { buffer << "tst.w\t" << DisasmRegister(rn) << ", #" << imm; };
+tst_wri.disasm = { buffer << "tst.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 tst_wri.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t op1 = cpu.GetGPR_npc( rn ), op2 = imm, res = op1 & op2;
-  cpu.CPSR().N().Set( (res >> 31) & 1 );
-  cpu.CPSR().Z().Set( res == 0 );
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & op2;
+  cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+  cpu.CPSR().Set( Z, U32(res == U32(0)) );
+  if (cfim)
+    cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
 };
+
+/*
+ * end of tst instruction
+ *******************************************************************/
 
 /* CLZ instructions */
 
-op clz( 0b111110101011[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: ?[4] );
+op clz( 0b111110101011[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm_[4] );
+clz.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rm != rm_)};
 
 clz.disasm = { buffer << "clz\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
 
 clz.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, __builtin_clzl( cpu.GetGPR_npc( rm ) ) );
+  // TODO: Use a portable function...
+  cpu.SetGPR( rd, CountLeadingZeros( cpu.GetGPR( rm ) ) );
 };
 
-/* UXTA instructions */
+/*******************************************************************
+ * uxtab16 (Unsigned Extend and Add Byte 16) instruction
+ *
+ * UXTAB16 extracts two 8-bit values from a register, sign-extends
+ * them to 16 bits each, adds the results to two 16-bit values from
+ * another register, and writes the final results to the destination
+ * register. You can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit values.
+ */
 
-op uxtab16( 0b111110100011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxtab16.var ror : {uint32_t} = {8*ror0};
+op uxtab16( 0b111110100011[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxtab16.var ror : {uint8_t} = {8*rotate};
+uxtab16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 uxtab16.disasm = {
-  buffer << "uxtab16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "uxtab16\t"
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 uxtab16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  uint16_t lo = rmval << 8, hi = rmval >> 8;
-  lo >>= 8; hi >>= 8;
-  lo += rnval; hi += rnval >> 16;
-  cpu.SetGPR( rd, ((uint32_t)lo) | (((uint32_t)hi) << 16) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  U32 rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  U16 lo = U16( rmval << 8 ) >> 8, hi = U16( rmval >> 8 ) >> 8;
+  lo += U16( rnval >> 0 ); hi += U16( rnval >> 16 );
+  cpu.SetGPR( rd, (U32( lo ) << 0) | (U32( hi ) << 16) );
 };
 
-op uxtab( 0b111110100101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxtab.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of uxtab16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uxtab (Signed Extend and Add Byte) instruction
+ *
+ * UXTAB extracts an 8-bit value from a register, sign-extends it to
+ * 32 bits, adds the result to the value in another register, and
+ * writes the final result to the destination register. You can
+ * specify a rotation by 0, 8, 16, or 24 bits before extracting the
+ * 8-bit value.
+ */
+
+op uxtab( 0b111110100101[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxtab.var ror : {uint8_t} = {8*rotate};
+uxtab.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 uxtab.disasm = {
-  buffer << "uxtab\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "uxtab\t"
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 uxtab.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  cpu.SetGPR( rd, rnval + ((uint32_t)((uint8_t)rmval)) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8  U8;
+  U32 rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, rnval + U32( U8( rmval ) ) );
 };
 
-op uxtah( 0b111110100001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxtah.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of uxtab instruction
+ *******************************************************************/
+
+op uxtah( 0b111110100001[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxtah.var ror : {uint8_t} = {8*rotate};
+uxtah.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
+
 uxtah.disasm = {
-  buffer << "uxtah\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "uxtah\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 uxtah.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  cpu.SetGPR( rd, rnval + ((uint32_t)((uint16_t)rmval)) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  U32 rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, rnval + U32( U16( rmval ) ) );
 };
 
-/* UXT instructions */
+/*******************************************************************
+ * uxtb16 (Unsigned Extend Byte 16) instruction
+ *  
+ * UXTB16 extracts two 8-bit values from a register, sign-extends them
+ * to 16 bits each, and writes the results to the destination
+ * register. You can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit values.
+ */
 
-op uxtb16( 0b1111101000111111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxtb16.var ror : {uint32_t} = {8*ror0};
+op uxtb16( 0b1111101000111111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxtb16.var ror : {uint8_t} = {8*rotate};
+uxtb16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+
 uxtb16.disasm = {
-  buffer << "uxtb16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "uxtb16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 uxtb16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  cpu.SetGPR( rd, rmval & 0x00ff00ff );
+  typedef typename ARCH::U32 U32;
+  U32 rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, rmval & U32( 0x00ff00ff ) );
 };
 
-op uxtb_w( 0b1111101001011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxtb_w.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of uxtb16 instruction
+ *******************************************************************/
+
+op uxtb_w( 0b1111101001011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxtb_w.var ror : {uint8_t} = {8*rotate};
+uxtb_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+
 uxtb_w.disasm = {
   buffer << "uxtb.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  if (ror) buffer << ", ror " << DisasmI(ror);
 };
 
 uxtb_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  cpu.SetGPR( rd, ((uint32_t)((uint8_t)rmval)) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8 U8;
+  U32 rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, U32( U8( rmval ) ) );
 };
 
-op uxth_w( 0b1111101000011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-uxth_w.var ror : {uint32_t} = {8*ror0};
+op uxth_w( 0b1111101000011111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+uxth_w.var ror : {uint8_t} = {8*rotate};
+uxth_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+
 uxth_w.disasm = {
-  buffer << "uxth.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "uxth.w\t" << DisasmRegister(rd) << ", "
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 uxth_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  cpu.SetGPR( rd, (uint32_t)((uint16_t)rmval) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  U32 rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, U32( U16( rmval ) ) );
 };
 
-/* STXA instructions */
+/*******************************************************************
+ * sxtab16 (Signed Extend and Add Byte 16) instruction
+ *
+ * SXTAB16 extracts two 8-bit values from a register, sign-extends
+ * them to 16 bits each, adds the results to two 16-bit values from
+ * another register, and writes the final results to the destination
+ * register. You can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit values.
+ */
 
-op sxtab16( 0b111110100010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxtab16.var ror : {uint32_t} = {8*ror0};
+op sxtab16( 0b111110100010[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxtab16.var ror : {uint8_t} = {8*rotate};
+sxtab16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 sxtab16.disasm = {
-  buffer << "sxtab16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "sxtab16\t"
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxtab16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  int16_t lo = rmval << 8, hi = rmval >> 8;
-  lo >>= 8; hi >>= 8;
-  lo += rnval; hi += rnval >> 16;
-  cpu.SetGPR( rd, ((uint32_t)lo) | (((uint32_t)hi) << 16) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::S16 S16;
+  U32 rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  S16 lo = S16( rmval << 8 ) >> 8, hi = S16( rmval >> 8 ) >> 8;
+  
+  lo += S16( rnval >> 0 ); hi += S16( rnval >> 16 );
+  cpu.SetGPR( rd, (U32( U16( lo ) ) << 0) | (U32( U16( hi ) ) << 16) );
 };
 
-op sxtab( 0b111110100100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxtab.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of sxtab16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sxtab (Signed Extend and Add Byte) instruction
+ *
+ * SXTAB extracts an 8-bit value from a register, sign-extends it to
+ * 32 bits, adds the result to the value in another register, and
+ * writes the final result to the destination register. You can
+ * specify a rotation by 0, 8, 16, or 24 bits before extracting the
+ * 8-bit value.
+ */
+
+op sxtab( 0b111110100100[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxtab.var ror : {uint8_t} = {8*rotate};
+sxtab.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 sxtab.disasm = {
-  buffer << "sxtab\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "sxtab\t"
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxtab.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  cpu.SetGPR( rd, rnval + ((int32_t)((int8_t)rmval)) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S8  S8;
+  U32 rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, rnval + U32( S32( S8( rmval ) ) ) );
 };
 
-op sxtah( 0b111110100000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxtah.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of sxtab instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sxtah (Signed Extend and Add Halfword) instruction
+ *  
+ * SXTAH extracts a 16-bit value from a register, sign-extends it to
+ * 32 bits, adds the result to a value from another register, and
+ * writes the final result to the destination register. You can
+ * specify a rotation by 0, 8, 16, or 24 bits before extracting the
+ * 16-bit value.
+ */
+
+op sxtah( 0b111110100000[12]: rn[4]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxtah.var ror : {uint8_t} = {8*rotate};
+sxtah.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rn == 13) or (rn == 15)};
 
 sxtah.disasm = {
-  buffer << "sxtah\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "sxtah\t"
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxtah.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rnval = cpu.GetGPR_npc( rn ), rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  cpu.SetGPR( rd, rnval + ((int32_t)((int16_t)rmval)) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  U32 rnval = cpu.GetGPR( rn ), rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, rnval + U32( S32( S16( rmval ) ) ) );
 };
 
-/* STX instructions */
+/*
+ * end of sxtah instruction
+ *******************************************************************/
 
-op sxtb16( 0b1111101000101111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxtb16.var ror : {uint32_t} = {8*ror0};
+/*******************************************************************
+ * sxtb16 (Signed Extend Byte 16) instruction
+ *  
+ * SXTB16 extracts two 8-bit values from a register, sign-extends them
+ * to 16 bits each, and writes the results to the destination
+ * register. You can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit values.
+ */
+
+op sxtb16( 0b1111101000101111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxtb16.var ror : {uint8_t} = {8*rotate};
+sxtb16.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
 
 sxtb16.disasm = {
-  buffer << "sxtb16\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "sxtb16\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxtb16.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  int16_t lo = rmval << 8, hi = rmval >> 8;
-  lo >>= 8; hi >>= 8;
-  cpu.SetGPR( rd, (((uint32_t)hi) << 16) | ((uint32_t)hi) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::S16 S16;
+  U32 rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  S16 lo = S16( rmval << 8 ) >> 8, hi = S16( rmval >> 8 ) >> 8;
+  cpu.SetGPR( rd, (U32( U16( lo ) ) << 0) | (U32( U16( hi ) ) << 16) );
 };
 
-op sxtb_w( 0b1111101001001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxtb_w.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of sxtb16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sxtb (Signed Extend Byte) instruction
+ *  
+ * SXTB extracts an 8-bit value from a register, sign-extends it to 32
+ * bits, and writes the result to the destination register. The
+ * instruction can specify a rotation by 0, 8, 16, or 24 bits before
+ * extracting the 8-bit value.
+ */
+
+op sxtb_w( 0b1111101001001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxtb_w.var ror : {uint8_t} = {8*rotate};
+sxtb_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+
 sxtb_w.disasm = {
-  buffer << "sxtb.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "sxtb.w\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxtb_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  cpu.SetGPR( rd, ((int32_t)((int8_t)rmval)) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S8  S8;
+  U32 rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, U32( S32( S8( rmval ) ) ) );
 };
 
-op sxth_w( 0b1111101000001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: ror0[2]: rm[4] );
-sxth_w.var ror : {uint32_t} = {8*ror0};
+/*
+ * end of sxtb instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sxth (Signed Extend Halfword) instruction
+ */
+
+op sxth_w( 0b1111101000001111[16]:> <: 0b1111[4]: rd[4]: 0b10[2]: rotate[2]: rm[4] );
+sxth_w.var ror : {uint8_t} = {8*rotate};
+sxth_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15)};
+
 sxth_w.disasm = {
-  buffer << "sxth.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-  if (ror) buffer << ", ror #" << ror;
+  buffer << "sxth.w\t" << DisasmRegister(rd)
+         << ", " << DisasmRegister(rm) << DisasmShImm( ror?3:0, ror );
 };
 
 sxth_w.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t rmval = cpu.GetGPR_npc( rm );
-  rmval = (rmval >> ror) | (rmval << (32-ror));
-  cpu.SetGPR( rd, (int32_t)((int16_t)rmval) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  U32 rmval = RotateRight( cpu.GetGPR( rm ), ror );
+  cpu.SetGPR( rd, U32( S32( S16( rmval ) ) ) );
 };
+
+/*
+ * end of sxth instruction
+ *******************************************************************/
 
 /* UBFX instructions */
 
-op ubfx_rrii( 0b111100111100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: width0[5] );
-ubfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {width0+1};
+op ubfx( 0b111100111100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: widthm1[5] );
+ubfx.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {widthm1+1};
+ubfx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or ((lsb + widthm1) > 31)};
 
-ubfx_rrii.disasm = {
-  buffer << "ubfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << lsb << ", #" << width;
+ubfx.disasm = {
+  buffer << "ubfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
 };
 
-ubfx_rrii.execute = {
+ubfx.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (((uint32_t)cpu.GetGPR_npc( rn )) << (32 - width - lsb)) >> (32 - width) );
+  cpu.SetGPR( rd, (cpu.GetGPR( rn ) << (32 - width - lsb)) >> (32 - width) );
 };
 
 /* SBFX instructions */
 
-op sbfx_rrii( 0b111100110100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: width0[5] );
-sbfx_rrii.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {width0+1};
+op sbfx( 0b111100110100[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: widthm1[5] );
+sbfx.var lsb : {uint32_t} = {lsb1|lsb0}, width : {uint32_t} = {widthm1+1};
+sbfx.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn == 15) or (lsb + widthm1) > 31};
 
-sbfx_rrii.disasm = {
-  buffer << "sbfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << lsb << ", #" << width;
+sbfx.disasm = {
+  buffer << "sbfx\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
 };
 
-sbfx_rrii.execute = {
+sbfx.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (((int32_t)cpu.GetGPR_npc( rn )) << (32 - width - lsb)) >> (32 - width) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  cpu.SetGPR( rd, U32((S32(cpu.GetGPR( rn )) << (32 - width - lsb)) >> (32 - width)) );
 };
 
 /* BF[IC] instructions (bit field insertion/clear) */
 
+/*******************************************************************
+ * bfi (Bit Field Insert) instruction
+ * 
+ * BFI copies any number of low order bits from a register into the
+ * same number of adjacent bits at any position in the destination
+ * register.
+ */
+
 op bfi( 0b111100110110[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
-op bfc( 0b111100110110[12]: 0b1111[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
-group bf( bfi, bfc );
+bfi.var lsb : {uint8_t} = {lsb1|lsb0};
+bfi.var width : {uint32_t} = {msb-lsb+1};
+bfi.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+bfi.var reject : {Reject} = {msb < lsb};
 
-bf.var lsb : {uint32_t} = {lsb1|lsb0};
-bf.var width : {uint32_t} = {msb-(lsb1|lsb0)+1};
-bf.var clear : {uint32_t} = {~(((1 << (msb-(lsb1|lsb0)+1))-1) << (lsb1|lsb0))};
-
-bfc.disasm = { buffer << "bfc\t" << DisasmRegister(rd) << ", #" << lsb << ", #" << width; };
-bfi.disasm = { buffer << "bfi\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << lsb << ", #" << width; };
-
-bfc.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
-  
-  cpu.SetGPR( rd, (cpu.GetGPR( rd ) & clear) );
+bfi.disasm = {
+  buffer << "bfi\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
 };
 
 bfi.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SetGPR( rd, (cpu.GetGPR( rd ) & clear) | ((cpu.GetGPR( rn ) << lsb) & ~clear) );
+  // if (msb < lsb) UNPREDICTABLE
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( rd, (cpu.GetGPR( rd ) & U32(clear)) | ((cpu.GetGPR( rn ) << lsb) & U32(~clear)) );
 };
+
+/*
+ * end of bfi instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * bfc (Bit Field Clear) instruction
+ *
+ * BFC clears any number of adjacent bits at any position in a
+ * register, without affecting the other bits in the register.
+ */
+
+op bfc( 0b111100110110[12]: 0b1111[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
+bfc.var lsb : {uint32_t} = {lsb1|lsb0};
+bfc.var width : {uint32_t} = {msb-lsb+1};
+bfc.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+bfc.var reject : {Reject} = {msb < lsb};
+
+bfc.disasm = {
+  buffer << "bfc\t" << DisasmRegister(rd) << ", " << DisasmI(lsb) << ", " << DisasmI(width);
+};
+
+bfc.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  // if (msb < lsb) UNPREDICTABLE
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( rd, cpu.GetGPR( rd ) & U32(clear) );
+};
+
+/*
+ * end of bfc instruction
+ *******************************************************************/
 
 /* RBIT instruction */
 
-op rbit( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1010[4]: ?[4] );
+op rbit( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1010[4]: rm_[4] );
+rbit.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rm != rm_)};
 
-rbit.disasm = { buffer << "rbit\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
+rbit.disasm = {
+  buffer << "rbit\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 rbit.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  uint32_t src = cpu.GetGPR( rm ), dst = 0;
-  for (int idx = 0; idx < 32; ++idx) { dst = (dst << 1) | (src & 1); src >>= 1; }
+  typedef typename ARCH::U32 U32;
+  U32 src = cpu.GetGPR( rm ), dst = U32(0);
+  for (int idx = 0; idx < 32; ++idx) { dst = (dst << 1) | (src & U32(1)); src >>= 1; }
   cpu.SetGPR( rd, dst );
 }
+
+/*******************************************************************
+ * rev (Byte-Reverse Word) instruction
+ *
+ * REV reverses the byte order in a 32-bit register.
+ */
+
+op rev_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1000[4]: rm_[4] );
+rev_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rm != rm_)};
+
+rev_w.disasm = { buffer << "rev.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
+
+rev_w.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ), rdval = ByteSwap( rmval );
+	
+  cpu.SetGPR( rd, rdval );
+};
+
+/*
+ * end of rev instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * rev16 (Byte-Reverse Packed Halfword) instruction
+ *
+ * REV16 reverses the byte order in each16-bit halfword of a 32-bit
+ * register.
+ */
+
+{ ARCH::Config::insns6 }:                                       \
+op rev16_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1001[4]: rm_[4] );
+rev16_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rm != rm_)};
+
+rev16_w.disasm = {
+  buffer << "rev16.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
+
+rev16_w.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ), rdval = ByteSwap( RotateRight( rmval, 16 ) );
+  cpu.SetGPR( rd, rdval );
+};
+
+/*
+ * end of rev16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * revsh (Byte-Reverse Signed Halfword) instruction
+ *
+ * REVSH reverses the byte order in the lower 16-bit halfword of a
+ * 32-bit register, and sign-extends the result to 32 bits.
+ */
+
+{ ARCH::Config::insns6 }:                               \
+op revsh_w( 0b111110101001[12]: rm[4]:> <: 0b1111[4]: rd[4]: 0b1011[4]: rm_[4] );
+revsh_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15) or (rm != rm_)};
+
+revsh_w.disasm = {
+  buffer << "revsh.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
+
+revsh_w.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::U16 U16;
+  
+  U16 src( cpu.GetGPR(rm) );
+  cpu.SetGPR( rd, U32(S32(S16((src >> 8) | (src << 8)))) );
+};
+
+/*
+ * end of revsh instruction
+ *******************************************************************/
+

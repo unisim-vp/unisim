@@ -36,7 +36,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CONCATENATED_REGISTER_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CONCATENATED_REGISTER_HH__
 
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <string>
 #include <sstream>
 #include <stdexcept>
@@ -50,7 +50,7 @@ namespace processor {
 namespace hcs12x {
 
 using std::string;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::kernel::service::TCallBack;
 using unisim::kernel::service::CallBackObject;

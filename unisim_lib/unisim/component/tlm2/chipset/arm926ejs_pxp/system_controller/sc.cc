@@ -32,7 +32,6 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#define SC_INCLUDE_DYNAMIC_PROCESSES
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/util/endian/endian.hh"

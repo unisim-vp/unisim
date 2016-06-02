@@ -186,12 +186,11 @@ unisim/component/tlm2/processor/arm/armemu/armemu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
-unisim/component/cxx/processor/arm/armemu/cache.cc \
+unisim/component/cxx/processor/arm/cache.cc \
 unisim/component/cxx/processor/arm/armemu/cpu.cc \
 unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
 unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
-unisim/component/cxx/processor/arm/cpu.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
 
@@ -206,23 +205,39 @@ unisim/component/cxx/processor/arm/isa/thumb/branch_T1.isa \
 unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
 unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
-"
+unisim/component/cxx/processor/arm/isa/thumb2/branch.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/coprocessor.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/data_processing.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/exception.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/hints.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/load_store.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/misc_arithmetic.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/multiply.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/neon.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/ordering.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/status_register_access.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/vfp.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/xscale.isa"
 
 UNISIM_LIB_ARMEMU_ISA_ARM32_FILES="\
-unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
-unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
-unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
-unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
+unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
+unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
+unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/hints.isa \
+unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
+unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
 unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
-unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
+unisim/component/cxx/processor/arm/isa/arm32/neon.isa \
 unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
 unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
+unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
+unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
+unisim/component/cxx/processor/arm/isa/arm32/vfp.isa \
+unisim/component/cxx/processor/arm/isa/arm32/xscale.isa \
 unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
 UNISIM_LIB_ARMEMU_ISA_FILES="${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES} ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}"
@@ -265,11 +280,11 @@ unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/cache_power_estimator.hh \
 unisim/service/interfaces/memory_injection.hh \
-unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/os.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/loader.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
@@ -320,7 +335,6 @@ unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/breakpoint_registry.hh \
-unisim/util/debug/register.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/breakpoint.hh \
@@ -329,7 +343,6 @@ unisim/util/debug/simple_register.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/watchpoint_registry.hh \
-unisim/util/debug/data_object.hh \
 unisim/util/debug/type.hh \
 unisim/util/debug/data_object_initializer.hh \
 unisim/util/debug/subprogram.hh \
@@ -345,6 +358,7 @@ unisim/util/os/linux_os/arm.hh \
 unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
+unisim/util/os/linux_os/i386.hh \
 unisim/util/os/linux_os/linux.hh \
 unisim/util/os/linux_os/ppc.hh \
 unisim/util/os/linux_os/errno.hh \
@@ -363,19 +377,24 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
-unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
+unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/cxx/processor/arm/psr.hh \
+unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
-unisim/component/cxx/processor/arm/coprocessor_interface.hh \
 unisim/component/cxx/processor/arm/armemu/cpu.hh \
-unisim/component/cxx/processor/arm/armemu/cache.hh \
+unisim/component/cxx/processor/arm/cache.hh \
+unisim/component/cxx/processor/arm/cp15.hh \
+unisim/component/cxx/processor/arm/armemu/cp15.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
-unisim/component/cxx/memory/ram/memory.hh"
+unisim/component/cxx/processor/arm/extregbank.hh \
+unisim/component/cxx/processor/arm/hostfloat.hh \
+unisim/component/cxx/memory/ram/memory.hh \
+"
 
 UNISIM_LIB_ARMEMU_TEMPLATE_FILES="\
 unisim/service/tee/memory_access_reporting/tee.tcc \
@@ -428,6 +447,7 @@ unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
 unisim/util/queue/queue.tcc \
+unisim/component/cxx/processor/arm/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 
@@ -452,8 +472,7 @@ m4/pthread.m4"
 
 UNISIM_LIB_ARMEMU_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_armv5l.xml \
-unisim/service/debug/gdb_server/gdb_armv4l.xml \
-unisim/service/debug/gdb_server/gdb_armv5b.xml \
+unisim/service/debug/gdb_server/gdb_armv7l.xml \
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
 
@@ -1030,7 +1049,7 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb/thumb.isa" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa" >> "${ARMEMU_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMEMU_MAKEFILE_AM}"

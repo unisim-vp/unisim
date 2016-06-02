@@ -34,6 +34,7 @@
 
 #include <inttypes.h>
 #include <iostream>
+#include <sstream>
 
 #include "unisim/component/cxx/processor/arm/disasm.hh"
 #include "unisim/component/cxx/processor/arm/psr.hh"
@@ -174,6 +175,12 @@ namespace arm {
     sink << register_dis[m_reg];
   }
   
+  /* Coprocessor Register disassembling method */
+  void DisasmCPR::operator() ( std::ostream& sink ) const
+  {
+    sink << "cr" << m_reg;
+  }
+  
   /* Register list disassembling method */
   void DisasmRegList::operator() ( std::ostream& sink ) const
   {
@@ -228,6 +235,30 @@ namespace arm {
       pseudo_psr.ITAdvance();
     } while (pseudo_psr.InITBlock());
   }
+  
+  std::ostream&
+  operator << ( std::ostream& sink, PSR const& psr )
+  {
+    std::ostringstream oss;
+    oss << std::hex
+        <<    "N=" << psr.Get(N)
+        <<  ", Z=" << psr.Get(Z)
+        <<  ", C=" << psr.Get(C)
+        <<  ", V=" << psr.Get(V)
+        <<  ", Q=" << psr.Get(Q)
+        << ", GE=" << psr.Get(GE)
+        <<  ", E=" << psr.Get(E)
+        <<  ", J=" << psr.Get(J)
+        <<  ", T=" << psr.Get(T)
+        << ", IT=" << psr.ITGetState()
+        <<  ", A=" << psr.Get(A)
+        <<  ", I=" << psr.Get(I)
+        <<  ", F=" << psr.Get(F)
+        <<  ", M=" << psr.Get(M);
+    sink << oss.str();
+    return sink;
+  }
+  
 
 } // end of namespace arm
 } // end of namespace processor

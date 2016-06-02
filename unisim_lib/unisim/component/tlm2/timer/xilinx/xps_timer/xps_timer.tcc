@@ -37,6 +37,7 @@
 
 #include <systemc.h>
 #include <unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.hh>
+#include <math.h>
 
 #define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 
@@ -912,13 +913,18 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 template <class CONFIG>
 void XPS_Timer<CONFIG>::AlignToClock(sc_time& t)
 {
-	sc_dt::uint64 time_tu = t.value();
-	sc_dt::uint64 cycle_time_tu = cycle_time.value();
-	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
-	if(!modulo) return; // already aligned
+// 	sc_dt::uint64 time_tu = t.value();
+// 	sc_dt::uint64 cycle_time_tu = cycle_time.value();
+// 	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
+// 	if(!modulo) return; // already aligned
+// 
+// 	time_tu += cycle_time_tu - modulo;
+// 	t = sc_time(time_tu, false);
 
-	time_tu += cycle_time_tu - modulo;
-	t = sc_time(time_tu, false);
+	sc_time modulo(t);
+	modulo %= cycle_time;
+	if(modulo == SC_ZERO_TIME) return; // already aligned
+	t += cycle_time - modulo;
 }
 
 template <class CONFIG>

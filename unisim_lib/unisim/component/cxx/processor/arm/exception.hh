@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 
+#include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -43,15 +44,35 @@ namespace cxx {
 namespace processor {
 namespace arm {
 namespace exception {
-
-static const uint32_t RESET = 1;
-static const uint32_t UNDEFINED_INSN = 2;
-static const uint32_t SWI = 4;
-static const uint32_t PREFETCH_ABORT = 8;
-static const uint32_t DATA_ABORT = 16;
-static const uint32_t IRQ = 32;
-static const uint32_t FIQ = 64;
-
+  
+  /*** RegisterField for the Synchronous Virtual exception vector ***/
+  /* Synchronous */
+  static RegisterField< 0, 1> const RESET;  // Reset
+  static RegisterField< 1, 1> const PABRT;  // Prefetch Abort (including prefetch TLB miss)
+  static RegisterField< 2, 1> const UNDEF;  // Undefined instruction
+  static RegisterField< 3, 1> const SWI;    // Software Interrupt
+  static RegisterField< 4, 1> const DABRT;  // Data Abort (including data TLB miss)
+  static RegisterField< 5, 1> const EABRT;  // Synchronous External Abort (External memory system exception)
+  
+  /* Asynchronous */
+  static RegisterField<24, 8> const ASYNC;  // Mask for all asynchronous abort
+  
+  static RegisterField<24, 1> const FIQ;    // FIQ external asynchronous abort
+  static RegisterField<25, 1> const IRQ;    // IRQ external asynchronous abort
+  
+  /** SynchronousAbort the class used to abort normal execution of an
+   *  instruction (using a throw).
+   */
+  struct Exception : public std::exception { Exception() {} virtual const char* what() const throw() { return "Exception"; } };
+  struct UndefInstrException : Exception { UndefInstrException() {} virtual const char* what() const throw() { return "UndefInstrException"; } };
+  struct HypTrapException : Exception { HypTrapException() {} virtual const char* what() const throw() { return "HypTrapException"; } };
+  struct SVCException : Exception  { SVCException() {} virtual const char* what() const throw() { return "SVCException"; } };
+  struct SMCException : Exception  { SMCException() {} virtual const char* what() const throw() { return "SMCException"; } };
+  struct HVCException : Exception  { HVCException() {} virtual const char* what() const throw() { return "HVCException"; } };
+  struct PrefetchAbortException : Exception { PrefetchAbortException() {} virtual const char* what() const throw() { return "PrefetchAbortException"; } };
+  struct DataAbortException : Exception { DataAbortException() {} virtual const char* what() const throw() { return "DataAbortException"; } };
+  struct VirtualAbortException : Exception { VirtualAbortException() {} virtual const char* what() const throw() { return "VirtualAbortException"; } };
+  
 } // end of namespace exception
 } // end of namespace arm
 } // end of namespace processor

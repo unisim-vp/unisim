@@ -36,7 +36,7 @@
 
 #include <errno.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
 #include <winsock2.h>
 
@@ -114,7 +114,7 @@ Telnet::~Telnet()
 	if(telnet_sock >= 0)
 	{
 		TelnetFlushOutput();
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(telnet_sock);
 #else
 		close(telnet_sock);
@@ -165,7 +165,7 @@ bool Telnet::EndSetup()
 	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
 	{
 		logger << DebugError << "Bind failed. TCP Port #" << telnet_tcp_port << " may be already in use. Please specify another port in " << param_telnet_tcp_port.GetName() << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -176,7 +176,7 @@ bool Telnet::EndSetup()
 	if(listen(server_sock, 1))
 	{
 		logger << DebugError << "Listen failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -184,10 +184,10 @@ bool Telnet::EndSetup()
 		return false;
 	}
 
-#if defined(WIN32) || defined(WIN64)
-		int addr_len;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	int addr_len;
 #else
-		socklen_t addr_len;
+	socklen_t addr_len;
 #endif
 
 	logger << DebugInfo << "Listening on TCP port " << telnet_tcp_port << EndDebugInfo;
@@ -197,7 +197,7 @@ bool Telnet::EndSetup()
 	if(telnet_sock < 0)
 	{
 		logger << DebugError << "accept failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -210,7 +210,7 @@ bool Telnet::EndSetup()
 		logger << DebugInfo << "Connection with telnet client established" << EndDebugInfo;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	u_long NonBlock = 1;
 	if(ioctlsocket(telnet_sock, FIONBIO, &NonBlock) != 0)
 	{
@@ -243,7 +243,7 @@ bool Telnet::EndSetup()
 	}
 #endif
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	closesocket(server_sock);
 #else
 	close(server_sock);
@@ -281,7 +281,7 @@ void Telnet::TelnetFlushOutput()
 		unsigned int index = 0;
 		do
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int r = send(telnet_sock, (const char *)(telnet_output_buffer + index), telnet_output_buffer_size, 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -317,7 +317,7 @@ bool Telnet::TelnetGet(uint8_t& v)
 	{
 		do
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int r = recv(telnet_sock, (char *) telnet_input_buffer, sizeof(telnet_input_buffer), 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -325,7 +325,7 @@ bool Telnet::TelnetGet(uint8_t& v)
 			if(r <= 0)
 #endif
 			{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
 #else
 				if(r < 0 && errno == EAGAIN)

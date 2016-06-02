@@ -46,6 +46,8 @@ Simulator::Simulator(int argc, char **argv)
   , host_time(0)
   , linux_os(0)
   , tee_memory_access_reporting(0)
+  , nirq_signal("nIRQm")
+  , nfiq_signal("nFIQm")
   , simulation_spent_time(0.0)
   , gdb_server(0)
   , inline_debugger(0)
@@ -134,15 +136,24 @@ Simulator::Simulator(int argc, char **argv)
 			0;
   
   
+  nfiq_signal = true; 
+  nirq_signal = true; 
+  nrst_signal = true;
+  
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
 
   cpu->master_socket(memory->slave_sock);
+  cpu->nIRQm( nirq_signal );
+  cpu->nFIQm( nfiq_signal );
+  cpu->nRESETm( nrst_signal );
+
 
   // Connect debugger to CPU
   cpu->debug_control_import >> debugger->debug_control_export;
   cpu->instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
   cpu->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+  cpu->memory_import >> memory->memory_export;
   debugger->disasm_import >> cpu->disasm_export;
   debugger->memory_import >> cpu->memory_export;
   debugger->registers_import >> cpu->registers_export;
@@ -179,6 +190,7 @@ Simulator::Simulator(int argc, char **argv)
     inline_debugger->backtrace_import >> debugger->backtrace_export;
     inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
 	inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
+	inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
     inline_debugger->profiling_import >> profiler->profiling_export;
   }
   else if(enable_gdb_server)
@@ -197,17 +209,17 @@ Simulator::Simulator(int argc, char **argv)
   linux_os->memory_import_ >> cpu->memory_export;
   linux_os->memory_injection_import_ >> cpu->memory_injection_export;
   linux_os->registers_import_ >> cpu->registers_export;
-  // connecting power estimator
-  if ( enable_power_estimation )
-  {
-    cpu->icache.power_estimator_import >> il1_power_estimator->power_estimator_export;
-    cpu->icache.power_mode_import >> il1_power_estimator->power_mode_export;
-    cpu->dcache.power_estimator_import >> dl1_power_estimator->power_estimator_export;
-    cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
+  // // connecting power estimator
+  // if ( enable_power_estimation )
+  // {
+  //   cpu->icache.power_estimator_import >> il1_power_estimator->power_estimator_export;
+  //   cpu->icache.power_mode_import >> il1_power_estimator->power_mode_export;
+  //   cpu->dcache.power_estimator_import >> dl1_power_estimator->power_estimator_export;
+  //   cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
 
-    il1_power_estimator->time_import >> time->time_export;
-    dl1_power_estimator->time_import >> time->time_export;
-  }
+  //   il1_power_estimator->time_import >> time->time_export;
+  //   dl1_power_estimator->time_import >> time->time_export;
+  // }
 }
 
 Simulator::~Simulator()
@@ -423,11 +435,12 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 	sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_process_handle h = sc_get_current_process_handle();
+		switch(h.proc_kind())
 		{
 			case SC_THREAD_PROC_: 
 			case SC_CTHREAD_PROC_:
-				wait();
+				sc_core::wait();
 				break;
 			default:
 				break;
@@ -473,13 +486,12 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable("linux-os.utsname-nodename","localhost");
   sim->SetVariable("linux-os.utsname-release", "2.6.27.35");
   sim->SetVariable("linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010");
-  sim->SetVariable("linux-os.utsname-machine", "armv5");
+  sim->SetVariable("linux-os.utsname-machine", "armv7");
   sim->SetVariable("linux-os.utsname-domainname","localhost");
   sim->SetVariable("linux-os.apply-host-environment", false);
   sim->SetVariable("linux-os.hwcap", "swp half fastmult");
 
-  sim->SetVariable("gdb-server.architecture-description-filename",
-                   "gdb_armv5l.xml");
+  sim->SetVariable("gdb-server.architecture-description-filename", "gdb_armv5l.xml"); // Current Cross-GDBs doesn't natively recognize armv7 ...
   sim->SetVariable("debugger.parse-dwarf", false);
   sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml");
 

@@ -127,7 +127,9 @@ private:
 	typedef enum
 	{
 		TOK_COMMA,
+#if 0
 		TOK_COLON,
+#endif
 		TOK_EQUAL,
 		TOK_STRING,
 		TOK_EOF

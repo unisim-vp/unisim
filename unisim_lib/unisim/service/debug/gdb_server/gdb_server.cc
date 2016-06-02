@@ -57,7 +57,7 @@ GDBRegister::GDBRegister(const string& reg_name, int reg_bitsize, GDBEndian reg_
 {
 }
 
-GDBRegister::GDBRegister(unisim::util::debug::Register *_reg, GDBEndian reg_endian, unsigned int _reg_num)
+GDBRegister::GDBRegister(unisim::service::interfaces::Register *_reg, GDBEndian reg_endian, unsigned int _reg_num)
 	: name(_reg->GetName())
 	, bitsize(8 * _reg->GetSize())
 	, reg(_reg)

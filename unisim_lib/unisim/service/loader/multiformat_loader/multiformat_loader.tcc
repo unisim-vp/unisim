@@ -134,7 +134,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	, elf64_loaders()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_verbose_parser("verbose-parser", this, verbose_parser, "Enable/Disable verbosity of parser")
-	, param_filename("filename", this, filename, "List of files to load. Syntax: [[filename=]<filename1>[:[format=]<format1>]][,[filename=]<filename2>[:[format=]<format2>]]... (e.g. boot.bin:raw,app.elf)")
+	, param_filename("filename", this, filename, "List of files to load. Syntax: [[filename=]<filename1>[=[format=]<format1>]][,[filename=]<filename2>[=[format=]<format2>]]... (e.g. boot.bin=raw,app.elf)")
 {
 	positional_option_types.push_back(OPT_FILENAME);
 	positional_option_types.push_back(OPT_FORMAT);
@@ -457,6 +457,7 @@ typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement *MultiForma
 			return ld_stmt;
 		}
 		
+#if 0
 		if(tok != TOK_COLON)
 		{
 			logger << DebugWarning << "In Parameter " << param_filename.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a ':')" << EndDebugWarning;
@@ -464,6 +465,15 @@ typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement *MultiForma
 			delete ld_stmt;
 			return 0;
 		}
+#else
+		if(tok != TOK_EQUAL)
+		{
+			logger << DebugWarning << "In Parameter " << param_filename.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a '=')" << EndDebugWarning;
+			PrettyPrintSyntaxErrorLocation(filename.c_str(), pos);
+			delete ld_stmt;
+			return 0;
+		}
+#endif
 		
 		pos += n;
 	}
@@ -588,7 +598,8 @@ unsigned int MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::
 		}
 		return n;
 	}
-	
+
+#if 0
 	if(c == ':')
 	{
 		tok_value = c;
@@ -599,13 +610,18 @@ unsigned int MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::
 		}
 		return n;
 	}
-	
+#endif
+
 	do
 	{
 		tok_value += c;
 		if((pos + n) >= s.length()) break;
 		c = s[pos + n];
-		if((c == '=') || (c == ',') || (c == ':')) break;
+		if((c == '=') || (c == ',')
+#if 0
+			|| (c == ':')
+#endif
+		) break;
 		n++;
 	}
 	while(1);
@@ -628,9 +644,11 @@ std::string MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::GetTokenName(Token tok
 		case TOK_COMMA:
 			sstr << "token ','";
 			break;
+#if 0
 		case TOK_COLON:
 			sstr << "token ':'";
 			break;
+#endif
 		case TOK_EQUAL:
 			sstr << "token '='";
 			break;

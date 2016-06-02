@@ -71,13 +71,13 @@ rfeia.disasm = {
 op srsdb( 0b11101000[8]: 0b00[2]: x[1]: 0b0[1]: r0[4]:> <: 0b11000000000[11]: imm[5] );
 
 srsdb.disasm = {
-  buffer << "srsdb\t" << DisasmRegister(r0) << (x ? "!" : "") << ", #" << imm;
+  buffer << "srsdb\t" << DisasmRegister(r0) << (x ? "!" : "") << ", " << DisasmI(imm);
 };
 
 op srsia( 0b11101001[8]: 0b10[2]: x[1]: 0b0[1]: r0[4]:> <: 0b11000000000[11]: imm[5] );
 
 srsia.disasm = {
-  buffer << "srsia\t" << DisasmRegister(r0) << (x ? "!" : "") << ", #" << imm;
+  buffer << "srsia\t" << DisasmRegister(r0) << (x ? "!" : "") << ", " << DisasmI(imm);
 };
 
 /*
@@ -86,11 +86,11 @@ srsia.disasm = {
 
 op smc_i( 0b111101111111[12]: imm0[4]:> <: 0b1000[4]: shl<4> imm1[8]: shl<12> imm2[4] );
 smc_i.var imm : {uint32_t} = {imm2|imm1|imm0};
-smc_i.disasm = { buffer << "smc\t#" << imm; };
+smc_i.disasm = { buffer << "smc\t" << DisasmI(imm); };
 
 op hvc_i( 0b111101111110[12]: shl<12> imm1[4]:> <: 0b1000[4]: imm0[12] );
 hvc_i.var imm : {uint32_t} = {imm1|imm0};
-hvc_i.disasm = { buffer << "hvc\t#" << imm; };
+hvc_i.disasm = { buffer << "hvc\t" << DisasmI(imm); };
 
 /*******************************************************************
  * cps (Change Processor State) instruction
@@ -99,30 +99,66 @@ hvc_i.disasm = { buffer << "hvc\t#" << imm; };
  * and the CPSR.M mode field, without changing the other CPSR bits.
  */ 
 
-op cps_chmod( 0b11110[5]: 0b0[1]: 0b1110[4]: 0b1[1]: 0b0[1]: 0b1111[4]:> <: 0b10000[5]: 0b00[2]: 0b1[1]: 0b000[3]: mode[5] );
+op cps_w( 0b11110[5]: 0b0[1]: 0b1110[4]: 0b101111[6]:> <: 0b10000[5]: chitm[1]: dis[1]: chmod[1]: a[1]: i[1]: f[1]: mode[5] );
+cps_w.var reject : {Reject} = {(not chmod and (mode != 0)) or
+                             (chitm xor (a or i or f)) or
+                             (not (chmod or chitm)) or
+                             (not chitm and dis)};
 
-cps_chmod.disasm = {
-  buffer << "cps\t#" << mode;
+cps_w.disasm = {
+  buffer << "cps";
+  char const* sep = "\t";
+  if (chitm) {
+    buffer << (dis?"id":"ie") << '\t' << (a?"a":"") << (i?"i":"") << (f?"f":"");
+    sep = ", ";
+  }
+  if (chmod)
+    buffer << sep << DisasmI( mode );
 };
 
-op cps_chint( 0b11110[5]: 0b0[1]: 0b1110[4]: 0b1[1]: 0b0[1]: 0b1111[4]:> <: 0b10000[5]: 0b1[1]: dis[1]: 0b0[1]: aif[3]: 0b0[1]: 0b0000[4] );
-
-cps_chint.disasm = {
-  buffer << "cpsi" << (dis?'d':'e') << ".w" << (aif ? "\t" : "");
-  for (int bit = 3; --bit >= 0;)
-    if ((aif >> bit) & 1) buffer << ("fia"[bit]);
-};
-
-op cps_chintmod( 0b11110[5]: 0b0[1]: 0b1110[4]: 0b1[1]: 0b0[1]: 0b1111[4]:> <: 0b10000[5]: 0b1[1]: dis[1]: 0b1[1]: aif[3]: mode[5] );
-
-cps_chintmod.disasm = {
-  buffer << "cpsi" << (dis?'d':'e') << '\t';
-  for (int bit = 3; --bit >= 0;)
-    if ((aif >> bit) & 1) buffer << ("fia"[bit]);
-  buffer << ", #" << mode;
+cps_w.execute = {
+  if (GetNativeValue(cpu.CPSR().Get(M)) != cpu.USER_MODE)
+    return;
+  typename ARCH::psr_type cpsr_val = cpu.CPSR();
+  typedef typename ARCH::U32 U32;
+  if (a)     cpsr_val.Set( A, U32(dis) );
+  if (i)     cpsr_val.Set( I, U32(dis) );
+  if (f)     cpsr_val.Set( F, U32(dis) );
+  if (chmod) cpsr_val.Set( M, U32(mode) );
+  
+  // CPSRWriteByInstr() checks for illegal mode changes
+  CPSRWriteByInstr( cpu, cpsr_val.bits(), 0b1111, false );
 };
 
 /*
  * end of cps (Change Processor State) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * SUBS PC, LR and related instructions
+ * 
+ * The SUBS PC, LR, #<const> instruction provides an exception return
+ * without the use of the stack.
+ */ 
+
+op subs_pclri( 0b1111001111011110[16]:> <: 0b10001111[8]: imm[8] );
+
+subs_pclri.disasm = {
+  buffer << "subs\tpc, lr, " << DisasmI(imm);
+};
+
+subs_pclri.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 op1 = cpu.GetGPR( 14 ), op2 = U32(imm), res = op1 - op2;
+  
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  
+  cpu.SetGPR( 15, res );
+};
+
+/*
+ * end of SUBS PC, LR and related instructions
  *******************************************************************/
 

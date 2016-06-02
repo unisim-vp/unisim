@@ -95,7 +95,7 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Object;
 using unisim::service::interfaces::Loader;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableLookup;

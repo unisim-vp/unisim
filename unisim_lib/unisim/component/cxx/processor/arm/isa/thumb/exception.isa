@@ -52,7 +52,7 @@ swi.disasm = {
 swi.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  cpu.SWI( imm );
+  cpu.CallSupervisor( imm );
 };
 
 /*
@@ -81,21 +81,25 @@ bkpt.execute = {
  * end of bkpt (breakpoint) instruction
  *******************************************************************/
 
-{ ARCH::insns6 }:                               \
-op cpsid( 0b1011011001110[13]: bf[3] );
+{ ARCH::Config::insns6 }:                               \
+op cps( 0b10110110011[11]: dis[1]: 0[1]: a[1]: i[1]: f[1] );
+cps.var reject : {Reject} = {(not (a or i or f))};
+/* chmod = 0, chitm = 1, mode = 0 */
 
-cpsid.disasm = {
-  buffer << "cpsid" << (bf ? "\t" : "");
-  for (int bit = 3; --bit >= 0;)
-    if ((bf >> bit) & 1) buffer << ("fia"[bit]);
-}
+cps.disasm = {
+  buffer << "cps" << (dis?"id":"ie") << '\t' << (a?"a":"") << (i?"i":"") << (f?"f":"");
+};
 
-{ ARCH::insns6 }:                               \
-op cpsie( 0b1011011001100[13]: bf[3] );
-
-cpsie.disasm = {
-  buffer << "cpsie" << (bf ? "\t" : "");
-  for (int bit = 3; --bit >= 0;)
-    if ((bf >> bit) & 1) buffer << ("fia"[bit]);
-}
+cps.execute = {
+  if (GetNativeValue(cpu.CPSR().Get(M)) != cpu.USER_MODE)
+    return;
+  typename ARCH::psr_type cpsr_val = cpu.CPSR();
+  typedef typename ARCH::U32 U32;
+  if (a)     cpsr_val.Set( A, U32(dis) );
+  if (i)     cpsr_val.Set( I, U32(dis) );
+  if (f)     cpsr_val.Set( F, U32(dis) );
+  
+  // CPSRWriteByInstr() checks for illegal mode changes
+  CPSRWriteByInstr( cpu, cpsr_val.bits(), 0b1111, false );
+};
 

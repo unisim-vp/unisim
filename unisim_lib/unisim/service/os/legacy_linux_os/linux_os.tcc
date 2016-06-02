@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_OS_LINUX_OS_LINUX_OS_TCC__
 #define __UNISIM_SERVICE_OS_LINUX_OS_LINUX_OS_TCC__
 
-#if !defined(linux) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(WIN64)
+#if !defined(linux) && !defined(__linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(_WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 #error "Unsupported host machine for Linux system call translation !"
 #endif
 
@@ -53,7 +53,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #include <process.h>
 #else
 #include <sys/times.h>
@@ -68,7 +68,7 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/os/linux_os/linux_os_exception.hh"
 #include "unisim/util/endian/endian.hh"
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/likely/likely.hh"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim/service/os/linux_os/linux_os.tcc:" << __LINE__
@@ -104,7 +104,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::util::endian::endian_type;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::Host2BigEndian;
@@ -515,7 +515,10 @@ LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 SetupBlobARM()
 {
 	if(!blob) return false;
-	if ( utsname_machine.compare("armv5") == 0 )
+	if ((utsname_machine.compare("armv5") == 0) or
+      (utsname_machine.compare("armv6") == 0) or
+      (utsname_machine.compare("armv7") == 0) or
+      )
 	{
 		// TODO: Check that the program/stack is not in conflict with the
 		//   tls and cmpxchg interfaces
@@ -630,13 +633,13 @@ SetupBlobARM()
 			logger << DebugInfo
 					<< "cmpxchg handler configured." << EndDebugInfo;
 		}
-		typename unisim::util::debug::blob::Blob<ADDRESS_TYPE> *armv5_blob = 
+		typename unisim::util::debug::blob::Blob<ADDRESS_TYPE> *arm_blob = 
 			new typename unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
-		armv5_blob->SetArchitecture("arm");
-		armv5_blob->SetEndian(endianess);
-		armv5_blob->AddSection(tls_if_section);
-		armv5_blob->AddSection(cmpxchg_if_section);
-		blob->AddBlob(armv5_blob);
+		arm_blob->SetArchitecture("arm");
+		arm_blob->SetEndian(endianess);
+		arm_blob->AddSection(tls_if_section);
+		arm_blob->AddSection(cmpxchg_if_section);
+		blob->AddBlob(arm_blob);
 	}
 
 	return true;
@@ -1428,7 +1431,7 @@ LSC_open()
 	ReadMem(addr, pathname, pathnamelen + 1);
 	flags = GetSystemCallParam(1);
 	mode = GetSystemCallParam(2);
-#if defined(linux)
+#if defined(linux) || defined(__linux) || defined(__linux__)
 	ret = open(pathname, flags, mode);
 #else
 	int host_flags = 0;
@@ -1441,7 +1444,7 @@ LSC_open()
 	if (flags & LINUX_O_EXCL) host_flags |= O_EXCL;
 	if (flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
 	if (flags & LINUX_O_APPEND) host_flags |= O_APPEND;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 #else
 	host_mode = mode; // other UNIX systems should have the same bit encoding for protection
@@ -1539,7 +1542,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getuid() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -1570,7 +1573,7 @@ LSC_access()
 	pathname = (char *) malloc(pathnamelen + 1);
 	ReadMem(addr, pathname, pathnamelen + 1);
 	mode = GetSystemCallParam(1);
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	int win_mode = 0;
 	win_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 	ret = access(pathname, win_mode);
@@ -1653,7 +1656,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getgid() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -1673,7 +1676,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_geteuid() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -1693,7 +1696,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getegid() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -1784,7 +1787,7 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target((int32_t) 512);
 	target_stat->st_blocks = Host2Target((int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim);
@@ -1793,7 +1796,7 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctim);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux x64
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2Target(endianess, (int64_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim.tv_sec);
@@ -1823,7 +1826,7 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atime);
@@ -1832,7 +1835,7 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux 32
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atim.tv_sec);
@@ -1865,10 +1868,10 @@ int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Stat64(int fd, struct powerpc_stat64_t *target_stat)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
-#elif defined(linux)
+#elif defined(linux) || defined(__linux) || defined(__linux__)
 	struct stat64 host_stat;
 	ret = fstat64(fd, &host_stat);
 #elif defined(__APPLE_CC__)
@@ -1888,7 +1891,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim);
@@ -1897,7 +1900,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctim);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux x64
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim.tv_sec);
@@ -1927,7 +1930,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atime);
@@ -1936,7 +1939,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux 32
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atim.tv_sec);
@@ -1968,10 +1971,10 @@ int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Stat64(int fd, arm_stat64_t *target_stat)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
-#elif defined(linux)
+#elif defined(linux) || defined(__linux) || defined(__linux__)
 	struct stat64 host_stat;
 	ret = fstat64(fd, &host_stat);
 #elif defined(__APPLE_CC__)
@@ -1991,7 +1994,7 @@ Stat64(int fd, arm_stat64_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim);
@@ -2000,7 +2003,7 @@ Stat64(int fd, arm_stat64_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctim);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux x64
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim.tv_sec);
@@ -2031,7 +2034,7 @@ Stat64(int fd, arm_stat64_t *target_stat)
 	target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atime);
@@ -2040,7 +2043,7 @@ Stat64(int fd, arm_stat64_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) // Linux 32
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atim.tv_sec);
@@ -2071,7 +2074,7 @@ int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Times(struct powerpc_tms_t *target_tms)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;
@@ -2100,7 +2103,7 @@ int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Times(struct arm_tms_t *target_tms)
 {
 	int ret;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	FILETIME ftCreationTime;
 	FILETIME ftExitTime;
 	FILETIME ftKernelTime;
@@ -2131,7 +2134,7 @@ GetTimeOfDay(struct arm_timeval_t *target_tv)
 {
 	int ret = -1;
 
-#if defined(linux) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	struct timeval host_tv;
 
 	ret = (int)gettimeofday(&host_tv, NULL);
@@ -2148,7 +2151,7 @@ GetTimeOfDay(struct powerpc_timeval_t *target_tv)
 {
 	int ret = -1;
 
-#if defined(linux) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	struct timeval host_tv;
 
 	ret = (int) gettimeofday(&host_tv, NULL);
@@ -2165,7 +2168,7 @@ GetRUsage(PARAMETER_TYPE who, struct arm_rusage_t *target_ru)
 {
 	int ret = -1;
 
-#if defined(linux) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	struct rusage host_ru;
 
 	ret = (int)getrusage((int)who, &host_ru);
@@ -2198,7 +2201,7 @@ GetRUsage(PARAMETER_TYPE who, struct powerpc_rusage_t *target_ru)
 {
 	int ret = -1;
 
-#if defined(linux) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	struct rusage host_ru;
 
 	ret = (int)getrusage((int)who, &host_ru);
@@ -2488,7 +2491,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getuid32() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -2507,7 +2510,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getgid32() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -2526,7 +2529,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_geteuid32() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	uid_t ret;
@@ -2545,7 +2548,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getegid32() 
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	uint32_t ret = 0;
 #else
 	gid_t ret;
@@ -2588,7 +2591,7 @@ LSC_fcntl()
 { 
 	int64_t ret;
     
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	ret = -1;
 #else
 	ret = fcntl(GetSystemCallParam(0),
@@ -2974,7 +2977,7 @@ SetSyscallNameMap()
 	syscall_name_map[string("kill")] = &thistype::LSC_kill;
 	syscall_name_map[string("ftruncate")] = &thistype::LSC_ftruncate;
 	// the following are arm private system calls
-	if (utsname_machine.compare("armv5") == 0)
+	if ((system.compare("arm") == 0) || (system.compare("arm-eabi") == 0))
 	{
 		syscall_name_map[string("breakpoint")] = &thistype::LSC_arm_breakpoint;
 		syscall_name_map[string("cacheflush")] = &thistype::LSC_arm_cacheflush;
@@ -3064,7 +3067,7 @@ PPCGetSyscallNumber(int id)
 //         res->st_rdev = Host2Target(endianess, (int64_t)s->st_rdev);
 //         res->__pad2 = 0;
 //         res->st_size = Host2Target(endianess, (int64_t)s->st_size);
-// #if defined(WIN32) || defined(WIN64)
+// #if defined(_WIN32) || defined(_WIN64)
 //         res->st_blksize = 512;
 //         res->st_blocks = s->st_size / 512;
 // #else

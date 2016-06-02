@@ -41,6 +41,7 @@
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 
@@ -50,7 +51,6 @@
 #include <unisim/util/debug/event.hh>
 #include <unisim/util/debug/breakpoint.hh>
 #include <unisim/util/debug/watchpoint.hh>
-#include <unisim/util/debug/register.hh>
 
 #include <string>
 #include <vector>
@@ -118,7 +118,7 @@ class GDBRegister
 public:
 	GDBRegister();
 	GDBRegister(const string& reg_name, int reg_bitsize, GDBEndian endian, unsigned int reg_num);
-	GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian, unsigned int reg_num);
+	GDBRegister(unisim::service::interfaces::Register *reg, GDBEndian endian, unsigned int reg_num);
 	inline const char *GetName() const { return name.c_str(); }
 	inline int GetBitSize() const { return bitsize; }
 	bool SetValue(const string& hex);
@@ -126,14 +126,15 @@ public:
 	bool GetValue(string& hex) const;
 	bool GetValue(void *buffer) const;
 	inline int GetHexLength() const { return bitsize / 4; }
-	inline unisim::util::debug::Register *GetRegisterInterface() { return reg; }
-	inline void SetRegisterInterface(unisim::util::debug::Register *reg) { this->reg = reg; }
+	inline unisim::service::interfaces::Register *GetRegisterInterface() { return reg; }
+	inline void SetRegisterInterface(unisim::service::interfaces::Register *reg) { this->reg = reg; }
 	inline GDBEndian GetEndian() const { return endian; }
 	unsigned int GetRegNum() const { return reg_num; }
+	bool IsEmpty() const { return (bitsize == 0) and (not reg); }
 private:
 	string name;
 	int bitsize;
-	unisim::util::debug::Register *reg;
+	unisim::service::interfaces::Register *reg;
 	GDBEndian endian;
 	unsigned int reg_num;
 };

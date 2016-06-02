@@ -60,7 +60,7 @@
 #include <fstream>
 #include <iostream>
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windows.h>
 #include <io.h>     // for function access()
 #else
@@ -117,6 +117,9 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, subprogram_lookup_import("subprogram-lookup-import", this)
 	, logger(*this)
 	, memory_atom_size(1)
+	, search_path()
+	, init_macro()
+	, output()
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
 	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
 	, param_init_macro("init-macro", this, init_macro, "path to initial macro to run when debugger starts")
@@ -340,7 +343,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				break;
 			case 1:
 				{
-					unisim::util::debug::Register *reg = registers_import->GetRegister(parm[0].c_str());
+					unisim::service::interfaces::Register *reg = registers_import->GetRegister(parm[0].c_str());
 
 					if(reg)
 					{

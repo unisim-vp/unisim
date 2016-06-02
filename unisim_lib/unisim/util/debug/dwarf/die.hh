@@ -690,6 +690,7 @@ public:
 	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
 	bool HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByName(unsigned int dw_tag, const char *name, bool external) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindParentDIE(unsigned int dw_tag) const;
 	
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name) const;
@@ -729,6 +730,7 @@ public:
 	bool GetArrayElementEncoding(uint8_t& encoding) const;
 	unsigned int GetSubRangeCount() const;
 	const DWARF_DIE<MEMORY_ADDR> *GetAbstractOrigin() const;
+	const DWARF_DIE<MEMORY_ADDR> *GetSpecification() const;
 	
 	const unisim::util::debug::Type *BuildType(bool following_pointer = false, unsigned int array_dim = 0) const;
 	const unisim::util::debug::Type *BuildTypeOf() const;

@@ -57,14 +57,12 @@ class ManagedPayload
 {
 public:
 	ManagedPayload() :
-		extensions(tlm::max_num_extensions()),
 		memory_manager(0),
 		ref_count(0)
 	{
 	}
 	
 	explicit ManagedPayload(tlm::tlm_mm_interface *mm) :
-		extensions(tlm::max_num_extensions()),
 		memory_manager(mm),
 		ref_count(0)
 	{
@@ -100,181 +98,31 @@ public:
 	
 	void reset()
 	{
-		extensions.free_entire_cache();
 	};
-
-	void deep_copy_from(const ManagedPayload & other)
-	{
-		for(unsigned int i=0; i<other.extensions.size(); i++)
-		{
-			if(other.extensions[i])
-			{
-				if(!extensions[i])
-				{
-					tlm::tlm_extension_base *ext = other.extensions[i]->clone();
-					if(ext)
-					{
-						if(has_mm())
-						{
-							set_auto_extension(i, ext);
-						}
-						else
-						{
-							set_extension(i, ext);
-						}
-					}
-				}
-				else
-				{
-					extensions[i]->copy_from(*other.extensions[i]);
-				}
-			}
-		}
-	}
 	
-	void update_extensions_from(const ManagedPayload & other)
+	virtual ~ManagedPayload()
 	{
-		for(unsigned int i=0; i<other.extensions.size(); i++)
-		{
-			if(other.extensions[i])
-			{
-				if(extensions[i])
-				{
-					extensions[i]->copy_from(*other.extensions[i]);
-				}
-			}
-		}
 	}
 	
 	void free_all_extensions()
 	{
-		extensions.free_entire_cache();
-		for(unsigned int i=0; i<extensions.size(); i++)
-		{
-			if(extensions[i])
-			{
-				extensions[i]->free();
-				extensions[i] = 0;
-			}
-		}
 	}
-	
-	
-	virtual ~ManagedPayload()
-	{
-		for(unsigned int i=0; i<extensions.size(); i++)
-			if(extensions[i]) extensions[i]->free();
-	}
-	
-	template <typename T> T* set_extension(T* ext)
-	{
-		return static_cast<T*>(set_extension(T::ID, ext));
-	}
-	
-	tlm::tlm_extension_base* set_extension(unsigned int index, tlm::tlm_extension_base* ext)
-	{
-		tlm::tlm_extension_base* tmp = extensions[index];
-		extensions[index] = ext;
-		return tmp;
-	}
-	
-	template <typename T> T* set_auto_extension(T* ext)
-	{
-		return static_cast<T*>(set_auto_extension(T::ID, ext));
-	}
-	
-	tlm::tlm_extension_base* set_auto_extension(unsigned int index, tlm::tlm_extension_base* ext)
-	{
-		tlm::tlm_extension_base* tmp = extensions[index];
-		extensions[index] = ext;
-		if (!tmp) extensions.insert_in_cache(&extensions[index]);
-		assert(memory_manager != 0);
-		return tmp;
-	}
-	
-	template <typename T> void get_extension(T*& ext) const
-	{
-		ext = get_extension<T>();
-	}
-	
-	template <typename T> T* get_extension() const
-	{
-		return static_cast<T*>(get_extension(T::ID));
-	}
-	
-	tlm::tlm_extension_base* get_extension(unsigned int index) const
-	{
-		return extensions[index];
-	}
-	
-	template <typename T> void clear_extension(const T* ext)
-	{
-		clear_extension<T>();
-	}
-	
-	template <typename T> void clear_extension()
-	{
-		clear_extension(T::ID);
-	}
-	
-	template <typename T> void release_extension(T* ext)
-	{
-		release_extension<T>();
-	}
-	
-	template <typename T> void release_extension()
-	{
-		release_extension(T::ID);
-	}
-
-    void resize_extensions()
-    {
-        extensions.expand(tlm::max_num_extensions());
-    }
 
 protected:
 
-	ManagedPayload(const ManagedPayload& x) :
-		extensions(tlm::max_num_extensions())
-		, memory_manager(0)
+	ManagedPayload(const ManagedPayload& x)
+		: memory_manager(0)
 		, ref_count(0)
 
 	{
-		for(unsigned int i=0; i<extensions.size(); i++)
-		{
-			extensions[i] = x.get_extension(i);
-		}
 	}
 	
 	ManagedPayload& operator= (const ManagedPayload& x)
 	{
-		for(unsigned int i=0; i<extensions.size(); i++)
-		{
-			extensions[i] = x.get_extension(i);
-		}
 		return (*this);
 	}
 
 private:
-	void clear_extension(unsigned int index)
-	{
-		extensions[index] = static_cast<tlm::tlm_extension_base*>(0);
-	}
-	
-	void release_extension(unsigned int index)
-	{
-		if (memory_manager)
-		{
-			extensions.insert_in_cache(&extensions[index]);
-		}
-		else
-		{
-			extensions[index]->free();
-			extensions[index] = static_cast<tlm::tlm_extension_base*>(0);
-		}
-	}
-	
-	tlm::tlm_array<tlm::tlm_extension_base*> extensions;
 	tlm::tlm_mm_interface* memory_manager;
 	unsigned int ref_count;
 };
@@ -467,7 +315,7 @@ public:
 	Schedule()
 		: schedule()
 		, free_list()
-		, kernel_event()
+		, kernel_event("schedule_kernel_event")
 	{
 	}
 	
@@ -1102,15 +950,29 @@ inline DMIRegion *DMIRegionCache::Lookup(sc_dt::uint64 addr, sc_dt::uint64 size)
 
 inline void DMIRegionCache::Insert(DMIGrant dmi_grant, tlm::tlm_dmi *dmi_data)
 {
-	DMIRegion *dmi_region = new DMIRegion(dmi_grant, dmi_data);
-	dmi_region->next = mru_dmi_region;
-	mru_dmi_region = dmi_region;
+	if(dmi_data->get_end_address() >= dmi_data->get_start_address()) // prevent us from crazy targets behavior
+	{
+		DMIRegion *dmi_region = new DMIRegion(dmi_grant, dmi_data);
+		dmi_region->next = mru_dmi_region;
+		mru_dmi_region = dmi_region;
+	}
+	else
+	{
+		delete dmi_data;
+	}
 }
 
 inline void DMIRegionCache::Insert(DMIRegion *dmi_region)
 {
-	dmi_region->next = mru_dmi_region;
-	mru_dmi_region = dmi_region;
+	if(dmi_region->GetDMI()->get_end_address() >= dmi_region->GetDMI()->get_start_address()) // prevent us from crazy targets behavior
+	{
+		dmi_region->next = mru_dmi_region;
+		mru_dmi_region = dmi_region;
+	}
+	else
+	{
+		delete dmi_region;
+	}
 }
 
 inline void DMIRegionCache::Remove(DMIRegion *dmi_region)

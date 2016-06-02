@@ -54,7 +54,7 @@
 #include "unisim/kernel/logger/logger.hh"
 
 #include "unisim/util/debug/simple_register.hh"
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -104,7 +104,7 @@ using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 
 using unisim::util::debug::SimpleRegister;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::debug::Symbol;
 using unisim::util::endian::endian_type;
 using unisim::util::endian::BigEndian2Host;

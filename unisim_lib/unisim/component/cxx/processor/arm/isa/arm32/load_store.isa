@@ -44,21 +44,24 @@
 
 op ldr_imm( cond[4]: 0b010[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: offset[12] );
 ldr_imm.var imm : {int32_t} = {u?offset:-offset};
+ldr_imm.var reject : {Reject} = {(not p and w) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 ldr_imm.disasm = {
-  if ((rn == 15) and ((not p) or w)) { buffer << "<undefined>"; return; }
   buffer << "ldr" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
 };
 
 ldr_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead32( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead32( p?oaddr:addr ) );
 };
 
 op ldr_reg( cond[4]: 0b011[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+ldr_reg.var reject : {Reject} = {(not p and w) or (rm == 15) or
+                                 ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldr_reg.disasm = {
   buffer << "ldr" << DisasmCondition(cond) << '\t'
@@ -69,10 +72,11 @@ ldr_reg.disasm = {
 ldr_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+  typedef typename ARCH::U32 U32;
+  U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead32( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead32( p?oaddr:addr ) );
 };
 
 /*
@@ -85,21 +89,24 @@ ldr_reg.execute = {
 
 op ldrh_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1011[4]: im0[4] );
 ldrh_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+ldrh_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 ldrh_imm.disasm = {
-  if ((rn == 15) and ((not p) or w)) { buffer << "<undefined>"; return; }
   buffer << "ldrh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
 };
 
 ldrh_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead16( p?oaddr:addr ) );
 };
 
 op ldrh_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: 0b0000[4]: 0b1011[4]: rm[4] );
+ldrh_reg.var reject : {Reject} = {(not p and w) or (rm == 15) or (rt == 15) or
+                                 ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldrh_reg.disasm = {
   buffer << "ldrh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
@@ -108,10 +115,10 @@ ldrh_reg.disasm = {
 ldrh_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t rmval = cpu.GetGPR( rm ),
-           addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead16( p?oaddr:addr ) );
 };
 
 /*
@@ -124,21 +131,26 @@ ldrh_reg.execute = {
 
 op ldrsh_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1111[4]: im0[4] );
 ldrsh_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+ldrsh_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 ldrsh_imm.disasm = {
-  if ((rn == 15) and ((not p) or w)) { buffer << "<undefined>"; return; }
   buffer << "ldrsh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
 };
 
 ldrsh_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( p?oaddr:addr ) ) ) ) );
 };
 
 op ldrsh_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: 0b0000[4]: 0b1111[4]: rm[4] );
+ldrsh_reg.var reject : {Reject} = {(not p and w) or (rm == 15) or (rt == 15) or
+                                   ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldrsh_reg.disasm = {
   buffer << "ldrsh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
@@ -147,10 +159,13 @@ ldrsh_reg.disasm = {
 ldrsh_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t rmval = cpu.GetGPR( rm ),
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( p?oaddr:addr ) ) ) ) );
 };
 
 /*
@@ -163,21 +178,24 @@ ldrsh_reg.execute = {
 
 op ldrb_imm( cond[4]: 0b010[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]: rt[4]: offset[12] );
 ldrb_imm.var imm : {int32_t} = {u?offset:-offset};
+ldrb_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 ldrb_imm.disasm = {
-  if ((rn == 15) and ((not p) or w)) { buffer << "<undefined>"; return; }
   buffer << "ldrb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
 };
 
 ldrb_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
   cpu.SetGPR_mem( rt, cpu.MemRead8( p?oaddr:addr ) );
 };
 
 op ldrb_reg( cond[4]: 0b011[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+ldrb_reg.var reject : {Reject} = {(not p and w) or (rm == 15) or (rt == 15) or
+                                  ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldrb_reg.disasm = {
   buffer << "ldrb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
@@ -187,7 +205,8 @@ ldrb_reg.disasm = {
 ldrb_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+  typedef typename ARCH::U32 U32;
+  U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
   cpu.SetGPR_mem( rt, cpu.MemRead8( p?oaddr:addr ) );
@@ -203,21 +222,26 @@ ldrb_reg.execute = {
 
 op ldrsb_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b1[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1101[4]: im0[4] );
 ldrsb_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+ldrsb_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 ldrsb_imm.disasm = {
-  if ((rn == 15) and ((not p) or w)) { buffer << "<undefined>"; return; }
   buffer << "ldrsb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
 };
 
 ldrsb_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S8  S8;
+  U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, U32( S32( S8( cpu.MemRead8( p?oaddr:addr ) ) ) ) );
 };
 
 op ldrsb_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b1[1]: rn[4]: rt[4]: 0b0000[4]: 0b1101[4]: rm[4] );
+ldrsb_reg.var reject : {Reject} = {(not p and w) or (rm == 15) or (rt == 15) or
+                                  ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldrsb_reg.disasm = {
   buffer << "ldrsb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
@@ -226,10 +250,13 @@ ldrsb_reg.disasm = {
 ldrsb_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t rmval = cpu.GetGPR( rm ),
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S8  S8;
+  U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( p?oaddr:addr ) );
+  cpu.SetGPR_mem( rt, U32( S32( S8( cpu.MemRead8( p?oaddr:addr ) ) ) ) );
 };
 
 /*
@@ -240,26 +267,30 @@ ldrsb_reg.execute = {
  * ldrd instruction
  */
 
-{ ARCH::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op ldrd_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1101[4]: im0[4] );
 ldrd_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+ldrd_imm.var reject : {Reject} = {(not p and w) or (rt & 1) or (rt == 14) or
+                                  ((not p or w) and ((rn == 15) or ((rn & 0xe) == rt)))};
 
 ldrd_imm.disasm = {
-  if ((rn == 15) and ((not p) or w)) { buffer << "<undefined>"; return; }
   buffer << "ldrd" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
 };
 
 ldrd_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( (rt+0) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 0 ) );
-  cpu.SetGPR_mem( (rt+1) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 4 ) );
+  cpu.SetGPR_mem( (rt+0) & 0xf, cpu.MemRead32( (p?oaddr:addr) + U32(0) ) );
+  cpu.SetGPR_mem( (rt+1) & 0xf, cpu.MemRead32( (p?oaddr:addr) + U32(4) ) );
 };
 
-{ ARCH::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op ldrd_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: 0b0000[4]: 0b1101[4]: rm[4] );
+ldrd_reg.var reject : {Reject} = {(not p and w) or (rt & 1) or (rt == 14) or (rm == 15) or ((rm & 0xe) == rt) or
+                                  ((not p or w) and ((rn == 15) or ((rn & 0xe) == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 ldrd_reg.disasm = {
   buffer << "ldrd" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
@@ -268,11 +299,12 @@ ldrd_reg.disasm = {
 ldrd_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t rmval = cpu.GetGPR( rm ),
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( (rt+0) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 0 ) );
-  cpu.SetGPR_mem( (rt+1) & 0xf, cpu.MemRead32( (p?oaddr:addr) + 4 ) );
+  cpu.SetGPR_mem( (rt+0) & 0xf, cpu.MemRead32( (p?oaddr:addr) + U32(0) ) );
+  cpu.SetGPR_mem( (rt+1) & 0xf, cpu.MemRead32( (p?oaddr:addr) + U32(4) ) );
 };
 
 /*
@@ -285,6 +317,7 @@ ldrd_reg.execute = {
 
 op str_imm( cond[4]: 0b010[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: offset[12] );
 str_imm.var imm : {int32_t} = {u?offset:-offset};
+str_imm.var reject : {Reject} = {(not p and w) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 str_imm.disasm = {
   buffer << "str" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -293,12 +326,16 @@ str_imm.disasm = {
 str_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite32( p?oaddr:addr, cpu.GetGPR( rt ) );
+  cpu.MemUWrite32( p?oaddr:addr, cpu.GetGPR( rt ) );
 };
 
 op str_reg( cond[4]: 0b011[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+str_reg.var reject : {Reject} = {(not p and w)or (rm == 15) or
+                                 ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
+
 
 str_reg.disasm = {
   buffer << "str" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
@@ -308,10 +345,11 @@ str_reg.disasm = {
 str_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+  typedef typename ARCH::U32 U32;
+  U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite32( p?oaddr:addr, cpu.GetGPR( rt ) );
+  cpu.MemUWrite32( p?oaddr:addr, cpu.GetGPR( rt ) );
 };
 
 /*
@@ -324,6 +362,7 @@ str_reg.execute = {
 
 op strh_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1011[4]: im0[4] );
 strh_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+strh_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 strh_imm.disasm = {
   buffer << "strh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -332,13 +371,17 @@ strh_imm.disasm = {
 strh_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  U32 addr = cpu.GetGPR( rn ), oaddr = addr + U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite16( p?oaddr:addr, cpu.GetGPR( rt ) );
+  cpu.MemUWrite16( p?oaddr:addr, U16(cpu.GetGPR( rt )) );
 };
 
 op strh_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: 0b0000[4]: 0b1011[4]: rm[4] );
- 
+strh_reg.var reject : {Reject} = {(not p and w)or (rm == 15) or (rt == 15) or
+                                  ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
+
 strh_reg.disasm = {
   buffer << "strh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
 };
@@ -346,10 +389,12 @@ strh_reg.disasm = {
 strh_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t rmval = cpu.GetGPR( rm ),
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite16( p?oaddr:addr, cpu.GetGPR( rt ) );
+  cpu.MemUWrite16( p?oaddr:addr, U16(cpu.GetGPR( rt )) );
 };
 
 /*
@@ -362,6 +407,7 @@ strh_reg.execute = {
 
 op strb_imm( cond[4]: 0b010[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: offset[12] );
 strb_imm.var imm : {int32_t} = {u?offset:-offset};
+strb_imm.var reject : {Reject} = {(not p and w) or (rt == 15) or ((not p or w) and ((rn == 15) or (rn == rt)))};
 
 strb_imm.disasm = {
   buffer << "strb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -370,12 +416,16 @@ strb_imm.disasm = {
 strb_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8  U8;
+  U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite8( p?oaddr:addr, cpu.GetGPR( rt ) );
+  cpu.MemWrite8( p?oaddr:addr, U8(cpu.GetGPR( rt )) );
 };
 
 op strb_reg( cond[4]: 0b011[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+strb_reg.var reject : {Reject} = {(not p and w)or (rm == 15) or (rt == 15) or
+                                  ((not p or w) and ((rn == 15) or (rn == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 strb_reg.disasm = {
   buffer << "strb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
@@ -385,10 +435,12 @@ strb_reg.disasm = {
 strb_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8  U8;
+  U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite8( p?oaddr:addr, cpu.GetGPR( rt ) );
+  cpu.MemWrite8( p?oaddr:addr, U8(cpu.GetGPR( rt )) );
 };
 
 /*
@@ -399,9 +451,11 @@ strb_reg.execute = {
  * strd instruction
  */
 
-{ ARCH::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op strd_imm( cond[4]: 0b000[3]: p[1]: u[1]: 0b1[1]: w[1]: 0b0[1]: rn[4]: rt[4]: shl<4> im1[4]: 0b1111[4]: im0[4] );
 strd_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+strd_imm.var reject : {Reject} = {(not p and w) or (rt & 1) or (rt == 14) or
+                                  ((not p or w) and ((rn == 15) or ((rn & 0xe) == rt)))};
 
 strd_imm.disasm = {
   buffer << "strd" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI( rn, imm, p, w );
@@ -410,14 +464,17 @@ strd_imm.disasm = {
 strd_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn ), oaddr = addr+ U32(imm);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite32( (p?oaddr:addr) + 0, cpu.GetGPR( (rt+0) & 0xf ) );
-  cpu.MemWrite32( (p?oaddr:addr) + 4, cpu.GetGPR( (rt+1) & 0xf ) );
+  cpu.MemWrite32( (p?oaddr:addr) + U32(0), cpu.GetGPR( (rt+0) & 0xf ) );
+  cpu.MemWrite32( (p?oaddr:addr) + U32(4), cpu.GetGPR( (rt+1) & 0xf ) );
 };
 
-{ ARCH::insns5E }: \
+{ ARCH::Config::insns5E }: \
 op strd_reg( cond[4]: 0b000[3]: p[1]: u[1]: 0b0[1]: w[1]: 0b0[1]: rn[4]: rt[4]: 0b0000[4]: 0b1111[4]: rm[4] );
+strd_reg.var reject : {Reject} = {(not p and w) or (rt & 1) or (rt == 14) or (rm == 15) or
+                                  ((not p or w) and ((rn == 15) or ((rn & 0xe) == rt) or ((ARCH::Config::model < ARMV6) and (rm == rn))))};
 
 strd_reg.disasm = {
   buffer << "strd" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR( rn, rm, p, u, w );
@@ -426,11 +483,12 @@ strd_reg.disasm = {
 strd_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t rmval = cpu.GetGPR( rm ),
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   if (not p or w) cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite32( (p?oaddr:addr) + 0, cpu.GetGPR( (rt+0) & 0xf ) );
-  cpu.MemWrite32( (p?oaddr:addr) + 4, cpu.GetGPR( (rt+1) & 0xf ) );
+  cpu.MemWrite32( (p?oaddr:addr) + U32(0), cpu.GetGPR( (rt+0) & 0xf ) );
+  cpu.MemWrite32( (p?oaddr:addr) + U32(4), cpu.GetGPR( (rt+1) & 0xf ) );
 };
 
 /*
@@ -444,6 +502,7 @@ strd_reg.execute = {
 
 op ldrt_imm( cond[4]: 0b0100[4]: u[1]: 0b011[3]: rn[4]: rt[4]: offset[12] );
 ldrt_imm.var imm : {int32_t} = {u?offset:-offset};
+ldrt_imm.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt)};
 
 ldrt_imm.disasm = {
   buffer << "ldrt" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,false,false);
@@ -452,12 +511,14 @@ ldrt_imm.disasm = {
 ldrt_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn );
-  cpu.SetGPR( rn, addr + imm );
-  cpu.SetGPR_mem( rt, cpu.MemRead32( addr ) );
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr+ U32(imm) );
+  cpu.SetGPR_mem( rt, cpu.MemURead32( addr ) );
 };
 
 op ldrt_reg( cond[4]: 0b0110[4]: u[1]: 0b011[3]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+ldrt_reg.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt) or (rm == 15)};
 
 ldrt_reg.disasm = {
   buffer << "ldrt" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRRI(rn,rm,shift,imm,false,u,true);
@@ -466,10 +527,11 @@ ldrt_reg.disasm = {
 ldrt_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+  typedef typename ARCH::U32 U32;
+  U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead32( addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead32( addr ) );
 };
 
 /*
@@ -483,6 +545,7 @@ ldrt_reg.execute = {
 
 op ldrht_imm( cond[4]: 0b0000[4]: u[1]: 0b111[3]: rn[4]: rt[4]: shl<4> im1[4]: 0b1011[4]: im0[4] );
 ldrht_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+ldrht_imm.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt)};
 
 ldrht_imm.disasm = {
   buffer << "ldrht" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,false,false);
@@ -491,12 +554,14 @@ ldrht_imm.disasm = {
 ldrht_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn );
-  cpu.SetGPR( rn, addr + imm );
-  cpu.SetGPR_mem( rt, cpu.MemRead16( addr ) );
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr+ U32(imm) );
+  cpu.SetGPR_mem( rt, cpu.MemURead16( addr ) );
 };
 
 op ldrht_reg( cond[4]: 0b0000[4]: u[1]: 0b011[3]: rn[4]: rt[4]: 0b0000[4]: 0b1011[4]: rm[4] );
+ldrht_reg.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt) or (rm == 15)};
 
 ldrht_reg.disasm = {
   buffer << "ldrht" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,false,u,true);
@@ -505,10 +570,10 @@ ldrht_reg.disasm = {
 ldrht_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t rmval = cpu.GetGPR( rm ),
-           addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
+  typedef typename ARCH::U32 U32;
+  U32 rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemRead32( addr ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead16( addr ) );
 };
 
 /*
@@ -522,6 +587,7 @@ ldrht_reg.execute = {
 
 op ldrsht_imm( cond[4]: 0b0000[4]: u[1]: 0b111[3]: rn[4]: rt[4]: shl<4> im1[4]: 0b1111[4]: im0[4] );
 ldrsht_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+ldrsht_imm.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt)};
 
 ldrsht_imm.disasm = {
   buffer << "ldrsht" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,false,false);
@@ -530,12 +596,16 @@ ldrsht_imm.disasm = {
 ldrsht_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn );
-  cpu.SetGPR( rn, addr + imm );
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( addr ) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  U32 addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr+ U32(imm) );
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( addr ) ) ) ) );
 };
 
 op ldrsht_reg( cond[4]: 0b0000[4]: u[1]: 0b011[3]: rn[4]: rt[4]: 0b0000[4]: 0b1111[4]: rm[4] );
+ldrsht_reg.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt) or (rm == 15)};
 
 ldrsht_reg.disasm = {
   buffer << "ldrsht" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,false,u,true);
@@ -544,10 +614,13 @@ ldrsht_reg.disasm = {
 ldrsht_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t rmval = cpu.GetGPR( rm ),
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( addr ) );
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( addr ) ) ) ) );
 };
 
 /*
@@ -561,6 +634,7 @@ ldrsht_reg.execute = {
 
 op ldrbt_imm( cond[4]: 0b0100[4]: u[1]: 0b111[3]: rn[4]: rt[4]: offset[12] );
 ldrbt_imm.var imm : {int32_t} = {u?offset:-offset};
+ldrbt_imm.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt)};
 
 ldrbt_imm.disasm = {
   buffer << "ldrbt" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,false,false);
@@ -569,12 +643,14 @@ ldrbt_imm.disasm = {
 ldrbt_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t addr = cpu.GetGPR( rn );
-  cpu.SetGPR( rn, addr + imm );
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr+ U32(imm) );
   cpu.SetGPR_mem( rt, cpu.MemRead8( addr ) );
 };
 
 op ldrbt_reg( cond[4]: 0b0110[4]: u[1]: 0b111[3]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+ldrbt_reg.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt) or (rm == 15)};
 
 ldrbt_reg.disasm = {
   buffer << "ldrbt" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRRI(rn,rm,shift,imm,false,u,true);
@@ -583,7 +659,8 @@ ldrbt_reg.disasm = {
 ldrbt_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+  typedef typename ARCH::U32 U32;
+  U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   cpu.SetGPR( rn, oaddr );
   cpu.SetGPR_mem( rt, cpu.MemRead8( addr ) );
@@ -600,6 +677,7 @@ ldrbt_reg.execute = {
 
 op ldrsbt_imm( cond[4]: 0b0000[4]: u[1]: 0b111[3]: rn[4]: rt[4]: shl<4> im1[4]: 0b1101[4]: im0[4] );
 ldrsbt_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+ldrsbt_imm.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt)};
 
 ldrsbt_imm.disasm = {
   buffer << "ldrsbt" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,false,false);
@@ -608,12 +686,16 @@ ldrsbt_imm.disasm = {
 ldrsbt_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn );
-  cpu.SetGPR( rn, addr + imm );
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( addr ) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S8  S8;
+  U32 addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr+ U32(imm) );
+  cpu.SetGPR_mem( rt, U32( S32( S8( cpu.MemRead8( addr ) ) ) ) );
 };
 
 op ldrsbt_reg( cond[4]: 0b0000[4]: u[1]: 0b011[3]: rn[4]: rt[4]: 0b0000[4]: 0b1101[4]: rm[4] );
+ldrsbt_reg.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt) or (rm == 15)};
 
 ldrsbt_reg.disasm = {
   buffer << "ldrsbt" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,false,u,true);
@@ -622,10 +704,13 @@ ldrsbt_reg.disasm = {
 ldrsbt_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t rmval = cpu.GetGPR( rm ),
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S8  S8;
+  U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   cpu.SetGPR( rn, oaddr );
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( addr ) );
+  cpu.SetGPR_mem( rt, U32( S32( S8( cpu.MemRead8( addr ) ) ) ) );
 };
 
 /*
@@ -639,6 +724,7 @@ ldrsbt_reg.execute = {
 
 op strt_imm( cond[4]: 0b010[3]: 0b0[1]: u[1]: 0b0[1]: 0b1[1]: 0b0[1]: rn[4]: rt[4]: offset[12] );
 strt_imm.var imm : {int32_t} = {u?offset:-offset};
+strt_imm.var reject : {Reject} = {(rn == 15) or (rn == rt)};
 
 strt_imm.disasm = {
   buffer << "strt" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,false,false);
@@ -647,12 +733,14 @@ strt_imm.disasm = {
 strt_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t addr = cpu.GetGPR( rn );
-  cpu.SetGPR( rn, addr + imm );
-  cpu.MemWrite32( addr, cpu.GetGPR( rt ) );
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr+ U32(imm) );
+  cpu.MemUWrite32( addr, cpu.GetGPR( rt ) );
 };
 
 op strt_reg( cond[4]: 0b011[3]: 0b0[1]: u[1]: 0b0[1]: 0b1[1]: 0b0[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+strt_reg.var reject : {Reject} = {(rn == 15) or (rn == rt) or (rm == 15)};
 
 strt_reg.disasm = {
   buffer << "strt" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRRI(rn,rm,shift,imm,false,u,true);
@@ -661,10 +749,11 @@ strt_reg.disasm = {
 strt_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+  typedef typename ARCH::U32 U32;
+  U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite32( addr, cpu.GetGPR( rt ) );
+  cpu.MemUWrite32( addr, cpu.GetGPR( rt ) );
 };
 
 /*
@@ -678,6 +767,7 @@ strt_reg.execute = {
 
 op strht_imm( cond[4]: 0b0000[4]: u[1]: 0b110[3]: rn[4]: rt[4]: shl<4> im1[4]: 0b1011[4]: im0[4] );
 strht_imm.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+strht_imm.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt)};
 
 strht_imm.disasm = {
   buffer << "strht" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,false,false);
@@ -686,13 +776,16 @@ strht_imm.disasm = {
 strht_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t addr = cpu.GetGPR( rn );
-  cpu.SetGPR( rn, addr + imm );
-  cpu.MemWrite16( addr, cpu.GetGPR( rt ) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  U32 addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr+ U32(imm) );
+  cpu.MemUWrite16( addr, U16(cpu.GetGPR( rt )) );
 };
 
 op strht_reg( cond[4]: 0b0000[4]: u[1]: 0b010[3]: rn[4]: rt[4]: 0b0000[4]: 0b1011[4]: rm[4] );
- 
+strht_reg.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt) or (rm == 15)};
+
 strht_reg.disasm = {
   buffer << "strht" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRR(rn,rm,false,u,true);
 };
@@ -700,10 +793,12 @@ strht_reg.disasm = {
 strht_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t rmval = cpu.GetGPR( rm ),
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  U32 rmval = cpu.GetGPR( rm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?rmval:-rmval);
   cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite16( addr, cpu.GetGPR( rt ) );
+  cpu.MemUWrite16( addr, U16(cpu.GetGPR( rt )) );
 };
 
 /*
@@ -717,6 +812,7 @@ strht_reg.execute = {
 
 op strbt_imm( cond[4]: 0b010[3]: 0b0[1]: u[1]: 0b1[1]: 0b1[1]: 0b0[1]: rn[4]: rt[4]: offset[12] );
 strbt_imm.var imm : {int32_t} = {u?offset:-offset};
+strbt_imm.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt)};
 
 strbt_imm.disasm = {
   buffer << "strbt" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRI(rn,imm,false,false);
@@ -725,12 +821,15 @@ strbt_imm.disasm = {
 strbt_imm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn );
-  cpu.SetGPR( rn, addr + imm );
-  cpu.MemWrite8( addr, cpu.GetGPR( rt ) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8  U8;
+  U32 addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + U32(imm) );
+  cpu.MemWrite8( addr, U8(cpu.GetGPR( rt )) );
 };
 
 op strbt_reg( cond[4]: 0b011[3]: 0b0[1]: u[1]: 0b1[1]: 0b1[1]: 0b0[1]: rn[4]: rt[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
+strbt_reg.var reject : {Reject} = {(rt == 15) or (rn == 15) or (rn == rt) or (rm == 15)};
 
 strbt_reg.disasm = {
   buffer << "strbt" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << DisasmMemoryRRI(rn,rm,shift,imm,false,u,true);
@@ -739,10 +838,12 @@ strbt_reg.disasm = {
 strbt_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
 
-  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8  U8;
+  U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
            addr = cpu.GetGPR( rn ), oaddr = addr + (u?isval:-isval);
   cpu.SetGPR( rn, oaddr );
-  cpu.MemWrite8( addr, cpu.GetGPR( rt ) );
+  cpu.MemWrite8( addr, U8(cpu.GetGPR( rt )) );
 };
 
 /*
@@ -765,8 +866,7 @@ op pld_imm( 0b1111[4]: 0b01[2]: 0b0[1]: 0b1[1]: u[1]: r[1]: 0b0[1]: 0b1[1]: rn[4
 pld_imm.var imm : {int32_t} = {u?offset:-offset};
 
 pld_imm.disasm = {
-  buffer << "pld" << (r?"":"w") << "\t"
-         << DisasmMemoryRI(rn,imm,true,false);
+  buffer << "pld" << (r?"":"w") << "\t" << DisasmMemoryRI(rn,imm,true,false);
 };
 
 pld_imm.execute = { /*ignore for now*/ };
@@ -829,6 +929,7 @@ pli_reg.execute = { /*ignore for now*/ };
  */
 
 op ldm( cond[4]: 0b100[3]: mod[2]: 0b0[1]: w[1]: 0b1[1]: rn[4]: reglist[16] );
+ldm.var reject : {Reject} = {(rn == 15) or (reglist == 0)};
 
 ldm.disasm = {
   buffer << "ldm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")
@@ -838,13 +939,15 @@ ldm.disasm = {
 ldm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( rn );
+  LSMIter itr(mod, reglist);
   while (itr.next()) {
-    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
+    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
   }
   
   bool overwritten = (reglist >> rn) & 1;
-  if (w and not overwritten) cpu.SetGPR( rn, itr.addr() );
+  if (w and not overwritten) cpu.SetGPR( rn, base + U32(itr.offset()) );
 };
 
 /*
@@ -860,6 +963,7 @@ ldm.execute = {
  */
 
 op stm( cond[4]: 0b100[3]: mod[2]: 0b0[1]: w[1]: 0b0[1]: rn[4]: reglist[16] );
+stm.var reject : {Reject} = {(rn == 15) or (reglist == 0) or (w and (((reglist & (reglist-1)) >> rn) & 1))};
 
 stm.disasm = {
   buffer << "stm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")
@@ -869,12 +973,15 @@ stm.disasm = {
 stm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( rn );
+  LSMIter itr(mod, reglist);
   while (itr.next()) {
-    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
+    cpu.MemWrite32( base + U32(itr.offset()), cpu.GetGPR( itr.reg() ) );
   }
   
-  if (w) cpu.SetGPR( rn, itr.addr() );
+  if (w) cpu.SetGPR( rn, base + U32(itr.offset()) );
 };
 
 /*
@@ -885,31 +992,83 @@ stm.execute = {
  * ldm ^ (Load Multiple User Registers) instruction 
  */
 
-op ldm_npcusr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: 0b0[1]: 0b1[1]: rn[4]: 0b0[1]: reglist[15] );
-ldm_npcusr.var w : {uint32_t} = {0};
-op ldm_pcusr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: w[1]: 0b1[1]: rn[4]: 0b1[1]: regnpclist[15] );
-ldm_pcusr.var reglist : {uint32_t} = {0x8000|regnpclist};
-
-group ldm_usr( ldm_npcusr, ldm_pcusr );
+op ldm_usr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: 0b0[1]: 0b1[1]: rn[4]: 0b0[1]: reglist[15] );
+ldm_usr.var reject : {Reject} = {(rn == 15) or (reglist == 0)};
 
 ldm_usr.disasm = {
-  buffer << "ldm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")
+  buffer << "ldm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn)
          << ", {" << DisasmRegList(reglist) << "}^";
 };
 
 ldm_usr.execute = {
-  assert( not "privileged" );
   if (not CheckCondition(cpu, cond)) return;
   
-  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
-  while (itr.next()) {
-    cpu.SetGPR_usr( itr.reg(), cpu.MemRead32( itr.addr() ) );
+  uint8_t running_mode = GetNativeValue(cpu.CPSR().Get(M));
+  switch (running_mode) {
+  case ARCH::HYPERVISOR_MODE:
+    cpu.UndefinedInstruction( this );
+    return;
+  case ARCH::USER_MODE:
+  case ARCH::SYSTEM_MODE:
+    cpu.UnpredictableInsnBehaviour();
+    return;
   }
   
-  // TODO: if (reglist & 0x8000) cpu.MoveSPSRtoCPSR();
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( rn );
+  LSMIter itr(mod, reglist);
+  // Now Register writes are in user mode
+  cpu.CurrentMode().Swap( cpu ); // OUT
+  cpu.GetMode(cpu.USER_MODE); // IN
+  while (itr.next()) {
+    cpu.SetGPR(itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
+  }
+  cpu.GetMode(cpu.USER_MODE); // OUT
+  cpu.CurrentMode().Swap( cpu ); // IN
+};
+
+op ldm_rfe( cond[4]: 0b100[3]: mod[2]: 0b1[1]: w[1]: 0b1[1]: rn[4]: 0b1[1]: regnpclist[15] );
+ldm_rfe.var reglist : {uint32_t} = {regnpclist | 0x8000};
+ldm_rfe.var reject : {Reject} = {(rn == 15) or ((reglist >> rn) & 1)};
+
+ldm_rfe.disasm = {
+  buffer << "ldm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")
+         << ", {" << DisasmRegList(reglist) << "}^";
+};
+
+ldm_rfe.execute = {
+  if (not CheckCondition(cpu, cond)) return;
   
-  bool overwritten = (reglist >> rn) & 1;
-  if (w and not overwritten) cpu.SetGPR_usr( rn, itr.addr() );
+  uint8_t running_mode = GetNativeValue(cpu.CPSR().Get(M));
+  switch (running_mode) {
+  case ARCH::HYPERVISOR_MODE:
+    cpu.UndefinedInstruction( this );
+    return;
+  case ARCH::USER_MODE:
+  case ARCH::SYSTEM_MODE:
+    cpu.UnpredictableInsnBehaviour();
+    return;
+  }
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( rn );
+  LSMIter itr(mod, reglist);
+  U32 new_pc_value = U32(1); //< Illegal address to be sure that value is overwritten
+  while (itr.next()) {
+    U32 value = cpu.MemRead32( base + U32(itr.offset()) );
+    if (itr.reg() != 15) cpu.SetGPR( itr.reg(), value );
+    else                 new_pc_value = value;
+  }
+  if (w) cpu.SetGPR( rn, base + U32(itr.offset()) );
+  
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  // Cannot return to Hyp mode and ThumbEE state
+  cpu.Assert( (cpu.CPSR().Get(M) != U32(cpu.HYPERVISOR_MODE)) or
+              (cpu.CPSR().Get(J) == U32(0)) or (cpu.CPSR().Get(T) == U32(0)));
+  
+  cpu.BranchExchange( new_pc_value );
 };
 
 /*
@@ -921,6 +1080,7 @@ ldm_usr.execute = {
  */
 
 op stm_usr( cond[4]: 0b100[3]: mod[2]: 0b1[1]: w[1]: 0b0[1]: rn[4]: reglist[16] );
+stm_usr.var reject : {Reject} = {(rn == 15) or (reglist == 0)};
 
 stm_usr.disasm = {
   buffer << "stm" << DisasmLSMMode(mod) << DisasmCondition(cond) << '\t' << DisasmRegister(rn) << (w?"!":"")
@@ -928,15 +1088,17 @@ stm_usr.disasm = {
 };
 
 stm_usr.execute = {
-  assert( not "privileged" );
   if (not CheckCondition(cpu, cond)) return;
+  assert( not "privileged" );
   
-  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( rn );
+  LSMIter itr(mod, reglist);
   while (itr.next()) {
-    cpu.MemWrite32( itr.addr(), cpu.GetGPR_usr( itr.reg() ) );
+    cpu.MemWrite32( base + U32(itr.offset()), cpu.GetBankedRegister( cpu.USER_MODE, itr.reg() ) );
   }
   
-  if (w) cpu.SetGPR_usr( rn, itr.addr() );
+  if (w) cpu.SetBankedRegister( cpu.USER_MODE, rn, base + U32(itr.offset()) );
 };
 
 /*
@@ -962,10 +1124,11 @@ swp.disasm = {
 };
 
 swp.execute = {
-  if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t value = cpu.GetGPR(rm);
-  uint32_t address = cpu.GetGPR(rn);
+  typedef typename ARCH::U32 U32;
+  U32 value = cpu.GetGPR(rm);
+  U32 address = cpu.GetGPR(rn);
   cpu.SetGPR_mem( rt, cpu.MemRead32(address) );
   cpu.MemWrite32(address, value);
 };
@@ -987,10 +1150,12 @@ swpb.disasm = {
 };
 
 swpb.execute = {
-  if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
   
-  uint8_t value = cpu.GetGPR(rm) & uint32_t( 0x0ff );
-  uint32_t address = cpu.GetGPR(rn);
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8 U8;
+  U8 value = U8(cpu.GetGPR(rm));
+  U32 address = cpu.GetGPR(rn);
   cpu.SetGPR_mem( rt, cpu.MemRead8(address) );
   cpu.MemWrite8(address, value);
 };
@@ -1011,14 +1176,19 @@ swpb.execute = {
  */
 
 op ldrex( cond[4]: 0b0001100[7]: 0b1[1]: rn[4]: rt[4]: 0b1111[4]: 0b1001[4]: 0b1111[4] );
+ldrex.var reject : {Reject} = {(rt == 15) or (rn == 15)};
 
 ldrex.disasm = {
-  buffer << "ldrex" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
-         << "[" << DisasmRegister(rn) << "]";
+  buffer << "ldrex" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", " << "[" << DisasmRegister(rn) << "]";
 };
 
 ldrex.execute = {
-  cpu.SetGPR_mem( rt , cpu.MemRead32( cpu.GetGPR( rn ) ) );
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typename ARCH::U32 addr = cpu.GetGPR( rn );
+  
+  cpu.SetExclusiveMonitors( addr, 4 );
+  cpu.SetGPR_mem( rt, cpu.MemRead32( addr ) );
 };
 
 /*
@@ -1030,6 +1200,7 @@ ldrex.execute = {
  */
 
 op ldrexh( cond[4]: 0b0001111[7]: 0b1[1]: rn[4]: rt[4]: 0b1111[4]: 0b1001[4]: 0b1111[4] );
+ldrexh.var reject : {Reject} = {(rt == 15) or (rn == 15)};
 
 ldrexh.disasm = {
   buffer << "ldrexh" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
@@ -1037,7 +1208,12 @@ ldrexh.disasm = {
 };
 
 ldrexh.execute = {
-  cpu.SetGPR_mem( rt, cpu.MemRead16( cpu.GetGPR( rn ) ) );
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typename ARCH::U32 addr = cpu.GetGPR( rn );
+  
+  cpu.SetExclusiveMonitors( addr, 2 );
+  cpu.SetGPR_mem( rt, cpu.MemRead16( addr ) );
 };
 
 /*
@@ -1049,6 +1225,7 @@ ldrexh.execute = {
  */
 
 op ldrexb( cond[4]: 0b0001110[7]: 0b1[1]: rn[4]: rt[4]: 0b1111[4]: 0b1001[4]: 0b1111[4] );
+ldrexb.var reject : {Reject} = {(rt == 15) or (rn == 15)};
 
 ldrexb.disasm = {
   buffer << "ldrexb" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
@@ -1056,7 +1233,12 @@ ldrexb.disasm = {
 };
 
 ldrexb.execute = {
-  cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR( rn ) ) );
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typename ARCH::U32 addr = cpu.GetGPR( rn );
+  
+  cpu.SetExclusiveMonitors( addr, 1 );
+  cpu.SetGPR_mem( rt, cpu.MemRead8( addr ) );
 };
 
 /*
@@ -1068,6 +1250,7 @@ ldrexb.execute = {
  */
 
 op ldrexd( cond[4]: 0b0001101[7]: 0b1[1]: rn[4]: rt[4]: 0b1111[4]: 0b1001[4]: 0b1111[4] );
+ldrexd.var reject : {Reject} = {(rt & 1) or (rt == 14) or (rn == 15)};
 
 ldrexd.disasm = {
   buffer << "ldrexd" << DisasmCondition(cond) << '\t' << DisasmRegister(rt) << ", "
@@ -1075,9 +1258,14 @@ ldrexd.disasm = {
 };
 
 ldrexd.execute = {
-  uint32_t addr = cpu.GetGPR( rn );
-  cpu.SetGPR_mem( (rt+0) & 0xf, cpu.MemRead32( addr + 0 ) );
-  cpu.SetGPR_mem( (rt+1) & 0xf, cpu.MemRead32( addr + 4 ) );
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn );
+  
+  cpu.SetExclusiveMonitors( addr, 8 );
+  cpu.SetGPR_mem( (rt+0) & 0xf, cpu.MemRead32( addr + U32(0) ) );
+  cpu.SetGPR_mem( (rt+1) & 0xf, cpu.MemRead32( addr + U32(4) ) );
 };
 
 /*
@@ -1094,6 +1282,7 @@ ldrexd.execute = {
  */
 
 op strex( cond[4]: 0b0001100[7]: 0b0[1]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rt[4] );
+strex.var reject : {Reject} = {(rd == 15) or (rt == 15) or (rn == 15) or (rd == rn) or (rd == rt)};
 
 strex.disasm = {
   buffer << "strex" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", "
@@ -1102,8 +1291,17 @@ strex.disasm = {
 };
 
 strex.execute = {
-  cpu.MemWrite32( cpu.GetGPR( rn ), cpu.GetGPR( rt ) );
-  cpu.SetGPR( rd, 0 );
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn );
+  
+  if (cpu.ExclusiveMonitorsPass(addr, 4)) {
+    cpu.MemWrite32( addr, cpu.GetGPR( rt ) );
+    cpu.SetGPR( rd, U32(0) );
+  } else {
+    cpu.SetGPR( rd, U32(1) );
+  }
 };
 
 /*
@@ -1115,6 +1313,7 @@ strex.execute = {
  */
 
 op strexh( cond[4]: 0b0001111[7]: 0b0[1]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rt[4] );
+strexh.var reject : {Reject} = {(rd == 15) or (rt == 15) or (rn == 15) or (rd == rn) or (rd == rt)};
 
 strexh.disasm = {
   buffer << "strexh" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", "
@@ -1123,8 +1322,17 @@ strexh.disasm = {
 };
 
 strexh.execute = {
-  cpu.MemWrite16( cpu.GetGPR( rn ), cpu.GetGPR( rt ) );
-  cpu.SetGPR( rd, 0 );
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn );
+  
+  if (cpu.ExclusiveMonitorsPass(addr, 2)) {
+    cpu.MemWrite16( addr, typename ARCH::U16(cpu.GetGPR( rt )) );
+    cpu.SetGPR( rd, U32(0) );
+  } else {
+    cpu.SetGPR( rd, U32(1) );
+  }
 };
 
 /*
@@ -1136,6 +1344,7 @@ strexh.execute = {
  */
 
 op strexb( cond[4]: 0b0001110[7]: 0b0[1]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rt[4] );
+strexb.var reject : {Reject} = {(rd == 15) or (rt == 15) or (rn == 15) or (rd == rn) or (rd == rt)};
 
 strexb.disasm = {
   buffer << "strexb" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", "
@@ -1144,8 +1353,17 @@ strexb.disasm = {
 };
 
 strexb.execute = {
-  cpu.MemWrite8( cpu.GetGPR( rn ), cpu.GetGPR( rt ) );
-  cpu.SetGPR( rd, 0 );
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn );
+  
+  if (cpu.ExclusiveMonitorsPass(addr, 1)) {
+    cpu.MemWrite8( addr, typename ARCH::U8(cpu.GetGPR( rt )) );
+    cpu.SetGPR( rd, U32(0) );
+  } else {
+    cpu.SetGPR( rd, U32(1) );
+  }
 };
 
 /*
@@ -1157,6 +1375,8 @@ strexb.execute = {
  */
 
 op strexd( cond[4]: 0b0001101[7]: 0b0[1]: rn[4]: rd[4]: 0b1111[4]: 0b1001[4]: rt[4] );
+strexd.var reject : {Reject} = {(rd == 15) or (rt & 1) or (rt == 14) or (rn == 15) or
+                                (rd == rn) or ((rd & 0xe) == rt)};
 
 strexd.disasm = {
   buffer << "strexd" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", "
@@ -1165,10 +1385,18 @@ strexd.disasm = {
 };
 
 strexd.execute = {
-  uint32_t addr = cpu.GetGPR( rn );
-  cpu.MemWrite32( addr + 0, cpu.GetGPR( (rt+0) & 0xf ) );
-  cpu.MemWrite32( addr + 4, cpu.GetGPR( (rt+1) & 0xf ) );
-  cpu.SetGPR( rd, 0 );
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 addr = cpu.GetGPR( rn );
+  
+  if (cpu.ExclusiveMonitorsPass(addr, 8)) {
+    cpu.MemWrite32( addr + U32(0), cpu.GetGPR( (rt+0) & 0xf ) );
+    cpu.MemWrite32( addr + U32(4), cpu.GetGPR( (rt+1) & 0xf ) );
+    cpu.SetGPR( rd, U32(0) );
+  } else {
+    cpu.SetGPR( rd, U32(1) );
+  }
 };
 
 /*
@@ -1177,11 +1405,22 @@ strexd.execute = {
 
 /*******************************************************************
  * clrex (Clear Exclusive) instruction
+ *
+ * CLREX clears the local record of the executing processor that an
+ * address has had a request for an exclusive access.
  */
 
 op clrex( 0b1111[4]: 0b01010111[8]: 0b1111[4]: 0b1111[4]: 0b0000[4]: 0b0001[4]: 0b1111[4] );
 
-clrex.disasm = { buffer << "clrex"; };
+clrex.disasm = {
+  buffer << "clrex";
+};
+
+clrex.execute = {
+  if (not CheckCondition(cpu, cpu.itcond())) return;
+  
+  cpu.ClearExclusiveLocal();
+};
 
 /*
  * end of strexd instruction

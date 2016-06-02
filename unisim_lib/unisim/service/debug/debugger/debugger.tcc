@@ -343,9 +343,17 @@ bool Debugger<ADDRESS>::WriteMemory(ADDRESS addr, const void *buffer, uint32_t s
 }
 
 template <class ADDRESS>
-unisim::util::debug::Register *Debugger<ADDRESS>::GetRegister(const char *name)
+unisim::service::interfaces::Register *Debugger<ADDRESS>::GetRegister(const char *name)
 {
 	return registers_import ? registers_import->GetRegister(name) : 0;
+}
+
+template <class ADDRESS>
+void Debugger<ADDRESS>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	if (not registers_import)
+		return;
+	registers_import->ScanRegisters( scanner );
 }
 
 template <class ADDRESS>

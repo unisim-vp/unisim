@@ -455,7 +455,8 @@ inline void CPU<CONFIG>::RunInternalTimers()
 	uint64_t delta = delta_time_tu / timer_cycle_time_tu;
 	inherited::RunTimers(delta);
 	sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
-	sc_time t(t_tu, false);
+	sc_time t(sc_get_time_resolution());
+	t *= t_tu;
 	timer_time += t;
 #endif
 #endif
@@ -474,13 +475,14 @@ inline void CPU<CONFIG>::LazyRunInternalTimers()
 template <class CONFIG>
 inline void CPU<CONFIG>::AlignToHSBClock()
 {
-	sc_dt::uint64 hsb_cycle_time_tu = hsb_cycle_time.value();
-	sc_dt::uint64 run_time_tu = run_time.value();
-	sc_dt::uint64 modulo = run_time_tu % hsb_cycle_time_tu;
-	if(!modulo) return; // already aligned
+	sc_core::sc_time time_skew(run_time);
+	time_skew %= hsb_cycle_time;
 	
-	sc_dt::uint64 time_alignment_tu = hsb_cycle_time_tu - modulo;
-	sc_time time_alignment(time_alignment_tu, false);
+	if(time_skew == sc_core::SC_ZERO_TIME) return; // already aligned
+	
+	sc_core::sc_time time_alignment(hsb_cycle_time);
+	time_alignment -= time_skew;
+	
 	cpu_time += time_alignment;
 	run_time += time_alignment;
 }
@@ -488,14 +490,24 @@ inline void CPU<CONFIG>::AlignToHSBClock()
 template <class CONFIG>
 void CPU<CONFIG>::AlignToHSBClock(sc_time& t)
 {
-	sc_dt::uint64 hsb_cycle_time_tu = hsb_cycle_time.value();
-	sc_dt::uint64 time_tu = t.value();
-	sc_dt::uint64 modulo = time_tu % hsb_cycle_time_tu;
-	if(!modulo) return; // already aligned
+	sc_core::sc_time time_skew(t);
+	time_skew %= hsb_cycle_time;
 	
-	sc_dt::uint64 time_alignment_tu = hsb_cycle_time_tu - modulo;
-	sc_time time_alignment(time_alignment_tu, false);
+	if(time_skew == sc_core::SC_ZERO_TIME) return; // already aligned
+	
+	sc_core::sc_time time_alignment(hsb_cycle_time);
+	time_alignment -= time_skew;
+	
 	t += time_alignment;
+
+// 	sc_dt::uint64 hsb_cycle_time_tu = hsb_cycle_time.value();
+// 	sc_dt::uint64 time_tu = t.value();
+// 	sc_dt::uint64 modulo = time_tu % hsb_cycle_time_tu;
+// 	if(!modulo) return; // already aligned
+// 	
+// 	sc_dt::uint64 time_alignment_tu = hsb_cycle_time_tu - modulo;
+// 	sc_time time_alignment(time_alignment_tu, false);
+// 	t += time_alignment;
 }
 
 template <class CONFIG>

@@ -38,7 +38,7 @@
 
 using namespace std;
 
-int main(int argc, char *argv[]) {
+int sc_main(int argc, char *argv[]) {
 	int ret = 0;
 
 #ifdef WIN32

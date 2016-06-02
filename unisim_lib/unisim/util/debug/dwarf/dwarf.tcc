@@ -44,7 +44,7 @@
 
 #include <stdlib.h>
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <io.h>
 #else
 #include <sys/types.h>
@@ -961,7 +961,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_XML(const char *output_filename)
 template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 {
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(output_dir);
 #else
 	mkdir(output_dir, S_IRWXU);
@@ -1037,7 +1037,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_abbrev_output_dir_sstr;
 	debug_abbrev_output_dir_sstr << output_dir << "/debug_abbrev";
 	std::string debug_abbrev_output_dir(debug_abbrev_output_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_abbrev_output_dir.c_str());
 #else
 	mkdir(debug_abbrev_output_dir.c_str(), S_IRWXU);
@@ -1117,7 +1117,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_macinfo_ouput_dir_sstr;
 	debug_macinfo_ouput_dir_sstr << output_dir << "/debug_macinfo";
 	std::string debug_macinfo_output_dir(debug_macinfo_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_macinfo_output_dir.c_str());
 #else
 	mkdir(debug_macinfo_output_dir.c_str(), S_IRWXU);
@@ -1202,7 +1202,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_line_ouput_dir_sstr;
 	debug_line_ouput_dir_sstr << output_dir << "/debug_line";
 	std::string debug_line_output_dir(debug_line_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_line_output_dir.c_str());
 #else
 	mkdir(debug_line_output_dir.c_str(), S_IRWXU);
@@ -1282,7 +1282,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_aranges_ouput_dir_sstr;
 	debug_aranges_ouput_dir_sstr << output_dir << "/debug_aranges";
 	std::string debug_aranges_output_dir(debug_aranges_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_aranges_output_dir.c_str());
 #else
 	mkdir(debug_aranges_output_dir.c_str(), S_IRWXU);
@@ -1367,7 +1367,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_pubnames_ouput_dir_sstr;
 	debug_pubnames_ouput_dir_sstr << output_dir << "/debug_pubnames";
 	std::string debug_pubnames_output_dir(debug_pubnames_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_pubnames_output_dir.c_str());
 #else
 	mkdir(debug_pubnames_output_dir.c_str(), S_IRWXU);
@@ -1450,7 +1450,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_pubtypes_ouput_dir_sstr;
 	debug_pubtypes_ouput_dir_sstr << output_dir << "/debug_pubtypes";
 	std::string debug_pubtypes_output_dir(debug_pubtypes_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_pubtypes_output_dir.c_str());
 #else
 	mkdir(debug_pubtypes_output_dir.c_str(), S_IRWXU);
@@ -1534,7 +1534,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_range_ouput_dir_sstr;
 	debug_range_ouput_dir_sstr << output_dir << "/debug_ranges";
 	std::string debug_range_output_dir(debug_range_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_range_output_dir.c_str());
 #else
 	mkdir(debug_range_output_dir.c_str(), S_IRWXU);
@@ -1619,7 +1619,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_loc_ouput_dir_sstr;
 	debug_loc_ouput_dir_sstr << output_dir << "/debug_loc";
 	std::string debug_loc_output_dir(debug_loc_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_loc_output_dir.c_str());
 #else
 	mkdir(debug_loc_output_dir.c_str(), S_IRWXU);
@@ -1715,7 +1715,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 				break;
 		}
 		std::string debug_frame_output_dir(debug_frame_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		mkdir(debug_frame_output_dir.c_str());
 #else
 		mkdir(debug_frame_output_dir.c_str(), S_IRWXU);
@@ -1724,7 +1724,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 		std::stringstream debug_frame_cies_ouput_dir_sstr;
 		debug_frame_cies_ouput_dir_sstr << debug_frame_output_dir << "/cies";
 		std::string debug_frame_cies_output_dir(debug_frame_cies_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		mkdir(debug_frame_cies_output_dir.c_str());
 #else
 		mkdir(debug_frame_cies_output_dir.c_str(), S_IRWXU);
@@ -1733,7 +1733,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 		std::stringstream debug_frame_fdes_ouput_dir_sstr;
 		debug_frame_fdes_ouput_dir_sstr << debug_frame_output_dir << "/fdes";
 		std::string debug_frame_fdes_output_dir(debug_frame_fdes_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		mkdir(debug_frame_fdes_output_dir.c_str());
 #else
 		mkdir(debug_frame_fdes_output_dir.c_str(), S_IRWXU);
@@ -1952,7 +1952,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_info_ouput_dir_sstr;
 	debug_info_ouput_dir_sstr << output_dir << "/debug_info";
 	std::string debug_info_output_dir(debug_info_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_info_output_dir.c_str());
 #else
 	mkdir(debug_info_output_dir.c_str(), S_IRWXU);
@@ -1961,7 +1961,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_info_cus_ouput_dir_sstr;
 	debug_info_cus_ouput_dir_sstr << debug_info_output_dir << "/cus";
 	std::string debug_info_cus_output_dir(debug_info_cus_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_info_cus_output_dir.c_str());
 #else
 	mkdir(debug_info_cus_output_dir.c_str(), S_IRWXU);
@@ -1970,7 +1970,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	std::stringstream debug_info_dies_ouput_dir_sstr;
 	debug_info_dies_ouput_dir_sstr << debug_info_output_dir << "/dies";
 	std::string debug_info_dies_output_dir(debug_info_dies_ouput_dir_sstr.str());
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	mkdir(debug_info_dies_output_dir.c_str());
 #else
 	mkdir(debug_info_dies_output_dir.c_str(), S_IRWXU);
@@ -2654,6 +2654,22 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDIEByPubType(const
 {
 	const DWARF_Pub<MEMORY_ADDR> *dw_pub = FindPubType(name);
 	return dw_pub ? dw_pub->GetDIE() : 0;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDIEByName(unsigned int dw_tag, const char *name, bool external) const
+{
+	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
+	
+	for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++)
+	{
+		DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
+
+		const DWARF_DIE<MEMORY_ADDR> *dw_found_die = dw_cu->FindDIEByName(dw_tag, name, external);
+		if(dw_found_die) return dw_found_die;
+	}
+	
+	return 0;
 }
 
 template <class MEMORY_ADDR>

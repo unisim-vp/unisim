@@ -163,7 +163,14 @@ namespace arm {
     void operator() ( std::ostream& sink ) const;
     uint32_t m_reglist;
   };
-
+  
+  struct DisasmCPR : public DisasmObject
+  {
+    DisasmCPR( uint32_t reg ) : m_reg( reg ) {}
+    void operator() ( std::ostream& sink ) const;
+    uint32_t m_reg;
+  };
+  
   /* Multiple Load Store Mode disassembling method */
   struct DisasmLSMMode : public DisasmObject
   {
@@ -179,6 +186,11 @@ namespace arm {
     void operator() ( std::ostream& sink ) const;
     uint32_t m_mask;
   };
+  
+  struct PSR;
+  
+  std::ostream& operator << ( std::ostream& sink, PSR const& dobj );
+  
   
   enum controltype_t { ctNormal, ctBranch, ctCondBranch, ctCall, ctLeave };
   

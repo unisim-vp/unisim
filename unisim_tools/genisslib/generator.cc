@@ -659,7 +659,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   }
   _product.code( " void SetLittleEndian();\n" );
   _product.code( " void SetBigEndian();\n" );
-  _product.code( "private:\n" );
+  _product.code( (Opts::shared().privatemembers ? "private:\n" : "public:\n") );
   _product.code( " std::vector<DecodeTableEntry" );
   _product.template_abbrev( isa().m_tparams );
   _product.code( " > decode_table;\n" );
@@ -871,7 +871,7 @@ Generator::isa_operations_decl( Product_t& _product ) const
       _product.code( ")%s;\n", (actionproto->m_constness ? " const" : "") );
     }
 
-    _product.code( "private:\n" );
+    _product.code( (Opts::shared().privatemembers ? "private:\n" : "public:\n") );
 
     _product.code( "};\n\n" );
   }

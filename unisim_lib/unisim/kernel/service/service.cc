@@ -46,6 +46,7 @@
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -55,11 +56,11 @@
 #include <unistd.h>
 //#include <limits.h>
 //#include <limits>
-#if defined(__APPLE_CC__) || defined (linux) 
+#if defined(__APPLE_CC__) || defined(linux) || defined(__linux) || defined(__linux__)
 #include <dlfcn.h>
 #endif
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windows.h>
 #endif
 
@@ -76,7 +77,7 @@
 #include "unisim/kernel/debug/debug.hh"
 #include "unisim/util/likely/likely.hh"
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <fcntl.h>
 //Note: this is to force opening console and files in binary mode on Windows as on UNIX
 int _CRT_fmode = _O_BINARY;
@@ -257,14 +258,14 @@ bool ResolvePath(const std::string& prefix_dir,
 //	char resolved_dir_buf[PATH_MAX + 1];
 	char resolved_dir_buf[FILENAME_MAX + 1];
 
-#if defined(linux) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	if ( realpath(unresolved_dir.c_str(), 
 				resolved_dir_buf) )
 	{
 		out_dir = resolved_dir_buf;
 		return true;
 	}
-#elif defined(WIN32)
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	DWORD length = GetFullPathName(unresolved_dir.c_str(), 
 			PATH_MAX + 1, 
 			resolved_dir_buf, 
@@ -513,7 +514,7 @@ void VariableBase::NotifyListeners()
 }
 
 VariableBase::operator bool () const { return false; }
-VariableBase::operator char () const { return (long long) *this; }
+VariableBase::operator signed char () const { return (long long) *this; }
 VariableBase::operator short () const { return (long long) *this; }
 VariableBase::operator int () const { return (long long) *this; }
 VariableBase::operator long () const { return (long long) *this; }
@@ -1165,16 +1166,16 @@ const char *Variable<bool>::GetDataTypeName() const
 }
 
 template <>
-Variable<char>::Variable(const char *_name, Object *_owner, char& _storage, Type type, const char *_description) :
+Variable<signed char>::Variable(const char *_name, Object *_owner, signed char& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
 	Simulator::simulator->Initialize(this);
 }
 
 template <>
-const char *Variable<char>::GetDataTypeName() const
+const char *Variable<signed char>::GetDataTypeName() const
 {
-	return GetSignedDataTypeName<char>(); //"char";
+	return GetSignedDataTypeName<signed char>(); //"char";
 }
 
 template <>
@@ -1417,7 +1418,7 @@ template <> VariableBase& Variable<bool>::operator = (const char *value)
 	NotifyListeners();
 	return *this;
 }
-template <> VariableBase& Variable<char>::operator = (const char *value)
+template <> VariableBase& Variable<signed char>::operator = (const char *value)
 {
 	if ( IsMutable() ) {
 		char tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
@@ -1657,9 +1658,9 @@ const char *Formula<bool>::GetDataTypeName() const
 }
 
 template <>
-const char *Formula<char>::GetDataTypeName() const
+const char *Formula<signed char>::GetDataTypeName() const
 {
-	return GetSignedDataTypeName<char>();
+	return GetSignedDataTypeName<signed char>();
 }
 
 template <>
@@ -1733,7 +1734,7 @@ const char *Formula<double>::GetDataTypeName() const
 //=============================================================================
 
 template class Variable<bool>;
-template class Variable<char>;
+template class Variable<signed char>;
 template class Variable<short>;
 template class Variable<int>;
 template class Variable<long>;
@@ -1748,7 +1749,7 @@ template class Variable<double>;
 template class Variable<string>;
 
 template class VariableArray<bool>;
-template class VariableArray<char>;
+template class VariableArray<signed char>;
 template class VariableArray<short>;
 template class VariableArray<int>;
 template class VariableArray<long>;
@@ -1763,7 +1764,7 @@ template class VariableArray<double>;
 template class VariableArray<string>;
 
 template class Formula<bool>;
-template class Formula<char>;
+template class Formula<signed char>;
 template class Formula<short>;
 template class Formula<int>;
 template class Formula<long>;
@@ -2015,14 +2016,6 @@ void Object::SetDescription(const char *_description)
 }
 
 //=============================================================================
-//=                              ServiceInterface                             =
-//=============================================================================
-
-ServiceInterface::~ServiceInterface()
-{
-}
-
-//=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
 
@@ -2174,6 +2167,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, apis()
 	, cmd_args(0)
 	, param_cmd_args(0)
+	, logger(0)
 {
 	bool has_share_data_dir_hint = false;
 	string shared_data_dir_hint;
@@ -2353,22 +2347,22 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		if(GetBinPath(argv[0], bin_dir, program_binary))
 		{
-			// std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-			// std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+// 			 std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+// 			 std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 			if ( GetSharePath(bin_dir, shared_data_dir) )
 			{
-				// std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+// 				std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 			}
 			else
 			{
-				// std::cerr << "Could not resolve share data dir path" << std::endl;
+// 				std::cerr << "Could not resolve share data dir path" << std::endl;
 				warn_get_share_path = true;
 			}
 		}
 		else
 		{
-			// std::cerr << "Could not resolve bin and share data dir paths" << std::endl;
+// 			std::cerr << "Could not resolve bin and share data dir paths" << std::endl;
 			warn_get_bin_path = true;
 			warn_get_share_path = true;
 		}
@@ -2377,13 +2371,13 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		if ( !ResolvePath(shared_data_dir_hint, string(), shared_data_dir) )
 		{
-			// std::cerr << "Could not resolve share data dir path" << std::endl;
+// 			std::cerr << "Could not resolve share data dir path" << std::endl;
 			warn_get_share_path = true;
 		}
 		else
 		{
-			// std::cerr << "Resolved data dir path: " << shared_data_dir
-			// 	<< std::endl;
+// 			std::cerr << "Resolved data dir path: " << shared_data_dir
+// 			 	<< std::endl;
 		}
 	}
 
@@ -2488,7 +2482,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					}
 					if(*p == '=')
 					{
-						char *variable_value = ++p;
+						const char *variable_value = ++p;
 						
 						SetVariable(variable_name.c_str(), variable_value);
 					}
@@ -2561,7 +2555,27 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	param_cmd_args->SetSerializable(false);
 	
 	// Setup logger
-	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
+        logger = new unisim::kernel::logger::Logger( "kernel_logger" );
+        unisim::kernel::logger::LoggerServer& logserv = *(logger->GetServerInstance());
+	param_logger_std_err = new Parameter<bool>( "kernel_logger.std_err", 0, logserv.opt_std_err_,
+                                                    "Show logger output through the standard error output" );
+	param_logger_std_out = new Parameter<bool>( "kernel_logger.std_out", 0, logserv.opt_std_out_,
+                                                    "Show logger output through the standard output" );
+	param_logger_std_err_color = new Parameter<bool>( "kernel_logger.std_err_color", 0, logserv.opt_std_err_color_,
+                                                          "Colorize logger output through the standard error output _(only works if std_err is active)" );
+	param_logger_std_out_color = new Parameter<bool>( "kernel_logger.std_out_color", 0, logserv.opt_std_out_color_,
+                                                          "Colorize logger output through the standard output _(only works if std_out is active)" );
+	param_logger_file = new Parameter<bool>( "kernel_logger.file", 0, logserv.opt_file_,
+                                                 "Keep logger output in a file" );
+	param_logger_filename = new Parameter<std::string>( "kernel_logger.filename", 0, logserv.opt_filename_,
+                                                            "Filename to keep logger output _(the option file must be activated)" );
+	param_logger_xml_file = new Parameter<bool>( "kernel_logger.xml_file", 0, logserv.opt_xml_file_,
+                                                     "Keep logger output in a file xml formatted" );
+	param_logger_xml_filename = new Parameter<std::string>( "kernel_logger.xml_filename", 0, logserv.opt_xml_filename_,
+                                                                "Filename to keep logger xml output _(the option xml_file must be activated)" );
+	param_logger_xml_file_gzipped = new Parameter<bool>( "kernel_logger.xml_file_gzipped", 0, logserv.opt_xml_file_gzipped_,
+                                                             "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)" );
+        logserv.Setup();
 }
 
 Simulator::~Simulator()
@@ -2626,6 +2640,17 @@ Simulator::~Simulator()
 	{
 		delete[] cmd_args;
 	}
+
+        delete logger;
+	delete param_logger_std_err;
+	delete param_logger_std_out;
+	delete param_logger_std_err_color;
+	delete param_logger_std_out_color;
+	delete param_logger_file;
+	delete param_logger_filename;
+	delete param_logger_xml_file;
+	delete param_logger_xml_filename;
+	delete param_logger_xml_file_gzipped;
 }
 
 void Simulator::Version(ostream& os) const
@@ -3359,7 +3384,7 @@ void Simulator::GetRootObjects(list<Object *>& lst) const
 	}
 }
 
-#if defined(__APPLE_CC__) || defined(linux)
+#if defined(__APPLE_CC__) || defined(linux) || defined(__linux) || defined(__linux__)
 void FindMyself()
 {
 	// stupid method to find the path to the executable/library using the dladdr
@@ -3369,7 +3394,7 @@ void FindMyself()
 
 bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
 {
-#if defined(linux) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	Dl_info info;
 	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
@@ -3382,7 +3407,7 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 			return true;
 		}
 	}
-#elif defined(WIN32)
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	char bin_path_buf[PATH_MAX + 1];
 	DWORD bin_path_length;
 	bin_path_length = GetModuleFileName(NULL, bin_path_buf, sizeof(bin_path_buf));
@@ -3446,7 +3471,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	const char *start = executable_path.c_str();
 	const char *end = start + executable_path.length() - 1;
 	while(end != (start - 1) && 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	      (*end != '\\') &&
 #endif
 	      (*end != '/'))
@@ -3524,7 +3549,7 @@ T Simulator::GetVariable(const char *variable_name, const T *t) const
 }
 
 template bool Simulator::GetVariable(const char *, const bool *) const;
-template char Simulator::GetVariable(const char *, const char *) const;
+template signed char Simulator::GetVariable(const char *, const signed char *) const;
 template short Simulator::GetVariable(const char *, const short *) const;
 template int Simulator::GetVariable(const char *, const int *) const;
 template long Simulator::GetVariable(const char *, const long *) const;

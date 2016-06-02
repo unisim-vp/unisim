@@ -296,12 +296,12 @@ private:
 	unisim::kernel::logger::Logger logger;
 
 	// register access interfaces
-	unisim::util::debug::Register *reg_pc;
-	unisim::util::debug::Register *reg_sp;
-	unisim::util::debug::Register *reg_syscall_num;
-	unisim::util::debug::Register *reg_params[5];
-	unisim::util::debug::Register *reg_return_status;
-	unisim::util::debug::Register *reg_errno;
+	unisim::service::interfaces::Register *reg_pc;
+	unisim::service::interfaces::Register *reg_sp;
+	unisim::service::interfaces::Register *reg_syscall_num;
+	unisim::service::interfaces::Register *reg_params[5];
+	unisim::service::interfaces::Register *reg_return_status;
+	unisim::service::interfaces::Register *reg_errno;
 
 	// target to host file descriptors
 	std::map<int32_t, int> target_to_host_fildes;

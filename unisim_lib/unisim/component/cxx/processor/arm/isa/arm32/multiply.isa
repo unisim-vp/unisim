@@ -51,21 +51,16 @@ mla.disasm = {
 };
 
 mla.execute = {
-  uint32_t res;
-  uint32_t rm_value = cpu.GetGPR(rm);
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rs_value = cpu.GetGPR(rs);
-  
   if (not CheckCondition(cpu, cond)) return;
-
-  res = rm_value * rs_value;
-  res += rn_value;
-  cpu.SetGPR(rd, res);
+  
+  typedef typename ARCH::U32 U32;
+  U32 res = cpu.GetGPR(rm) * cpu.GetGPR(rs) + cpu.GetGPR(rn);
+  cpu.SetGPR( rd, res );
   
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
     }
 };
 
@@ -78,11 +73,18 @@ mla.execute = {
  */
 
 op mls( cond[4]: 0b00000110[8]: rd[4]: ra[4]: rm[4]: 0b1001[4]: rn[4] );
+mls.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
 
 mls.disasm = {
   buffer << "mls" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+mls.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  cpu.SetGPR( rd, cpu.GetGPR( ra ) - (cpu.GetGPR( rn ) * cpu.GetGPR( rm )) );
 };
 
 /*
@@ -93,28 +95,26 @@ mls.disasm = {
  * mul instruction
  */
 
-op mul( cond[4]: 0b0000000[7]: s[1]: rd[4]: 0b0000[4]: rs[4]: 0b1001[4]: rm[4] );
+op mul( cond[4]: 0b0000000[7]: s[1]: rd[4]: 0b0000[4]: rm[4]: 0b1001[4]: rn[4] );
+mul.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or ((ARCH::Config::model < ARMV6) and (rd == rn))};
 
 mul.disasm = {
   buffer << "mul" << (s?"s":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
-         << DisasmRegister(rs);
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm);
 };
 
 mul.execute = {
-  uint32_t res;
-  uint32_t rm_value = cpu.GetGPR(rm);
-  uint32_t rs_value = cpu.GetGPR(rs);
-  
   if (not CheckCondition(cpu, cond)) return;
-
-  res = rm_value * rs_value;
+  
+  typedef typename ARCH::U32 U32;
+  U32 res = cpu.GetGPR(rn) * cpu.GetGPR(rm);
   cpu.SetGPR(rd, res);
   
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 31) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U32(0)) );
     }
 };
 
@@ -126,8 +126,11 @@ mul.execute = {
  * smlal instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ ARCH::Config::insns5E }:                                                     \
 op smlal( cond[4]: 0b0000111[7]: s[1]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
+smlal.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or
+                               (rdhi == rdlo) or
+                               ((ARCH::Config::model < ARMV6) and ((rdhi == rn) or (rdlo == rn)))};
 
 smlal.disasm = {
   buffer << "smlal" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -136,27 +139,23 @@ smlal.disasm = {
 };
   
 smlal.execute = {
-  uint64_t res;
-  uint64_t res_lo, res_hi;
-  uint32_t rdhi_value = cpu.GetGPR(rdhi);
-  uint32_t rdlo_value = cpu.GetGPR(rdlo);
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rm_value = cpu.GetGPR(rm);
-
-
   if (not CheckCondition(cpu, cond)) return;
 
-  res = rdlo_value + (((uint64_t)rdhi_value) << 32);
-  res = (int64_t)res + ((int64_t)(int32_t)rn_value) * ((int64_t)(int32_t)rm_value);
-  res_lo = res & (uint64_t)(~(uint32_t)0);
-  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-  cpu.SetGPR(rdhi, (uint32_t)res_hi);
-  cpu.SetGPR(rdlo, (uint32_t)res_lo);
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  S64 op1 = S64( S32( cpu.GetGPR(rn) ) );
+  S64 op2 = S64( S32( cpu.GetGPR(rm) ) );
+  S64 res = ((S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) )) + (op1 * op2);
+  
+  cpu.SetGPR( rdlo, U32( res >> 0 ) );
+  cpu.SetGPR( rdhi, U32( res >> 32 ) );
 
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 63) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == S64(0)) );
     }
 };
 
@@ -165,50 +164,13 @@ smlal.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * smlald (Signed Multiply Accumulate Long Dual) instruction
- *
- * SMLALD performs two signed 16 * 16-bit multiplications. It adds the
- * products to a 64-bit accumulate operand.
- */
-
-{ ARCH::insns6 }:                                                      \
-op smlald( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b00[2]: m[1]: 0b1[1]: rn[4] );
-
-smlald.disasm = {
-  buffer << "smlald" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
-         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of smlald instruction
- *******************************************************************/
-
-/*******************************************************************
- * smlsld (Signed Multiply Accumulate Long Dual) instruction
- *
- * SMLSLD performs two signed 16 * 16-bit multiplications. It adds the
- * products to a 64-bit accumulate operand.
- */
-
-{ ARCH::insns6 }:                                                      \
-op smlsld( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b01[2]: m[1]: 0b1[1]: rn[4] );
-
-smlsld.disasm = {
-  buffer << "smlsld" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
-         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
-};
-
-/*
- * end of smlsld instruction
- *******************************************************************/
-
-/*******************************************************************
  * smull instruction
  */
 
 op smull( cond[4]: 0b0000110[7]: s[1]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
+smull.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or
+                               (rdhi == rdlo) or
+                               ((ARCH::Config::model < ARMV6) and ((rdhi == rn) or (rdlo == rn)))};
 
 smull.disasm = {
   buffer << "smull" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -217,24 +179,19 @@ smull.disasm = {
 };
 
 smull.execute = {
-  uint64_t res;
-  uint64_t res_lo, res_hi;
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rm_value = cpu.GetGPR(rm);
-
-
   if (not CheckCondition(cpu, cond)) return;
 
-  res = ((int64_t)(int32_t)rn_value) * ((int64_t)(int32_t)rm_value);
-  res_lo = res & (uint64_t)(~(uint32_t)0);
-  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-  cpu.SetGPR(rdhi, (uint32_t)res_hi);
-  cpu.SetGPR(rdlo, (uint32_t)res_lo);
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  S64 res = S64( S32( cpu.GetGPR( rn ) ) ) * S64( S32( cpu.GetGPR( rm ) ) );
+  cpu.SetGPR( rdlo, U32( res >> 0 ) );
+  cpu.SetGPR( rdhi, U32( res >> 32 ) );
   
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 63) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == S64(0)) );
     }
 };
 
@@ -247,6 +204,9 @@ smull.execute = {
  */
 
 op umlal( cond[4]: 0b0000101[7]: s[1]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
+umlal.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or
+                               (rdhi == rdlo) or
+                               ((ARCH::Config::model < ARMV6) and ((rdhi == rn) or (rdlo == rn)))};
 
 umlal.disasm = {
   buffer << "umlal" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -255,26 +215,20 @@ umlal.disasm = {
 };
 
 umlal.execute = {
-  uint64_t res;
-  uint64_t res_lo, res_hi;
-  uint32_t rdhi_value = cpu.GetGPR(rdhi);
-  uint32_t rdlo_value = cpu.GetGPR(rdlo);
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rm_value = cpu.GetGPR(rm);
-
   if (not CheckCondition(cpu, cond)) return;
 
-  res = rdlo_value + (((uint64_t)rdhi_value) << 32);
-  res += ((int64_t)rn_value) * ((int64_t)rm_value);
-  res_lo = res & (uint64_t)(~(uint32_t)0);
-  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-  cpu.SetGPR(rdhi, (uint32_t)res_hi);
-  cpu.SetGPR(rdlo, (uint32_t)res_lo);
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::U32 U32;
+  U64 res = ((U64(cpu.GetGPR( rdlo ))) <<  0) | ((U64(cpu.GetGPR( rdhi ))) << 32);
+  res += U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ));
+  
+  cpu.SetGPR( rdlo, U32(res >> 0) );
+  cpu.SetGPR( rdhi, U32(res >> 32) );
 
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 63) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U64(0)) );
     }
 };
 
@@ -286,13 +240,26 @@ umlal.execute = {
  * umaal instruction
  */
 
-{ ARCH::insns6 }:                                                      \
+{ ARCH::Config::insns6 }:                                                      \
 op umaal( cond[4]: 0b00000100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
+umaal.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or
+                               (rdhi == rdlo) or
+                               ((ARCH::Config::model < ARMV6) and ((rdhi == rn) or (rdlo == rn)))};
 
 umaal.disasm = {
   buffer << "umaal" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
          << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+umaal.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::U32 U32;
+  U64 res = (U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ))) + U64(cpu.GetGPR( rdlo )) + U64(cpu.GetGPR( rdhi ));
+  cpu.SetGPR( rdlo, U32(res >> 0) );
+  cpu.SetGPR( rdhi, U32(res >> 32) );
 };
 
 /*
@@ -307,6 +274,9 @@ umaal.disasm = {
  */
 
 op umull( cond[4]: 0b0000100[7]: s[1]: rdhi[4]: rdlo[4]: rm[4]: 0b1001[4]: rn[4] );
+umull.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or
+                               (rdhi == rdlo) or
+                               ((ARCH::Config::model < ARMV6) and ((rdhi == rn) or (rdlo == rn)))};
 
 umull.disasm = {
   buffer << "umull" << (s?"s":"") << DisasmCondition(cond) << '\t'
@@ -315,23 +285,18 @@ umull.disasm = {
 };
 
 umull.execute = {
-  uint64_t res;
-  uint64_t res_lo, res_hi;
-  uint32_t rn_value = cpu.GetGPR(rn);
-  uint32_t rm_value = cpu.GetGPR(rm);
-  
   if (not CheckCondition(cpu, cond)) return;
 
-  res = ((int64_t)rn_value) * ((int64_t)rm_value);
-  res_lo = res & (uint64_t)(~(uint32_t)0);
-  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-  cpu.SetGPR(rdhi, (uint32_t)res_hi);
-  cpu.SetGPR(rdlo, (uint32_t)res_lo);
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::U32 U32;
+  U64 res = U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ));
+  cpu.SetGPR( rdlo, U32(res >> 0) );
+  cpu.SetGPR( rdhi, U32(res >> 32) );
 
   if (s)
     {
-      cpu.CPSR().N().Set( (res >> 63) & 1 );
-      cpu.CPSR().Z().Set( res == 0 );
+      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
+      cpu.CPSR().Set( Z, U32(res == U64(0)) );
     }
 };
 
@@ -343,64 +308,35 @@ umull.execute = {
  * smlaxy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
-op smlaxy( cond[4]: 0b00010000[8]: rd[4]: ra[4]: rm[4]: 0b1[1]: y[1]: x[1]: 0b0[1]: rn[4] );
+{ ARCH::Config::insns5E }:                                                     \
+op smlaxy( cond[4]: 0b00010000[8]: rd[4]: ra[4]: rm[4]: 0b1[1]: m[1]: n[1]: 0b0[1]: rn[4] );
+smlaxy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (ra == 15) or (rm == 15)};
 
 smlaxy.disasm = {
-  buffer << "smla" << (x?"t":"b") << (y?"t":"b") << DisasmCondition(cond) << '\t'
+  buffer << "smla" << (n?"t":"b") << (m?"t":"b") << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
          << DisasmRegister(rm) << ", " << DisasmRegister(ra);
 };
 
 smlaxy.execute = {
-  int32_t op1;
-  int32_t op2;
-  uint32_t val_rn;
-  uint32_t val_rm;
-  uint32_t val_ra;
-  uint32_t val_rd;
+  if (not CheckCondition(cpu, cond)) return;
   
-
-  if(not CheckCondition(cpu, cond)) return;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
   
-  if(rd == cpu.PC_reg || rn == cpu.PC_reg || ra == cpu.PC_reg || rm == cpu.PC_reg) {
-    // unpredictable behavior, we do nothing
-    return;
-  }
+  S32 mop1 = S32(S16(cpu.GetGPR(rn) >> (16*n)));
+  S32 mop2 = S32(S16(cpu.GetGPR(rm) >> (16*m)));
   
-  val_rn = cpu.GetGPR(rn);
-  val_rm = cpu.GetGPR(rm);
-  val_ra = cpu.GetGPR(ra);
+  // Compute operands and result of signed addition
+  U32 op1 = U32(mop1 * mop2),
+      op2 = cpu.GetGPR(ra),
+      res = op1 + op2;
   
-  if(x)
-    val_rn = val_rn >> 16;
-  if(val_rn & (uint32_t)0x00008000ULL) {
-    val_rn = val_rn | (uint32_t)0xffff0000ULL;
-    op1 = (int32_t)val_rn;
-  } else {
-    val_rn = val_rn & (uint32_t)0x0000ffffULL;
-    op1 = (int32_t)val_rn;
-  }
+  U32 overflow = ((op1 & op2 & (~res)) | ((~op1) & (~op2) & res)) >> 31;
+  cpu.CPSR().Set( Q, overflow | cpu.CPSR().Get( Q ) );
   
-  if(y)
-    val_rm = val_rm >> 16;
-  if(val_rm & (uint32_t)0x00008000ULL) {
-    val_rm = val_rm | (uint32_t)0xffff0000ULL;
-    op2 = (int32_t)val_rm;
-  } else {
-    val_rm = val_rm & (uint32_t)0x0000ffffULL;
-    op2 = (int32_t)val_rm;
-  }
-  
-  uint32_t mul_res = (uint32_t)(op1 * op2);
-  //val_rd = op1 + val_ra;
-  uint8_t carry_out, overflow_out, sign;
-  unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, mul_res, val_ra, 0);
-  //if(op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
-  if (overflow_out) {
-    cpu.CPSR().Q().Set( 1 );
-  }
-  cpu.SetGPR(rd, val_rd);
+  cpu.SetGPR( rd, res );
 };
 
 /*
@@ -408,130 +344,12 @@ smlaxy.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * smlad instruction
- */
-
-{ ARCH::insns6 }:                                                      \
-op smlad( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: m[1]: 0b1[1]: rn[4] );
-
-smlad.disasm = {
-  buffer << "smlad" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
-};
-
-/*
- * end of smlad instruction
- *******************************************************************/
-
-/*******************************************************************
- * smuad instruction
- */
-
-{ ARCH::insns6 }:                                                      \
-op smuad( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: m[1]: 0b1[1]: rn[4] );
-
-smuad.disasm = {
-  buffer << "smuad" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm);
-};
-
-/*
- * end of smuad instruction
- *******************************************************************/
-
-/*******************************************************************
- * smlsd instruction
- */
-
-{ ARCH::insns6 }:                                                      \
-op smlsd( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b01[2]: m[1]: 0b1[1]: rn[4] );
-
-smlsd.disasm = {
-  buffer << "smlsd" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
-};
-
-/*
- * end of smlsd instruction
- *******************************************************************/
-
-/*******************************************************************
- * smusd instruction
- */
-
-{ ARCH::insns6 }:                                                      \
-op smusd( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b01[2]: m[1]: 0b1[1]: rn[4] );
-
-smusd.disasm = {
-  buffer << "smusd" << (m?"x":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm);
-};
-
-/*
- * end of smusd instruction
- *******************************************************************/
-
-/*******************************************************************
- * smmla instruction
- */
-
-{ ARCH::insns6 }:                                                      \
-op smmla( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: r[1]: 0b1[1]: rn[4] );
-
-smmla.disasm = {
-  buffer << "smmla" << (r?"r":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
-};
-
-/*
- * end of smmla instruction
- *******************************************************************/
-
-/*******************************************************************
- * smmul instruction
- */
-
-{ ARCH::insns6 }:                                                      \
-op smmul( cond[4]: 0b01110101[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: r[1]: 0b1[1]: rn[4] );
-
-smmul.disasm = {
-  buffer << "smmul" << (r?"r":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm);
-};
-
-/*
- * end of smmul instruction
- *******************************************************************/
-
-/*******************************************************************
- * smmls instruction
- */
-
-{ ARCH::insns6 }:                                                      \
-op smmls( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b11[2]: r[1]: 0b1[1]: rn[4] );
-
-smmls.disasm = {
-  buffer << "smmls" << (r?"r":"") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
-         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
-};
-
-/*
- * end of smmls instruction
- *******************************************************************/
-
-/*******************************************************************
  * smlalxy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
+{ ARCH::Config::insns5E }:                                                     \
 op smlalxy( cond[4]: 0b00010100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b1[1]: m[1]: n[1]: 0b0[1]: rn[4] );
+smlalxy.var reject : {Reject} = {(rdhi == 15) or (rdlo == 15) or (rn == 15) or (rm == 15) or (rdhi == rdlo)};
 
 smlalxy.disasm = {
   buffer << "smlal" << (n?"t":"b") << (m?"t":"b") << DisasmCondition(cond) << '\t'
@@ -542,15 +360,16 @@ smlalxy.disasm = {
 smlalxy.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  if ((rdhi == cpu.PC_reg) or (rdlo == cpu.PC_reg) or (rn == cpu.PC_reg) or (rm == cpu.PC_reg))
-    { /* unpredictable behavior, we do nothing */ return; }
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S16 S16;
   
-  uint64_t val_rd = (uint64_t( cpu.GetGPR(rdhi) ) << 32) | uint64_t( cpu.GetGPR(rdlo) );
-  int32_t op1 = int32_t( int16_t(cpu.GetGPR(rn) >> (n*16)) );
-  int32_t op2 = int32_t( int16_t(cpu.GetGPR(rm) >> (m*16)) );
-  val_rd += int64_t( op1 * op2 );
-  cpu.SetGPR( rdlo, uint32_t( val_rd ) );
-  cpu.SetGPR( rdhi, uint32_t( val_rd >> 32 ) );
+  S64 op1 = S64( S16(cpu.GetGPR(rn) >> (16*n)) );
+  S64 op2 = S64( S16(cpu.GetGPR(rm) >> (16*m)) );
+  S64 res = ((S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) )) + (op1 * op2);
+  
+  cpu.SetGPR( rdlo, U32( res >> 0 ) );
+  cpu.SetGPR( rdhi, U32( res >> 32 ) );
 };
 
 /*
@@ -561,71 +380,33 @@ smlalxy.execute = {
  * smlawy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
-op smlawy( cond[4]: 0b00010010[8]: rd[4]: rn[4]: rs[4]: 0b1[1]: y[1]: 0b00[2]: rm[4] );
+{ ARCH::Config::insns5E }:                                                     \
+op smlawy( cond[4]: 0b00010010[8]: rd[4]: ra[4]: rm[4]: 0b1[1]: m[1]: 0b00[2]: rn[4] );
+smlawy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (ra == 15) or (rm == 15)};
 
 smlawy.disasm = {
-  buffer << "smlaw" << (y?"t":"b") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs) << ", " << DisasmRegister(rn);
+  buffer << "smlaw" << (m?"t":"b") << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
 };
 
 smlawy.execute = {
-  int32_t op;
-  uint32_t val_rm;
-  uint32_t val_rs;
-  uint32_t val_rn;
-  uint32_t val_rd;
+  if (not CheckCondition(cpu, cond)) return;
   
-
-  if(not CheckCondition(cpu, cond)) return;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
   
-  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg || rs == cpu.PC_reg) {
-    // unpredictable behavior, we do nothing
-    return;
-  }
+  S64 mop1 = S64( S32(cpu.GetGPR(rn)) );
+  S64 mop2 = S64( S16(cpu.GetGPR(rm) >> (16*m)) );
   
-  val_rm = cpu.GetGPR(rm);
-  val_rs = cpu.GetGPR(rs);
-  val_rn = cpu.GetGPR(rn);
+  U32 op1 = U32( (mop1 * mop2) >> 16 ),
+      op2 = cpu.GetGPR(ra),
+      res = op1 + op2;
   
-  if(y)
-    val_rs = val_rs >> 16;
-  if(val_rs & (uint32_t)0x00008000ULL) {
-    val_rs = val_rs | (uint32_t)0xffff0000ULL;
-    op = (int32_t)val_rs;
-  } else {
-    val_rs = val_rs & (uint32_t)0x0000ffffULL;
-    op = (int32_t)val_rs;
-  }
+  U32 overflow = ((op1 & op2 & (~res)) | ((~op1) & (~op2) & res)) >> 31;
+  cpu.CPSR().Set( Q, overflow | cpu.CPSR().Get( Q ) );
   
-  int64_t op64;
-  op64 = (int32_t)val_rm;
-  op64 = op64 * op;
-  op64 = op64 >> 16;
-  op64 = op64 & (uint64_t)0xffffffffULL;
-  uint32_t op_tmp = op64;
-  //int32_t sval_rd = (int32_t)op_tmp;
-  //val_rd = (uint32_t)(sval_rd + (int32_t)val_rn);
-  uint8_t carry_out, overflow_out, sign;
-  unisim::util::arithmetic::SignedAdd32(val_rd, carry_out, overflow_out, sign, op_tmp, val_rn, 0);
-  //   if ( (op_tmp & (uint32_t)0x80000000ULL) !=
-  //     (val_rn & (uint32_t)0x80000000ULL) )
-  if(overflow_out)
-    {
-      //    cpu.SetCPSR_Q(false);
-      cpu.CPSR().Q().Set( 1 );
-    }
-  //   else
-  //   {
-  //     if ( (op_tmp & (uint32_t)0x80000000ULL) !=
-  //       (val_rd & (uint32_t)0x80000000ULL) )
-  //     {
-  //       cpu.SetCPSR_Q(true);
-  //     }
-  //     else
-  //       cpu.SetCPSR_Q(false);
-  //   }
-  cpu.SetGPR(rd, val_rd);
-
+  cpu.SetGPR( rd, res );
 };
 
 /*
@@ -636,55 +417,25 @@ smlawy.execute = {
  * smulxy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
-op smulxy( cond[4]: 0b00010110[8]: rd[4]: 0b0000[4]: rs[4]: 0b1[1]: y[1]: x[1]: 0b0[1]: rm[4] );
+{ ARCH::Config::insns5E }:                                                     \
+op smulxy( cond[4]: 0b00010110[8]: rd[4]: 0b0000[4]: rm[4]: 0b1[1]: m[1]: n[1]: 0b0[1]: rn[4] );
+smulxy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 smulxy.disasm = {
-  buffer << "smul" << (x?"t":"b") << (y?"t":"b") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+  buffer << "smul" << (n?"t":"b") << (m?"t":"b") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 smulxy.execute = {
-  int32_t op1;
-  int32_t op2;
-  uint32_t val_rm;
-  uint32_t val_rs;
-  uint32_t val_rd;
+  if (not CheckCondition(cpu, cond)) return;
   
-
-  if(not CheckCondition(cpu, cond)) return;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  S32 op1 = S32( S16(cpu.GetGPR(rn) >> (16*n)) );
+  S32 op2 = S32( S16(cpu.GetGPR(rm) >> (16*m)) );
   
-  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rs == cpu.PC_reg) {
-    // unpredictable behavior, we do nothing
-    return;
-  }
-  
-  val_rm = cpu.GetGPR(rm);
-  val_rs = cpu.GetGPR(rs);
-  
-  if(x)
-    val_rm = val_rm >> 16;
-  if(val_rm & (uint32_t)0x00008000ULL) {
-    val_rm = val_rm | (uint32_t)0xffff0000ULL;
-    op1 = (int32_t)val_rm;
-  } else {
-    val_rm = val_rm & (uint32_t)0x0000ffffULL;
-    op1 = (int32_t)val_rm;
-  }
-  
-  if(y)
-    val_rs = val_rs >> 16;
-  if(val_rs & (uint32_t)0x00008000ULL) {
-    val_rs = val_rs | (uint32_t)0xffff0000ULL;
-    op2 = (int32_t)val_rs;
-  } else {
-    val_rs = val_rs & (uint32_t)0x0000ffffULL;
-    op2 = (int32_t)val_rs;
-  }
-  
-  op1 = op1 * op2;
-  val_rd = (uint32_t)op1;
-  cpu.SetGPR(rd, val_rd);
+  cpu.SetGPR( rd, U32(op1 * op2) );
 };
 
 /*
@@ -695,46 +446,27 @@ smulxy.execute = {
  * smulwy instruction
  */
 
-{ ARCH::insns5E }:                                                     \
-op smulwy( cond[4]: 0b00010010[8]: rd[4]: 0b0000[4]: rs[4]: 0b1[1]: y[1]: 0b10[2]: rm[4] );
+{ ARCH::Config::insns5E }:                                                     \
+op smulwy( cond[4]: 0b00010010[8]: rd[4]: 0b0000[4]: rm[4]: 0b1[1]: m[1]: 0b10[2]: rn[4] );
+smulwy.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
 
 smulwy.disasm = {
-  buffer << "smulw" << (y?"t":"b") << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
+  buffer << "smulw" << (m?"t":"b") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
 smulwy.execute = {
-  int32_t op1;
-  int32_t op2;
-  uint32_t val_rm;
-  uint32_t val_rs;
-  uint32_t val_rd;
+  if (not CheckCondition(cpu, cond)) return;
   
-
-  if(not CheckCondition(cpu, cond)) return;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
   
-  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rs == cpu.PC_reg) {
-    // unpredictable behavior, we do nothing
-    return;
-  }
+  U32 rmval = cpu.GetGPR(rm) >> (16*m);
   
-  val_rm = cpu.GetGPR(rm);
-  val_rs = cpu.GetGPR(rs);
-  
-  if(y)
-    val_rs = val_rs >> 16;
-  if(val_rs & (uint32_t)0x00008000ULL) {
-    val_rs = val_rs | (uint32_t)0xffff0000ULL;
-    op2 = (int32_t)val_rs;
-  } else {
-    val_rs = val_rs & (uint32_t)0x0000ffffULL;
-    op2 = (int32_t)val_rs;
-  }
-  
-  op1 = (int32_t)val_rm;
-  int64_t op64 = (int64_t)op1 * (int64_t)op2;
-  val_rd = (uint32_t)((uint64_t)(op64 >> 16) & (uint64_t)0xffffffffULL);
-  cpu.SetGPR(rd, val_rd);
+  S64 res64 = S64(S32(cpu.GetGPR(rn))) * S64(S16(rmval));
+  cpu.SetGPR( rd, U32((res64 >> 16) & S64(0xffffffffULL)) );
 };
 
 /*
@@ -750,12 +482,27 @@ smulwy.execute = {
  * destination register. The condition code flags are not affected
  */
 
-{ ARCH::insnsRM }:                                                     \
+{ ARCH::Config::insnsRM }:                                                     \
 op sdiv( cond[4]: 0b01110001[8]: rd[4]: 0b1111[4]: rm[4]: 0b0001[4]: rn[4] );
 
 sdiv.disasm = {
   buffer << "sdiv" << DisasmCondition(cond) << '\t'
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+sdiv.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  S32 op1( cpu.GetGPR(rn) ), op2( cpu.GetGPR(rm) ),
+      res(0); // An untrapped division by zero result in 0.
+  
+  if (not cpu.IntegerZeroDivide( op2 == S32(0) )) {
+    res = op1 / op2;
+  }
+  
+  cpu.SetGPR( rd, U32(res) );
 };
 
 /*
@@ -770,7 +517,7 @@ sdiv.disasm = {
  * destination register. The condition code flags are not affected.
  */
 
-{ ARCH::insnsRM }:                                                     \
+{ ARCH::Config::insnsRM }:                                                     \
 op udiv( cond[4]: 0b01110011[8]: rd[4]: 0b1111[4]: rm[4]: 0b0001[4]: rn[4] );
 
 udiv.disasm = {
@@ -778,6 +525,405 @@ udiv.disasm = {
          << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
 
+udiv.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGPR(rn) ), op2( cpu.GetGPR(rm) ),
+      res(0); // An untrapped division by zero result in 0.
+  
+  if (not cpu.IntegerZeroDivide( op2 == U32(0) )) {
+    res = op1 / op2;
+  }
+  
+  cpu.SetGPR( rd, res );
+}
+
 /*
  * end of udiv instruction
  *******************************************************************/
+
+/*******************************************************************
+ * smlad (Signed Multiply Accumulate Dual) instruction
+ *
+ * SMLAD performs two signed 16 × 16-bit multiplications.  It adds the
+ * products to a 32-bit accumulate operand.  Optionally, the
+ * instruction can exchange the halfwords of the second operand before
+ * performing the arithmetic. This produces top*bottom and bottom*top
+ * multiplications.  This instruction sets the Q flag if the
+ * accumulate operation overflow s. Overflow cannot occur during the
+ * multiplications.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smlad( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: swap[1]: 0b1[1]: rn[4] );
+smlad.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
+
+smlad.disasm = {
+  buffer << "smlad" << (swap?"x":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+smlad.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  if (swap) op2 = RotateRight(op2,16);
+  
+  S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
+  S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
+  S64 res = S64(product1) + S64(product2) + S64(S32(cpu.GetGPR(ra)));
+  
+  U32 saturation( res != S64(S32(res)) );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of smlad instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smlald (Signed Multiply Accumulate Long Dual) instruction
+ *
+ * SMLALD performs two signed 16 × 16-bit multiplications. It adds the
+ * products to a 64-bit accumulate operand.  Optionally, the
+ * instruction can exchange the halfwords of the second operand before
+ * performing the arithmetic. This produces top*bottom and bottom*top
+ * multiplication.  Overflow is possible during this instruction, but
+ * only as a result of the 64-bit addition. This overflow is not
+ * detected if it occurs. Instead, the result wraps around modulo
+ * 2^64.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smlald( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b00[2]: swap[1]: 0b1[1]: rn[4] );
+smlald.var reject : {Reject} = {(rdlo == 15) or (rdhi == 15) or (rn == 15) or (rm == 15) or (rdhi == rdlo)};
+
+smlald.disasm = {
+  buffer << "smlald" << (swap?"x":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+smlald.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  if (swap) op2 = RotateRight(op2,16);
+  
+  S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
+  S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
+  S64 addend = (S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) );
+  S64 res = S64(product1) + S64(product2) + addend;
+  
+  cpu.SetGPR( rdlo, U32(res      ) );
+  cpu.SetGPR( rdhi, U32(res >> 32) );
+};
+
+/*
+ * end of smlald instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smlsd (Signed Multiply Subtract Dual) instruction
+ *
+ * SMLSD performs two signed 16-bit multiplications.  It adds the
+ * difference of the products to a 32-bit accumulate operand.
+ * Optionally, the instruction can exchange the halfwords of the
+ * second opera nd before performing the arithmetic. This produces
+ * top*bottom and bottom*top multiplications.  This instruction sets
+ * the Q flag if the accumulate operation overflows. Overflow cannot
+ * occur during the multiplications or subtraction.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smlsd( cond[4]: 0b01110000[8]: rd[4]: ra[4]: rm[4]: 0b01[2]: swap[1]: 0b1[1]: rn[4] );
+smlsd.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
+
+smlsd.disasm = {
+  buffer << "smlsd" << (swap?"x":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+smlsd.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  if (swap) op2 = RotateRight(op2,16);
+  
+  S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
+  S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
+  S64 res = S64(product1) - S64(product2) + S64(S32(cpu.GetGPR(ra)));
+  
+  U32 saturation( res != S64(S32(res)) );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of smlsd instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smlsld (Signed Multiply Accumulate Long Dual) instruction
+ *
+ * SMLSLD performs two signed 16*16-bit multiplications. It adds the
+ * difference of the products to a 64-bit accumulate operand.
+ * Optionally, the instruction can exchange the halfwords of the
+ * second operand before performing the arithmetic. This produces
+ * top*bottom and bottom*top multiplications.  Overflow is possible
+ * during this instruction, but only as a result of the 64-bit
+ * addition. This overflow is not detected if it occurs. Instead, the
+ * result wraps around modulo 2^64.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smlsld( cond[4]: 0b01110100[8]: rdhi[4]: rdlo[4]: rm[4]: 0b01[2]: swap[1]: 0b1[1]: rn[4] );
+smlsld.var reject : {Reject} = {(rdlo == 15) or (rdhi == 15) or (rn == 15) or (rm == 15) or (rdlo == rdhi)};
+
+smlsld.disasm = {
+  buffer << "smlsld" << (swap?"x":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+smlsld.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  if (swap) op2 = RotateRight(op2,16);
+  
+  S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
+  S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
+  S64 addend = (S64( cpu.GetGPR(rdhi) ) << 32) | S64( cpu.GetGPR(rdlo) );
+  S64 res = S64(product1) - S64(product2) + addend;
+  
+  cpu.SetGPR( rdlo, U32(res      ) );
+  cpu.SetGPR( rdhi, U32(res >> 32) );
+};
+
+/*
+ * end of smlsld instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smmla (Signed Most Significant Word Multiply Accumulate) instruction
+ *
+ * SMMLA multiplies two signed 32-bit values, extracts the most
+ * significant 32 bits of the result, and adds an accumulate value.
+ * Optionally, the instruction can specify that the result is rounded
+ * instead of being truncated.  In this case, the constant 0x80000000
+ * is added to the product before the high word is extracted.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smmla( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b00[2]: round[1]: 0b1[1]: rn[4] );
+smmla.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
+
+smmla.disasm = {
+  buffer << "smmla" << (round?"r":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+smmla.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  S64 a(S32(cpu.GetGPR(ra))), n(S32(cpu.GetGPR(rn))), m(S32(cpu.GetGPR(rm)));
+  S64 res = (a<<32) + n*m + (S64(round)<<31);
+
+  cpu.SetGPR( rd, U32(res >> 32) );
+};
+
+/*
+ * end of smmla instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smmls (Signed Most Significant Word Multiply Subtract) instruction
+ *
+ * multiplies two signed 32-bit values, subtracts the result from a
+ * 32-bit accumulate value that is shifted left by 32 bits, and ex
+ * tracts the most significant 32 bits of the result of that
+ * subtraction.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smmls( cond[4]: 0b01110101[8]: rd[4]: ra[4]: rm[4]: 0b11[2]: round[1]: 0b1[1]: rn[4] );
+smmls.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15) or (ra == 15)};
+
+smmls.disasm = {
+  buffer << "smmls" << (round?"r":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+smmls.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  S64 a(S32(cpu.GetGPR(ra))), n(S32(cpu.GetGPR(rn))), m(S32(cpu.GetGPR(rm)));
+  S64 res = (a<<32) - n*m + (S64(round)<<31);
+
+  cpu.SetGPR( rd, U32(res >> 32) );
+};
+
+/*
+ * end of smmls instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smmul (Signed Most Significant Word Multiply) instruction
+ *
+ * SMMUL multiplies two signed 32-bit values, extracts the most
+ * significant 32 bits of the result, and writes those bits to the
+ * destination register.  Optionally, the instruction can specify that
+ * the result is rounded instead of being truncated.  In this case,
+ * the constant 0x80000000 is added to the product before the high
+ * word is extracted.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smmul( cond[4]: 0b01110101[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: round[1]: 0b1[1]: rn[4] );
+smmul.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+smmul.disasm = {
+  buffer << "smmul" << (round?"r":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+smmul.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  S64 n(S32(cpu.GetGPR(rn))), m(S32(cpu.GetGPR(rm)));
+  S64 res = n*m + (S64(round)<<31);
+
+  cpu.SetGPR( rd, U32(res >> 32) );
+};
+
+/*
+ * end of smmul instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smuad (Signed Dual Multiply Add) instruction
+ *
+ * SMUAD erforms two signed 16 × 16-bit multiplications. It adds the
+ * products together, and writes the result to the destination
+ * register.  Optionally, the instruction can exchange the halfwords
+ * of the second operand before performing the arithmetic.  This
+ * produces top*bottom and bottom*top multiplication.  This
+ * instruction sets the Q flag if the addition overflows.  The
+ * multiplications cannot overflow.
+ */
+
+{ ARCH::Config::insns6 }:                                                      \
+op smuad( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b00[2]: swap[1]: 0b1[1]: rn[4] );
+smuad.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+smuad.disasm = {
+  buffer << "smuad" << (swap?"x":"") << DisasmCondition(cond) << '\t' << DisasmRegister(rd)
+         << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+smuad.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  if (swap) op2 = RotateRight(op2,16);
+  
+  S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
+  S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
+  S64 res = S64(product1) + S64(product2);
+  
+  U32 saturation( res != S64(S32(res)) );
+  
+  cpu.CPSR().Set( Q, saturation | cpu.CPSR().Get( Q ) );
+  cpu.SetGPR( rd, U32(res) );
+};
+
+/*
+ * end of smuad instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smusd (Signed Multiply Subtract Dual) instruction
+ *
+ * SMUSD performs two signed 16-bit multiplications.  It subtracts
+ * one of the products from the other, and writes the result to the
+ * destination register.  Optionally, the instruction can exchange the
+ * halfwords of the second operand before performing the arithmetic.
+ * This produces top*bottom and bottom*top multiplication.  Overflow
+ * cannot occur.
+ */
+
+
+{ ARCH::Config::insns6 }:                                                      \
+op smusd( cond[4]: 0b01110000[8]: rd[4]: 0b1111[4]: rm[4]: 0b01[2]: swap[1]: 0b1[1]: rn[4] );
+smusd.var reject : {Reject} = {(rd == 15) or (rn == 15) or (rm == 15)};
+
+smusd.disasm = {
+  buffer << "smusd" << (swap?"x":"") << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm);
+};
+
+smusd.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  
+  U32 op1 = cpu.GetGPR(rn), op2 = cpu.GetGPR(rm);
+  if (swap) op2 = RotateRight(op2,16);
+  
+  S32 product1 = S32(S16(op1      )) * S32(S16(op2      ));
+  S32 product2 = S32(S16(op1 >> 16)) * S32(S16(op2 >> 16));
+  
+  cpu.SetGPR( rd, U32(product1 - product2) );
+};
+
+/*
+ * end of smusd instruction
+ *******************************************************************/
+

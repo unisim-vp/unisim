@@ -239,7 +239,7 @@ int shmidcat_init(char *gtk_wave_path)
 #endif
 		memset(buf, 0, WAVE_PARTIAL_VCD_RING_BUFFER_SIZE);
 
-#ifdef __linux__
+#if defined(linux) || defined(__linux) || defined(__linux__)
 		shmctl(shmid, IPC_RMID, &ds); /* mark for destroy, linux allows queuing up destruction now */
 #endif
 

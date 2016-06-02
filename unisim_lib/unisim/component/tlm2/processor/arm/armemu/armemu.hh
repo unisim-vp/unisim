@@ -40,7 +40,6 @@
 #include "unisim/component/cxx/processor/arm/armemu/cpu.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <inttypes.h>
-#include <string>
 
 namespace unisim {
 namespace component {
@@ -48,8 +47,6 @@ namespace tlm2 {
 namespace processor {
 namespace arm {
 namespace armemu {
-
-using std::string;
 
 class ARMEMU
 	: public sc_module
@@ -73,19 +70,44 @@ public:
 	tlm::tlm_initiator_socket<32> master_socket;
 	
 private:
-	// virtual method implementation to handle backward path of transactions 
-	//   sent through the master_port
-	virtual sync_enum_type nb_transport_bw(transaction_type &trans, 
-			phase_type &phase, 
-			sc_core::sc_time &time);
-	// virtual method implementation to handle backward path of the dmi 
+	// virtual method implementation to handle backward path of
+	//   transactions sent through the master_port
+	virtual sync_enum_type nb_transport_bw(transaction_type &trans, phase_type &phase, sc_core::sc_time &time);
+	// virtual method implementation to handle backward path of the dmi
 	//   mechanism
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, 
-			sc_dt::uint64 end_range);
+	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
 	/**************************************************************************
 	 * Port to the bus and its virtual methods to handle                  END *
 	 *   incomming calls.                                                     *
+	 **************************************************************************/
+
+	/**************************************************************************
+	 * Interrupt ports and their handles                                START *
+	 **************************************************************************/
+
+public:
+	// Slave port for the nIRQm signal
+	sc_core::sc_in<bool> nIRQm;
+	// Slave port for the nFIQm signal
+	sc_core::sc_in<bool> nFIQm;
+  // Slave port for the nRESETm signal
+  sc_core::sc_in<bool> nRESETm;
+  
+private:
+  int raised_irqs;
+  int raised_fiqs;
+  int raised_rsts;
+  
+	/** nIRQm port handler */
+	void IRQHandler();
+	/** nFIQm port handler */
+	void FIQHandler();
+  /** nRESETm port hander */
+	void ResetHandler();
+	
+	/**************************************************************************
+	 * Interrupt ports and their handles                                  END *
 	 **************************************************************************/
 
 public:
@@ -114,32 +136,8 @@ public:
 	virtual void PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
 
 private:
-	/** Non intrusive memory read method.
-	 * Non intrusive memory read method that the inherited cpu uses and should 
-	 *   be redefined to access the tlm2 debug interface.
-	 *
-	 * @param addr the address to read
-	 * @param buffer a buffer to put the read data
-	 * @param size the amount of data to read
-	 *
-	 * @return true on success, false otherwise
-	 */
-	virtual bool ExternalReadMemory(uint32_t addr, 
-			void *buffer, 
-			uint32_t size);
-	/** Non intrusive memory write method.
-	 * Non intrusive memory write method that the inherited cpu uses and should 
-	 *   be redefined to access the tlm2 debug interface.
-	 *
-	 * @param addr the address to write
-	 * @param buffer a buffer with the write data
-	 * @param size the amount of data to read
-	 *
-	 * @return true on success, false otherwise
-	 */
-	virtual bool ExternalWriteMemory(uint32_t addr, 
-			const void *buffer, 
-			uint32_t size);
+	virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size);
+	virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
 	
 	/** Event used to signalize the end of a read transaction.
 	 * Method PrRead waits for this event once the read transaction has been 
@@ -167,13 +165,13 @@ private:
 	double ipc;
 	bool enable_dmi;
 	
+  unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
+  
 	unisim::kernel::service::Parameter<sc_time> param_cpu_cycle_time;
 	unisim::kernel::service::Parameter<sc_time> param_bus_cycle_time;
 	unisim::kernel::service::Parameter<sc_time> param_nice_time;
 	unisim::kernel::service::Parameter<double> param_ipc;
 	unisim::kernel::service::Parameter<bool> param_enable_dmi;
-
-  unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
 	
 	/*************************************************************************
 	 * Logger, verbose and trap parameters/methods/ports               START *

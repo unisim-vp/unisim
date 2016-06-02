@@ -39,7 +39,7 @@
 #include <inttypes.h>
 #include <iosfwd>
 #include <string>
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/util/likely/likely.hh>
 
@@ -137,7 +137,7 @@ namespace tms320c3x {
 		void Rndf(uint8_t hi_a, uint32_t lo_a, uint32_t& overflow, uint32_t& underflow, uint32_t& neg);
 	};
 	
-	class RegisterDebugInterface : public unisim::util::debug::Register
+	class RegisterDebugInterface : public unisim::service::interfaces::Register
 	{
 	public:
 		RegisterDebugInterface(const char *name, unisim::component::cxx::processor::tms320c3x::Register *reg, bool extended_precision = false);
@@ -152,7 +152,7 @@ namespace tms320c3x {
 		unisim::component::cxx::processor::tms320c3x::Register *reg;
 	};
 	
-	class RegisterBitFieldDebugInterface : public unisim::util::debug::Register
+	class RegisterBitFieldDebugInterface : public unisim::service::interfaces::Register
 	{
 	public:
 		RegisterBitFieldDebugInterface(const char *name, unisim::component::cxx::processor::tms320c3x::Register *reg, unsigned int bit_offset, unsigned int bit_size = 1);

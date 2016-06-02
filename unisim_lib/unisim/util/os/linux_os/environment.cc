@@ -39,7 +39,7 @@
 #include <crt_externs.h>
 #define environ (*_NSGetEnviron())
 #endif
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
 #include <stdlib.h>
 #else
 #include <unistd.h>

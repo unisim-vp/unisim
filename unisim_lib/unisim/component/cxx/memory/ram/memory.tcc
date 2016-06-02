@@ -89,7 +89,7 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	, param_bytesize("bytesize", this, bytesize, "memory size in bytes")
 	, stat_memory_usage("memory-usage", this, memory_usage, (std::string("target memory usage in bytes (page granularity of ") + u32toa(PAGE_SIZE) + " bytes)").c_str())
 	, initial_byte_value(0x00)
-	, param_initial_byte_value("initial-byte-value", this, initial_byte_value)
+	, param_initial_byte_value("initial-byte-value", this, initial_byte_value, "initial value for all bytes of memory")
 
 {
 	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -389,7 +389,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 			{
 				uint8_t *src = &page->storage[page_offset];
 				uint8_t *dst = &((uint8_t *)buffer)[copied];
-
+				uint32_t copy_left = copy_size;
 				do
 				{
 					uint8_t mask = byte_enable[byte_enable_offset];
@@ -397,7 +397,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 					*dst = ((*dst) & ~mask) | ((*src) & mask);
 					// cycle through the byte enable buffer
 					if(++byte_enable_offset >= byte_enable_length) byte_enable_offset = 0;
-				} while(++src, ++dst, --copy_size);
+				} while (++src, ++dst, --copy_left);
 			}
 			else
 			{
