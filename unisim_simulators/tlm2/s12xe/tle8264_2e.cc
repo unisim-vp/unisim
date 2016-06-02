@@ -99,6 +99,8 @@ void TLE8264_2E::OnDisconnect() {
 
 void TLE8264_2E::Reset() {
 
+	std::cout << sc_time_stamp() << " TLE::Reset" << std::endl;
+
 	wk_state_register = WK_STATE_DEFAULT;
 	wd_refresh = false;
 
@@ -106,13 +108,15 @@ void TLE8264_2E::Reset() {
 	mask_registers[0b000] = REG_000_MSK_DEFAULT;
 	mask_registers[0b001] = REG_001_MSK_DEFAULT;
 	mask_registers[0b010] = REG_010_MSK_DEFAULT;
+	mask_registers[0b011] = REG_011_MSK_DEFAULT;
 
 	// interrupt status
 	status_registers[0b000] = REG_000_DEFAULT;
 	status_registers[0b001] = REG_001_DEFAULT;
 	status_registers[0b010] = REG_010_DEFAULT;
+	status_registers[0b011] = REG_011_DEFAULT;
 
-	reserved = REG_011_DEFAULT;
+//	reserved = REG_011_DEFAULT;
 
 	// configuration registers
 	cfg_registers[0b100] = REG_100_DEFAULT;
@@ -426,8 +430,10 @@ void TLE8264_2E::refresh_watchdog()
 }
 
 void TLE8264_2E::execute_init() {
-
+	// TODO: Workaround. This action is done by default. To confirm !!!
+	Reset();
 }
+
 void TLE8264_2E::execute_restart() {
 	/*
 	 * TODO:
@@ -440,9 +446,11 @@ void TLE8264_2E::execute_restart() {
 		execute_normal();
 	}
 }
+
 void TLE8264_2E::execute_swflash() {
 
 }
+
 void TLE8264_2E::execute_normal() {
 	if (!isWatchDogEnable()) { std::cerr << "In Normal Mode the watchdog needs to be triggered !!!" << std::endl; }
 
@@ -505,9 +513,16 @@ uint16_t TLE8264_2E::execute_readonly(uint16_t sel)
 			response = response | (status_registers[2] << 6);
 		} break;
 		case 0b011: {
+// 20160513: start update
 			/* NOP; reserved register */
-			std::cerr << "TLE8264_2E:: read of reserved register 0b000" << std::endl;
-			response = response | reserved;
+//			std::cerr << "TLE8264_2E:: read of reserved register 0b011" << std::endl;
+//			response = response | reserved;
+
+			std::cerr << "TLE8264_2E:: read (done) of reserved register 0b011" << std::endl;
+			status_registers[3] = status_registers[3] & 0x000;
+			response = response | (status_registers[3] << 6);
+
+// 20160513: end update
 		} break;
 		case 0b100: {
 			response = response | (cfg_registers[0] << 6);
@@ -523,7 +538,7 @@ uint16_t TLE8264_2E::execute_readonly(uint16_t sel)
 		} break;
 	}
 
-	if (((status_registers[0] & 0x07F) == 0) && ((status_registers[1] & 0x17F) == 0) && ((status_registers[2] & 0x1FF) == 0))
+	if (((status_registers[0] & 0x07F) == 0) && ((status_registers[1] & 0x17F) == 0) && ((status_registers[2] & 0x1FF) == 0) && ((status_registers[3] & 0x1FF) == 0))
 	{
 		status_registers[0] = status_registers[0] & 0x0FF;  // clear 'INT' flag. equivalent to 'status_registers[0] = REG_000_DEFAULT'
 		if (sel == 0b000) {
@@ -586,7 +601,7 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 	uint16_t val = spi_cmd >> 6;
 
 	if (debug_enabled) {
-		std::cout << sc_object::name() << "::triggerStateMachine()  execute CMD 0x" << std::hex << spi_cmd << std::dec << std::endl;
+		std::cout << sc_time_stamp() << " " << sc_object::name() << "::triggerStateMachine()  execute CMD 0x" << std::hex << spi_cmd << std::dec << std::endl;
 	}
 
 	switch (current_cmd & 0x0007)
@@ -598,6 +613,17 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			// No mode change
 			current_cmd = write(sel, val);
 		} break;
+
+// 20160513: start add - transition due to "Init mode not successful"
+		case RESTART: {
+			current_mode = new_mode;
+			current_cmd = write(sel, val);
+			// when leaving the SWFlash a reset is generated
+			assert_reset_interrupt();
+			execute_restart();
+		} break;
+// 20160513: end adding
+
 		case NORMAL: {
 			current_mode = new_mode;
 			current_cmd = write(sel, val);
@@ -613,7 +639,7 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			return (execute_readonly(sel));
 
 		} break;
-		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
+		default: std::cout << sc_time_stamp() << " (1) change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
 	} break;
@@ -628,7 +654,7 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			/*no change but triggers wd and clear int ...*/
 			return (execute_readonly(sel));
 		} break;
-		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
+		default: std::cout << sc_time_stamp() << " (2) change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
 	} break;
@@ -653,7 +679,7 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			/*no change but triggers wd and clear int ...*/
 			return (execute_readonly(sel));
 		} break;
-		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
+		default: std::cout << sc_time_stamp() << " (3) change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
 	} break;
@@ -664,8 +690,17 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			current_cmd = write(sel, val);
 		} break;
 		case RESTART: {
+			std::cout << sc_time_stamp() << " (4) change mode (done) normal->restart 0x" << std::hex << spi_cmd << std::dec << " Register updated"<< std::endl;
+// 20160513: the commented line is replaced by the below code
+//			current_cmd = write(sel, val);
+
+// 20160513: start adding
+			current_mode = new_mode;
 			current_cmd = write(sel, val);
-			std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << " Register updated"<< std::endl;
+			// when leaving the SWFlash a reset is generated
+			assert_reset_interrupt();
+			execute_restart();
+// 20160513: end adding
 		} break;
 		case SWFLASH: {
 			current_mode = new_mode;
@@ -714,7 +749,7 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			/*no change but triggers wd and clear int ...*/
 			return (execute_readonly(sel));
 		} break;
-		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
+		default: std::cout << sc_time_stamp() << " (5) change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
 	} break;
@@ -732,7 +767,7 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			/*no change but triggers wd and clear int ...*/
 			return (execute_readonly(sel));
 		} break;
-		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
+		default: std::cout << sc_time_stamp() << " (6) change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
 	} break;
@@ -759,7 +794,7 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			/*no change but triggers wd and clear int ...*/
 			return (execute_readonly(sel));
 		} break;
-		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
+		default: std::cout << sc_time_stamp() << " (7) change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
 	} break;
@@ -777,11 +812,11 @@ uint16_t TLE8264_2E::triggerStateMachine(uint16_t spi_cmd) {
 			/*no change but triggers wd and clear int ...*/
 			return (execute_readonly(sel));
 		} break;
-		default: std::cout << "change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
+		default: std::cout << sc_time_stamp() << " (8) change mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 		}
 
 	} break;
-	default: std::cout << "Reserved mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
+	default: std::cout << sc_time_stamp() << " Reserved mode not supported 0x" << std::hex << spi_cmd << std::dec << std::endl; break;
 	}
 
 	// The default value of 'WD refresh bit' is 0. The first trigger must be 1 and the following triggers must be 0.
@@ -833,8 +868,13 @@ uint16_t TLE8264_2E::write(uint16_t sel, uint16_t val) {
 			response = response | (status_registers[2] << 6);
 		} break;
 		case 0b011: {
+// 20160513: start update
 			/* NOP; reserved register */
-			std::cerr << "TLE8264_2E:: write to reserved register 0b000" << std::endl;
+//			std::cerr << "TLE8264_2E:: write to reserved register 0b011 value=0x" << std::hex << val << std::endl;
+			std::cerr << "TLE8264_2E:: write (done) to reserved register 0b011 value=0x" << std::hex << val << std::endl;
+			mask_registers[3] = ~(mask_registers[3] ^ val) & 0x01FF;
+			response = response | (status_registers[3] << 6);
+// 20160513: end update
 		} break;
 		case 0b100: {
 			cfg_registers[0] = val;
@@ -845,6 +885,9 @@ uint16_t TLE8264_2E::write(uint16_t sel, uint16_t val) {
 			response = response | (cfg_registers[1] << 6);
 		} break;
 		case 0b110: {
+// 20160513: start add
+			std::cout << sc_time_stamp() << " TLE::WD write before 0x" << std::hex << cfg_registers[2] << " new value 0x" << std::hex << val << std::endl;
+// 20160513: end add
 			cfg_registers[2] = val;
 			computeWDTimeer();
 			if (isWatchDogEnable()) { watchdog_enable_event.notify(); }

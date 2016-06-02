@@ -102,6 +102,7 @@ public:
 	static const uint16_t REG_000_MSK_DEFAULT	= 0b0000111111;
 	static const uint16_t REG_001_MSK_DEFAULT	= 0b0111111111;
 	static const uint16_t REG_010_MSK_DEFAULT	= 0b0010101101;
+	static const uint16_t REG_011_MSK_DEFAULT	= 0b0000000011;
 	static const uint16_t REG_000_DEFAULT		= 0b0000000000;
 	static const uint16_t REG_001_DEFAULT 		= 0b0000000000;
 	static const uint16_t REG_010_DEFAULT 		= 0b0000000000;
@@ -224,8 +225,8 @@ private:
 
 	bool wd_refresh;
 	uint16_t wk_state_register;
-	uint16_t mask_registers[3]; // 9lsb are mask bits and the 10th bit is wd_refresh
-	uint16_t status_registers[3]; // 9lsb are status bits and the 10th bit is wk_state
+	uint16_t mask_registers[4]; // 9lsb are mask bits and the 10th bit is wd_refresh
+	uint16_t status_registers[4]; // 9lsb are status bits and the 10th bit is wk_state
 	uint16_t reserved;
 	uint16_t cfg_registers[4]; // 9-bits by register
 

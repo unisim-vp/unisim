@@ -94,12 +94,12 @@ void S12VREGL3V3::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
 
-//			std::cerr << "S12VREGL3V3::Warning: READ access to 0x" << std::hex << (address - baseAddress) << std::endl;
+			std::cout << "S12VREGL3V3::Warning: READ access to 0x" << std::hex << (address - base_address) << std::endl;
 
 			read(address - base_address, data_ptr, data_length);
 		} else if (cmd == tlm::TLM_WRITE_COMMAND) {
 
-//			std::cerr << "S12VREGL3V3::Warning: WRITE access to 0x" << std::hex << (address - baseAddress) << std::endl;
+			std::cout << "S12VREGL3V3::Warning: WRITE access to 0x" << std::hex << (address - base_address) << std::endl;
 
 			write(address - base_address, data_ptr, data_length);
 		}

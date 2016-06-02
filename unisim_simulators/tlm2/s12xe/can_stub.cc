@@ -371,9 +371,11 @@ void CAN_STUB::watchdog() {
 
 void CAN_STUB::processCAN_Inject()
 {
+	wait(sc_time(17, SC_MS));
+
 	while (!isTerminated() && (rand_enabled || xml_enabled || cosim_enabled)) {
 
-		wait(*can_inject_stimulus_period_sc);
+//		wait(*can_inject_stimulus_period_sc);
 
 		for (unsigned int i=0; i<can_inject_vect.size()  && !isTerminated(); i++) {
 			if (can_inject_vect[i] != NULL) {

@@ -1500,7 +1500,7 @@ void ECT::IOC_Channel_t::runOutputCompare() {
 		ectParent->runChannelOutputCompareAction(ioc_index);
 		// set the TFLG1::CxF to show that output compare is detected
 		if (ectParent->isInputOutputInterruptEnabled(ioc_index)) {
-			std::cout << sc_time_stamp() << "  " << sc_object::name() << " runOutputCompare (1) 0x" << std::hex << ectParent->getInterruptOffsetChannel0() - (ioc_index * 2) << std::endl;
+			std::cout << sc_time_stamp() << "  " << sc_object::name() << " ioc_index " << (unsigned int) ioc_index << " runOutputCompare (1) 0x" << std::hex << ectParent->getInterruptOffsetChannel0() - (ioc_index * 2) << std::endl;
 			ectParent->setTimerInterruptFlag(ioc_index);
 			ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
 		}

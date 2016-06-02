@@ -54,6 +54,8 @@ Simulator::Simulator(int argc, char **argv)
 	, spi0(0)
 	, spi1(0)
 	, spi2(0)
+	, spi1_stub(0)
+	, spi2_stub(0)
 	, pim(0)
 	, dbg(0)
 	, iic0(0)
@@ -196,6 +198,9 @@ Simulator::Simulator(int argc, char **argv)
 	spi0 = new S12SPI("SPI0");
 	spi1 = new S12SPI("SPI1");
 	spi2 = new S12SPI("SPI2");
+
+	spi1_stub = new TLE72XXSL("SPI1-STUB");
+	spi2_stub = new TLE72XXSL("SPI2-STUB");
 
 	pim  = new S12XEPIM("PIM");
 	dbg  = new S12XDBG("DBG");
@@ -366,16 +371,20 @@ Simulator::Simulator(int argc, char **argv)
 	can_stub->can_tx_sock(tranceiver1->can_master_rx_sock);
 	tranceiver1->can_slave_tx_sock(can1->can_rx_sock);
 
-	tranceiver1->spi_tx_socket(spi1->rx_socket);
-	spi1->tx_socket(tranceiver1->spi_rx_socket);
+	tranceiver1->spi_tx_socket(tranceiver1->spi_rx_socket);
+
+	spi1->tx_socket(spi1_stub->rx_socket);
+	spi1_stub->tx_socket(spi1->rx_socket);
 
 	can2->can_tx_sock(tranceiver2->can_slave_rx_sock);
 	tranceiver2->can_master_tx_sock(can_stub->can_rx_sock);
 	can_stub->can_tx_sock(tranceiver2->can_master_rx_sock);
 	tranceiver2->can_slave_tx_sock(can2->can_rx_sock);
 
-	tranceiver2->spi_tx_socket(spi2->rx_socket);
-	spi2->tx_socket(tranceiver2->spi_rx_socket);
+	tranceiver2->spi_tx_socket(tranceiver2->spi_rx_socket);
+
+	spi2->tx_socket(spi2_stub->rx_socket);
+	spi2_stub->tx_socket(spi2->rx_socket);
 
 	can3->can_tx_sock(tranceiver3->can_slave_rx_sock);
 	tranceiver3->can_master_tx_sock(can_stub->can_rx_sock);
@@ -459,6 +468,8 @@ Simulator::Simulator(int argc, char **argv)
 	crg->bus_clock_socket(spi0->bus_clock_socket);
 	crg->bus_clock_socket(spi1->bus_clock_socket);
 	crg->bus_clock_socket(spi2->bus_clock_socket);
+	crg->bus_clock_socket(spi1_stub->bus_clock_socket);
+	crg->bus_clock_socket(spi2_stub->bus_clock_socket);
 	crg->bus_clock_socket(pim->bus_clock_socket);
 	crg->bus_clock_socket(dbg->bus_clock_socket);
 	crg->bus_clock_socket(iic0->bus_clock_socket);
@@ -797,6 +808,9 @@ Simulator::~Simulator()
 	if (spi0) { delete spi0; spi0 = NULL; }
 	if (spi1) { delete spi1; spi1 = NULL; }
 	if (spi2) { delete spi2; spi2 = NULL; }
+	if (spi1_stub) { delete spi1_stub; spi1_stub = NULL; }
+	if (spi2_stub) { delete spi2_stub; spi2_stub = NULL; }
+
 	if (pim)  { delete pim; pim = NULL; }
 	if (dbg)  { delete dbg; dbg = NULL; }
 	if (iic0) { delete iic0; iic0 = NULL; }
@@ -1327,6 +1341,16 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SPI2.debug-enabled", false);
 	simulator->SetVariable("SPI2.txd-pin-enable", true);
 	simulator->SetVariable("SPI2.telnet-enabled", false);
+
+	simulator->SetVariable("SPI1-STUB.bus-cycle-time", 250000);
+	simulator->SetVariable("SPI1-STUB.debug-enabled", false);
+	simulator->SetVariable("SPI1-STUB.txd-pin-enable", true);
+	simulator->SetVariable("SPI1-STUB.telnet-enabled", false);
+
+	simulator->SetVariable("SPI2-STUB.bus-cycle-time", 250000);
+	simulator->SetVariable("SPI2-STUB.debug-enabled", false);
+	simulator->SetVariable("SPI2-STUB.txd-pin-enable", true);
+	simulator->SetVariable("SPI2-STUB.telnet-enabled", false);
 
 	simulator->SetVariable("MMC.version", "V4");
 	simulator->SetVariable("MMC.debug-enabled", false);
