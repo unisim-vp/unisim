@@ -349,12 +349,13 @@ public:
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   
 protected:
-  uint32_t HandleAsynchronousException( uint32_t );
-  virtual uint32_t ExcVectorBase();
-  void     TakeReset();
-  void     TakePhysicalFIQorIRQException( bool isIRQ );
-  void     TakeSVCException();
-  void     TakeDataOrPrefetchAbortException( bool isdata );
+  uint32_t     HandleAsynchronousException( uint32_t );
+  uint32_t     ExcVectorBase();
+  void         TakeReset();
+  void         TakePhysicalFIQorIRQException( bool isIRQ );
+  virtual void BranchToFIQorIRQvector( bool isIRQ );
+  void         TakeSVCException();
+  void         TakeDataOrPrefetchAbortException( bool isdata );
   
   /************************************************************************/
   /* Exception handling                                               END */

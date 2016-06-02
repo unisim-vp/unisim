@@ -595,7 +595,7 @@ CPU<CONFIG>::TakeDataOrPrefetchAbortException( bool isdata )
   cpsr.Set( J, 0 );
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
-  // Branch to SVC vector.
+  // Branch to Abort vector.
   Branch(ExcVectorBase() + vect_offset);
 }
 
@@ -667,7 +667,6 @@ CPU<CONFIG>::TakePhysicalFIQorIRQException( bool isIRQ )
   
   uint32_t new_lr_value = GetNIA() + 4;
   uint32_t new_spsr_value = cpsr.Get( ALL32 );
-  uint32_t vect_offset = isIRQ ? 0x18 : 0x1C;
       
   // TODO: [IRQ|FIQ]s may be routed to monitor (if
   // HaveSecurityExt() and SCR.[IRQ|FIQ]) or to Hypervisor (if
@@ -699,7 +698,22 @@ CPU<CONFIG>::TakePhysicalFIQorIRQException( bool isIRQ )
   cpsr.Set( J, 0 );
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) );
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) );
-  // Branch to correct [IRQ|FIQ] vector ("implementation defined" if SCTLR.VE == '1').
+  // Branch to correct [IRQ|FIQ] vector
+  if (sctlr::VE.Get( SCTLR ))
+    BranchToFIQorIRQvector( isIRQ );              //< Virtual method, Implementation defined
+  else
+    CPU<CONFIG>::BranchToFIQorIRQvector( isIRQ ); //< Static method, default behavior
+}
+
+/** Branch to Physical FIQ or IRQ vector
+ * This method provides default behavior when branching to physical FIQ or IRQ vector
+ * @param isIRQ   whether the Exception is an IRQ (true) or an FIQ (false)
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::BranchToFIQorIRQvector( bool isIRQ )
+{
+  uint32_t vect_offset = isIRQ ? 0x18 : 0x1c;
   Branch(ExcVectorBase() + vect_offset);
 }
 
@@ -920,7 +934,6 @@ CPU<CONFIG>::CP15ResetRegisters()
   sctlr::M.Set(       SCTLR, 0 ); // MMU enable.
   
   CPACR = 0x0;
-  
 }
     
 /** Unpredictable Instruction Behaviour.

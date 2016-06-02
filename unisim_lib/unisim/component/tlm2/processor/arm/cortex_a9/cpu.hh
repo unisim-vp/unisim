@@ -134,16 +134,6 @@ public:
 	
   sc_core::sc_time const& GetCpuCycleTime() const { return cpu_cycle_time; };
 
-  /**************************/
-  /* CP15 Interface   START */
-  /**************************/
-  
-  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-    
-  /**************************/
-  /* CP15 Interface    END  */
-  /**************************/
-
 private:
   virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size);
   virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
@@ -184,8 +174,10 @@ private:
   sc_time nice_time;
   double ipc;
   bool enable_dmi;
+  bool VINITHI;
   sc_time time_per_instruction;
-	
+  
+  
   unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
   
   unisim::kernel::service::Parameter<sc_time> param_cpu_cycle_time;
@@ -193,6 +185,7 @@ private:
   unisim::kernel::service::Parameter<sc_time> param_nice_time;
   unisim::kernel::service::Parameter<double> param_ipc;
   unisim::kernel::service::Parameter<bool> param_enable_dmi;
+  unisim::kernel::service::Parameter<bool> param_VINITHI;
 	
   /*************************************************************************
    * Logger, verbose and trap parameters/methods/ports               START *
@@ -207,6 +200,19 @@ private:
    *************************************************************************/
 	
   unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
+
+  /**************************/
+  /* CP15 Interface   START */
+  /**************************/
+  
+protected:
+  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  virtual void     CP15ResetRegisters();
+
+  /**************************/
+  /* CP15 Interface    END  */
+  /**************************/
+
 };
 
 } // end of namespace cortex_a9

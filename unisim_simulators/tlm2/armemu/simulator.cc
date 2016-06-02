@@ -57,16 +57,6 @@ Simulator::Simulator(int argc, char **argv)
   , param_enable_gdb_server(0)
   , enable_inline_debugger(false)
   , param_enable_inline_debugger(0)
-  , il1_power_estimator(0)
-  , dl1_power_estimator(0)
-  , enable_power_estimation(false)
-  , param_enable_power_estimation("enable-power-estimation", 0,
-                                  enable_power_estimation,
-                                  "Activate caches power estimation.")
-  , formula_caches_total_dynamic_energy(0)
-  , formula_caches_total_dynamic_power(0)
-  , formula_caches_total_leakage_power(0)
-  , formula_caches_total_power(0)
   , exit_status(0)
 {
   cpu = new CPU("cpu");
@@ -87,53 +77,16 @@ Simulator::Simulator(int argc, char **argv)
       "Enable inline debugger.");
   if ( enable_inline_debugger )
     inline_debugger = new INLINE_DEBUGGER("inline-debugger");
-  if ( enable_power_estimation )
-  {
-    il1_power_estimator = new POWER_ESTIMATOR("il1-power-estimator");
-    dl1_power_estimator = new POWER_ESTIMATOR("dl1-power-estimator");
-    formula_caches_total_dynamic_energy =
-        new unisim::kernel::service::Formula<double> (
-            "caches-total-dynamic-energy", 0,
-            unisim::kernel::service::Formula<double>::OP_ADD,
-            &(*dl1_power_estimator)["dynamic-energy"],
-            &(*il1_power_estimator)["dynamic-energy"],
-            0,
-            "caches total dynamic energy (in J)");
-    formula_caches_total_dynamic_power =
-        new unisim::kernel::service::Formula<double> (
-            "caches-total-dynamic-power", 0,
-            unisim::kernel::service::Formula<double>::OP_ADD,
-            &(*dl1_power_estimator)["dynamic-power"],
-            &(*il1_power_estimator)["dynamic-power"],
-            0,
-            "caches total dynamic power (in J)");
-    formula_caches_total_leakage_power =
-        new unisim::kernel::service::Formula<double> (
-            "caches-total-leakage-power", 0,
-            unisim::kernel::service::Formula<double>::OP_ADD,
-            &(*dl1_power_estimator)["leakage-power"],
-            &(*il1_power_estimator)["leakage-power"],
-            0,
-            "caches total leakage power (in J)");
-    formula_caches_total_power =
-        new unisim::kernel::service::Formula<double> (
-            "caches-total-power", 0,
-            unisim::kernel::service::Formula<double>::OP_ADD,
-            formula_caches_total_dynamic_power,
-            formula_caches_total_leakage_power,
-            0,
-            "caches total (dynamic+leakage) power (in J)");
-  }
-
-	//  - debugger
-	debugger = new DEBUGGER("debugger");
-	//  - profiler
-	profiler = enable_inline_debugger ? new PROFILER("profiler") : 0;
-	//  - Tee Memory Access Reporting
-	tee_memory_access_reporting = 
-		(enable_gdb_server || enable_inline_debugger) ?
-			new TEE_MEMORY_ACCESS_REPORTING("tee-memory-access-reporting") :
-			0;
+  
+  //  - debugger
+  debugger = new DEBUGGER("debugger");
+  //  - profiler
+  profiler = enable_inline_debugger ? new PROFILER("profiler") : 0;
+  //  - Tee Memory Access Reporting
+  tee_memory_access_reporting = 
+    (enable_gdb_server || enable_inline_debugger) ?
+    new TEE_MEMORY_ACCESS_REPORTING("tee-memory-access-reporting") :
+    0;
   
   
   nfiq_signal = true; 
@@ -236,8 +189,6 @@ Simulator::~Simulator()
   if ( debugger ) delete debugger;
   if ( profiler ) delete profiler;
   if ( tee_memory_access_reporting ) delete tee_memory_access_reporting;
-  if ( il1_power_estimator ) delete il1_power_estimator;
-  if ( dl1_power_estimator ) delete dl1_power_estimator;
 }
 
 int

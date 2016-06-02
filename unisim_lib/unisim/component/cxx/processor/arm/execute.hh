@@ -39,7 +39,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
 
-#include "unisim/component/cxx/processor/arm/psr.hh"
+#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/util/truth_table/truth_table.hh>
 #include <inttypes.h>
 #include <stdexcept>
 
@@ -72,27 +73,31 @@ namespace arm {
   bool
   CheckCondition( coreT& core, uint32_t cond )
   {
-    using CondTruthTable::N; using CondTruthTable::Z; using CondTruthTable::C; using CondTruthTable::V;
-    uint32_t nzcv = GetNativeValue( core.CPSR().Get( NZCV ) );
-    uint16_t const condition_truth_tables[] = {
-      uint16_t(                      Z::tt ), // eq; equal
-      uint16_t(                     ~Z::tt ), // ne; not equal
-      uint16_t(                      C::tt ), // cs/hs; unsigned higuer or same
-      uint16_t(                     ~C::tt ), // cc/lo; unsigned lower
-      uint16_t(                      N::tt ), // mi; negative
-      uint16_t(                     ~N::tt ), // pl; positive or zero
-      uint16_t(                      V::tt ), // vs; overflow set
-      uint16_t(                     ~V::tt ), // vc; overflow clear
-      uint16_t(          ~(~C::tt | Z::tt) ), // hi; unsigned higher
-      uint16_t(           (~C::tt | Z::tt) ), // ls; unsigned lower or same
-      uint16_t(           ~(N::tt ^ V::tt) ), // ge; signed greater than or equal
-      uint16_t(            (N::tt ^ V::tt) ), // lt; signed less than
-      uint16_t( ~(Z::tt | (N::tt ^ V::tt)) ), // gt; signed greater than
-      uint16_t(  (Z::tt | (N::tt ^ V::tt)) ), // le; signed less than or equal
-      uint16_t(                     0xffff ), // al; always
-      uint16_t(                     0x0000 ), // <und>; never (illegal)
+    util::truth_table::InBit<uint16_t,3> const N;
+    util::truth_table::InBit<uint16_t,2> const Z;
+    util::truth_table::InBit<uint16_t,1> const C;
+    util::truth_table::InBit<uint16_t,0> const V;
+
+    static uint16_t const condition_truth_tables[] = {
+      (                  Z).tt, // eq; equal
+      (              not Z).tt, // ne; not equal
+      (                  C).tt, // cs/hs; unsigned higuer or same
+      (              not C).tt, // cc/lo; unsigned lower
+      (                  N).tt, // mi; negative
+      (              not N).tt, // pl; positive or zero
+      (                  V).tt, // vs; overflow set
+      (              not V).tt, // vc; overflow clear
+      (   not (not C or Z)).tt, // hi; unsigned higher
+      (       (not C or Z)).tt, // ls; unsigned lower or same
+      (      not (N xor V)).tt, // ge; signed greater than or equal
+      (          (N xor V)).tt, // lt; signed less than
+      (not(Z or (N xor V))).tt, // gt; signed greater than
+      (   (Z or (N xor V))).tt, // le; signed less than or equal
+      (   uint16_t(0xffff)),    // al; always
+      (   uint16_t(0x0000)),    // <und>; never (illegal)
     };
     if (cond >= 15) throw std::logic_error("invalid condition code");
+    uint32_t nzcv = GetNativeValue( core.CPSR().Get( NZCV ) );
     return ((condition_truth_tables[cond] >> nzcv) & 1);
   }
   

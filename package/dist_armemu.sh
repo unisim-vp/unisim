@@ -126,11 +126,6 @@ unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/debugger/debugger32.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
-unisim/service/power/cache_profile.cc \
-unisim/service/power/cache_dynamic_power.cc \
-unisim/service/power/cache_leakage_power.cc \
-unisim/service/power/cache_power_estimator.cc \
-unisim/service/power/cache_dynamic_energy.cc \
 unisim/service/os/linux_os/linux.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
@@ -186,11 +181,9 @@ unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
-unisim/component/cxx/processor/arm/cache.cc \
 unisim/component/cxx/processor/arm/vmsav7/cpu.cc \
 unisim/component/cxx/processor/arm/vmsav7/isa_arm32.cc \
 unisim/component/cxx/processor/arm/vmsav7/isa_thumb.cc \
-unisim/component/cxx/processor/arm/memory_op.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
 
@@ -258,11 +251,6 @@ unisim/service/debug/sim_debugger/sim_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/power/cache_power_estimator.hh \
-unisim/service/power/cache_profile.hh \
-unisim/service/power/cache_dynamic_power.hh \
-unisim/service/power/cache_leakage_power.hh \
-unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
@@ -278,7 +266,6 @@ unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/disassembly.hh \
-unisim/service/interfaces/cache_power_estimator.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/os.hh \
 unisim/service/interfaces/linux_os.hh \
@@ -384,10 +371,8 @@ unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
 unisim/component/cxx/processor/arm/vmsav7/cpu.hh \
-unisim/component/cxx/processor/arm/cache.hh \
 unisim/component/cxx/processor/arm/cp15.hh \
 unisim/component/cxx/processor/arm/vmsav7/cp15.hh \
-unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/models.hh \

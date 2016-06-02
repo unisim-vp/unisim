@@ -145,12 +145,14 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , nice_time(1.0, SC_MS)
   , ipc(1.0)
   , enable_dmi(false)
+  , VINITHI(false)
   , stat_cpu_time("cpu-time", this, cpu_time, "The processor time")
   , param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time, "The processor cycle time.")
   , param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "The processor bus cycle time.")
   , param_nice_time("nice-time", this, nice_time,  "Maximum time between SystemC waits.")
   , param_ipc("ipc", this, ipc, "Instructions per cycle performance.")
   , param_enable_dmi("enable-dmi", this, enable_dmi, "Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation")
+  , param_VINITHI("VINITHI", this, VINITHI, "Reset V-bit value. When HIGH indicates HIVECS mode at reset." )
   , verbose_tlm(false)
   , param_verbose_tlm("verbose-tlm", this, verbose_tlm, "Display TLM information")
   , dmi_region_cache()
@@ -224,6 +226,17 @@ CPU::EndSetup()
   return true;
 }
 
+/** Resets the internal values of corresponding CP15 Registers
+ */
+void
+CPU::CP15ResetRegisters()
+{
+  this->PCPU::CP15ResetRegisters();
+  
+  // Implementation defined values for SCTLR
+  cxx::processor::arm::sctlr::V.Set( SCTLR, VINITHI );
+}
+    
 void 
 CPU::Stop(int ret)
 {

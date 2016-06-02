@@ -50,9 +50,10 @@ namespace truth_table {
 
     static tt_type const tt = ttVAL;
 
-    template <typename RHS> LUT<TT,(tt&RHS::tt)> operator && ( RHS const& ) const { return LUT<TT,(tt&RHS::tt)>(); }
-    template <typename RHS> LUT<TT,(tt|RHS::tt)> operator || ( RHS const& ) const { return LUT<TT,(tt|RHS::tt)>(); }
-    LUT<TT,(~tt)> operator ! () const { return LUT<TT,(~tt)>(); }
+    template <typename RT> LUT<TT,TT(tt&RT::tt)> operator and ( RT const& ) const { return LUT<TT,TT(tt&RT::tt)>(); }
+    template <typename RT> LUT<TT,TT(tt|RT::tt)> operator  or ( RT const& ) const { return LUT<TT,TT(tt|RT::tt)>(); }
+    template <typename RT> LUT<TT,TT(tt^RT::tt)> operator xor ( RT const& ) const { return LUT<TT,TT(tt^RT::tt)>(); }
+    LUT<TT,TT(~tt)> operator ! () const { return LUT<TT,TT(~tt)>(); }
   };
 
   template <typename TT, unsigned Tbit, unsigned Tbits = 8*sizeof(TT)>
@@ -64,9 +65,10 @@ namespace truth_table {
     static unsigned const msb = (Tbits-1);
     static tt_type const tt = (((msb >> Tbit) & 1) ? (tt_type(1) << msb) : tt_type(0)) | InBit<tt_type,Tbit,msb>::tt;
 
-    template <typename RHS> LUT<TT,(tt&RHS::tt)> operator && ( RHS const& ) const { return LUT<TT,(tt&RHS::tt)>(); }
-    template <typename RHS> LUT<TT,(tt|RHS::tt)> operator || ( RHS const& ) const { return LUT<TT,(tt|RHS::tt)>(); }
-    LUT<TT,(~tt)> operator ! () const { return LUT<TT,(~tt)>(); }
+    template <typename RT> LUT<TT,TT(tt&RT::tt)> operator and ( RT const& ) const { return LUT<TT,TT(tt&RT::tt)>(); }
+    template <typename RT> LUT<TT,TT(tt|RT::tt)> operator  or ( RT const& ) const { return LUT<TT,TT(tt|RT::tt)>(); }
+    template <typename RT> LUT<TT,TT(tt^RT::tt)> operator xor ( RT const& ) const { return LUT<TT,TT(tt^RT::tt)>(); }
+    LUT<TT,TT(~tt)> operator ! () const { return LUT<TT,TT(~tt)>(); }
   };
 
   template <typename TT, unsigned Tbit> struct InBit<TT, Tbit, 1> { static TT const tt = 0; };
