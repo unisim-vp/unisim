@@ -36,7 +36,6 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_PMSAV7_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
-#include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
@@ -299,8 +298,10 @@ protected:
   //=               Instruction prefetch buffer                         =
   //=====================================================================
   
-  uint8_t ipb_bytes[Cache::LINE_SIZE];                       //!< The instruction prefetch buffer
-  uint32_t ipb_base_address;                                 //!< base address of IPB content (cache line size aligned if valid)
+  static unsigned const IPB_LINE_SIZE = 32;
+  
+  uint8_t ipb_bytes[IPB_LINE_SIZE]; //!< The instruction prefetch buffer
+  uint32_t ipb_base_address;        //!< base address of IPB content (cache line size aligned if valid)
   
   /**********************************************************/
   /* UNISIM parameters, statistics                    START */

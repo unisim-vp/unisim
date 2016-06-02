@@ -136,16 +136,6 @@ namespace cortex_r5f {
 	
     sc_core::sc_time const& GetCpuCycleTime() const { return cpu_cycle_time; };
 
-    /**************************/
-    /* CP15 Interface   START */
-    /**************************/
-  
-    virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
-    
-    /**************************/
-    /* CP15 Interface    END  */
-    /**************************/
-
   private:
     virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size);
     virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
@@ -210,6 +200,26 @@ namespace cortex_r5f {
     
     unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
     
+    /****************************/
+    /* Configuration pins START */
+    /****************************/
+  protected:
+    bool VINITHI; unisim::kernel::service::Parameter<bool> param_VINITHI;
+    bool CFGEE;   unisim::kernel::service::Parameter<bool> param_CFGEE;
+    bool TEINIT;  unisim::kernel::service::Parameter<bool> param_TEINIT;
+    
+    /****************************/
+    /* Configuration pins  END  */
+    /****************************/
+    
+    /**************************/
+    /* CP15 Interface   START */
+    /**************************/
+  protected:    
+    virtual void     CP15ResetRegisters();
+    virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+    
+    /* */
     uint32_t ACTLR;         //< Auxiliary Control Register
     uint32_t SACTLR;        //< Secondary Auxiliary Control Register
     uint32_t ATCMRR;        //< ATCM Region Register
@@ -232,6 +242,10 @@ namespace cortex_r5f {
     uint32_t HPIR;          //< AHB peripheral interface region register
     uint32_t ADFSR;         //< Auxiliary Data Fault Status Register
     uint32_t AIFSR;         //< Auxiliary Instruction Fault Status Register
+
+    /**************************/
+    /* CP15 Interface    END  */
+    /**************************/
   };
   
 } // end of namespace cortex_r5f

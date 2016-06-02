@@ -174,7 +174,6 @@ private:
   sc_time nice_time;
   double ipc;
   bool enable_dmi;
-  bool VINITHI;
   sc_time time_per_instruction;
   
   
@@ -185,7 +184,6 @@ private:
   unisim::kernel::service::Parameter<sc_time> param_nice_time;
   unisim::kernel::service::Parameter<double> param_ipc;
   unisim::kernel::service::Parameter<bool> param_enable_dmi;
-  unisim::kernel::service::Parameter<bool> param_VINITHI;
 	
   /*************************************************************************
    * Logger, verbose and trap parameters/methods/ports               START *
@@ -201,6 +199,16 @@ private:
 	
   unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
 
+  /****************************/
+  /* Configuration pins START */
+  /****************************/
+protected:
+  bool VINITHI; unisim::kernel::service::Parameter<bool> param_VINITHI;
+    
+  /****************************/
+  /* Configuration pins  END  */
+  /****************************/
+    
   /**************************/
   /* CP15 Interface   START */
   /**************************/
@@ -208,7 +216,7 @@ private:
 protected:
   virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   virtual void     CP15ResetRegisters();
-
+  
   /**************************/
   /* CP15 Interface    END  */
   /**************************/

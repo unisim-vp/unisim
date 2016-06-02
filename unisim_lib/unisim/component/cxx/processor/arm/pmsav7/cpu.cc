@@ -35,8 +35,6 @@
 #include <unisim/component/cxx/processor/arm/pmsav7/cpu.hh>
 #include <unisim/component/cxx/processor/arm/pmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
-#include <unisim/component/cxx/processor/arm/cache.hh>
-#include <unisim/component/cxx/processor/arm/memory_op.hh>
 #include <unisim/kernel/debug/debug.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -698,14 +696,14 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
   this->ipb_base_address = base_address;
   
   // TODO: MPU check
-  if (not PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE)) {
+  if (not PrRead(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE)) {
     DataAbort( base_address, mat_exec, DAbort_SyncExternal );
   }
 
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
     memory_access_reporting_import->
       ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN,
-                         base_address, Cache::LINE_SIZE);
+                         base_address, IPB_LINE_SIZE);
 }
 
 /** Reads ARM32 instructions from the memory system
@@ -719,8 +717,8 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 void 
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
-  uint32_t base_address = address & -(Cache::LINE_SIZE);
-  uint32_t buffer_index = address % (Cache::LINE_SIZE);
+  uint32_t base_address = address & -(IPB_LINE_SIZE);
+  uint32_t buffer_index = address % (IPB_LINE_SIZE);
   
   if (unlikely(ipb_base_address != base_address))
     {
@@ -744,8 +742,8 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
 void
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
 {
-  uint32_t base_address = address & -(Cache::LINE_SIZE);
-  uint32_t buffer_index = address % (Cache::LINE_SIZE);
+  uint32_t base_address = address & -(IPB_LINE_SIZE);
+  uint32_t buffer_index = address % (IPB_LINE_SIZE);
     
   if (unlikely(ipb_base_address != base_address))
     {
@@ -755,8 +753,8 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
   // In ARMv7, instruction fetch ignores "Endianness execution state bit"
   insn.str[0] = ipb_bytes[buffer_index+0];
   insn.str[1] = ipb_bytes[buffer_index+1];
-  if (unlikely((buffer_index+2) >= Cache::LINE_SIZE)) {
-    RefillInsnPrefetchBuffer( base_address + Cache::LINE_SIZE );
+  if (unlikely((buffer_index+2) >= IPB_LINE_SIZE)) {
+    RefillInsnPrefetchBuffer( base_address + IPB_LINE_SIZE );
     buffer_index = intptr_t(-2);
   }
   insn.str[2] = ipb_bytes[buffer_index+2];

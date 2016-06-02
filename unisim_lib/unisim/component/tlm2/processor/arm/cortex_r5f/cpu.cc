@@ -154,6 +154,12 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , verbose_tlm(false)
   , param_verbose_tlm("verbose-tlm", this, verbose_tlm, "Display TLM information")
   , dmi_region_cache()
+  , VINITHI(false)
+  , param_VINITHI("VINITHI", this, VINITHI, "Reset V-bit value. When HIGH indicates HIVECS mode at reset" )
+  , CFGEE(false)
+  , param_CFGEE("CFGEE", this, CFGEE, "Reset EE-bit value. When HIGH indicates BE-8 mode for exceptions at reset")
+  , TEINIT(false)
+  , param_TEINIT("TEINIT", this, TEINIT, "Reset TE-bit value. Exception instruction set at reset (HIGH=Thumb,LO=ARM)")
   , ACTLR()
   , SACTLR()
   , ATCMRR()
@@ -829,6 +835,19 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   return true;
 }
 
+/** Resets the internal values of corresponding CP15 Registers
+ */
+void
+CPU::CP15ResetRegisters()
+{
+  this->PCPU::CP15ResetRegisters();
+  
+  // Implementation defined values for SCTLR
+  cxx::processor::arm::sctlr::V.Set( SCTLR, VINITHI );
+  cxx::processor::arm::sctlr::EE.Set( SCTLR, CFGEE );
+  cxx::processor::arm::sctlr::TE.Set( SCTLR, TEINIT );
+}
+    
 /** Get the Internal representation of the CP15 Register
  * 
  * @param crn     the "crn" field of the instruction code
