@@ -236,6 +236,18 @@ CPU::Stop(int ret)
   wait();
 }
 
+/** Wait for a specific event and update CPU times
+ */
+
+void
+CPU::Wait( sc_event const& evt )
+{
+  if (quantum_time != SC_ZERO_TIME)
+    Sync();
+  wait( evt );
+  cpu_time = sc_time_stamp();
+}
+
 /** Synchronization demanded from the CPU implementation.
  * An example (an for the moment the only synchronization demanded by the CPU
  * implmentation) is the a synchronization demanded by the debugger.
@@ -337,9 +349,7 @@ CPU::Run()
   {
     if (check_external_events) {
       if (not nRESETm) {
-        do {
-          wait( nRESETm.value_changed_event() );
-        } while (not nRESETm);
+        Wait( nRESETm.negedge_event() );
         this->TakeReset();
       }
       if (not nIRQm or not nFIQm) {
@@ -445,8 +455,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
         << PHASE(phase) << std::endl;
       TRANS(PCPU::logger, trans);
       PCPU::logger << EndDebug;
-      sc_stop();
-      wait();
+      Stop(-1);
       break;
     case tlm::END_REQ:
       /* The request phase is finished.
@@ -479,8 +488,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
           << PHASE(phase) << std::endl;
         TRANS(PCPU::logger, trans);
         PCPU::logger << EndDebug;
-        sc_stop();
-        wait();
+        Stop(-1);
         break;
       }
       tmp_time = sc_time_stamp();
@@ -502,8 +510,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
     << PHASE(phase) << std::endl;
   TRANS(PCPU::logger, trans);
   PCPU::logger << EndDebug;
-  sc_stop();
-  wait();
+  Stop(-1);
   // useless return to avoid compiler warnings/errors
   return ret;
 }

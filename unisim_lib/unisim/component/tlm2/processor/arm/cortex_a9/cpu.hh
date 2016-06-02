@@ -120,6 +120,7 @@ private:
 public:
   virtual void Stop(int ret);
   virtual void Sync();
+  void Wait( sc_event const& evt );
 	
   virtual bool EndSetup();
 
