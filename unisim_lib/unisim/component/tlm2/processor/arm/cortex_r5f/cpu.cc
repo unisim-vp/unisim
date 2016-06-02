@@ -131,9 +131,12 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , unisim::component::cxx::processor::arm::pmsav7::CPU(name, parent)
   , master_socket("master_socket")
   , check_external_events(false)
+  , nRESETm("nRESETm")
   , nIRQm("nIRQm")
   , nFIQm("nFIQm")
-  , nRESETm("nRESETm")
+  , IRQADDRVm("IRQADDRVm")
+  , IRQADDRm("IRQADDRm")
+  , IRQACKm("IRQACKm")
   , end_read_rsp_event()
   , payload_fabric()
   , tmp_time()
@@ -348,7 +351,9 @@ CPU::Run()
                         << " - time_per_instruction = " << time_per_instruction
                         << EndDebugInfo;
     }
-    
+  
+  IRQACKm = false;
+  
   for (;;)
   {
     if (check_external_events) {
@@ -357,6 +362,7 @@ CPU::Run()
           wait( nRESETm.value_changed_event() );
         } while (not nRESETm);
         this->TakeReset();
+        IRQACKm = false;
       }
       if (not nIRQm or not nFIQm) {
         uint32_t exceptions = 0;
@@ -409,7 +415,7 @@ CPU::Run()
                             << EndDebugInfo;
         Sync();
       }
-    else if ( quantum_time > nice_time )
+    else if (quantum_time > nice_time)
       Sync();
   }
 }
@@ -577,7 +583,30 @@ CPU::ResetHandler()
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
+
+void
+CPU::BranchToFIQorIRQvector( bool isIRQ )
+{
+  if (not isIRQ) {
+    // Behavior is default for FIQs
+    PCPU::BranchToFIQorIRQvector( isIRQ );
+    return;
+  }
+  // Handshake with the VIC to retrieve IRQ vector address
+  IRQACKm = true;
   
+  do {
+    quantum_time += cpu_cycle_time;
+    Sync();
+  } while (not IRQADDRVm);
+  
+  uint32_t irq_addr = IRQADDRm.read();
+  
+  IRQACKm = false;
+  
+  Branch( irq_addr );
+}
+
 /**
  * Virtual method implementation to handle non intrusive reads performed by the inherited
  * cpu to perform external memory accesses.

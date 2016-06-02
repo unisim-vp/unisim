@@ -90,13 +90,19 @@ namespace cortex_r5f {
 
   public:
     bool check_external_events;
+    // Slave port for the nRESETm signal
+    sc_core::sc_in<bool> nRESETm;
     // Slave port for the nIRQm signal
     sc_core::sc_in<bool> nIRQm;
     // Slave port for the nFIQm signal
     sc_core::sc_in<bool> nFIQm;
-    // Slave port for the nRESETm signal
-    sc_core::sc_in<bool> nRESETm;
-  
+    // Slave port for the IRQADDRVm signal
+    sc_core::sc_in<bool> IRQADDRVm; // Indicates IRQADDRm is valid.
+    // Slave port for the IRQADDRm signal
+    sc_core::sc_in<sc_dt::sc_uint<32> > IRQADDRm; // Address of the IRQ. Stable when IRQADDRVm is asserted.
+    // Master port for the IRQACKm signal
+    sc_core::sc_out<bool> IRQACKm; // Acknowledges interrupt.
+    
   private:
     /** nIRQm port handler */
     void IRQHandler();
@@ -104,7 +110,10 @@ namespace cortex_r5f {
     void FIQHandler();
     /** nRESETm port hander */
     void ResetHandler();
-	
+
+  protected:
+    virtual void BranchToFIQorIRQvector( bool isIRQ );
+
     /**************************************************************************
      * Interrupt ports and their handles                                  END *
      **************************************************************************/
