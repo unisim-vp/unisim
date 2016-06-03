@@ -130,7 +130,8 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , sc_module(name)
   , unisim::component::cxx::processor::arm::vmsav7::CPU(name, parent)
   , master_socket("master_socket")
-  , check_external_events(false)
+  , check_external_event(false)
+  , external_event("extevt")
   , nIRQm("nIRQm")
   , nFIQm("nFIQm")
   , nRESETm("nRESETm")
@@ -347,7 +348,7 @@ CPU::Run()
     
   for (;;)
   {
-    if (check_external_events) {
+    if (GetExternalEvent()) {
       if (not nRESETm) {
         Wait( nRESETm.negedge_event() );
         this->TakeReset();
@@ -361,7 +362,6 @@ CPU::Run()
         if (exception_taken and this->exception_trap_reporting_import)
           this->exception_trap_reporting_import->ReportTrap(*this,"irq or fiq");
       }
-      check_external_events = false;
     }
   
     if (unlikely(verbose_tlm))
@@ -392,7 +392,7 @@ CPU::Run()
     if (unisim::component::cxx::processor::arm::I.Get( cpsr_cleared_bits ) or
         unisim::component::cxx::processor::arm::F.Get( cpsr_cleared_bits ))
       {
-        this->check_external_events = true;
+        SetExternalEvent();
         if (unlikely(verbose_tlm))
           PCPU::logger << DebugInfo
                             << "Syncing due to exception being unmasked" << std::endl
@@ -534,7 +534,7 @@ CPU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_rang
 void
 CPU::IRQHandler()
 {
-  this->check_external_events = true;
+  SetExternalEvent();
   if (verbose_tlm)
     PCPU::logger << DebugInfo
                       << "IRQ level change:" << std::endl
@@ -547,7 +547,7 @@ CPU::IRQHandler()
 void 
 CPU::FIQHandler()
 {
-  this->check_external_events = true;
+  SetExternalEvent();
   if (verbose_tlm)
     PCPU::logger << DebugInfo
                       << "FIQ level change:" << std::endl
@@ -560,7 +560,7 @@ CPU::FIQHandler()
 void 
 CPU::ResetHandler()
 {
-  this->check_external_events = true;
+  SetExternalEvent();
   if (verbose_tlm)
     PCPU::logger << DebugInfo
                       << "RESET level change:" << std::endl
@@ -868,7 +868,24 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
 void
 CPU::WaitForInterrupt()
 {
-  
+  if (not check_external_event)
+    Wait( external_event );
+}
+
+void
+CPU::SetExternalEvent()
+{
+  check_external_event = true;
+  external_event.notify( sc_core::SC_ZERO_TIME );
+}
+
+bool
+CPU::GetExternalEvent()
+{
+  bool status = check_external_event;
+  external_event.cancel();
+  check_external_event = false;
+  return status;
 }
 
 } // end of namespace cortex_a9

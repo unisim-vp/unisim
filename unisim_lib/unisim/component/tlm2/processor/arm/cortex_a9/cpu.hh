@@ -86,12 +86,19 @@ private:
    *   incomming calls.                                                     *
    **************************************************************************/
 
+private:
+  void SetExternalEvent();
+  bool GetExternalEvent();
+  
+  bool        check_external_event;
+  sc_core::sc_event external_event;
+  
   /**************************************************************************
    * Interrupt ports and their handles                                START *
    **************************************************************************/
 
 public:
-  bool check_external_events;
+  
   // Slave port for the nIRQm signal
   sc_core::sc_in<bool> nIRQm;
   // Slave port for the nFIQm signal

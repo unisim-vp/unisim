@@ -86,12 +86,18 @@ namespace cortex_r5f {
      *   incomming calls.                                                     *
      **************************************************************************/
 
+private:
+  void SetExternalEvent();
+  bool GetExternalEvent();
+  
+  bool        check_external_event;
+  sc_core::sc_event external_event;
+  
     /**************************************************************************
      * Interrupt ports and their handles                                START *
      **************************************************************************/
 
   public:
-    bool check_external_events;
     // Slave port for the nRESETm signal
     sc_core::sc_in<bool> nRESETm;
     // Slave port for the nIRQm signal
