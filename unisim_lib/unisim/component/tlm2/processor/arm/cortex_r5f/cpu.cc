@@ -599,11 +599,16 @@ CPU::BranchToFIQorIRQvector( bool isIRQ )
     PCPU::BranchToFIQorIRQvector( isIRQ );
     return;
   }
+  if (verbose)
+    logger << DebugInfo
+           << "Vector IRQ Exception, starting VIC handshake" << std::endl
+           << EndDebugInfo;
+  
   // Handshake with the VIC to retrieve IRQ vector address
   IRQACKm = true;
   
   if (not IRQADDRVm)
-    Wait( IRQADDRVm.negedge_event() );
+    Wait( IRQADDRVm.posedge_event() );
   
   uint32_t irq_addr = IRQADDRm.read();
   
