@@ -607,6 +607,11 @@ CPU::BranchToFIQorIRQvector( bool isIRQ )
   
   uint32_t irq_addr = IRQADDRm.read();
   
+  if (verbose)
+    logger << DebugInfo
+           << "Received IRQ vector address: " << std::hex << irq_addr << std::dec << std::endl
+           << EndDebugInfo;
+  
   IRQACKm = false;
   
   Branch( irq_addr );
