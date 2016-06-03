@@ -886,10 +886,11 @@ CPU::SetExternalEvent()
 bool
 CPU::GetExternalEvent()
 {
-  bool status = check_external_event;
+  if (not check_external_event)
+    return false;
   external_event.cancel();
   check_external_event = false;
-  return status;
+  return true;
 }
 
 } // end of namespace cortex_a9
