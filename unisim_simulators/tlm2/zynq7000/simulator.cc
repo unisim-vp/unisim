@@ -515,9 +515,10 @@ TTC::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& updat
 PS_UART::PS_UART( sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line )
   : unisim::kernel::service::Object( name, parent )
   , MMDevice( name, parent )
-  , update_state_event( "update_state_event" )
-  , clock_period( sc_core::SC_ZERO_TIME )
-  , last_state_update_time( sc_core::SC_ZERO_TIME )
+  , unisim::kernel::service::Client<unisim::service::interfaces::CharIO>( name, parent )
+  , char_io_import("char-io-import", this)
+  , exchange_event( "exchange_event" )
+  , exchange_period( sc_core::SC_ZERO_TIME )
   , mpcore( _mpcore )
   , it_line( _it_line )
   , TxFIFO()
@@ -525,6 +526,7 @@ PS_UART::PS_UART( sc_module_name const& name, unisim::kernel::service::Object* p
   , CR(0b100101000)
   , MR(0)
   , IMR(0)
+  , ISR(0)
   , BAUDGEN(0x28b)
   , RXTOUT(0)
   , BDIV(0xf)
@@ -536,15 +538,13 @@ PS_UART::PS_UART( sc_module_name const& name, unisim::kernel::service::Object* p
   MMDevice::hardfail = true;
   
   SC_HAS_PROCESS(PS_UART);
-  SC_METHOD(UpdateStateProcess);
-  sc_core::sc_module::sensitive << update_state_event;
+  SC_METHOD(ExchangeProcess);
+  sc_core::sc_module::sensitive << exchange_event;
 }
 
 bool
 PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time )
 {
-  UpdateState( update_time );
-  
   if (d.size == 4) {
     switch (addr) {
     case 0x00: d.Access( CR ); CR &= -4; return true;
@@ -562,6 +562,7 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
       IMR &= ~disable_mask;
     } return true;
     case 0x10: d.Access( IMR ); return true;
+    case 0x14: d.Access( ISR ); return true;
     case 0x18: d.Access( BAUDGEN ); return true;
     case 0x1c: d.Access( RXTOUT ); return true;
     case 0x20: d.Access( RTRIG ); RTRIG &= 0x3f; return true;
@@ -586,8 +587,11 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
         // Tx
         uint32_t value;
         d.Access( value );
-        std::cout << char(value);
-        std::cout.flush();
+        if (not char_io_import)
+          throw std::logic_error("no IO client connected");
+        if (value & -256)
+          throw std::logic_error("Junk bits in Tx");
+        char_io_import->PutChar( char(value) );
       } else {
         return false;
       }
@@ -604,15 +608,28 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
 }
 
 void
-PS_UART::UpdateStateProcess()
+PS_UART::ExchangeProcess()
 {
-  UpdateState( sc_core::sc_time_stamp() );
-}
-
-void
-PS_UART::UpdateState( sc_core::sc_time const& update_time )
-{
+  if (not char_io_import)
+    return;
   
+  exchange_event.notify( exchange_period );
+  
+  char_io_import->FlushChars();
+  
+  if (RxFIFO.size >= FIFO::CAPACITY) {
+    mpcore.SendInterrupt( it_line, sc_core::SC_ZERO_TIME );
+    return;
+  }
+    
+  for (char ch; char_io_import->GetChar( ch );) {
+    RxFIFO.Push( ch );
+    unsigned size = RxFIFO.size;
+    if (size >= RTRIG) {
+      mpcore.SendInterrupt( it_line, sc_core::SC_ZERO_TIME );
+      return;
+    }
+  }
 }
 
 SLCR::SLCR(const sc_module_name& name, unisim::kernel::service::Object* parent)
@@ -683,6 +700,7 @@ Simulator::Simulator(int argc, char **argv)
   , uart0( "uart0", 0, mpcore, 59 )
   , uart1( "uart1", 0, mpcore, 82 )
   , l2c( "l2c", 0 )
+  , telnet("telnet", 0)
   , nirq_signal("nIRQm")
   , nfiq_signal("nFIQm")
   , nrst_signal("nRESETm")
@@ -741,6 +759,8 @@ Simulator::Simulator(int argc, char **argv)
   
   mpcore.nIRQ( nirq_signal );
   mpcore.nFIQ( nfiq_signal );
+  
+  uart0.char_io_import >> telnet.char_io_export;
   
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;
@@ -980,6 +1000,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
   unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
   
   ttc0.clock_period = ttc1.clock_period = cpu.GetCpuCycleTime();
+  uart0.exchange_period = uart0.exchange_period = sc_core::sc_time( 20, sc_core::SC_MS );
   
   // inline-debugger and gdb-server are exclusive
   if(enable_inline_debugger && enable_gdb_server)

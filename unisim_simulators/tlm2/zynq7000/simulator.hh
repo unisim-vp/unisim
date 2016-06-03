@@ -43,11 +43,13 @@
 //#include <unisim/service/os/linux_os/linux.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/trap_handler/trap_handler.hh>
+#include <unisim/service/telnet/telnet.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/tee/memory_access_reporting/tee.hh>
+#include <unisim/service/interfaces/char_io.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
@@ -212,15 +214,16 @@ struct TTC : public MMDevice
   void UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time );
 };
 
-struct PS_UART : public MMDevice
+struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim::service::interfaces::CharIO>
+
 {
   PS_UART( sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line );
   
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
 
-  sc_core::sc_event update_state_event;
-  sc_core::sc_time  clock_period;
-  sc_core::sc_time  last_state_update_time;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
+  sc_core::sc_event exchange_event;
+  sc_core::sc_time  exchange_period;
   MPCore&           mpcore;
   int               it_line;
   
@@ -235,10 +238,9 @@ struct PS_UART : public MMDevice
   
   FIFO TxFIFO;
   FIFO RxFIFO;
-  unsigned CR, MR, IMR, BAUDGEN, RXTOUT, BDIV, TTRIG, RTRIG, FDEL;
+  unsigned CR, MR, IMR, ISR, BAUDGEN, RXTOUT, BDIV, TTRIG, RTRIG, FDEL;
   
-  void UpdateStateProcess();
-  void UpdateState( sc_core::sc_time const& update_time );
+  void ExchangeProcess();
 };
 
 struct L2C : public MMDevice
@@ -291,6 +293,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   typedef unisim::service::tee::memory_access_reporting::Tee<uint32_t> TEE_MEMORY_ACCESS_REPORTING;
   typedef unisim::service::time::sc_time::ScTime ScTime;
   typedef unisim::service::time::host_time::HostTime HostTime;
+  typedef unisim::service::telnet::Telnet Telnet;
   
   CPU                          cpu;
   ZynqRouter                   router;
@@ -303,6 +306,8 @@ struct Simulator : public unisim::kernel::service::Simulator
   PS_UART                      uart0;
   PS_UART                      uart1;
   L2C                          l2c;
+  Telnet                       telnet;
+  
   sc_signal<bool>              nirq_signal;
   sc_signal<bool>              nfiq_signal;
   sc_signal<bool>              nrst_signal;

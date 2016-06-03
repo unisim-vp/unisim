@@ -1361,18 +1361,26 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
     
     unisim::util::truth_table::InBit<uint32_t,1> const P;
     unisim::util::truth_table::InBit<uint32_t,0> const W;
+    Case<0b000> const AP000;
+    Case<0b001> const AP001;
+    Case<0b010> const AP010;
+    //Case<0b011> const AP011;
+    Case<0b100> const AP100;
+    Case<0b101> const AP101;
+    Case<0b110> const AP110;
+    Case<0b111> const AP111;
 
     unsigned sel = (tad.ap << 2) | (unsigned(ispriv) << 1) | (unsigned(mat == mat_write) << 0);
     
     uint32_t const perm_table =
-      ((Case<0b000>()) or
-       (Case<0b001>() and not P) or
-       (Case<0b010>() and not P and W) or
-       /* Case<0b011>() */
-       (Case<0b100>()) or
-       (Case<0b101>() and (not P or W)) or
-       (Case<0b110>() and W) or
-       (Case<0b111>() and W)).tt;
+      ((AP000) or
+       (AP001 and not P) or
+       (AP010 and not P and W) or
+     /* AP011 */
+       (AP100) or
+       (AP101 and (not P or W)) or
+       (AP110 and W) or
+       (AP111 and W)).tt;
     
     uint32_t xabort = unsigned(mat == mat_exec) & (tad.xn | (tad.pxn & unsigned(GetPL() == 1)));
 

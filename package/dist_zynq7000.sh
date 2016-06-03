@@ -148,6 +148,7 @@ unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/os/linux_os/linux.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
+unisim/service/telnet/telnet.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/util/debug/symbol_table_64.cc \
@@ -288,6 +289,7 @@ unisim/service/os/linux_os/linux.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
+unisim/service/telnet/telnet.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
@@ -309,6 +311,7 @@ unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/subprogram_lookup.hh \
+unisim/service/interfaces/char_io.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/util/likely/likely.hh \
