@@ -905,7 +905,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
-    case CP15ENCODE( 1, 0, 0, 0 ):
+    case CP15ENCODE( 1, 0, 0, 1 ):
       {
         static struct : CP15Reg
         {
@@ -1288,6 +1288,12 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
   
   // Fall back to base cpu CP15 registers
   return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
+}
+
+void
+CPU::WaitForInterrupt()
+{
+  
 }
 
 } // end of namespace cortex_r5f

@@ -58,7 +58,6 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::service::interfaces::MemoryInjection;
-using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
@@ -86,7 +85,7 @@ CPU::CPU(const char *name, Object *parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<MemoryAccessReporting<uint32_t> >(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
-  , Client<DebugControl<uint32_t> >(name, parent)
+  , Client<unisim::service::interfaces::DebugControl<uint32_t> >(name, parent)
   , Client<TrapReporting>(name, parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
@@ -353,26 +352,8 @@ CPU::StepInstruction()
   /* Instruction boundary next_insn_addr becomes current_insn_addr */
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
   
-  if (debug_control_import)
-    {
-      for (bool proceed = false; not proceed; )
-        {
-          switch (debug_control_import->FetchDebugCommand( insn_addr ))
-            {
-            case DebugControl<uint32_t>::DBG_STEP: 
-              proceed = true;
-              break;
-            case DebugControl<uint32_t>::DBG_SYNC:
-              Sync();
-              continue;
-              break;
-            case DebugControl<uint32_t>::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
-            case DebugControl<uint32_t>::DBG_KILL:
-              Stop(0);
-              return;
-            }
-        }
-    }
+  if (debug_control_import and debug_control_import->FetchDebugCommand( insn_addr ) != DebugControl::DBG_STEP)
+    Stop(-1);
   
   try {
     // Instruction Fetch Decode and Execution (may generate exceptions

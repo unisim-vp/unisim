@@ -71,6 +71,8 @@ public:
   // Master port to the bus port
   tlm::tlm_initiator_socket<32> master_socket;
 	
+  void WaitForInterrupt();
+    
 private:
   // virtual method implementation to handle backward path of
   //   transactions sent through the master_port

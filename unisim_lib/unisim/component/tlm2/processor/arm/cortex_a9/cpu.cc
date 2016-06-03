@@ -865,6 +865,12 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
   return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
 }
 
+void
+CPU::WaitForInterrupt()
+{
+  
+}
+
 } // end of namespace cortex_a9
 } // end of namespace arm
 } // end of namespace processor

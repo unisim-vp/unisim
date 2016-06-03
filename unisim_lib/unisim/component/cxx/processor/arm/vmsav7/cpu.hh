@@ -109,7 +109,8 @@ struct CPU
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint32_t> > memory_injection_export;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint32_t> > memory_export;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint32_t> > memory_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint32_t> > debug_control_import;
+  typedef unisim::service::interfaces::DebugControl<uint32_t> DebugControl;
+  unisim::kernel::service::ServiceImport<DebugControl> debug_control_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint32_t> > symbol_table_lookup_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> exception_trap_reporting_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> instruction_counter_trap_reporting_import;
@@ -139,7 +140,6 @@ struct CPU
   //=====================================================================
 
   void StepInstruction();
-  virtual void Sync() = 0;
 
   //=====================================================================
   //=             memory injection interface methods                    =

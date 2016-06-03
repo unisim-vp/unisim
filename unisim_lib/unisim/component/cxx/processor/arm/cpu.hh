@@ -347,6 +347,7 @@ public:
   void     UnpredictableIf( bool condition ) { if (not condition) UnpredictableInsnBehaviour(); }
   void     CallSupervisor( uint16_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
+  virtual void WaitForInterrupt() {}; // Implementation-defined
   
 protected:
   uint32_t     HandleAsynchronousException( uint32_t );
