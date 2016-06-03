@@ -359,8 +359,12 @@ CPU::Run()
         unisim::component::cxx::processor::arm::F.Set( exceptions, not nFIQm );
         
         bool exception_taken = this->HandleAsynchronousException( exceptions ) != 0;
-        if (exception_taken and this->exception_trap_reporting_import)
-          this->exception_trap_reporting_import->ReportTrap(*this,"irq or fiq");
+        if (exception_taken) {
+          if (exception_trap_reporting_import)
+            exception_trap_reporting_import->ReportTrap(*this,"irq or fiq");
+          if (requires_finished_instruction_reporting and memory_access_reporting_import)
+            memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
+        }
       }
     }
   
