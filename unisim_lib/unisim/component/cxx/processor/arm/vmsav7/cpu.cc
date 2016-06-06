@@ -499,8 +499,26 @@ CPU::StepInstruction()
   /* Instruction boundary next_insn_addr becomes current_insn_addr */
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
   
-  if (debug_control_import and debug_control_import->FetchDebugCommand( insn_addr ) != DebugControl::DBG_STEP)
-    Stop(-1);
+  if (debug_control_import)
+    {
+      for (bool proceed = false; not proceed; )
+        {
+          switch (debug_control_import->FetchDebugCommand( insn_addr ))
+            {
+            case DebugControl::DBG_STEP: 
+              proceed = true;
+              break;
+            case DebugControl::DBG_SYNC:
+              Sync();
+              continue;
+              break;
+            case DebugControl::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
+            case DebugControl::DBG_KILL:
+              Stop(0);
+              return;
+            }
+        }
+    }
   
   try {
     // Instruction Fetch Decode and Execution (may generate exceptions

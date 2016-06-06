@@ -492,7 +492,7 @@ protected:
   /* Debug Registers              END  */
   /*************************************/
   
-  
+  virtual void Sync() = 0;
 };
 	
 } // end of namespace arm

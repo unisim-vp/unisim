@@ -233,8 +233,7 @@ CPU::Stop(int ret)
   // Call BusSynchronize to account for the remaining time spent in the cpu 
   // core
   BusSynchronize();
-  sc_stop();
-  wait();
+  unisim::kernel::service::Object::Stop( ret );
 }
 
 /** Wait for a specific event and update CPU times
