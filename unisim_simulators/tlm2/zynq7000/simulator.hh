@@ -215,7 +215,6 @@ struct TTC : public MMDevice
 };
 
 struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim::service::interfaces::CharIO>
-
 {
   PS_UART( sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line );
   
@@ -223,7 +222,7 @@ struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim:
 
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
   sc_core::sc_event exchange_event;
-  sc_core::sc_time  exchange_period;
+  sc_core::sc_time  exchange_period, int_period;
   MPCore&           mpcore;
   int               it_line;
   
@@ -234,11 +233,17 @@ struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim:
     unsigned head, size;
     void Push( uint8_t item ) { head = (head + CAPACITY - 1) % CAPACITY; size +=1; items[head] = item; }
     uint8_t Pull() { size -= 1; return items[(head+size-1)%CAPACITY]; }
+    bool Full() const { return size >= CAPACITY; }
+    bool NearlyFull() const { return size >= (CAPACITY-1); }
+    bool Empty() const { return size == 0; }
+    bool Trig( unsigned level ) { return level and (size >= level); }
   };
   
   FIFO TxFIFO;
   FIFO RxFIFO;
   unsigned CR, MR, IMR, ISR, BAUDGEN, RXTOUT, BDIV, TTRIG, RTRIG, FDEL;
+  
+  void PutChar( Data const& d );
   
   void ExchangeProcess();
 };

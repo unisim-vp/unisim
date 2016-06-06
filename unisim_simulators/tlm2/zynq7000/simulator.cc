@@ -519,6 +519,7 @@ PS_UART::PS_UART( sc_module_name const& name, unisim::kernel::service::Object* p
   , char_io_import("char-io-import", this)
   , exchange_event( "exchange_event" )
   , exchange_period( sc_core::SC_ZERO_TIME )
+  , int_period( sc_core::SC_ZERO_TIME )
   , mpcore( _mpcore )
   , it_line( _it_line )
   , TxFIFO()
@@ -561,8 +562,18 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
       d.Access( disable_mask );
       IMR &= ~disable_mask;
     } return true;
-    case 0x10: d.Access( IMR ); return true;
-    case 0x14: d.Access( ISR ); return true;
+    case 0x10:
+      if (d.wnr) return false;
+      d.Access( IMR ); return true;
+    case 0x14: {
+      if (d.wnr) {
+        uint32_t disable_mask;
+        d.Access( disable_mask );
+        ISR &= ~disable_mask;
+      } else
+        d.Access( ISR );
+      return true;
+    }
     case 0x18: d.Access( BAUDGEN ); return true;
     case 0x1c: d.Access( RXTOUT ); return true;
     case 0x20: d.Access( RTRIG ); RTRIG &= 0x3f; return true;
@@ -570,31 +581,21 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
       // Channel_sts_reg
       if (d.wnr) return false;
       uint32_t SR = 0;
-      RegisterField<14,1>().Set( SR, (TxFIFO.size >= (FIFO::CAPACITY-1)) );
-      RegisterField<13,1>().Set( SR, TTRIG and (TxFIFO.size >= TTRIG) );
-      RegisterField<12,1>().Set( SR, (FDEL >= 4) and (RxFIFO.size >= FDEL) );
+      RegisterField<14,1>().Set( SR, TxFIFO.NearlyFull() );
+      RegisterField<13,1>().Set( SR, TxFIFO.Trig( TTRIG ) );
+      RegisterField<12,1>().Set( SR, (FDEL >= 4) and RxFIFO.Trig( FDEL ) );
       RegisterField<11,1>().Set( SR, false );
       RegisterField<10,1>().Set( SR, false );
-      RegisterField<4,1>().Set( SR, (TxFIFO.size >= FIFO::CAPACITY) );
-      RegisterField<3,1>().Set( SR, (TxFIFO.size == 0) );
-      RegisterField<2,1>().Set( SR, (RxFIFO.size >= FIFO::CAPACITY) );
-      RegisterField<1,1>().Set( SR, (RxFIFO.size == 0) );
-      RegisterField<0,1>().Set( SR, RTRIG and (RxFIFO.size >= RTRIG) );
+      RegisterField <4,1>().Set( SR, TxFIFO.Full() );
+      RegisterField <3,1>().Set( SR, TxFIFO.Empty() );
+      RegisterField <2,1>().Set( SR, RxFIFO.Full() );
+      RegisterField <1,1>().Set( SR, RxFIFO.Empty() );
+      RegisterField <0,1>().Set( SR, RxFIFO.Trig( RTRIG ) );
       d.Access( SR );
     } return true;
-    case 0x30: {
-      if (d.wnr) {
-        // Tx
-        uint32_t value;
-        d.Access( value );
-        if (not char_io_import)
-          throw std::logic_error("no IO client connected");
-        if (value & -256)
-          throw std::logic_error("Junk bits in Tx");
-        char_io_import->PutChar( char(value) );
-      } else {
-        return false;
-      }
+    case 0x30: { 
+      if (d.wnr) PutChar( d ); // Tx
+      else       return false;
     } return true;
     case 0x34: d.Access( BDIV ); BDIV &= 0xff; return true;
     case 0x38: d.Access( FDEL ); FDEL &= 0x3f; return true;
@@ -608,6 +609,20 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
 }
 
 void
+PS_UART::PutChar( Data const& d )
+{
+  uint32_t value = 0;
+  d.Access( value );
+  if (value & -256)
+    throw std::logic_error("Junk bits in Tx");
+  if (not char_io_import)
+    throw std::logic_error("no IO client connected");
+  char_io_import->PutChar( char(value) );
+  
+  exchange_event.notify( int_period );
+}
+
+void
 PS_UART::ExchangeProcess()
 {
   if (not char_io_import)
@@ -615,21 +630,36 @@ PS_UART::ExchangeProcess()
   
   exchange_event.notify( exchange_period );
   
+  /*** Tx Handling ***/
   char_io_import->FlushChars();
   
-  if (RxFIFO.size >= FIFO::CAPACITY) {
-    mpcore.SendInterrupt( it_line, sc_core::SC_ZERO_TIME );
-    return;
-  }
-    
-  for (char ch; char_io_import->GetChar( ch );) {
+  RegisterField<12,1>().Set( ISR, 0 ); // TOVR, Transmitter FIFO Overflow
+  RegisterField<11,1>().Set( ISR, 0 ); // TNFULL, Transmitter FIFO Nearly Full
+  RegisterField<10,1>().Set( ISR, 0 ); // TTRIG, Transmitter FIFO Trigger
+  RegisterField <9,1>().Set( ISR, 0 ); // DMSI, Delta Modem Status Indicator
+  RegisterField <8,1>().Set( ISR, 0 ); // TIMEOUT, Receiver Timeout Error
+  RegisterField <7,1>().Set( ISR, 0 ); // PARE, Receiver Parity Error
+  RegisterField <6,1>().Set( ISR, 0 ); // FRAME, Receiver Framing Error 
+  RegisterField <5,1>().Set( ISR, 0 ); // ROVR, Receiver Overflow Error
+  RegisterField <4,1>().Set( ISR, 0 ); // TFUL, Transmitter FIFO Full
+  RegisterField <3,1>().Set( ISR, 1 ); // TEMPTY, Transmitter FIFO Empty
+  
+  /*** Rx Handling ***/
+  for (char ch; (not RxFIFO.Full()) and (char_io_import->GetChar( ch ));) {
     RxFIFO.Push( ch );
-    unsigned size = RxFIFO.size;
-    if (size >= RTRIG) {
-      mpcore.SendInterrupt( it_line, sc_core::SC_ZERO_TIME );
-      return;
-    }
   }
+  
+  /*** Updating ISR ***/
+  if (RxFIFO.Full())
+    RegisterField <2,1>().Set( ISR, 1 ); // RFUL, Receiver FIFO Full
+  if (RxFIFO.Empty())
+    RegisterField <1,1>().Set( ISR, 1 ); // REMPTY, Receiver FIFO Empty
+  if (RxFIFO.Trig( RTRIG ))
+    RegisterField <0,1>().Set( ISR, 1 ); // RTRIG, Receiver FIFO Trigger
+  
+  /*** Interrupt Generation ***/
+  if (ISR & IMR)
+    mpcore.SendInterrupt( it_line, sc_core::SC_ZERO_TIME );
 }
 
 SLCR::SLCR(const sc_module_name& name, unisim::kernel::service::Object* parent)
@@ -1001,6 +1031,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
   
   ttc0.clock_period = ttc1.clock_period = cpu.GetCpuCycleTime();
   uart0.exchange_period = uart0.exchange_period = sc_core::sc_time( 20, sc_core::SC_MS );
+  uart0.int_period = uart0.int_period = sc_core::sc_time( 100, sc_core::SC_US );
   
   // inline-debugger and gdb-server are exclusive
   if(enable_inline_debugger && enable_gdb_server)
