@@ -358,15 +358,15 @@ CPU::StepInstruction()
         {
           switch (debug_control_import->FetchDebugCommand( insn_addr ))
             {
-            case DebugControl<uint32_t>::DBG_STEP: 
+            case DebugControl::DBG_STEP: 
               proceed = true;
               break;
-            case DebugControl<uint32_t>::DBG_SYNC:
+            case DebugControl::DBG_SYNC:
               Sync();
               continue;
               break;
-            case DebugControl<uint32_t>::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
-            case DebugControl<uint32_t>::DBG_KILL:
+            case DebugControl::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
+            case DebugControl::DBG_KILL:
               Stop(0);
               return;
             }
