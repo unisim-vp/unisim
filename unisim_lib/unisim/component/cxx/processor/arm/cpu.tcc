@@ -332,6 +332,8 @@ CPU<CONFIG>::~CPU()
     delete *itr;
   for (typename VariableRegisterPool::iterator itr = variable_register_pool.begin(), end = variable_register_pool.end(); itr != end; ++itr)
     delete *itr;
+  for (typename ModeMap::iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr)
+    delete itr->second;
 }
 
 /** Get a register by its name.
