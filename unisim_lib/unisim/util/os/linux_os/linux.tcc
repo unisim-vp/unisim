@@ -594,6 +594,31 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget()
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LogSystemCall(int id)
+{
+  int translated_id = id;
+  
+  SysCall* sc = target_system->GetSystemCall( translated_id );
+
+  if (not sc) {
+    logger_ << DebugError << "Unknown syscall(id = " << translated_id
+            << ", untranslated id = " << id << ")" << EndDebugError;
+    return;
+  }
+  
+  logger_
+    << DebugInfo
+    << "Syscall(id=" << translated_id;
+  if (translated_id != id)
+    logger_ << ", " << "unstranslated id=" << id;
+
+  std::ostringstream oss;
+  sc->Describe( *this, oss );
+  
+  logger_ << "): " << sc->GetName() << oss.str() << EndDebugInfo;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& terminated, int& return_status)
 {
   if (not is_load_ or not target_system)

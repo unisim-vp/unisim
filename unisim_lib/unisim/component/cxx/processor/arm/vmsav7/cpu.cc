@@ -40,6 +40,8 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/truth_table/truth_table.hh>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/os/linux_os/arm.hh>
 
 #include <sstream>
 #include <string>
@@ -192,12 +194,12 @@ CPU::EndSetup()
   /* Finalizing LOAD job */
   if (not linux_os_import) {
     if (verbose)
-      logger << DebugInfo << "No Linux OS connection ==> **bare metal/full system** mode" << EndDebugInfo;
+      logger << DebugInfo << "No Linux OS emulation ==> **bare metal/full system** mode" << EndDebugInfo;
     this->TakeReset();
   } else {
     /* Linux OS has setup Memory and User Registers */
     if (verbose)
-      logger << DebugInfo << "Linux OS connection present ==> using linux os emulation" << EndDebugInfo;
+      logger << DebugInfo << "With Linux OS emulation" << EndDebugInfo;
   }
   
   if (verbose)
@@ -352,7 +354,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
-    if (this->linux_os_import) {
+    if (linux_os_import) {
       // we are executing on linux emulation mode, handle all misalignemnt as if implemented
       PerformUWriteAccess( addr, size, value );
       return;
@@ -449,7 +451,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
-    if (this->linux_os_import) {
+    if (linux_os_import) {
       // we are executing on linux emulation mode, handle all misalignemnt as if implemented
       return PerformUReadAccess( addr, size );
     }
@@ -489,7 +491,6 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 
   return value;
 }
-
 
 /** Execute one complete instruction.
  */
@@ -939,10 +940,10 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
 void
 CPU::CallSupervisor( uint16_t imm )
 {
-  if (this->linux_os_import) {
+  if (linux_os_import) {
     // we are executing on linux emulation mode, use linux_os_import
     try {
-      this->linux_os_import->ExecuteSystemCall(imm);
+      linux_os_import->ExecuteSystemCall(imm);
     }
     catch (Exception const& e)
       {
@@ -950,6 +951,21 @@ CPU::CallSupervisor( uint16_t imm )
         this->Stop( -1 );
       }
   } else {
+    instruction_counter_trap_reporting_import->ReportTrap(*this, "CallSupervisor");
+    
+    static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
+    {
+      typedef unisim::util::os::linux_os::ARMTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> > ArmTarget;
+      
+      ArmLinuxOS( CPU* _cpu )
+        : unisim::util::os::linux_os::Linux<uint32_t, uint32_t>( _cpu->logger, _cpu, _cpu, _cpu )
+      {
+        SetTargetSystem(new ArmTarget( "arm-eabi", *this ));
+      }
+    } arm_linux_os( this );
+    
+    arm_linux_os.LogSystemCall( imm );
+
     // we are executing on full system mode
     this->PCPU::CallSupervisor( imm );
   }
@@ -1346,7 +1362,7 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
     // else {
     //   // Check if hit is coherent
     //   TransAddrDesc tad_chk;
-    //   TranslationTableWalk<DebugMemAcc>( tad_chk, mva );
+    //   TranslationTableWalk<DebugMemAcc>( tad_chk, mva, mat, size );
     //   if (tad_chk.pa != tad.pa)
     //     exception_trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
     // }

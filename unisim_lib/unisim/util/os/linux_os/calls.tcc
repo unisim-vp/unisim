@@ -517,7 +517,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMem( Linux& lin, ADDRESS_
             << "OS read memory:" << std::endl
             << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
             << "\tsize = " << size << std::endl
-            << "\tdata =" << std::hex;
+            << "\tdata =0x" << std::hex;
                                
           for (unsigned int i = 0; i < size; i++)
             {
@@ -551,7 +551,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::WriteMem( Linux& lin, ADDRESS
                   << "OS write memory:" << std::endl
                   << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
                   << "\tsize = " << size << std::endl
-                  << "\tdata =" << std::hex;
+                  << "\tdata =0x" << std::hex;
                        
       for (unsigned int i = 0; i < size; i++)
         {
@@ -602,6 +602,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "exit"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int status;
@@ -618,6 +619,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "read"; }
+      void Describe( Linux& lin, std::ostream& sink ) const {
+        sink << "(int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
+             << ", void *buf=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+             << ", size_t count=" << std::dec << int(SysCall::GetParam(lin, 2))
+             << ")" << std::dec;
+      }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int32_t target_fd;
@@ -671,6 +678,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "write"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int32_t target_fd;
@@ -709,7 +717,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
                                 << "buffer =";
                     for (size_t i = 0; i < count; i++)
                       {
-                        lin.logger_ << " " << std::hex << (unsigned int)((uint8_t *)buf)[i] << std::dec;
+                        lin.logger_ << " 0x" << std::hex << (unsigned int)((uint8_t *)buf)[i] << std::dec;
                       }
                     lin.logger_ << EndDebugInfo;
                   }
@@ -732,6 +740,16 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "open"; }
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
+        address_type addr = SysCall::GetParam(lin, 0);
+        int flags = SysCall::GetParam(lin, 1);
+        uint32_t mode = SysCall::GetParam(lin, 2);
+        sink << "(const char *pathname=0x" << std::hex << addr
+             << ", int flags=0x" << std::hex << flags
+             << ", mode_t mode=0x" << std::hex << mode
+             << ")" << std::dec;
+      }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int64_t ret;
@@ -810,6 +828,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "close"; }
+      void Describe( Linux& lin, std::ostream& sink ) const {
+        sink << "(int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
+             << ")" << std::dec;
+      }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int host_fd;
@@ -862,6 +884,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "lseek"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int32_t target_fd;
@@ -905,6 +928,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "getpid"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         pid_t ret;
@@ -921,6 +945,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "gettid"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         // Note: in a single threaded environment, the thread ID is equal to the process ID (PID, as returned by getpid)
@@ -938,6 +963,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "getuid"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
@@ -958,6 +984,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "access"; }
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
+        int access(const char *pathname, int mode);
+        address_type pathname = SysCall::GetParam(lin, 0);
+        int mode = SysCall::GetParam(lin, 1);
+        sink << "(const char *pathname=0x" << std::hex << pathname
+             << ", int mode=0x" << std::hex << mode << ")" << std::dec;
+      }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int ret;
@@ -1009,6 +1043,11 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "brk"; }
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
+        address_type addr = SysCall::GetParam(lin, 0);
+        sink << "(void *addr=0x" << std::hex << addr << std::dec << ")";
+      }
       void Execute( Linux& lin, int syscall_id ) const
       {
         ADDRESS_TYPE new_brk_point;
@@ -1032,6 +1071,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "getgid"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
@@ -1053,6 +1093,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "geteuid"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
@@ -1074,6 +1115,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "getegid"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
@@ -1095,6 +1137,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "munmap"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         // Note: currently disabled
@@ -1107,6 +1150,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "stat"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         // TODO write LSC_stat
@@ -1120,6 +1164,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "_llseek"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int32_t target_fd;
@@ -1181,6 +1226,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "writev"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int32_t target_fd = SysCall::GetParam(lin, 0);
@@ -1215,6 +1261,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "mmap"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         // Note: currently disabled
@@ -1223,10 +1270,37 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
   }
-
+  
+  {
+    static struct : public SysCall {
+      char const* GetName() const { return "mprotect"; }
+      void Describe( Linux& lin, std::ostream& sink ) const {
+        sink << "(void *addr=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
+             << ", size_t len=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+             << ", int prot=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 2))
+             << ")" << std::dec;
+      }
+      void Execute( Linux& lin, int syscall_id ) const
+      {
+        // Note: currently disabled
+        SysCall::SetStatus(lin, -LINUX_ENOSYS,true); return;
+      }
+    } sc;
+    if (_name.compare( sc.GetName() ) == 0) return &sc;
+  }
+  
   {
     static struct : public SysCall {
       char const* GetName() const { return "mmap2"; }
+      void Describe( Linux& lin, std::ostream& sink ) const {
+        sink << "(void *addr=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
+             << ", size_t length=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+             << ", int prot=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 2))
+             << ", int flags=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 3))
+             << ", int fd=" << std::dec << int(SysCall::GetParam(lin, 4))
+             << ", off_t pgoffset=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 5))
+             << ")" << std::dec;
+      }
       void Execute( Linux& lin, int syscall_id ) const
       {
         // Note: currently disabled
@@ -1239,6 +1313,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "getuid32"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
@@ -1257,6 +1332,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "getgid32"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
@@ -1275,6 +1351,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "geteuid32"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
@@ -1293,6 +1370,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "getegid32"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
@@ -1311,6 +1389,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "flistxattr"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         // TODO implement LSC_flistxattr
@@ -1326,6 +1405,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "exit_group"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-LINUX_EINVAL),true);
@@ -1337,6 +1417,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "fcntl"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int32_t target_fd;
@@ -1380,6 +1461,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "fcntl64"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int32_t target_fd;
@@ -1443,6 +1525,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "dup"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int32_t target_oldfd;
@@ -1492,6 +1575,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "ioctl"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
@@ -1503,6 +1587,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "ugetrlimit"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
@@ -1514,6 +1599,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "getrlimit"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
@@ -1525,6 +1611,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "setrlimit"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
@@ -1536,6 +1623,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "rt_sigaction"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
@@ -1547,6 +1635,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "getrusage"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
@@ -1558,6 +1647,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "unlink"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int ret;
@@ -1592,6 +1682,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "rename"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int ret;
@@ -1626,6 +1717,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "time"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL), true);
@@ -1637,6 +1729,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "socketcall"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL), true);
@@ -1648,6 +1741,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "rt_sigprocmask"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL), true);
@@ -1659,6 +1753,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "kill"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
@@ -1670,6 +1765,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "tkill"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
@@ -1681,6 +1777,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "tgkill"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
@@ -1692,6 +1789,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "ftruncate"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int host_fd;
@@ -1725,6 +1823,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "umask"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         mode_t mask;
@@ -1748,6 +1847,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "statfs"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL), true);
@@ -1761,6 +1861,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
     {
       UnimplementedSC( std::string _name ) : name( _name ) {} std::string name;
       char const* GetName() const { return name.c_str(); }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(...)"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         if(unlikely(lin.verbose_))

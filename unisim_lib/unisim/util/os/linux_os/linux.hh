@@ -100,6 +100,7 @@ struct Linux
 	{
 		virtual ~SysCall() {}
 		virtual void Execute( Linux& lin, int syscall_id ) const = 0;
+		virtual void Describe( Linux& lin, std::ostream& sink ) const = 0;
 		virtual char const* GetName() const = 0;
 		virtual void Release() {}
         protected:
@@ -260,6 +261,8 @@ struct Linux
 	// Executes the given system call id depending on the architecture the linux
 	// emulation is working on.
 	void ExecuteSystemCall(int id, bool& terminated, int& return_status);
+	
+	void LogSystemCall(int id);
 
 	UTSName const& GetUTSName() const { return utsname; }
 	

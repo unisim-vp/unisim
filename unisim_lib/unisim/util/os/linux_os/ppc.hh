@@ -967,6 +967,11 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "times"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              address_type buf_addr = GetSystemCallParam(lin, 0);
+              sink << "(struct tms *buf=" << std::hex << buf_addr << std::dec << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -996,6 +1001,13 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "gettimeofday"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              address_type tv = GetSystemCallParam(lin, 0);
+              address_type tz = GetSystemCallParam(lin, 1);
+              sink << "(struct timeval *tv=" << std::hex << tv << std::dec
+                   << ", struct timezone *tz=" << std::hex << tz << std::dec << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret = -1;
@@ -1041,6 +1053,12 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "fstat"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              int32_t fd = GetSystemCallParam(lin, 0);
+              address_type buf = GetSystemCallParam(lin, 1);
+              sink << "(int fd=" << std::dec << fd << ", struct stat *buf=" << std::hex << buf << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -1085,6 +1103,11 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "uname"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              address_type buf_addr = GetSystemCallParam(lin, 0);
+              sink << "(struct utsname *buf=" << std::hex << buf_addr << std::dec << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -1113,6 +1136,13 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "stat64"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              uint32_t path = GetSystemCallParam(lin, 0);
+              address_type buf = GetSystemCallParam(lin, 1);
+              sink << "(const char *pathname=" << std::hex << path
+                   << ", struct stat *buf=" << std::hex << buf << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -1150,6 +1180,12 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "fstat64"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              int32_t fd = GetSystemCallParam(lin, 0);
+              address_type buf = GetSystemCallParam(lin, 1);
+              sink << "(int fd=" << std::dec << fd << ", struct stat *buf=" << std::hex << buf << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
