@@ -987,6 +987,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
         } x;
+        return x;
       } break;
       
     case CP15ENCODE( 9, 0, 12, 1 ):

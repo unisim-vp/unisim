@@ -1045,7 +1045,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).DFSR = value; }
           uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFSR; }
         } x;
-
+        return x;
       } break;
 
     case CP15ENCODE( 5, 0, 0, 1 ):
@@ -1056,7 +1056,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).IFSR = value; }
           uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFSR; }
         } x;
-
+        return x;
       } break;
 
     case CP15ENCODE( 6, 0, 0, 0 ):
@@ -1067,7 +1067,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).DFAR = value; }
           uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFAR; }
         } x;
-
+        return x;
       } break;
 
     case CP15ENCODE( 6, 0, 0, 2 ):
@@ -1078,7 +1078,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).IFAR = value; }
           uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFAR; }
         } x;
-
+        return x;
       } break;
 
     case CP15ENCODE( 6, 0, 1, 0 ):
@@ -1090,7 +1090,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
         } x;
-
+        return x;
       } break;
       
     case CP15ENCODE( 6, 0, 1, 1 ):
@@ -1102,7 +1102,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
         } x;
-        
+        return x;
       } break;
       
     case CP15ENCODE( 6, 0, 1, 2 ):
@@ -1114,7 +1114,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
         } x;
-
+        return x;
       } break;
       
     case CP15ENCODE( 6, 0, 1, 3 ):
@@ -1126,7 +1126,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
         } x;
-        
+        return x;
       } break;
       
     case CP15ENCODE( 6, 0, 1, 4 ):
@@ -1138,7 +1138,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
         } x;
-
+        return x;
       } break;
       
     case CP15ENCODE( 6, 0, 1, 5 ):
@@ -1150,7 +1150,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
         } x;
-        
+        return x;
       } break;
       
       /***************************************************************
