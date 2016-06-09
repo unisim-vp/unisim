@@ -483,8 +483,6 @@ protected:
   typedef std::map<std::string, unisim::service::interfaces::Register*> RegistersRegistry;
   RegistersRegistry registers_registry;
   
-  typedef std::set<unisim::service::interfaces::Register*> DebugRegisterPool;
-  DebugRegisterPool debug_register_pool;
   typedef std::set<unisim::kernel::service::VariableBase*> VariableRegisterPool;
   VariableRegisterPool variable_register_pool;
   

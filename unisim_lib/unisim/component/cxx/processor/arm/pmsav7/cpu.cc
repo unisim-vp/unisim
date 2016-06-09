@@ -814,7 +814,7 @@ CPU::DataAbort( uint32_t va, mem_acc_type_t mat, DAbort type )
   
   if ((type != DAbort_SyncExternal) and (type != DAbort_AsyncExternal))
     RegisterField<12,1>().Set( FSR, 0 );
-  RegisterField<11,1>().Set( FSR, mat_write ? 1 : 0 );
+  RegisterField<11,1>().Set( FSR, (mat == mat_write) ? 1 : 0 );
   
   struct FS {
     FS( uint32_t& _dfsr ) : dfsr( _dfsr ) {} uint32_t& dfsr;

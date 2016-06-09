@@ -183,7 +183,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
         description =  description + ", " + name;
       }
       var_reg = new unisim::kernel::service::Register<uint32_t>( pretty_name.c_str(), this, gpr[idx], description.c_str() );
-      debug_register_pool.insert( dbg_reg );
       variable_register_pool.insert( var_reg );
       bool is_banked = false;
       for (typename ModeMap::const_iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr) {
@@ -195,7 +194,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
         registers_registry[br_pretty_name] = dbg_reg;
         if (br_name != br_pretty_name)
           registers_registry[br_name] = dbg_reg;
-        debug_register_pool.insert( dbg_reg );
       }
       if (is_banked) {
         std::string br_name = name + "_usr";
@@ -204,7 +202,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
         registers_registry[br_pretty_name] = dbg_reg;
         if (br_name != br_pretty_name)
           registers_registry[br_name] = dbg_reg;
-        debug_register_pool.insert( dbg_reg );
       }
     }
   
@@ -222,14 +219,12 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
     dbg_reg = new ProgramCounterRegister( *this );
     registers_registry["pc"] = registers_registry["r15"] = dbg_reg;
-    debug_register_pool.insert( dbg_reg );
     var_reg = new unisim::kernel::service::Register<uint32_t>( "pc", this, this->next_insn_addr, "Logical Register #15: pc, r15" );
     variable_register_pool.insert( var_reg );
     
     // Handling the CPSR register
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "cpsr", &cpsr.m_value );
     registers_registry["cpsr"] = dbg_reg;
-    debug_register_pool.insert( dbg_reg );
     var_reg = new unisim::kernel::service::Register<uint32_t>( "cpsr", this, this->cpsr.m_value, "Current Program Status Register" );
     variable_register_pool.insert( var_reg );
     
@@ -253,17 +248,14 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       std::string name = std::string( "spsr_" ) + itr->second->suffix;
       dbg_reg = new SavedProgramStatusRegister( *this, name, itr->first );
       registers_registry[name] = dbg_reg;
-      debug_register_pool.insert( dbg_reg );
     }
     
     /* SCTLR */
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "sctlr", &SCTLR );
     registers_registry["sctlr"] = dbg_reg;
-    debug_register_pool.insert( dbg_reg );
     /* CPACR */
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "cpacr", &CPACR );
     registers_registry["cpacr"] = dbg_reg;
-    debug_register_pool.insert( dbg_reg );
     
     // Advanced SIMD and VFP register
     struct VFPDouble : public unisim::service::interfaces::Register
@@ -284,7 +276,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
         std::stringstream regname; regname << 'd' << idx;
         dbg_reg = new VFPDouble( *this, regname.str(), idx );
         registers_registry[regname.str()] = dbg_reg;
-        debug_register_pool.insert( dbg_reg );
       }
     
     struct VFPSingle : public unisim::service::interfaces::Register
@@ -305,14 +296,12 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
         std::stringstream regname; regname << 's' << idx;
         dbg_reg = new VFPSingle( *this, regname.str(), idx );
         registers_registry[regname.str()] = dbg_reg;
-        debug_register_pool.insert( dbg_reg );
       }
 
     
     // Handling the FPSCR register
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpscr", &fpscr.m_value );
     registers_registry["fpscr"] = dbg_reg;
-    debug_register_pool.insert( dbg_reg );
     var_reg = new unisim::kernel::service::Register<uint32_t>( "fpscr", this, this->fpscr.m_value, "Current Program Status Register" );
     variable_register_pool.insert( var_reg );
   }
@@ -328,9 +317,20 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
-  for (typename DebugRegisterPool::iterator itr = debug_register_pool.begin(), end = debug_register_pool.end(); itr != end; ++itr)
-    delete *itr;
-  for (typename VariableRegisterPool::iterator itr = variable_register_pool.begin(), end = variable_register_pool.end(); itr != end; ++itr)
+  /* Debug registers may be referenced more than once (by different
+   * names).  Thus we must keep track of deleted registers in order
+   * not to delete them multiple times. */
+  { std::set<unisim::service::interfaces::Register*> deleted_regs;
+    for (typename RegistersRegistry::iterator itr = registers_registry.begin(),
+           end = registers_registry.end(); itr != end; ++itr)
+      {
+        if (deleted_regs.insert( itr->second ).second)
+          delete itr->second;
+      }
+  }
+  
+  for (typename VariableRegisterPool::iterator itr = variable_register_pool.begin(),
+         end = variable_register_pool.end(); itr != end; ++itr)
     delete *itr;
   for (typename ModeMap::iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr)
     delete itr->second;

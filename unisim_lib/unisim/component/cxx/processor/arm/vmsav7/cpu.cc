@@ -77,6 +77,26 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 
+namespace {
+  template <unsigned NIBBLES>
+  struct HexDump
+  {
+    char buffer[NIBBLES+1];
+    HexDump( uint32_t value ) {
+      char* ptr = &buffer[NIBBLES];
+      *ptr-- = '\0';
+      while (ptr >= &buffer[0])
+        { *ptr-- = "0123456789abcdef"[value&0xf]; value >>= 4; }
+    }
+    char const* s() const { return &buffer[0]; }
+  };
+}
+
+struct DebugMemAcc
+{
+  static bool const updateTLB = false;
+};
+
 /** Constructor.
  *
  * @param name the name that will be used by the UNISIM service 
@@ -139,6 +159,77 @@ CPU::CPU(const char *name, Object *parent)
   param_voltage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  
+  // Active Variables for specific CPU handling
+  unisim::kernel::service::VariableBase* var = 0;
+  
+  struct ReadPhysicalMemory : public unisim::kernel::service::VariableBase
+  {
+    ReadPhysicalMemory( CPU& _cpu )
+      : VariableBase("read-phys-mem", &_cpu, unisim::kernel::service::VariableBase::VAR_PARAMETER, ""), cpu( _cpu )
+    {
+      SetVisible(false);
+      SetSerializable(false);
+    }
+
+    VariableBase& operator = (char const* args)
+    {
+      uint32_t addr = strtoul(args,0,0);
+      uint32_t byte = addr % 16;
+      addr &= -uint32_t(16);
+      uint8_t buffer[16];
+      
+      cpu.logger << DebugInfo
+                 << " address  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f" << std::endl
+                 << HexDump<8>(addr).s();
+      
+      if (not cpu.ExternalReadMemory( addr, &buffer[0], 16 )) {
+        cpu.logger <<       " ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??" << std::endl;
+      } else {
+        for (int idx = 0; idx < 16; ++idx)
+          cpu.logger << ' ' << HexDump<2>(buffer[idx]).s();
+        cpu.logger << std::endl;
+      }
+      cpu.logger << "         "; for (;byte > 0; --byte) cpu.logger << "   "; cpu.logger << "^" << EndDebugInfo;
+      return *this;
+    }
+    CPU& cpu;
+  };
+  var = new ReadPhysicalMemory( *this );
+  variable_register_pool.insert( var );
+  
+  struct VirtToPhys : public unisim::kernel::service::VariableBase
+  {
+    VirtToPhys( CPU& _cpu )
+      : VariableBase("virt2phys", &_cpu, unisim::kernel::service::VariableBase::VAR_PARAMETER, ""), cpu( _cpu )
+    {
+      SetVisible(false);
+      SetSerializable(false);
+    }
+    
+    VariableBase& operator = (char const* args)
+    {
+      uint32_t addr = strtoul(args,0,0);
+      cpu.logger << DebugInfo << "V[0x" << std::hex << addr << "] : ";
+        
+      try {
+        uint32_t phys_addr = cpu.TranslateAddress<DebugMemAcc>( addr, true, mat_read, 1 );
+        cpu.logger << "P[0x" << std::hex << phys_addr << "]";
+      } catch (DataAbortException const&)
+        { cpu.logger << "unmapped"; }
+      cpu.logger << EndDebugInfo;
+      
+      return *this;
+    }
+    CPU& cpu;
+  };
+  var = new VirtToPhys( *this );
+  variable_register_pool.insert( var );
+  
+  /* Debug Register */
+  registers_registry["ttbcr"] = new unisim::util::debug::SimpleRegister<uint32_t>( "TTBCR", &mmu.ttbcr );
+  registers_registry["ttbr0"] = new unisim::util::debug::SimpleRegister<uint32_t>( "TTBR0", &mmu.ttbr0 );
+  registers_registry["ttbr1"] = new unisim::util::debug::SimpleRegister<uint32_t>( "TTBR1", &mmu.ttbr1 );
 }
 
 /** Destructor.
@@ -701,11 +792,6 @@ CPU::RequiresMemoryAccessReporting( bool report )
   requires_memory_access_reporting = report;
 }
 
-struct DebugMemAcc
-{
-  static bool const updateTLB = false;
-};
-
 /** Perform a non intrusive read access.
  * This method performs a normal read, but it does not change the state
  *   of the caches. It calls ExternalReadMemory if data not in cache.
@@ -964,6 +1050,7 @@ CPU::CallSupervisor( uint16_t imm )
       }
     } arm_linux_os( this );
     
+    logger << DebugInfo << "PC: 0x" << std::hex << GetCIA() << EndDebugInfo;
     arm_linux_os.LogSystemCall( imm );
 
     // we are executing on full system mode
@@ -1047,7 +1134,7 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
       RegisterField<13,1>().Set( FSR, 0 );
       if ((type != DAbort_SyncExternal) and (type != DAbort_AsyncExternal))
         RegisterField<12,1>().Set( FSR, 0 );
-      RegisterField<11,1>().Set( FSR, mat_write ? 1 : 0 );
+      RegisterField<11,1>().Set( FSR, (mat == mat_write) ? 1 : 0 );
       RegisterField<9,1>().Set( FSR, 0 );
       // FSR<8> = bit UNKNOWN;
       RegisterField<8,1>().Set( FSR, 0 );
