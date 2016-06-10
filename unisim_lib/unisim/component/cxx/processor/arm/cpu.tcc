@@ -228,11 +228,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     var_reg = new unisim::kernel::service::Register<uint32_t>( "cpsr", this, this->cpsr.m_value, "Current Program Status Register" );
     variable_register_pool.insert( var_reg );
     
-    /** Specific SPSR */
-    struct SavedProgramStatusRegister : public unisim::service::interfaces::Register
+    /** SPSRs */
+    struct SavedProgramStatusRegisterWithMode : public unisim::service::interfaces::Register
     {
-      SavedProgramStatusRegister( CPU& _cpu, std::string _name, uint8_t _mode ) : cpu(_cpu), name(_name), mode(_mode) {}
-      virtual ~SavedProgramStatusRegister() {}
+      SavedProgramStatusRegisterWithMode( CPU& _cpu, std::string _name, uint8_t _mode ) : cpu(_cpu), name(_name), mode(_mode) {}
+      virtual ~SavedProgramStatusRegisterWithMode() {}
       virtual const char *GetName() const { return name.c_str(); }
       virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.GetMode(mode).GetSPSR(); }
       virtual void SetValue( void const* buffer ) { cpu.GetMode(mode).SetSPSR( *((uint32_t*)buffer) ); }
@@ -246,9 +246,29 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       if (not itr->second->HasSPSR()) continue;
       
       std::string name = std::string( "spsr_" ) + itr->second->suffix;
-      dbg_reg = new SavedProgramStatusRegister( *this, name, itr->first );
+      dbg_reg = new SavedProgramStatusRegisterWithMode( *this, name, itr->first );
       registers_registry[name] = dbg_reg;
     }
+    struct SavedProgramStatusRegister : public unisim::service::interfaces::Register
+    {
+      SavedProgramStatusRegister( CPU& _cpu ) : cpu(_cpu) {} CPU& cpu;
+      virtual ~SavedProgramStatusRegister() {}
+      virtual const char *GetName() const { return "spsr"; }
+      virtual void GetValue( void* buffer ) const
+      {
+        try { *((uint32_t*)buffer) = cpu.CurrentMode().GetSPSR(); }
+        catch (std::logic_error const&)
+          { cpu.logger << DebugError << "No SPSR in " << cpu.CurrentMode().suffix << " mode" << EndDebugError; }
+      }
+      virtual void SetValue( void const* buffer )
+      {
+        try { cpu.CurrentMode().SetSPSR( *((uint32_t*)buffer) ); }
+        catch (std::logic_error const&)
+          { cpu.logger << DebugError << "No SPSR in " << cpu.CurrentMode().suffix << " mode" << EndDebugError; }
+      }
+      virtual int  GetSize() const { return 4; }
+    };
+    registers_registry["spsr"] = new SavedProgramStatusRegister( *this );
     
     /* SCTLR */
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "sctlr", &SCTLR );
