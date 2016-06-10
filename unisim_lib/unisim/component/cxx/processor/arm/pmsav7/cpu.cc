@@ -260,9 +260,9 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
       { data[byte] = shifter; shifter >>= 8; }
   }
   
-  //uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, true, size );
   uint32_t write_addr = addr & ~lo_mask;
-
+  //CheckPermissions( write_addr, cpsr.Get(M) != USER_MODE, mat_write, size );
+                    
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
   if (not PrWrite( write_addr, data, size )) {
@@ -313,8 +313,8 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
     DataAbort( addr, mat_read, DAbort_Alignment );
   }
   
-  //uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, false, size );
   uint32_t read_addr = addr & ~lo_mask;
+  //CheckPermissions( read_addr, cpsr.Get(M) != USER_MODE, mat_read, size );
   
   uint8_t data[4];
 
@@ -694,7 +694,8 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 {
   this->ipb_base_address = base_address;
   
-  // TODO: MPU check
+  //CheckPermissions( base_address, cpsr.Get(M) != USER_MODE, mat_exec, size );
+  
   if (not PrRead(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE)) {
     DataAbort( base_address, mat_exec, DAbort_SyncExternal );
   }

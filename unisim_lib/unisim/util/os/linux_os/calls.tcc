@@ -1930,6 +1930,28 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   }
   
   {
+    static struct : public SysCall {
+      char const* GetName() const { return "vfork"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "()"; }
+    } sc;
+    if (_name.compare( sc.GetName() ) == 0) return &sc;
+  }
+  
+  {
+    static struct : public SysCall {
+      char const* GetName() const { return "execve"; }
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
+        sink << "(const char *filename=" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
+             << ", char *const argv[]=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+             << ", char *const envp[]=" << std::hex << uint32_t(SysCall::GetParam(lin, 2))
+             << ")";
+      }
+    } sc;
+    if (_name.compare( sc.GetName() ) == 0) return &sc;
+  }
+  
+  {
     struct UnimplementedSC : public SysCall
     {
       UnimplementedSC( std::string _name ) : name( _name ) {} std::string name;

@@ -492,7 +492,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
         }
     }
   
-  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, GetPL(), mat_write, size );
+  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, cpsr.Get(M) != USER_MODE, mat_write, size );
   
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
@@ -554,7 +554,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
     }
   }
   
-  uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, GetPL(), mat_read, size );
+  uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, cpsr.Get(M) != USER_MODE, mat_read, size );
   
   uint8_t data[4];
 
@@ -974,7 +974,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t mva, uint32_t base_address)
 void 
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(IPB_LINE_SIZE), GetPL(), mat_exec, IPB_LINE_SIZE );
+  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(IPB_LINE_SIZE), cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
   uint32_t buffer_index = address % (IPB_LINE_SIZE);
   
   if (unlikely(ipb_base_address != base_address))
@@ -999,7 +999,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
 void
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(IPB_LINE_SIZE), GetPL(), mat_exec, IPB_LINE_SIZE );
+  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(IPB_LINE_SIZE), cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
   intptr_t buffer_index = address % (IPB_LINE_SIZE);
     
   if (unlikely(ipb_base_address != base_address))
@@ -1484,7 +1484,8 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
        (AP110 and W) or
        (AP111 and W)).tt;
     
-    uint32_t xabort = unsigned(mat == mat_exec) & (tad.xn | (tad.pxn & unsigned(GetPL() == 1)));
+    /* TODO: check that ispriv is correct for pxn (only PL1 is concerned ?) */
+    uint32_t xabort = unsigned(mat == mat_exec) & (tad.xn | (tad.pxn & ispriv));
 
     /* TODO: Long descriptor format + Hardware flags */
     if (unlikely((((dac >> 1) & (perm_table >> sel)) | xabort) & 1))
