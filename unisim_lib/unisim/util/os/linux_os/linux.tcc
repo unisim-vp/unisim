@@ -612,10 +612,27 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LogSystemCall(int id)
   if (translated_id != id)
     logger_ << ", " << "unstranslated id=" << id;
 
+  logger_ << "): " << sc->TraceCall( *this ) << EndDebugInfo;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+std::string
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::TraceCall( Linux& lin ) const
+{
   std::ostringstream oss;
-  sc->Describe( *this, oss );
-  
-  logger_ << "): " << sc->GetName() << oss.str() << EndDebugInfo;
+  oss << GetName();
+  Describe( lin, oss );
+  return oss.str();
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::Execute( Linux& lin, int syscall_id ) const
+{
+  lin.logger_ << DebugWarning << this->GetName() << " is not implemented" << EndDebugWarning;
+  if (unlikely(lin.verbose_))
+    lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+  SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>

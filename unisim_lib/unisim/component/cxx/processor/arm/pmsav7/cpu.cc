@@ -1153,6 +1153,18 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
+    case CP15ENCODE( 6, 0, 2, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "RGNR, MPU Region Number Register"; }
+          uint32_t& reg( CPU& cpu ) { return cpu.mpu.RGNR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+        } x;
+        return x;
+      } break;
+      
       /***************************************************************
        * Cache maintenance, address translation, and other functions *
        ***************************************************************/

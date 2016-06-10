@@ -184,6 +184,7 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , HPIR(0)
   , ADFSR(0)
   , AIFSR(0)
+  , CFLR(0)
 {
   PCPU::param_cpu_cycle_time_ps.SetVisible(false);
   param_cpu_cycle_time.AddListener(this);
@@ -1283,7 +1284,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "Correctable Fault Location Register"; }
-          uint32_t Read( CP15CPU& cpu ) { return 0; }
+          uint32_t& reg( CP15CPU& cpu ) { return dynamic_cast<CPU&>( cpu ).CFLR; }
+          uint32_t Read( CP15CPU& cpu ) { return reg( cpu ); }
+          void Write( CP15CPU& cpu, uint32_t value ) { reg( cpu ) = value; }
         } x;
         return x;
       } break;

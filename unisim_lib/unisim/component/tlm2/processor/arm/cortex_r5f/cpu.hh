@@ -260,7 +260,8 @@ private:
     uint32_t HPIR;          //< AHB peripheral interface region register
     uint32_t ADFSR;         //< Auxiliary Data Fault Status Register
     uint32_t AIFSR;         //< Auxiliary Instruction Fault Status Register
-
+    uint32_t CFLR;          //<  CorrectableFault Location Register
+    
     /**************************/
     /* CP15 Interface    END  */
     /**************************/

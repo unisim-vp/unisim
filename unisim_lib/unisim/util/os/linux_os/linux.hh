@@ -99,10 +99,11 @@ struct Linux
 	struct SysCall
 	{
 		virtual ~SysCall() {}
-		virtual void Execute( Linux& lin, int syscall_id ) const = 0;
+		virtual void Execute( Linux& lin, int syscall_id ) const;
 		virtual void Describe( Linux& lin, std::ostream& sink ) const = 0;
 		virtual char const* GetName() const = 0;
 		virtual void Release() {}
+		std::string TraceCall( Linux& lin ) const;
         protected:
 		// SysCall Friend accessing methods
 		static bool ReadMem(Linux& lin, ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
