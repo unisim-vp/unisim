@@ -110,7 +110,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	param_vih.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_vil.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
-	for (uint8_t i=0; i<ATD_SIZE; i++) {
+	for (unsigned int i=0; i<ATD_SIZE; i++) {
 		analog_signal[i] = vrl;
 		analog_signal_reg[i].SetMutable(true);
 	}
@@ -237,7 +237,7 @@ void ATD10B<ATD_SIZE>::Process()
 
 		wait(input_anx_payload_queue.get_event());
 
-		InputANx(analog_signal);
+		InputANx(&analog_signal);
 
 		RunScanMode();
 
@@ -254,27 +254,29 @@ void ATD10B<ATD_SIZE>::Process()
  */
 
 template <unsigned int ATD_SIZE>
-void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
+void ATD10B<ATD_SIZE>::InputANx(double (*anValue)[ATD_SIZE])
 {
-	ATD_Payload<ATD_SIZE> *last_payload = NULL;
+//	ATD_Payload<ATD_SIZE> *last_payload = NULL;
 	ATD_Payload<ATD_SIZE> *payload = NULL;
 
 
-	do
-	{
-		if (last_payload) {
-			last_payload->release();
-		}
-		last_payload = payload;
-		payload = input_anx_payload_queue.get_next_transaction();
+//	do
+//	{
+//		if (last_payload) {
+//			last_payload->release();
+//		}
+//		last_payload = payload;
+//		payload = input_anx_payload_queue.get_next_transaction();
+//
+//		if (debug_enabled && payload) {
+//			cout << sc_object::name() << ":: Receive " << *payload << " - " << sc_time_stamp() << endl;
+//		}
+//
+//	} while(payload);
+//
+//	payload = last_payload;
 
-		if (debug_enabled && payload) {
-			cout << sc_object::name() << ":: Receive " << *payload << " - " << sc_time_stamp() << endl;
-		}
-
-	} while(payload);
-
-	payload = last_payload;
+	payload = input_anx_payload_queue.get_next_transaction();
 
 	if (debug_enabled && payload) {
 		cout << sc_object::name() << ":: Last Receive " << *payload << " - " << sc_time_stamp() << endl;
@@ -282,9 +284,12 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 
 	if (payload) {
 		for (unsigned int i=0; i<ATD_SIZE; i++) {
-			anValue[i] = payload->anPort[i];
+			(*anValue)[i] = payload->anPort[i];
 		}
 		payload->release();
+		tlm_phase phase = BEGIN_RESP;
+		sc_time local_time = SC_ZERO_TIME;
+		anx_socket->nb_transport_bw( *payload, phase, local_time);
 	}
 
 }
@@ -344,14 +349,14 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 {
 
 	// - check ATDCTL0::wrap bits to identify the channel to wrap around
-	uint8_t wrapArroundChannel = atdctl0_register & 0x0F;
+	unsigned int wrapArroundChannel = atdctl0_register & 0x0F;
 	if (wrapArroundChannel == 0) {
 		cerr << "Warning: " << sc_object::name() << " => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
 
 		wrapArroundChannel = ATD_SIZE-1;
 	}
 
-	uint8_t sequenceLength = 1;
+	unsigned int sequenceLength = 1;
 	// - check ATDCTL3 to determine the sequence length and storage mode of the result
 	sequenceLength = (atdctl3_register & 0x78) >> 3; // get S8C S4C S2C S1C
 	if (sequenceLength == 0) {
@@ -372,7 +377,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 	{
 
 		// Store the result of conversion
-		uint8_t sequenceIndex = 0;
+		unsigned int sequenceIndex = 0;
 		abortSequence = false;
 
 		while ((sequenceIndex < sequenceLength)  && !abortSequence ) {
@@ -645,15 +650,15 @@ uint16_t ATD10B<ATD_SIZE>::getDigitalToken(double analogVoltage) {
 
 	if (isDataSigned) {
 		if (analogVoltage == vrh) {
-			digitalToken =  0xFFFF & llround((analogVoltage - zeroAnalogVoltage - delta) / delta);
+			digitalToken =  0xFFFF & lround((analogVoltage - zeroAnalogVoltage - delta) / delta);
 		} else {
-			digitalToken = 0xFFFF & llround((analogVoltage - zeroAnalogVoltage) / delta);
+			digitalToken = 0xFFFF & lround((analogVoltage - zeroAnalogVoltage) / delta);
 		}
 	} else {
 		if ((analogVoltage < zeroAnalogVoltage) || (analogVoltage == vrh)) {
-			digitalToken = 0xFFFF & llround((analogVoltage - vrl) / delta);
+			digitalToken = 0xFFFF & lround((analogVoltage - vrl) / delta);
 		} else {
-			digitalToken = 0xFFFF & llround((analogVoltage - vrl + delta) / delta);
+			digitalToken = 0xFFFF & lround((analogVoltage - vrl + delta) / delta);
 		}
 	}
 
@@ -1015,7 +1020,7 @@ bool ATD10B<ATD_SIZE>::BeginSetup() {
 	portad1_var->setCallBack(this, PORTAD1, &CallBackObject::write, NULL);
 
 	char shortName[20];
-	for (uint8_t i=0; i < ATD_SIZE; i++) {
+	for (unsigned int i=0; i < ATD_SIZE; i++) {
 
 		sprintf(shortName, "ATDDR%d", i);
 

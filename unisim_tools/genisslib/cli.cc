@@ -283,7 +283,7 @@ CLI::process( intptr_t _argc, char** _argv ) {
       cerr << m_displayname << ": unexpected argument: " << args.front() << "\n";
       throw Exit_t( 1 );
     }
-  } catch( ConstStr_t _error ) {
+  } catch( ConstStr_t& _error ) {
     cerr << m_displayname << ": " << _error.str();
     help();
     throw Exit_t( 1 );

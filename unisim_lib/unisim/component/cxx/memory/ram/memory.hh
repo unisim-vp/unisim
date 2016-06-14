@@ -52,6 +52,7 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 
@@ -73,12 +74,14 @@ private:
 };
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE = 1024 * 1024>
-class Memory : public Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >
+class Memory
+		: public virtual Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >
+
 {
 public:
 	/* exported services */
 	ServiceExport<unisim::service::interfaces::Memory<PHYSICAL_ADDR> > memory_export;
-	
+
 	Memory(const  char *name, Object *parent = 0); //, PHYSICAL_ADDR org, uint64_t bytesize);
 	virtual ~Memory();
 	

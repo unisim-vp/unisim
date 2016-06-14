@@ -9,6 +9,7 @@
 #define CONVERT_HH_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <iostream>
 #include <sstream>
@@ -16,6 +17,9 @@
 #include <vector>
 #include <typeinfo>
 #include <stdexcept>
+#include <map>
+
+#include <unisim/util/endian/endian.hh>
 
 class BadConversion : public std::runtime_error {
 public:
@@ -256,6 +260,33 @@ inline void stringSplit(std::string str, const std::string delim, std::vector<st
 
 }
 
+inline void splitCharStr2Array(char* str, const char * delimiters, int *count, char** *res) {
+
+	char *  p    = strtok (str, delimiters);
+	int n_spaces = 0, i;
+
+	/* split string and append tokens to 'res' */
+
+	while (p) {
+	  (*res) = (char**) realloc ((*res), sizeof (char*) * ++n_spaces);
+
+	  if ((*res) == NULL)
+	    exit (-1); /* memory allocation failed */
+
+	  (*res)[n_spaces-1] = p;
+
+	  p = strtok (NULL, " ");
+	}
+
+//	/* print the result */
+//
+//	for (i = 0; i < (n_spaces); ++i)
+//	  printf ("res[%d] = %s\n", i, (*res)[i]);
+
+	*count = n_spaces;
+
+}
+
 /* Function to get parity of number n. It returns 1
    if n has odd parity, and returns 0 if n has even
    parity */
@@ -289,6 +320,80 @@ inline bool ParseHex(const std::string& s, size_t& pos, T& value)
 		n++;
 	}
 	return (n > 0);
+}
+
+inline const char* getOsName() {
+
+	#ifndef __OSNAME__
+	#if defined(_WIN32) || defined(_WIN64)
+			const char* osName = "Windows";
+	#else
+	#ifdef __linux
+			const char* osName = "Linux";
+	#else
+			const char* osName = "Unknown";
+	#endif
+	#endif
+	#endif
+
+    return (osName);
+}
+
+/*
+ * Expand environment variables
+ * Windows:
+ *    - ExpandEnvironmentStrings(%PATH%): Expands environment-variable strings and replaces them with the values defined for the current user
+ *    - PathUnExpandEnvStrings: To replace folder names in a fully qualified path with their associated environment-variable strings
+ *    - Example Get system informations :
+ *      url: http://msdn.microsoft.com/en-us/library/ms724426%28v=vs.85%29.aspx
+ *
+ * Linux/Posix:
+ *   url: http://stackoverflow.com/questions/1902681/expand-file-names-that-have-environment-variables-in-their-path
+ *
+ */
+
+#include <cstdlib>
+#include <string>
+
+static std::string expand_environment_variables( std::string s ) {
+    if( s.find( "$(" ) == std::string::npos ) return s;
+
+    std::string pre  = s.substr( 0, s.find( "$(" ) );
+    std::string post = s.substr( s.find( "$(" ) + 2 );
+
+    if( post.find( ')' ) == std::string::npos ) return s;
+
+    std::string variable = post.substr( 0, post.find( ')' ) );
+    std::string value    = "";
+
+    post = post.substr( post.find( ')' ) + 1 );
+
+    if( getenv( variable.c_str() ) != NULL ) value = std::string( getenv( variable.c_str() ) );
+
+    return expand_environment_variables( pre + value + post );
+}
+
+static std::string expand_path_variables( std::string s , std::map<std::string, std::string> env_vars) {
+    if( s.find( "$(" ) == std::string::npos ) return s;
+
+    std::string pre  = s.substr( 0, s.find( "$(" ) );
+    std::string post = s.substr( s.find( "$(" ) + 2 );
+
+    if( post.find( ')' ) == std::string::npos ) return s;
+
+    std::string variable = post.substr( 0, post.find( ')' ) );
+    std::string value    = "";
+
+    post = post.substr( post.find( ')' ) + 1 );
+
+	std::map<std::string, std::string>::iterator it = env_vars.find(variable);
+	if (it == env_vars.end()) {
+		if( getenv( variable.c_str() ) != NULL ) value = std::string( getenv( variable.c_str() ) );
+	} else {
+		value = it->second;
+	}
+
+    return expand_environment_variables( pre + value + post );
 }
 
 #endif /* CONVERT_HH_ */

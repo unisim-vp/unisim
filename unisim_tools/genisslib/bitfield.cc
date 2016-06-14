@@ -118,7 +118,7 @@ SeparatorBitField_t::SeparatorBitField_t( bool _rewind )
 {}
 
 SeparatorBitField_t::SeparatorBitField_t( SeparatorBitField_t const& _src )
-  : BitField_t()
+  : BitField_t(), m_rewind(false)
 {}
 
 void

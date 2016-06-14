@@ -146,7 +146,7 @@ void S12MPU::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+	if ((address >= baseAddress) && (address < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -441,7 +441,7 @@ void S12MPU::Reset() {
 
 bool S12MPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+12))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -471,7 +471,7 @@ bool S12MPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool S12MPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+12))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (size == 0) {
 			return (true);

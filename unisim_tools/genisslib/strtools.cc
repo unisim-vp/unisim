@@ -41,6 +41,8 @@ namespace Str {
         return ConstStr_t( storage );
     }
     assert( false );
+
+    return ConstStr_t("");
   }
 
   ConstStr_t

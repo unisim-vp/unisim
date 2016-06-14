@@ -844,6 +844,7 @@ inline DMIRegion::DMIRegion(DMIGrant _dmi_grant, tlm::tlm_dmi *_dmi_data)
 	, dmi_data(_dmi_data)
 	, read_lat_lut(dmi_data->get_read_latency())
 	, write_lat_lut(dmi_data->get_write_latency())
+	, next(NULL)
 {
 }
 

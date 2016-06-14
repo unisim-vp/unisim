@@ -32,6 +32,9 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
+#ifndef __UNISIM_SERVICE_TEE_REGISTERS_HH__
+#define __UNISIM_SERVICE_TEE_REGISTERS_HH__
+
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/register.hh"
 #include <unisim/kernel/service/service.hh>
@@ -97,6 +100,13 @@ public:
 
 		return reg;
 	}
+
+
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
+
 };
 
 } // end registers
@@ -104,7 +114,7 @@ public:
 } // end service
 } // end unisim 
 
-
+#endif
 
 
 
