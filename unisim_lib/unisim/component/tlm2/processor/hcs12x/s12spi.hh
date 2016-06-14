@@ -226,6 +226,10 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner ) {
+    	// TODO:
+    }
+
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================

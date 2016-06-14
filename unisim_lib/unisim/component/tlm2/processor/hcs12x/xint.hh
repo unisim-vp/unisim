@@ -211,6 +211,11 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
+
 	//==============================================================
 	//=              XINT Registers Access Routines                =
 	//==============================================================

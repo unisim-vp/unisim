@@ -100,6 +100,13 @@ public:
 
 		return reg;
 	}
+
+
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
+
 };
 
 } // end registers
