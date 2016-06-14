@@ -285,7 +285,7 @@ unisim/util/debug/data_object.hh \
 unisim/util/debug/type.hh \
 unisim/util/debug/data_object_initializer.hh \
 unisim/util/debug/profile.hh \
-unisim/util/debug/register.hh \
+unisim/service/interfaces/register.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/simple_register.hh \
 unisim/util/debug/watchpoint_registry.hh \
