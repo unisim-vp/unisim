@@ -936,8 +936,8 @@ T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tlm::tlm_dmi &dmi) {
 		TRANS(logger, trans);
 		logger << EndDebug;
 		dmi.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
-		dmi.set_start_address(0);
-		dmi.set_end_address((sc_dt::uint64) -1);
+		dmi.set_start_address(trans.get_address());
+		dmi.set_end_address(trans.get_address() + trans.get_data_length() - 1);
 		return false;
 	}
 	/* perform the address translation */
@@ -1001,7 +1001,7 @@ T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tlm::tlm_dmi &dmi) {
 	{
 		// deny all crazy target address space
 		dmi.set_start_address(start_range);
-		dmi.set_start_address(end_range);
+		dmi.set_end_address(end_range);
 		dmi_status = false;
 	}
 

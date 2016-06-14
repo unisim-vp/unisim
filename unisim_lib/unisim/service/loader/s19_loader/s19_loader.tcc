@@ -135,8 +135,8 @@ bool S19_Loader<MEMORY_ADDR>::Load() {
 		return (false);
 	}
 
-	cerr << Object::GetName() << ": Load file \"" << filename << "\" to simulated RAM." << endl;
-	cerr << Object::GetName() << ": Load started..." << endl;
+	std::cerr << Object::GetName() << ": Load file \"" << filename << "\" to simulated RAM." << std::endl;
+	std::cerr << Object::GetName() << ": Load started..." << std::endl;
 
 	do
 	{
@@ -155,11 +155,11 @@ bool S19_Loader<MEMORY_ADDR>::Load() {
 
 	fclose(bootptr);
 
-	cerr << Object::GetName() << ": File \"" << filename;
+	std::cerr << Object::GetName() << ": File \"" << filename;
 	if (success) {
-		cerr << "\" Load success." << endl;
+		std::cerr << "\" Load success." << std::endl;
 	} else {
-		cerr << "\" Load fail!" << endl;
+		std::cerr << "\" Load fail!" << std::endl;
 	}
 
 	return (success);
@@ -297,7 +297,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 			sscanf(srec+2+(cnt*2), "%2x", &tchksum);
 
 			if ((tchksum + (chksum & 0xff)) != 0xff)  {
-				cerr << "check sum " << chksum << "\n";
+				std::cerr << "check sum " << chksum << "\n";
 				ShowError(ERR_BADCHKSUM,linenum,srec);
 				return (false);
 			}
@@ -334,7 +334,7 @@ bool S19_Loader<MEMORY_ADDR>::memWrite(uint32_t addr, const void *buffer, uint32
 		{
 			if(!memory_import->WriteMemory(addr, buffer, size))
 			{
-				cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
+				std::cerr << Object::GetName() << ": Can't write into memory (@0x" << std::hex << addr << " - @0x" << (addr +  size - 1) << std::dec << ")" << std::endl;
 			}
 			else 
 			{
@@ -349,23 +349,23 @@ bool S19_Loader<MEMORY_ADDR>::memWrite(uint32_t addr, const void *buffer, uint32
 template <class MEMORY_ADDR>
 void  S19_Loader<MEMORY_ADDR>::ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE])
 {
-	cerr << Object::GetName() << ": ";
+	std::cerr << Object::GetName() << ": ";
 	switch (errnum) {
-		case ERR_NOFILE: cerr << "Error: Unable to open \"" << filename << "\""; break;
-		case ERR_BADREC: cerr << "Error: Bad S19 record."; break;
-		case ERR_NOSUPPORT: cerr << "Error: Unsupported S-record format; must be S0, S1 or S9."; break;
-		case ERR_BADADDR: cerr << "Error: Address is out of range for this MCU."; break;
-		case ERR_BADCHKSUM: cerr << "Error: Record checksum is bad."; break;
-		case ERR_BADFILENAME: cerr << "Error: Illegal character in file name."; break;
-		case ERR_IO : cerr << "Error: Input/Output !"; break;
-		default: cerr << "Error: Unknown!"; break;
+		case ERR_NOFILE: std::cerr << "Error: Unable to open \"" << filename << "\""; break;
+		case ERR_BADREC: std::cerr << "Error: Bad S19 record."; break;
+		case ERR_NOSUPPORT: std::cerr << "Error: Unsupported S-record format; must be S0, S1 or S9."; break;
+		case ERR_BADADDR: std::cerr << "Error: Address is out of range for this MCU."; break;
+		case ERR_BADCHKSUM: std::cerr << "Error: Record checksum is bad."; break;
+		case ERR_BADFILENAME: std::cerr << "Error: Illegal character in file name."; break;
+		case ERR_IO : std::cerr << "Error: Input/Output !"; break;
+		default: std::cerr << "Error: Unknown!"; break;
 	}
 	
 	if (linenum)  {
-		cerr << "\nline " << linenum << " " << srec ;
+		std::cerr << "\nline " << linenum << " " << srec ;
 	}
 	
-	cerr << endl;
+	std::cerr << std::endl;
 }
 
 } // end UNISIM namespace

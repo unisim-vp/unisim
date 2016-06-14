@@ -383,7 +383,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
@@ -749,7 +748,6 @@ if [ "${has_to_build_risc16_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${RISC16_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${RISC16_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${RISC16_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${RISC16_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${RISC16_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${RISC16_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-risc16-${RISC16_VERSION}\"], [path of shared data relative to bin directory])" >> "${RISC16_CONFIGURE_AC}"

@@ -96,22 +96,8 @@ namespace arm {
   RegisterField< 1,1> const DZC;    /* Division by Zero cumulative exception bit */
   RegisterField< 0,1> const IOC;    /* Invalid Operation cumulative exception bit */
   
-  struct PSR
+  struct PSR : public FieldRegister<uint32_t>
   {
-    PSR() : m_value( 0 ) {}
-    PSR( uint32_t value ) : m_value( value ) {}
-  
-    /* Raw bits */
-    uint32_t&   bits() { return m_value; }
-    
-    
-    /* Condition code flags */
-    template <typename RF>
-    uint32_t Get( RF const& rf ) const { return rf.Get( m_value ); }
-    template <typename RF>
-    void     Set( RF const& rf, uint32_t value ) { return rf.Set( m_value, value ); }
-    
-  
     void ITSetState( uint32_t cond, uint32_t mask )
     {
       RegisterField<12,4>().Set( m_value, cond );
@@ -137,8 +123,6 @@ namespace arm {
       RegisterField<10,6>().Set( m_value, state >> 2 );
       RegisterField<25,2>().Set( m_value, state & 3 );
     }
-  
-    uint32_t m_value;
   };
 
 } // end of namespace arm

@@ -33,70 +33,69 @@
 
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
+#include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <simulator.hh>
 #include <stdexcept>
 #include <iostream>
 #include <inttypes.h>
 
+using unisim::component::cxx::processor::arm::RegisterField;
+
 void
-ZynqRouter::set_abs_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end )
+ZynqRouter::relative_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock )
+{
+  this->mapping[output_port].used = true;
+  this->mapping[output_port].range_start = range_start;
+  this->mapping[output_port].range_end =   range_end;
+  this->mapping[output_port].output_port = output_port;
+  this->mapping[output_port].translation = 0;
+  (*init_socket[output_port])( sock );
+}
+
+void
+ZynqRouter::absolute_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock )
 {
   this->mapping[output_port].used = true;
   this->mapping[output_port].range_start = range_start;
   this->mapping[output_port].range_end =   range_end;
   this->mapping[output_port].output_port = output_port;
   this->mapping[output_port].translation = range_start;
-}
-
-void
-ZynqRouter::set_rel_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, uint64_t offset )
-{
-  this->mapping[output_port].used = true;
-  this->mapping[output_port].range_start = range_start;
-  this->mapping[output_port].range_end =   range_end;
-  this->mapping[output_port].output_port = output_port;
-  this->mapping[output_port].translation = offset;
+  (*init_socket[output_port])( sock );
 }
 
 ZynqRouter::ZynqRouter(const char* name, unisim::kernel::service::Object* parent)
   : unisim::kernel::service::Object( name, parent )
   , unisim::component::tlm2::interconnect::generic_router::Router<ZynqRouterConfig>( name, parent )
 {
-  this->set_abs_mapping( 0, 0x00000000, 0x3fffffff ); /* Main OCM RAM */
-  this->set_abs_mapping( 1, 0xffff0000, 0xffffffff ); /* Boot OCM ROM */
-  this->set_rel_mapping( 2, 0xf8f01000, 0xf8f01fff ); /* GIC */
-  this->set_rel_mapping( 3, 0xf8f00100, 0xf8f001ff ); /* GIC */
 }
 
-/**
- * Constructor.
- * 
- * @param name the name of the module
- * @param parent the parent service
- */
-GIC::GIC(const sc_module_name& name, unisim::kernel::service::Object* parent)
+namespace {
+  std::string NameSocketFromModule( sc_module_name const& name )
+  {
+    std::string res( name );
+    res += "_socket";
+    return res;
+  }
+}
+
+MMDevice::MMDevice( sc_module_name const& name, unisim::kernel::service::Object* parent )
   : unisim::kernel::service::Object( name, parent )
-  , sc_module(name)
-  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>(name,parent)
+  , sc_module( name )
+  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>( name, parent )
+  , socket( NameSocketFromModule( name ).c_str() )
   , trap_reporting_import("trap-reporting-import", this)
-  , d( *this )
-  , c( *this )
-{
-}
-
-GIC::IF::IF( GIC& _gic, char const* socket_name )
-  : gic( _gic )
-  , socket( socket_name )
+  , verbose( false )
+  , hardfail( false )
 {
   socket( *this );
 }
 
-unsigned int GIC::IF::transport_dbg(tlm::tlm_generic_payload& payload) { throw 0; return 0; }
+unsigned int MMDevice::transport_dbg(tlm::tlm_generic_payload& payload) { throw std::runtime_error("Not implemented"); return 0; }
 
 tlm::tlm_sync_enum
-GIC::IF::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+MMDevice::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
-  if (phase != tlm::BEGIN_REQ) { throw 0; }
+  if (phase != tlm::BEGIN_REQ) { throw std::logic_error("internal error"); }
   
   this->b_transport(payload, t);
   
@@ -104,7 +103,7 @@ GIC::IF::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phas
 }
 
 void
-GIC::IF::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+MMDevice::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t )
 {
   payload.set_dmi_allowed( false );
   
@@ -112,7 +111,7 @@ GIC::IF::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
     {
       for (int idx = int(payload.get_byte_enable_length()); --idx >= 0; )
         if (not byte_enable_ptr[idx])
-          throw 0;
+          throw std::logic_error("internal error");
     }
   
   // unsigned int streaming_width = payload.get_streaming_width();
@@ -126,27 +125,71 @@ GIC::IF::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
       uint32_t addr = payload.get_address(), size = payload.get_data_length();
       
       if ((addr|size) & (size-1))
-        std::cerr << "Malformed GIC register address: [" << std::hex << addr << "," << std::dec << size << "].\n";
-      else
-        status = AccessRegister( cmd == tlm::TLM_WRITE_COMMAND, addr, size, Data( payload.get_data_ptr() ) );
+        std::cerr << "Malformed register address: [" << std::hex << addr << "," << std::dec << size << "].\n";
+      else {
+        Data d( payload.get_data_ptr(), cmd == tlm::TLM_WRITE_COMMAND, size );
+        status = AccessRegister( addr, d, sc_core::sc_time_stamp() + t );
+        if (verbose or not status)
+          DumpRegisterAccess( std::cerr, addr, d );
+        if (not status) {
+          std::cerr <<  "Error: register access failed.\n";
+          if (hardfail)
+            this->Stop(-1);
+        }
+      }
     } break;
     case tlm::TLM_IGNORE_COMMAND:
       break;
     default:
-      throw 0;
+      throw std::logic_error("internal error");
     }
   
   tlm::tlm_response_status resp_status = status ? tlm::TLM_OK_RESPONSE : tlm::TLM_ADDRESS_ERROR_RESPONSE;
   payload.set_response_status( resp_status );
 }
 
-GIC::DistIF::DistIF( GIC& _gic )
-  : IF( _gic, "dist_socket" )
+void
+MMDevice::DumpRegisterAccess( std::ostream& sink, uint32_t addr, MMDevice::Data const& d )
 {
-  CTLR = 0;
-  memset( &ICFGR[0], 0, sizeof (ICFGR) );
+  sink << this->GetName() << " register " << (d.wnr?"write":"read")
+       << " @[" << std::hex << addr << ',' << std::dec << d.size << "] ";
+  sink << (d.wnr ? "<- 0x" : "-> 0x");
+  for (int idx = d.size; --idx >= 0;) {
+    uint8_t byte = d.ptr[idx];
+    sink << "0123456789abcdef"[(byte>>4)&15]
+         << "0123456789abcdef"[(byte>>0)&15];
+  }
+  sink << ".\n";
+}
+
+/**
+ * Constructor.
+ * 
+ * @param name the name of the module
+ * @param parent the parent service
+ */
+MPCore::MPCore(const sc_module_name& name, unisim::kernel::service::Object* parent)
+  : unisim::kernel::service::Object( name, parent )
+  , MMDevice( name, parent )
+  , nIRQ("nIRQ")
+  , nFIQ("nFIQ")
+  , ICCICR(0)
+  , ICCPMR(0)
+  , ICDDCR(0)
+  , generate_exceptions_event("generate_exceptions_event")
+{
+  
+  std::fill_n(IENABLE, state32_count, 0);
+  std::fill_n(IPENDING, state32_count, 0);
+  std::fill_n(IACTIVE, state32_count, 0);
   memset( &IPRIORITYR[0], 0, sizeof (IPRIORITYR) );
-  memset( &IENABLER[0], 0, sizeof (IENABLER) );
+  memset( &ICDIPTR[0], 0, sizeof (ICDIPTR) );
+  memset( &ICDICFR[0], 0, sizeof (ICDICFR) );
+  
+  SC_HAS_PROCESS(MPCore);
+  
+  SC_METHOD(GenerateExceptionsProcess);
+  sc_core::sc_module::sensitive << generate_exceptions_event;
 }
 
 namespace {
@@ -158,84 +201,519 @@ namespace {
 }
 
 bool
-GIC::DistIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
+MPCore::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time )
 {
-  std::cerr << "GICD register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n"; 
-  
-  if (size == 4) {
+  if (d.size == 4) {
     uint32_t RAZ_WI(0);
     
-    if (Match<0x100,-0x80> m = addr) /* GICD_ISENABLER */ {
-      unsigned idx = m.var >> 2;
-      if (idx > ien_count)
-        d.Access( wnr, RAZ_WI );
-      else {
-        uint32_t value = IENABLER[idx];
-        d.Access( wnr, value );
-        if (wnr) IENABLER[idx] |= value;
-      }
-      return true;
+    if (addr == 0x100) /* ICCICR: CPU Interface Control Register */ {
+      d.Access( ICCICR );
     }
     
-    if (Match<0x180,-0x80> m = addr) /* GICD_ICENABLER */ {
-      unsigned idx = m.var >> 2;
-      if (idx > ien_count)
-        d.Access( wnr, RAZ_WI );
-      else {
-        uint32_t value = IENABLER[idx];
-        d.Access( wnr, value );
-        if (wnr) IENABLER[idx] &= ~value;
-      }
-      return true;
+    else if (addr == 0x104) /* ICCPMR: Interrupt Priority Mask Register */ {
+      d.Access( ICCPMR );
     }
     
-    if (Match<0x400,-0x400> m = addr) /* GICD_IPRIORITYR */ {
-      unsigned idx = m.var;
-      if (idx < GIC::ITLinesCount)
-        d.Access( wnr, &IPRIORITYR[idx], 4 );
-      else
-        d.Access( wnr, RAZ_WI );
-      return true;
+    else if (addr == 0x10c) /* ICCIAR: Interrupt Acknowledge Register */ {
+      if (d.wnr) return false;
+      uint32_t iar = ReadGICC_IAR();
+      d.Access( iar );
     }
     
-    if (Match<0x800,-0x400> m = addr) /* GICD_ITARGETSR */ {
-      d.Access( wnr, RAZ_WI );
-      return true;
+    else if (addr == 0x110) /* ICCEOIR: End Of Interrupt Register */ {
+      if (not d.wnr) return false;
+      uint32_t eoir = 0;
+      d.Access( eoir );
+      unsigned int_id = eoir % 1024;
+      if (int_id < 16)
+        return false;
+      // Ending interrupt
+      IACTIVE[int_id / 32] &= ~(1u << (int_id % 32));
     }
     
-    if (Match<0xc00,-0x100> m = addr) /* GICD_ICFGR */ {
-      unsigned idx = m.var >> 2;
-      d.Access( wnr, (idx < icfgr_count) ? ICFGR[idx] : RAZ_WI );
-      return true;
+    else if (addr == 0x1000) /* ICDDCR:  Distributor Control Register */ {
+      d.Access( ICDDCR );
     }
     
-    switch (addr) {
-    case 0:
-      d.Access( wnr, CTLR );
-      return true;
-      
-    case 4:
-      if (wnr) return false;
+    else if (addr == 0x1004) /* ICDICTR:  Interrupt Controller Type Register */ {
+      if (d.wnr) return false;
       uint32_t result = ITLinesNumber;
-      d.Access( false, result );
-      return true;
+      d.Access( result );
+    }
+    
+    else if (Match<0x1100,-0x80> m = addr) /* ICDISER: Interrupt Set-enable Register  */ {
+      unsigned idx = m.var >> 2;
+      if (idx > state32_count)
+        d.Access( RAZ_WI );
+      else {
+        uint32_t value = IENABLE[idx];
+        d.Access( value );
+        if (d.wnr) IENABLE[idx] |= value;
+      }
+    }
+    
+    else if (Match<0x1180,-0x80> m = addr) /* ICDICER: Interrupt Clear-Enable Register */ {
+      unsigned idx = m.var >> 2;
+      if (idx > state32_count)
+        d.Access( RAZ_WI );
+      else {
+        uint32_t value = IENABLE[idx];
+        d.Access( value );
+        if (d.wnr) IENABLE[idx] &= ~value;
+      }
+    }
+    
+    else if (Match<0x1400,-0x400> m = addr) /* ICDIPR: Interrupt Priority Register */ {
+      unsigned idx = m.var;
+      if (idx < ITLinesCount)
+        d.Copy( &IPRIORITYR[idx], 4 );
+      else
+        d.Access( RAZ_WI );
+    }
+    
+    else if (Match<0x1800,-0x400> m = addr) /* ICDIPTR: Interrupt Processor Targets Register */ {
+      unsigned idx = m.var;
+      if (idx < 16) {
+        uint32_t value = 0x01010101;
+        d.Access( value );
+      }
+      else if ((24 <= idx) and (idx < ITLinesCount)) {
+        d.Copy( &ICDIPTR[idx], 4 );
+      }
+      else
+        d.Access( RAZ_WI );
+    }
+    
+    else if (Match<0x1c00,-0x100> m = addr) /* ICDICFR: Interrupt Configuration Register */ {
+      unsigned idx = m.var >> 2;
+      d.Access( (idx < icfgr_count) ? ICDICFR[idx] : RAZ_WI );
+    }
+    
+    else
+      return false;
+  }
+  
+  else return false;
+
+  if (d.wnr)
+    generate_exceptions_event.notify(update_time - sc_core::sc_time_stamp());
+  
+  return true;
+}
+
+void
+MPCore::SendInterrupt( unsigned idx, sc_core::sc_time const& t )
+{
+  IPENDING[idx/32] |= (1ul << (idx%32));
+  generate_exceptions_event.notify(t);
+}
+
+unsigned
+MPCore::HighestPriorityPendingInterrupt( uint8_t required, uint8_t enough )
+{
+  unsigned hppi = 1023;
+  
+  if ((ICCICR & ICDDCR & 1) == 0)
+    return hppi;
+  
+  // Preemption not supported                                                                                                                               
+  for (unsigned idx = 0; idx < state32_count; ++ idx)
+    if (IACTIVE[idx])
+      return hppi;
+  
+  for (unsigned int_id = 0; int_id < ITLinesCount; int_id += 1) {
+    unsigned word = int_id / 32;
+    uint32_t bit = 1u << (int_id % 32);
+    if (not (IPENDING[word] & IENABLE[word] & bit))
+      continue;
+    uint8_t priority = IPRIORITYR[int_id];
+    if (priority < enough)
+      return int_id;
+    if (priority < required) {
+      hppi = int_id;
+      required = priority;
+    }
+  }
+    
+  return hppi;
+}
+
+void
+MPCore::GenerateExceptionsProcess()
+{
+  nIRQ = not (HighestPriorityPendingInterrupt( ICCPMR, ICCPMR ) < ITLinesCount);
+}
+
+uint32_t
+MPCore::ReadGICC_IAR()
+{
+  unsigned int_id = HighestPriorityPendingInterrupt( ICCPMR, 0 );
+  if (int_id < 16)
+    throw std::logic_error("not implemented");
+  
+  // Acknowledging
+  unsigned word = int_id / 32;
+  uint32_t bit = 1u << (int_id % 32);
+  IPENDING[word] &= ~bit;
+  IACTIVE[word] |= bit;
+  
+  return int_id;
+}
+
+TTC::TTC( const sc_module_name& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it )
+  : unisim::kernel::service::Object( name, parent )
+  , MMDevice( name, parent )
+  , mpcore( _mpcore )
+  , id( _id )
+  , base_it( _base_it )
+  , update_state_event( "update_state_event" )
+  , clock_period( sc_core::SC_ZERO_TIME )
+{
+  std::fill_n(Clock_Control, 3, 0);
+  std::fill_n(Counter_Control, 3, 0x21);
+  std::fill_n(Counter_Value, 3, 0);
+  std::fill_n(Interval_Counter, 3, 0);
+  std::fill_n(Interrupt_Register, 3, 0);
+  std::fill_n(Interrupt_Enable, 3, 0);
+  std::fill_n(it_lines, 3, -1);
+  std::fill_n(update_counters, 3, 0);
+  
+  SC_HAS_PROCESS(TTC);
+  
+  SC_METHOD(UpdateStateProcess);
+  sc_core::sc_module::sensitive << update_state_event;
+}
+
+void
+TTC::UpdateStateProcess()
+{
+  UpdateState( sc_core::sc_time_stamp() );
+}
+
+void
+TTC::UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time )
+{
+  update_counters[idx] += 1;
+  if (Clock_Control[idx] & 0x28)
+    throw std::logic_error( "internal error" );
+  if (Counter_Control[idx] & 0x10) {
+    Counter_Value[idx] = 0;
+    Counter_Control[idx] &= ~0x10;
+  }
+  if (Counter_Control[idx] & 1) {
+    // Disabled
+    last_state_update_time[idx] = update_time;
+    return;
+  }
+  
+  // Computing counter ticks since last update
+  sc_dt::uint64 ticks;
+  sc_core::sc_time  tick_period( clock_period );
+  if (Clock_Control[idx] & 1) // Prescaling
+    tick_period *= sc_dt::uint64( 1 << (((Clock_Control[idx] >> 1) & 0xf) + 1) );
+  
+  ticks = (update_time - last_state_update_time[idx]) / tick_period;
+  last_state_update_time[idx] += ticks*tick_period;
+  
+  bool interval_mode = (Counter_Control[idx] & 2);
+  uint32_t interrupt_vector = interval_mode ? 0x01 : 0x10;
+  bool interrupt_enable = interrupt_vector & Interrupt_Enable[idx];
+  sc_dt::uint64 interval = interval_mode ? Interval_Counter[idx] : 0x10000;
+  sc_dt::uint64 counter_value = Counter_Value[idx];
+  
+  // Computing ticks to next zero and updating the counter value to its current state
+  sc_dt::uint64 ticks_to_next_zero = 0;
+  if (Counter_Control[idx] & 4) {
+    // Decrement
+    ticks_to_next_zero = counter_value ? counter_value : interval;
+    if (ticks > counter_value) {
+      counter_value = interval - 1 - ((ticks - counter_value - 1) % interval);
+    } else {
+      counter_value = counter_value - ticks;
+    }
+  } else {
+    // Increment
+    if (interval > counter_value) {
+      ticks_to_next_zero = interval - counter_value;
+      counter_value = (counter_value + ticks) % interval;
+    } else {
+      ticks_to_next_zero = 1;
+      if (ticks > 0)
+        counter_value = (ticks - 1) % interval;
     }
   }
   
-  std::cerr << "Unknown GICD register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
-  return false;
+  if (interrupt_enable) {
+    if (ticks_to_next_zero < ticks)
+      throw std::logic_error("internal error");
+    
+    ticks_to_next_zero -= ticks;
+    
+    sc_core::sc_time const& sc_now = sc_core::sc_time_stamp();
+    sc_core::sc_time sc_int( last_state_update_time[idx] );
+    sc_int += ticks_to_next_zero*tick_period;
+    
+    if (sc_int < sc_now)
+      throw std::logic_error("internal error");
+    
+    sc_int -= sc_now;
+    
+    if (ticks_to_next_zero <= 0) {
+      Interrupt_Register[idx] |= interrupt_vector;
+      mpcore.SendInterrupt( base_it + idx, sc_int );
+    }
+    update_state_event.notify( sc_int );
+  }
+  
+  Counter_Value[idx] = counter_value;
 }
 
-GIC::CpuIF::CpuIF( GIC& _gic )
-  : IF( _gic, "cpu_socket" )
+void
+TTC::UpdateState( sc_core::sc_time const& update_time )
 {
-  
+  for (unsigned idx = 0; idx < 3; ++idx)
+    UpdateCounterState( idx, update_time );
 }
 
 bool
-GIC::CpuIF::AccessRegister( bool wnr, uint32_t addr, unsigned size, Data const& d )
+TTC::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time )
 {
-  std::cerr << "Unknown GICC register " << (wnr?"write":"read") << " @[" << std::hex << addr << ',' << std::dec << size << "].\n";
+  UpdateState( update_time );
+  int update_idx = -1;
+  
+  if (d.size == 4) {
+    switch (addr) {
+    case 0x00: d.Access( Clock_Control[0] ); update_idx = 0; break;
+    case 0x04: d.Access( Clock_Control[1] ); update_idx = 1; break;
+    case 0x08: d.Access( Clock_Control[2] ); update_idx = 2; break;
+    case 0x0c: d.Access( Counter_Control[0] ); update_idx = 0; break;
+    case 0x10: d.Access( Counter_Control[1] ); update_idx = 1; break;
+    case 0x14: d.Access( Counter_Control[2] ); update_idx = 2; break;
+    case 0x18: d.Access( Counter_Value[0] ); break;
+    case 0x1c: d.Access( Counter_Value[1] ); break;
+    case 0x20: d.Access( Counter_Value[2] ); break;
+    case 0x24: d.Access( Interval_Counter[0] ); update_idx = 0; break;
+    case 0x28: d.Access( Interval_Counter[1] ); update_idx = 1; break;
+    case 0x2c: d.Access( Interval_Counter[2] ); update_idx = 2; break;
+    case 0x54: d.Access( Interrupt_Register[0] ); if (not d.wnr) Interrupt_Register[0] = 0; break;
+    case 0x58: d.Access( Interrupt_Register[1] ); if (not d.wnr) Interrupt_Register[1] = 0; break;
+    case 0x5c: d.Access( Interrupt_Register[2] ); if (not d.wnr) Interrupt_Register[2] = 0; break;
+    case 0x60: d.Access( Interrupt_Enable[0] ); update_idx = 0; break;
+    case 0x64: d.Access( Interrupt_Enable[1] ); update_idx = 1; break;
+    case 0x68: d.Access( Interrupt_Enable[2] ); update_idx = 2; break;
+    default: return false;
+    }
+  }
+  else return false;
+  
+  if (d.wnr and (update_idx >= 0))
+    UpdateCounterState( update_idx, update_time );
+  
+  return true;
+}
+
+PS_UART::PS_UART( sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line )
+  : unisim::kernel::service::Object( name, parent )
+  , MMDevice( name, parent )
+  , unisim::kernel::service::Client<unisim::service::interfaces::CharIO>( name, parent )
+  , char_io_import("char-io-import", this)
+  , exchange_event( "exchange_event" )
+  , exchange_period( sc_core::SC_ZERO_TIME )
+  , int_period( sc_core::SC_ZERO_TIME )
+  , mpcore( _mpcore )
+  , it_line( _it_line )
+  , TxFIFO()
+  , RxFIFO()
+  , CR(0b100101000)
+  , MR(0)
+  , IMR(0)
+  , ISR(0)
+  , BAUDGEN(0x28b)
+  , RXTOUT(0)
+  , BDIV(0xf)
+  , TTRIG(FIFO::CAPACITY/2)
+  , RTRIG(FIFO::CAPACITY/2)
+  , FDEL(0)
+{
+  MMDevice::verbose = false;
+  MMDevice::hardfail = true;
+  
+  SC_HAS_PROCESS(PS_UART);
+  SC_METHOD(ExchangeProcess);
+  sc_core::sc_module::sensitive << exchange_event;
+}
+
+bool
+PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time )
+{
+  if (d.size == 4) {
+    switch (addr) {
+    case 0x00: d.Access( CR ); CR &= -4; return true;
+    case 0x04: d.Access( MR ); return true;
+    case 0x08: { // IER
+      if (not d.wnr) return false;
+      uint32_t enable_mask = 0;
+      d.Access( enable_mask );
+      IMR |= enable_mask;
+    } return true;
+    case 0x0c: { // IDR
+      if (not d.wnr) return false;
+      uint32_t disable_mask = 0;
+      d.Access( disable_mask );
+      IMR &= ~disable_mask;
+    } return true;
+    case 0x10:
+      if (d.wnr) return false;
+      d.Access( IMR ); return true;
+    case 0x14: {
+      if (d.wnr) {
+        uint32_t disable_mask;
+        d.Access( disable_mask );
+        ISR &= ~disable_mask;
+      } else
+        d.Access( ISR );
+      return true;
+    }
+    case 0x18: d.Access( BAUDGEN ); return true;
+    case 0x1c: d.Access( RXTOUT ); return true;
+    case 0x20: d.Access( RTRIG ); RTRIG &= 0x3f; return true;
+    case 0x2c: {
+      // Channel_sts_reg
+      if (d.wnr) return false;
+      uint32_t SR = 0;
+      RegisterField<14,1>().Set( SR, TxFIFO.NearlyFull() );
+      RegisterField<13,1>().Set( SR, TxFIFO.Trig( TTRIG ) );
+      RegisterField<12,1>().Set( SR, (FDEL >= 4) and RxFIFO.Trig( FDEL ) );
+      RegisterField<11,1>().Set( SR, false );
+      RegisterField<10,1>().Set( SR, false );
+      RegisterField <4,1>().Set( SR, TxFIFO.Full() );
+      RegisterField <3,1>().Set( SR, TxFIFO.Empty() );
+      RegisterField <2,1>().Set( SR, RxFIFO.Full() );
+      RegisterField <1,1>().Set( SR, RxFIFO.Empty() );
+      RegisterField <0,1>().Set( SR, RxFIFO.Trig( RTRIG ) );
+      d.Access( SR );
+    } return true;
+    case 0x30: { 
+      if (d.wnr) PutChar( d ); // Tx
+      else       return false;
+    } return true;
+    case 0x34: d.Access( BDIV ); BDIV &= 0xff; return true;
+    case 0x38: d.Access( FDEL ); FDEL &= 0x3f; return true;
+    case 0x44: d.Access( TTRIG ); TTRIG &= 0x3f; return true;
+    default: return false;
+    }
+  }
+  else return false;
+  
+  return false;
+}
+
+void
+PS_UART::PutChar( Data const& d )
+{
+  uint32_t value = 0;
+  d.Access( value );
+  if (value & -256)
+    throw std::logic_error("Junk bits in Tx");
+  if (not char_io_import)
+    throw std::logic_error("no IO client connected");
+  char_io_import->PutChar( char(value) );
+  
+  exchange_event.notify( int_period );
+}
+
+void
+PS_UART::ExchangeProcess()
+{
+  if (not char_io_import)
+    return;
+  
+  exchange_event.notify( exchange_period );
+  
+  /*** Tx Handling ***/
+  char_io_import->FlushChars();
+  
+  RegisterField<12,1>().Set( ISR, 0 ); // TOVR, Transmitter FIFO Overflow
+  RegisterField<11,1>().Set( ISR, 0 ); // TNFULL, Transmitter FIFO Nearly Full
+  RegisterField<10,1>().Set( ISR, 0 ); // TTRIG, Transmitter FIFO Trigger
+  RegisterField <9,1>().Set( ISR, 0 ); // DMSI, Delta Modem Status Indicator
+  RegisterField <8,1>().Set( ISR, 0 ); // TIMEOUT, Receiver Timeout Error
+  RegisterField <7,1>().Set( ISR, 0 ); // PARE, Receiver Parity Error
+  RegisterField <6,1>().Set( ISR, 0 ); // FRAME, Receiver Framing Error 
+  RegisterField <5,1>().Set( ISR, 0 ); // ROVR, Receiver Overflow Error
+  RegisterField <4,1>().Set( ISR, 0 ); // TFUL, Transmitter FIFO Full
+  RegisterField <3,1>().Set( ISR, 1 ); // TEMPTY, Transmitter FIFO Empty
+  
+  /*** Rx Handling ***/
+  for (char ch; (not RxFIFO.Full()) and (char_io_import->GetChar( ch ));) {
+    RxFIFO.Push( ch );
+  }
+  
+  /*** Updating ISR ***/
+  if (RxFIFO.Full())
+    RegisterField <2,1>().Set( ISR, 1 ); // RFUL, Receiver FIFO Full
+  if (RxFIFO.Empty())
+    RegisterField <1,1>().Set( ISR, 1 ); // REMPTY, Receiver FIFO Empty
+  if (RxFIFO.Trig( RTRIG ))
+    RegisterField <0,1>().Set( ISR, 1 ); // RTRIG, Receiver FIFO Trigger
+  
+  /*** Interrupt Generation ***/
+  if (ISR & IMR)
+    mpcore.SendInterrupt( it_line, sc_core::SC_ZERO_TIME );
+}
+
+SLCR::SLCR(const sc_module_name& name, unisim::kernel::service::Object* parent)
+  : unisim::kernel::service::Object( name, parent )
+  , MMDevice( name, parent )
+  , ARM_PLL_CTRL(0x1a008)
+  , DDR_PLL_CTRL(0x1a008)
+  , IO_PLL_CTRL(0x1a008)
+  , ARM_CLK_CTRL(0x1f000400)
+  , CLK_621_TRUE(0x1)
+  , UART_CLK_CTRL(0x3f03)
+{
+}
+
+bool
+SLCR::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time )
+{
+  if (d.size == 4) {
+    switch (addr) {
+    case 0x100: d.Access(  ARM_PLL_CTRL ); return true;
+    case 0x104: d.Access(  DDR_PLL_CTRL ); return true;
+    case 0x108: d.Access(   IO_PLL_CTRL ); return true;
+    case 0x120: d.Access(  ARM_CLK_CTRL ); return true;
+    case 0x154: d.Access( UART_CLK_CTRL ); return true;
+    case 0x1c4: d.Access(  CLK_621_TRUE ); return true;
+    }
+  }
+  
+  return false;
+}
+
+L2C::L2C( const sc_module_name& name, unisim::kernel::service::Object* parent )
+  : unisim::kernel::service::Object( name, parent )
+  , MMDevice( name, parent )
+{
+}
+
+bool
+L2C::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time )
+{
+  if (d.size == 4) {
+    //uint32_t RAZ_WI(0);
+    
+    switch (addr) {
+    case 0x0000: d.Access( fastreg( addr, 0x410000c8 ) ); return true;
+      // case 0x4: { uint32_t reg0_cache_type = 0; d.Access( reg0_cache_type ); return true; }
+    case 0x0100: d.Access( fastreg( addr, 0x00000000 ) ); return true;
+    case 0x0108: d.Access( fastreg( addr, 0x00000777 ) ); return true;
+    case 0x010c: d.Access( fastreg( addr, 0x00000777 ) ); return true;
+    case 0x0c00: d.Access( fastreg( addr, 0x40000001 ) ); return true;
+    case 0x0c04: d.Access( fastreg( addr, 0xfff00000 ) ); return true;
+    }
+  }
+  
   return false;
 }
 
@@ -243,9 +721,16 @@ Simulator::Simulator(int argc, char **argv)
   : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
   , cpu( "cpu" )
   , router( "router" )
-  , gic( "gic" )
+  , mpcore( "mpcore" )
   , main_ram( "main_ram" )
   , boot_rom( "boot_rom" )
+  , slcr( "slcr" )
+  , ttc0( "ttc0", 0, mpcore, 0, 42 )
+  , ttc1( "ttc1", 0, mpcore, 1, 69 )
+  , uart0( "uart0", 0, mpcore, 59 )
+  , uart1( "uart1", 0, mpcore, 82 )
+  , l2c( "l2c", 0 )
+  , telnet("telnet", 0)
   , nirq_signal("nIRQm")
   , nfiq_signal("nFIQm")
   , nrst_signal("nRESETm")
@@ -291,16 +776,27 @@ Simulator::Simulator(int argc, char **argv)
   cpu.nIRQm( nirq_signal );
   cpu.nFIQm( nfiq_signal );
   cpu.nRESETm( nrst_signal );
-
-  (*router.init_socket[0])( main_ram.slave_sock );
-  (*router.init_socket[1])( boot_rom.slave_sock );
-  (*router.init_socket[2])( gic.d.socket );
-  (*router.init_socket[3])( gic.c.socket );
+  
+  router.relative_mapping( 0, 0x00000000, 0x3fffffff, main_ram.slave_sock ); /* Main OCM RAM */
+  router.absolute_mapping( 1, 0xffff0000, 0xffffffff, boot_rom.slave_sock ); /* Boot OCM ROM */
+  router.relative_mapping( 2, 0xf8f00000, 0xf8f01fff, mpcore.socket ); /* Mpcore - SCU, Interrupt controller, Counters and Timers */
+  router.relative_mapping( 3, 0xf8000000, 0xf8000fff, slcr.socket ); /* SLCR */
+  router.relative_mapping( 4, 0xf8001000, 0xf8001fff, ttc0.socket ); /* TTC0 */
+  router.relative_mapping( 5, 0xf8002000, 0xf8002fff, ttc1.socket ); /* TTC1 */
+  router.relative_mapping( 6, 0xf8f02000, 0xf8f02fff, l2c.socket ); /* L2Cpl310 */
+  router.relative_mapping( 7, 0xe0000000, 0xe0000fff, uart0.socket ); /* uart0 */
+  router.relative_mapping( 8, 0xe0001000, 0xe0001fff, uart1.socket ); /* uart1 */
+  
+  mpcore.nIRQ( nirq_signal );
+  mpcore.nFIQ( nfiq_signal );
+  
+  uart0.char_io_import >> telnet.char_io_export;
   
   // Connect debugger to CPU
   cpu.debug_control_import >> debugger->debug_control_export;
   cpu.instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
-  gic.trap_reporting_import >> debugger->trap_reporting_export;
+  //cpu.exception_trap_reporting_import >> debugger->trap_reporting_export;
+  mpcore.trap_reporting_import >> debugger->trap_reporting_export;
   //cpu.symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
   cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   debugger->disasm_import >> cpu.disasm_export;
@@ -422,18 +918,19 @@ Run()
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  cerr << "Simulation run-time parameters:" << endl;
-  DumpParameters(cerr);
-  cerr << endl;
-  cerr << "Simulation formulas:" << endl;
-  DumpFormulas(cerr);
-  cerr << endl;
-  cerr << "Simulation statistics:" << endl;
-  DumpStatistics(cerr);
-  cerr << endl;
+  // cerr << "Simulation run-time parameters:" << endl;
+  // DumpParameters(cerr);
+  // cerr << endl;
+  // cerr << "Simulation formulas:" << endl;
+  // DumpFormulas(cerr);
+  // cerr << endl;
+  // cerr << "Simulation statistics:" << endl;
+  // DumpStatistics(cerr);
+  // cerr << endl;
 
   cerr << "simulation time: " << simulation_spent_time << " seconds" << endl;
-  cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+  cerr << "simulated time: " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+  std::cerr << "guest instructions: " << uint64_t(cpu["instruction-counter"]) << std::endl;
   cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
   cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 
@@ -532,6 +1029,10 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 
   unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
   
+  ttc0.clock_period = ttc1.clock_period = cpu.GetCpuCycleTime();
+  uart0.exchange_period = uart0.exchange_period = sc_core::sc_time( 20, sc_core::SC_MS );
+  uart0.int_period = uart0.int_period = sc_core::sc_time( 100, sc_core::SC_US );
+  
   // inline-debugger and gdb-server are exclusive
   if(enable_inline_debugger && enable_gdb_server)
     {
@@ -613,10 +1114,10 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "boot_rom.cycle-time",        "10 ns" );
   sim->SetVariable( "boot_rom.read-latency",      "10 ns" );
   sim->SetVariable( "boot_rom.write-latency",     "0 ps" );
-  sim->SetVariable( "loader.memory-mapper.mapping", "main_ram:0x00000000-0x3fffffff,boot_rom:0xffff0000-0xffffffff" );
+  sim->SetVariable( "loader.memory-mapper.mapping", "main_ram:0x00000000-0x3fffffff,boot_rom:0xffff0000-0xffffffff:+0xffff0000" );
   
   
-  sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_armv5l.xml" ); // Current Cross-GDBs doesn't natively recognize armv7...
+  sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_arm_with_neon.xml" );
   sim->SetVariable( "debugger.parse-dwarf", false );
   sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml" );
 

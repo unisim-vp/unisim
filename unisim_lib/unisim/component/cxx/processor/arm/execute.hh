@@ -39,9 +39,10 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
 
-#include "unisim/component/cxx/processor/arm/psr.hh"
+#include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/util/truth_table/truth_table.hh>
 #include <inttypes.h>
-#include <cassert>
+#include <stdexcept>
 
 namespace unisim {
 namespace component {
@@ -72,27 +73,31 @@ namespace arm {
   bool
   CheckCondition( coreT& core, uint32_t cond )
   {
-    using CondTruthTable::N; using CondTruthTable::Z; using CondTruthTable::C; using CondTruthTable::V;
-    uint32_t nzcv = GetNativeValue( core.CPSR().Get( NZCV ) );
-    uint16_t const condition_truth_tables[] = {
-      uint16_t(                      Z::tt ), // eq; equal
-      uint16_t(                     ~Z::tt ), // ne; not equal
-      uint16_t(                      C::tt ), // cs/hs; unsigned higuer or same
-      uint16_t(                     ~C::tt ), // cc/lo; unsigned lower
-      uint16_t(                      N::tt ), // mi; negative
-      uint16_t(                     ~N::tt ), // pl; positive or zero
-      uint16_t(                      V::tt ), // vs; overflow set
-      uint16_t(                     ~V::tt ), // vc; overflow clear
-      uint16_t(          ~(~C::tt | Z::tt) ), // hi; unsigned higher
-      uint16_t(           (~C::tt | Z::tt) ), // ls; unsigned lower or same
-      uint16_t(           ~(N::tt ^ V::tt) ), // ge; signed greater than or equal
-      uint16_t(            (N::tt ^ V::tt) ), // lt; signed less than
-      uint16_t( ~(Z::tt | (N::tt ^ V::tt)) ), // gt; signed greater than
-      uint16_t(  (Z::tt | (N::tt ^ V::tt)) ), // le; signed less than or equal
-      uint16_t(                     0xffff ), // al; always
-      uint16_t(                     0x0000 ), // <und>; never (illegal)
+    util::truth_table::InBit<uint16_t,3> const N;
+    util::truth_table::InBit<uint16_t,2> const Z;
+    util::truth_table::InBit<uint16_t,1> const C;
+    util::truth_table::InBit<uint16_t,0> const V;
+
+    static uint16_t const condition_truth_tables[] = {
+      (                  Z).tt, // eq; equal
+      (              not Z).tt, // ne; not equal
+      (                  C).tt, // cs/hs; unsigned higuer or same
+      (              not C).tt, // cc/lo; unsigned lower
+      (                  N).tt, // mi; negative
+      (              not N).tt, // pl; positive or zero
+      (                  V).tt, // vs; overflow set
+      (              not V).tt, // vc; overflow clear
+      (   not (not C or Z)).tt, // hi; unsigned higher
+      (       (not C or Z)).tt, // ls; unsigned lower or same
+      (      not (N xor V)).tt, // ge; signed greater than or equal
+      (          (N xor V)).tt, // lt; signed less than
+      (not(Z or (N xor V))).tt, // gt; signed greater than
+      (   (Z or (N xor V))).tt, // le; signed less than or equal
+      (   uint16_t(0xffff)),    // al; always
+      (   uint16_t(0x0000)),    // <und>; never (illegal)
     };
-    assert( cond < 15 );
+    if (cond >= 15) throw std::logic_error("invalid condition code");
+    uint32_t nzcv = GetNativeValue( core.CPSR().Get( NZCV ) );
     return ((condition_truth_tables[cond] >> nzcv) & 1);
   }
   
@@ -118,7 +123,7 @@ namespace arm {
       }
     }
     
-    assert( false );
+    throw std::logic_error("bad ComputeImmShift arguments");
     return U32(0);
   }
   
@@ -184,7 +189,7 @@ namespace arm {
     case 1: carry = (value >> shvalm1) & select_bit; break;
     case 2: carry = ((value >> shvalm1) & select_bit) | (U32(S32(value) >> 31) & (select_bit ^ U32(1))); break;
     case 3: carry = (value >> (shvalm1 & U32(0x1f))) & U32(1); break;
-    default: assert( false );
+    default: throw std::logic_error("bad UpdateStatusRegShift arguments");
     }
     
     carry = (carry & ~select_carry) | (core.CPSR().Get( C ) & select_carry);
@@ -303,7 +308,7 @@ namespace arm {
                    ((mask & 4 ? 0xff : 0) << 16) |
                    ((mask & 8 ? 0xff : 0) << 24));
     
-    core.Assert( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) == U32(0) );
+    core.UnpredictableIf( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) == U32(0) );
     
     BOOL const is_secure( true ); // IsSecure()
     BOOL const nmfi( false ); // Non Maskable FIQ (SCTLR.NMFI == '1');
@@ -368,7 +373,7 @@ namespace arm {
       case IA: m_dir = +1; m_reg = -1; m_incb =  0; m_inca = +4; m_offset -= 4; break;
       case DB: m_dir = -1; m_reg = 16; m_incb = -4; m_inca =  0; break;
       case IB: m_dir = +1; m_reg = -1; m_incb = +4; m_inca =  0; break;
-      default: assert( false );
+      default: throw std::logic_error("Bad LSM mode");
       }
     
     }
@@ -421,7 +426,7 @@ namespace arm {
         bits |= (uint64_t((e & 0x7ff) ^ 0x400) << 52); /* inserting exponent */
         bits |= uint64_t( s ) << 63;                   /* inserting sign */
         for (unsigned byte = 0, bit = 0; byte < bcT; byte += 1, bit += 8) bytes[byte] = bits >> bit;
-      } else throw 0;
+      } else throw std::logic_error("unexpected FP size");
     }
   };
   

@@ -50,7 +50,7 @@ main(int argc, char *argv[])
       if(WSAStartup(wVersionRequested, &wsaData) == 0)
         return;
       std::cerr << "WSAStartup failed" << std::endl;
-      throw 0;
+      throw std::logic_error("internal error");
     }
     ~WSAEnv() { WSACleanup(); }
   } wsa_env;

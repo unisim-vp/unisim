@@ -118,7 +118,8 @@ typedef enum
 	INLINE_DEBUGGER_MODE_STEP,
 	INLINE_DEBUGGER_MODE_CONTINUE,
 	INLINE_DEBUGGER_MODE_CONTINUE_UNTIL,
-	INLINE_DEBUGGER_MODE_RESET
+	INLINE_DEBUGGER_MODE_RESET,
+	INLINE_DEBUGGER_MODE_TRAVERSE
 } InlineDebuggerRunningMode;
 
 class InlineDebuggerBase
@@ -221,6 +222,21 @@ private:
 	std::ostream *std_error_stream;
 	
 	std::list<unisim::util::debug::DataObject<ADDRESS> *> tracked_data_objects;
+	class VisitedInstructionPage
+	{
+	public:
+		VisitedInstructionPage();
+		bool Get(ADDRESS cia);
+		static ADDRESS MaskLowerBits(ADDRESS cia);
+		
+	private:
+		static unsigned const OFFSET_BITS = 12;
+		typedef uint32_t Words;
+		static unsigned const BITS_PER_WORD = 8*sizeof (Words);
+		static unsigned const WORD_COUNT = (1 << OFFSET_BITS) / BITS_PER_WORD;
+		Words flags[WORD_COUNT];
+	};
+	std::map<ADDRESS,VisitedInstructionPage> visited_instructions;
 
 	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);
@@ -231,6 +247,7 @@ private:
 	bool IsBlankLine(const std::string& line) const;
 	bool IsQuitCommand(const char *cmd) const;
 	bool IsStepInstructionCommand(const char *cmd) const;
+	bool IsTraverseCommand(const char *cmd) const;
 	bool IsStepCommand(const char *cmd) const;
 	bool IsNextInstructionCommand(const char *cmd) const;
 	bool IsContinueCommand(const char *cmd) const;
@@ -336,6 +353,7 @@ private:
 	void PrintDataObjectType(unisim::util::debug::DataObject<ADDRESS> *data_object, ADDRESS cia);
 	void PrintDataObjectType(const char *data_object_name, ADDRESS cia);
 	void InfoSubProgram(const char *subprogram_name);
+	bool IsVisited(ADDRESS cia);
 };
 
 } // end of namespace inline_debugger

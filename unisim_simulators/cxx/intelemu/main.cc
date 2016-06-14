@@ -135,7 +135,7 @@ struct Arch
     }
     regmap["%eip"] = new unisim::util::debug::SimpleRegister<uint32_t>("%eip", &m_EIP);
     
-    struct SegmentRegister : public unisim::util::debug::Register
+    struct SegmentRegister : public unisim::service::interfaces::Register
     {
       SegmentRegister( Arch& _arch, std::string _name, unsigned _idx ) : arch(_arch), name(_name), idx(_idx) {}
       virtual const char *GetName() const { return "pc"; }
@@ -160,7 +160,7 @@ struct Arch
       regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(regname.str(), &m_gdt_bases[idx]);
     }
     
-    struct X87Register : public unisim::util::debug::Register
+    struct X87Register : public unisim::service::interfaces::Register
     {
       X87Register( std::string _name, Arch& _arch, unsigned _idx ) : name(_name), arch(_arch), idx(_idx) {}
       char const* GetName() const { return name.c_str(); }
@@ -187,7 +187,7 @@ struct Arch
   unisim::service::interfaces::LinuxOS* GetLinuxOS() { return linux_os; }
   
   unisim::service::interfaces::LinuxOS* linux_os;
-  std::map<std::string,unisim::util::debug::Register*> regmap;
+  std::map<std::string,unisim::service::interfaces::Register*> regmap;
   
   using unisim::component::cxx::processor::intel::Arch::m_mem;
   // unisim::service::interfaces::Memory<uint32_t>
@@ -195,12 +195,12 @@ struct Arch
   bool ReadMemory(uint32_t addr, void* buffer, uint32_t size ) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
   bool WriteMemory(uint32_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
   // unisim::service::interfaces::Registers
-  unisim::util::debug::Register* GetRegister(char const* name)
+  unisim::service::interfaces::Register* GetRegister(char const* name)
   {
     auto reg = regmap.find( name );
     return (reg == regmap.end()) ? 0 : reg->second;
   }
-  void ScanRegisters(unisim::util::debug::RegisterScanner& scanner)
+  void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
   {
     // General purpose registers
     scanner.Append( GetRegister( "%eax" ) );

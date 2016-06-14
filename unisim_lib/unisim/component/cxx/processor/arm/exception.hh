@@ -43,27 +43,14 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-namespace exception {
   
-  /*** RegisterField for the Synchronous Virtual exception vector ***/
-  /* Synchronous */
-  static RegisterField< 0, 1> const RESET;  // Reset
-  static RegisterField< 1, 1> const PABRT;  // Prefetch Abort (including prefetch TLB miss)
-  static RegisterField< 2, 1> const UNDEF;  // Undefined instruction
-  static RegisterField< 3, 1> const SWI;    // Software Interrupt
-  static RegisterField< 4, 1> const DABRT;  // Data Abort (including data TLB miss)
-  static RegisterField< 5, 1> const EABRT;  // Synchronous External Abort (External memory system exception)
-  
-  /* Asynchronous */
-  static RegisterField<24, 8> const ASYNC;  // Mask for all asynchronous abort
-  
-  static RegisterField<24, 1> const FIQ;    // FIQ external asynchronous abort
-  static RegisterField<25, 1> const IRQ;    // IRQ external asynchronous abort
-  
-  /** SynchronousAbort the class used to abort normal execution of an
-   *  instruction (using a throw).
+  /** struct Exception
+   *  
+   * Base class used to abort normal execution of an instruction and
+   * take processor to related handler (using a throw).
    */
   struct Exception : public std::exception { Exception() {} virtual const char* what() const throw() { return "Exception"; } };
+  
   struct UndefInstrException : Exception { UndefInstrException() {} virtual const char* what() const throw() { return "UndefInstrException"; } };
   struct HypTrapException : Exception { HypTrapException() {} virtual const char* what() const throw() { return "HypTrapException"; } };
   struct SVCException : Exception  { SVCException() {} virtual const char* what() const throw() { return "SVCException"; } };
@@ -73,7 +60,27 @@ namespace exception {
   struct DataAbortException : Exception { DataAbortException() {} virtual const char* what() const throw() { return "DataAbortException"; } };
   struct VirtualAbortException : Exception { VirtualAbortException() {} virtual const char* what() const throw() { return "VirtualAbortException"; } };
   
-} // end of namespace exception
+  // Data Abort Types
+  enum DAbort {
+    DAbort_AccessFlag,
+    DAbort_Alignment,
+    DAbort_Background,
+    DAbort_Domain,
+    DAbort_Permission,
+    DAbort_Translation,
+    DAbort_SyncExternal,
+    DAbort_SyncExternalonWalk,
+    DAbort_SyncParity,
+    DAbort_SyncParityonWalk,
+    DAbort_AsyncParity,
+    DAbort_AsyncExternal,
+    DAbort_DebugEvent,
+    DAbort_TLBConflict,
+    DAbort_Lockdown,
+    DAbort_Coproc,
+    DAbort_ICacheMaint
+  };
+
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

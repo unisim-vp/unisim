@@ -609,7 +609,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("pxp.uart2.enable-logger", true);
 
 #ifdef SIM_GDB_SERVER_SUPPORT
-	sim->SetVariable("gdb-server.architecture-description-filename", "gdb_server/gdb_armv5l.xml");
+	sim->SetVariable("gdb-server.architecture-description-filename", "gdb_server/gdb_arm_with_fpa.xml");
 #endif // SIM_GDB_SERVER_SUPPORT
 
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT

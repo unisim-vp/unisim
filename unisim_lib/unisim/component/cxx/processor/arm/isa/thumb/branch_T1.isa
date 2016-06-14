@@ -81,7 +81,7 @@ bl_h2.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t address = cpu.GetGPR(cpu.LR_reg) + imm0;
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() | 1 );
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() | 1 );
   cpu.Branch( address );
 };
 
@@ -109,7 +109,7 @@ blx_h3.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   uint32_t address = (cpu.GetGPR(cpu.LR_reg) + imm0) & -4;
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() | 1 );
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() | 1 );
   cpu.BranchExchange( address );
 };
 

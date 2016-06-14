@@ -169,8 +169,8 @@ msr_reg_psr.execute = {
   } else {
     CPSRWriteByInstr( cpu, cpu.GetGPR(rn), mask, false ); // Does not affect execution state bits other than E
     // Cannot return to Hyp mode and ThumbEE state
-    cpu.Assert( (cpu.CPSR().Get(M) != U32(cpu.HYPERVISOR_MODE)) or
-                (cpu.CPSR().Get(J) == U32(0)) or (cpu.CPSR().Get(T) == U32(0)));
+    cpu.UnpredictableIf( (cpu.CPSR().Get(M) != U32(cpu.HYPERVISOR_MODE)) or
+                         (cpu.CPSR().Get(J) == U32(0)) or (cpu.CPSR().Get(T) == U32(0)));
   }
 };
 

@@ -94,6 +94,17 @@ wfi.disasm = {
   buffer << "wfi" << DisasmCondition(cond);
 };
 
+wfi.execute = {
+  // if (HaveVirtExt() and not IsSecure() and not CurrentModeIsHyp() and HCR.TWI) {
+  //   HSRString = Zeros(25);
+  //   HSRString<0> = '0';
+  //   WriteHSR('000001', HSRString);
+  //   TakeHypTrapException();
+  // } else
+  
+  cpu.WaitForInterrupt();
+};
+
 /*
  * end of wfi instruction
  *******************************************************************/

@@ -32,11 +32,10 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CPU_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/cpu.hh>
-#include <unisim/component/cxx/processor/arm/cache.hh>
 #include <unisim/component/cxx/processor/arm/isa_arm32.hh>
 #include <unisim/component/cxx/processor/arm/isa_thumb.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
@@ -57,7 +56,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-namespace armemu {
+namespace vmsav7 {
 
 struct ARMv7emu
 {
@@ -66,7 +65,7 @@ struct ARMv7emu
   //=====================================================================
   
   // Following a standard armv7 configuration
-  static uint32_t const model = unisim::component::cxx::processor::arm::ARMEMU;
+  static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
   static bool const     insns4T = true;
   static bool const     insns5E = true;
   static bool const     insns5J = true;
@@ -77,7 +76,6 @@ struct ARMv7emu
   static bool const     insns7  = true;
   static bool const     hasVFP  = true;
   static bool const     hasAdvSIMD = false;
-  static bool const     LINUX_PRINTK_SNOOPING = true;
 };
 
 struct CPU
@@ -94,8 +92,12 @@ struct CPU
   , public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<uint32_t> >
 {
   typedef CPU this_type;
-  typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> BaseCpu;
-  typedef typename BaseCpu::CP15Reg CP15Reg;
+  typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> PCPU;
+  typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> CP15CPU;
+  typedef typename CP15CPU::CP15Reg CP15Reg;
+  
+  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
+  
 
   //=====================================================================
   //=                  public service imports/exports                   =
@@ -107,7 +109,8 @@ struct CPU
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint32_t> > memory_injection_export;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint32_t> > memory_export;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint32_t> > memory_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint32_t> > debug_control_import;
+  typedef unisim::service::interfaces::DebugControl<uint32_t> DebugControl;
+  unisim::kernel::service::ServiceImport<DebugControl> debug_control_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint32_t> > symbol_table_lookup_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> exception_trap_reporting_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> instruction_counter_trap_reporting_import;
@@ -130,14 +133,13 @@ struct CPU
 
   virtual bool BeginSetup();
   virtual bool EndSetup();
-  virtual void OnDisconnect();
+  virtual void OnDisconnect() {}
 
   //=====================================================================
   //=                    execution handling methods                     =
   //=====================================================================
 
   void StepInstruction();
-  virtual void Sync() = 0;
 
   //=====================================================================
   //=             memory injection interface methods                    =
@@ -178,8 +180,8 @@ struct CPU
   /* Memory access methods       START                          */
   /**************************************************************/
 	
-  virtual void PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
-  virtual void PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
+  virtual bool PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
+  virtual bool PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
   
   uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }
   uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }
@@ -208,7 +210,7 @@ struct CPU
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
   
-  void RefillInsnPrefetchBuffer( uint32_t base_address );
+  void RefillInsnPrefetchBuffer( uint32_t mva, uint32_t base_address );
   
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn );
@@ -225,6 +227,10 @@ struct CPU
   void BKPT( uint32_t imm );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU>* insn );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb2::Operation<CPU>* insn );
+  void DataAbort(uint32_t va, uint64_t ipa,
+                 unsigned domain, int level, mem_acc_type_t mat,
+                 DAbort type, bool taketohypmode, bool s2abort,
+                 bool ipavalid, bool LDFSRformat, bool s2fs1walk);
 	
   /**************************************************/
   /* Software Exceptions                      END   */
@@ -254,6 +260,8 @@ protected:
   /* MMU Interface   START */
   /*************************/
   
+  uint32_t DFSR, IFSR, DFAR, IFAR;
+  
   struct MMU
   {
     MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() {}
@@ -263,12 +271,18 @@ protected:
     uint32_t prrr;  /*< PRRR, Primary Region Remap Register */
     uint32_t nmrr;  /*< NMRR, Normal Memory Remap Register */
     uint32_t dacr;
-    
   } mmu;
   
   struct TransAddrDesc
   {
     uint32_t   pa;
+    uint32_t   nG : 1;
+    uint32_t   domain : 4;
+    uint32_t   level : 2;
+    uint32_t   ap : 3;
+    uint32_t   pxn : 1;
+    uint32_t   xn : 1;
+    uint32_t   asid : 8;
   };
   
   struct TLB
@@ -287,19 +301,19 @@ protected:
     bool GetTranslation( TransAddrDesc& tad, uint32_t mva );
     void AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad );
     void Invalidate() { entry_count = 0; }
+    void InvalidateByMVA( uint32_t mva );
+    void InvalidateByASID( uint32_t asid ) { /* TODO: support for ASIDs */ Invalidate(); }
   } tlb;
   
   template <class POLICY>
-  void      TranslationTableWalk( TransAddrDesc& tad, uint32_t mva );
+  void      TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat, unsigned size );
   template <class POLICY>
-  uint32_t  TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size );
+  uint32_t  TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size );
     
-  
   /*************************/
   /* MMU Interface    END  */
   /*************************/
-
-
+  
   /**************************/
   /* CP15 Interface   START */
   /**************************/
@@ -323,37 +337,14 @@ protected:
 
   /** Trap when reaching the number of instructions indicated. */
   uint64_t trap_on_instruction_counter;
-	
-  /**********************************************************/
-  /* UNISIM parameters, statistics                    START */
-  /**********************************************************/
-  
-  /** UNISIM Parameter to set the MIDR register. */
-  unisim::kernel::service::Parameter<uint32_t> param_midr;
-  uint32_t sctlr_rstval;
-  /** UNISIM Parameter to set the reset value of SCTLR. */
-  unisim::kernel::service::Parameter<uint32_t> param_sctlr_rstval;
-  /** UNISIM Parameter to set the CPU cycle time. */
-  unisim::kernel::service::Parameter<uint64_t> param_cpu_cycle_time_ps;
-  /** UNISIM Parameter to set the CPU voltage. */
-  unisim::kernel::service::Parameter<uint64_t> param_voltage;
-  /** UNISIM Parameter to set/unset verbose mode. */
-  unisim::kernel::service::Parameter<bool> param_verbose;
-  /** UNISIM Parameter to set traps on instruction counter. */
-  unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
-  /** UNISIM Statistic of the number of instructions executed. */
-  unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
-
-  /**********************************************************/
-  /* UNISIM parameters, statistics                      END */
-  /**********************************************************/
 
   //=====================================================================
   //=               Instruction prefetch buffer                         =
   //=====================================================================
+  static unsigned const IPB_LINE_SIZE = 32;
   
-  uint8_t ipb_bytes[Cache::LINE_SIZE];                       //!< The instruction prefetch buffer
-  uint32_t ipb_base_address;                                 //!< base address of IPB content (cache line size aligned if valid)
+  uint8_t ipb_bytes[IPB_LINE_SIZE];  //!< The instruction prefetch buffer
+  uint32_t ipb_base_address;         //!< base address of IPB content (cache line size aligned if valid)
   
   /*************************
    * LINUX PRINTK SNOOPING *
@@ -362,13 +353,33 @@ protected:
   uint32_t linux_printk_buf_size;
   bool     linux_printk_snooping;
 
+  /**********************************************************/
+  /* UNISIM parameters, statistics                    START */
+  /**********************************************************/
+  
+  /** UNISIM Parameter to set the CPU cycle time. */
+  unisim::kernel::service::Parameter<uint64_t> param_cpu_cycle_time_ps;
+  /** UNISIM Parameter to set the CPU voltage. */
+  unisim::kernel::service::Parameter<uint64_t> param_voltage;
+  /** UNISIM Parameter to set/unset verbose mode. */
+  unisim::kernel::service::Parameter<bool> param_verbose;
+  /** UNISIM Parameter to set traps on instruction counter. */
+  unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
+  /** UNISIM Printk snooping activation */
+  unisim::kernel::service::Parameter<bool> param_linux_printk_snooping;
+  /** UNISIM Statistic of the number of instructions executed. */
+  unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
+
+  /**********************************************************/
+  /* UNISIM parameters, statistics                      END */
+  /**********************************************************/
 };
 
-} // end of namespace armemu
+} // end of namespace vmsav7
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CPU_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CPU_HH__

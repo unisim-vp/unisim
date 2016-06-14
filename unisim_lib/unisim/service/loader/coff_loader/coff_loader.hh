@@ -47,7 +47,7 @@ namespace service {
 namespace loader {
 namespace coff_loader {
 
-using namespace std;
+// using namespace std;
 using unisim::service::interfaces::Memory;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
@@ -95,12 +95,12 @@ private:
 	unisim::util::loader::coff_loader::CoffLoader<MEMORY_ADDR> *coff_loader;
 	
 	// Run-time parameters
-	string filename;
+	std::string filename;
 	bool dump_headers;
 	bool verbose;
 
 	// Run-time parameters (accessors)
-	Parameter<string> param_filename;
+	Parameter<std::string> param_filename;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 

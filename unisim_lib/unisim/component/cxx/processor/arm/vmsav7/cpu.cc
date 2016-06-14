@@ -32,20 +32,21 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
-#include <unisim/component/cxx/processor/arm/armemu/cpu.hh>
-#include <unisim/component/cxx/processor/arm/armemu/cp15.hh>
+#include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
+#include <unisim/component/cxx/processor/arm/vmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
-#include <unisim/component/cxx/processor/arm/cache.hh>
-#include <unisim/component/cxx/processor/arm/memory_op.hh>
 #include <unisim/kernel/debug/debug.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/truth_table/truth_table.hh>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/os/linux_os/arm.hh>
 
 #include <sstream>
 #include <string>
 #include <cstring>
-#include <cassert>
+#include <stdexcept>
 #include <inttypes.h>
 
 namespace unisim {
@@ -53,13 +54,12 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-namespace armemu {
+namespace vmsav7 {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::service::interfaces::MemoryInjection;
-using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
@@ -77,6 +77,26 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 
+namespace {
+  template <unsigned NIBBLES>
+  struct HexDump
+  {
+    char buffer[NIBBLES+1];
+    HexDump( uint32_t value ) {
+      char* ptr = &buffer[NIBBLES];
+      *ptr-- = '\0';
+      while (ptr >= &buffer[0])
+        { *ptr-- = "0123456789abcdef"[value&0xf]; value >>= 4; }
+    }
+    char const* s() const { return &buffer[0]; }
+  };
+}
+
+struct DebugMemAcc
+{
+  static bool const updateTLB = false;
+};
+
 /** Constructor.
  *
  * @param name the name that will be used by the UNISIM service 
@@ -89,7 +109,7 @@ CPU::CPU(const char *name, Object *parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<MemoryAccessReporting<uint32_t> >(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
-  , Client<DebugControl<uint32_t> >(name, parent)
+  , Client<unisim::service::interfaces::DebugControl<uint32_t> >(name, parent)
   , Client<TrapReporting>(name, parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
@@ -114,29 +134,102 @@ CPU::CPU(const char *name, Object *parent)
   , arm32_decoder()
   , thumb_decoder()
   , csselr(0)
+  , DFSR()
+  , IFSR()
+  , DFAR()
+  , IFAR()
   , mmu()
   , instruction_counter(0)
   , voltage(0)
   , trap_on_instruction_counter(0)
-  , param_midr( "MIDR", this, this->BaseCpu::midr, "Value of MIDR (Main ID Register)." )
-  , sctlr_rstval( this->BaseCpu::sctlr )
-  , param_sctlr_rstval("SCTLR", this, this->sctlr_rstval, "The processor reset value of the SCTLR register.")
-  , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
-  , param_voltage("voltage", this, this->voltage, "The processor voltage in mV.")
-  , param_verbose("verbose", this, this->BaseCpu::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
-  , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
-                                      "Produce a trap when the given instruction count is reached.")
-  , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
   , ipb_base_address( -1 )
   , linux_printk_buf_addr( 0 )
   , linux_printk_buf_size( 0 )
   , linux_printk_snooping( false )
+  , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
+  , param_voltage("voltage", this, this->voltage, "The processor voltage in mV.")
+  , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
+  , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
+                                      "Produce a trap when the given instruction count is reached.")
+  , param_linux_printk_snooping( "linux_printk_snooping", this, linux_printk_snooping, "Activate the printk snooping" )
+  , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
   // Set the right format for various of the variables
   param_cpu_cycle_time_ps.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   param_voltage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  
+  // Active Variables for specific CPU handling
+  unisim::kernel::service::VariableBase* var = 0;
+  
+  struct ReadPhysicalMemory : public unisim::kernel::service::VariableBase
+  {
+    ReadPhysicalMemory( CPU& _cpu )
+      : VariableBase("read-phys-mem", &_cpu, unisim::kernel::service::VariableBase::VAR_PARAMETER, ""), cpu( _cpu )
+    {
+      SetVisible(false);
+      SetSerializable(false);
+    }
+
+    VariableBase& operator = (char const* args)
+    {
+      uint32_t addr = strtoul(args,0,0);
+      uint32_t byte = addr % 16;
+      addr &= -uint32_t(16);
+      uint8_t buffer[16];
+      
+      cpu.logger << DebugInfo
+                 << " address  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f" << std::endl
+                 << HexDump<8>(addr).s();
+      
+      if (not cpu.ExternalReadMemory( addr, &buffer[0], 16 )) {
+        cpu.logger <<       " ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??" << std::endl;
+      } else {
+        for (int idx = 0; idx < 16; ++idx)
+          cpu.logger << ' ' << HexDump<2>(buffer[idx]).s();
+        cpu.logger << std::endl;
+      }
+      cpu.logger << "         "; for (;byte > 0; --byte) cpu.logger << "   "; cpu.logger << "^" << EndDebugInfo;
+      return *this;
+    }
+    CPU& cpu;
+  };
+  var = new ReadPhysicalMemory( *this );
+  variable_register_pool.insert( var );
+  
+  struct VirtToPhys : public unisim::kernel::service::VariableBase
+  {
+    VirtToPhys( CPU& _cpu )
+      : VariableBase("virt2phys", &_cpu, unisim::kernel::service::VariableBase::VAR_PARAMETER, ""), cpu( _cpu )
+    {
+      SetVisible(false);
+      SetSerializable(false);
+    }
+    
+    VariableBase& operator = (char const* args)
+    {
+      uint32_t addr = strtoul(args,0,0);
+      cpu.logger << DebugInfo << "V[0x" << std::hex << addr << "] : ";
+        
+      try {
+        uint32_t phys_addr = cpu.TranslateAddress<DebugMemAcc>( addr, true, mat_read, 1 );
+        cpu.logger << "P[0x" << std::hex << phys_addr << "]";
+      } catch (DataAbortException const&)
+        { cpu.logger << "unmapped"; }
+      cpu.logger << EndDebugInfo;
+      
+      return *this;
+    }
+    CPU& cpu;
+  };
+  var = new VirtToPhys( *this );
+  variable_register_pool.insert( var );
+  
+  /* Debug Register */
+  registers_registry["ttbcr"] = new unisim::util::debug::SimpleRegister<uint32_t>( "TTBCR", &mmu.ttbcr );
+  registers_registry["ttbr0"] = new unisim::util::debug::SimpleRegister<uint32_t>( "TTBR0", &mmu.ttbr0 );
+  registers_registry["ttbr1"] = new unisim::util::debug::SimpleRegister<uint32_t>( "TTBR1", &mmu.ttbr1 );
 }
 
 /** Destructor.
@@ -171,9 +264,14 @@ CPU::BeginSetup()
 void
 CPU::CP15ResetRegisters()
 {
-  this->BaseCpu::CP15ResetRegisters();
-  /* sctlr takes its reset value */
-  sctlr = sctlr_rstval;
+  this->PCPU::CP15ResetRegisters();
+  
+  // VMSA default values for SCTLR (may be overwritten by implementations)
+  sctlr::AFE.Set(     SCTLR, 0 ); // Access flag enable.
+  sctlr::TRE.Set(     SCTLR, 0 ); // TEX remap enable
+  sctlr::UWXN.Set(    SCTLR, 0 ); // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
+  sctlr::WXN.Set(     SCTLR, 0 ); // Write permission implies XN (Virtualization Extensions)
+  sctlr::HA.Set(      SCTLR, 0 ); // Hardware Access flag enable.
 }
     
 /** Object setup method.
@@ -187,31 +285,16 @@ CPU::EndSetup()
   /* Finalizing LOAD job */
   if (not linux_os_import) {
     if (verbose)
-      logger << DebugInfo << "No Linux OS connection ==> **bare metal/full system** mode" << EndDebugInfo;
+      logger << DebugInfo << "No Linux OS emulation ==> **bare metal/full system** mode" << EndDebugInfo;
     this->TakeReset();
   } else {
     /* Linux OS has setup Memory and User Registers */
     if (verbose)
-      logger << DebugInfo << "Linux OS connection present ==> using linux os emulation" << EndDebugInfo;
-    
-    // TODO: Following should be done by linux_os
-    /* We need to set System Registers as a standard linux would have
-     * done, we only affects flags that impact a Linux OS emulation
-     * (others are unaffected).
-     */
-    SCTLR::I.Set(       sctlr, 1 ); // Instruction Cache enable
-    SCTLR::C.Set(       sctlr, 1 ); // Cache enable
-    SCTLR::A.Set(       sctlr, 0 ); // Alignment check enable
-    /*** Program Status Register (PSR) ***/
-    cpsr.Set( J, 0 );
-    cpsr.ITSetState( 0b0000, 0b0000 );
-    cpsr.Set( E, 0 ); // TODO, should *REALLY* be done in LinuxOS
-    // Thumb execution state bit already set by LinuxOS, as a side-effect of PC assignment */
-    cpsr.Set( M, USER_MODE );
+      logger << DebugInfo << "With Linux OS emulation" << EndDebugInfo;
   }
   
   if (verbose)
-    logger << DebugInfo << "Initial pc set to 0x" << std::hex << GetNPC() << std::dec << EndDebugInfo;
+    logger << DebugInfo << "Initial pc set to 0x" << std::hex << GetNIA() << std::dec << EndDebugInfo;
   
   /* Initialize the caches and power support as required. */
   {
@@ -274,7 +357,7 @@ CPU::EndSetup()
   }
 
 
-  if(ARMv7emu::LINUX_PRINTK_SNOOPING)
+  if (linux_printk_snooping)
     {
       if (verbose)
         logger << DebugInfo << "Linux printk snooping enabled" << EndDebugInfo;
@@ -297,7 +380,10 @@ CPU::EndSetup()
                      << std::dec << linux_printk_buf_size << "]" << EndDebugInfo;
         }
       else
-        logger << DebugWarning << "Linux printk buffer not found. Linux printk snooping will not work properly." << EndDebugWarning;
+        {
+          logger << DebugWarning << "Linux printk buffer not found. Linux printk snooping will not work properly." << EndDebugWarning;
+          linux_printk_snooping = false;
+        }
     }
   
   
@@ -313,60 +399,9 @@ struct SoftMemAcc { static bool const updateTLB=true; };
 void
 CPU::PerformPrefetchAccess( uint32_t addr )
 {
-  // bool cache_access = SCTLR::C.Get( sctlr ) and dcache.GetSize();
+  /* it is just a cache prefetch, ignore the request if cache is not active */
   
-  // if (likely(cache_access))
-  //   {
-  //     dcache.prefetch_accesses++;
-  //     uint32_t cache_tag = dcache.GetTag(addr);
-  //     uint32_t cache_set = dcache.GetSet(addr);
-  //     uint32_t cache_way;
-  //     bool cache_hit =
-  //       dcache.GetWay(cache_tag, cache_set, &cache_way) and
-  //       dcache.GetValid(cache_set, cache_way);
-      
-  //     // If the access was a miss, data needs to be fetched from main
-  //     //   memory and placed into the cache
-  //     if (likely(not cache_hit))
-  //       {
-  //         // get a way to replace
-  //         cache_way = dcache.GetNewWay( cache_set );
-  //         // get the valid and dirty bits from the way to replace
-  //         bool cache_valid = dcache.GetValid( cache_set, cache_way );
-  //         bool cache_dirty = dcache.GetDirty( cache_set, cache_way );
-  //         if (cache_valid and cache_dirty)
-  //           {
-  //             // the cache line to replace is valid and dirty so it needs
-  //             //   to be sent to the main memory
-  //             uint8_t *rep_cache_data = 0;
-  //             uint32_t rep_cache_address = dcache.GetBaseAddress( cache_set, cache_way );
-  //             dcache.GetData( cache_set, cache_way, &rep_cache_data );
-  //             PrWrite( rep_cache_address, rep_cache_data, dcache.LINE_SIZE );
-  //           }
-  //         // the new data can be requested
-  //         uint8_t *cache_data = 0;
-  //         uint32_t cache_address = dcache.GetBaseAddressFromAddress(addr);
-  //         // When getting the data we get the pointer to the cache
-  //         //   line containing the data, so no need to write the cache
-  //         //   afterwards
-  //         uint32_t cache_line_size = dcache.GetData( cache_set, cache_way, &cache_data );
-  //         PrRead( cache_address, cache_data, cache_line_size );
-  //         dcache.SetTag( cache_set, cache_way, cache_tag );
-  //         dcache.SetValid( cache_set, cache_way, 1 );
-  //         dcache.SetDirty( cache_set, cache_way, 0 );
-  //       }
-  //     else
-  //       {
-  //         dcache.prefetch_hits++;
-  //       }
-  //     if (unlikely( dcache.power_estimator_import ))
-  //       dcache.power_estimator_import->ReportReadAccess();
-  //   }
-  // else
-    {
-      /* it is just a cache prefetch, ignore the request if cache is not active */
-    }
-  /* CHECK: should we report a memory access for a prefetch???? */
+  /* TODO: shouldn't we report a memory access for a prefetch???? */
 }
 
 /** Performs an unaligned write access.
@@ -378,10 +413,10 @@ void
 CPU::PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("Bad size");
   uint32_t misalignment = addr & lo_mask;
   
-  if (unlikely(misalignment and not SCTLR::A.Get( this->sctlr ))) {
+  if (unlikely(misalignment and not arm::sctlr::A.Get( this->SCTLR ))) {
     uint32_t eaddr = addr;
     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
       for (unsigned byte = size; --byte < size; ++eaddr)
@@ -406,18 +441,20 @@ void
 CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
-    if (this->linux_os_import) {
+    if (linux_os_import) {
       // we are executing on linux emulation mode, handle all misalignemnt as if implemented
       PerformUWriteAccess( addr, size, value );
       return;
     }
     else {
-      // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-      throw unisim::component::cxx::processor::arm::exception::DataAbortException(); 
+      // TODO: provide correct alignment fault mva (va + FCSE
+      // translation) + provide correct LDFSRformat (see ARM Doc
+      // AlignmentFaultV)
+      DataAbort( addr, 0, 0, 0, mat_write, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
     }
   }
 
@@ -433,7 +470,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
       { data[byte] = shifter; shifter >>= 8; }
   }
   
-  if (unlikely(ARMv7emu::LINUX_PRINTK_SNOOPING and linux_printk_snooping))
+  if (unlikely(linux_printk_snooping))
     {
       if (uint32_t(addr - linux_printk_buf_addr) < linux_printk_buf_size)
         {
@@ -455,53 +492,15 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
         }
     }
   
-  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, true, size );
+  uint32_t write_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, cpsr.Get(M) != USER_MODE, mat_write, size );
   
-  // In armv7 no address mungling is performed
-  // In armv5, fix the write address according to request size when big endian
-  // write_addr ^= ((-size) & 3);
+  // There is no data cache or data should not be cached.
+  // Just send the request to the memory interface
+  if (not PrWrite( write_addr, data, size )) {
+    // TODO: domain assigned with a regular value ?
+    DataAbort(addr, write_addr, 0, 0, mat_write, DAbort_SyncExternal, false, false, true, false, false);
+  }
   
-  // bool cache_access = dcache.GetSize() and SCTLR::C.Get( this->sctlr );
-  // if (likely(cache_access))
-  //   {
-  //     dcache.write_accesses++;
-  //     uint32_t cache_tag = dcache.GetTag(write_addr);
-  //     uint32_t cache_set = dcache.GetSet(write_addr);
-  //     uint32_t cache_way;
-  //     bool cache_hit = false;
-  //     if (dcache.GetWay( cache_tag, cache_set, &cache_way ))
-  //       {
-  //         if (dcache.GetValid( cache_set, cache_way))
-  //           {
-  //             // the access is a hit
-  //             cache_hit = true;
-  //           }
-  //       }
-  //     // if the access was a hit the data needs to be written into
-  //     //   the cache, if the access was a miss the data needs to be
-  //     //   written into memory, but the cache doesn't need to be updated
-  //     if (likely(cache_hit))
-  //       {
-  //         dcache.write_hits++;
-  //         uint32_t cache_index = dcache.GetIndex( write_addr );
-  //         dcache.SetData( cache_set, cache_way, cache_index, size, data );
-  //         dcache.SetDirty( cache_set, cache_way, 1 );
-  //       }
-  //     else
-  //       {
-  //         PrWrite( write_addr, data, size );
-  //       }
-
-  //     if (unlikely(dcache.power_estimator_import))
-  //       dcache.power_estimator_import->ReportWriteAccess();
-  //   }
-  // else
-    {
-      // There is no data cache or data should not be cached.
-      // Just send the request to the memory interface
-      PrWrite( write_addr, data, size );
-    }
-
   /* report read memory access if necessary */
   ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
 }
@@ -514,10 +513,10 @@ uint32_t
 CPU::PerformUReadAccess( uint32_t addr, uint32_t size )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
-  if (unlikely(misalignment and not SCTLR::A.Get( this->sctlr ))) {
+  if (unlikely(misalignment and not arm::sctlr::A.Get( this->SCTLR ))) {
     uint32_t result = 0;
     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
       for (unsigned byte = 0; byte < size; ++byte)
@@ -539,89 +538,30 @@ uint32_t
 CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
 {
   uint32_t const lo_mask = size - 1;
-  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw 0;
+  if (unlikely((lo_mask > 3) or (size & lo_mask))) throw std::logic_error("bad size");
   uint32_t misalignment = addr & lo_mask;
   
   if (unlikely(misalignment)) {
-    if (this->linux_os_import) {
+    if (linux_os_import) {
       // we are executing on linux emulation mode, handle all misalignemnt as if implemented
       return PerformUReadAccess( addr, size );
     }
     else {
-      // TODO: Full misaligned DataAbort(mva, ipaddress, ...)
-      throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+      // TODO: provide correct alignment fault mva (va + FCSE
+      // translation) + provide correct LDFSRformat (see ARM Doc
+      // AlignmentFaultV)
+      DataAbort( addr, 0, 0, 0, mat_read, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
     }
   }
   
-  uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, false, false, size );
+  uint32_t read_addr = TranslateAddress<SoftMemAcc>( addr & ~lo_mask, cpsr.Get(M) != USER_MODE, mat_read, size );
   
   uint8_t data[4];
 
-  // In armv7 no address mungling is performed
-  // In armv5, fix the read address depending on the request size and endianess
-  // if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
-  //   read_addr ^= ((-size) & 3);
-  // }
-
-  // bool cache_access = dcache.GetSize() and SCTLR::C.Get( this->sctlr );
-  // if (likely(cache_access))
-  //   {
-  //     dcache.read_accesses++;
-  //     uint32_t cache_tag = dcache.GetTag( read_addr );
-  //     uint32_t cache_set = dcache.GetSet( read_addr );
-  //     uint32_t cache_way;
-  //     bool cache_hit =
-  //       dcache.GetWay(cache_tag, cache_set, &cache_way) and
-  //       dcache.GetValid(cache_set, cache_way);
-  //     // If the access was a miss, data needs to be fetched from main
-  //     //   memory and placed into the cache
-  //     if (unlikely(not cache_hit))
-  //       {
-  //         // get a way to replace
-  //         cache_way = dcache.GetNewWay( cache_set );
-  //         // Check if the way to replace needs to be written back
-  //         if (dcache.GetValid( cache_set, cache_way ) and dcache.GetDirty( cache_set, cache_way ))
-  //           {
-  //             // The cache line to replace is valid and dirty so it
-  //             //   needs to be sent back
-  //             uint8_t* rep_cache_data = 0;
-  //             uint32_t rep_cache_address = dcache.GetBaseAddress( cache_set, cache_way );
-  //             dcache.GetData( cache_set, cache_way, &rep_cache_data );
-  //             PrWrite( rep_cache_address, rep_cache_data, dcache.LINE_SIZE );
-  //           }
-  //         // the new data can be requested
-  //         uint8_t* cache_data = 0;
-  //         uint32_t cache_address = dcache.GetBaseAddressFromAddress( read_addr );
-  //         // When getting the data we get the pointer to the cache
-  //         // line containing the data, so no need to write the cache
-  //         // afterwards
-  //         uint32_t cache_line_size = dcache.GetData( cache_set, cache_way, &cache_data );
-  //         PrRead( cache_address, cache_data, cache_line_size );
-  //         dcache.SetTag( cache_set, cache_way, cache_tag );
-  //         dcache.SetValid( cache_set, cache_way, 1 );
-  //         dcache.SetDirty( cache_set, cache_way, 0 );
-  //       }
-  //     else
-  //       {
-  //         // cache hit
-  //         dcache.read_hits++;
-  //       }
-
-  //     // at this point the data is in the cache, we can read it from the
-  //     //   cache
-  //     uint32_t cache_index = dcache.GetIndex(read_addr);
-  //     uint8_t* ptr;
-  //     (void)dcache.GetData(cache_set, cache_way, cache_index, size, &ptr);
-  //     memcpy( &data[0], ptr, size );
-      
-  //     if (unlikely(dcache.power_estimator_import))
-  //       dcache.power_estimator_import->ReportReadAccess();
-  //   }
-  // else // there is no data cache
-    {
-      // just read the data from the memory system
-      PrRead(read_addr, &data[0], size);
-    }
+  // just read the data from the memory system
+  if (not PrRead(read_addr, &data[0], size)) {
+    DataAbort(addr, read_addr, 0, 0, mat_read, DAbort_SyncExternal, false, false, true, false, false);
+  }
 
   /* report read memory access if necessary */
   ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
@@ -643,24 +583,13 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   return value;
 }
 
-
-/** Object disconnect method.
- * This method is called when this UNISIM object is disconnected from other
- *   UNISIM objects.
- */
-void 
-CPU::OnDisconnect()
-{
-  /* TODO */
-}
-
 /** Execute one complete instruction.
  */
 void 
 CPU::StepInstruction()
 {
-  /* Instruction boundary next_pc becomes current_pc */
-  uint32_t insn_addr = this->current_pc = GetNPC();
+  /* Instruction boundary next_insn_addr becomes current_insn_addr */
+  uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
   
   if (debug_control_import)
     {
@@ -668,15 +597,15 @@ CPU::StepInstruction()
         {
           switch (debug_control_import->FetchDebugCommand( insn_addr ))
             {
-            case DebugControl<uint32_t>::DBG_STEP: 
+            case DebugControl::DBG_STEP: 
               proceed = true;
               break;
-            case DebugControl<uint32_t>::DBG_SYNC:
+            case DebugControl::DBG_SYNC:
               Sync();
               continue;
               break;
-            case DebugControl<uint32_t>::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
-            case DebugControl<uint32_t>::DBG_KILL:
+            case DebugControl::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
+            case DebugControl::DBG_KILL:
               Stop(0);
               return;
             }
@@ -697,11 +626,11 @@ CPU::StepInstruction()
       isa::thumb2::Operation<CPU>* op;
       op = thumb_decoder.Decode(insn_addr, insn);
       unsigned insn_length = op->GetLength();
-      if (insn_length % 16) throw 0;
+      if (insn_length % 16) throw std::logic_error("Bad T2 instruction length");
     
       /* update PC register value before execution */
-      this->gpr[15] = this->next_pc + 4;
-      this->next_pc += insn_length / 8;
+      this->gpr[15] = this->next_insn_addr + 4;
+      this->next_insn_addr += insn_length / 8;
     
       /* Execute instruction */
       asm volatile( "thumb2_operation_execute:" );
@@ -723,8 +652,8 @@ CPU::StepInstruction()
       op = arm32_decoder.Decode(insn_addr, insn);
     
       /* update PC register value before execution */
-      this->gpr[15] = this->next_pc + 8;
-      this->next_pc += 4;
+      this->gpr[15] = this->next_insn_addr + 8;
+      this->next_insn_addr += 4;
     
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
@@ -733,7 +662,7 @@ CPU::StepInstruction()
     }
     
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+      memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
     
     instruction_counter++;
     if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
@@ -741,12 +670,12 @@ CPU::StepInstruction()
   
   }
   
-  catch (exception::SVCException const& svexc) {
+  catch (SVCException const& svexc) {
     /* Resuming execution, since SVC exceptions are explicitly
      * requested from regular instructions. ITState will be updated by
      * TakeSVCException (as done in the ARM spec). */
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+      memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
 
     instruction_counter++;
     if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
@@ -755,15 +684,41 @@ CPU::StepInstruction()
     this->TakeSVCException();
   }
   
-  catch (exception::UndefInstrException const& undexc) {
+  catch (DataAbortException const& daexc) {
+    /* Abort execution, and take processor to data abort handler */
+    
+    if (unlikely( exception_trap_reporting_import))
+      exception_trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+    
+    this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
+  }
+  
+  catch (PrefetchAbortException const& paexc) {
+    /* Abort execution, and take processor to prefetch abort handler */
+    
+    if (unlikely( exception_trap_reporting_import))
+      exception_trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
+    
+    this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
+  }
+  
+  catch (UndefInstrException const& undexc) {
     logger << DebugError << "Undefined instruction"
-           << " pc: " << std::hex << current_pc << std::dec
+           << " pc: " << std::hex << current_insn_addr << std::dec
            << ", cpsr: " << std::hex << cpsr.bits() << std::dec
            << " (" << cpsr << ")"
            << EndDebugError;
     this->Stop(-1);
   }
   
+  catch (Exception const& exc) {
+    logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
+           << " pc: " << std::hex << current_insn_addr << std::dec
+           << ", cpsr: " << std::hex << cpsr.bits() << std::dec
+           << " (" << cpsr << ")"
+           << EndDebugError;
+    this->Stop(-1);
+  }
 }
 
 /** Inject an intrusive read memory operation.
@@ -778,51 +733,14 @@ CPU::StepInstruction()
 bool 
 CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
 {
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t* rbuffer = (uint8_t*)buffer;
 
-  // if (likely(dcache.GetSize()))
-  //   {
-  //     while (size != 0)
-  //       {
-  //         ef_addr = base_addr + index;
-
-  //         // Need to access the data cache before the memory subsystem
-  //         uint32_t cache_tag = dcache.GetTag( ef_addr );
-  //         uint32_t cache_set = dcache.GetSet( ef_addr );
-  //         uint32_t cache_way;
-  //         bool cache_hit =
-  //           dcache.GetWay(cache_tag, cache_set, &cache_way) and
-  //           dcache.GetValid(cache_set, cache_way);
-  //         if (cache_hit)
-  //           {
-  //             // Read data from the cache
-  //             uint32_t cache_index = dcache.GetIndex( ef_addr );
-  //             uint32_t read_data_size = dcache.GetDataCopy( cache_set, cache_way, cache_index, size, &rbuffer[index] );
-  //             index += read_data_size;
-  //             size -= read_data_size;
-  //           }
-  //         else
-  //           {
-  //             // Read data from memory subsystem
-  //             PrRead( ef_addr, &rbuffer[index], 1);
-  //             index++;
-  //             size--;
-  //           }
-  //       }
-  //   }
-  // else
+  // No data cache, just send request to the memory subsystem
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      // No data cache, just send request to the memory subsystem
-      while (size != 0)
-        {
-          ef_addr = base_addr + index;
-          PrRead(ef_addr, &rbuffer[index], 1);
-          index++;
-          size--;
-        }
+      uint32_t ef_addr = addr + index;
+      if (not PrRead(ef_addr, &rbuffer[index], 1))
+        return false;
     }
 
   return true;
@@ -839,51 +757,14 @@ CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
 bool 
 CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
 {
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t const* wbuffer = (uint8_t const*)buffer;
   
-  // if (likely(dcache.GetSize()))
-  //   {
-  //     while (size != 0)
-  //       {
-  //         ef_addr = base_addr + index;
-
-  //         // Need to access the data cache before accessing the main memory
-  //         uint32_t cache_tag = dcache.GetTag(ef_addr);
-  //         uint32_t cache_set = dcache.GetSet(ef_addr);
-  //         uint32_t cache_way;
-  //         bool cache_hit =
-  //           dcache.GetWay( cache_tag, cache_set, &cache_way ) and
-  //           dcache.GetValid( cache_set, cache_way );
-  //         if (cache_hit)
-  //           {
-  //             // Write data in the cache
-  //             uint32_t cache_index = dcache.GetIndex( ef_addr );
-  //             uint32_t write_data_size = dcache.SetData( cache_set, cache_way, cache_index, size, &wbuffer[index] );
-  //             dcache.SetDirty( cache_set, cache_way, 1 );
-  //             index += write_data_size;
-  //             size -= write_data_size;
-  //           }
-  //         else
-  //           {
-  //             PrWrite( ef_addr, &wbuffer[index], 1 );
-  //             index++;
-  //             size--;
-  //           }
-  //       }
-  //   }
-  // else
+  // No data cache, just send the request to the memory subsystem
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      // No data cache, just send the request to the memory subsystem
-      while (size != 0)
-        {
-          ef_addr = base_addr + index;
-          PrWrite( ef_addr, &wbuffer[index], 1 );
-          index++;
-          size--;
-        }
+      uint32_t ef_addr = addr + index;
+      if (not PrWrite( ef_addr, &wbuffer[index], 1 ))
+        return false;
     }
 
   return true;
@@ -911,11 +792,6 @@ CPU::RequiresMemoryAccessReporting( bool report )
   requires_memory_access_reporting = report;
 }
 
-struct DebugMemAcc
-{
-  static bool const updateTLB = false;
-};
-
 /** Perform a non intrusive read access.
  * This method performs a normal read, but it does not change the state
  *   of the caches. It calls ExternalReadMemory if data not in cache.
@@ -927,64 +803,24 @@ struct DebugMemAcc
  *
  * @return true on success, false otherwise
  */
-bool 
+bool
 CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
 {
-  bool status = true;
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t* rbuffer = (uint8_t*)buffer;
 
-  // bool cache_access = SCTLR::C.Get( this->sctlr ) and dcache.GetSize();
-  // if (likely(cache_access))
-  //   {
-  //     while ((size != 0) and status)
-  //       {
-  //         ef_addr = base_addr + index;
-
-  //         // Need to access the data cache before memory subsystem
-  //         uint32_t cache_tag = dcache.GetTag(ef_addr);
-  //         uint32_t cache_set = dcache.GetSet(ef_addr);
-  //         uint32_t cache_way;
-  //         bool cache_hit =
-  //           dcache.GetWay( cache_tag, cache_set, &cache_way ) and
-  //           dcache.GetValid( cache_set, cache_way );
-  //         if (cache_hit)
-  //           {
-  //             // Read data from the cache
-  //             uint32_t cache_index = dcache.GetIndex(ef_addr);
-  //             uint32_t data_read_size = dcache.GetDataCopy( cache_set, cache_way, cache_index, size, &rbuffer[index] );
-  //             index += data_read_size;
-  //             size -= data_read_size;
-  //           }
-  //         else
-  //           {
-  //             // Read data from the memory subsystem
-  //             status &= ExternalReadMemory( ef_addr, &rbuffer[index], 1 );
-  //             index++;
-  //             size--;
-  //           }
-  //       }
-  //   }
-  // else
+  // No data cache, just send request to the memory subsystem
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      // No data cache, just send request to the memory subsystem
-      while ((size != 0) and status)
-        {
-          try {
-            ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, false, 1 );
-          } catch (unisim::component::cxx::processor::arm::exception::DataAbortException const& x) {
-            status = false;
-            break;
-          }
-          status &= ExternalReadMemory( ef_addr, &rbuffer[index], 1 );
-          index++;
-          size--;
-        }
+      try {
+        uint32_t ef_addr = TranslateAddress<DebugMemAcc>( addr + index, true, mat_read, 1 );
+        if (not ExternalReadMemory( ef_addr, &rbuffer[index], 1 ))
+          return false;
+      }
+      catch (DataAbortException const& x)
+        { return false; }
     }
 
-  return status;
+  return true;
 }
 
 /** Perform a non intrusive write access.
@@ -998,65 +834,23 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
  *
  * @return true on success, false otherwise
  */
-bool 
+bool
 CPU::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
 {
-  bool status = true;
-  uint32_t index = 0;
-  uint32_t base_addr = (uint32_t)addr;
-  uint32_t ef_addr;
   uint8_t const* wbuffer = (uint8_t const*)buffer;
 
-  // bool cache_access = SCTLR::C.Get( this->sctlr ) and dcache.GetSize();
-  // if (cache_access)
-  //   {
-  //     while ((size != 0) and status)
-  //       {
-  //         ef_addr = base_addr + index;
-          
-  //         // Need to access the data cache before accessing the main memory
-  //         uint32_t cache_tag = dcache.GetTag( ef_addr );
-  //         uint32_t cache_set = dcache.GetSet( ef_addr );
-  //         uint32_t cache_way;
-  //         bool cache_hit =
-  //           dcache.GetWay( cache_tag, cache_set, &cache_way ) and
-  //           dcache.GetValid( cache_set, cache_way );
-  //         if (cache_hit)
-  //           {
-  //             // Write data to the cache
-  //             uint32_t cache_index = dcache.GetIndex( ef_addr );
-  //             uint32_t data_read_size = dcache.SetData( cache_set, cache_way, cache_index, size, &wbuffer[index] );
-  //             dcache.SetDirty( cache_set, cache_way, 1 );
-  //             index += data_read_size;
-  //             size -= data_read_size;
-  //           }
-  //         else
-  //           {
-  //             // Write data to the memory subsytem
-  //             status &= ExternalWriteMemory( ef_addr, &wbuffer[index], 1);
-  //             index++;
-  //             size--;
-  //           }
-  //       }
-  //   }
-  // else
+  // No data cache, just send request to the memory subsystem
+  for (uint32_t index = 0; size != 0; ++index, --size)
     {
-      // No data cache, just send request to the memory subsystem
-      while ((size != 0) and status)
-        {
-          try {
-            ef_addr = TranslateAddress<DebugMemAcc>( base_addr + index, true, true, 1 );
-          } catch (unisim::component::cxx::processor::arm::exception::DataAbortException const& x) {
-            status = false;
-            break;
-          }
-          status &= ExternalWriteMemory( ef_addr, &wbuffer[index], 1 );
-          index++;
-          size--;
-        }
+      try {
+        uint32_t ef_addr = TranslateAddress<DebugMemAcc>( addr + index, true, mat_write, 1 );
+        if (not ExternalWriteMemory( ef_addr, &wbuffer[index], 1 ))
+          return false;
+      } catch (DataAbortException const& x)
+        { return false; }
     }
-
-  return status;
+  
+  return true;
 }
 
 /** Disasm an instruction address.
@@ -1094,7 +888,7 @@ CPU::Disasm(uint32_t addr, uint32_t& next_addr)
     
       op = thumb_decoder.Decode(addr, insn);
       unsigned insn_length = op->GetLength();
-      if (insn_length % 16) throw 0;
+      if (insn_length % 16) throw std::logic_error("Bad T2 instruction size");
     
       buffer << "0x";
       buffer << op->GetEncoding() << " ";
@@ -1154,58 +948,19 @@ CPU::PerformExit(int ret)
  *     encompass, once the refill is complete.
  */
 void 
-CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
+CPU::RefillInsnPrefetchBuffer(uint32_t mva, uint32_t base_address)
 {
   this->ipb_base_address = base_address;
   
-  // bool cache_access = SCTLR::I.Get( this->sctlr ) and icache.GetSize();
-  // if (likely(cache_access))
-  //   {
-  //     icache.read_accesses++;
-  //     // check the instruction cache
-  //     uint32_t cache_tag = icache.GetTag(base_address);
-  //     uint32_t cache_set = icache.GetSet(base_address);
-  //     uint32_t cache_way;
-  //     // Check for a cache hit
-  //     bool cache_hit =
-  //       icache.GetWay(cache_tag, cache_set, &cache_way) and
-  //       icache.GetValid(cache_set, cache_way);
-      
-  //     if (likely(cache_hit))
-  //       {
-  //         // cache hit
-  //         icache.read_hits++;
-  //       }
-  //     else
-  //       {
-  //         // get a way to replace (no need to check valid and dirty
-  //         // bits, the new data can be requested immediately)
-  //         cache_way = icache.GetNewWay(cache_set);
-  //         uint8_t *cache_data = 0;
-  //         // when getting the physical data of the cache line
-  //         icache.GetData(cache_set, cache_way, &cache_data);
-  //         PrRead(base_address, cache_data, Cache::LINE_SIZE);
-  //         icache.SetTag(cache_set, cache_way, cache_tag);
-  //         icache.SetValid(cache_set, cache_way, 1);
-  //       }
-      
-  //     // At this point data is in the cache, so we can read it from it
-  //     uint32_t cache_index = icache.GetIndex(base_address);
-  //     icache.GetDataCopy(cache_set, cache_way, cache_index, Cache::LINE_SIZE, &this->ipb_bytes[0]);
-
-  //     if (unlikely(icache.power_estimator_import))
-  //       icache.power_estimator_import->ReportReadAccess();
-  //   }
-  // else
-    {
-      // No instruction cache present, just request the insn to the
-      // memory system.
-      PrRead(base_address, &this->ipb_bytes[0], Cache::LINE_SIZE);
-    }
-
+  // No instruction cache present, just request the insn to the
+  // memory system.
+  if (not PrRead(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE)) {
+    DataAbort(mva, base_address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
+  }
+  
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
     memory_access_reporting_import->
-      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, Cache::LINE_SIZE);
+      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, IPB_LINE_SIZE);
 }
 
 /** Reads ARM32 instructions from the memory system
@@ -1219,12 +974,12 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 void 
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
-  uint32_t buffer_index = address % (Cache::LINE_SIZE);
+  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(IPB_LINE_SIZE), cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
+  uint32_t buffer_index = address % (IPB_LINE_SIZE);
   
   if (unlikely(ipb_base_address != base_address))
     {
-      RefillInsnPrefetchBuffer( base_address );
+      RefillInsnPrefetchBuffer( address, base_address );
     }
   
   uint32_t word;
@@ -1244,19 +999,19 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
 void
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(Cache::LINE_SIZE), false, false, Cache::LINE_SIZE );
-  intptr_t buffer_index = address % (Cache::LINE_SIZE);
+  uint32_t base_address = TranslateAddress<SoftMemAcc>( address & -(IPB_LINE_SIZE), cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
+  intptr_t buffer_index = address % (IPB_LINE_SIZE);
     
   if (unlikely(ipb_base_address != base_address))
     {
-      RefillInsnPrefetchBuffer( base_address );
+      RefillInsnPrefetchBuffer( address, base_address );
     }
   
   // In ARMv7, instruction fetch ignores "Endianness execution state bit"
   insn.str[0] = ipb_bytes[buffer_index+0];
   insn.str[1] = ipb_bytes[buffer_index+1];
-  if (unlikely((buffer_index+2) >= Cache::LINE_SIZE)) {
-    RefillInsnPrefetchBuffer( base_address + Cache::LINE_SIZE );
+  if (unlikely((buffer_index+2) >= IPB_LINE_SIZE)) {
+    RefillInsnPrefetchBuffer( address+2, base_address + IPB_LINE_SIZE );
     buffer_index = intptr_t(-2);
   }
   insn.str[2] = ipb_bytes[buffer_index+2];
@@ -1271,19 +1026,35 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
 void
 CPU::CallSupervisor( uint16_t imm )
 {
-  if (this->linux_os_import) {
+  if (linux_os_import) {
     // we are executing on linux emulation mode, use linux_os_import
     try {
-      this->linux_os_import->ExecuteSystemCall(imm);
+      linux_os_import->ExecuteSystemCall(imm);
     }
-    catch (exception::Exception const& e)
+    catch (Exception const& e)
       {
         std::cerr << e.what() << std::endl;
         this->Stop( -1 );
       }
   } else {
+    instruction_counter_trap_reporting_import->ReportTrap(*this, "CallSupervisor");
+    
+    static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
+    {
+      typedef unisim::util::os::linux_os::ARMTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> > ArmTarget;
+      
+      ArmLinuxOS( CPU* _cpu )
+        : unisim::util::os::linux_os::Linux<uint32_t, uint32_t>( _cpu->logger, _cpu, _cpu, _cpu )
+      {
+        SetTargetSystem(new ArmTarget( "arm-eabi", *this ));
+      }
+    } arm_linux_os( this );
+    
+    logger << DebugInfo << "PC: 0x" << std::hex << GetCIA() << EndDebugInfo;
+    arm_linux_os.LogSystemCall( imm );
+
     // we are executing on full system mode
-    this->BaseCpu::CallSupervisor( imm );
+    this->PCPU::CallSupervisor( imm );
   }
 }
 
@@ -1294,7 +1065,7 @@ void
 CPU::BKPT( uint32_t imm )
 {
   // we are executing on linux emulation mode
-  throw "TODO: Generate a debug event: virtual BKPTInstrDebugEvent() method ?";
+  throw std::logic_error( "TODO: Generate a debug event: virtual BKPTInstrDebugEvent() method ?" );
 }
 
 void
@@ -1304,11 +1075,11 @@ CPU::UndefinedInstruction( isa::arm32::Operation<CPU>* insn )
   insn->disasm( *this, oss );
   
   logger << DebugWarning << "Undefined instruction"
-         << " @" << std::hex << current_pc << std::dec
+         << " @" << std::hex << current_insn_addr << std::dec
          << ": " << oss.str()
          << EndDebugWarning;
   
-  throw exception::UndefInstrException();
+  throw UndefInstrException();
 }
 
 void
@@ -1318,12 +1089,122 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
   insn->disasm( *this, oss );
   
   logger << DebugWarning << "Undefined instruction"
-         << " @" << std::hex << current_pc << std::dec
+         << " @" << std::hex << current_insn_addr << std::dec
          << ": " << oss.str()
          << EndDebugWarning;
   
-  throw exception::UndefInstrException();
+  throw UndefInstrException();
 }
+
+void
+CPU::DataAbort(uint32_t va, uint64_t ipa,
+               unsigned domain, int level, mem_acc_type_t mat,
+               DAbort type, bool taketohypmode, bool s2abort,
+               bool ipavalid, bool LDFSRformat, bool s2fs1walk)
+{
+  uint32_t& FSR = (mat == mat_exec) ? IFSR : DFSR;
+  uint32_t& FAR = (mat == mat_exec) ? IFAR : DFAR;
+  
+  if (not taketohypmode) {
+    // FSR = bits(32) UNKNOWN;
+    // FAR = bits(32) UNKNOWN;
+
+    // Asynchronous abort don't update DFAR. Synchronous Watchpoint
+    // (DAbort_DebugEvent) update DFAR since debug v7.1.
+    switch (type) {
+    default: FAR = va; break;
+    case DAbort_AsyncParity: case DAbort_AsyncExternal: break;
+    }
+    if (LDFSRformat) {
+      throw std::logic_error("Long descriptors format not supported");
+      // // new format
+      // FSR<13> = TLBLookupCameFromCacheMaintenance();
+      // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal))
+      //   FSR<12> = IMPLEMENTATION_DEFINED;
+      // else
+      //   FSR<12> = '0';
+      // FSR<11> = if (mat == mat_write) then '1' else '0';
+      // FSR<10> = bit UNKNOWN;
+      // FSR<9> = '1';
+      // FSR<8:6> = bits(3) UNKNOWN;
+      // FSR<5:0> = EncodeLDFSR(type, level);
+    }
+    else { // Short descriptor format
+      // FSR<13> = TLBLookupCameFromCacheMaintenance();
+      RegisterField<13,1>().Set( FSR, 0 );
+      if ((type != DAbort_SyncExternal) and (type != DAbort_AsyncExternal))
+        RegisterField<12,1>().Set( FSR, 0 );
+      RegisterField<11,1>().Set( FSR, (mat == mat_write) ? 1 : 0 );
+      RegisterField<9,1>().Set( FSR, 0 );
+      // FSR<8> = bit UNKNOWN;
+      RegisterField<8,1>().Set( FSR, 0 );
+      // domain_valid = ((type == DAbort_Domain) ||
+      //                 ((level == 2) &&
+      //                  (type IN {DAbort_Translation, DAbort_AccessFlag,
+      //                      DAbort_SyncExternalonWalk, DAbort_SyncParityonWalk})) ||
+      //                 (!HaveLPAE() && (type == DAbort_Permission)));
+      // if (domain_valid)   FSR<7:4> = domain;
+      // else                FSR<7:4> = bits(4) UNKNOWN;
+      RegisterField<4,4>().Set( FSR, domain );
+      struct FS {
+        FS( uint32_t& _dfsr ) : dfsr( _dfsr ) {} uint32_t& dfsr;
+        void Set( uint32_t value ) {
+          RegisterField<10,1>().Set( dfsr, value >> 4 );
+          RegisterField<0,4>() .Set( dfsr, value >> 0 );
+        }
+      } fault_status( FSR );
+      switch (type) {
+      case DAbort_AccessFlag:         fault_status.Set( level==1 ? 0b00011 : 0b00110 ); break;
+      case DAbort_Alignment:          fault_status.Set( 0b00001 ); break;
+      case DAbort_Permission:         fault_status.Set( 0b01101 | (level&2) ); break;
+      case DAbort_Domain:             fault_status.Set( 0b01001 | (level&2) ); break;
+      case DAbort_Translation:        fault_status.Set( 0b00101 | (level&2) ); break;
+      case DAbort_SyncExternal:       fault_status.Set( 0b01000 ); break;
+      case DAbort_SyncExternalonWalk: fault_status.Set( 0b01100 | (level&2) ); break;
+      case DAbort_SyncParity:         fault_status.Set( 0b11001 ); break;
+      case DAbort_SyncParityonWalk:   fault_status.Set( 0b11100 | (level&2) ); break;
+      case DAbort_AsyncParity:        fault_status.Set( 0b11000 ); break;
+      case DAbort_AsyncExternal:      fault_status.Set( 0b10110 ); break;
+      case DAbort_DebugEvent:         fault_status.Set( 0b00010 ); break;
+      case DAbort_TLBConflict:        fault_status.Set( 0b10000 ); break;
+      case DAbort_Lockdown:           fault_status.Set( 0b10100 ); break;
+      case DAbort_Coproc:             fault_status.Set( 0b11010 ); break;
+      case DAbort_ICacheMaint:        fault_status.Set( 0b00100 ); break;
+      default: throw std::logic_error("Unhandled case");
+      }
+    }
+  }
+  else { // taketohypmode
+    throw std::logic_error("Hypervision not supported");
+    // bits(25) HSRString = Zeros(25);
+    // bits(6) ec;
+    // HDFAR = vaddress;
+    // if (ipavalid)
+    //   HPFAR<31:4> = ipaddress<39:12>;
+    // if (secondstageabort) {
+    //   ec = '100100';
+    //   HSRString<24:16> = LSInstructionSyndrome();
+    // } else {
+    //   ec = '100101';
+    //   HSRString<24> = '0'; // Instruction syndrome not valid
+    // }
+    // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal))
+    //   HSRString<9> = IMPLEMENTATION_DEFINED;
+    // else
+    //   HSRString<9> = '0';
+    // HSRString<8> = TLBLookupCameFromCacheMaintenance();
+    // HSRString<7> = if s2fs1walk then '1' else '0';
+    // HSRString<6> = if mat_write then '1' else '0';
+    // HSRString<5:0> = EncodeLDFSR(type, level);
+    // WriteHSR(ec, HSRString);
+  }
+  
+  if (mat == mat_exec)
+    throw PrefetchAbortException();
+  else
+    throw DataAbortException();
+}
+
 
 CPU::TLB::TLB()
  : entry_count(0)
@@ -1338,8 +1219,8 @@ template <class POLICY>
 bool
 CPU::TLB::GetTranslation( TransAddrDesc& tad, uint32_t mva )
 {
-  unsigned lsb, hit;
-  uint32_t key;
+  unsigned lsb = 0, hit;
+  uint32_t key = 0;
   for (hit = 0; hit < entry_count; ++hit)
     {
       key = keys[hit];
@@ -1366,6 +1247,32 @@ CPU::TLB::GetTranslation( TransAddrDesc& tad, uint32_t mva )
 }
 
 void
+CPU::TLB::InvalidateByMVA( uint32_t mva )
+{
+  unsigned hit;
+  uint32_t key = 0;
+  for (hit = 0; hit < entry_count; ++hit)
+    {
+      key = keys[hit];
+      unsigned lsb = key & 31;
+      if (((mva ^ key) >> lsb) == 0)
+        break;
+    }
+  if (hit >= entry_count)
+    return; // Not in TLB
+  
+  // Invalidating entry
+  entry_count -= 1;
+  for (; hit < entry_count; ++hit)
+    keys[hit] = keys[hit+1];
+  keys[hit] = key;
+  
+  // safety recursion to invalidate duplicates
+  InvalidateByMVA( mva );
+}
+
+
+void
 CPU::TLB::AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad )
 {
   if (entry_count >= ENTRY_CAPACITY)
@@ -1386,7 +1293,7 @@ CPU::TLB::AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad )
 
 template <class POLICY>
 void
-CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
+CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat, unsigned size )
 {
   //  // this is only called when the MMU is enabled
   //  TLBRecord result;
@@ -1401,7 +1308,6 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
   // s2fs1walk = FALSE;
   // // default setting of the domain
   // domain = bits(4) UNKNOWN;
-  // // Determine correct Translation Table Base Register to use.
   
   struct EndianReader
   {
@@ -1414,11 +1320,12 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
     }
     uint8_t* data() { return &b[0]; }
     EndianReader( bool _be ) : be( _be ) {}
-  } erd( SCTLR::EE.Get( sctlr ) );
+  } erd( arm::sctlr::EE.Get( SCTLR ) );
   
   uint32_t lsb = 0;
   //bool     nG;
   
+  // Determine correct Translation Table Base Register to use.
   uint32_t n = TTBCR::N.Get( mmu.ttbcr ), ttbr;
   if ((mva >> 1) >> (n^31)) {
     ttbr = mmu.ttbr1;
@@ -1429,52 +1336,66 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
   
   // Obtain First level descriptor.
   uint32_t l1descaddr = (((ttbr >> (14-n)) << (14-n)) | ((mva << n) >> (n+18))) & -4;
-  PrRead( l1descaddr, erd.data(), 4 );
+  if (not PrRead( l1descaddr, erd.data(), 4 )) {
+    DataAbort(l1descaddr, l1descaddr, 0, 0, mat_read, DAbort_SyncExternalonWalk, false, false, false, false, false);
+  }
   uint32_t l1desc = erd.Get();
   switch (l1desc&3) {
   case 0: {
     // Fault, Reserved
-    // TODO: Full DAbort_Translation 
-    throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+    DataAbort(mva, 0, 0, 1, mat, DAbort_Translation, false, false, false, false, false);
   } break;
     
   case 1: {
     // Large page or Small page
+    tad.domain = RegisterField<5,4>().Get( l1desc );
+    tad.level = 2;
+    tad.pxn = RegisterField<2,1>().Get( l1desc );
     // Obtain Second level descriptor.
     uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
-    PrRead( l2descaddr, erd.data(), 4 );
+    if (not PrRead( l2descaddr, erd.data(), 4 )) {
+      DataAbort(l2descaddr, 0, tad.domain, 0, mat_read, DAbort_SyncExternalonWalk, false, false, false, false, false);
+    }
     uint32_t l2desc = erd.Get();
     // Process Second level descriptor.
     if ((l2desc&3) == 0) {
-      // TODO: Full DAbort_Translation 
-      throw unisim::component::cxx::processor::arm::exception::DataAbortException();
+      DataAbort(mva, 0, tad.domain, 2, mat, DAbort_Translation, false, false, false, false, false);
     }
-    //nG = (l2desc >> 11) & 1;
+    tad.ap = (RegisterField<9,1>().Get( l2desc ) << 2) | RegisterField<4,2>().Get( l2desc );
+    tad.nG = RegisterField<11,1>().Get( l2desc );
     if (l2desc & 2) {
       // Small page (4kB)
+      tad.xn = RegisterField<0,1>().Get( l2desc );
       lsb = 12;
       tad.pa = (l2desc & 0xfffff000) | (mva & 0x00000fff);
     }
     else {
       // Large page (64kB)
-      tad.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
+      tad.xn = RegisterField<15,1>().Get( l2desc );
       lsb = 16;
+      tad.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
     }
   } break;
     
   case 2: case 3: {
     // Section or Supersection
-    //nG = (l1desc >> 17) & 1;
+    tad.ap = (RegisterField<15,1>().Get( l1desc ) << 2) | RegisterField<10,2>().Get( l1desc );
+    tad.xn = RegisterField<4,1>().Get( l1desc );
+    tad.pxn = RegisterField<0,1>().Get( l1desc );
+    tad.nG = RegisterField<17,1>().Get( l1desc );
+    tad.level = 1;
     
     if ((l1desc >> 18) & 1) {
       // Supersection (16MB)
+      tad.domain = 0b0000;
       lsb = 24;
       if (RegisterField<20,4>().Get( l1desc ) or RegisterField<5,4>().Get( l1desc ))
-        throw 0; /* Large 40-bit extended address */
+        throw std::logic_error("LPAE not implemented"); /* Large 40-bit extended address */
       tad.pa = (l1desc & 0xff000000) | (mva & 0x00ffffff);
     }
     else {
       // Section (1MB)
+      tad.domain = RegisterField<5,4>().Get( l1desc );
       lsb = 20;
       tad.pa = (l1desc & 0xfff00000) | (mva & 0x000fffff);
     }
@@ -1482,32 +1403,98 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva )
     
   }
   
+  if (tad.nG) // Non Global entries refer to the current ASID
+    tad.asid = CONTEXTIDR & 0xff;
   // Try to add entry to TLB
   if (POLICY::updateTLB)
     tlb.AddTranslation( lsb, mva, tad );
 }
 
+namespace {
+  template <unsigned VAL, unsigned Tbits = 32>
+  struct Case
+  {
+    typedef Case<VAL, Tbits> this_type;
+    typedef uint32_t tt_type;
+
+    static unsigned const msb = (Tbits-1);
+    static tt_type const tt = (((msb >> 2) == VAL) ? (tt_type(1) << msb) : tt_type(0)) | Case<VAL,msb>::tt;
+
+    template <typename RHS> unisim::util::truth_table::LUT<tt_type,(tt&RHS::tt)>
+    operator && ( RHS const& ) const { return unisim::util::truth_table::LUT<tt_type,(tt&RHS::tt)>(); }
+    template <typename RHS> unisim::util::truth_table::LUT<tt_type,(tt|RHS::tt)>
+    operator || ( RHS const& ) const { return unisim::util::truth_table::LUT<tt_type,(tt|RHS::tt)>(); }
+    unisim::util::truth_table::LUT<tt_type,(~tt)>
+    operator ! () const { return unisim::util::truth_table::LUT<tt_type,(~tt)>(); }
+  };
+
+  template <unsigned VAL> struct Case<VAL,1> { static uint32_t const tt = 0; };
+}
+
 template <class POLICY>
 uint32_t
-CPU::TranslateAddress( uint32_t va, bool ispriv, bool iswrite, unsigned size )
+CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size )
 {
-  // bits(32) mva;
-  // bits(40) ia_in;
-  // AddressDescriptor result;
   uint32_t mva = va; /* No FCSE translation in this model*/
-  TransAddrDesc tad;
   
   // FirstStageTranslation
-  if (SCTLR::M.Get( this->sctlr )) {
-    // Stage 1 MMU enabled
-    if (not tlb.GetTranslation<POLICY>( tad, mva ))
-      TranslationTableWalk<POLICY>( tad, mva );
-  } else {
-    tad.pa = mva;
-  }
-  // TODO: Check permissions here
   
- return tad.pa;
+  if (arm::sctlr::M.Get( this->SCTLR )) {
+    bool ishyp = cpsr.Get(M) == HYPERVISOR_MODE;
+    TransAddrDesc tad;
+    
+    // Stage 1 MMU enabled
+    if (unlikely(not tlb.GetTranslation<POLICY>( tad, mva )))
+      TranslationTableWalk<POLICY>( tad, mva, mat, size );
+    // else {
+    //   // Check if hit is coherent
+    //   TransAddrDesc tad_chk;
+    //   TranslationTableWalk<DebugMemAcc>( tad_chk, mva, mat, size );
+    //   if (tad_chk.pa != tad.pa)
+    //     exception_trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
+    // }
+    
+    
+    // Checking permissions
+    unsigned dac = (mmu.dacr >> (tad.domain*2)) & 3;
+    
+    if (unlikely((dac & 1) == 0))
+      DataAbort( mva, 0, tad.domain, tad.level, mat, DAbort_Domain, false, false, false, false, false );
+    
+    unisim::util::truth_table::InBit<uint32_t,1> const P;
+    unisim::util::truth_table::InBit<uint32_t,0> const W;
+    Case<0b000> const AP000;
+    Case<0b001> const AP001;
+    Case<0b010> const AP010;
+    //Case<0b011> const AP011;
+    Case<0b100> const AP100;
+    Case<0b101> const AP101;
+    Case<0b110> const AP110;
+    Case<0b111> const AP111;
+
+    unsigned sel = (tad.ap << 2) | (unsigned(ispriv) << 1) | (unsigned(mat == mat_write) << 0);
+    
+    uint32_t const perm_table =
+      ((AP000) or
+       (AP001 and not P) or
+       (AP010 and not P and W) or
+     /* AP011 */
+       (AP100) or
+       (AP101 and (not P or W)) or
+       (AP110 and W) or
+       (AP111 and W)).tt;
+    
+    /* TODO: check that ispriv is correct for pxn (only PL1 is concerned ?) */
+    uint32_t xabort = unsigned(mat == mat_exec) & (tad.xn | (tad.pxn & ispriv));
+
+    /* TODO: Long descriptor format + Hardware flags */
+    if (unlikely((((dac >> 1) & (perm_table >> sel)) | xabort) & 1))
+      DataAbort( mva, 0, tad.domain, tad.level, mat, DAbort_Permission, ishyp, false, false, false, false );
+    
+    return tad.pa;
+  }
+  
+  return mva;
 }
 
 
@@ -1529,7 +1516,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CTR, Cache Type Register"; }
-          uint32_t Read( BaseCpu& _cpu ) { return 0x8403c003; }
+          uint32_t Read( CP15CPU& _cpu ) { return 0x8403c003; }
         } x;
         return x;
       } break;
@@ -1539,7 +1526,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
-          uint32_t Read( BaseCpu& _cpu ) {
+          uint32_t Read( CP15CPU& _cpu ) {
             CPU& cpu = dynamic_cast<CPU&>( _cpu );
             switch (cpu.csselr) {
               /*              LNSZ      ASSOC       NUMSETS        POLICY      */
@@ -1558,7 +1545,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CLIDR, Cache Level ID Register"; }
-          uint32_t Read( BaseCpu& _cpu ) {
+          uint32_t Read( CP15CPU& _cpu ) {
             CPU& cpu = dynamic_cast<CPU&>( _cpu );
             uint32_t
               LoUU =   0b010, /* Level of Unification Uniprocessor  */
@@ -1577,7 +1564,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "ID_MMFR0, Memory Model Feature Register 0"; }
-          uint32_t Read( BaseCpu& _cpu ) { return 0x3; /* vmsav7 */ }
+          uint32_t Read( CP15CPU& _cpu ) { return 0x3; /* vmsav7 */ }
         } x;
         return x;
       } break;
@@ -1587,10 +1574,10 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             dynamic_cast<CPU&>( _cpu ).csselr = value;
           }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).csselr; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).csselr; }
         } x;
         return x;
       } break;
@@ -1604,8 +1591,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
           /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr0 = value; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr0; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr0 = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr0; }
         } x;
         return x;
       } break;
@@ -1616,8 +1603,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "TTBR1, Translation Table Base Register 1"; }
           /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr1 = value; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr1; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr1 = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr1; }
         } x;
         return x;
       } break;
@@ -1627,8 +1614,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "TTBCR, Translation Table Base Control Register"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbcr = value; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbcr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbcr = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbcr; }
         } x;
         return x;
       } break;
@@ -1639,11 +1626,64 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DACR, Domain Access Control Register"; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.dacr; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
-            dynamic_cast<CPU&>( _cpu ).mmu.dacr = value;
-            _cpu.logger << DebugInfo << "DACR <- " << std::hex << value << std::dec << EndDebugInfo;
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.dacr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) {
+            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            cpu.mmu.dacr = value;
+            if (cpu.verbose)
+              cpu.logger << DebugInfo << "DACR <- " << std::hex << value << std::dec << EndDebugInfo;
           }
+        } x;
+        return x;
+      } break;
+
+      /*********************************
+       * Memory system fault registers *
+       *********************************/
+    case CP15ENCODE( 5, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DFSR, Data Fault Status Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFSR; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 5, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "IFSR, Instruction Fault Status Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFSR; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 6, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DFAR, Data Fault Status Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFAR; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 6, 0, 0, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "IFAR, Instruction Fault Status Register"; }
+          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFAR; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
         } x;
         return x;
       } break;
@@ -1656,9 +1696,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1669,9 +1709,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "ICIMVAU, Clean data* cache line by MVA to PoU"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1682,9 +1722,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "BPIALL, Invalidate all branch predictors"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
-            /* No branc predictor, basically nothing to do */
-            _cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
+          void Write( CP15CPU& _cpu, uint32_t value ) {
+            /* No branch predictor, basically nothing to do */
+            //_cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1695,9 +1735,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DCCMVAC, Clean data* cache line by MVA to PoC"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1708,9 +1748,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DCCMVAU, Clean data* cache line by MVA to PoU"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1721,9 +1761,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1734,9 +1774,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DCCISW, Clean and invalidate [d|u]cache line by set/way"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             /* No cache, basically nothing to do */
-            _cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
+            //_cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
           }
         } x;
         return x;
@@ -1750,10 +1790,41 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) {
+          void Write( CP15CPU& _cpu, uint32_t value ) {
             CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
-            cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
+            if (cpu.verbose)
+              cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
             cpu.tlb.Invalidate();
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 8, 0, 7, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TLBIMVA, invalidate unified TLB entry by MVA and ASID"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) {
+            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            if (cpu.verbose)
+              cpu.logger << DebugInfo << "TLBIMVA(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
+            cpu.tlb.InvalidateByMVA(value);
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 8, 0, 7, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TLBIASID,  invalidate unified TLB by ASID match"; }
+          void Write( CP15CPU& _cpu, uint32_t value ) {
+            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            if (cpu.verbose)
+              cpu.logger << DebugInfo << "TLBIASID(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
+            cpu.tlb.InvalidateByASID(value);
           }
         } x;
         return x;
@@ -1767,8 +1838,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "PRRR, Primary Region Remap Register"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.prrr = value; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.prrr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.prrr = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.prrr; }
         } x;
         return x;
       } break;
@@ -1778,38 +1849,39 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "NMRR, Normal Memory Remap Register"; }
-          void Write( BaseCpu& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.nmrr = value; }
-          uint32_t Read( BaseCpu& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.nmrr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.nmrr = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.nmrr; }
         } x;
         return x;
       } break;
+      
+      /***********************************/
+      /* Context and thread ID registers */
+      /***********************************/
       
     case CP15ENCODE( 13, 0, 0, 3 ):
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "TPIDRURO, Thread Id Privileged Read Write Only Register"; }
-          unsigned RequiredPL() { return 0; /* Doesn't requires priviledges */ }
-          uint32_t Read( BaseCpu& _cpu ) {
-            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
-            /* TODO: the following only works in linux os
-             * emulation. We should really access the TPIDRURO
-             * register. */
-            return cpu.MemRead32( 0xffff0ff0 );
-          }
+          char const* Describe() { return "TPIDRURO, User Read-Only Thread ID Register"; }
+          unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
+          uint32_t Read( CP15CPU& _cpu )
+          { return dynamic_cast<CPU&>( _cpu ).MemRead32( 0xffff0ff0 ); }
         } x;
-        return x;
+        /* When using linux os emulation, this register overrides the base one */
+        if (linux_os_import)
+          return x;
       } break;
       
     }
   
-  // Fall back to base cpu CP15 registers
-  return this->BaseCpu::CP15GetRegister( crn, opcode1, crm, opcode2 );
+  // Fall back to parent cpu CP15 registers
+  return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
 }
 
-} // end of namespace armemu
+} // end of namespace vmsav7
 
-template struct unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::armemu::ARMv7emu>;
+template struct unisim::component::cxx::processor::arm::CPU<unisim::component::cxx::processor::arm::vmsav7::ARMv7emu>;
 
 } // end of namespace arm
 } // end of namespace processor

@@ -32,8 +32,8 @@
  * Authors: Yves Lhuillier Perez (yves.lhuillier@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CP15_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARMEMU_CP15_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CP15_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CP15_HH__
 
 
 #include <unisim/component/cxx/processor/arm/register_field.hh>
@@ -44,8 +44,25 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+namespace vmsav7 {
 
+  /** SCTLR Manips
+   *
+   * Base Register Fields to ease access to the SCTLR System Control
+   * Register.  This class factorizes all common SCTLR register
+   * fields, though some of them may not be present in a particular
+   * ARM processor implementation
+   */
 
+  namespace sctlr
+  {
+    RegisterField<29,1> const AFE;     // Access flag enable
+    RegisterField<28,1> const TRE;     // TEX remap enable
+    RegisterField<20,1> const UWXN;    // Unprivileged write permission implies PL1 XN (Virtualization Extensions)
+    RegisterField<19,1> const WXN;     // Write permission implies XN (Virtualization Extensions)
+    RegisterField<17,1> const HA;      // Hardware Access flag enable
+  }
+  
   /** TTBCR Manips
    *
    *  TTBCR, Translation Table Base Control Register
@@ -61,10 +78,11 @@ namespace arm {
   };
 
 
+} // end of namespace vmsav7
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ARM926EJS_CP15_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV7_CP15_HH__

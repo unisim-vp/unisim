@@ -32,17 +32,16 @@
  * Author: Daniel Gracia Perez (daniel.gracia-perez@cea.fr) 
  */
 
-#include "unisim/kernel/logger/logger_server.hh"
-
-#include <sstream>
-#include <string>
-#include <iostream>
-#include <ios>
+#include <unisim/kernel/logger/logger_server.hh>
+#include <unisim/kernel/service/service.hh>
 
 #include <libxml/encoding.h>
 #include <libxml/xmlwriter.h>
 
-#include "unisim/kernel/service/service.hh"
+#include <sstream>
+#include <string>
+#include <iostream>
+#include <stdexcept>
 
 namespace unisim {
 namespace kernel {
@@ -99,7 +98,7 @@ LoggerServer::Close()
         {
           std::cerr << "Error(LoggerServer::Close): "
                     << "could not correctly close the text output file" << std::endl;
-          throw 0;
+          throw std::logic_error("internal error");
         }
     }
 }

@@ -464,7 +464,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	// sim->SetVariable("loader.file3.base-addr",    0x1110000);
   
   
-  sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_armv5l.xml" ); // Current Cross-GDBs doesn't natively recognize armv7...
+  sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_arm_with_neon.xml" );
   sim->SetVariable( "debugger.parse-dwarf", false );
   sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml" );
 

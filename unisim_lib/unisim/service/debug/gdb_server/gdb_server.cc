@@ -45,24 +45,30 @@ GDBRegister::GDBRegister()
 	, reg(0)
 	, endian(GDB_LITTLE_ENDIAN)
 	, reg_num(0)
+	, type()
+	, group()
 {
 }
 
-GDBRegister::GDBRegister(const string& reg_name, int reg_bitsize, GDBEndian reg_endian, unsigned int _reg_num)
+GDBRegister::GDBRegister(const string& reg_name, int reg_bitsize, GDBEndian reg_endian, unsigned int _reg_num, const std::string& _type, const std::string& _group)
 	: name(reg_name)
 	, bitsize(reg_bitsize)
 	, reg(0)
 	, endian(reg_endian)
 	, reg_num(_reg_num)
+	, type(_type)
+	, group(_group)
 {
 }
 
-GDBRegister::GDBRegister(unisim::service::interfaces::Register *_reg, GDBEndian reg_endian, unsigned int _reg_num)
-	: name(_reg->GetName())
+GDBRegister::GDBRegister(unisim::service::interfaces::Register *_reg, const string& reg_name, GDBEndian reg_endian, unsigned int _reg_num, const std::string& _type, const std::string& _group)
+	: name(reg_name)
 	, bitsize(8 * _reg->GetSize())
 	, reg(_reg)
 	, endian(reg_endian)
 	, reg_num(_reg_num)
+	, type(_type)
+	, group(_group)
 {
 }
 
@@ -176,6 +182,81 @@ bool GDBRegister::GetValue(void *buffer) const
 	if(reg)
 		reg->GetValue(buffer);
 	return reg != 0;
+}
+
+std::ostream& GDBRegister::ToXML(std::ostream& os, unsigned int _reg_num) const
+{
+	os << "<reg name=\"" << name << "\" bitsize=\"" << bitsize << "\"";
+	if(reg_num != _reg_num)
+	{
+		os << " regnum=\"" << reg_num << "\"";
+	}
+	if(!type.empty())
+	{
+		os << " type=\"" << type << "\"";
+	}
+	if(!group.empty())
+	{
+		os << " group=\"" << group << "\"";
+	}
+	os << "/>";
+	
+	return os;
+}
+
+GDBFeature::GDBFeature(const std::string& _name, unsigned int _id)
+	: name(_name)
+	, id(_id)
+	, gdb_registers()
+{
+}
+void GDBFeature::AddRegister(const GDBRegister *gdb_register)
+{
+	gdb_registers.push_back(gdb_register);
+}
+
+unsigned int GDBFeature::GetId() const
+{
+	return id;
+}
+
+std::ostream& GDBFeature::ToXML(std::ostream& os, std::string req_filename) const
+{
+	std::stringstream feature_filename_sstr;
+	feature_filename_sstr << "feature" << id << ".xml";
+	std::string feature_filename(feature_filename_sstr.str());
+
+	if(req_filename == feature_filename)
+	{
+		os << "<feature name=\"" << name << "\"";
+
+		unsigned int n = gdb_registers.size();
+		if(n > 0)
+		{
+			os << ">";
+			
+			unsigned int i;
+			unsigned int reg_num = (unsigned int) -1;
+			for(i = 0; i < n; i++)
+			{
+				const GDBRegister *gdb_reg = gdb_registers[i];
+				if(gdb_reg)
+				{
+					gdb_reg->ToXML(os, reg_num);
+					
+					reg_num = gdb_reg->GetRegNum() + 1;
+				}
+			}
+			
+			os << "</feature>";
+		}
+		else
+		{
+			os << "/>";
+		}
+	}
+	
+	return os;
 }
 
 } // end of namespace gdb_server

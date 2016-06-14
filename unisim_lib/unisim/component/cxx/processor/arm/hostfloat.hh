@@ -23,6 +23,8 @@ inline int issignaling(float f)
 }
 #endif
 
+#include <unisim/component/cxx/processor/arm/register_field.hh>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -30,16 +32,9 @@ namespace processor {
 namespace arm {
 namespace hostfloat {
   
-  struct FPSCR
+  struct FPSCR : public FieldRegister<uint32_t>
   {
-    uint32_t m_value;
-    
-    FPSCR() : m_value( 0x03000000 ) {}
-    
-    template <typename RF>
-    uint32_t Get( RF const& rf ) const { return rf.Get( m_value ); }
-    template <typename RF>
-    void     Set( RF const& rf, uint32_t value ) { return rf.Set( m_value, value ); }
+    FPSCR() : FieldRegister<uint32_t>( 0x03000000 ) {}
   };
   
   template <typename operT, typename fpscrT>

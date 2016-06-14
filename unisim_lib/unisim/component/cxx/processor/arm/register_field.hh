@@ -82,6 +82,24 @@ namespace arm {
   /* Common bitfields */
   RegisterField<0,32> const ALL32;  /* Raw 32 bits of the any status/control register*/
   RegisterField<0,64> const ALL64;  /* Raw 64 bits of the any status/control register*/
+  
+  template <typename T>
+  struct FieldRegister
+  {
+    T m_value;
+    
+    FieldRegister() : m_value() {}
+    FieldRegister( T _value ) : m_value( _value ) {}
+    
+    template <typename RF>
+    T Get( RF const& rf ) const { return rf.Get( m_value ); }
+    template <typename RF>
+    void     Set( RF const& rf, T value ) { return rf.Set( m_value, value ); }
+    
+    /* Raw bits accessor */
+    T& bits() { return m_value; }
+  };
+  
 
 } // end of namespace arm
 } // end of namespace processor

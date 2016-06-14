@@ -542,7 +542,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/check_lib.m4 \
 m4/rtbcob.m4 \
@@ -953,8 +952,11 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "UNISIM_WITH_BOOST(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${STAR12X_CONFIGURE_AC}"
+<<<<<<< HEAD
 	echo "UNISIM_CHECK_TLM20" >> "${STAR12X_CONFIGURE_AC}"
 	echo "" >> "${STAR12X_CONFIGURE_AC}"
+=======
+>>>>>>> origin/armv7
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-star12x-${STAR12X_VERSION}\"], [path of shared data relative to bin directory])" >> "${STAR12X_CONFIGURE_AC}"

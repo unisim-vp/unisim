@@ -1,4 +1,4 @@
-message ( STATUS "Checking unisim::component::tlm2::processor::arm::armemu" )
+message ( STATUS "Checking unisim::component::tlm2::processor::arm::cortex_a9" )
 
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCISystemC.cmake )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCITLM2.cmake )
@@ -6,7 +6,7 @@ include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
 set ( tlm2_armemu_subdirs
 	unisim/kernel
-	unisim/component/cxx/processor/arm/armemu
+	unisim/component/cxx/processor/arm/vmsav7
 	)
 
 foreach ( dir ${tlm2_armemu_subdirs} )
@@ -19,8 +19,8 @@ include_directories (
 	)
 
 set ( tlm2_armemu_srcs
-	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/processor/arm/armemu/armemu.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/processor/arm/armemu/armemu.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc
 	)
 
 add_library ( unisim__component__tlm2__processor__arm__armemu
@@ -28,7 +28,7 @@ add_library ( unisim__component__tlm2__processor__arm__armemu
 	)
 
 set_source_files_properties (
-	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/processor/arm/armemu/armemu.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc
 	PROPERTIES
 		COMPILE_FLAGS "-I${OSCI_SYSTEMC_INCLUDE_DIR} -I${OSCI_TLM2_INCLUDE_DIR}"
 	)
@@ -44,4 +44,4 @@ add_dependencies ( unisim__component__tlm2__processor__arm__armemu
 	unisim__component__cxx__processor__arm__armemu
 	)
 
-message ( STATUS "Checking unisim::component::tlm2::processor::arm::armemu - done" )
+message ( STATUS "Checking unisim::component::tlm2::processor::arm::cortex_a9 - done" )

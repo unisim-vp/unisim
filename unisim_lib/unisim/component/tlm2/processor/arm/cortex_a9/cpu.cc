@@ -32,7 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include <unisim/component/tlm2/processor/arm/armemu/armemu.hh>
+#include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -45,7 +45,7 @@
 #define LOCATION \
   " - location = " \
   << __FUNCTION__ \
-  << ":unisim_lib/unisim/component/tlm2/processor/arm/armemu/armemu.cc:" \
+  << ":unisim_lib/unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc:" \
   << __LINE__
 #define TIME(X) \
   " - time = " \
@@ -121,21 +121,20 @@ namespace component {
 namespace tlm2 {
 namespace processor {
 namespace arm {
-namespace armemu {
+namespace cortex_a9 {
 
 using namespace unisim::kernel::logger;
 
-ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
+CPU::CPU( sc_module_name const& name, Object* parent )
   : unisim::kernel::service::Object(name, parent)
   , sc_module(name)
-  , unisim::component::cxx::processor::arm::armemu::CPU(name, parent)
+  , unisim::component::cxx::processor::arm::vmsav7::CPU(name, parent)
   , master_socket("master_socket")
-  , nIRQm("nIRQm_port")
-  , nFIQm("nFIQm_port")
-  , nRESETm("nRESETm_port")
-  , raised_irqs()
-  , raised_fiqs()
-  , raised_rsts()
+  , check_external_event(false)
+  , external_event("extevt")
+  , nIRQm("nIRQm")
+  , nFIQm("nFIQm")
+  , nRESETm("nRESETm")
   , end_read_rsp_event()
   , payload_fabric()
   , tmp_time()
@@ -156,8 +155,10 @@ ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
   , verbose_tlm(false)
   , param_verbose_tlm("verbose-tlm", this, verbose_tlm, "Display TLM information")
   , dmi_region_cache()
+  , VINITHI(false)
+  , param_VINITHI("VINITHI", this, VINITHI, "Reset V-bit value. When HIGH indicates HIVECS mode at reset." )
 {
-  inherited::param_cpu_cycle_time_ps.SetVisible(false);
+  PCPU::param_cpu_cycle_time_ps.SetVisible(false);
   param_cpu_cycle_time.AddListener(this);
   param_cpu_cycle_time.NotifyListeners();
 
@@ -172,13 +173,13 @@ ARMEMU::ARMEMU( sc_module_name const& name, Object* parent )
   sensitive << nRESETm;
 }
 
-ARMEMU::~ARMEMU()
+CPU::~CPU()
 {
   param_cpu_cycle_time.RemoveListener(this);
 }
 
 void
-ARMEMU::VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
+CPU::VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
 {
   // no need to check the name, the only variable with notify
   //   activated is the cpu_cycle_time
@@ -194,11 +195,11 @@ ARMEMU::VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
  * @return  true if the initialization suceeds, false otherwise
  */
 bool 
-ARMEMU::EndSetup()
+CPU::EndSetup()
 {
-  if (not inherited::EndSetup())
+  if (not PCPU::EndSetup())
   {
-    inherited::logger << DebugError
+    PCPU::logger << DebugError
       << "Error while trying to set up the ARM cpu" << std::endl
       << LOCATION
       << EndDebugError;
@@ -210,7 +211,7 @@ ARMEMU::EndSetup()
 
   if ( verbose_tlm ) 
   {
-    inherited::logger << DebugInfo
+    PCPU::logger << DebugInfo
       << "Setting CPU cycle time to " 
       << cpu_cycle_time.to_string() << std::endl
       << "Setting Bus cycle time to " 
@@ -220,17 +221,31 @@ ARMEMU::EndSetup()
       << EndDebugInfo;
   }
   
+  /* compute the average time of each instruction */
+  time_per_instruction = cpu_cycle_time * ipc;
+
   return true;
 }
 
 void 
-ARMEMU::Stop(int ret)
+CPU::Stop(int ret)
 {
   // Call BusSynchronize to account for the remaining time spent in the cpu 
   // core
   BusSynchronize();
-  sc_stop();
-  wait();
+  unisim::kernel::service::Object::Stop( ret );
+}
+
+/** Wait for a specific event and update CPU times
+ */
+
+void
+CPU::Wait( sc_event const& evt )
+{
+  if (quantum_time != SC_ZERO_TIME)
+    Sync();
+  wait( evt );
+  cpu_time = sc_time_stamp();
 }
 
 /** Synchronization demanded from the CPU implementation.
@@ -238,11 +253,11 @@ ARMEMU::Stop(int ret)
  * implmentation) is the a synchronization demanded by the debugger.
  */
 void
-ARMEMU::Sync()
+CPU::Sync()
 {
   if ( unlikely(verbose_tlm) )
   {
-    inherited::logger << DebugInfo
+    PCPU::logger << DebugInfo
       << "Sync" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
@@ -253,39 +268,11 @@ ARMEMU::Sync()
   quantum_time = SC_ZERO_TIME;
   
   if (unlikely(verbose_tlm))
-    inherited::logger << DebugInfo
+    PCPU::logger << DebugInfo
                       << "Resuming after wait" << std::endl
                       << " - cpu_time     = " << cpu_time << std::endl
                       << " - nice_time     = " << nice_time << std::endl
                       << EndDebugInfo;
-  
-  /** Handling external signals at this point (they won't change until the next call to Sync) */
-  if (raised_rsts > 0) {
-    if (verbose)
-      logger << DebugInfo << "Received RESET!" << EndDebugInfo;
-    this->TakeReset();
-    if (--raised_rsts > 0) inherited::logger << DebugWarning << "Missed " << raised_rsts << " RESETs" << EndDebugWarning;
-    raised_rsts = 0; // Discard raised reset queue
-    return;
-  }
-  
-  uint32_t exceptions = 0;
-  unisim::component::cxx::processor::arm::I.Set( exceptions, raised_irqs > 0 );
-  unisim::component::cxx::processor::arm::F.Set( exceptions, raised_fiqs > 0 );
-  
-  if (not exceptions) return;
-  exceptions = this->HandleAsynchronousException( exceptions );
-  
-  if      (unisim::component::cxx::processor::arm::I.Get( exceptions ))
-    {
-      if (--raised_irqs > 0) inherited::logger << DebugWarning << "Missed " << raised_irqs << " IRQs" << EndDebugWarning;
-      raised_irqs = 0; // Discard raised IRQ queue
-    }
-  else if (unisim::component::cxx::processor::arm::F.Get( exceptions ))
-    {
-      if (--raised_fiqs > 0) inherited::logger << DebugWarning << "Missed " << raised_fiqs << " FIQs" << EndDebugWarning;
-      raised_fiqs = 0; // Discard raised FIQ queue
-    }
 }
 
 /** Updates the cpu time to the next bus cycle.
@@ -293,11 +280,11 @@ ARMEMU::Sync()
  * quantum time and if necessary synchronizes with the global SystemC clock.
  */
 void 
-ARMEMU::BusSynchronize() 
+CPU::BusSynchronize() 
 {
   if ( unlikely(verbose_tlm) )
   {
-    inherited::logger << DebugInfo
+    PCPU::logger << DebugInfo
       << "Bus Synchronize:" << std::endl
       << " - bus_time     = " << bus_time << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
@@ -311,14 +298,25 @@ ARMEMU::BusSynchronize()
   // quantum_time += 
   //   ((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
   //   (cpu_time + quantum_time);
-  while ( bus_time < (cpu_time + quantum_time) )
+  
+#if 0
+  sc_time deadline(cpu_time);
+  deadline += quantum_time;
+  while ( bus_time < deadline )
     bus_time += bus_cycle_time;
-  quantum_time = bus_time - cpu_time;
+  quantum_time = bus_time;
+  quantum_time -= cpu_time;
+#else
+  quantum_time += 
+    ((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
+    (cpu_time + quantum_time);
+#endif
+  
   if (quantum_time > nice_time)
     Sync();
   if (unlikely(verbose_tlm))
   {
-    inherited::logger << DebugInfo
+    PCPU::logger << DebugInfo
       << "Bus is now Synchronized:" << std::endl
       << " - bus_time     = " << bus_time << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
@@ -335,20 +333,12 @@ ARMEMU::BusSynchronize()
  * global SystemC time is updated.
  */
 void
-ARMEMU::Run()
+CPU::Run()
 {
-  /* Dismiss any interrupt that could have started before simulation (initialization artifacts) */
-  raised_irqs = 0;
-  raised_fiqs = 0;
-  raised_rsts = 0;
-
-  /* compute the average time of each instruction */
-  sc_time time_per_instruction = cpu_cycle_time * ipc;
-  
   if ( unlikely(verbose) )
     {
-      inherited::logger << DebugInfo
-                        << "Starting ARMEMU::Run loop" << std::endl
+      PCPU::logger << DebugInfo
+                        << "Starting CPU::Run loop" << std::endl
                         << " - cpu_time     = " << cpu_time << std::endl
                         << " - nice_time = " << nice_time << std::endl
                         << " - time_per_instruction = " << time_per_instruction
@@ -357,9 +347,29 @@ ARMEMU::Run()
     
   for (;;)
   {
-    if ( unlikely(verbose_tlm) )
+    if (GetExternalEvent()) {
+      if (not nRESETm) {
+        Wait( nRESETm.negedge_event() );
+        this->TakeReset();
+      }
+      if (not nIRQm or not nFIQm) {
+        uint32_t exceptions = 0;
+        unisim::component::cxx::processor::arm::I.Set( exceptions, not nIRQm );
+        unisim::component::cxx::processor::arm::F.Set( exceptions, not nFIQm );
+        
+        bool exception_taken = this->HandleAsynchronousException( exceptions ) != 0;
+        if (exception_taken) {
+          if (exception_trap_reporting_import)
+            exception_trap_reporting_import->ReportTrap(*this,"irq or fiq");
+          if (requires_finished_instruction_reporting and memory_access_reporting_import)
+            memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
+        }
+      }
+    }
+  
+    if (unlikely(verbose_tlm))
     {
-      inherited::logger << DebugInfo
+      PCPU::logger << DebugInfo
         << "Starting instruction:" << std::endl
         << " - cpu_time     = " << cpu_time << std::endl
         << " - quantum_time = " << quantum_time
@@ -372,33 +382,37 @@ ARMEMU::Run()
     quantum_time += time_per_instruction;
     cpsr_cleared_bits &= ~(CPSR().bits());
     
+    if ( unlikely(verbose_tlm) )
+    {
+      PCPU::logger << DebugInfo
+        << "Instruction finished:" << std::endl
+        << " - cpu_time     = " << cpu_time << std::endl
+        << " - quantum_time = " << quantum_time
+        << EndDebugInfo;
+    }
+    
+    // Check if we need to sync
     if (unisim::component::cxx::processor::arm::I.Get( cpsr_cleared_bits ) or
         unisim::component::cxx::processor::arm::F.Get( cpsr_cleared_bits ))
       {
-        if (verbose)
-          inherited::logger << DebugInfo
+        SetExternalEvent();
+        if (unlikely(verbose_tlm))
+          PCPU::logger << DebugInfo
                             << "Syncing due to exception being unmasked" << std::endl
+                            << " - PC = 0x" << std::hex << current_insn_addr << std::dec << std::endl
                             << " - cpsr_cleared_bits = 0x" << std::hex << cpsr_cleared_bits << std::dec << std::endl
                             << " - cpu_time     = " << cpu_time << std::endl
                             << " - quantum_time = " << quantum_time
                             << EndDebugInfo;
         Sync();
       }
-    if ( unlikely(verbose_tlm) )
-    {
-      inherited::logger << DebugInfo
-        << "Instruction finished:" << std::endl
-        << " - cpu_time     = " << cpu_time << std::endl
-        << " - quantum_time = " << quantum_time
-        << EndDebugInfo;
-    }
-    if ( quantum_time > nice_time )
+    else if ( quantum_time > nice_time )
       Sync();
   }
 }
 
 void 
-ARMEMU::Reset()
+CPU::Reset()
 {
 }
   
@@ -414,19 +428,19 @@ ARMEMU::Reset()
  * @return      the synchronization status
  */
 tlm::tlm_sync_enum 
-ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_time& time)
+CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_time& time)
 {
   sync_enum_type ret = tlm::TLM_ACCEPTED;
 
   if (trans.get_command() == tlm::TLM_IGNORE_COMMAND) 
   {
-    inherited::logger << DebugWarning << "Received nb_transport_bw on master socket" 
+    PCPU::logger << DebugWarning << "Received nb_transport_bw on master socket" 
       << ", with an ignore, which the cpu doesn't know how to handle" 
       << std::endl
       << TIME(time) << std::endl
       << PHASE(phase) << std::endl;
-    TRANS(inherited::logger, trans);
-    inherited::logger << EndDebug;
+    TRANS(PCPU::logger, trans);
+    PCPU::logger << EndDebug;
     return ret;
   }
 
@@ -437,15 +451,14 @@ ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc
       /* The cpu should not receive the BEGIN_REQ (as it is the cpu which 
        * generates cpu requests), neither END_RESP (as it is the cpu which
        * ends responses) */
-      inherited::logger << DebugError << "Received nb_transport_bw on master_socket" 
+      PCPU::logger << DebugError << "Received nb_transport_bw on master_socket" 
         << ", with unexpected phase" << std::endl
         << LOCATION << std::endl
         << TIME(time) << std::endl
         << PHASE(phase) << std::endl;
-      TRANS(inherited::logger, trans);
-      inherited::logger << EndDebug;
-      sc_stop();
-      wait();
+      TRANS(PCPU::logger, trans);
+      PCPU::logger << EndDebug;
+      Stop(-1);
       break;
     case tlm::END_REQ:
       /* The request phase is finished.
@@ -472,17 +485,17 @@ ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc
       trans.acquire();
       if (trans.is_write())
       {
-        inherited::logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction" << std::endl
+        PCPU::logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction" << std::endl
           << LOCATION << std::endl
           << TIME(time) << std::endl 
           << PHASE(phase) << std::endl;
-        TRANS(inherited::logger, trans);
-        inherited::logger << EndDebug;
-        sc_stop();
-        wait();
+        TRANS(PCPU::logger, trans);
+        PCPU::logger << EndDebug;
+        Stop(-1);
         break;
       }
-      tmp_time = sc_time_stamp() + time;
+      tmp_time = sc_time_stamp();
+	  tmp_time += time;
       /* TODO: increase tmp_time depending on the size of the transaction. */
       end_read_rsp_event.notify(time);
       ret = tlm::TLM_COMPLETED;
@@ -493,15 +506,14 @@ ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc
 
   /* this code should never be executed, if you are here something is wrong 
    *   above :( */
-  inherited::logger << DebugError 
+  PCPU::logger << DebugError 
     << "Reached end of nb_transport_bw, THIS SHOULD NEVER HAPPEN" << std::endl
     << LOCATION << std::endl
     << TIME(time) << std::endl
     << PHASE(phase) << std::endl;
-  TRANS(inherited::logger, trans);
-  inherited::logger << EndDebug;
-  sc_stop();
-  wait();
+  TRANS(PCPU::logger, trans);
+  PCPU::logger << EndDebug;
+  Stop(-1);
   // useless return to avoid compiler warnings/errors
   return ret;
 }
@@ -516,49 +528,46 @@ ARMEMU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc
  * @param end_range   the end address of the memory range to remove
  */
 void 
-ARMEMU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
+CPU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
 {
   dmi_region_cache.Invalidate(start_range, end_range);
 }
 
 /** nIRQm port handler */
 void
-ARMEMU::IRQHandler()
+CPU::IRQHandler()
 {
-  if (not nIRQm) raised_irqs += 1;
-  if (verbose)
-    inherited::logger << DebugInfo
+  SetExternalEvent();
+  if (verbose_tlm)
+    PCPU::logger << DebugInfo
                       << "IRQ level change:" << std::endl
                       << " - nIRQm = " << nIRQm << std::endl
-                      << " - raised_irqs = " << raised_irqs << std::endl
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
 
 /** nFIQm port handler */
 void 
-ARMEMU::FIQHandler()
+CPU::FIQHandler()
 {
-  if (not nFIQm) raised_fiqs += 1;
-  if (verbose)
-    inherited::logger << DebugInfo
+  SetExternalEvent();
+  if (verbose_tlm)
+    PCPU::logger << DebugInfo
                       << "FIQ level change:" << std::endl
                       << " - nFIQm = " << nFIQm << std::endl
-                      << " - raised_fiqs = " << raised_fiqs << std::endl
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
   
 /** nRESETm port handler */
 void 
-ARMEMU::ResetHandler()
+CPU::ResetHandler()
 {
-  if (not nRESETm) raised_rsts += 1;
-  if (verbose)
-    inherited::logger << DebugInfo
+  SetExternalEvent();
+  if (verbose_tlm)
+    PCPU::logger << DebugInfo
                       << "RESET level change:" << std::endl
                       << " - nRESETm = " << nRESETm << std::endl
-                      << " - raised_rsts = " << raised_rsts << std::endl
                       << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
@@ -574,36 +583,26 @@ ARMEMU::ResetHandler()
  */
 
 bool 
-ARMEMU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
+CPU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 {
   if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
   {
     // operator -> of ports is not legal before end of elaboration because
     // an implementation of SystemC can defer complete binding just before end of elaboration
     // Using memory service interface instead
-    return inherited::memory_import->ReadMemory(addr, buffer, size);
+    return PCPU::memory_import->ReadMemory(addr, buffer, size);
   }
 
-  transaction_type *trans;
-  unsigned int read_size;
-
-  trans = payload_fabric.allocate();
+  Transaction trans( payload_fabric );
   trans->set_address(addr);
   trans->set_data_length(size);
   trans->set_data_ptr((uint8_t *)buffer);
   trans->set_read();
   trans->set_streaming_width(size);
 
-  read_size = master_socket->transport_dbg(*trans);
+  unsigned read_size = master_socket->transport_dbg(*trans);
 
-  if (trans->is_response_ok() and read_size == size)
-  {
-    trans->release();
-    return true;
-  }
-
-  trans->release();
-  return false;
+  return (trans->is_response_ok() and read_size == size);
 }
 
 /**
@@ -616,36 +615,26 @@ ARMEMU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
  * @param size    the size of the write
  */
 bool 
-ARMEMU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
+CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 {
   if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
   {
     // operator -> of ports is not legal before end of elaboration because
     // an implementation of SystemC can defer complete binding just before end of elaboration
     // Using memory service interface instead
-    return inherited::memory_import->WriteMemory(addr, buffer, size);
+    return PCPU::memory_import->WriteMemory(addr, buffer, size);
   }
 
-  transaction_type *trans;
-  unsigned int write_size;
-
-  trans = payload_fabric.allocate();
+  Transaction trans( payload_fabric );
   trans->set_address(addr);
   trans->set_data_length(size);
   trans->set_data_ptr((uint8_t *)buffer);
   trans->set_write();
   trans->set_streaming_width(size);
 
-  write_size = master_socket->transport_dbg(*trans);
+  unsigned write_size = master_socket->transport_dbg(*trans);
 
-  if (trans->is_response_ok() and (write_size == size))
-  {
-    trans->release();
-    return true;
-  }
-
-  trans->release();
-  return false;
+  return (trans->is_response_ok() and (write_size == size));
 }
 
 /**
@@ -661,11 +650,11 @@ ARMEMU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
  * @param buffer  the buffer to copy the data to read
  * @param size    the size of the read
  */
-void 
-ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
+bool
+CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 {
   if ( unlikely(verbose_tlm) )
-    inherited::logger << DebugInfo
+    PCPU::logger << DebugInfo
       << "Starting PrRead:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
@@ -674,10 +663,11 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
   /* Use blocking transactions.
    * Steps:
    * 1 - check when the request can be send (synchronize with the bus)
-   * 2 - create the transaction
+   * 2 - create the (auto-released) transaction
    * 3 - send the transaction
-   * 4 - release the transaction
+   * 4 - update DMI region cache
    */
+  
   // 1 - synchronize with the bus
   BusSynchronize();
 
@@ -699,35 +689,35 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
           quantum_time += dmi_region->GetReadLatency(size);
           if (quantum_time > nice_time)
             Sync();
-          return;
+          return true;
         }
       }
     }
   }
 
-  // 2 - create the transaction
-  transaction_type *trans;
+  // 2 - create the (auto-released) transaction
+  Transaction trans( payload_fabric );
+  
   //uint32_t byte_enable = 0xffffffffUL;
-  trans = payload_fabric.allocate();
   trans->set_address(addr);
   trans->set_read();
   trans->set_data_ptr(buffer);
   trans->set_data_length(size);
   trans->set_streaming_width(size);
+  
   // trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
   // trans->set_byte_enable_length(size);
 
   // 3 - send the transaction and check response status
   master_socket->b_transport(*trans, quantum_time);
-  if (not trans->is_response_ok()) {
-    throw "TODO: asynchronous abort (read)...";
-  }
+  if (not trans->is_response_ok())
+    return false;
   
   // cpu_time = sc_time_stamp() + quantum_time;
   if (quantum_time > nice_time)
     Sync();
 
-  // post3 - update DMI region cache
+  // 4 - update DMI region cache
   if(likely(enable_dmi))
   {
     if(likely(not dmi_region and trans->is_dmi_allowed()))
@@ -741,24 +731,21 @@ ARMEMU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
     }
   }
 
-  // 4 - release the transaction
-  trans->release();
-
   if ( unlikely(verbose_tlm) )
-    inherited::logger << DebugInfo
+    PCPU::logger << DebugInfo
       << "Finished PrRead:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
 
-  return;
+  return true;
 }
 
-void 
-ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
+bool
+CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
 {
   if ( unlikely(verbose_tlm) )
-    inherited::logger << DebugInfo
+    PCPU::logger << DebugInfo
       << "Starting PrWrite:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
@@ -767,7 +754,7 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   /* Use blocking transactions.
    * Steps:
    * 1 - check when the request can be send (synchronize with the bus)
-   * 2 - create the transaction
+   * 2 - create the (auto-released) transaction
    * 3 - send the transaction
    */
   // 1 - synchronize with the bus
@@ -791,16 +778,16 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
           quantum_time += dmi_region->GetWriteLatency(size);
           if (quantum_time > nice_time)
             Sync();
-          return;
+          return true;
         }
       }
     }
   }
   
-  // 2 - create the transaction
-  transaction_type *trans;
+  // 2 - create the (auto-released) transaction
+  Transaction trans( payload_fabric );
+  
   //uint32_t byte_enable = 0xffffffffUL;
-  trans = payload_fabric.allocate();
   trans->set_address(addr);
   trans->set_write();
   trans->set_data_ptr((unsigned char *)buffer);
@@ -811,9 +798,8 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
 
   // 3 - send the transaction and check response status
   master_socket->b_transport(*trans, quantum_time);
-  if (not trans->is_response_ok()) {
-    throw "TODO: asynchronous abort (write)...";
-  }
+  if (not trans->is_response_ok())
+    return false;
   
   if (quantum_time > nice_time)
     Sync();
@@ -832,20 +818,81 @@ ARMEMU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
     }
   }
 
-  // 4 - release the transaction
-  trans->release();
-
   if ( unlikely(verbose_tlm) )
-    inherited::logger << DebugInfo
+    PCPU::logger << DebugInfo
       << "Finished PrWrite:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
 
-  return;
+  return true;
 }
 
-} // end of namespace armemu
+/** Resets the internal values of corresponding CP15 Registers
+ */
+void
+CPU::CP15ResetRegisters()
+{
+  this->PCPU::CP15ResetRegisters();
+  
+  // Implementation defined values for SCTLR
+  cxx::processor::arm::sctlr::V.Set( SCTLR, VINITHI );
+}
+    
+/** Get the Internal representation of the CP15 Register
+ * 
+ * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @return        an internal CP15Reg
+ */
+CPU::CP15Reg&
+CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+  switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
+    {
+    case CP15ENCODE( 0, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "MIDR, Main ID Register"; }
+          uint32_t Read( CP15CPU& cpu ) { return 0x414fc090; }
+        } x;
+        return x;
+      } break;
+      
+    }
+  
+  // Fall back to base cpu CP15 registers
+  return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
+}
+
+void
+CPU::WaitForInterrupt()
+{
+  if (not check_external_event)
+    Wait( external_event );
+}
+
+void
+CPU::SetExternalEvent()
+{
+  check_external_event = true;
+  external_event.notify( sc_core::SC_ZERO_TIME );
+}
+
+bool
+CPU::GetExternalEvent()
+{
+  if (not check_external_event)
+    return false;
+  external_event.cancel();
+  check_external_event = false;
+  return true;
+}
+
+} // end of namespace cortex_a9
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace tlm2

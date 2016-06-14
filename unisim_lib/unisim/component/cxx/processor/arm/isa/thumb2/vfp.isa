@@ -962,13 +962,14 @@ vldmdb_f32.disasm = {
 vldmdb_f32.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 2 );
-  cpu.SetGPR( rn, address  );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 2 );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.SetVU32( vd + reg, cpu.MemRead32( address ) );
-    address += 4;
+    cpu.SetVU32( vd + reg, cpu.MemRead32( base_addr + U32(4*reg) ) );
   }
+
+  cpu.SetGPR( rn, base_addr );
 };
 
 op vldmdb_f64( 0b1110110[7]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b11[2]: rn[4]:> <: vd0[4]: 0b1011[4]: regs[7]: fldm[1] );
@@ -987,14 +988,15 @@ vldmdb_f64.disasm = {
 vldmdb_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 3 );
-  cpu.SetGPR( rn, address );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 3 );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( address + 0 ) );
-    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( address + 4 ) );
-    address += 8;
+    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( base_addr + U32(8*reg + 0) ) );
+    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( base_addr + U32(8*reg + 4) ) );
   }
+  
+  cpu.SetGPR( rn, base_addr );
 };
 
 op vldmia_f32( 0b1110110[7]: 0b0[1]: 0b1[1]: vd0[1]: w[1]: 0b1[1]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: regs[8] );
@@ -1012,13 +1014,14 @@ vldmia_f32.disasm = {
 vldmia_f32.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 2 ) );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.SetVU32( vd + reg, cpu.MemRead32( address ) );
-    address += 4;
+    cpu.SetVU32( vd + reg, cpu.MemRead32( base_addr + U32(4*reg) ) );
   }
+
+  if (w) cpu.SetGPR( rn, base_addr + U32( regs << 2 ) );
 };
 
 op vldmia_f64( 0b1110110[7]: 0b0[1]: 0b1[1]: shl<4> vd1[1]: w[1]: 0b1[1]: rn[4]:> <: vd0[4]: 0b1011[4]: regs[7]: fldm[1] );
@@ -1037,14 +1040,15 @@ vldmia_f64.disasm = {
 vldmia_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 3 ) );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( address + 0 ) );
-    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( address + 4 ) );
-    address += 8;
+    cpu.SetVU32( 2*(vd+reg) + 0, cpu.MemRead32( base_addr + U32(8*reg + 0) ) );
+    cpu.SetVU32( 2*(vd+reg) + 1, cpu.MemRead32( base_addr + U32(8*reg + 4) ) );
   }
+
+  if (w) cpu.SetGPR( rn, base_addr + U32( regs << 3 ) );
 };
 
 /* VLDR; loads an a single extension register from memory, using an
@@ -1440,6 +1444,7 @@ vmov_drr.execute = {
 /* VMRS; Move to ARM core register from Advanced SIMD and Floating-point Extension System Register */
 
 op vmrs( 0b1110[4]: 0b11101111[8]: spr[4]:> <: rt[4]: 0b1010[4]: 0b0001[4]: 0b0000[4] );
+vmrs.var reject : {Reject} = {(rt == 13) or ((rt == 15) and (spr != 1))};
 
 vmrs.disasm = {
   buffer << "vmrs\t";
@@ -1448,44 +1453,54 @@ vmrs.disasm = {
   buffer << ", ";
   switch (spr) {
   default: buffer << "<undefined>"; return;
-  case 0:  buffer << "fpsid"; break;
-  case 1:  buffer << "fpscr"; break;
-  case 6:  buffer << "mvfr1"; break;
-  case 7:  buffer << "mvfrt"; break;
-  case 8:  buffer << "fpexc"; break;
-  case 9:  buffer << "fpinst @ Impl def"; break;
-  case 10: buffer << "fpinst2 @ Impl def"; break;
+  case 0b0000:  buffer << "fpsid"; break;
+  case 0b0001:  buffer << "fpscr"; break;
+  case 0b0110:  buffer << "mvfr1"; break;
+  case 0b0111:  buffer << "mvfr0"; break;
+  case 0b1000:  buffer << "fpexc"; break;
   }
 };
 
 vmrs.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  switch (spr) {
-  default: throw 0;
-  case 1: {
-    if (rt != 15) {
-      cpu.SetGPR( rt, cpu.FPSCR().Get( ALL32 ) );
-    } else {
+  if (spr == 1) {
+    // cpu.CheckVFPEnabled(TRUE); cpu.SerializeVFP(); cpu.VFPExcBarrier();
+    if (rt != 15)
+      cpu.SetGPR( rt, cpu.FPSCR().bits() );
+    else
       cpu.CPSR().Set( NZCV, cpu.FPSCR().Get( NZCV ) );
+  }
+  
+  else {
+    // cpu.CheckVFPEnabled(FALSE);
+    if (GetNativeValue(cpu.CPSR().Get(M) == typename ARCH::U32(cpu.USER_MODE)))
+      cpu.UndefinedInstruction( this );
+
+    switch (spr) {
+    default:
+      cpu.UndefinedInstruction( this );
+      break;
+ // case 0b0000: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.FPSID() ); break;
+ // case 0b0110: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.MVFR1() ); break;
+ // case 0b0111: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.MVFR0() ); break;
+    case 0b1000: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.FPEXC.bits() ); break;
     }
-  } break;
   }
 };
 
 op vmsr( 0b1110[4]: 0b11101110[8]: spr[4]:> <: rt[4]: 0b1010[4]: 0b0001[4]: 0b0000[4] );
+vmsr.var reject : {Reject} = {(rt == 13) or (rt == 15)};
 
 vmsr.disasm = {
   buffer << "vmsr\t";
   switch (spr) {
   default: buffer << "<undefined>"; return;
-  case 0:  buffer << "fpsid"; break;
-  case 1:  buffer << "fpscr"; break;
-  case 6:  buffer << "mvfr1"; break;
-  case 7:  buffer << "mvfr0"; break;
-  case 8:  buffer << "fpexc"; break;
-  case 9:  buffer << "fpinst @ Impl def"; break;
-  case 10: buffer << "fpinst2 @ Impl def"; break;
+  case 0b0000:  buffer << "fpsid"; break;
+  case 0b0001:  buffer << "fpscr"; break;
+  case 0b0110:  buffer << "mvfr1"; break;
+  case 0b0111:  buffer << "mvfr0"; break;
+  case 0b1000:  buffer << "fpexc"; break;
   }
   buffer << ", " << DisasmRegister(rt);
 };
@@ -1493,11 +1508,26 @@ vmsr.disasm = {
 vmsr.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  switch (spr) {
-  default: throw 0;
-  case 1: {
-    cpu.FPSCR().Set( ALL32, cpu.GetGPR( rt ) );
-  } break;
+  if (spr == 1) {
+    // cpu.CheckVFPEnabled(TRUE); cpu.SerializeVFP(); cpu.VFPExcBarrier();
+    cpu.FPSCR().bits() = cpu.GetGPR( rt );
+  }
+  
+  else {
+    // cpu.CheckVFPEnabled(FALSE);
+    if (GetNativeValue(cpu.CPSR().Get(M) == typename ARCH::U32(cpu.USER_MODE)))
+      cpu.UndefinedInstruction( this );
+    
+    switch (spr) {
+    default:
+      cpu.UndefinedInstruction( this );
+      break;
+      
+ // case 0b0000: /* cpu.SerializeVFP(); */ /* FPSID is read-only */ break;
+ // case 0b0110: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.MVFR1() ); break;
+ // case 0b0111: /* cpu.SerializeVFP(); */ cpu.SetGPR( rt, cpu.MVFR0() ); break;
+    case 0b1000: /* cpu.SerializeVFP(); */ cpu.FPEXC.bits() = cpu.GetGPR( rt ); break;
+    }
   }
 };
 
@@ -1675,13 +1705,14 @@ vstmdb_f32.disasm = {
 vstmdb_f32.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 2 );
-  cpu.SetGPR( rn, address );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 2 );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.MemWrite32( address, cpu.GetVU32( vd + reg ) );
-    address += 4;
+    cpu.MemWrite32( base_addr + U32(4*reg), cpu.GetVU32( vd + reg ) );
   }
+  
+  cpu.SetGPR( rn, base_addr );
 };
 
 op vstmdb_f64( 0b1110110[7]: 0b1[1]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: rn[4]:> <: vd0[4]: 0b1011[4]: regs[7]: fstm[1] );
@@ -1700,14 +1731,15 @@ vstmdb_f64.disasm = {
 vstmdb_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn ) - typename ARCH::U32( regs << 3 );
-  cpu.SetGPR( rn, address );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 3 );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.MemWrite32( address + 0, cpu.GetVU32( 2*(vd+reg) + 0 ) );
-    cpu.MemWrite32( address + 4, cpu.GetVU32( 2*(vd+reg) + 1 ) );
-    address += 8;
+    cpu.MemWrite32( base_addr + U32(8*reg + 0), cpu.GetVU32( 2*(vd+reg) + 0 ) );
+    cpu.MemWrite32( base_addr + U32(8*reg + 4), cpu.GetVU32( 2*(vd+reg) + 1 ) );
   }
+  
+  cpu.SetGPR( rn, base_addr );
 };
 
 op vstmia_f32( 0b1110110[7]: 0b0[1]: 0b1[1]: vd0[1]: w[1]: 0b0[1]: rn[4]:> <: shl<1> vd1[4]: 0b1010[4]: regs[8] );
@@ -1724,13 +1756,14 @@ vstmia_f32.disasm = {
 vstmia_f32.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 2 ) );
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn );
                      
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.MemWrite32( address, cpu.GetVU32( vd + reg ) );
-    address += 4;
+    cpu.MemWrite32( base_addr + U32(4*reg), cpu.GetVU32( vd + reg ) );
   }
+  
+  if (w) cpu.SetGPR( rn, base_addr + U32( regs << 2 ) );
 };
 
 op vstmia_f64( 0b1110110[7]: 0b0[1]: 0b1[1]: shl<4> vd1[1]: w[1]: 0b0[1]: rn[4]:> <: vd0[4]: 0b1011[4]: regs[7]: fstm[1] );
@@ -1749,14 +1782,15 @@ vstmia_f64.disasm = {
 vstmia_f64.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
-  typename ARCH::U32 address = cpu.GetGPR( rn );
-  if (w) cpu.SetGPR( rn, address + typename ARCH::U32( regs << 3 ) );
-                     
+  typedef typename ARCH::U32 U32;
+  U32 base_addr = cpu.GetGPR( rn );
+  
   for (unsigned reg = 0; reg < regs; ++reg) {
-    cpu.MemWrite32( address + 0, cpu.GetVU32( 2*(vd+reg) + 0 ) );
-    cpu.MemWrite32( address + 4, cpu.GetVU32( 2*(vd+reg) + 1 ) );
-    address += 8;
+    cpu.MemWrite32( base_addr + U32(8*reg + 0), cpu.GetVU32( 2*(vd+reg) + 0 ) );
+    cpu.MemWrite32( base_addr + U32(8*reg + 4), cpu.GetVU32( 2*(vd+reg) + 1 ) );
   }
+  
+  if (w) cpu.SetGPR( rn, base_addr + U32( regs << 3 ) );
 };
 
 /* VSTR This instruction stores a single extension register to memory,

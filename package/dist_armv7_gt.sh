@@ -201,15 +201,15 @@ unisim/util/endian/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
 unisim/util/queue/queue.cc \
-unisim/component/tlm2/processor/arm/armemu/armemu.cc \
+unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
 unisim/component/cxx/processor/arm/cache.cc \
-unisim/component/cxx/processor/arm/armemu/cpu.cc \
-unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
-unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
+unisim/component/cxx/processor/arm/vmsav7/cpu.cc \
+unisim/component/cxx/processor/arm/vmsav7/isa_arm32.cc \
+unisim/component/cxx/processor/arm/vmsav7/isa_thumb.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
@@ -402,6 +402,7 @@ unisim/util/xml/xml.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/arithmetic/arithmetic.hh \
+unisim/util/truth_table/truth_table.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/queue/queue.hh \
@@ -410,17 +411,17 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
-unisim/component/tlm2/processor/arm/armemu/armemu.hh \
+unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
-unisim/component/cxx/processor/arm/armemu/cpu.hh \
+unisim/component/cxx/processor/arm/vmsav7/cpu.hh \
 unisim/component/cxx/processor/arm/cache.hh \
 unisim/component/cxx/processor/arm/cp15.hh \
-unisim/component/cxx/processor/arm/armemu/cp15.hh \
+unisim/component/cxx/processor/arm/vmsav7/cp15.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
@@ -512,7 +513,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/scml2.m4 \
 m4/with_boost.m4 \
 m4/cacti.m4 \
@@ -522,8 +522,7 @@ m4/real_path.m4 \
 m4/pthread.m4"
 
 UNISIM_LIB_ARMV7_GT_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_armv5l.xml \
-unisim/service/debug/gdb_server/gdb_armv7l.xml \
+unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml \
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
 
@@ -735,8 +734,8 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
-  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
+
 
 Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir> --with-scml2=<path-to-scml2-install-dir>
@@ -1035,7 +1034,6 @@ if [ "${has_to_build_armv7_gt_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${ARMV7_GT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SCML2" >> "${ARMV7_GT_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ARMV7_GT_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ARMV7_GT_CONFIGURE_AC}"

@@ -1269,7 +1269,7 @@ sbfx.execute = {
 op bfi( 0b111100110110[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
 bfi.var lsb : {uint8_t} = {lsb1|lsb0};
 bfi.var width : {uint32_t} = {msb-lsb+1};
-bfi.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+bfi.var clear : {uint32_t} = {~(((uint64_t(1) << width)-1) << lsb)};
 bfi.var reject : {Reject} = {msb < lsb};
 
 bfi.disasm = {
@@ -1298,7 +1298,7 @@ bfi.execute = {
 op bfc( 0b111100110110[12]: 0b1111[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
 bfc.var lsb : {uint32_t} = {lsb1|lsb0};
 bfc.var width : {uint32_t} = {msb-lsb+1};
-bfc.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+bfc.var clear : {uint32_t} = {~(((uint64_t(1) << width)-1) << lsb)};
 bfc.var reject : {Reject} = {msb < lsb};
 
 bfc.disasm = {

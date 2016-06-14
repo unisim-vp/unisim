@@ -117,7 +117,7 @@ cps_w.disasm = {
 };
 
 cps_w.execute = {
-  if (GetNativeValue(cpu.CPSR().Get(M)) != cpu.USER_MODE)
+  if (GetNativeValue(cpu.CPSR().Get(M)) == cpu.USER_MODE)
     return;
   typename ARCH::psr_type cpsr_val = cpu.CPSR();
   typedef typename ARCH::U32 U32;
@@ -141,13 +141,13 @@ cps_w.execute = {
  * without the use of the stack.
  */ 
 
-op subs_pclri( 0b1111001111011110[16]:> <: 0b10001111[8]: imm[8] );
+op subspc( 0b1111001111011110[16]:> <: 0b10001111[8]: imm[8] );
 
-subs_pclri.disasm = {
+subspc.disasm = {
   buffer << "subs\tpc, lr, " << DisasmI(imm);
 };
 
-subs_pclri.execute = {
+subspc.execute = {
   if (not CheckCondition(cpu, cpu.itcond())) return;
   
   typedef typename ARCH::U32 U32;
