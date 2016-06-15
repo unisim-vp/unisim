@@ -242,10 +242,17 @@ CPU::Stop(int ret)
 void
 CPU::Wait( sc_event const& evt )
 {
-  if (quantum_time != SC_ZERO_TIME)
-    Sync();
+  //if (quantum_time != SC_ZERO_TIME)
+  // Sync();
   wait( evt );
-  cpu_time = sc_time_stamp();
+  sc_core::sc_time delta( sc_core::sc_time_stamp() );
+  delta -= cpu_time;
+  if (delta > quantum_time) {
+    quantum_time = SC_ZERO_TIME;
+  } else {
+    quantum_time -= delta;
+  }
+  cpu_time = sc_core::sc_time_stamp();
 }
 
 /** Synchronization demanded from the CPU implementation.
@@ -871,8 +878,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
 void
 CPU::WaitForInterrupt()
 {
-  if (not check_external_event)
+  if (not check_external_event and nIRQm and nFIQm) {
     Wait( external_event );
+  }
 }
 
 void

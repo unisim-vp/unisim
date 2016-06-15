@@ -169,10 +169,13 @@ template <unsigned COUNT> struct ITP
     unsigned const idx = COUNT - 1;
     sc_core::sc_spawn_options opt;
     opt.set_sensitivity( &mpcore.interrupt_line_events[idx] );
+    opt.dont_initialize();
+    opt.spawn_method();
     std::ostringstream oss( "ITProcess" );
     oss << idx;
-    sc_core::sc_get_curr_simcontext()->
-      create_method_process( oss.str().c_str(), false, static_cast<sc_core::SC_ENTRY_FUNC>(&MPCore::ITProcess<idx>), &mpcore, &opt );
+    
+    sc_core::sc_spawn(sc_bind(&MPCore::ITProcess<idx>,&mpcore),oss.str().c_str(),&opt);
+    
     ITP<idx>::Register( mpcore );
   }
 };

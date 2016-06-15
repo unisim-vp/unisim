@@ -146,12 +146,16 @@ CPU::CPU(const char *name, Object *parent)
   , linux_printk_buf_addr( 0 )
   , linux_printk_buf_size( 0 )
   , linux_printk_snooping( false )
+  , halt_on_addr( uint32_t(-1) )
+  , halt_on_location()
   , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
   , param_voltage("voltage", this, this->voltage, "The processor voltage in mV.")
   , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
   , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
                                       "Produce a trap when the given instruction count is reached.")
-  , param_linux_printk_snooping( "linux_printk_snooping", this, linux_printk_snooping, "Activate the printk snooping" )
+  , param_linux_printk_snooping( "linux-printk-snooping", this, linux_printk_snooping, "Activate the printk snooping" )
+  , param_halt_on_location( "halt-on-location", this, halt_on_location,
+                            "Tell the CPU to halt simulation on a specific instruction (address or symbol)." )
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
   // Set the right format for various of the variables
@@ -354,20 +358,47 @@ CPU::EndSetup()
     requires_memory_access_reporting = false;
     requires_finished_instruction_reporting = false;
   }
+  
+  typedef unisim::util::debug::Symbol<uint32_t> Symbol;
+  
+  if (halt_on_location.size()) {
+    if (verbose)
+      logger << DebugInfo << "Halt-On instruction enabled" << EndDebugInfo;
+    
+    if (Symbol const* symbol = symbol_table_lookup_import ?
+        symbol_table_lookup_import->FindSymbolByName(halt_on_location.c_str(), Symbol::SYM_FUNC) : 0)
+      {
+        halt_on_addr = symbol->GetAddress();
+        
+        if (verbose) logger << DebugInfo << "Found " << halt_on_location << EndDebugInfo;
+      }
+    else
+      {
+        char const* location = halt_on_location.c_str();
+        char* endptr;
+        halt_on_addr = strtoul(location, &endptr, 0);
+        if ((*location == '\0') or (*endptr != '\0'))
+          halt_on_addr = uint32_t(-1);
+      }
+    
+    if (verbose) {
+      if (halt_on_addr != uint32_t(-1))
+        logger << DebugInfo << "Simulation will stop on instruction @" << std::hex << halt_on_addr << EndDebugInfo;
+      else
+        logger << DebugWarning
+               << halt_on_location << " is not a valid instruction address; halt-on feature disabled."
+               << EndDebugWarning;
+    }
 
+  }
 
   if (linux_printk_snooping)
     {
       if (verbose)
         logger << DebugInfo << "Linux printk snooping enabled" << EndDebugInfo;
       
-      typedef unisim::util::debug::Symbol<uint32_t> Symbol;
-      Symbol const* symbol = 0;
-      
-      if (symbol_table_lookup_import)
-        symbol = symbol_table_lookup_import->FindSymbolByName("__log_buf", Symbol::SYM_OBJECT);
-      
-      if (symbol)
+      if (Symbol const* symbol = symbol_table_lookup_import ?
+          symbol_table_lookup_import->FindSymbolByName("__log_buf", Symbol::SYM_OBJECT) : 0)
         {
           linux_printk_buf_addr = symbol->GetAddress();
           linux_printk_buf_size = symbol->GetSize();
@@ -587,6 +618,8 @@ CPU::StepInstruction()
 {
   /* Instruction boundary next_insn_addr becomes current_insn_addr */
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
+  
+  if (insn_addr == halt_on_addr) { Stop(0); return; }
   
   if (debug_control_import)
     {

@@ -360,12 +360,18 @@ protected:
   uint8_t ipb_bytes[IPB_LINE_SIZE];  //!< The instruction prefetch buffer
   uint32_t ipb_base_address;         //!< base address of IPB content (cache line size aligned if valid)
   
-  /*************************
-   * LINUX PRINTK SNOOPING *
-   *************************/
+  /*************************/
+  /* LINUX PRINTK SNOOPING */
+  /*************************/
   uint32_t linux_printk_buf_addr;
   uint32_t linux_printk_buf_size;
   bool     linux_printk_snooping;
+
+  /*********************/
+  /* "HALT ON" feature */
+  /*********************/
+  uint32_t    halt_on_addr;
+  std::string halt_on_location;
 
   /**********************************************************/
   /* UNISIM parameters, statistics                    START */
@@ -381,6 +387,8 @@ protected:
   unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
   /** UNISIM Printk snooping activation */
   unisim::kernel::service::Parameter<bool> param_linux_printk_snooping;
+  /** UNISIM Parameter to enable and locate Halt-On feature. */
+  unisim::kernel::service::Parameter<std::string> param_halt_on_location;
   /** UNISIM Statistic of the number of instructions executed. */
   unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
 

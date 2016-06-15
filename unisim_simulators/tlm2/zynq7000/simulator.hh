@@ -170,8 +170,10 @@ struct MPCore : public MMDevice
   sc_core::sc_event interrupt_line_events[ITLinesCount];
   template <unsigned IDX> void ITProcess() { ITProcess( IDX ); }
   void ITProcess( unsigned idx );
+  
   sc_core::sc_event generate_exceptions_event;
   void GenerateExceptionsProcess();
+  
   unsigned HighestPriorityPendingInterrupt( uint8_t required, uint8_t enough );
   uint32_t ReadGICC_IAR();
 };
