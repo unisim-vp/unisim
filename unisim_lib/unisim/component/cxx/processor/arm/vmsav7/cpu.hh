@@ -283,6 +283,7 @@ protected:
     uint32_t   pxn : 1;
     uint32_t   xn : 1;
     uint32_t   asid : 8;
+    uint32_t   lsb : 5;
   };
   
   struct TLB
@@ -298,18 +299,31 @@ protected:
     TransAddrDesc vals[ENTRY_CAPACITY];
     TLB();
     template <class POLICY>
-    bool GetTranslation( TransAddrDesc& tad, uint32_t mva );
-    void AddTranslation( unsigned lsb, uint32_t mva, TransAddrDesc const& tad );
-    void Invalidate() { entry_count = 0; }
-    void InvalidateByMVA( uint32_t mva );
-    void InvalidateByASID( uint32_t asid ) { /* TODO: support for ASIDs */ Invalidate(); }
+    bool GetTranslation( TransAddrDesc& tad, uint32_t mva, uint32_t asid );
+    void AddTranslation( uint32_t mva, TransAddrDesc const& tad );
+    void InvalidateAll() { entry_count = 0; }
+    
+    struct Iterator
+    {
+      Iterator( TLB& _tlb );
+      bool Next();
+      void Invalidate();
+      bool MatchMVA( uint32_t mva ) const;
+      bool IsGlobal() const;
+      bool MatchASID( uint32_t asid ) const;
+    private:
+      TLB& tlb;
+      unsigned idx, next;
+    };
   } tlb;
   
   template <class POLICY>
   void      TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat, unsigned size );
   template <class POLICY>
   uint32_t  TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size );
-    
+  
+  uint32_t  GetASID() const { return CONTEXTIDR & 0xff; }
+  
   /*************************/
   /* MMU Interface    END  */
   /*************************/

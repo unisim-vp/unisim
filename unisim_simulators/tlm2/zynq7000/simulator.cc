@@ -518,8 +518,9 @@ PS_UART::PS_UART( sc_module_name const& name, unisim::kernel::service::Object* p
   , unisim::kernel::service::Client<unisim::service::interfaces::CharIO>( name, parent )
   , char_io_import("char-io-import", this)
   , exchange_event( "exchange_event" )
-  , exchange_period( sc_core::SC_ZERO_TIME )
-  , int_period( sc_core::SC_ZERO_TIME )
+  , bit_period( sc_core::SC_ZERO_TIME )
+  , last_rx( sc_core::SC_ZERO_TIME )
+  , rx_timeout_active(true)
   , mpcore( _mpcore )
   , it_line( _it_line )
   , TxFIFO()
@@ -548,7 +549,20 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
 {
   if (d.size == 4) {
     switch (addr) {
-    case 0x00: d.Access( CR ); CR &= -4; return true;
+    case 0x00:
+      d.Access( CR );
+      if (d.wnr) {
+        uint32_t const zero(0);
+        if (RegisterField<0,1>().Swap( CR, zero ))
+          RxFIFO.Clear();
+        RegisterField<1,1>().Set( CR, zero );
+        if (RegisterField<6,1>().Swap( CR, zero )) {
+          rx_timeout_active = true;
+          last_rx = update_time;
+          exchange_event.notify( bit_period*rx_timeout_ticks() );
+        }
+      }
+      return true;
     case 0x04: d.Access( MR ); return true;
     case 0x08: { // IER
       if (not d.wnr) return false;
@@ -570,12 +584,17 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
         uint32_t disable_mask;
         d.Access( disable_mask );
         ISR &= ~disable_mask;
+        // if (disable_mask & 0x100)
+        //   trap_reporting_import->ReportTrap(*this, "WTF???");
       } else
         d.Access( ISR );
       return true;
     }
     case 0x18: d.Access( BAUDGEN ); return true;
-    case 0x1c: d.Access( RXTOUT ); return true;
+    case 0x1c:
+      d.Access( RXTOUT );
+      if (d.wnr) { RXTOUT &= 0xff; rx_timeout_active = true; }
+      return true;
     case 0x20: d.Access( RTRIG ); RTRIG &= 0x3f; return true;
     case 0x2c: {
       // Channel_sts_reg
@@ -595,7 +614,7 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
     } return true;
     case 0x30: { 
       if (d.wnr) PutChar( d ); // Tx
-      else       return false;
+      else       GetChar( d ); // Rx
     } return true;
     case 0x34: d.Access( BDIV ); BDIV &= 0xff; return true;
     case 0x38: d.Access( FDEL ); FDEL &= 0x3f; return true;
@@ -619,7 +638,17 @@ PS_UART::PutChar( Data const& d )
     throw std::logic_error("no IO client connected");
   char_io_import->PutChar( char(value) );
   
-  exchange_event.notify( int_period );
+  if (RegisterField<3,1>().Get( IMR )) /* TEMPTY */
+    exchange_event.notify( 8*bit_period );
+}
+
+void
+PS_UART::GetChar( Data const& d )
+{
+  uint32_t value = 0;
+  if (not RxFIFO.Empty())
+    value = RxFIFO.Pull();
+  d.Access( value );
 }
 
 void
@@ -628,28 +657,39 @@ PS_UART::ExchangeProcess()
   if (not char_io_import)
     return;
   
-  exchange_event.notify( exchange_period );
+  sc_core::sc_time update_time( sc_core::sc_time_stamp() );
+  exchange_event.notify( bit_period*1024 );
+  
+  /*** Error handling ***/
+  // No error possible
+  
+  /*** - ISR update ***/
+  RegisterField <9,1>().Set( ISR, 0 ); // DMSI, Delta Modem Status Indicator
+  RegisterField <7,1>().Set( ISR, 0 ); // PARE, Receiver Parity Error
+  RegisterField <6,1>().Set( ISR, 0 ); // FRAME, Receiver Framing Error 
+  RegisterField <5,1>().Set( ISR, 0 ); // ROVR, Receiver Overflow Error
   
   /*** Tx Handling ***/
   char_io_import->FlushChars();
   
+  /*** - ISR update ***/
   RegisterField<12,1>().Set( ISR, 0 ); // TOVR, Transmitter FIFO Overflow
   RegisterField<11,1>().Set( ISR, 0 ); // TNFULL, Transmitter FIFO Nearly Full
   RegisterField<10,1>().Set( ISR, 0 ); // TTRIG, Transmitter FIFO Trigger
-  RegisterField <9,1>().Set( ISR, 0 ); // DMSI, Delta Modem Status Indicator
-  RegisterField <8,1>().Set( ISR, 0 ); // TIMEOUT, Receiver Timeout Error
-  RegisterField <7,1>().Set( ISR, 0 ); // PARE, Receiver Parity Error
-  RegisterField <6,1>().Set( ISR, 0 ); // FRAME, Receiver Framing Error 
-  RegisterField <5,1>().Set( ISR, 0 ); // ROVR, Receiver Overflow Error
   RegisterField <4,1>().Set( ISR, 0 ); // TFUL, Transmitter FIFO Full
   RegisterField <3,1>().Set( ISR, 1 ); // TEMPTY, Transmitter FIFO Empty
   
   /*** Rx Handling ***/
   for (char ch; (not RxFIFO.Full()) and (char_io_import->GetChar( ch ));) {
     RxFIFO.Push( ch );
+    last_rx = update_time;
   }
   
-  /*** Updating ISR ***/
+  /*** - ISR update ***/
+  if (rx_timeout_active and RXTOUT and ((update_time - last_rx) >= (bit_period*rx_timeout_ticks()))) {
+    RegisterField <8,1>().Set( ISR, 1 ); // TIMEOUT, Receiver Timeout Error
+    //rx_timeout_active = false; // WTF? xilinx says that timeout is inactive until RST_TO (which linux never gives)
+  }
   if (RxFIFO.Full())
     RegisterField <2,1>().Set( ISR, 1 ); // RFUL, Receiver FIFO Full
   if (RxFIFO.Empty())
@@ -797,6 +837,8 @@ Simulator::Simulator(int argc, char **argv)
   cpu.instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
   //cpu.exception_trap_reporting_import >> debugger->trap_reporting_export;
   mpcore.trap_reporting_import >> debugger->trap_reporting_export;
+  uart0.trap_reporting_import >> debugger->trap_reporting_export;
+  uart1.trap_reporting_import >> debugger->trap_reporting_export;
   //cpu.symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
   cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   debugger->disasm_import >> cpu.disasm_export;
@@ -1030,8 +1072,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
   unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
   
   ttc0.clock_period = ttc1.clock_period = cpu.GetCpuCycleTime();
-  uart0.exchange_period = uart0.exchange_period = sc_core::sc_time( 20, sc_core::SC_MS );
-  uart0.int_period = uart0.int_period = sc_core::sc_time( 100, sc_core::SC_US );
+  uart0.bit_period = uart0.bit_period = sc_core::sc_time( 9, sc_core::SC_US ); /* Approx 115200 bauds ;-) */
   
   // inline-debugger and gdb-server are exclusive
   if(enable_inline_debugger && enable_gdb_server)

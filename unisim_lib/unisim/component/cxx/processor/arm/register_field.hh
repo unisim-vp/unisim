@@ -77,6 +77,14 @@ namespace arm {
       reg = (reg & ~mask) | ((value << pos) & mask);
     }
     template <typename T> void Set( T& reg, bool ones ) const { this->Set( reg, ones ? ~T( 0 ) : T( 0 )); }
+    template <typename T>
+    T Swap( T& reg, T const& value ) const
+    {
+      T const mask = ((~T(0)) >> ((8*sizeof (T)) - size)) << pos;
+      T res = (reg & mask) >> pos;
+      reg = (reg & ~mask) | ((value << pos) & mask);
+      return res;
+    }
   };
   
   /* Common bitfields */

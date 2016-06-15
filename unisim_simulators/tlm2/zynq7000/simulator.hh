@@ -222,7 +222,8 @@ struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim:
 
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
   sc_core::sc_event exchange_event;
-  sc_core::sc_time  exchange_period, int_period;
+  sc_core::sc_time  bit_period, last_rx;
+  bool              rx_timeout_active;
   MPCore&           mpcore;
   int               it_line;
   
@@ -232,11 +233,12 @@ struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim:
     uint8_t items[CAPACITY];
     unsigned head, size;
     void Push( uint8_t item ) { head = (head + CAPACITY - 1) % CAPACITY; size +=1; items[head] = item; }
-    uint8_t Pull() { size -= 1; return items[(head+size-1)%CAPACITY]; }
+    uint8_t Pull() { size -= 1; return items[(head+size)%CAPACITY]; }
     bool Full() const { return size >= CAPACITY; }
     bool NearlyFull() const { return size >= (CAPACITY-1); }
     bool Empty() const { return size == 0; }
     bool Trig( unsigned level ) { return level and (size >= level); }
+    void Clear() { size = 0; }
   };
   
   FIFO TxFIFO;
@@ -244,6 +246,9 @@ struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim:
   unsigned CR, MR, IMR, ISR, BAUDGEN, RXTOUT, BDIV, TTRIG, RTRIG, FDEL;
   
   void PutChar( Data const& d );
+  void GetChar( Data const& d );
+  
+  sc_dt::uint64 rx_timeout_ticks() const { return (RXTOUT*4+3); }
   
   void ExchangeProcess();
 };
