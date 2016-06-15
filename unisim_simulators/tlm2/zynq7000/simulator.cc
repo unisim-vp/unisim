@@ -162,6 +162,23 @@ MMDevice::DumpRegisterAccess( std::ostream& sink, uint32_t addr, MMDevice::Data 
   sink << ".\n";
 }
 
+template <unsigned COUNT> struct ITP
+{
+  static void Register( MPCore& mpcore )
+  {
+    unsigned const idx = COUNT - 1;
+    sc_core::sc_spawn_options opt;
+    opt.set_sensitivity( &mpcore.interrupt_line_events[idx] );
+    std::ostringstream oss( "ITProcess" );
+    oss << idx;
+    sc_core::sc_get_curr_simcontext()->
+      create_method_process( oss.str().c_str(), false, static_cast<sc_core::SC_ENTRY_FUNC>(&MPCore::ITProcess<idx>), &mpcore, &opt );
+    ITP<idx>::Register( mpcore );
+  }
+};
+
+template <> struct ITP<0u> { static void Register( MPCore& mpcore ) {} };
+
 /**
  * Constructor.
  * 
@@ -190,6 +207,8 @@ MPCore::MPCore(const sc_module_name& name, unisim::kernel::service::Object* pare
   
   SC_METHOD(GenerateExceptionsProcess);
   sc_core::sc_module::sensitive << generate_exceptions_event;
+  
+  ITP<ITLinesCount>::Register( *this );
 }
 
 namespace {
@@ -302,10 +321,10 @@ MPCore::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& up
 }
 
 void
-MPCore::SendInterrupt( unsigned idx, sc_core::sc_time const& t )
+MPCore::ITProcess( unsigned idx )
 {
   IPENDING[idx/32] |= (1ul << (idx%32));
-  generate_exceptions_event.notify(t);
+  generate_exceptions_event.notify(sc_core::SC_ZERO_TIME);
 }
 
 unsigned
@@ -460,7 +479,7 @@ TTC::UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time )
     
     if (ticks_to_next_zero <= 0) {
       Interrupt_Register[idx] |= interrupt_vector;
-      mpcore.SendInterrupt( base_it + idx, sc_int );
+      mpcore.interrupt_line_events[base_it + idx].notify(sc_int);
     }
     update_state_event.notify( sc_int );
   }
@@ -699,7 +718,7 @@ PS_UART::ExchangeProcess()
   
   /*** Interrupt Generation ***/
   if (ISR & IMR)
-    mpcore.SendInterrupt( it_line, sc_core::SC_ZERO_TIME );
+    mpcore.interrupt_line_events[it_line].notify(sc_core::SC_ZERO_TIME);
 }
 
 SLCR::SLCR(const sc_module_name& name, unisim::kernel::service::Object* parent)

@@ -150,8 +150,6 @@ struct MPCore : public MMDevice
 
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
   
-  void SendInterrupt( unsigned idx, sc_core::sc_time const& t );
-
   sc_core::sc_out<bool> nIRQ;
   sc_core::sc_out<bool> nFIQ;
   
@@ -169,6 +167,9 @@ struct MPCore : public MMDevice
   static unsigned const icfgr_count = 2*(ITLinesNumber+1);
   uint32_t ICDICFR[ITLinesCount/16];
   
+  sc_core::sc_event interrupt_line_events[ITLinesCount];
+  template <unsigned IDX> void ITProcess() { ITProcess( IDX ); }
+  void ITProcess( unsigned idx );
   sc_core::sc_event generate_exceptions_event;
   void GenerateExceptionsProcess();
   unsigned HighestPriorityPendingInterrupt( uint8_t required, uint8_t enough );
