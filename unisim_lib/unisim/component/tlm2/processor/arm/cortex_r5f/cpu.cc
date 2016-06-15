@@ -187,8 +187,6 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , AIFSR(0)
   , CFLR(0)
 {
-  PCPU::param_cpu_cycle_time_ps.SetVisible(false);
-
   master_socket.bind(*this);
   
   SC_THREAD(Run);

@@ -147,69 +147,77 @@ namespace armsec
     /* mask for valid bits in processor control and status registers */
     static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
     
-    struct SourceReg : public ExprNode
+    struct SourceID
     {
-      SourceReg( unsigned _reg ) : reg( _reg ) {} unsigned reg;
-      virtual void Repr( std::ostream& sink ) const { sink << "SourceReg(" << reg << ")"; }
-      intptr_t cmp( ExprNode const& brhs ) const
+      enum Code
+        {
+          NA = 0,
+          r0,r1,r2,r3,r4,r5,r6,r7,
+          r8,r9,sl,fp,ip,sp,lr,
+          cia, cpsr, spsr,
+          fpscr, fpexc
+        };
+    
+      template <class SCANNER>
+      static void
+      ScanOp( SCANNER const& ops )
       {
-        SourceReg const& rhs = dynamic_cast<SourceReg const&>( brhs );
-        return int(reg - rhs.reg);
+        { static std::string const _("r0");    if (ops( _, r0))    return; }
+        { static std::string const _("r1");    if (ops( _, r1))    return; }
+        { static std::string const _("r2");    if (ops( _, r2))    return; }
+        { static std::string const _("r3");    if (ops( _, r3))    return; }
+        { static std::string const _("r4");    if (ops( _, r4))    return; }
+        { static std::string const _("r5");    if (ops( _, r5))    return; }
+        { static std::string const _("r6");    if (ops( _, r6))    return; }
+        { static std::string const _("r7");    if (ops( _, r7))    return; }
+        { static std::string const _("r8");    if (ops( _, r8))    return; }
+        { static std::string const _("r9");    if (ops( _, r9))    return; }
+        { static std::string const _("sl");    if (ops( _, sl))    return; }
+        { static std::string const _("fp");    if (ops( _, fp))    return; }
+        { static std::string const _("ip");    if (ops( _, ip))    return; }
+        { static std::string const _("sp");    if (ops( _, sp))    return; }
+        { static std::string const _("lr");    if (ops( _, lr))    return; }
+        { static std::string const _("cia");   if (ops( _, cia))   return; }
+        { static std::string const _("cpsr");  if (ops( _, cpsr))  return; }
+        { static std::string const _("spsr");  if (ops( _, spsr))  return; }
+        { static std::string const _("fpscr"); if (ops( _, fpscr)) return; }
+        { static std::string const _("fpexc"); if (ops( _, fpexc)) return; }
       }
-      ExprNode* GetConstNode() { return 0; };
-    };
-  
-    struct SourceCIA : public ExprNode
-    {
-      SourceCIA() {}
-      virtual void Repr( std::ostream& sink ) const { sink << "SourceCIA()"; }
-      intptr_t cmp( ExprNode const& brhs ) const { return 0; }
-      ExprNode* GetConstNode() { return 0; };
+    
+      SourceID( Code _code ) : code(_code) {}
+      SourceID( std::string _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
+      SourceID( char const* _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
+      std::string ToString() const { std::string res("NA"); ScanOp( Enum2Str<Code>( code, res ) ); return res; }
+      SourceID operator + ( int offset ) const { return SourceID( Code(int(code) + offset) ); }
+      int operator - ( SourceID rid ) const { return int(code) - int(rid.code); }
+      
+      Code code;
     };
     
-    struct SourceCPSR : public ExprNode
+    struct Source : public ExprNode
     {
-      SourceCPSR() {}
-      virtual void Repr( std::ostream& sink ) const { sink << "SourceCPSR()"; }
-      intptr_t cmp( ExprNode const& brhs ) const { return 0; }
-      ExprNode* GetConstNode() { return 0; };
+      Source( SourceID _id ) : id( _id ) {}
+      Source( char const* name ) : id( name ) {}
+      virtual void Repr( std::ostream& sink ) const { sink << "Source(" << id.ToString() << ")"; }
+      virtual intptr_t cmp( ExprNode const& brhs ) const {
+        Source const& rhs = dynamic_cast<Source const&>( brhs );
+        return id - rhs.id;
+      }
+      virtual ExprNode* GetConstNode() { return 0; };
+      
+      SourceID id;
     };
-    
-    struct SourceSPSR : public ExprNode
-    {
-      SourceSPSR() {}
-      virtual void Repr( std::ostream& sink ) const { sink << "SourceSPSR()"; }
-      intptr_t cmp( ExprNode const& brhs ) const { return 0; }
-      ExprNode* GetConstNode() { return 0; };
-    };
-    
-    struct SourceFPSCR : public ExprNode
-    {
-      SourceFPSCR() {}
-      virtual void Repr( std::ostream& sink ) const { sink << "SourceFPSCR()"; }
-      intptr_t cmp( ExprNode const& brhs ) const { return 0; }
-      ExprNode* GetConstNode() { return 0; };
-    };
-    
-    struct SourceFPEXC : public ExprNode
-    {
-      SourceFPEXC() {}
-      virtual void Repr( std::ostream& sink ) const { sink << "SourceFPEXC()"; }
-      intptr_t cmp( ExprNode const& brhs ) const { return 0; }
-      ExprNode* GetConstNode() { return 0; };
-    };
-    
     
     State( PathNode& _path, bool is_thumb, unsigned insn_length )
       : path( &_path )
-      , current_insn_addr( Expr( new SourceCIA ) )
+      , current_insn_addr( Expr( new Source("cia") ) )
       , next_insn_addr()
-      , cpsr( Expr( new SourceCPSR ) )
-      , spsr( Expr( new SourceSPSR ) )
-      , fpscr( *this, Expr( new SourceFPSCR ) )
+      , cpsr( Expr( new Source("cpsr") ) )
+      , spsr( Expr( new Source("spsr") ) )
+      , fpscr( *this, Expr( new Source("fpscr") ) )
     {
       for (unsigned reg = 0; reg < 15; ++reg)
-        reg_values[reg] = U32( armsec::Expr( new SourceReg( reg ) ) );
+        reg_values[reg] = U32( armsec::Expr( new Source( SourceID("r0") + reg ) ) );
       reg_values[15] = current_insn_addr + U32( is_thumb ? 4 : 8 );
       if ((insn_length != 32) and ((insn_length != 16) or not is_thumb))
         throw std::logic_error( "Bad instruction length" );
@@ -415,9 +423,21 @@ namespace armsec
     void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value ) { not_implemented(); }
     char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { not_implemented(); return ""; }
     
-    void dump()
+    void Dump( std::ostream& sink, State const& ref )
     {
-      std::cout << "hello\n";
+      sink <<     "    nia   := "; next_insn_addr.expr->Repr( sink ); sink << std::endl;
+      if (cpsr.m_value.expr != ref.cpsr.m_value.expr)
+        { sink << "    cpsr  := "; cpsr.m_value.expr->Repr( sink ); sink << std::endl; }
+      if (spsr.m_value.expr != ref.spsr.m_value.expr)
+        { sink << "    spsr  := "; spsr.m_value.expr->Repr( sink ); sink << std::endl; }
+      if (fpscr.m_value.expr != ref.fpscr.m_value.expr)
+        { sink << "    fpscr := "; fpscr.m_value.expr->Repr( sink ); sink << std::endl; }
+      for (unsigned reg = 0; reg < 15; ++reg) {
+        if (reg_values[reg].expr == ref.reg_values[reg].expr)
+          continue;
+        sink <<   "    " << (SourceID("r0") + reg).ToString()
+             <<         "    := "; reg_values[reg].expr->Repr( sink ); sink << std::endl;
+      }
     }
   
   };
@@ -457,10 +477,8 @@ struct Decoder
     typename ISA::Operation* op = isa.NCDecode( addr, ISA::mkcode( code ) );
     armsec::PathNode path;
     std::cout << std::hex << addr << std::dec << ": ";
-    {
-      armsec::State for_disasm_purpose( path, isa.is_thumb, op->GetLength() );
-      op->disasm( for_disasm_purpose, std::cout );
-    }
+    armsec::State reference( path, isa.is_thumb, op->GetLength() );
+    op->disasm( reference, std::cout );
     std::cout << std::endl;
     for (bool end = false; not end;) {
       armsec::State state( path, isa.is_thumb, op->GetLength() );
@@ -470,6 +488,7 @@ struct Decoder
       for (armsec::PathNode* pn = state.path; pn->previous; pn = pn->previous, sep = "  and ")
         {
           std::cout << sep; pn->Dump( std::cout ); std::cout << std::endl;
+          state.Dump( std::cout, reference );
         }
     }
   }
