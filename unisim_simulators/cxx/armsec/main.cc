@@ -190,7 +190,7 @@ namespace armsec
     {
       for (unsigned reg = 0; reg < 15; ++reg)
         reg_values[reg] = U32( new SourceReg( reg ) );
-      current_insn_addr = U32( new CIA );
+      current_insn_addr = U32( new SourceCIA );
       reg_values[15] = current_insn_addr + U32( is_thumb ? 4 : 8 );
       if ((insn_length != 16) and (insn_length != 32))
         throw std::logic_error( "Bad instruction length" );
@@ -202,7 +202,7 @@ namespace armsec
     U32 reg_values[16];
     U32 current_insn_addr, next_insn_addr;
     psr_type cpsr, spsr;
-    U32  cpsr, spsr, fpscr;
+    U32  fpscr;
     
     void not_implemented() { throw std::logic_error( "not implemented" ); }
 
@@ -210,86 +210,65 @@ namespace armsec
     U32  GetGPR( uint32_t id ) { return reg_values[id]; }
     void SetGPR_usr( uint32_t id, U32 const& value ) { /* Only work in system mode instruction */ not_implemented(); }
     void SetGPR_mem( uint32_t id, U32 const& value ) { reg_values[id] = value; }
-    void SetGPR( uint32_t id, U32 const& value ) { reg_values[id] = value; }
+    void SetGPR( uint32_t id, U32 const& value ) {
+      if (id != 15)
+        reg_values[id] = value;
+      else
+        next_insn_addr = value;
+    }
     
     SmartValue<uint32_t> GetNIA() { return next_insn_addr; }
 
-    // template <typename RF>  uint32_t GetPSR( RF const& rf ) const { return 0; }
-    // template <typename RF>  void     SetPSR( RF const& rf, uint32_t value ) {}
-    
-    struct PSRFlags : public ExprNode
-    {
-      PSRFlags( uint32_t _mask ) : mask( _mask ) {} uint32_t mask;
-      virtual void Repr( std::ostream& sink ) const { sink << "PSR_flags"; }
-    };
-    
-    template <typename RF> U32 GetPSR( RF const& rf )
-    {
-      return U32( new PSRFlags( rf.Get( uint32_t( -1 ) ) ) );
-    }
-    void SetPSR( typeof( unisim::component::cxx::processor::arm::ALL32 ) const&, uint32_t value ) { not_implemented(); }
-    template <typename RF>
-    void SetPSR( RF const& rf )
-    {
-      interface.writeflags();
-      if (rf.Get( ~psr_ok_mask ) != 0) not_implemented();
-    }
-    
-    psr_type CPSR() { return psr_type( cpsr ); };
-    U32& SPSR() { /* Only work in system mode instruction */ not_implemented(); return cpsr; };
+    psr_type& CPSR() { return cpsr; };
+    psr_type& SPSR() { not_implemented(); return spsr; };
     
     void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ not_implemented(); }
     
     struct Load : public ExprNode
     {
-      Load( Expr const& _address ) : address( _address ) {} Expr address;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); address->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "Load( "; address->Repr( sink ); sink << " )"; }
+      Load( Expr const& _addr, unsigned _size, bool _aligned )
+        : addr( _addr ), size( _size ), aligned( _aligned )
+      {}
+      
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); addr->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "Load( "; addr->Repr( sink ); sink << " )"; }
+      Expr addr;
+      unsigned size;
+      bool aligned;
     };
     
-    U32 MemRead( Expr const& addr, bool aligned=true )
+    struct Store : public ExprNode
     {
-      interface.load_addrs.push_back( addr );
-      interface.aligned &= aligned;
-      return U32( new Load( addr ) ); 
-    }
+      Store( Expr const& _addr, unsigned _size, bool _aligned, Expr const& _value )
+        : addr( _addr ), size( _size ), aligned( _aligned ), value( _value )
+      {}
+      virtual void Repr( std::ostream& sink ) const { sink << "Store( "; addr->Repr( sink ); sink << " )"; }
+      Expr addr;
+      unsigned size;
+      bool aligned;
+      Expr value;
+    };
     
-    void MemWrite( Expr const& addr, bool aligned=true )
-    {
-      interface.store_addrs.push_back( addr );
-      interface.aligned &= aligned;
-    }
+    std::vector<Expr> stores;
     
-    U32  MemURead32( U32 const& address ) { return MemRead( address.m_expr, false ); }
-    U32  MemURead16( U32 const& address ) { return MemRead( address.m_expr, false ); }
-    U32  MemRead32( U32 const& address ) { return MemRead( address.m_expr ); }
-    U32  MemRead16( U32 const& address ) { return MemRead( address.m_expr ); }
-    U32  MemRead8( U32 const& address ) { return MemRead( address.m_expr ); }
+    U32  MemURead32( U32 const& addr ) { return U32( new Load( addr.m_expr, 4, false ) ); }
+    U32  MemURead16( U32 const& addr ) { return U32( new Load( addr.m_expr, 2, false ) ); }
+    U32  MemRead32( U32 const& addr ) { return U32( new Load( addr.m_expr, 4, true ) ); }
+    U32  MemRead16( U32 const& addr ) { return U32( new Load( addr.m_expr, 2, true ) ); }
+    U32  MemRead8( U32 const& addr ) { return U32( new Load( addr.m_expr, 1, false ) ); }
     
-    void MemUWrite32( U32 const& address, U32 const& value ) { MemWrite( address.m_expr, false ); }
-    void MemUWrite16( U32 const& address, U16 const& value ) { MemWrite( address.m_expr, false ); }
-    void MemWrite32( U32 const& address, U32 const& value ) { MemWrite( address.m_expr ); }
-    void MemWrite16( U32 const& address, U16 const& value ) { MemWrite( address.m_expr ); }
-    void MemWrite8( U32 const& address, U8 const& value ) { MemWrite( address.m_expr ); }
+    void MemUWrite32( U32 const& addr, U32 const& value ) { stores.push_back( new Store( addr.m_expr, 4, false, value.m_expr ) ); }
+    void MemUWrite16( U32 const& addr, U16 const& value ) { stores.push_back( new Store( addr.m_expr, 2, false, value.m_expr ) ); }
+    void MemWrite32( U32 const& addr, U32 const& value ) { stores.push_back( new Store( addr.m_expr, 4, true, value.m_expr ) ); }
+    void MemWrite16( U32 const& addr, U16 const& value ) { stores.push_back( new Store( addr.m_expr, 2, true, value.m_expr ) ); }
+    void MemWrite8( U32 const& addr, U8 const& value ) { stores.push_back( new Store( addr.m_expr, 1, false, value.m_expr ) ); }
     
-    void SetExclusiveMonitors( U32 const& address, unsigned size ) {}
-    bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { return true; }
-    void ClearExclusiveLocal() {}
+    void SetExclusiveMonitors( U32 const& address, unsigned size ) { not_implemented(); }
+    bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { not_implemented(); }
+    void ClearExclusiveLocal() { not_implemented(); }
     
-    void donttest_branch();
-    bool Check( BOOL condition ) { return true; }
-    void BranchExchange( U32 const& target ) { donttest_branch(); }
-    void Branch( U32 const& target ) { donttest_branch(); }
-    
-    void donttest_copro();
-    // bool CoprocessorLoad( uint32_t cp_num, uint32_t address) { donttest_copro(); return false; }
-    // bool CoprocessorLoad( uint32_t cp_num, uint32_t address, uint32_t option) { donttest_copro(); return false; }
-    // bool CoprocessorStore( uint32_t cp_num, uint32_t address) { donttest_copro(); return false; }
-    // bool CoprocessorStore( uint32_t cp_num, uint32_t address, uint32_t option) { donttest_copro(); return false; }
-    // void CoprocessorDataProcess( uint32_t cp_num, uint32_t op1, uint32_t op2, uint32_t crd, uint32_t crn, uint32_t crm ) { donttest_copro(); }
-    // void MoveToCoprocessor( uint32_t cp_num, uint32_t op1, uint32_t op2, uint32_t rd, uint32_t crn, uint32_t crm ) { donttest_copro(); }
-    // void MoveFromCoprocessor( uint32_t cp_num, uint32_t op1, uint32_t op2, uint32_t rd, uint32_t crn, uint32_t crm ) { donttest_copro(); }
-    // uint32_t Coproc_GetOneWord( unsigned code, unsigned cp_num, unsigned op1, unsigned op2, unsigned crn, unsigned crm ) { donttest_copro(); return 0; }
+    void BranchExchange( U32 const& target ) { next_insn_addr = target; }
+    void Branch( U32 const& target ) { next_insn_addr = target; }
     
     void WaitForInterrupt() { not_implemented(); }
     void SWI( uint32_t imm ) { not_implemented(); }
@@ -313,7 +292,7 @@ namespace armsec
     U32& FPSCR() { return fpscr; }
   
     uint32_t itcond() const { return this->COND_AL; }
-    bool itblock() { interface.itsensitive = true; return false; }
+    bool itblock() { return false; }
     void ITSetState( uint32_t cond, uint32_t mask );
 
     // /* masks for the different running modes */
