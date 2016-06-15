@@ -9,18 +9,6 @@
 
 namespace armsec
 {
-  struct BaseNotFound {};
-  struct NotAnOffset {};
-  
-  struct Variables { virtual ~Variables() {} };
-  
-  struct RelTrans
-  {
-    void negate() {}
-    void add( uint32_t offset ) {}
-    void sub( uint32_t offset ) {}
-  };
-  
   struct ExprNode
   {
     virtual ~ExprNode() {}
@@ -38,17 +26,44 @@ namespace armsec
     virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); }
     virtual void Repr( std::ostream& sink ) const = 0;
     virtual intptr_t cmp( ExprNode const& ) const = 0;
+    virtual ExprNode* GetConstNode() = 0;
   };
   
-  enum  from_node_t { from_node };
+  struct ConstNodeBase : public ExprNode
+  {
+    virtual ConstNodeBase* bop( std::string op, ConstNodeBase& cnb ) { return 0; }
+    ExprNode* GetConstNode() { return this; };
+  };
+  
+  template <typename VALUE_TYPE>
+  struct ConstNode : public ConstNodeBase
+  {
+    ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
+    virtual void Repr( std::ostream& sink ) const { sink << "0x" << std::hex << value << std::dec; }
+    intptr_t cmp( ExprNode const& brhs ) const
+    {
+      ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );
+      return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0;
+    }
+    ConstNodeBase*
+    bop( std::string op, ConstNodeBase& cnb )
+    {
+      static std::string const _xor_("Xor");
+      if (op == _xor_) {
+        ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
+        return new ConstNode<VALUE_TYPE>( value ^ rop.value );
+      }
+      std::cerr << "Unhandled BOP operation: " << op << std::endl;
+      return 0;
+    }
+  };
   
   struct Expr
   {
     Expr() : node() {} ExprNode* node;
     Expr( Expr const& expr ) : node( expr.node ) { node->Retain(); }
     Expr( ExprNode* const& _node ) : node( _node ) { node->Retain(); }
-    Expr&  operator = ( Expr const& expr ) { expr.node->Retain(); if (node) node->Release(); node = expr.node; return *this; }
-    void clear() { }
+    Expr&  operator = ( Expr const& expr ) { if (expr.node) expr.node->Retain(); if (node) node->Release(); node = expr.node; return *this; }
     ~Expr() { if (node) node->Release(); }
     ExprNode const* operator->() const { return node; }
     ExprNode* operator->() { return node; }
@@ -66,17 +81,13 @@ namespace armsec
     bool operator == ( Expr const& rhs ) const { return cmp( rhs ) == 0; }
     bool operator  < ( Expr const& rhs ) const { return cmp( rhs )  < 0; }
     bool operator  > ( Expr const& rhs ) const { return cmp( rhs )  > 0; }
-  };
-  
-  template <typename VALUE_TYPE>
-  struct ConstNode : public ExprNode
-  {
-    ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
-    virtual void Repr( std::ostream& sink ) const { sink << "0x" << std::hex << value << std::dec; }
-    intptr_t cmp( ExprNode const& brhs ) const
+    bool MakeConst()
     {
-      ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );
-      return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0;
+      if (ExprNode* cn = node->GetConstNode()) {
+        *this = Expr( cn );
+        return true;
+      }
+      return false;
     }
   };
   
@@ -121,7 +132,6 @@ namespace armsec
     { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
     virtual void Repr( std::ostream& sink ) const
     { sink << name << "( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-    std::string name; Expr left; Expr right;
     intptr_t cmp( ExprNode const& brhs ) const
     {
       BONode const& rhs = dynamic_cast<BONode const&>( brhs );
@@ -129,6 +139,13 @@ namespace armsec
       if (intptr_t delta = left.cmp( rhs.left )) return delta;
       return right.cmp( rhs.right );
     }
+    virtual ExprNode* GetConstNode()
+    {
+      if (left.MakeConst() and right.MakeConst())
+        return dynamic_cast<ConstNodeBase&>( *left.node ).bop( name, dynamic_cast<ConstNodeBase&>( *right.node ) );
+      return 0;
+    }
+    std::string name; Expr left; Expr right;
   };
   
   template <typename Bool> struct AssertBool {};
@@ -144,7 +161,6 @@ namespace armsec
     SmartValue() : expr() {}
     
     SmartValue( Expr const& _expr ) : expr( _expr ) {}
-    SmartValue( from_node_t fn, ExprNode* _expr ) : expr( _expr ) {}
     
     explicit SmartValue( value_type value ) : expr( make_const( value ) ) {}
 
@@ -169,12 +185,12 @@ namespace armsec
     SmartValue<value_type>& operator = ( SmartValue<value_type> const& other ) { expr = other.expr; return *this; }
     
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator << ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( from_node, new BONode( "SHL", expr, make_const( shift ) ) ); }
+    SmartValue<value_type> operator << ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( Expr( new BONode( "SHL", expr, make_const( shift ) ) ) ); }
     template <typename SHIFT_TYPE>
     SmartValue<value_type> operator >> ( SHIFT_TYPE shift ) const {
       if (std::numeric_limits<value_type>::is_signed)
-        return SmartValue<value_type>( from_node, new BONode( "SAR", expr, make_const( shift ) ) );
-      return SmartValue<value_type>( from_node, new BONode( "SHR", expr, make_const( shift ) ) );
+        return SmartValue<value_type>( Expr( new BONode( "SAR", expr, make_const( shift ) ) ) );
+      return SmartValue<value_type>( Expr( new BONode( "SHR", expr, make_const( shift ) ) ) );
     }
     template <typename SHIFT_TYPE>
     SmartValue<value_type>& operator <<= ( SHIFT_TYPE shift ) { expr = new BONode( "SHL", expr, make_const( shift ) ); return *this; }
@@ -188,16 +204,16 @@ namespace armsec
     }
     
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator << ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( from_node, new BONode( "SHL", expr, other.expr ) ); }
+    SmartValue<value_type> operator << ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "SHL", expr, other.expr ) ) ); }
     template <typename SHIFT_TYPE>
     SmartValue<value_type> operator >> ( SmartValue<SHIFT_TYPE> const& other ) const {
       if (std::numeric_limits<value_type>::is_signed)
-        return SmartValue<value_type>( from_node, new BONode( "SAR", expr, other.expr ) );
-      return SmartValue<value_type>( from_node, new BONode( "SHR", expr, other.expr ) );
+        return SmartValue<value_type>( Expr( new BONode( "SAR", expr, other.expr ) ) );
+      return SmartValue<value_type>( Expr( new BONode( "SHR", expr, other.expr ) ) );
     }
     
-    SmartValue<value_type> operator - () const { return SmartValue<value_type>( from_node, new BONode( "Sub", make_const( value_type( 0 ) ), expr ) ); }
-    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( from_node, new BONode( "Xor", make_const( ~value_type( 0 ) ), expr ) ); }
+    SmartValue<value_type> operator - () const { return SmartValue<value_type>( Expr( new BONode( "Sub", make_const( value_type( 0 ) ), expr ) ) ); }
+    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( Expr( new BONode( "Xor", make_const( ~value_type( 0 ) ), expr ) ) ); }
     
     SmartValue<value_type>& operator += ( SmartValue<value_type> const& other ) { expr = new BONode( "Add", expr, other.expr ); return *this; }
     SmartValue<value_type>& operator -= ( SmartValue<value_type> const& other ) { expr = new BONode( "Sub", expr, other.expr ); return *this; }
@@ -208,30 +224,30 @@ namespace armsec
     SmartValue<value_type>& operator &= ( SmartValue<value_type> const& other ) { expr = new BONode( "And", expr, other.expr ); return *this; }
     SmartValue<value_type>& operator |= ( SmartValue<value_type> const& other ) { expr = new  BONode( "Or", expr, other.expr ); return *this; }
     
-    SmartValue<value_type> operator + ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( from_node, new BONode( "Add", expr, other.expr ) ); }
-    SmartValue<value_type> operator - ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( from_node, new BONode( "Sub", expr, other.expr ) ); }
-    SmartValue<value_type> operator * ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( from_node, new BONode( "Mul", expr, other.expr ) ); }
-    SmartValue<value_type> operator / ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( from_node, new BONode( "Div", expr, other.expr ) ); }
-    SmartValue<value_type> operator % ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( from_node, new BONode( "Mod", expr, other.expr ) ); }
-    SmartValue<value_type> operator ^ ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( from_node, new BONode( "Xor", expr, other.expr ) ); }
-    SmartValue<value_type> operator & ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( from_node, new BONode( "And", expr, other.expr ) ); }
-    SmartValue<value_type> operator | ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( from_node, new  BONode( "Or", expr, other.expr ) ); }
+    SmartValue<value_type> operator + ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Add", expr, other.expr ) ) ); }
+    SmartValue<value_type> operator - ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Sub", expr, other.expr ) ) ); }
+    SmartValue<value_type> operator * ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Mul", expr, other.expr ) ) ); }
+    SmartValue<value_type> operator / ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Div", expr, other.expr ) ) ); }
+    SmartValue<value_type> operator % ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Mod", expr, other.expr ) ) ); }
+    SmartValue<value_type> operator ^ ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Xor", expr, other.expr ) ) ); }
+    SmartValue<value_type> operator & ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "And", expr, other.expr ) ) ); }
+    SmartValue<value_type> operator | ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new  BONode( "Or", expr, other.expr ) ) ); }
     
-    SmartValue<bool> operator == ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( from_node, new BONode( "Teq", expr, other.expr ) ); }
-    SmartValue<bool> operator != ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( from_node, new BONode( "Tne", expr, other.expr ) ); }
-    SmartValue<bool> operator <= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( from_node, new BONode( "Tle", expr, other.expr ) ); }
-    SmartValue<bool> operator >= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( from_node, new BONode( "Tge", expr, other.expr ) ); }
-    SmartValue<bool> operator < ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( from_node, new BONode( "Tlt", expr, other.expr ) ); }
-    SmartValue<bool> operator > ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( from_node, new BONode( "Tgt", expr, other.expr ) ); }
+    SmartValue<bool> operator == ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( "Teq", expr, other.expr ) ) ); }
+    SmartValue<bool> operator != ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( "Tne", expr, other.expr ) ) ); }
+    SmartValue<bool> operator <= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( "Tle", expr, other.expr ) ) ); }
+    SmartValue<bool> operator >= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( "Tge", expr, other.expr ) ) ); }
+    SmartValue<bool> operator < ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( Expr( new BONode( "Tlt", expr, other.expr ) ) ); }
+    SmartValue<bool> operator > ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( Expr( new BONode( "Tgt", expr, other.expr ) ) ); }
 
     SmartValue<bool> operator ! () const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( from_node, new BONode( "Xor", make_const( true ), expr ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new BONode( "Xor", make_const( true ), expr ) ) ); }
 
     SmartValue<bool> operator && ( SmartValue<bool> const& other ) const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( from_node, new BONode( "And", expr, other.expr ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new BONode( "And", expr, other.expr ) ) ); }
     
     SmartValue<bool> operator || ( SmartValue<bool> const& other ) const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( from_node, new  BONode( "Or", expr, other.expr ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new  BONode( "Or", expr, other.expr ) ) ); }
   };
   
   template <typename UTP>
@@ -257,15 +273,16 @@ namespace armsec
         DefaultNaNNode const& rhs = dynamic_cast<DefaultNaNNode const&>( brhs );
         return fsz - rhs.fsz;
       }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename fpscrT> static
     void SetDefaultNan( SmartValue<float>& result, fpscrT const& fpscr )
-    { result = SmartValue<float>( from_node, new DefaultNaNNode( 32 ) ); }
+    { result = SmartValue<float>( Expr( new DefaultNaNNode( 32 ) ) ); }
     
     template <typename fpscrT> static
     void SetDefaultNan( SmartValue<double>& result, fpscrT const& fpscr )
-    { result = SmartValue<double>( from_node, new DefaultNaNNode( 64 ) ); }
+    { result = SmartValue<double>( Expr( new DefaultNaNNode( 64 ) ) ); }
     
     template <typename FLOAT, typename fpscrT> static
     void SetQuietBit( FLOAT& op, fpscrT const& fpscr )
@@ -284,7 +301,7 @@ namespace armsec
     template <typename FLOAT, typename fpscrT> static
     SmartValue<int32_t> Compare( FLOAT op1, FLOAT op2, fpscrT& fpscr )
     {
-      return SmartValue<int32_t>( from_node, new BONode( "FCmp", op1.expr, op2.expr ) );
+      return SmartValue<int32_t>( Expr( new BONode( "FCmp", op1.expr, op2.expr ) ) );
     }
 
     struct IsNaNNode : public ExprNode
@@ -298,20 +315,21 @@ namespace armsec
         if (intptr_t delta = src.cmp( rhs.src )) return delta;
         return int(signaling) - int(rhs.signaling);
       }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename FLOAT, typename fpscrT> static
     SmartValue<bool>
     IsSNaN( FLOAT const& op, fpscrT const& fpscr )
     {
-      return SmartValue<bool>( from_node, new IsNaNNode( op.expr, false ) );
+      return SmartValue<bool>( Expr( new IsNaNNode( op.expr, false ) ) );
     }
     
     template <typename FLOAT, typename fpscrT> static
     SmartValue<bool>
     IsQNaN( FLOAT const& op, fpscrT const& fpscr )
     {
-      return SmartValue<bool>( from_node, new IsNaNNode( op.expr, true ) );
+      return SmartValue<bool>( Expr( new IsNaNNode( op.expr, true ) ) );
     }
     
     template <typename FLOAT, typename fpscrT> static
@@ -352,6 +370,7 @@ namespace armsec
         if (intptr_t delta = right.cmp( rhs.right )) return delta;
         return acc.cmp( rhs.acc );
       }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename FLOAT, typename fpscrT> static
@@ -380,12 +399,13 @@ namespace armsec
         if (intptr_t delta = ssz - rhs.ssz) return delta;
         return dsz - rhs.dsz;
       }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename ofpT, typename ifpT, typename fpscrT> static
     void FtoF( SmartValue<ofpT>& res, SmartValue<ifpT> const& op, fpscrT& fpscr )
     {
-      res = SmartValue<ofpT>( from_node, new FtoFNode( op.expr, 8*sizeof (ifpT), 8*sizeof (ofpT) ) );
+      res = SmartValue<ofpT>( Expr( new FtoFNode( op.expr, 8*sizeof (ifpT), 8*sizeof (ofpT) ) ) );
     }
 
     struct FtoINode : public ExprNode
@@ -403,12 +423,13 @@ namespace armsec
         if (intptr_t delta = fsz - rhs.fsz) return delta;
         return fb - rhs.fb;
       }
+      ExprNode* GetConstNode() { return 0; };
     };
 
     template <typename intT, typename fpT, typename fpscrT> static
     void FtoI( SmartValue<intT>& res, SmartValue<fpT> const& op, int fracbits, fpscrT& fpscr )
     {
-      res = SmartValue<intT>( from_node, new FtoINode( op.expr, 8*sizeof (fpT), 8*sizeof (intT), fracbits) );
+      res = SmartValue<intT>( Expr( new FtoINode( op.expr, 8*sizeof (fpT), 8*sizeof (intT), fracbits) ) );
     }
 
     struct ItoFNode : public ExprNode
@@ -426,12 +447,13 @@ namespace armsec
         if (intptr_t delta = fsz - rhs.fsz) return delta;
         return fb - rhs.fb;
       }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename fpT, typename intT, typename fpscrT> static
     void ItoF( SmartValue<fpT>& res, SmartValue<intT> const& op, int fracbits, fpscrT& fpscr )
     {
-      res = SmartValue<fpT>( from_node, new ItoFNode( op.expr, 8*sizeof (intT), 8*sizeof (fpT), fracbits ) );
+      res = SmartValue<fpT>( Expr( new ItoFNode( op.expr, 8*sizeof (intT), 8*sizeof (fpT), fracbits ) ) );
     }
     
     template <typename FLOAT, typename fpscrT> static

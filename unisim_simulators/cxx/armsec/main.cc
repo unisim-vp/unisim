@@ -194,6 +194,7 @@ namespace armsec
         SourceReg const& rhs = dynamic_cast<SourceReg const&>( brhs );
         return int(reg - rhs.reg);
       }
+      ExprNode* GetConstNode() { return 0; };
     };
   
     struct SourceCIA : public ExprNode
@@ -201,6 +202,7 @@ namespace armsec
       SourceCIA() {}
       virtual void Repr( std::ostream& sink ) const { sink << "SourceCIA()"; }
       intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     struct SourceCPSR : public ExprNode
@@ -208,6 +210,7 @@ namespace armsec
       SourceCPSR() {}
       virtual void Repr( std::ostream& sink ) const { sink << "SourceCPSR()"; }
       intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     struct SourceSPSR : public ExprNode
@@ -215,6 +218,7 @@ namespace armsec
       SourceSPSR() {}
       virtual void Repr( std::ostream& sink ) const { sink << "SourceSPSR()"; }
       intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     struct SourceFPSCR : public ExprNode
@@ -222,6 +226,7 @@ namespace armsec
       SourceFPSCR() {}
       virtual void Repr( std::ostream& sink ) const { sink << "SourceFPSCR()"; }
       intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     struct SourceFPEXC : public ExprNode
@@ -229,6 +234,7 @@ namespace armsec
       SourceFPEXC() {}
       virtual void Repr( std::ostream& sink ) const { sink << "SourceFPEXC()"; }
       intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     struct psr_type : public unisim::component::cxx::processor::arm::FieldRegister<U32>
@@ -270,11 +276,11 @@ namespace armsec
     
     State( PathNode& _path, bool is_thumb, unsigned insn_length )
       : path( &_path )
-      , current_insn_addr( armsec::from_node, new SourceCIA )
+      , current_insn_addr( Expr( new SourceCIA ) )
       , next_insn_addr()
-      , cpsr( new SourceCPSR )
-      , spsr( new SourceSPSR )
-      , fpscr( new SourceFPSCR )
+      , cpsr( Expr( new SourceCPSR ) )
+      , spsr( Expr( new SourceSPSR ) )
+      , fpscr( Expr( new SourceFPSCR ) )
     {
       for (unsigned reg = 0; reg < 15; ++reg)
         reg_values[reg] = U32( new SourceReg( reg ) );
@@ -328,6 +334,7 @@ namespace armsec
         if (intptr_t delta = int(size - rhs.size)) return delta;
         return (int(aligned) - int(rhs.aligned));
       }
+      ExprNode* GetConstNode() { return 0; };
       Expr addr;
       unsigned size;
       bool aligned;
@@ -347,6 +354,7 @@ namespace armsec
         if (intptr_t delta = int(size - rhs.size)) return delta;
         return (int(aligned) - int(rhs.aligned));
       }
+      ExprNode* GetConstNode() { return 0; };
       Expr addr;
       unsigned size;
       bool aligned;
