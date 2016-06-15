@@ -438,21 +438,6 @@ namespace arm {
   enum FPExc { InvalidOp=0, DivideByZero=1, Overflow=2, Underflow=3,
                Inexact=4, InputDenorm=7 };
 
-  template <typename ARCH, typename fpscrT>
-  void FPProcessException( FPExc exception, ARCH& arch, fpscrT& fpscr )
-  {
-    typedef typename ARCH::U32 U32;
-    
-    switch (exception) {
-    case InvalidOp:    if (arch.Cond( fpscr.Get( IOE ) )) throw exception; else fpscr.Set( IOC, U32(1) ); break;
-    case DivideByZero: if (arch.Cond( fpscr.Get( DZE ) )) throw exception; else fpscr.Set( DZC, U32(1) ); break;
-    case Overflow:     if (arch.Cond( fpscr.Get( OFE ) )) throw exception; else fpscr.Set( OFC, U32(1) ); break;
-    case Underflow:    if (arch.Cond( fpscr.Get( UFE ) )) throw exception; else fpscr.Set( UFC, U32(1) ); break;
-    case Inexact:      if (arch.Cond( fpscr.Get( IXE ) )) throw exception; else fpscr.Set( IXC, U32(1) ); break;
-    case InputDenorm:  if (arch.Cond( fpscr.Get( IDE ) )) throw exception; else fpscr.Set( IDC, U32(1) ); break;
-    }
-  }
-
   template <typename operT, typename ARCH, typename fpscrT>
   struct __FPProcessNaN__
   {
@@ -489,7 +474,7 @@ namespace arm {
       else /* hasSNaN*/ {
         result = *firstSNaN;
         ARCH::FP::SetQuietBit( result, fpscr );
-        FPProcessException( InvalidOp, arch, fpscr );
+        fpscr.ProcessException( IOC /*InvalidOp*/ );
       }
       if (arch.Cond( fpscr.Get( DN ) )) {
         ARCH::FP::SetDefaultNan( result, fpscr );
@@ -508,7 +493,7 @@ namespace arm {
   FPFlushToZero( operT& op, ARCH& arch, fpscrT& fpscr )
   {
     if (ARCH::FP::FlushToZero( op, fpscr ))
-      FPProcessException( InputDenorm, arch, fpscr );
+      fpscr.ProcessException( IDC /* InputDenorm */ );
   }
 
   template <typename operT, typename ARCH, typename fpscrT>
@@ -601,7 +586,7 @@ namespace arm {
     if (arch.Cond(hasSNaN or hasQNaN)) {
       fpscr.Set( NZCV, U32(3) ); /* N=0,Z=0,C=1,V=1 */
       if (arch.Cond(hasSNaN or BOOL(quiet_nan_exc)))
-        FPProcessException( InvalidOp, arch, fpscr );
+        fpscr.ProcessException( IOC /* InvalidOp */ );
     }
     else {
       S32 fc = ARCH::FP::Compare( op1, op2, fpscr );
