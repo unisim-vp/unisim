@@ -593,7 +593,28 @@ namespace simfloat {
       
       // getting fraction bits of requested fixed point
       exp += fracbits;
-      
+      // position of the integer part is given by -exp
+      // Computing integer part and the 2 msb of error 
+      unsigned error = 0;
+      if (exp <= 0) {
+        for (;exp < 0;exp+=1)
+          {
+            unsigned bit = (man & 1);
+            man >>= 1;
+            error >>= 1;
+            error |= (bit << 1);
+          }
+      } else {
+        for (;exp > 0;exp-=1)
+          {
+            int64_t nman = man << 1;
+            if ((nman ^ man) >> 63) {
+              man = ~((man >> 63) ^ (int64_t(1) << 63));
+              break;
+            }
+            man = nman;
+          }
+      }
     }
 
     template <typename INT, typename fpscrT> static
