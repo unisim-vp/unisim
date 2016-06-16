@@ -52,7 +52,6 @@ namespace cortex_r5f {
     : public sc_module
     , public tlm::tlm_bw_transport_if<>
     , public unisim::component::cxx::processor::arm::pmsav7::CPU
-    , public unisim::kernel::service::VariableBaseListener
   {
   public:
     typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
@@ -131,8 +130,7 @@ private:
     CPU(const sc_module_name& name, Object *parent = 0);
     virtual ~CPU();
 
-  private:
-    virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
+    void SetCycleTime(sc_core::sc_time const& cycle_time);
 
   public:
     virtual void Stop(int ret);
@@ -193,12 +191,19 @@ private:
     sc_time bus_cycle_time;
     sc_time nice_time;
     double ipc;
-    bool enable_dmi;
     sc_time time_per_instruction;
+    bool enable_dmi;
 	
     unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
   
-    unisim::kernel::service::Parameter<sc_time> param_cpu_cycle_time;
+    struct CpuCycleTimeParam : public unisim::kernel::service::Parameter<sc_time>
+    {
+      CpuCycleTimeParam(char const* name, Object *owner, CPU& _cpu, const char *description)
+        : unisim::kernel::service::Parameter<sc_time>(name, owner, _cpu.cpu_cycle_time, description), cpu(_cpu)
+      {}
+      void Set( sc_time const& value ) { cpu.SetCycleTime( value ); }
+      CPU& cpu;
+    } param_cpu_cycle_time;
     unisim::kernel::service::Parameter<sc_time> param_bus_cycle_time;
     unisim::kernel::service::Parameter<sc_time> param_nice_time;
     unisim::kernel::service::Parameter<double> param_ipc;
