@@ -128,17 +128,6 @@ template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
 
 //=============================================================================
-//=                          VariableBaseListener                             =
-//=============================================================================
-
-class VariableBaseListener
-{
-public:
-	virtual void VariableBaseNotify(const VariableBase *var) = 0;
-	virtual ~VariableBaseListener() {};
-};
-
-//=============================================================================
 //=                             VariableBase                                 =
 //=============================================================================
 
@@ -217,10 +206,6 @@ public:
 	virtual void SetSerializable(bool is_serializable);
 	virtual void SetModified(bool is_modified);
 
-	void AddListener(VariableBaseListener *listener);
-	void RemoveListener(VariableBaseListener *listener);
- 	void NotifyListeners();
-
 private:
 	string name;
 	string var_name;
@@ -234,7 +219,6 @@ private:
 	bool is_visible;
 	bool is_serializable;
 	bool is_modified;
-	list<VariableBaseListener *> listener_list;
 };
 
 //=============================================================================
@@ -458,11 +442,42 @@ public:
 };
 
 //=============================================================================
+//=                            Variable<TYPE>                                 =
+//=============================================================================
+
+template <class TYPE>
+class Variable : public VariableBase
+{
+public:
+	typedef VariableBase::Type Type;
+	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
+
+	virtual const char *GetDataTypeName() const;
+	virtual unsigned int GetBitSize() const;
+	virtual operator bool () const;
+	virtual operator long long () const;
+	virtual operator unsigned long long () const;
+	virtual operator double () const;
+	virtual operator string () const;
+	virtual VariableBase& operator = (bool value);
+	virtual VariableBase& operator = (long long value);
+	virtual VariableBase& operator = (unsigned long long value);
+	virtual VariableBase& operator = (double value);
+	virtual VariableBase& operator = (const char * value);
+	
+	virtual void Set( TYPE const& value ) { SetModified(*storage != value); *storage = value; }
+	virtual TYPE Get() const { return *storage; }
+
+private:
+	TYPE *storage;
+};
+
+//=============================================================================
 //=                  CallBackObject and  TCallBack<TYPE>                      =
 //=============================================================================
 
-class CallBackObject {
-public:
+struct CallBackObject
+{
 	virtual ~CallBackObject() {}
 
 	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length) {
@@ -475,10 +490,10 @@ public:
 
 	typedef bool (CallBackObject::*cbwrite)(unsigned int offset, const void*, unsigned int size);
 	typedef bool (CallBackObject::*cbread)(unsigned int offset, const void*, unsigned int size);
-
 };
 
-template <typename DataType> class TCallBack : public CallBackObject {
+template <typename DataType> class TCallBack : public CallBackObject
+{
 private:
 	CallBackObject *m_owner;
 	unsigned int m_offset;
@@ -501,32 +516,21 @@ public:
 };
 
 //=============================================================================
-//=                            Variable<TYPE>                                =
+//=                            VariableCB<TYPE>                               =
 //=============================================================================
 
 template <class TYPE>
-class Variable : public VariableBase
+class VariableCB : public Variable<TYPE>
 {
 public:
-	typedef VariableBase::Type Type;
-	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
-
-	void setCallBack(CallBackObject *owner, unsigned int offset, bool (CallBackObject::*_write)(unsigned int, const void*, unsigned int), bool (CallBackObject::*_read)(unsigned int, const void*, unsigned int)) {
+	VariableCB( const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
+	void setCallBack(CallBackObject *owner, unsigned int offset, CallBackObject::cbwrite _write, CallBackObject::cbread _read)
+	{
 		m_callback.reset(new TCallBack<TYPE>(owner, offset, _write, _read));
 	}
 
-	virtual const char *GetDataTypeName() const;
-	virtual unsigned int GetBitSize() const;
-	virtual operator bool () const;
-	virtual operator long long () const;
-	virtual operator unsigned long long () const;
-	virtual operator double () const;
-	virtual operator string () const;
-	virtual VariableBase& operator = (bool value);
-	virtual VariableBase& operator = (long long value);
-	virtual VariableBase& operator = (unsigned long long value);
-	virtual VariableBase& operator = (double value);
-	virtual VariableBase& operator = (const char * value);
+	virtual void Set( TYPE const& value ) { if (not WriteBack(value)) Variable<TYPE>::Set( value ); }
+	virtual TYPE Get() const { TYPE value; if (not ReadBack(value)) return Variable<TYPE>::Get(); return value; }
 
 protected:
 
@@ -554,7 +558,6 @@ protected:
 	CallBackObject& scallback() { return (*m_callback); }
 
 private:
-	TYPE *storage;
 	std::auto_ptr<CallBackObject> m_callback;
 };
 

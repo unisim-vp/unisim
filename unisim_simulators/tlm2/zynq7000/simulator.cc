@@ -566,6 +566,13 @@ PS_UART::PS_UART( sc_module_name const& name, unisim::kernel::service::Object* p
   sc_core::sc_module::sensitive << exchange_event;
 }
 
+void
+PS_UART::reload_rxtout( sc_core::sc_time const& update_time )
+{
+  last_rx = update_time;
+  exchange_event.notify( bit_period*rx_timeout_ticks() );
+}
+
 bool
 PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time )
 {
@@ -578,11 +585,8 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
         if (RegisterField<0,1>().Swap( CR, zero ))
           RxFIFO.Clear();
         RegisterField<1,1>().Set( CR, zero );
-        if (RegisterField<6,1>().Swap( CR, zero )) {
-          rx_timeout_active = true;
-          last_rx = update_time;
-          exchange_event.notify( bit_period*rx_timeout_ticks() );
-        }
+        if (RegisterField<6,1>().Swap( CR, zero ))
+          reload_rxtout( update_time );
       }
       return true;
     case 0x04: d.Access( MR ); return true;
@@ -615,7 +619,7 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
     case 0x18: d.Access( BAUDGEN ); return true;
     case 0x1c:
       d.Access( RXTOUT );
-      if (d.wnr) { RXTOUT &= 0xff; rx_timeout_active = true; }
+      if (d.wnr) { RXTOUT &= 0xff; reload_rxtout( update_time ); }
       return true;
     case 0x20: d.Access( RTRIG ); RTRIG &= 0x3f; return true;
     case 0x2c: {
@@ -711,6 +715,7 @@ PS_UART::ExchangeProcess()
   if (rx_timeout_active and RXTOUT and ((update_time - last_rx) >= (bit_period*rx_timeout_ticks()))) {
     RegisterField <8,1>().Set( ISR, 1 ); // TIMEOUT, Receiver Timeout Error
     //rx_timeout_active = false; // WTF? xilinx says that timeout is inactive until RST_TO (which linux never gives)
+    reload_rxtout( update_time );
   }
   if (RxFIFO.Full())
     RegisterField <2,1>().Set( ISR, 1 ); // RFUL, Receiver FIFO Full
@@ -724,13 +729,15 @@ PS_UART::ExchangeProcess()
     mpcore.interrupt_line_events[it_line].notify(sc_core::SC_ZERO_TIME);
 }
 
-SLCR::SLCR(const sc_module_name& name, unisim::kernel::service::Object* parent)
+SLCR::SLCR(const sc_module_name& name, Simulator& _simulator, unisim::kernel::service::Object* parent )
   : unisim::kernel::service::Object( name, parent )
   , MMDevice( name, parent )
+  , simulator(_simulator)
   , ARM_PLL_CTRL(0x1a008)
   , DDR_PLL_CTRL(0x1a008)
   , IO_PLL_CTRL(0x1a008)
   , ARM_CLK_CTRL(0x1f000400)
+  , DDR_CLK_CTRL(0x18400003)
   , CLK_621_TRUE(0x1)
   , UART_CLK_CTRL(0x3f03)
 {
@@ -739,12 +746,18 @@ SLCR::SLCR(const sc_module_name& name, unisim::kernel::service::Object* parent)
 bool
 SLCR::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time )
 {
+  struct Finally {
+    Finally( Simulator& _sim, bool _fixclks ) : sim(_sim), fixclks(_fixclks) {} Simulator& sim; bool fixclks;
+    ~Finally() { if (fixclks) sim.UpdateClocks(); }
+  } update_clocks( simulator, d.wnr );
+      
   if (d.size == 4) {
     switch (addr) {
     case 0x100: d.Access(  ARM_PLL_CTRL ); return true;
     case 0x104: d.Access(  DDR_PLL_CTRL ); return true;
     case 0x108: d.Access(   IO_PLL_CTRL ); return true;
     case 0x120: d.Access(  ARM_CLK_CTRL ); return true;
+    case 0x124: d.Access(  DDR_CLK_CTRL ); return true;
     case 0x154: d.Access( UART_CLK_CTRL ); return true;
     case 0x1c4: d.Access(  CLK_621_TRUE ); return true;
     }
@@ -781,12 +794,13 @@ L2C::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& updat
 
 Simulator::Simulator(int argc, char **argv)
   : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
+  , ps_clk_period(sc_core::SC_ZERO_TIME)
   , cpu( "cpu" )
   , router( "router" )
   , mpcore( "mpcore" )
   , main_ram( "main_ram" )
   , boot_rom( "boot_rom" )
-  , slcr( "slcr" )
+  , slcr( "slcr", *this )
   , ttc0( "ttc0", 0, mpcore, 0, 42 )
   , ttc1( "ttc1", 0, mpcore, 1, 69 )
   , uart0( "uart0", 0, mpcore, 59 )
@@ -1075,7 +1089,71 @@ SimulationFinished() const
   return sc_end_of_simulation_invoked();
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+void
+Simulator::UpdateClocks()
+{
+  /* PLLs*/
+  sc_core::sc_time
+    arm_pll_period = ps_clk_period / RegisterField<12,7>().Get( slcr.ARM_PLL_CTRL ), // PLL Feedback divider
+    ddr_pll_period = ps_clk_period / RegisterField<12,7>().Get( slcr.DDR_PLL_CTRL ), // PLL Feedback divider
+    io_pll_period  = ps_clk_period / RegisterField<12,7>().Get( slcr.IO_PLL_CTRL );  // PLL Feedback divider
+  
+  if (RegisterField<3,2>().Get( slcr.ARM_PLL_CTRL ) & 2)
+    throw std::logic_error("ARM PLL Bypass not supported");
+  if (RegisterField<3,2>().Get( slcr.DDR_PLL_CTRL ) & 2)
+    throw std::logic_error("DDR PLL Bypass not supported");
+  if (RegisterField<3,2>().Get( slcr.IO_PLL_CTRL ) & 2)
+    throw std::logic_error("IO PLL Bypass not supported");
+  
+  
+  /* CPU Clock */
+  {
+    // Source selection
+    unsigned srcsel = RegisterField<4,2>().Get( slcr.ARM_CLK_CTRL );
+    sc_core::sc_time& pll_period = (srcsel & 2) ? (srcsel & 1) ? io_pll_period : ddr_pll_period : arm_pll_period;
+    // 6-bit Programmable Divider
+    sc_core::sc_time cpu_6x4x_period = pll_period * RegisterField<8,6>().Get( slcr.ARM_CLK_CTRL ); // divisor
+    // Clock Ratio Generator
+    bool is621( RegisterField<0,1>().Get( slcr.CLK_621_TRUE ) );
+    sc_core::sc_time cpu_3x2x_period = cpu_6x4x_period * 2;
+    sc_core::sc_time cpu_2x_period = cpu_6x4x_period * (is621 ? 3 : 2);
+    sc_core::sc_time cpu_1x_period = cpu_2x_period * 2;
+    std::cerr << "cpu_6x4x_period: " << cpu_6x4x_period.to_string() << " -> cpu" << std::endl
+              << "cpu_3x2x_period: " << cpu_3x2x_period.to_string() << " -> " << std::endl
+              << "cpu_2x_period: " << cpu_2x_period.to_string() << " -> bus, router, boot_rom" << std::endl
+              << "cpu_1x_period: " << cpu_1x_period.to_string() << " -> TTC" << std::endl;
+      
+    // Clock activation ...
+    cpu["cpu-cycle-time"] = cpu_6x4x_period.to_string().c_str();
+    cpu["bus-cycle-time"] = cpu_2x_period.to_string().c_str();
+    boot_rom["cycle-time"] = cpu_2x_period.to_string().c_str();
+    boot_rom["read-latency"] = cpu_2x_period.to_string().c_str();
+    boot_rom["write-latency"] = 0;
+    router["cycle_time"] = cpu_2x_period.to_string().c_str();
+    ttc0.clock_period = ttc1.clock_period = cpu_1x_period;
+  }
+  /* DDR Clock */
+  {
+    // 6-bit Programmable Divider
+    sc_core::sc_time ddr_3x_period = ddr_pll_period * RegisterField<20,6>().Get( slcr.DDR_CLK_CTRL ); // divisor
+    sc_core::sc_time ddr_2x_period = ddr_pll_period * RegisterField<26,6>().Get( slcr.DDR_CLK_CTRL ); // divisor
+    std::cerr << "ddr_3x_period: " << ddr_3x_period.to_string() << " -> " << std::endl
+              << "ddr_2x_period: " << ddr_2x_period.to_string() << " -> main_ram" << std::endl;
+    // Clock activation ...
+    main_ram["cycle-time"] = ddr_2x_period.to_string().c_str();
+    main_ram["read-latency"] = ddr_2x_period.to_string().c_str();
+    main_ram["write-latency"] = 0;
+  }
+  /* UART clock */
+  // Whatever control registers are we provide a 115200 bauds clock
+  uart0.bit_period = uart0.bit_period = sc_core::sc_time( 9, sc_core::SC_US ); /* Approx 115200 bauds ;-) */
+  /* TTC Clock */
+  
+  
+}
+
+unisim::kernel::service::Simulator::SetupStatus
+Simulator::Setup()
 {
   if(enable_inline_debugger)
     {
@@ -1093,8 +1171,9 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 
   unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
   
-  ttc0.clock_period = ttc1.clock_period = cpu.GetCpuCycleTime();
-  uart0.bit_period = uart0.bit_period = sc_core::sc_time( 9, sc_core::SC_US ); /* Approx 115200 bauds ;-) */
+  ps_clk_period = sc_core::sc_time( 30, sc_core::SC_NS ); // 33 MHz
+  
+  UpdateClocks();
   
   // inline-debugger and gdb-server are exclusive
   if(enable_inline_debugger && enable_gdb_server)
@@ -1158,7 +1237,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   
   sim->SetVariable( "cpu.SCTLR",                0x00c52078 );
   sim->SetVariable( "cpu.default-endianness",   "little-endian" );
-  sim->SetVariable( "cpu.cpu-cycle-time",       "10 ns" ); // 32Mhz
+  sim->SetVariable( "cpu.cpu-cycle-time",       "1.5 ns" ); // 666Mhz
   sim->SetVariable( "cpu.bus-cycle-time",       "10 ns" ); // 32Mhz
   sim->SetVariable( "cpu.icache.size",          0x020000 ); // 128 KB
   sim->SetVariable( "cpu.dcache.size",          0x020000 ); // 128 KB

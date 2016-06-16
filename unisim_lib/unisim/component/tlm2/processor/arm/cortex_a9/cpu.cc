@@ -144,10 +144,10 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , cpu_cycle_time(62500.0, SC_PS)
   , bus_cycle_time(62500.0, SC_PS)
   , nice_time(1.0, SC_MS)
-  , ipc(1.0)
+  , ipc(2.0)
   , enable_dmi(false)
   , stat_cpu_time("cpu-time", this, cpu_time, "The processor time")
-  , param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time, "The processor cycle time.")
+  , param_cpu_cycle_time("cpu-cycle-time", this, *this, "The processor cycle time.")
   , param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "The processor bus cycle time.")
   , param_nice_time("nice-time", this, nice_time,  "Maximum time between SystemC waits.")
   , param_ipc("ipc", this, ipc, "Instructions per cycle performance.")
@@ -158,10 +158,6 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , VINITHI(false)
   , param_VINITHI("VINITHI", this, VINITHI, "Reset V-bit value. When HIGH indicates HIVECS mode at reset." )
 {
-  PCPU::param_cpu_cycle_time_ps.SetVisible(false);
-  param_cpu_cycle_time.AddListener(this);
-  param_cpu_cycle_time.NotifyListeners();
-
   master_socket.bind(*this);
   
   SC_THREAD(Run);
@@ -175,19 +171,23 @@ CPU::CPU( sc_module_name const& name, Object* parent )
 
 CPU::~CPU()
 {
-  param_cpu_cycle_time.RemoveListener(this);
 }
 
 void
-CPU::VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
+CPU::SetCycleTime( sc_core::sc_time const& cycle_time )
 {
-  // no need to check the name, the only variable with notify
-  //   activated is the cpu_cycle_time
-  uint64_t cycle_time_ps = cpu_cycle_time.value();
-  uint64_t ps = sc_time(1.0, SC_PS).value();
-  cycle_time_ps = cycle_time_ps * ps;
-  (*this)["cpu-cycle-time-ps"] = cycle_time_ps;
+  /* Setting main cpu clock */
+  cpu_cycle_time = cycle_time;
+  /* compute the average time of each instruction */
+  time_per_instruction = cpu_cycle_time / ipc;
 }
+
+void
+CPU::SetBusCycleTime( sc_core::sc_time const& cycle_time )
+{
+  bus_cycle_time = cycle_time;
+}
+
 
 /** Initialization of the module
  * Initializes the module depending on the parameters values.
@@ -208,22 +208,17 @@ CPU::EndSetup()
 
   cpu_time = SC_ZERO_TIME;
   bus_time = SC_ZERO_TIME;
-
-  if ( verbose_tlm ) 
+  
+  if (verbose_tlm)
   {
     PCPU::logger << DebugInfo
-      << "Setting CPU cycle time to " 
-      << cpu_cycle_time.to_string() << std::endl
-      << "Setting Bus cycle time to " 
-      << bus_cycle_time.to_string() << std::endl
-      << "Setting nice time to " << nice_time.to_string() << std::endl
-      << "Setting IPC to " << ipc << std::endl
-      << EndDebugInfo;
+                 << "CPU cycle time is " << cpu_cycle_time.to_string() << std::endl
+                 << "BUS cycle time is " << bus_cycle_time.to_string() << std::endl
+                 << "Nice time is " << nice_time.to_string() << std::endl
+                 << "IPC is " << ipc << std::endl
+                 << EndDebugInfo;
   }
   
-  /* compute the average time of each instruction */
-  time_per_instruction = cpu_cycle_time * ipc;
-
   return true;
 }
 
@@ -385,7 +380,6 @@ CPU::Run()
     
     uint32_t cpsr_cleared_bits = CPSR().bits();
     StepInstruction();
-    // cpu_time += time_per_instruction;
     quantum_time += time_per_instruction;
     cpsr_cleared_bits &= ~(CPSR().bits());
     

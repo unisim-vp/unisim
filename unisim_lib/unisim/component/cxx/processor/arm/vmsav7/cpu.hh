@@ -341,14 +341,6 @@ protected:
 
   /** Instruction counter */
   uint64_t instruction_counter;
-	
-  /** CPU cycle time in picoseconds. */
-  uint64_t cpu_cycle_time_ps;
-  /** CPU voltage in mV, required to compute cache power consumption. */
-  uint64_t voltage;
-  // uint64_t cpu_cycle;      //!< Number of cpu cycles
-  // uint64_t bus_cycle;      //!< Number of front side bus cycles
-
   /** Trap when reaching the number of instructions indicated. */
   uint64_t trap_on_instruction_counter;
 
@@ -377,10 +369,6 @@ protected:
   /* UNISIM parameters, statistics                    START */
   /**********************************************************/
   
-  /** UNISIM Parameter to set the CPU cycle time. */
-  unisim::kernel::service::Parameter<uint64_t> param_cpu_cycle_time_ps;
-  /** UNISIM Parameter to set the CPU voltage. */
-  unisim::kernel::service::Parameter<uint64_t> param_voltage;
   /** UNISIM Parameter to set/unset verbose mode. */
   unisim::kernel::service::Parameter<bool> param_verbose;
   /** UNISIM Parameter to set traps on instruction counter. */

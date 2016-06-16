@@ -140,7 +140,6 @@ CPU::CPU(const char *name, Object *parent)
   , IFAR()
   , mmu()
   , instruction_counter(0)
-  , voltage(0)
   , trap_on_instruction_counter(0)
   , ipb_base_address( -1 )
   , linux_printk_buf_addr( 0 )
@@ -148,9 +147,7 @@ CPU::CPU(const char *name, Object *parent)
   , linux_printk_snooping( false )
   , halt_on_addr( uint32_t(-1) )
   , halt_on_location()
-  , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
-  , param_voltage("voltage", this, this->voltage, "The processor voltage in mV.")
-  , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
+  , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system.")
   , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
                                       "Produce a trap when the given instruction count is reached.")
   , param_linux_printk_snooping( "linux-printk-snooping", this, linux_printk_snooping, "Activate the printk snooping" )
@@ -159,8 +156,6 @@ CPU::CPU(const char *name, Object *parent)
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
   // Set the right format for various of the variables
-  param_cpu_cycle_time_ps.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-  param_voltage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   
@@ -252,13 +247,6 @@ CPU::BeginSetup()
   if (verbose)
     logger << DebugInfo << "CPU::BeginSetup(): Verbose activated." << EndDebugInfo;
 
-  if (cpu_cycle_time_ps == 0)
-    {
-      // We can't (don't want to) provide a default valid cycle time
-      logger << DebugError << "cpu-cycle-time should be strictly positive" << EndDebugError;
-      return false;
-    }
-
   return true;
 }
 
@@ -298,58 +286,6 @@ CPU::EndSetup()
   
   if (verbose)
     logger << DebugInfo << "Initial pc set to 0x" << std::hex << GetNIA() << std::dec << EndDebugInfo;
-  
-  /* Initialize the caches and power support as required. */
-  {
-    unsigned int min_cycle_time = 0;
-    uint64_t il1_def_voltage = 0;
-    uint64_t dl1_def_voltage = 0;
-
-    // if (icache.power_mode_import)
-    //   {
-    //     min_cycle_time =  icache.power_mode_import->GetMinCycleTime();
-    //     il1_def_voltage = icache.power_mode_import->GetDefaultVoltage();
-    //   }
-    // if (dcache.power_mode_import)
-    //   {
-    //     if ( dcache.power_mode_import->GetMinCycleTime() > min_cycle_time )
-    //       min_cycle_time = dcache.power_mode_import->GetMinCycleTime();
-    //     dl1_def_voltage =  dcache.power_mode_import->GetDefaultVoltage();
-    //   }
-
-    if (min_cycle_time > 0)
-      {
-        if ( cpu_cycle_time_ps < min_cycle_time )
-          {
-            logger << DebugWarning;
-            logger << "A cycle time of " << cpu_cycle_time_ps << " ps is too low for the simulated hardware !" << std::endl;
-            logger << "cpu cycle time should be >= " << min_cycle_time << " ps." << std::endl;
-            logger << EndDebugWarning;
-          }
-      }
-
-    if (voltage == 0)
-      {
-        voltage = (il1_def_voltage > dl1_def_voltage) ? il1_def_voltage : dl1_def_voltage;
-        logger << DebugWarning
-               << "A cpu voltage was not defined (set to 0). Using the maximum voltage found from the caches as current voltage. "
-               << "Voltage used is " << voltage << " mV.";
-        // if ( icache.power_mode_import )
-        //   logger << std::endl << "  - instruction cache voltage = " << il1_def_voltage << " mV";
-        // if ( dcache.power_mode_import )
-        //   logger << std::endl << "  - data cache voltage = " << dl1_def_voltage << " mV";
-        logger << EndDebugWarning;
-      }
-  
-    // if (icache.power_mode_import)
-    //   icache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
-    // if (dcache.power_mode_import)
-    //   dcache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
-
-    if (verbose)
-      logger << DebugInfo << "Setting cpu cycle time to " << cpu_cycle_time_ps << " ps." << std::endl
-             << DebugInfo << "Setting cpu voltage to " << voltage << " mV." << EndDebugInfo;
-  }
   
   /* If the memory access reporting import is not connected remove the
    *   need of reporting memory accesses and finished instruction.

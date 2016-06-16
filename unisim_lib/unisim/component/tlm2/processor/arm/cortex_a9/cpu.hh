@@ -52,7 +52,6 @@ class CPU
 	: public sc_module
 	, public tlm::tlm_bw_transport_if<>
 	, public unisim::component::cxx::processor::arm::vmsav7::CPU
-	, public unisim::kernel::service::VariableBaseListener
 {
 public:
   typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
@@ -123,9 +122,6 @@ public:
   CPU(const sc_module_name& name, Object *parent = 0);
   virtual ~CPU();
 
-private:
-  virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
-
 public:
   virtual void Stop(int ret);
   virtual void Sync();
@@ -142,7 +138,8 @@ public:
   virtual bool PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size);
   virtual bool PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
 	
-  sc_core::sc_time const& GetCpuCycleTime() const { return cpu_cycle_time; };
+  void SetCycleTime( sc_core::sc_time const& cycle_time );
+  void SetBusCycleTime( sc_core::sc_time const& cycle_time );
 
 private:
   virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size);
@@ -189,7 +186,14 @@ private:
   
   unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
   
-  unisim::kernel::service::Parameter<sc_time> param_cpu_cycle_time;
+  struct CpuCycleTimeParam : public unisim::kernel::service::Parameter<sc_time>
+  {
+    CpuCycleTimeParam(char const* name, Object *owner, CPU& _cpu, const char *description)
+      : unisim::kernel::service::Parameter<sc_time>(name, owner, _cpu.cpu_cycle_time, description), cpu(_cpu)
+    {}
+    void Set( sc_time const& value ) { cpu.SetCycleTime( value ); }
+    CPU& cpu;
+  } param_cpu_cycle_time;
   unisim::kernel::service::Parameter<sc_time> param_bus_cycle_time;
   unisim::kernel::service::Parameter<sc_time> param_nice_time;
   unisim::kernel::service::Parameter<double> param_ipc;
