@@ -74,7 +74,7 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	registers_import("registers-import", this),
 	breakpoint_registry(),
 	watchpoint_registry(),
-	logger(*this),
+	logger(static_cast<Object&>(*this)),
 	verbose(false),
 
 	// PCI configuration registers initialization

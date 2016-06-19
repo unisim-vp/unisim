@@ -256,7 +256,7 @@ public:
 	static const uint8_t EXT_RTR_MASK = 0x01;
 	static const uint8_t STD_RTR_MASK = 0x10;
 
-	tlm_extension_base* set_auto_extension(tlm_extension_base* ext) {}
+	tlm_extension_base* set_auto_extension(tlm_extension_base* ext) { return 0; }
 
 	void setMsgVect(uint8_t vect[CAN_MSG_SIZE]) {
 		for (int i=0; i<CAN_MSG_SIZE; i++) {

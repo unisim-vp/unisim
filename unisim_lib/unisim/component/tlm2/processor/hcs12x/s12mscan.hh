@@ -680,7 +680,7 @@ private:
 
 	inline void incReceiverErrorCounter() {
 
-		canrxerr_register = (canrxerr_register < 255)? canrxerr_register++ : canrxerr_register;
+		canrxerr_register = (canrxerr_register < 255)? (canrxerr_register+1) : canrxerr_register;
 
 		if ((canrxerr_register >= 0) && (canrxerr_register <= 96)) {
 			setReceiverStatus(RxOK); /* 0 <= receive error counter <= 96 */
@@ -699,7 +699,7 @@ private:
 
 	inline void incTransmitterErrorCounter() {
 
-		cantxerr_register = (cantxerr_register < 255)? cantxerr_register++ : cantxerr_register;
+		cantxerr_register = (cantxerr_register < 255)? (cantxerr_register+1) : cantxerr_register;
 
 		if ((cantxerr_register >= 0) && (cantxerr_register <= 96)) {
 			setTransmitterStatus(TxOK); /* 0 <= Transmitter error counter <= 96 */

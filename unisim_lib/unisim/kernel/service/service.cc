@@ -297,6 +297,7 @@ VariableBase(const char *_name, Object *_owner, Type _type, const char *_descrip
 	, is_visible(true)
 	, is_serializable(true)
 	, is_modified(false)
+	, listener_set()
 {
 	if(_owner)
 	{
@@ -319,6 +320,7 @@ VariableBase(const char *_name, VariableBase *_container, Type _type, const char
 	, is_visible(true)
 	, is_serializable(true)
 	, is_modified(false)
+	, listener_set()
 {
 	Simulator::simulator->Register(this);
 }
@@ -335,6 +337,7 @@ VariableBase()
 	, is_visible(false)
 	, is_serializable(false)
 	, is_modified(false)
+	, listener_set()
 {
 }
 
@@ -488,6 +491,28 @@ void VariableBase::SetModified(bool _is_modified)
 	is_modified = _is_modified;
 }
 
+void
+VariableBase::AddListener( VariableBaseListener* listener )
+{
+  listener_set.insert( listener );
+}
+
+void
+VariableBase::RemoveListener( VariableBaseListener* listener )
+{
+  listener_set.erase( listener );
+}
+
+void
+VariableBase::NotifyListeners()
+{
+  typedef std::set<VariableBaseListener*>::iterator listener_iterator;
+  for (listener_iterator itr = listener_set.begin(), end = listener_set.end(); itr != end; ++itr)
+    {
+      (*itr)->VariableBaseNotify( this );
+    }
+}
+
 VariableBase::operator bool () const { return false; }
 VariableBase::operator signed char () const { return (long long) *this; }
 VariableBase::operator short () const { return (long long) *this; }
@@ -503,20 +528,20 @@ VariableBase::operator float () const { return (double) *this; }
 VariableBase::operator double () const { return 0.0; }
 VariableBase::operator string () const { return string(); }
 
-VariableBase& VariableBase::operator = (bool value) { return *this; }
+VariableBase& VariableBase::operator = (bool value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (char value) { *this = (long long) value; return *this; }
 VariableBase& VariableBase::operator = (short value) { *this = (long long) value; return *this; }
 VariableBase& VariableBase::operator = (int value) { *this = (long long) value; return *this; }
 VariableBase& VariableBase::operator = (long value) { *this = (long long) value; return *this; }
-VariableBase& VariableBase::operator = (long long value) { return *this; }
+VariableBase& VariableBase::operator = (long long value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (unsigned char value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned short value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned int value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned long value) { *this = (unsigned long long) value; return *this; }
-VariableBase& VariableBase::operator = (unsigned long long value) { return *this; }
+VariableBase& VariableBase::operator = (unsigned long long value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (float value) { *this = (double) value; return *this; }
-VariableBase& VariableBase::operator = (double value) { return *this; }
-VariableBase& VariableBase::operator = (const char *value) { return *this; }
+VariableBase& VariableBase::operator = (double value) { NotifyListeners(); return *this; }
+VariableBase& VariableBase::operator = (const char *value) { NotifyListeners(); return *this; }
 
 VariableBase& VariableBase::operator [] (unsigned int index)
 {
@@ -606,6 +631,7 @@ void VariableBase::GenerateLatexDocumentation(std::ostream& os) const
 	os << "\\hline" << std::endl;
 }
 
+
 //=============================================================================
 //=                            Variable<TYPE>                                =
 //=============================================================================
@@ -637,7 +663,7 @@ template <class TYPE> Variable<TYPE>::operator unsigned long long () const
 
 template <class TYPE> Variable<TYPE>::operator double () const
 {
-	return (double)( Get() );
+	return double( Get() );
 }
 
 template <class TYPE> Variable<TYPE>::operator string () const
@@ -3453,7 +3479,7 @@ void Simulator::SetVariable(const char *variable_name, long long variable_value)
 
 void Simulator::SetVariable(const char *variable_name, float variable_value)
 {
-	SetVariable(variable_name, (double) variable_value);
+	SetVariable(variable_name, double(variable_value));
 }
 
 void Simulator::SetVariable(const char *variable_name, double variable_value)

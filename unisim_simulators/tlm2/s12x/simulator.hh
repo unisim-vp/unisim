@@ -129,17 +129,13 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::VariableBase;
 
-using unisim::kernel::service::CallBackObject;
-
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
 
 using unisim::service::telnet::Telnet;
 
-class Simulator :
-	public unisim::kernel::service::Simulator
-	, public CallBackObject
-
+class Simulator
+  : public unisim::kernel::service::Simulator
 {
 private:
 	//=========================================================================
@@ -170,9 +166,6 @@ public:
 		pim->generatePimFile();
 		if (pim) { delete pim; pim = NULL; }
 	};
-
-	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
-	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 	/*
 	 * To control the progress of the simulation:
@@ -411,11 +404,20 @@ private:
 	bool dump_statistics;
 	Parameter<bool> param_dump_statistics;
 
-	enum ReadBackOffsets {DATA_LOAD_RATIO, DATA_STORE_RATIO};
-
 	double null_stat_var;
-	Statistic<double> stat_data_load_ratio;
-	Statistic<double> stat_data_store_ratio;
+	struct LoadRatioStatistic : public unisim::kernel::service::Variable<double>
+	{
+		LoadRatioStatistic(Simulator& _sim);
+		void Get(double& value);
+		Simulator& sim;
+	} stat_data_load_ratio;
+
+	struct StoreRatioStatistic : public unisim::kernel::service::Variable<double>
+	{
+		StoreRatioStatistic(Simulator& _sim);
+		void Get(double& value);
+		Simulator& sim;
+	} stat_data_store_ratio;
 
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 

@@ -128,8 +128,8 @@ Simulator::Simulator(int argc, char **argv)
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
 
 	, null_stat_var(0)
-	, stat_data_load_ratio("data-load-ratio %", 0, null_stat_var, "Data Load Ratio")
-	, stat_data_store_ratio("data-store-ratio %", 0, null_stat_var, "Data Store Ratio")
+	, stat_data_load_ratio(*this)
+	, stat_data_store_ratio(*this)
 
 	, prev_sig_int_handler(0)
 
@@ -148,9 +148,6 @@ Simulator::Simulator(int argc, char **argv)
 	param_pc_reg_name = new Parameter<string>("program-counter-name", 0, program_counter_name, "Target CPU program counter name");
 	param_pc_reg_name->SetMutable(false);
 	param_pc_reg_name->SetVisible(true);
-
-	stat_data_load_ratio.setCallBack(this, DATA_LOAD_RATIO, NULL, &CallBackObject::read);
-	stat_data_store_ratio.setCallBack(this, DATA_STORE_RATIO, NULL, &CallBackObject::read);
 
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
@@ -961,29 +958,26 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 
 }
 
+Simulator::LoadRatioStatistic::LoadRatioStatistic(Simulator& _sim)
+  : Variable<double>("data-load-ratio %", 0, sim.null_stat_var, VariableBase::VAR_STATISTIC, "Data Load Ratio"), sim(_sim) {}
 
-bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_length) {
-
-	uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
-	uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
-
-	switch (offset) {
-		case DATA_LOAD_RATIO: {
-			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100;
-			return (true);
-		}
-		case DATA_STORE_RATIO: {
-			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100;
-			return (true);
-		}
-
-	}
-
-	return (false);
+void
+Simulator::LoadRatioStatistic::Get(double& value)
+{
+  CPU& cpu( *sim.cpu );
+  double total_access = double(cpu["instruction-counter"]) + double(cpu["data-load-counter"]) + double(cpu["store-counter"]);
+  value = double(cpu["data-load-counter"])/total_access*100;
 }
 
-bool Simulator::write(unsigned int offset, const void *buffer, unsigned int data_length) {
-	return (false);
+Simulator::StoreRatioStatistic::StoreRatioStatistic(Simulator& _sim)
+  : Variable<double>("data-store-ratio %", 0, sim.null_stat_var, VariableBase::VAR_STATISTIC, "Data Store Ratio"), sim(_sim) {}
+
+void
+Simulator::StoreRatioStatistic::Get(double& value)
+{
+  CPU& cpu( *sim.cpu );
+  double total_access = double(cpu["instruction-counter"]) + double(cpu["data-load-counter"]) + double(cpu["store-counter"]);
+  value = double(cpu["data-store-counter"])/total_access*100;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)

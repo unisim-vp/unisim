@@ -62,7 +62,7 @@ CacheLeakagePower ::
 
 double
 CacheLeakagePower ::
-GetLeakagePower()
+GetLeakagePower() const
 {
 	map<CacheProfileKey, CacheProfile *>::const_iterator prof_iter;
 	double leakage_power = 0.0;

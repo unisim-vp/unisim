@@ -263,7 +263,7 @@ inline void stringSplit(std::string str, const std::string delim, std::vector<st
 inline void splitCharStr2Array(char* str, const char * delimiters, int *count, char** *res) {
 
 	char *  p    = strtok (str, delimiters);
-	int n_spaces = 0, i;
+	int n_spaces = 0;
 
 	/* split string and append tokens to 'res' */
 

@@ -51,7 +51,8 @@ public:
 	CacheDynamicEnergy(const map<CacheProfileKey, CacheProfile *> *_profiles);
 	~CacheDynamicEnergy();
 
-	double GetDynamicEnergy();
+	double GetDynamicEnergy() const;
+	bool operator != ( CacheDynamicEnergy const& clp ) const { return GetDynamicEnergy() != clp.GetDynamicEnergy(); }
 
 private:
 	const map<CacheProfileKey, CacheProfile *> *profiles;
