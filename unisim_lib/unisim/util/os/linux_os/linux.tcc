@@ -629,9 +629,10 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::Execute( Linux& lin, int syscall_id ) const
 {
-  lin.logger_ << DebugWarning << this->GetName() << " is not implemented" << EndDebugWarning;
-  if (unlikely(lin.verbose_))
+  if (unlikely(lin.verbose_)) {
+    lin.logger_ << DebugWarning << this->GetName() << " is not implemented" << EndDebugWarning;
     lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+  }
   SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
 }
 

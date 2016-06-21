@@ -188,8 +188,8 @@ private:
   
   struct CpuCycleTimeParam : public unisim::kernel::service::Parameter<sc_time>
   {
-    CpuCycleTimeParam(char const* name, CPU* _cpu, const char *description)
-      : unisim::kernel::service::Parameter<sc_time>(name, _cpu, _cpu->cpu_cycle_time, "Processor cycle time parameter"), cpu(_cpu)
+    CpuCycleTimeParam(char const* name, CPU* _cpu)
+      : unisim::kernel::service::Parameter<sc_time>(name, _cpu, _cpu->cpu_cycle_time, "Processor cycle time parameter"), cpu(*_cpu)
     {}
     void Set( sc_time const& value ) { cpu.SetCycleTime( value ); }
     CPU& cpu;

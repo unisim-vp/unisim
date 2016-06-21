@@ -84,6 +84,7 @@ struct CPU
   typedef int32_t  S32;
   typedef int64_t  S64;
   typedef bool     BOOL;
+  typedef bool     Cond;
   
   /*
    * ARM architecture constants

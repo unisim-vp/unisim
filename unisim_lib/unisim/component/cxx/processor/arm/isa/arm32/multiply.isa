@@ -51,7 +51,7 @@ mla.disasm = {
 };
 
 mla.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 res = cpu.GetGPR(rm) * cpu.GetGPR(rs) + cpu.GetGPR(rn);
@@ -82,7 +82,7 @@ mls.disasm = {
 };
 
 mls.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
 
   cpu.SetGPR( rd, cpu.GetGPR( ra ) - (cpu.GetGPR( rn ) * cpu.GetGPR( rm )) );
 };
@@ -105,7 +105,7 @@ mul.disasm = {
 };
 
 mul.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 res = cpu.GetGPR(rn) * cpu.GetGPR(rm);
@@ -139,7 +139,7 @@ smlal.disasm = {
 };
   
 smlal.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -179,7 +179,7 @@ smull.disasm = {
 };
 
 smull.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -215,7 +215,7 @@ umlal.disasm = {
 };
 
 umlal.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::U32 U32;
@@ -253,7 +253,7 @@ umaal.disasm = {
 };
 
 umaal.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::U32 U32;
@@ -285,7 +285,7 @@ umull.disasm = {
 };
 
 umull.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::U32 U32;
@@ -319,7 +319,7 @@ smlaxy.disasm = {
 };
 
 smlaxy.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -358,7 +358,7 @@ smlalxy.disasm = {
 };
 
 smlalxy.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -389,7 +389,7 @@ smlawy.disasm = {
 };
 
 smlawy.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -427,7 +427,7 @@ smulxy.disasm = {
 };
 
 smulxy.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -456,7 +456,7 @@ smulwy.disasm = {
 };
 
 smulwy.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -491,7 +491,7 @@ sdiv.disasm = {
 };
 
 sdiv.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -526,7 +526,7 @@ udiv.disasm = {
 };
 
 udiv.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1( cpu.GetGPR(rn) ), op2( cpu.GetGPR(rm) ),
@@ -566,7 +566,7 @@ smlad.disasm = {
 };
 
 smlad.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -614,7 +614,7 @@ smlald.disasm = {
 };
 
 smlald.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -659,7 +659,7 @@ smlsd.disasm = {
 };
 
 smlsd.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -707,7 +707,7 @@ smlsld.disasm = {
 };
 
 smlsld.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -751,7 +751,7 @@ smmla.disasm = {
 };
 
 smmla.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -786,7 +786,7 @@ smmls.disasm = {
 };
 
 smmls.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -823,7 +823,7 @@ smmul.disasm = {
 };
 
 smmul.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -861,7 +861,7 @@ smuad.disasm = {
 };
 
 smuad.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
@@ -908,7 +908,7 @@ smusd.disasm = {
 };
 
 smusd.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;

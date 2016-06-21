@@ -70,35 +70,38 @@ namespace arm {
    * @return true if the condition matches CPSR, false otherwise
    */
   template <typename coreT>
-  bool
+  typename coreT::BOOL
   CheckCondition( coreT& core, uint32_t cond )
   {
     util::truth_table::InBit<uint16_t,3> const N;
     util::truth_table::InBit<uint16_t,2> const Z;
     util::truth_table::InBit<uint16_t,1> const C;
     util::truth_table::InBit<uint16_t,0> const V;
+    
+    typedef typename coreT::U16 U16;
+    typedef typename coreT::U32 U32;
 
-    static uint16_t const condition_truth_tables[] = {
-      (                  Z).tt, // eq; equal
-      (              not Z).tt, // ne; not equal
-      (                  C).tt, // cs/hs; unsigned higuer or same
-      (              not C).tt, // cc/lo; unsigned lower
-      (                  N).tt, // mi; negative
-      (              not N).tt, // pl; positive or zero
-      (                  V).tt, // vs; overflow set
-      (              not V).tt, // vc; overflow clear
-      (   not (not C or Z)).tt, // hi; unsigned higher
-      (       (not C or Z)).tt, // ls; unsigned lower or same
-      (      not (N xor V)).tt, // ge; signed greater than or equal
-      (          (N xor V)).tt, // lt; signed less than
-      (not(Z or (N xor V))).tt, // gt; signed greater than
-      (   (Z or (N xor V))).tt, // le; signed less than or equal
-      (   uint16_t(0xffff)),    // al; always
-      (   uint16_t(0x0000)),    // <und>; never (illegal)
+    static U16 const condition_truth_tables[] = {
+      U16((                  Z).tt), // eq; equal
+      U16((              not Z).tt), // ne; not equal
+      U16((                  C).tt), // cs/hs; unsigned higuer or same
+      U16((              not C).tt), // cc/lo; unsigned lower
+      U16((                  N).tt), // mi; negative
+      U16((              not N).tt), // pl; positive or zero
+      U16((                  V).tt), // vs; overflow set
+      U16((              not V).tt), // vc; overflow clear
+      U16((   not (not C or Z)).tt), // hi; unsigned higher
+      U16((       (not C or Z)).tt), // ls; unsigned lower or same
+      U16((      not (N xor V)).tt), // ge; signed greater than or equal
+      U16((          (N xor V)).tt), // lt; signed less than
+      U16((not(Z or (N xor V))).tt), // gt; signed greater than
+      U16((   (Z or (N xor V))).tt), // le; signed less than or equal
+      U16(                  0xffff),    // al; always
+      U16(                  0x0000),    // <und>; never (illegal)
     };
     if (cond >= 15) throw std::logic_error("invalid condition code");
-    uint32_t nzcv = GetNativeValue( core.CPSR().Get( NZCV ) );
-    return ((condition_truth_tables[cond] >> nzcv) & 1);
+    U32 nzcv = core.CPSR().Get( NZCV );
+    return ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0);
   }
   
   template <typename coreT>

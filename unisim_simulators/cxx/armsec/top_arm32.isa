@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2013,
+ *  Copyright (c) 2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,24 +29,18 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
-
+ 
 /**********************************************
 
-           THUMB ARM EMULATOR ISA
+             ARM EMULATOR ISA
 
 **********************************************/
 
-namespace unisim::component::cxx::processor::arm::isa::thumb
-
-set codetype buffer;
+namespace unisim::component::cxx::processor::arm::isa::arm32
+set endianness big
 set addressclass {uint32_t}
-set endianness little;
-//set fields_order descending;
-set words_order ascending;
-//set withencode_p true;
-
 template <{typename} {ARCH}>
 
 decl {
@@ -58,20 +52,20 @@ action {void} execute({ARCH &} {cpu}) {
   cpu.UndefinedInstruction( this );
 }
 
-action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {
-  buffer << "; Unknown THUMB instruction";
+action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer}) {
+  buffer << "; Unknown ARM instruction";
 }
 
 impl {
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/disasm.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
-#include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/endian/endian.hh>
 #include <iostream>
 #include <iomanip>
 
-// using unisim::util::arithmetic::CountLeadingZeros;
+using unisim::util::arithmetic::CountLeadingZeros;
 using unisim::util::endian::ByteSwap;
 using unisim::util::arithmetic::RotateRight;
 // using unisim::util::arithmetic::UnsignedAdd8;
@@ -83,14 +77,23 @@ using unisim::util::arithmetic::RotateRight;
 // using unisim::util::arithmetic::UnsignedSub8;
 
 #include <unisim/component/cxx/processor/arm/execute.hh>
+
 } // end of impl
 
-include "data_processing.isa"
-include "load_store.isa"
-include "multiply.isa"
-include "misc_arithmetic.isa"
-include "branch.isa"
-include "branch_T1.isa"
-include "exception.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/load_store.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/multiply.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/hints.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/branch.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/exception.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/vfp.isa"
 
-include "ordering.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/ordering.isa"
+
+//include "unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
+//include "unisim/component/cxx/processor/arm/isa/arm32/specialization.isa"
+
+//include "unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"
