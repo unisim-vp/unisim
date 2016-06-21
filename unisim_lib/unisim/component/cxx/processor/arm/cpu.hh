@@ -72,7 +72,6 @@ struct CPU
 {
   typedef CONFIG Config;
   typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR fpscr_type;
-  typedef unisim::component::cxx::processor::arm::PSR psr_type;
   typedef double   F64;
   typedef float    F32;
   typedef uint8_t  U8;

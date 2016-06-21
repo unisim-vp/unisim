@@ -258,7 +258,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       {
         try { *((uint32_t*)buffer) = cpu.CurrentMode().GetSPSR(); }
         catch (std::logic_error const&)
-          { cpu.logger << DebugError << "No SPSR in " << cpu.CurrentMode().suffix << " mode" << EndDebugError; }
+          {
+            /* Do not produce an error because dwarf says this register always exists */
+            *((uint32_t*)buffer) = 0;
+            //cpu.logger << DebugError << "No SPSR in " << cpu.CurrentMode().suffix << " mode" << EndDebugError;
+          }
       }
       virtual void SetValue( void const* buffer )
       {

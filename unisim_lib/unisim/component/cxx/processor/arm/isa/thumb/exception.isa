@@ -97,13 +97,12 @@ cps.execute = {
   if (Cond is_usr=( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
     return;
   
-  typename ARCH::psr_type cpsr_val = cpu.CPSR();
-  
-  if (a)     cpsr_val.Set( A, U32(dis) );
-  if (i)     cpsr_val.Set( I, U32(dis) );
-  if (f)     cpsr_val.Set( F, U32(dis) );
+  U32 cpsr_val = cpu.CPSR().bits(), disable( dis );
+  if (a) A.Set( cpsr_val, disable );
+  if (i) I.Set( cpsr_val, disable );
+  if (f) F.Set( cpsr_val, disable );
   
   // CPSRWriteByInstr() checks for illegal mode changes
-  CPSRWriteByInstr( cpu, cpsr_val.bits(), 0b1111, false );
+  CPSRWriteByInstr( cpu, cpsr_val, 0b1111, false );
 };
 
