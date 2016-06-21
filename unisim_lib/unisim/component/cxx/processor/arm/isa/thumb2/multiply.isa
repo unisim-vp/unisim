@@ -364,7 +364,7 @@ smlawy.disasm = {
 };
 
 smlawy.execute = {
-  if(not CheckCondition(cpu, cpu.itcond())) return;
+  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
