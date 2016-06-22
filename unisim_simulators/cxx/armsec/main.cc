@@ -45,8 +45,8 @@ namespace armsec
 
   template <typename operT, typename fpscrT> int FloatCompare( operT op1, operT op2, fpscrT& fpscr ) { return 0; }
 
-  typedef double   F64;
-  typedef float    F32;
+  typedef SmartValue<double>   F64;
+  typedef SmartValue<float>    F32;
   typedef SmartValue<bool>     BOOL;
   typedef SmartValue<uint8_t>  U8;
   typedef SmartValue<uint16_t> U16;
@@ -70,9 +70,13 @@ namespace armsec
     typedef armsec::S16  S16;
     typedef armsec::S32  S32;
     typedef armsec::S64  S64;
+    
+    typedef armsec::FPU  FPU;
+
     struct Cond
     {
       Cond( BOOL const& _cond_expr ) {}
+      Cond( U32 const& _cond_expr ) {}
       operator bool () const { return true; }
     };
     
@@ -125,38 +129,50 @@ namespace armsec
     static uint32_t const COND_LE = 0x0d;
     static uint32_t const COND_AL = 0x0e;
     
+    /* mask for valid bits in processor control and status registers */
+    static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
+    
     struct SourceReg : public ExprNode
     {
       SourceReg( unsigned _reg ) : reg( _reg ) {} unsigned reg;
-      virtual void Repr( std::ostream& sink ) const;
+      virtual void Repr( std::ostream& sink ) const { sink << "SourceReg(" << reg << ")"; }
     };
   
     struct SourceCIA : public ExprNode
     {
       SourceCIA() {}
-      virtual void Repr( std::ostream& sink ) const;
+      virtual void Repr( std::ostream& sink ) const { sink << "SourceCIA()"; }
     };
     
     struct SourceCPSR : public ExprNode
     {
       SourceCPSR() {}
-      virtual void Repr( std::ostream& sink ) const;
+      virtual void Repr( std::ostream& sink ) const { sink << "SourceCPSR()"; }
     };
     
     struct SourceSPSR : public ExprNode
     {
       SourceSPSR() {}
-      virtual void Repr( std::ostream& sink ) const;
+      virtual void Repr( std::ostream& sink ) const { sink << "SourceSPSR()"; }
     };
     
     struct SourceFPSCR : public ExprNode
     {
       SourceFPSCR() {}
-      virtual void Repr( std::ostream& sink ) const;
+      virtual void Repr( std::ostream& sink ) const { sink << "SourceFPSCR()"; }
+    };
+    
+    struct SourceFPEXC : public ExprNode
+    {
+      SourceFPEXC() {}
+      virtual void Repr( std::ostream& sink ) const { sink << "SourceFPEXC()"; }
     };
     
     struct psr_type : public unisim::component::cxx::processor::arm::FieldRegister<U32>
     {
+      psr_type( Expr const& expr )
+        : unisim::component::cxx::processor::arm::FieldRegister<U32>( expr )
+      {}
       // void ITSetState( uint32_t cond, uint32_t mask )
       // {
       //   RegisterField<12,4>().Set( m_value, cond );
@@ -184,25 +200,31 @@ namespace armsec
       // }
     };
     
+    struct fpscr_type : public unisim::component::cxx::processor::arm::FieldRegister<U32>
+    {
+      fpscr_type( Expr const& expr ) { m_value = expr; }
+    };
+    
     State( bool is_thumb, unsigned insn_length )
-      : current_insn_addr( new SourceCIA ),
-        fpscr( new SourceFPSCR )
+      : current_insn_addr( new SourceCIA )
+      , next_insn_addr()
+      , cpsr( new SourceCPSR )
+      , spsr( new SourceSPSR )
+      , fpscr( new SourceFPSCR )
     {
       for (unsigned reg = 0; reg < 15; ++reg)
         reg_values[reg] = U32( new SourceReg( reg ) );
-      current_insn_addr = U32( new SourceCIA );
       reg_values[15] = current_insn_addr + U32( is_thumb ? 4 : 8 );
-      if ((insn_length != 16) and (insn_length != 32))
+      if ((insn_length != 32) and ((insn_length != 16) or not is_thumb))
         throw std::logic_error( "Bad instruction length" );
       next_insn_addr = current_insn_addr + U32( insn_length / 8 );
-      cpsr.m_value = U32( new SourceCPSR );
-      spsr.m_value = U32( new SourceSPSR );
     }
 
     U32 reg_values[16];
     U32 current_insn_addr, next_insn_addr;
     psr_type cpsr, spsr;
-    U32  fpscr;
+    fpscr_type fpscr;
+    U32 FPEXC;
     
     void not_implemented() { throw std::logic_error( "not implemented" ); }
 
@@ -217,7 +239,7 @@ namespace armsec
         next_insn_addr = value;
     }
     
-    SmartValue<uint32_t> GetNIA() { return next_insn_addr; }
+    U32 GetNIA() { return next_insn_addr; }
 
     psr_type& CPSR() { return cpsr; };
     psr_type& SPSR() { not_implemented(); return spsr; };
@@ -264,7 +286,7 @@ namespace armsec
     void MemWrite8( U32 const& addr, U8 const& value ) { stores.push_back( new Store( addr.m_expr, 1, false, value.m_expr ) ); }
     
     void SetExclusiveMonitors( U32 const& address, unsigned size ) { not_implemented(); }
-    bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { not_implemented(); }
+    bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { not_implemented(); return false; }
     void ClearExclusiveLocal() { not_implemented(); }
     
     void BranchExchange( U32 const& target ) { next_insn_addr = target; }
@@ -289,11 +311,11 @@ namespace armsec
     F64  GetVDR( unsigned idx ) { return F64( 0 ); }
     void SetVDR( unsigned idx, F64 val ) {}
   
-    U32& FPSCR() { return fpscr; }
+    fpscr_type& FPSCR() { return fpscr; }
   
     uint32_t itcond() const { return this->COND_AL; }
     bool itblock() { return false; }
-    void ITSetState( uint32_t cond, uint32_t mask );
+    void ITSetState( uint32_t cond, uint32_t mask ) { not_implemented(); }
 
     // /* masks for the different running modes */
     // static uint32_t const RUNNING_MODE_MASK = 0x1F;
@@ -330,8 +352,6 @@ namespace armsec
       std::cout << "hello\n";
     }
   
-    template <class INSN> void UndefinedInstruction( INSN const& insn ) {}
-    
   };
 
 }

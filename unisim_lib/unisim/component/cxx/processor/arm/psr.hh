@@ -96,6 +96,11 @@ namespace arm {
   RegisterField< 1,1> const DZC;    /* Division by Zero cumulative exception bit */
   RegisterField< 0,1> const IOC;    /* Invalid Operation cumulative exception bit */
   
+  struct FPSCReg : public FieldRegister<uint32_t>
+  {
+    FPSCReg() : FieldRegister<uint32_t>( 0x03000000 ) {}
+  };
+  
   struct PSR : public FieldRegister<uint32_t>
   {
     void ITSetState( uint32_t cond, uint32_t mask )

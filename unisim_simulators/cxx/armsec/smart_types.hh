@@ -202,8 +202,12 @@ namespace armsec
     {
       unsigned src_size = 8*sizeof(SRC_VALUE_TYPE);
       unsigned dst_size = 8*sizeof(value_type);
+      bool src_signed = std::numeric_limits<SRC_VALUE_TYPE>::is_signed;
+      bool dst_signed = std::numeric_limits<value_type>::is_signed;
       
-      if (std::numeric_limits<value_type>::is_signed and ((dst_size <= src_size) or std::numeric_limits<SRC_VALUE_TYPE>::is_signed))
+      if ((src_size == dst_size) and (src_signed == dst_signed))
+        m_expr = other.m_expr;
+      if (dst_signed and ((dst_size <= src_size) or src_signed))
         m_expr = new SXTNode( other.m_expr, std::min(dst_size,src_size) );
       else {
         uint32_t mask = uint32_t((uint64_t(1) << dst_size) - 1);
@@ -307,6 +311,232 @@ namespace armsec
   };
   template <typename UTP>
   UTP CountLeadingZeros( UTP const& value ) { return UTP( new CLZNode( value.m_expr ) ); }
+  
+  struct FPU
+  {
+    struct DefaultNaNNode : public ExprNode
+    {
+      DefaultNaNNode( int _fsz ) : fsz( _fsz ) {} int fsz;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "F" << fsz << "DefaultNaN()"; }
+    };
+    
+    template <typename fpscrT> static
+    void FloatSetDefaultNan( SmartValue<float>& result, fpscrT const& fpscr )
+    { result = SmartValue<float>( new DefaultNaNNode( 32 ) ); }
+    
+    template <typename fpscrT> static
+    void FloatSetDefaultNan( SmartValue<double>& result, fpscrT const& fpscr )
+    { result = SmartValue<double>( new DefaultNaNNode( 64 ) ); }
+    
+    struct SetQuietBitNode : public ExprNode
+    {
+      SetQuietBitNode( Expr const& _src ) : src( _src ) {} Expr src;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FSetQuietBit( "; src->Repr( sink ); sink << " )"; }
+    };
+    
+    template <typename FLOAT, typename fpscrT> static
+    void FloatSetQuietBit( FLOAT& op, fpscrT const& fpscr )
+    {
+      op = FLOAT( new SetQuietBitNode( op.m_expr ) );
+    }
+
+    struct FlushToZeroNode : public ExprNode
+    {
+      FlushToZeroNode( Expr const& _src ) : src( _src ) {} Expr src;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FFlushToZero( "; src->Repr( sink ); sink << " )"; }
+    };
+    
+    template <typename FLOAT, typename fpscrT> static
+    bool
+    FloatFlushToZero( FLOAT& op, fpscrT& fpscr )
+    {
+      op = FLOAT( new FlushToZeroNode( op.m_expr ) );
+      return false;
+    }
+
+    struct CmpNode : public ExprNode
+    {
+      CmpNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FCmp( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+    };
+
+    template <typename FLOAT, typename fpscrT> static
+    SmartValue<int32_t> FloatCompare( FLOAT op1, FLOAT op2, fpscrT& fpscr )
+    {
+      return SmartValue<int32_t>( new CmpNode( op1.m_expr, op2.m_expr ) );
+    }
+
+    struct IsNaNNode : public ExprNode
+    {
+      IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "Is" << (signaling?'S':'Q') << "NaN( "; src->Repr( sink ); sink << " )"; }
+    };
+    
+    template <typename FLOAT, typename fpscrT> static
+    SmartValue<bool>
+    FloatIsSNaN( FLOAT const& op, fpscrT const& fpscr )
+    {
+      return SmartValue<bool>( new IsNaNNode( op.m_expr, false ) );
+    }
+    
+    template <typename FLOAT, typename fpscrT> static
+    SmartValue<bool>
+    FloatIsQNaN( FLOAT const& op, fpscrT const& fpscr )
+    {
+      return SmartValue<bool>( new IsNaNNode( op.m_expr, true ) );
+    }
+    
+    struct AddNode : public ExprNode
+    {
+      AddNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FAdd( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+    };
+    
+    template <typename FLOAT, typename fpscrT> static
+    void FloatAdd( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    {
+      res = FLOAT( new AddNode( op1.m_expr, op2.m_expr ) );
+    }
+
+    struct SubNode : public ExprNode
+    {
+      SubNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FSub( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+    };
+    
+    template <typename FLOAT, typename fpscrT> static
+    void FloatSub( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    {
+      res = FLOAT( new SubNode( op1.m_expr, op2.m_expr ) );
+    }
+
+    struct DivNode : public ExprNode
+    {
+      DivNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FDiv( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+    };
+    
+    template <typename FLOAT, typename fpscrT> static
+    void FloatDiv( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    {
+      res = FLOAT( new DivNode( op1.m_expr, op2.m_expr ) );
+    }
+
+    struct MulNode : public ExprNode
+    {
+      MulNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FMul( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+    };
+    
+    template <typename FLOAT, typename fpscrT> static
+    void FloatMul( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    {
+      res = FLOAT( new MulNode( op1.m_expr, op2.m_expr ) );
+    }
+
+    struct MulAddNode : public ExprNode
+    {
+      MulAddNode( Expr const& _acc, Expr const& _left, Expr const& _right )
+        : acc( _acc ), left( _left ), right( _right ) {}
+      Expr acc; Expr left; Expr right;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); acc->Traverse( visitor ); left->Traverse( visitor ); right->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FMulAdd( "; acc->Repr( sink ); sink << ", "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+    };
+    
+    template <typename FLOAT, typename fpscrT> static
+    void FloatMulAdd( FLOAT& acc, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    {
+      acc = FLOAT( new MulAddNode( acc.m_expr, op1.m_expr, op2.m_expr ) );
+    }
+
+    struct NegNode : public ExprNode
+    {
+      NegNode( Expr const& _src ) : src( _src ) {} Expr src;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FNeg( "; src->Repr( sink ); sink << " )"; }
+    };
+  
+    template <typename FLOAT, typename fpscrT> static
+    void FloatNeg( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new NegNode( op.m_expr ) ); }
+
+    struct SqrtNode : public ExprNode
+    {
+      SqrtNode( Expr const& _src ) : src( _src ) {} Expr src;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FSqrt( "; src->Repr( sink ); sink << " )"; }
+    };
+  
+    template <typename FLOAT, typename fpscrT> static
+    void FloatSqrt( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new SqrtNode( op.m_expr ) ); }
+
+    struct FtoFNode : public ExprNode
+    {
+      FtoFNode( Expr const& _src, int _ssz, int _dsz )
+        : src( _src ), ssz( _ssz ), dsz( _dsz )
+      {} Expr src; int ssz; int dsz;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "F" << ssz << "2F" << dsz << "( "; src->Repr( sink ); sink << " )"; }
+    };
+    
+    template <typename ofpT, typename ifpT, typename fpscrT> static
+    void FloatFtoF( SmartValue<ofpT>& res, SmartValue<ifpT> const& op, fpscrT& fpscr )
+    {
+      res = SmartValue<ofpT>( new FtoFNode( op.m_expr, 8*sizeof (ifpT), 8*sizeof (ofpT) ) );
+    }
+
+    struct FtoINode : public ExprNode
+    {
+      FtoINode( Expr const& _src, int _fsz, int _isz, int _fb )
+        : src( _src ), fsz( _fsz ), isz( _isz ), fb( _fb )
+      {} Expr src; int fsz; int isz; int fb; 
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "F" << fsz << "2I" << isz << "( "; src->Repr( sink ); sink << ", " << fb << " )"; }
+    };
+
+    template <typename intT, typename fpT, typename fpscrT> static
+    void FloatFtoI( SmartValue<intT>& res, SmartValue<fpT> const& op, int fracbits, fpscrT& fpscr )
+    {
+      res = SmartValue<intT>( new FtoINode( op.m_expr, 8*sizeof (fpT), 8*sizeof (intT), fracbits) );
+    }
+
+    struct ItoFNode : public ExprNode
+    {
+      ItoFNode( Expr const& _src, int _isz, int _fsz, int _fb )
+        : src( _src ), isz( _isz ), fsz( _fsz ), fb( _fb )
+      {} Expr src; int isz; int fsz; int fb;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "I" << isz << "2F" << fsz << "( "; src->Repr( sink ); sink << ", " << fb << " )"; }
+    };
+    
+    template <typename fpT, typename intT, typename fpscrT> static
+    void FloatItoF( SmartValue<fpT>& res, SmartValue<intT> const& op, int fracbits, fpscrT& fpscr )
+    {
+      res = SmartValue<fpT>( new ItoFNode( op.m_expr, 8*sizeof (intT), 8*sizeof (fpT), fracbits ) );
+    }
+    
+    struct AbsNode : public ExprNode
+    {
+      AbsNode( Expr const& _src ) : src( _src ) {} Expr src;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FAbs( "; src->Repr( sink ); sink << " )"; }
+    };
+  
+    template <typename FLOAT, typename fpscrT> static
+    void FloatAbs( FLOAT& res, FLOAT const& op, fpscrT& fpscr )
+    {
+      res = FLOAT( new AbsNode( op.m_expr ) );
+    }
+    
+  };
 } // end of namespace armsec
 
 #endif /* SMART_TYPES_HH */

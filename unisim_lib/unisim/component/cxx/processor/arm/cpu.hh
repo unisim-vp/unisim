@@ -71,7 +71,7 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
 {
   typedef CONFIG Config;
-  typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR fpscr_type;
+  typedef unisim::component::cxx::processor::arm::hostfloat::FPU FPU;
   typedef double   F64;
   typedef float    F32;
   typedef uint8_t  U8;
@@ -437,9 +437,9 @@ protected:
 
 public:
   // VFP/NEON registers
-  fpscr_type fpscr;
-  fpscr_type& FPSCR() { return fpscr; }
-  FieldRegister<uint32_t> FPEXC;
+  FPSCReg fpscr;
+  FPSCReg& FPSCR() { return fpscr; }
+  U32 FPEXC;
 
   struct ExtRegBank
   {

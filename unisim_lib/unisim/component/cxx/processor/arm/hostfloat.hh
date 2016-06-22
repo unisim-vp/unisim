@@ -32,107 +32,105 @@ namespace processor {
 namespace arm {
 namespace hostfloat {
   
-  struct FPSCR : public FieldRegister<uint32_t>
+  struct FPU
   {
-    FPSCR() : FieldRegister<uint32_t>( 0x03000000 ) {}
+    template <typename operT, typename fpscrT> static
+    bool
+    FloatFlushToZero( operT& op, fpscrT& fpscr )
+    {
+      int fptype = std::fpclassify(op);
+      if ((fptype != FP_SUBNORMAL) or (fptype == FP_ZERO)) return false;
+      op = 0.0;
+      return true;
+    }
+    
+    template <typename operT, typename fpscrT> static
+    void FloatAdd( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 + op2; }
+  
+    template <typename operT, typename fpscrT> static
+    void FloatSub( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 - op2; }
+  
+    template <typename operT, typename fpscrT> static
+    void FloatDiv( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 / op2; }
+    
+    template <typename operT, typename fpscrT> static
+    void FloatMul( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 * op2; }
+  
+    template <typename operT, typename fpscrT> static
+    void FloatMulAdd( operT& acc, operT op1, operT op2, fpscrT& fpscr ) { acc = acc + (op1 * op2); }
+  
+    template <typename operT, typename fpscrT> static
+    void FloatNeg( operT& res, operT op, fpscrT& fpscr ) { res = -op; }
+  
+    template <typename fpT, typename intT, typename fpscrT> static
+    void FloatItoF( fpT& res, intT op, int fracbits, fpscrT& fpscr ) { res = fpT( op ) / fpT(1 << fracbits); }
+  
+    template <typename intT, typename fpT, typename fpscrT> static
+    void FloatFtoI( intT& res, fpT op, int fracbits, fpscrT& fpscr ) { res = intT( op * fpT(1 << fracbits) ); }
+  
+    template <typename ofpT, typename ifpT, typename fpscrT> static
+    void FloatFtoF( ofpT& res, ifpT op, fpscrT& fpscr ) { res = ofpT( op ); }
+  
+    template <typename fpscrT> static
+    void FloatAbs( double& res, double op, fpscrT& fpscr ) { res = fabs( op ); }
+  
+    template <typename fpscrT> static
+    void FloatAbs( float& res, float op, fpscrT& fpscr ) { res = fabsf( op ); }
+  
+    template <typename operT, typename fpscrT> static
+    bool FloatIsSNaN( operT op, fpscrT const& fpscr ) { return std::isnan( op ) and issignaling( op ); }
+  
+    template <typename operT, typename fpscrT> static
+    bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return std::isnan( op ) and not issignaling( op ); }
+  
+    template <typename fpscrT> static
+    void FloatSetQuietBit( double& op, fpscrT const& fpscr )
+    {
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+      uint64_t d;
+      memcpy(&d, &op, 8);
+      d = d | (1ULL << 51);
+      memcpy(&op, &d, 8);
+#else
+      ieee754_double ud;
+      ud.d = op;
+      ud.ieee_nan.quiet_nan = 1;
+      op = ud.d;
+#endif
+    }
+  
+    template <typename fpscrT> static
+    void FloatSetQuietBit( float& op, fpscrT const& fpscr )
+    {
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+      uint32_t f;
+      memcpy(&f, &op, 4);
+      f = f | (1UL << 22);
+      memcpy(&op, &f, 4);
+#else
+      ieee754_float uf;
+      uf.f = op;
+      uf.ieee_nan.quiet_nan = 1;
+      op = uf.f;
+#endif
+    }
+  
+    template <typename fpscrT> static
+    void FloatSetDefaultNan( double& result, fpscrT const& fpscr )
+    { result = (double(0) / double(0)); }
+  
+    template <typename fpscrT> static
+    void FloatSetDefaultNan( float& result, fpscrT const& fpscr )
+    { result = (float(0) / float(0)); }
+  
+    template <typename operT, typename fpscrT> static
+    void FloatSqrt( operT& res, operT const& op, fpscrT& fpscr ) { res = sqrt( op ); }
+  
+    template <typename operT, typename fpscrT> static
+    int FloatCompare( operT op1, operT op2, fpscrT& fpscr )
+    { return (op1 == op2) ? 0 : (op1 > op2) ? +1 : -1; }
   };
   
-  template <typename operT, typename fpscrT>
-  bool
-  FloatFlushToZero( operT& op, fpscrT& fpscr )
-  {
-    int fptype = std::fpclassify(op);
-    if ((fptype != FP_SUBNORMAL) or (fptype == FP_ZERO)) return false;
-    op = 0.0;
-    return true;
-  }
-  
-  template <typename operT, typename fpscrT>
-  void FloatAdd( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 + op2; }
-  
-  template <typename operT, typename fpscrT>
-  void FloatSub( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 - op2; }
-  
-  template <typename operT, typename fpscrT>
-  void FloatDiv( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 / op2; }
-  
-  template <typename operT, typename fpscrT>
-  void FloatMul( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 * op2; }
-  
-  template <typename operT, typename fpscrT>
-  void FloatMulAdd( operT& acc, operT op1, operT op2, fpscrT& fpscr ) { acc = acc + (op1 * op2); }
-  
-  template <typename operT, typename fpscrT>
-  void FloatNeg( operT& res, operT op, fpscrT& fpscr ) { res = -op; }
-  
-  template <typename fpT, typename intT, typename fpscrT>
-  void FloatItoF( fpT& res, intT op, int fracbits, fpscrT& fpscr ) { res = fpT( op ) / fpT(1 << fracbits); }
-  
-  template <typename intT, typename fpT, typename fpscrT>
-  void FloatFtoI( intT& res, fpT op, int fracbits, fpscrT& fpscr ) { res = intT( op * fpT(1 << fracbits) ); }
-  
-  template <typename ofpT, typename ifpT, typename fpscrT>
-  void FloatFtoF( ofpT& res, ifpT op, fpscrT& fpscr ) { res = ofpT( op ); }
-  
-  template <typename fpscrT>
-  void FloatAbs( double& res, double op, fpscrT& fpscr ) { res = fabs( op ); }
-  
-  template <typename fpscrT>
-  void FloatAbs( float& res, float op, fpscrT& fpscr ) { res = fabsf( op ); }
-  
-  template <typename operT, typename fpscrT>
-  bool FloatIsSNaN( operT op, fpscrT const& fpscr ) { return std::isnan( op ) and issignaling( op ); }
-  
-  template <typename operT, typename fpscrT>
-  bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return std::isnan( op ) and not issignaling( op ); }
-  
-  template <typename fpscrT>
-  void FloatSetQuietBit( double& op, fpscrT const& fpscr )
-  {
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-    uint64_t d;
-	memcpy(&d, &op, 8);
-	d = d | (1ULL << 51);
-	memcpy(&op, &d, 8);
-#else
-    ieee754_double ud;
-    ud.d = op;
-    ud.ieee_nan.quiet_nan = 1;
-    op = ud.d;
-#endif
-  }
-  
-  template <typename fpscrT>
-  void FloatSetQuietBit( float& op, fpscrT const& fpscr )
-  {
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-    uint32_t f;
-	memcpy(&f, &op, 4);
-	f = f | (1UL << 22);
-	memcpy(&op, &f, 4);
-#else
-    ieee754_float uf;
-    uf.f = op;
-    uf.ieee_nan.quiet_nan = 1;
-    op = uf.f;
-#endif
-  }
-  
-  template <typename fpscrT>
-  void FloatSetDefaultNan( double& result, fpscrT const& fpscr )
-  { result = (double(0) / double(0)); }
-  
-  template <typename fpscrT>
-  void FloatSetDefaultNan( float& result, fpscrT const& fpscr )
-  { result = (float(0) / float(0)); }
-  
-  template <typename operT, typename fpscrT>
-  void FloatSqrt( operT& res, operT const& op, fpscrT& fpscr ) { res = sqrt( op ); }
-  
-  template <typename operT, typename fpscrT>
-  int FloatCompare( operT op1, operT op2, fpscrT& fpscr )
-  { return (op1 == op2) ? 0 : (op1 > op2) ? +1 : -1; }
-
 } // end of namespace hostfloat
 } // end of namespace arm
 } // end of namespace processor
