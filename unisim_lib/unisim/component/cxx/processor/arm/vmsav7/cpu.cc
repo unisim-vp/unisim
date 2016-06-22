@@ -1071,57 +1071,57 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
                DAbort type, bool taketohypmode, bool s2abort,
                bool ipavalid, bool LDFSRformat, bool s2fs1walk)
 {
-  uint32_t& FSR = (mat == mat_exec) ? IFSR : DFSR;
-  uint32_t& FAR = (mat == mat_exec) ? IFAR : DFAR;
+  uint32_t& UFSR = (mat == mat_exec) ? IFSR : DFSR;
+  uint32_t& UFAR = (mat == mat_exec) ? IFAR : DFAR;
   
   if (not taketohypmode) {
-    // FSR = bits(32) UNKNOWN;
-    // FAR = bits(32) UNKNOWN;
+    // UFSR = bits(32) UNKNOWN;
+    // UFAR = bits(32) UNKNOWN;
 
     // Asynchronous abort don't update DFAR. Synchronous Watchpoint
     // (DAbort_DebugEvent) update DFAR since debug v7.1.
     switch (type) {
-    default: FAR = va; break;
+    default: UFAR = va; break;
     case DAbort_AsyncParity: case DAbort_AsyncExternal: break;
     }
     if (LDFSRformat) {
       throw std::logic_error("Long descriptors format not supported");
       // // new format
-      // FSR<13> = TLBLookupCameFromCacheMaintenance();
+      // UFSR<13> = TLBLookupCameFromCacheMaintenance();
       // if (type IN (DAbort_AsyncExternal,DAbort_SyncExternal))
-      //   FSR<12> = IMPLEMENTATION_DEFINED;
+      //   UFSR<12> = IMPLEMENTATION_DEFINED;
       // else
-      //   FSR<12> = '0';
-      // FSR<11> = if (mat == mat_write) then '1' else '0';
-      // FSR<10> = bit UNKNOWN;
-      // FSR<9> = '1';
-      // FSR<8:6> = bits(3) UNKNOWN;
-      // FSR<5:0> = EncodeLDFSR(type, level);
+      //   UFSR<12> = '0';
+      // UFSR<11> = if (mat == mat_write) then '1' else '0';
+      // UFSR<10> = bit UNKNOWN;
+      // UFSR<9> = '1';
+      // UFSR<8:6> = bits(3) UNKNOWN;
+      // UFSR<5:0> = EncodeLDFSR(type, level);
     }
     else { // Short descriptor format
-      // FSR<13> = TLBLookupCameFromCacheMaintenance();
-      RegisterField<13,1>().Set( FSR, 0 );
+      // UFSR<13> = TLBLookupCameFromCacheMaintenance();
+      RegisterField<13,1>().Set( UFSR, 0 );
       if ((type != DAbort_SyncExternal) and (type != DAbort_AsyncExternal))
-        RegisterField<12,1>().Set( FSR, 0 );
-      RegisterField<11,1>().Set( FSR, (mat == mat_write) ? 1 : 0 );
-      RegisterField<9,1>().Set( FSR, 0 );
-      // FSR<8> = bit UNKNOWN;
-      RegisterField<8,1>().Set( FSR, 0 );
+        RegisterField<12,1>().Set( UFSR, 0 );
+      RegisterField<11,1>().Set( UFSR, (mat == mat_write) ? 1 : 0 );
+      RegisterField<9,1>().Set( UFSR, 0 );
+      // UFSR<8> = bit UNKNOWN;
+      RegisterField<8,1>().Set( UFSR, 0 );
       // domain_valid = ((type == DAbort_Domain) ||
       //                 ((level == 2) &&
       //                  (type IN {DAbort_Translation, DAbort_AccessFlag,
       //                      DAbort_SyncExternalonWalk, DAbort_SyncParityonWalk})) ||
       //                 (!HaveLPAE() && (type == DAbort_Permission)));
-      // if (domain_valid)   FSR<7:4> = domain;
-      // else                FSR<7:4> = bits(4) UNKNOWN;
-      RegisterField<4,4>().Set( FSR, domain );
+      // if (domain_valid)   UFSR<7:4> = domain;
+      // else                UFSR<7:4> = bits(4) UNKNOWN;
+      RegisterField<4,4>().Set( UFSR, domain );
       struct FS {
         FS( uint32_t& _dfsr ) : dfsr( _dfsr ) {} uint32_t& dfsr;
         void Set( uint32_t value ) {
           RegisterField<10,1>().Set( dfsr, value >> 4 );
           RegisterField<0,4>() .Set( dfsr, value >> 0 );
         }
-      } fault_status( FSR );
+      } fault_status( UFSR );
       switch (type) {
       case DAbort_AccessFlag:         fault_status.Set( level==1 ? 0b00011 : 0b00110 ); break;
       case DAbort_Alignment:          fault_status.Set( 0b00001 ); break;
