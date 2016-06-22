@@ -202,19 +202,19 @@ void InlineDebugger<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
+void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
 {
-	switch(event.GetType())
+	switch(event->GetType())
 	{
 		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
 			{
-				const unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = (const unisim::util::debug::Breakpoint<ADDRESS> *) &event;
+				const unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = (const unisim::util::debug::Breakpoint<ADDRESS> *) event;
 				(*std_output_stream) << "-> Reached " << (*breakpoint) << std::endl;
 			}
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
 			{
-				const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = (const unisim::util::debug::Watchpoint<ADDRESS> *) &event;
+				const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = (const unisim::util::debug::Watchpoint<ADDRESS> *) event;
 				(*std_output_stream) << "-> Reached " << (*watchpoint) << std::endl;
 			}
 			break;
@@ -1254,61 +1254,101 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::HasBreakpoint(ADDRESS addr)
 {
-	return debug_event_trigger_import ? debug_event_trigger_import->IsEventListened(unisim::util::debug::Breakpoint<ADDRESS>(addr)) : false;
+	if(debug_event_trigger_import)
+	{
+		unisim::util::debug::Breakpoint<ADDRESS> brkp = unisim::util::debug::Breakpoint<ADDRESS>(addr);
+		return debug_event_trigger_import->IsEventListened(&brkp);
+	}
+	return false;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetBreakpoint(ADDRESS addr)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't set breakpoint at 0x" << hex << addr << dec << endl;
+		unisim::util::debug::Breakpoint<ADDRESS> *brkp = new unisim::util::debug::Breakpoint<ADDRESS>(addr);
+		if(debug_event_trigger_import->Listen(brkp))
+		{
+			return;
+		}
+		delete brkp;
 	}
+	(*std_output_stream) << "Can't set breakpoint at 0x" << hex << addr << dec << endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
+		unisim::util::debug::Watchpoint<ADDRESS> *wp = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+		
+		if(debug_event_trigger_import->Listen(wp))
+		{
+			return;
+		}
+		delete wp;
 	}
+	(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
+		unisim::util::debug::Watchpoint<ADDRESS> *wp = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+		
+		if(debug_event_trigger_import->Listen(wp))
+		{
+			return;
+		}
+		delete wp;
 	}
+	(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't remove breakpoint at 0x" << hex << addr << dec << endl;
+		unisim::util::debug::Breakpoint<ADDRESS> brkp = unisim::util::debug::Breakpoint<ADDRESS>(addr);
+		if(debug_event_trigger_import->Unlisten(&brkp))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't remove breakpoint at 0x" << hex << addr << dec << endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
+		unisim::util::debug::Watchpoint<ADDRESS> wp = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+		if(debug_event_trigger_import->Unlisten(&wp))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
+		unisim::util::debug::Watchpoint<ADDRESS> wp = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+		if(debug_event_trigger_import->Unlisten(&wp))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 }
 
 template <class ADDRESS>

@@ -109,7 +109,6 @@ unisim/kernel/debug/debug.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/api/api.cc \
-unisim/kernel/tlm/tlm.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
@@ -125,6 +124,9 @@ unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/debugger/debugger32.cc \
+unisim/service/debug/monitor/monitor.cc \
+unisim/service/debug/monitor/monitor_32.cc \
+unisim/service/debug/monitor/monitor_64.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/os/linux_os/linux.cc \
 unisim/service/trap_handler/trap_handler.cc \
@@ -250,6 +252,7 @@ unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/sim_debugger/sim_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
+unisim/service/debug/monitor/monitor.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/trap_handler/trap_handler.hh \
@@ -388,6 +391,7 @@ unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/sim_debugger/sim_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
+unisim/service/debug/monitor/monitor.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/os/linux_os/linux.tcc \
 unisim/util/debug/profile.tcc \
@@ -503,6 +507,7 @@ string"
 UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES="\
 main.cc \
 simulator.cc \
+api.cc \
 "
 UNISIM_SIMULATORS_ARMEMU_HEADER_FILES="\
 simulator.hh \
@@ -564,7 +569,7 @@ for file in ${UNISIM_LIB_ARMEMU_FILES}; do
 	fi
 done
 
-UNISIM_SIMULATORS_ARMEMU_FILES="${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_EXTRA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TESTBENCH_FILES}"
+UNISIM_SIMULATORS_ARMEMU_FILES="${UNISIM_SIMULATORS_ARMEMU_MAIN_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_EXTRA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TESTBENCH_FILES}"
 
 for file in ${UNISIM_SIMULATORS_ARMEMU_FILES}; do
 	has_to_copy=no
@@ -946,8 +951,8 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_PROG_CXX" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PROG_RANLIB" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${ARMEMU_CONFIGURE_AC}"
+	echo "LT_INIT" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${ARMEMU_CONFIGURE_AC}"
@@ -997,15 +1002,22 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 
 	AM_ARMEMU_VERSION=$(printf ${ARMEMU_VERSION} | sed -e 's/\./_/g')
 	echo "Generating armemu Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${ARMEMU_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${ARMEMU_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libarmemu-${ARMEMU_VERSION}.a" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "libarmemu_${AM_ARMEMU_VERSION}_a_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	# armemu
 	echo "bin_PROGRAMS = unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "unisim_armemu_${AM_ARMEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "unisim_armemu_${AM_ARMEMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDADD = libarmemu-${ARMEMU_VERSION}.a" >> "${ARMEMU_MAKEFILE_AM}"
-
+	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDFLAGS = -DSIM_EXECUTABLE -static-libtool-libs" >> "${ARMEMU_MAKEFILE_AM}"
+ 	echo "unisim_armemu_${AM_ARMEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDADD = libunisim-armemu-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
+	# libunisim-armemu and libunisim-armemu-plugin
+	echo "lib_LTLIBRARIES = libunisim-armemu-${ARMEMU_VERSION}.la libunisim-armemu-plugin-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libunisim_armemu_${AM_ARMEMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libunisim_armemu_${AM_ARMEMU_VERSION}_la_LDFLAGS = -static" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_CPPFLAGS = -DSIM_PLUGIN" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_LDFLAGS = -shared -no-undefined" >> "${ARMEMU_MAKEFILE_AM}"
+	
 	echo "noinst_HEADERS = ${UNISIM_LIB_ARMEMU_HEADER_FILES} ${UNISIM_LIB_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_LIB_ARMEMU_M4_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "sharedir = \$(prefix)/share/unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
@@ -1065,7 +1077,7 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/armemu
 	
 	echo "Building armemu configure"
-	${SHELL} -c "cd ${DEST_DIR}/armemu && aclocal -I m4 && autoconf --force && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR}/armemu && aclocal -I m4 && libtoolize --force && autoconf --force && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

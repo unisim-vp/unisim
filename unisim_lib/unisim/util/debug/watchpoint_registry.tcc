@@ -188,15 +188,21 @@ void WatchpointRegistry<ADDRESS>::Reset()
 }
 
 template <class ADDRESS>
-bool WatchpointRegistry<ADDRESS>::SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+bool WatchpointRegistry<ADDRESS>::SetWatchpoint(const Watchpoint<ADDRESS> *wp)
 {
+	unisim::util::debug::MemoryAccessType mat = wp->GetMemoryAccessType();
+	unisim::util::debug::MemoryType mt = wp->GetMemoryType();
+	ADDRESS addr = wp->GetAddress();
+	uint32_t size = wp->GetSize();
+	
 	if(size > 0)
 	{
-		typename list<Watchpoint<ADDRESS> >::const_iterator watchpoint;
+		typename std::list<const Watchpoint<ADDRESS> *>::const_iterator watchpoint_it;
 	
-		for(watchpoint = watchpoints.begin(); watchpoint != watchpoints.end(); watchpoint++)
+		for(watchpoint_it = watchpoints.begin(); watchpoint_it != watchpoints.end(); watchpoint_it++)
 		{
-			if(watchpoint->GetMemoryType() == mt && watchpoint->GetMemoryAccessType() == mat && watchpoint->HasOverlap(addr, size))
+			const Watchpoint<ADDRESS> *watchpoint = *watchpoint_it;
+			if((watchpoint->GetMemoryType() == mt) && (watchpoint->GetMemoryAccessType() == mat) && watchpoint->HasOverlap(addr, size))
 			{
 	// 		  cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 	// 		       << ": FALSE mat = " << mat 
@@ -206,7 +212,7 @@ bool WatchpointRegistry<ADDRESS>::SetWatchpoint(unisim::util::debug::MemoryAcces
 				return false;
 			}
 		}
-		watchpoints.push_back(Watchpoint<ADDRESS>(mat, mt, addr, size));
+		watchpoints.push_back(wp);
 		has_watchpoints = true;
 
 		do
@@ -237,14 +243,17 @@ bool WatchpointRegistry<ADDRESS>::SetWatchpoint(unisim::util::debug::MemoryAcces
 }
 
 template <class ADDRESS>
-bool WatchpointRegistry<ADDRESS>::SetWatchpoint(const Watchpoint<ADDRESS>& wp)
+bool WatchpointRegistry<ADDRESS>::SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
-	unisim::util::debug::MemoryAccessType mat = wp.GetMemoryAccessType();
-	unisim::util::debug::MemoryType mt = wp.GetMemoryType();
-	ADDRESS addr = wp.GetAddress();
-	uint32_t size = wp.GetSize();
+	const Watchpoint<ADDRESS> *watchpoint = new Watchpoint<ADDRESS>(mat, mt, addr, size);
 	
-	return SetWatchpoint(mat, mt, addr, size);
+	if(!SetWatchpoint(watchpoint))
+	{
+		delete watchpoint;
+		return false;
+	}
+	
+	return true;
 }
 
 template <class ADDRESS>
@@ -255,13 +264,15 @@ bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(unisim::util::debug::MemoryAc
 
 	if(size > 0)
 	{
-		typename list<Watchpoint<ADDRESS> >::iterator watchpoint;
+		typename std::list<const Watchpoint<ADDRESS> *>::iterator watchpoint_it;
 
-		for(watchpoint = watchpoints.begin(); watchpoint != watchpoints.end(); watchpoint++)
+		for(watchpoint_it = watchpoints.begin(); watchpoint_it != watchpoints.end(); watchpoint_it++)
 		{
-			if(watchpoint->GetAddress() == addr && watchpoint->GetSize() == size && watchpoint->GetMemoryType() == mt && watchpoint->GetMemoryAccessType() == mat)
+			const Watchpoint<ADDRESS> *watchpoint = *watchpoint_it;
+			if((watchpoint->GetAddress() == addr) && (watchpoint->GetSize() == size) && (watchpoint->GetMemoryType() == mt) && (watchpoint->GetMemoryAccessType() == mat))
 			{
-				watchpoints.erase(watchpoint);
+				delete watchpoint;
+				watchpoints.erase(watchpoint_it);
 				if(watchpoints.empty())
 					has_watchpoints = false;
 				status = true;
@@ -289,12 +300,12 @@ bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(unisim::util::debug::MemoryAc
 }
 
 template <class ADDRESS>
-bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(const Watchpoint<ADDRESS>& wp)
+bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(const Watchpoint<ADDRESS> *wp)
 {
-	unisim::util::debug::MemoryAccessType mat = wp.GetMemoryAccessType();
-	unisim::util::debug::MemoryType mt = wp.GetMemoryType();
-	ADDRESS addr = wp.GetAddress();
-	uint32_t size = wp.GetSize();
+	unisim::util::debug::MemoryAccessType mat = wp->GetMemoryAccessType();
+	unisim::util::debug::MemoryType mt = wp->GetMemoryType();
+	ADDRESS addr = wp->GetAddress();
+	uint32_t size = wp->GetSize();
 	
 	return RemoveWatchpoint(mat, mt, addr, size);
 }
@@ -307,11 +318,12 @@ const Watchpoint<ADDRESS> *WatchpointRegistry<ADDRESS>::FindWatchpoint(unisim::u
 //        << " mat = " << mat << " mt = " << mt << endl;
 	if(HasWatchpoint(mat, mt, addr, size))
 	{
-		typename list<Watchpoint<ADDRESS> >::const_iterator watchpoint;
+		typename std::list<const Watchpoint<ADDRESS> *>::const_iterator watchpoint_it;
 
-		for(watchpoint = watchpoints.begin(); watchpoint != watchpoints.end(); watchpoint++)
+		for(watchpoint_it = watchpoints.begin(); watchpoint_it != watchpoints.end(); watchpoint_it++)
 		{
-			if(watchpoint->GetMemoryType() == mt && watchpoint->GetMemoryAccessType() == mat && watchpoint->HasOverlap(addr, size)) return &(*watchpoint);
+			const Watchpoint<ADDRESS> *watchpoint = *watchpoint_it;
+			if((watchpoint->GetMemoryType() == mt) && (watchpoint->GetMemoryAccessType() == mat) && watchpoint->HasOverlap(addr, size)) return watchpoint;
 		}
 	}
 	return 0;
@@ -340,12 +352,12 @@ bool WatchpointRegistry<ADDRESS>::HasWatchpoint(unisim::util::debug::MemoryAcces
 }
 
 template <class ADDRESS>
-bool WatchpointRegistry<ADDRESS>::HasWatchpoint(const Watchpoint<ADDRESS>& wp) const
+bool WatchpointRegistry<ADDRESS>::HasWatchpoint(const Watchpoint<ADDRESS> *wp) const
 {
-	unisim::util::debug::MemoryAccessType mat = wp.GetMemoryAccessType();
-	unisim::util::debug::MemoryType mt = wp.GetMemoryType();
-	ADDRESS addr = wp.GetAddress();
-	uint32_t size = wp.GetSize();
+	unisim::util::debug::MemoryAccessType mat = wp->GetMemoryAccessType();
+	unisim::util::debug::MemoryType mt = wp->GetMemoryType();
+	ADDRESS addr = wp->GetAddress();
+	uint32_t size = wp->GetSize();
 	
 	return HasWatchpoint(mat, mt, addr, size);
 }
@@ -356,7 +368,7 @@ bool WatchpointRegistry<ADDRESS>::HasWatchpoints() const {
 }
 
 template <class ADDRESS>
-const list<Watchpoint<ADDRESS> >& WatchpointRegistry<ADDRESS>::GetWatchpoints() const
+const std::list<const Watchpoint<ADDRESS> *>& WatchpointRegistry<ADDRESS>::GetWatchpoints() const
 {
 	return watchpoints;
 }
