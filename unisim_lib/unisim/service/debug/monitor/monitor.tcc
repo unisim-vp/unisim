@@ -201,9 +201,7 @@ DataObject<ADDRESS>::DataObject(const char *data_location, size_t _size, unisim:
 	ADDRESS cia = 0;
 	reg_pc->GetValue(&cia);
 
-	std::cerr << "cia=0x" << std::hex << cia << std::dec << std::endl;
 	data_object = data_object_lookup_if->FindDataObject(data_location, cia);
-	std::cerr << "data_object=" << data_object << std::endl;
 }
 
 template <typename ADDRESS>
@@ -235,7 +233,6 @@ bool DataObject<ADDRESS>::GetValue(void *value) const
 		ADDRESS cia = 0;
 		reg_pc->GetValue(&cia);
 
-		std::cerr << "cia=0x" << std::hex << cia << std::dec << std::endl;
 		data_object->Seek(cia);
 		
 		if(data_object->Exists())
@@ -250,22 +247,22 @@ bool DataObject<ADDRESS>::GetValue(void *value) const
 					}
 					else
 					{
-						std::cerr << "data object can't be read" << std::endl;
+						std::cerr << "data object \"" << data_object->GetName() << "\" can't be read" << std::endl;
 					}
 				}
 				else
 				{
-					std::cerr << "data object can't be fetched" << std::endl;
+					std::cerr << unisim::kernel::logger::DebugWarning << "data object \"" << data_object->GetName() << "\" can't be fetched" << std::endl;
 				}
 			}
 			else
 			{
-				std::cerr << "data object is optimized out" << std::endl;
+				std::cerr << unisim::kernel::logger::DebugWarning << "data object \"" << data_object->GetName() << "\" is optimized out" << std::endl;
 			}
 		}
 		else
 		{
-			std::cerr << "after seeking data object no longer exists" << std::endl;
+			std::cerr << unisim::kernel::logger::DebugWarning << "after seeking (PC change) data object \"" << data_object->GetName() << "\" no longer exists in current context" << std::endl;
 		}
 	}
 	
@@ -440,7 +437,6 @@ int Monitor<ADDRESS>::LookupDataObject(const char *info, size_t size)
 	{
 		if(data_object->Exists())
 		{
-			std::cerr << "push back data_object" << std::endl;
 			tracked_data_objects.push_back(data_object);
 			
 			return handle;
@@ -475,7 +471,7 @@ int Monitor<ADDRESS>::GetDataObjectValue(int handle, void *value)
 		}
 		else
 		{
-			std::cerr << "invalid data object handle" << std::endl;
+			logger << unisim::kernel::logger::DebugWarning << "invalid data object handle" << unisim::kernel::logger::EndDebugWarning;
 		}
 	}
 	
@@ -493,7 +489,6 @@ int Monitor<ADDRESS>::StopMe(int exit_status)
 template <typename ADDRESS>
 void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
 {
-	std::cerr << "void Monitor<ADDRESS>::OnDebugEvent(...)" << std::endl;
 	const HardwareBreakpoint<ADDRESS> *hw_breakpoint = dynamic_cast<const HardwareBreakpoint<ADDRESS> *>(event);
 	
 	if(hw_breakpoint)

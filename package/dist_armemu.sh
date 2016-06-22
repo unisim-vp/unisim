@@ -953,6 +953,7 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "AC_PROG_CXX" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "LT_INIT" >> "${ARMEMU_CONFIGURE_AC}"
+	echo "AC_SUBST(LIBTOOL_DEPS)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${ARMEMU_CONFIGURE_AC}"
@@ -1004,6 +1005,9 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "Generating armemu Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I m4" > "${ARMEMU_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "LIBTOOL_DEPS = @LIBTOOL_DEPS@" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libtool: \$(LIBTOOL_DEPS)" >> "${ARMEMU_MAKEFILE_AM}"
+	printf "\t\$(SHELL) ./config.status libtool\n" >> "${ARMEMU_MAKEFILE_AM}"
 	# armemu
 	echo "bin_PROGRAMS = unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "unisim_armemu_${AM_ARMEMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ARMEMU_MAKEFILE_AM}"
