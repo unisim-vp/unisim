@@ -50,7 +50,7 @@ swi.disasm = {
 };
 
 swi.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.CallSupervisor( imm );
 };
@@ -72,7 +72,7 @@ bkpt.disasm = {
 };
 
 bkpt.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.BKPT( imm );
 };
@@ -92,9 +92,8 @@ cps.disasm = {
 
 cps.execute = {
   typedef typename ARCH::U32 U32;
-  typedef typename ARCH::Cond Cond;
   
-  if (Cond is_usr=( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
+  if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
     return;
   
   U32 cpsr_val = cpu.CPSR().bits(), disable( dis );

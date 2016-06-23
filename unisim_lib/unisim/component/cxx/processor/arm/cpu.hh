@@ -84,7 +84,6 @@ struct CPU
   typedef int32_t  S32;
   typedef int64_t  S64;
   typedef bool     BOOL;
-  typedef bool     Cond;
   
   /*
    * ARM architecture constants
@@ -344,8 +343,8 @@ struct CPU
   /************************************************************************/
 
 public:
+  bool     Cond( bool cond ) { return cond; }
   void     UnpredictableInsnBehaviour();
-  void     UnpredictableIf( bool condition ) { if (not condition) UnpredictableInsnBehaviour(); }
   void     CallSupervisor( uint16_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   virtual void WaitForInterrupt() {}; // Implementation-defined

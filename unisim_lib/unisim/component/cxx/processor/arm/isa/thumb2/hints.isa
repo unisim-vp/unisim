@@ -50,7 +50,7 @@ nopw.disasm = {
 };
 
 nopw.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /*
@@ -94,7 +94,7 @@ dmb.disasm = {
 };
 
 dmb.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /* DSB instruction */
@@ -107,7 +107,7 @@ dsb.disasm = {
 };
 
 dsb.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /* ISB instruction */
@@ -120,7 +120,7 @@ isb.disasm = {
 };
 
 isb.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
 };
 

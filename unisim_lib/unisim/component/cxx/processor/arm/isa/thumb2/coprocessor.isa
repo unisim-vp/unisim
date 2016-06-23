@@ -42,7 +42,7 @@ mrc.disasm = {
 };
 
 mrc.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 }
@@ -54,7 +54,7 @@ mrc2.disasm = {
 };
 
 mrc2.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 }
@@ -66,7 +66,7 @@ mcr.disasm = {
 };
 
 mcr.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 }
@@ -80,7 +80,7 @@ mcr2.disasm = {
 };
 
 mcr2.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 }
@@ -92,7 +92,7 @@ cdp.disasm = {
 };
 
 cdp.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 }
@@ -105,7 +105,7 @@ cdp2.disasm = {
 };
 
 cdp2.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 }
@@ -117,7 +117,7 @@ mrrc.disasm = {
 };
 
 mrrc.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 }
@@ -129,7 +129,7 @@ mrrc2.disasm = {
 };
 
 mrrc2.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 }
@@ -141,7 +141,7 @@ mcrr.disasm = {
 };
 
 mcrr.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 }
@@ -153,7 +153,7 @@ mcrr2.disasm = {
 };
 
 mcrr2.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 }
@@ -173,7 +173,7 @@ stc.disasm = {
 };
 
 stc.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.UnpredictableInsnBehaviour();
 };
@@ -187,7 +187,7 @@ stc_unindexed.disasm = {
 };
 
 stc_unindexed.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 	
   cpu.UnpredictableInsnBehaviour();
 };
@@ -211,7 +211,7 @@ stc2.disasm = {
 };
 
 stc2.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 	
   cpu.UnpredictableInsnBehaviour();
 };
@@ -226,7 +226,7 @@ stc2_unindexed.disasm = {
 };
 
 stc2_unindexed.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 	
   cpu.UnpredictableInsnBehaviour();
 };
@@ -250,7 +250,7 @@ ldc.disasm = {
 };
 
 ldc.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 	
   cpu.UnpredictableInsnBehaviour();
 };
@@ -264,7 +264,7 @@ ldc_unindexed.disasm = {
 };
 
 ldc_unindexed.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 	
   cpu.UnpredictableInsnBehaviour();
 };
@@ -289,7 +289,7 @@ ldc2.disasm = {
 };
 
 ldc2.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 	
   cpu.UnpredictableInsnBehaviour();
 };
@@ -304,7 +304,7 @@ ldc2_unindexed.disasm = {
 };
 
 ldc2_unindexed.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 	
   cpu.UnpredictableInsnBehaviour();
 };
@@ -327,7 +327,7 @@ cp15_mcr.disasm = {
 };
 
 cp15_mcr.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   cpu.CP15WriteRegister( crn, opc1, crm, opc2, cpu.GetGPR(rt) );
 };
@@ -344,7 +344,7 @@ cp15_mrc.disasm = {
 };
 
 cp15_mrc.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 value = cpu.CP15ReadRegister( crn, opc1, crm, opc2 );

@@ -118,9 +118,8 @@ cps_w.disasm = {
 
 cps_w.execute = {
   typedef typename ARCH::U32 U32;
-  typedef typename ARCH::Cond Cond;
   
-  if (Cond is_usr=( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
+  if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
     return;
   
   U32 cpsr_val = cpu.CPSR().bits(), disable( dis );
@@ -152,7 +151,7 @@ subspc.disasm = {
 };
 
 subspc.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( 14 ), op2 = U32(imm), res = op1 - op2;

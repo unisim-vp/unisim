@@ -49,7 +49,7 @@ mul.disasm = {
 };
 
 mul.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 res = cpu.GetGPR(rd) * cpu.GetGPR(rm);

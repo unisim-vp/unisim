@@ -51,7 +51,7 @@ qadd.disasm = {
 };
 
 qadd.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -86,7 +86,7 @@ qadd16.disasm = {
 };
 
 qadd16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
@@ -122,7 +122,7 @@ qadd8.disasm = {
 };
 
 qadd8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
@@ -158,7 +158,7 @@ qsub.disasm = {
 };
 
 qsub.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -193,7 +193,7 @@ qsub16.disasm = {
 };
 
 qsub16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
@@ -228,7 +228,7 @@ qsub8.disasm = {
 };
 
 qsub8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
@@ -259,7 +259,7 @@ qdadd.disasm = {
 };
 
 qdadd.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -294,7 +294,7 @@ qdsub.disasm = {
 };
 
 qdsub.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -333,7 +333,7 @@ pkh.disasm = {
 };
 
 pkh.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -365,7 +365,7 @@ sel.disasm = {
 };
 
 sel.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
@@ -407,7 +407,7 @@ ssat.disasm = {
 };
 
 ssat.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -445,7 +445,7 @@ ssat16.disasm = {
 };
 
 ssat16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -487,7 +487,7 @@ usat.disasm = {
 };
 
 usat.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -529,7 +529,7 @@ usat16.disasm = {
 };
 
 usat16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -574,7 +574,7 @@ uadd16.disasm = {
 };
 
 uadd16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
@@ -609,7 +609,7 @@ uadd8.disasm = {
 };
 
 uadd8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
@@ -644,7 +644,7 @@ usub16.disasm = {
 };
 
 usub16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
@@ -679,7 +679,7 @@ usub8.disasm = {
 };
 
 usub8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
@@ -714,7 +714,7 @@ sadd16.disasm = {
 };
 
 sadd16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
@@ -749,7 +749,7 @@ sadd8.disasm = {
 };
 
 sadd8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
@@ -784,7 +784,7 @@ ssub16.disasm = {
 };
 
 ssub16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
@@ -819,7 +819,7 @@ ssub8.disasm = {
 };
 
 ssub8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
@@ -854,7 +854,7 @@ uqadd16.disasm = {
 };
 
 uqadd16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
@@ -889,7 +889,7 @@ uqadd8.disasm = {
 };
 
 uqadd8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
@@ -924,7 +924,7 @@ uqsub16.disasm = {
 };
 
 uqsub16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask);
@@ -960,7 +960,7 @@ uqsub8.disasm = {
 };
 
 uqsub8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask);
@@ -993,7 +993,7 @@ usad8.disasm = { buffer << "usad8\t" << DisasmRegister(rd) << ", " << DisasmRegi
 };
 
 usad8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 	
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1031,7 +1031,7 @@ usada8.disasm = {
 };
 
 usada8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 	
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1069,7 +1069,7 @@ uhadd16.disasm = {
 };
 
 uhadd16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
@@ -1101,7 +1101,7 @@ uhadd8.disasm = {
 };
 
 uhadd8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
@@ -1133,7 +1133,7 @@ shadd16.disasm = {
 };
 
 shadd16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
@@ -1165,7 +1165,7 @@ shadd8.disasm = {
 };
 
 shadd8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
@@ -1197,7 +1197,7 @@ uhsub16.disasm = {
 };
 
 uhsub16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
@@ -1229,7 +1229,7 @@ uhsub8.disasm = {
 };
 
 uhsub8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
@@ -1261,7 +1261,7 @@ shsub16.disasm = {
 };
 
 shsub16.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<16>::msbmask), lsbs(SWP<16>::lsbmask);
@@ -1293,7 +1293,7 @@ shsub8.disasm = {
 };
 
 shsub8.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   uint32_t const msbs(SWP<8>::msbmask), lsbs(SWP<8>::lsbmask);
@@ -1327,7 +1327,7 @@ qasx.disasm = {
 };
 
 qasx.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1373,7 +1373,7 @@ qsax.disasm = {
 };
 
 qsax.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1420,7 +1420,7 @@ uqasx.disasm = {
 };
 
 uqasx.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1467,7 +1467,7 @@ uqsax.disasm = {
 };
 
 uqsax.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1513,7 +1513,7 @@ sasx.disasm = {
 };
 
 sasx.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1555,7 +1555,7 @@ ssax.disasm = {
 };
 
 ssax.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1597,7 +1597,7 @@ uasx.disasm = {
 };
 
 uasx.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1638,7 +1638,7 @@ usax.disasm = {
 };
 
 usax.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1679,7 +1679,7 @@ shasx.disasm = {
 };
 
 shasx.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1719,7 +1719,7 @@ shsax.disasm = {
 };
 
 shsax.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1759,7 +1759,7 @@ uhasx.disasm = {
 };
 
 uhasx.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1798,7 +1798,7 @@ uhsax.disasm = {
 };
 
 uhsax.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;

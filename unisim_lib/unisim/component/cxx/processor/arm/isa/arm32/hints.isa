@@ -49,7 +49,7 @@ nop.disasm = {
 };
 
 nop.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cond) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 };
 
 /*

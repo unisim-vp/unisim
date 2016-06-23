@@ -51,7 +51,7 @@ vabs_f32.disasm = {
 };
 
 vabs_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op = cpu.GetVSR( vm ), res;
   
@@ -68,7 +68,7 @@ vabs_f64.disasm = {
 };
 
 vabs_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vm ), res;
   
@@ -89,7 +89,7 @@ vadd_f32.disasm = {
 };
 
 vadd_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
   
@@ -106,7 +106,7 @@ vadd_f64.disasm = {
 };
 
 vadd_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
   
@@ -127,7 +127,7 @@ vcmp_f32d.disasm = {
 };
 
 vcmp_f32d.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op1 = cpu.GetVSR( vd ), op2 = cpu.GetVSR( vm );
   
@@ -142,7 +142,7 @@ vcmp_f64d.disasm = {
 };
 
 vcmp_f64d.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op1 = cpu.GetVDR( vd ), op2 = cpu.GetVDR( vm );
   
@@ -157,7 +157,7 @@ vcmp_f32i.disasm = {
 };
 
 vcmp_f32i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::F32 F32;
   F32 op1 = cpu.GetVSR( vd );
@@ -174,7 +174,7 @@ vcmp_f64i.disasm = {
 };
 
 vcmp_f64i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::F64 F64;
   F64 op1 = cpu.GetVDR( vd );
@@ -193,7 +193,7 @@ vcvt_f32u32.disasm = {
 };
 
 vcvt_f32u32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::U32 op = cpu.GetVU32( vm );
   typename ARCH::F32 res;
@@ -211,7 +211,7 @@ vcvt_f64u32.disasm = {
 };
 
 vcvt_f64u32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::U32 op = cpu.GetVU32( vm );
   typename ARCH::F64 res;
@@ -229,7 +229,7 @@ vcvt_f32s32.disasm = {
 };
 
 vcvt_f32s32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( vm ) );
   typename ARCH::F32 res;
@@ -247,7 +247,7 @@ vcvt_f64s32.disasm = {
 };
 
 vcvt_f64s32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( vm ) );
   typename ARCH::F64 res;
@@ -265,7 +265,7 @@ vcvt_u32f32.disasm = {
 };
 
 vcvt_u32f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op = cpu.GetVSR( vm );
   typename ARCH::U32 res;
@@ -283,7 +283,7 @@ vcvtr_u32f32.disasm = {
 };
 
 vcvtr_u32f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op = cpu.GetVSR( vm );
   typename ARCH::U32 res;
@@ -302,7 +302,7 @@ vcvt_u32f64.disasm = {
 };
 
 vcvt_u32f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vm );
   typename ARCH::U32 res;
@@ -320,7 +320,7 @@ vcvtr_u32f64.disasm = {
 };
 
 vcvtr_u32f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vm );
   typename ARCH::U32 res;
@@ -339,7 +339,7 @@ vcvt_s32f32.disasm = {
 };
 
 vcvt_s32f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op = cpu.GetVSR( vm );
   typename ARCH::S32 res;
@@ -357,7 +357,7 @@ vcvtr_s32f32.disasm = {
 };
 
 vcvtr_s32f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op = cpu.GetVSR( vm );
   typename ARCH::S32 res;
@@ -376,7 +376,7 @@ vcvt_s32f64.disasm = {
 };
 
 vcvt_s32f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vm );
   typename ARCH::S32 res;
@@ -394,7 +394,7 @@ vcvtr_s32f64.disasm = {
 };
 
 vcvtr_s32f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vm );
   typename ARCH::S32 res;
@@ -415,7 +415,7 @@ vcvt_f32s16i.disasm = {
 };
 
 vcvt_f32s16i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::S32 op = typename ARCH::S32( typename ARCH::S16( cpu.GetVU32( vd ) ) );
   typename ARCH::F32 res;
@@ -434,7 +434,7 @@ vcvt_f32s32i.disasm = {
 };
 
 vcvt_f32s32i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( vd ) );
   typename ARCH::F32 res;
@@ -453,7 +453,7 @@ vcvt_f64s16i.disasm = {
 };
 
 vcvt_f64s16i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::S32 op = typename ARCH::S32( typename ARCH::S16( cpu.GetVU32( 2*vd ) ) );
   typename ARCH::F64 res;
@@ -472,7 +472,7 @@ vcvt_f64s32i.disasm = {
 };
 
 vcvt_f64s32i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( 2*vd ) );
   typename ARCH::F32 res;
@@ -491,7 +491,7 @@ vcvt_f32u16i.disasm = {
 };
 
 vcvt_f32u16i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::U32 op = typename ARCH::U32( typename ARCH::U16( cpu.GetVU32( vd ) ) );
   typename ARCH::F32 res;
@@ -510,7 +510,7 @@ vcvt_f32u32i.disasm = {
 };
 
 vcvt_f32u32i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::U32 op = cpu.GetVU32( vd );
   typename ARCH::F32 res;
@@ -529,7 +529,7 @@ vcvt_f64u16i.disasm = {
 };
 
 vcvt_f64u16i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::U32 op = typename ARCH::U32( typename ARCH::U16( cpu.GetVU32( 2*vd ) ) );
   typename ARCH::F64 res;
@@ -548,7 +548,7 @@ vcvt_f64u32i.disasm = {
 };
 
 vcvt_f64u32i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::U32 op = typename ARCH::U32( cpu.GetVU32( 2*vd ) );
   typename ARCH::F64 res;
@@ -567,7 +567,7 @@ vcvt_s16f32i.disasm = {
 };
 
 vcvt_s16f32i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op = cpu.GetVSR( vd );
   typename ARCH::S16 res;
@@ -586,7 +586,7 @@ vcvt_s16f64i.disasm = {
 };
 
 vcvt_s16f64i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vd );
   typename ARCH::S16 res;
@@ -605,7 +605,7 @@ vcvt_s32f32i.disasm = {
 };
 
 vcvt_s32f32i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op = cpu.GetVSR( vd );
   typename ARCH::S32 res;
@@ -624,7 +624,7 @@ vcvt_s32f64i.disasm = {
 };
 
 vcvt_s32f64i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vd );
   typename ARCH::S32 res;
@@ -643,7 +643,7 @@ vcvt_u16f32i.disasm = {
 };
 
 vcvt_u16f32i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op = cpu.GetVSR( vd );
   typename ARCH::U16 res;
@@ -662,7 +662,7 @@ vcvt_u16f64i.disasm = {
 };
 
 vcvt_u16f64i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vd );
   typename ARCH::U16 res;
@@ -681,7 +681,7 @@ vcvt_u32f32i.disasm = {
 };
 
 vcvt_u32f32i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op = cpu.GetVSR( vd );
   typename ARCH::U32 res;
@@ -700,7 +700,7 @@ vcvt_u32f64i.disasm = {
 };
 
 vcvt_u32f64i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vd );
   typename ARCH::U32 res;
@@ -721,7 +721,7 @@ vcvt_f64f32.disasm = {
 };
 
 vcvt_f64f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op = cpu.GetVSR( vm );
   typename ARCH::F64 res;
@@ -739,7 +739,7 @@ vcvt_f32f64.disasm = {
 };
 
 vcvt_f32f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vm );
   typename ARCH::F32 res;
@@ -759,7 +759,7 @@ vdiv_f32.disasm = {
 };
 
 vdiv_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
   
@@ -776,7 +776,7 @@ vdiv_f64.disasm = {
 };
 
 vdiv_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
   
@@ -795,7 +795,7 @@ vfma_f32.disasm = {
 };
 
 vfma_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
   
@@ -812,7 +812,7 @@ vfma_f64.disasm = {
 };
 
 vfma_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
   
@@ -829,7 +829,7 @@ vfms_f32.disasm = {
 };
 
 vfms_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
   
@@ -847,7 +847,7 @@ vfms_f64.disasm = {
 };
 
 vfms_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
   
@@ -867,7 +867,7 @@ vfnma_f32.disasm = {
 };
 
 vfnma_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
   
@@ -885,7 +885,7 @@ vfnma_f64.disasm = {
 };
 
 vfnma_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
   
@@ -903,7 +903,7 @@ vfnms_f32.disasm = {
 };
 
 vfnms_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
   
@@ -922,7 +922,7 @@ vfnms_f64.disasm = {
 };
 
 vfnms_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
   
@@ -950,7 +950,7 @@ vldmdb_f32.disasm = {
 };
 
 vldmdb_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 2 );
@@ -976,7 +976,7 @@ vldmdb_f64.disasm = {
 };
 
 vldmdb_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 3 );
@@ -1002,7 +1002,7 @@ vldmia_f32.disasm = {
 };
 
 vldmia_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base_addr = cpu.GetGPR( rn );
@@ -1028,7 +1028,7 @@ vldmia_f64.disasm = {
 };
 
 vldmia_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base_addr = cpu.GetGPR( rn );
@@ -1054,7 +1054,7 @@ vldr_32.disasm = {
 };
 
 vldr_32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32(imm);
@@ -1070,7 +1070,7 @@ vldr_literal_32.disasm = {
 };
 
 vldr_literal_32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm);
@@ -1087,7 +1087,7 @@ vldr_64.disasm = {
 };
 
 vldr_64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32(imm);
@@ -1104,7 +1104,7 @@ vldr_literal_64.disasm = {
 };
 
 vldr_literal_64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm);
@@ -1126,7 +1126,7 @@ vmla_f32.disasm = {
 };
 
 vmla_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
   
@@ -1144,7 +1144,7 @@ vmla_f64.disasm = {
 };
 
 vmla_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
   
@@ -1162,7 +1162,7 @@ vmls_f32.disasm = {
 };
 
 vmls_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
   
@@ -1181,7 +1181,7 @@ vmls_f64.disasm = {
 };
 
 vmls_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
   
@@ -1206,7 +1206,7 @@ vnmla_f32.disasm = {
 };
 
 vnmla_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
   
@@ -1226,7 +1226,7 @@ vnmla_f64.disasm = {
 };
 
 vnmla_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
   
@@ -1252,7 +1252,7 @@ vnmls_f32.disasm = {
 };
 
 vnmls_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
   
@@ -1271,7 +1271,7 @@ vnmls_f64.disasm = {
 };
 
 vnmls_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
   
@@ -1293,7 +1293,7 @@ vmov_f32i.disasm = {
 };
 
 vmov_f32i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetVSR( vd, fpimm );
 };
@@ -1307,7 +1307,7 @@ vmov_f64i.disasm = {
 };
 
 vmov_f64i.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetVDR( vd, fpimm );
 };
@@ -1322,7 +1322,7 @@ vmov_f32s.disasm = {
 };
 
 vmov_f32s.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetVSR( vd, cpu.GetVSR( vm ) );
 };
@@ -1335,7 +1335,7 @@ vmov_f64d.disasm = {
 };
 
 vmov_f64d.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetVDR( vd, cpu.GetVDR( vm ) );
 };
@@ -1350,7 +1350,7 @@ vmov_rs.disasm = {
 };
 
 vmov_rs.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetGPR( rt, cpu.GetVU32( vn ) );
 };
@@ -1363,7 +1363,7 @@ vmov_sr.disasm = {
 };
 
 vmov_sr.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetVU32( vn, cpu.GetGPR( rt ) );
 };
@@ -1378,7 +1378,7 @@ vmov_ssrr.disasm = {
 };
 
 vmov_ssrr.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetVU32( vm+0, cpu.GetGPR( rt  ) );
   cpu.SetVU32( vm+1, cpu.GetGPR( rt2 ) );
@@ -1392,7 +1392,7 @@ vmov_rrss.disasm = {
 };
 
 vmov_rrss.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetGPR( rt,  cpu.GetVU32( vm+0 ) );
   cpu.SetGPR( rt2, cpu.GetVU32( vm+1 ) );
@@ -1408,7 +1408,7 @@ vmov_rrd.disasm = {
 };
 
 vmov_rrd.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetGPR( rt,  cpu.GetVU32( 2*vm+0 ) );
   cpu.SetGPR( rt2, cpu.GetVU32( 2*vm+1 ) );
@@ -1422,7 +1422,7 @@ vmov_drr.disasm = {
 };
 
 vmov_drr.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetVU32( 2*vm+0, cpu.GetGPR( rt  ) );
   cpu.SetVU32( 2*vm+1, cpu.GetGPR( rt2 ) );
@@ -1449,7 +1449,7 @@ vmrs.disasm = {
 };
 
 vmrs.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   if (spr == 1) {
     // cpu.CheckVFPEnabled(TRUE); cpu.SerializeVFP(); cpu.VFPExcBarrier();
@@ -1462,9 +1462,8 @@ vmrs.execute = {
   else {
     // cpu.CheckVFPEnabled(FALSE);
     typedef typename ARCH::U32 U32;
-    typedef typename ARCH::Cond Cond;
     
-    if (Cond is_usr=( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
+    if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
       cpu.UndefinedInstruction( this );
 
     switch (spr) {
@@ -1496,7 +1495,7 @@ vmsr.disasm = {
 };
 
 vmsr.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   if (spr == 1) {
     // cpu.CheckVFPEnabled(TRUE); cpu.SerializeVFP(); cpu.VFPExcBarrier();
@@ -1506,8 +1505,8 @@ vmsr.execute = {
   else {
     // cpu.CheckVFPEnabled(FALSE);
     typedef typename ARCH::U32 U32;
-    typedef typename ARCH::Cond Cond;
-    if (Cond is_usr=( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
+    
+    if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
       cpu.UndefinedInstruction( this );
     
     switch (spr) {
@@ -1533,7 +1532,7 @@ vmul_f32.disasm = {
 };
 
 vmul_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
   
@@ -1550,7 +1549,7 @@ vmul_f64.disasm = {
 };
 
 vmul_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
   
@@ -1571,7 +1570,7 @@ vnmul_f32.disasm = {
 };
 
 vnmul_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
   
@@ -1589,7 +1588,7 @@ vnmul_f64.disasm = {
 };
 
 vnmul_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
   
@@ -1609,7 +1608,7 @@ vneg_f32.disasm = {
 };
 
 vneg_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op = cpu.GetVSR( vm ), res;
   
@@ -1626,7 +1625,7 @@ vneg_f64.disasm = {
 };
 
 vneg_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vm ), res;
   
@@ -1645,7 +1644,7 @@ vsqrt_f32s.disasm = {
 };
 
 vsqrt_f32s.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op = cpu.GetVSR( vm ), res;
   
@@ -1662,7 +1661,7 @@ vsqrt_f64d.disasm = {
 };
 
 vsqrt_f64d.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vm ), res;
   
@@ -1687,7 +1686,7 @@ vstmdb_f32.disasm = {
 };
 
 vstmdb_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 2 );
@@ -1713,7 +1712,7 @@ vstmdb_f64.disasm = {
 };
 
 vstmdb_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 3 );
@@ -1738,7 +1737,7 @@ vstmia_f32.disasm = {
 };
 
 vstmia_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base_addr = cpu.GetGPR( rn );
@@ -1764,7 +1763,7 @@ vstmia_f64.disasm = {
 };
 
 vstmia_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base_addr = cpu.GetGPR( rn );
@@ -1790,7 +1789,7 @@ vstr_32.disasm = {
 };
 
 vstr_32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32(imm);
@@ -1806,7 +1805,7 @@ vstr_64.disasm = {
 };
 
 vstr_64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32(imm);
@@ -1828,7 +1827,7 @@ vsub_f32.disasm = {
 };
 
 vsub_f32.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
   
@@ -1845,7 +1844,7 @@ vsub_f64.disasm = {
 };
 
 vsub_f64.execute = {
-  if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
   

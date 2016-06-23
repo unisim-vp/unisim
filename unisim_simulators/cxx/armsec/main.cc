@@ -72,13 +72,12 @@ namespace armsec
     typedef armsec::S64  S64;
     
     typedef armsec::FP   FP;
-
-    struct Cond
+    
+    template <typename T>
+    bool Cond( SmartValue<T> const& cond )
     {
-      Cond( BOOL const& _cond_expr ) {}
-      Cond( U32 const& _cond_expr ) {}
-      operator bool () const { return true; }
-    };
+      return true;
+    }
     
     struct Config
     {
@@ -299,7 +298,6 @@ namespace armsec
     template <typename OP>
     void UndefinedInstruction( OP* op ) { not_implemented(); }
     void CallSupervisor( uint16_t imm ) { not_implemented(); }
-    void UnpredictableIf( BOOL const& condition ) { not_implemented(); }
     bool IntegerZeroDivide( BOOL const& condition ) { return false; }
 
     U32  GetVU32( unsigned idx ) { return U32( 0 ); }
