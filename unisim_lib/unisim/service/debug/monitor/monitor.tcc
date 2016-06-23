@@ -168,15 +168,45 @@ bool SourceCodeBreakpoint<ADDRESS>::Exists() const
 }
 
 template <typename ADDRESS>
-DataObjectWatchpoint<ADDRESS>::DataObjectWatchpoint(const char *data_location, typename unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if, int _handle, void (*_callback)(int))
+void SourceCodeBreakpoint<ADDRESS>::Invalidate()
+{
+	hw_breakpoints.clear();
+}
+
+template <typename ADDRESS>
+DataObjectWatchpoint<ADDRESS>::DataObjectWatchpoint(const char *data_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *_debug_event_trigger_if, typename unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, int _handle, void (*callback)(int))
 	: handle(handle)
+	, debug_event_trigger_if(_debug_event_trigger_if)
 	, hw_watchpoint(0)
 {
+	const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_if->FindSymbolByName(data_location, unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT);
+	
+	if(symbol)
+	{
+		ADDRESS hw_watchpoint_addr = symbol->GetAddress();
+		ADDRESS hw_watchpoint_size = symbol->GetSize();
+		
+		HardwareWatchpoint<ADDRESS> *hw_wp = new HardwareWatchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, hw_watchpoint_addr, hw_watchpoint_size, handle, callback);
+		
+		if(debug_event_trigger_if->Listen(hw_wp))
+		{
+			hw_watchpoint = hw_wp;
+		}
+		else
+		{
+			delete hw_wp;
+		}
+	}
 }
 
 template <typename ADDRESS>
 DataObjectWatchpoint<ADDRESS>::~DataObjectWatchpoint()
 {
+	if(hw_watchpoint)
+	{
+		debug_event_trigger_if->Unlisten(hw_watchpoint);
+		delete hw_watchpoint;
+	}
 }
 
 template <typename ADDRESS>
@@ -189,6 +219,12 @@ template <typename ADDRESS>
 int DataObjectWatchpoint<ADDRESS>::GetHandle() const
 {
 	return handle;
+}
+
+template <typename ADDRESS>
+void DataObjectWatchpoint<ADDRESS>::Invalidate()
+{
+	hw_watchpoint = 0;
 }
 
 template <typename ADDRESS>
@@ -311,6 +347,7 @@ Monitor<ADDRESS>::~Monitor()
 	{
 		SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = source_code_breakpoints[source_code_breakpoint_num];
 		
+		source_code_breakpoint->Invalidate();
 		delete source_code_breakpoint;
 	}
 
@@ -321,6 +358,7 @@ Monitor<ADDRESS>::~Monitor()
 	{
 		DataObjectWatchpoint<ADDRESS> *data_object_watchpoint = data_object_watchpoints[data_object_watchpoint_num];
 		
+		data_object_watchpoint->Invalidate();
 		delete data_object_watchpoint;
 	}
 
@@ -368,13 +406,19 @@ int Monitor<ADDRESS>::SetBreakpoint(const char *info, void (*callback)(int))
 template <typename ADDRESS>
 int Monitor<ADDRESS>::SetWatchpoint(const char *info, void (*callback)(int))
 {
+	std::cerr << "int Monitor<ADDRESS>::SetWatchpoint(...)" << std::endl;
 	int handle = data_object_watchpoints.size() + 1;
-	DataObjectWatchpoint<ADDRESS> *data_object_watchpoint = new DataObjectWatchpoint<ADDRESS>(info, data_object_lookup_import, handle, callback);
+	DataObjectWatchpoint<ADDRESS> *data_object_watchpoint = new DataObjectWatchpoint<ADDRESS>(info, debug_event_trigger_import, symbol_table_lookup_import, handle, callback);
 	
 	if(data_object_watchpoint)
 	{
-		data_object_watchpoints.push_back(data_object_watchpoint);
-		return handle;
+		if(data_object_watchpoint->Exists())
+		{
+			data_object_watchpoints.push_back(data_object_watchpoint);
+			return handle;
+		}
+		
+		delete data_object_watchpoint;
 	}
 	
 	return -1;

@@ -115,6 +115,7 @@ public:
 	virtual ~SourceCodeBreakpoint();
 	bool Exists() const;
 	int GetHandle() const;
+	void Invalidate();
 private:
 	int handle;
 	typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if;
@@ -125,14 +126,15 @@ template <typename ADDRESS>
 class DataObjectWatchpoint
 {
 public:
-	DataObjectWatchpoint(const char *data_location, typename unisim::service::interfaces::DataObjectLookup<ADDRESS> *data_object_lookup_if, int handle, void (*callback)(int));
+	DataObjectWatchpoint(const char *data_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if, typename unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, int handle, void (*callback)(int));
 	virtual ~DataObjectWatchpoint();
 	bool Exists() const;
 	int GetHandle() const;
 	void Report() const;
+	void Invalidate();
 private:
 	int handle;
-	void (*callback)(int);
+	typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *debug_event_trigger_if;
 	HardwareWatchpoint<ADDRESS> *hw_watchpoint;
 };
 

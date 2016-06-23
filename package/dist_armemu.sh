@@ -1014,10 +1014,12 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDFLAGS = -DSIM_EXECUTABLE -static-libtool-libs" >> "${ARMEMU_MAKEFILE_AM}"
  	echo "unisim_armemu_${AM_ARMEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDADD = libunisim-armemu-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
-	# libunisim-armemu and libunisim-armemu-plugin
-	echo "lib_LTLIBRARIES = libunisim-armemu-${ARMEMU_VERSION}.la libunisim-armemu-plugin-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
+	# libunisim-armemu
+	echo "noinst_LTLIBRARIES = libunisim-armemu-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "libunisim_armemu_${AM_ARMEMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "libunisim_armemu_${AM_ARMEMU_VERSION}_la_LDFLAGS = -static" >> "${ARMEMU_MAKEFILE_AM}"
+	# libunisim-armemu-plugin
+	echo "lib_LTLIBRARIES = libunisim-armemu-plugin-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_CPPFLAGS = -DSIM_PLUGIN" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_LDFLAGS = -shared -no-undefined" >> "${ARMEMU_MAKEFILE_AM}"
