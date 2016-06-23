@@ -36,6 +36,7 @@ namespace armsec
     };
     virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); }
     virtual void Repr( std::ostream& sink ) const = 0;
+    virtual intptr_t cmp( ExprNode const& ) const = 0;
   };
   
   

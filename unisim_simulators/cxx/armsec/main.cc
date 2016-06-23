@@ -56,7 +56,17 @@ namespace armsec
   typedef SmartValue<int16_t>  S16;
   typedef SmartValue<int32_t>  S32;
   typedef SmartValue<int64_t>  S64;
-
+  
+  struct PathNode
+  {
+    PathNode( PathNode* _previous ) : expr(), previous( _previous ), true_nxt(), false_nxt(), complete(false) {}
+    Expr expr;
+    PathNode* previous;
+    PathNode* true_nxt;
+    PathNode* false_nxt;
+    bool complete;
+  };
+  
   struct State
   {
     typedef armsec::F64  F64;
@@ -76,6 +86,20 @@ namespace armsec
     template <typename T>
     bool Cond( SmartValue<T> const& cond )
     {
+      if (not path->expr.node) {
+        path->expr = cond->expr;
+        path->false_nxt = new PathNode( path );
+        path = path->false_nxt;
+        return false;
+      }
+      if (path->expr != cond.expr)
+        throw std::logic_error( "unexpected condition" );
+      
+      if (not path->false_nxt->complete) {
+        path = path->false_nxt;
+        return false;
+      }
+      
       return true;
     }
     
@@ -204,8 +228,9 @@ namespace armsec
       fpscr_type( Expr const& expr ) { m_value = expr; }
     };
     
-    State( bool is_thumb, unsigned insn_length )
-      : current_insn_addr( new SourceCIA )
+    State( PathNode& _path, bool is_thumb, unsigned insn_length )
+      : path( _path )
+      , current_insn_addr( new SourceCIA )
       , next_insn_addr()
       , cpsr( new SourceCPSR )
       , spsr( new SourceSPSR )
@@ -218,7 +243,9 @@ namespace armsec
         throw std::logic_error( "Bad instruction length" );
       next_insn_addr = current_insn_addr + U32( insn_length / 8 );
     }
-
+    
+    PathNode* path;
+    
     U32 reg_values[16];
     U32 current_insn_addr, next_insn_addr;
     psr_type cpsr, spsr;
