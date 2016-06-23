@@ -254,7 +254,7 @@ private:
 	// =            Registers                      =
 	// =============================================
 
-	uint8_t reserved_register[MEMORY_MAP_SIZE];	// 1 byte
+//	uint8_t reserved_register[MEMORY_MAP_SIZE];	// 1 byte
 
 	inline void ComputeBaudRate();
 

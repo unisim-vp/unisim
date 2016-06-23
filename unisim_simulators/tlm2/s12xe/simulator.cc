@@ -913,15 +913,6 @@ void Simulator::Run() {
 
 	cerr << "Starting simulation ..." << endl;
 
-// ***
-//	uint8_t xx = 2;
-//	symRead8("WiperOut", &xx);
-//	std::cout << "WiperOut= " << (unsigned int) xx << std::endl;
-//	symWrite8("WiperOut", 1);
-//	symRead8("WiperOut", &xx);
-//	std::cout << "WiperOut= " << (unsigned int) xx << std::endl;
-// ***
-
 	double time_start = host_time->GetTime();
 
 	try

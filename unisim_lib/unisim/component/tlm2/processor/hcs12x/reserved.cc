@@ -118,7 +118,7 @@ bool RESERVED::read(unsigned int offset, const void *buffer, unsigned int data_l
 
 //	std::cout << sc_object::name() << "::read offset= " << std::dec << offset << "  size=" << data_length << std::endl;
 
-	*((uint8_t *) buffer) = reserved_register[offset];
+//	*((uint8_t *) buffer) = reserved_register[offset];
 
 	return (true);
 }
@@ -127,7 +127,7 @@ bool RESERVED::write(unsigned int offset, const void *buffer, unsigned int data_
 
 	//	std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  data=" << (unsigned int) *((uint8_t *) buffer) << std::endl;
 
-	reserved_register[offset] = *((uint8_t *) buffer);
+//	reserved_register[offset] = *((uint8_t *) buffer);
 
 	return (true);
 }
@@ -201,7 +201,7 @@ void RESERVED::OnDisconnect() {
 
 void RESERVED::Reset() {
 
-	memset(reserved_register, 0, MEMORY_MAP_SIZE);
+//	memset(reserved_register, 0, MEMORY_MAP_SIZE);
 }
 
 
@@ -215,7 +215,7 @@ bool RESERVED::ReadMemory(physical_address_t address, void *buffer, uint32_t siz
 	for (int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
 		if ((address >= ADDRESS_SPACE[i][0]) && (address <= ADDRESS_SPACE[i][1])) {
 
-			*((uint8_t *) buffer) = reserved_register[address - ADDRESS_SPACE[i][0]];
+//			*((uint8_t *) buffer) = reserved_register[address - ADDRESS_SPACE[i][0]];
 
 			return true;
 		}
@@ -230,7 +230,7 @@ bool RESERVED::WriteMemory(physical_address_t address, const void *buffer, uint3
 	for (int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
 		if ((address >= ADDRESS_SPACE[i][0]) && (address <= ADDRESS_SPACE[i][1])) {
 
-			reserved_register[address - ADDRESS_SPACE[i][0]] = *((uint8_t *) buffer);
+//			reserved_register[address - ADDRESS_SPACE[i][0]] = *((uint8_t *) buffer);
 
 			return true;
 		}
