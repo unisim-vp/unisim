@@ -59,7 +59,7 @@ namespace armsec
   
   struct PathNode
   {
-    PathNode( PathNode* _previous ) : expr(), previous( _previous ), true_nxt(), false_nxt(), complete(false) {}
+    PathNode( PathNode* _previous=0 ) : expr(), previous( _previous ), true_nxt(), false_nxt(), complete(false) {}
     Expr expr;
     PathNode* previous;
     PathNode* true_nxt;
@@ -87,7 +87,7 @@ namespace armsec
     bool Cond( SmartValue<T> const& cond )
     {
       if (not path->expr.node) {
-        path->expr = cond->expr;
+        path->expr = cond.expr;
         path->false_nxt = new PathNode( path );
         path = path->false_nxt;
         return false;
@@ -159,36 +159,46 @@ namespace armsec
     {
       SourceReg( unsigned _reg ) : reg( _reg ) {} unsigned reg;
       virtual void Repr( std::ostream& sink ) const { sink << "SourceReg(" << reg << ")"; }
+      intptr_t cmp( ExprNode const& brhs ) const
+      {
+        SourceReg const& rhs = dynamic_cast<SourceReg const&>( brhs );
+        return int(reg - rhs.reg);
+      }
     };
   
     struct SourceCIA : public ExprNode
     {
       SourceCIA() {}
       virtual void Repr( std::ostream& sink ) const { sink << "SourceCIA()"; }
+      intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     };
     
     struct SourceCPSR : public ExprNode
     {
       SourceCPSR() {}
       virtual void Repr( std::ostream& sink ) const { sink << "SourceCPSR()"; }
+      intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     };
     
     struct SourceSPSR : public ExprNode
     {
       SourceSPSR() {}
       virtual void Repr( std::ostream& sink ) const { sink << "SourceSPSR()"; }
+      intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     };
     
     struct SourceFPSCR : public ExprNode
     {
       SourceFPSCR() {}
       virtual void Repr( std::ostream& sink ) const { sink << "SourceFPSCR()"; }
+      intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     };
     
     struct SourceFPEXC : public ExprNode
     {
       SourceFPEXC() {}
       virtual void Repr( std::ostream& sink ) const { sink << "SourceFPEXC()"; }
+      intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     };
     
     struct psr_type : public unisim::component::cxx::processor::arm::FieldRegister<U32>
@@ -229,7 +239,7 @@ namespace armsec
     };
     
     State( PathNode& _path, bool is_thumb, unsigned insn_length )
-      : path( _path )
+      : path( &_path )
       , current_insn_addr( new SourceCIA )
       , next_insn_addr()
       , cpsr( new SourceCPSR )
@@ -277,9 +287,17 @@ namespace armsec
       Load( Expr const& _addr, unsigned _size, bool _aligned )
         : addr( _addr ), size( _size ), aligned( _aligned )
       {}
-      
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); addr->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "Load( "; addr->Repr( sink ); sink << " )"; }
+      virtual void Repr( std::ostream& sink ) const {
+        sink << "Load" << (aligned ? "A" : "") << size << "( "; addr->Repr( sink ); sink << " )";
+      }
+      intptr_t cmp( ExprNode const& brhs ) const
+      {
+        Load const& rhs = dynamic_cast<Load const&>( brhs );
+        if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
+        if (intptr_t delta = int(size - rhs.size)) return delta;
+        return (int(aligned) - int(rhs.aligned));
+      }
       Expr addr;
       unsigned size;
       bool aligned;
@@ -291,6 +309,14 @@ namespace armsec
         : addr( _addr ), size( _size ), aligned( _aligned ), value( _value )
       {}
       virtual void Repr( std::ostream& sink ) const { sink << "Store( "; addr->Repr( sink ); sink << " )"; }
+      intptr_t cmp( ExprNode const& brhs ) const
+      {
+        Store const& rhs = dynamic_cast<Store const&>( brhs );
+        if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
+        if (intptr_t delta = value.cmp( rhs.value )) return delta;
+        if (intptr_t delta = int(size - rhs.size)) return delta;
+        return (int(aligned) - int(rhs.aligned));
+      }
       Expr addr;
       unsigned size;
       bool aligned;
@@ -299,17 +325,17 @@ namespace armsec
     
     std::vector<Expr> stores;
     
-    U32  MemURead32( U32 const& addr ) { return U32( new Load( addr.m_expr, 4, false ) ); }
-    U32  MemURead16( U32 const& addr ) { return U32( new Load( addr.m_expr, 2, false ) ); }
-    U32  MemRead32( U32 const& addr ) { return U32( new Load( addr.m_expr, 4, true ) ); }
-    U32  MemRead16( U32 const& addr ) { return U32( new Load( addr.m_expr, 2, true ) ); }
-    U32  MemRead8( U32 const& addr ) { return U32( new Load( addr.m_expr, 1, false ) ); }
+    U32  MemURead32( U32 const& addr ) { return U32( new Load( addr.expr, 4, false ) ); }
+    U32  MemURead16( U32 const& addr ) { return U32( new Load( addr.expr, 2, false ) ); }
+    U32  MemRead32( U32 const& addr ) { return U32( new Load( addr.expr, 4, true ) ); }
+    U32  MemRead16( U32 const& addr ) { return U32( new Load( addr.expr, 2, true ) ); }
+    U32  MemRead8( U32 const& addr ) { return U32( new Load( addr.expr, 1, false ) ); }
     
-    void MemUWrite32( U32 const& addr, U32 const& value ) { stores.push_back( new Store( addr.m_expr, 4, false, value.m_expr ) ); }
-    void MemUWrite16( U32 const& addr, U16 const& value ) { stores.push_back( new Store( addr.m_expr, 2, false, value.m_expr ) ); }
-    void MemWrite32( U32 const& addr, U32 const& value ) { stores.push_back( new Store( addr.m_expr, 4, true, value.m_expr ) ); }
-    void MemWrite16( U32 const& addr, U16 const& value ) { stores.push_back( new Store( addr.m_expr, 2, true, value.m_expr ) ); }
-    void MemWrite8( U32 const& addr, U8 const& value ) { stores.push_back( new Store( addr.m_expr, 1, false, value.m_expr ) ); }
+    void MemUWrite32( U32 const& addr, U32 const& value ) { stores.push_back( new Store( addr.expr, 4, false, value.expr ) ); }
+    void MemUWrite16( U32 const& addr, U16 const& value ) { stores.push_back( new Store( addr.expr, 2, false, value.expr ) ); }
+    void MemWrite32( U32 const& addr, U32 const& value ) { stores.push_back( new Store( addr.expr, 4, true, value.expr ) ); }
+    void MemWrite16( U32 const& addr, U16 const& value ) { stores.push_back( new Store( addr.expr, 2, true, value.expr ) ); }
+    void MemWrite8( U32 const& addr, U8 const& value ) { stores.push_back( new Store( addr.expr, 1, false, value.expr ) ); }
     
     void SetExclusiveMonitors( U32 const& address, unsigned size ) { not_implemented(); }
     bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { not_implemented(); return false; }
@@ -412,7 +438,8 @@ struct Decoder
   do_isa( ISA& isa, uint32_t addr, uint32_t code )
   {
     typename ISA::Operation* op = isa.NCDecode( addr, ISA::mkcode( code ) );
-    armsec::State state( isa.is_thumb, op->GetLength() );
+    armsec::PathNode path;
+    armsec::State state( path, isa.is_thumb, op->GetLength() );
     op->execute( state );
     state.dump();
   }

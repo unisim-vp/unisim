@@ -4,6 +4,7 @@
 #include <limits>       // std::numeric_limits
 #include <ostream>
 #include <stdint.h>
+#include <typeinfo>
 // #include <cmath>
 
 namespace armsec
@@ -50,6 +51,20 @@ namespace armsec
     ~Expr() { if (node) node->Release(); }
     ExprNode const* operator->() const { return node; }
     ExprNode* operator->() { return node; }
+    intptr_t cmp( Expr const& rhs ) const
+    {
+      /* First compare actual types */
+      const std::type_info& til = typeid(*node);
+      const std::type_info& tir = typeid(*rhs.node);
+      if (intptr_t delta = &til - &tir)
+        return delta;
+      /* Same types, call derived comparator */
+      return node->cmp( *rhs.node );
+    }
+    bool operator != ( Expr const& rhs ) const { return cmp( rhs ) != 0; }
+    bool operator == ( Expr const& rhs ) const { return cmp( rhs ) == 0; }
+    bool operator  < ( Expr const& rhs ) const { return cmp( rhs )  < 0; }
+    bool operator  > ( Expr const& rhs ) const { return cmp( rhs )  > 0; }
   };
   
   template <typename VALUE_TYPE>
@@ -57,130 +72,63 @@ namespace armsec
   {
     ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
     virtual void Repr( std::ostream& sink ) const { sink << "0x" << std::hex << value << std::dec; }
+    intptr_t cmp( ExprNode const& brhs ) const
+    {
+      ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );
+      return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0;
+    }
   };
   
   template <typename VALUE_TYPE>
   Expr make_const( VALUE_TYPE value ) { return Expr( new ConstNode<VALUE_TYPE>( value ) ); }
   
+  struct UONode : public ExprNode
+  {
+    UONode( std::string _name, Expr const& _src )
+      : name(_name), src( _src ) {}
+    virtual void Traverse( Visitor& visitor ) const
+    { visitor.Process( this ); src->Traverse( visitor ); }
+    virtual void Repr( std::ostream& sink ) const
+    { sink << name << "( "; src->Repr( sink ); sink << " )"; }
+    std::string name; Expr src;
+    intptr_t cmp( ExprNode const& brhs ) const
+    {
+      UONode const& rhs = dynamic_cast<UONode const&>( brhs );
+      if (intptr_t delta = name.compare( rhs.name )) return delta;
+      return src.cmp( rhs.src );
+    }
+  };
+  
   struct SXTNode : public ExprNode
   {
-    SXTNode( Expr const& expr, unsigned _size ) : src( expr ), size( _size ) {} Expr src; unsigned size;
+    SXTNode( Expr const& _src, unsigned _size ) : src( _src ), size( _size ) {} Expr src; unsigned size;
     virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
     virtual void Repr( std::ostream& sink ) const { sink << "SXT<" << size << ">( "; src->Repr( sink ); sink << " )"; }
+    intptr_t cmp( ExprNode const& brhs ) const
+    {
+      SXTNode const& rhs = dynamic_cast<SXTNode const&>( brhs );
+      if (intptr_t delta = src.cmp( rhs.src )) return delta;
+      return int(size - rhs.size);
+    }
   };
   
-  struct SHLNode : public ExprNode
+  struct BONode : public ExprNode
   {
-    SHLNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "SHL( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+    BONode( std::string _name, Expr const& _left, Expr const& _right )
+      : name(_name), left( _left ), right( _right ) {}
+    virtual void Traverse( Visitor& visitor ) const
+    { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
+    virtual void Repr( std::ostream& sink ) const
+    { sink << name << "( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+    std::string name; Expr left; Expr right;
+    intptr_t cmp( ExprNode const& brhs ) const
+    {
+      BONode const& rhs = dynamic_cast<BONode const&>( brhs );
+      if (intptr_t delta = name.compare( rhs.name )) return delta;
+      if (intptr_t delta = left.cmp( rhs.left )) return delta;
+      return right.cmp( rhs.right );
+    }
   };
-  
-  struct SHRNode : public ExprNode
-  {
-    SHRNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "SHR( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  
-  struct SARNode : public ExprNode
-  {
-    SARNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "SAR( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  
-  struct AddNode : public ExprNode
-  {
-    AddNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Add( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  struct SubNode : public ExprNode
-  {
-    SubNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Sub( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  struct MulNode : public ExprNode
-  {
-    MulNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Mul( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  struct DivNode : public ExprNode
-  {
-    DivNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Div( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  struct ModNode : public ExprNode
-  {
-    ModNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Mod( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  struct XorNode : public ExprNode
-  {
-    XorNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Xor( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  struct AndNode : public ExprNode
-  {
-    AndNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "And( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  struct OrNode : public ExprNode
-  {
-    OrNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Or( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  
-  struct TeqNode : public ExprNode
-  {
-    TeqNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Teq( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  
-  struct TneNode : public ExprNode
-  {
-    TneNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Tne( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  
-  struct TgeNode : public ExprNode
-  {
-    TgeNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Tge( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  
-  struct TleNode : public ExprNode
-  {
-    TleNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Tle( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  
-  struct TgtNode : public ExprNode
-  {
-    TgtNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Tgt( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  
-  struct TltNode : public ExprNode
-  {
-    TltNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "Tlt( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-  };
-  
   
   template <typename Bool> struct AssertBool {};
   template <>              struct AssertBool<bool> { static void check() {} };
@@ -190,13 +138,13 @@ namespace armsec
   {
     typedef VALUE_TYPE value_type;
     
-    Expr                  m_expr;
+    Expr                  expr;
     
-    SmartValue() : m_expr() {}
+    SmartValue() : expr() {}
     
-    SmartValue( Expr const& expr ) : m_expr( expr ) {}
+    SmartValue( Expr const& _expr ) : expr( _expr ) {}
     
-    explicit SmartValue( value_type value ) : m_expr( make_const( value ) ) {}
+    explicit SmartValue( value_type value ) : expr( make_const( value ) ) {}
 
     template <typename SRC_VALUE_TYPE>
     explicit SmartValue( SmartValue<SRC_VALUE_TYPE> const& other )
@@ -207,111 +155,93 @@ namespace armsec
       bool dst_signed = std::numeric_limits<value_type>::is_signed;
       
       if ((src_size == dst_size) and (src_signed == dst_signed))
-        m_expr = other.m_expr;
+        expr = other.expr;
       if (dst_signed and ((dst_size <= src_size) or src_signed))
-        m_expr = new SXTNode( other.m_expr, std::min(dst_size,src_size) );
+        expr = new SXTNode( other.expr, std::min(dst_size,src_size) );
       else {
         uint32_t mask = uint32_t((uint64_t(1) << dst_size) - 1);
-        m_expr = new AndNode( other.m_expr, make_const( mask ) );
+        expr = new BONode( "And", other.expr, make_const( mask ) );
       }
     }
     
-    SmartValue<value_type>& operator = ( SmartValue<value_type> const& other ) { m_expr = other.m_expr; return *this; }
+    SmartValue<value_type>& operator = ( SmartValue<value_type> const& other ) { expr = other.expr; return *this; }
     
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator << ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( new SHLNode( m_expr, make_const( shift ) ) ); }
+    SmartValue<value_type> operator << ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( new BONode( "SHL", expr, make_const( shift ) ) ); }
     template <typename SHIFT_TYPE>
     SmartValue<value_type> operator >> ( SHIFT_TYPE shift ) const {
       if (std::numeric_limits<value_type>::is_signed)
-        return SmartValue<value_type>( new SARNode( m_expr, make_const( shift ) ) );
-      return SmartValue<value_type>( new SHRNode( m_expr, make_const( shift ) ) );
+        return SmartValue<value_type>( new BONode( "SAR", expr, make_const( shift ) ) );
+      return SmartValue<value_type>( new BONode( "SHR", expr, make_const( shift ) ) );
     }
     template <typename SHIFT_TYPE>
-    SmartValue<value_type>& operator <<= ( SHIFT_TYPE shift ) { m_expr = new SHLNode( m_expr, make_const( shift ) ); return *this; }
+    SmartValue<value_type>& operator <<= ( SHIFT_TYPE shift ) { expr = new BONode( "SHL", expr, make_const( shift ) ); return *this; }
     template <typename SHIFT_TYPE>
     SmartValue<value_type>& operator >>= ( SHIFT_TYPE shift ) {
       if (std::numeric_limits<value_type>::is_signed)
-        m_expr = new SARNode( m_expr, make_const( shift ) );
+        expr = new BONode( "SAR", expr, make_const( shift ) );
       else
-        m_expr = new SHRNode( m_expr, make_const( shift ) );
+        expr = new BONode( "SHR", expr, make_const( shift ) );
       return *this;
     }
     
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator << ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( new SHLNode( m_expr, other.m_expr ) ); }
+    SmartValue<value_type> operator << ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( new BONode( "SHL", expr, other.expr ) ); }
     template <typename SHIFT_TYPE>
     SmartValue<value_type> operator >> ( SmartValue<SHIFT_TYPE> const& other ) const {
       if (std::numeric_limits<value_type>::is_signed)
-        return SmartValue<value_type>( new SARNode( m_expr, other.m_expr ) );
-      return SmartValue<value_type>( new SHRNode( m_expr, other.m_expr ) );
+        return SmartValue<value_type>( new BONode( "SAR", expr, other.expr ) );
+      return SmartValue<value_type>( new BONode( "SHR", expr, other.expr ) );
     }
     
-    SmartValue<value_type> operator - () const { return SmartValue<value_type>( new SubNode( make_const( value_type( 0 ) ), m_expr ) ); }
-    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( new XorNode( make_const( ~value_type( 0 ) ), m_expr ) ); }
+    SmartValue<value_type> operator - () const { return SmartValue<value_type>( new BONode( "Sub", make_const( value_type( 0 ) ), expr ) ); }
+    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( new BONode( "Xor", make_const( ~value_type( 0 ) ), expr ) ); }
     
-    SmartValue<value_type>& operator += ( SmartValue<value_type> const& other ) { m_expr = new AddNode( m_expr, other.m_expr ); return *this; }
-    SmartValue<value_type>& operator -= ( SmartValue<value_type> const& other ) { m_expr = new SubNode( m_expr, other.m_expr ); return *this; }
-    SmartValue<value_type>& operator *= ( SmartValue<value_type> const& other ) { m_expr = new MulNode( m_expr, other.m_expr ); return *this; }
-    SmartValue<value_type>& operator /= ( SmartValue<value_type> const& other ) { m_expr = new DivNode( m_expr, other.m_expr ); return *this; }
-    SmartValue<value_type>& operator %= ( SmartValue<value_type> const& other ) { m_expr = new ModNode( m_expr, other.m_expr ); return *this; }
-    SmartValue<value_type>& operator ^= ( SmartValue<value_type> const& other ) { m_expr = new XorNode( m_expr, other.m_expr ); return *this; }
-    SmartValue<value_type>& operator &= ( SmartValue<value_type> const& other ) { m_expr = new AndNode( m_expr, other.m_expr ); return *this; }
-    SmartValue<value_type>& operator |= ( SmartValue<value_type> const& other ) { m_expr = new  OrNode( m_expr, other.m_expr ); return *this; }
+    SmartValue<value_type>& operator += ( SmartValue<value_type> const& other ) { expr = new BONode( "Add", expr, other.expr ); return *this; }
+    SmartValue<value_type>& operator -= ( SmartValue<value_type> const& other ) { expr = new BONode( "Sub", expr, other.expr ); return *this; }
+    SmartValue<value_type>& operator *= ( SmartValue<value_type> const& other ) { expr = new BONode( "Mul", expr, other.expr ); return *this; }
+    SmartValue<value_type>& operator /= ( SmartValue<value_type> const& other ) { expr = new BONode( "Div", expr, other.expr ); return *this; }
+    SmartValue<value_type>& operator %= ( SmartValue<value_type> const& other ) { expr = new BONode( "Mod", expr, other.expr ); return *this; }
+    SmartValue<value_type>& operator ^= ( SmartValue<value_type> const& other ) { expr = new BONode( "Xor", expr, other.expr ); return *this; }
+    SmartValue<value_type>& operator &= ( SmartValue<value_type> const& other ) { expr = new BONode( "And", expr, other.expr ); return *this; }
+    SmartValue<value_type>& operator |= ( SmartValue<value_type> const& other ) { expr = new  BONode( "Or", expr, other.expr ); return *this; }
     
-    SmartValue<value_type> operator + ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new AddNode( m_expr, other.m_expr ) ); }
-    SmartValue<value_type> operator - ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new SubNode( m_expr, other.m_expr ) ); }
-    SmartValue<value_type> operator * ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new MulNode( m_expr, other.m_expr ) ); }
-    SmartValue<value_type> operator / ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new DivNode( m_expr, other.m_expr ) ); }
-    SmartValue<value_type> operator % ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new ModNode( m_expr, other.m_expr ) ); }
-    SmartValue<value_type> operator ^ ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new XorNode( m_expr, other.m_expr ) ); }
-    SmartValue<value_type> operator & ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new AndNode( m_expr, other.m_expr ) ); }
-    SmartValue<value_type> operator | ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new  OrNode( m_expr, other.m_expr ) ); }
+    SmartValue<value_type> operator + ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new BONode( "Add", expr, other.expr ) ); }
+    SmartValue<value_type> operator - ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new BONode( "Sub", expr, other.expr ) ); }
+    SmartValue<value_type> operator * ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new BONode( "Mul", expr, other.expr ) ); }
+    SmartValue<value_type> operator / ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new BONode( "Div", expr, other.expr ) ); }
+    SmartValue<value_type> operator % ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new BONode( "Mod", expr, other.expr ) ); }
+    SmartValue<value_type> operator ^ ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new BONode( "Xor", expr, other.expr ) ); }
+    SmartValue<value_type> operator & ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new BONode( "And", expr, other.expr ) ); }
+    SmartValue<value_type> operator | ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( new  BONode( "Or", expr, other.expr ) ); }
     
-    SmartValue<bool> operator == ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( new TeqNode( m_expr, other.m_expr ) ); }
-    SmartValue<bool> operator != ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( new TneNode( m_expr, other.m_expr ) ); }
-    SmartValue<bool> operator <= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( new TleNode( m_expr, other.m_expr ) ); }
-    SmartValue<bool> operator >= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( new TgeNode( m_expr, other.m_expr ) ); }
-    SmartValue<bool> operator < ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( new TltNode( m_expr, other.m_expr ) ); }
-    SmartValue<bool> operator > ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( new TgtNode( m_expr, other.m_expr ) ); }
+    SmartValue<bool> operator == ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( new BONode( "Teq", expr, other.expr ) ); }
+    SmartValue<bool> operator != ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( new BONode( "Tne", expr, other.expr ) ); }
+    SmartValue<bool> operator <= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( new BONode( "Tle", expr, other.expr ) ); }
+    SmartValue<bool> operator >= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( new BONode( "Tge", expr, other.expr ) ); }
+    SmartValue<bool> operator < ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( new BONode( "Tlt", expr, other.expr ) ); }
+    SmartValue<bool> operator > ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( new BONode( "Tgt", expr, other.expr ) ); }
 
     SmartValue<bool> operator ! () const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( new XorNode( make_const( true ), m_expr ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( new BONode( "Xor", make_const( true ), expr ) ); }
 
     SmartValue<bool> operator && ( SmartValue<bool> const& other ) const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( new AndNode( m_expr, other.m_expr ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( new BONode( "And", expr, other.expr ) ); }
     
     SmartValue<bool> operator || ( SmartValue<bool> const& other ) const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( new  OrNode( m_expr, other.m_expr ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( new  BONode( "Or", expr, other.expr ) ); }
   };
   
-  struct ByteSwapNode : public ExprNode
-  {
-    ByteSwapNode( Expr const& _src ) : src( _src ) {} Expr src;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "ByteSwap( "; src->Repr( sink ); sink << " )"; }
-  };
   template <typename UTP>
-  UTP ByteSwap( UTP const& value ) { return UTP( new ByteSwapNode( value.m_expr ) ); }
+  UTP ByteSwap( UTP const& value ) { return UTP( new UONode( "ByteSwap", value.expr ) ); }
   
-  struct RORNode : public ExprNode
-  {
-    RORNode( Expr const& _src, Expr const& _shift ) : src( _src ), shift( _shift ) {} Expr src; Expr shift;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); shift->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "ROR( "; src->Repr( sink ); sink << ", "; shift->Repr( sink ); sink << " )"; }
-  };
   template <typename UTP>
-  UTP RotateRight( UTP const& value, unsigned shift ) { return UTP( new RORNode( value.m_expr, make_const( shift ) ) ); }
+  UTP RotateRight( UTP const& value, unsigned shift ) { return UTP( new BONode( "ROR", value.expr, make_const( shift ) ) ); }
   template <typename UTP>
-  UTP RotateRight( UTP const& value, UTP const& shift ) { return UTP( new RORNode( value.m_expr, shift.m_expr ) ); }
+  UTP RotateRight( UTP const& value, UTP const& shift ) { return UTP( new BONode( "ROR", value.expr, shift.expr ) ); }
   
-  struct CLZNode : public ExprNode
-  {
-    CLZNode( Expr const& _src ) : src( _src ) {} Expr src;
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const { sink << "CLZ( "; src->Repr( sink ); sink << " )"; }
-  };
   template <typename UTP>
-  UTP CountLeadingZeros( UTP const& value ) { return UTP( new CLZNode( value.m_expr ) ); }
+  UTP CountLeadingZeros( UTP const& value ) { return UTP( new UONode( "CLZ", value.expr ) ); }
   
   struct FP
   {
@@ -320,6 +250,11 @@ namespace armsec
       DefaultNaNNode( int _fsz ) : fsz( _fsz ) {} int fsz;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); }
       virtual void Repr( std::ostream& sink ) const { sink << "F" << fsz << "DefaultNaN()"; }
+      intptr_t cmp( ExprNode const& brhs ) const
+      {
+        DefaultNaNNode const& rhs = dynamic_cast<DefaultNaNNode const&>( brhs );
+        return fsz - rhs.fsz;
+      }
     };
     
     template <typename fpscrT> static
@@ -330,45 +265,24 @@ namespace armsec
     void SetDefaultNan( SmartValue<double>& result, fpscrT const& fpscr )
     { result = SmartValue<double>( new DefaultNaNNode( 64 ) ); }
     
-    struct SetQuietBitNode : public ExprNode
-    {
-      SetQuietBitNode( Expr const& _src ) : src( _src ) {} Expr src;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FSetQuietBit( "; src->Repr( sink ); sink << " )"; }
-    };
-    
     template <typename FLOAT, typename fpscrT> static
     void SetQuietBit( FLOAT& op, fpscrT const& fpscr )
     {
-      op = FLOAT( new SetQuietBitNode( op.m_expr ) );
+      op = FLOAT( new UONode( "FSetQuietBit", op.expr ) );
     }
 
-    struct FlushToZeroNode : public ExprNode
-    {
-      FlushToZeroNode( Expr const& _src ) : src( _src ) {} Expr src;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FFlushToZero( "; src->Repr( sink ); sink << " )"; }
-    };
-    
     template <typename FLOAT, typename fpscrT> static
     bool
     FlushToZero( FLOAT& op, fpscrT& fpscr )
     {
-      op = FLOAT( new FlushToZeroNode( op.m_expr ) );
+      op = FLOAT( new UONode( "FFlushToZero", op.expr ) );
       return false;
     }
-
-    struct CmpNode : public ExprNode
-    {
-      CmpNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FCmp( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-    };
 
     template <typename FLOAT, typename fpscrT> static
     SmartValue<int32_t> Compare( FLOAT op1, FLOAT op2, fpscrT& fpscr )
     {
-      return SmartValue<int32_t>( new CmpNode( op1.m_expr, op2.m_expr ) );
+      return SmartValue<int32_t>( new BONode( "FCmp", op1.expr, op2.expr ) );
     }
 
     struct IsNaNNode : public ExprNode
@@ -376,72 +290,50 @@ namespace armsec
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
       virtual void Repr( std::ostream& sink ) const { sink << "Is" << (signaling?'S':'Q') << "NaN( "; src->Repr( sink ); sink << " )"; }
+      intptr_t cmp( ExprNode const& brhs ) const
+      {
+        IsNaNNode const& rhs = dynamic_cast<IsNaNNode const&>( brhs );
+        if (intptr_t delta = src.cmp( rhs.src )) return delta;
+        return int(signaling) - int(rhs.signaling);
+      }
     };
     
     template <typename FLOAT, typename fpscrT> static
     SmartValue<bool>
     IsSNaN( FLOAT const& op, fpscrT const& fpscr )
     {
-      return SmartValue<bool>( new IsNaNNode( op.m_expr, false ) );
+      return SmartValue<bool>( new IsNaNNode( op.expr, false ) );
     }
     
     template <typename FLOAT, typename fpscrT> static
     SmartValue<bool>
     IsQNaN( FLOAT const& op, fpscrT const& fpscr )
     {
-      return SmartValue<bool>( new IsNaNNode( op.m_expr, true ) );
+      return SmartValue<bool>( new IsNaNNode( op.expr, true ) );
     }
-    
-    struct AddNode : public ExprNode
-    {
-      AddNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FAdd( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-    };
     
     template <typename FLOAT, typename fpscrT> static
     void Add( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
-      res = FLOAT( new AddNode( op1.m_expr, op2.m_expr ) );
+      res = FLOAT( new BONode( "FAdd", op1.expr, op2.expr ) );
     }
 
-    struct SubNode : public ExprNode
-    {
-      SubNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FSub( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-    };
-    
     template <typename FLOAT, typename fpscrT> static
     void Sub( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
-      res = FLOAT( new SubNode( op1.m_expr, op2.m_expr ) );
+      res = FLOAT( new BONode( "FSub", op1.expr, op2.expr ) );
     }
 
-    struct DivNode : public ExprNode
-    {
-      DivNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FDiv( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-    };
-    
     template <typename FLOAT, typename fpscrT> static
     void Div( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
-      res = FLOAT( new DivNode( op1.m_expr, op2.m_expr ) );
+      res = FLOAT( new BONode( "FDiv", op1.expr, op2.expr ) );
     }
 
-    struct MulNode : public ExprNode
-    {
-      MulNode( Expr const& _left, Expr const& _right ) : left( _left ), right( _right ) {} Expr left; Expr right;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FMul( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-    };
-    
     template <typename FLOAT, typename fpscrT> static
     void Mul( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
-      res = FLOAT( new MulNode( op1.m_expr, op2.m_expr ) );
+      res = FLOAT( new BONode( "FMul", op1.expr, op2.expr ) );
     }
 
     struct MulAddNode : public ExprNode
@@ -451,33 +343,26 @@ namespace armsec
       Expr acc; Expr left; Expr right;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); acc->Traverse( visitor ); left->Traverse( visitor ); right->Traverse( visitor ); }
       virtual void Repr( std::ostream& sink ) const { sink << "FMulAdd( "; acc->Repr( sink ); sink << ", "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+      intptr_t cmp( ExprNode const& brhs ) const
+      {
+        MulAddNode const& rhs = dynamic_cast<MulAddNode const&>( brhs );
+        if (intptr_t delta = left.cmp( rhs.left )) return delta;
+        if (intptr_t delta = right.cmp( rhs.right )) return delta;
+        return acc.cmp( rhs.acc );
+      }
     };
     
     template <typename FLOAT, typename fpscrT> static
     void MulAdd( FLOAT& acc, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
-      acc = FLOAT( new MulAddNode( acc.m_expr, op1.m_expr, op2.m_expr ) );
+      acc = FLOAT( new MulAddNode( acc.expr, op1.expr, op2.expr ) );
     }
 
-    struct NegNode : public ExprNode
-    {
-      NegNode( Expr const& _src ) : src( _src ) {} Expr src;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FNeg( "; src->Repr( sink ); sink << " )"; }
-    };
-  
     template <typename FLOAT, typename fpscrT> static
-    void Neg( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new NegNode( op.m_expr ) ); }
+    void Neg( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new UONode( "FNeg", op.expr ) ); }
 
-    struct SqrtNode : public ExprNode
-    {
-      SqrtNode( Expr const& _src ) : src( _src ) {} Expr src;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FSqrt( "; src->Repr( sink ); sink << " )"; }
-    };
-  
     template <typename FLOAT, typename fpscrT> static
-    void Sqrt( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new SqrtNode( op.m_expr ) ); }
+    void Sqrt( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new UONode( "FSqrt", op.expr ) ); }
 
     struct FtoFNode : public ExprNode
     {
@@ -486,12 +371,19 @@ namespace armsec
       {} Expr src; int ssz; int dsz;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
       virtual void Repr( std::ostream& sink ) const { sink << "F" << ssz << "2F" << dsz << "( "; src->Repr( sink ); sink << " )"; }
+      intptr_t cmp( ExprNode const& brhs ) const
+      {
+        FtoFNode const& rhs = dynamic_cast<FtoFNode const&>( brhs );
+        if (intptr_t delta = src.cmp( rhs.src )) return delta;
+        if (intptr_t delta = ssz - rhs.ssz) return delta;
+        return dsz - rhs.dsz;
+      }
     };
     
     template <typename ofpT, typename ifpT, typename fpscrT> static
     void FtoF( SmartValue<ofpT>& res, SmartValue<ifpT> const& op, fpscrT& fpscr )
     {
-      res = SmartValue<ofpT>( new FtoFNode( op.m_expr, 8*sizeof (ifpT), 8*sizeof (ofpT) ) );
+      res = SmartValue<ofpT>( new FtoFNode( op.expr, 8*sizeof (ifpT), 8*sizeof (ofpT) ) );
     }
 
     struct FtoINode : public ExprNode
@@ -501,12 +393,20 @@ namespace armsec
       {} Expr src; int fsz; int isz; int fb; 
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
       virtual void Repr( std::ostream& sink ) const { sink << "F" << fsz << "2I" << isz << "( "; src->Repr( sink ); sink << ", " << fb << " )"; }
+      intptr_t cmp( ExprNode const& brhs ) const
+      {
+        FtoINode const& rhs = dynamic_cast<FtoINode const&>( brhs );
+        if (intptr_t delta = src.cmp( rhs.src )) return delta;
+        if (intptr_t delta = isz - rhs.isz) return delta;
+        if (intptr_t delta = fsz - rhs.fsz) return delta;
+        return fb - rhs.fb;
+      }
     };
 
     template <typename intT, typename fpT, typename fpscrT> static
     void FtoI( SmartValue<intT>& res, SmartValue<fpT> const& op, int fracbits, fpscrT& fpscr )
     {
-      res = SmartValue<intT>( new FtoINode( op.m_expr, 8*sizeof (fpT), 8*sizeof (intT), fracbits) );
+      res = SmartValue<intT>( new FtoINode( op.expr, 8*sizeof (fpT), 8*sizeof (intT), fracbits) );
     }
 
     struct ItoFNode : public ExprNode
@@ -516,25 +416,26 @@ namespace armsec
       {} Expr src; int isz; int fsz; int fb;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
       virtual void Repr( std::ostream& sink ) const { sink << "I" << isz << "2F" << fsz << "( "; src->Repr( sink ); sink << ", " << fb << " )"; }
+      intptr_t cmp( ExprNode const& brhs ) const
+      {
+        ItoFNode const& rhs = dynamic_cast<ItoFNode const&>( brhs );
+        if (intptr_t delta = src.cmp( rhs.src )) return delta;
+        if (intptr_t delta = isz - rhs.isz) return delta;
+        if (intptr_t delta = fsz - rhs.fsz) return delta;
+        return fb - rhs.fb;
+      }
     };
     
     template <typename fpT, typename intT, typename fpscrT> static
     void ItoF( SmartValue<fpT>& res, SmartValue<intT> const& op, int fracbits, fpscrT& fpscr )
     {
-      res = SmartValue<fpT>( new ItoFNode( op.m_expr, 8*sizeof (intT), 8*sizeof (fpT), fracbits ) );
+      res = SmartValue<fpT>( new ItoFNode( op.expr, 8*sizeof (intT), 8*sizeof (fpT), fracbits ) );
     }
     
-    struct AbsNode : public ExprNode
-    {
-      AbsNode( Expr const& _src ) : src( _src ) {} Expr src;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FAbs( "; src->Repr( sink ); sink << " )"; }
-    };
-  
     template <typename FLOAT, typename fpscrT> static
     void Abs( FLOAT& res, FLOAT const& op, fpscrT& fpscr )
     {
-      res = FLOAT( new AbsNode( op.m_expr ) );
+      res = FLOAT( new UONode( "FAbs", op.expr ) );
     }
     
   };
