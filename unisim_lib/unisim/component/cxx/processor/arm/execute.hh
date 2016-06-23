@@ -414,19 +414,19 @@ namespace arm {
     operator double () { return this->toFP<double>(); }
     
     template <unsigned bcT>
-    void toBytes( uint8_t (&bytes)[bcT] )
+    void toBytes( uint8_t (&bytes)[bcT] ) const
     {
-      int32_t exponent = (int8_t((e^4) << 4)) >> 4;
+      int32_t exp = (int8_t((e^4) << 4)) >> 4;
       if (bcT == 4) {
         uint32_t bits = 0;
         bits |= uint32_t( m ) << 19;                   /* inserting mantissa */
-        bits |= (uint32_t((e & 0xff) ^ 0x80) << 23);   /* inserting exponent */
+        bits |= (uint32_t((exp & 0xff) ^ 0x80) << 23);   /* inserting exponent */
         bits |= uint32_t( s ) << 31;                   /* inserting sign */
         for (unsigned byte = 0, bit = 0; byte < bcT; byte += 1, bit += 8) bytes[byte] = bits >> bit;
       } else if (bcT == 8) {
         uint64_t bits = 0;
         bits |= uint64_t( m ) << 48;                   /* inserting mantissa */
-        bits |= (uint64_t((e & 0x7ff) ^ 0x400) << 52); /* inserting exponent */
+        bits |= (uint64_t((exp & 0x7ff) ^ 0x400) << 52); /* inserting exponent */
         bits |= uint64_t( s ) << 63;                   /* inserting sign */
         for (unsigned byte = 0, bit = 0; byte < bcT; byte += 1, bit += 8) bytes[byte] = bits >> bit;
       } else throw std::logic_error("unexpected FP size");

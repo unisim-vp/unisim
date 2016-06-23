@@ -159,9 +159,11 @@ vcmp_f32i.disasm = {
 vcmp_f32i.execute = {
   if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  typename ARCH::F32 op1 = cpu.GetVSR( vd ), op2( 0 );
+  typedef typename ARCH::F32 F32;
+  F32 op1 = cpu.GetVSR( vd );
+  F32 zero = F32(); /* default constructor is expected to zero-out */
   
-  FPCompare( op1, op2, e, cpu, cpu.FPSCR() );
+  FPCompare( op1, zero, e, cpu, cpu.FPSCR() );
 };
 
 op vcmp_f64i( 0b11101110[8]: 0b1[1]: shl<4> vd1[1]: 0b11[2]: 0b0101[4]:> <: vd0[4]: 0b1011[4]: e[1]: 0b100[3]: 0b0000[4] );
@@ -174,9 +176,11 @@ vcmp_f64i.disasm = {
 vcmp_f64i.execute = {
   if (typename ARCH::Cond n=( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  typename ARCH::F64 op1 = cpu.GetVDR( vd ), op2( 0 );
+  typedef typename ARCH::F64 F64;
+  F64 op1 = cpu.GetVDR( vd );
+  F64 zero = F64(); /* default constructor is expected to zero-out */
   
-  FPCompare( op1, op2, e, cpu, cpu.FPSCR() );
+  FPCompare( op1, zero, e, cpu, cpu.FPSCR() );
 }
 
 /* VCVT, VCVTR (Convert between floating-point and integer, Floating-point) */

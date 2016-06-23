@@ -33,6 +33,8 @@
  */
  
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
+#include <unisim/component/cxx/processor/arm/execute.hh>
+#include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <unisim/util/simfloat/floating.tcc>
 #include <stdlib.h>
 #include <sstream>
@@ -43,131 +45,164 @@ namespace cxx {
 namespace processor {
 namespace arm {
 namespace simfloat {
+  
+  SoftDouble::SoftDouble( arm::VFPExpandImm const& imm )
+  {
+    uint8_t bytes[8];
+    imm.toBytes( bytes );
+    setChunk( (void*)(&bytes[0]), true );
+  }
+  SoftFloat::SoftFloat( arm::VFPExpandImm const& imm )
+  {
+    uint8_t bytes[4];
+    imm.toBytes( bytes );
+    setChunk( (void*)(&bytes[0]), true );
+  }
+  void
+  SoftDouble::ToBytes( uint8_t* bytes ) const
+  {
+    fillChunk( (void*)(bytes), true );
+  }
+  void
+  SoftDouble::FromBytes( uint8_t const* bytes )
+  {
+    setChunk( (void*)(bytes), true );
+  }
+  void
+  SoftFloat::ToBytes( uint8_t* bytes ) const
+  {
+    fillChunk( (void*)(bytes), true );
+  }
+  void
+  SoftFloat::FromBytes( uint8_t const* bytes )
+  {
+    setChunk( (void*)(bytes), true );
+  }
 
-FloatingPointRegisterInterface::FloatingPointRegisterInterface(const char *_name, SoftDouble *_value)
-  : name(_name)
-  , value(_value)
-{
-}
+  FloatingPointRegisterInterface::FloatingPointRegisterInterface(const char *_name, SoftDouble *_value)
+    : name(_name)
+    , value(_value)
+  {
+  }
 
-FloatingPointRegisterInterface::~FloatingPointRegisterInterface()
-{
-}
+  FloatingPointRegisterInterface::~FloatingPointRegisterInterface()
+  {
+  }
 
-const char *FloatingPointRegisterInterface::GetName() const
-{
-	return name.c_str();
-}
+  const char *FloatingPointRegisterInterface::GetName() const
+  {
+    return name.c_str();
+  }
 
-void FloatingPointRegisterInterface::GetValue(void *buffer) const
-{
-	*(uint64_t *) buffer = value->queryValue();
-}
+  void FloatingPointRegisterInterface::GetValue(void *buffer) const
+  {
+    *(uint64_t *) buffer = value->queryValue();
+  }
 
-void FloatingPointRegisterInterface::SetValue(const void *buffer)
-{
-	*value = SoftDouble(*(uint64_t *) buffer);
-}
+  void FloatingPointRegisterInterface::SetValue(const void *buffer)
+  {
+    *value = SoftDouble(*(uint64_t *) buffer);
+  }
 
-int FloatingPointRegisterInterface::GetSize() const
-{
-	return 8;
-}
+  int FloatingPointRegisterInterface::GetSize() const
+  {
+    return 8;
+  }
 
-FloatingPointRegisterView::FloatingPointRegisterView(const char *name, unisim::kernel::service::Object *owner, SoftDouble& _storage, const char *description)
-	: unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
-	, storage(_storage)
-{
-}
+  FloatingPointRegisterView::FloatingPointRegisterView(const char *name, unisim::kernel::service::Object *owner, SoftDouble& _storage, const char *description)
+    : unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
+    , storage(_storage)
+  {
+  }
 
-FloatingPointRegisterView::~FloatingPointRegisterView()
-{
-}
+  FloatingPointRegisterView::~FloatingPointRegisterView()
+  {
+  }
 
-const char *FloatingPointRegisterView::GetDataTypeName() const
-{
-	return "64-bit floating-point register";
-}
+  const char *FloatingPointRegisterView::GetDataTypeName() const
+  {
+    return "64-bit floating-point register";
+  }
 
-FloatingPointRegisterView::operator bool () const
-{
-	return (bool) storage.queryValue();
-}
+  FloatingPointRegisterView::operator bool () const
+  {
+    return (bool) storage.queryValue();
+  }
 
-FloatingPointRegisterView::operator long long () const
-{
-	return (long long) storage.queryValue();
-}
+  FloatingPointRegisterView::operator long long () const
+  {
+    return (long long) storage.queryValue();
+  }
 
-FloatingPointRegisterView::operator unsigned long long () const
-{
-	return (unsigned long long) storage.queryValue();
-}
+  FloatingPointRegisterView::operator unsigned long long () const
+  {
+    return (unsigned long long) storage.queryValue();
+  }
 
-FloatingPointRegisterView::operator double () const
-{
-	return (double) storage.queryValue();
-}
+  FloatingPointRegisterView::operator double () const
+  {
+    return (double) storage.queryValue();
+  }
 
-FloatingPointRegisterView::operator std::string () const
-{
-	std::stringstream sstr;
-	sstr << "0x" << std::hex;
-	sstr.fill('0');
-	sstr.width(8);
-	sstr << (uint64_t) storage.queryValue();
-	return sstr.str();
-}
+  FloatingPointRegisterView::operator std::string () const
+  {
+    std::stringstream sstr;
+    sstr << "0x" << std::hex;
+    sstr.fill('0');
+    sstr.width(8);
+    sstr << (uint64_t) storage.queryValue();
+    return sstr.str();
+  }
 
-unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (bool value)
-{
-	if(IsMutable())
-	{
-		storage = SoftDouble((uint64_t) value);
-		NotifyListeners();
-	}
-	return *this;
-}
+  unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (bool value)
+  {
+    if(IsMutable())
+      {
+        storage = SoftDouble((uint64_t) value);
+        NotifyListeners();
+      }
+    return *this;
+  }
 
-unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (long long value)
-{
-	if(IsMutable())
-	{
-		storage = SoftDouble((int64_t) value);
-		NotifyListeners();
-	}
-	return *this;
-}
+  unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (long long value)
+  {
+    if(IsMutable())
+      {
+        storage = SoftDouble((int64_t) value);
+        NotifyListeners();
+      }
+    return *this;
+  }
 
-unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (unsigned long long value)
-{
-	if(IsMutable())
-	{
-		storage = SoftDouble((uint64_t) value);
-		NotifyListeners();
-	}
-	return *this;
-}
+  unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (unsigned long long value)
+  {
+    if(IsMutable())
+      {
+        storage = SoftDouble((uint64_t) value);
+        NotifyListeners();
+      }
+    return *this;
+  }
 
-unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (double value)
-{
-	if(IsMutable())
-	{
-		storage = SoftDouble((int64_t) value);
-		NotifyListeners();
-	}
-	return *this;
-}
+  unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (double value)
+  {
+    if(IsMutable())
+      {
+        storage = SoftDouble((int64_t) value);
+        NotifyListeners();
+      }
+    return *this;
+  }
 
-unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (const char * value)
-{
-	if(IsMutable())
-	{
-		storage = SoftDouble((uint64_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)));
-		NotifyListeners();
-	}
-	return *this;
-}
+  unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (const char * value)
+  {
+    if(IsMutable())
+      {
+        storage = SoftDouble((uint64_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)));
+        NotifyListeners();
+      }
+    return *this;
+  }
 
 } // end of namespace simfloat
 } // end of namespace arm
