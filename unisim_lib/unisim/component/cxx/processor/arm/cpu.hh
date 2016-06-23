@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
+#include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -71,9 +72,9 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
 {
   typedef CONFIG Config;
-  typedef unisim::component::cxx::processor::arm::hostfloat::FPU FPU;
-  typedef double   F64;
-  typedef float    F32;
+  typedef hostfloat::FPU FPU;
+  typedef FPU::F64 F64;
+  typedef FPU::F32 F32;
   typedef uint8_t  U8;
   typedef uint16_t U16;
   typedef uint32_t U32;

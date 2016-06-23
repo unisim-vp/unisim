@@ -34,6 +34,9 @@ namespace hostfloat {
   
   struct FPU
   {
+    typedef double F64;
+    typedef float  F32;
+    
     template <typename operT, typename fpscrT> static
     bool
     FloatFlushToZero( operT& op, fpscrT& fpscr )
