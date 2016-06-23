@@ -71,7 +71,7 @@ namespace armsec
     typedef armsec::S32  S32;
     typedef armsec::S64  S64;
     
-    typedef armsec::FPU  FPU;
+    typedef armsec::FP   FP;
 
     struct Cond
     {
@@ -384,40 +384,42 @@ struct Decoder
   
   template <class ISA>
   void
-  do_isa( ISA& isa, uint32_t code )
+  do_isa( ISA& isa, uint32_t addr, uint32_t code )
   {
-    typename ISA::Operation* op = isa.NCDecode( 0, ISA::mkcode( code ) );
+    typename ISA::Operation* op = isa.NCDecode( addr, ISA::mkcode( code ) );
     armsec::State state( isa.is_thumb, op->GetLength() );
     op->execute( state );
     state.dump();
   }
-  void  do_arm( uint32_t code ) { do_isa( armisa, code ); }
-  void  do_thumb( uint32_t code ) { do_isa( thumbisa, code ); }
+  void  do_arm( uint32_t addr, uint32_t code ) { do_isa( armisa, addr, code ); }
+  void  do_thumb( uint32_t addr, uint32_t code ) { do_isa( thumbisa, addr, code ); }
 };
+
+uint32_t getu32( char const* arg )
+{
+  char *end;
+  uint32_t res = strtoul( arg, &end, 0 );
+  if ((*arg == '\0') or (*end != '\0'))
+    throw std::runtime_error( "Invalid argument." );
+  return res;
+}
 
 int
 main( int argc, char** argv )
 {
-  if (argc != 3) {
-    std::cerr << "usage: <prog> [arm|thumb] <code>\n";
+  if (argc != 4) {
+    std::cerr << "usage: <prog> [arm|thumb] <addr> <code>\n";
     return 1;
   }
   
-  uint32_t code;
-  {
-    char const* beg = argv[2]; char *end;
-    code = strtoul( argv[2], &end, 0 );
-    if ((*beg == '\0') or (*end != '\0')) {
-      std::cerr << "Invalid code argument\n";
-      return 1;
-    }
-  }
+  uint32_t addr = getu32(argv[2]), code = getu32(argv[3]);
   
   Decoder decoder;
-  if        (std::string(argv[1]) == std::string("arm")) {
-    decoder.do_arm( code );
-  } else if (std::string(argv[1]) == std::string("thumb")) {
-    decoder.do_thumb( code );
+  std::string iset(argv[1]);
+  if        (iset == std::string("arm")) {
+    decoder.do_arm( addr, code );
+  } else if (iset == std::string("thumb")) {
+    decoder.do_thumb( addr, code );
   }
   
   return 0;

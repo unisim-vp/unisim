@@ -312,7 +312,7 @@ namespace armsec
   template <typename UTP>
   UTP CountLeadingZeros( UTP const& value ) { return UTP( new CLZNode( value.m_expr ) ); }
   
-  struct FPU
+  struct FP
   {
     struct DefaultNaNNode : public ExprNode
     {
@@ -322,11 +322,11 @@ namespace armsec
     };
     
     template <typename fpscrT> static
-    void FloatSetDefaultNan( SmartValue<float>& result, fpscrT const& fpscr )
+    void SetDefaultNan( SmartValue<float>& result, fpscrT const& fpscr )
     { result = SmartValue<float>( new DefaultNaNNode( 32 ) ); }
     
     template <typename fpscrT> static
-    void FloatSetDefaultNan( SmartValue<double>& result, fpscrT const& fpscr )
+    void SetDefaultNan( SmartValue<double>& result, fpscrT const& fpscr )
     { result = SmartValue<double>( new DefaultNaNNode( 64 ) ); }
     
     struct SetQuietBitNode : public ExprNode
@@ -337,7 +337,7 @@ namespace armsec
     };
     
     template <typename FLOAT, typename fpscrT> static
-    void FloatSetQuietBit( FLOAT& op, fpscrT const& fpscr )
+    void SetQuietBit( FLOAT& op, fpscrT const& fpscr )
     {
       op = FLOAT( new SetQuietBitNode( op.m_expr ) );
     }
@@ -351,7 +351,7 @@ namespace armsec
     
     template <typename FLOAT, typename fpscrT> static
     bool
-    FloatFlushToZero( FLOAT& op, fpscrT& fpscr )
+    FlushToZero( FLOAT& op, fpscrT& fpscr )
     {
       op = FLOAT( new FlushToZeroNode( op.m_expr ) );
       return false;
@@ -365,7 +365,7 @@ namespace armsec
     };
 
     template <typename FLOAT, typename fpscrT> static
-    SmartValue<int32_t> FloatCompare( FLOAT op1, FLOAT op2, fpscrT& fpscr )
+    SmartValue<int32_t> Compare( FLOAT op1, FLOAT op2, fpscrT& fpscr )
     {
       return SmartValue<int32_t>( new CmpNode( op1.m_expr, op2.m_expr ) );
     }
@@ -379,14 +379,14 @@ namespace armsec
     
     template <typename FLOAT, typename fpscrT> static
     SmartValue<bool>
-    FloatIsSNaN( FLOAT const& op, fpscrT const& fpscr )
+    IsSNaN( FLOAT const& op, fpscrT const& fpscr )
     {
       return SmartValue<bool>( new IsNaNNode( op.m_expr, false ) );
     }
     
     template <typename FLOAT, typename fpscrT> static
     SmartValue<bool>
-    FloatIsQNaN( FLOAT const& op, fpscrT const& fpscr )
+    IsQNaN( FLOAT const& op, fpscrT const& fpscr )
     {
       return SmartValue<bool>( new IsNaNNode( op.m_expr, true ) );
     }
@@ -399,7 +399,7 @@ namespace armsec
     };
     
     template <typename FLOAT, typename fpscrT> static
-    void FloatAdd( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    void Add( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
       res = FLOAT( new AddNode( op1.m_expr, op2.m_expr ) );
     }
@@ -412,7 +412,7 @@ namespace armsec
     };
     
     template <typename FLOAT, typename fpscrT> static
-    void FloatSub( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    void Sub( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
       res = FLOAT( new SubNode( op1.m_expr, op2.m_expr ) );
     }
@@ -425,7 +425,7 @@ namespace armsec
     };
     
     template <typename FLOAT, typename fpscrT> static
-    void FloatDiv( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    void Div( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
       res = FLOAT( new DivNode( op1.m_expr, op2.m_expr ) );
     }
@@ -438,7 +438,7 @@ namespace armsec
     };
     
     template <typename FLOAT, typename fpscrT> static
-    void FloatMul( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    void Mul( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
       res = FLOAT( new MulNode( op1.m_expr, op2.m_expr ) );
     }
@@ -453,7 +453,7 @@ namespace armsec
     };
     
     template <typename FLOAT, typename fpscrT> static
-    void FloatMulAdd( FLOAT& acc, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    void MulAdd( FLOAT& acc, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
       acc = FLOAT( new MulAddNode( acc.m_expr, op1.m_expr, op2.m_expr ) );
     }
@@ -466,7 +466,7 @@ namespace armsec
     };
   
     template <typename FLOAT, typename fpscrT> static
-    void FloatNeg( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new NegNode( op.m_expr ) ); }
+    void Neg( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new NegNode( op.m_expr ) ); }
 
     struct SqrtNode : public ExprNode
     {
@@ -476,7 +476,7 @@ namespace armsec
     };
   
     template <typename FLOAT, typename fpscrT> static
-    void FloatSqrt( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new SqrtNode( op.m_expr ) ); }
+    void Sqrt( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new SqrtNode( op.m_expr ) ); }
 
     struct FtoFNode : public ExprNode
     {
@@ -488,7 +488,7 @@ namespace armsec
     };
     
     template <typename ofpT, typename ifpT, typename fpscrT> static
-    void FloatFtoF( SmartValue<ofpT>& res, SmartValue<ifpT> const& op, fpscrT& fpscr )
+    void FtoF( SmartValue<ofpT>& res, SmartValue<ifpT> const& op, fpscrT& fpscr )
     {
       res = SmartValue<ofpT>( new FtoFNode( op.m_expr, 8*sizeof (ifpT), 8*sizeof (ofpT) ) );
     }
@@ -503,7 +503,7 @@ namespace armsec
     };
 
     template <typename intT, typename fpT, typename fpscrT> static
-    void FloatFtoI( SmartValue<intT>& res, SmartValue<fpT> const& op, int fracbits, fpscrT& fpscr )
+    void FtoI( SmartValue<intT>& res, SmartValue<fpT> const& op, int fracbits, fpscrT& fpscr )
     {
       res = SmartValue<intT>( new FtoINode( op.m_expr, 8*sizeof (fpT), 8*sizeof (intT), fracbits) );
     }
@@ -518,7 +518,7 @@ namespace armsec
     };
     
     template <typename fpT, typename intT, typename fpscrT> static
-    void FloatItoF( SmartValue<fpT>& res, SmartValue<intT> const& op, int fracbits, fpscrT& fpscr )
+    void ItoF( SmartValue<fpT>& res, SmartValue<intT> const& op, int fracbits, fpscrT& fpscr )
     {
       res = SmartValue<fpT>( new ItoFNode( op.m_expr, 8*sizeof (intT), 8*sizeof (fpT), fracbits ) );
     }
@@ -531,7 +531,7 @@ namespace armsec
     };
   
     template <typename FLOAT, typename fpscrT> static
-    void FloatAbs( FLOAT& res, FLOAT const& op, fpscrT& fpscr )
+    void Abs( FLOAT& res, FLOAT const& op, fpscrT& fpscr )
     {
       res = FLOAT( new AbsNode( op.m_expr ) );
     }

@@ -352,200 +352,200 @@ namespace simfloat {
     SoftDouble& storage;
   };
 
-  struct FPU
+  struct FP
   {
     typedef SoftDouble F64;
     typedef SoftFloat  F32;
     
     template <typename fpscrT> static
-    void FloatSetDefaultNan( SoftDouble& result, fpscrT const& fpscr )
+    void SetDefaultNan( SoftDouble& result, fpscrT const& fpscr )
     {
     }
 
     template <typename fpscrT> static
-    void FloatSetDefaultNan( SoftFloat& result, fpscrT const& fpscr )
+    void SetDefaultNan( SoftFloat& result, fpscrT const& fpscr )
     {
     }
 
     
     template <typename fpscrT> static
-    void FloatSetQuietBit( SoftDouble& op, fpscrT const& fpscr )
+    void SetQuietBit( SoftDouble& op, fpscrT const& fpscr )
     {
     } 
 
     template <typename fpscrT> static
-    void FloatSetQuietBit( SoftFloat& op, fpscrT const& fpscr )
+    void SetQuietBit( SoftFloat& op, fpscrT const& fpscr )
     {
     } 
 
     template <typename fpscrT> static
-    void FloatSqrt( SoftDouble& res, SoftDouble const& op, fpscrT& fpscr )
+    void Sqrt( SoftDouble& res, SoftDouble const& op, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
-    void FloatSqrt( SoftFloat& res, SoftFloat const& op, fpscrT& fpscr )
+    void Sqrt( SoftFloat& res, SoftFloat const& op, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
-    int FloatCompare( SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
+    int Compare( SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
     {
       return 0;
     }
     
     template <typename fpscrT> static
-    int FloatCompare( SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
+    int Compare( SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
     {
       return 0;
     }
     
     template <typename fpscrT> static
-    bool FloatIsSNaN( SoftDouble const& op, fpscrT const& fpscr )
+    bool IsSNaN( SoftDouble const& op, fpscrT const& fpscr )
     {
       return false;
     }
 
     template <typename fpscrT> static
-    bool FloatIsSNaN( SoftFloat const& op, fpscrT const& fpscr )
+    bool IsSNaN( SoftFloat const& op, fpscrT const& fpscr )
     {
       return false;
     }
 
     template <typename fpscrT> static
-    bool FloatIsQNaN( SoftDouble const& op, fpscrT const& fpscr )
+    bool IsQNaN( SoftDouble const& op, fpscrT const& fpscr )
     {
       return false;
     }
 
     template <typename fpscrT> static
-    bool FloatIsQNaN( SoftFloat const& op, fpscrT const& fpscr )
+    bool IsQNaN( SoftFloat const& op, fpscrT const& fpscr )
     {
       return false;
     }
 
     template <typename fpscrT> static
     bool
-    FloatFlushToZero( SoftDouble& op, fpscrT& fpscr )
+    FlushToZero( SoftDouble& op, fpscrT& fpscr )
     {
       return false;
     }
 
     template <typename fpscrT> static
     bool
-    FloatFlushToZero( SoftFloat& op, fpscrT& fpscr )
+    FlushToZero( SoftFloat& op, fpscrT& fpscr )
     {
       return false;
     }
 
     template <typename fpscrT> static
     void
-    FloatAdd( SoftDouble& res, SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
+    Add( SoftDouble& res, SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
     void
-    FloatAdd( SoftFloat& res, SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
+    Add( SoftFloat& res, SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
     void
-    FloatSub( SoftDouble& res, SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
+    Sub( SoftDouble& res, SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
     void
-    FloatSub( SoftFloat& res, SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
+    Sub( SoftFloat& res, SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
     void
-    FloatDiv( SoftDouble& res, SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
+    Div( SoftDouble& res, SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
     void
-    FloatDiv( SoftFloat& res, SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
+    Div( SoftFloat& res, SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
     void
-    FloatMul( SoftDouble& res, SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
+    Mul( SoftDouble& res, SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
     void
-    FloatMul( SoftFloat& res, SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
+    Mul( SoftFloat& res, SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
     void
-    FloatMulAdd( SoftDouble& acc, SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
+    MulAdd( SoftDouble& acc, SoftDouble const& op1, SoftDouble const& op2, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
     void
-    FloatMulAdd( SoftFloat& acc, SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
+    MulAdd( SoftFloat& acc, SoftFloat const& op1, SoftFloat const& op2, fpscrT& fpscr )
     {
     }
     
     template <typename fpscrT> static
-    void FloatNeg( SoftDouble& res, SoftDouble const& op, fpscrT& fpscr )
+    void Neg( SoftDouble& res, SoftDouble const& op, fpscrT& fpscr )
     {
     }
     
     template <typename fpscrT> static
-    void FloatNeg( SoftFloat& res, SoftFloat const& op, fpscrT& fpscr )
+    void Neg( SoftFloat& res, SoftFloat const& op, fpscrT& fpscr )
     {
     }
     
     template <typename fpscrT> static
-    void FloatFtoF( SoftDouble& res, SoftFloat const& op, fpscrT& fpscr )
+    void FtoF( SoftDouble& res, SoftFloat const& op, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
-    void FloatFtoF( SoftFloat& res, SoftDouble const& op, fpscrT& fpscr )
+    void FtoF( SoftFloat& res, SoftDouble const& op, fpscrT& fpscr )
     {
     }
 
     
     template <typename INT, typename fpscrT> static
-    void FloatFtoI( INT& res, SoftDouble const& op, int fracbits, fpscrT& fpscr )
-    {
-    }
-
-    template <typename INT, typename fpscrT> static
-    void FloatFtoI( INT& res, SoftFloat const& op, int fracbits, fpscrT& fpscr )
+    void FtoI( INT& res, SoftDouble const& op, int fracbits, fpscrT& fpscr )
     {
     }
 
     template <typename INT, typename fpscrT> static
-    void FloatItoF( SoftDouble& res, INT const& op, int fracbits, fpscrT& fpscr )
+    void FtoI( INT& res, SoftFloat const& op, int fracbits, fpscrT& fpscr )
+    {
+    }
+
+    template <typename INT, typename fpscrT> static
+    void ItoF( SoftDouble& res, INT const& op, int fracbits, fpscrT& fpscr )
     {
     }
     
     template <typename INT, typename fpscrT> static
-    void FloatItoF( SoftFloat& res, INT const& op, int fracbits, fpscrT& fpscr )
+    void ItoF( SoftFloat& res, INT const& op, int fracbits, fpscrT& fpscr )
     {
     }
     
     template <typename fpscrT> static
-    void FloatAbs( SoftDouble& res, SoftDouble const& op, fpscrT& fpscr )
+    void Abs( SoftDouble& res, SoftDouble const& op, fpscrT& fpscr )
     {
     }
 
     template <typename fpscrT> static
-    void FloatAbs( SoftFloat& res, SoftFloat const& op, fpscrT& fpscr )
+    void Abs( SoftFloat& res, SoftFloat const& op, fpscrT& fpscr )
     {
     }
 
