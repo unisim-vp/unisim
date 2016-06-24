@@ -143,7 +143,7 @@ template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CIE<uin
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CompilationUnit<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_DIE<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_FDE<uint32_t>&);
-template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Frame<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_RegSet<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_LocListEntry<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_MacInfoListEntry<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Pub<uint32_t>&);

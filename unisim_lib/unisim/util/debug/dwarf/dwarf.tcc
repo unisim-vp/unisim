@@ -3680,7 +3680,7 @@ bool DWARF_Handler<MEMORY_ADDR>::ComputeCFA(MEMORY_ADDR pc, MEMORY_ADDR& cfa) co
 				{
 					logger << DebugInfo << "In File \"" << GetFilename() << "\", lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
 					
-					logger << DebugInfo << "In File \"" << GetFilename() << "\", register set before unwinding:" << *frame << EndDebugInfo;
+					logger << DebugInfo << "In File \"" << GetFilename() << "\", register set before unwinding:" << frame->GetRegSet() << EndDebugInfo;
 				}
 				
 				DWARF_Frame<MEMORY_ADDR> *prev_frame = new DWARF_Frame<MEMORY_ADDR>(this);
@@ -3776,7 +3776,7 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 			{
 				logger << DebugInfo << "In File \"" << GetFilename() << "\", lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
 			
-				logger << DebugInfo << "In File \"" << GetFilename() << "\", register set before unwinding:" << *frame << EndDebugInfo;
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", register set before unwinding:" << frame->GetRegSet() << EndDebugInfo;
 			}
 			
 			unsigned int dw_ret_addr_reg_num = dw_cie->GetReturnAddressRegister();
@@ -3798,7 +3798,7 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 
 			if(debug)
 			{
-				logger << DebugInfo << "In File \"" << GetFilename() << "\", register set after unwinding:" << *frame << EndDebugInfo;
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", register set after unwinding:" << frame->GetRegSet() << EndDebugInfo;
 			}
 
 			if(!backtrace)
@@ -3879,7 +3879,7 @@ bool DWARF_Handler<MEMORY_ADDR>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& r
 				{
 					logger << DebugInfo << "In File \"" << GetFilename() << "\", lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
 					
-					logger << DebugInfo << "In File \"" << GetFilename() << "\", register set before unwinding:" << *frame << EndDebugInfo;
+					logger << DebugInfo << "In File \"" << GetFilename() << "\", register set before unwinding:" << frame->GetRegSet() << EndDebugInfo;
 				}
 				
 				DWARF_Frame<MEMORY_ADDR> *prev_frame = new DWARF_Frame<MEMORY_ADDR>(this);
@@ -3890,7 +3890,7 @@ bool DWARF_Handler<MEMORY_ADDR>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& r
 				{
 					if(debug)
 					{
-						logger << DebugInfo << "In File \"" << GetFilename() << "\", register set after unwinding:" << *prev_frame << EndDebugInfo;
+						logger << DebugInfo << "In File \"" << GetFilename() << "\", register set after unwinding:" << prev_frame->GetRegSet() << EndDebugInfo;
 					}
 
 					ret_addr = 0;

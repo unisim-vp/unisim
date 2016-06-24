@@ -43,8 +43,6 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-using std::list;
-	
 template <class ADDRESS>
 class BreakpointMapPage
 {
@@ -75,16 +73,16 @@ public:
 	bool SetBreakpoint(ADDRESS addr);
 	bool RemoveBreakpoint(ADDRESS addr);
 	bool HasBreakpoint(ADDRESS addr) const;
-	bool SetBreakpoint(const Breakpoint<ADDRESS>& brkp);
-	bool RemoveBreakpoint(const Breakpoint<ADDRESS>& brkp);
-	bool HasBreakpoint(const Breakpoint<ADDRESS>& brkp) const;
+	bool SetBreakpoint(const Breakpoint<ADDRESS> *brkp);
+	bool RemoveBreakpoint(const Breakpoint<ADDRESS> *brkp);
 	bool HasBreakpoints() const;
+	bool HasBreakpoint(const Breakpoint<ADDRESS> *brkp) const;
 	const Breakpoint<ADDRESS> *FindBreakpoint(ADDRESS addr) const;
-	const list<Breakpoint<ADDRESS> >& GetBreakpoints() const;
+	const std::list<const Breakpoint<ADDRESS> *>& GetBreakpoints() const;
 
 private:
 	bool has_breakpoints;
-	list<Breakpoint<ADDRESS> > breakpoints;
+	std::list<const Breakpoint<ADDRESS> *> breakpoints;
 	BreakpointMapPage<ADDRESS> *hash_table[NUM_HASH_TABLE_ENTRIES];
 
 	void AllocatePage(ADDRESS addr);

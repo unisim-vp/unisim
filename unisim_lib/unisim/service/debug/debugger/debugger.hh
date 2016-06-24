@@ -149,9 +149,9 @@ public:
 
 	virtual typename unisim::service::interfaces::DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 
-	virtual bool Listen(const unisim::util::debug::Event<ADDRESS>& event);
-	virtual bool Unlisten(const unisim::util::debug::Event<ADDRESS>& event);
-	virtual bool IsEventListened(const unisim::util::debug::Event<ADDRESS>& event) const;
+	virtual bool Listen(const unisim::util::debug::Event<ADDRESS> *event);
+	virtual bool Unlisten(const unisim::util::debug::Event<ADDRESS> *event);
+	virtual bool IsEventListened(const unisim::util::debug::Event<ADDRESS> *event) const;
 	virtual void EnumerateListenedEvents(std::list<const unisim::util::debug::Event<ADDRESS> *>& lst, typename unisim::util::debug::Event<ADDRESS>::Type ev_type = unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) const;
 	virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr);
 	virtual void Reset();
